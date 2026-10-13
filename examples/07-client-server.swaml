@@ -1,0 +1,42 @@
+swaml "0.1";
+package Rpc {
+    interface clientServer Health version "1.0.0" {
+        operation check(): Bool idempotent;
+    }
+    unit def Server {
+        port health: Health server;
+        operation checkHealth(): Bool on call health.check { return true; }
+    }
+    unit def Client {
+        port health: Health client;
+        var healthy: Bool = false;
+        operation poll(): Void on every 1 s {
+            request health.check() as statusValue within 100 ms otherwise { set healthy = false; return; };
+            set healthy = statusValue;
+            return;
+        }
+    }
+    component def Service {
+        port health: Health server;
+        unit serverUnit: Server;
+        delegate health -> serverUnit.health;
+    }
+    component def Caller {
+        port health: Health client;
+        unit clientUnit: Client;
+        delegate health -> clientUnit.health;
+    }
+    system HealthCheck service {
+        component caller: Caller;
+        component serviceUnit: Service;
+        connect healthCheck: caller.health -> serviceUnit.health qos {
+            delivery atLeastOnce; ordering fifo; capacity 4; overflow reject;
+        };
+    }
+    case Poll for HealthCheck {
+        request caller.health.check -> serviceUnit.health.check via healthCheck label sent;
+        reply serviceUnit.health.check -> caller.health.check via healthCheck after sent label answered;
+    }
+    view interaction SV of Poll;
+    view requestFlow FV of Client.poll;
+}

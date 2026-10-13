@@ -1,0 +1,33 @@
+swaml "0.1";
+package Hello {
+    interface senderReceiver Greeting version "1.0.0" {
+        data text: String queued;
+    }
+    unit def Speaker {
+        port output: Greeting sender;
+        operation greet(): Void on start {
+            send output.text("Hello, SWAML");
+            return;
+        }
+    }
+    unit def Listener {
+        port input: Greeting receiver;
+        var last: String = "";
+        operation hear(message: String): Void on receive input.text {
+            set last = message;
+            return;
+        }
+    }
+    component def Conversation {
+        unit speaker: Speaker;
+        unit listener: Listener;
+        connect greeting: speaker.output -> listener.input qos {
+            delivery atMostOnce; ordering fifo; capacity 4; overflow reject;
+        };
+    }
+    system Demo service { component conversation: Conversation; }
+    view overview GV of Demo;
+    view wiring IV of Conversation;
+    view greetingFlow FV of Speaker.greet;
+    view inventory GRV of Demo;
+}

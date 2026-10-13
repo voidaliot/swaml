@@ -1,0 +1,39 @@
+swaml "0.1";
+package Values {
+    enum Health { Good, Failed }
+    datatype Measurement { value: Real; health: Health; }
+    interface senderReceiver Measurements version "1.0.0" { data sample: Measurement queued; }
+    unit def Producer {
+        port output: Measurements sender;
+        function twice(x: Real): Real = x * 2.0;
+        operation prepare(): Void {
+            let samples: Real[3] = array [1.0, 2.0, 3.0];
+            let i: Int = 0;
+            while (i < 3) bound 3 {
+                let measurement: Measurement = record Measurement {
+                    value = compute twice(samples[i]);
+                    health = enumValue Health.Good;
+                };
+                send output.sample(measurement);
+                set i = i + 1;
+            }
+            return;
+        }
+        operation boot(): Void on start { invoke prepare(); return; }
+    }
+    unit def Consumer {
+        port input: Measurements receiver;
+        var latest: Real = 0.0;
+        operation update(measurement: Measurement): Void on receive input.sample {
+            if (measurement.health == enumValue Health.Good) { set latest = measurement.value; }
+            return;
+        }
+    }
+    component def Pipeline {
+        unit producer: Producer;
+        unit consumer: Consumer;
+        connect samples: producer.output -> consumer.input qos { delivery atMostOnce; ordering fifo; capacity 3; overflow reject; };
+    }
+    system Demo service { component pipeline: Pipeline; }
+    view preparation FV of Producer.prepare;
+}

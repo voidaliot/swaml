@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "language": "SWAML",
+  "languageVersion": "0.1",
+  "foundation": { "name": "KerML", "version": "1.0", "source": "https://www.omg.org/spec/KerML/1.0" },
+  "status": "proposed-mapping-contract-not-an-exporter",
+  "namespace": null,
+  "mapping": [
+    { "source": "Package", "kernel": "Package", "constraints": ["flat-namespace", "unique-name"] },
+    { "source": "Component", "kernel": "Structure", "constraints": ["composition-only", "acyclic-containment"] },
+    { "source": "Unit", "kernel": "Structure", "constraints": ["encapsulation", "direct-operation-ownership"] },
+    { "source": "Instance", "kernel": "Feature", "constraints": ["composite", "typed-by-definition", "multiplicity-one"] },
+    { "source": "DataType", "kernel": "DataType", "constraints": ["value-semantics", "finite-record"] },
+    { "source": "EnumType", "kernel": "DataType", "constraints": ["nominal-finite-domain"] },
+    { "source": "Interface", "kernel": "Classifier", "constraints": ["nominal-versioned-contract", "member-kind"] },
+    { "source": "Port", "kernel": "Feature", "constraints": ["interface-typing", "member-direction-by-role"] },
+    { "source": "Signature", "kernel": "Behavior", "constraints": ["contract-only", "typed-copied-parameters"] },
+    { "source": "Operation", "kernel": ["Behavior", "Step"], "constraints": ["owned-unit-context", "trigger", "run-to-completion"] },
+    { "source": "FunctionDef", "kernel": "Function", "constraints": ["pure", "acyclic-calls"] },
+    { "source": "Connect", "kernel": "Connector", "constraints": ["interface-boundary", "qos", "endpoint-cardinality"] },
+    { "source": "Delegate", "kernel": "Connector", "constraints": ["role-preserving-forwarding", "no-extra-queue"] },
+    { "source": "Block", "kernel": ["Step", "Succession"], "constraints": ["ordered-structured-flow"] },
+    { "source": "Machine", "kernel": ["Behavior", "Step", "Succession"], "constraints": ["current-state", "priority", "timer-lifecycle", "reaction-atomicity"] },
+    { "source": "Send", "kernel": "SWAML-library-message-interaction", "constraints": ["typed-payload", "port-route", "emitter-provenance"] },
+    { "source": "Request", "kernel": "SWAML-library-request-interaction", "constraints": ["correlation", "timeout", "result-or-failure"] }
+  ],
+  "invariants": ["I1-boundary", "I2-ownership", "I3-event-provenance", "I4-type-safety", "I5-communication-policy", "I6-view-consistency"]
+}

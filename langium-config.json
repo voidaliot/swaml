@@ -1,0 +1,5 @@
+{
+  "projectName": "Swaml",
+  "languages": [{ "id": "swaml", "grammar": "src/language/swaml.langium", "fileExtensions": [".swaml"], "textMate": { "out": "syntax/swaml.tmLanguage.json" } }],
+  "out": "src/language/generated"
+}

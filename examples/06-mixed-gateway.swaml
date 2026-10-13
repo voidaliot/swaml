@@ -1,0 +1,73 @@
+swaml "0.1";
+package Gateway {
+    interface senderReceiver Samples version "1.0.0" { data value: Real sampled; }
+    interface service Telemetry version "1.0.0" {
+        operation read(): Real idempotent;
+        event observed(value: Real);
+    }
+    unit def Sensor {
+        port output: Samples sender;
+        operation sample(): Void on every 10 ms timing { wcet 1 ms; deadline 2 ms; concurrency serial; } {
+            send output.value(21.0); return;
+        }
+    }
+    unit def Adapter {
+        port input: Samples receiver;
+        port api: Telemetry provides;
+        var latest: Real = 0.0;
+        operation receiveSample(value: Real): Void on receive input.value timing { wcet 1 ms; deadline 3 ms; concurrency serial; } {
+            set latest = value;
+            publish api.observed(value);
+            return;
+        }
+        operation readLatest(): Real on call api.read timing { wcet 1 ms; deadline 3 ms; concurrency serial; } { return latest; }
+    }
+    unit def Dashboard {
+        port telemetry: Telemetry requires;
+        var displayed: Real = 0.0;
+        operation refresh(): Void on manual timing { wcet 1 ms; deadline 30 ms; concurrency serial; } {
+            request telemetry.read() as measured within 25 ms otherwise { return; };
+            set displayed = measured; return;
+        }
+        operation update(value: Real): Void on receive telemetry.observed timing { wcet 1 ms; deadline 5 ms; concurrency serial; } {
+            set displayed = value; return;
+        }
+    }
+    component def Acquisition {
+        port output: Samples sender;
+        unit sensor: Sensor;
+        delegate output -> sensor.output;
+    }
+    component def Bridge {
+        port input: Samples receiver;
+        port api: Telemetry provides;
+        unit adapter: Adapter;
+        delegate input -> adapter.input;
+        delegate api -> adapter.api;
+    }
+    component def Display {
+        port telemetry: Telemetry requires;
+        unit dashboard: Dashboard;
+        delegate telemetry -> dashboard.telemetry;
+    }
+    system Product mixed {
+        component acquisition: Acquisition;
+        component bridge: Bridge;
+        component display: Display;
+        connect sensing: acquisition.output -> bridge.input qos {
+            delivery atMostOnce; ordering fifo; capacity 1; overflow dropOldest; maxLatency 1 ms; maxAge 20 ms;
+        };
+        connect observing: display.telemetry -> bridge.api qos {
+            delivery atMostOnce; ordering fifo; capacity 8; overflow reject; maxLatency 2 ms;
+        };
+        node controller mcu;
+        node edge process;
+        deploy acquisition on controller;
+        deploy bridge on edge;
+        deploy display on edge;
+    }
+    view overview GV of Product;
+    view connections IV of Product;
+    view conversion FV of Adapter.receiveSample;
+    view allocation GRV of Product;
+}

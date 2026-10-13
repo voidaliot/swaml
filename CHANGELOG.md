@@ -1,0 +1,11 @@
+# Changelog
+
+## 0.1.0 — 2026-10-14
+
+- Define the complete initial SWAML language draft, with a proposed KerML 1.0 semantic mapping and explicit conformance levels.
+- Define components, units, value types, pure functions, operations, port contracts, delegation, sender–receiver, client–server, publish–subscribe and combined services.
+- Specify control flow, stateful operations, queue/delivery/error semantics, timing contracts, deployment, cases and the six graphical views.
+- Add a Langium 4.4 grammar, owner-aware scoping, initial semantic checks, CLI and LSP entry point.
+- Add seven valid examples, invalid fixtures, tests, CI, user and contributor guides, architecture comparison and coding-agent instructions.
+
+This is a language design/reference-core release. Kernel interchange, execution, graphical editors and an extension package are specified integration work, not implemented features.

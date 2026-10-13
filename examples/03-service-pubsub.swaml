@@ -1,0 +1,76 @@
+swaml "0.1";
+package Commerce {
+    interface service Orders version "1.0.0" {
+        // Submitting publishes effects, so this contract does not claim idempotency.
+        operation submit(orderId: String): Bool;
+        event accepted(orderId: String);
+    }
+    interface publishSubscribe Audit version "1.0.0" { event recorded(orderId: String); }
+    unit def OrderService {
+        port api: Orders provides;
+        port audit: Audit publisher;
+        operation submit(orderId: String): Bool on call api.submit {
+            publish api.accepted(orderId);
+            publish audit.recorded(orderId);
+            return true;
+        }
+    }
+    unit def Frontend {
+        port orders: Orders requires;
+        var lastAccepted: String = "";
+        operation checkout(): Void on manual {
+            request orders.submit("order-42") as accepted within 2 s otherwise { fail "checkout unavailable"; };
+            assert accepted;
+            return;
+        }
+        operation confirmation(orderId: String): Void on receive orders.accepted { set lastAccepted = orderId; return; }
+    }
+    unit def AuditStore {
+        port input: Audit subscriber;
+        var last: String = "";
+        operation storeRecord(orderId: String): Void on receive input.recorded { set last = orderId; return; }
+    }
+    component def Backend {
+        port api: Orders provides;
+        port audit: Audit publisher;
+        unit serviceUnit: OrderService;
+        delegate api -> serviceUnit.api;
+        delegate audit -> serviceUnit.audit;
+    }
+    component def Web {
+        port orders: Orders requires;
+        unit frontend: Frontend;
+        delegate orders -> frontend.orders;
+    }
+    component def Archive {
+        port input: Audit subscriber;
+        unit store: AuditStore;
+        delegate input -> store.input;
+    }
+    system Shop service {
+        component web: Web;
+        component backend: Backend;
+        component archive: Archive;
+        connect orderLink: web.orders -> backend.api qos { delivery atMostOnce; ordering fifo; capacity 32; overflow reject; };
+        connect auditing: backend.audit -> archive.input qos { delivery atLeastOnce; ordering fifo; capacity 128; overflow dropOldest; };
+        node edge container;
+        node application container;
+        node storage container;
+        deploy web on edge;
+        deploy backend on application;
+        deploy archive on storage;
+    }
+    requirement AcceptedOrder "Accepted orders shall be published to audit subscribers.";
+    case Checkout for Shop satisfies AcceptedOrder {
+        request web.orders.submit -> backend.api.submit via orderLink label submitOrder;
+        publish backend.api.accepted -> web.orders.accepted via orderLink after submitOrder label notification;
+        publish backend.audit.recorded -> archive.input.recorded via auditing after submitOrder label auditRecord;
+        reply backend.api.submit -> web.orders.submit via orderLink after notification label response;
+    }
+    view overview GV of Shop;
+    view wiring IV of Shop;
+    view cases CV of Shop;
+    view checkout SV of Checkout;
+    view services GRV of Shop;
+    view submitFlow FV of OrderService.submit;
+}

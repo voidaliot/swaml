@@ -1,0 +1,53 @@
+swaml "0.1";
+package Control {
+    interface senderReceiver Samples version "1.0.0" { data temperature: Real sampled; }
+    interface senderReceiver Commands version "1.0.0" { data duty: Real sampled; }
+    unit def Sensor {
+        port output: Samples sender;
+        operation sample(): Void on every 10 ms timing { wcet 1 ms; deadline 3 ms; concurrency serial; } {
+            send output.temperature(23.5);
+            return;
+        }
+    }
+    unit def Regulator {
+        port input: Samples receiver;
+        port output: Commands sender;
+        function clamp(x: Real): Real = x / 100.0;
+        operation regulate(temperature: Real): Void on receive input.temperature timing { wcet 1 ms; deadline 3 ms; concurrency serial; } {
+            let duty: Real = compute clamp(temperature);
+            if (duty > 0.8) { send output.duty(0.8); }
+            else { send output.duty(duty); }
+            return;
+        }
+    }
+    unit def Actuator {
+        port input: Commands receiver;
+        var applied: Real = 0.0;
+        operation apply(duty: Real): Void on receive input.duty timing { wcet 1 ms; deadline 2 ms; concurrency serial; } {
+            set applied = duty;
+            assert applied <= 0.8;
+            return;
+        }
+    }
+    component def Controller {
+        unit sensor: Sensor;
+        unit regulator: Regulator;
+        unit actuator: Actuator;
+        connect measured: sensor.output -> regulator.input qos {
+            delivery atMostOnce; ordering fifo; capacity 1; overflow dropOldest; maxLatency 1 ms; maxAge 20 ms;
+        };
+        connect commanded: regulator.output -> actuator.input qos {
+            delivery atMostOnce; ordering fifo; capacity 1; overflow dropOldest; maxLatency 1 ms; maxAge 20 ms;
+        };
+    }
+    system Heating realtime {
+        component controller: Controller;
+        node ecu mcu;
+        deploy controller on ecu;
+    }
+    requirement LimitedDuty "Applied duty shall be at most 0.8.";
+    view overview GV of Heating;
+    view wiring IV of Controller;
+    view regulating FV of Regulator.regulate;
+    view deployment GRV of Heating;
+}

@@ -1,0 +1,7 @@
+node_modules/
+out/
+src/language/generated/
+syntax/*.tmLanguage.json
+*.tsbuildinfo
+.DS_Store
+*.vsix
