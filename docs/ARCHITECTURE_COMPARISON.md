@@ -72,7 +72,7 @@ For service and event-driven software, our design additionally makes queue capac
 | SysML part definition/usage | component/unit definition and instance | software-specific ownership interpretation |
 | Physical/external endpoint | adapter unit with typed ports | how actual I/O enters the implementation |
 
-## Decisions recorded for 0.1
+## Decisions retained in 1.0
 
 1. Unit is the smallest interface-protected software boundary. Pure local computation does not require a port.
 2. Components compose; units execute. Do not make both own independent execution semantics.
@@ -82,7 +82,7 @@ For service and event-driven software, our design additionally makes queue capac
 6. Publish/subscribe is explicit and supports fan-out without assuming a particular broker.
 7. A service can combine requests and events, but implicit fields are avoided.
 8. State and flow share FV because both belong to operations.
-9. A complete, bounded 0.1 language is preferable to undefined syntax for advanced features. Deferred constructs are listed in the implementation/roadmap documents.
+9. A complete, bounded 1.0 language is preferable to undefined syntax for advanced features. Deferred constructs are listed in the implementation/roadmap documents.
 10. Tool claims must distinguish parsing, validation, kernel mapping, execution and graphical editing.
 
 ## Source handling

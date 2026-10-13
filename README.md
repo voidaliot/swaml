@@ -2,24 +2,23 @@
 
 SWAML is a software-focused modeling language designed on the KerML semantic foundation. It combines architectural structure, executable-operation contracts, state behavior, and interface-controlled communication for embedded realtime software and services.
 
-**Version 0.1 is a language design and a working Langium reference core.** It is an independent project, informally motivated by an “unofficial UML 3.0”; it is not an OMG UML release, an AUTOSAR implementation, or a certified KerML tool.
+**Version 1.0.0 defines the language and includes a working Langium parser, validator and reference simulator.** It is an independent project, informally motivated by an “unofficial UML 3.0”; it is not an OMG UML release, an AUTOSAR implementation, or a certified KerML tool.
 
-## PDF and release
+## Read the complete specification
 
-[Download the complete PDF](https://github.com/voidaliot/swaml/releases/download/v0.1.0/SWAML-0.1.0-Specification.pdf) · [Release 0.1.0](https://github.com/voidaliot/swaml/releases/tag/v0.1.0) · [Rebuild and verify](docs/PDF_PUBLICATION.md)
+[Full Markdown reference](docs/SWAML-1.0.0-Reference.md) · [Full PDF](output/pdf/SWAML-1.0.0-Specification.pdf) · [By concern](docs/CONCERN_GUIDE.md) · [Alphabetical keywords](docs/KEYWORD_REFERENCE.md)
 
-The PDF includes the normative specification, graphical notation, grammar, all examples, user guide and supporting documentation, with bookmarks and embedded source files. Release 0.1.0 packages the reviewed 0.1.1 draft/core revision; models retain the `0.1` language header.
+The specification covers all 129 reserved words, formal syntax/typing/execution rules, static and dynamic architecture, communication policies, timing, deployment, cases and graphical notation. The PDF includes clickable navigation, all model examples, exact grammar, vector diagrams and embedded source files. [Publication and verification](docs/PDF_PUBLICATION.md) · [1.0 evidence](docs/RELEASE_1_0.md) · [Historical v0.1.0](https://github.com/voidaliot/swaml/releases/tag/v0.1.0).
 
 ## Start here
 
-- [User guide](docs/USER_GUIDE.md): learn SWAML through models you can validate.
-- [Full language specification](docs/LANGUAGE_SPECIFICATION.md): normative 0.1 rules and semantics.
-- [Architecture comparison](docs/ARCHITECTURE_COMPARISON.md): AUTOSAR Classic/Adaptive, UML, SysML, AADL and the resulting decisions.
-- [Graphical notation](docs/GRAPHICAL_NOTATION.md): Browser, GV, IV, CV, SV, GRV, FV.
-- [Grammar](src/language/swaml.langium): the authoritative concrete syntax.
-- [Tooling and VS Code integration](docs/TOOLING.md): consume the language core in `swaml-vsc-ext`.
-- [Specification audit](docs/SPECIFICATION_AUDIT.md): resolved issues, evidence and completion boundary.
-- [Implementation status](docs/IMPLEMENTATION_STATUS.md): what is checked today and what remains for a full workbench.
+- [User guide](docs/USER_GUIDE.md): learn the language through complete models.
+- [Normative document set](docs/LANGUAGE_SPECIFICATION.md): the rules and conformance obligations.
+- [Reference simulation](docs/SIMULATION.md): execute models and inspect reproducible traces.
+- [Graphical examples](docs/GRAPHICAL_EXAMPLES.md): Browser, GV, IV, CV, SV, GRV and both FV forms.
+- [Architecture comparison](docs/ARCHITECTURE_COMPARISON.md): AUTOSAR Classic/Adaptive, UML, SysML and AADL.
+- [Grammar](src/language/swaml.langium) and [tool integration](docs/TOOLING.md): reusable Langium core for a separately implemented VS Code extension.
+- [Implementation status](docs/IMPLEMENTATION_STATUS.md) and [migration](docs/MIGRATION_1_0.md): precise scope and version changes.
 
 ## The model
 
@@ -38,7 +37,7 @@ Components compose units and components. Units own data, operations and pure fun
 
 Every exchange between units or components crosses typed ports and an explicit connector. Interfaces support sender–receiver data, client–server operations, publish–subscribe events, and combined services. An event has an interface declaration, an emitting operation and a receiving operation or state transition. There is no global event bus hidden in the syntax.
 
-## Run the workbench
+## Parse, validate and simulate
 
 Requires Node.js 22+ and npm 10.2.3+.
 
@@ -46,9 +45,10 @@ Requires Node.js 22+ and npm 10.2.3+.
 npm ci
 npm run check
 node out/src/cli/main.js examples/03-service-pubsub.swaml
+node out/src/cli/simulate.js Commerce::Shop examples/simulation/03-service-pubsub.json examples/03-service-pubsub.swaml
 ```
 
-`npm run check` generates the parser, typechecks the TypeScript, runs semantic and language-server tests, validates the examples and checks documentation links/snippets and the complete grammar mapping inventory. The CLI exits 0 for accepted models, 1 for validation errors, and 2 for invocation or I/O errors. Supply all related files together when a model imports another package.
+`npm run check` generates the parser, typechecks the TypeScript, runs semantic, simulator and language-server tests, validates and simulates every example, checks documentation and keyword coverage, and verifies the complete grammar mapping inventory and graphical subjects. The CLI exits 0 for accepted models, 1 for validation errors, and 2 for invocation or I/O errors. Supply all related files together when a model imports another package.
 
 ## Models
 
@@ -69,15 +69,16 @@ node out/src/cli/main.js examples/03-service-pubsub.swaml
 ```text
 docs/                 Specification, user guide, notation, research, decisions
 src/language/         Grammar, scoping, validation and generated AST (build output)
-src/cli/              Headless model validation
+src/cli/              Headless validation and simulation
+src/simulation/       Portable logical-time reference interpreter
 src/server/           Language Server Protocol entry point
-examples/             Executable parser/validator fixtures
-spec/                 Machine-readable KerML mapping contract
-scripts/              Documentation checks
+examples/             Valid/invalid models, simulation options and trace evidence
+spec/                 Mapping, keyword and graphical-source inventories
+scripts/              Reference/figure/PDF builders and consistency checks
 syntax/               Generated TextMate grammar (build output)
-test/                 Positive, negative and LSP integration tests
+test/                 Static, behavioral, CLI and LSP integration tests
 ```
 
-This repository does not yet contain a simulator, a KerML serializer, an AUTOSAR ARXML exporter, graphical editing, or a packaged VS Code extension. Those are implementation work items with defined contracts, rather than implied capabilities of the validator.
+The simulator implements a documented deterministic logical-time profile. Passing a bounded run does not prove physical realtime schedulability or safety across every possible schedule. KerML serialization, platform export and graphical editing have defined language-side contracts and need their own backends. The actual VS Code extension is implemented elsewhere; this repository owns the language.
 
 Contributions follow [CONTRIBUTING.md](CONTRIBUTING.md). Coding agents follow [AGENTS.md](AGENTS.md). Original code and documentation use the existing [MIT license](LICENSE); referenced standards retain their own terms.

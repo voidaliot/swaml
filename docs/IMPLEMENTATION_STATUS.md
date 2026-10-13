@@ -1,6 +1,6 @@
 # Implementation status — 1.0.0
 
-The normative specification defines the complete bounded 1.0 language. The repository implements the Langium parser, CLI, language-server foundation and broad static checking. It also implements a bounded logical-time reference simulator; it does not implement a production runtime, KerML exporter or graphical editor. See the [audit report](SPECIFICATION_AUDIT.md) and [conformance obligations](spec/08-conformance-obligations.md).
+The normative specification defines the complete bounded 1.0 language. The repository implements the Langium parser, CLI, language-server foundation and broad static checking. It also implements a bounded logical-time reference simulator; it does not implement a production runtime, KerML exporter or graphical editor. See the [1.0 evidence](RELEASE_1_0.md) and historical [0.1 audit](SPECIFICATION_AUDIT.md) and [conformance obligations](spec/08-conformance-obligations.md).
 
 ## Implemented and tested
 

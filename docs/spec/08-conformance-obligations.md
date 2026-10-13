@@ -63,6 +63,6 @@ A tool's conformance report MUST identify language version, implementation versi
 
 ## 8.5 Scope and future evolution
 
-Completeness of this draft means every 1.0 construct has syntax, ownership, reference/type rules, static constraints, operational or descriptive meaning, a normalization contract and a conformance category. It does not mean every future software architecture concern is a built-in keyword or that all backends are implemented.
+Completeness of this specification means every 1.0 construct has syntax, ownership, reference/type rules, static constraints, operational or descriptive meaning, a normalization contract and a conformance category. It does not mean every future software architecture concern is a built-in keyword or that all backends are implemented.
 
 The finite boundary remains explicit: no inheritance, generics, reference-valued payloads, dynamic object creation/subscriptions/discovery, unrestricted fork/join, hierarchical/orthogonal state machines or arbitrary host-language code. Model adapters and protocols can express supported interactions; a new construct needs a versioned proposal with the same obligations. Patch clarification fixes retain the `1.0` header only when valid-model meaning is unchanged; incompatible changes require versioned migration.

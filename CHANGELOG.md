@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.0 — 2026-10-14
+
+- Stabilize the complete language with header 1.0 and aligned package/specification version. Add migration guidance and formal typing/execution transition rules.
+- Implement a deterministic logical-time reference simulator covering the full expression/statement language, RPC, queues, snapshots, state reactions and explicit failures/resource limits.
+- Add reproducible simulation configurations and expected results for all eight example systems, with trace evidence and behavioral/CLI regressions.
+- Publish a complete user-facing Markdown/PDF reference, alphabetical concern guide and exhaustive 129-keyword index.
+- Add eight source-linked vector examples for Browser, GV, IV, CV, SV, GRV and operation-flow/state FV.
+- Keep VS Code extension implementation separate. Preserve the explicit limits on physical timing proof, kernel export and graphical-editor conformance.
+- Resolve specification/publication issues #8–#12 through focused commits and checked evidence.
+
 ## Public release 0.1.0 — 2026-10-14
 
 - Publish the initial GitHub release as `v0.1.0`, packaging the reviewed 0.1.1 draft/core revision below.

@@ -26,7 +26,7 @@ Breaking changes require a new language version and migration notes. Additive ke
 1. Update the normative prose and grammar together.
 2. Update the grammar mapping inventory and classify each obligation as static, runtime, analysis, kernel or graphical. Every rule/type needs a normative home. Regenerate with `npm run langium:generate`; update scoping and validators as needed.
 3. Add a valid model and a negative regression that would have caught the original issue. Cross-file changes need imported/qualified and ambiguous-name cases.
-4. Update the user guide, affected examples, implementation matrix and changelog.
+4. Update the keyword inventory, user guide, affected examples, simulation configurations, graphical projections, implementation matrix and changelog. Regenerate the complete reference with `npm run docs:build`.
 5. Run `npm run check` and report the result in the pull request.
 
 Tests must verify observable language behavior, not copy the implementation's internal algorithm. Preserve malformed-input recovery: editor diagnostics must not crash the language server. New communication features need tests that attempts to bypass interfaces are rejected.
@@ -52,3 +52,11 @@ Track a concrete contradiction, missing semantic choice or validator defect as a
 Include the language/core version, a minimal model, exact CLI command or editor action, observed diagnostics and expected rule. For graphical work include the view ID and semantic subject path. For timing/delivery concerns state the target assumptions; a compiler acceptance result alone is not execution evidence.
 
 Do not include credentials, private service URLs or production payloads in examples. Replace them with minimal synthetic values.
+
+## Publication changes
+
+The source chapters and `spec/keywords.json` are maintained inputs. The complete Markdown and keyword reference are generated. Run `npm run docs:build` after editing those inputs. Figure changes require `python3 scripts/build-graphical-examples.py` and semantic subject checks; commit SVG and scene pairs together. Do not silently edit one rendition.
+
+For an edition, follow [the PDF workflow](docs/PDF_PUBLICATION.md): build, verify exact source attachments and hashes, render all pages, and visually inspect figures, code, tables and navigation. Attach the full Markdown, PDF, manifest and checksum to the prepared release. A public release is a separate explicit publication action; a release-ready commit/tag or draft preserves reviewability.
+
+Simulator changes must retain the [profile contract](docs/SIMULATION.md) or introduce a new named profile/version. Include a trace-level regression and record configuration/source identity. Review timeout ties, partial fanout, stale timers, queue limits and snapshot behavior whenever communication or dispatch changes. Never equate a bounded successful run with physical schedulability or a proof of all possible executions.

@@ -30,6 +30,8 @@ jobs:
           cache-dependency-path: scripts/pdf-requirements.txt
       - run: python -m pip install -r scripts/pdf-requirements.txt
       - run: sudo apt-get update && sudo apt-get install -y fonts-dejavu-core
+      - name: Verify generated vector examples
+        run: python scripts/build-graphical-examples.py --check
       - name: Verify committed publication
         run: python scripts/check-spec-pdf.py
       - name: Rebuild from source and verify

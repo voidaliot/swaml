@@ -223,3 +223,19 @@ test('helper deadline detects suspension before helper returns', async () => {
 test('reject malformed numeric binding options instead of ignoring resource bounds', async () => {
     await assert.rejects(() => run(program('return;'), 'P::S', { untilNs: 1, maxSteps: 'unbounded' as unknown as number }), /maxSteps/);
 });
+test('machine data payload, exit/effect/entry order and finality execute directly', async () => {
+    const text = `swaml "1.0"; package P {
+      interface senderReceiver Signal version "1.0.0" { data step: Int queued; }
+      unit def Sender { port output: Signal sender; operation run(): Void on start { send output.step(3); } }
+      unit def Receiver { port input: Signal receiver; var count: Int = 0;
+        operation run(): Void on start machine { initial A;
+          state A { exit { set count = count + 1; } }
+          state B final { entry { assert count == 4; } }
+          transition next: A -> B on receive input.step when (payload > 0) { set count = count + payload; }
+        }
+      }
+      component def C { unit senderUnit: Sender; unit receiverUnit: Receiver; connect signal: senderUnit.output -> receiverUnit.input qos { delivery atMostOnce; ordering fifo; capacity 1; overflow reject; }; }
+      system S service { component c: C; }
+    }`;
+    const r = await run(text); assert.equal(r.stores['c.receiverUnit'].count, 4); assert.equal(r.machines['c.receiverUnit.run'].live, false); assert.equal(r.outcome, 'no-failure-observed');
+});

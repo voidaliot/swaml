@@ -1,5 +1,7 @@
 # Specification completeness audit — 0.1.1
 
+This is the historical 0.1 audit. For current behavior and simulation support, read the [1.0 evidence](RELEASE_1_0.md).
+
 **Date:** 2026-10-14. **Scope:** complete the bounded 0.1 language contract and resolve defects found in the initial Langium reference core. Language header remains `swaml "0.1";`.
 
 ## Findings and resolutions

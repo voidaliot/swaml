@@ -460,7 +460,7 @@ For service and event-driven software, our design additionally makes queue capac
 | SysML part definition/usage | component/unit definition and instance | software-specific ownership interpretation |
 | Physical/external endpoint | adapter unit with typed ports | how actual I/O enters the implementation |
 
-## Decisions recorded for 0.1
+## Decisions retained in 1.0
 
 1. Unit is the smallest interface-protected software boundary. Pure local computation does not require a port.
 2. Components compose; units execute. Do not make both own independent execution semantics.
@@ -470,7 +470,7 @@ For service and event-driven software, our design additionally makes queue capac
 6. Publish/subscribe is explicit and supports fan-out without assuming a particular broker.
 7. A service can combine requests and events, but implicit fields are avoided.
 8. State and flow share FV because both belong to operations.
-9. A complete, bounded 0.1 language is preferable to undefined syntax for advanced features. Deferred constructs are listed in the implementation/roadmap documents.
+9. A complete, bounded 1.0 language is preferable to undefined syntax for advanced features. Deferred constructs are listed in the implementation/roadmap documents.
 10. Tool claims must distinguish parsing, validation, kernel mapping, execution and graphical editing.
 
 ## Source handling
@@ -737,7 +737,7 @@ A tool's conformance report MUST identify language version, implementation versi
 
 ## 8.5 Scope and future evolution
 
-Completeness of this draft means every 1.0 construct has syntax, ownership, reference/type rules, static constraints, operational or descriptive meaning, a normalization contract and a conformance category. It does not mean every future software architecture concern is a built-in keyword or that all backends are implemented.
+Completeness of this specification means every 1.0 construct has syntax, ownership, reference/type rules, static constraints, operational or descriptive meaning, a normalization contract and a conformance category. It does not mean every future software architecture concern is a built-in keyword or that all backends are implemented.
 
 The finite boundary remains explicit: no inheritance, generics, reference-valued payloads, dynamic object creation/subscriptions/discovery, unrestricted fork/join, hierarchical/orthogonal state machines or arbitrary host-language code. Model adapters and protocols can express supported interactions; a new construct needs a versioned proposal with the same obligations. Patch clarification fixes retain the `1.0` header only when valid-model meaning is unchanged; incompatible changes require versioned migration.
 
@@ -2677,7 +2677,7 @@ Precedence, lowest first: or; and; equality; ordered comparison; addition/subtra
 
 # Implementation status — 1.0.0
 
-The normative specification defines the complete bounded 1.0 language. The repository implements the Langium parser, CLI, language-server foundation and broad static checking. It also implements a bounded logical-time reference simulator; it does not implement a production runtime, KerML exporter or graphical editor. See the [audit report](SPECIFICATION_AUDIT.md) and [conformance obligations](#source-7edf1a193e2a).
+The normative specification defines the complete bounded 1.0 language. The repository implements the Langium parser, CLI, language-server foundation and broad static checking. It also implements a bounded logical-time reference simulator; it does not implement a production runtime, KerML exporter or graphical editor. See the [1.0 evidence](RELEASE_1_0.md) and historical [0.1 audit](SPECIFICATION_AUDIT.md) and [conformance obligations](#source-7edf1a193e2a).
 
 ## Implemented and tested
 
@@ -2830,6 +2830,12 @@ Build a separate normalized model from the linked/validated authoring AST, then 
 Before an extension consumes a new language-core version, run `npm ci && npm run check`, inspect the spec/grammar changes and update versioned fixtures. A grammar change, even if additive, can reserve an identifier previously used in source. Release notes must explain migration.
 
 Tests cover valid fixtures, illegal interface access, scoping, type errors, QoS, state/timing rules and the LSP transport lifecycle. Broader conformance claims require the additional tests in [implementation status](#source-f25fc4312adb).
+
+## Simulation API for a separate host
+
+After linking and validating every referenced document, call `simulate(models, "Package::System", options)` from the package's `./simulation` export. It has no Node filesystem dependency. The host supplies a finite horizon and may supply manual releases, transport fault schedule and resource limits. The [profile contract](#source-fedc6631cb48) defines the exact scheduler, observability and limits. The CLI adapter adds file loading and SHA-256 source digests.
+
+Present `outcome` and `status` together: a run can quiesce after a failed activation, and a bounded horizon is not a proof of liveness. A future extension can connect trace source lines and occurrence paths to FV/IV/GRV selections. That UI belongs in the extension repository; it must not introduce an independent runtime meaning or bypass validation.
 
 ---
 
