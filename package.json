@@ -1,16 +1,38 @@
 {
-  "name": "@swaml/language", "version": "1.0.0", "private": true,
+  "name": "@swaml/language",
+  "version": "1.0.0",
+  "private": true,
   "description": "Software Architecture Modeling Language: specification and Langium reference workbench",
-  "license": "MIT", "type": "module", "engines": { "node": ">=22", "npm": ">=10.2.3" },
-  "exports": { ".": "./out/src/language/swaml-module.js", "./ast": "./out/src/language/generated/ast.js" },
-  "bin": { "swaml": "./out/src/cli/main.js" },
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22",
+    "npm": ">=10.2.3"
+  },
+  "exports": {
+    ".": "./out/src/language/swaml-module.js",
+    "./ast": "./out/src/language/generated/ast.js",
+    "./simulation": "./out/src/simulation/simulator.js"
+  },
+  "bin": {
+    "swaml": "./out/src/cli/main.js",
+    "swaml-simulate": "./out/src/cli/simulate.js"
+  },
   "scripts": {
     "langium:generate": "langium generate",
     "build": "npm run langium:generate && tsc -p tsconfig.json",
     "test": "node --test out/test/*.test.js",
     "validate:examples": "node out/src/cli/main.js examples/*.swaml",
-    "check": "npm run build && npm test && npm run validate:examples && node scripts/check-docs.mjs"
+    "check": "npm run build && npm test && npm run validate:examples && node scripts/check-docs.mjs && node scripts/check-simulations.mjs",
+    "simulate": "node out/src/cli/simulate.js"
   },
-  "dependencies": { "langium": "4.4.0", "vscode-languageserver": "10.1.2" },
-  "devDependencies": { "@types/node": "^22.0.0", "langium-cli": "4.4.0", "typescript": "~5.9.3" }
+  "dependencies": {
+    "langium": "4.4.0",
+    "vscode-languageserver": "10.1.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "langium-cli": "4.4.0",
+    "typescript": "~5.9.3"
+  }
 }

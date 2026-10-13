@@ -1,0 +1,152 @@
+{
+  "profile": "swaml-reference/1.0",
+  "outcome": "no-failure-observed",
+  "system": "Hello::Demo",
+  "options": {
+    "untilNs": 100,
+    "maxSteps": 100000,
+    "maxPending": 1024,
+    "maxReentrant": 64,
+    "latencyNs": 0,
+    "manual": [],
+    "faults": []
+  },
+  "status": "quiescent",
+  "timeNs": 0,
+  "steps": 17,
+  "sources": [
+    {
+      "uri": "file:///examples/01-hello.swaml",
+      "text": "swaml \"1.0\";\npackage Hello {\n    interface senderReceiver Greeting version \"1.0.0\" {\n        data text: String queued;\n    }\n    unit def Speaker {\n        port output: Greeting sender;\n        operation greet(): Void on start {\n            send output.text(\"Hello, SWAML\");\n            return;\n        }\n    }\n    unit def Listener {\n        port input: Greeting receiver;\n        var last: String = \"\";\n        operation hear(message: String): Void on receive input.text {\n            set last = message;\n            return;\n        }\n    }\n    component def Conversation {\n        unit speaker: Speaker;\n        unit listener: Listener;\n        connect greeting: speaker.output -> listener.input qos {\n            delivery atMostOnce; ordering fifo; capacity 4; overflow reject;\n        };\n    }\n    system Demo service { component conversation: Conversation; }\n    view overview GV of Demo;\n    view wiring IV of Conversation;\n    view greetingFlow FV of Speaker.greet;\n    view inventory GRV of Demo;\n}\n"
+    }
+  ],
+  "trace": [
+    {
+      "timeNs": 0,
+      "ordinal": 1,
+      "kind": "initialize",
+      "subject": "conversation.speaker",
+      "definition": "Hello::Speaker",
+      "node": null
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 2,
+      "kind": "initialize",
+      "subject": "conversation.listener",
+      "definition": "Hello::Listener",
+      "node": null
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 3,
+      "kind": "release",
+      "subject": "a1",
+      "operation": "conversation.speaker.greet"
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 4,
+      "kind": "dispatch",
+      "subject": "a1",
+      "operation": "conversation.speaker.greet",
+      "mode": "serial"
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 5,
+      "kind": "emission",
+      "subject": "m2",
+      "offer": 1,
+      "activation": "a1",
+      "route": "conversation.greeting",
+      "source": "conversation.speaker.output.text",
+      "target": "conversation.listener.input.text",
+      "payload": [
+        "Hello, SWAML"
+      ],
+      "response": false
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 6,
+      "kind": "admission",
+      "subject": "m2",
+      "queue": "conversation.greeting/forward/text"
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 7,
+      "kind": "statement",
+      "subject": "a1",
+      "kindOfStatement": "Send",
+      "line": 9
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 8,
+      "kind": "ready",
+      "subject": "m2",
+      "queue": "conversation.greeting/forward/text"
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 9,
+      "kind": "release",
+      "subject": "a3",
+      "operation": "conversation.listener.hear"
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 10,
+      "kind": "delivery",
+      "subject": "m2",
+      "attempt": 1,
+      "route": "conversation.greeting",
+      "source": "conversation.speaker.output.text",
+      "target": "conversation.listener.input.text"
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 11,
+      "kind": "dispatch",
+      "subject": "a3",
+      "operation": "conversation.listener.hear",
+      "mode": "serial"
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 12,
+      "kind": "complete",
+      "subject": "a1",
+      "operation": "conversation.speaker.greet"
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 13,
+      "kind": "statement",
+      "subject": "a3",
+      "kindOfStatement": "Assign",
+      "line": 17
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 14,
+      "kind": "complete",
+      "subject": "a3",
+      "operation": "conversation.listener.hear"
+    }
+  ],
+  "stores": {
+    "conversation.speaker": {},
+    "conversation.listener": {
+      "last": "Hello, SWAML"
+    }
+  },
+  "machines": {},
+  "deployments": {
+    "conversation": null,
+    "conversation.speaker": null,
+    "conversation.listener": null
+  }
+}

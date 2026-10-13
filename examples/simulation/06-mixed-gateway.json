@@ -1,0 +1,9 @@
+{
+  "untilNs": 30000000,
+  "manual": [
+    {
+      "atNs": 15000000,
+      "operation": "display.dashboard.refresh"
+    }
+  ]
+}

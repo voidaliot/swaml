@@ -1,0 +1,9 @@
+{
+  "untilNs": 1000000000,
+  "manual": [
+    {
+      "atNs": 0,
+      "operation": "front.panel.adjust"
+    }
+  ]
+}

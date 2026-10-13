@@ -1,0 +1,97 @@
+[
+  {
+    "model": "examples/01-hello.swaml",
+    "system": "Hello::Demo",
+    "options": "examples/simulation/01-hello.json",
+    "expectedStores": {
+      "conversation.listener": {
+        "last": "Hello, SWAML"
+      }
+    }
+  },
+  {
+    "model": "examples/02-realtime-controller.swaml",
+    "system": "Control::Heating",
+    "options": "examples/simulation/02-realtime-controller.json",
+    "expectedStores": {
+      "controller.actuator": {
+        "applied": 0.235
+      }
+    }
+  },
+  {
+    "model": "examples/03-service-pubsub.swaml",
+    "system": "Commerce::Shop",
+    "options": "examples/simulation/03-service-pubsub.json",
+    "expectedStores": {
+      "web.frontend": {
+        "lastAccepted": "order-42"
+      },
+      "archive.store": {
+        "last": "order-42"
+      }
+    }
+  },
+  {
+    "model": "examples/04-stateful-operation.swaml",
+    "system": "Lifecycle::Product",
+    "options": "examples/simulation/04-stateful-operation.json",
+    "expectedStores": {
+      "assembly.device": {
+        "cycles": 1
+      },
+      "assembly.monitor": {
+        "current": "stopped"
+      }
+    }
+  },
+  {
+    "model": "examples/05-values-and-flow.swaml",
+    "system": "Values::Demo",
+    "options": "examples/simulation/05-values-and-flow.json",
+    "expectedStores": {
+      "pipeline.consumer": {
+        "latest": 6
+      }
+    }
+  },
+  {
+    "model": "examples/06-mixed-gateway.swaml",
+    "system": "Gateway::Product",
+    "options": "examples/simulation/06-mixed-gateway.json",
+    "expectedStores": {
+      "display.dashboard": {
+        "displayed": 21
+      },
+      "bridge.adapter": {
+        "latest": 21
+      }
+    }
+  },
+  {
+    "model": "examples/07-client-server.swaml",
+    "system": "Rpc::HealthCheck",
+    "options": "examples/simulation/07-client-server.json",
+    "expectedStores": {
+      "caller.clientUnit": {
+        "healthy": true
+      }
+    }
+  },
+  {
+    "model": "examples/08-service-field.swaml",
+    "system": "Settings::Cabin",
+    "options": "examples/simulation/08-service-field.json",
+    "expectedStores": {
+      "settings.store": {
+        "currentValue": 22
+      },
+      "front.panel": {
+        "displayed": 22
+      },
+      "rear.panel": {
+        "displayed": 22
+      }
+    }
+  }
+]
