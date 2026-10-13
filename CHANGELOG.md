@@ -1,5 +1,12 @@
 # Changelog
 
+## Public release 0.1.0 — 2026-10-14
+
+- Publish the initial GitHub release as `v0.1.0`, packaging the reviewed 0.1.1 draft/core revision below.
+- Deliver the complete PDF book, embedded original sources, source manifest and SHA-256 checksum.
+- Add the reproducible PDF builder, navigation/source/bounds verification and PDF CI gate.
+- Preserve the `swaml "0.1";` header and existing conformance limitations.
+
 ## 0.1.1 — 2026-10-14
 
 - Close the first specification audit with explicit operational, normalization and conformance chapters; cover all 80 grammar rule/type names in the checked mapping inventory.

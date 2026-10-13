@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+"""Validate complete sources, embedded attachments, navigation and page bounds."""
+import argparse
+import hashlib
+import json
+from pathlib import Path
+from pypdf import PdfReader
+import pdfplumber
+
+ROOT=Path(__file__).resolve().parents[1]
+parser=argparse.ArgumentParser()
+parser.add_argument('--pdf',type=Path,default=ROOT/'output/pdf/SWAML-0.1.0-Specification.pdf')
+PDF=parser.parse_args().pdf
+manifest=json.loads(PDF.with_suffix('.manifest.json').read_text())
+reader=PdfReader(PDF)
+assert len(reader.pages)==manifest['pages'] and len(reader.pages)>60
+assert hashlib.sha256(PDF.read_bytes()).hexdigest()==manifest['pdfSha256']
+assert PDF.with_suffix('.sha256').read_text().split()[0]==manifest['pdfSha256']
+assert len(reader.attachments)==len(manifest['sources'])
+for source in manifest['sources']:
+    original=(ROOT/source['path']).read_bytes()
+    assert hashlib.sha256(original).hexdigest()==source['sha256'],source['path']
+    assert reader.attachments[source['attachmentName']]==[original],source['path']
+
+def destinations(items):
+    for item in items:
+        if isinstance(item,list): yield from destinations(item)
+        else: yield item
+outlines=list(destinations(reader.outline))
+assert len(outlines)>100
+for item in outlines: assert reader.get_destination_page_number(item) is not None,item.title
+links=sum(len(page.get('/Annots',[])) for page in reader.pages)
+assert links>200
+page_ids={page.indirect_reference.idnum for page in reader.pages}
+for page in reader.pages:
+    for ref in page.get('/Annots',[]):
+        annotation=ref.get_object()
+        if '/Dest' in annotation:
+            dest=annotation['/Dest']
+            assert dest[0].idnum in page_ids
+text='\n'.join(page.extract_text() or '' for page in reader.pages)
+for title in ['Complete concrete grammar','Grammar-to-semantics inventory','Operational contract','Normalized semantic model','Conformance obligations','Model examples','Architecture analysis','Contributing to SWAML','MIT License']:
+    assert title in text,title
+with pdfplumber.open(PDF) as doc:
+    for i,page in enumerate(doc.pages,1):
+        assert len(page.chars)>50,f'Empty page {i}'
+        for c in page.chars:
+            if not c['text'].strip(): continue
+            assert c['x0']>=37 and c['x1']<=page.width-37 and c['top']>=8 and c['bottom']<=page.height-8, (i,c['text'],c['x0'],c['x1'])
+print(f'PDF verified: {len(reader.pages)} pages, {len(outlines)} bookmarks, {links} links, {len(manifest["sources"])} exact source attachments; page bounds pass.')
