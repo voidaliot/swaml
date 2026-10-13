@@ -1,4 +1,4 @@
-# SWAML 0.1 user guide
+# SWAML 1.0 user guide
 
 SWAML describes what software contains, how it communicates, and how operations and state evolve. The model remains independent of C++, Rust, an RTOS, a cloud runtime, or a particular network protocol.
 
@@ -14,7 +14,7 @@ node out/src/cli/main.js examples/01-hello.swaml
 
 A successful result is `Checked 1 model(s): 0 error(s)`. This checks the implemented rules; it does not execute the software or prove schedulability. `npm run check` also runs the repository tests. Open the [implementation matrix](IMPLEMENTATION_STATUS.md) before interpreting a passed check as a stronger assurance claim.
 
-A file starts with `swaml "0.1";` and contains named packages. Names are case sensitive. Keywords cannot be identifiers. Use `orderLink`, for example, rather than the reserved word `ordering`.
+A file starts with `swaml "1.0";` and contains named packages. Names are case sensitive. Keywords cannot be identifiers. Use `orderLink`, for example, rather than the reserved word `ordering`.
 
 ## 2. Write the contract first
 
@@ -33,7 +33,7 @@ Each connector uses one nominal interface definition. Equal-looking interfaces a
 This is a complete small model; save it as `example.swaml`:
 
 ```swaml
-swaml "0.1";
+swaml "1.0";
 package First {
     interface senderReceiver Reading version "1.0.0" {
         data value: Real sampled;
@@ -131,13 +131,13 @@ The validator checks positivity, `wcet <= deadline`, and `deadline <= period` fo
 
 A system can declare execution nodes with kind `mcu`, `process`, or `container`, and `deploy instance.path on nodeName;`. A component deployment applies to descendants unless a more specific descendant deployment overrides it. Each explicit instance path may be deployed only once.
 
-Nodes are allocation targets, not units and not communication shortcuts. Moving a unit to another process cannot make a previously illegal direct data access legal. Network addresses, credentials, task schedules and generated code are outside the 0.1 model.
+Nodes are allocation targets, not units and not communication shortcuts. Moving a unit to another process cannot make a previously illegal direct data access legal. Network addresses, credentials, task schedules and generated code are outside the 1.0 model.
 
 The [mixed gateway](../examples/06-mixed-gateway.swaml) shows how one unit explicitly converts sampled values into event notifications. An adapter owns the conversion, timing and failure policy.
 
 ## 10. Organize a larger model
 
-Packages are flat namespaces in 0.1. Write `import Contracts::*;` to use another package's declarations unqualified, or name a declaration `Contracts::Reading`. All relevant files must be loaded together. Two imports exposing the same short name make it ambiguous; use the qualified name.
+Packages are flat namespaces in 1.0. Write `import Contracts::*;` to use another package's declarations unqualified, or name a declaration `Contracts::Reading`. All relevant files must be loaded together. Two imports exposing the same short name make it ambiguous; use the qualified name.
 
 The editor host should load the whole model workspace. The CLI deliberately loads the files you supply and does not search unrelated directories. Do not put secrets in model payloads, examples or deployment notes.
 

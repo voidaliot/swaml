@@ -1,4 +1,4 @@
-swaml "0.1";
+swaml "1.0";
 package Rpc {
     interface clientServer Health version "1.0.0" {
         operation check(): Bool idempotent;

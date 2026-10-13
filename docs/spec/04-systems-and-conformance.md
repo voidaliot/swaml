@@ -1,6 +1,6 @@
 # 4. Systems, timing, cases and conformance
 
-Normative chapter of the [SWAML 0.1 specification](../LANGUAGE_SPECIFICATION.md).
+Normative chapter of the [SWAML 1.0 specification](../LANGUAGE_SPECIFICATION.md).
 
 ## 4.1 Systems and profiles
 
@@ -17,7 +17,7 @@ The system profile is `service`, `realtime` or `mixed`:
 | Interface isolation and handler checks | required | required | required |
 | Production scheduling evidence | target dependent | required for hard realtime claims | required for realtime claims |
 
-The mixed profile is intentionally conservative: all used operations and connectors carry timing contracts. It does not infer that a cloud-facing operation has no timing requirement. A future subassembly profile can relax this with explicit partitioning; no such implicit relaxation exists in 0.1.
+The mixed profile is intentionally conservative: all used operations and connectors carry timing contracts. It does not infer that a cloud-facing operation has no timing requirement. A future subassembly profile can relax this with explicit partitioning; no such implicit relaxation exists in 1.0.
 
 A timing contract declares positive `wcet`, positive `deadline`, and `concurrency serial|reentrant`. WCET MUST be no larger than deadline. For periodic operations, deadline MUST be no larger than the period. A stateful operation's timing contract applies separately to each run-to-completion reaction, including entry/exit/effect and any completion microsteps, not to the lifetime of the machine.
 
@@ -79,4 +79,4 @@ The following groups collectively define semantic validity. Diagnostic numbers i
 
 **Graphical conformance (G):** S and the graphical specification's projection and edit rules. G may present invalid models with diagnostics, but must not invent valid connectivity from layout. FV combines flow/state projection; GEV/AFV/STV are not SWAML view kinds.
 
-A tool claiming `SWAML 0.1 S, partial V` accurately describes this repository's current core. It must not advertise K, E or G until those implementations and checks exist. Future versions must use a new language header when breaking syntax or semantics; migration tooling must not change the meaning of models silently.
+A tool claiming `SWAML 1.0 S, partial V` accurately describes this repository's current core. It must not advertise K, E or G until those implementations and checks exist. Future versions must use a new language header when breaking syntax or semantics; migration tooling must not change the meaning of models silently.

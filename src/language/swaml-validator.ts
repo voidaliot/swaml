@@ -10,7 +10,7 @@ export class SwamlValidator {
         const parseResult = AstUtils.getDocument(model).parseResult;
         if (parseResult.lexerErrors.length || parseResult.parserErrors.length) return;
         const error = (node: AstNode, code: string, message: string) => accept('error', message, { node, code });
-        if (model.version !== '0.1') error(model, 'SW001', 'Supported language version is "0.1".');
+        if (model.version !== '1.0') error(model, 'SW001', 'Supported language version is "1.0".');
         const nodes = [model, ...AstUtils.streamAllContents(model)];
         const packages = [...this.services.shared.workspace.LangiumDocuments.all].flatMap(d => a.isModel(d.parseResult.value) ? d.parseResult.value.packages : []);
         for (const pkg of model.packages) if (packages.filter(p => p.name === pkg.name).length > 1) error(pkg, 'SW002', 'Package names must be unique across the workspace.');
@@ -204,7 +204,7 @@ export class SwamlValidator {
         }
         const visiting = new Set<AstNode>(), visited = new Set<AstNode>();
         const walk = (node: a.Operation | a.FunctionDef): void => {
-            if (visiting.has(node)) { error(node, 'SW056', 'Recursive local call cycles are not supported in 0.1.'); return; }
+            if (visiting.has(node)) { error(node, 'SW056', 'Recursive local call cycles are not supported in 1.0.'); return; }
             if (visited.has(node)) return;
             visiting.add(node);
             for (const n of AstUtils.streamAllContents(node)) {

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0",
   "language": "SWAML",
-  "languageVersion": "0.1",
+  "languageVersion": "1.0",
   "foundation": {
     "name": "KerML",
     "version": "1.0",

@@ -1,6 +1,6 @@
 # SWAML language specification
 
-**Version:** 0.1.1 · **Language header:** `swaml "0.1";` · **Status:** complete 0.1 draft for implementation and review · **Date:** 2026-10-14
+**Version:** 1.0.0 · **Language header:** `swaml "1.0";` · **Status:** 1.0 release candidate · **Date:** 2026-10-14
 
 SWAML means Software Architecture Modeling Language. This document and its normative chapters define a software architecture language over a KerML-based semantic model. SWAML is independently authored; “unofficial UML 3.0” describes its motivation and does not denote an OMG standard or compatibility level.
 
@@ -18,7 +18,8 @@ Read these chapters together. Their requirements have equal standing:
 8. [Operational contract and target bindings](spec/06-execution-contract.md).
 9. [Normalized semantic model](spec/07-normalized-model.md).
 10. [Conformance obligations and evidence](spec/08-conformance-obligations.md).
-11. [Machine-readable mapping inventory](../spec/kerml-mapping.json).
+11. [Formal core and simulation relation](spec/09-formal-semantics.md).
+12. [Machine-readable mapping inventory](../spec/kerml-mapping.json).
 
 The [user guide](USER_GUIDE.md), [architecture comparison](ARCHITECTURE_COMPARISON.md), examples and design decisions are informative. The [implementation matrix](IMPLEMENTATION_STATUS.md) reports current tool support; a missing implementation does not waive a language rule.
 
@@ -28,7 +29,7 @@ MUST and MUST NOT state conformance requirements. SHOULD states a recommendation
 
 The grammar determines tokens and parse structure. Prose determines validity and meaning. If grammar accepts text that violates a semantic rule, that text is invalid. If a discovered conflict makes the two impossible to satisfy, record a specification defect; do not silently choose a runtime meaning. Unknown syntax and unknown language versions MUST be rejected.
 
-The language is closed at version 0.1: constructs not listed in the grammar are not implicitly inherited from UML, SysML or KerML. Definitions may be reused by instantiation, but inheritance, generics, redefinition, unrestricted KerML embedding and dynamic creation are not part of this version. This constraint makes the whole v0.1 language implementable without pretending to reproduce three other standards.
+The language is closed at version 1.0: constructs not listed in the grammar are not implicitly inherited from UML, SysML or KerML. Definitions may be reused by instantiation, but inheritance, generics, redefinition, unrestricted KerML embedding and dynamic creation are not part of this version. This constraint makes the whole v1.0 language implementable without pretending to reproduce three other standards.
 
 ## 3. Design invariants
 
@@ -51,7 +52,7 @@ Local calls, calculation values, timer expiration, initial activation and state 
 | Interface | data, event or operation members | nominal versioned contract |
 | Component definition | ports, child instances, connectors, delegation | reusable composition type |
 | Unit definition | ports, private variables, operations, functions | reusable behavior/data boundary |
-| Instance | no inline definitions in 0.1 | one component or unit definition |
+| Instance | no inline definitions in 1.0 | one component or unit definition |
 | Port | role and optionality | one interface |
 | Connector | QoS | source and target port paths |
 | Delegation | no data conversion | outer port and immediate child port |

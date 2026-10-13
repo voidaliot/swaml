@@ -1,4 +1,4 @@
-swaml "0.1";
+swaml "1.0";
 package Lifecycle {
     interface publishSubscribe Commands version "1.0.0" { event begin(); event stop(); }
     interface publishSubscribe Status version "1.0.0" { event changed(value: String); }

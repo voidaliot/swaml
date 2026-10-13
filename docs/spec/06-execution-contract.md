@@ -1,6 +1,6 @@
 # 6. Operational contract and target bindings
 
-Normative chapter of the [SWAML 0.1 specification](../LANGUAGE_SPECIFICATION.md). This chapter makes the allowed traces precise; it does not prescribe an implementation thread model. The executable backend remains future work.
+Normative chapter of the [SWAML 1.0 specification](../LANGUAGE_SPECIFICATION.md). This chapter makes the allowed traces precise; it does not prescribe an implementation thread model. The executable backend remains future work.
 
 ## 6.1 Configuration and observable occurrences
 
