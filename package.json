@@ -1,5 +1,5 @@
 {
-  "name": "@swaml/language", "version": "0.1.0", "private": true,
+  "name": "@swaml/language", "version": "0.1.1", "private": true,
   "description": "Software Architecture Modeling Language: specification and Langium reference workbench",
   "license": "MIT", "type": "module", "engines": { "node": ">=22", "npm": ">=10.2.3" },
   "exports": { ".": "./out/src/language/swaml-module.js", "./ast": "./out/src/language/generated/ast.js" },

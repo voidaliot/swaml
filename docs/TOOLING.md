@@ -42,6 +42,7 @@ For multiple files, create all documents first and build them together so that i
 | File | Responsibility |
 | --- | --- |
 | [swaml-module.ts](../src/language/swaml-module.ts) | Dependency injection and registration |
+| [swaml-document-builder.ts](../src/language/swaml-document-builder.ts) | Conservative workspace revalidation for paths and negative lookups |
 | [swaml-scope.ts](../src/language/swaml-scope.ts) | Local-owner scopes, imported/qualified declarations, ambiguity |
 | [semantic.ts](../src/language/semantic.ts) | Instance/port/member paths, type identities, time conversion |
 | [swaml-validator.ts](../src/language/swaml-validator.ts) | Model invariants and typed behavior validation |
@@ -50,7 +51,7 @@ For multiple files, create all documents first and build them together so that i
 
 Cross-references use Langium references for declarations, functions, local operations, states and nodes. Composite endpoint/value/view paths are strings with explicit SWAML resolution. This keeps encapsulation checks explicit, but **generic rename/find-references/navigation does not cover those strings**. The extension must supply those providers before advertising full refactoring.
 
-The current scope provider scans loaded documents for clarity. Large-model indexing, cancellation-aware expensive checks and affected-document invalidation are follow-up work. The validator skips semantic checks after parser/lexer errors; built-in diagnostics still report malformed input.
+The current scope provider scans loaded documents for clarity. Every changed/added/deleted document conservatively relinks and revalidates all loaded SWAML models, including string paths and previously absent declarations. This favors correct editor diagnostics over incremental performance. Large-model dependency indexing and cancellation-aware expensive checks remain optimization work. The validator skips semantic checks after parser/lexer errors; built-in diagnostics still report malformed input.
 
 ## Desktop extension scaffold contract
 

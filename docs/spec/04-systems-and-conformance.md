@@ -41,13 +41,13 @@ A case step has a kind (`send`, `publish`, `request`, `reply`), two endpoint-mem
 
 Both endpoints MUST identify the same member of the connector's interface. Sender–receiver steps use data, publish steps use events, and request/reply steps use operation signatures. A request follows client → server or requires → provides orientation; a reply reverses the matching request. A service publish goes from provides → requires; ordinary pub/sub follows publisher → subscriber.
 
-`after label` imposes a happens-before dependency on an earlier declared step. No predecessor means no ordering is imposed relative to other steps. Source order is only a stable display tie-break, not an implicit total order. Thus unrelated notifications can remain concurrent in SV. A reply MUST be causally after an outstanding matching request on that connector/member; otherwise the case is invalid. Every step must ultimately be realizable by unit operations behind the exposed ports. These last two trace-realizability rules require more analysis than the prototype currently performs.
+`after label` imposes a happens-before dependency on an earlier declared step. No predecessor means no ordering is imposed relative to other steps. Source order is only a stable display tie-break, not an implicit total order. Thus unrelated notifications can remain concurrent in SV. A reply MUST have exactly one unanswered matching request among its transitive `after` ancestors, with reversed endpoints and the same connector/member. Zero or multiple candidates is an error (SW083); each request has at most one reply. A request may remain unanswered in a partial trace. A prior reply closes a candidate only when that reply is itself an ancestor of the current step. A reply on an independent causal branch cannot resolve ambiguity merely by appearing earlier in the file. Source order never chooses between ambiguous correlations. Realization by operation bodies is a separate analysis claim requiring a witness; route-valid cases remain unverified until that evidence exists.
 
 Cases describe representative traces, not exhaustive behavior. They do not execute a second program, introduce independent event definitions, or loosen operation guards. A complete behavioral verification must check traces against operation semantics and environmental assumptions.
 
 ## 4.4 View declarations
 
-A view declaration names a view kind and a dot-separated subject in its own package. GV, IV and GRV may reference structural subjects; CV references a case or system, SV references a case or system (for case selection), and FV references an operation. A view of an instance resolves through its definition while retaining the occurrence path and identity.
+A view declaration names a view kind and a dot-separated subject in its own package. GV and GRV may reference any resolvable named semantic declaration or the owning package, except another view; IV requires a system or component; CV references a case or system, SV references a case or system (for case selection), and FV references an operation. A view of an instance resolves through its definition while retaining the occurrence path and identity.
 
 View declarations carry no executable behavior. Layout, color, filters and collapsed regions are presentation data. The full [graphical contract](../GRAPHICAL_NOTATION.md) defines representation and source-edit invariants.
 
@@ -65,13 +65,13 @@ The following groups collectively define semantic validity. Diagnostic numbers i
 | Behavior | local-only calls/data, outgoing provenance, signatures, unique handlers, return coverage, terminating error paths, bounded loops, no recursion | SW050–SW059 |
 | States | legal stateful signature, final-state rules, priority, reachability, completion-cycle restrictions | SW060–SW064 |
 | Allocation | existing instances and nodes, no duplicate exact deployments | SW070 |
-| Presentation/cases | subject kind, connector/member paths, happens-before, correlated replies, realizable exchanges | SW080–SW082 |
+| Presentation/cases | subject kind, connector/member paths, happens-before and uniquely correlated replies | SW080–SW083 |
 
 ## 4.6 Conformance levels
 
 **Syntax conformance (S):** the complete concrete grammar, exact version, tokenization and AST construction. Recovery during editing must retain syntax diagnostics; an incomplete AST is not a valid model.
 
-**Static conformance (V):** S plus every static validity rule in this specification. A partial validator MUST enumerate checks that it lacks. It must not hide unresolved links or a validator crash as success.
+**Static conformance (V):** S plus every static validity rule in this specification, classified explicitly in [chapter 8](08-conformance-obligations.md). A partial validator MUST enumerate checks that it lacks. It must not hide unresolved links or a validator crash as success.
 
 **KerML mapping conformance (K):** V plus chapter 5's normalized elements and preserved SWAML semantic constraints, with a tested mapping against KerML 1.0 and its selected libraries. Export must retain a reverse trace map and stable identity. K does not automatically imply SWAML execution.
 

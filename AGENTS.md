@@ -4,6 +4,7 @@
 
 - `docs/LANGUAGE_SPECIFICATION.md` and the normative chapter affected by the task.
 - `docs/IMPLEMENTATION_STATUS.md` to distinguish specified and implemented behavior.
+- `docs/spec/06-execution-contract.md`, `07-normalized-model.md` and `08-conformance-obligations.md` for execution, mapping and evidence boundaries.
 - `docs/decisions/0001-language-boundaries.md` for the owner's accepted architecture choices.
 - `CONTRIBUTING.md` for contribution and validation expectations.
 
@@ -33,6 +34,6 @@ For documentation changes run `node scripts/check-docs.mjs` after a build. Compl
 
 ## Working practices
 
-Prefer small, reviewable changes with stable diagnostic codes. Add a decision record for substantial language changes and update the changelog and implementation matrix. Do not silently widen access scopes to make a fixture pass.
+Prefer small, reviewable changes with stable diagnostic codes. Keep every grammar rule/type covered in `spec/kerml-mapping.json`; the documentation checker enforces coverage. Add a decision record for substantial language changes and update the changelog and implementation matrix. Do not silently widen access scopes to make a fixture pass.
 
 Preserve the existing license, unrelated user edits and repository history. Never add credentials or downloaded proprietary standards. Use primary-source links and original analysis. Follow the user's authorization for GitHub changes; local edits alone do not imply permission to publish a release or alter another repository.

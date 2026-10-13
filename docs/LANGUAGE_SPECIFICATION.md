@@ -1,6 +1,6 @@
 # SWAML language specification
 
-**Version:** 0.1.0 · **Language header:** `swaml "0.1";` · **Status:** complete 0.1 draft for implementation and review · **Date:** 2026-10-14
+**Version:** 0.1.1 · **Language header:** `swaml "0.1";` · **Status:** complete 0.1 draft for implementation and review · **Date:** 2026-10-14
 
 SWAML means Software Architecture Modeling Language. This document and its normative chapters define a software architecture language over a KerML-based semantic model. SWAML is independently authored; “unofficial UML 3.0” describes its motivation and does not denote an OMG standard or compatibility level.
 
@@ -15,7 +15,10 @@ Read these chapters together. Their requirements have equal standing:
 5. [KerML semantic mapping](spec/05-kerml-mapping.md).
 6. [Graphical notation](GRAPHICAL_NOTATION.md).
 7. [Concrete grammar](../src/language/swaml.langium).
-8. [Machine-readable mapping inventory](../spec/kerml-mapping.json).
+8. [Operational contract and target bindings](spec/06-execution-contract.md).
+9. [Normalized semantic model](spec/07-normalized-model.md).
+10. [Conformance obligations and evidence](spec/08-conformance-obligations.md).
+11. [Machine-readable mapping inventory](../spec/kerml-mapping.json).
 
 The [user guide](USER_GUIDE.md), [architecture comparison](ARCHITECTURE_COMPARISON.md), examples and design decisions are informative. The [implementation matrix](IMPLEMENTATION_STATUS.md) reports current tool support; a missing implementation does not waive a language rule.
 
@@ -68,4 +71,4 @@ All named elements have stable identity within a model version. Tools SHOULD per
 
 A parser supports concrete syntax. A semantic validator additionally enforces static rules. A KerML mapper additionally produces the normalized representation in chapter 5. An execution backend additionally realizes chapter 3 and communication policies. A graphical editor additionally satisfies the view/editing contract. A tool MUST state which levels it implements; success at one level MUST NOT imply the others.
 
-This repository supplies a parser, LSP foundation and a documented subset of semantic validation. The specification defines more than that implementation, especially runtime delivery, idempotency, whole-program concurrency, timing proof, interchange and graphical editing. See the [exact support matrix](IMPLEMENTATION_STATUS.md).
+This repository supplies a parser, LSP foundation and a documented subset of semantic validation. The specification defines more than that implementation, especially runtime delivery, idempotency, target snapshot realization, timing proof, interchange and graphical editing. See the [exact support matrix](IMPLEMENTATION_STATUS.md).

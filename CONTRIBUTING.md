@@ -24,7 +24,7 @@ Breaking changes require a new language version and migration notes. Additive ke
 ## Implement and test
 
 1. Update the normative prose and grammar together.
-2. Regenerate with `npm run langium:generate`; update scoping and validators as needed.
+2. Update the grammar mapping inventory and classify each obligation as static, runtime, analysis, kernel or graphical. Every rule/type needs a normative home. Regenerate with `npm run langium:generate`; update scoping and validators as needed.
 3. Add a valid model and a negative regression that would have caught the original issue. Cross-file changes need imported/qualified and ambiguous-name cases.
 4. Update the user guide, affected examples, implementation matrix and changelog.
 5. Run `npm run check` and report the result in the pull request.
@@ -42,6 +42,10 @@ Reviewers should check that definitions and instances remain distinct, private d
 Link to primary sources for external standards. Write original explanations; do not copy standard PDFs or proprietary specification text into the repository. Preserve the existing MIT license for original code and documentation and retain any applicable third-party notices.
 
 Executable `swaml` code fences must be complete, valid models: the documentation checker parses and validates them. Use inline snippets or `text` fences for deliberate fragments, and put intentionally invalid models under `examples/invalid/` with their expected diagnostic.
+
+## Resolve specification issues
+
+Track a concrete contradiction, missing semantic choice or validator defect as a GitHub issue with acceptance criteria. Resolve it with matching normative text, implementation where in scope, examples and regression evidence. Close the issue only when its stated criteria are met; do not close runtime/editor implementation work because a specification paragraph exists. Link the resolution commit or merged pull request and record any remaining conformance limitation.
 
 ## Report a defect
 

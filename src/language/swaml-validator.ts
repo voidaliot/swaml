@@ -84,10 +84,14 @@ export class SwamlValidator {
             if (a.isView(node)) {
                 const pkg = owner(node, a.isPackage);
                 const [root, ...rest] = node.subject.split('.');
-                let subject: AstNode | undefined = pkg?.elements.find(e => e.name === root);
+                if (root === pkg?.name && pkg.elements.some(e => e.name === root)) error(node, 'SW080', 'View subject is ambiguous between its package and a declaration.');
+                let subject: AstNode | undefined = root === pkg?.name ? pkg : pkg?.elements.find(e => e.name === root);
                 if (subject && rest.length && (a.isUnit(subject) || a.isComponent(subject) || a.isSystem(subject))) subject = resolvePath(subject, rest.join('.'));
                 else if (rest.length) subject = undefined;
                 if (!subject) error(node, 'SW080', 'View subject must resolve in its package.');
+                if (subject && a.isInstance(subject)) subject = subject.definition.ref;
+                if (subject && a.isView(subject)) error(node, 'SW080', 'A view cannot use another view as its semantic subject.');
+                if (subject && node.kind === 'IV' && !a.isComponent(subject) && !a.isSystem(subject)) error(node, 'SW080', 'IV subject must be a component or system.');
                 if (subject && node.kind === 'FV' && !a.isOperation(subject)) error(node, 'SW080', 'FV subject must be an operation.');
                 if (subject && ['SV', 'CV'].includes(node.kind) && !a.isScenario(subject) && !a.isSystem(subject)) error(node, 'SW080', 'SV/CV subject must be a case or system.');
             }
@@ -120,6 +124,7 @@ export class SwamlValidator {
         for (const v of vars) this.expect(v.value, typeKey(v.type), new Map(), error);
         for (const fn of unit.members.filter(a.isFunctionDef)) {
             if (typeKey(fn.result) === 'Void') error(fn, 'SW020', 'Pure functions must return a value.');
+            for (const p of fn.parameters) if (base.has(p.name)) error(p, 'SW002', 'A parameter cannot shadow unit data.');
             const env = new Map(fn.parameters.map(p => [p.name, typeKey(p.type)]));
             this.expect(fn.value, typeKey(fn.result), env, error);
         }
@@ -171,7 +176,13 @@ export class SwamlValidator {
                     this.block(t.effect, local, 'Void', error);
                 }
             }
-            if (op.timing?.concurrency === 'reentrant' && [...AstUtils.streamAllContents(op)].some(n => a.isAssign(n) && base.has(n.target))) error(op, 'SW054', 'Reentrant operations may not mutate unit data.');
+            const mutates = (current: a.Operation, seen = new Set<a.Operation>()): boolean => {
+                if (seen.has(current)) return false;
+                seen.add(current);
+                return [...AstUtils.streamAllContents(current)].some(n =>
+                    (a.isAssign(n) && base.has(n.target)) || (a.isInvoke(n) && !!n.operation.ref && mutates(n.operation.ref, seen)));
+            };
+            if (op.timing?.concurrency === 'reentrant' && mutates(op)) error(op, 'SW054', 'Reentrant operations may not mutate unit data, including through local helpers.');
         }
         for (const port of unit.members.filter(a.isPort)) {
             if (['sender', 'publisher', 'provides'].includes(port.role)) {
@@ -215,7 +226,8 @@ export class SwamlValidator {
                 if (!t) error(s, 'SW022', 'Assignment target is not local data.');
                 else this.expect(s.value, t, env, error);
             } else if (a.isReturn(s)) {
-                if (s.value) this.expect(s.value, result, env, error);
+                if (s.value && result === 'Void') error(s, 'SW023', 'Void operations must use a bare return.');
+                else if (s.value) this.expect(s.value, result, env, error);
                 else if (result !== 'Void') error(s, 'SW023', 'Return value is required.');
             } else if (a.isSend(s) || a.isRequest(s)) {
                 const ep = endpoint(s, s.endpoint);
@@ -227,6 +239,7 @@ export class SwamlValidator {
                     this.args(s, s.args, types, env, error);
                 }
                 if (a.isRequest(s)) {
+                    if (env.has('failure')) error(s, 'SW002', 'The implicit request failure binding cannot shadow an existing value.');
                     this.block(s.failure, new Map(env).set('failure', 'String'), result, error);
                     if (!this.terminates(s.failure)) error(s.failure, 'SW057', 'Request failure path must return or fail.');
                     if (env.has(s.name)) error(s, 'SW002', 'Request result may not shadow local data.');
@@ -263,6 +276,7 @@ export class SwamlValidator {
             const parts = e.path.split('.');
             let t = env.get(parts[0]);
             if (!t) { error(e, 'SW022', `Unknown local value '${parts[0]}'. Cross-unit data access is forbidden.`); return '?'; }
+            if (t === 'Void') { error(e, 'SW022', 'A Void request result names completion only and cannot be read as a value.'); return '?'; }
             for (const field of parts.slice(1)) {
                 const all = [...this.services.shared.workspace.LangiumDocuments.all].flatMap(d => a.isModel(d.parseResult.value) ? d.parseResult.value.packages.flatMap(p => p.elements) : []);
                 const dtype = all.find(d => a.isDataType(d) && typeKey({ type: { ref: d } } as a.TypeRef) === t);
@@ -274,7 +288,8 @@ export class SwamlValidator {
                 this.expect(e.index, 'Int', env, error);
                 const match = /^(.*)\[(\d+)\]$/.exec(t);
                 if (!match) { error(e, 'SW023', 'Only arrays can be indexed.'); return '?'; }
-                if (a.isLiteral(e.index) && e.index.number !== undefined && e.index.number >= Number(match[2])) error(e, 'SW025', 'Array index is out of bounds.');
+                const constant = this.constantNumber(e.index);
+                if (constant !== undefined && (constant < 0 || constant >= Number(match[2]))) error(e, 'SW025', 'Array index is out of bounds.');
                 return match[1];
             }
             return t;
@@ -333,8 +348,17 @@ export class SwamlValidator {
         }
         return '?';
     }
+    private constantNumber(e: a.Expression): number | undefined {
+        if (a.isLiteral(e)) return e.number;
+        if (a.isUnaryExpression(e) && e.operator === '-') {
+            const operand = this.constantNumber(e.operand);
+            return operand === undefined ? undefined : -operand;
+        }
+        return undefined;
+    }
     private checkMachine(m: a.Machine, error: Reporter): void {
         for (const t of m.transitions) {
+            if (t.priority !== undefined && !Number.isSafeInteger(t.priority)) error(t, 'SW062', 'Transition priority must be a nonnegative safe integer.');
             if (t.from.ref?.final) error(t, 'SW061', 'Final states have no outgoing transitions.');
             const peers = m.transitions.filter(x => x !== t && x.from.ref === t.from.ref && x.kind === t.kind && x.endpoint === t.endpoint && (x.delay ? nanos(x.delay) : 0) === (t.delay ? nanos(t.delay) : 0));
             if (peers.some(x => (x.priority ?? 0) === (t.priority ?? 0))) error(t, 'SW062', 'Competing transitions require distinct priorities.');
@@ -375,7 +399,11 @@ export class SwamlValidator {
             return p;
         };
         const uses = new Map<string, number>();
+        const routes = new Set<string>();
         for (const { n, s, t } of connections) {
+            const route = `${resolve(s)}->${resolve(t)}`;
+            if (routes.has(route)) error(n, 'SW035', 'Duplicate connector route after delegation expansion.');
+            routes.add(route);
             for (const p of [resolve(s), resolve(t)]) uses.set(p, (uses.get(p) ?? 0) + 1);
             if (system.profile === 'realtime' || system.profile === 'mixed') {
                 if (!n.qos?.maxLatency) error(n, 'SW044', 'Realtime/mixed systems require connector maxLatency.');
@@ -384,10 +412,9 @@ export class SwamlValidator {
             }
         }
         for (const [path, port] of ports) {
-            if (aliases.has(path)) continue;
-            const count = uses.get(path) ?? 0;
+            const count = uses.get(resolve(path)) ?? 0;
             if (!port.optional && count === 0) error(system, 'SW034', `Required port '${path}' is unconnected.`);
-            if (['receiver', 'client', 'requires'].includes(port.role) && count > 1) error(system, 'SW035', `Port '${path}' requires a single source/provider.`);
+            if (!aliases.has(path) && ['receiver', 'client', 'requires'].includes(port.role) && count > 1) error(system, 'SW035', `Port '${path}' requires a single source/provider.`);
         }
         const deployed = new Set<string>();
         for (const d of system.members.filter(a.isDeployment)) {
@@ -411,19 +438,35 @@ export class SwamlValidator {
     private checkScenario(n: a.Scenario, error: Reporter): void {
         const system = n.system.ref;
         if (!system) return;
-        const labels = new Set<string>();
+        const labels = new Map<string, a.ScenarioStep>();
+        const replies = new Map<a.ScenarioStep, a.ScenarioStep>();
         for (const step of n.steps) {
             if (step.predecessor && !labels.has(step.predecessor)) error(step, 'SW081', 'after must reference an earlier step label.');
-            labels.add(step.name);
+            const ancestors = new Set<a.ScenarioStep>();
+            let predecessor = step.predecessor && labels.get(step.predecessor);
+            while (predecessor && !ancestors.has(predecessor)) {
+                ancestors.add(predecessor);
+                predecessor = predecessor.predecessor && labels.get(predecessor.predecessor);
+            }
+            labels.set(step.name, step);
             const link = system.members.filter(a.isConnect).find(c => c.name === step.connector);
             const sourcePortPath = step.source.split('.').slice(0, -1).join('.');
             const targetPortPath = step.target.split('.').slice(0, -1).join('.');
             const source = resolvePath(system, step.source), target = resolvePath(system, step.target);
             if (!link || !source || !target) { error(step, 'SW082', 'Scenario members and connector must resolve.'); continue; }
-            const reverse = step.kind === 'reply' || (step.kind === 'publish' && source && a.isEventMember(source) && link.source === targetPortPath);
+            const sourcePort = resolvePath(system, sourcePortPath);
+            const reverse = step.kind === 'reply' || (step.kind === 'publish' && sourcePort && a.isPort(sourcePort) && sourcePort.role === 'provides');
             if ((reverse ? link.target !== sourcePortPath || link.source !== targetPortPath : link.source !== sourcePortPath || link.target !== targetPortPath)) error(step, 'SW082', 'Scenario exchange must follow its connector (responses reverse it).');
             if (source !== target) error(step, 'SW082', 'Scenario endpoints must identify the same interface member.');
             if (step.kind === 'send' ? !a.isDataMember(source) : step.kind === 'publish' ? !a.isEventMember(source) : !a.isSignature(source)) error(step, 'SW082', 'Scenario verb must match member kind.');
+            if (step.kind === 'reply') {
+                // A reply in a different causal branch must not close a request merely
+                // because it is printed earlier. Source order is not happens-before.
+                const requests = [...ancestors].filter(prior => prior.kind === 'request' && prior.connector === step.connector && prior.source === step.target && prior.target === step.source && !(replies.has(prior) && ancestors.has(replies.get(prior)!)));
+                if (requests.length !== 1) error(step, 'SW083', 'Reply requires exactly one causally preceding, unanswered request on the same route/member.');
+                else if (replies.has(requests[0])) error(step, 'SW083', 'A request cannot have multiple replies, including on independent causal branches.');
+                else replies.set(requests[0], step);
+            }
         }
     }
 }

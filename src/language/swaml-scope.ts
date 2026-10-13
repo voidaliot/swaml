@@ -22,7 +22,6 @@ export class SwamlScopeProvider extends DefaultScopeProvider {
             if (!a.isModel(doc.parseResult.value)) continue;
             for (const p of doc.parseResult.value.packages) {
                 for (const element of p.elements) {
-                    if (!this.reflection.isSubtype(element.$type, type)) continue;
                     entries.push({ node: element, name: `${p.name}::${element.name}` });
                     if (p === pkg || pkg?.imports.some(i => i.namespace === p.name)) entries.push({ node: element, name: element.name });
                 }
@@ -31,6 +30,6 @@ export class SwamlScopeProvider extends DefaultScopeProvider {
         // Ambiguous imports are errors, never dependent on file iteration order.
         const counts = new Map<string, number>();
         for (const e of entries) counts.set(e.name, (counts.get(e.name) ?? 0) + 1);
-        return new MapScope(entries.filter(e => counts.get(e.name) === 1).map(e => this.descriptions.createDescription(e.node, e.name)));
+        return new MapScope(entries.filter(e => counts.get(e.name) === 1 && this.reflection.isSubtype(e.node.$type, type)).map(e => this.descriptions.createDescription(e.node, e.name)));
     }
 }

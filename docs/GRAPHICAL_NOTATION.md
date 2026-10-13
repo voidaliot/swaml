@@ -13,8 +13,10 @@ SWAML retains the user's existing view family with these exact names. GRV is int
 | IV | Interconnect View | system or component occurrence/definition | immediate children, exposed ports, connectors, delegation |
 | CV | Case View | system or case | cases, requirements and intended coverage |
 | SV | Sequence View | case, or case selected from a system | interface exchanges and happens-before dependencies |
-| GRV | Grid View | selected subject | model inventory, interfaces, operations, timing, allocation or traces |
+| GRV | Grid View | package or named semantic declaration | model inventory, interfaces, operations, timing, allocation or traces |
 | FV | Flow View | operation | statement flow or states/transitions owned by that operation |
+
+GV/GRV subjects exclude other views. IV accepts only a component or system; a unit is inspected through GV/FV or its containing IV. A package subject is its own name alone. These categories are validated.
 
 GEV is absent. AFV and STV are not separate SWAML view kinds; both become FV according to the operation's body. There are no performer swimlanes. If grouping is useful, label a frame with its actual component/unit/operation path.
 

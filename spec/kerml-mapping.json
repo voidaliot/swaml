@@ -1,28 +1,718 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "2.0",
   "language": "SWAML",
   "languageVersion": "0.1",
-  "foundation": { "name": "KerML", "version": "1.0", "source": "https://www.omg.org/spec/KerML/1.0" },
+  "foundation": {
+    "name": "KerML",
+    "version": "1.0",
+    "source": "https://www.omg.org/spec/KerML/1.0"
+  },
   "status": "proposed-mapping-contract-not-an-exporter",
   "namespace": null,
   "mapping": [
-    { "source": "Package", "kernel": "Package", "constraints": ["flat-namespace", "unique-name"] },
-    { "source": "Component", "kernel": "Structure", "constraints": ["composition-only", "acyclic-containment"] },
-    { "source": "Unit", "kernel": "Structure", "constraints": ["encapsulation", "direct-operation-ownership"] },
-    { "source": "Instance", "kernel": "Feature", "constraints": ["composite", "typed-by-definition", "multiplicity-one"] },
-    { "source": "DataType", "kernel": "DataType", "constraints": ["value-semantics", "finite-record"] },
-    { "source": "EnumType", "kernel": "DataType", "constraints": ["nominal-finite-domain"] },
-    { "source": "Interface", "kernel": "Classifier", "constraints": ["nominal-versioned-contract", "member-kind"] },
-    { "source": "Port", "kernel": "Feature", "constraints": ["interface-typing", "member-direction-by-role"] },
-    { "source": "Signature", "kernel": "Behavior", "constraints": ["contract-only", "typed-copied-parameters"] },
-    { "source": "Operation", "kernel": ["Behavior", "Step"], "constraints": ["owned-unit-context", "trigger", "run-to-completion"] },
-    { "source": "FunctionDef", "kernel": "Function", "constraints": ["pure", "acyclic-calls"] },
-    { "source": "Connect", "kernel": "Connector", "constraints": ["interface-boundary", "qos", "endpoint-cardinality"] },
-    { "source": "Delegate", "kernel": "Connector", "constraints": ["role-preserving-forwarding", "no-extra-queue"] },
-    { "source": "Block", "kernel": ["Step", "Succession"], "constraints": ["ordered-structured-flow"] },
-    { "source": "Machine", "kernel": ["Behavior", "Step", "Succession"], "constraints": ["current-state", "priority", "timer-lifecycle", "reaction-atomicity"] },
-    { "source": "Send", "kernel": "SWAML-library-message-interaction", "constraints": ["typed-payload", "port-route", "emitter-provenance"] },
-    { "source": "Request", "kernel": "SWAML-library-request-interaction", "constraints": ["correlation", "timeout", "result-or-failure"] }
+    {
+      "source": "Model",
+      "kind": "element",
+      "kernel": [
+        "Package"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Workspace root and version; source containers remain traceable."
+    },
+    {
+      "source": "Package",
+      "kind": "element",
+      "kernel": [
+        "Package"
+      ],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Flat unique declaration namespace with ordered owned members."
+    },
+    {
+      "source": "Import",
+      "kind": "element",
+      "kernel": [
+        "NamespaceImport"
+      ],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Direct wildcard visibility edge; no transitive import or implicit copying."
+    },
+    {
+      "source": "Element",
+      "kind": "grouping",
+      "kernel": [],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Grammar union; normalize the selected concrete alternative exactly once."
+    },
+    {
+      "source": "DataType",
+      "kind": "element",
+      "kernel": [
+        "DataType"
+      ],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Finite nominal value domain: ordered record fields or unique enum literals."
+    },
+    {
+      "source": "EnumType",
+      "kind": "element",
+      "kernel": [
+        "DataType"
+      ],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Finite nominal value domain: ordered record fields or unique enum literals."
+    },
+    {
+      "source": "Parameter",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Typed field/input feature; preserve declared position and copied values."
+    },
+    {
+      "source": "TypeRef",
+      "kind": "reference",
+      "kernel": [
+        "FeatureTyping"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Reference to primitive/nominal type, plus optional fixed-array shape."
+    },
+    {
+      "source": "ValueType",
+      "kind": "grouping",
+      "kernel": [],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Grammar union; normalize the selected concrete alternative exactly once."
+    },
+    {
+      "source": "Interface",
+      "kind": "element",
+      "kernel": [
+        "Classifier"
+      ],
+      "normative": "docs/spec/02-communication.md",
+      "semantic": "Nominal versioned member contract; legal member set depends on kind."
+    },
+    {
+      "source": "InterfaceMember",
+      "kind": "grouping",
+      "kernel": [],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Grammar union; normalize the selected concrete alternative exactly once."
+    },
+    {
+      "source": "DataMember",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "normative": "docs/spec/02-communication.md",
+      "semantic": "Typed payload contract with sampled/queued delivery interpretation."
+    },
+    {
+      "source": "EventMember",
+      "kind": "element",
+      "kernel": [
+        "Behavior"
+      ],
+      "normative": "docs/spec/02-communication.md",
+      "semantic": "Contract-only payload signature; only port-projected operation emission can instantiate an exchange."
+    },
+    {
+      "source": "Signature",
+      "kind": "element",
+      "kernel": [
+        "Behavior"
+      ],
+      "normative": "docs/spec/02-communication.md",
+      "semantic": "Contract-only RPC signature with copied parameters/result and idempotency assertion."
+    },
+    {
+      "source": "Argument",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Typed field/input feature; preserve declared position and copied values."
+    },
+    {
+      "source": "Component",
+      "kind": "element",
+      "kernel": [
+        "Structure"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Component composition or unit private-state/executable boundary; distinct occurrence contexts."
+    },
+    {
+      "source": "ComponentMember",
+      "kind": "grouping",
+      "kernel": [],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Grammar union; normalize the selected concrete alternative exactly once."
+    },
+    {
+      "source": "Unit",
+      "kind": "element",
+      "kernel": [
+        "Structure"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Component composition or unit private-state/executable boundary; distinct occurrence contexts."
+    },
+    {
+      "source": "UnitMember",
+      "kind": "grouping",
+      "kernel": [],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Grammar union; normalize the selected concrete alternative exactly once."
+    },
+    {
+      "source": "Definition",
+      "kind": "grouping",
+      "kernel": [],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Grammar union; normalize the selected concrete alternative exactly once."
+    },
+    {
+      "source": "Instance",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Composite owned occurrence typed by a definition, multiplicity one."
+    },
+    {
+      "source": "Port",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Interface-typed role projection with optionality and instance-local endpoints."
+    },
+    {
+      "source": "Variable",
+      "kind": "element",
+      "kernel": [
+        "Feature",
+        "FeatureValue"
+      ],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Private variable with pure initializer and per-unit-occurrence storage."
+    },
+    {
+      "source": "System",
+      "kind": "element",
+      "kernel": [
+        "Structure"
+      ],
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "semantic": "Closed assembly with profile, expanded instances and resolved routes."
+    },
+    {
+      "source": "SystemMember",
+      "kind": "grouping",
+      "kernel": [],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Grammar union; normalize the selected concrete alternative exactly once."
+    },
+    {
+      "source": "Node",
+      "kind": "element",
+      "kernel": [
+        "Structure"
+      ],
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "semantic": "Logical execution-node declaration with mcu/process/container binding metadata."
+    },
+    {
+      "source": "Deployment",
+      "kind": "element",
+      "kernel": [
+        "MetadataFeature"
+      ],
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "semantic": "Explicit occurrence-to-node allocation; nearest ancestor determines inherited allocation."
+    },
+    {
+      "source": "Connect",
+      "kind": "element",
+      "kernel": [
+        "Connector"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Port route or queue-free forwarding alias; preserve hierarchy and nominal interface identity."
+    },
+    {
+      "source": "Delegate",
+      "kind": "element",
+      "kernel": [
+        "Connector"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Port route or queue-free forwarding alias; preserve hierarchy and nominal interface identity."
+    },
+    {
+      "source": "Qos",
+      "kind": "element",
+      "kernel": [
+        "MetadataFeature"
+      ],
+      "normative": "docs/spec/06-execution-contract.md",
+      "semantic": "Per-route/member/direction queue capacity, overflow, delivery, order, latency and age constraints."
+    },
+    {
+      "source": "Operation",
+      "kind": "element",
+      "kernel": [
+        "Behavior",
+        "Step"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Owned implementation plus synthetic executable feature; typed unit context and exactly one body form."
+    },
+    {
+      "source": "Trigger",
+      "kind": "element",
+      "kernel": [
+        "MetadataFeature"
+      ],
+      "normative": "docs/spec/06-execution-contract.md",
+      "semantic": "Local release rule or port-member handler binding; not a free event."
+    },
+    {
+      "source": "Timing",
+      "kind": "element",
+      "kernel": [
+        "MetadataFeature"
+      ],
+      "normative": "docs/spec/06-execution-contract.md",
+      "semantic": "WCET, elapsed deadline and concurrency contract; root and helper interpretation."
+    },
+    {
+      "source": "FunctionDef",
+      "kind": "element",
+      "kernel": [
+        "Function"
+      ],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Pure parameter-only expression with acyclic local call graph."
+    },
+    {
+      "source": "Block",
+      "kind": "element",
+      "kernel": [
+        "Step",
+        "Succession"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Ordered steps, lexical scope, success/failure exits and source trace."
+    },
+    {
+      "source": "Statement",
+      "kind": "grouping",
+      "kernel": [],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Grammar union; normalize the selected concrete alternative exactly once."
+    },
+    {
+      "source": "Let",
+      "kind": "element",
+      "kernel": [
+        "Step",
+        "Feature"
+      ],
+      "normative": "docs/spec/03-behavior.md",
+      "semantic": "Evaluate then create/replace one copied value in the proper lexical/private environment."
+    },
+    {
+      "source": "Assign",
+      "kind": "element",
+      "kernel": [
+        "Step",
+        "Feature"
+      ],
+      "normative": "docs/spec/03-behavior.md",
+      "semantic": "Evaluate then create/replace one copied value in the proper lexical/private environment."
+    },
+    {
+      "source": "Send",
+      "kind": "element",
+      "kernel": [
+        "Step"
+      ],
+      "normative": "docs/spec/06-execution-contract.md",
+      "semantic": "SWAML library emission behavior with operation/port/member provenance and independent route offers."
+    },
+    {
+      "source": "Request",
+      "kind": "element",
+      "kernel": [
+        "Step"
+      ],
+      "normative": "docs/spec/06-execution-contract.md",
+      "semantic": "SWAML library awaited RPC behavior with correlation, bounded timeout and exclusive success/failure."
+    },
+    {
+      "source": "Invoke",
+      "kind": "element",
+      "kernel": [
+        "Step"
+      ],
+      "normative": "docs/spec/06-execution-contract.md",
+      "semantic": "Same-unit synchronous call preserving caller context, lock, snapshot and continuation."
+    },
+    {
+      "source": "Return",
+      "kind": "element",
+      "kernel": [
+        "Step"
+      ],
+      "normative": "docs/spec/03-behavior.md",
+      "semantic": "Frame completion or failure unwinding; no rollback or implicit event."
+    },
+    {
+      "source": "If",
+      "kind": "element",
+      "kernel": [
+        "Step",
+        "Succession"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Guarded structured control with branch exclusivity, loop count and bound failure."
+    },
+    {
+      "source": "While",
+      "kind": "element",
+      "kernel": [
+        "Step",
+        "Succession"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Guarded structured control with branch exclusivity, loop count and bound failure."
+    },
+    {
+      "source": "Fail",
+      "kind": "element",
+      "kernel": [
+        "Step"
+      ],
+      "normative": "docs/spec/03-behavior.md",
+      "semantic": "Frame completion or failure unwinding; no rollback or implicit event."
+    },
+    {
+      "source": "Assert",
+      "kind": "element",
+      "kernel": [
+        "Step"
+      ],
+      "normative": "docs/spec/03-behavior.md",
+      "semantic": "Pure Boolean check with explicit activation failure continuation."
+    },
+    {
+      "source": "Machine",
+      "kind": "element",
+      "kernel": [
+        "Behavior",
+        "Feature",
+        "Step",
+        "Succession"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Owned stateful body with current-state, timer generations and ordered reactions."
+    },
+    {
+      "source": "State",
+      "kind": "element",
+      "kernel": [
+        "Step"
+      ],
+      "normative": "docs/spec/06-execution-contract.md",
+      "semantic": "State identity, entry/exit groups and finality in one operation context."
+    },
+    {
+      "source": "Transition",
+      "kind": "element",
+      "kernel": [
+        "Step",
+        "Succession"
+      ],
+      "normative": "docs/spec/06-execution-contract.md",
+      "semantic": "Source/target, stimulus matcher, guard, priority and exit/effect/update/entry sequence."
+    },
+    {
+      "source": "Requirement",
+      "kind": "element",
+      "kernel": [
+        "MetadataFeature"
+      ],
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "semantic": "Named text obligation; coverage claims carry no automatic proof."
+    },
+    {
+      "source": "Scenario",
+      "kind": "element",
+      "kernel": [
+        "Behavior"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Descriptive partial trace tied to a system and requirement references; not a second executable program."
+    },
+    {
+      "source": "ScenarioStep",
+      "kind": "element",
+      "kernel": [
+        "Step",
+        "Succession"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Port-member exchange with connector, explicit causal predecessor and inferred unique reply correlation."
+    },
+    {
+      "source": "View",
+      "kind": "element",
+      "kernel": [
+        "MetadataFeature"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Projection kind and resolved declaration/occurrence subject; presentation has no runtime effects."
+    },
+    {
+      "source": "Duration",
+      "kind": "value",
+      "kernel": [
+        "LiteralInteger"
+      ],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Exact positive integer nanoseconds with retained authoring unit."
+    },
+    {
+      "source": "Path",
+      "kind": "reference",
+      "kernel": [],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Resolve according to reference context; preserve authoring spelling and resolved identities."
+    },
+    {
+      "source": "QualifiedName",
+      "kind": "reference",
+      "kernel": [],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Resolve according to reference context; preserve authoring spelling and resolved identities."
+    },
+    {
+      "source": "Expression",
+      "kind": "lowering",
+      "kernel": [
+        "Expression"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Typed expression tree; grouping/precedence, operand order and conditional short-circuit evaluation."
+    },
+    {
+      "source": "OrExpression",
+      "kind": "lowering",
+      "kernel": [
+        "Expression"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Typed expression tree; grouping/precedence, operand order and conditional short-circuit evaluation."
+    },
+    {
+      "source": "AndExpression",
+      "kind": "lowering",
+      "kernel": [
+        "Expression"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Typed expression tree; grouping/precedence, operand order and conditional short-circuit evaluation."
+    },
+    {
+      "source": "EqualityExpression",
+      "kind": "lowering",
+      "kernel": [
+        "Expression"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Typed expression tree; grouping/precedence, operand order and conditional short-circuit evaluation."
+    },
+    {
+      "source": "RelationalExpression",
+      "kind": "lowering",
+      "kernel": [
+        "Expression"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Typed expression tree; grouping/precedence, operand order and conditional short-circuit evaluation."
+    },
+    {
+      "source": "AdditiveExpression",
+      "kind": "lowering",
+      "kernel": [
+        "Expression"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Typed expression tree; grouping/precedence, operand order and conditional short-circuit evaluation."
+    },
+    {
+      "source": "MultiplicativeExpression",
+      "kind": "lowering",
+      "kernel": [
+        "Expression"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Typed expression tree; grouping/precedence, operand order and conditional short-circuit evaluation."
+    },
+    {
+      "source": "UnaryExpression",
+      "kind": "lowering",
+      "kernel": [
+        "Expression"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Typed expression tree; grouping/precedence, operand order and conditional short-circuit evaluation."
+    },
+    {
+      "source": "PrimaryExpression",
+      "kind": "lowering",
+      "kernel": [
+        "Expression"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Typed expression tree; grouping/precedence, operand order and conditional short-circuit evaluation."
+    },
+    {
+      "source": "Literal",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Concrete typed literal expression: Bool, bounded Int, finite Real or portable String."
+    },
+    {
+      "source": "FunctionCall",
+      "kind": "lowering",
+      "kernel": [
+        "Expression"
+      ],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Typed pure local function invocation with ordered copied arguments."
+    },
+    {
+      "source": "ReferenceExpression",
+      "kind": "lowering",
+      "kernel": [
+        "Expression"
+      ],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Local/copied/private value lookup with record traversal and checked final array indexing."
+    },
+    {
+      "source": "RecordLiteral",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Nominal construction, declared field/literal identities, fixed ordered array values."
+    },
+    {
+      "source": "FieldValue",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Nominal construction, declared field/literal identities, fixed ordered array values."
+    },
+    {
+      "source": "EnumLiteral",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Nominal construction, declared field/literal identities, fixed ordered array values."
+    },
+    {
+      "source": "ArrayLiteral",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Nominal construction, declared field/literal identities, fixed ordered array values."
+    },
+    {
+      "source": "Numeric",
+      "kind": "lexical",
+      "kernel": [],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Unsigned decimal value; unary minus is an expression; finite/safe literal range checks."
+    },
+    {
+      "source": "WS",
+      "kind": "lexical",
+      "kernel": [],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Insignificant source trivia; retain only for authoring round trips."
+    },
+    {
+      "source": "ID",
+      "kind": "lexical",
+      "kernel": [],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Case-sensitive ASCII identifier; grammar keywords are reserved."
+    },
+    {
+      "source": "NUMBER",
+      "kind": "lexical",
+      "kernel": [],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Unsigned decimal value; unary minus is an expression; finite/safe literal range checks."
+    },
+    {
+      "source": "INT",
+      "kind": "lexical",
+      "kernel": [],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Unsigned decimal value; unary minus is an expression; finite/safe literal range checks."
+    },
+    {
+      "source": "STRING",
+      "kind": "lexical",
+      "kernel": [],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Unicode text with only quote, backslash, n, r and t escapes; no raw controls."
+    },
+    {
+      "source": "ML_COMMENT",
+      "kind": "lexical",
+      "kernel": [],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Insignificant source trivia; retain only for authoring round trips."
+    },
+    {
+      "source": "SL_COMMENT",
+      "kind": "lexical",
+      "kernel": [],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Insignificant source trivia; retain only for authoring round trips."
+    }
   ],
-  "invariants": ["I1-boundary", "I2-ownership", "I3-event-provenance", "I4-type-safety", "I5-communication-policy", "I6-view-consistency"]
+  "invariants": [
+    "I1-boundary",
+    "I2-ownership",
+    "I3-event-provenance",
+    "I4-type-safety",
+    "I5-communication-policy",
+    "I6-view-consistency"
+  ]
 }

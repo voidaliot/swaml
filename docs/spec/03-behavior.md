@@ -47,9 +47,9 @@ All ordinary operations and state-machine reactions are serial by default. The u
 
 A callback to the same unit while a serial request is pending cannot execute until the serial activation ends. Cycles of requests can therefore time out or deadlock absent timeouts; all requests have finite timeouts. The language does not silently release the lock and allow reentrant state mutation. Authors SHOULD avoid synchronous request cycles.
 
-`concurrency reentrant` permits overlapping activations with separate local frames. Such an operation MUST NOT mutate unit data directly or through local helpers, and MUST NOT invoke an operation that mutates shared state. It may read the unit's state snapshot captured at activation, and functions receive copied parameters. A conforming backend must preserve that snapshot or reject the model if its target cannot realize it. The prototype detects direct mutation, while transitive effects require further analysis (see implementation status).
+`concurrency reentrant` permits overlapping activations with separate local frames. Such an operation MUST NOT mutate unit data directly or through local helpers, and MUST NOT invoke an operation that mutates shared state. It may read the unit's state snapshot captured at dispatch, and functions receive copied parameters. A conforming backend must preserve that snapshot or reject the model if its target cannot realize it. The reference validator follows local helper calls to check this prohibition. Snapshot realizability remains a backend obligation.
 
-Input queues are per connector/member. FIFO constrains order within one queue. Across independent ready queues, the scheduler may choose any ready activation consistent with deadlines and the target profile; no global total order is inferred. Periodic activations released while the serial unit is busy remain pending; a target profile MUST bound that activation backlog or reject a production deployment. Deadlines are measured from release, not eventual dispatch. Merely listing WCET/deadline does not define thread priorities.
+Input queues are per connector/member. FIFO constrains order within one queue. Across independent ready queues, the scheduler may choose any ready activation consistent with deadlines and the target profile; no global total order is inferred. Periodic activations released while the serial unit is busy remain pending; a target profile MUST bound that activation backlog; exceeding the bound records ActivationOverflow and stops the system, as defined in chapter 6. Deadlines are measured from release, not eventual dispatch. Merely listing WCET/deadline does not define thread priorities.
 
 The core semantics is therefore a set of allowed execution traces. An execution backend may add a deterministic scheduling policy that narrows this set but must document it. A model requiring determinism across sources must explicitly order exchanges or provide a coordinating operation.
 
@@ -63,21 +63,21 @@ A state owns an optional entry block and optional exit block. A `final` state co
 
 ## 3.5 Transition triggers and selection
 
-A transition names source and destination states in the same machine. It has one trigger and optional Bool guard and nonnegative integer priority. Missing priority means 0; larger values take precedence.
+A transition names source and destination states in the same machine. It has one trigger and optional Bool guard and nonnegative safe integer priority. Missing priority means 0; larger values take precedence.
 
 - `on receive port.member` consumes one incoming data/event for the machine. Event parameter names are available as copied values in the guard and effect. Data has the local name `payload`. These names MUST NOT collide with unit variables. RPC operations are not allowed as machine transition triggers.
-- `on after D` becomes eligible after D elapsed time since entering the source state. Leaving the source cancels its timer. Reentering starts a fresh timer.
+- `on after D` becomes eligible after D elapsed time since completing the source state's entry block. Leaving the source cancels its timer. Reentering starts a fresh timer.
 - `on completion` is eligible after the state's entry and any prior reaction have finished, before waiting for a new external message.
 
 For one stimulus, first select transitions from the current state with matching trigger, then evaluate guards, then choose the highest-priority enabled transition. Potentially competing transitions with the same source and identical trigger MUST have distinct priorities even when an author believes their guards are mutually exclusive. A missing guard means true. Unrelated queued stimuli are dispatched one at a time, in the scheduler order permitted by 3.3.
 
-A received message with no enabled transition is consumed and ignored. A timer with no enabled transition expires once and is not retriggered until reentry. Completion transitions are reevaluated after each successful state entry. Models MUST NOT contain unconditional completion cycles. Guarded cycles must reach quiescence; a checking executor MUST fail a reaction after 1,024 completion microsteps rather than spin forever. This limit is a semantic protection, not a proof of useful behavior.
+A received message with no enabled transition is consumed and ignored. A timer with no enabled transition expires once and is not retriggered until reentry. Completion transitions are reevaluated after each successful state entry and each machine reaction, including an ignored stimulus. Models MUST NOT contain unconditional completion cycles. Guarded cycles must reach quiescence; a checking executor MUST fail a reaction after 1,024 completion microsteps rather than spin forever. This limit is a semantic protection, not a proof of useful behavior.
 
 ## 3.6 Transition execution
 
 A selected transition executes atomically with respect to this unit's other serial reactions:
 
-1. Consume the matching stimulus, if any, and cancel the source state's outstanding timer.
+1. Consume the matching stimulus, if any, and cancel all timers for the source state's entry generation.
 2. Run the source state's exit block.
 3. Run the transition effect with the stimulus payload in scope.
 4. Update the current-state identity to the destination.
@@ -89,3 +89,5 @@ Entry and exit blocks do not inherit event parameters; only the guard/effect doe
 `return;` in any state block terminates the owning stateful operation immediately and cancels pending timers; remaining transition phases are skipped. `fail` terminates it with failure and also cancels timers. Neither rolls back prior side effects. Other queued messages still belong to the unit, but a terminated machine no longer dispatches its members; a target runtime must record these as undeliverable until unit restart.
 
 Every state MUST be reachable from the initial state in the transition graph, ignoring guards for this static check. Reachability through satisfiable guards and eventual completion are stronger analysis obligations, not consequences of graph reachability. No state, operation or component may use an unbound global event to change another unit's behavior.
+
+The [operational contract](06-execution-contract.md) further defines initialization barriers, snapshots, timer generations, stimulus ties, failure and resource bounds.

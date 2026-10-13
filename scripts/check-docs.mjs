@@ -28,5 +28,18 @@ for (const file of (await walk(root)).filter(f => f.endsWith('.md'))) {
     }
 }
 const mapping = JSON.parse(await readFile(resolve(root, 'spec/kerml-mapping.json'), 'utf8'));
-if (mapping.languageVersion !== '0.1' || !mapping.mapping.length) throw new Error('Invalid mapping inventory');
-console.log(`Documentation checked: ${links} local links, ${snippets} SWAML snippet(s), mapping JSON.`);
+if (mapping.languageVersion !== '0.1' || mapping.schemaVersion !== '2.0') throw new Error('Invalid mapping inventory');
+const grammar = await readFile(resolve(root, 'src/language/swaml.langium'), 'utf8');
+const productions = new Set([...grammar.matchAll(/^(?:(?:entry|hidden|terminal|type)\s+)*([A-Za-z]\w*)(?:\s+returns\s+\w+)?\s*[:=]/gm)].map(m => m[1]));
+const sources = new Set();
+const kinds = new Set(['element', 'grouping', 'reference', 'value', 'lowering', 'lexical']);
+const bases = new Set(['Package', 'NamespaceImport', 'DataType', 'Feature', 'FeatureTyping', 'Classifier', 'Behavior', 'Structure', 'FeatureValue', 'MetadataFeature', 'Connector', 'Step', 'Function', 'Succession', 'LiteralInteger', 'Expression']);
+for (const entry of mapping.mapping) {
+    if (!productions.has(entry.source) || sources.has(entry.source)) throw new Error(`Extra/duplicate mapping: ${entry.source}`);
+    if (!kinds.has(entry.kind) || !Array.isArray(entry.kernel) || entry.kernel.some(k => !bases.has(k)) || !entry.semantic?.trim()) throw new Error(`Incomplete mapping: ${entry.source}`);
+    if (!entry.normative?.startsWith('docs/spec/')) throw new Error(`Missing normative home: ${entry.source}`);
+    await stat(resolve(root, entry.normative));
+    sources.add(entry.source);
+}
+for (const rule of productions) if (!sources.has(rule)) throw new Error(`Unmapped grammar rule: ${rule}`);
+console.log(`Documentation checked: ${links} local links, ${snippets} SWAML snippet(s), ${sources.size} grammar mappings.`);

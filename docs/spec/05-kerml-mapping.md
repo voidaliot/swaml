@@ -27,11 +27,11 @@ The [mapping inventory](../../spec/kerml-mapping.json) is a machine-readable des
 | Connector | Connector between port Features | permitted interface exchange and QoS obligations |
 | Delegation | Connector plus identity-preserving forwarding constraint | same role and contract; no extra queue |
 | Ordered flow | contained Steps and Successions | structured branches/loops, bounded execution |
-| Message occurrence | interaction/flow representation with typed payload and endpoint features | source activation, route and correlation metadata |
+| Message emission | Step typed by a SWAML-library communication Behavior | source activation, route and correlation metadata |
 | State / transition | contained behavior steps, state predicate and succession relations | SWAML state-selection and reaction semantics |
 | Requirement / case / view | annotated named elements and trace memberships | SWAML-specific interpretation |
 
-The table establishes a mapping target, not a claim that names such as “SWAML state” already exist as native KerML metaclasses. A full exporter needs a versioned SWAML semantic library for the additional predicates, activation and communication constraints.
+The table establishes a mapping target, not a claim that names such as “SWAML state” already exist as native KerML metaclasses. A full exporter needs a versioned SWAML semantic library for the additional predicates, activation and communication constraints. [Chapter 7](07-normalized-model.md) completes the information model, reference edges and lowering rules for every syntax family; the inventory covers all 80 grammar rule/type names.
 
 ## 5.3 Normalization algorithm
 
