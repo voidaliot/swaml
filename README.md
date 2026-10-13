@@ -4,6 +4,12 @@ SWAML is a software-focused modeling language designed on the KerML semantic fou
 
 **Version 0.1 is a language design and a working Langium reference core.** It is an independent project, informally motivated by an “unofficial UML 3.0”; it is not an OMG UML release, an AUTOSAR implementation, or a certified KerML tool.
 
+## PDF and release
+
+[Download the complete PDF](https://github.com/voidaliot/swaml/releases/download/v0.1.0/SWAML-0.1.0-Specification.pdf) · [Release 0.1.0](https://github.com/voidaliot/swaml/releases/tag/v0.1.0) · [Rebuild and verify](docs/PDF_PUBLICATION.md)
+
+The PDF includes the normative specification, graphical notation, grammar, all examples, user guide and supporting documentation, with bookmarks and embedded source files. Release 0.1.0 packages the reviewed 0.1.1 draft/core revision; models retain the `0.1` language header.
+
 ## Start here
 
 - [User guide](docs/USER_GUIDE.md): learn SWAML through models you can validate.

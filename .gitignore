@@ -5,3 +5,6 @@ syntax/*.tmLanguage.json
 *.tsbuildinfo
 .DS_Store
 *.vsix
+tmp/pdfs/
+.venv-pdf/
+__pycache__/

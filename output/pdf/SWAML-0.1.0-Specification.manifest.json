@@ -1,0 +1,165 @@
+{
+  "release": "0.1.0",
+  "languageVersion": "0.1",
+  "specificationRevision": "0.1.1",
+  "pages": 88,
+  "pdf": "SWAML-0.1.0-Specification.pdf",
+  "sources": [
+    {
+      "path": "docs/LANGUAGE_SPECIFICATION.md",
+      "attachmentName": "docs__LANGUAGE_SPECIFICATION.md",
+      "sha256": "589e07746ced9594f75dffd9e215549fef3012bc7a136e0af5336c408009fcb0"
+    },
+    {
+      "path": "docs/spec/01-structure-and-types.md",
+      "attachmentName": "docs__spec__01-structure-and-types.md",
+      "sha256": "98293b551a16d47bfe173aca27612b9be92d80dce3638e0c464b3dbf42b776d4"
+    },
+    {
+      "path": "docs/spec/02-communication.md",
+      "attachmentName": "docs__spec__02-communication.md",
+      "sha256": "ecaf0b734fec0547626236fe7fe8e7e8dc20840dcaed132a383f240c308effeb"
+    },
+    {
+      "path": "docs/spec/03-behavior.md",
+      "attachmentName": "docs__spec__03-behavior.md",
+      "sha256": "710cf4de9b96889261dc85b88713b386b0b6c8fd8d9ed8e7b8435725a864214c"
+    },
+    {
+      "path": "docs/spec/04-systems-and-conformance.md",
+      "attachmentName": "docs__spec__04-systems-and-conformance.md",
+      "sha256": "033e9b73d7a2163df84319cf59c609af34f946d036417f6de69149dc67d3b26f"
+    },
+    {
+      "path": "docs/spec/05-kerml-mapping.md",
+      "attachmentName": "docs__spec__05-kerml-mapping.md",
+      "sha256": "c384def951a191282341318412a7ed6ff8abd288f65007600060a5ec88c5f550"
+    },
+    {
+      "path": "docs/spec/06-execution-contract.md",
+      "attachmentName": "docs__spec__06-execution-contract.md",
+      "sha256": "22e2289e14ea30cd2f96bedb80d056bd14391c751a4dbd9bc6c5b06c821e796a"
+    },
+    {
+      "path": "docs/spec/07-normalized-model.md",
+      "attachmentName": "docs__spec__07-normalized-model.md",
+      "sha256": "d20547d8a05b91194ffcafa7f95b104ccca89ad1bbdcdaa7d66257cf1fd506f6"
+    },
+    {
+      "path": "docs/spec/08-conformance-obligations.md",
+      "attachmentName": "docs__spec__08-conformance-obligations.md",
+      "sha256": "345fb176866df7e39ccd68cd17ebfdcd23131bd2e61e188963e4b7234fd021ec"
+    },
+    {
+      "path": "docs/GRAPHICAL_NOTATION.md",
+      "attachmentName": "docs__GRAPHICAL_NOTATION.md",
+      "sha256": "e6a9c4dae4130d67b47ab88497e4f9247f400953c33df6f0d01887308f901b47"
+    },
+    {
+      "path": "docs/USER_GUIDE.md",
+      "attachmentName": "docs__USER_GUIDE.md",
+      "sha256": "611aec7ca54aab5bb79a0558a8d95202d81285966c4613b73de79d038a352753"
+    },
+    {
+      "path": "docs/ARCHITECTURE_COMPARISON.md",
+      "attachmentName": "docs__ARCHITECTURE_COMPARISON.md",
+      "sha256": "8b69dab350cbc74166acb6adabb13d462a837d7813e29be5471018e4c242cfc1"
+    },
+    {
+      "path": "docs/TOOLING.md",
+      "attachmentName": "docs__TOOLING.md",
+      "sha256": "c586b3e5acdd9aa45f03920b29ac2055f4c34effa4dc63945e9ab6a2617607f2"
+    },
+    {
+      "path": "docs/IMPLEMENTATION_STATUS.md",
+      "attachmentName": "docs__IMPLEMENTATION_STATUS.md",
+      "sha256": "e107c535c2fe86f09fb7a27134bde3ac6d55a398055ee48a2b3ab412e3d95717"
+    },
+    {
+      "path": "docs/SPECIFICATION_AUDIT.md",
+      "attachmentName": "docs__SPECIFICATION_AUDIT.md",
+      "sha256": "c9d81e0cd09caef187c9e02b576ef8deae1b0ce5dcfebc9e66c6142bb5a7c6c6"
+    },
+    {
+      "path": "docs/decisions/0001-language-boundaries.md",
+      "attachmentName": "docs__decisions__0001-language-boundaries.md",
+      "sha256": "8e5a915407a9a5445dd4416d9d80cabb369dc252c912cde34d2dccd5dbc0230b"
+    },
+    {
+      "path": "docs/decisions/0002-auditable-semantics.md",
+      "attachmentName": "docs__decisions__0002-auditable-semantics.md",
+      "sha256": "ab37db704590239fafceccbb7fbd977786f7c1f35dc7edb4a5fdc74c7164e827"
+    },
+    {
+      "path": "docs/PDF_PUBLICATION.md",
+      "attachmentName": "docs__PDF_PUBLICATION.md",
+      "sha256": "2c91a1671732dbda8774a20adc55338cb68afcd785fdc25f669ef8bfc39677d7"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "attachmentName": "CONTRIBUTING.md",
+      "sha256": "5c97e5d0b091aa2886c05a56150f66dfbf4ea95afc096f8cb9f9f5acf1f4664a"
+    },
+    {
+      "path": "AGENTS.md",
+      "attachmentName": "AGENTS.md",
+      "sha256": "8f23e1f5ed77c0da17d02c436157e9405ca22c45a22aec573cc504d8f51239e5"
+    },
+    {
+      "path": "src/language/swaml.langium",
+      "attachmentName": "src__language__swaml.langium",
+      "sha256": "1449eb9a491120a0c12452c7f7ef95f8e57aa905b484fa2fe7da6918a5a4eb6c"
+    },
+    {
+      "path": "spec/kerml-mapping.json",
+      "attachmentName": "spec__kerml-mapping.json",
+      "sha256": "c4088f46779bc4ba1143b6cb341899a4fa9a0e738c62545713fce7fb143425b2"
+    },
+    {
+      "path": "examples/01-hello.swaml",
+      "attachmentName": "examples__01-hello.swaml",
+      "sha256": "e85ba852d9c9815ddd70590515c0f70893583b876b5f427076398de2f951c673"
+    },
+    {
+      "path": "examples/02-realtime-controller.swaml",
+      "attachmentName": "examples__02-realtime-controller.swaml",
+      "sha256": "6661daf41dc2e712f8a1157db78034c6dccbda5c0336a4bf3de667f1e81c5d0d"
+    },
+    {
+      "path": "examples/03-service-pubsub.swaml",
+      "attachmentName": "examples__03-service-pubsub.swaml",
+      "sha256": "0be83b5dc2783997ff3cd90ad4fdccd5c7e9a7cef90d4c64c21f80f48f74b98a"
+    },
+    {
+      "path": "examples/04-stateful-operation.swaml",
+      "attachmentName": "examples__04-stateful-operation.swaml",
+      "sha256": "5f01289a361b68683b65757b84732a8b9977a0a28be82d7d3a7699ed806aae43"
+    },
+    {
+      "path": "examples/05-values-and-flow.swaml",
+      "attachmentName": "examples__05-values-and-flow.swaml",
+      "sha256": "3a9f35a7c168324d820e223cd6b8aba33343a4e1197d7719128d0f3cc2342350"
+    },
+    {
+      "path": "examples/06-mixed-gateway.swaml",
+      "attachmentName": "examples__06-mixed-gateway.swaml",
+      "sha256": "21d510f7a113275063058136ce107401096eb5e0afba3e0e401f1c06d72360cc"
+    },
+    {
+      "path": "examples/07-client-server.swaml",
+      "attachmentName": "examples__07-client-server.swaml",
+      "sha256": "fcb51c98106d33ca7c3a95fffab387838110d56c5226040cf76af07cff95ec70"
+    },
+    {
+      "path": "examples/08-service-field.swaml",
+      "attachmentName": "examples__08-service-field.swaml",
+      "sha256": "13077f153dc56da083ce469d1126c156fba2463c97fd301f2ca93b30a7fa6f4b"
+    },
+    {
+      "path": "LICENSE",
+      "attachmentName": "LICENSE",
+      "sha256": "24d1618025e85d72fb57a7e108712a9a12799f83aa723006abc9ce71296ec46b"
+    }
+  ],
+  "pdfSha256": "f1c2a94e9ffc7025112ebd11e2b1ca95170991a7b84e270c4a1f25360e4aa946"
+}
