@@ -78,6 +78,6 @@ hidden terminal WS: /\s+/;
 terminal ID: /[_a-zA-Z][\w]*/;
 terminal NUMBER returns number: /[0-9]+\.[0-9]+/;
 terminal INT returns number: /[0-9]+/;
-terminal STRING: /"([^"\\]|\\.)*"/;
+terminal STRING: /"([^"\\\x00-\x1F]|\\["\\nrt])*"/;
 hidden terminal ML_COMMENT: /\/\*[\s\S]*?\*\//;
 hidden terminal SL_COMMENT: /\/\/[^\n\r]*/;

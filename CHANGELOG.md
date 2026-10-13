@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.1 — 2026-10-14
+
+- Close the first specification audit with explicit operational, normalization and conformance chapters; cover all 80 grammar rule/type names in the checked mapping inventory.
+- Define startup, backlog, snapshot, fanout, timer-generation and timeout-race behavior and required execution binding evidence.
+- Enforce portable strings, cross-kind name ambiguity, Void completion rules, reserved failure scope and literal negative array bounds.
+- Follow helper calls for reentrant mutation checks; validate case reply correlation, all view subject kinds, delegated required ports and expanded duplicate routes.
+- Revalidate loaded models after cross-file updates, including new ambiguous declarations and string paths.
+- Add a service-field/multiple-subscriber example and regression coverage. Language header stays `0.1`; previously accepted invalid inputs can now be rejected. See decision 0002 for draft compatibility policy.
+
 ## 0.1.0 — 2026-10-14
 
 - Define the complete initial SWAML language draft, with a proposed KerML 1.0 semantic mapping and explicit conformance levels.

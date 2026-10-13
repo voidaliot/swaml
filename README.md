@@ -12,6 +12,7 @@ SWAML is a software-focused modeling language designed on the KerML semantic fou
 - [Graphical notation](docs/GRAPHICAL_NOTATION.md): Browser, GV, IV, CV, SV, GRV, FV.
 - [Grammar](src/language/swaml.langium): the authoritative concrete syntax.
 - [Tooling and VS Code integration](docs/TOOLING.md): consume the language core in `swaml-vsc-ext`.
+- [Specification audit](docs/SPECIFICATION_AUDIT.md): resolved issues, evidence and completion boundary.
 - [Implementation status](docs/IMPLEMENTATION_STATUS.md): what is checked today and what remains for a full workbench.
 
 ## The model
@@ -41,7 +42,7 @@ npm run check
 node out/src/cli/main.js examples/03-service-pubsub.swaml
 ```
 
-`npm run check` generates the parser, typechecks the TypeScript, runs semantic and language-server tests, validates the examples and checks documentation links/snippets. The CLI exits 0 for accepted models, 1 for validation errors, and 2 for invocation or I/O errors. Supply all related files together when a model imports another package.
+`npm run check` generates the parser, typechecks the TypeScript, runs semantic and language-server tests, validates the examples and checks documentation links/snippets and the complete grammar mapping inventory. The CLI exits 0 for accepted models, 1 for validation errors, and 2 for invocation or I/O errors. Supply all related files together when a model imports another package.
 
 ## Models
 
@@ -54,6 +55,7 @@ node out/src/cli/main.js examples/03-service-pubsub.swaml
 | [Values and flow](examples/05-values-and-flow.swaml) | Records, enums, fixed arrays, functions, local calls, bounded loops |
 | [Mixed gateway](examples/06-mixed-gateway.swaml) | Explicit conversion between sampled embedded data and service events |
 | [Client–server](examples/07-client-server.swaml) | Standalone RPC, idempotent query, timeout and correlated reply |
+| [Service field](examples/08-service-field.swaml) | Explicit getter/setter/event, multiple consumers, reentrant snapshot query |
 | [Invalid models](examples/invalid/README.md) | Rejected attempts to bypass an interface |
 
 ## Repository layout
