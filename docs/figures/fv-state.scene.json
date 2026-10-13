@@ -1,0 +1,407 @@
+{
+  "width": 1000,
+  "height": 740,
+  "title": "FV · Operation states",
+  "description": "Device.lifecycle(): Void · on start · state ownership replaces a separate performer allocation.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 1000,
+      "height": 740,
+      "fill": "#ffffff",
+      "stroke": "none",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 32,
+      "y": 47,
+      "text": "FV · Operation states",
+      "size": 30,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 32,
+      "y": 80,
+      "text": "Device.lifecycle(): Void · on start · state ownership replaces a separate performer allocation.",
+      "size": 17,
+      "bold": false,
+      "color": "#516579"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          32,
+          99
+        ],
+        [
+          968,
+          99
+        ]
+      ],
+      "color": "#ccd9e2",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "rect",
+      "x": 32,
+      "y": 125,
+      "width": 936,
+      "height": 562,
+      "fill": "#f7fafc",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 50,
+      "y": 158,
+      "text": "op lifecycle",
+      "size": 22,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "circle",
+      "x": 82,
+      "y": 229,
+      "r": 9,
+      "fill": "#17324d",
+      "stroke": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          94,
+          229
+        ],
+        [
+          140,
+          229
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "rect",
+      "x": 145,
+      "y": 186,
+      "width": 270,
+      "height": 133,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 18
+    },
+    {
+      "kind": "text",
+      "x": 166,
+      "y": 219,
+      "text": "state Idle",
+      "size": 22,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          145,
+          235
+        ],
+        [
+          415,
+          235
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 164,
+      "y": 264,
+      "text": "entry: publish status.changed",
+      "size": 16,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 165,
+      "y": 291,
+      "text": "(\"idle\")",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 592,
+      "y": 186,
+      "width": 330,
+      "height": 153,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 18
+    },
+    {
+      "kind": "text",
+      "x": 612,
+      "y": 219,
+      "text": "state Running",
+      "size": 22,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          592,
+          235
+        ],
+        [
+          922,
+          235
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 610,
+      "y": 263,
+      "text": "entry: set cycles = cycles + 1;",
+      "size": 16,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 610,
+      "y": 291,
+      "text": "publish status.changed(\"running\")",
+      "size": 16,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          415,
+          252
+        ],
+        [
+          585,
+          252
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "text",
+      "x": 428,
+      "y": 220,
+      "text": "on receive",
+      "size": 16,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 425,
+      "y": 241,
+      "text": "commands.begin",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 577,
+      "y": 521,
+      "width": 347,
+      "height": 130,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 18
+    },
+    {
+      "kind": "text",
+      "x": 598,
+      "y": 553,
+      "text": "state Stopped «final»",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "circle",
+      "x": 899,
+      "y": 545,
+      "r": 9,
+      "fill": "white",
+      "stroke": "#17324d"
+    },
+    {
+      "kind": "circle",
+      "x": 899,
+      "y": 545,
+      "r": 5,
+      "fill": "#17324d",
+      "stroke": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          577,
+          568
+        ],
+        [
+          924,
+          568
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 596,
+      "y": 597,
+      "text": "entry: publish status.changed",
+      "size": 16,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 596,
+      "y": 624,
+      "text": "(\"stopped\")",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          757,
+          339
+        ],
+        [
+          757,
+          515
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "text",
+      "x": 773,
+      "y": 392,
+      "text": "on receive",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 773,
+      "y": 418,
+      "text": "commands.stop",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          592,
+          308
+        ],
+        [
+          483,
+          308
+        ],
+        [
+          483,
+          586
+        ],
+        [
+          570,
+          586
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "text",
+      "x": 67,
+      "y": 403,
+      "text": "Alternative: on after 30 s",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 67,
+      "y": 435,
+      "text": "effect: publish status.changed(\"timeout\")",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 67,
+      "y": 481,
+      "text": "Leaving Running cancels its timer.",
+      "size": 17,
+      "bold": false,
+      "color": "#516579"
+    },
+    {
+      "kind": "text",
+      "x": 67,
+      "y": 627,
+      "text": "Initial/final markers are local control,",
+      "size": 16,
+      "bold": false,
+      "color": "#516579"
+    },
+    {
+      "kind": "text",
+      "x": 67,
+      "y": 649,
+      "text": "not interface messages.",
+      "size": 16,
+      "bold": false,
+      "color": "#516579"
+    }
+  ]
+}

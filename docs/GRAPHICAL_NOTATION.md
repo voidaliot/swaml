@@ -2,6 +2,8 @@
 
 This is the normative notation and interaction contract for a future workbench. The current repository defines the model, grammar and language server; it does not claim to ship these diagram editors.
 
+The [rendered example catalog](GRAPHICAL_EXAMPLES.md) illustrates every view family against validated source models.
+
 ## 1. Views and navigation
 
 SWAML retains the user's existing view family with these exact names. GRV is interpreted as Grid View, following the existing Aliot convention.

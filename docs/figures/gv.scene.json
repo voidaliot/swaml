@@ -1,0 +1,487 @@
+{
+  "width": 1000,
+  "height": 650,
+  "title": "GV · General View",
+  "description": "Cabin shows occurrence ownership and explicit deployment; types are shared declarations.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 1000,
+      "height": 650,
+      "fill": "#ffffff",
+      "stroke": "none",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 32,
+      "y": 47,
+      "text": "GV · General View",
+      "size": 30,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 32,
+      "y": 80,
+      "text": "Cabin shows occurrence ownership and explicit deployment; types are shared declarations.",
+      "size": 17,
+      "bold": false,
+      "color": "#516579"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          32,
+          99
+        ],
+        [
+          968,
+          99
+        ]
+      ],
+      "color": "#ccd9e2",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "rect",
+      "x": 32,
+      "y": 122,
+      "width": 935,
+      "height": 330,
+      "fill": "#f7fafc",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 50,
+      "y": 156,
+      "text": "«system» Cabin · service",
+      "size": 24,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 55,
+      "y": 188,
+      "width": 280,
+      "height": 205,
+      "fill": "#ffffff",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 71,
+      "y": 219,
+      "text": "settings : Service",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 302,
+      "y": 201,
+      "width": 17,
+      "height": 24,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 296,
+      "y": 204,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 296,
+      "y": 215,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 71,
+      "y": 251,
+      "text": "«component occurrence»",
+      "size": 17,
+      "bold": false,
+      "color": "#516579"
+    },
+    {
+      "kind": "rect",
+      "x": 73,
+      "y": 275,
+      "width": 244,
+      "height": 82,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 87,
+      "y": 298,
+      "text": "«unit» store",
+      "size": 17,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 87,
+      "y": 323,
+      "text": ": SettingStore",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 87,
+      "y": 346,
+      "text": "Private store per occurrence",
+      "size": 13,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 360,
+      "y": 188,
+      "width": 280,
+      "height": 205,
+      "fill": "#ffffff",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 376,
+      "y": 219,
+      "text": "front : Client",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 607,
+      "y": 201,
+      "width": 17,
+      "height": 24,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 601,
+      "y": 204,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 601,
+      "y": 215,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 376,
+      "y": 251,
+      "text": "«component occurrence»",
+      "size": 17,
+      "bold": false,
+      "color": "#516579"
+    },
+    {
+      "kind": "rect",
+      "x": 378,
+      "y": 275,
+      "width": 244,
+      "height": 82,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 392,
+      "y": 298,
+      "text": "«unit» panel",
+      "size": 17,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 392,
+      "y": 323,
+      "text": ": Panel",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 392,
+      "y": 346,
+      "text": "Private store per occurrence",
+      "size": 13,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 665,
+      "y": 188,
+      "width": 280,
+      "height": 205,
+      "fill": "#ffffff",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 681,
+      "y": 219,
+      "text": "rear : Client",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 912,
+      "y": 201,
+      "width": 17,
+      "height": 24,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 906,
+      "y": 204,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 906,
+      "y": 215,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 681,
+      "y": 251,
+      "text": "«component occurrence»",
+      "size": 17,
+      "bold": false,
+      "color": "#516579"
+    },
+    {
+      "kind": "rect",
+      "x": 683,
+      "y": 275,
+      "width": 244,
+      "height": 82,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 697,
+      "y": 298,
+      "text": "«unit» panel",
+      "size": 17,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 697,
+      "y": 323,
+      "text": ": Panel",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 697,
+      "y": 346,
+      "text": "Private store per occurrence",
+      "size": 13,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 60,
+      "y": 516,
+      "width": 285,
+      "height": 80,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 80,
+      "y": 548,
+      "text": "controller",
+      "size": 22,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 80,
+      "y": 575,
+      "text": "«node: process»",
+      "size": 18,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 565,
+      "y": 516,
+      "width": 300,
+      "height": 80,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 585,
+      "y": 548,
+      "text": "displays",
+      "size": 22,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 585,
+      "y": 575,
+      "text": "«node: container»",
+      "size": 18,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          194,
+          394
+        ],
+        [
+          194,
+          510
+        ]
+      ],
+      "color": "#17324d",
+      "dash": true,
+      "arrow": true
+    },
+    {
+      "kind": "text",
+      "x": 207,
+      "y": 485,
+      "text": "deploy",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          500,
+          394
+        ],
+        [
+          620,
+          510
+        ]
+      ],
+      "color": "#17324d",
+      "dash": true,
+      "arrow": true
+    },
+    {
+      "kind": "text",
+      "x": 518,
+      "y": 480,
+      "text": "deploy",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          803,
+          394
+        ],
+        [
+          803,
+          510
+        ]
+      ],
+      "color": "#17324d",
+      "dash": true,
+      "arrow": true
+    },
+    {
+      "kind": "text",
+      "x": 817,
+      "y": 485,
+      "text": "deploy",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    }
+  ]
+}

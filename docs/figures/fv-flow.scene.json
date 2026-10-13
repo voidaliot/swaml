@@ -1,0 +1,307 @@
+{
+  "width": 1000,
+  "height": 780,
+  "title": "FV · Operation flow",
+  "description": "SettingStore.update(desired: Int): Bool · on call api.setPoint · directly owned by the unit.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 1000,
+      "height": 780,
+      "fill": "#ffffff",
+      "stroke": "none",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 32,
+      "y": 47,
+      "text": "FV · Operation flow",
+      "size": 30,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 32,
+      "y": 80,
+      "text": "SettingStore.update(desired: Int): Bool · on call api.setPoint · directly owned by the unit.",
+      "size": 17,
+      "bold": false,
+      "color": "#516579"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          32,
+          99
+        ],
+        [
+          968,
+          99
+        ]
+      ],
+      "color": "#ccd9e2",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "rect",
+      "x": 32,
+      "y": 121,
+      "width": 935,
+      "height": 620,
+      "fill": "#f7fafc",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 52,
+      "y": 153,
+      "text": "op update · serial by default",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "circle",
+      "x": 382,
+      "y": 182,
+      "r": 9,
+      "fill": "#17324d",
+      "stroke": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          382,
+          192
+        ],
+        [
+          382,
+          212
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          382.0,
+          217
+        ],
+        [
+          582,
+          282.0
+        ],
+        [
+          382.0,
+          347
+        ],
+        [
+          182,
+          282.0
+        ]
+      ],
+      "fill": "#eef4f8",
+      "stroke": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 270,
+      "y": 276,
+      "text": "desired < 10 or",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 278,
+      "y": 303,
+      "text": "desired > 30",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          582,
+          282
+        ],
+        [
+          745,
+          282
+        ],
+        [
+          745,
+          338
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "text",
+      "x": 602,
+      "y": 259,
+      "text": "true",
+      "size": 18,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 635,
+      "y": 344,
+      "width": 220,
+      "height": 57,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 25
+    },
+    {
+      "kind": "text",
+      "x": 676,
+      "y": 381,
+      "text": "return false",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          382,
+          347
+        ],
+        [
+          382,
+          375
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "text",
+      "x": 397,
+      "y": 356,
+      "text": "false",
+      "size": 18,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 202,
+      "y": 381,
+      "width": 360,
+      "height": 63,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 220,
+      "y": 420,
+      "text": "set currentValue = desired",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          382,
+          444
+        ],
+        [
+          382,
+          484
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "rect",
+      "x": 172,
+      "y": 490,
+      "width": 420,
+      "height": 63,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 190,
+      "y": 528,
+      "text": "publish api.changed(currentValue)",
+      "size": 19,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          382,
+          553
+        ],
+        [
+          382,
+          593
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "rect",
+      "x": 271,
+      "y": 599,
+      "width": 222,
+      "height": 58,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 25
+    },
+    {
+      "kind": "text",
+      "x": 314,
+      "y": 636,
+      "text": "return true",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 55,
+      "y": 709,
+      "text": "The publish node names an interface member. It creates no free event or remote action.",
+      "size": 17,
+      "bold": false,
+      "color": "#516579"
+    }
+  ]
+}

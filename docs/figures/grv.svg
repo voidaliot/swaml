@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="540" viewBox="0 0 1000 540" role="img" aria-labelledby="title desc">
+<title id="title">GRV · Grid View</title><desc id="desc">Operation inventory from Cabin; blank timing means no declared contract in service profile.</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#17324d"/></marker></defs>
+<g font-family="DejaVu Sans, sans-serif">
+<rect x="0" y="0" width="1000" height="540" rx="8" fill="#ffffff" stroke="none"/>
+<text x="32" y="47" font-size="30" font-weight="700" fill="#17324d">GRV · Grid View</text>
+<text x="32" y="80" font-size="17" font-weight="400" fill="#516579">Operation inventory from Cabin; blank timing means no declared contract in service profile.</text>
+<polyline points="32,99 968,99" fill="none" stroke="#ccd9e2" stroke-width="2"/>
+<rect x="32" y="131" width="222" height="48" rx="0" fill="#17324d" stroke="white"/>
+<text x="42" y="162" font-size="16" font-weight="700" fill="white">Occurrence</text>
+<rect x="254" y="131" width="172" height="48" rx="0" fill="#17324d" stroke="white"/>
+<text x="264" y="162" font-size="16" font-weight="700" fill="white">Operation</text>
+<rect x="426" y="131" width="257" height="48" rx="0" fill="#17324d" stroke="white"/>
+<text x="436" y="162" font-size="16" font-weight="700" fill="white">Trigger</text>
+<rect x="683" y="131" width="115" height="48" rx="0" fill="#17324d" stroke="white"/>
+<text x="693" y="162" font-size="16" font-weight="700" fill="white">Result</text>
+<rect x="798" y="131" width="68" height="48" rx="0" fill="#17324d" stroke="white"/>
+<text x="808" y="162" font-size="16" font-weight="700" fill="white">WCET</text>
+<rect x="866" y="131" width="102" height="48" rx="0" fill="#17324d" stroke="white"/>
+<text x="876" y="162" font-size="16" font-weight="700" fill="white">Deadline</text>
+<rect x="32" y="179" width="222" height="43" rx="0" fill="#eef4f8" stroke="#ccd9e2"/>
+<text x="41" y="207" font-size="15" font-weight="400" fill="#17324d">settings.store</text>
+<rect x="254" y="179" width="172" height="43" rx="0" fill="#eef4f8" stroke="#ccd9e2"/>
+<text x="263" y="207" font-size="15" font-weight="400" fill="#17324d">read()</text>
+<rect x="426" y="179" width="257" height="43" rx="0" fill="#eef4f8" stroke="#ccd9e2"/>
+<text x="435" y="207" font-size="15" font-weight="400" fill="#17324d">call api.get</text>
+<rect x="683" y="179" width="115" height="43" rx="0" fill="#eef4f8" stroke="#ccd9e2"/>
+<text x="692" y="207" font-size="15" font-weight="400" fill="#17324d">Int</text>
+<rect x="798" y="179" width="68" height="43" rx="0" fill="#eef4f8" stroke="#ccd9e2"/>
+<text x="807" y="207" font-size="15" font-weight="400" fill="#17324d">1 ms</text>
+<rect x="866" y="179" width="102" height="43" rx="0" fill="#eef4f8" stroke="#ccd9e2"/>
+<text x="875" y="207" font-size="15" font-weight="400" fill="#17324d">5 ms</text>
+<rect x="32" y="222" width="222" height="43" rx="0" fill="white" stroke="#ccd9e2"/>
+<text x="41" y="250" font-size="15" font-weight="400" fill="#17324d">settings.store</text>
+<rect x="254" y="222" width="172" height="43" rx="0" fill="white" stroke="#ccd9e2"/>
+<text x="263" y="250" font-size="15" font-weight="400" fill="#17324d">update(desired)</text>
+<rect x="426" y="222" width="257" height="43" rx="0" fill="white" stroke="#ccd9e2"/>
+<text x="435" y="250" font-size="15" font-weight="400" fill="#17324d">call api.setPoint</text>
+<rect x="683" y="222" width="115" height="43" rx="0" fill="white" stroke="#ccd9e2"/>
+<text x="692" y="250" font-size="15" font-weight="400" fill="#17324d">Bool</text>
+<rect x="798" y="222" width="68" height="43" rx="0" fill="white" stroke="#ccd9e2"/>
+<text x="807" y="250" font-size="15" font-weight="400" fill="#17324d">-</text>
+<rect x="866" y="222" width="102" height="43" rx="0" fill="white" stroke="#ccd9e2"/>
+<text x="875" y="250" font-size="15" font-weight="400" fill="#17324d">-</text>
+<rect x="32" y="265" width="222" height="43" rx="0" fill="#eef4f8" stroke="#ccd9e2"/>
+<text x="41" y="293" font-size="15" font-weight="400" fill="#17324d">front.panel</text>
+<rect x="254" y="265" width="172" height="43" rx="0" fill="#eef4f8" stroke="#ccd9e2"/>
+<text x="263" y="293" font-size="15" font-weight="400" fill="#17324d">adjust()</text>
+<rect x="426" y="265" width="257" height="43" rx="0" fill="#eef4f8" stroke="#ccd9e2"/>
+<text x="435" y="293" font-size="15" font-weight="400" fill="#17324d">manual</text>
+<rect x="683" y="265" width="115" height="43" rx="0" fill="#eef4f8" stroke="#ccd9e2"/>
+<text x="692" y="293" font-size="15" font-weight="400" fill="#17324d">Void</text>
+<rect x="798" y="265" width="68" height="43" rx="0" fill="#eef4f8" stroke="#ccd9e2"/>
+<text x="807" y="293" font-size="15" font-weight="400" fill="#17324d">-</text>
+<rect x="866" y="265" width="102" height="43" rx="0" fill="#eef4f8" stroke="#ccd9e2"/>
+<text x="875" y="293" font-size="15" font-weight="400" fill="#17324d">-</text>
+<rect x="32" y="308" width="222" height="43" rx="0" fill="white" stroke="#ccd9e2"/>
+<text x="41" y="336" font-size="15" font-weight="400" fill="#17324d">front.panel</text>
+<rect x="254" y="308" width="172" height="43" rx="0" fill="white" stroke="#ccd9e2"/>
+<text x="263" y="336" font-size="15" font-weight="400" fill="#17324d">refresh()</text>
+<rect x="426" y="308" width="257" height="43" rx="0" fill="white" stroke="#ccd9e2"/>
+<text x="435" y="336" font-size="15" font-weight="400" fill="#17324d">manual</text>
+<rect x="683" y="308" width="115" height="43" rx="0" fill="white" stroke="#ccd9e2"/>
+<text x="692" y="336" font-size="15" font-weight="400" fill="#17324d">Void</text>
+<rect x="798" y="308" width="68" height="43" rx="0" fill="white" stroke="#ccd9e2"/>
+<text x="807" y="336" font-size="15" font-weight="400" fill="#17324d">-</text>
+<rect x="866" y="308" width="102" height="43" rx="0" fill="white" stroke="#ccd9e2"/>
+<text x="875" y="336" font-size="15" font-weight="400" fill="#17324d">-</text>
+<rect x="32" y="351" width="222" height="43" rx="0" fill="#eef4f8" stroke="#ccd9e2"/>
+<text x="41" y="379" font-size="15" font-weight="400" fill="#17324d">front.panel</text>
+<rect x="254" y="351" width="172" height="43" rx="0" fill="#eef4f8" stroke="#ccd9e2"/>
+<text x="263" y="379" font-size="15" font-weight="400" fill="#17324d">display(current)</text>
+<rect x="426" y="351" width="257" height="43" rx="0" fill="#eef4f8" stroke="#ccd9e2"/>
+<text x="435" y="379" font-size="15" font-weight="400" fill="#17324d">receive setting.changed</text>
+<rect x="683" y="351" width="115" height="43" rx="0" fill="#eef4f8" stroke="#ccd9e2"/>
+<text x="692" y="379" font-size="15" font-weight="400" fill="#17324d">Void</text>
+<rect x="798" y="351" width="68" height="43" rx="0" fill="#eef4f8" stroke="#ccd9e2"/>
+<text x="807" y="379" font-size="15" font-weight="400" fill="#17324d">-</text>
+<rect x="866" y="351" width="102" height="43" rx="0" fill="#eef4f8" stroke="#ccd9e2"/>
+<text x="875" y="379" font-size="15" font-weight="400" fill="#17324d">-</text>
+<rect x="32" y="394" width="222" height="43" rx="0" fill="white" stroke="#ccd9e2"/>
+<text x="41" y="422" font-size="15" font-weight="400" fill="#17324d">rear.panel</text>
+<rect x="254" y="394" width="172" height="43" rx="0" fill="white" stroke="#ccd9e2"/>
+<text x="263" y="422" font-size="15" font-weight="400" fill="#17324d">(same operations)</text>
+<rect x="426" y="394" width="257" height="43" rx="0" fill="white" stroke="#ccd9e2"/>
+<text x="435" y="422" font-size="15" font-weight="400" fill="#17324d">distinct occurrence</text>
+<rect x="683" y="394" width="115" height="43" rx="0" fill="white" stroke="#ccd9e2"/>
+<text x="692" y="422" font-size="15" font-weight="400" fill="#17324d">Void</text>
+<rect x="798" y="394" width="68" height="43" rx="0" fill="white" stroke="#ccd9e2"/>
+<text x="807" y="422" font-size="15" font-weight="400" fill="#17324d">-</text>
+<rect x="866" y="394" width="102" height="43" rx="0" fill="white" stroke="#ccd9e2"/>
+<text x="875" y="422" font-size="15" font-weight="400" fill="#17324d">-</text>
+<text x="35" y="477" font-size="17" font-weight="400" fill="#516579">read is reentrant; other roots default to serial. Sorting this grid changes no execution order.</text>
+</g></svg>

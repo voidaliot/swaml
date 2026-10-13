@@ -1,0 +1,859 @@
+{
+  "width": 1000,
+  "height": 540,
+  "title": "GRV · Grid View",
+  "description": "Operation inventory from Cabin; blank timing means no declared contract in service profile.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 1000,
+      "height": 540,
+      "fill": "#ffffff",
+      "stroke": "none",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 32,
+      "y": 47,
+      "text": "GRV · Grid View",
+      "size": 30,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 32,
+      "y": 80,
+      "text": "Operation inventory from Cabin; blank timing means no declared contract in service profile.",
+      "size": 17,
+      "bold": false,
+      "color": "#516579"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          32,
+          99
+        ],
+        [
+          968,
+          99
+        ]
+      ],
+      "color": "#ccd9e2",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "rect",
+      "x": 32,
+      "y": 131,
+      "width": 222,
+      "height": 48,
+      "fill": "#17324d",
+      "stroke": "white",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 42,
+      "y": 162,
+      "text": "Occurrence",
+      "size": 16,
+      "bold": true,
+      "color": "white"
+    },
+    {
+      "kind": "rect",
+      "x": 254,
+      "y": 131,
+      "width": 172,
+      "height": 48,
+      "fill": "#17324d",
+      "stroke": "white",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 264,
+      "y": 162,
+      "text": "Operation",
+      "size": 16,
+      "bold": true,
+      "color": "white"
+    },
+    {
+      "kind": "rect",
+      "x": 426,
+      "y": 131,
+      "width": 257,
+      "height": 48,
+      "fill": "#17324d",
+      "stroke": "white",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 436,
+      "y": 162,
+      "text": "Trigger",
+      "size": 16,
+      "bold": true,
+      "color": "white"
+    },
+    {
+      "kind": "rect",
+      "x": 683,
+      "y": 131,
+      "width": 115,
+      "height": 48,
+      "fill": "#17324d",
+      "stroke": "white",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 693,
+      "y": 162,
+      "text": "Result",
+      "size": 16,
+      "bold": true,
+      "color": "white"
+    },
+    {
+      "kind": "rect",
+      "x": 798,
+      "y": 131,
+      "width": 68,
+      "height": 48,
+      "fill": "#17324d",
+      "stroke": "white",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 808,
+      "y": 162,
+      "text": "WCET",
+      "size": 16,
+      "bold": true,
+      "color": "white"
+    },
+    {
+      "kind": "rect",
+      "x": 866,
+      "y": 131,
+      "width": 102,
+      "height": 48,
+      "fill": "#17324d",
+      "stroke": "white",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 876,
+      "y": 162,
+      "text": "Deadline",
+      "size": 16,
+      "bold": true,
+      "color": "white"
+    },
+    {
+      "kind": "rect",
+      "x": 32,
+      "y": 179,
+      "width": 222,
+      "height": 43,
+      "fill": "#eef4f8",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 41,
+      "y": 207,
+      "text": "settings.store",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 254,
+      "y": 179,
+      "width": 172,
+      "height": 43,
+      "fill": "#eef4f8",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 263,
+      "y": 207,
+      "text": "read()",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 426,
+      "y": 179,
+      "width": 257,
+      "height": 43,
+      "fill": "#eef4f8",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 435,
+      "y": 207,
+      "text": "call api.get",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 683,
+      "y": 179,
+      "width": 115,
+      "height": 43,
+      "fill": "#eef4f8",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 692,
+      "y": 207,
+      "text": "Int",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 798,
+      "y": 179,
+      "width": 68,
+      "height": 43,
+      "fill": "#eef4f8",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 807,
+      "y": 207,
+      "text": "1 ms",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 866,
+      "y": 179,
+      "width": 102,
+      "height": 43,
+      "fill": "#eef4f8",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 875,
+      "y": 207,
+      "text": "5 ms",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 32,
+      "y": 222,
+      "width": 222,
+      "height": 43,
+      "fill": "white",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 41,
+      "y": 250,
+      "text": "settings.store",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 254,
+      "y": 222,
+      "width": 172,
+      "height": 43,
+      "fill": "white",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 263,
+      "y": 250,
+      "text": "update(desired)",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 426,
+      "y": 222,
+      "width": 257,
+      "height": 43,
+      "fill": "white",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 435,
+      "y": 250,
+      "text": "call api.setPoint",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 683,
+      "y": 222,
+      "width": 115,
+      "height": 43,
+      "fill": "white",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 692,
+      "y": 250,
+      "text": "Bool",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 798,
+      "y": 222,
+      "width": 68,
+      "height": 43,
+      "fill": "white",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 807,
+      "y": 250,
+      "text": "-",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 866,
+      "y": 222,
+      "width": 102,
+      "height": 43,
+      "fill": "white",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 875,
+      "y": 250,
+      "text": "-",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 32,
+      "y": 265,
+      "width": 222,
+      "height": 43,
+      "fill": "#eef4f8",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 41,
+      "y": 293,
+      "text": "front.panel",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 254,
+      "y": 265,
+      "width": 172,
+      "height": 43,
+      "fill": "#eef4f8",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 263,
+      "y": 293,
+      "text": "adjust()",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 426,
+      "y": 265,
+      "width": 257,
+      "height": 43,
+      "fill": "#eef4f8",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 435,
+      "y": 293,
+      "text": "manual",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 683,
+      "y": 265,
+      "width": 115,
+      "height": 43,
+      "fill": "#eef4f8",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 692,
+      "y": 293,
+      "text": "Void",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 798,
+      "y": 265,
+      "width": 68,
+      "height": 43,
+      "fill": "#eef4f8",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 807,
+      "y": 293,
+      "text": "-",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 866,
+      "y": 265,
+      "width": 102,
+      "height": 43,
+      "fill": "#eef4f8",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 875,
+      "y": 293,
+      "text": "-",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 32,
+      "y": 308,
+      "width": 222,
+      "height": 43,
+      "fill": "white",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 41,
+      "y": 336,
+      "text": "front.panel",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 254,
+      "y": 308,
+      "width": 172,
+      "height": 43,
+      "fill": "white",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 263,
+      "y": 336,
+      "text": "refresh()",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 426,
+      "y": 308,
+      "width": 257,
+      "height": 43,
+      "fill": "white",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 435,
+      "y": 336,
+      "text": "manual",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 683,
+      "y": 308,
+      "width": 115,
+      "height": 43,
+      "fill": "white",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 692,
+      "y": 336,
+      "text": "Void",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 798,
+      "y": 308,
+      "width": 68,
+      "height": 43,
+      "fill": "white",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 807,
+      "y": 336,
+      "text": "-",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 866,
+      "y": 308,
+      "width": 102,
+      "height": 43,
+      "fill": "white",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 875,
+      "y": 336,
+      "text": "-",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 32,
+      "y": 351,
+      "width": 222,
+      "height": 43,
+      "fill": "#eef4f8",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 41,
+      "y": 379,
+      "text": "front.panel",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 254,
+      "y": 351,
+      "width": 172,
+      "height": 43,
+      "fill": "#eef4f8",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 263,
+      "y": 379,
+      "text": "display(current)",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 426,
+      "y": 351,
+      "width": 257,
+      "height": 43,
+      "fill": "#eef4f8",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 435,
+      "y": 379,
+      "text": "receive setting.changed",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 683,
+      "y": 351,
+      "width": 115,
+      "height": 43,
+      "fill": "#eef4f8",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 692,
+      "y": 379,
+      "text": "Void",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 798,
+      "y": 351,
+      "width": 68,
+      "height": 43,
+      "fill": "#eef4f8",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 807,
+      "y": 379,
+      "text": "-",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 866,
+      "y": 351,
+      "width": 102,
+      "height": 43,
+      "fill": "#eef4f8",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 875,
+      "y": 379,
+      "text": "-",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 32,
+      "y": 394,
+      "width": 222,
+      "height": 43,
+      "fill": "white",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 41,
+      "y": 422,
+      "text": "rear.panel",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 254,
+      "y": 394,
+      "width": 172,
+      "height": 43,
+      "fill": "white",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 263,
+      "y": 422,
+      "text": "(same operations)",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 426,
+      "y": 394,
+      "width": 257,
+      "height": 43,
+      "fill": "white",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 435,
+      "y": 422,
+      "text": "distinct occurrence",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 683,
+      "y": 394,
+      "width": 115,
+      "height": 43,
+      "fill": "white",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 692,
+      "y": 422,
+      "text": "Void",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 798,
+      "y": 394,
+      "width": 68,
+      "height": 43,
+      "fill": "white",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 807,
+      "y": 422,
+      "text": "-",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 866,
+      "y": 394,
+      "width": 102,
+      "height": 43,
+      "fill": "white",
+      "stroke": "#ccd9e2",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 875,
+      "y": 422,
+      "text": "-",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 35,
+      "y": 477,
+      "text": "read is reentrant; other roots default to serial. Sorting this grid changes no execution order.",
+      "size": 17,
+      "bold": false,
+      "color": "#516579"
+    }
+  ]
+}
