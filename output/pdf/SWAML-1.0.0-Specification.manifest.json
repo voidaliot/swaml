@@ -8,7 +8,7 @@
     {
       "path": "docs/LANGUAGE_SPECIFICATION.md",
       "attachmentName": "docs__LANGUAGE_SPECIFICATION.md",
-      "sha256": "2ebf021984965c041dcadfbf7875fe0f8f31ec6e70e18e51c3423fbb9f43e6dd"
+      "sha256": "6b46fed5d05a097fadcc914821f2848bae1802db838c673ee68eb9929abadc0d"
     },
     {
       "path": "docs/spec/01-structure-and-types.md",
@@ -198,7 +198,7 @@
     {
       "path": "docs/SWAML-1.0.0-Reference.md",
       "attachmentName": "docs__SWAML-1.0.0-Reference.md",
-      "sha256": "400facc19bdfd709d4f0590e126bbe142ee65b6cda71e8a08c48db6a669b7b6a"
+      "sha256": "a2e51833c1a20cc1abccd390e124d15c49b1dcee48d191f1a522146eb8f360b0"
     },
     {
       "path": "spec/keywords.json",
@@ -341,5 +341,5 @@
       "sha256": "0fcc84bc5b47099fb76d8b3b8536582c674a413b001fc5c46d5e83ab0cfcad21"
     }
   ],
-  "pdfSha256": "d13d3138b3f11531ee43e604b35e8a62a94abf3790eed73ed8a2a57e9be00323"
+  "pdfSha256": "e8448551664383b600131957d63bf8e2b2011e578e9003786e127d29de7558f3"
 }

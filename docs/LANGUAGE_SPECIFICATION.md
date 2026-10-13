@@ -1,6 +1,6 @@
 # SWAML language specification
 
-**Version:** 1.0.0 · **Language header:** `swaml "1.0";` · **Status:** 1.0 release candidate · **Date:** 2026-10-14
+**Version:** 1.0.0 · **Language header:** `swaml "1.0";` · **Status:** complete 1.0 specification · **Date:** 2026-10-14
 
 SWAML means Software Architecture Modeling Language. This document and its normative chapters define a software architecture language over a KerML-based semantic model. SWAML is independently authored; “unofficial UML 3.0” describes its motivation and does not denote an OMG standard or compatibility level.
 
