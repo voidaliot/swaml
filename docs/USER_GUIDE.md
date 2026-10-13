@@ -182,3 +182,7 @@ Use the owning package's name as a GV/GRV subject for an inventory. IV takes a c
 If a request returns Void, its required `as` name marks completion but cannot be read as a value. Reserve `failure` for the implicit error-path binding. Write string line breaks with `\n`; raw line breaks, tabs and unsupported escapes inside strings are rejected.
 
 The [operational contract](spec/06-execution-contract.md) defines execution edge cases, and the [conformance obligations](spec/08-conformance-obligations.md) distinguish validator acceptance from runtime and analysis evidence.
+
+## Find a construct or run an example
+
+Use the [alphabetical keyword reference](KEYWORD_REFERENCE.md) for exact words and context, the [concern guide](CONCERN_GUIDE.md) for architectural questions, or the [complete Markdown book](SWAML-1.0.0-Reference.md) for a single user-facing document. All eight examples have executable [simulation configurations](../examples/simulation/runs.json); follow the [reference simulation guide](SIMULATION.md) to run them and inspect their traces.

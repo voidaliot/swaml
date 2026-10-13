@@ -23,8 +23,9 @@
     "build": "npm run langium:generate && tsc -p tsconfig.json",
     "test": "node --test out/test/*.test.js",
     "validate:examples": "node out/src/cli/main.js examples/*.swaml",
-    "check": "npm run build && npm test && npm run validate:examples && node scripts/check-docs.mjs && node scripts/check-simulations.mjs",
-    "simulate": "node out/src/cli/simulate.js"
+    "check": "npm run build && npm test && npm run validate:examples && node scripts/check-docs.mjs && node scripts/check-simulations.mjs && node scripts/build-reference.mjs --check",
+    "simulate": "node out/src/cli/simulate.js",
+    "docs:build": "node scripts/build-reference.mjs"
   },
   "dependencies": {
     "langium": "4.4.0",
