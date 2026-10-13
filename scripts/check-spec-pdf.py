@@ -9,11 +9,12 @@ import pdfplumber
 
 ROOT=Path(__file__).resolve().parents[1]
 parser=argparse.ArgumentParser()
-parser.add_argument('--pdf',type=Path,default=ROOT/'output/pdf/SWAML-0.1.0-Specification.pdf')
+parser.add_argument('--pdf',type=Path,default=ROOT/'output/pdf/SWAML-1.0.0-Specification.pdf')
 PDF=parser.parse_args().pdf
 manifest=json.loads(PDF.with_suffix('.manifest.json').read_text())
 reader=PdfReader(PDF)
-assert len(reader.pages)==manifest['pages'] and len(reader.pages)>60
+assert manifest['release']=='1.0.0' and manifest['languageVersion']=='1.0'
+assert len(reader.pages)==manifest['pages'] and len(reader.pages)>100
 assert hashlib.sha256(PDF.read_bytes()).hexdigest()==manifest['pdfSha256']
 assert PDF.with_suffix('.sha256').read_text().split()[0]==manifest['pdfSha256']
 assert len(reader.attachments)==len(manifest['sources'])
@@ -29,6 +30,8 @@ def destinations(items):
 outlines=list(destinations(reader.outline))
 assert len(outlines)>100
 for item in outlines: assert reader.get_destination_page_number(item) is not None,item.title
+keyword_titles={'Keyword: '+e['keyword'] for e in json.loads((ROOT/'spec/keywords.json').read_text())['entries']}
+assert keyword_titles.issubset({str(o.title) for o in outlines}), 'Missing keyword navigation'
 links=sum(len(page.get('/Annots',[])) for page in reader.pages)
 assert links>200
 page_ids={page.indirect_reference.idnum for page in reader.pages}
@@ -39,7 +42,7 @@ for page in reader.pages:
             dest=annotation['/Dest']
             assert dest[0].idnum in page_ids
 text='\n'.join(page.extract_text() or '' for page in reader.pages)
-for title in ['Complete concrete grammar','Grammar-to-semantics inventory','Operational contract','Normalized semantic model','Conformance obligations','Model examples','Architecture analysis','Contributing to SWAML','MIT License']:
+for title in ['Complete concrete grammar','Grammar-to-semantics inventory','Operational contract','Normalized semantic model','Conformance obligations','Model examples','Architecture analysis','Contributing to SWAML','MIT License','Alphabetical keyword reference','Language reference by concern','Formal core and simulation relation','Graphical notation examples','Reference simulation profile']:
     assert title in text,title
 with pdfplumber.open(PDF) as doc:
     for i,page in enumerate(doc.pages,1):

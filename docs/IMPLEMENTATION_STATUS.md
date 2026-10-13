@@ -1,6 +1,6 @@
-# Implementation status — 0.1.1
+# Implementation status — 1.0.0
 
-The normative draft defines the complete bounded 0.1 language. The repository implements the Langium parser, CLI, language-server foundation and broad static checking. It does not implement a runtime, KerML exporter or graphical editor. See the [audit report](SPECIFICATION_AUDIT.md) and [conformance obligations](spec/08-conformance-obligations.md).
+The normative specification defines the complete bounded 1.0 language. The repository implements the Langium parser, CLI, language-server foundation and broad static checking. It also implements a bounded logical-time reference simulator; it does not implement a production runtime, KerML exporter or graphical editor. See the [1.0 evidence](RELEASE_1_0.md) and historical [0.1 audit](SPECIFICATION_AUDIT.md) and [conformance obligations](spec/08-conformance-obligations.md).
 
 ## Implemented and tested
 
@@ -20,6 +20,7 @@ The normative draft defines the complete bounded 0.1 language. The repository im
 | All six view subject categories, package and occurrence contexts | view regressions |
 | Conservative workspace relink/revalidation after change/addition/deletion | editor update tests including newly ambiguous names |
 | LSP initialize/diagnostics/shutdown and CLI exit behavior | integration tests |
+| Reference execution | all statements/expressions, startup/periodic/manual activation, machines, queue policies, RPC, snapshots, fault injection and bounded trace evidence |
 | Production-to-spec/normalized mapping inventory | automatic coverage for all 80 grammar rule/type names |
 
 `npm run check` rebuilds, runs tests, validates every example, checks documentation links and executable snippets, and detects missing/duplicate grammar mappings. Mapping coverage is a documentation consistency check, not a KerML validation result.
@@ -37,15 +38,15 @@ String-valued paths now receive conservative dependency invalidation. Path-aware
 | Capability | Remaining implementation |
 | --- | --- |
 | KerML K backend | versioned SWAML library, normalized mapper, kernel validation, reverse traces and round-trip tests |
-| Execution E backend | frames, scheduler, state reactions, queues, snapshots, correlation, failures and evidence |
+| Production E backend | physical CPU/scheduling, real middleware/serialization, platform clock/resource evidence and independent assessment; logical reference simulation is implemented |
 | Timing/behavioral analysis | target scheduling model, case witnesses, idempotency and safety/liveness evidence |
 | Browser and graphical G workbench | projections, layout sidecars, Properties, validated source edits and undo |
 | Complete IDE refactoring | path-aware rename/find references/navigation and stable identity map |
 | VS Code package | language client activation, bundling, desktop/web entry points, commands and release pipeline |
 | Platform exports | target bindings and serialization such as AUTOSAR ARXML |
 
-No K, E or G conformance claim is made. These implementation milestones have complete language-side contracts; they are not necessary to claim that the 0.1 specification draft has defined its syntax and meaning.
+No blanket K, E or G certification is claimed. The [reference simulation profile](SIMULATION.md) documents its executable scope and time abstraction. These implementation milestones have complete language-side contracts; they are not necessary to claim that the 1.0 specification has defined its syntax and meaning.
 
-## Intentionally outside 0.1
+## Intentionally outside 1.0
 
 Inheritance/redefinition, generics, dynamic object creation, unbounded arrays, reference-valued payloads, hierarchical/orthogonal state regions, fork/join syntax, host-language code blocks, dynamic service discovery, runtime subscribe/unsubscribe, topic wildcards, exactly-once delivery, full requirements algebra and geometry require a versioned language proposal. They cannot be introduced as undocumented backend behavior.

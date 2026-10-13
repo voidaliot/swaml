@@ -1,6 +1,6 @@
 # 3. Operations, flow and states
 
-Normative chapter of the [SWAML 0.1 specification](../LANGUAGE_SPECIFICATION.md).
+Normative chapter of the [SWAML 1.0 specification](../LANGUAGE_SPECIFICATION.md).
 
 ## 3.1 Operation identity and activation
 
@@ -39,7 +39,7 @@ Reaching the end of a Void operation completes it. A value-returning operation M
 
 Failure unwinds the current activation and its synchronous local callers. It does not undo earlier variable assignments, published messages, responses, or external effects. For an RPC handler, failure produces a RemoteFailure response through the originating interface. For a periodic/start/manual/receive activation it produces a local diagnostic occurrence, not an implicit broadcast. To notify another unit, model a fault event and publish it explicitly on a declared interface in an explicit branch before failing.
 
-Conditionals, bounded loops, expression evaluation and sequential local calls are the full flow language in 0.1. There is no generic fork/join statement, exception hierarchy, arbitrary host-language body or independent action node. Concurrent architectural behavior is expressed by separately activated operations and connected units. A later fork/join extension must define data-race and cancellation semantics before entering the grammar.
+Conditionals, bounded loops, expression evaluation and sequential local calls are the full flow language in 1.0. There is no generic fork/join statement, exception hierarchy, arbitrary host-language body or independent action node. Concurrent architectural behavior is expressed by separately activated operations and connected units. A later fork/join extension must define data-race and cancellation semantics before entering the grammar.
 
 ## 3.3 Scheduling and concurrency
 
@@ -55,7 +55,7 @@ The core semantics is therefore a set of allowed execution traces. An execution 
 
 ## 3.4 Stateful operations
 
-A stateful operation MUST have no parameters, result Void, and `on start`. It owns one flat state machine with one or more states, exactly one initial reference and zero or more transitions. State and transition names are unique in the machine namespace. Hierarchical/orthogonal states, history pseudostates, entry/exit points and state inheritance are absent in 0.1.
+A stateful operation MUST have no parameters, result Void, and `on start`. It owns one flat state machine with one or more states, exactly one initial reference and zero or more transitions. State and transition names are unique in the machine namespace. Hierarchical/orthogonal states, history pseudostates, entry/exit points and state inheritance are absent in 1.0.
 
 Starting the operation enters its initial state and executes that state's entry block once. The operation remains alive between reactions without holding the serial unit lock. Each entry/exit/transition reaction is scheduled as a serial activation unless its timing contract explicitly says reentrant; a stateful operation nevertheless MUST have at most one reaction in progress and cannot reenter its own state machine.
 

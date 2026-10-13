@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="740" viewBox="0 0 1000 740" role="img" aria-labelledby="title desc">
+<title id="title">FV · Operation states</title><desc id="desc">Device.lifecycle(): Void · on start · state ownership replaces a separate performer allocation.</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#17324d"/></marker></defs>
+<g font-family="DejaVu Sans, sans-serif">
+<rect x="0" y="0" width="1000" height="740" rx="8" fill="#ffffff" stroke="none"/>
+<text x="32" y="47" font-size="30" font-weight="700" fill="#17324d">FV · Operation states</text>
+<text x="32" y="80" font-size="17" font-weight="400" fill="#516579">Device.lifecycle(): Void · on start · state ownership replaces a separate performer allocation.</text>
+<polyline points="32,99 968,99" fill="none" stroke="#ccd9e2" stroke-width="2"/>
+<rect x="32" y="125" width="936" height="562" rx="8" fill="#f7fafc" stroke="#17324d"/>
+<text x="50" y="158" font-size="22" font-weight="700" fill="#17324d">op lifecycle</text>
+<circle cx="82" cy="229" r="9" fill="#17324d" stroke="#17324d"/>
+<polyline points="94,229 140,229" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="145" y="186" width="270" height="133" rx="18" fill="white" stroke="#17324d"/>
+<text x="166" y="219" font-size="22" font-weight="700" fill="#17324d">state Idle</text>
+<polyline points="145,235 415,235" fill="none" stroke="#17324d" stroke-width="2"/>
+<text x="164" y="264" font-size="16" font-weight="400" fill="#17324d">entry: publish status.changed</text>
+<text x="165" y="291" font-size="17" font-weight="400" fill="#17324d">(&quot;idle&quot;)</text>
+<rect x="592" y="186" width="330" height="153" rx="18" fill="white" stroke="#17324d"/>
+<text x="612" y="219" font-size="22" font-weight="700" fill="#17324d">state Running</text>
+<polyline points="592,235 922,235" fill="none" stroke="#17324d" stroke-width="2"/>
+<text x="610" y="263" font-size="16" font-weight="400" fill="#17324d">entry: set cycles = cycles + 1;</text>
+<text x="610" y="291" font-size="16" font-weight="400" fill="#17324d">publish status.changed(&quot;running&quot;)</text>
+<polyline points="415,252 585,252" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="428" y="220" font-size="16" font-weight="400" fill="#17324d">on receive</text>
+<text x="425" y="241" font-size="15" font-weight="400" fill="#17324d">commands.begin</text>
+<rect x="577" y="521" width="347" height="130" rx="18" fill="white" stroke="#17324d"/>
+<text x="598" y="553" font-size="21" font-weight="700" fill="#17324d">state Stopped «final»</text>
+<circle cx="899" cy="545" r="9" fill="white" stroke="#17324d"/>
+<circle cx="899" cy="545" r="5" fill="#17324d" stroke="#17324d"/>
+<polyline points="577,568 924,568" fill="none" stroke="#17324d" stroke-width="2"/>
+<text x="596" y="597" font-size="16" font-weight="400" fill="#17324d">entry: publish status.changed</text>
+<text x="596" y="624" font-size="17" font-weight="400" fill="#17324d">(&quot;stopped&quot;)</text>
+<polyline points="757,339 757,515" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="773" y="392" font-size="17" font-weight="400" fill="#17324d">on receive</text>
+<text x="773" y="418" font-size="17" font-weight="400" fill="#17324d">commands.stop</text>
+<polyline points="592,308 483,308 483,586 570,586" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="67" y="403" font-size="20" font-weight="700" fill="#17324d">Alternative: on after 30 s</text>
+<text x="67" y="435" font-size="17" font-weight="400" fill="#17324d">effect: publish status.changed(&quot;timeout&quot;)</text>
+<text x="67" y="481" font-size="17" font-weight="400" fill="#516579">Leaving Running cancels its timer.</text>
+<text x="67" y="627" font-size="16" font-weight="400" fill="#516579">Initial/final markers are local control,</text>
+<text x="67" y="649" font-size="16" font-weight="400" fill="#516579">not interface messages.</text>
+</g></svg>

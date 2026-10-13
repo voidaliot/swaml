@@ -1,6 +1,6 @@
 # 8. Conformance obligations and evidence
 
-Normative classification of the [SWAML 0.1 specification](../LANGUAGE_SPECIFICATION.md). This chapter separates static language validity, runtime behavior and proof claims. It prevents acceptance by one tool from being mistaken for evidence supplied by another.
+Normative classification of the [SWAML 1.0 specification](../LANGUAGE_SPECIFICATION.md). This chapter separates static language validity, runtime behavior and proof claims. It prevents acceptance by one tool from being mistaken for evidence supplied by another.
 
 ## 8.1 Static acceptance
 
@@ -63,6 +63,6 @@ A tool's conformance report MUST identify language version, implementation versi
 
 ## 8.5 Scope and future evolution
 
-Completeness of this draft means every 0.1 construct has syntax, ownership, reference/type rules, static constraints, operational or descriptive meaning, a normalization contract and a conformance category. It does not mean every future software architecture concern is a built-in keyword or that all backends are implemented.
+Completeness of this specification means every 1.0 construct has syntax, ownership, reference/type rules, static constraints, operational or descriptive meaning, a normalization contract and a conformance category. It does not mean every future software architecture concern is a built-in keyword or that all backends are implemented.
 
-The finite boundary remains explicit: no inheritance, generics, reference-valued payloads, dynamic object creation/subscriptions/discovery, unrestricted fork/join, hierarchical/orthogonal state machines or arbitrary host-language code. Model adapters and protocols can express supported interactions; a new construct needs a versioned proposal with the same obligations. Draft clarification fixes documented here keep the `0.1` header; after language stabilization, changed valid-model meaning requires versioned migration.
+The finite boundary remains explicit: no inheritance, generics, reference-valued payloads, dynamic object creation/subscriptions/discovery, unrestricted fork/join, hierarchical/orthogonal state machines or arbitrary host-language code. Model adapters and protocols can express supported interactions; a new construct needs a versioned proposal with the same obligations. Patch clarification fixes retain the `1.0` header only when valid-model meaning is unchanged; incompatible changes require versioned migration.

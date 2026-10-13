@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="780" viewBox="0 0 1000 780" role="img" aria-labelledby="title desc">
+<title id="title">FV · Operation flow</title><desc id="desc">SettingStore.update(desired: Int): Bool · on call api.setPoint · directly owned by the unit.</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#17324d"/></marker></defs>
+<g font-family="DejaVu Sans, sans-serif">
+<rect x="0" y="0" width="1000" height="780" rx="8" fill="#ffffff" stroke="none"/>
+<text x="32" y="47" font-size="30" font-weight="700" fill="#17324d">FV · Operation flow</text>
+<text x="32" y="80" font-size="17" font-weight="400" fill="#516579">SettingStore.update(desired: Int): Bool · on call api.setPoint · directly owned by the unit.</text>
+<polyline points="32,99 968,99" fill="none" stroke="#ccd9e2" stroke-width="2"/>
+<rect x="32" y="121" width="935" height="620" rx="8" fill="#f7fafc" stroke="#17324d"/>
+<text x="52" y="153" font-size="20" font-weight="700" fill="#17324d">op update · serial by default</text>
+<circle cx="382" cy="182" r="9" fill="#17324d" stroke="#17324d"/>
+<polyline points="382,192 382,212" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
+<polygon points="382.0,217 582,282.0 382.0,347 182,282.0" fill="#eef4f8" stroke="#17324d"/>
+<text x="270" y="276" font-size="21" font-weight="700" fill="#17324d">desired &lt; 10 or</text>
+<text x="278" y="303" font-size="21" font-weight="700" fill="#17324d">desired &gt; 30</text>
+<polyline points="582,282 745,282 745,338" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="602" y="259" font-size="18" font-weight="400" fill="#17324d">true</text>
+<rect x="635" y="344" width="220" height="57" rx="25" fill="#eef4f8" stroke="#17324d"/>
+<text x="676" y="381" font-size="21" font-weight="700" fill="#17324d">return false</text>
+<polyline points="382,347 382,375" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="397" y="356" font-size="18" font-weight="400" fill="#17324d">false</text>
+<rect x="202" y="381" width="360" height="63" rx="8" fill="#eef4f8" stroke="#17324d"/>
+<text x="220" y="420" font-size="20" font-weight="700" fill="#17324d">set currentValue = desired</text>
+<polyline points="382,444 382,484" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="172" y="490" width="420" height="63" rx="8" fill="#eef4f8" stroke="#17324d"/>
+<text x="190" y="528" font-size="19" font-weight="700" fill="#17324d">publish api.changed(currentValue)</text>
+<polyline points="382,553 382,593" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="271" y="599" width="222" height="58" rx="25" fill="#eef4f8" stroke="#17324d"/>
+<text x="314" y="636" font-size="21" font-weight="700" fill="#17324d">return true</text>
+<text x="55" y="709" font-size="17" font-weight="400" fill="#516579">The publish node names an interface member. It creates no free event or remote action.</text>
+</g></svg>

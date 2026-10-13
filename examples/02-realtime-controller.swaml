@@ -1,4 +1,4 @@
-swaml "0.1";
+swaml "1.0";
 package Control {
     interface senderReceiver Samples version "1.0.0" { data temperature: Real sampled; }
     interface senderReceiver Commands version "1.0.0" { data duty: Real sampled; }

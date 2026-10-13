@@ -1,4 +1,4 @@
-swaml "0.1";
+swaml "1.0";
 package Settings {
     // A remotely visible property is an explicit getter, setter and event contract.
     interface service TemperatureSetting version "1.0.0" {

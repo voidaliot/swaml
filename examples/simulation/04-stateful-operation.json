@@ -1,0 +1,9 @@
+{
+  "untilNs": 31000000000,
+  "manual": [
+    {
+      "atNs": 1,
+      "operation": "assembly.operatorUnit.startDevice"
+    }
+  ]
+}

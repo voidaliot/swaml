@@ -1,0 +1,779 @@
+{
+  "languageVersion": "1.0",
+  "entries": [
+    {
+      "keyword": "after",
+      "concern": "Behavior and states",
+      "meaning": "In a transition, creates a timer measured from source-state entry completion; leaving the state cancels its generation. In a case step, names one earlier causal predecessor, not a delay or source-order convention.",
+      "example": "on after 10 ms / via link after sent label received;"
+    },
+    {
+      "keyword": "and",
+      "concern": "Values and calculation",
+      "meaning": "Short-circuit Boolean conjunction. Both operands must be Bool; the right operand is evaluated only when the left is true.",
+      "example": "ready and enabled"
+    },
+    {
+      "keyword": "array",
+      "concern": "Values and calculation",
+      "meaning": "Constructs a nonempty fixed array. Elements share one nominal type, with numeric common-type widening inside the literal. The inferred extent is the element count.",
+      "example": "array [1, 2, 3]"
+    },
+    {
+      "keyword": "as",
+      "concern": "Communication",
+      "meaning": "Names the successful awaited RPC result. A Void result reserves the name without creating a readable value. The name must be fresh in the live lexical environment.",
+      "example": "request api.read() as value within 1 s otherwise { return; };"
+    },
+    {
+      "keyword": "assert",
+      "concern": "Behavior and states",
+      "meaning": "Evaluates a Bool; false fails the activation without rollback. A failed RPC handler returns RemoteFailure through its correlation. Assertions are executable checks, not static proofs.",
+      "example": "assert measured <= 100;"
+    },
+    {
+      "keyword": "atLeastOnce",
+      "concern": "Communication",
+      "meaning": "Permits retries and duplicate delivery subject to liveness, overflow and freshness. RPC members on such a connector must declare idempotent behavior. It never implies exactly-once effects.",
+      "example": "delivery atLeastOnce;"
+    },
+    {
+      "keyword": "atMostOnce",
+      "concern": "Communication",
+      "meaning": "Allows loss but no duplicate delivery for a logical message. A lost request or response can still lead to timeout. This policy does not guarantee admission or successful execution.",
+      "example": "delivery atMostOnce;"
+    },
+    {
+      "keyword": "bestEffort",
+      "concern": "Communication",
+      "meaning": "Permits loss without an eventual-delivery guarantee and without duplicate delivery. Queue capacity, overflow and declared timing bounds still apply.",
+      "example": "delivery bestEffort;"
+    },
+    {
+      "keyword": "Bool",
+      "concern": "Values and calculation",
+      "meaning": "Primitive two-valued Boolean type. Conditions and logical operators require Bool; numbers and strings are not truthy substitutes.",
+      "example": "let ready: Bool = true;"
+    },
+    {
+      "keyword": "bound",
+      "concern": "Behavior and states",
+      "meaning": "Sets the positive safe-integer maximum number of loop-body executions. After that many iterations the condition is reevaluated; a still-true condition fails execution.",
+      "example": "while (i < 3) bound 3 { set i = i + 1; }"
+    },
+    {
+      "keyword": "call",
+      "concern": "Behavior and states",
+      "meaning": "Activates a unit operation for an incoming RPC interface member. Parameters and result must match the contract, and the member has exactly one handler owner.",
+      "example": "operation read(): Int on call api.get { return current; }"
+    },
+    {
+      "keyword": "capacity",
+      "concern": "Communication",
+      "meaning": "Positive safe-integer retained-message limit per connector occurrence, direction and member. Transport-pending messages count; running handlers do not. Sampled data requires capacity 1.",
+      "example": "capacity 8;"
+    },
+    {
+      "keyword": "case",
+      "concern": "Cases and evidence",
+      "meaning": "Defines a descriptive scenario for a system with labeled interface exchanges and optional requirement traces. It does not execute or prove itself and cannot introduce hidden traffic.",
+      "example": "case Checkout for Shop satisfies Accepted { ... }"
+    },
+    {
+      "keyword": "client",
+      "concern": "Communication",
+      "meaning": "Port role for the requesting side of a clientServer interface. A closed client port has at most one route; replies return through the same route and correlation.",
+      "example": "port api: Health client;"
+    },
+    {
+      "keyword": "clientServer",
+      "concern": "Communication",
+      "meaning": "Interface kind containing operation signatures only. A client issues request; a server implements on call handlers. Events belong in service or publishSubscribe contracts.",
+      "example": "interface clientServer Health version \"1.0.0\" { operation check(): Bool; }"
+    },
+    {
+      "keyword": "completion",
+      "concern": "Behavior and states",
+      "meaning": "Local machine stimulus reconsidered after entry and each reaction until quiescent. It is not an interface event. Unconditional cycles are invalid; guarded cycles have a 1,024-edge runtime limit.",
+      "example": "transition next: A -> B on completion {}"
+    },
+    {
+      "keyword": "component",
+      "concern": "Structure and names",
+      "meaning": "Declares a reusable composition definition with def, or a contained occurrence without def. Components own ports, units/components, connections and delegations; execution belongs to units.",
+      "example": "component def Service { unit store: Store; } / component backend: Service;"
+    },
+    {
+      "keyword": "compute",
+      "concern": "Values and calculation",
+      "meaning": "Calls a pure function owned by the same unit with copied arguments. Functions cannot observe unit state or invoke operations. The function result retains its declared type.",
+      "example": "compute clamp(temperature)"
+    },
+    {
+      "keyword": "concurrency",
+      "concern": "Timing and deployment",
+      "meaning": "Selects serial or reentrant root activation policy in a timing contract. Helpers inherit the root mode. Machines never overlap their own reactions.",
+      "example": "concurrency serial;"
+    },
+    {
+      "keyword": "connect",
+      "concern": "Communication",
+      "meaning": "Creates an explicit connector between immediate child ports of a component/system. Contracts must be identical and roles complementary. Every connector supplies QoS.",
+      "example": "connect samples: sensor.output -> controller.input qos { ... };"
+    },
+    {
+      "keyword": "container",
+      "concern": "Timing and deployment",
+      "meaning": "Execution-node kind representing a container deployment location. It does not create a component, communication channel or container runtime configuration.",
+      "example": "node application container;"
+    },
+    {
+      "keyword": "CV",
+      "concern": "Graphical views",
+      "meaning": "Case View kind: displays cases, requirements and claimed coverage for a case or system. Verified coverage requires separate linked evidence.",
+      "example": "view coverage CV of Shop;"
+    },
+    {
+      "keyword": "data",
+      "concern": "Communication",
+      "meaning": "Declares one senderReceiver member with a value type and sampled or queued mode. Outgoing use is send; incoming handling is on receive with one typed argument.",
+      "example": "data sample: Real sampled;"
+    },
+    {
+      "keyword": "datatype",
+      "concern": "Values and calculation",
+      "meaning": "Declares a nominal finite record. Field names are unique, every literal supplies all fields once, and recursive value containment is invalid. Empty records have one value.",
+      "example": "datatype Point { x: Real; y: Real; }"
+    },
+    {
+      "keyword": "deadline",
+      "concern": "Timing and deployment",
+      "meaning": "Positive elapsed-time bound from root release to completion, including queueing and request suspension. For machines it applies per reaction. WCET must not exceed it.",
+      "example": "deadline 5 ms;"
+    },
+    {
+      "keyword": "def",
+      "concern": "Structure and names",
+      "meaning": "Distinguishes a reusable component or unit definition from a contained occurrence. Defining a type creates no runtime storage; each occurrence receives its own state.",
+      "example": "unit def Worker { ... }"
+    },
+    {
+      "keyword": "delegate",
+      "concern": "Communication",
+      "meaning": "Aliases a component boundary port to one immediate child port of the same role and interface. Every component port delegates once. Delegation adds neither conversion nor a queue.",
+      "example": "delegate api -> worker.api;"
+    },
+    {
+      "keyword": "delivery",
+      "concern": "Communication",
+      "meaning": "Chooses bestEffort, atMostOnce or atLeastOnce for all member queues of a connector. Delivery is separate from FIFO ordering, admission and application success.",
+      "example": "delivery atMostOnce;"
+    },
+    {
+      "keyword": "deploy",
+      "concern": "Timing and deployment",
+      "meaning": "Assigns an existing component or descendant occurrence to a system node. Descendants inherit the nearest explicit allocation. Duplicate exact-path allocations are invalid.",
+      "example": "deploy backend.worker on application;"
+    },
+    {
+      "keyword": "dropNewest",
+      "concern": "Communication",
+      "meaning": "On a full queue, discards the offered message observably. Admission does not fail the producer; an RPC can later time out. Existing retained messages stay.",
+      "example": "overflow dropNewest;"
+    },
+    {
+      "keyword": "dropOldest",
+      "concern": "Communication",
+      "meaning": "On a full queue, discards the oldest retained message and admits the new one. Required with capacity 1 for sampled data. It does not undo effects of already dispatched handlers.",
+      "example": "overflow dropOldest;"
+    },
+    {
+      "keyword": "else",
+      "concern": "Behavior and states",
+      "meaning": "Optional alternative block of an if statement. Only the chosen branch executes; branch-local declarations do not escape that branch.",
+      "example": "if (ready) { return; } else { fail \"not ready\"; }"
+    },
+    {
+      "keyword": "entry",
+      "concern": "Behavior and states",
+      "meaning": "State-entry block executed after that state becomes current. It has no incoming payload scope. Residence timers begin after entry finishes; return/fail terminates the machine.",
+      "example": "state Idle { entry { set count = 0; } }"
+    },
+    {
+      "keyword": "enum",
+      "concern": "Values and calculation",
+      "meaning": "Declares a nominal type with one or more unique named literals. Distinct enum declarations are incompatible even if names match; no implicit integer conversion exists.",
+      "example": "enum Health { Good, Failed }"
+    },
+    {
+      "keyword": "enumValue",
+      "concern": "Values and calculation",
+      "meaning": "Constructs one declared literal of an enum type. The dot selects an enum literal, not a component path or variable field.",
+      "example": "enumValue Health.Good"
+    },
+    {
+      "keyword": "event",
+      "concern": "Communication",
+      "meaning": "Declares a typed asynchronous member in publishSubscribe or service. It must be emitted by an operation through a port and owned by one receiving operation; free global events are absent.",
+      "example": "event changed(value: Real);"
+    },
+    {
+      "keyword": "every",
+      "concern": "Behavior and states",
+      "meaning": "Periodic parameterless Void activation at epoch plus k periods, k starting at 1. Releases do not merge when earlier activations are busy; pending work is bounded by the binding.",
+      "example": "operation sample(): Void on every 10 ms { ... }"
+    },
+    {
+      "keyword": "exit",
+      "concern": "Behavior and states",
+      "meaning": "State-exit block runs after timer cancellation and before the transition effect. It lacks payload scope. Return/failure skips remaining transition phases.",
+      "example": "state Running { exit { set active = false; } }"
+    },
+    {
+      "keyword": "fail",
+      "concern": "Behavior and states",
+      "meaning": "Raises a local failure with a String literal reason, unwinds synchronous callers, and preserves committed effects. An RPC caller receives the correlated RemoteFailure outcome.",
+      "example": "fail \"invalid operating mode\";"
+    },
+    {
+      "keyword": "false",
+      "concern": "Values and calculation",
+      "meaning": "The false Bool literal. Distinct from numeric zero, empty strings or absent values; no implicit coercion exists.",
+      "example": "let ready: Bool = false;"
+    },
+    {
+      "keyword": "fifo",
+      "concern": "Communication",
+      "meaning": "Dispatches retained messages in queue order for one connector/direction/member. Independent queues and handler completion order are not globally ordered.",
+      "example": "ordering fifo;"
+    },
+    {
+      "keyword": "final",
+      "concern": "Behavior and states",
+      "meaning": "Marks a state that completes its owning operation after entry. It has no outgoing transition. Future input to that machine is undeliverable, not rerouted.",
+      "example": "state Stopped final {}"
+    },
+    {
+      "keyword": "for",
+      "concern": "Cases and evidence",
+      "meaning": "Selects the system described by a case. The steps must use top-level connectors and exposed component port/member paths of that system.",
+      "example": "case Poll for HealthCheck { ... }"
+    },
+    {
+      "keyword": "function",
+      "concern": "Values and calculation",
+      "meaning": "Defines a pure expression with a non-Void result. It sees only copied parameters and other local pure functions, never unit variables. The call graph is acyclic.",
+      "example": "function twice(x: Real): Real = x * 2.0;"
+    },
+    {
+      "keyword": "FV",
+      "concern": "Graphical views",
+      "meaning": "Flow View of an operation. Projects either its statement body or its owned states/transitions in the same view family. There are no performer allocations or separate AFV/STV kinds.",
+      "example": "view control FV of Controller.regulate;"
+    },
+    {
+      "keyword": "GRV",
+      "concern": "Graphical views",
+      "meaning": "Grid View of a package or named semantic declaration other than a view. Presents inventory, contracts, timing, allocation or trace tables; sorting does not change model meaning.",
+      "example": "view inventory GRV of Architecture;"
+    },
+    {
+      "keyword": "GV",
+      "concern": "Graphical views",
+      "meaning": "General View of a package or resolvable named semantic declaration other than a view. Shows ownership, types, attributes and relations, retaining definition/occurrence distinction.",
+      "example": "view overview GV of Product;"
+    },
+    {
+      "keyword": "idempotent",
+      "concern": "Communication",
+      "meaning": "Contract assertion required for RPC under atLeastOnce delivery. Repeated requests must have idempotent effects including published side effects. The keyword alone is not a proof.",
+      "example": "operation read(): Int idempotent;"
+    },
+    {
+      "keyword": "if",
+      "concern": "Behavior and states",
+      "meaning": "Evaluates one Bool and executes the selected lexical block. It supplies no concurrency or implicit variable merging. Value-returning operations must cover both paths or fail.",
+      "example": "if (value > limit) { return false; } else { return true; }"
+    },
+    {
+      "keyword": "import",
+      "concern": "Structure and names",
+      "meaning": "Imports top-level names from one package using namespace::*; imports are not transitive. A short name must be unique across local and directly imported declarations.",
+      "example": "import Common::*;"
+    },
+    {
+      "keyword": "initial",
+      "concern": "Behavior and states",
+      "meaning": "References exactly one state in the owning machine. Initialization enters it once per system epoch before the machine consumes input.",
+      "example": "initial Idle;"
+    },
+    {
+      "keyword": "Int",
+      "concern": "Values and calculation",
+      "meaning": "Exact signed integer type from -(2^53-1) through 2^53-1. Overflow, invalid indexing and division/remainder by zero fail execution. Scalar Int may widen to Real.",
+      "example": "var count: Int = 0;"
+    },
+    {
+      "keyword": "interface",
+      "concern": "Communication",
+      "meaning": "Declares a nominal, versioned contract of one of four kinds. Port endpoints must reference the same declaration; matching names or version strings alone are insufficient.",
+      "example": "interface service Orders version \"1.0.0\" { ... }"
+    },
+    {
+      "keyword": "invoke",
+      "concern": "Behavior and states",
+      "meaning": "Synchronously calls an untriggered Void operation in the same unit. It shares the root lock and snapshot; copied parameters are local. Remote invocation requires request through a port.",
+      "example": "invoke prepare();"
+    },
+    {
+      "keyword": "IV",
+      "concern": "Graphical views",
+      "meaning": "Interconnect View of a system/component definition or occurrence. Shows immediate children, boundary ports, connectors and delegation with exact interface paths.",
+      "example": "view wiring IV of Product;"
+    },
+    {
+      "keyword": "label",
+      "concern": "Cases and evidence",
+      "meaning": "Assigns a unique name to a scenario step. Later after clauses use that label as a causal predecessor; source position alone imposes no ordering.",
+      "example": "via orderLink label submitted;"
+    },
+    {
+      "keyword": "let",
+      "concern": "Behavior and states",
+      "meaning": "Creates a typed mutable local value from a copied initializer. It cannot shadow a live local, parameter or unit variable, and disappears at block exit.",
+      "example": "let count: Int = 0;"
+    },
+    {
+      "keyword": "machine",
+      "concern": "Behavior and states",
+      "meaning": "Alternative body of a parameterless Void on start operation. Owns one flat set of states and transitions. State behavior is directly owned by the operation, without a performer layer.",
+      "example": "operation lifecycle(): Void on start machine { initial Idle; state Idle {} }"
+    },
+    {
+      "keyword": "manual",
+      "concern": "Behavior and states",
+      "meaning": "Parameterless Void operation trigger released by a harness. It is control of execution, not a route for injecting external model payloads or bypassing interfaces.",
+      "example": "operation refresh(): Void on manual { ... }"
+    },
+    {
+      "keyword": "maxAge",
+      "concern": "Communication",
+      "meaning": "Maximum message age measured from original emission through retries. Eligibility is inclusive; greater age discards before dispatch. Required for sampled data in realtime/mixed systems.",
+      "example": "maxAge 20 ms;"
+    },
+    {
+      "keyword": "maxLatency",
+      "concern": "Communication",
+      "meaning": "Positive bound from admitted emission to destination readiness, excluding dispatch wait. Exceeding it is an observable contract violation. Required on realtime/mixed connectors.",
+      "example": "maxLatency 1 ms;"
+    },
+    {
+      "keyword": "mcu",
+      "concern": "Timing and deployment",
+      "meaning": "Execution-node kind for an embedded microcontroller location. The core does not infer interrupts, task priorities, processor speed or memory limits.",
+      "example": "node controller mcu;"
+    },
+    {
+      "keyword": "mixed",
+      "concern": "Timing and deployment",
+      "meaning": "System profile covering embedded/service combinations. All used operations carry timing and all connectors latency; sampled data also carries age. It does not silently exempt cloud-facing paths.",
+      "example": "system Product mixed { ... }"
+    },
+    {
+      "keyword": "ms",
+      "concern": "Timing and deployment",
+      "meaning": "Millisecond duration unit; one ms equals 1,000,000 ns. Duration magnitude must be a positive integer and normalize exactly within the safe range.",
+      "example": "within 25 ms"
+    },
+    {
+      "keyword": "node",
+      "concern": "Timing and deployment",
+      "meaning": "Declares a named execution location in a system with mcu, process or container kind. Nodes affect allocation only; traffic still follows interfaces.",
+      "example": "node edge process;"
+    },
+    {
+      "keyword": "not",
+      "concern": "Values and calculation",
+      "meaning": "Unary Bool negation with precedence above multiplication. No numeric or string coercion is allowed.",
+      "example": "not ready"
+    },
+    {
+      "keyword": "ns",
+      "concern": "Timing and deployment",
+      "meaning": "Nanosecond duration unit and the reference simulation clock's integral base. All specified durations are positive, with safe exact conversion.",
+      "example": "after 1 ns"
+    },
+    {
+      "keyword": "of",
+      "concern": "Graphical views",
+      "meaning": "Introduces a view subject path rooted in the owning package or its top-level declaration. Allowed subject kinds depend on the view kind.",
+      "example": "view flow FV of Product.controller.worker.run;"
+    },
+    {
+      "keyword": "on",
+      "concern": "Behavior and states",
+      "meaning": "Introduces an operation or transition trigger. Operations use start/manual/every/receive/call; transitions use completion/after/receive. Triggers do not introduce free signals.",
+      "example": "on receive input.sample"
+    },
+    {
+      "keyword": "operation",
+      "concern": "Behavior and states",
+      "meaning": "In an interface, declares an RPC signature. In a unit, declares executable flow or an owned machine. An incoming signature is implemented by exactly one on call operation.",
+      "example": "operation get(): Int; / operation read(): Int on call api.get { return value; }"
+    },
+    {
+      "keyword": "optional",
+      "concern": "Communication",
+      "meaning": "Allows a port to remain unconnected in a closed system. It does not change contract, role or handler rules. Unbound data/event sends succeed; unbound RPC reports Unavailable.",
+      "example": "port diagnostics: Notices publisher optional;"
+    },
+    {
+      "keyword": "or",
+      "concern": "Values and calculation",
+      "meaning": "Short-circuit Boolean disjunction. The right Bool operand is evaluated only when the left is false.",
+      "example": "ready or retryAllowed"
+    },
+    {
+      "keyword": "ordering",
+      "concern": "Communication",
+      "meaning": "Selects fifo or unordered independently of delivery reliability. Ordering applies per connector occurrence, direction and member, not across an entire interface or system.",
+      "example": "ordering fifo;"
+    },
+    {
+      "keyword": "otherwise",
+      "concern": "Communication",
+      "meaning": "Mandatory request failure block with implicit copied failure:String. It must return or fail on every path and cannot fall through to successful result use.",
+      "example": "within 1 s otherwise { set lastError = failure; return; };"
+    },
+    {
+      "keyword": "overflow",
+      "concern": "Communication",
+      "meaning": "Required admission policy when a member queue is full: dropOldest, dropNewest or reject. Policies apply independently to every route in fanout.",
+      "example": "overflow reject;"
+    },
+    {
+      "keyword": "package",
+      "concern": "Structure and names",
+      "meaning": "Top-level, non-nested namespace for declarations and direct imports. A package is declared once in the loaded workspace; multiple packages may share a file.",
+      "example": "package Control { ... }"
+    },
+    {
+      "keyword": "port",
+      "concern": "Communication",
+      "meaning": "Owned communication boundary feature typed by one interface, with a compatible role and optionality. Component ports delegate to children; unit ports bind operations to members.",
+      "example": "port api: Orders requires;"
+    },
+    {
+      "keyword": "priority",
+      "concern": "Behavior and states",
+      "meaning": "Nonnegative safe-integer tie-break among matching transitions for the same state and stimulus; larger wins, default 0. It is not an operation scheduling priority.",
+      "example": "on receive commands.begin priority 2 {}"
+    },
+    {
+      "keyword": "process",
+      "concern": "Timing and deployment",
+      "meaning": "Execution-node kind for a logical process. It supplies no hidden IPC access, shared memory or task scheduling policy.",
+      "example": "node worker process;"
+    },
+    {
+      "keyword": "provides",
+      "concern": "Communication",
+      "meaning": "Provider role of a service interface. Handles incoming RPC, returns correlated results/failures and publishes its declared events in reverse connector direction.",
+      "example": "port api: Orders provides;"
+    },
+    {
+      "keyword": "publish",
+      "concern": "Communication",
+      "meaning": "Emits an outgoing event through a publisher/provides port. In a case, describes a routed event step. Arguments are evaluated once and copied per route; no free event syntax exists.",
+      "example": "publish api.changed(current);"
+    },
+    {
+      "keyword": "publisher",
+      "concern": "Communication",
+      "meaning": "Outgoing role for a publishSubscribe contract. One port may fan out through several connectors; every outgoing member is tied to an emitting operation.",
+      "example": "port events: Notices publisher;"
+    },
+    {
+      "keyword": "publishSubscribe",
+      "concern": "Communication",
+      "meaning": "Event-only contract kind with publisher/subscriber ports. Subscriptions are explicit static connectors. Runtime subscribe/unsubscribe and wildcard topics are outside 1.0.",
+      "example": "interface publishSubscribe Notices version \"1.0.0\" { event changed(); }"
+    },
+    {
+      "keyword": "qos",
+      "concern": "Communication",
+      "meaning": "Introduces connector delivery, ordering, capacity and overflow, followed by optional latency and age in the grammar's order. Each connector must supply the block.",
+      "example": "qos { delivery atMostOnce; ordering fifo; capacity 4; overflow reject; }"
+    },
+    {
+      "keyword": "queued",
+      "concern": "Communication",
+      "meaning": "SenderReceiver data mode representing a sequence of retained values under queue policy. It does not imply losslessness or unbounded history.",
+      "example": "data text: String queued;"
+    },
+    {
+      "keyword": "Real",
+      "concern": "Values and calculation",
+      "meaning": "Finite IEEE 754 binary64 type. Arithmetic is nearest-even; non-finite results and division by zero fail. Scalar Int widens, but fixed arrays do not implicitly widen.",
+      "example": "var temperature: Real = 20.0;"
+    },
+    {
+      "keyword": "realtime",
+      "concern": "Timing and deployment",
+      "meaning": "System profile requiring operation timing, connector latency and sampled freshness contracts. Those declarations require target evidence before any hard realtime claim.",
+      "example": "system Heating realtime { ... }"
+    },
+    {
+      "keyword": "receive",
+      "concern": "Behavior and states",
+      "meaning": "Consumes an incoming data/event member through a receiver/subscriber/requires port. An ordinary operation receives copied parameters; a transition exposes event parameters or data payload in guard/effect.",
+      "example": "on receive commands.begin"
+    },
+    {
+      "keyword": "receiver",
+      "concern": "Communication",
+      "meaning": "Incoming senderReceiver role. Every data member has one handler owner; at most one route feeds a closed receiver port. Multiple sources require an explicit merge/adaptor unit.",
+      "example": "port input: Samples receiver;"
+    },
+    {
+      "keyword": "record",
+      "concern": "Values and calculation",
+      "meaning": "Constructs a nominal datatype value by assigning each declared field exactly once. Field order in the literal does not change record equality; fields remain copied values.",
+      "example": "record Point { x = 1.0; y = 2.0; }"
+    },
+    {
+      "keyword": "reentrant",
+      "concern": "Timing and deployment",
+      "meaning": "Allows overlapping roots with independent dispatch-time unit snapshots. Direct or helper writes to unit state are statically invalid. Local variables remain mutable; one machine reaction cannot overlap itself.",
+      "example": "concurrency reentrant;"
+    },
+    {
+      "keyword": "reject",
+      "concern": "Communication",
+      "meaning": "On full queue, rejects the offer. Data/event producers fail after all fanout offers; requests take otherwise with Rejected. Previously accepted offers and effects are preserved.",
+      "example": "overflow reject;"
+    },
+    {
+      "keyword": "reply",
+      "concern": "Cases and evidence",
+      "meaning": "Describes a response step in a case, reversing an existing connector/member request. It must have one unanswered causal request ancestor. Executable handlers reply by returning, not by a reply statement.",
+      "example": "reply backend.api.get -> client.api.get via link after asked label answered;"
+    },
+    {
+      "keyword": "request",
+      "concern": "Communication",
+      "meaning": "Awaits one RPC on a local client/requires port with fresh correlation, result name, finite timeout and explicit failure block. In cases it describes the corresponding routed exchange.",
+      "example": "request api.get() as value within 1 s otherwise { return; };"
+    },
+    {
+      "keyword": "requirement",
+      "concern": "Cases and evidence",
+      "meaning": "Named natural-language obligation. It has descriptive text and can be referenced by cases; the core supplies no implicit requirements solver or verified checkmark.",
+      "example": "requirement Safe \"Duty shall remain within the allowed range.\";"
+    },
+    {
+      "keyword": "requires",
+      "concern": "Communication",
+      "meaning": "Consumer role of a service interface. Issues RPC and handles reverse-direction provider events. It has at most one route in a closed system.",
+      "example": "port orders: Orders requires;"
+    },
+    {
+      "keyword": "return",
+      "concern": "Behavior and states",
+      "meaning": "Completes the current operation with a copied typed result or bare Void. Inside an invoked helper it resumes the caller; inside state behavior it terminates the owning machine immediately.",
+      "example": "return accepted;"
+    },
+    {
+      "keyword": "s",
+      "concern": "Timing and deployment",
+      "meaning": "Second duration unit; one s equals 1,000,000,000 ns. A duration must still fit the exact safe nanosecond range.",
+      "example": "within 2 s"
+    },
+    {
+      "keyword": "sampled",
+      "concern": "Communication",
+      "meaning": "SenderReceiver data mode retaining the latest pending sample: capacity 1 and dropOldest are mandatory. Dispatch removes the sample; the core does not define a remote shared-variable read.",
+      "example": "data temperature: Real sampled;"
+    },
+    {
+      "keyword": "satisfies",
+      "concern": "Cases and evidence",
+      "meaning": "Links a case to one or more requirement declarations as intended coverage. It is a claim requiring test/analysis/review evidence, not a proof by syntax.",
+      "example": "case Checkout for Shop satisfies Accepted, Audited { ... }"
+    },
+    {
+      "keyword": "send",
+      "concern": "Communication",
+      "meaning": "Emits an outgoing senderReceiver data member through a sender port with exactly one value. In a case it describes a data exchange. It cannot publish events or bypass another unit's interface.",
+      "example": "send output.temperature(23.5);"
+    },
+    {
+      "keyword": "sender",
+      "concern": "Communication",
+      "meaning": "Outgoing senderReceiver role. May fan out through multiple explicit connectors; each member has at least one syntactically associated emitting operation.",
+      "example": "port output: Samples sender;"
+    },
+    {
+      "keyword": "senderReceiver",
+      "concern": "Communication",
+      "meaning": "Data-only contract kind with sampled/queued members and sender/receiver roles. No RPC operations or event members may be declared inside it.",
+      "example": "interface senderReceiver Samples version \"1.0.0\" { data value: Real sampled; }"
+    },
+    {
+      "keyword": "serial",
+      "concern": "Timing and deployment",
+      "meaning": "Default root mode: acquire the unit's one serial lock until completion/failure, including RPC waits. Local invokes share the root lock. Independent unit roots may still interleave.",
+      "example": "concurrency serial;"
+    },
+    {
+      "keyword": "server",
+      "concern": "Communication",
+      "meaning": "Provider role for clientServer contracts. Each operation signature has exactly one on call handler; results/failures follow the request correlation.",
+      "example": "port health: Health server;"
+    },
+    {
+      "keyword": "service",
+      "concern": "Communication",
+      "meaning": "As an interface kind, combines RPC operations and events with requires/provides roles. As a system profile, makes timing contracts optional while retaining interfaces, QoS and static validity.",
+      "example": "interface service Orders version \"1.0.0\" { ... } / system Shop service { ... }"
+    },
+    {
+      "keyword": "set",
+      "concern": "Behavior and states",
+      "meaning": "Replaces an existing mutable local, parameter or permitted unit variable with a copied assignable value. Field/index mutation and remote/private access are absent.",
+      "example": "set current = desired;"
+    },
+    {
+      "keyword": "start",
+      "concern": "Behavior and states",
+      "meaning": "Once-per-run startup trigger for a parameterless Void operation. State machines require it. All stores/routes/handlers exist before startup work runs; readiness protocols still need explicit ports.",
+      "example": "operation boot(): Void on start { ... }"
+    },
+    {
+      "keyword": "state",
+      "concern": "Behavior and states",
+      "meaning": "Declares a named operation-owned state with optional entry/exit and final marker. States are flat, directly owned and never assigned later to performers.",
+      "example": "state Idle { entry { set active = false; } }"
+    },
+    {
+      "keyword": "String",
+      "concern": "Values and calculation",
+      "meaning": "Finite Unicode text with exact equality and no normalization. Strings support portable escapes; implicit concatenation, ordering and bounded transport size are absent.",
+      "example": "var lastError: String = \"\";"
+    },
+    {
+      "keyword": "subscriber",
+      "concern": "Communication",
+      "meaning": "Incoming publishSubscribe role. Multiple publishers may feed one subscriber port through distinct queues. Each event has one handler owner; cross-source ordering is unspecified.",
+      "example": "port input: Notices subscriber;"
+    },
+    {
+      "keyword": "SV",
+      "concern": "Graphical views",
+      "meaning": "Sequence View of a case or a system's selected case. Lifelines are occurrences; arrows show port/member/connector and request correlation. Independent steps must remain visibly unordered.",
+      "example": "view checkout SV of Checkout;"
+    },
+    {
+      "keyword": "swaml",
+      "concern": "Structure and names",
+      "meaning": "Mandatory document introducer followed by the exact language major/minor header string and semicolon. All loaded sources must use supported version 1.0.",
+      "example": "swaml \"1.0\";"
+    },
+    {
+      "keyword": "system",
+      "concern": "Structure and names",
+      "meaning": "Closed assembly of top-level component occurrences, connectors, execution nodes and deployment. Each selected system expands definitions into distinct runtime instances.",
+      "example": "system Product mixed { component root: Assembly; ... }"
+    },
+    {
+      "keyword": "timing",
+      "concern": "Timing and deployment",
+      "meaning": "Operation contract containing wcet, deadline and concurrency in that order. Required on used operations in realtime/mixed systems; machine timing applies per reaction.",
+      "example": "timing { wcet 1 ms; deadline 5 ms; concurrency serial; }"
+    },
+    {
+      "keyword": "transition",
+      "concern": "Behavior and states",
+      "meaning": "Named state edge owned by one machine, with source/target, stimulus, optional guard/priority and effect. Execution orders exit, effect, state update, entry, then completion processing.",
+      "example": "transition beginRun: Idle -> Running on receive commands.begin {}"
+    },
+    {
+      "keyword": "true",
+      "concern": "Values and calculation",
+      "meaning": "The true Bool literal, with no implicit equivalence to numeric one or other nonempty values.",
+      "example": "assert true;"
+    },
+    {
+      "keyword": "unit",
+      "concern": "Structure and names",
+      "meaning": "Smallest interface-protected software boundary. Defines private data/functions/operations or instantiates a unit inside a component. Systems wrap top-level units in components.",
+      "example": "unit def Worker { ... } / unit worker: Worker;"
+    },
+    {
+      "keyword": "unordered",
+      "concern": "Communication",
+      "meaning": "No source-language dispatch ordering guarantee beyond other causal rules. A deterministic backend may still choose FIFO; this choice must not be mistaken for a model guarantee.",
+      "example": "ordering unordered;"
+    },
+    {
+      "keyword": "us",
+      "concern": "Timing and deployment",
+      "meaning": "Microsecond duration unit; one us equals 1,000 ns. The source spelling is ASCII us, not the micro sign.",
+      "example": "wcet 100 us;"
+    },
+    {
+      "keyword": "var",
+      "concern": "Values and calculation",
+      "meaning": "Declares private per-unit mutable state with a typed pure initializer independent of mutable variables. Each unit occurrence owns separate storage; other units cannot read it directly.",
+      "example": "var count: Int = 0;"
+    },
+    {
+      "keyword": "version",
+      "concern": "Communication",
+      "meaning": "Required interface semantic-version string major.minor.patch. Compatibility is nominal declaration identity, not automatic version-range matching or structural subtyping.",
+      "example": "interface clientServer API version \"1.0.0\" { ... }"
+    },
+    {
+      "keyword": "via",
+      "concern": "Cases and evidence",
+      "meaning": "Names the top-level system connector used by a case exchange. Endpoint-member paths must resolve on its visible component ports with a legal orientation.",
+      "example": "via orderLink label submitted;"
+    },
+    {
+      "keyword": "view",
+      "concern": "Graphical views",
+      "meaning": "Declares a named projection of an existing semantic subject with GV/IV/CV/SV/GRV/FV kind. It carries no executable behavior or diagram geometry.",
+      "example": "view wiring IV of Product;"
+    },
+    {
+      "keyword": "Void",
+      "concern": "Values and calculation",
+      "meaning": "Uninhabited operation/signature result type. Invalid for stored values, parameters, record fields, arrays and pure-function results. A Void RPC result name is reserved but unreadable.",
+      "example": "operation notify(): Void { return; }"
+    },
+    {
+      "keyword": "wcet",
+      "concern": "Timing and deployment",
+      "meaning": "Positive active-execution-time bound including local helpers and machine microsteps, excluding request wait. Must not exceed deadline; physical evidence belongs to a target binding.",
+      "example": "wcet 1 ms;"
+    },
+    {
+      "keyword": "when",
+      "concern": "Behavior and states",
+      "meaning": "Optional pure Bool transition guard evaluated against the unit snapshot/live environment and stimulus payload as applicable. False consumes/ignores the stimulus when no other transition matches.",
+      "example": "on receive commands.begin when (enabled) {}"
+    },
+    {
+      "keyword": "while",
+      "concern": "Behavior and states",
+      "meaning": "Pretest Bool loop with mandatory positive bound. Each iteration has a lexical body scope. A still-true condition after the bound fails instead of silently exiting.",
+      "example": "while (i < 3) bound 3 { set i = i + 1; }"
+    },
+    {
+      "keyword": "within",
+      "concern": "Communication",
+      "meaning": "Required positive RPC timeout measured from issuance. Only a response observed strictly before expiry can win; equal-time expiry wins and late server effects are not canceled.",
+      "example": "within 100 ms otherwise { return; };"
+    }
+  ]
+}

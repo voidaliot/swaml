@@ -1,0 +1,576 @@
+{
+  "width": 1000,
+  "height": 750,
+  "title": "IV · Interconnect View",
+  "description": "Cabin: two required service ports connect to one provided port; delegation reaches units.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 1000,
+      "height": 750,
+      "fill": "#ffffff",
+      "stroke": "none",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 32,
+      "y": 47,
+      "text": "IV · Interconnect View",
+      "size": 30,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 32,
+      "y": 80,
+      "text": "Cabin: two required service ports connect to one provided port; delegation reaches units.",
+      "size": 17,
+      "bold": false,
+      "color": "#516579"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          32,
+          99
+        ],
+        [
+          968,
+          99
+        ]
+      ],
+      "color": "#ccd9e2",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "rect",
+      "x": 32,
+      "y": 125,
+      "width": 282,
+      "height": 205,
+      "fill": "#ffffff",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 48,
+      "y": 156,
+      "text": "front : Client",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 281,
+      "y": 138,
+      "width": 17,
+      "height": 24,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 275,
+      "y": 141,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 275,
+      "y": 152,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 32,
+      "y": 385,
+      "width": 282,
+      "height": 205,
+      "fill": "#ffffff",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 48,
+      "y": 416,
+      "text": "rear : Client",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 281,
+      "y": 398,
+      "width": 17,
+      "height": 24,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 275,
+      "y": 401,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 275,
+      "y": 412,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 680,
+      "y": 173,
+      "width": 287,
+      "height": 380,
+      "fill": "#ffffff",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 696,
+      "y": 204,
+      "text": "settings : Service",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 934,
+      "y": 186,
+      "width": 17,
+      "height": 24,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 928,
+      "y": 189,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 928,
+      "y": 200,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 49,
+      "y": 191,
+      "text": "setting [Req]",
+      "size": 18,
+      "bold": false,
+      "color": "#087f8c"
+    },
+    {
+      "kind": "rect",
+      "x": 57,
+      "y": 237,
+      "width": 225,
+      "height": 66,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 68,
+      "y": 263,
+      "text": "«unit» panel : Panel",
+      "size": 17,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 68,
+      "y": 287,
+      "text": "setting [Req]",
+      "size": 16,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          314,
+          205
+        ],
+        [
+          303,
+          205
+        ],
+        [
+          303,
+          270
+        ],
+        [
+          282,
+          270
+        ]
+      ],
+      "color": "#087f8c",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 66,
+      "y": 324,
+      "text": "delegate setting → panel.setting",
+      "size": 15,
+      "bold": false,
+      "color": "#087f8c"
+    },
+    {
+      "kind": "rect",
+      "x": 308,
+      "y": 199,
+      "width": 12,
+      "height": 12,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 276,
+      "y": 264,
+      "width": 12,
+      "height": 12,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 49,
+      "y": 451,
+      "text": "setting [Req]",
+      "size": 18,
+      "bold": false,
+      "color": "#087f8c"
+    },
+    {
+      "kind": "rect",
+      "x": 57,
+      "y": 497,
+      "width": 225,
+      "height": 66,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 68,
+      "y": 523,
+      "text": "«unit» panel : Panel",
+      "size": 17,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 68,
+      "y": 547,
+      "text": "setting [Req]",
+      "size": 16,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          314,
+          465
+        ],
+        [
+          303,
+          465
+        ],
+        [
+          303,
+          530
+        ],
+        [
+          282,
+          530
+        ]
+      ],
+      "color": "#087f8c",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 66,
+      "y": 584,
+      "text": "delegate setting → panel.setting",
+      "size": 15,
+      "bold": false,
+      "color": "#087f8c"
+    },
+    {
+      "kind": "rect",
+      "x": 308,
+      "y": 459,
+      "width": 12,
+      "height": 12,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 276,
+      "y": 524,
+      "width": 12,
+      "height": 12,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 717,
+      "y": 328,
+      "width": 224,
+      "height": 119,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 730,
+      "y": 360,
+      "text": "«unit» store",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 730,
+      "y": 388,
+      "text": ": SettingStore",
+      "size": 19,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 739,
+      "y": 423,
+      "text": "api [Prov]",
+      "size": 17,
+      "bold": false,
+      "color": "#087f8c"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          680,
+          293
+        ],
+        [
+          699,
+          293
+        ],
+        [
+          699,
+          411
+        ],
+        [
+          717,
+          411
+        ]
+      ],
+      "color": "#087f8c",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "rect",
+      "x": 674,
+      "y": 287,
+      "width": 12,
+      "height": 12,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 702,
+      "y": 274,
+      "text": "api [Prov]",
+      "size": 17,
+      "bold": true,
+      "color": "#087f8c"
+    },
+    {
+      "kind": "rect",
+      "x": 711,
+      "y": 405,
+      "width": 12,
+      "height": 12,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 704,
+      "y": 483,
+      "text": "delegate api → store.api",
+      "size": 17,
+      "bold": false,
+      "color": "#087f8c"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          320,
+          205
+        ],
+        [
+          450,
+          205
+        ],
+        [
+          450,
+          293
+        ],
+        [
+          674,
+          293
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "text",
+      "x": 346,
+      "y": 181,
+      "text": "frontLink «service»",
+      "size": 18,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          320,
+          465
+        ],
+        [
+          526,
+          465
+        ],
+        [
+          526,
+          307
+        ],
+        [
+          674,
+          307
+        ],
+        [
+          674,
+          293
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "text",
+      "x": 338,
+      "y": 500,
+      "text": "rearLink «service»",
+      "size": 18,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 32,
+      "y": 624,
+      "width": 935,
+      "height": 92,
+      "fill": "#eef4f8",
+      "stroke": "none",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 50,
+      "y": 655,
+      "text": "Contract: TemperatureSetting @ 1.0.0",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 50,
+      "y": 684,
+      "text": "Both links: atMostOnce · fifo · capacity 8 · reject. Requests → provider; events/replies reverse.",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    }
+  ]
+}

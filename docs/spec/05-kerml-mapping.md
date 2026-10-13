@@ -1,6 +1,6 @@
 # 5. KerML semantic mapping
 
-Normative SWAML mapping contract, with implementation status stated explicitly. Part of the [SWAML 0.1 specification](../LANGUAGE_SPECIFICATION.md).
+Normative SWAML mapping contract, with implementation status stated explicitly. Part of the [SWAML 1.0 specification](../LANGUAGE_SPECIFICATION.md).
 
 ## 5.1 Foundation and boundary
 

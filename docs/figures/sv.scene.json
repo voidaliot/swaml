@@ -1,0 +1,362 @@
+{
+  "width": 1000,
+  "height": 750,
+  "title": "SV · Sequence View",
+  "description": "Change: causality follows after labels. Rear notification is unordered with front notice/reply.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 1000,
+      "height": 750,
+      "fill": "#ffffff",
+      "stroke": "none",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 32,
+      "y": 47,
+      "text": "SV · Sequence View",
+      "size": 30,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 32,
+      "y": 80,
+      "text": "Change: causality follows after labels. Rear notification is unordered with front notice/reply.",
+      "size": 17,
+      "bold": false,
+      "color": "#516579"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          32,
+          99
+        ],
+        [
+          968,
+          99
+        ]
+      ],
+      "color": "#ccd9e2",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "rect",
+      "x": 65,
+      "y": 127,
+      "width": 205,
+      "height": 57,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 75,
+      "y": 161,
+      "text": "front : Client",
+      "size": 18,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          167,
+          185
+        ],
+        [
+          167,
+          603
+        ]
+      ],
+      "color": "#17324d",
+      "dash": true,
+      "arrow": false
+    },
+    {
+      "kind": "rect",
+      "x": 400,
+      "y": 127,
+      "width": 205,
+      "height": 57,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 410,
+      "y": 161,
+      "text": "settings : Service",
+      "size": 18,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          502,
+          185
+        ],
+        [
+          502,
+          603
+        ]
+      ],
+      "color": "#17324d",
+      "dash": true,
+      "arrow": false
+    },
+    {
+      "kind": "rect",
+      "x": 757,
+      "y": 127,
+      "width": 205,
+      "height": 57,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 767,
+      "y": 161,
+      "text": "rear : Client",
+      "size": 18,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          859,
+          185
+        ],
+        [
+          859,
+          603
+        ]
+      ],
+      "color": "#17324d",
+      "dash": true,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          169,
+          229
+        ],
+        [
+          499,
+          229
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "text",
+      "x": 179,
+      "y": 213,
+      "text": "adjust: setting.setPoint → api.setPoint",
+      "size": 16,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 188,
+      "y": 252,
+      "text": "request via frontLink · correlation adjust",
+      "size": 16,
+      "bold": false,
+      "color": "#087f8c"
+    },
+    {
+      "kind": "rect",
+      "x": 318,
+      "y": 290,
+      "width": 635,
+      "height": 250,
+      "fill": "#f7fafc",
+      "stroke": "#ccd9e2",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 340,
+      "y": 320,
+      "text": "Independent branch after adjust",
+      "size": 17,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          502,
+          325
+        ],
+        [
+          502,
+          585
+        ]
+      ],
+      "color": "#17324d",
+      "dash": true,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          859,
+          325
+        ],
+        [
+          859,
+          585
+        ]
+      ],
+      "color": "#17324d",
+      "dash": true,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          500,
+          369
+        ],
+        [
+          175,
+          369
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "text",
+      "x": 41,
+      "y": 351,
+      "text": "frontNotice: api.changed → setting.changed",
+      "size": 16,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 43,
+      "y": 392,
+      "text": "publish via frontLink · after adjust",
+      "size": 16,
+      "bold": false,
+      "color": "#087f8c"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          508,
+          439
+        ],
+        [
+          851,
+          439
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "text",
+      "x": 536,
+      "y": 414,
+      "text": "rearNotice: api.changed → setting.changed",
+      "size": 15,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 536,
+      "y": 463,
+      "text": "publish via rearLink · after adjust",
+      "size": 16,
+      "bold": false,
+      "color": "#087f8c"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          499,
+          573
+        ],
+        [
+          175,
+          573
+        ]
+      ],
+      "color": "#17324d",
+      "dash": true,
+      "arrow": true
+    },
+    {
+      "kind": "text",
+      "x": 50,
+      "y": 554,
+      "text": "accepted: api.setPoint → setting.setPoint",
+      "size": 16,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 52,
+      "y": 601,
+      "text": "reply via frontLink · after frontNotice · correlation adjust",
+      "size": 16,
+      "bold": false,
+      "color": "#087f8c"
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 662,
+      "text": "The rearNotice row is positioned for readability: it may occur before or after accepted.",
+      "size": 18,
+      "bold": false,
+      "color": "#516579"
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 694,
+      "text": "Causal chains: adjust → frontNotice → accepted; adjust → rearNotice.",
+      "size": 18,
+      "bold": true,
+      "color": "#17324d"
+    }
+  ]
+}

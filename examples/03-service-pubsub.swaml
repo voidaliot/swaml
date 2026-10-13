@@ -1,4 +1,4 @@
-swaml "0.1";
+swaml "1.0";
 package Commerce {
     interface service Orders version "1.0.0" {
         // Submitting publishes effects, so this contract does not claim idempotency.

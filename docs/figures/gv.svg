@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="650" viewBox="0 0 1000 650" role="img" aria-labelledby="title desc">
+<title id="title">GV · General View</title><desc id="desc">Cabin shows occurrence ownership and explicit deployment; types are shared declarations.</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#17324d"/></marker></defs>
+<g font-family="DejaVu Sans, sans-serif">
+<rect x="0" y="0" width="1000" height="650" rx="8" fill="#ffffff" stroke="none"/>
+<text x="32" y="47" font-size="30" font-weight="700" fill="#17324d">GV · General View</text>
+<text x="32" y="80" font-size="17" font-weight="400" fill="#516579">Cabin shows occurrence ownership and explicit deployment; types are shared declarations.</text>
+<polyline points="32,99 968,99" fill="none" stroke="#ccd9e2" stroke-width="2"/>
+<rect x="32" y="122" width="935" height="330" rx="8" fill="#f7fafc" stroke="#17324d"/>
+<text x="50" y="156" font-size="24" font-weight="700" fill="#17324d">«system» Cabin · service</text>
+<rect x="55" y="188" width="280" height="205" rx="8" fill="#ffffff" stroke="#17324d"/>
+<text x="71" y="219" font-size="21" font-weight="700" fill="#17324d">settings : Service</text>
+<rect x="302" y="201" width="17" height="24" rx="0" fill="#eef4f8" stroke="#17324d"/>
+<rect x="296" y="204" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<rect x="296" y="215" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<text x="71" y="251" font-size="17" font-weight="400" fill="#516579">«component occurrence»</text>
+<rect x="73" y="275" width="244" height="82" rx="8" fill="#eef4f8" stroke="#17324d"/>
+<text x="87" y="298" font-size="17" font-weight="700" fill="#17324d">«unit» store</text>
+<text x="87" y="323" font-size="17" font-weight="400" fill="#17324d">: SettingStore</text>
+<text x="87" y="346" font-size="13" font-weight="400" fill="#17324d">Private store per occurrence</text>
+<rect x="360" y="188" width="280" height="205" rx="8" fill="#ffffff" stroke="#17324d"/>
+<text x="376" y="219" font-size="21" font-weight="700" fill="#17324d">front : Client</text>
+<rect x="607" y="201" width="17" height="24" rx="0" fill="#eef4f8" stroke="#17324d"/>
+<rect x="601" y="204" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<rect x="601" y="215" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<text x="376" y="251" font-size="17" font-weight="400" fill="#516579">«component occurrence»</text>
+<rect x="378" y="275" width="244" height="82" rx="8" fill="#eef4f8" stroke="#17324d"/>
+<text x="392" y="298" font-size="17" font-weight="700" fill="#17324d">«unit» panel</text>
+<text x="392" y="323" font-size="17" font-weight="400" fill="#17324d">: Panel</text>
+<text x="392" y="346" font-size="13" font-weight="400" fill="#17324d">Private store per occurrence</text>
+<rect x="665" y="188" width="280" height="205" rx="8" fill="#ffffff" stroke="#17324d"/>
+<text x="681" y="219" font-size="21" font-weight="700" fill="#17324d">rear : Client</text>
+<rect x="912" y="201" width="17" height="24" rx="0" fill="#eef4f8" stroke="#17324d"/>
+<rect x="906" y="204" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<rect x="906" y="215" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<text x="681" y="251" font-size="17" font-weight="400" fill="#516579">«component occurrence»</text>
+<rect x="683" y="275" width="244" height="82" rx="8" fill="#eef4f8" stroke="#17324d"/>
+<text x="697" y="298" font-size="17" font-weight="700" fill="#17324d">«unit» panel</text>
+<text x="697" y="323" font-size="17" font-weight="400" fill="#17324d">: Panel</text>
+<text x="697" y="346" font-size="13" font-weight="400" fill="#17324d">Private store per occurrence</text>
+<rect x="60" y="516" width="285" height="80" rx="8" fill="#eef4f8" stroke="#17324d"/>
+<text x="80" y="548" font-size="22" font-weight="700" fill="#17324d">controller</text>
+<text x="80" y="575" font-size="18" font-weight="400" fill="#17324d">«node: process»</text>
+<rect x="565" y="516" width="300" height="80" rx="8" fill="#eef4f8" stroke="#17324d"/>
+<text x="585" y="548" font-size="22" font-weight="700" fill="#17324d">displays</text>
+<text x="585" y="575" font-size="18" font-weight="400" fill="#17324d">«node: container»</text>
+<polyline points="194,394 194,510" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<text x="207" y="485" font-size="17" font-weight="400" fill="#17324d">deploy</text>
+<polyline points="500,394 620,510" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<text x="518" y="480" font-size="17" font-weight="400" fill="#17324d">deploy</text>
+<polyline points="803,394 803,510" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<text x="817" y="485" font-size="17" font-weight="400" fill="#17324d">deploy</text>
+</g></svg>

@@ -1,0 +1,345 @@
+{
+  "release": "1.0.0",
+  "languageVersion": "1.0",
+  "specificationRevision": "1.0.0",
+  "pages": 136,
+  "pdf": "SWAML-1.0.0-Specification.pdf",
+  "sources": [
+    {
+      "path": "docs/LANGUAGE_SPECIFICATION.md",
+      "attachmentName": "docs__LANGUAGE_SPECIFICATION.md",
+      "sha256": "6b46fed5d05a097fadcc914821f2848bae1802db838c673ee68eb9929abadc0d"
+    },
+    {
+      "path": "docs/spec/01-structure-and-types.md",
+      "attachmentName": "docs__spec__01-structure-and-types.md",
+      "sha256": "908cb3f3c0b51bab4137d316a9f25109d0f950caa863bac6c5c67bdf2284b8c1"
+    },
+    {
+      "path": "docs/spec/02-communication.md",
+      "attachmentName": "docs__spec__02-communication.md",
+      "sha256": "086d82866f7948554892163f7fc23493a517da6fdeb027be659462eaee8fac9b"
+    },
+    {
+      "path": "docs/spec/03-behavior.md",
+      "attachmentName": "docs__spec__03-behavior.md",
+      "sha256": "23b7fc90f06bf846090f9868f050df6bb15739b86067fab06a9d000fe1370e14"
+    },
+    {
+      "path": "docs/spec/04-systems-and-conformance.md",
+      "attachmentName": "docs__spec__04-systems-and-conformance.md",
+      "sha256": "8fb029fbed873bdffd8b7fab6a44492cf4cce50fc5c9eecfadce0f4c951e28d8"
+    },
+    {
+      "path": "docs/spec/05-kerml-mapping.md",
+      "attachmentName": "docs__spec__05-kerml-mapping.md",
+      "sha256": "29f45dfe11e3331c714f2a7a22aa672ec5c3b38b9eab3c5137b4a1104e5596a4"
+    },
+    {
+      "path": "docs/spec/06-execution-contract.md",
+      "attachmentName": "docs__spec__06-execution-contract.md",
+      "sha256": "1b9d5daf5e3f78cff6f8c3465a1e0351670e9a905cf0667f8cf3fba1d7b5ad47"
+    },
+    {
+      "path": "docs/spec/07-normalized-model.md",
+      "attachmentName": "docs__spec__07-normalized-model.md",
+      "sha256": "2fa44571355913c223755bc52c74d79b64a24156929d3185e622d2bfeb0cdab0"
+    },
+    {
+      "path": "docs/spec/08-conformance-obligations.md",
+      "attachmentName": "docs__spec__08-conformance-obligations.md",
+      "sha256": "cdab51c5bc0668ca5e32ec54c100e04e39419ca58f016897570a5894af71a3f9"
+    },
+    {
+      "path": "docs/spec/09-formal-semantics.md",
+      "attachmentName": "docs__spec__09-formal-semantics.md",
+      "sha256": "4e323161510361e3191f2ef5978f12c2afcfca82aabc38f9994d32ecdd7d9cb9"
+    },
+    {
+      "path": "docs/GRAPHICAL_NOTATION.md",
+      "attachmentName": "docs__GRAPHICAL_NOTATION.md",
+      "sha256": "b9e5162214d1e3bbfd76186008b893d64e1640aeb9d27c91aa685c61f4312ce1"
+    },
+    {
+      "path": "docs/CONCERN_GUIDE.md",
+      "attachmentName": "docs__CONCERN_GUIDE.md",
+      "sha256": "bd5b3964b02352f27624db4f593a89586ad8b7464b0f1206c64898c74f5917bb"
+    },
+    {
+      "path": "docs/KEYWORD_REFERENCE.md",
+      "attachmentName": "docs__KEYWORD_REFERENCE.md",
+      "sha256": "6e45887869927e9ddb84d799aa7733c16dfcf39889569eab0c6ffe0283e58df2"
+    },
+    {
+      "path": "docs/GRAPHICAL_EXAMPLES.md",
+      "attachmentName": "docs__GRAPHICAL_EXAMPLES.md",
+      "sha256": "6c77f82813162b79c17dd0ae6c4cf30727bfd94097cab271e90a23297090581b"
+    },
+    {
+      "path": "docs/SIMULATION.md",
+      "attachmentName": "docs__SIMULATION.md",
+      "sha256": "69b2b90e3db2d2ca98fb5aaf5446d718390b2549d49607008b59a32f35c0dbe8"
+    },
+    {
+      "path": "docs/MIGRATION_1_0.md",
+      "attachmentName": "docs__MIGRATION_1_0.md",
+      "sha256": "01e1d21d0abdf18ec1cd0e882be486458667f8945b3b7978957c251d105ebf74"
+    },
+    {
+      "path": "docs/USER_GUIDE.md",
+      "attachmentName": "docs__USER_GUIDE.md",
+      "sha256": "5e81c2e24008390138173de173e0a203392969171c2a043196831f15030f2e22"
+    },
+    {
+      "path": "docs/ARCHITECTURE_COMPARISON.md",
+      "attachmentName": "docs__ARCHITECTURE_COMPARISON.md",
+      "sha256": "cc57111ce445b12eb96b0a7c22665e82fdc203aff20ce60c71a592f8a6d478d9"
+    },
+    {
+      "path": "docs/TOOLING.md",
+      "attachmentName": "docs__TOOLING.md",
+      "sha256": "dea6d4291600e9775efd472fb6ed80d1fa8f68b10989757a1950861e2dfd483b"
+    },
+    {
+      "path": "docs/IMPLEMENTATION_STATUS.md",
+      "attachmentName": "docs__IMPLEMENTATION_STATUS.md",
+      "sha256": "f132e3eb7fc782d359ee49154cf73e04aa079107f602ce83c39f72dbab6e513b"
+    },
+    {
+      "path": "docs/RELEASE_1_0.md",
+      "attachmentName": "docs__RELEASE_1_0.md",
+      "sha256": "eeab3e765ed5cd0c09c54f58d585f5228518638c0047580c54973c725bc43733"
+    },
+    {
+      "path": "docs/decisions/0001-language-boundaries.md",
+      "attachmentName": "docs__decisions__0001-language-boundaries.md",
+      "sha256": "8e5a915407a9a5445dd4416d9d80cabb369dc252c912cde34d2dccd5dbc0230b"
+    },
+    {
+      "path": "docs/decisions/0002-auditable-semantics.md",
+      "attachmentName": "docs__decisions__0002-auditable-semantics.md",
+      "sha256": "ab37db704590239fafceccbb7fbd977786f7c1f35dc7edb4a5fdc74c7164e827"
+    },
+    {
+      "path": "docs/decisions/0003-reference-execution-and-publication.md",
+      "attachmentName": "docs__decisions__0003-reference-execution-and-publication.md",
+      "sha256": "6dd2c50dc573c6039656a62c8105e36d69daebc944717b1cbf7ad3611e970990"
+    },
+    {
+      "path": "docs/PDF_PUBLICATION.md",
+      "attachmentName": "docs__PDF_PUBLICATION.md",
+      "sha256": "d7bf598737c193ae4ff818565874829b147d56c1aebd44390524fafa6609f730"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "attachmentName": "CONTRIBUTING.md",
+      "sha256": "6f54af342769ecbf7c20e5b5f8358ba8858f87d6370f00e8b09c75c05509a4d2"
+    },
+    {
+      "path": "AGENTS.md",
+      "attachmentName": "AGENTS.md",
+      "sha256": "761abb1e79ead7cb5908675b629647e535330ce4413a658b44fb02846de83314"
+    },
+    {
+      "path": "src/language/swaml.langium",
+      "attachmentName": "src__language__swaml.langium",
+      "sha256": "1449eb9a491120a0c12452c7f7ef95f8e57aa905b484fa2fe7da6918a5a4eb6c"
+    },
+    {
+      "path": "spec/kerml-mapping.json",
+      "attachmentName": "spec__kerml-mapping.json",
+      "sha256": "0507ca13dab74ec8242cf8a80971fee099770fbd1304f50110d51b453aa626fe"
+    },
+    {
+      "path": "examples/01-hello.swaml",
+      "attachmentName": "examples__01-hello.swaml",
+      "sha256": "b66bccc6a1e58207daf56f680df2d5e457a385530fc7a1c7352ac1616d20e02c"
+    },
+    {
+      "path": "examples/02-realtime-controller.swaml",
+      "attachmentName": "examples__02-realtime-controller.swaml",
+      "sha256": "53b129505deb87b75be278638c605587a388181bd94b7f7d5aab42bbc37a1b6e"
+    },
+    {
+      "path": "examples/03-service-pubsub.swaml",
+      "attachmentName": "examples__03-service-pubsub.swaml",
+      "sha256": "fd5bc13b3339b6e72d87eb963bb6141fd46d699a817f437d5e077090f3683074"
+    },
+    {
+      "path": "examples/04-stateful-operation.swaml",
+      "attachmentName": "examples__04-stateful-operation.swaml",
+      "sha256": "a5d3c4e615441bfc607cbac1669af32cfb24e8e7af318b69bbe1531d0b5b1bfb"
+    },
+    {
+      "path": "examples/05-values-and-flow.swaml",
+      "attachmentName": "examples__05-values-and-flow.swaml",
+      "sha256": "012a437cc3f96fcecee1d2de3f188b8d7e99d44b8539088f0bdfafbe4027775e"
+    },
+    {
+      "path": "examples/06-mixed-gateway.swaml",
+      "attachmentName": "examples__06-mixed-gateway.swaml",
+      "sha256": "d7fb65294e4503decb548162b9458475cced1492bf5d27533907eb6570b66c1c"
+    },
+    {
+      "path": "examples/07-client-server.swaml",
+      "attachmentName": "examples__07-client-server.swaml",
+      "sha256": "bc6521affb6546c303c3eba7bbdb04234d738a8b663e148e7b460564bff9143e"
+    },
+    {
+      "path": "examples/08-service-field.swaml",
+      "attachmentName": "examples__08-service-field.swaml",
+      "sha256": "a7a9e1e8dd57eccfc6e45e300f71c360c63cd54411751c2b5a3f44716d944528"
+    },
+    {
+      "path": "LICENSE",
+      "attachmentName": "LICENSE",
+      "sha256": "24d1618025e85d72fb57a7e108712a9a12799f83aa723006abc9ce71296ec46b"
+    },
+    {
+      "path": "docs/SWAML-1.0.0-Reference.md",
+      "attachmentName": "docs__SWAML-1.0.0-Reference.md",
+      "sha256": "a2e51833c1a20cc1abccd390e124d15c49b1dcee48d191f1a522146eb8f360b0"
+    },
+    {
+      "path": "spec/keywords.json",
+      "attachmentName": "spec__keywords.json",
+      "sha256": "3a140c8661690bfd38f398a41f9965c48a83d2ee60812dfc38f18b6b8ef64cd1"
+    },
+    {
+      "path": "spec/graphical-examples.json",
+      "attachmentName": "spec__graphical-examples.json",
+      "sha256": "ac5467f867879aea1a12e162c1a23d0805ecf7adebf075e6808bb957147ec1f6"
+    },
+    {
+      "path": "docs/figures/browser.scene.json",
+      "attachmentName": "docs__figures__browser.scene.json",
+      "sha256": "02f6cdb75fec4e78d4afb5eea32d2ffecc624dbd1595ce50d7e27ddc211bbaaa"
+    },
+    {
+      "path": "docs/figures/browser.svg",
+      "attachmentName": "docs__figures__browser.svg",
+      "sha256": "28600252c3664e1de98d3d96da9f486a4ce24be81b773afd6c36a142c75629cb"
+    },
+    {
+      "path": "docs/figures/cv.scene.json",
+      "attachmentName": "docs__figures__cv.scene.json",
+      "sha256": "47a2d40ae05935e4130f5cf1b77c10ced5d7590d6011897552ba33868edc8014"
+    },
+    {
+      "path": "docs/figures/cv.svg",
+      "attachmentName": "docs__figures__cv.svg",
+      "sha256": "2e3e0b8dab50171203afc76bd3394457ece5e8ea428225773b4e237f1b19a4eb"
+    },
+    {
+      "path": "docs/figures/fv-flow.scene.json",
+      "attachmentName": "docs__figures__fv-flow.scene.json",
+      "sha256": "073ae9381190a655eedad4345a28bb8cb2f6e85d5e0b11d946dddea7169dc58e"
+    },
+    {
+      "path": "docs/figures/fv-flow.svg",
+      "attachmentName": "docs__figures__fv-flow.svg",
+      "sha256": "80c4ede8cbe187a3146284f8c584f86d5ad8148858a17f3702b3592f707482bb"
+    },
+    {
+      "path": "docs/figures/fv-state.scene.json",
+      "attachmentName": "docs__figures__fv-state.scene.json",
+      "sha256": "283992d69626a7dade9c503113ff34c7105d49c3d92602de4626d732d244e416"
+    },
+    {
+      "path": "docs/figures/fv-state.svg",
+      "attachmentName": "docs__figures__fv-state.svg",
+      "sha256": "4ce216a891055bc41fa2544451a5e49ba34d8145499ffc11401e87fffd6859da"
+    },
+    {
+      "path": "docs/figures/grv.scene.json",
+      "attachmentName": "docs__figures__grv.scene.json",
+      "sha256": "f675f2bb2b7e418c7770c484539ce37565c0b0be74bfd27834bbb90e31277991"
+    },
+    {
+      "path": "docs/figures/grv.svg",
+      "attachmentName": "docs__figures__grv.svg",
+      "sha256": "07f553f62086a073ee13bc33c76e443649489cae3d2e22c769dabbb77aea3a9a"
+    },
+    {
+      "path": "docs/figures/gv.scene.json",
+      "attachmentName": "docs__figures__gv.scene.json",
+      "sha256": "4c4f623308607dc50759419c4ab1ee21abe791e125db21e4d0c1eddc32914ff0"
+    },
+    {
+      "path": "docs/figures/gv.svg",
+      "attachmentName": "docs__figures__gv.svg",
+      "sha256": "d89499c421b529904f82623300469fbc6ddb970b5b5266a690ece5130689eee8"
+    },
+    {
+      "path": "docs/figures/iv.scene.json",
+      "attachmentName": "docs__figures__iv.scene.json",
+      "sha256": "dbc08868861878febf867a86e48abca08fe40f100435ad18f8ba1fe7eb81f831"
+    },
+    {
+      "path": "docs/figures/iv.svg",
+      "attachmentName": "docs__figures__iv.svg",
+      "sha256": "b509a66214a4540ca6f31f170f879573264c4d64c5d987afdc833c2f24d1ea31"
+    },
+    {
+      "path": "docs/figures/sv.scene.json",
+      "attachmentName": "docs__figures__sv.scene.json",
+      "sha256": "d96cb4682d7621177bb6fafcb38acc5380c5fbaa69ecc8b096c7f2e21495a9cf"
+    },
+    {
+      "path": "docs/figures/sv.svg",
+      "attachmentName": "docs__figures__sv.svg",
+      "sha256": "bcfdea50522dd4c5ffce958f87cb4e442785dc59c0d5fd6406e07b0fe12e74af"
+    },
+    {
+      "path": "examples/simulation/01-hello.json",
+      "attachmentName": "examples__simulation__01-hello.json",
+      "sha256": "a40eb897ff4c36f4d4f5d29293b418eabe354e8b31d3eb812952b50a91f09f64"
+    },
+    {
+      "path": "examples/simulation/02-realtime-controller.json",
+      "attachmentName": "examples__simulation__02-realtime-controller.json",
+      "sha256": "e5d12a25491c85e1a13739721eb1ebedb01465cd9d4b7faa5b20dae364e33f95"
+    },
+    {
+      "path": "examples/simulation/03-service-pubsub.json",
+      "attachmentName": "examples__simulation__03-service-pubsub.json",
+      "sha256": "bf0628f6f7922a5caf3cd771c75b72ff5f5025e76a31687478611b6ecefcf342"
+    },
+    {
+      "path": "examples/simulation/04-stateful-operation.json",
+      "attachmentName": "examples__simulation__04-stateful-operation.json",
+      "sha256": "a8d4021000391559e168871327eb661805a5aebff47a5a6c8eba5bc2313eefe0"
+    },
+    {
+      "path": "examples/simulation/05-values-and-flow.json",
+      "attachmentName": "examples__simulation__05-values-and-flow.json",
+      "sha256": "a40eb897ff4c36f4d4f5d29293b418eabe354e8b31d3eb812952b50a91f09f64"
+    },
+    {
+      "path": "examples/simulation/06-mixed-gateway.json",
+      "attachmentName": "examples__simulation__06-mixed-gateway.json",
+      "sha256": "33e9494fd72b2b3e0f9227e181d3df6d8673d00a40ed35fa46351dd8f74ca99f"
+    },
+    {
+      "path": "examples/simulation/07-client-server.json",
+      "attachmentName": "examples__simulation__07-client-server.json",
+      "sha256": "a88fa6f4de28cb0d7d479a5d8018ba0fa1e15041bf97f4bc593467a6709531c2"
+    },
+    {
+      "path": "examples/simulation/08-service-field.json",
+      "attachmentName": "examples__simulation__08-service-field.json",
+      "sha256": "0f58ec5972d19c8256a0850b8846a09b4a7623123f371b21fc7dc7aa9051ec04"
+    },
+    {
+      "path": "examples/simulation/hello-trace.json",
+      "attachmentName": "examples__simulation__hello-trace.json",
+      "sha256": "d98d66d5b4ca0c6af1f3d48d3aad8a50e0c95c899468f03ce0dd8e4ff78505dc"
+    },
+    {
+      "path": "examples/simulation/runs.json",
+      "attachmentName": "examples__simulation__runs.json",
+      "sha256": "0fcc84bc5b47099fb76d8b3b8536582c674a413b001fc5c46d5e83ab0cfcad21"
+    }
+  ],
+  "pdfSha256": "e8448551664383b600131957d63bf8e2b2011e578e9003786e127d29de7558f3"
+}

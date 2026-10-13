@@ -29,11 +29,11 @@ const failures: [string, string, string | undefined][] = [
     ['wrong interface identity', hello.replace('unit def Listener', 'interface senderReceiver Other version "1.0.0" { data text: String queued; } unit def Listener').replace('port input: Greeting', 'port input: Other'), 'SW031'],
     ['undefined interface', hello.replace('port input: Greeting', 'port input: Missing'), undefined],
     ['zero capacity', hello.replace('capacity 4', 'capacity 0'), 'SW041'],
-    ['wrong language version', hello.replace('swaml "0.1"', 'swaml "9.0"'), 'SW001'],
-    ['no free events', 'swaml "0.1"; package P { event E(); }', undefined],
-    ['no performer syntax', 'swaml "0.1"; package P { performer X; }', undefined],
+    ['wrong language version', hello.replace('swaml "1.0"', 'swaml "9.0"'), 'SW001'],
+    ['no free events', 'swaml "1.0"; package P { event E(); }', undefined],
+    ['no performer syntax', 'swaml "1.0"; package P { performer X; }', undefined],
     ['no geometry view', hello.replace('overview GV', 'overview GEV'), undefined],
-    ['incomplete document is safe', 'swaml "0.1"; package P { component def C { connect', undefined],
+    ['incomplete document is safe', 'swaml "1.0"; package P { component def C { connect', undefined],
     ['wrong import', hello.replace('port output: Greeting', 'port output: Elsewhere::Greeting'), undefined],
     ['local data cannot escape unit', hello.replace('send output.text("Hello, SWAML")', 'send output.text(listener.last)'), 'SW022'],
 ];
@@ -73,16 +73,16 @@ test('local invoke is scoped to the owning unit', async () => {
 test('imports resolve across documents', async () => {
     const { Swaml, shared } = createSwamlServices(EmptyFileSystem);
     const parse = parseHelper<Model>(Swaml);
-    const library = await parse('swaml "0.1"; package Library { interface clientServer Api version "1.0.0" { operation ping(): Void; } }', { documentUri: 'file:///library.swaml' });
-    const client = await parse('swaml "0.1"; package Client { import Library::*; unit def U { port api: Api client optional; operation run(): Void { request api.ping() as responseValue within 1 s otherwise { return; }; } } }', { documentUri: 'file:///client.swaml' });
+    const library = await parse('swaml "1.0"; package Library { interface clientServer Api version "1.0.0" { operation ping(): Void; } }', { documentUri: 'file:///library.swaml' });
+    const client = await parse('swaml "1.0"; package Client { import Library::*; unit def U { port api: Api client optional; operation run(): Void { request api.ping() as responseValue within 1 s otherwise { return; }; } } }', { documentUri: 'file:///client.swaml' });
     await shared.workspace.DocumentBuilder.build([library, client], { validation: true });
     assert.deepEqual(client.diagnostics, []);
 });
 test('unimported symbols cannot leak across documents', async () => {
     const { Swaml, shared } = createSwamlServices(EmptyFileSystem);
     const parse = parseHelper<Model>(Swaml);
-    const lib = await parse('swaml "0.1"; package A { datatype Value { x: Int; } }', { documentUri: 'file:///a.swaml' });
-    const user = await parse('swaml "0.1"; package B { datatype Box { x: Value; } }', { documentUri: 'file:///b.swaml' });
+    const lib = await parse('swaml "1.0"; package A { datatype Value { x: Int; } }', { documentUri: 'file:///a.swaml' });
+    const user = await parse('swaml "1.0"; package B { datatype Box { x: Value; } }', { documentUri: 'file:///b.swaml' });
     await shared.workspace.DocumentBuilder.build([lib, user], { validation: true });
     assert.ok(user.diagnostics?.some(d => d.severity === 1));
 });
@@ -106,11 +106,11 @@ test('sampled data cannot silently queue history', async () => {
     assert.ok((await diagnostics(load('02-realtime-controller.swaml').replace('capacity 1', 'capacity 4'))).some(d => d.code === 'SW041'));
 });
 test('pure functions cannot read mutable unit state', async () => {
-    const text = 'swaml "0.1"; package P { unit def U { var hidden: Int = 1; function f(): Int = hidden; } }';
+    const text = 'swaml "1.0"; package P { unit def U { var hidden: Int = 1; function f(): Int = hidden; } }';
     assert.ok((await diagnostics(text)).some(d => d.code === 'SW022'));
 });
 test('recursive local calls rejected', async () => {
-    const text = 'swaml "0.1"; package P { unit def U { operation a(): Void { invoke b(); } operation b(): Void { invoke a(); } } }';
+    const text = 'swaml "1.0"; package P { unit def U { operation a(): Void { invoke b(); } operation b(): Void { invoke a(); } } }';
     assert.ok((await diagnostics(text)).some(d => d.code === 'SW056'));
 });
 test('value-returning handler covers every branch', async () => {
@@ -122,7 +122,7 @@ test('unconditional completion cycle rejected', async () => {
     assert.ok((await diagnostics(text)).some(d => d.code === 'SW064'));
 });
 test('ambiguous imported names are rejected', async () => {
-    const text = 'swaml "0.1"; package A { datatype T { x: Int; } } package B { datatype T { x: Int; } } package C { import A::*; import B::*; datatype Use { value: T; } }';
+    const text = 'swaml "1.0"; package A { datatype T { x: Int; } } package B { datatype T { x: Int; } } package C { import A::*; import B::*; datatype Use { value: T; } }';
     assert.ok((await diagnostics(text)).some(d => d.severity === 1));
 });
 test('duplicate connectors are rejected', async () => {

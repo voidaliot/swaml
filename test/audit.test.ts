@@ -6,7 +6,7 @@ import { parseHelper } from 'langium/test';
 import { createSwamlServices } from '../src/language/swaml-module.js';
 import type { Model } from '../src/language/generated/ast.js';
 
-const model = (body: string) => `swaml "0.1"; package P { ${body} }`;
+const model = (body: string) => `swaml "1.0"; package P { ${body} }`;
 const unit = (body: string) => model(`unit def U { ${body} }`);
 const fixture = (file: string) => readFileSync(new URL(`../../examples/${file}.swaml`, import.meta.url), 'utf8');
 async function diagnostics(text: string) {
@@ -33,8 +33,8 @@ test('portable escapes decode without loss', async () => {
     assert.ok('text' in element);
     assert.equal(element.text, '"\\\n\r\t');
 });
-test('ambiguity includes declarations of different kinds', () => invalid('swaml "0.1"; package A { datatype T {} } package B { interface senderReceiver T version "1.0.0" { data x: Int queued; } } package C { import A::*; import B::*; datatype Use { value: T; } }'));
-test('qualified names disambiguate different declaration kinds', async () => assert.deepEqual(await diagnostics('swaml "0.1"; package A { datatype T {} } package B { interface senderReceiver T version "1.0.0" { data x: Int queued; } } package C { import A::*; import B::*; datatype Use { value: A::T; } }'), []));
+test('ambiguity includes declarations of different kinds', () => invalid('swaml "1.0"; package A { datatype T {} } package B { interface senderReceiver T version "1.0.0" { data x: Int queued; } } package C { import A::*; import B::*; datatype Use { value: T; } }'));
+test('qualified names disambiguate different declaration kinds', async () => assert.deepEqual(await diagnostics('swaml "1.0"; package A { datatype T {} } package B { interface senderReceiver T version "1.0.0" { data x: Int queued; } } package C { import A::*; import B::*; datatype Use { value: A::T; } }'), []));
 for (const index of ['-1', '2', '-(-2)']) test(`constant array bound ${index}`, () => invalid(unit(`var xs: Int[2] = array [1, 2]; operation run(): Void { let x: Int = xs[${index}]; }`), 'SW025'));
 test('legal array endpoints', async () => assert.deepEqual(await diagnostics(unit('var xs: Int[2] = array [1, 2]; operation run(): Void { let a: Int = xs[0]; let b: Int = xs[1]; }')), []));
 test('failure binding cannot overwrite user data', () => invalid(rpc.replace('var healthy:', 'var failure: String = ""; var healthy:'), 'SW002'));
@@ -65,9 +65,9 @@ class MemoryFiles extends EmptyFileSystemProvider {
 }
 test('editor updates revalidate negative lookups, paths and deletion across files', async () => {
     const libUri = URI.parse('file:///library.swaml'), userUri = URI.parse('file:///user.swaml'), otherUri = URI.parse('file:///other.swaml');
-    const library = 'swaml "0.1"; package Library { unit def U { operation run(): Void {} } component def C { unit child: U; } }';
-    const user = 'swaml "0.1"; package User { import Library::*; import Other::*; system S service { component root: C; } view flow FV of S.root.child.run; }';
-    const files = new Map([[libUri.toString(), library], [userUri.toString(), user], [otherUri.toString(), 'swaml "0.1"; package Other {}']]);
+    const library = 'swaml "1.0"; package Library { unit def U { operation run(): Void {} } component def C { unit child: U; } }';
+    const user = 'swaml "1.0"; package User { import Library::*; import Other::*; system S service { component root: C; } view flow FV of S.root.child.run; }';
+    const files = new Map([[libUri.toString(), library], [userUri.toString(), user], [otherUri.toString(), 'swaml "1.0"; package Other {}']]);
     const { shared } = createSwamlServices({ fileSystemProvider: () => new MemoryFiles(files) });
     const docs = await Promise.all([...files.keys()].map(uri => shared.workspace.LangiumDocuments.getOrCreateDocument(URI.parse(uri))));
     await shared.workspace.DocumentBuilder.build(docs, { validation: true });
@@ -80,10 +80,10 @@ test('editor updates revalidate negative lookups, paths and deletion across file
     await shared.workspace.DocumentBuilder.update([libUri], []);
     assert.equal(userDoc.diagnostics?.length, 0);
     // The user had no reference into Other. A newly introduced name must still invalidate it.
-    files.set(otherUri.toString(), 'swaml "0.1"; package Other { datatype C {} }');
+    files.set(otherUri.toString(), 'swaml "1.0"; package Other { datatype C {} }');
     await shared.workspace.DocumentBuilder.update([otherUri], []);
     assert.ok(userDoc.diagnostics?.some(d => d.severity === 1));
-    files.set(otherUri.toString(), 'swaml "0.1"; package Other {}');
+    files.set(otherUri.toString(), 'swaml "1.0"; package Other {}');
     await shared.workspace.DocumentBuilder.update([otherUri], []);
     assert.equal(userDoc.diagnostics?.length, 0);
     files.delete(libUri.toString());

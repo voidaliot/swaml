@@ -96,3 +96,9 @@ Build a separate normalized model from the linked/validated authoring AST, then 
 Before an extension consumes a new language-core version, run `npm ci && npm run check`, inspect the spec/grammar changes and update versioned fixtures. A grammar change, even if additive, can reserve an identifier previously used in source. Release notes must explain migration.
 
 Tests cover valid fixtures, illegal interface access, scoping, type errors, QoS, state/timing rules and the LSP transport lifecycle. Broader conformance claims require the additional tests in [implementation status](IMPLEMENTATION_STATUS.md).
+
+## Simulation API for a separate host
+
+After linking and validating every referenced document, call `simulate(models, "Package::System", options)` from the package's `./simulation` export. It has no Node filesystem dependency. The host supplies a finite horizon and may supply manual releases, transport fault schedule and resource limits. The [profile contract](SIMULATION.md) defines the exact scheduler, observability and limits. The CLI adapter adds file loading and SHA-256 source digests.
+
+Present `outcome` and `status` together: a run can quiesce after a failed activation, and a bounded horizon is not a proof of liveness. A future extension can connect trace source lines and occurrence paths to FV/IV/GRV selections. That UI belongs in the extension repository; it must not introduce an independent runtime meaning or bypass validation.

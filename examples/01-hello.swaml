@@ -1,4 +1,4 @@
-swaml "0.1";
+swaml "1.0";
 package Hello {
     interface senderReceiver Greeting version "1.0.0" {
         data text: String queued;

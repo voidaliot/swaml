@@ -1,4 +1,4 @@
-swaml "0.1";
+swaml "1.0";
 package Invalid {
     unit def Bad {
         operation leak(): Void {

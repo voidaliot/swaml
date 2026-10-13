@@ -17,6 +17,6 @@ try {
             if (d.severity === 1) errors++;
         }
     }
-    console.log(`Checked ${docs.length} model(s): ${errors} error(s). This validates the implemented 0.1 checks; it is not execution or KerML conformance verification.`);
+    console.log(`Checked ${docs.length} model(s): ${errors} error(s). This validates the implemented 1.0 checks; it is not execution or KerML conformance verification.`);
     process.exitCode = errors ? 1 : 0;
 } catch (error) { console.error(String(error)); process.exitCode = 2; }

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="750" viewBox="0 0 1000 750" role="img" aria-labelledby="title desc">
+<title id="title">SV · Sequence View</title><desc id="desc">Change: causality follows after labels. Rear notification is unordered with front notice/reply.</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#17324d"/></marker></defs>
+<g font-family="DejaVu Sans, sans-serif">
+<rect x="0" y="0" width="1000" height="750" rx="8" fill="#ffffff" stroke="none"/>
+<text x="32" y="47" font-size="30" font-weight="700" fill="#17324d">SV · Sequence View</text>
+<text x="32" y="80" font-size="17" font-weight="400" fill="#516579">Change: causality follows after labels. Rear notification is unordered with front notice/reply.</text>
+<polyline points="32,99 968,99" fill="none" stroke="#ccd9e2" stroke-width="2"/>
+<rect x="65" y="127" width="205" height="57" rx="8" fill="#eef4f8" stroke="#17324d"/>
+<text x="75" y="161" font-size="18" font-weight="700" fill="#17324d">front : Client</text>
+<polyline points="167,185 167,603" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="400" y="127" width="205" height="57" rx="8" fill="#eef4f8" stroke="#17324d"/>
+<text x="410" y="161" font-size="18" font-weight="700" fill="#17324d">settings : Service</text>
+<polyline points="502,185 502,603" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<rect x="757" y="127" width="205" height="57" rx="8" fill="#eef4f8" stroke="#17324d"/>
+<text x="767" y="161" font-size="18" font-weight="700" fill="#17324d">rear : Client</text>
+<polyline points="859,185 859,603" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<polyline points="169,229 499,229" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="179" y="213" font-size="16" font-weight="400" fill="#17324d">adjust: setting.setPoint → api.setPoint</text>
+<text x="188" y="252" font-size="16" font-weight="400" fill="#087f8c">request via frontLink · correlation adjust</text>
+<rect x="318" y="290" width="635" height="250" rx="8" fill="#f7fafc" stroke="#ccd9e2"/>
+<text x="340" y="320" font-size="17" font-weight="700" fill="#17324d">Independent branch after adjust</text>
+<polyline points="502,325 502,585" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<polyline points="859,325 859,585" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<polyline points="500,369 175,369" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="41" y="351" font-size="16" font-weight="400" fill="#17324d">frontNotice: api.changed → setting.changed</text>
+<text x="43" y="392" font-size="16" font-weight="400" fill="#087f8c">publish via frontLink · after adjust</text>
+<polyline points="508,439 851,439" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="536" y="414" font-size="15" font-weight="400" fill="#17324d">rearNotice: api.changed → setting.changed</text>
+<text x="536" y="463" font-size="16" font-weight="400" fill="#087f8c">publish via rearLink · after adjust</text>
+<polyline points="499,573 175,573" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<text x="50" y="554" font-size="16" font-weight="400" fill="#17324d">accepted: api.setPoint → setting.setPoint</text>
+<text x="52" y="601" font-size="16" font-weight="400" fill="#087f8c">reply via frontLink · after frontNotice · correlation adjust</text>
+<text x="36" y="662" font-size="18" font-weight="400" fill="#516579">The rearNotice row is positioned for readability: it may occur before or after accepted.</text>
+<text x="36" y="694" font-size="18" font-weight="700" fill="#17324d">Causal chains: adjust → frontNotice → accepted; adjust → rearNotice.</text>
+</g></svg>

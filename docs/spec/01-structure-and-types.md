@@ -1,6 +1,6 @@
 # 1. Structure, names and types
 
-Normative chapter of the [SWAML 0.1 specification](../LANGUAGE_SPECIFICATION.md).
+Normative chapter of the [SWAML 1.0 specification](../LANGUAGE_SPECIFICATION.md).
 
 ## 1.1 Lexical model
 
@@ -10,11 +10,11 @@ Strings use double quotes and backslash escapes. A conforming implementation MUS
 
 Unsigned decimal integers and decimal real literals are supported; a minus sign is a unary operator. Decimal real literals require digits on both sides of the point. Hexadecimal, exponent and suffix forms are absent. Duration literals consist of a positive integer followed by `ns`, `us`, `ms` or `s`. A duration MUST normalize to an exact integer nanosecond count no larger than 2^53−1. Time has no implicit unit.
 
-The document grammar is `swaml STRING ;` followed by zero or more packages. Only the header value `0.1` is supported. An empty model is valid as an editing/library artifact, but contains no closed system.
+The document grammar is `swaml STRING ;` followed by zero or more packages. Only the header value `1.0` is supported. An empty model is valid as an editing/library artifact, but contains no closed system.
 
 ## 1.2 Namespaces and resolution
 
-Packages are top-level and non-nested in 0.1. A package name MUST be unique in the loaded model workspace. A package is declared in one file, although one file may contain several packages. Named elements in the same namespace MUST be unique; overload resolution is not supported.
+Packages are top-level and non-nested in 1.0. A package name MUST be unique in the loaded model workspace. A package is declared in one file, although one file may contain several packages. Named elements in the same namespace MUST be unique; overload resolution is not supported.
 
 `A::Type` identifies a package declaration. `import A::*;` exposes A's top-level declarations by short name in the importing package. Imports are not transitive. A short reference MUST resolve to exactly one declaration across the local package and its direct imports. Ambiguity is an error even when one candidate is local. Fully qualified references do not require an import.
 
@@ -47,11 +47,11 @@ Unit state is private to its instance. A variable has a declared type and a pure
 | `enum` | a nominal set of one or more unique literals |
 | `T[n]` | a fixed array of exactly n values, n a positive safe integer |
 
-Datatypes and enums are nominal: two declarations with identical members are distinct types. Recursive records, including recursion through arrays, MUST be rejected. There are no pointers, references, nullable values, dynamic collections, aliases, generics or inheritance in 0.1. Bounded strings and machine integer widths may be added by future target profiles; they are not inferred from these primitives.
+Datatypes and enums are nominal: two declarations with identical members are distinct types. Recursive records, including recursion through arrays, MUST be rejected. There are no pointers, references, nullable values, dynamic collections, aliases, generics or inheritance in 1.0. Bounded strings and machine integer widths may be added by future target profiles; they are not inferred from these primitives.
 
 `record T { field = expression; … }` MUST assign every field of T exactly once and no others. `enumValue T.Literal` MUST name a declared literal. `array [e1, e2, …]` constructs a nonempty fixed array; its elements MUST have one type, allowing numeric Int-to-Real promotion inside the literal. Arrays of differing lengths are incompatible.
 
-Record fields may be read by `value.field.subfield`. `arrayValue[index]` reads one array element, with an Int index. Only one final index suffix is available in 0.1; a local variable can hold an intermediate array value. Bounds are zero inclusive to length exclusive. Out-of-bounds access fails the current operation at runtime and MUST NOT produce an undefined value. Whole-value assignment is supported; mutating a record field or array element in place is not part of 0.1.
+Record fields may be read by `value.field.subfield`. `arrayValue[index]` reads one array element, with an Int index. Only one final index suffix is available in 1.0; a local variable can hold an intermediate array value. Bounds are zero inclusive to length exclusive. Out-of-bounds access fails the current operation at runtime and MUST NOT produce an undefined value. Whole-value assignment is supported; mutating a record field or array element in place is not part of 1.0.
 
 Assignment, argument passing and return require the same nominal type and array length, with one exception: a scalar Int may widen to Real. Arrays do not implicitly widen. No numeric narrowing or conversion between enums and integers is implicit.
 
@@ -63,7 +63,7 @@ From lowest to highest precedence: `or`, `and`, `== !=`, `< <= > >=`, `+ -`, `* 
 
 Boolean operators require Bool operands. Ordered comparison and arithmetic require numeric operands. Equality compares equal nominal value types recursively (records by declared fields, arrays by ordered values), or two numerics after promotion. String equality is exact code-point equality with no normalization; no ordering or concatenation operator is defined. `%` is integer remainder with the sign of the dividend and requires Int operands. `/` always returns Real. Other arithmetic returns Real if either input is Real and Int otherwise.
 
-A pure function has the syntax `function name(parameters): Type = expression;`. Its environment consists only of parameters, literals, record/enum/array construction and other functions in the same unit. It MUST NOT read unit variables, call operations, or communicate. Local call graphs MUST be acyclic in 0.1. `compute name(arguments)` evaluates the expression once with copied arguments and returns its value.
+A pure function has the syntax `function name(parameters): Type = expression;`. Its environment consists only of parameters, literals, record/enum/array construction and other functions in the same unit. It MUST NOT read unit variables, call operations, or communicate. Local call graphs MUST be acyclic in 1.0. `compute name(arguments)` evaluates the expression once with copied arguments and returns its value.
 
 ## 1.6 Requirements for tools
 

@@ -1,0 +1,325 @@
+{
+  "width": 1000,
+  "height": 700,
+  "title": "Model Browser · ownership and occurrence context",
+  "description": "Settings example: declarations and usages have distinct badges.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 1000,
+      "height": 700,
+      "fill": "#ffffff",
+      "stroke": "none",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 32,
+      "y": 47,
+      "text": "Model Browser · ownership and occurrence context",
+      "size": 30,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 32,
+      "y": 80,
+      "text": "Settings example: declarations and usages have distinct badges.",
+      "size": 17,
+      "bold": false,
+      "color": "#516579"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          32,
+          99
+        ],
+        [
+          968,
+          99
+        ]
+      ],
+      "color": "#ccd9e2",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "rect",
+      "x": 32,
+      "y": 123,
+      "width": 560,
+      "height": 532,
+      "fill": "#f7fafc",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "rect",
+      "x": 615,
+      "y": 123,
+      "width": 352,
+      "height": 532,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 52,
+      "y": 156,
+      "text": "  Settings  [package]",
+      "size": 18,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 74,
+      "y": 192,
+      "text": "▸ TemperatureSetting  [interface]",
+      "size": 18,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 74,
+      "y": 228,
+      "text": "  SettingStore  [unit def]",
+      "size": 18,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 96,
+      "y": 264,
+      "text": "  api  [port: provides]",
+      "size": 18,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 96,
+      "y": 300,
+      "text": "  currentValue  [var: Int]",
+      "size": 18,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 96,
+      "y": 336,
+      "text": "▸ read / update  [operations]",
+      "size": 18,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 74,
+      "y": 372,
+      "text": "  Cabin  [system: service]",
+      "size": 18,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 96,
+      "y": 408,
+      "text": "  settings : Service  [occurrence]",
+      "size": 18,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 118,
+      "y": 444,
+      "text": "  store : SettingStore  [occurrence]",
+      "size": 18,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 140,
+      "y": 480,
+      "text": "  api  [port: provides]",
+      "size": 18,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 40,
+      "y": 492,
+      "width": 544,
+      "height": 33,
+      "fill": "#d5edf0",
+      "stroke": "none",
+      "rx": 3
+    },
+    {
+      "kind": "text",
+      "x": 140,
+      "y": 516,
+      "text": "  update  [operation occurrence]",
+      "size": 18,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 96,
+      "y": 552,
+      "text": "▸ front : Client  [occurrence]",
+      "size": 18,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 96,
+      "y": 588,
+      "text": "▸ rear : Client  [occurrence]",
+      "size": 18,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 637,
+      "y": 158,
+      "text": "Selected operation",
+      "size": 22,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 637,
+      "y": 202,
+      "text": "Instance context:",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 637,
+      "y": 232,
+      "text": "Cabin.settings.store.update",
+      "size": 17,
+      "bold": false,
+      "color": "#087f8c"
+    },
+    {
+      "kind": "text",
+      "x": 637,
+      "y": 262,
+      "text": "",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 637,
+      "y": 292,
+      "text": "Shared declaration:",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 637,
+      "y": 322,
+      "text": "SettingStore.update",
+      "size": 17,
+      "bold": false,
+      "color": "#087f8c"
+    },
+    {
+      "kind": "text",
+      "x": 637,
+      "y": 352,
+      "text": "",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 637,
+      "y": 382,
+      "text": "Trigger: on call api.setPoint",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 637,
+      "y": 412,
+      "text": "Parameters: desired: Int",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 637,
+      "y": 442,
+      "text": "Result: Bool",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 637,
+      "y": 472,
+      "text": "",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 637,
+      "y": 502,
+      "text": "Open declaration → GV",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 637,
+      "y": 532,
+      "text": "Open behavior → FV",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 637,
+      "y": 562,
+      "text": "Up → store occurrence",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    }
+  ]
+}
