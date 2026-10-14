@@ -1,1 +1,2 @@
-*.pdf binary
+# Generated text comparisons use LF on every contributor and CI platform.
+* text=auto eol=lf

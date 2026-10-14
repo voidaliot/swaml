@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
-import { resolve, relative } from 'node:path';
+import { resolve, relative, sep } from 'node:path';
 import { AstUtils, EmptyFileSystem } from 'langium';
 import { parseHelper } from 'langium/test';
 import { createSwamlServices, SWAML_LANGUAGE_VERSION } from '../out/src/language/swaml-module.js';
@@ -47,7 +47,7 @@ function checkInventory(doc) {
             assert(c[key].every(x => universe.has(x)), `${c.id}: unknown ${key}`);
         }
         assert(nonempty(c.source?.model) && nonempty(c.source?.path), `${c.id}: missing semantic context`);
-        const modelPath = relative(root, resolve(root, c.source.model));
+        const modelPath = relative(root, resolve(root, c.source.model)).split(sep).join('/');
         assert(modelPath.startsWith('examples/') && modelPath.endsWith('.swaml'), `${c.id}: context must be a repository example`);
         assert(templates.has(c.drawing?.template), `${c.id}: unsupported drawing template`);
         assert(Array.isArray(c.drawing.header) && c.drawing.header.length && c.drawing.header.every(nonempty), `${c.id}: missing drawing header`);
