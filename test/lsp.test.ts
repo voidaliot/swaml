@@ -39,7 +39,7 @@ test('LSP initializes, publishes semantic diagnostics and shuts down', async () 
         send({ jsonrpc: '2.0', method: 'initialized', params: {} });
         send({ jsonrpc: '2.0', method: 'textDocument/didOpen', params: { textDocument: {
             uri: 'file:///lsp-test.swaml', languageId: 'swaml', version: 1,
-            text: 'swaml "1.0"; package P { unit def U { operation run(): Void { publish foreign.output.eventName(); return; } } }'
+            text: 'package P { unit def U { operation run(): Void { publish foreign.output.eventName(); return; } } }'
         } } });
         const message = await Promise.race([published, timeout]);
         assert.ok(message.params?.diagnostics?.some(d => d.code === 'SW050'), JSON.stringify(message));

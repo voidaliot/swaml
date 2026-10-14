@@ -1,6 +1,13 @@
 # Changelog
 
-## Unreleased
+## 1.1.0 — 2026-10-14
+
+- Keep `component def` and `unit def` as explicit reusable types; concrete root component usages replace `system`, including typed roots with separate deployment bindings.
+- Author operation-owned states directly without `machine`; omit Void results and the file header, and use ordinary assignments, calls, enum values and array literals.
+- Pin the headerless 1.1 grammar at the host/CLI; document the deliberate 1.0 syntax migration requested for this minor release.
+- Preserve interface-only communication, bounded control flow, typed contracts, runtime queues, RPC correlation, private stores, state timing, all graphical views and the separate extension boundary.
+- Migrate the complete normative/user-facing reference, examples, graphical figures and reference simulation profile; provide a full 1.1 Markdown/PDF edition and executable regression evidence.
+
 
 - Cancel undispatched inputs to terminated machines even behind unavailable FIFO messages, preventing false handler deadlines while preserving live-machine deadlines and delivery order (#15).
 

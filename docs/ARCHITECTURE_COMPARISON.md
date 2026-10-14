@@ -48,6 +48,8 @@ SysML 2.0 uses KerML as its foundation and provides definition/usage modeling, t
 
 The existing Aliot view family supplies the navigation vocabulary. Its public guide describes Browser navigation and structural/behavioral views. SWAML preserves General, Interconnect, Case, Sequence and Grid views, removes geometry and combines flow/state views into FV. [Existing Aliot documentation](https://github.com/voidaliot/sysml-v2-vscext-release/blob/main/README.md).
 
+SWAML 1.1 retains `component def` and `unit def` so reusable types remain visibly distinct from occurrences. A top-level component usage also supplies the closed execution root; no second `system` concept is needed. States remain directly inside their owning operation, distinguished by its initial-state declaration, rather than an extra authored `machine` wrapper. This reduces authoring vocabulary without changing interface boundaries or runtime state semantics.
+
 ## Additional architecture lessons
 
 AADL emphasizes architecture-level analysis of performance-critical properties and real-time embedded systems. [SEI introduction to AADL](https://www.sei.cmu.edu/library/the-architecture-analysis-design-language-aadl-an-introduction/), [SEI control-systems modeling guide](https://www.sei.cmu.edu/library/developing-aadl-models-for-control-systems-a-practitioners-guide/).
@@ -72,7 +74,7 @@ For service and event-driven software, our design additionally makes queue capac
 | SysML part definition/usage | component/unit definition and instance | software-specific ownership interpretation |
 | Physical/external endpoint | adapter unit with typed ports | how actual I/O enters the implementation |
 
-## Decisions retained in 1.0
+## Decisions retained in 1.1
 
 1. Unit is the smallest interface-protected software boundary. Pure local computation does not require a port.
 2. Components compose; units execute. Do not make both own independent execution semantics.
@@ -82,7 +84,7 @@ For service and event-driven software, our design additionally makes queue capac
 6. Publish/subscribe is explicit and supports fan-out without assuming a particular broker.
 7. A service can combine requests and events, but implicit fields are avoided.
 8. State and flow share FV because both belong to operations.
-9. A complete, bounded 1.0 language is preferable to undefined syntax for advanced features. Deferred constructs are listed in the implementation/roadmap documents.
+9. A complete, bounded 1.1 language is preferable to undefined syntax for advanced features. Deferred constructs are listed in the implementation/roadmap documents.
 10. Tool claims must distinguish parsing, validation, kernel mapping, execution and graphical editing.
 
 ## Source handling

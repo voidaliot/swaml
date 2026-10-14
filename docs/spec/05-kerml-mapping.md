@@ -1,6 +1,6 @@
 # 5. KerML semantic mapping
 
-Normative SWAML mapping contract, with implementation status stated explicitly. Part of the [SWAML 1.0 specification](../LANGUAGE_SPECIFICATION.md).
+Normative SWAML mapping contract, with implementation status stated explicitly. Part of the [SWAML 1.1 specification](../LANGUAGE_SPECIFICATION.md).
 
 ## 5.1 Foundation and boundary
 
@@ -17,6 +17,7 @@ The [mapping inventory](../../spec/kerml-mapping.json) is a machine-readable des
 | Package | Package | flat authoring namespace |
 | Component definition | Structure | only composition, interfaces and connectors |
 | Unit definition | Structure | encapsulated state and local executable features |
+| Root component | composite Feature typed by a referenced or synthetic Structure | selected named occurrence, closed topology and effective execution profile; typed binding cannot extend topology |
 | Component/unit instance | composite Feature typed by its Structure | exactly-one multiplicity and acyclic composition |
 | Value datatype / enum | DataType | finite value semantics; enum domain restriction |
 | Interface contract | Classifier | nominal version, legal members and communication mode |
@@ -39,7 +40,7 @@ A mapper MUST perform the following in dependency order:
 
 1. Validate the complete workspace and resolve every textual reference. Allocate stable IDs for package declarations and each named semantic element. Retain file URI and source range as provenance, not as identity.
 2. Create value types and interface classifiers. Materialize every data/event/operation parameter and result as a typed feature with copied-value semantics. Preserve interface version and member order.
-3. Create component/unit structures and owned instance features, with membership and typing links. Keep definition identity separate from every instance-path identity. A reused definition must not merge the states of its occurrences.
+3. Create component/unit structures and owned instance features, plus synthetic structures for inline root composition, with membership and typing links. Each root is a named occurrence of its referenced or synthetic structure; a typed root has no extra wrapper child. Preserve source profile omission in provenance and effective service in semantics. Keep definition identity separate from every instance-path identity. A reused definition must not merge the states of its occurrences.
 4. Create each port feature in its owning structure. Apply role-specific direction to each member projection: RPC inputs/results have opposite directions; service events run provider-to-consumer. Do not assign a single simplistic “out” bit to an entire bidirectional service contract.
 5. Create operation behaviors within their unit's ownership. Add a synthetic owned executable step typed by that behavior and a unit-instance context binding. This lowering artifact gives execution a structural context; it is not a user-visible performer or a second editable allocation model.
 6. Lower statement blocks to structured steps with explicit sequencing. A branch has a Boolean selection predicate and branch result control; a bounded loop has condition, body, count and failure edge. Lower expressions as typed expressions/functions. A mapper must preserve source order and short-circuit evaluation.

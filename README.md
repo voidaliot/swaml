@@ -2,13 +2,13 @@
 
 SWAML is a software-focused modeling language designed on the KerML semantic foundation. It combines architectural structure, executable-operation contracts, state behavior, and interface-controlled communication for embedded realtime software and services.
 
-**Version 1.0.0 defines the language and includes a working Langium parser, validator and reference simulator.** It is an independent project, informally motivated by an “unofficial UML 3.0”; it is not an OMG UML release, an AUTOSAR implementation, or a certified KerML tool.
+**Version 1.1.0 defines the language and includes a working Langium parser, validator and reference simulator.** It is an independent project, informally motivated by an “unofficial UML 3.0”; it is not an OMG UML release, an AUTOSAR implementation, or a certified KerML tool.
 
 ## Read the complete specification
 
-[Full Markdown reference](docs/SWAML-1.0.0-Reference.md) · [Full PDF](output/pdf/SWAML-1.0.0-Specification.pdf) · [By concern](docs/CONCERN_GUIDE.md) · [Alphabetical keywords](docs/KEYWORD_REFERENCE.md)
+[Full Markdown reference](docs/SWAML-1.1.0-Reference.md) · [Full PDF](output/pdf/SWAML-1.1.0-Specification.pdf) · [By concern](docs/CONCERN_GUIDE.md) · [Alphabetical keywords](docs/KEYWORD_REFERENCE.md)
 
-The specification covers all 129 reserved words, formal syntax/typing/execution rules, static and dynamic architecture, communication policies, timing, deployment, cases and graphical notation. The PDF includes clickable navigation, all model examples, exact grammar, vector diagrams and embedded source files. [Publication and verification](docs/PDF_PUBLICATION.md) · [1.0 evidence](docs/RELEASE_1_0.md) · [Historical v0.1.0](https://github.com/voidaliot/swaml/releases/tag/v0.1.0).
+The specification covers every reserved word, formal syntax/typing/execution rules, static and dynamic architecture, communication policies, timing, deployment, cases and graphical notation. The PDF includes clickable navigation, all model examples, exact grammar, vector diagrams and embedded source files. [Publication and verification](docs/PDF_PUBLICATION.md) · [1.1 evidence](docs/RELEASE_1_1.md) · [Historical v0.1.0](https://github.com/voidaliot/swaml/releases/tag/v0.1.0).
 
 ## Start here
 
@@ -18,13 +18,30 @@ The specification covers all 129 reserved words, formal syntax/typing/execution 
 - [Graphical examples](docs/GRAPHICAL_EXAMPLES.md): Browser, GV, IV, CV, SV, GRV and both FV forms.
 - [Architecture comparison](docs/ARCHITECTURE_COMPARISON.md): AUTOSAR Classic/Adaptive, UML, SysML and AADL.
 - [Grammar](src/language/swaml.langium) and [tool integration](docs/TOOLING.md): reusable Langium core for a separately implemented VS Code extension.
-- [Implementation status](docs/IMPLEMENTATION_STATUS.md) and [migration](docs/MIGRATION_1_0.md): precise scope and version changes.
+- [Implementation status](docs/IMPLEMENTATION_STATUS.md) and [migration](docs/MIGRATION_1_1.md): precise scope and version changes.
+
+## Compact syntax, explicit meaning
+
+Reusable types retain `def`. A top-level component usage is the runnable root, and operations own their states directly. Files begin with packages; select the pinned SWAML 1.1 parser through your tool or the CLI's `--language-version 1.1` option. The grammar removes the `swaml`, `system`, `machine`, `set`, `compute`, `array` and `enumValue` markers. See the [1.1 migration](docs/MIGRATION_1_1.md) before loading older models.
+
+```swaml
+package CounterExample {
+    unit def Counter {
+        var value: Int = 0;
+        operation increment() on start { value = value + 1; }
+    }
+    component demo { unit counter: Counter; }
+}
+```
+
+`component def Assembly { ... }` defines a reusable composition. `component demo: Assembly;` creates a named root from it. All exchange between distinct unit/component occurrences still requires typed ports and explicit connections.
 
 ## The model
 
 ```mermaid
 flowchart TB
-    S[System assembly] --> C[Component instance]
+    C[Root component usage] --> N[Nested component usage]
+    N --> U[Unit instance]
     C --> U[Unit instance]
     U --> O[Operation]
     O --> F[Control flow or owned states]
@@ -33,7 +50,7 @@ flowchart TB
     U --> FN[Pure function]
 ```
 
-Components compose units and components. Units own data, operations and pure functions. Operations own their control flow or state machine directly. There are no performers or separate action allocations.
+Components compose units and components. Units own data, operations and pure functions. Operations own their control flow or states directly. There are no performers or separate action allocations.
 
 Every exchange between units or components crosses typed ports and an explicit connector. Interfaces support sender–receiver data, client–server operations, publish–subscribe events, and combined services. An event has an interface declaration, an emitting operation and a receiving operation or state transition. There is no global event bus hidden in the syntax.
 
@@ -62,6 +79,7 @@ node out/src/cli/simulate.js Commerce::Shop examples/simulation/03-service-pubsu
 | [Mixed gateway](examples/06-mixed-gateway.swaml) | Explicit conversion between sampled embedded data and service events |
 | [Client–server](examples/07-client-server.swaml) | Standalone RPC, idempotent query, timeout and correlated reply |
 | [Service field](examples/08-service-field.swaml) | Explicit getter/setter/event, multiple consumers, reentrant snapshot query |
+| [Component roots](examples/09-component-roots.swaml) | Reusable definitions, typed roots, realtime deployment bindings and inline roots with direct unit children |
 | [Invalid models](examples/invalid/README.md) | Rejected attempts to bypass an interface |
 
 ## Repository layout

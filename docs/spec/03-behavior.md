@@ -1,15 +1,17 @@
 # 3. Operations, flow and states
 
-Normative chapter of the [SWAML 1.0 specification](../LANGUAGE_SPECIFICATION.md).
+Normative chapter of the [SWAML 1.1 specification](../LANGUAGE_SPECIFICATION.md).
 
 ## 3.1 Operation identity and activation
 
-An operation belongs directly to a unit definition and is instantiated per unit instance. It has a name, ordered parameters, result type, optional trigger, optional timing contract, and exactly one body form: a statement block or an owned state machine. A component does not execute operations; execution lives in its contained units.
+An operation belongs directly to a unit definition and is instantiated per unit instance. It has a name, ordered parameters, optional result annotation, optional trigger, optional timing contract, and exactly one body form: a statement block or directly owned states. Omitting `: Type` means Void; an explicit `: Void` has identical meaning. A component does not execute operations; execution lives in its contained units.
+
+An **activation root** is one dispatched operation activation or state reaction and its synchronous local-call stack. It owns the execution lock/snapshot context inherited by helpers. This runtime term is distinct from a **root component**, which selects architecture and never executes statements itself.
 
 | Trigger | Activation and permitted signature |
 | --- | --- |
 | omitted | local `invoke`; the callable operation must return Void |
-| `on manual` | parameterless Void root activated by a test/administrative harness, carrying no model data |
+| `on manual` | parameterless Void activation activated by a test/administrative harness, carrying no model data |
 | `on start` | parameterless Void operation, once after unit initialization and connector readiness |
 | `on every D` | parameterless Void operation released at unit start + kD, for positive integer k |
 | `on receive p.m` | copied data/event arguments, Void result |
@@ -26,7 +28,7 @@ An activation holds its copied parameters, locals, a program position, its unit 
 | Statement | Semantics |
 | --- | --- |
 | `let x: T = e;` | evaluate e, typecheck, create a local mutable value |
-| `set x = e;` | replace an existing local/parameter/unit-variable value; no field or remote assignment |
+| `x = e;` | replace an existing local/parameter/unit-variable value; no field or remote assignment |
 | `invoke op(args);` | execute an untriggered local Void operation synchronously; return resumes the caller |
 | `return;` / `return e;` | complete the current operation; return a copied value when required |
 | `if (e) { … } else { … }` | evaluate a Bool once and execute the selected block; else is optional |
@@ -39,7 +41,7 @@ Reaching the end of a Void operation completes it. A value-returning operation M
 
 Failure unwinds the current activation and its synchronous local callers. It does not undo earlier variable assignments, published messages, responses, or external effects. For an RPC handler, failure produces a RemoteFailure response through the originating interface. For a periodic/start/manual/receive activation it produces a local diagnostic occurrence, not an implicit broadcast. To notify another unit, model a fault event and publish it explicitly on a declared interface in an explicit branch before failing.
 
-Conditionals, bounded loops, expression evaluation and sequential local calls are the full flow language in 1.0. There is no generic fork/join statement, exception hierarchy, arbitrary host-language body or independent action node. Concurrent architectural behavior is expressed by separately activated operations and connected units. A later fork/join extension must define data-race and cancellation semantics before entering the grammar.
+Conditionals, bounded loops, expression evaluation and sequential local calls are the full flow language in 1.1. There is no generic fork/join statement, exception hierarchy, arbitrary host-language body or independent action node. Concurrent architectural behavior is expressed by separately activated operations and connected units. A later fork/join extension must define data-race and cancellation semantics before entering the grammar.
 
 ## 3.3 Scheduling and concurrency
 
@@ -49,13 +51,13 @@ A callback to the same unit while a serial request is pending cannot execute unt
 
 `concurrency reentrant` permits overlapping activations with separate local frames. Such an operation MUST NOT mutate unit data directly or through local helpers, and MUST NOT invoke an operation that mutates shared state. It may read the unit's state snapshot captured at dispatch, and functions receive copied parameters. A conforming backend must preserve that snapshot or reject the model if its target cannot realize it. The reference validator follows local helper calls to check this prohibition. Snapshot realizability remains a backend obligation.
 
-Input queues are per connector/member. FIFO constrains order within one queue. Across independent ready queues, the scheduler may choose any ready activation consistent with deadlines and the target profile; no global total order is inferred. Periodic activations released while the serial unit is busy remain pending; a target profile MUST bound that activation backlog; exceeding the bound records ActivationOverflow and stops the system, as defined in chapter 6. Deadlines are measured from release, not eventual dispatch. Merely listing WCET/deadline does not define thread priorities.
+Input queues are per connector/member. FIFO constrains order within one queue. Across independent ready queues, the scheduler may choose any ready activation consistent with deadlines and the target profile; no global total order is inferred. Periodic activations released while the serial unit is busy remain pending; a target profile MUST bound that activation backlog; exceeding the bound records ActivationOverflow and stops the selected root execution, as defined in chapter 6. Deadlines are measured from release, not eventual dispatch. Merely listing WCET/deadline does not define thread priorities.
 
 The core semantics is therefore a set of allowed execution traces. An execution backend may add a deterministic scheduling policy that narrows this set but must document it. A model requiring determinism across sources must explicitly order exchanges or provide a coordinating operation.
 
 ## 3.4 Stateful operations
 
-A stateful operation MUST have no parameters, result Void, and `on start`. It owns one flat state machine with one or more states, exactly one initial reference and zero or more transitions. State and transition names are unique in the machine namespace. Hierarchical/orthogonal states, history pseudostates, entry/exit points and state inheritance are absent in 1.0.
+A stateful operation MUST have no parameters, result Void (explicit or omitted), and `on start`. Its body begins `{ initial StateName;`, followed by one or more states and zero or more transitions. There is no `machine` declaration or keyword. The grammar's `StateBody` only groups the owned syntax; it has no separate authored name, definition, allocation or runtime identity. `initial` MUST be first, so the body is unambiguously distinguished from a statement block. The behavior is mathematically a flat state machine with exactly one initial reference. State and transition names are unique within that operation's state body. Hierarchical/orthogonal states, history pseudostates, entry/exit points and state inheritance are absent in 1.1.
 
 Starting the operation enters its initial state and executes that state's entry block once. The operation remains alive between reactions without holding the serial unit lock. Each entry/exit/transition reaction is scheduled as a serial activation unless its timing contract explicitly says reentrant; a stateful operation nevertheless MUST have at most one reaction in progress and cannot reenter its own state machine.
 
@@ -63,9 +65,9 @@ A state owns an optional entry block and optional exit block. A `final` state co
 
 ## 3.5 Transition triggers and selection
 
-A transition names source and destination states in the same machine. It has one trigger and optional Bool guard and nonnegative safe integer priority. Missing priority means 0; larger values take precedence.
+A transition names source and destination states in the same operation. It has one trigger and optional Bool guard and nonnegative safe integer priority. Missing priority means 0; larger values take precedence.
 
-- `on receive port.member` consumes one incoming data/event for the machine. Event parameter names are available as copied values in the guard and effect. Data has the local name `payload`. These names MUST NOT collide with unit variables. RPC operations are not allowed as machine transition triggers.
+- `on receive port.member` consumes one incoming data/event for the machine. Event parameter names are available as copied values in the guard and effect. Data has the local name `payload`. These names MUST NOT collide with unit variables. RPC operations are not allowed as state transition triggers.
 - `on after D` becomes eligible after D elapsed time since completing the source state's entry block. Leaving the source cancels its timer. Reentering starts a fresh timer.
 - `on completion` is eligible after the state's entry and any prior reaction have finished, before waiting for a new external message.
 

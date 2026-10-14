@@ -1,4 +1,3 @@
-swaml "1.0";
 package Gateway {
     interface senderReceiver Samples version "1.0.0" { data value: Real sampled; }
     interface service Telemetry version "1.0.0" {
@@ -7,7 +6,7 @@ package Gateway {
     }
     unit def Sensor {
         port output: Samples sender;
-        operation sample(): Void on every 10 ms timing { wcet 1 ms; deadline 2 ms; concurrency serial; } {
+        operation sample() on every 10 ms timing { wcet 1 ms; deadline 2 ms; concurrency serial; } {
             send output.value(21.0); return;
         }
     }
@@ -15,8 +14,8 @@ package Gateway {
         port input: Samples receiver;
         port api: Telemetry provides;
         var latest: Real = 0.0;
-        operation receiveSample(value: Real): Void on receive input.value timing { wcet 1 ms; deadline 3 ms; concurrency serial; } {
-            set latest = value;
+        operation receiveSample(value: Real) on receive input.value timing { wcet 1 ms; deadline 3 ms; concurrency serial; } {
+            latest = value;
             publish api.observed(value);
             return;
         }
@@ -25,12 +24,12 @@ package Gateway {
     unit def Dashboard {
         port telemetry: Telemetry requires;
         var displayed: Real = 0.0;
-        operation refresh(): Void on manual timing { wcet 1 ms; deadline 30 ms; concurrency serial; } {
+        operation refresh() on manual timing { wcet 1 ms; deadline 30 ms; concurrency serial; } {
             request telemetry.read() as measured within 25 ms otherwise { return; };
-            set displayed = measured; return;
+            displayed = measured; return;
         }
-        operation update(value: Real): Void on receive telemetry.observed timing { wcet 1 ms; deadline 5 ms; concurrency serial; } {
-            set displayed = value; return;
+        operation update(value: Real) on receive telemetry.observed timing { wcet 1 ms; deadline 5 ms; concurrency serial; } {
+            displayed = value; return;
         }
     }
     component def Acquisition {
@@ -50,7 +49,7 @@ package Gateway {
         unit dashboard: Dashboard;
         delegate telemetry -> dashboard.telemetry;
     }
-    system Product mixed {
+    component Product mixed {
         component acquisition: Acquisition;
         component bridge: Bridge;
         component display: Display;

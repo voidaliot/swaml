@@ -4,6 +4,8 @@
 
 The current package is a reusable language core. It is marked `private` to prevent accidental npm publication. The existing `voidaliot/swaml-vsc-ext` repository can consume a reviewed version through a local workspace dependency or a future published package; that repository has not been modified by this setup.
 
+This edition parses headerless **SWAML 1.1** only. The extension must pin its language-core dependency and identify 1.1 in project/workspace settings before source loading; these settings belong to the host, not to an undocumented model grammar. The repository CLI is itself pinned to 1.1. Unsupported requested editions must be rejected explicitly; a host must never silently upgrade models to the latest parser. Read the [migration guide](MIGRATION_1_1.md) before consuming this incompatible source update.
+
 The source of concrete syntax is [swaml.langium](../src/language/swaml.langium). Langium generates AST types, grammar metadata, reflection and TextMate syntax. Generated files and `out/` are ignored; rebuild them after checkout.
 
 The implementation follows Langium's grammar → generated AST → references → validation workflow. [Langium grammar reference](https://langium.org/docs/reference/grammar-language/), [reference-resolution guide](https://langium.org/docs/learn/workflow/resolve_cross_references/).
@@ -99,6 +101,6 @@ Tests cover valid fixtures, illegal interface access, scoping, type errors, QoS,
 
 ## Simulation API for a separate host
 
-After linking and validating every referenced document, call `simulate(models, "Package::System", options)` from the package's `./simulation` export. It has no Node filesystem dependency. The host supplies a finite horizon and may supply manual releases, transport fault schedule and resource limits. The [profile contract](SIMULATION.md) defines the exact scheduler, observability and limits. The CLI adapter adds file loading and SHA-256 source digests.
+After linking and validating every referenced document, call `simulate(models, "Package::Root", options)` from the package's `./simulation` export. It has no Node filesystem dependency. The host supplies a finite horizon and may supply manual releases, transport fault schedule and resource limits. The [profile contract](SIMULATION.md) defines the exact scheduler, observability and limits. The CLI adapter adds file loading and SHA-256 source digests.
 
 Present `outcome` and `status` together: a run can quiesce after a failed activation, and a bounded horizon is not a proof of liveness. A future extension can connect trace source lines and occurrence paths to FV/IV/GRV selections. That UI belongs in the extension repository; it must not introduce an independent runtime meaning or bypass validation.

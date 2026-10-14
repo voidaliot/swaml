@@ -1,6 +1,8 @@
 # Contributing to SWAML
 
-SWAML is developed as a language: specification, grammar, semantics, diagnostics and examples must evolve together. Start with the [language specification](docs/LANGUAGE_SPECIFICATION.md), [ownership decision](docs/decisions/0001-language-boundaries.md) and [implementation status](docs/IMPLEMENTATION_STATUS.md).
+SWAML is developed as a language: specification, grammar, semantics, diagnostics and examples must evolve together. The 1.1 syntax keeps explicit `def` declarations and distinguishes them from concrete component usages. Source files are headerless; a host must pin the grammar version. Read the [1.1 migration](docs/MIGRATION_1_1.md) when converting old models.
+
+Start with the [language specification](docs/LANGUAGE_SPECIFICATION.md), [ownership decision](docs/decisions/0001-language-boundaries.md) and [implementation status](docs/IMPLEMENTATION_STATUS.md).
 
 ## Development setup
 

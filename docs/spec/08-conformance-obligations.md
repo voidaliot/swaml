@@ -1,6 +1,6 @@
 # 8. Conformance obligations and evidence
 
-Normative classification of the [SWAML 1.0 specification](../LANGUAGE_SPECIFICATION.md). This chapter separates static language validity, runtime behavior and proof claims. It prevents acceptance by one tool from being mistaken for evidence supplied by another.
+Normative classification of the [SWAML 1.1 specification](../LANGUAGE_SPECIFICATION.md). This chapter separates static language validity, runtime behavior and proof claims. It prevents acceptance by one tool from being mistaken for evidence supplied by another.
 
 ## 8.1 Static acceptance
 
@@ -8,7 +8,7 @@ Static validity is determined from the complete loaded source workspace without 
 
 | ID | Static obligation | Reference-core evidence |
 | --- | --- | --- |
-| V01 | Exact header; portable tokens, escapes and safe literal domains | parser, SW001/SW025; lexical audit tests |
+| V01 | Pinned edition, headerless package syntax; portable tokens, escapes and safe literal domains | parser/SW025; lexical and migration tests |
 | V02 | Unique package/scoped names; imports exist; references resolve uniquely before kind filtering | SW002/SW004, owner-aware linker; multi-file tests |
 | V03 | Finite nominal records/enums/arrays; no Void data; complete typed constructions | SW020–SW028; values/flow and audit fixtures |
 | V04 | Pure initializer/function environments, no cross-unit value lookup, compatible operands/arguments/results | SW022–SW024; isolation and type tests |
@@ -16,12 +16,12 @@ Static validity is determined from the complete loaded source workspace without 
 | V06 | Acyclic composition, correct occurrence kinds, immediate-child routes, one delegation per boundary, no duplicate aliases/routes | SW012/SW013/SW030/SW033/SW035 |
 | V07 | Required-port closure through every alias; single source/provider where required | SW034/SW035; closure fixtures |
 | V08 | Every outgoing member has syntactic emission provenance; every incoming member has one handler owner | SW050/SW051/SW055 |
-| V09 | Positive safe durations, capacities, array extents, loop bounds and priorities; complete QoS; sampled buffering and idempotent RPC declaration | SW020/SW040/SW041/SW043/SW059/SW062 |
+| V09 | Positive safe durations, capacities, array extents and loop bounds; nonnegative safe priorities; complete QoS; sampled buffering and idempotent RPC declaration | SW020/SW040/SW041/SW043/SW059/SW062 |
 | V10 | WCET <= deadline; periodic deadline <= period; realtime/mixed required timing/latency/age metadata | SW042/SW044/SW045 |
 | V11 | Local acyclic calls; legal invoke targets; copied input parameters; no live-name shadowing | linker, SW002/SW056/SW058 |
 | V12 | Value returns and request failure paths terminate; Void completion is not a value | SW020/SW022/SW023/SW053/SW057 |
-| V13 | Reentrant roots do not write unit data directly or through any reachable helper | SW054; transitive-effect audit tests |
-| V14 | Machine signature, initial reference, graph reachability, final-state rules, competing priorities and no unconditional completion cycle | SW060–SW064 |
+| V13 | Reentrant activation roots do not write unit data directly or through any reachable helper | SW054; transitive-effect audit tests |
+| V14 | Stateful operation signature, initial reference, graph reachability, final-state rules, competing priorities and no unconditional completion cycle | SW060–SW064 |
 | V15 | Valid occurrence deployment/node targets; no duplicate exact allocation | SW070 |
 | V16 | View subject kind, case member/route/direction, earlier predecessor and uniquely correlated reply | SW080–SW083 |
 
@@ -63,6 +63,6 @@ A tool's conformance report MUST identify language version, implementation versi
 
 ## 8.5 Scope and future evolution
 
-Completeness of this specification means every 1.0 construct has syntax, ownership, reference/type rules, static constraints, operational or descriptive meaning, a normalization contract and a conformance category. It does not mean every future software architecture concern is a built-in keyword or that all backends are implemented.
+Completeness of this specification means every 1.1 construct has syntax, ownership, reference/type rules, static constraints, operational or descriptive meaning, a normalization contract and a conformance category. It does not mean every future software architecture concern is a built-in keyword or that all backends are implemented.
 
-The finite boundary remains explicit: no inheritance, generics, reference-valued payloads, dynamic object creation/subscriptions/discovery, unrestricted fork/join, hierarchical/orthogonal state machines or arbitrary host-language code. Model adapters and protocols can express supported interactions; a new construct needs a versioned proposal with the same obligations. Patch clarification fixes retain the `1.0` header only when valid-model meaning is unchanged; incompatible changes require versioned migration.
+The finite boundary remains explicit: no inheritance, generics, reference-valued payloads, dynamic object creation/subscriptions/discovery, unrestricted fork/join, hierarchical/orthogonal state machines or arbitrary host-language code. Model adapters and protocols can express supported interactions; a new construct needs a versioned proposal with the same obligations. Patch clarifications preserve valid-model meaning for the pinned edition. Incompatible changes require an explicitly selected new edition and migration notes. The 1.1 release intentionally migrates syntax from 1.0 despite using a minor version; it provides no silent legacy aliases.

@@ -1,6 +1,6 @@
 # SWAML language specification
 
-**Version:** 1.0.0 · **Language header:** `swaml "1.0";` · **Status:** complete 1.0 specification · **Date:** 2026-10-14
+**Version:** 1.1.0 · **Source:** headerless packages; parser/host pinned to 1.1 · **Status:** complete 1.1 specification · **Date:** 2026-10-14
 
 SWAML means Software Architecture Modeling Language. This document and its normative chapters define a software architecture language over a KerML-based semantic model. SWAML is independently authored; “unofficial UML 3.0” describes its motivation and does not denote an OMG standard or compatibility level.
 
@@ -27,9 +27,9 @@ The [user guide](USER_GUIDE.md), [architecture comparison](ARCHITECTURE_COMPARIS
 
 MUST and MUST NOT state conformance requirements. SHOULD states a recommendation with an explicitly documented justification needed for deviation. MAY grants permission. “Error” means a model is not valid under this version. An implementation may retain an invalid model for editing but MUST NOT report it as fully valid.
 
-The grammar determines tokens and parse structure. Prose determines validity and meaning. If grammar accepts text that violates a semantic rule, that text is invalid. If a discovered conflict makes the two impossible to satisfy, record a specification defect; do not silently choose a runtime meaning. Unknown syntax and unknown language versions MUST be rejected.
+The grammar determines tokens and parse structure. Prose determines validity and meaning. If grammar accepts text that violates a semantic rule, that text is invalid. If a discovered conflict makes the two impossible to satisfy, record a specification defect; do not silently choose a runtime meaning. Unknown syntax and unsupported requested language versions MUST be rejected. The host selects a pinned 1.1 parser before loading source; a file does not guess its own edition. See the [1.1 migration guide](MIGRATION_1_1.md) for the intentional syntax migration from 1.0.
 
-The language is closed at version 1.0: constructs not listed in the grammar are not implicitly inherited from UML, SysML or KerML. Definitions may be reused by instantiation, but inheritance, generics, redefinition, unrestricted KerML embedding and dynamic creation are not part of this version. This constraint makes the whole v1.0 language implementable without pretending to reproduce three other standards.
+The language is closed at version 1.1: constructs not listed in the grammar are not implicitly inherited from UML, SysML or KerML. Definitions may be reused by instantiation, but inheritance, generics, redefinition, unrestricted KerML embedding and dynamic creation are not part of this version. This constraint makes the whole v1.1 language implementable without pretending to reproduce three other standards.
 
 ## 3. Design invariants
 
@@ -46,24 +46,24 @@ Local calls, calculation values, timer expiration, initial activation and state 
 
 | Element | Owns | References / meaning |
 | --- | --- | --- |
-| Model | packages | exact language version |
+| Model | packages | language version supplied by the pinned parser/host |
 | Package | imports, named elements | namespace |
 | DataType / EnumType | fields / literals | immutable value shape |
 | Interface | data, event or operation members | nominal versioned contract |
 | Component definition | ports, child instances, connectors, delegation | reusable composition type |
 | Unit definition | ports, private variables, operations, functions | reusable behavior/data boundary |
-| Instance | no inline definitions in 1.0 | one component or unit definition |
+| Contained instance | no inline definitions | one component or unit definition |
 | Port | role and optionality | one interface |
 | Connector | QoS | source and target port paths |
 | Delegation | no data conversion | outer port and immediate child port |
-| Operation | parameters, result, trigger, timing; flow **or** machine | executable behavior owned by a unit |
+| Operation | parameters, result, trigger, timing; flow **or** owned states | executable behavior owned by a unit |
 | Function | parameters, result, expression | pure local calculation |
-| Machine | states, transitions, initial reference | lifetime of a stateful operation |
+| State body | states, transitions, initial reference | syntax grouping of one operation; not an independent model element |
 | State | entry and exit blocks | one operation-local condition |
 | Transition | guard, effect, priority, trigger | source and target states |
-| System | component instances, connectors, execution nodes, deployment | closed assembly and profile |
+| Root component | inline unit/component occurrences and connectors, or one component definition; execution nodes/deployment | named closed occurrence; default service profile |
 | Requirement | text | named obligation |
-| Case | exchange steps, trace links | one system and requirements |
+| Case | exchange steps, trace links | one root component and requirements |
 | View | kind | one subject, no runtime semantics |
 
 All named elements have stable identity within a model version. Tools SHOULD persist a separate UUID identity map for editing; the language's normative textual identity is its qualified declaration/instance path. A rename is an identity-preserving edit only when the tool updates that map and all references atomically.

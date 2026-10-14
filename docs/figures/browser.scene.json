@@ -126,7 +126,7 @@
       "kind": "text",
       "x": 74,
       "y": 372,
-      "text": "  Cabin  [system: service]",
+      "text": "  Cabin  [component root]",
       "size": 18,
       "bold": true,
       "color": "#17324d"

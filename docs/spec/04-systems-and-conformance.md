@@ -1,12 +1,16 @@
-# 4. Systems, timing, cases and conformance
+# 4. Root components, timing, cases and conformance
 
-Normative chapter of the [SWAML 1.0 specification](../LANGUAGE_SPECIFICATION.md).
+Normative chapter of the [SWAML 1.1 specification](../LANGUAGE_SPECIFICATION.md).
 
-## 4.1 Systems and profiles
+## 4.1 Root components and profiles
 
-A system is a closed architecture assembly. Its top-level occurrences are components. Several systems in one package may describe alternative assemblies of the same definitions. Instantiation recursively creates children and local variable storage, resolves delegation and connectors, and then enables startup/periodic activation. No unit may publish during a partially connected startup phase.
+A root component is the closed occurrence selected for validation, deployment and execution. It uses the same component concept as reusable architecture: an inline `component Demo { … }` owns unit/component children and connectors, while `component Demo: Assembly;` obtains them from a component definition. Several named roots in one package may instantiate the same definition independently or describe alternative assemblies. Root selection is explicit in the simulator/host by package-qualified name, and is not inferred from file order.
 
-The system profile is `service`, `realtime` or `mixed`:
+A typed root's optional body is a deployment binding only: nodes and deployments may reference existing descendants; instances, connectors, ports and delegation MUST NOT be added there. An inline root may contain direct unit instances because the root itself supplies their component boundary. All paths in cases, deployment and simulation are relative to the selected root; the root name is not an extra child segment.
+
+Instantiation recursively creates children and local variable storage, resolves delegation and connectors, checks closure, and then enables startup/periodic activation. No unit may publish during a partially connected startup phase.
+
+The root profile is `service`, `realtime` or `mixed`; omission means `service`. Only the service profile defaults; QoS, interface versions, timeouts and realtime obligations remain explicit:
 
 | Obligation | service | realtime | mixed |
 | --- | --- | --- | --- |
@@ -17,7 +21,7 @@ The system profile is `service`, `realtime` or `mixed`:
 | Interface isolation and handler checks | required | required | required |
 | Production scheduling evidence | target dependent | required for hard realtime claims | required for realtime claims |
 
-The mixed profile is intentionally conservative: all used operations and connectors carry timing contracts. It does not infer that a cloud-facing operation has no timing requirement. A future subassembly profile can relax this with explicit partitioning; no such implicit relaxation exists in 1.0.
+The mixed profile is intentionally conservative: all used operations and connectors carry timing contracts. It does not infer that a cloud-facing operation has no timing requirement. A future subassembly profile can relax this with explicit partitioning; no such implicit relaxation exists in 1.1.
 
 A timing contract declares positive `wcet`, positive `deadline`, and `concurrency serial|reentrant`. WCET MUST be no larger than deadline. For periodic operations, deadline MUST be no larger than the period. A stateful operation's timing contract applies separately to each run-to-completion reaction, including entry/exit/effect and any completion microsteps, not to the lifetime of the machine.
 
@@ -27,7 +31,7 @@ A conforming validator checks arithmetic consistency. A conforming target backen
 
 ## 4.2 Deployment
 
-An execution node is named and has kind `mcu`, `process` or `container`. A deployment maps an existing component or descendant unit/component instance path onto a node declared in the same system. It does not reference a definition. The same explicit instance path may occur in only one deployment.
+An execution node is named and has kind `mcu`, `process` or `container`. A deployment maps an existing immediate or descendant unit/component instance path onto a node declared in the same root component. It does not reference a definition. The same explicit instance path may occur in only one deployment.
 
 A component deployment applies to all its descendants by default. A deployment of a more specific descendant overrides that inherited location for its subtree. If no deployment exists for an instance or ancestor, the instance is logically modeled but unallocated. An unallocated architecture can be valid; an executable target configuration cannot silently pick a node and call it specified.
 
@@ -35,9 +39,9 @@ Deployment does not change interfaces, connector identity, callback ownership or
 
 ## 4.3 Requirements and cases
 
-`requirement Name "text";` declares a named natural-language obligation. `case Name for System satisfies Requirement, … { … }` defines a scenario and optional trace links. A `satisfies` link is an assertion of intended coverage, not verified fulfillment. Verification evidence belongs to a test, analysis or review artifact linked by an implementation tool.
+`requirement Name "text";` declares a named natural-language obligation. `case Name for RootComponent satisfies Requirement, … { … }` defines a scenario and optional trace links. A `satisfies` link is an assertion of intended coverage, not verified fulfillment. Verification evidence belongs to a test, analysis or review artifact linked by an implementation tool.
 
-A case step has a kind (`send`, `publish`, `request`, `reply`), two endpoint-member paths, a named top-level system connector, an optional earlier-step predecessor and a unique label. Case endpoints must be visible system-level component ports; internal component interactions require a separate scenario in a system assembled at that abstraction level. This limitation keeps case paths subject to the same hierarchy rule as structural connectors.
+A case step has a kind (`send`, `publish`, `request`, `reply`), two endpoint-member paths, a named connector at the selected root composition level, an optional earlier-step predecessor and a unique label. Case endpoints must be visible ports of immediate child units/components. A typed root resolves those children and connectors through its definition. Internal interactions at a deeper level require a separate root component assembled at that abstraction level. This limitation keeps case paths subject to the same hierarchy rule as structural connectors.
 
 Both endpoints MUST identify the same member of the connector's interface. Sender–receiver steps use data, publish steps use events, and request/reply steps use operation signatures. A request follows client → server or requires → provides orientation; a reply reverses the matching request. A service publish goes from provides → requires; ordinary pub/sub follows publisher → subscriber.
 
@@ -47,7 +51,7 @@ Cases describe representative traces, not exhaustive behavior. They do not execu
 
 ## 4.4 View declarations
 
-A view declaration names a view kind and a dot-separated subject in its own package. GV and GRV may reference any resolvable named semantic declaration or the owning package, except another view; IV requires a system or component; CV references a case or system, SV references a case or system (for case selection), and FV references an operation. A view of an instance resolves through its definition while retaining the occurrence path and identity.
+A view declaration names a view kind and a dot-separated subject in its own package. GV and GRV may reference any resolvable named semantic declaration or the owning package, except another view; IV requires a root component, a component definition or a nested component occurrence; CV references a case or root component, SV references a case or root component (for case selection), and FV references an operation. A view of an instance resolves through its definition while retaining the occurrence path and identity.
 
 View declarations carry no executable behavior. Layout, color, filters and collapsed regions are presentation data. The full [graphical contract](../GRAPHICAL_NOTATION.md) defines representation and source-edit invariants.
 
@@ -57,7 +61,7 @@ The following groups collectively define semantic validity. Diagnostic numbers i
 
 | Group | Required checks | Prototype family |
 | --- | --- | --- |
-| Names | version, uniqueness, imports, reference target kind, ambiguity, lexical scopes | SW001–SW004, linker |
+| Names | pinned language edition, uniqueness, imports, reference target kind, ambiguity, lexical scopes | SW002–SW004, parser/linker |
 | Contracts | interface kind/member compatibility, role compatibility, exact interface identity | SW010–SW013, SW031–SW032 |
 | Values | nominal typing, arity, field completeness, enum membership, array shape, literal ranges, purity, no recursive value containment | SW020–SW028 |
 | Architecture | acyclic composition, immediate-child boundaries, one delegation, no duplicate links/aliases, closure/cardinality | SW030–SW035 |
@@ -69,7 +73,7 @@ The following groups collectively define semantic validity. Diagnostic numbers i
 
 ## 4.6 Conformance levels
 
-**Syntax conformance (S):** the complete concrete grammar, exact version, tokenization and AST construction. Recovery during editing must retain syntax diagnostics; an incomplete AST is not a valid model.
+**Syntax conformance (S):** the complete concrete grammar, pinned host/parser version, tokenization and AST construction. Recovery during editing must retain syntax diagnostics; an incomplete AST is not a valid model.
 
 **Static conformance (V):** S plus every static validity rule in this specification, classified explicitly in [chapter 8](08-conformance-obligations.md). A partial validator MUST enumerate checks that it lacks. It must not hide unresolved links or a validator crash as success.
 
@@ -79,4 +83,4 @@ The following groups collectively define semantic validity. Diagnostic numbers i
 
 **Graphical conformance (G):** S and the graphical specification's projection and edit rules. G may present invalid models with diagnostics, but must not invent valid connectivity from layout. FV combines flow/state projection; GEV/AFV/STV are not SWAML view kinds.
 
-A tool claiming `SWAML 1.0 S, partial V` accurately describes this repository's current core. It must not advertise K, E or G until those implementations and checks exist. Future versions must use a new language header when breaking syntax or semantics; migration tooling must not change the meaning of models silently.
+A tool claiming `SWAML 1.1 S, partial V` accurately describes this repository's current core. It must not advertise K, E or G until those implementations and checks exist. A language host must require an explicit supported edition, and incompatible changes require documented migration. Version 1.1 is an intentional syntax revision; it is not backward-compatible with 1.0 despite the minor version number. Migration tooling must not change the meaning of models silently.

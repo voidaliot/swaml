@@ -62,7 +62,7 @@
       "kind": "text",
       "x": 50,
       "y": 156,
-      "text": "«system» Cabin · service",
+      "text": "«component» Cabin · root",
       "size": 24,
       "bold": true,
       "color": "#17324d"

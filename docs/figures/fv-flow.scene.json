@@ -219,7 +219,7 @@
       "kind": "text",
       "x": 220,
       "y": 420,
-      "text": "set currentValue = desired",
+      "text": "currentValue = desired",
       "size": 20,
       "bold": true,
       "color": "#17324d"

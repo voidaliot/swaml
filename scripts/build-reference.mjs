@@ -20,9 +20,9 @@ async function output(path, text) {
 const inventory = JSON.parse(await read('spec/keywords.json'));
 const grammar = await read('src/language/swaml.langium');
 const keys = new Set([...grammar.matchAll(/'([a-zA-Z][a-zA-Z0-9]*)'/g)].map(m => m[1]));
-if (inventory.languageVersion !== '1.0' || inventory.entries.length !== keys.size) throw new Error('Keyword inventory/version mismatch');
+if (inventory.languageVersion !== '1.1' || inventory.entries.length !== keys.size) throw new Error('Keyword inventory/version mismatch');
 const productions = [...grammar.matchAll(/^(?:(?:entry|hidden|terminal|type)\s+)*([A-Za-z]\w*)(?:\s+returns\s+\w+)?\s*[:=]([\s\S]*?)(?=^(?:(?:entry|hidden|terminal|type)\s+)*[A-Za-z]\w*(?:\s+returns\s+\w+)?\s*[:=]|$(?![\s\S]))/gm)];
-let keywordText = '# Alphabetical keyword reference\n\nThis user-facing reference covers every reserved word in the SWAML 1.0 grammar. Entries are sorted alphabetically, ignoring case for sorting only; source keywords remain case-sensitive. Example fragments illustrate a use and are not standalone models. Read the linked normative concern for full constraints. Punctuation and operator precedence follow the final section.\n\n';
+let keywordText = '# Alphabetical keyword reference\n\nThis user-facing reference covers every reserved word in the SWAML 1.1 grammar. Entries are sorted alphabetically, ignoring case for sorting only; source keywords remain case-sensitive. Example fragments illustrate a use and are not standalone models. Read the linked normative concern for full constraints. Punctuation and operator precedence follow the final section.\n\n';
 keywordText += inventory.entries.map(e => `[\`${e.keyword}\`](#keyword-${e.keyword.toLowerCase()})`).join(' · ') + '\n\n';
 const ordered = inventory.entries.map(e => e.keyword.toLowerCase());
 if (ordered.join() !== [...ordered].sort().join()) throw new Error('Keyword inventory must be alphabetical');
@@ -51,8 +51,8 @@ const chapters = [
     ['Runtime contract', 'docs/spec/06-execution-contract.md'],
     ['Simulation', 'docs/SIMULATION.md'],
     ['Structure, names and values', 'docs/spec/01-structure-and-types.md'],
-    ['Systems, timing, deployment and cases', 'docs/spec/04-systems-and-conformance.md'],
-    ['Version migration', 'docs/MIGRATION_1_0.md'],
+    ['Root components, timing, deployment and cases', 'docs/spec/04-systems-and-conformance.md'],
+    ['Version migration', 'docs/MIGRATION_1_1.md'],
     ['Alphabetical keyword reference', 'docs/KEYWORD_REFERENCE.md'],
     ['Implementation evidence', 'docs/IMPLEMENTATION_STATUS.md'],
     ['Tool integration', 'docs/TOOLING.md']
@@ -60,7 +60,7 @@ const chapters = [
 try { await read('docs/GRAPHICAL_EXAMPLES.md'); chapters.splice(chapters.findIndex(x => x[0] === 'Graphical notation') + 1, 0, ['Graphical examples', 'docs/GRAPHICAL_EXAMPLES.md']); } catch {}
 const anchor = p => 'source-' + createHash('sha256').update(p).digest('hex').slice(0, 12);
 const included = new Set(chapters.map(x => x[1]));
-let book = '# SWAML 1.0.0 — Complete language reference\n\n**Software Architecture Modeling Language** · Language header `swaml "1.0";` · Independently authored, KerML-based semantic design.\n\nThis is the complete user-facing Markdown edition, generated from the maintained source chapters. Navigate by the alphabetical concern map or the exhaustive alphabetical keyword reference. Normative chapters define meaning; tutorials, comparisons and examples illustrate it. The portable reference parser and logical simulator provide executable evidence with the limitations stated below.\n\n## Contents\n\n';
+let book = '# SWAML 1.1.0 — Complete language reference\n\n**Software Architecture Modeling Language** · Headerless language 1.1; explicit definitions and component usages · Independently authored, KerML-based semantic design.\n\nThis is the complete user-facing Markdown edition, generated from the maintained source chapters. Navigate by the alphabetical concern map or the exhaustive alphabetical keyword reference. Normative chapters define meaning; tutorials, comparisons and examples illustrate it. The portable reference parser and logical simulator provide executable evidence with the limitations stated below.\n\n## Contents\n\n';
 book += chapters.map(([title, p]) => `- [${title}](#${anchor(p)})`).join('\n') + '\n- [Complete concrete grammar](#complete-concrete-grammar)\n- [Model examples](#model-examples)\n\n';
 for (const [title, path] of chapters) {
     let text = path === 'docs/KEYWORD_REFERENCE.md' ? keywordText : await read(path);
@@ -75,6 +75,11 @@ for (const [title, path] of chapters) {
 }
 book += '# Complete concrete grammar\n\nThe exact normative Langium grammar follows. Generated AST and syntax files are build outputs, not independent definitions.\n\n```langium\n' + grammar.trim() + '\n```\n\n# Model examples\n\n';
 const runs = JSON.parse(await read('examples/simulation/runs.json'));
-for (const run of runs) book += `## ${posix.basename(run.model, '.swaml')}\n\nSystem: \`${run.system}\`. [Simulation options](${posix.relative('docs', run.options)}).\n\n\`\`\`swaml\n${(await read(run.model)).trim()}\n\`\`\`\n\n`;
-await output('docs/SWAML-1.0.0-Reference.md', book);
+for (const model of new Set(runs.map(run => run.model))) {
+    const configurations = runs.filter(run => run.model === model);
+    book += `## ${posix.basename(model, '.swaml')}\n\n`;
+    book += configurations.map(run => `- Root component: \`${run.root}\`. [Simulation options](${posix.relative('docs', run.options)}).`).join('\n') + '\n\n';
+    book += `\`\`\`swaml\n${(await read(model)).trim()}\n\`\`\`\n\n`;
+}
+await output('docs/SWAML-1.1.0-Reference.md', book);
 console.log(`${check ? 'Verified' : 'Built'} complete reference and ${seen.size} alphabetical keyword entries.`);

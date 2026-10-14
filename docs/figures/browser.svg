@@ -14,7 +14,7 @@
 <text x="96" y="264" font-size="18" font-weight="400" fill="#17324d">  api  [port: provides]</text>
 <text x="96" y="300" font-size="18" font-weight="400" fill="#17324d">  currentValue  [var: Int]</text>
 <text x="96" y="336" font-size="18" font-weight="400" fill="#17324d">▸ read / update  [operations]</text>
-<text x="74" y="372" font-size="18" font-weight="700" fill="#17324d">  Cabin  [system: service]</text>
+<text x="74" y="372" font-size="18" font-weight="700" fill="#17324d">  Cabin  [component root]</text>
 <text x="96" y="408" font-size="18" font-weight="400" fill="#17324d">  settings : Service  [occurrence]</text>
 <text x="118" y="444" font-size="18" font-weight="400" fill="#17324d">  store : SettingStore  [occurrence]</text>
 <text x="140" y="480" font-size="18" font-weight="400" fill="#17324d">  api  [port: provides]</text>

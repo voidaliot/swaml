@@ -4,11 +4,11 @@ Normative SWAML contract extending [chapter 5](05-kerml-mapping.md). This chapte
 
 ## 7.1 Identity, ownership and source trace
 
-Normalization consumes a resolved workspace and emits a finite declaration graph plus instance expansions for selected systems. Each semantic node has an immutable identity within that normalized artifact, a semantic kind, at most one owning node, ordered owned children where order matters, typed reference edges, and source provenance. Except for model roots, every semantic node has exactly one owner. Reference edges never imply containment.
+Normalization consumes a resolved workspace and emits a finite declaration graph plus instance expansions for selected root components. Each semantic node has an immutable identity within that normalized artifact, a semantic kind, at most one owning node, ordered owned children where order matters, typed reference edges, and source provenance. Except for model roots, every semantic node has exactly one owner. Reference edges never imply containment.
 
 The deterministic textual identity of a declaration is its package plus owned-name path, for example `Settings::SettingStore.update`. Anonymous syntax nodes use the owning declaration ID plus a structural slot path such as `/body/statements/2/condition`; these IDs are stable for an unchanged syntax tree, not across arbitrary edits. Synthetic elements append a reserved role segment such as `/@execution` or `/@failure`. No source identifier contains `/` or `@`, so generated roles cannot collide with source names.
 
-An occurrence identity consists of the system declaration ID and the child-instance path. A port occurrence adds the owned port name. An operation occurrence additionally refers to its shared operation declaration and unit occurrence. Runtime activations add a run ID and unique activation ordinal. A mapper MUST NOT collapse occurrence paths merely because they share a definition. Persistent editor UUIDs are a separate identity map with explicit rename/move history; source locations and in-memory AST addresses are never persistent IDs.
+An occurrence identity consists of the root component declaration ID and the child-instance path. A port occurrence adds the owned port name. An operation occurrence additionally refers to its shared operation declaration and unit occurrence. Runtime activations add a run ID and unique activation ordinal. A mapper MUST NOT collapse occurrence paths merely because they share a definition. Persistent editor UUIDs are a separate identity map with explicit rename/move history; source locations and in-memory AST addresses are never persistent IDs.
 
 A reverse trace relation maps every generated element to one or more authoring node identities and their URI/ranges. Synthetic nodes retain their source owner and generation role. No generated constraint may be untraceable. An import can have an import-declaration source location while referencing a package located in another document.
 
@@ -25,13 +25,13 @@ A reverse trace relation maps every generated element to one or more authoring n
 | Port feature | interface target, role, optionality and derived member directions |
 | Connection/delegation | owner, endpoint feature references, explicit path provenance, interface identity, queue policy for a connection; no queue for delegation |
 | Variable/local/parameter | declared type, ownership/scope, initializer where present, mutable copied-value semantics |
-| Executable | signature, trigger, concurrency/timing, one body or machine, context bound to the owning unit |
-| System/binding | component occurrence tree, execution nodes, explicit and effective deployment, service/realtime/mixed profile |
+| Executable | signature, trigger, concurrency/timing, one statement or state body, context bound to the owning unit |
+| Root component/binding | named occurrence with inline composition or component-definition reference, execution nodes, explicit/effective deployment and effective service/realtime/mixed profile |
 | Requirement/case/view | text, trace edges, scenario step graph, view kind and resolved subject with definition/occurrence distinction |
 
 All textual references MUST resolve before normalization. A `TypeRef` is a use, not a new nominal declaration. Array extents are carried as shape constraints and do not create element aliasing. Empty records have one value. Void results create no output-value feature. Parameters preserve order, independent of parameter names at a handler implementation.
 
-A component instance expands its definition's child features recursively. Expansion preserves each connector's owner path, so two uses of the same component produce distinct connector occurrences and queues. Effective deployment is computed by the nearest explicitly deployed ancestor, including the occurrence itself. An absent ancestor yields an explicit Unallocated value, not an invented node.
+A typed root expands its component definition, and an inline root expands its authored children; no extra wrapper occurrence is inserted. Its normalized profile records service even when the source omits that default, while provenance preserves the omission. A typed binding body contributes only nodes/deployment, never topology. Every component child expands its definition's child features recursively. Expansion preserves each connector's owner path, so two uses of the same component produce distinct connector occurrences and queues. Effective deployment is computed by the nearest explicitly deployed ancestor, including the occurrence itself. An absent ancestor yields an explicit Unallocated value, not an invented node.
 
 ## 7.3 Contract projection and route normalization
 
@@ -58,11 +58,11 @@ A statement body normalizes to an entry, ordered steps, exit/failure terminals a
 
 | Source construct | Normalized meaning |
 | --- | --- |
-| let / set | evaluate expression, then create/replace copied local or private value |
+| let / assignment | evaluate expression, then create/replace copied local or private value |
 | send / publish | operand evaluation followed by per-route message offers, emission provenance and success/rejection continuation |
 | request | issuance/correlation creation, suspended frame, timeout, typed success binding or terminating failure branch |
-| invoke | synchronous same-unit call edge, copied arguments, borrowed root context/snapshot and caller continuation |
-| return / fail | terminate the current frame; unwind callers on failure; correlated result/failure for RPC roots |
+| invoke | synchronous same-unit call edge, copied arguments, borrowed activation context/snapshot and caller continuation |
+| return / fail | terminate the current frame; unwind callers on failure; correlated result/failure for RPC activations |
 | if | evaluate Bool once, mutually exclusive selected branch and merge of control only |
 | while | repeated condition, body, iteration counter and bound-failure edge; no implicit unbounded loop |
 | assert | Bool evaluation and failure edge when false |
@@ -70,7 +70,7 @@ A statement body normalizes to an entry, ordered steps, exit/failure terminals a
 
 Expressions carry inferred type and evaluation order. Binary short-circuit nodes conditionally skip their right operand. A record value maps fields to declared identities, not input order; an array preserves value order and fixed extent; enum values retain enum and literal identity. Numeric failures and invalid index edges are part of the expression contract. A mapper MUST NOT silently substitute mathematical unbounded integers for SWAML bounded Int execution.
 
-A machine is a behavior region owned by one operation. It normalizes to state identities, initial reference, entry/exit/effect step groups, trigger matchers, pure guards, priorities, finality, current-state feature, timer-generation features and the chapter 6 dispatch/reaction rules. A transition is not merely an unconstrained edge: its priority selection, source-state condition, payload environment and ordered exit/effect/update/entry phases are required semantics.
+The directly owned state body is syntax grouping, not an independent behavior declaration. It contributes to its operation's normalization: state identities, initial reference, entry/exit/effect step groups, trigger matchers, pure guards, priorities, finality, current-state feature, timer-generation features and the chapter 6 dispatch/reaction rules. A transition is not merely an unconstrained edge: its priority selection, source-state condition, payload environment and ordered exit/effect/update/entry phases are required semantics.
 
 ## 7.5 Kernel representation and SWAML library responsibilities
 
@@ -90,10 +90,10 @@ Normalize each case label to a distinct step identity, resolve its route/member 
 
 A case realization claim records a witness execution and assumptions, including payload values absent from the diagram, dispatch choices and operation paths. Mere route validity does not supply that witness. A graphical renderer can display an unverified case but must not show it as proven.
 
-Normalize views to `(kind, subjectDeclaration, occurrenceContext?)`. GV/GRV can inspect any resolvable named semantic declaration or the owning package, except another view. IV requires a system or component; CV/SV require a case or system; FV requires an operation. A package name colliding with a top-level declaration makes that root ambiguous and is rejected for view lookup. The dot path begins at a top-level declaration in the owning package or is the package's name alone. Descents follow component/unit instances, their structural members and interface members exposed through ports. State-level navigation is Browser/FV selection within an operation, not a second view subject syntax.
+Normalize views to `(kind, subjectDeclaration, occurrenceContext?)`. GV/GRV can inspect any resolvable named semantic declaration or the owning package, except another view. IV requires a root component, a component definition or a nested component occurrence; CV/SV require a case or root component; FV requires an operation. A package name colliding with a top-level declaration makes that root ambiguous and is rejected for view lookup. The dot path begins at a top-level declaration in the owning package or is the package's name alone. Descents follow component/unit instances, their structural members and interface members exposed through ports. State-level navigation is Browser/FV selection within an operation, not a second view subject syntax.
 
 ## 7.7 Equivalence and completeness
 
 Two normalized artifacts are equivalent when an identity-respecting graph correspondence preserves ownership, types, value shapes, interface versions, instance contexts, routes, evaluation order, triggers, state selection, policies, deployments, case dependencies/correlations and view subjects. Whitespace, comments, source offsets and diagram geometry are excluded. Requirements text and failure reasons remain observable documentation/diagnostic values and must be preserved.
 
-A round trip may rename anonymous lowering IDs while retaining their owner/role trace. It may not remove guarded branches, reorder effects, merge queues, weaken timing contracts, convert copied payloads into remote references, or drop SWAML metadata because a receiver lacks support. Unsupported meaning requires an explicit partial-import result. This information-preservation contract is complete for the closed 1.0 syntax; implementing and validating a KerML backend is a separate milestone.
+A round trip may rename anonymous lowering IDs while retaining their owner/role trace. It may not remove guarded branches, reorder effects, merge queues, weaken timing contracts, convert copied payloads into remote references, or drop SWAML metadata because a receiver lacks support. Unsupported meaning requires an explicit partial-import result. This information-preservation contract is complete for the closed 1.1 syntax; implementing and validating a KerML backend is a separate milestone.

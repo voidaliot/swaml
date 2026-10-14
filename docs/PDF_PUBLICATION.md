@@ -1,16 +1,18 @@
 # PDF specification and release publication
 
-The [complete PDF](../output/pdf/SWAML-1.0.0-Specification.pdf) assembles the normative chapters, graphical notation, complete grammar, semantic inventory, all eight valid models, user guide, architecture comparison, implementation status, decisions and contributor/agent guidance. It has a clickable contents page, section bookmarks, internal and external links, vector figures, selectable numbered code, repeated table headings and embedded original source files.
+The [complete PDF](../output/pdf/SWAML-1.1.0-Specification.pdf) contains the normative chapters, notation, grammar, mapping inventory, nine models and project guidance. It includes clickable contents, bookmarks, links, vector figures, selectable numbered code, repeated table headings and embedded sources.
 
 ## Version identifiers
 
-This edition is specification/package **1.0.0**, with source header **1.0**. The full [Markdown reference](SWAML-1.0.0-Reference.md) and PDF are generated from maintained chapters. The PDF additionally includes project guidance, a complete mapping inventory and embedded source/figure files. Keyword navigation covers all 129 reserved words; the concern guide is alphabetical.
+This edition is specification/package **1.1.0**, with a pinned **1.1** parser and headerless source. The full [Markdown reference](SWAML-1.1.0-Reference.md) and PDF are generated from maintained chapters. The PDF additionally includes project guidance, a complete mapping inventory and embedded source/figure files. Keyword navigation covers every current reserved word; the concern guide is alphabetical.
 
-The historical v0.1.0 release packages draft/core revision 0.1.1 with header 0.1. Its tag and assets remain unchanged. A release number is not a certification: the 1.0 reference simulator is a logical-time binding; physical timing proof, KerML export and graphical editing remain separate implementations.
+The v1.0.0 tagged Markdown/PDF edition is preserved unchanged; its source header and keyword inventory belong to the historical grammar. Current publication checks target 1.1 sources.
+
+Historical v0.1.0 packages draft/core revision 0.1.1 with header 0.1; its assets remain unchanged. Version 1.1 provides logical-time simulation; physical timing proof, KerML export and graphical editing remain separate implementations.
 
 ## Rebuild the book
 
-Use Python 3.10+ and DejaVu fonts. On Debian/Ubuntu, install `fonts-dejavu-core`; on other systems, point the builder at a directory containing the DejaVu Sans regular/bold/oblique/bold-oblique and DejaVu Sans Mono TTF files.
+Use Python 3.10+ and DejaVu fonts (`fonts-dejavu-core` on Debian/Ubuntu). Elsewhere, supply DejaVu Sans regular/bold/oblique/bold-oblique and Sans Mono TTF files with `--font-dir`.
 
 ```sh
 python3 -m venv .venv-pdf
@@ -20,7 +22,7 @@ python3 scripts/build-spec-pdf.py --font-dir /usr/share/fonts/truetype/dejavu
 python3 scripts/check-spec-pdf.py
 ```
 
-First run `python3 scripts/build-graphical-examples.py` and `npm run docs:build` after changing source chapters or figures. The builder reads the repository's source documents directly. Its source list is explicit; unsupported Markdown constructs fail the build instead of disappearing. Mermaid illustrations in the graphical chapter are rendered as corresponding vector figures. The eight notation examples share SVG/vector-scene sources across the Markdown and PDF. Keyword links jump to individual entries inside the PDF. The code appendix preserves every grammar line; wrapped continuation rows have no new line number. Exact original bytes remain accessible through embedded attachments.
+First run `python3 scripts/build-graphical-examples.py` and `npm run docs:build` after changing source chapters or figures. The explicit source list is built directly; unsupported Markdown fails the build. Mermaid illustrations become vector figures. The eight examples share SVG/vector-scene sources across Markdown/PDF. Keyword links jump to individual entries. Every grammar line is preserved; wrapped continuations have no new line number. Attachments preserve exact source bytes.
 
 Outputs are the PDF, a JSON source/hash manifest and a SHA-256 checksum under `output/pdf/`. The checksum identifies the generated artifact; PDF metadata may vary between builds. The manifest allows readers to verify exactly which source content an edition contains.
 

@@ -5,6 +5,9 @@ import { SwamlScopeProvider } from './swaml-scope.js';
 import { SwamlValidator } from './swaml-validator.js';
 import { SwamlDocumentBuilder } from './swaml-document-builder.js';
 
+/** Headerless models are interpreted only under this explicitly pinned language edition. */
+export const SWAML_LANGUAGE_VERSION = '1.1' as const;
+
 export type SwamlServices = LangiumServices & { validation: { SwamlValidator: SwamlValidator } };
 export const SwamlModule: Module<SwamlServices, PartialLangiumServices & { validation: { SwamlValidator: SwamlValidator } }> = {
     references: { ScopeProvider: services => new SwamlScopeProvider(services) },

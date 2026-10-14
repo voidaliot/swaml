@@ -1,4 +1,3 @@
-swaml "1.0";
 package Commerce {
     interface service Orders version "1.0.0" {
         // Submitting publishes effects, so this contract does not claim idempotency.
@@ -18,17 +17,17 @@ package Commerce {
     unit def Frontend {
         port orders: Orders requires;
         var lastAccepted: String = "";
-        operation checkout(): Void on manual {
+        operation checkout() on manual {
             request orders.submit("order-42") as accepted within 2 s otherwise { fail "checkout unavailable"; };
             assert accepted;
             return;
         }
-        operation confirmation(orderId: String): Void on receive orders.accepted { set lastAccepted = orderId; return; }
+        operation confirmation(orderId: String) on receive orders.accepted { lastAccepted = orderId; return; }
     }
     unit def AuditStore {
         port input: Audit subscriber;
         var last: String = "";
-        operation storeRecord(orderId: String): Void on receive input.recorded { set last = orderId; return; }
+        operation storeRecord(orderId: String) on receive input.recorded { last = orderId; return; }
     }
     component def Backend {
         port api: Orders provides;
@@ -47,7 +46,7 @@ package Commerce {
         unit store: AuditStore;
         delegate input -> store.input;
     }
-    system Shop service {
+    component Shop {
         component web: Web;
         component backend: Backend;
         component archive: Archive;

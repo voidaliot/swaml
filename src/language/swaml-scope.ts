@@ -11,8 +11,8 @@ export class SwamlScopeProvider extends DefaultScopeProvider {
         let candidates: AstNode[] | undefined;
         if (a.isInvoke(node)) candidates = owner(node, a.isUnit)?.members.filter(a.isOperation);
         if (a.isFunctionCall(node)) candidates = owner(node, a.isUnit)?.members.filter(a.isFunctionDef);
-        if (a.isTransition(node) || a.isMachine(node)) candidates = owner(node, a.isMachine)?.states;
-        if (a.isDeployment(node)) candidates = owner(node, a.isSystem)?.members.filter(a.isNode);
+        if (a.isTransition(node) || a.isStateBody(node)) candidates = owner(node, a.isStateBody)?.states;
+        if (a.isDeployment(node)) candidates = owner(node, a.isRootComponent)?.members.filter(a.isNode);
         if (a.isDelegate(node)) candidates = owner(node, a.isComponent)?.members.filter(a.isPort);
         const type = this.reflection.getReferenceType(context);
         if (candidates !== undefined) return this.createScopeForNodes(candidates.filter(n => this.reflection.isSubtype(n.$type, type)));

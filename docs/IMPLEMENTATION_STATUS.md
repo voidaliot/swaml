@@ -1,12 +1,14 @@
-# Implementation status — 1.0.0
+# Implementation status — 1.1.0
 
-The normative specification defines the complete bounded 1.0 language. The repository implements the Langium parser, CLI, language-server foundation and broad static checking. It also implements a bounded logical-time reference simulator; it does not implement a production runtime, KerML exporter or graphical editor. See the [1.0 evidence](RELEASE_1_0.md) and historical [0.1 audit](SPECIFICATION_AUDIT.md) and [conformance obligations](spec/08-conformance-obligations.md).
+The normative specification defines the complete bounded 1.1 language. The repository implements the Langium parser, CLI, language-server foundation and broad static checking. It also implements a bounded logical-time reference simulator; it does not implement a production runtime, KerML exporter or graphical editor. See the [1.1 migration](MIGRATION_1_1.md), historical [1.0 evidence](RELEASE_1_0.md) and historical [0.1 audit](SPECIFICATION_AUDIT.md) and [conformance obligations](spec/08-conformance-obligations.md).
 
 ## Implemented and tested
 
 | Capability | Evidence |
 | --- | --- |
-| Complete grammar, portable string escapes, generated AST/TextMate syntax | generator, all examples, lexical regressions |
+| Headerless 1.1 grammar, portable string escapes, generated AST/TextMate syntax | generator, all examples, lexical regressions |
+| Explicit definitions, inline/typed root components, direct unit children, deployment-only typed binding and default service profile | 1.1 root/migration regressions |
+| Direct operation states, optional Void results, assignment/function/array/enum syntax | 1.1 parser, type, shadowing and simulation regressions |
 | Imports, qualified names, ambiguity across declaration kinds and owner-scoped references | multi-document and namespace tests |
 | Interface member/role/signature checks; no cross-unit operation/data bypass | contract and isolation tests |
 | Composition, delegation, required boundary/leaf closure, route uniqueness and cardinality | topology tests |
@@ -45,8 +47,8 @@ String-valued paths now receive conservative dependency invalidation. Path-aware
 | VS Code package | language client activation, bundling, desktop/web entry points, commands and release pipeline |
 | Platform exports | target bindings and serialization such as AUTOSAR ARXML |
 
-No blanket K, E or G certification is claimed. The [reference simulation profile](SIMULATION.md) documents its executable scope and time abstraction. These implementation milestones have complete language-side contracts; they are not necessary to claim that the 1.0 specification has defined its syntax and meaning.
+No blanket K, E or G certification is claimed. The [reference simulation profile](SIMULATION.md) documents its executable scope and time abstraction. These implementation milestones have complete language-side contracts; they are not necessary to claim that the 1.1 specification has defined its syntax and meaning.
 
-## Intentionally outside 1.0
+## Intentionally outside 1.1
 
 Inheritance/redefinition, generics, dynamic object creation, unbounded arrays, reference-valued payloads, hierarchical/orthogonal state regions, fork/join syntax, host-language code blocks, dynamic service discovery, runtime subscribe/unsubscribe, topic wildcards, exactly-once delivery, full requirements algebra and geometry require a versioned language proposal. They cannot be introduced as undocumented backend behavior.

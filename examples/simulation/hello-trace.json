@@ -1,7 +1,7 @@
 {
-  "profile": "swaml-reference/1.0",
+  "profile": "swaml-reference/1.1",
   "outcome": "no-failure-observed",
-  "system": "Hello::Demo",
+  "root": "Hello::Demo",
   "options": {
     "untilNs": 100,
     "maxSteps": 100000,
@@ -17,7 +17,7 @@
   "sources": [
     {
       "uri": "file:///examples/01-hello.swaml",
-      "text": "swaml \"1.0\";\npackage Hello {\n    interface senderReceiver Greeting version \"1.0.0\" {\n        data text: String queued;\n    }\n    unit def Speaker {\n        port output: Greeting sender;\n        operation greet(): Void on start {\n            send output.text(\"Hello, SWAML\");\n            return;\n        }\n    }\n    unit def Listener {\n        port input: Greeting receiver;\n        var last: String = \"\";\n        operation hear(message: String): Void on receive input.text {\n            set last = message;\n            return;\n        }\n    }\n    component def Conversation {\n        unit speaker: Speaker;\n        unit listener: Listener;\n        connect greeting: speaker.output -> listener.input qos {\n            delivery atMostOnce; ordering fifo; capacity 4; overflow reject;\n        };\n    }\n    system Demo service { component conversation: Conversation; }\n    view overview GV of Demo;\n    view wiring IV of Conversation;\n    view greetingFlow FV of Speaker.greet;\n    view inventory GRV of Demo;\n}\n"
+      "text": "package Hello {\n    interface senderReceiver Greeting version \"1.0.0\" {\n        data text: String queued;\n    }\n    unit def Speaker {\n        port output: Greeting sender;\n        operation greet() on start {\n            send output.text(\"Hello, SWAML\");\n            return;\n        }\n    }\n    unit def Listener {\n        port input: Greeting receiver;\n        var last: String = \"\";\n        operation hear(message: String) on receive input.text {\n            last = message;\n            return;\n        }\n    }\n    component def Conversation {\n        unit speaker: Speaker;\n        unit listener: Listener;\n        connect greeting: speaker.output -> listener.input qos {\n            delivery atMostOnce; ordering fifo; capacity 4; overflow reject;\n        };\n    }\n    component Demo { component conversation: Conversation; }\n    view overview GV of Demo;\n    view wiring IV of Conversation;\n    view greetingFlow FV of Speaker.greet;\n    view inventory GRV of Demo;\n}\n"
     }
   ],
   "trace": [
@@ -80,7 +80,7 @@
       "kind": "statement",
       "subject": "a1",
       "kindOfStatement": "Send",
-      "line": 9
+      "line": 8
     },
     {
       "timeNs": 0,
@@ -127,7 +127,7 @@
       "kind": "statement",
       "subject": "a3",
       "kindOfStatement": "Assign",
-      "line": 17
+      "line": 16
     },
     {
       "timeNs": 0,

@@ -1,10 +1,10 @@
 # 6. Operational contract and target bindings
 
-Normative chapter of the [SWAML 1.0 specification](../LANGUAGE_SPECIFICATION.md). This chapter makes the allowed traces precise; it does not prescribe an implementation thread model. The [reference simulation binding](../SIMULATION.md) makes a deterministic logical-time choice within this contract; production backends require their own binding and evidence.
+Normative chapter of the [SWAML 1.1 specification](../LANGUAGE_SPECIFICATION.md). This chapter makes the allowed traces precise; it does not prescribe an implementation thread model. The [reference simulation binding](../SIMULATION.md) makes a deterministic logical-time choice within this contract; production backends require their own binding and evidence.
 
 ## 6.1 Configuration and observable occurrences
 
-A running configuration consists of: the selected system instance tree; private variable stores per unit instance; live activation frames and their local call stacks; one serial lock per unit; the state and timer generation of each live stateful operation; message queues keyed by connector occurrence, direction and member; pending request correlations; released lifecycle activations; and a monotonic logical time.
+A running configuration consists of: the selected root component instance tree; private variable stores per unit instance; live activation frames and their local call stacks; one serial lock per unit; the state and timer generation of each live stateful operation; message queues keyed by connector occurrence, direction and member; pending request correlations; released lifecycle activations; and a monotonic logical time.
 
 Each message has a logical identity, original emission time, producing activation identity, typed copied payload, source/destination port occurrences, interface member, connector occurrence and delegation route. A retry keeps the logical identity and original timestamp. A transport attempt has a separate identity. An RPC response additionally references its request correlation. Occurrence identities MUST be unique within a run and cannot be declaration IDs reused for every emission.
 
@@ -17,26 +17,26 @@ A step of execution is either a local statement/expression step, communication a
 Initialization has a barrier with the following phases:
 
 1. Expand the acyclic instance tree, establish effective deployments, create private stores from pure initializers, resolve all routes and install all queues/handlers.
-2. Install each stateful operation's initial state identity and arm its initialization reaction. It is not yet ready to consume a stimulus. Register all ordinary startup roots.
-3. Establish one system epoch `t0`. Release every startup/initialization activation at `t0`; activate periodic releases at `t0 + k * period`, with k starting at 1. All ports may now admit traffic.
+2. Install each stateful operation's initial state identity and arm its initialization reaction. It is not yet ready to consume a stimulus. Register all ordinary startup activations.
+3. Establish one run epoch `t0`. Release every startup/initialization activation at `t0`; activate periodic releases at `t0 + k * period`, with k starting at 1. All ports may now admit traffic.
 
-The scheduler may interleave startup roots across units and within a unit subject to its lock. Messages arriving before a machine finishes initial entry remain in their connector queue; they are not discarded merely because initial entry is pending. Timers start when entry finishes, not when the initialization reaction was released. A startup operation may request a service whose unit's startup root has not run: handlers and initialized data already exist. If an application needs an additional readiness protocol, it MUST model that protocol through an interface.
+The scheduler may interleave startup activations across units and within a unit subject to its lock. Messages arriving before a machine finishes initial entry remain in their connector queue; they are not discarded merely because initial entry is pending. Timers start when entry finishes, not when the initialization reaction was released. A startup operation may request a service whose unit's startup activation has not run: handlers and initialized data already exist. If an application needs an additional readiness protocol, it MUST model that protocol through an interface.
 
-Each startup root is released exactly once per system run. The core defines no automatic component restart. A deployment implementation restarting a failed unit starts a new run epoch for the affected binding and MUST report its reset, queue-retention and correlation policy; it cannot imply uninterrupted E conformance for a reset it has not modeled.
+Each startup activation is released exactly once per root run. The core defines no automatic component restart. A deployment implementation restarting a failed unit starts a new run epoch for the affected binding and MUST report its reset, queue-retention and correlation policy; it cannot imply uninterrupted E conformance for a reset it has not modeled.
 
 Periodic releases are independent of earlier completions. Serial dispatch does not merge or silently skip them. Manual activations are parameterless local harness releases. Input-triggered work remains in the input queue until dispatch is possible; it is not copied into an unbounded second activation queue. Admission of an RPC response resumes its suspended frame without acquiring another unit lock.
 
 ## 6.3 Dispatch, backlog and snapshots
 
-A serial root acquires its unit's lock at dispatch and releases it on completion/failure. Local invokes execute on the root's stack and inherit its concurrency mode and snapshot, regardless of a helper's own timing declaration. A reentrant root may overlap other roots, but neither it nor any reachable helper may assign unit data. Assigning its own parameters/locals is allowed.
+A serial activation root acquires its unit's lock at dispatch and releases it on completion/failure. Local invokes execute on the activation root's stack and inherit its concurrency mode and snapshot, regardless of a helper's own timing declaration. A reentrant activation root may overlap other activation roots, but neither it nor any reachable helper may assign unit data. Assigning its own parameters/locals is allowed.
 
-A reentrant root captures an atomic value snapshot of all unit variables at dispatch, before its first expression. All reads by that root and its helpers use that snapshot throughout suspension and resumption. An assignment by a serial activation is atomic at the whole-value level; snapshots observe some consistent store between assignments. A machine's next reaction captures a fresh snapshot if it is reentrant. Reentrant does not allow overlapping reactions of the same machine.
+A reentrant activation root captures an atomic value snapshot of all unit variables at dispatch, before its first expression. All reads by that activation and its helpers use that snapshot throughout suspension and resumption. An assignment by a serial activation is atomic at the whole-value level; snapshots observe some consistent store between assignments. A machine's next reaction captures a fresh snapshot if it is reentrant. Reentrant does not allow overlapping reactions of the same machine.
 
-Between independent ready queues and lifecycle releases, the scheduler chooses any enabled root. For a FIFO queue, dispatch preserves queue order; completion order of reentrant handlers need not match dispatch order. A target backend MUST specify fairness and scheduling policy, and MUST NOT introduce starvation while claiming eventual at-least-once delivery under continuously enabled receivers.
+Between independent ready queues and lifecycle releases, the scheduler chooses any enabled activation root. For a FIFO queue, dispatch preserves queue order; completion order of reentrant handlers need not match dispatch order. A target backend MUST specify fairness and scheduling policy, and MUST NOT introduce starvation while claiming eventual at-least-once delivery under continuously enabled receivers.
 
-An executable target binding MUST bound pending start/manual/periodic activations separately from connector queues. On exceeding that bound it MUST record `ActivationOverflow` and stop the affected system execution; silently dropping or coalescing releases is not an implementation of this core. A simulator may expose an explicitly unbounded mathematical backlog, but cannot use it as evidence for a bounded production deployment. The binding also bounds simultaneous reentrant roots; when full, subsequent work remains pending rather than exceeding the limit.
+An executable target binding MUST bound pending start/manual/periodic activations separately from connector queues. On exceeding that bound it MUST record `ActivationOverflow` and stop the affected root execution; silently dropping or coalescing releases is not an implementation of this core. A simulator may expose an explicitly unbounded mathematical backlog, but cannot use it as evidence for a bounded production deployment. The binding also bounds simultaneous reentrant activation roots; when full, subsequent work remains pending rather than exceeding the limit.
 
-WCET includes local helpers and active reaction microsteps; request wait consumes deadline budget but no active CPU budget. The root's deadline is measured from release. For input reactions release occurs when the message is ready in its destination queue. A timer reaction is released at its due time even if dispatch is later. Local helpers have no independent release; a backend checks their declared execution bounds over the invocation and also includes them in the root's bounds.
+WCET includes local helpers and active reaction microsteps; request wait consumes deadline budget but no active CPU budget. The activation root's deadline is measured from release. For input reactions release occurs when the message is ready in its destination queue. A timer reaction is released at its due time even if dispatch is later. Local helpers have no independent release; a backend checks their declared execution bounds over the invocation and also includes them in the activation root's bounds.
 
 ## 6.4 Queue offers and fanout
 
@@ -80,7 +80,7 @@ Final entry completion, bare return or failure terminates the machine, cancels a
 
 ## 6.7 Execution binding contract
 
-Every backend claiming E MUST identify its backend version, supported SWAML version, system, model digest and target configuration. It MUST supply explicit values or a justified symbolic abstraction for:
+Every backend claiming E MUST identify its backend version, supported SWAML version, selected root component, model digest and target configuration. It MUST supply explicit values or a justified symbolic abstraction for:
 
 - effective deployment of every unit; clock basis, precision and cross-node error bounds;
 - scheduler, fairness, serial locking, snapshot implementation and reentrant limits;

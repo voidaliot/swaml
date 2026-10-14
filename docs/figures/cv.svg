@@ -7,7 +7,7 @@
 <text x="32" y="80" font-size="17" font-weight="400" fill="#516579">Claimed coverage is explicit; no verification checkmark appears without evidence.</text>
 <polyline points="32,99 968,99" fill="none" stroke="#ccd9e2" stroke-width="2"/>
 <rect x="35" y="134" width="443" height="318" rx="8" fill="#f7fafc" stroke="#17324d"/>
-<text x="55" y="170" font-size="24" font-weight="700" fill="#17324d">«system» Cabin</text>
+<text x="55" y="170" font-size="24" font-weight="700" fill="#17324d">«component» Cabin</text>
 <rect x="93" y="248" width="327" height="116" rx="35" fill="#e3f2f3" stroke="#17324d"/>
 <text x="123" y="286" font-size="24" font-weight="700" fill="#17324d">«case» Change</text>
 <text x="123" y="323" font-size="20" font-weight="400" fill="#17324d">for Cabin</text>

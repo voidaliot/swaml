@@ -15,7 +15,7 @@ export interface SimulationOptions {
 }
 export interface TraceEvent { timeNs: number; ordinal: number; kind: string; subject: string; [key: string]: unknown }
 export interface SimulationResult {
-    profile: 'swaml-reference/1.0'; system: string; options: SimulationOptions;
+    profile: 'swaml-reference/1.1'; root: string; options: SimulationOptions;
     outcome: 'failed' | 'no-failure-observed';
     status: 'quiescent' | 'horizon' | 'violation' | 'limit'; timeNs: number; steps: number;
     sources: { uri: string; text: string }[];
@@ -37,21 +37,33 @@ type Yield = { kind: 'step' } | { kind: 'request'; endpoint: string; args: Value
 class ReturnValue { constructor(public value?: Value) {} }
 
 /** A deterministic, zero CPU-cost reference interpreter. Requires a fully built, valid workspace. */
-export function simulate(models: a.Model[], systemName: string, input: SimulationOptions): SimulationResult {
+export function simulate(models: a.Model[], rootName: string, input: SimulationOptions): SimulationResult {
     if (!models.length) throw new Error('Supply a validated workspace.');
     for (const model of models) {
         const d = AstUtils.getDocument(model);
         if (d.state < DocumentState.Validated || d.diagnostics?.some(x => x.severity === 1)) throw new Error('Simulation requires all input documents to be linked and validated without errors.');
     }
     const supplied = new Set(models);
+    const packages = new Set(models.flatMap(model => model.packages.map(pkg => pkg.name)));
+    const requirePackage = (name: string): void => {
+        if (!packages.has(name)) throw new Error('Supply every referenced document in the validated workspace.');
+    };
+    // Imports and enum value paths are semantic references rather than Langium cross-reference nodes.
+    for (const model of models) {
+        for (const pkg of model.packages) for (const imported of pkg.imports) requirePackage(imported.namespace);
+        for (const node of AstUtils.streamAst(model)) if (a.isReferenceExpression(node) && node.path.includes('::')) {
+            const type = node.path.split('.')[0];
+            requirePackage(type.slice(0, type.lastIndexOf('::')));
+        }
+    }
     for (const model of models) for (const node of AstUtils.streamAst(model)) for (const reference of AstUtils.streamReferences(node)) {
         const target = 'ref' in reference.reference ? reference.reference.ref : undefined;
         if (target && !supplied.has(AstUtils.getDocument(target).parseResult.value as a.Model)) throw new Error('Supply every referenced document in the validated workspace.');
     }
-    const systems = models.flatMap(m => m.packages.flatMap(p => p.elements.filter(a.isSystem).map(s => ({ id: `${p.name}::${s.name}`, system: s }))));
-    const selected = systems.find(s => s.id === systemName);
-    if (!selected) throw new Error(`Unknown system ${systemName}; use a qualified Package::System name.`);
-    return new Interpreter(models, selected.system, selected.id, input).run();
+    const roots = models.flatMap(m => m.packages.flatMap(p => p.elements.filter(a.isRootComponent).map(s => ({ id: `${p.name}::${s.name}`, root: s }))));
+    const selected = roots.find(s => s.id === rootName);
+    if (!selected) throw new Error(`Unknown root ${rootName}; use a qualified Package::Root name.`);
+    return new Interpreter(models, selected.root, selected.id, input).run();
 }
 class Interpreter {
     private options: Required<SimulationOptions>;
@@ -71,7 +83,7 @@ class Interpreter {
     private order = 0;
     private offers = 0;
     private stopped?: 'violation' | 'limit';
-    constructor(private models: a.Model[], private system: a.System, private id: string, options: SimulationOptions) {
+    constructor(private models: a.Model[], private root: a.RootComponent, private id: string, options: SimulationOptions) {
         this.options = { untilNs: options.untilNs, maxSteps: options.maxSteps ?? 100000, maxPending: options.maxPending ?? 1024, maxReentrant: options.maxReentrant ?? 64, latencyNs: options.latencyNs ?? 0, manual: copy(options.manual ?? []), faults: copy(options.faults ?? []) };
         if (!Number.isSafeInteger(this.options.untilNs) || this.options.untilNs < 0) throw new Error('untilNs must be a nonnegative safe integer');
         for (const key of ['untilNs', 'maxSteps', 'maxPending', 'maxReentrant', 'latencyNs'] as const) { const value = this.options[key]; if (!Number.isSafeInteger(value) || value < (['maxSteps', 'maxPending', 'maxReentrant'].includes(key) ? 1 : 0)) throw new Error(`Invalid ${key}`); }
@@ -90,30 +102,30 @@ class Interpreter {
     private addTime(t: number, d: number): number { const result = t + d; if (!Number.isSafeInteger(result)) throw new RuntimeFault('ClockRange'); return result; }
     private schedule(time: number, phase: number, run: () => void): void { this.events.push({ time, phase, order: this.order++, run }); }
     private leaf(path: string): string { while (this.aliases.has(path)) path = this.aliases.get(path)!; return path; }
-    private expand(c: a.System | a.Component, prefix = '', allocation: string | null = null): void {
+    private expand(c: a.RootComponent | a.Component, prefix = '', allocation: string | null = null): void {
         const path = (name: string) => prefix ? `${prefix}.${name}` : name;
-        for (const member of c.members) {
+        for (const member of a.isRootComponent(c) && c.definition ? c.definition.ref!.members : c.members) {
             this.fuel();
             if (a.isDelegate(member)) this.aliases.set(path(member.outer.ref!.name), path(member.target));
             if (a.isConnect(member)) this.routes.push({ path: path(member.name), source: path(member.source), target: path(member.target), qos: member.qos! });
             if (!a.isInstance(member)) continue;
             const p = path(member.name), definition = member.definition.ref!;
-            const node = this.system.members.filter(a.isDeployment).find(d => d.target === p)?.node.ref?.name ?? allocation;
+            const node = this.root.members.filter(a.isDeployment).find(d => d.target === p)?.node.ref?.name ?? allocation;
             this.deployments[p] = node;
             if (a.isComponent(definition)) this.expand(definition, p, node);
             else {
                 const unit: Unit = { path: p, definition, store: new Map(), serial: false, active: 0 };
                 this.units.set(p, unit);
-                for (const variable of definition.members.filter(a.isVariable)) bind(unit.store, variable.name, typeKey(variable.type), evaluate(variable.value, new Map(), this.fuel));
+                for (const variable of definition.members.filter(a.isVariable)) bind(unit.store, variable.name, typeKey(variable.type), evaluate(variable.value, new Map(), this.fuel, this.models));
                 for (const port of definition.members.filter(a.isPort)) this.ports.set(`${p}.${port.name}`, { unit, port });
-                for (const operation of definition.members.filter(a.isOperation)) if (operation.machine) this.machines.push({ unit, operation, state: operation.machine.initial.ref!, generation: 0, ready: false, live: true, reacting: false });
+                for (const operation of definition.members.filter(a.isOperation)) if (operation.stateBody) this.machines.push({ unit, operation, state: operation.stateBody.initial.ref!, generation: 0, ready: false, live: true, reacting: false });
                 this.log('initialize', p, { definition: `${owner(definition, a.isPackage)!.name}::${definition.name}`, node });
             }
         }
     }
     run(): SimulationResult {
         try {
-            this.expand(this.system);
+            this.expand(this.root);
             for (const r of this.routes) { r.source = this.leaf(r.source); r.target = this.leaf(r.target); }
             for (const unit of this.units.values()) for (const op of unit.definition.members.filter(a.isOperation)) {
                 if (op.trigger?.kind === 'start') this.schedule(0, 1, () => this.release(unit, op, this.machines.find(m => m.unit === unit && m.operation === op), { kind: 'initialize' }));
@@ -140,7 +152,7 @@ class Interpreter {
             this.stopped = error.code === 'StepLimit' ? 'limit' : 'violation';
             this.log('violation', this.id, { code: error.code, message: error.message });
         }
-        return { profile: 'swaml-reference/1.0', outcome: this.stopped || this.trace.some(t => t.kind === 'failure') ? 'failed' : 'no-failure-observed', system: this.id, options: copy(this.options), status: this.stopped ?? (this.events.length ? 'horizon' : 'quiescent'), timeNs: this.time, steps: this.steps,
+        return { profile: 'swaml-reference/1.1', outcome: this.stopped || this.trace.some(t => t.kind === 'failure') ? 'failed' : 'no-failure-observed', root: this.id, options: copy(this.options), status: this.stopped ?? (this.events.length ? 'horizon' : 'quiescent'), timeNs: this.time, steps: this.steps,
             sources: this.models.map(m => ({ uri: AstUtils.getDocument(m).uri.toString(), text: AstUtils.getDocument(m).textDocument.getText() })).sort((x, y) => x.uri.localeCompare(y.uri)),
             trace: this.trace, stores: Object.fromEntries([...this.units].map(([p, u]) => [p, Object.fromEntries([...u.store].map(([n, v]) => [n, plain(v.value)]))])),
             machines: Object.fromEntries(this.machines.map(m => [`${m.unit.path}.${m.operation.name}`, { state: m.state.name, live: m.live }])), deployments: this.deployments };
@@ -171,7 +183,7 @@ class Interpreter {
     private handler(m: Message): { unit: Unit; operation: a.Operation; machine?: Machine } {
         const p = this.ports.get(m.target)!;
         const endpoint = `${p.port.name}.${m.member}`;
-        const machine = this.machines.find(x => x.unit === p.unit && x.operation.machine!.transitions.some(t => t.kind === 'receive' && t.endpoint === endpoint));
+        const machine = this.machines.find(x => x.unit === p.unit && x.operation.stateBody!.transitions.some(t => t.kind === 'receive' && t.endpoint === endpoint));
         const operation = machine?.operation ?? p.unit.definition.members.filter(a.isOperation).find(x => ['receive', 'call'].includes(x.trigger?.kind ?? '') && x.trigger?.endpoint === endpoint)!;
         return { unit: p.unit, operation, machine };
     }
@@ -310,7 +322,7 @@ class Interpreter {
         return undefined;
     }
     private *block(frame: Frame, block: a.Block, parent: Environment): Generator<Yield, void, Response | undefined> {
-        const env = new Map(parent), ev = (e: a.Expression) => evaluate(e, env, this.fuel);
+        const env = new Map(parent), ev = (e: a.Expression) => evaluate(e, env, this.fuel, this.models);
         for (const s of block.statements) {
             this.fuel();
             if (a.isLet(s)) bind(env, s.name, typeKey(s.type), ev(s.value));
@@ -342,13 +354,13 @@ class Interpreter {
     }
     private arm(machine: Machine): void {
         const generation = machine.generation;
-        const times = new Set(machine.operation.machine!.transitions.filter(t => t.from.ref === machine.state && t.kind === 'after').map(t => nanos(t.delay!)));
+        const times = new Set(machine.operation.stateBody!.transitions.filter(t => t.from.ref === machine.state && t.kind === 'after').map(t => nanos(t.delay!)));
         for (const delay of times) this.schedule(this.addTime(this.time, delay), 1, () => this.release(machine.unit, machine.operation, machine, { kind: 'after', delay, generation }));
     }
     private *reaction(frame: Frame): Generator<Yield, undefined, Response | undefined> {
-        const m = frame.work.machine!, flow = m.operation.machine!, payload = this.payload(frame);
+        const m = frame.work.machine!, flow = m.operation.stateBody!, payload = this.payload(frame);
         const block = (b?: a.Block, env = frame.snapshot) => b ? this.block(frame, b, env) : (function* (): Generator<Yield, void, Response | undefined> {})();
-        const choose = (kind: string, env: Environment): a.Transition | undefined => flow.transitions.filter(t => t.from.ref === m.state && t.kind === kind && (kind !== 'receive' || t.endpoint === frame.work.stimulus?.endpoint) && (kind !== 'after' || nanos(t.delay!) === frame.work.stimulus?.delay) && (!t.guard || evaluate(t.guard, env, this.fuel).data === true)).sort((x, y) => (y.priority ?? 0) - (x.priority ?? 0))[0];
+        const choose = (kind: string, env: Environment): a.Transition | undefined => flow.transitions.filter(t => t.from.ref === m.state && t.kind === kind && (kind !== 'receive' || t.endpoint === frame.work.stimulus?.endpoint) && (kind !== 'after' || nanos(t.delay!) === frame.work.stimulus?.delay) && (!t.guard || evaluate(t.guard, env, this.fuel, this.models).data === true)).sort((x, y) => (y.priority ?? 0) - (x.priority ?? 0))[0];
         const enter = function* (self: Interpreter): Generator<Yield, void, Response | undefined> {
             self.log('stateEntry', `${m.unit.path}.${m.operation.name}`, { state: m.state.name, generation: m.generation });
             yield* block(m.state.entry);
