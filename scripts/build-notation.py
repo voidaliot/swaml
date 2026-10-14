@@ -5,26 +5,57 @@ Pillow and DejaVu Sans rasterize the same geometry used by SVG/PDF. --check
 compares vector/source bytes and decoded PNG pixels, ignoring PNG compression.
 """
 from pathlib import Path
-import argparse, io, json, os, re
-from PIL import Image
+import argparse, hashlib, io, json, math, os, platform, re
+from PIL import Image, ImageChops, features
 
 ROOT=Path(__file__).resolve().parents[1]
-parser=argparse.ArgumentParser();parser.add_argument('--check',action='store_true');parser.add_argument('--font-dir');args=parser.parse_args()
+parser=argparse.ArgumentParser();parser.add_argument('--check',action='store_true');parser.add_argument('--font-dir');parser.add_argument('--diagnostics',type=Path,help='Write renderer metadata and mismatch images for CI investigation.');args=parser.parse_args()
 if args.font_dir:os.environ['SWAML_FONT_DIR']=args.font_dir
-from notation_scene import render, Scene
+from notation_scene import render, Scene, font, font_path
 inventory=json.loads((ROOT/'spec/notation.json').read_text())
 out=ROOT/'docs/notation'
 if not args.check:out.mkdir(parents=True,exist_ok=True)
 concepts=inventory['concepts']
+failures=[]
+diagnostics={'platform':platform.platform(),'python':platform.python_version(),'pillow':Image.__version__,
+    'freetype':features.version('freetype2'),'raqmAvailable':features.check('raqm'),
+    'layoutEngine':font(20).layout_engine.name,
+    'fonts':{font_path(bold).name:hashlib.sha256(font_path(bold).read_bytes()).hexdigest() for bold in [False,True]},
+    'mismatches':[]}
+
+def save_diagnostic(path,data,kind='expected'):
+    if args.diagnostics:
+        destination=args.diagnostics/kind/path.relative_to(ROOT)
+        destination.parent.mkdir(parents=True,exist_ok=True);destination.write_bytes(data)
+
+def mismatch(path,detail):
+    failures.append(str(path.relative_to(ROOT)))
+    diagnostics['mismatches'].append({'path':str(path.relative_to(ROOT)),**detail})
 
 def write(path,data):
-    if args.check: assert path.read_bytes()==data, f'Stale notation artifact: {path.relative_to(ROOT)}'
+    if args.check:
+        if path.read_bytes()!=data:
+            mismatch(path,{'kind':'exact-source'});save_diagnostic(path,data)
     else:path.write_bytes(data)
 
 def write_png(path,png):
     if args.check:
         actual=Image.open(path).convert('RGB');expected=Image.open(io.BytesIO(png)).convert('RGB')
-        assert actual.size==expected.size and actual.tobytes()==expected.tobytes(), f'Stale PNG geometry/pixels: {path.relative_to(ROOT)}'
+        if actual.size!=expected.size or actual.tobytes()!=expected.tobytes():
+            detail={'kind':'pixels','actualSize':actual.size,'expectedSize':expected.size}
+            if actual.size==expected.size:
+                difference=ImageChops.difference(actual,expected)
+                maximum=ImageChops.lighter(ImageChops.lighter(*difference.split()[:2]),difference.split()[2])
+                histogram=maximum.histogram();pixels=actual.width*actual.height
+                rgb=difference.histogram();channels=3*pixels
+                detail.update(changedPixels=pixels-histogram[0],changedFraction=(pixels-histogram[0])/pixels,
+                    maxChannelDelta=max(i for i,count in enumerate(histogram) if count),
+                    meanAbsoluteChannelDelta=sum((i%256)*count for i,count in enumerate(rgb))/channels,
+                    rmsChannelDelta=math.sqrt(sum((i%256)**2*count for i,count in enumerate(rgb))/channels))
+                masks=[image.convert('L').point(lambda v:255 if v<128 else 0) for image in [actual,expected]]
+                detail['threshold128ChangedPixels']=pixels-ImageChops.difference(*masks).histogram()[0]
+                data=io.BytesIO();maximum.point(lambda v:min(255,v*4)).save(data,format='PNG');save_diagnostic(path,data.getvalue(),'difference-x4')
+            mismatch(path,detail);save_diagnostic(path,png);save_diagnostic(path,path.read_bytes(),'committed')
     else:path.write_bytes(png)
 
 for concept in concepts:
@@ -70,4 +101,8 @@ for key,title in [('keywords','Keyword coverage'),('productions','Grammar produc
         lines += [f'| `{item["term"]}` | {item["mode"]} | {detail.replace("|", "&#124;")} |']
     lines.append('')
 write(ROOT/'docs/GRAPHICAL_CATALOG.md','\n'.join(lines).encode())
+if args.diagnostics:
+    args.diagnostics.mkdir(parents=True,exist_ok=True)
+    (args.diagnostics/'report.json').write_text(json.dumps(diagnostics,indent=2)+'\n')
+assert not failures, 'Stale notation artifacts: '+', '.join(failures)+(f'; diagnostics: {args.diagnostics}/report.json' if args.diagnostics else '')
 print(('Verified' if args.check else 'Built')+f' {len(concepts)} canonical SVG/PNG/vector-scene triples, {len(worked)} worked-view PNGs and the graphical catalog.')

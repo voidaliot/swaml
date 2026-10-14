@@ -27,7 +27,9 @@ FONTS = {}
 def font(size, bold=False):
     key = (size, bold)
     if key not in FONTS:
-        FONTS[key] = ImageFont.truetype(str(font_path(bold)), size)
+        # Pillow's implicit default depends on optional RAQM support. Pin the
+        # layout engine so macOS and Linux use identical advances and kerning.
+        FONTS[key] = ImageFont.truetype(str(font_path(bold)), size, layout_engine=ImageFont.Layout.BASIC)
     return FONTS[key]
 
 def wrapped(value, width, size=18, bold=False):

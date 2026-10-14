@@ -33,7 +33,14 @@ jobs:
       - name: Verify generated vector examples
         run: python scripts/build-graphical-examples.py --check
       - name: Verify canonical SVG and PNG notation
-        run: python scripts/build-notation.py --check
+        run: python scripts/build-notation.py --check --diagnostics tmp/pdfs/notation-raster
+      - name: Preserve notation renderer diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: notation-renderer-diagnostics
+          path: tmp/pdfs/notation-raster
+          if-no-files-found: ignore
       - name: Verify committed publication
         run: python scripts/check-spec-pdf.py
       - name: Rebuild from source and verify

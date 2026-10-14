@@ -248,7 +248,7 @@
     {
       "path": "resources/fonts/README.md",
       "attachmentName": "resources__fonts__README.md",
-      "sha256": "3c0da8f1a3836cead5bf45a120b7f329ea2983ce18e310d48e3f9dcba31b7e5b"
+      "sha256": "0e2af35ae79cff400fb4ae36b30a5dfbb6d0f8d8c98f82c24c4504a64283bf96"
     },
     {
       "path": "resources/fonts/LICENSE-DejaVu.txt",
@@ -1826,5 +1826,5 @@
       "sha256": "f4e7bfd5995f00c485f4e276e30b47746146afc9ed568b2094d64678319bb434"
     }
   ],
-  "pdfSha256": "e5e3f09f154aecd841b773b199f84d5be9636ab063a63dcc406536c2b5cba998"
+  "pdfSha256": "b4c76fdf03a3da211797dae27245cb3e45fbf366f509f1988eb7d1e5929f2d36"
 }

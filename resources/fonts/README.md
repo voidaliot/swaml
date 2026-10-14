@@ -19,9 +19,17 @@ Bitstream Vera and Arev portions retain their accompanying licenses.
 | DejaVuSans.ttf | `7da195a74c55bef988d0d48f9508bd5d849425c1770dba5d7bfc6ce9ed848954` |
 | DejaVuSans-Bold.ttf | `e6476c1b80502924294eed40894c5b18e06c181444ca953e5334262df9c27724` |
 
-`scripts/build-notation.py` uses Pillow 12.3.0 and these exact font bytes.
+`scripts/build-notation.py` uses Pillow 12.3.0, these exact font bytes and
+`ImageFont.Layout.BASIC` explicitly. Pillow's implicit layout engine can change
+when the optional RAQM library is available, changing glyph positioning even
+with identical fonts; the explicit engine prevents that host-dependent choice.
 `--check` compares decoded PNG pixels, independent of PNG compression, and exact
 SVG/vector-scene text. `--font-dir` (or `SWAML_FONT_DIR`) is an explicit override
 for a deliberate font migration; different font metrics require regeneration
 and visual review. The PDF publication may additionally require the system's
 DejaVu oblique and monospace faces, as documented in its build guide.
+
+CI passes `--diagnostics tmp/pdfs/notation-raster` to retain renderer and FreeType
+versions, font hashes, per-image pixel statistics, expected/committed PNGs and
+amplified difference images when a check fails. These diagnostics do not relax
+the exact comparison; they make platform differences and stale assets inspectable.
