@@ -1,4 +1,4 @@
-# SWAML graphical notation, version 1.0
+# SWAML graphical notation, version 1.1
 
 This is the normative notation and interaction contract for a future workbench. The current repository defines the model, grammar and language server; it does not claim to ship these diagram editors.
 
@@ -11,18 +11,18 @@ SWAML retains the user's existing view family with these exact names. GRV is int
 | ID | Name | Primary subject | Contents |
 | --- | --- | --- | --- |
 | Browser | Model Browser | workspace / selected subtree | ownership tree, definitions/usages, errors, references |
-| GV | General View | package, system, component, unit or declaration | owned elements, types, properties and relations |
-| IV | Interconnect View | system or component occurrence/definition | immediate children, exposed ports, connectors, delegation |
-| CV | Case View | system or case | cases, requirements and intended coverage |
-| SV | Sequence View | case, or case selected from a system | interface exchanges and happens-before dependencies |
+| GV | General View | package, root component, definition, unit or declaration | owned elements, types, properties and relations |
+| IV | Interconnect View | root or nested component occurrence, or component definition | immediate children, exposed ports, connectors, delegation |
+| CV | Case View | root component or case | cases, requirements and intended coverage |
+| SV | Sequence View | case, or case selected from a root component | interface exchanges and happens-before dependencies |
 | GRV | Grid View | package or named semantic declaration | model inventory, interfaces, operations, timing, allocation or traces |
 | FV | Flow View | operation | statement flow or states/transitions owned by that operation |
 
-GV/GRV subjects exclude other views. IV accepts only a component or system; a unit is inspected through GV/FV or its containing IV. A package subject is its own name alone. These categories are validated.
+GV/GRV subjects exclude other views. IV accepts a root component, a component definition or a nested component occurrence; a unit is inspected through GV/FV or its containing IV. A package subject is its own name alone. These categories are validated.
 
 GEV is absent. AFV and STV are not separate SWAML view kinds; both become FV according to the operation's body. There are no performer swimlanes. If grouping is useful, label a frame with its actual component/unit/operation path.
 
-The Browser shows packages → definitions/system instances → child occurrences → ports, variables, functions and operations → flow statements or states/transitions. A definition and a usage MUST have distinct badges. Opening a usage preserves its instance path even when the editor displays members inherited from its definition.
+The Browser shows packages → definitions/root occurrences → child occurrences → ports, variables, functions and operations → flow statements or states/transitions. A definition and a usage MUST have distinct badges. Opening a usage preserves its instance path even when the editor displays members inherited from its definition.
 
 Selection updates Properties; **Open declaration** selects the shared declaration. **Diagram** opens the most appropriate view for the selected semantic element, and **Up** goes to its owning element. These commands are requirements for the future host, not implemented commands in this package.
 
@@ -30,7 +30,7 @@ Selection updates Properties; **Open declaration** selects the shared declaratio
 
 | Element | Shape and required labels |
 | --- | --- |
-| System | framed rectangle, `«system»`, name, profile |
+| Root component | component frame, `«component»`, root occurrence name and effective profile; typed roots show `name : Type` |
 | Component | rectangle with double-tab component marker, name/type; children may be nested |
 | Unit | plain rectangle with `«unit»` and name/type |
 | Definition | `«component def»` / `«unit def»`; no occurrence underline |
@@ -115,7 +115,7 @@ SV lifelines represent component or unit **instances**, with the visible port pa
 
 An SV renderer MUST preserve `after` dependencies and show unrelated steps as unordered/concurrent rather than inventing semantic ordering from vertical placement. It MAY choose a stable topological arrangement for readability, but must mark independent groups and expose the dependency relation. A case cannot create an operation, free event, implicit connector or arbitrary actor bypass merely by drawing a message.
 
-CV shows the system's named cases and explicit requirement links. A filled verification checkmark requires linked evidence from a verification tool; a `satisfies` assertion alone is shown as claimed coverage.
+CV shows the root component's named cases and explicit requirement links. A filled verification checkmark requires linked evidence from a verification tool; a `satisfies` assertion alone is shown as claimed coverage.
 
 ## 6. Grid View
 

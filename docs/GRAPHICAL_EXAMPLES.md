@@ -14,7 +14,7 @@ The tree distinguishes `SettingStore` as a unit definition from `Cabin.settings.
 
 ![General View of Cabin with settings, front and rear component occurrences and inherited deployments](figures/gv.svg)
 
-`settings`, `front` and `rear` are component occurrences. Each owns its unit occurrence. Dashed `deploy` edges assign settings to controller and the panels to displays; descendant units inherit those locations. These are allocation edges, not communication lines. The two Panel occurrences have distinct private stores despite sharing one definition.
+`Cabin` is the root component occurrence and its profile is service. `settings`, `front` and `rear` are component occurrences. Each owns its unit occurrence. Dashed `deploy` edges assign settings to controller and the panels to displays; descendant units inherit those locations. These are allocation edges, not communication lines. The two Panel occurrences have distinct private stores despite sharing one definition.
 
 ## IV: explicit interconnection and delegation
 
@@ -38,7 +38,7 @@ Lifelines are component occurrences; every message names its exposed port/member
 
 ![Grid View listing service and panel operation signatures, triggers, results and declared timing](figures/grv.svg)
 
-The grid shows effective occurrence paths and source-declared contracts. A dash means the service-profile operation has no timing declaration; it never means zero physical execution time. `read` is reentrant; other roots use the serial default. The rear row summarizes the same three declarations in a different occurrence context. Sorting a grid does not reorder source statements, queues or case dependencies.
+The grid shows effective occurrence paths and source-declared contracts. A dash means the service-profile operation has no timing declaration; it never means zero physical execution time. `read` is reentrant; other activation roots use the serial default. The rear row summarizes the same three declarations in a different occurrence context. Sorting a grid does not reorder source statements, queues or case dependencies.
 
 ## FV: operation statement flow
 
@@ -50,7 +50,7 @@ The frame belongs directly to `SettingStore.update`. The decision tests the actu
 
 ![Flow View of Device.lifecycle with Idle, Running, Stopped final, interface event transitions and a 30-second timer](figures/fv-state.svg)
 
-`Idle`, `Running` and `Stopped` belong directly to `Device.lifecycle`. Initial entry publishes idle status. The interface event `commands.begin` enters Running; entry increments cycles and publishes running. Either `commands.stop` or the local 30-second timer enters the final state. The timer edge first publishes timeout in its effect. Final entry publishes stopped and terminates the machine. Leaving Running cancels the old timer generation. Both state and statement projections are FV; no GEV, AFV, STV or performer layer is introduced.
+`Idle`, `Running` and `Stopped` belong directly to `Device.lifecycle`. Initial entry publishes idle status. The interface event `commands.begin` enters Running; entry increments cycles and publishes running. Either `commands.stop` or the local 30-second timer enters the final state. The timer edge first publishes timeout in its effect. Final entry publishes stopped and terminates its owning operation. Leaving Running cancels the old timer generation. Both state and statement projections are FV; no GEV, AFV, STV or performer layer is introduced.
 
 ## Reproduction and semantic checks
 

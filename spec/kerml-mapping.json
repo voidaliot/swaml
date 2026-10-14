@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0",
   "language": "SWAML",
-  "languageVersion": "1.0",
+  "languageVersion": "1.1",
   "foundation": {
     "name": "KerML",
     "version": "1.0",
@@ -17,7 +17,7 @@
         "Package"
       ],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Workspace root and version; source containers remain traceable."
+      "semantic": "Workspace source container under a host-pinned 1.1 language edition; no file version header."
     },
     {
       "source": "Package",
@@ -128,7 +128,7 @@
         "Behavior"
       ],
       "normative": "docs/spec/02-communication.md",
-      "semantic": "Contract-only RPC signature with copied parameters/result and idempotency assertion."
+      "semantic": "Contract-only RPC signature with copied parameters/result and idempotency assertion; omitted result is Void."
     },
     {
       "source": "Argument",
@@ -207,16 +207,17 @@
       "semantic": "Private variable with pure initializer and per-unit-occurrence storage."
     },
     {
-      "source": "System",
+      "source": "RootComponent",
       "kind": "element",
       "kernel": [
+        "Feature",
         "Structure"
       ],
       "normative": "docs/spec/04-systems-and-conformance.md",
-      "semantic": "Closed assembly with profile, expanded instances and resolved routes."
+      "semantic": "Named root component occurrence: typed composite Feature, or inline composition lowered through a synthetic Structure; effective profile defaults to service. Binding nodes/deployments cannot extend typed topology. Preserve root and child occurrence identity without an extra wrapper."
     },
     {
-      "source": "SystemMember",
+      "source": "RootMember",
       "kind": "grouping",
       "kernel": [],
       "normative": "docs/spec/07-normalized-model.md",
@@ -275,7 +276,7 @@
         "Step"
       ],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Owned implementation plus synthetic executable feature; typed unit context and exactly one body form."
+      "semantic": "Owned implementation plus synthetic executable feature; typed unit context and exactly one statement or directly owned state body; omitted result is Void."
     },
     {
       "source": "Trigger",
@@ -293,7 +294,7 @@
         "MetadataFeature"
       ],
       "normative": "docs/spec/06-execution-contract.md",
-      "semantic": "WCET, elapsed deadline and concurrency contract; root and helper interpretation."
+      "semantic": "WCET, elapsed deadline and concurrency contract; activation root and local helper interpretation."
     },
     {
       "source": "FunctionDef",
@@ -416,16 +417,11 @@
       "semantic": "Pure Boolean check with explicit activation failure continuation."
     },
     {
-      "source": "Machine",
-      "kind": "element",
-      "kernel": [
-        "Behavior",
-        "Feature",
-        "Step",
-        "Succession"
-      ],
+      "source": "StateBody",
+      "kind": "grouping",
+      "kernel": [],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Owned stateful body with current-state, timer generations and ordered reactions."
+      "semantic": "Initial-first syntax grouping contributing directly to its operation: states, transitions, current-state, timer generations and ordered reactions. No independently authored/executable element."
     },
     {
       "source": "State",
@@ -462,7 +458,7 @@
         "Behavior"
       ],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Descriptive partial trace tied to a system and requirement references; not a second executable program."
+      "semantic": "Descriptive partial trace tied to a root component and requirements; inline or definition-derived root topology, never a second executable program."
     },
     {
       "source": "ScenarioStep",
@@ -505,6 +501,13 @@
       "kernel": [],
       "normative": "docs/spec/01-structure-and-types.md",
       "semantic": "Resolve according to reference context; preserve authoring spelling and resolved identities."
+    },
+    {
+      "source": "ValuePath",
+      "kind": "reference",
+      "kernel": [],
+      "normative": "docs/spec/01-structure-and-types.md",
+      "semantic": "Value-reference syntax permitting local field paths and explicit package-qualified enum literals. An accessible value first segment wins over an unqualified enum with no field-failure fallback; cross-unit private lookup remains forbidden."
     },
     {
       "source": "Expression",
@@ -612,7 +615,7 @@
         "Expression"
       ],
       "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Local/copied/private value lookup with record traversal and checked final array indexing."
+      "semantic": "Local/copied/private value lookup with record traversal and checked final indexing; alternatively a nominal enum value resolved by lexical-first then package/import rules. Qualified enum identity is retained."
     },
     {
       "source": "RecordLiteral",
@@ -625,15 +628,6 @@
     },
     {
       "source": "FieldValue",
-      "kind": "value",
-      "kernel": [
-        "Expression"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Nominal construction, declared field/literal identities, fixed ordered array values."
-    },
-    {
-      "source": "EnumLiteral",
       "kind": "value",
       "kernel": [
         "Expression"

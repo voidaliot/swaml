@@ -1,5 +1,5 @@
 {
-  "languageVersion": "1.0",
+  "languageVersion": "1.1",
   "entries": [
     {
       "keyword": "after",
@@ -12,12 +12,6 @@
       "concern": "Values and calculation",
       "meaning": "Short-circuit Boolean conjunction. Both operands must be Bool; the right operand is evaluated only when the left is true.",
       "example": "ready and enabled"
-    },
-    {
-      "keyword": "array",
-      "concern": "Values and calculation",
-      "meaning": "Constructs a nonempty fixed array. Elements share one nominal type, with numeric common-type widening inside the literal. The inferred extent is the element count.",
-      "example": "array [1, 2, 3]"
     },
     {
       "keyword": "as",
@@ -59,7 +53,7 @@
       "keyword": "bound",
       "concern": "Behavior and states",
       "meaning": "Sets the positive safe-integer maximum number of loop-body executions. After that many iterations the condition is reevaluated; a still-true condition fails execution.",
-      "example": "while (i < 3) bound 3 { set i = i + 1; }"
+      "example": "while (i < 3) bound 3 { i = i + 1; }"
     },
     {
       "keyword": "call",
@@ -76,7 +70,7 @@
     {
       "keyword": "case",
       "concern": "Cases and evidence",
-      "meaning": "Defines a descriptive scenario for a system with labeled interface exchanges and optional requirement traces. It does not execute or prove itself and cannot introduce hidden traffic.",
+      "meaning": "Defines a descriptive scenario for a root component with labeled interface exchanges and optional requirement traces. It does not execute or prove itself and cannot introduce hidden traffic.",
       "example": "case Checkout for Shop satisfies Accepted { ... }"
     },
     {
@@ -94,31 +88,25 @@
     {
       "keyword": "completion",
       "concern": "Behavior and states",
-      "meaning": "Local machine stimulus reconsidered after entry and each reaction until quiescent. It is not an interface event. Unconditional cycles are invalid; guarded cycles have a 1,024-edge runtime limit.",
+      "meaning": "Local state stimulus reconsidered after entry and each reaction until quiescent. It is not an interface event. Unconditional cycles are invalid; guarded cycles have a 1,024-edge runtime limit.",
       "example": "transition next: A -> B on completion {}"
     },
     {
       "keyword": "component",
       "concern": "Structure and names",
-      "meaning": "Declares a reusable composition definition with def, or a contained occurrence without def. Components own ports, units/components, connections and delegations; execution belongs to units.",
-      "example": "component def Service { unit store: Store; } / component backend: Service;"
-    },
-    {
-      "keyword": "compute",
-      "concern": "Values and calculation",
-      "meaning": "Calls a pure function owned by the same unit with copied arguments. Functions cannot observe unit state or invoke operations. The function result retains its declared type.",
-      "example": "compute clamp(temperature)"
+      "meaning": "With def, declares a reusable composition type. Without def, a typed child occurrence uses name: Type; at package level a root occurrence either supplies inline unit/component children and connectors or instantiates a component definition. A typed root body may bind nodes/deployment only. The root profile defaults to service.",
+      "example": "component def Assembly { unit controller: Controller; } / component Demo: Assembly;"
     },
     {
       "keyword": "concurrency",
       "concern": "Timing and deployment",
-      "meaning": "Selects serial or reentrant root activation policy in a timing contract. Helpers inherit the root mode. Machines never overlap their own reactions.",
+      "meaning": "Selects serial or reentrant operation activation policy in a timing contract. Helpers inherit the activation mode. Stateful operations never overlap their own reactions.",
       "example": "concurrency serial;"
     },
     {
       "keyword": "connect",
       "concern": "Communication",
-      "meaning": "Creates an explicit connector between immediate child ports of a component/system. Contracts must be identical and roles complementary. Every connector supplies QoS.",
+      "meaning": "Creates an explicit connector between immediate child ports of a component definition or root component. Contracts must be identical and roles complementary. Every connector supplies QoS.",
       "example": "connect samples: sensor.output -> controller.input qos { ... };"
     },
     {
@@ -130,7 +118,7 @@
     {
       "keyword": "CV",
       "concern": "Graphical views",
-      "meaning": "Case View kind: displays cases, requirements and claimed coverage for a case or system. Verified coverage requires separate linked evidence.",
+      "meaning": "Case View kind: displays cases, requirements and claimed coverage for a case or root component. Verified coverage requires separate linked evidence.",
       "example": "view coverage CV of Shop;"
     },
     {
@@ -148,13 +136,13 @@
     {
       "keyword": "deadline",
       "concern": "Timing and deployment",
-      "meaning": "Positive elapsed-time bound from root release to completion, including queueing and request suspension. For machines it applies per reaction. WCET must not exceed it.",
+      "meaning": "Positive elapsed-time bound from activation release to completion, including queueing and request suspension. For stateful operations it applies per reaction. WCET must not exceed it.",
       "example": "deadline 5 ms;"
     },
     {
       "keyword": "def",
       "concern": "Structure and names",
-      "meaning": "Distinguishes a reusable component or unit definition from a contained occurrence. Defining a type creates no runtime storage; each occurrence receives its own state.",
+      "meaning": "Required marker for a reusable component or unit type. Definitions create no running singleton. An occurrence without def must either refer to the matching definition kind or, for a package-level component root, supply inline composition.",
       "example": "unit def Worker { ... }"
     },
     {
@@ -172,7 +160,7 @@
     {
       "keyword": "deploy",
       "concern": "Timing and deployment",
-      "meaning": "Assigns an existing component or descendant occurrence to a system node. Descendants inherit the nearest explicit allocation. Duplicate exact-path allocations are invalid.",
+      "meaning": "Assigns an existing component or descendant occurrence to a root component node. Descendants inherit the nearest explicit allocation. Duplicate exact-path allocations are invalid.",
       "example": "deploy backend.worker on application;"
     },
     {
@@ -196,20 +184,14 @@
     {
       "keyword": "entry",
       "concern": "Behavior and states",
-      "meaning": "State-entry block executed after that state becomes current. It has no incoming payload scope. Residence timers begin after entry finishes; return/fail terminates the machine.",
-      "example": "state Idle { entry { set count = 0; } }"
+      "meaning": "State-entry block executed after that state becomes current. It has no incoming payload scope. Residence timers begin after entry finishes; return/fail terminates the owning operation.",
+      "example": "state Idle { entry { count = 0; } }"
     },
     {
       "keyword": "enum",
       "concern": "Values and calculation",
-      "meaning": "Declares a nominal type with one or more unique named literals. Distinct enum declarations are incompatible even if names match; no implicit integer conversion exists.",
-      "example": "enum Health { Good, Failed }"
-    },
-    {
-      "keyword": "enumValue",
-      "concern": "Values and calculation",
-      "meaning": "Constructs one declared literal of an enum type. The dot selects an enum literal, not a component path or variable field.",
-      "example": "enumValue Health.Good"
+      "meaning": "Declares a nominal set of one or more unique literals. Values use Type.Literal or Package::Type.Literal. A live value first segment in the current expression environment takes precedence over an unqualified enum name, with no fallback after a failed field lookup; qualify to select the enum explicitly.",
+      "example": "enum Status { Ready, Failed } / Status.Ready / Contracts::Status.Ready"
     },
     {
       "keyword": "event",
@@ -227,7 +209,7 @@
       "keyword": "exit",
       "concern": "Behavior and states",
       "meaning": "State-exit block runs after timer cancellation and before the transition effect. It lacks payload scope. Return/failure skips remaining transition phases.",
-      "example": "state Running { exit { set active = false; } }"
+      "example": "state Running { exit { active = false; } }"
     },
     {
       "keyword": "fail",
@@ -250,20 +232,20 @@
     {
       "keyword": "final",
       "concern": "Behavior and states",
-      "meaning": "Marks a state that completes its owning operation after entry. It has no outgoing transition. Future input to that machine is undeliverable, not rerouted.",
+      "meaning": "Marks a state that completes its owning operation after entry. It has no outgoing transition. Future input to that operation is undeliverable, not rerouted.",
       "example": "state Stopped final {}"
     },
     {
       "keyword": "for",
       "concern": "Cases and evidence",
-      "meaning": "Selects the system described by a case. The steps must use top-level connectors and exposed component port/member paths of that system.",
-      "example": "case Poll for HealthCheck { ... }"
+      "meaning": "Selects the root component described by a case. The steps use root-level connectors and immediate child unit/component port-member paths. Typed roots resolve topology through their component definition.",
+      "example": "case Startup for Product { ... }"
     },
     {
       "keyword": "function",
       "concern": "Values and calculation",
       "meaning": "Defines a pure expression with a non-Void result. It sees only copied parameters and other local pure functions, never unit variables. The call graph is acyclic.",
-      "example": "function twice(x: Real): Real = x * 2.0;"
+      "example": "function twice(value: Int): Int = value * 2; / twice(3)"
     },
     {
       "keyword": "FV",
@@ -304,7 +286,7 @@
     {
       "keyword": "initial",
       "concern": "Behavior and states",
-      "meaning": "References exactly one state in the owning machine. Initialization enters it once per system epoch before the machine consumes input.",
+      "meaning": "The first item in a stateful operation body. References exactly one state owned by that operation and distinguishes state behavior from a statement block without a wrapper keyword. Initialization enters it once per run epoch before input consumption.",
       "example": "initial Idle;"
     },
     {
@@ -322,13 +304,13 @@
     {
       "keyword": "invoke",
       "concern": "Behavior and states",
-      "meaning": "Synchronously calls an untriggered Void operation in the same unit. It shares the root lock and snapshot; copied parameters are local. Remote invocation requires request through a port.",
+      "meaning": "Synchronously calls an untriggered Void operation in the same unit. It shares the activation lock and snapshot; copied parameters are local. Remote invocation requires request through a port.",
       "example": "invoke prepare();"
     },
     {
       "keyword": "IV",
       "concern": "Graphical views",
-      "meaning": "Interconnect View of a system/component definition or occurrence. Shows immediate children, boundary ports, connectors and delegation with exact interface paths.",
+      "meaning": "Interconnect View of a root component/component definition or occurrence. Shows immediate children, boundary ports, connectors and delegation with exact interface paths.",
       "example": "view wiring IV of Product;"
     },
     {
@@ -344,12 +326,6 @@
       "example": "let count: Int = 0;"
     },
     {
-      "keyword": "machine",
-      "concern": "Behavior and states",
-      "meaning": "Alternative body of a parameterless Void on start operation. Owns one flat set of states and transitions. State behavior is directly owned by the operation, without a performer layer.",
-      "example": "operation lifecycle(): Void on start machine { initial Idle; state Idle {} }"
-    },
-    {
       "keyword": "manual",
       "concern": "Behavior and states",
       "meaning": "Parameterless Void operation trigger released by a harness. It is control of execution, not a route for injecting external model payloads or bypassing interfaces.",
@@ -358,7 +334,7 @@
     {
       "keyword": "maxAge",
       "concern": "Communication",
-      "meaning": "Maximum message age measured from original emission through retries. Eligibility is inclusive; greater age discards before dispatch. Required for sampled data in realtime/mixed systems.",
+      "meaning": "Maximum message age measured from original emission through retries. Eligibility is inclusive; greater age discards before dispatch. Required for sampled data in realtime/mixed roots.",
       "example": "maxAge 20 ms;"
     },
     {
@@ -376,8 +352,8 @@
     {
       "keyword": "mixed",
       "concern": "Timing and deployment",
-      "meaning": "System profile covering embedded/service combinations. All used operations carry timing and all connectors latency; sampled data also carries age. It does not silently exempt cloud-facing paths.",
-      "example": "system Product mixed { ... }"
+      "meaning": "Root component profile covering embedded/service combinations. All used operations carry timing and all connectors latency; sampled data also carries age. It does not silently exempt cloud-facing paths.",
+      "example": "component Product mixed { ... }"
     },
     {
       "keyword": "ms",
@@ -388,7 +364,7 @@
     {
       "keyword": "node",
       "concern": "Timing and deployment",
-      "meaning": "Declares a named execution location in a system with mcu, process or container kind. Nodes affect allocation only; traffic still follows interfaces.",
+      "meaning": "Declares a named execution location in a root component with mcu, process or container kind. Nodes affect allocation only; traffic still follows interfaces.",
       "example": "node edge process;"
     },
     {
@@ -418,13 +394,13 @@
     {
       "keyword": "operation",
       "concern": "Behavior and states",
-      "meaning": "In an interface, declares an RPC signature. In a unit, declares executable flow or an owned machine. An incoming signature is implemented by exactly one on call operation.",
-      "example": "operation get(): Int; / operation read(): Int on call api.get { return value; }"
+      "meaning": "In an interface, declares an RPC signature. In a unit, declares executable statements or directly owned states. An omitted result annotation means Void. An incoming signature is implemented by exactly one on call operation.",
+      "example": "operation reset(); / operation reset() on call api.reset { return; }"
     },
     {
       "keyword": "optional",
       "concern": "Communication",
-      "meaning": "Allows a port to remain unconnected in a closed system. It does not change contract, role or handler rules. Unbound data/event sends succeed; unbound RPC reports Unavailable.",
+      "meaning": "Allows a port to remain unconnected in a closed root component. It does not change contract, role or handler rules. Unbound data/event sends succeed; unbound RPC reports Unavailable.",
       "example": "port diagnostics: Notices publisher optional;"
     },
     {
@@ -436,14 +412,14 @@
     {
       "keyword": "ordering",
       "concern": "Communication",
-      "meaning": "Selects fifo or unordered independently of delivery reliability. Ordering applies per connector occurrence, direction and member, not across an entire interface or system.",
+      "meaning": "Selects fifo or unordered independently of delivery reliability. Ordering applies per connector occurrence, direction and member, not across an entire interface or root.",
       "example": "ordering fifo;"
     },
     {
       "keyword": "otherwise",
       "concern": "Communication",
       "meaning": "Mandatory request failure block with implicit copied failure:String. It must return or fail on every path and cannot fall through to successful result use.",
-      "example": "within 1 s otherwise { set lastError = failure; return; };"
+      "example": "within 1 s otherwise { lastError = failure; return; };"
     },
     {
       "keyword": "overflow",
@@ -496,7 +472,7 @@
     {
       "keyword": "publishSubscribe",
       "concern": "Communication",
-      "meaning": "Event-only contract kind with publisher/subscriber ports. Subscriptions are explicit static connectors. Runtime subscribe/unsubscribe and wildcard topics are outside 1.0.",
+      "meaning": "Event-only contract kind with publisher/subscriber ports. Subscriptions are explicit static connectors. Runtime subscribe/unsubscribe and wildcard topics are outside 1.1.",
       "example": "interface publishSubscribe Notices version \"1.0.0\" { event changed(); }"
     },
     {
@@ -520,8 +496,8 @@
     {
       "keyword": "realtime",
       "concern": "Timing and deployment",
-      "meaning": "System profile requiring operation timing, connector latency and sampled freshness contracts. Those declarations require target evidence before any hard realtime claim.",
-      "example": "system Heating realtime { ... }"
+      "meaning": "Root component profile requiring operation timing, connector latency and sampled freshness contracts. Those declarations require target evidence before any hard realtime claim.",
+      "example": "component Heating realtime { ... }"
     },
     {
       "keyword": "receive",
@@ -544,7 +520,7 @@
     {
       "keyword": "reentrant",
       "concern": "Timing and deployment",
-      "meaning": "Allows overlapping roots with independent dispatch-time unit snapshots. Direct or helper writes to unit state are statically invalid. Local variables remain mutable; one machine reaction cannot overlap itself.",
+      "meaning": "Allows overlapping operation activations with independent dispatch-time unit snapshots. Direct or helper writes to unit state are statically invalid. Local variables remain mutable; one state reaction cannot overlap itself.",
       "example": "concurrency reentrant;"
     },
     {
@@ -574,13 +550,13 @@
     {
       "keyword": "requires",
       "concern": "Communication",
-      "meaning": "Consumer role of a service interface. Issues RPC and handles reverse-direction provider events. It has at most one route in a closed system.",
+      "meaning": "Consumer role of a service interface. Issues RPC and handles reverse-direction provider events. It has at most one route in a closed root component.",
       "example": "port orders: Orders requires;"
     },
     {
       "keyword": "return",
       "concern": "Behavior and states",
-      "meaning": "Completes the current operation with a copied typed result or bare Void. Inside an invoked helper it resumes the caller; inside state behavior it terminates the owning machine immediately.",
+      "meaning": "Completes the current operation with a copied typed result or bare Void. Inside an invoked helper it resumes the caller; inside state behavior it terminates the owning operation immediately.",
       "example": "return accepted;"
     },
     {
@@ -622,7 +598,7 @@
     {
       "keyword": "serial",
       "concern": "Timing and deployment",
-      "meaning": "Default root mode: acquire the unit's one serial lock until completion/failure, including RPC waits. Local invokes share the root lock. Independent unit roots may still interleave.",
+      "meaning": "Default activation mode: acquire the unit's one serial lock until completion/failure, including RPC waits. Local invokes share the activation lock. Independent unit activations may still interleave.",
       "example": "concurrency serial;"
     },
     {
@@ -634,26 +610,20 @@
     {
       "keyword": "service",
       "concern": "Communication",
-      "meaning": "As an interface kind, combines RPC operations and events with requires/provides roles. As a system profile, makes timing contracts optional while retaining interfaces, QoS and static validity.",
-      "example": "interface service Orders version \"1.0.0\" { ... } / system Shop service { ... }"
-    },
-    {
-      "keyword": "set",
-      "concern": "Behavior and states",
-      "meaning": "Replaces an existing mutable local, parameter or permitted unit variable with a copied assignable value. Field/index mutation and remote/private access are absent.",
-      "example": "set current = desired;"
+      "meaning": "As an interface kind, combines RPC operations and events with requires/provides roles. As a root component profile, makes timing contracts optional while retaining interfaces, explicit QoS and static validity; it is the default when no profile is written.",
+      "example": "interface service Orders version \"1.0.0\" { ... } / component Shop service { ... }"
     },
     {
       "keyword": "start",
       "concern": "Behavior and states",
-      "meaning": "Once-per-run startup trigger for a parameterless Void operation. State machines require it. All stores/routes/handlers exist before startup work runs; readiness protocols still need explicit ports.",
+      "meaning": "Once-per-run startup trigger for a parameterless Void operation. Stateful operations require it. All stores/routes/handlers exist before startup work runs; readiness protocols still need explicit ports.",
       "example": "operation boot(): Void on start { ... }"
     },
     {
       "keyword": "state",
       "concern": "Behavior and states",
-      "meaning": "Declares a named operation-owned state with optional entry/exit and final marker. States are flat, directly owned and never assigned later to performers.",
-      "example": "state Idle { entry { set active = false; } }"
+      "meaning": "Declares a named state directly inside an operation after its initial reference. Optional entry/exit blocks contain ordinary operation statements. State names are operation-local; no separate state allocation or performer exists.",
+      "example": "state Idle { entry { active = false; } }"
     },
     {
       "keyword": "String",
@@ -670,31 +640,19 @@
     {
       "keyword": "SV",
       "concern": "Graphical views",
-      "meaning": "Sequence View of a case or a system's selected case. Lifelines are occurrences; arrows show port/member/connector and request correlation. Independent steps must remain visibly unordered.",
+      "meaning": "Sequence View of a case or a root component's selected case. Lifelines are occurrences; arrows show port/member/connector and request correlation. Independent steps must remain visibly unordered.",
       "example": "view checkout SV of Checkout;"
-    },
-    {
-      "keyword": "swaml",
-      "concern": "Structure and names",
-      "meaning": "Mandatory document introducer followed by the exact language major/minor header string and semicolon. All loaded sources must use supported version 1.0.",
-      "example": "swaml \"1.0\";"
-    },
-    {
-      "keyword": "system",
-      "concern": "Structure and names",
-      "meaning": "Closed assembly of top-level component occurrences, connectors, execution nodes and deployment. Each selected system expands definitions into distinct runtime instances.",
-      "example": "system Product mixed { component root: Assembly; ... }"
     },
     {
       "keyword": "timing",
       "concern": "Timing and deployment",
-      "meaning": "Operation contract containing wcet, deadline and concurrency in that order. Required on used operations in realtime/mixed systems; machine timing applies per reaction.",
+      "meaning": "Operation contract containing wcet, deadline and concurrency in that order. Required on used operations in realtime/mixed roots; stateful operation timing applies per reaction.",
       "example": "timing { wcet 1 ms; deadline 5 ms; concurrency serial; }"
     },
     {
       "keyword": "transition",
       "concern": "Behavior and states",
-      "meaning": "Named state edge owned by one machine, with source/target, stimulus, optional guard/priority and effect. Execution orders exit, effect, state update, entry, then completion processing.",
+      "meaning": "Named state edge owned by one operation, with source/target, stimulus, optional guard/priority and effect. Execution orders exit, effect, state update, entry, then completion processing.",
       "example": "transition beginRun: Idle -> Running on receive commands.begin {}"
     },
     {
@@ -706,7 +664,7 @@
     {
       "keyword": "unit",
       "concern": "Structure and names",
-      "meaning": "Smallest interface-protected software boundary. Defines private data/functions/operations or instantiates a unit inside a component. Systems wrap top-level units in components.",
+      "meaning": "Smallest interface-protected software boundary. With def, defines private data/functions/operations; a typed usage creates an occurrence inside a nested or root component. Each occurrence has distinct storage and handlers.",
       "example": "unit def Worker { ... } / unit worker: Worker;"
     },
     {
@@ -736,7 +694,7 @@
     {
       "keyword": "via",
       "concern": "Cases and evidence",
-      "meaning": "Names the top-level system connector used by a case exchange. Endpoint-member paths must resolve on its visible component ports with a legal orientation.",
+      "meaning": "Names the root-level connector used by a case exchange. Endpoint-member paths must resolve on its immediate child component/unit ports with a legal orientation.",
       "example": "via orderLink label submitted;"
     },
     {
@@ -748,13 +706,13 @@
     {
       "keyword": "Void",
       "concern": "Values and calculation",
-      "meaning": "Uninhabited operation/signature result type. Invalid for stored values, parameters, record fields, arrays and pure-function results. A Void RPC result name is reserved but unreadable.",
+      "meaning": "No result value. Operation implementations and interface signatures default to Void when : Type is omitted; an explicit : Void is equivalent. Forbidden for parameters, variables, fields, arrays and pure function results. A Void RPC completion label is not readable data.",
       "example": "operation notify(): Void { return; }"
     },
     {
       "keyword": "wcet",
       "concern": "Timing and deployment",
-      "meaning": "Positive active-execution-time bound including local helpers and machine microsteps, excluding request wait. Must not exceed deadline; physical evidence belongs to a target binding.",
+      "meaning": "Positive active-execution-time bound including local helpers and state reaction microsteps, excluding request wait. Must not exceed deadline; physical evidence belongs to a target binding.",
       "example": "wcet 1 ms;"
     },
     {
@@ -767,7 +725,7 @@
       "keyword": "while",
       "concern": "Behavior and states",
       "meaning": "Pretest Bool loop with mandatory positive bound. Each iteration has a lexical body scope. A still-true condition after the bound fails instead of silently exiting.",
-      "example": "while (i < 3) bound 3 { set i = i + 1; }"
+      "example": "while (i < 3) bound 3 { i = i + 1; }"
     },
     {
       "keyword": "within",
