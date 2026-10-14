@@ -160,6 +160,7 @@ class Interpreter {
     private prepare(m: Message): void {
         if (m.response) return;
         const handler = this.handler(m);
+        if (handler.machine && !handler.machine.live) return;
         m.work = { ...handler, id: this.uid('a'), released: m.ready, args: copy(m.args), message: m, done: false, stimulus: handler.machine ? { kind: 'receive', endpoint: `${this.ports.get(m.target)!.port.name}.${m.member}` } : undefined };
         this.released(m.work);
     }
@@ -181,13 +182,19 @@ class Interpreter {
             else if (this.canDispatch(work)) { this.pending.splice(i, 1); this.start(work); } else i++;
         }
         for (const q of this.queues.values()) {
+            // Undeliverable ready inputs must be cancelled even behind an in-flight FIFO head.
+            for (let i = 0; i < q.items.length;) {
+                const m = q.items[i];
+                const machine = m.available && !m.response ? this.handler(m).machine : undefined;
+                if (machine && !machine.live) { q.items.splice(i, 1); this.discard(m, 'Undeliverable'); }
+                else i++;
+            }
             while (q.items.length) {
                 const m = q.items[0];
                 if (!m.available) break;
                 if (m.route.qos.maxAge && this.time - m.emitted > nanos(m.route.qos.maxAge)) { q.items.shift(); this.discard(m, 'Expired'); continue; }
                 if (m.response) { if (--m.copies === 0) q.items.shift(); this.log('delivery', m.id, { correlation: m.correlation!.id, route: m.route.path }); this.complete(m.correlation!, m.response); continue; }
                 const handler = this.handler(m);
-                if (handler.machine && !handler.machine.live) { q.items.shift(); this.discard(m, 'Undeliverable'); continue; }
                 if (handler.machine && !handler.machine.ready) break;
                 if (!this.canDispatch(handler)) break;
                 if (--m.copies === 0) q.items.shift();

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Cancel undispatched inputs to terminated machines even behind unavailable FIFO messages, preventing false handler deadlines while preserving live-machine deadlines and delivery order (#15).
+
 - Fix required boundary-port closure: internal leaf connections cannot satisfy unused outer aliases; external connection use propagates inward through every delegation (#14).
 
 ## 1.0.0 — 2026-10-14
