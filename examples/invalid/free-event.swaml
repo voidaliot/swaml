@@ -1,4 +1,3 @@
-swaml "1.0";
 package Invalid {
     // Parser error: events belong to interface contracts.
     event Unowned(value: Int);

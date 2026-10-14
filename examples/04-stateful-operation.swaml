@@ -1,20 +1,19 @@
-swaml "1.0";
 package Lifecycle {
     interface publishSubscribe Commands version "1.0.0" { event begin(); event stop(); }
     interface publishSubscribe Status version "1.0.0" { event changed(value: String); }
     unit def Operator {
         port commands: Commands publisher;
-        operation startDevice(): Void on manual { publish commands.begin(); return; }
-        operation stopDevice(): Void on manual { publish commands.stop(); return; }
+        operation startDevice() on manual { publish commands.begin(); return; }
+        operation stopDevice() on manual { publish commands.stop(); return; }
     }
     unit def Device {
         port commands: Commands subscriber;
         port status: Status publisher;
         var cycles: Int = 0;
-        operation lifecycle(): Void on start machine {
+        operation lifecycle() on start {
             initial Idle;
             state Idle { entry { publish status.changed("idle"); } }
-            state Running { entry { set cycles = cycles + 1; publish status.changed("running"); } }
+            state Running { entry { cycles = cycles + 1; publish status.changed("running"); } }
             state Stopped final { entry { publish status.changed("stopped"); } }
             transition beginRun: Idle -> Running on receive commands.begin {}
             transition stopRun: Running -> Stopped on receive commands.stop {}
@@ -24,7 +23,7 @@ package Lifecycle {
     unit def Monitor {
         port status: Status subscriber;
         var current: String = "unknown";
-        operation observe(value: String): Void on receive status.changed { set current = value; return; }
+        operation observe(value: String) on receive status.changed { current = value; return; }
     }
     component def Assembly {
         unit operatorUnit: Operator;
@@ -33,7 +32,7 @@ package Lifecycle {
         connect commands: operatorUnit.commands -> device.commands qos { delivery atMostOnce; ordering fifo; capacity 8; overflow reject; };
         connect status: device.status -> monitor.status qos { delivery atMostOnce; ordering fifo; capacity 8; overflow dropOldest; };
     }
-    system Product service { component assembly: Assembly; }
+    component Product { component assembly: Assembly; }
     view lifecycle FV of Device.lifecycle;
     view wiring IV of Assembly;
 }

@@ -1,7 +1,7 @@
 import { AstUtils, type AstNode, type ValidationAcceptor, type LangiumCoreServices } from 'langium';
 import * as a from './generated/ast.js';
 import { owner } from './swaml-scope.js';
-import { container, endpoint, named, nanos, resolvePath, typeKey, type Container } from './semantic.js';
+import { container, endpoint, members, named, nanos, resolvePath, resolveEnumLiteral, typeKey, type Container } from './semantic.js';
 
 type Env = Map<string, string>;
 export class SwamlValidator {
@@ -10,7 +10,6 @@ export class SwamlValidator {
         const parseResult = AstUtils.getDocument(model).parseResult;
         if (parseResult.lexerErrors.length || parseResult.parserErrors.length) return;
         const error = (node: AstNode, code: string, message: string) => accept('error', message, { node, code });
-        if (model.version !== '1.0') error(model, 'SW001', 'Supported language version is "1.0".');
         const nodes = [model, ...AstUtils.streamAllContents(model)];
         const packages = [...this.services.shared.workspace.LangiumDocuments.all].flatMap(d => a.isModel(d.parseResult.value) ? d.parseResult.value.packages : []);
         for (const pkg of model.packages) if (packages.filter(p => p.name === pkg.name).length > 1) error(pkg, 'SW002', 'Package names must be unique across the workspace.');
@@ -40,7 +39,12 @@ export class SwamlValidator {
                 const roles = { senderReceiver: ['sender', 'receiver'], clientServer: ['client', 'server'], publishSubscribe: ['publisher', 'subscriber'], service: ['provides', 'requires'] };
                 if (!roles[node.interface.ref.kind].includes(node.role)) error(node, 'SW011', 'Port role does not match interface kind.');
             }
-            if (a.isInstance(node) && a.isSystem(node.$container!) && node.kind === 'unit') error(node, 'SW012', 'Systems contain components; wrap a top-level unit in a component.');
+            if (a.isRootComponent(node) && node.definition?.ref) {
+                for (const member of node.members) {
+                    if (!a.isNode(member) && !a.isDeployment(member)) error(member, 'SW012', 'A typed root may bind nodes and deployment only; change topology in its component definition.');
+                    if ('name' in member && node.definition.ref.members.some(m => 'name' in m && m.name === member.name)) error(member, 'SW002', `Root binding name '${member.name}' duplicates a member of its definition.`);
+                }
+            }
             if (a.isInstance(node) && node.definition.ref) {
                 if ((node.kind === 'unit') !== a.isUnit(node.definition.ref)) error(node, 'SW012', 'Instance kind must match its definition.');
                 const visit = (d: a.Definition, seen: Set<a.Definition>): boolean => {
@@ -66,7 +70,7 @@ export class SwamlValidator {
                 if (node.target.split('.').length !== 2 || !target || !a.isPort(target)) error(node, 'SW030', 'Delegate to one immediate child port: child.port.');
                 else if (outer && (outer.interface.ref !== target.interface.ref || outer.role !== target.role)) error(node, 'SW032', 'Delegation preserves interface identity and port role.');
             }
-            if (a.isComponent(node) || a.isSystem(node)) {
+            if (a.isComponent(node) || a.isRootComponent(node)) {
                 const links = node.members.filter(a.isConnect);
                 for (const link of links) if (links.some(other => other !== link && other.source === link.source && other.target === link.target)) error(link, 'SW035', 'Duplicate connector endpoints are not allowed.');
                 if (a.isComponent(node)) {
@@ -78,22 +82,22 @@ export class SwamlValidator {
                 if (node.members.filter(a.isDelegate).filter(d => d.outer.ref === port).length !== 1) error(port, 'SW033', 'Each component boundary port must delegate to exactly one child port.');
             }
             if (a.isUnit(node)) this.checkUnit(node, error);
-            if (a.isSystem(node)) this.checkSystem(node, error);
-            if (a.isMachine(node)) this.checkMachine(node, error);
+            if (a.isRootComponent(node)) this.checkRoot(node, error);
+            if (a.isStateBody(node)) this.checkStateBody(node, error);
             if (a.isScenario(node)) this.checkScenario(node, error);
             if (a.isView(node)) {
                 const pkg = owner(node, a.isPackage);
                 const [root, ...rest] = node.subject.split('.');
                 if (root === pkg?.name && pkg.elements.some(e => e.name === root)) error(node, 'SW080', 'View subject is ambiguous between its package and a declaration.');
                 let subject: AstNode | undefined = root === pkg?.name ? pkg : pkg?.elements.find(e => e.name === root);
-                if (subject && rest.length && (a.isUnit(subject) || a.isComponent(subject) || a.isSystem(subject))) subject = resolvePath(subject, rest.join('.'));
+                if (subject && rest.length && (a.isUnit(subject) || a.isComponent(subject) || a.isRootComponent(subject))) subject = resolvePath(subject, rest.join('.'));
                 else if (rest.length) subject = undefined;
                 if (!subject) error(node, 'SW080', 'View subject must resolve in its package.');
                 if (subject && a.isInstance(subject)) subject = subject.definition.ref;
                 if (subject && a.isView(subject)) error(node, 'SW080', 'A view cannot use another view as its semantic subject.');
-                if (subject && node.kind === 'IV' && !a.isComponent(subject) && !a.isSystem(subject)) error(node, 'SW080', 'IV subject must be a component or system.');
+                if (subject && node.kind === 'IV' && !a.isComponent(subject) && !a.isRootComponent(subject)) error(node, 'SW080', 'IV subject must be a component or root.');
                 if (subject && node.kind === 'FV' && !a.isOperation(subject)) error(node, 'SW080', 'FV subject must be an operation.');
-                if (subject && ['SV', 'CV'].includes(node.kind) && !a.isScenario(subject) && !a.isSystem(subject)) error(node, 'SW080', 'SV/CV subject must be a case or system.');
+                if (subject && ['SV', 'CV'].includes(node.kind) && !a.isScenario(subject) && !a.isRootComponent(subject)) error(node, 'SW080', 'SV/CV subject must be a case or root.');
             }
         }
         for (const d of nodes.filter(a.isDataType)) {
@@ -152,13 +156,13 @@ export class SwamlValidator {
             if (op.trigger?.period && op.timing && nanos(op.timing.deadline) > nanos(op.trigger.period)) error(op, 'SW042', 'Periodic deadline must not exceed period.');
             if (op.body) this.block(op.body, env, typeKey(op.result), error);
             if (op.body && typeKey(op.result) !== 'Void' && !this.terminates(op.body)) error(op, 'SW053', 'Every path of a value-returning operation must return or fail.');
-            if (op.machine) {
+            if (op.stateBody) {
                 if (typeKey(op.result) !== 'Void' || op.parameters.length || op.trigger?.kind !== 'start') error(op, 'SW060', 'Stateful operations must have no parameters, return Void and start on start.');
-                for (const state of op.machine.states) {
+                for (const state of op.stateBody.states) {
                     if (state.entry) this.block(state.entry, new Map(env), 'Void', error);
                     if (state.exit) this.block(state.exit, new Map(env), 'Void', error);
                 }
-                for (const t of op.machine.transitions) {
+                for (const t of op.stateBody.transitions) {
                     const local = new Map(env);
                     if (t.endpoint) {
                         const ep = endpoint(t, t.endpoint);
@@ -198,13 +202,13 @@ export class SwamlValidator {
                 if (port.role === 'provides' && a.isEventMember(member)) continue;
                 const path = `${port.name}.${member.name}`;
                 const handlers = operations.filter(op => op.trigger?.endpoint === path).length;
-                const machines = operations.filter(op => op.machine?.transitions.some(t => t.endpoint === path)).length;
+                const machines = operations.filter(op => op.stateBody?.transitions.some(t => t.endpoint === path)).length;
                 if (handlers + machines !== 1) error(port, 'SW055', `Member '${path}' requires exactly one receiving operation (or one stateful operation).`);
             }
         }
         const visiting = new Set<AstNode>(), visited = new Set<AstNode>();
         const walk = (node: a.Operation | a.FunctionDef): void => {
-            if (visiting.has(node)) { error(node, 'SW056', 'Recursive local call cycles are not supported in 1.0.'); return; }
+            if (visiting.has(node)) { error(node, 'SW056', 'Recursive local call cycles are not supported in 1.1.'); return; }
             if (visited.has(node)) return;
             visiting.add(node);
             for (const n of AstUtils.streamAllContents(node)) {
@@ -248,7 +252,7 @@ export class SwamlValidator {
             } else if (a.isInvoke(s)) {
                 if (s.operation.ref) {
                     this.args(s, s.args, s.operation.ref.parameters.map(p => typeKey(p.type)), env, error);
-                    if (s.operation.ref.trigger || s.operation.ref.machine || typeKey(s.operation.ref.result) !== 'Void') error(s, 'SW058', 'invoke targets an untriggered local Void operation; use compute for pure results.');
+                    if (s.operation.ref.trigger || s.operation.ref.stateBody || typeKey(s.operation.ref.result) !== 'Void') error(s, 'SW058', 'invoke targets an untriggered local Void operation; call a pure function for results.');
                 }
             } else if (a.isIf(s)) {
                 this.expect(s.condition, 'Bool', env, error); this.block(s.then, env, result, error);
@@ -275,7 +279,14 @@ export class SwamlValidator {
         if (a.isReferenceExpression(e)) {
             const parts = e.path.split('.');
             let t = env.get(parts[0]);
-            if (!t) { error(e, 'SW022', `Unknown local value '${parts[0]}'. Cross-unit data access is forbidden.`); return '?'; }
+            const models = [...this.services.shared.workspace.LangiumDocuments.all].map(d => d.parseResult.value).filter(a.isModel);
+            const enumLiteral = resolveEnumLiteral(e, models, env);
+            if (enumLiteral) {
+                if (!enumLiteral.type.literals.includes(enumLiteral.literal)) error(e, 'SW027', 'Unknown enum literal.');
+                if (e.index) error(e, 'SW023', 'Only arrays can be indexed.');
+                return `${owner(enumLiteral.type, a.isPackage)?.name}::${enumLiteral.type.name}`;
+            }
+            if (!t) { error(e, 'SW022', `Unknown local value or enum type '${parts[0]}'. Cross-unit data access is forbidden.`); return '?'; }
             if (t === 'Void') { error(e, 'SW022', 'A Void request result names completion only and cannot be read as a value.'); return '?'; }
             for (const field of parts.slice(1)) {
                 const all = [...this.services.shared.workspace.LangiumDocuments.all].flatMap(d => a.isModel(d.parseResult.value) ? d.parseResult.value.packages.flatMap(p => p.elements) : []);
@@ -303,12 +314,6 @@ export class SwamlValidator {
                 else this.expect(value.value, typeKey(field.type), env, error);
             }
             for (const value of e.fields) if (!d.fields.some(f => f.name === value.name)) error(value, 'SW026', 'Unknown record field.');
-            return `${owner(d, a.isPackage)?.name}::${d.name}`;
-        }
-        if (a.isEnumLiteral(e)) {
-            const d = e.type.ref;
-            if (!d) return '?';
-            if (!d.literals.includes(e.literal)) error(e, 'SW027', 'Unknown enum literal.');
             return `${owner(d, a.isPackage)?.name}::${d.name}`;
         }
         if (a.isArrayLiteral(e)) {
@@ -356,7 +361,7 @@ export class SwamlValidator {
         }
         return undefined;
     }
-    private checkMachine(m: a.Machine, error: Reporter): void {
+    private checkStateBody(m: a.StateBody, error: Reporter): void {
         for (const t of m.transitions) {
             if (t.priority !== undefined && !Number.isSafeInteger(t.priority)) error(t, 'SW062', 'Transition priority must be a nonnegative safe integer.');
             if (t.from.ref?.final) error(t, 'SW061', 'Final states have no outgoing transitions.');
@@ -377,12 +382,27 @@ export class SwamlValidator {
         };
         if (m.states.some(s => cycle(s, new Set()))) error(m, 'SW064', 'Unconditional completion cycles cause zero-time livelock.');
     }
-    private checkSystem(system: a.System, error: Reporter): void {
+    private checkRoot(root: a.RootComponent, report: Reporter): void {
+        // This acceptor belongs to the selecting root's document. A definition in
+        // another document must not lend its range to a diagnostic with this URI.
+        const error: Reporter = (node, code, message) => {
+            if (AstUtils.getDocument(node) === AstUtils.getDocument(root)) report(node, code, message);
+            else {
+                const path: string[] = [];
+                let current: AstNode | undefined = node;
+                while (current && !a.isPackage(current)) {
+                    if ('name' in current && typeof current.name === 'string') path.unshift(current.name);
+                    current = current.$container;
+                }
+                const identity = `${current && a.isPackage(current) ? current.name : '?'}::${path.join('.')}`;
+                report(root, code, `${message} Affected imported element: '${identity}'.`);
+            }
+        };
         const ports = new Map<string, a.Port>(), aliases = new Map<string, string>();
         const connections: { n: a.Connect; s: string; t: string }[] = [];
         const instances = new Set<string>();
         const expand = (c: Container, prefix: string, seen: Set<a.Definition>) => {
-            for (const m of c.members) {
+            for (const m of members(c)) {
                 if (a.isPort(m)) ports.set(prefix + m.name, m);
                 if (a.isConnect(m)) connections.push({ n: m, s: prefix + m.source, t: prefix + m.target });
                 if (a.isDelegate(m)) aliases.set(prefix + m.outer.$refText, prefix + m.target);
@@ -392,7 +412,7 @@ export class SwamlValidator {
                 }
             }
         };
-        expand(system, '', new Set());
+        expand(root, '', new Set());
         const resolve = (p: string): string => {
             const seen = new Set<string>();
             while (aliases.has(p) && !seen.has(p)) { seen.add(p); p = aliases.get(p)!; }
@@ -412,39 +432,39 @@ export class SwamlValidator {
                     uses.set(p, (uses.get(p) ?? 0) + 1);
                 }
             }
-            if (system.profile === 'realtime' || system.profile === 'mixed') {
-                if (!n.qos?.maxLatency) error(n, 'SW044', 'Realtime/mixed systems require connector maxLatency.');
+            if (root.profile === 'realtime' || root.profile === 'mixed') {
+                if (!n.qos?.maxLatency) error(n, 'SW044', 'Realtime/mixed roots require connector maxLatency.');
                 const port = ports.get(resolve(s));
                 if (port?.interface.ref?.members.some(m => a.isDataMember(m) && m.mode === 'sampled') && !n.qos?.maxAge) error(n, 'SW044', 'Sampled realtime data requires maxAge.');
             }
         }
         for (const [path, port] of ports) {
             const count = uses.get(path) ?? 0;
-            if (!port.optional && count === 0) error(system, 'SW034', `Required port '${path}' is unconnected.`);
-            if (!aliases.has(path) && ['receiver', 'client', 'requires'].includes(port.role) && count > 1) error(system, 'SW035', `Port '${path}' requires a single source/provider.`);
+            if (!port.optional && count === 0) error(root, 'SW034', `Required port '${path}' is unconnected.`);
+            if (!aliases.has(path) && ['receiver', 'client', 'requires'].includes(port.role) && count > 1) error(root, 'SW035', `Port '${path}' requires a single source/provider.`);
         }
         const deployed = new Set<string>();
-        for (const d of system.members.filter(a.isDeployment)) {
+        for (const d of root.members.filter(a.isDeployment)) {
             if (!instances.has(d.target)) error(d, 'SW070', 'Deployment must name an instance path.');
             if (deployed.has(d.target)) error(d, 'SW070', 'An instance cannot be deployed twice.');
             deployed.add(d.target);
         }
-        if (system.profile !== 'service') {
+        if ((root.profile ?? 'service') !== 'service') {
             const units = new Set([...ports.values()].map(p => owner(p, a.isUnit)).filter(Boolean));
             // Include port-free units too.
             const walk = (c: Container, seen: Set<a.Definition>) => {
-                for (const i of c.members.filter(a.isInstance)) if (i.definition.ref && !seen.has(i.definition.ref)) {
+                for (const i of members(c).filter(a.isInstance)) if (i.definition.ref && !seen.has(i.definition.ref)) {
                     if (a.isUnit(i.definition.ref)) units.add(i.definition.ref);
                     else walk(i.definition.ref, new Set(seen).add(i.definition.ref));
                 }
             };
-            walk(system, new Set());
-            for (const unit of units) for (const op of unit!.members.filter(a.isOperation)) if (!op.timing) error(op, 'SW045', 'Operations used in realtime/mixed systems require timing contracts.');
+            walk(root, new Set());
+            for (const unit of units) for (const op of unit!.members.filter(a.isOperation)) if (!op.timing) error(op, 'SW045', 'Operations used in realtime/mixed roots require timing contracts.');
         }
     }
     private checkScenario(n: a.Scenario, error: Reporter): void {
-        const system = n.system.ref;
-        if (!system) return;
+        const root = n.root.ref;
+        if (!root) return;
         const labels = new Map<string, a.ScenarioStep>();
         const replies = new Map<a.ScenarioStep, a.ScenarioStep>();
         for (const step of n.steps) {
@@ -456,12 +476,12 @@ export class SwamlValidator {
                 predecessor = predecessor.predecessor && labels.get(predecessor.predecessor);
             }
             labels.set(step.name, step);
-            const link = system.members.filter(a.isConnect).find(c => c.name === step.connector);
+            const link = members(root).filter(a.isConnect).find(c => c.name === step.connector);
             const sourcePortPath = step.source.split('.').slice(0, -1).join('.');
             const targetPortPath = step.target.split('.').slice(0, -1).join('.');
-            const source = resolvePath(system, step.source), target = resolvePath(system, step.target);
+            const source = resolvePath(root, step.source), target = resolvePath(root, step.target);
             if (!link || !source || !target) { error(step, 'SW082', 'Scenario members and connector must resolve.'); continue; }
-            const sourcePort = resolvePath(system, sourcePortPath);
+            const sourcePort = resolvePath(root, sourcePortPath);
             const reverse = step.kind === 'reply' || (step.kind === 'publish' && sourcePort && a.isPort(sourcePort) && sourcePort.role === 'provides');
             if ((reverse ? link.target !== sourcePortPath || link.source !== targetPortPath : link.source !== sourcePortPath || link.target !== targetPortPath)) error(step, 'SW082', 'Scenario exchange must follow its connector (responses reverse it).');
             if (source !== target) error(step, 'SW082', 'Scenario endpoints must identify the same interface member.');
