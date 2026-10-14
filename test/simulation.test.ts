@@ -239,3 +239,44 @@ test('machine data payload, exit/effect/entry order and finality execute directl
     }`;
     const r = await run(text); assert.equal(r.stores['c.receiverUnit'].count, 4); assert.equal(r.machines['c.receiverUnit.run'].live, false); assert.equal(r.outcome, 'no-failure-observed');
 });
+
+const queuedMachine = (termination: string, stopAt = 3, deadline = 5) => `swaml "1.0"; package P {
+          interface publishSubscribe I version "1.0.0" { event e(); }
+          unit def Sender { port p: I publisher;
+            operation run(): Void on start { publish p.e(); publish p.e(); }
+          }
+          unit def Receiver { port p: I subscriber;
+            operation run(): Void on start timing { wcet 1 ns; deadline ${deadline} ns; concurrency serial; } machine {
+              initial A; state A {} state B ${termination === 'final' ? 'final' : ''} {}
+              transition stop: A -> B on after ${stopAt} ns { ${termination === 'return' ? 'return;' : termination === 'fail' ? 'fail "stopped";' : ''} }
+              transition consume: A -> A on receive p.e {}
+            }
+          }
+          component def C { unit senderUnit: Sender; unit receiverUnit: Receiver;
+            connect events: senderUnit.p -> receiverUnit.p qos { delivery atLeastOnce; ordering fifo; capacity 2; overflow reject; };
+          }
+          system S service { component c: C; }
+        }`;
+for (const termination of ['final', 'return', 'fail']) for (const readyAt of [2, 4]) {
+    test(`terminated machine discards FIFO-blocked inputs: ${termination}, ready at ${readyAt}`, async () => {
+        const r = await run(queuedMachine(termination), 'P::S', { untilNs: 50, latencyNs: readyAt, faults: [{ offer: 1, kind: 'drop', delayNs: 20 }] });
+        // An atLeastOnce retry keeps the first offer in flight until 40 ns, blocking the ready second input.
+        assert.equal(r.machines['c.receiverUnit.run'].live, false);
+        assert.ok(!failed(r, 'Deadline'), JSON.stringify(r.trace));
+        assert.deepEqual(r.trace.filter(t => t.kind === 'drop' && t.reason === 'Undeliverable').map(t => t.timeNs), [Math.max(3, readyAt), 40]);
+        assert.equal(r.trace.filter(t => t.kind === 'release' && t.operation === 'c.receiverUnit.run').length, readyAt < 3 ? 3 : 2);
+        assert.equal(r.trace.filter(t => t.kind === 'delivery').length, 0);
+        assert.equal(r.status, 'quiescent');
+    });
+}
+test('a live machine retains the deadline of a FIFO-blocked ready input', async () => {
+    const r = await run(queuedMachine('final', 60), 'P::S', { untilNs: 50, latencyNs: 2, faults: [{ offer: 1, kind: 'drop', delayNs: 20 }] });
+    assert.ok(failed(r, 'Deadline')); assert.equal(r.timeNs, 7);
+    assert.equal(r.machines['c.receiverUnit.run'].live, true);
+});
+test('live machine input delivery preserves FIFO when later input becomes ready first', async () => {
+    const r = await run(queuedMachine('final', 60, 100), 'P::S', { untilNs: 50, latencyNs: 2, faults: [{ offer: 1, kind: 'drop', delayNs: 20 }] });
+    const sent = r.trace.filter(t => t.kind === 'emission').map(t => t.subject);
+    assert.deepEqual(r.trace.filter(t => t.kind === 'delivery').map(t => [t.subject, t.timeNs]), sent.map(id => [id, 40]));
+    assert.equal(r.outcome, 'no-failure-observed');
+});
