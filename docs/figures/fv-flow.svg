@@ -20,7 +20,7 @@
 <polyline points="382,347 382,375" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
 <text x="397" y="356" font-size="18" font-weight="400" fill="#17324d">false</text>
 <rect x="202" y="381" width="360" height="63" rx="8" fill="#eef4f8" stroke="#17324d"/>
-<text x="220" y="420" font-size="20" font-weight="700" fill="#17324d">set currentValue = desired</text>
+<text x="220" y="420" font-size="20" font-weight="700" fill="#17324d">currentValue = desired</text>
 <polyline points="382,444 382,484" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
 <rect x="172" y="490" width="420" height="63" rx="8" fill="#eef4f8" stroke="#17324d"/>
 <text x="190" y="528" font-size="19" font-weight="700" fill="#17324d">publish api.changed(currentValue)</text>

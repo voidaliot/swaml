@@ -1,13 +1,61 @@
 {
-  "languageVersion": "1.0",
+  "languageVersion": "1.1",
   "examples": [
-    { "figure": "browser", "view": "Browser", "model": "examples/08-service-field.swaml", "package": "Settings", "subject": "Cabin" },
-    { "figure": "gv", "view": "GV", "model": "examples/08-service-field.swaml", "package": "Settings", "subject": "Cabin" },
-    { "figure": "iv", "view": "IV", "model": "examples/08-service-field.swaml", "package": "Settings", "subject": "Cabin" },
-    { "figure": "cv", "view": "CV", "model": "examples/08-service-field.swaml", "package": "Settings", "subject": "Cabin" },
-    { "figure": "sv", "view": "SV", "model": "examples/08-service-field.swaml", "package": "Settings", "subject": "Change" },
-    { "figure": "grv", "view": "GRV", "model": "examples/08-service-field.swaml", "package": "Settings", "subject": "Cabin" },
-    { "figure": "fv-flow", "view": "FV", "model": "examples/08-service-field.swaml", "package": "Settings", "subject": "Cabin.settings.store.update" },
-    { "figure": "fv-state", "view": "FV", "model": "examples/04-stateful-operation.swaml", "package": "Lifecycle", "subject": "Device.lifecycle" }
+    {
+      "figure": "browser",
+      "view": "Browser",
+      "model": "examples/08-service-field.swaml",
+      "package": "Settings",
+      "subject": "Cabin"
+    },
+    {
+      "figure": "gv",
+      "view": "GV",
+      "model": "examples/08-service-field.swaml",
+      "package": "Settings",
+      "subject": "Cabin"
+    },
+    {
+      "figure": "iv",
+      "view": "IV",
+      "model": "examples/08-service-field.swaml",
+      "package": "Settings",
+      "subject": "Cabin"
+    },
+    {
+      "figure": "cv",
+      "view": "CV",
+      "model": "examples/08-service-field.swaml",
+      "package": "Settings",
+      "subject": "Cabin"
+    },
+    {
+      "figure": "sv",
+      "view": "SV",
+      "model": "examples/08-service-field.swaml",
+      "package": "Settings",
+      "subject": "Change"
+    },
+    {
+      "figure": "grv",
+      "view": "GRV",
+      "model": "examples/08-service-field.swaml",
+      "package": "Settings",
+      "subject": "Cabin"
+    },
+    {
+      "figure": "fv-flow",
+      "view": "FV",
+      "model": "examples/08-service-field.swaml",
+      "package": "Settings",
+      "subject": "Cabin.settings.store.update"
+    },
+    {
+      "figure": "fv-state",
+      "view": "FV",
+      "model": "examples/04-stateful-operation.swaml",
+      "package": "Lifecycle",
+      "subject": "Device.lifecycle"
+    }
   ]
 }

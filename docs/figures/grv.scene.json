@@ -850,7 +850,7 @@
       "kind": "text",
       "x": 35,
       "y": 477,
-      "text": "read is reentrant; other roots default to serial. Sorting this grid changes no execution order.",
+      "text": "read is reentrant; other operations default to serial. Sorting this grid changes no execution order.",
       "size": 17,
       "bold": false,
       "color": "#516579"

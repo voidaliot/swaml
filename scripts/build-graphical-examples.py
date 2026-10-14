@@ -44,7 +44,7 @@ class Scene:
 
 s=Scene('browser','Model Browser · ownership and occurrence context','Settings example: declarations and usages have distinct badges.',700)
 s.rect(32,123,560,532,fill='#f7fafc');s.rect(615,123,352,532,fill='white')
-rows=[(0,'Settings  [package]'),(1,'TemperatureSetting  [interface]'),(1,'SettingStore  [unit def]'),(2,'api  [port: provides]'),(2,'currentValue  [var: Int]'),(2,'read / update  [operations]'),(1,'Cabin  [system: service]'),(2,'settings : Service  [occurrence]'),(3,'store : SettingStore  [occurrence]'),(4,'api  [port: provides]'),(4,'update  [operation occurrence]'),(2,'front : Client  [occurrence]'),(2,'rear : Client  [occurrence]')]
+rows=[(0,'Settings  [package]'),(1,'TemperatureSetting  [interface]'),(1,'SettingStore  [unit def]'),(2,'api  [port: provides]'),(2,'currentValue  [var: Int]'),(2,'read / update  [operations]'),(1,'Cabin  [component root]'),(2,'settings : Service  [occurrence]'),(3,'store : SettingStore  [occurrence]'),(4,'api  [port: provides]'),(4,'update  [operation occurrence]'),(2,'front : Client  [occurrence]'),(2,'rear : Client  [occurrence]')]
 for i,(depth,label) in enumerate(rows):
  y=156+i*36
  if i==10:s.rect(40,y-24,544,33,fill='#d5edf0',stroke='none',rx=3)
@@ -54,7 +54,7 @@ for i,t in enumerate(['Instance context:','Cabin.settings.store.update','','Shar
 s.save()
 
 s=Scene('gv','GV · General View','Cabin shows occurrence ownership and explicit deployment; types are shared declarations.',650)
-s.rect(32,122,935,330,fill='#f7fafc');s.text(50,156,'«system» Cabin · service',24,True)
+s.rect(32,122,935,330,fill='#f7fafc');s.text(50,156,'«component» Cabin · root',24,True)
 for x,name,typ in [(55,'settings','Service'),(360,'front','Client'),(665,'rear','Client')]:
  s.component(x,188,280,205,f'{name} : {typ}')
  s.text(x+16,251,'«component occurrence»',17,color=GRAY)
@@ -87,7 +87,7 @@ s.text(50,684,'Both links: atMostOnce · fifo · capacity 8 · reject. Requests 
 s.save()
 
 s=Scene('cv','CV · Case View','Claimed coverage is explicit; no verification checkmark appears without evidence.',570)
-s.rect(35,134,443,318,fill='#f7fafc');s.text(55,170,'«system» Cabin',24,True)
+s.rect(35,134,443,318,fill='#f7fafc');s.text(55,170,'«component» Cabin',24,True)
 s.rect(93,248,327,116,fill='#e3f2f3',rx=35);s.text(123,286,'«case» Change',24,True);s.text(123,323,'for Cabin',20)
 s.rect(623,225,337,162,fill='white',rx=0);s.text(641,257,'«requirement»',19,color=TEAL);s.text(641,291,'VisibleSetting',23,True);s.text(641,326,'Both panels can observe',18);s.text(641,354,'accepted setting updates.',18)
 s.line([(420,301),(616,301)],dash=True,arrow=True);s.text(498,261,'satisfies',18);s.text(493,282,'(claimed)',18)
@@ -117,7 +117,7 @@ rows=[['settings.store','read()','call api.get','Int','1 ms','5 ms'],['settings.
 for row,data in enumerate(rows):
  y=179+row*43
  for i,value in enumerate(data):s.rect(columns[i],y,columns[i+1]-columns[i],43,fill=PALE if row%2==0 else 'white',stroke='#ccd9e2',rx=0);s.text(columns[i]+9,y+28,value,15)
-s.text(35,477,'read is reentrant; other roots default to serial. Sorting this grid changes no execution order.',17,color=GRAY)
+s.text(35,477,'read is reentrant; other operations default to serial. Sorting this grid changes no execution order.',17,color=GRAY)
 s.save()
 
 s=Scene('fv-flow','FV · Operation flow','SettingStore.update(desired: Int): Bool · on call api.setPoint · directly owned by the unit.',780)
@@ -127,7 +127,7 @@ s.diamond(182,217,400,130);s.text(270,276,'desired < 10 or',21,True);s.text(278,
 s.line([(582,282),(745,282),(745,338)],arrow=True);s.text(602,259,'true',18)
 s.rect(635,344,220,57,rx=25);s.text(676,381,'return false',21,True)
 s.line([(382,347),(382,375)],arrow=True);s.text(397,356,'false',18)
-s.rect(202,381,360,63);s.text(220,420,'set currentValue = desired',20,True)
+s.rect(202,381,360,63);s.text(220,420,'currentValue = desired',20,True)
 s.line([(382,444),(382,484)],arrow=True)
 s.rect(172,490,420,63);s.text(190,528,'publish api.changed(currentValue)',19,True)
 s.line([(382,553),(382,593)],arrow=True)
@@ -139,7 +139,7 @@ s=Scene('fv-state','FV · Operation states','Device.lifecycle(): Void · on star
 s.rect(32,125,936,562,fill='#f7fafc');s.text(50,158,'op lifecycle',22,True)
 s.circle(82,229,9);s.line([(94,229),(140,229)],arrow=True)
 s.rect(145,186,270,133,fill='white',rx=18);s.text(166,219,'state Idle',22,True);s.line([(145,235),(415,235)]);s.text(164,264,'entry: publish status.changed',16);s.text(165,291,'("idle")',17)
-s.rect(592,186,330,153,fill='white',rx=18);s.text(612,219,'state Running',22,True);s.line([(592,235),(922,235)]);s.text(610,263,'entry: set cycles = cycles + 1;',16);s.text(610,291,'publish status.changed("running")',16)
+s.rect(592,186,330,153,fill='white',rx=18);s.text(612,219,'state Running',22,True);s.line([(592,235),(922,235)]);s.text(610,263,'entry: cycles = cycles + 1;',16);s.text(610,291,'publish status.changed("running")',16)
 s.line([(415,252),(585,252)],arrow=True);s.text(428,220,'on receive',16);s.text(425,241,'commands.begin',15)
 s.rect(577,521,347,130,fill='white',rx=18);s.text(598,553,'state Stopped «final»',21,True);s.circle(899,545,9,fill='white');s.circle(899,545,5);s.line([(577,568),(924,568)]);s.text(596,597,'entry: publish status.changed',16);s.text(596,624,'("stopped")',17)
 s.line([(757,339),(757,515)],arrow=True);s.text(773,392,'on receive',17);s.text(773,418,'commands.stop',17)

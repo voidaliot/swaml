@@ -20,6 +20,8 @@ for (const file of (await walk(root)).filter(f => f.endsWith('.md'))) {
         await stat(resolve(dirname(file), decodeURIComponent(target))).catch(() => { throw new Error(`Broken link in ${file}: ${target}`); });
         links++;
     }
+    // Historical consolidated editions retain the grammar of their immutable release.
+    if (file.endsWith('/docs/SWAML-1.0.0-Reference.md')) continue;
     for (const match of text.matchAll(/```swaml\n([\s\S]*?)```/g)) {
         const { Swaml } = createSwamlServices(EmptyFileSystem);
         const doc = await parseHelper(Swaml)(match[1], { validation: true });
@@ -28,7 +30,7 @@ for (const file of (await walk(root)).filter(f => f.endsWith('.md'))) {
     }
 }
 const mapping = JSON.parse(await readFile(resolve(root, 'spec/kerml-mapping.json'), 'utf8'));
-if (mapping.languageVersion !== '1.0' || mapping.schemaVersion !== '2.0') throw new Error('Invalid mapping inventory');
+if (mapping.languageVersion !== '1.1' || mapping.schemaVersion !== '2.0') throw new Error('Invalid mapping inventory');
 const grammar = await readFile(resolve(root, 'src/language/swaml.langium'), 'utf8');
 const productions = new Set([...grammar.matchAll(/^(?:(?:entry|hidden|terminal|type)\s+)*([A-Za-z]\w*)(?:\s+returns\s+\w+)?\s*[:=]/gm)].map(m => m[1]));
 const sources = new Set();

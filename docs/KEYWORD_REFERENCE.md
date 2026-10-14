@@ -1,8 +1,8 @@
 # Alphabetical keyword reference
 
-This user-facing reference covers every reserved word in the SWAML 1.0 grammar. Entries are sorted alphabetically, ignoring case for sorting only; source keywords remain case-sensitive. Example fragments illustrate a use and are not standalone models. Read the linked normative concern for full constraints. Punctuation and operator precedence follow the final section.
+This user-facing reference covers every reserved word in the SWAML 1.1 grammar. Entries are sorted alphabetically, ignoring case for sorting only; source keywords remain case-sensitive. Example fragments illustrate a use and are not standalone models. Read the linked normative concern for full constraints. Punctuation and operator precedence follow the final section.
 
-[`after`](#keyword-after) · [`and`](#keyword-and) · [`array`](#keyword-array) · [`as`](#keyword-as) · [`assert`](#keyword-assert) · [`atLeastOnce`](#keyword-atleastonce) · [`atMostOnce`](#keyword-atmostonce) · [`bestEffort`](#keyword-besteffort) · [`Bool`](#keyword-bool) · [`bound`](#keyword-bound) · [`call`](#keyword-call) · [`capacity`](#keyword-capacity) · [`case`](#keyword-case) · [`client`](#keyword-client) · [`clientServer`](#keyword-clientserver) · [`completion`](#keyword-completion) · [`component`](#keyword-component) · [`compute`](#keyword-compute) · [`concurrency`](#keyword-concurrency) · [`connect`](#keyword-connect) · [`container`](#keyword-container) · [`CV`](#keyword-cv) · [`data`](#keyword-data) · [`datatype`](#keyword-datatype) · [`deadline`](#keyword-deadline) · [`def`](#keyword-def) · [`delegate`](#keyword-delegate) · [`delivery`](#keyword-delivery) · [`deploy`](#keyword-deploy) · [`dropNewest`](#keyword-dropnewest) · [`dropOldest`](#keyword-dropoldest) · [`else`](#keyword-else) · [`entry`](#keyword-entry) · [`enum`](#keyword-enum) · [`enumValue`](#keyword-enumvalue) · [`event`](#keyword-event) · [`every`](#keyword-every) · [`exit`](#keyword-exit) · [`fail`](#keyword-fail) · [`false`](#keyword-false) · [`fifo`](#keyword-fifo) · [`final`](#keyword-final) · [`for`](#keyword-for) · [`function`](#keyword-function) · [`FV`](#keyword-fv) · [`GRV`](#keyword-grv) · [`GV`](#keyword-gv) · [`idempotent`](#keyword-idempotent) · [`if`](#keyword-if) · [`import`](#keyword-import) · [`initial`](#keyword-initial) · [`Int`](#keyword-int) · [`interface`](#keyword-interface) · [`invoke`](#keyword-invoke) · [`IV`](#keyword-iv) · [`label`](#keyword-label) · [`let`](#keyword-let) · [`machine`](#keyword-machine) · [`manual`](#keyword-manual) · [`maxAge`](#keyword-maxage) · [`maxLatency`](#keyword-maxlatency) · [`mcu`](#keyword-mcu) · [`mixed`](#keyword-mixed) · [`ms`](#keyword-ms) · [`node`](#keyword-node) · [`not`](#keyword-not) · [`ns`](#keyword-ns) · [`of`](#keyword-of) · [`on`](#keyword-on) · [`operation`](#keyword-operation) · [`optional`](#keyword-optional) · [`or`](#keyword-or) · [`ordering`](#keyword-ordering) · [`otherwise`](#keyword-otherwise) · [`overflow`](#keyword-overflow) · [`package`](#keyword-package) · [`port`](#keyword-port) · [`priority`](#keyword-priority) · [`process`](#keyword-process) · [`provides`](#keyword-provides) · [`publish`](#keyword-publish) · [`publisher`](#keyword-publisher) · [`publishSubscribe`](#keyword-publishsubscribe) · [`qos`](#keyword-qos) · [`queued`](#keyword-queued) · [`Real`](#keyword-real) · [`realtime`](#keyword-realtime) · [`receive`](#keyword-receive) · [`receiver`](#keyword-receiver) · [`record`](#keyword-record) · [`reentrant`](#keyword-reentrant) · [`reject`](#keyword-reject) · [`reply`](#keyword-reply) · [`request`](#keyword-request) · [`requirement`](#keyword-requirement) · [`requires`](#keyword-requires) · [`return`](#keyword-return) · [`s`](#keyword-s) · [`sampled`](#keyword-sampled) · [`satisfies`](#keyword-satisfies) · [`send`](#keyword-send) · [`sender`](#keyword-sender) · [`senderReceiver`](#keyword-senderreceiver) · [`serial`](#keyword-serial) · [`server`](#keyword-server) · [`service`](#keyword-service) · [`set`](#keyword-set) · [`start`](#keyword-start) · [`state`](#keyword-state) · [`String`](#keyword-string) · [`subscriber`](#keyword-subscriber) · [`SV`](#keyword-sv) · [`swaml`](#keyword-swaml) · [`system`](#keyword-system) · [`timing`](#keyword-timing) · [`transition`](#keyword-transition) · [`true`](#keyword-true) · [`unit`](#keyword-unit) · [`unordered`](#keyword-unordered) · [`us`](#keyword-us) · [`var`](#keyword-var) · [`version`](#keyword-version) · [`via`](#keyword-via) · [`view`](#keyword-view) · [`Void`](#keyword-void) · [`wcet`](#keyword-wcet) · [`when`](#keyword-when) · [`while`](#keyword-while) · [`within`](#keyword-within)
+[`after`](#keyword-after) · [`and`](#keyword-and) · [`as`](#keyword-as) · [`assert`](#keyword-assert) · [`atLeastOnce`](#keyword-atleastonce) · [`atMostOnce`](#keyword-atmostonce) · [`bestEffort`](#keyword-besteffort) · [`Bool`](#keyword-bool) · [`bound`](#keyword-bound) · [`call`](#keyword-call) · [`capacity`](#keyword-capacity) · [`case`](#keyword-case) · [`client`](#keyword-client) · [`clientServer`](#keyword-clientserver) · [`completion`](#keyword-completion) · [`component`](#keyword-component) · [`concurrency`](#keyword-concurrency) · [`connect`](#keyword-connect) · [`container`](#keyword-container) · [`CV`](#keyword-cv) · [`data`](#keyword-data) · [`datatype`](#keyword-datatype) · [`deadline`](#keyword-deadline) · [`def`](#keyword-def) · [`delegate`](#keyword-delegate) · [`delivery`](#keyword-delivery) · [`deploy`](#keyword-deploy) · [`dropNewest`](#keyword-dropnewest) · [`dropOldest`](#keyword-dropoldest) · [`else`](#keyword-else) · [`entry`](#keyword-entry) · [`enum`](#keyword-enum) · [`event`](#keyword-event) · [`every`](#keyword-every) · [`exit`](#keyword-exit) · [`fail`](#keyword-fail) · [`false`](#keyword-false) · [`fifo`](#keyword-fifo) · [`final`](#keyword-final) · [`for`](#keyword-for) · [`function`](#keyword-function) · [`FV`](#keyword-fv) · [`GRV`](#keyword-grv) · [`GV`](#keyword-gv) · [`idempotent`](#keyword-idempotent) · [`if`](#keyword-if) · [`import`](#keyword-import) · [`initial`](#keyword-initial) · [`Int`](#keyword-int) · [`interface`](#keyword-interface) · [`invoke`](#keyword-invoke) · [`IV`](#keyword-iv) · [`label`](#keyword-label) · [`let`](#keyword-let) · [`manual`](#keyword-manual) · [`maxAge`](#keyword-maxage) · [`maxLatency`](#keyword-maxlatency) · [`mcu`](#keyword-mcu) · [`mixed`](#keyword-mixed) · [`ms`](#keyword-ms) · [`node`](#keyword-node) · [`not`](#keyword-not) · [`ns`](#keyword-ns) · [`of`](#keyword-of) · [`on`](#keyword-on) · [`operation`](#keyword-operation) · [`optional`](#keyword-optional) · [`or`](#keyword-or) · [`ordering`](#keyword-ordering) · [`otherwise`](#keyword-otherwise) · [`overflow`](#keyword-overflow) · [`package`](#keyword-package) · [`port`](#keyword-port) · [`priority`](#keyword-priority) · [`process`](#keyword-process) · [`provides`](#keyword-provides) · [`publish`](#keyword-publish) · [`publisher`](#keyword-publisher) · [`publishSubscribe`](#keyword-publishsubscribe) · [`qos`](#keyword-qos) · [`queued`](#keyword-queued) · [`Real`](#keyword-real) · [`realtime`](#keyword-realtime) · [`receive`](#keyword-receive) · [`receiver`](#keyword-receiver) · [`record`](#keyword-record) · [`reentrant`](#keyword-reentrant) · [`reject`](#keyword-reject) · [`reply`](#keyword-reply) · [`request`](#keyword-request) · [`requirement`](#keyword-requirement) · [`requires`](#keyword-requires) · [`return`](#keyword-return) · [`s`](#keyword-s) · [`sampled`](#keyword-sampled) · [`satisfies`](#keyword-satisfies) · [`send`](#keyword-send) · [`sender`](#keyword-sender) · [`senderReceiver`](#keyword-senderreceiver) · [`serial`](#keyword-serial) · [`server`](#keyword-server) · [`service`](#keyword-service) · [`start`](#keyword-start) · [`state`](#keyword-state) · [`String`](#keyword-string) · [`subscriber`](#keyword-subscriber) · [`SV`](#keyword-sv) · [`timing`](#keyword-timing) · [`transition`](#keyword-transition) · [`true`](#keyword-true) · [`unit`](#keyword-unit) · [`unordered`](#keyword-unordered) · [`us`](#keyword-us) · [`var`](#keyword-var) · [`version`](#keyword-version) · [`via`](#keyword-via) · [`view`](#keyword-view) · [`Void`](#keyword-void) · [`wcet`](#keyword-wcet) · [`when`](#keyword-when) · [`while`](#keyword-while) · [`within`](#keyword-within)
 
 ## Keyword: after
 
@@ -19,14 +19,6 @@ In a transition, creates a timer measured from source-state entry completion; le
 Short-circuit Boolean conjunction. Both operands must be Bool; the right operand is evaluated only when the left is true.
 
 **Example fragment:** `ready and enabled`
-
-## Keyword: array
-
-**Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `ArrayLiteral`.
-
-Constructs a nonempty fixed array. Elements share one nominal type, with numeric common-type widening inside the literal. The inferred extent is the element count.
-
-**Example fragment:** `array [1, 2, 3]`
 
 ## Keyword: as
 
@@ -82,7 +74,7 @@ Primitive two-valued Boolean type. Conditions and logical operators require Bool
 
 Sets the positive safe-integer maximum number of loop-body executions. After that many iterations the condition is reevaluated; a still-true condition fails execution.
 
-**Example fragment:** `while (i < 3) bound 3 { set i = i + 1; }`
+**Example fragment:** `while (i < 3) bound 3 { i = i + 1; }`
 
 ## Keyword: call
 
@@ -104,7 +96,7 @@ Positive safe-integer retained-message limit per connector occurrence, direction
 
 **Concern:** [Cases and evidence](spec/04-systems-and-conformance.md). **Grammar:** `Scenario`.
 
-Defines a descriptive scenario for a system with labeled interface exchanges and optional requirement traces. It does not execute or prove itself and cannot introduce hidden traffic.
+Defines a descriptive scenario for a root component with labeled interface exchanges and optional requirement traces. It does not execute or prove itself and cannot introduce hidden traffic.
 
 **Example fragment:** `case Checkout for Shop satisfies Accepted { ... }`
 
@@ -128,31 +120,23 @@ Interface kind containing operation signatures only. A client issues request; a 
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Transition`.
 
-Local machine stimulus reconsidered after entry and each reaction until quiescent. It is not an interface event. Unconditional cycles are invalid; guarded cycles have a 1,024-edge runtime limit.
+Local state stimulus reconsidered after entry and each reaction until quiescent. It is not an interface event. Unconditional cycles are invalid; guarded cycles have a 1,024-edge runtime limit.
 
 **Example fragment:** `transition next: A -> B on completion {}`
 
 ## Keyword: component
 
-**Concern:** [Structure and names](spec/01-structure-and-types.md). **Grammar:** `Component`, `Instance`.
+**Concern:** [Structure and names](spec/01-structure-and-types.md). **Grammar:** `Component`, `Instance`, `RootComponent`.
 
-Declares a reusable composition definition with def, or a contained occurrence without def. Components own ports, units/components, connections and delegations; execution belongs to units.
+With def, declares a reusable composition type. Without def, a typed child occurrence uses name: Type; at package level a root occurrence either supplies inline unit/component children and connectors or instantiates a component definition. A typed root body may bind nodes/deployment only. The root profile defaults to service.
 
-**Example fragment:** `component def Service { unit store: Store; } / component backend: Service;`
-
-## Keyword: compute
-
-**Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `FunctionCall`.
-
-Calls a pure function owned by the same unit with copied arguments. Functions cannot observe unit state or invoke operations. The function result retains its declared type.
-
-**Example fragment:** `compute clamp(temperature)`
+**Example fragment:** `component def Assembly { unit controller: Controller; } / component Demo: Assembly;`
 
 ## Keyword: concurrency
 
 **Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `Timing`.
 
-Selects serial or reentrant root activation policy in a timing contract. Helpers inherit the root mode. Machines never overlap their own reactions.
+Selects serial or reentrant operation activation policy in a timing contract. Helpers inherit the activation mode. Stateful operations never overlap their own reactions.
 
 **Example fragment:** `concurrency serial;`
 
@@ -160,7 +144,7 @@ Selects serial or reentrant root activation policy in a timing contract. Helpers
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Connect`.
 
-Creates an explicit connector between immediate child ports of a component/system. Contracts must be identical and roles complementary. Every connector supplies QoS.
+Creates an explicit connector between immediate child ports of a component definition or root component. Contracts must be identical and roles complementary. Every connector supplies QoS.
 
 **Example fragment:** `connect samples: sensor.output -> controller.input qos { ... };`
 
@@ -176,7 +160,7 @@ Execution-node kind representing a container deployment location. It does not cr
 
 **Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `View`.
 
-Case View kind: displays cases, requirements and claimed coverage for a case or system. Verified coverage requires separate linked evidence.
+Case View kind: displays cases, requirements and claimed coverage for a case or root component. Verified coverage requires separate linked evidence.
 
 **Example fragment:** `view coverage CV of Shop;`
 
@@ -200,7 +184,7 @@ Declares a nominal finite record. Field names are unique, every literal supplies
 
 **Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `Timing`.
 
-Positive elapsed-time bound from root release to completion, including queueing and request suspension. For machines it applies per reaction. WCET must not exceed it.
+Positive elapsed-time bound from activation release to completion, including queueing and request suspension. For stateful operations it applies per reaction. WCET must not exceed it.
 
 **Example fragment:** `deadline 5 ms;`
 
@@ -208,7 +192,7 @@ Positive elapsed-time bound from root release to completion, including queueing 
 
 **Concern:** [Structure and names](spec/01-structure-and-types.md). **Grammar:** `Component`, `Unit`.
 
-Distinguishes a reusable component or unit definition from a contained occurrence. Defining a type creates no runtime storage; each occurrence receives its own state.
+Required marker for a reusable component or unit type. Definitions create no running singleton. An occurrence without def must either refer to the matching definition kind or, for a package-level component root, supply inline composition.
 
 **Example fragment:** `unit def Worker { ... }`
 
@@ -232,7 +216,7 @@ Chooses bestEffort, atMostOnce or atLeastOnce for all member queues of a connect
 
 **Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `Deployment`.
 
-Assigns an existing component or descendant occurrence to a system node. Descendants inherit the nearest explicit allocation. Duplicate exact-path allocations are invalid.
+Assigns an existing component or descendant occurrence to a root component node. Descendants inherit the nearest explicit allocation. Duplicate exact-path allocations are invalid.
 
 **Example fragment:** `deploy backend.worker on application;`
 
@@ -264,25 +248,17 @@ Optional alternative block of an if statement. Only the chosen branch executes; 
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `State`.
 
-State-entry block executed after that state becomes current. It has no incoming payload scope. Residence timers begin after entry finishes; return/fail terminates the machine.
+State-entry block executed after that state becomes current. It has no incoming payload scope. Residence timers begin after entry finishes; return/fail terminates the owning operation.
 
-**Example fragment:** `state Idle { entry { set count = 0; } }`
+**Example fragment:** `state Idle { entry { count = 0; } }`
 
 ## Keyword: enum
 
 **Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `EnumType`.
 
-Declares a nominal type with one or more unique named literals. Distinct enum declarations are incompatible even if names match; no implicit integer conversion exists.
+Declares a nominal set of one or more unique literals. Values use Type.Literal or Package::Type.Literal. A live value first segment in the current expression environment takes precedence over an unqualified enum name, with no fallback after a failed field lookup; qualify to select the enum explicitly.
 
-**Example fragment:** `enum Health { Good, Failed }`
-
-## Keyword: enumValue
-
-**Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `EnumLiteral`.
-
-Constructs one declared literal of an enum type. The dot selects an enum literal, not a component path or variable field.
-
-**Example fragment:** `enumValue Health.Good`
+**Example fragment:** `enum Status { Ready, Failed } / Status.Ready / Contracts::Status.Ready`
 
 ## Keyword: event
 
@@ -306,7 +282,7 @@ Periodic parameterless Void activation at epoch plus k periods, k starting at 1.
 
 State-exit block runs after timer cancellation and before the transition effect. It lacks payload scope. Return/failure skips remaining transition phases.
 
-**Example fragment:** `state Running { exit { set active = false; } }`
+**Example fragment:** `state Running { exit { active = false; } }`
 
 ## Keyword: fail
 
@@ -336,7 +312,7 @@ Dispatches retained messages in queue order for one connector/direction/member. 
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `State`.
 
-Marks a state that completes its owning operation after entry. It has no outgoing transition. Future input to that machine is undeliverable, not rerouted.
+Marks a state that completes its owning operation after entry. It has no outgoing transition. Future input to that operation is undeliverable, not rerouted.
 
 **Example fragment:** `state Stopped final {}`
 
@@ -344,9 +320,9 @@ Marks a state that completes its owning operation after entry. It has no outgoin
 
 **Concern:** [Cases and evidence](spec/04-systems-and-conformance.md). **Grammar:** `Scenario`.
 
-Selects the system described by a case. The steps must use top-level connectors and exposed component port/member paths of that system.
+Selects the root component described by a case. The steps use root-level connectors and immediate child unit/component port-member paths. Typed roots resolve topology through their component definition.
 
-**Example fragment:** `case Poll for HealthCheck { ... }`
+**Example fragment:** `case Startup for Product { ... }`
 
 ## Keyword: function
 
@@ -354,7 +330,7 @@ Selects the system described by a case. The steps must use top-level connectors 
 
 Defines a pure expression with a non-Void result. It sees only copied parameters and other local pure functions, never unit variables. The call graph is acyclic.
 
-**Example fragment:** `function twice(x: Real): Real = x * 2.0;`
+**Example fragment:** `function twice(value: Int): Int = value * 2; / twice(3)`
 
 ## Keyword: FV
 
@@ -406,9 +382,9 @@ Imports top-level names from one package using namespace::*; imports are not tra
 
 ## Keyword: initial
 
-**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Machine`.
+**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `StateBody`.
 
-References exactly one state in the owning machine. Initialization enters it once per system epoch before the machine consumes input.
+The first item in a stateful operation body. References exactly one state owned by that operation and distinguishes state behavior from a statement block without a wrapper keyword. Initialization enters it once per run epoch before input consumption.
 
 **Example fragment:** `initial Idle;`
 
@@ -432,7 +408,7 @@ Declares a nominal, versioned contract of one of four kinds. Port endpoints must
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Invoke`.
 
-Synchronously calls an untriggered Void operation in the same unit. It shares the root lock and snapshot; copied parameters are local. Remote invocation requires request through a port.
+Synchronously calls an untriggered Void operation in the same unit. It shares the activation lock and snapshot; copied parameters are local. Remote invocation requires request through a port.
 
 **Example fragment:** `invoke prepare();`
 
@@ -440,7 +416,7 @@ Synchronously calls an untriggered Void operation in the same unit. It shares th
 
 **Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `View`.
 
-Interconnect View of a system/component definition or occurrence. Shows immediate children, boundary ports, connectors and delegation with exact interface paths.
+Interconnect View of a root component/component definition or occurrence. Shows immediate children, boundary ports, connectors and delegation with exact interface paths.
 
 **Example fragment:** `view wiring IV of Product;`
 
@@ -460,14 +436,6 @@ Creates a typed mutable local value from a copied initializer. It cannot shadow 
 
 **Example fragment:** `let count: Int = 0;`
 
-## Keyword: machine
-
-**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Machine`.
-
-Alternative body of a parameterless Void on start operation. Owns one flat set of states and transitions. State behavior is directly owned by the operation, without a performer layer.
-
-**Example fragment:** `operation lifecycle(): Void on start machine { initial Idle; state Idle {} }`
-
 ## Keyword: manual
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Trigger`.
@@ -480,7 +448,7 @@ Parameterless Void operation trigger released by a harness. It is control of exe
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Qos`.
 
-Maximum message age measured from original emission through retries. Eligibility is inclusive; greater age discards before dispatch. Required for sampled data in realtime/mixed systems.
+Maximum message age measured from original emission through retries. Eligibility is inclusive; greater age discards before dispatch. Required for sampled data in realtime/mixed roots.
 
 **Example fragment:** `maxAge 20 ms;`
 
@@ -502,11 +470,11 @@ Execution-node kind for an embedded microcontroller location. The core does not 
 
 ## Keyword: mixed
 
-**Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `System`.
+**Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `RootComponent`.
 
-System profile covering embedded/service combinations. All used operations carry timing and all connectors latency; sampled data also carries age. It does not silently exempt cloud-facing paths.
+Root component profile covering embedded/service combinations. All used operations carry timing and all connectors latency; sampled data also carries age. It does not silently exempt cloud-facing paths.
 
-**Example fragment:** `system Product mixed { ... }`
+**Example fragment:** `component Product mixed { ... }`
 
 ## Keyword: ms
 
@@ -520,7 +488,7 @@ Millisecond duration unit; one ms equals 1,000,000 ns. Duration magnitude must b
 
 **Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `Node`.
 
-Declares a named execution location in a system with mcu, process or container kind. Nodes affect allocation only; traffic still follows interfaces.
+Declares a named execution location in a root component with mcu, process or container kind. Nodes affect allocation only; traffic still follows interfaces.
 
 **Example fragment:** `node edge process;`
 
@@ -560,15 +528,15 @@ Introduces an operation or transition trigger. Operations use start/manual/every
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Signature`, `Operation`.
 
-In an interface, declares an RPC signature. In a unit, declares executable flow or an owned machine. An incoming signature is implemented by exactly one on call operation.
+In an interface, declares an RPC signature. In a unit, declares executable statements or directly owned states. An omitted result annotation means Void. An incoming signature is implemented by exactly one on call operation.
 
-**Example fragment:** `operation get(): Int; / operation read(): Int on call api.get { return value; }`
+**Example fragment:** `operation reset(); / operation reset() on call api.reset { return; }`
 
 ## Keyword: optional
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Port`.
 
-Allows a port to remain unconnected in a closed system. It does not change contract, role or handler rules. Unbound data/event sends succeed; unbound RPC reports Unavailable.
+Allows a port to remain unconnected in a closed root component. It does not change contract, role or handler rules. Unbound data/event sends succeed; unbound RPC reports Unavailable.
 
 **Example fragment:** `port diagnostics: Notices publisher optional;`
 
@@ -584,7 +552,7 @@ Short-circuit Boolean disjunction. The right Bool operand is evaluated only when
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Qos`.
 
-Selects fifo or unordered independently of delivery reliability. Ordering applies per connector occurrence, direction and member, not across an entire interface or system.
+Selects fifo or unordered independently of delivery reliability. Ordering applies per connector occurrence, direction and member, not across an entire interface or root.
 
 **Example fragment:** `ordering fifo;`
 
@@ -594,7 +562,7 @@ Selects fifo or unordered independently of delivery reliability. Ordering applie
 
 Mandatory request failure block with implicit copied failure:String. It must return or fail on every path and cannot fall through to successful result use.
 
-**Example fragment:** `within 1 s otherwise { set lastError = failure; return; };`
+**Example fragment:** `within 1 s otherwise { lastError = failure; return; };`
 
 ## Keyword: overflow
 
@@ -664,7 +632,7 @@ Outgoing role for a publishSubscribe contract. One port may fan out through seve
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Interface`.
 
-Event-only contract kind with publisher/subscriber ports. Subscriptions are explicit static connectors. Runtime subscribe/unsubscribe and wildcard topics are outside 1.0.
+Event-only contract kind with publisher/subscriber ports. Subscriptions are explicit static connectors. Runtime subscribe/unsubscribe and wildcard topics are outside 1.1.
 
 **Example fragment:** `interface publishSubscribe Notices version "1.0.0" { event changed(); }`
 
@@ -694,11 +662,11 @@ Finite IEEE 754 binary64 type. Arithmetic is nearest-even; non-finite results an
 
 ## Keyword: realtime
 
-**Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `System`.
+**Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `RootComponent`.
 
-System profile requiring operation timing, connector latency and sampled freshness contracts. Those declarations require target evidence before any hard realtime claim.
+Root component profile requiring operation timing, connector latency and sampled freshness contracts. Those declarations require target evidence before any hard realtime claim.
 
-**Example fragment:** `system Heating realtime { ... }`
+**Example fragment:** `component Heating realtime { ... }`
 
 ## Keyword: receive
 
@@ -728,7 +696,7 @@ Constructs a nominal datatype value by assigning each declared field exactly onc
 
 **Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `Timing`.
 
-Allows overlapping roots with independent dispatch-time unit snapshots. Direct or helper writes to unit state are statically invalid. Local variables remain mutable; one machine reaction cannot overlap itself.
+Allows overlapping operation activations with independent dispatch-time unit snapshots. Direct or helper writes to unit state are statically invalid. Local variables remain mutable; one state reaction cannot overlap itself.
 
 **Example fragment:** `concurrency reentrant;`
 
@@ -768,7 +736,7 @@ Named natural-language obligation. It has descriptive text and can be referenced
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Port`.
 
-Consumer role of a service interface. Issues RPC and handles reverse-direction provider events. It has at most one route in a closed system.
+Consumer role of a service interface. Issues RPC and handles reverse-direction provider events. It has at most one route in a closed root component.
 
 **Example fragment:** `port orders: Orders requires;`
 
@@ -776,7 +744,7 @@ Consumer role of a service interface. Issues RPC and handles reverse-direction p
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Return`.
 
-Completes the current operation with a copied typed result or bare Void. Inside an invoked helper it resumes the caller; inside state behavior it terminates the owning machine immediately.
+Completes the current operation with a copied typed result or bare Void. Inside an invoked helper it resumes the caller; inside state behavior it terminates the owning operation immediately.
 
 **Example fragment:** `return accepted;`
 
@@ -832,7 +800,7 @@ Data-only contract kind with sampled/queued members and sender/receiver roles. N
 
 **Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `Timing`.
 
-Default root mode: acquire the unit's one serial lock until completion/failure, including RPC waits. Local invokes share the root lock. Independent unit roots may still interleave.
+Default activation mode: acquire the unit's one serial lock until completion/failure, including RPC waits. Local invokes share the activation lock. Independent unit activations may still interleave.
 
 **Example fragment:** `concurrency serial;`
 
@@ -846,25 +814,17 @@ Provider role for clientServer contracts. Each operation signature has exactly o
 
 ## Keyword: service
 
-**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Interface`, `System`.
+**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Interface`, `RootComponent`.
 
-As an interface kind, combines RPC operations and events with requires/provides roles. As a system profile, makes timing contracts optional while retaining interfaces, QoS and static validity.
+As an interface kind, combines RPC operations and events with requires/provides roles. As a root component profile, makes timing contracts optional while retaining interfaces, explicit QoS and static validity; it is the default when no profile is written.
 
-**Example fragment:** `interface service Orders version "1.0.0" { ... } / system Shop service { ... }`
-
-## Keyword: set
-
-**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Assign`.
-
-Replaces an existing mutable local, parameter or permitted unit variable with a copied assignable value. Field/index mutation and remote/private access are absent.
-
-**Example fragment:** `set current = desired;`
+**Example fragment:** `interface service Orders version "1.0.0" { ... } / component Shop service { ... }`
 
 ## Keyword: start
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Trigger`.
 
-Once-per-run startup trigger for a parameterless Void operation. State machines require it. All stores/routes/handlers exist before startup work runs; readiness protocols still need explicit ports.
+Once-per-run startup trigger for a parameterless Void operation. Stateful operations require it. All stores/routes/handlers exist before startup work runs; readiness protocols still need explicit ports.
 
 **Example fragment:** `operation boot(): Void on start { ... }`
 
@@ -872,9 +832,9 @@ Once-per-run startup trigger for a parameterless Void operation. State machines 
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `State`.
 
-Declares a named operation-owned state with optional entry/exit and final marker. States are flat, directly owned and never assigned later to performers.
+Declares a named state directly inside an operation after its initial reference. Optional entry/exit blocks contain ordinary operation statements. State names are operation-local; no separate state allocation or performer exists.
 
-**Example fragment:** `state Idle { entry { set active = false; } }`
+**Example fragment:** `state Idle { entry { active = false; } }`
 
 ## Keyword: String
 
@@ -896,31 +856,15 @@ Incoming publishSubscribe role. Multiple publishers may feed one subscriber port
 
 **Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `View`.
 
-Sequence View of a case or a system's selected case. Lifelines are occurrences; arrows show port/member/connector and request correlation. Independent steps must remain visibly unordered.
+Sequence View of a case or a root component's selected case. Lifelines are occurrences; arrows show port/member/connector and request correlation. Independent steps must remain visibly unordered.
 
 **Example fragment:** `view checkout SV of Checkout;`
-
-## Keyword: swaml
-
-**Concern:** [Structure and names](spec/01-structure-and-types.md). **Grammar:** `Model`.
-
-Mandatory document introducer followed by the exact language major/minor header string and semicolon. All loaded sources must use supported version 1.0.
-
-**Example fragment:** `swaml "1.0";`
-
-## Keyword: system
-
-**Concern:** [Structure and names](spec/01-structure-and-types.md). **Grammar:** `System`.
-
-Closed assembly of top-level component occurrences, connectors, execution nodes and deployment. Each selected system expands definitions into distinct runtime instances.
-
-**Example fragment:** `system Product mixed { component root: Assembly; ... }`
 
 ## Keyword: timing
 
 **Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `Timing`.
 
-Operation contract containing wcet, deadline and concurrency in that order. Required on used operations in realtime/mixed systems; machine timing applies per reaction.
+Operation contract containing wcet, deadline and concurrency in that order. Required on used operations in realtime/mixed roots; stateful operation timing applies per reaction.
 
 **Example fragment:** `timing { wcet 1 ms; deadline 5 ms; concurrency serial; }`
 
@@ -928,7 +872,7 @@ Operation contract containing wcet, deadline and concurrency in that order. Requ
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Transition`.
 
-Named state edge owned by one machine, with source/target, stimulus, optional guard/priority and effect. Execution orders exit, effect, state update, entry, then completion processing.
+Named state edge owned by one operation, with source/target, stimulus, optional guard/priority and effect. Execution orders exit, effect, state update, entry, then completion processing.
 
 **Example fragment:** `transition beginRun: Idle -> Running on receive commands.begin {}`
 
@@ -944,7 +888,7 @@ The true Bool literal, with no implicit equivalence to numeric one or other none
 
 **Concern:** [Structure and names](spec/01-structure-and-types.md). **Grammar:** `Unit`, `Instance`.
 
-Smallest interface-protected software boundary. Defines private data/functions/operations or instantiates a unit inside a component. Systems wrap top-level units in components.
+Smallest interface-protected software boundary. With def, defines private data/functions/operations; a typed usage creates an occurrence inside a nested or root component. Each occurrence has distinct storage and handlers.
 
 **Example fragment:** `unit def Worker { ... } / unit worker: Worker;`
 
@@ -984,7 +928,7 @@ Required interface semantic-version string major.minor.patch. Compatibility is n
 
 **Concern:** [Cases and evidence](spec/04-systems-and-conformance.md). **Grammar:** `ScenarioStep`.
 
-Names the top-level system connector used by a case exchange. Endpoint-member paths must resolve on its visible component ports with a legal orientation.
+Names the root-level connector used by a case exchange. Endpoint-member paths must resolve on its immediate child component/unit ports with a legal orientation.
 
 **Example fragment:** `via orderLink label submitted;`
 
@@ -1000,7 +944,7 @@ Declares a named projection of an existing semantic subject with GV/IV/CV/SV/GRV
 
 **Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `TypeRef`.
 
-Uninhabited operation/signature result type. Invalid for stored values, parameters, record fields, arrays and pure-function results. A Void RPC result name is reserved but unreadable.
+No result value. Operation implementations and interface signatures default to Void when : Type is omitted; an explicit : Void is equivalent. Forbidden for parameters, variables, fields, arrays and pure function results. A Void RPC completion label is not readable data.
 
 **Example fragment:** `operation notify(): Void { return; }`
 
@@ -1008,7 +952,7 @@ Uninhabited operation/signature result type. Invalid for stored values, paramete
 
 **Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `Timing`.
 
-Positive active-execution-time bound including local helpers and machine microsteps, excluding request wait. Must not exceed deadline; physical evidence belongs to a target binding.
+Positive active-execution-time bound including local helpers and state reaction microsteps, excluding request wait. Must not exceed deadline; physical evidence belongs to a target binding.
 
 **Example fragment:** `wcet 1 ms;`
 
@@ -1026,7 +970,7 @@ Optional pure Bool transition guard evaluated against the unit snapshot/live env
 
 Pretest Bool loop with mandatory positive bound. Each iteration has a lexical body scope. A still-true condition after the bound fails instead of silently exiting.
 
-**Example fragment:** `while (i < 3) bound 3 { set i = i + 1; }`
+**Example fragment:** `while (i < 3) bound 3 { i = i + 1; }`
 
 ## Keyword: within
 

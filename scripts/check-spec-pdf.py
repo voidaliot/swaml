@@ -9,11 +9,11 @@ import pdfplumber
 
 ROOT=Path(__file__).resolve().parents[1]
 parser=argparse.ArgumentParser()
-parser.add_argument('--pdf',type=Path,default=ROOT/'output/pdf/SWAML-1.0.0-Specification.pdf')
+parser.add_argument('--pdf',type=Path,default=ROOT/'output/pdf/SWAML-1.1.0-Specification.pdf')
 PDF=parser.parse_args().pdf
 manifest=json.loads(PDF.with_suffix('.manifest.json').read_text())
 reader=PdfReader(PDF)
-assert manifest['release']=='1.0.0' and manifest['languageVersion']=='1.0'
+assert manifest['release']=='1.1.0' and manifest['languageVersion']=='1.1'
 assert len(reader.pages)==manifest['pages'] and len(reader.pages)>100
 assert hashlib.sha256(PDF.read_bytes()).hexdigest()==manifest['pdfSha256']
 assert PDF.with_suffix('.sha256').read_text().split()[0]==manifest['pdfSha256']

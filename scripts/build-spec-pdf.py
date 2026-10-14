@@ -36,20 +36,20 @@ LINE = colors.HexColor('#CBD5DF')
 PAGE_W, PAGE_H = A4
 MARGIN = 44
 WIDTH = PAGE_W - 2 * MARGIN
-RELEASE = '1.0.0'
-REVISION = '1.0.0'
+RELEASE = '1.1.0'
+REVISION = '1.1.0'
 REPO = f'https://github.com/voidaliot/swaml/blob/v{RELEASE}/'
 NORMATIVE = ['docs/LANGUAGE_SPECIFICATION.md'] + [f'docs/spec/{name}' for name in [
     '01-structure-and-types.md', '02-communication.md', '03-behavior.md',
     '04-systems-and-conformance.md', '05-kerml-mapping.md', '06-execution-contract.md',
     '07-normalized-model.md', '08-conformance-obligations.md', '09-formal-semantics.md',
 ]] + ['docs/GRAPHICAL_NOTATION.md']
-GUIDANCE = ['docs/CONCERN_GUIDE.md', 'docs/KEYWORD_REFERENCE.md', 'docs/GRAPHICAL_EXAMPLES.md', 'docs/SIMULATION.md', 'docs/MIGRATION_1_0.md', 'docs/USER_GUIDE.md', 'docs/ARCHITECTURE_COMPARISON.md', 'docs/TOOLING.md',
-            'docs/IMPLEMENTATION_STATUS.md', 'docs/RELEASE_1_0.md',
-            'docs/decisions/0001-language-boundaries.md', 'docs/decisions/0002-auditable-semantics.md', 'docs/decisions/0003-reference-execution-and-publication.md',
+GUIDANCE = ['docs/CONCERN_GUIDE.md', 'docs/KEYWORD_REFERENCE.md', 'docs/GRAPHICAL_EXAMPLES.md', 'docs/SIMULATION.md', 'docs/MIGRATION_1_1.md', 'docs/USER_GUIDE.md', 'docs/ARCHITECTURE_COMPARISON.md', 'docs/TOOLING.md',
+            'docs/IMPLEMENTATION_STATUS.md', 'docs/RELEASE_1_1.md',
+            'docs/decisions/0001-language-boundaries.md', 'docs/decisions/0002-auditable-semantics.md', 'docs/decisions/0003-reference-execution-and-publication.md', 'docs/decisions/0004-compact-component-language.md',
             'docs/PDF_PUBLICATION.md', 'CONTRIBUTING.md', 'AGENTS.md']
 EXAMPLES = sorted(p.relative_to(ROOT).as_posix() for p in (ROOT / 'examples').glob('*.swaml'))
-ATTACHMENTS = ['docs/SWAML-1.0.0-Reference.md', 'spec/keywords.json', 'spec/graphical-examples.json'] + sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/'docs/figures').glob('*')) + sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/'examples/simulation').glob('*.json'))
+ATTACHMENTS = ['docs/SWAML-1.1.0-Reference.md', 'spec/keywords.json', 'spec/graphical-examples.json'] + sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/'docs/figures').glob('*')) + sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/'examples/simulation').glob('*.json'))
 SOURCES = NORMATIVE + GUIDANCE + ['src/language/swaml.langium', 'spec/kerml-mapping.json'] + EXAMPLES + ['LICENSE'] + ATTACHMENTS
 ANCHORS = {p: 'file_' + hashlib.sha256(p.encode()).hexdigest()[:16] for p in SOURCES}
 STYLES: dict[str, ParagraphStyle] = {}
@@ -80,7 +80,7 @@ def fonts(directory: Path) -> None:
                        ('Mono', 'DejaVuSansMono.ttf')]:
         pdfmetrics.registerFont(TTFont(name, str(directory / file)))
     pdfmetrics.registerFontFamily('Body', normal='Body', bold='BodyB', italic='BodyI', boldItalic='BodyBI')
-    base = dict(fontName='Body', textColor=INK, fontSize=9.3, leading=14.2, spaceAfter=7, allowWidows=0, allowOrphans=0)
+    base = dict(fontName='Body', textColor=INK, fontSize=9.3, leading=13.5, spaceAfter=6, allowWidows=0, allowOrphans=0)
     STYLES['body'] = ParagraphStyle('body', **base)
     STYLES['h1'] = ParagraphStyle('h1', fontName='BodyB', fontSize=23, leading=28, textColor=NAVY, spaceAfter=18, keepWithNext=True)
     STYLES['h2'] = ParagraphStyle('h2', fontName='BodyB', fontSize=13, leading=17, textColor=NAVY, spaceBefore=15, spaceAfter=8, keepWithNext=True)
@@ -224,7 +224,7 @@ class Cover(Flowable):
         c.setFillColor(MUTED);c.setFont('BodyB',10);c.drawString(0,601,'SOFTWARE ARCHITECTURE MODELING LANGUAGE')
         c.setFillColor(NAVY);c.setFont('BodyB',60);c.drawString(-2,518,'SWAML')
         c.setFont('Body',24);c.drawString(0,478,'Complete language specification')
-        c.setFont('Body',12);c.setFillColor(TEAL);c.drawString(0,444,'Specification 1.0.0  /  Language 1.0  /  Reference simulation 1.0')
+        c.setFont('Body',12);c.setFillColor(TEAL);c.drawString(0,444,'Specification 1.1.0  /  Language 1.1  /  Reference simulation 1.1')
         c.setStrokeColor(LINE);c.line(0,412,WIDTH,412)
         labels=[('COMPONENT','Composition and boundary ports'),('UNIT','Private data, functions and operations'),('OPERATION','Structured flow or owned states')]
         for i,(title,sub) in enumerate(labels):
@@ -246,7 +246,7 @@ class Cover(Flowable):
 class Book(BaseDocTemplate):
     def __init__(self, filename: str):
         super().__init__(filename,pagesize=A4,leftMargin=MARGIN,rightMargin=MARGIN,topMargin=48,bottomMargin=44,
-                         title='SWAML Complete Language Specification - Version 1.0.0',author='Catalin Ilie and SWAML contributors',
+                         title='SWAML Complete Language Specification - Version 1.1.0',author='Catalin Ilie and SWAML contributors',
                          subject='Software architecture modeling on KerML: normative specification, grammar and examples',
                          pageCompression=1)
         self.addPageTemplates(PageTemplate(id='book',frames=[Frame(MARGIN,44,WIDTH,PAGE_H-92,leftPadding=0,rightPadding=0,topPadding=0,bottomPadding=0)],onPageEnd=self.decorate))
@@ -264,12 +264,12 @@ class Book(BaseDocTemplate):
         if self.page==1: return
         c.saveState();c.setStrokeColor(LINE);c.setLineWidth(.5)
         c.line(MARGIN,PAGE_H-30,PAGE_W-MARGIN,PAGE_H-30)
-        c.setFont('BodyB',7);c.setFillColor(TEAL);c.drawString(MARGIN,PAGE_H-22,'SWAML 1.0 / SPECIFICATION 1.0.0')
+        c.setFont('BodyB',7);c.setFillColor(TEAL);c.drawString(MARGIN,PAGE_H-22,'SWAML 1.1 / SPECIFICATION 1.1.0')
         c.setFont('Body',7);c.setFillColor(MUTED)
         title=self.section if len(self.section)<68 else self.section[:65]+'...'
         c.drawRightString(PAGE_W-MARGIN,PAGE_H-22,title)
         c.line(MARGIN,31,PAGE_W-MARGIN,31)
-        c.drawString(MARGIN,19,'Specification revision 1.0.0  |  github.com/voidaliot/swaml')
+        c.drawString(MARGIN,19,'Specification revision 1.1.0  |  github.com/voidaliot/swaml')
         c.drawRightString(PAGE_W-MARGIN,19,str(self.page));c.restoreState()
 
 
@@ -355,15 +355,15 @@ def markdown(source: str, status: str):
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument('--output',type=Path,default=ROOT/'output/pdf/SWAML-1.0.0-Specification.pdf')
+    parser.add_argument('--output',type=Path,default=ROOT/'output/pdf/SWAML-1.1.0-Specification.pdf')
     parser.add_argument('--font-dir',type=Path,default=os.environ.get('SWAML_PDF_FONT_DIR','/usr/share/fonts/truetype/dejavu'))
     args=parser.parse_args();fonts(args.font_dir);args.output.parent.mkdir(parents=True,exist_ok=True)
     story=[Cover(),PageBreak(),heading('About this edition',1,'edition')]
-    story.extend([Paragraph('VERSION 1.0.0 / COMPLETE LANGUAGE REFERENCE',STYLES['label']),
-        Paragraph('This book contains the complete SWAML 1.0 language specification, a concern guide and all 129 keywords in alphabetical order, formal execution rules, rendered notation examples, a reference simulation binding, the complete grammar and runnable model examples. The specification and package revision is 1.0.0; source models use <font name="Mono">swaml "1.0";</font>.',STYLES['body']),
+    story.extend([Paragraph('VERSION 1.1.0 / COMPLETE LANGUAGE REFERENCE',STYLES['label']),
+        Paragraph('This book contains the complete SWAML 1.1 language specification, a concern guide and every keyword in alphabetical order, formal execution rules, rendered notation examples, a reference simulation binding, the complete grammar and runnable model examples. The specification and package revision is 1.1.0. Source files begin with packages; hosts select and pin the 1.1 grammar. Explicit type definitions retain <font name="Mono">def</font>; component usages form execution roots and operations own their states directly.',STYLES['body']),
         Paragraph('Normative chapters define syntax, validity, interface isolation, operation/state behavior and mapping obligations. Tutorials and figures illustrate these rules. This independently authored language is not an OMG UML release or an AUTOSAR implementation. KerML export remains a proposed semantic mapping contract.',STYLES['body']),
         Paragraph('A working Langium parser/validator and deterministic logical-time simulator provide executable evidence. Physical timing proof, a kernel exporter, production runtime and graphical editor require separate implementations. VS Code extension development is outside this repository.',STYLES['body']),
-        table([['Navigation','How to use this PDF'],['Contents and bookmarks','Select a contents entry or use the PDF outline to open a chapter or section.'],['Cross-references','Links to included documents jump inside this book. Other repository links target version v1.0.0.'],['Code and tables','Code is selectable, numbered and wrapped without omitting source text. Tables repeat their headers across pages.'],['Source record','The build manifest lists every included source and its SHA-256 digest. Original source files are embedded as PDF attachments. The release includes a PDF checksum.']]),
+        table([['Navigation','How to use this PDF'],['Contents and bookmarks','Select a contents entry or use the PDF outline to open a chapter or section.'],['Cross-references','Links to included documents jump inside this book. Other repository links target version v1.1.0.'],['Code and tables','Code is selectable, numbered and wrapped without omitting source text. Tables repeat their headers across pages.'],['Source record','The build manifest lists every included source and its SHA-256 digest. Original source files are embedded as PDF attachments. The release includes a PDF checksum.']]),
         Paragraph('Original text and code: MIT license, copyright 2026 Catalin Ilie. Referenced standards retain their own terms; no standards PDFs are redistributed. Full license text appears at the end.',STYLES['small']),
         PageBreak()])
     toc_title=Paragraph('Contents',STYLES['h1']);toc_title.running_title='Contents';story.append(toc_title)
@@ -399,7 +399,7 @@ def main():
     for source in SOURCES:
         writer.add_attachment(source.replace('/', '__'), (ROOT/source).read_bytes())
     with args.output.open('wb') as stream: writer.write(stream)
-    manifest={'release':RELEASE,'languageVersion':'1.0','specificationRevision':REVISION,'pages':book.page,'pdf':args.output.name,
+    manifest={'release':RELEASE,'languageVersion':'1.1','specificationRevision':REVISION,'pages':book.page,'pdf':args.output.name,
               'sources':[{'path':p,'attachmentName':p.replace('/', '__'),'sha256':hashlib.sha256((ROOT/p).read_bytes()).hexdigest()} for p in SOURCES],
               'pdfSha256':hashlib.sha256(args.output.read_bytes()).hexdigest()}
     args.output.with_suffix('.manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')

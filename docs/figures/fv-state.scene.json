@@ -183,7 +183,7 @@
       "kind": "text",
       "x": 610,
       "y": 263,
-      "text": "entry: set cycles = cycles + 1;",
+      "text": "entry: cycles = cycles + 1;",
       "size": 16,
       "bold": false,
       "color": "#17324d"

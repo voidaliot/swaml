@@ -18,7 +18,7 @@
 <rect x="592" y="186" width="330" height="153" rx="18" fill="white" stroke="#17324d"/>
 <text x="612" y="219" font-size="22" font-weight="700" fill="#17324d">state Running</text>
 <polyline points="592,235 922,235" fill="none" stroke="#17324d" stroke-width="2"/>
-<text x="610" y="263" font-size="16" font-weight="400" fill="#17324d">entry: set cycles = cycles + 1;</text>
+<text x="610" y="263" font-size="16" font-weight="400" fill="#17324d">entry: cycles = cycles + 1;</text>
 <text x="610" y="291" font-size="16" font-weight="400" fill="#17324d">publish status.changed(&quot;running&quot;)</text>
 <polyline points="415,252 585,252" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
 <text x="428" y="220" font-size="16" font-weight="400" fill="#17324d">on receive</text>
