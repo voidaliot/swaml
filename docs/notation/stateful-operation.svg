@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="320" viewBox="0 0 560 320" role="img" aria-labelledby="title desc">
+<title id="title">Operation with states</title><desc id="desc">Operation with states. Draw the state graph inside the owning operation frame, keeping the operation name and on start label visible.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="320" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="25" y="25" width="510" height="270" rx="12" fill="#ffffff" stroke="#111111"/>
+<text x="43" y="61" font-size="20" font-weight="700" fill="#111111">«operation» lifecycle()</text>
+<polyline points="25,91 535,91" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="43" y="118" font-size="18" font-weight="400" fill="#111111">on start</text>
+<circle cx="65" cy="185" r="9" fill="#111111" stroke="#111111"/>
+<polyline points="75,185 130,185" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="130,185 118.0,190.0 118.0,180.0" fill="#111111" stroke="#111111"/>
+<rect x="133" y="145" width="153" height="80" rx="12" fill="#ffffff" stroke="#111111"/>
+<text x="193.5" y="191.0" font-size="18" font-weight="400" fill="#111111">Idle</text>
+<polyline points="287,185 344,185" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="344,185 332.0,190.0 332.0,180.0" fill="#111111" stroke="#111111"/>
+<rect x="347" y="145" width="157" height="80" rx="12" fill="#ffffff" stroke="#111111"/>
+<text x="389.008" y="191.0" font-size="18" font-weight="400" fill="#111111">Running</text>
+<text x="153.0" y="267" font-size="18" font-weight="400" fill="#111111">on receive commands.begin</text>
+</g></svg>

@@ -1,0 +1,184 @@
+{
+  "width": 560,
+  "height": 320,
+  "title": "Assertion",
+  "description": "Assertion. Draw an owned statement box with the exact statement label and directed control-flow succession.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 320,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "circle",
+      "x": 230,
+      "y": 25,
+      "r": 7,
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          230,
+          33
+        ],
+        [
+          230,
+          69
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          230,
+          69
+        ],
+        [
+          225.0,
+          57.0
+        ],
+        [
+          235.0,
+          57.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 40,
+      "y": 72,
+      "width": 380,
+      "height": 120,
+      "rx": 13,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 58,
+      "y": 110,
+      "text": "assert accepted",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          420,
+          132
+        ],
+        [
+          519,
+          132
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          519,
+          132
+        ],
+        [
+          507.0,
+          137.0
+        ],
+        [
+          507.0,
+          127.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "circle",
+      "x": 534,
+      "y": 132,
+      "r": 12,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "circle",
+      "x": 534,
+      "y": 132,
+      "r": 7,
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 432,
+      "y": 109,
+      "text": "false",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          230,
+          193
+        ],
+        [
+          230,
+          285
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          230,
+          285
+        ],
+        [
+          225.0,
+          273.0
+        ],
+        [
+          235.0,
+          273.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 248,
+      "y": 250,
+      "text": "true",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

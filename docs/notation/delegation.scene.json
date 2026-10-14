@@ -1,0 +1,110 @@
+{
+  "width": 560,
+  "height": 320,
+  "title": "Boundary delegation",
+  "description": "Boundary delegation. Draw a solid unarrowed line labeled delegate from a boundary port to one immediate child port inside its owner.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 320,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 22,
+      "y": 27,
+      "width": 516,
+      "height": 262,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 40,
+      "y": 58,
+      "text": "«delegate»",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 258,
+      "y": 143,
+      "width": 235,
+      "height": 110,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 336.5,
+      "y": 204.0,
+      "text": "store.api",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 15,
+      "y": 180,
+      "width": 14,
+      "height": 14,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 251,
+      "y": 180,
+      "width": 14,
+      "height": 14,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          29,
+          187
+        ],
+        [
+          251,
+          187
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 43,
+      "y": 134,
+      "text": "delegate api →",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 43,
+      "y": 159,
+      "text": "store.api",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

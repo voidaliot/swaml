@@ -1,0 +1,198 @@
+{
+  "width": 560,
+  "height": 320,
+  "title": "Browser",
+  "description": "Browser. Draw a containment/navigation tree of existing packages, definitions, occurrences and owned members.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 320,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 14,
+      "y": 14,
+      "width": 532,
+      "height": 292,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          14,
+          14
+        ],
+        [
+          174,
+          14
+        ],
+        [
+          174,
+          40
+        ],
+        [
+          158,
+          54
+        ],
+        [
+          14,
+          54
+        ]
+      ],
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 27,
+      "y": 40,
+      "text": "Browser",
+      "size": 19,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 194,
+      "y": 40,
+      "text": "Browser",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 44,
+      "y": 90,
+      "text": "Roots",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          51,
+          98
+        ],
+        [
+          51,
+          117
+        ],
+        [
+          71,
+          117
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 78,
+      "y": 124,
+      "text": "«component def» Pair",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          51,
+          98
+        ],
+        [
+          51,
+          151
+        ],
+        [
+          71,
+          151
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 78,
+      "y": 158,
+      "text": "«root» Demo: Pair",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          51,
+          98
+        ],
+        [
+          51,
+          185
+        ],
+        [
+          71,
+          185
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 78,
+      "y": 192,
+      "text": "«root» Minimal",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          85,
+          200
+        ],
+        [
+          85,
+          219
+        ],
+        [
+          105,
+          219
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 112,
+      "y": 226,
+      "text": "counter: Counter",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

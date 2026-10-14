@@ -18,6 +18,9 @@ async function output(path, text) {
     else await writeFile(new URL(path, root), text);
 }
 const inventory = JSON.parse(await read('spec/keywords.json'));
+const notation = JSON.parse(await read('spec/notation.json'));
+const graphicalConcepts = new Map(notation.concepts.map(c => [c.id, c]));
+const graphicalKeywords = new Map(notation.coverage.keywords.map(e => [e.term, e]));
 const grammar = await read('src/language/swaml.langium');
 const keys = new Set([...grammar.matchAll(/'([a-zA-Z][a-zA-Z0-9]*)'/g)].map(m => m[1]));
 if (inventory.languageVersion !== '1.1' || inventory.entries.length !== keys.size) throw new Error('Keyword inventory/version mismatch');
@@ -33,6 +36,9 @@ for (const e of inventory.entries) {
     const rules = productions.filter(m => m[2].includes(`'${e.keyword}'`)).map(m => m[1]);
     if (!rules.length) throw new Error(`No grammar rule for ${e.keyword}`);
     keywordText += `## Keyword: ${e.keyword}\n\n**Concern:** [${e.concern}](${posix.relative('docs', concerns[e.concern])}). **Grammar:** ${rules.map(r => `\`${r}\``).join(', ')}.\n\n${e.meaning}\n\n**Example fragment:** \`${e.example}\`\n\n`;
+    const graphical = graphicalKeywords.get(e.keyword);
+    if (!graphical) throw new Error(`Missing graphical coverage for ${e.keyword}`);
+    keywordText += `**Graphical notation:** ${graphical.concepts.map(id => `[${graphicalConcepts.get(id).title}](GRAPHICAL_CATALOG.md#notation-${id})`).join(', ') || 'Text only'}. ${graphical.rationale}\n\n`;
 }
 keywordText += `## Punctuation and operator reference\n\n| Token | Meaning |\n| --- | --- |\n| \`;\` | Declaration/statement terminator where the production requires it. |\n| \`{ }\` | Owned declarations, block scope, record assignments, QoS or timing block according to context. |\n| \`( )\` | Arguments, parameters, conditions or precedence grouping. |\n| \`[ ]\` | Fixed type extent, array literal or one final index read. |\n| \`:\` | Name/type separator, operation result or connector/transition header separator. |\n| \`,\` | List separator; no implicit trailing comma. |\n| \`::\` | Package qualification; imports append \`::*\`. |\n| \`.\` | Structural/member path, local record field, enum literal separator or real-literal decimal point. |\n| \`->\` | Connector, delegation, state transition or case exchange direction. |\n| \`=\` | Initialization, assignment, pure function body or record field assignment; never equality. |\n| \`== !=\` | Typed recursive equality/inequality; numeric scalar promotion permitted. |\n| \`< <= > >=\` | Numeric ordering; no String ordering. |\n| \`+ - * / %\` | Checked numeric arithmetic; slash always Real, remainder Int only; minus also unary. |\n| \`//\` / \`/* */\` | Line / non-nested block comments outside strings. |\n\nPrecedence, lowest first: or; and; equality; ordered comparison; addition/subtraction; multiplication/division/remainder; unary not/minus; primary. Binary operators associate left. Only and/or short-circuit. Identifiers, strings, numerics and durations have the exact lexical rules in [chapter 1](spec/01-structure-and-types.md); the [complete grammar](../src/language/swaml.langium) is authoritative for concrete syntax.\n`;
 await output('docs/KEYWORD_REFERENCE.md', keywordText);
@@ -46,6 +52,8 @@ const chapters = [
     ['Conformance and evidence', 'docs/spec/08-conformance-obligations.md'],
     ['Formal semantics', 'docs/spec/09-formal-semantics.md'],
     ['Graphical notation', 'docs/GRAPHICAL_NOTATION.md'],
+    ['Canonical graphical catalog', 'docs/GRAPHICAL_CATALOG.md'],
+    ['Graphical specification organization', 'docs/SYSML_STYLE_REVIEW.md'],
     ['Kernel mapping', 'docs/spec/05-kerml-mapping.md'],
     ['Kernel normalization', 'docs/spec/07-normalized-model.md'],
     ['Runtime contract', 'docs/spec/06-execution-contract.md'],
@@ -60,26 +68,44 @@ const chapters = [
 try { await read('docs/GRAPHICAL_EXAMPLES.md'); chapters.splice(chapters.findIndex(x => x[0] === 'Graphical notation') + 1, 0, ['Graphical examples', 'docs/GRAPHICAL_EXAMPLES.md']); } catch {}
 const anchor = p => 'source-' + createHash('sha256').update(p).digest('hex').slice(0, 12);
 const included = new Set(chapters.map(x => x[1]));
-let book = '# SWAML 1.1.0 — Complete language reference\n\n**Software Architecture Modeling Language** · Headerless language 1.1; explicit definitions and component usages · Independently authored, KerML-based semantic design.\n\nThis is the complete user-facing Markdown edition, generated from the maintained source chapters. Navigate by the alphabetical concern map or the exhaustive alphabetical keyword reference. Normative chapters define meaning; tutorials, comparisons and examples illustrate it. The portable reference parser and logical simulator provide executable evidence with the limitations stated below.\n\n## Contents\n\n';
+let book = '# SWAML 1.1.1 — Complete language reference\n\n**Software Architecture Modeling Language** · Headerless language 1.1; explicit definitions and component usages · Independently authored, KerML-based semantic design.\n\nThis is the complete user-facing Markdown edition, generated from the maintained source chapters. Navigate by the alphabetical concern map or the exhaustive alphabetical keyword reference. Normative chapters define meaning; tutorials, comparisons and examples illustrate it. The portable reference parser and logical simulator provide executable evidence with the limitations stated below.\n\n## Contents\n\n';
 book += chapters.map(([title, p]) => `- [${title}](#${anchor(p)})`).join('\n') + '\n- [Complete concrete grammar](#complete-concrete-grammar)\n- [Model examples](#model-examples)\n\n';
 for (const [title, path] of chapters) {
     let text = path === 'docs/KEYWORD_REFERENCE.md' ? keywordText : await read(path);
+    // Namespace source heading anchors so links retain their exact target in the combined book.
+    const headingCounts = new Map();
+    let inFence = false;
+    text = text.split('\n').map(line => {
+        if (/^```/.test(line)) inFence = !inFence;
+        if (inFence || !/^#{1,6} /.test(line)) return line;
+        const base = line.replace(/^#+ /, '').toLowerCase().replace(/[^\p{L}\p{N}_\s-]/gu, '').replace(/ /g, '-');
+        const count = headingCounts.get(base) || 0;
+        headingCounts.set(base, count + 1);
+        return `<a id="${anchor(path)}-${base}${count ? '-' + count : ''}"></a>\n\n${line}`;
+    }).join('\n');
     text = text.replace(/(!?)\[([^\]]*)\]\(([^)]+)\)/g, (whole, image, label, target) => {
-        if (/^[a-z]+:|^#/i.test(target)) return whole;
+        if (/^[a-z]+:/i.test(target)) return whole;
+        if (target.startsWith('#')) return `${image}[${label}](#${anchor(path)}-${target.slice(1)})`;
         const [file, fragment] = target.split('#');
         const destination = posix.normalize(posix.join(posix.dirname(path), file));
-        const link = !image && included.has(destination) ? `#${anchor(destination)}` : posix.relative('docs', destination) + (fragment ? '#' + fragment : '');
+        const link = !image && included.has(destination) ? `#${anchor(destination)}${fragment ? '-' + fragment : ''}` : posix.relative('docs', destination) + (fragment ? '#' + fragment : '');
         return `${image}[${label}](${link})`;
     });
     book += `<a id="${anchor(path)}"></a>\n\n${text.trim()}\n\n---\n\n`;
 }
 book += '# Complete concrete grammar\n\nThe exact normative Langium grammar follows. Generated AST and syntax files are build outputs, not independent definitions.\n\n```langium\n' + grammar.trim() + '\n```\n\n# Model examples\n\n';
 const runs = JSON.parse(await read('examples/simulation/runs.json'));
-for (const model of new Set(runs.map(run => run.model))) {
+for (const model of new Set([...runs.map(run => run.model), ...notation.concepts.map(c => c.source.model)])) {
     const configurations = runs.filter(run => run.model === model);
     book += `## ${posix.basename(model, '.swaml')}\n\n`;
-    book += configurations.map(run => `- Root component: \`${run.root}\`. [Simulation options](${posix.relative('docs', run.options)}).`).join('\n') + '\n\n';
+    book += configurations.length ? configurations.map(run => `- Root component: \`${run.root}\`. [Simulation options](${posix.relative('docs', run.options)}).`).join('\n') + '\n\n' : 'This validated notation fixture supplies complete contexts for catalog fragments; it is not an additional reference simulation scenario.\n\n';
     book += `\`\`\`swaml\n${(await read(model)).trim()}\n\`\`\`\n\n`;
 }
-await output('docs/SWAML-1.1.0-Reference.md', book);
+const localAnchors = new Set([...book.matchAll(/<a id="([^"]+)"/g)].map(match => match[1]));
+localAnchors.add('complete-concrete-grammar');
+localAnchors.add('model-examples');
+for (const match of book.matchAll(/\[[^\]]*\]\(#([^)]+)\)/g)) {
+    if (!localAnchors.has(match[1])) throw new Error(`Broken combined-reference anchor: ${match[1]}`);
+}
+await output('docs/SWAML-1.1.1-Reference.md', book);
 console.log(`${check ? 'Verified' : 'Built'} complete reference and ${seen.size} alphabetical keyword entries.`);

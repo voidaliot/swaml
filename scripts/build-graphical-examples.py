@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Reproducible vector notation scenes. No editor/extension implementation."""
 from pathlib import Path
-import json, html, sys
+import json, html, sys, math
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'docs/figures'
 OUT.mkdir(exist_ok=True)
@@ -17,7 +17,12 @@ class Scene:
     def add(self,kind,**kw): self.doc['shapes'].append(dict(kind=kind,**kw))
     def rect(self,x,y,w,h,fill=PALE,stroke=NAVY,rx=8): self.add('rect',x=x,y=y,width=w,height=h,fill=fill,stroke=stroke,rx=rx)
     def text(self,x,y,text,size=20,bold=False,color=NAVY): self.add('text',x=x,y=y,text=text,size=size,bold=bold,color=color)
-    def line(self,points,color=NAVY,dash=False,arrow=False): self.add('line',points=points,color=color,dash=dash,arrow=arrow)
+    def line(self,points,color=NAVY,dash=False,arrow=False,open=False):
+        self.add('line',points=points,color=color,dash=dash,arrow=arrow and not open)
+        if arrow and open:
+            x,y=points[-1];px,py=points[-2];angle=math.atan2(y-py,x-px)
+            sides=[(x-14*math.cos(angle)+side*6*math.sin(angle),y-14*math.sin(angle)-side*6*math.cos(angle)) for side in (-1,1)]
+            self.add('line',points=[sides[0],(x,y),sides[1]],color=color,dash=False,arrow=False)
     def circle(self,x,y,r,fill=NAVY): self.add('circle',x=x,y=y,r=r,fill=fill,stroke=NAVY)
     def diamond(self,x,y,w,h): self.add('polygon',points=[(x+w/2,y),(x+w,y+h/2),(x+w/2,y+h),(x,y+h/2)],fill=PALE,stroke=NAVY)
     def port(self,x,y,label,tx=None,ty=None):
@@ -64,9 +69,9 @@ for x,name,typ in [(55,'settings','Service'),(360,'front','Client'),(665,'rear',
  s.text(x+32,346,'Private store per occurrence',13)
 s.rect(60,516,285,80);s.text(80,548,'controller',22,True);s.text(80,575,'«node: process»',18)
 s.rect(565,516,300,80);s.text(585,548,'displays',22,True);s.text(585,575,'«node: container»',18)
-s.line([(194,394),(194,510)],dash=True,arrow=True);s.text(207,485,'deploy',17)
-s.line([(500,394),(620,510)],dash=True,arrow=True);s.text(518,480,'deploy',17)
-s.line([(803,394),(803,510)],dash=True,arrow=True);s.text(817,485,'deploy',17)
+s.line([(194,394),(194,510)],dash=True,arrow=True,open=True);s.text(207,485,'deploy',17)
+s.line([(500,394),(620,510)],dash=True,arrow=True,open=True);s.text(518,480,'deploy',17)
+s.line([(803,394),(803,510)],dash=True,arrow=True,open=True);s.text(817,485,'deploy',17)
 s.save()
 
 s=Scene('iv','IV · Interconnect View','Cabin: two required service ports connect to one provided port; delegation reaches units.',750)
@@ -90,7 +95,7 @@ s=Scene('cv','CV · Case View','Claimed coverage is explicit; no verification ch
 s.rect(35,134,443,318,fill='#f7fafc');s.text(55,170,'«component» Cabin',24,True)
 s.rect(93,248,327,116,fill='#e3f2f3',rx=35);s.text(123,286,'«case» Change',24,True);s.text(123,323,'for Cabin',20)
 s.rect(623,225,337,162,fill='white',rx=0);s.text(641,257,'«requirement»',19,color=TEAL);s.text(641,291,'VisibleSetting',23,True);s.text(641,326,'Both panels can observe',18);s.text(641,354,'accepted setting updates.',18)
-s.line([(420,301),(616,301)],dash=True,arrow=True);s.text(498,261,'satisfies',18);s.text(493,282,'(claimed)',18)
+s.line([(420,301),(616,301)],dash=True,arrow=True,open=True);s.text(498,261,'satisfies',18);s.text(493,282,'(claimed)',18)
 s.text(55,510,'Evidence status: unverified case claim. Simulation results are separate artifacts.',19,color=GRAY)
 s.save()
 
@@ -105,7 +110,7 @@ s.rect(318,290,635,250,fill='#f7fafc',stroke='#ccd9e2');s.text(340,320,'Independ
 s.line([(502,325),(502,585)],dash=True);s.line([(859,325),(859,585)],dash=True)
 s.line([(500,369),(175,369)],arrow=True);s.text(41,351,'frontNotice: api.changed → setting.changed',16);s.text(43,392,'publish via frontLink · after adjust',16,color=TEAL)
 s.line([(508,439),(851,439)],arrow=True);s.text(536,414,'rearNotice: api.changed → setting.changed',15);s.text(536,463,'publish via rearLink · after adjust',16,color=TEAL)
-s.line([(499,573),(175,573)],dash=True,arrow=True);s.text(50,554,'accepted: api.setPoint → setting.setPoint',16);s.text(52,601,'reply via frontLink · after frontNotice · correlation adjust',16,color=TEAL)
+s.line([(499,573),(175,573)],dash=True,arrow=True,open=True);s.text(50,554,'accepted: api.setPoint → setting.setPoint',16);s.text(52,601,'reply via frontLink · after frontNotice · correlation adjust',16,color=TEAL)
 s.text(36,662,'The rearNotice row is positioned for readability: it may occur before or after accepted.',18,color=GRAY)
 s.text(36,694,'Causal chains: adjust → frontNotice → accepted; adjust → rearNotice.',18,True)
 s.save()

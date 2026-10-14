@@ -1,0 +1,74 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Package",
+  "description": "Package. Draw a tabbed rectangular namespace frame; the tab contains the package name.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 30,
+      "y": 55,
+      "width": 500,
+      "height": 200,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 30,
+      "y": 22,
+      "width": 230,
+      "height": 33,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 44,
+      "y": 47,
+      "text": "Hello",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 48,
+      "y": 89,
+      "text": "interface Greeting",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 48,
+      "y": 114,
+      "text": "unit def Speaker",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 48,
+      "y": 139,
+      "text": "component Demo",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

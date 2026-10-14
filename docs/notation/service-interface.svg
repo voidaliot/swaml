@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
+<title id="title">Service interface</title><desc id="desc">Service interface. Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="36" y="24" width="488" height="198" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="54" y="54" font-size="20" font-weight="700" fill="#111111">«service interface»</text>
+<text x="54" y="81" font-size="20" font-weight="700" fill="#111111">TemperatureSetting</text>
+<text x="54" y="108" font-size="20" font-weight="700" fill="#111111">version &quot;1.0.0&quot;</text>
+<polyline points="36,121 524,121" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="54" y="149" font-size="18" font-weight="400" fill="#111111">operation get(): Int idempotent</text>
+<text x="54" y="174" font-size="18" font-weight="400" fill="#111111">operation setPoint(desired: Int): Bool</text>
+<text x="54" y="199" font-size="18" font-weight="400" fill="#111111">event changed(current: Int)</text>
+</g></svg>

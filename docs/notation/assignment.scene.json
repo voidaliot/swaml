@@ -1,0 +1,115 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Assignment",
+  "description": "Assignment. Draw an owned statement box with the exact statement label and directed control-flow succession.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "circle",
+      "x": 280,
+      "y": 27,
+      "r": 7,
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          280,
+          35
+        ],
+        [
+          280,
+          75
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          280,
+          75
+        ],
+        [
+          275.0,
+          63.0
+        ],
+        [
+          285.0,
+          63.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 45,
+      "y": 78,
+      "width": 470,
+      "height": 135,
+      "rx": 13,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 64,
+      "y": 111,
+      "text": "i = i + 1",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          280,
+          214
+        ],
+        [
+          280,
+          260
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          280,
+          260
+        ],
+        [
+          275.0,
+          248.0
+        ],
+        [
+          285.0,
+          248.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    }
+  ]
+}

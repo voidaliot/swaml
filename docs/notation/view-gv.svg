@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="320" viewBox="0 0 560 320" role="img" aria-labelledby="title desc">
+<title id="title">General View</title><desc id="desc">General View. Draw a framed projection titled GV with the semantic subject identity visible; use the canonical element symbols within it.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="320" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="14" y="14" width="532" height="292" rx="0" fill="#ffffff" stroke="#111111"/>
+<polygon points="14,14 174,14 174,40 158,54 14,54" fill="#ffffff" stroke="#111111"/>
+<text x="27" y="40" font-size="19" font-weight="700" fill="#111111">GV</text>
+<text x="194" y="40" font-size="18" font-weight="400" fill="#111111">Demo</text>
+<rect x="44" y="84" width="472" height="193" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="61" y="111" font-size="18" font-weight="700" fill="#111111">«root component» Demo</text>
+<rect x="478" y="94" width="22" height="31" rx="0" fill="#ffffff" stroke="#111111"/>
+<rect x="471" y="98" width="13" height="7" rx="0" fill="#ffffff" stroke="#111111"/>
+<rect x="471" y="113" width="13" height="7" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="61" y="137" font-size="18" font-weight="400" fill="#111111">profile: service (default)</text>
+<rect x="95" y="158" width="370" height="91" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="157.5" y="209.5" font-size="18" font-weight="400" fill="#111111">conversation: Conversation</text>
+<rect x="429" y="167" width="22" height="31" rx="0" fill="#ffffff" stroke="#111111"/>
+<rect x="422" y="171" width="13" height="7" rx="0" fill="#ffffff" stroke="#111111"/>
+<rect x="422" y="186" width="13" height="7" rx="0" fill="#ffffff" stroke="#111111"/>
+</g></svg>

@@ -2,13 +2,13 @@
 
 SWAML is a software-focused modeling language designed on the KerML semantic foundation. It combines architectural structure, executable-operation contracts, state behavior, and interface-controlled communication for embedded realtime software and services.
 
-**Version 1.1.0 defines the language and includes a working Langium parser, validator and reference simulator.** It is an independent project, informally motivated by an “unofficial UML 3.0”; it is not an OMG UML release, an AUTOSAR implementation, or a certified KerML tool.
+**Version 1.1.1 defines the language and includes a working Langium parser, validator and reference simulator.** It is an independent project, informally motivated by an “unofficial UML 3.0”; it is not an OMG UML release, an AUTOSAR implementation, or a certified KerML tool.
 
 ## Read the complete specification
 
-[Full Markdown reference](docs/SWAML-1.1.0-Reference.md) · [Full PDF](output/pdf/SWAML-1.1.0-Specification.pdf) · [By concern](docs/CONCERN_GUIDE.md) · [Alphabetical keywords](docs/KEYWORD_REFERENCE.md)
+[Full Markdown reference](docs/SWAML-1.1.1-Reference.md) · [Full PDF](output/pdf/SWAML-1.1.1-Specification.pdf) · [By concern](docs/CONCERN_GUIDE.md) · [Alphabetical keywords](docs/KEYWORD_REFERENCE.md)
 
-The specification covers every reserved word, formal syntax/typing/execution rules, static and dynamic architecture, communication policies, timing, deployment, cases and graphical notation. The PDF includes clickable navigation, all model examples, exact grammar, vector diagrams and embedded source files. [Publication and verification](docs/PDF_PUBLICATION.md) · [1.1 evidence](docs/RELEASE_1_1.md) · [Historical v0.1.0](https://github.com/voidaliot/swaml/releases/tag/v0.1.0).
+The specification covers every reserved word, formal syntax/typing/execution rules, static and dynamic architecture, communication policies, timing, deployment, cases and graphical notation. The PDF includes clickable navigation, all model examples, exact grammar, vector diagrams and embedded source files. [Publication and verification](docs/PDF_PUBLICATION.md) · [1.1.1 evidence](docs/RELEASE_1_1_1.md) · [Historical v0.1.0](https://github.com/voidaliot/swaml/releases/tag/v0.1.0).
 
 ## Start here
 
@@ -19,6 +19,12 @@ The specification covers every reserved word, formal syntax/typing/execution rul
 - [Architecture comparison](docs/ARCHITECTURE_COMPARISON.md): AUTOSAR Classic/Adaptive, UML, SysML and AADL.
 - [Grammar](src/language/swaml.langium) and [tool integration](docs/TOOLING.md): reusable Langium core for a separately implemented VS Code extension.
 - [Implementation status](docs/IMPLEMENTATION_STATUS.md) and [migration](docs/MIGRATION_1_1.md): precise scope and version changes.
+
+## Canonical graphical notation
+
+The [concept catalog](docs/GRAPHICAL_CATALOG.md) pairs each graphical concept with its SWAML textual notation and constraints, organized by concern and indexed by term. Download original [SVG and PNG assets](docs/notation/), or read the drawings in the full specification. The [coverage inventory](spec/notation.json) explicitly accounts for every grammar rule and keyword, including terms represented only as labels or text.
+
+The presentation follows the concept/graphical/textual organization reviewed in the [official SysML v2 specification](docs/SYSML_STYLE_REVIEW.md), using SWAML-specific drawings and semantics. [Worked diagrams](docs/GRAPHICAL_EXAMPLES.md) cover all view families.
 
 ## Compact syntax, explicit meaning
 
@@ -85,7 +91,8 @@ node out/src/cli/simulate.js Commerce::Shop examples/simulation/03-service-pubsu
 ## Repository layout
 
 ```text
-docs/                 Specification, user guide, notation, research, decisions
+docs/                 Specification, guides, notation catalog, research, decisions
+docs/notation/        Canonical SVG, PNG and vector-scene assets
 src/language/         Grammar, scoping, validation and generated AST (build output)
 src/cli/              Headless validation and simulation
 src/simulation/       Portable logical-time reference interpreter

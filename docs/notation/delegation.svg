@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="320" viewBox="0 0 560 320" role="img" aria-labelledby="title desc">
+<title id="title">Boundary delegation</title><desc id="desc">Boundary delegation. Draw a solid unarrowed line labeled delegate from a boundary port to one immediate child port inside its owner.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="320" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="22" y="27" width="516" height="262" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="40" y="58" font-size="20" font-weight="700" fill="#111111">«delegate»</text>
+<rect x="258" y="143" width="235" height="110" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="336.5" y="204.0" font-size="18" font-weight="400" fill="#111111">store.api</text>
+<rect x="15" y="180" width="14" height="14" rx="0" fill="#ffffff" stroke="#111111"/>
+<rect x="251" y="180" width="14" height="14" rx="0" fill="#ffffff" stroke="#111111"/>
+<polyline points="29,187 251,187" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="43" y="134" font-size="18" font-weight="400" fill="#111111">delegate api →</text>
+<text x="43" y="159" font-size="18" font-weight="400" fill="#111111">store.api</text>
+</g></svg>

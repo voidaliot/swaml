@@ -1,0 +1,271 @@
+{
+  "width": 560,
+  "height": 320,
+  "title": "Grid View",
+  "description": "Grid View. Draw a framed projection titled GRV with the semantic subject identity visible; use the canonical element symbols within it.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 320,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 14,
+      "y": 14,
+      "width": 532,
+      "height": 292,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          14,
+          14
+        ],
+        [
+          174,
+          14
+        ],
+        [
+          174,
+          40
+        ],
+        [
+          158,
+          54
+        ],
+        [
+          14,
+          54
+        ]
+      ],
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 27,
+      "y": 40,
+      "text": "GRV",
+      "size": 19,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 194,
+      "y": 40,
+      "text": "Demo",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          31,
+          91
+        ],
+        [
+          31,
+          276
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          208,
+          91
+        ],
+        [
+          208,
+          276
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          377,
+          91
+        ],
+        [
+          377,
+          276
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          529,
+          91
+        ],
+        [
+          529,
+          276
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          31,
+          91
+        ],
+        [
+          529,
+          91
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          31,
+          134
+        ],
+        [
+          529,
+          134
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          31,
+          181
+        ],
+        [
+          529,
+          181
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          31,
+          228
+        ],
+        [
+          529,
+          228
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          31,
+          276
+        ],
+        [
+          529,
+          276
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 41,
+      "y": 119,
+      "text": "Element",
+      "size": 18,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 218,
+      "y": 119,
+      "text": "Type",
+      "size": 18,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 387,
+      "y": 119,
+      "text": "Concern",
+      "size": 18,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 39,
+      "y": 165,
+      "text": "conversation",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 216,
+      "y": 165,
+      "text": "Conversation",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 385,
+      "y": 165,
+      "text": "component",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

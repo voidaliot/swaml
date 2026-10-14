@@ -1,0 +1,101 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Execution node",
+  "description": "Execution node. Draw a distinct execution-location rectangle with «node», its name and mcu/process/container kind.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          66,
+          65
+        ],
+        [
+          95,
+          35
+        ],
+        [
+          495,
+          35
+        ],
+        [
+          466,
+          65
+        ]
+      ],
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          466,
+          65
+        ],
+        [
+          495,
+          35
+        ],
+        [
+          495,
+          218
+        ],
+        [
+          466,
+          248
+        ]
+      ],
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 66,
+      "y": 65,
+      "width": 400,
+      "height": 183,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 85,
+      "y": 98,
+      "text": "«node» ecu",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 85,
+      "y": 140,
+      "text": "mcu",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 85,
+      "y": 165,
+      "text": "other kinds: process, container",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

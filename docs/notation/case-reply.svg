@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="320" viewBox="0 0 560 320" role="img" aria-labelledby="title desc">
+<title id="title">Correlated case reply</title><desc id="desc">Correlated case reply. Draw a dashed reply arrow reversing the matching request route and label its step identity and correlation.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="320" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="28" y="26" width="206" height="65" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="75.508" y="64.5" font-size="18" font-weight="400" fill="#111111">caller.health</text>
+<rect x="326" y="26" width="206" height="65" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="348.0" y="64.5" font-size="18" font-weight="400" fill="#111111">serviceUnit.health</text>
+<polyline points="131,92 131,300" fill="none" stroke="#111111" stroke-width="2" stroke-dasharray="7 5"/>
+<polyline points="429,92 429,300" fill="none" stroke="#111111" stroke-width="2" stroke-dasharray="7 5"/>
+<polyline points="429,182 131,182" fill="none" stroke="#111111" stroke-width="2" stroke-dasharray="7 5"/>
+<polyline points="143.0,177.0 131,182 143.0,187.0" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="188.0" y="112" font-size="18" font-weight="400" fill="#111111">answered; after sent</text>
+<text x="153.5" y="145" font-size="18" font-weight="400" fill="#111111">reply check via healthCheck</text>
+</g></svg>

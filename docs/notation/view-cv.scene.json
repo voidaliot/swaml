@@ -1,0 +1,175 @@
+{
+  "width": 560,
+  "height": 320,
+  "title": "Case View",
+  "description": "Case View. Draw a framed projection titled CV with the semantic subject identity visible; use the canonical element symbols within it.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 320,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 14,
+      "y": 14,
+      "width": 532,
+      "height": 292,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          14,
+          14
+        ],
+        [
+          174,
+          14
+        ],
+        [
+          174,
+          40
+        ],
+        [
+          158,
+          54
+        ],
+        [
+          14,
+          54
+        ]
+      ],
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 27,
+      "y": 40,
+      "text": "CV",
+      "size": 19,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 194,
+      "y": 40,
+      "text": "Shop",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 35,
+      "y": 86,
+      "width": 220,
+      "height": 186,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 53,
+      "y": 113,
+      "text": "context: Shop",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 53,
+      "y": 149,
+      "width": 182,
+      "height": 77,
+      "rx": 38,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 102.0,
+      "y": 191,
+      "text": "Checkout",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 353,
+      "y": 142,
+      "width": 178,
+      "height": 100,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 375.5,
+      "y": 198.0,
+      "text": "AcceptedOrder",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          235,
+          190
+        ],
+        [
+          352,
+          190
+        ]
+      ],
+      "color": "#111111",
+      "dash": true,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          340.0,
+          195.0
+        ],
+        [
+          352,
+          190
+        ],
+        [
+          340.0,
+          185.0
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 198.5,
+      "y": 76,
+      "text": "satisfies (claimed)",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

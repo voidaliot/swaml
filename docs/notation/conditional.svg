@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="370" viewBox="0 0 560 370" role="img" aria-labelledby="title desc">
+<title id="title">Conditional branch</title><desc id="desc">Conditional branch. Draw a decision diamond with the Bool condition and distinct true/false control exits, followed by a merge when control continues.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="370" rx="0" fill="#ffffff" stroke="none"/>
+<polygon points="280,35 370,90 280,145 190,90" fill="#ffffff" stroke="#111111"/>
+<text x="232.5" y="96" font-size="18" font-weight="400" fill="#111111">duty &gt; 0.8</text>
+<polyline points="190,90 140,90 140,173" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="140,173 135.0,161.0 145.0,161.0" fill="#111111" stroke="#111111"/>
+<text x="85" y="135" font-size="18" font-weight="400" fill="#111111">true</text>
+<polyline points="370,90 420,90 420,173" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="420,173 415.0,161.0 425.0,161.0" fill="#111111" stroke="#111111"/>
+<text x="438" y="135" font-size="18" font-weight="400" fill="#111111">false</text>
+<rect x="40" y="176" width="200" height="60" rx="12" fill="#ffffff" stroke="#111111"/>
+<text x="91.0" y="212.0" font-size="18" font-weight="400" fill="#111111">then { … }</text>
+<rect x="320" y="176" width="200" height="60" rx="12" fill="#ffffff" stroke="#111111"/>
+<text x="373.0" y="212.0" font-size="18" font-weight="400" fill="#111111">else { … }</text>
+<polyline points="140,237 140,285 249,285" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="249,285 237.0,290.0 237.0,280.0" fill="#111111" stroke="#111111"/>
+<polyline points="420,237 420,285 311,285" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="311,285 323.0,280.0 323.0,290.0" fill="#111111" stroke="#111111"/>
+<polygon points="280,263 310,285 280,307 250,285" fill="#ffffff" stroke="#111111"/>
+<polyline points="280,308 280,351" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="280,351 275.0,339.0 285.0,339.0" fill="#111111" stroke="#111111"/>
+</g></svg>

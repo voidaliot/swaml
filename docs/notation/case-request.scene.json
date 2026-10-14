@@ -1,0 +1,150 @@
+{
+  "width": 560,
+  "height": 320,
+  "title": "Case request",
+  "description": "Case request. Draw a request arrow between occurrence lifelines, labeled the member, connector and step identity.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 320,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 28,
+      "y": 26,
+      "width": 206,
+      "height": 65,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 46.508,
+      "y": 64.5,
+      "text": "caller.health.check",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 326,
+      "y": 26,
+      "width": 206,
+      "height": 65,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 345.0,
+      "y": 52.0,
+      "text": "serviceUnit.health.",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 403.0,
+      "y": 77.0,
+      "text": "check",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          131,
+          92
+        ],
+        [
+          131,
+          300
+        ]
+      ],
+      "color": "#111111",
+      "dash": true,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          429,
+          92
+        ],
+        [
+          429,
+          300
+        ]
+      ],
+      "color": "#111111",
+      "dash": true,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          131,
+          182
+        ],
+        [
+          429,
+          182
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          429,
+          182
+        ],
+        [
+          417.0,
+          187.0
+        ],
+        [
+          417.0,
+          177.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 261.0,
+      "y": 112,
+      "text": "sent",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 171.5,
+      "y": 145,
+      "text": "request via healthCheck",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

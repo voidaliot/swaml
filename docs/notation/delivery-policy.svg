@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
+<title id="title">Delivery policy</title><desc id="desc">Delivery policy. Attach a QoS property compartment to its connector; write the exact delivery value.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
+<polygon points="35,25 495,25 525,55 525,252 35,252" fill="#ffffff" stroke="#111111"/>
+<polyline points="495,25 495,55 525,55" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="55" y="61" font-size="20" font-weight="700" fill="#111111">Connector QoS</text>
+<text x="55" y="105" font-size="18" font-weight="400" fill="#111111">delivery atLeastOnce</text>
+<text x="55" y="130" font-size="18" font-weight="400" fill="#111111">alternatives: atMostOnce, bestEffort</text>
+</g></svg>

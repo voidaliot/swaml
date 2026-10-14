@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="320" viewBox="0 0 560 320" role="img" aria-labelledby="title desc">
+<title id="title">Assertion</title><desc id="desc">Assertion. Draw an owned statement box with the exact statement label and directed control-flow succession.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="320" rx="0" fill="#ffffff" stroke="none"/>
+<circle cx="230" cy="25" r="7" fill="#111111" stroke="#111111"/>
+<polyline points="230,33 230,69" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="230,69 225.0,57.0 235.0,57.0" fill="#111111" stroke="#111111"/>
+<rect x="40" y="72" width="380" height="120" rx="13" fill="#ffffff" stroke="#111111"/>
+<text x="58" y="110" font-size="20" font-weight="700" fill="#111111">assert accepted</text>
+<polyline points="420,132 519,132" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="519,132 507.0,137.0 507.0,127.0" fill="#111111" stroke="#111111"/>
+<circle cx="534" cy="132" r="12" fill="#ffffff" stroke="#111111"/>
+<circle cx="534" cy="132" r="7" fill="#111111" stroke="#111111"/>
+<text x="432" y="109" font-size="18" font-weight="400" fill="#111111">false</text>
+<polyline points="230,193 230,285" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="230,285 225.0,273.0 235.0,273.0" fill="#111111" stroke="#111111"/>
+<text x="248" y="250" font-size="18" font-weight="400" fill="#111111">true</text>
+</g></svg>

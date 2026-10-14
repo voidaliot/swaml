@@ -1,0 +1,53 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "State",
+  "description": "State. Draw a rounded state rectangle bearing the operation-local state name, with optional entry/exit compartments.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 65,
+      "y": 25,
+      "width": 430,
+      "height": 225,
+      "rx": 18,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 86,
+      "y": 60,
+      "text": "Active",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          65,
+          91
+        ],
+        [
+          495,
+          91
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    }
+  ]
+}

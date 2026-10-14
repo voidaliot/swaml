@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
+<title id="title">Case</title><desc id="desc">Case. Draw a case frame or rectangle labeled «case», its name and for Root identity.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="25" y="26" width="510" height="229" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="44" y="59" font-size="20" font-weight="700" fill="#111111">case context: Cabin</text>
+<rect x="95" y="106" width="370" height="102" rx="50" fill="#ffffff" stroke="#111111"/>
+<text x="195.0" y="164" font-size="20" font-weight="700" fill="#111111">«case» Change</text>
+</g></svg>

@@ -1,6 +1,6 @@
 # SWAML language specification
 
-**Version:** 1.1.0 · **Source:** headerless packages; parser/host pinned to 1.1 · **Status:** complete 1.1 specification · **Date:** 2026-10-14
+**Version:** 1.1.1 · **Source:** headerless packages; parser/host pinned to 1.1 · **Status:** complete 1.1 specification · **Date:** 2026-10-14
 
 SWAML means Software Architecture Modeling Language. This document and its normative chapters define a software architecture language over a KerML-based semantic model. SWAML is independently authored; “unofficial UML 3.0” describes its motivation and does not denote an OMG standard or compatibility level.
 
@@ -13,7 +13,7 @@ Read these chapters together. Their requirements have equal standing:
 3. [Operation and state semantics](spec/03-behavior.md).
 4. [Timing, deployment, cases and conformance](spec/04-systems-and-conformance.md).
 5. [KerML semantic mapping](spec/05-kerml-mapping.md).
-6. [Graphical notation](GRAPHICAL_NOTATION.md).
+6. [Graphical notation](GRAPHICAL_NOTATION.md) and [canonical concept catalog](GRAPHICAL_CATALOG.md).
 7. [Concrete grammar](../src/language/swaml.langium).
 8. [Operational contract and target bindings](spec/06-execution-contract.md).
 9. [Normalized semantic model](spec/07-normalized-model.md).

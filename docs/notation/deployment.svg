@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="320" viewBox="0 0 560 320" role="img" aria-labelledby="title desc">
+<title id="title">Deployment binding</title><desc id="desc">Deployment binding. Draw a dashed allocation arrow labeled deploy from the occurrence to its named execution node.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="320" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="29" y="42" width="215" height="91" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="44.0" y="93.5" font-size="18" font-weight="400" fill="#111111">controller: Controller</text>
+<polygon points="325,65 345,45 525,45 505,65" fill="#ffffff" stroke="#111111"/>
+<polygon points="505,65 525,45 525,133 505,153" fill="#ffffff" stroke="#111111"/>
+<rect x="325" y="65" width="180" height="88" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="373.5" y="115.0" font-size="18" font-weight="400" fill="#111111">ecu: mcu</text>
+<polyline points="243,90 323,105" fill="none" stroke="#111111" stroke-width="2" stroke-dasharray="7 5"/>
+<polyline points="310.2840910815372,107.70289851406937 323,105 312.1269764320391,97.87417664472616" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="171.5" y="188" font-size="18" font-weight="400" fill="#111111">deploy controller on ecu</text>
+<text x="29" y="222" font-size="18" font-weight="400" fill="#111111">«deploy»</text>
+</g></svg>

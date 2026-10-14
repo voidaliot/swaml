@@ -1,0 +1,62 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Occurrence lifeline",
+  "description": "Occurrence lifeline. Draw a lifeline headed by the occurrence name: Type and a dashed vertical line.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 128,
+      "y": 24,
+      "width": 304,
+      "height": 73,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 223.5,
+      "y": 66.5,
+      "text": "caller: Caller",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          280,
+          98
+        ],
+        [
+          280,
+          255
+        ]
+      ],
+      "color": "#111111",
+      "dash": true,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 312,
+      "y": 151,
+      "text": "health: Health client",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

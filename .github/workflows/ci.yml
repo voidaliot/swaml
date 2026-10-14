@@ -19,6 +19,19 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run check
 
+  notation-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - name: Verify notation with native Windows paths
+        run: node scripts/check-notation.mjs
+
   pdf:
     runs-on: ubuntu-latest
     steps:
@@ -29,9 +42,18 @@ jobs:
           cache: pip
           cache-dependency-path: scripts/pdf-requirements.txt
       - run: python -m pip install -r scripts/pdf-requirements.txt
-      - run: sudo apt-get update && sudo apt-get install -y fonts-dejavu-core
+      - run: sudo apt-get update && sudo apt-get install -y fonts-dejavu-core poppler-utils
       - name: Verify generated vector examples
         run: python scripts/build-graphical-examples.py --check
+      - name: Verify canonical SVG and PNG notation
+        run: python scripts/build-notation.py --check --diagnostics tmp/pdfs/notation-raster
+      - name: Preserve notation renderer diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: notation-renderer-diagnostics
+          path: tmp/pdfs/notation-raster
+          if-no-files-found: ignore
       - name: Verify committed publication
         run: python scripts/check-spec-pdf.py
       - name: Rebuild from source and verify

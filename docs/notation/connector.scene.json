@@ -1,0 +1,138 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Interface connector",
+  "description": "Interface connector. Draw a solid directed connector between port squares, with connector identity and interface name visible.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 20,
+      "y": 128,
+      "width": 170,
+      "height": 85,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 38.008,
+      "y": 176.5,
+      "text": "speaker.output",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 370,
+      "y": 128,
+      "width": 170,
+      "height": 85,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 396.508,
+      "y": 176.5,
+      "text": "listener.input",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 183,
+      "y": 164,
+      "width": 14,
+      "height": 14,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 363,
+      "y": 164,
+      "width": 14,
+      "height": 14,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          198,
+          171
+        ],
+        [
+          362,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          362,
+          171
+        ],
+        [
+          350.0,
+          176.0
+        ],
+        [
+          350.0,
+          166.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 35,
+      "text": "greeting: Greeting",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 198.5,
+      "y": 113,
+      "text": "greeting: Greeting",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 244,
+      "text": "capacity 4; overflow reject",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

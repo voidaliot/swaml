@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="320" viewBox="0 0 560 320" role="img" aria-labelledby="title desc">
+<title id="title">Browser</title><desc id="desc">Browser. Draw a containment/navigation tree of existing packages, definitions, occurrences and owned members.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="320" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="14" y="14" width="532" height="292" rx="0" fill="#ffffff" stroke="#111111"/>
+<polygon points="14,14 174,14 174,40 158,54 14,54" fill="#ffffff" stroke="#111111"/>
+<text x="27" y="40" font-size="19" font-weight="700" fill="#111111">Browser</text>
+<text x="194" y="40" font-size="18" font-weight="400" fill="#111111">Browser</text>
+<text x="44" y="90" font-size="18" font-weight="400" fill="#111111">Roots</text>
+<polyline points="51,98 51,117 71,117" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="78" y="124" font-size="18" font-weight="400" fill="#111111">«component def» Pair</text>
+<polyline points="51,98 51,151 71,151" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="78" y="158" font-size="18" font-weight="400" fill="#111111">«root» Demo: Pair</text>
+<polyline points="51,98 51,185 71,185" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="78" y="192" font-size="18" font-weight="400" fill="#111111">«root» Minimal</text>
+<polyline points="85,200 85,219 105,219" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="112" y="226" font-size="18" font-weight="400" fill="#111111">counter: Counter</text>
+</g></svg>

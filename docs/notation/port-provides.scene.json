@@ -1,0 +1,153 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Service provider port",
+  "description": "Service provider port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 28,
+      "y": 32,
+      "width": 290,
+      "height": 210,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 44,
+      "y": 62,
+      "text": "api:",
+      "size": 19,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 44,
+      "y": 88,
+      "text": "TemperatureSetting",
+      "size": 19,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 44,
+      "y": 114,
+      "text": "provides",
+      "size": 19,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 311,
+      "y": 167,
+      "width": 14,
+      "height": 14,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 350,
+      "y": 88,
+      "text": "«provides»",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          520,
+          158
+        ],
+        [
+          345,
+          158
+        ],
+        [
+          326,
+          174
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          326,
+          174
+        ],
+        [
+          331.9582556484907,
+          162.4458150600214
+        ],
+        [
+          338.39961310631855,
+          170.0949270411919
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          326,
+          174
+        ],
+        [
+          345,
+          193
+        ],
+        [
+          520,
+          193
+        ]
+      ],
+      "color": "#111111",
+      "dash": true,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          508.0,
+          198.0
+        ],
+        [
+          520,
+          193
+        ],
+        [
+          508.0,
+          188.0
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    }
+  ]
+}

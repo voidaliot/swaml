@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
+<title id="title">Pure local function</title><desc id="desc">Pure local function. Show a function signature and expression row in the owning unit, with an explicit result type.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="36" y="24" width="488" height="190" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="54" y="54" font-size="20" font-weight="700" fill="#111111">«function»</text>
+<text x="54" y="81" font-size="20" font-weight="700" fill="#111111">twice(x: Real): Real</text>
+<polyline points="36,94 524,94" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="54" y="122" font-size="18" font-weight="400" fill="#111111">= x * 2.0</text>
+</g></svg>

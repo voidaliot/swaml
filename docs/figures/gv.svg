@@ -44,10 +44,13 @@
 <rect x="565" y="516" width="300" height="80" rx="8" fill="#eef4f8" stroke="#17324d"/>
 <text x="585" y="548" font-size="22" font-weight="700" fill="#17324d">displays</text>
 <text x="585" y="575" font-size="18" font-weight="400" fill="#17324d">«node: container»</text>
-<polyline points="194,394 194,510" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<polyline points="194,394 194,510" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<polyline points="188.0,496.0 194,510 200.0,496.0" fill="none" stroke="#17324d" stroke-width="2"/>
 <text x="207" y="485" font-size="17" font-weight="400" fill="#17324d">deploy</text>
-<polyline points="500,394 620,510" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<polyline points="500,394 620,510" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<polyline points="605.7640301542275,504.58362090043005 620,510 614.1042953163973,495.9557603878407" fill="none" stroke="#17324d" stroke-width="2"/>
 <text x="518" y="480" font-size="17" font-weight="400" fill="#17324d">deploy</text>
-<polyline points="803,394 803,510" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<polyline points="803,394 803,510" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<polyline points="797.0,496.0 803,510 809.0,496.0" fill="none" stroke="#17324d" stroke-width="2"/>
 <text x="817" y="485" font-size="17" font-weight="400" fill="#17324d">deploy</text>
 </g></svg>

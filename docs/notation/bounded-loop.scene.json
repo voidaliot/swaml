@@ -1,0 +1,241 @@
+{
+  "width": 560,
+  "height": 320,
+  "title": "Bounded loop",
+  "description": "Bounded loop. Draw a loop frame with explicit while condition and positive bound label, and a return control edge for iteration.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 320,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 60,
+      "y": 30,
+      "width": 418,
+      "height": 230,
+      "rx": 14,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 80,
+      "y": 61,
+      "text": "while (i < 3)",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          270,
+          91
+        ],
+        [
+          340,
+          132
+        ],
+        [
+          270,
+          173
+        ],
+        [
+          200,
+          132
+        ]
+      ],
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 248.5,
+      "y": 138,
+      "text": "i < 3",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 156,
+      "y": 199,
+      "width": 230,
+      "height": 48,
+      "rx": 12,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 182.008,
+      "y": 216.5,
+      "text": "body: construct and",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 184.5,
+      "y": 241.5,
+      "text": "send measurement",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          270,
+          174
+        ],
+        [
+          270,
+          198
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          270,
+          198
+        ],
+        [
+          265.0,
+          186.0
+        ],
+        [
+          275.0,
+          186.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 285,
+      "y": 194,
+      "text": "true",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          387,
+          223
+        ],
+        [
+          442,
+          223
+        ],
+        [
+          442,
+          132
+        ],
+        [
+          341,
+          132
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          341,
+          132
+        ],
+        [
+          353.0,
+          127.0
+        ],
+        [
+          353.0,
+          137.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          200,
+          132
+        ],
+        [
+          90,
+          132
+        ],
+        [
+          90,
+          289
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          90,
+          289
+        ],
+        [
+          85.0,
+          277.0
+        ],
+        [
+          95.0,
+          277.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 101,
+      "y": 156,
+      "text": "false",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 134.0,
+      "y": 294,
+      "text": "bound 3; LoopBound on excess",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

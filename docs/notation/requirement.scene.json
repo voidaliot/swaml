@@ -1,0 +1,71 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Requirement",
+  "description": "Requirement. Draw a requirement rectangle labeled «requirement», its name and text compartment.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 36,
+      "y": 24,
+      "width": 488,
+      "height": 190,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 54,
+      "text": "«requirement»",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 81,
+      "text": "LimitedDuty",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          36,
+          94
+        ],
+        [
+          524,
+          94
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 122,
+      "text": "Applied duty shall be at most 0.8.",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

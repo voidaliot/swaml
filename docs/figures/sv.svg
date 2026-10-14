@@ -28,7 +28,8 @@
 <polyline points="508,439 851,439" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
 <text x="536" y="414" font-size="15" font-weight="400" fill="#17324d">rearNotice: api.changed → setting.changed</text>
 <text x="536" y="463" font-size="16" font-weight="400" fill="#087f8c">publish via rearLink · after adjust</text>
-<polyline points="499,573 175,573" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<polyline points="499,573 175,573" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<polyline points="189.0,567.0 175,573 189.0,579.0" fill="none" stroke="#17324d" stroke-width="2"/>
 <text x="50" y="554" font-size="16" font-weight="400" fill="#17324d">accepted: api.setPoint → setting.setPoint</text>
 <text x="52" y="601" font-size="16" font-weight="400" fill="#087f8c">reply via frontLink · after frontNotice · correlation adjust</text>
 <text x="36" y="662" font-size="18" font-weight="400" fill="#516579">The rearNotice row is positioned for readability: it may occur before or after accepted.</text>

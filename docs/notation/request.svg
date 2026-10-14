@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="320" viewBox="0 0 560 320" role="img" aria-labelledby="title desc">
+<title id="title">RPC request and failure continuation</title><desc id="desc">RPC request and failure continuation. Draw one request step labeled port.member, result binding and timeout, with distinct success and otherwise continuations.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="320" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="25" y="23" width="510" height="106" rx="12" fill="#ffffff" stroke="#111111"/>
+<text x="43" y="54" font-size="20" font-weight="700" fill="#111111">request setting.get()</text>
+<text x="43" y="81" font-size="20" font-weight="700" fill="#111111">as observed within 100 ms</text>
+<text x="43" y="111" font-size="18" font-weight="400" fill="#111111">otherwise { return; }</text>
+<polyline points="170,130 170,197" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="170,197 165.0,185.0 175.0,185.0" fill="#111111" stroke="#111111"/>
+<polyline points="390,130 390,197" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="390,197 385.0,185.0 395.0,185.0" fill="#111111" stroke="#111111"/>
+<text x="82" y="169" font-size="18" font-weight="400" fill="#111111">success</text>
+<text x="382" y="169" font-size="18" font-weight="400" fill="#111111">failure</text>
+<rect x="40" y="200" width="225" height="78" rx="12" fill="#ffffff" stroke="#111111"/>
+<text x="114.0" y="245.0" font-size="18" font-weight="400" fill="#111111">continue</text>
+<rect x="300" y="200" width="230" height="78" rx="12" fill="#ffffff" stroke="#111111"/>
+<text x="316.0" y="245.0" font-size="18" font-weight="400" fill="#111111">otherwise: return / fail</text>
+<text x="215.0" y="308" font-size="18" font-weight="400" fill="#111111">within timeout</text>
+</g></svg>
