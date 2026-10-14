@@ -107,3 +107,47 @@ test('expanded aliases cannot duplicate a subscription', () => invalid(model(`
 `), 'SW035'));
 test('package/declaration view ambiguity is explicit', () => invalid(model('unit def P {} view v GV of P;'), 'SW080'));
 test('an independent reply cannot resolve an ambiguous causal branch', () => invalid(rpc.replace(reply, `${reply} ${request.replace('label sent', 'after sent label second')} ${reply.replace('after sent label answered', 'after second label ambiguous')}`), 'SW083'));
+
+const boundaryModel = (outerOptional = false, nested = false, connected = false) => model(`
+    interface publishSubscribe I version "1.0.0" { event e(); }
+    unit def Publisher { port p: I publisher; operation run(): Void { publish p.e(); } }
+    unit def Subscriber { port p: I subscriber; operation observe(): Void on receive p.e {} }
+    component def Source {
+        port output: I publisher ${outerOptional && !nested ? 'optional' : ''};
+        unit producer: Publisher; unit listener: Subscriber;
+        delegate output -> producer.p;
+        connect internalEvents: producer.p -> listener.p qos { delivery atMostOnce; ordering fifo; capacity 1; overflow reject; };
+    }
+    ${nested ? `component def Outer { port output: I publisher ${outerOptional ? 'optional' : ''}; component child: Source; delegate output -> child.output; }` : ''}
+    component def Sink { port input: I subscriber; unit listener: Subscriber; delegate input -> listener.p; }
+    system S service { component root: ${nested ? 'Outer' : 'Source'};
+        ${connected ? `component sink: Sink; connect externalEvents: root.output -> sink.input qos { delivery atMostOnce; ordering fifo; capacity 1; overflow reject; };` : ''}
+    }
+`);
+test('internal leaf use does not connect its required boundary alias', async () => {
+    const ds = await diagnostics(boundaryModel());
+    assert.deepEqual(ds.map(d => [d.code, d.message]), [['SW034', "Required port 'root.output' is unconnected."]]);
+});
+test('optional boundary allows an internally connected leaf', async () => assert.deepEqual(await diagnostics(boundaryModel(true)), []));
+test('nested unconnected aliases each retain their closure obligation', async () => {
+    const ds = await diagnostics(boundaryModel(false, true));
+    assert.deepEqual(ds.map(d => [d.code, d.message]), [
+        ['SW034', "Required port 'root.output' is unconnected."],
+        ['SW034', "Required port 'root.child.output' is unconnected."]
+    ]);
+});
+test('outer connector use propagates through nested aliases to leaves', async () => assert.deepEqual(await diagnostics(boundaryModel(false, true, true)), []));
+test('optional outer boundary does not waive a required inner boundary', async () => {
+    const ds = await diagnostics(boundaryModel(true, true));
+    assert.deepEqual(ds.map(d => [d.code, d.message]), [['SW034', "Required port 'root.child.output' is unconnected."]]);
+});
+test('distinct boundary routes still enforce single-source leaf receivers', async () => {
+    const text = boundaryModel(false, false, true)
+        .replace('interface publishSubscribe', 'interface senderReceiver').replace('event e();', 'data e: Int queued;')
+        .replaceAll('I publisher', 'I sender').replaceAll('I subscriber', 'I receiver')
+        .replace('publish p.e();', 'send p.e(1);').replace('observe():', 'observe(value: Int):')
+        .replace('component sink: Sink;', `component sink: Sink; component second: Source;
+            connect secondEvents: second.output -> sink.input qos { delivery atMostOnce; ordering fifo; capacity 1; overflow reject; };`);
+    const ds = await diagnostics(text);
+    assert.deepEqual(ds.map(d => [d.code, d.message]), [['SW035', "Port 'sink.listener.p' requires a single source/provider."]]);
+});

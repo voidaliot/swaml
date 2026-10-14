@@ -404,7 +404,14 @@ export class SwamlValidator {
             const route = `${resolve(s)}->${resolve(t)}`;
             if (routes.has(route)) error(n, 'SW035', 'Duplicate connector route after delegation expansion.');
             routes.add(route);
-            for (const p of [resolve(s), resolve(t)]) uses.set(p, (uses.get(p) ?? 0) + 1);
+            for (const endpoint of [s, t]) {
+                // Connector use flows inward through delegation, never outward from a leaf.
+                const seen = new Set<string>();
+                for (let p: string | undefined = endpoint; p !== undefined && !seen.has(p); p = aliases.get(p)) {
+                    seen.add(p);
+                    uses.set(p, (uses.get(p) ?? 0) + 1);
+                }
+            }
             if (system.profile === 'realtime' || system.profile === 'mixed') {
                 if (!n.qos?.maxLatency) error(n, 'SW044', 'Realtime/mixed systems require connector maxLatency.');
                 const port = ports.get(resolve(s));
@@ -412,7 +419,7 @@ export class SwamlValidator {
             }
         }
         for (const [path, port] of ports) {
-            const count = uses.get(resolve(path)) ?? 0;
+            const count = uses.get(path) ?? 0;
             if (!port.optional && count === 0) error(system, 'SW034', `Required port '${path}' is unconnected.`);
             if (!aliases.has(path) && ['receiver', 'client', 'requires'].includes(port.role) && count > 1) error(system, 'SW035', `Port '${path}' requires a single source/provider.`);
         }
