@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
+<title id="title">Component definition</title><desc id="desc">Component definition. Draw a sharp-corner classifier rectangle with the component double-tab marker and explicit «component def» heading above its type name.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="36" y="24" width="488" height="190" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="54" y="54" font-size="20" font-weight="700" fill="#111111">«component def»</text>
+<text x="54" y="81" font-size="20" font-weight="700" fill="#111111">Conversation</text>
+<polyline points="36,94 524,94" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="54" y="122" font-size="18" font-weight="400" fill="#111111">speaker: Speaker</text>
+<text x="54" y="147" font-size="18" font-weight="400" fill="#111111">listener: Listener</text>
+<rect x="485" y="34" width="22" height="31" rx="0" fill="#ffffff" stroke="#111111"/>
+<rect x="478" y="38" width="13" height="7" rx="0" fill="#ffffff" stroke="#111111"/>
+<rect x="478" y="53" width="13" height="7" rx="0" fill="#ffffff" stroke="#111111"/>
+</g></svg>

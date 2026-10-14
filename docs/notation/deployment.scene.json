@@ -1,0 +1,156 @@
+{
+  "width": 560,
+  "height": 320,
+  "title": "Deployment binding",
+  "description": "Deployment binding. Draw a dashed allocation arrow labeled deploy from the occurrence to its named execution node.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 320,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 29,
+      "y": 42,
+      "width": 215,
+      "height": 91,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 44.0,
+      "y": 93.5,
+      "text": "controller: Controller",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          325,
+          65
+        ],
+        [
+          345,
+          45
+        ],
+        [
+          525,
+          45
+        ],
+        [
+          505,
+          65
+        ]
+      ],
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          505,
+          65
+        ],
+        [
+          525,
+          45
+        ],
+        [
+          525,
+          133
+        ],
+        [
+          505,
+          153
+        ]
+      ],
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 325,
+      "y": 65,
+      "width": 180,
+      "height": 88,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 373.5,
+      "y": 115.0,
+      "text": "ecu: mcu",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          243,
+          90
+        ],
+        [
+          323,
+          105
+        ]
+      ],
+      "color": "#111111",
+      "dash": true,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          310.2840910815372,
+          107.70289851406937
+        ],
+        [
+          323,
+          105
+        ],
+        [
+          312.1269764320391,
+          97.87417664472616
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 171.5,
+      "y": 188,
+      "text": "deploy controller on ecu",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 29,
+      "y": 222,
+      "text": "«deploy»",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

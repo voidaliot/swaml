@@ -1,0 +1,110 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Requirement coverage link",
+  "description": "Requirement coverage link. Draw a dashed arrow labeled satisfies from the case to the requirement.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 20,
+      "y": 128,
+      "width": 170,
+      "height": 85,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 71.0,
+      "y": 176.5,
+      "text": "Change",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 370,
+      "y": 128,
+      "width": 170,
+      "height": 85,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 394.5,
+      "y": 176.5,
+      "text": "VisibleSetting",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          190,
+          171
+        ],
+        [
+          370,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": true,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          358.0,
+          176.0
+        ],
+        [
+          370,
+          171
+        ],
+        [
+          358.0,
+          166.0
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 35,
+      "text": "«satisfies»",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 198.5,
+      "y": 113,
+      "text": "satisfies (claimed)",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

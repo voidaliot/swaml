@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
+<title id="title">Service consumer port</title><desc id="desc">Service consumer port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="28" y="32" width="290" height="210" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="44" y="62" font-size="19" font-weight="700" fill="#111111">setting:</text>
+<text x="44" y="88" font-size="19" font-weight="700" fill="#111111">TemperatureSetting</text>
+<text x="44" y="114" font-size="19" font-weight="700" fill="#111111">requires</text>
+<rect x="311" y="167" width="14" height="14" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="350" y="88" font-size="18" font-weight="400" fill="#111111">«requires»</text>
+<polyline points="326,174 345,158 520,158" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="520,158 508.0,163.0 508.0,153.0" fill="#111111" stroke="#111111"/>
+<polyline points="520,193 345,193 326,174" fill="none" stroke="#111111" stroke-width="2" stroke-dasharray="7 5"/>
+<polyline points="338.0208152801713,178.94974746830584 326,174 330.9497474683059,186.02081528017132" fill="none" stroke="#111111" stroke-width="2"/>
+</g></svg>

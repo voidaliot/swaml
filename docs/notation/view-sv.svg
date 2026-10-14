@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="320" viewBox="0 0 560 320" role="img" aria-labelledby="title desc">
+<title id="title">Sequence View</title><desc id="desc">Sequence View. Draw a framed projection titled SV with the semantic subject identity visible; use the canonical element symbols within it.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="320" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="14" y="14" width="532" height="292" rx="0" fill="#ffffff" stroke="#111111"/>
+<polygon points="14,14 174,14 174,40 158,54 14,54" fill="#ffffff" stroke="#111111"/>
+<text x="27" y="40" font-size="19" font-weight="700" fill="#111111">SV</text>
+<text x="194" y="40" font-size="18" font-weight="400" fill="#111111">Poll</text>
+<rect x="39" y="75" width="186" height="54" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="76.508" y="108.0" font-size="18" font-weight="400" fill="#111111">caller.health</text>
+<rect x="335" y="75" width="186" height="54" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="347.0" y="108.0" font-size="18" font-weight="400" fill="#111111">serviceUnit.health</text>
+<polyline points="132,130 132,286" fill="none" stroke="#111111" stroke-width="2" stroke-dasharray="7 5"/>
+<polyline points="428,130 428,286" fill="none" stroke="#111111" stroke-width="2" stroke-dasharray="7 5"/>
+<polyline points="132,181 428,181" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="428,181 416.0,186.0 416.0,176.0" fill="#111111" stroke="#111111"/>
+<text x="154.0" y="165" font-size="18" font-weight="400" fill="#111111">sent: check via healthCheck</text>
+<polyline points="428,253 132,253" fill="none" stroke="#111111" stroke-width="2" stroke-dasharray="7 5"/>
+<polyline points="144.0,248.0 132,253 144.0,258.0" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="162.5" y="235" font-size="18" font-weight="400" fill="#111111">answered: reply after sent</text>
+</g></svg>

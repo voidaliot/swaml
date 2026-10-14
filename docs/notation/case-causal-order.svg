@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
+<title id="title">Case causal order</title><desc id="desc">Case causal order. Draw an explicitly labeled after dependency between step labels, or show the predecessor in the arrow label.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="20" y="128" width="170" height="85" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="86.0" y="176.5" font-size="18" font-weight="400" fill="#111111">sent</text>
+<rect x="370" y="128" width="170" height="85" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="412.0" y="176.5" font-size="18" font-weight="400" fill="#111111">answered</text>
+<polyline points="190,171 370,171" fill="none" stroke="#111111" stroke-width="2" stroke-dasharray="7 5"/>
+<polyline points="358.0,176.0 370,171 358.0,166.0" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="26" y="35" font-size="20" font-weight="700" fill="#111111">Case dependency</text>
+<text x="237.0" y="113" font-size="18" font-weight="400" fill="#111111">after sent</text>
+</g></svg>

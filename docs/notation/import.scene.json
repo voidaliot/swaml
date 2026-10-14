@@ -1,0 +1,110 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Package import",
+  "description": "Package import. Draw a dashed open-arrow dependency from the importing package to the imported package, labeled import Shared::*.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 20,
+      "y": 128,
+      "width": 170,
+      "height": 85,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 67.0,
+      "y": 176.5,
+      "text": "Notation",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 370,
+      "y": 128,
+      "width": 170,
+      "height": 85,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 424.0,
+      "y": 176.5,
+      "text": "Shared",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          190,
+          171
+        ],
+        [
+          370,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": true,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          358.0,
+          176.0
+        ],
+        [
+          370,
+          171
+        ],
+        [
+          358.0,
+          166.0
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 35,
+      "text": "«import»",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 206.0,
+      "y": 113,
+      "text": "import Shared::*",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

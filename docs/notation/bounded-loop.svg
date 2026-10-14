@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="320" viewBox="0 0 560 320" role="img" aria-labelledby="title desc">
+<title id="title">Bounded loop</title><desc id="desc">Bounded loop. Draw a loop frame with explicit while condition and positive bound label, and a return control edge for iteration.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="320" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="60" y="30" width="418" height="230" rx="14" fill="#ffffff" stroke="#111111"/>
+<text x="80" y="61" font-size="20" font-weight="700" fill="#111111">while (i &lt; 3)</text>
+<polygon points="270,91 340,132 270,173 200,132" fill="#ffffff" stroke="#111111"/>
+<text x="248.5" y="138" font-size="18" font-weight="400" fill="#111111">i &lt; 3</text>
+<rect x="156" y="199" width="230" height="48" rx="12" fill="#ffffff" stroke="#111111"/>
+<text x="182.008" y="216.5" font-size="18" font-weight="400" fill="#111111">body: construct and</text>
+<text x="184.5" y="241.5" font-size="18" font-weight="400" fill="#111111">send measurement</text>
+<polyline points="270,174 270,198" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="270,198 265.0,186.0 275.0,186.0" fill="#111111" stroke="#111111"/>
+<text x="285" y="194" font-size="18" font-weight="400" fill="#111111">true</text>
+<polyline points="387,223 442,223 442,132 341,132" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="341,132 353.0,127.0 353.0,137.0" fill="#111111" stroke="#111111"/>
+<polyline points="200,132 90,132 90,289" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="90,289 85.0,277.0 95.0,277.0" fill="#111111" stroke="#111111"/>
+<text x="101" y="156" font-size="18" font-weight="400" fill="#111111">false</text>
+<text x="134.0" y="294" font-size="18" font-weight="400" fill="#111111">bound 3; LoopBound on excess</text>
+</g></svg>

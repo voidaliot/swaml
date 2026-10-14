@@ -1,0 +1,71 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Executable operation",
+  "description": "Executable operation. Draw an operation frame or compartment with its name, ordered parameters, result and activation label.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 36,
+      "y": 24,
+      "width": 488,
+      "height": 190,
+      "rx": 12,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 54,
+      "text": "«operation» greet()",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          36,
+          67
+        ],
+        [
+          524,
+          67
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 95,
+      "text": "on start",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 120,
+      "text": "owner: Speaker",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

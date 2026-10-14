@@ -1,0 +1,190 @@
+{
+  "width": 560,
+  "height": 320,
+  "title": "RPC request and failure continuation",
+  "description": "RPC request and failure continuation. Draw one request step labeled port.member, result binding and timeout, with distinct success and otherwise continuations.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 320,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 25,
+      "y": 23,
+      "width": 510,
+      "height": 106,
+      "rx": 12,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 43,
+      "y": 54,
+      "text": "request setting.get()",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 43,
+      "y": 81,
+      "text": "as observed within 100 ms",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 43,
+      "y": 111,
+      "text": "otherwise { return; }",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          170,
+          130
+        ],
+        [
+          170,
+          197
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          170,
+          197
+        ],
+        [
+          165.0,
+          185.0
+        ],
+        [
+          175.0,
+          185.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          390,
+          130
+        ],
+        [
+          390,
+          197
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          390,
+          197
+        ],
+        [
+          385.0,
+          185.0
+        ],
+        [
+          395.0,
+          185.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 82,
+      "y": 169,
+      "text": "success",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 382,
+      "y": 169,
+      "text": "failure",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 40,
+      "y": 200,
+      "width": 225,
+      "height": 78,
+      "rx": 12,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 114.0,
+      "y": 245.0,
+      "text": "continue",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 300,
+      "y": 200,
+      "width": 230,
+      "height": 78,
+      "rx": 12,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 316.0,
+      "y": 245.0,
+      "text": "otherwise: return / fail",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 215.0,
+      "y": 308,
+      "text": "within timeout",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

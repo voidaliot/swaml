@@ -36,20 +36,20 @@ LINE = colors.HexColor('#CBD5DF')
 PAGE_W, PAGE_H = A4
 MARGIN = 44
 WIDTH = PAGE_W - 2 * MARGIN
-RELEASE = '1.1.0'
-REVISION = '1.1.0'
+RELEASE = '1.1.1'
+REVISION = '1.1.1'
 REPO = f'https://github.com/voidaliot/swaml/blob/v{RELEASE}/'
 NORMATIVE = ['docs/LANGUAGE_SPECIFICATION.md'] + [f'docs/spec/{name}' for name in [
     '01-structure-and-types.md', '02-communication.md', '03-behavior.md',
     '04-systems-and-conformance.md', '05-kerml-mapping.md', '06-execution-contract.md',
     '07-normalized-model.md', '08-conformance-obligations.md', '09-formal-semantics.md',
-]] + ['docs/GRAPHICAL_NOTATION.md']
+]] + ['docs/GRAPHICAL_NOTATION.md', 'docs/GRAPHICAL_CATALOG.md']
 GUIDANCE = ['docs/CONCERN_GUIDE.md', 'docs/KEYWORD_REFERENCE.md', 'docs/GRAPHICAL_EXAMPLES.md', 'docs/SIMULATION.md', 'docs/MIGRATION_1_1.md', 'docs/USER_GUIDE.md', 'docs/ARCHITECTURE_COMPARISON.md', 'docs/TOOLING.md',
-            'docs/IMPLEMENTATION_STATUS.md', 'docs/RELEASE_1_1.md',
-            'docs/decisions/0001-language-boundaries.md', 'docs/decisions/0002-auditable-semantics.md', 'docs/decisions/0003-reference-execution-and-publication.md', 'docs/decisions/0004-compact-component-language.md',
+            'docs/IMPLEMENTATION_STATUS.md', 'docs/RELEASE_1_1_1.md', 'docs/SYSML_STYLE_REVIEW.md',
+            'docs/decisions/0001-language-boundaries.md', 'docs/decisions/0002-auditable-semantics.md', 'docs/decisions/0003-reference-execution-and-publication.md', 'docs/decisions/0004-compact-component-language.md', 'docs/decisions/0005-canonical-graphical-notation.md',
             'docs/PDF_PUBLICATION.md', 'CONTRIBUTING.md', 'AGENTS.md']
-EXAMPLES = sorted(p.relative_to(ROOT).as_posix() for p in (ROOT / 'examples').glob('*.swaml'))
-ATTACHMENTS = ['docs/SWAML-1.1.0-Reference.md', 'spec/keywords.json', 'spec/graphical-examples.json'] + sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/'docs/figures').glob('*')) + sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/'examples/simulation').glob('*.json'))
+EXAMPLES = sorted(p.relative_to(ROOT).as_posix() for p in (ROOT / 'examples').glob('*.swaml')) + sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/'examples/notation').glob('*.swaml'))
+ATTACHMENTS = ['docs/SWAML-1.1.1-Reference.md', 'spec/keywords.json', 'spec/graphical-examples.json', 'spec/notation.json', 'resources/fonts/README.md', 'resources/fonts/LICENSE-DejaVu.txt'] + sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/'docs/notation').glob('*') if p.is_file()) + sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/'docs/figures').glob('*')) + sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/'examples/simulation').glob('*.json'))
 SOURCES = NORMATIVE + GUIDANCE + ['src/language/swaml.langium', 'spec/kerml-mapping.json'] + EXAMPLES + ['LICENSE'] + ATTACHMENTS
 ANCHORS = {p: 'file_' + hashlib.sha256(p.encode()).hexdigest()[:16] for p in SOURCES}
 STYLES: dict[str, ParagraphStyle] = {}
@@ -224,7 +224,7 @@ class Cover(Flowable):
         c.setFillColor(MUTED);c.setFont('BodyB',10);c.drawString(0,601,'SOFTWARE ARCHITECTURE MODELING LANGUAGE')
         c.setFillColor(NAVY);c.setFont('BodyB',60);c.drawString(-2,518,'SWAML')
         c.setFont('Body',24);c.drawString(0,478,'Complete language specification')
-        c.setFont('Body',12);c.setFillColor(TEAL);c.drawString(0,444,'Specification 1.1.0  /  Language 1.1  /  Reference simulation 1.1')
+        c.setFont('Body',12);c.setFillColor(TEAL);c.drawString(0,444,'Specification 1.1.1  /  Language 1.1  /  Reference simulation 1.1')
         c.setStrokeColor(LINE);c.line(0,412,WIDTH,412)
         labels=[('COMPONENT','Composition and boundary ports'),('UNIT','Private data, functions and operations'),('OPERATION','Structured flow or owned states')]
         for i,(title,sub) in enumerate(labels):
@@ -246,7 +246,7 @@ class Cover(Flowable):
 class Book(BaseDocTemplate):
     def __init__(self, filename: str):
         super().__init__(filename,pagesize=A4,leftMargin=MARGIN,rightMargin=MARGIN,topMargin=48,bottomMargin=44,
-                         title='SWAML Complete Language Specification - Version 1.1.0',author='Catalin Ilie and SWAML contributors',
+                         title='SWAML Complete Language Specification - Version 1.1.1',author='Catalin Ilie and SWAML contributors',
                          subject='Software architecture modeling on KerML: normative specification, grammar and examples',
                          pageCompression=1)
         self.addPageTemplates(PageTemplate(id='book',frames=[Frame(MARGIN,44,WIDTH,PAGE_H-92,leftPadding=0,rightPadding=0,topPadding=0,bottomPadding=0)],onPageEnd=self.decorate))
@@ -264,12 +264,12 @@ class Book(BaseDocTemplate):
         if self.page==1: return
         c.saveState();c.setStrokeColor(LINE);c.setLineWidth(.5)
         c.line(MARGIN,PAGE_H-30,PAGE_W-MARGIN,PAGE_H-30)
-        c.setFont('BodyB',7);c.setFillColor(TEAL);c.drawString(MARGIN,PAGE_H-22,'SWAML 1.1 / SPECIFICATION 1.1.0')
+        c.setFont('BodyB',7);c.setFillColor(TEAL);c.drawString(MARGIN,PAGE_H-22,'SWAML 1.1 / SPECIFICATION 1.1.1')
         c.setFont('Body',7);c.setFillColor(MUTED)
         title=self.section if len(self.section)<68 else self.section[:65]+'...'
         c.drawRightString(PAGE_W-MARGIN,PAGE_H-22,title)
         c.line(MARGIN,31,PAGE_W-MARGIN,31)
-        c.drawString(MARGIN,19,'Specification revision 1.1.0  |  github.com/voidaliot/swaml')
+        c.drawString(MARGIN,19,'Specification revision 1.1.1  |  github.com/voidaliot/swaml')
         c.drawRightString(PAGE_W-MARGIN,19,str(self.page));c.restoreState()
 
 
@@ -278,7 +278,7 @@ def table(rows: list[list[str]], widths=None):
         n=len(rows[0]); widths=[WIDTH/n]*n
         if n==2: widths=[WIDTH*.29,WIDTH*.71]
         elif n==3: widths=[WIDTH*.22,WIDTH*.30,WIDTH*.48]
-    converted=[[Paragraph(cell,STYLES['headcell' if i==0 else 'cell']) for cell in row] for i,row in enumerate(rows)]
+    converted=[[Paragraph(cell,STYLES['headcell' if i==0 else 'cell']) if isinstance(cell,str) else cell for cell in row] for i,row in enumerate(rows)]
     t=Table(converted,colWidths=widths,repeatRows=1,hAlign='LEFT',splitByRow=1)
     t.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),NAVY),('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white,PALE]),
                           ('VALIGN',(0,0),(-1,-1),'TOP'),('LEFTPADDING',(0,0),(-1,-1),7),('RIGHTPADDING',(0,0),(-1,-1),7),
@@ -326,13 +326,36 @@ def markdown(source: str, status: str):
                         else: output.extend(blocks([child],indent+1))
             elif kind=='table':
                 head=children[0]['children'];body=children[1]['children'] if len(children)>1 else []
+                widths=None
+                if source=='docs/GRAPHICAL_CATALOG.md' and len(head)==3:
+                    graphical=any(plain_heading(cell['children']).lower()=='graphical notation' for cell in head)
+                    widths=[WIDTH*.16,WIDTH*.50,WIDTH*.34] if graphical else [WIDTH*.23,WIDTH*.18,WIDTH*.59]
+                def cell_content(cell,index):
+                    nodes=cell['children']
+                    if len(nodes)==1 and nodes[0]['type']=='image':
+                        if widths is None: raise ValueError('Image table requires explicit column widths')
+                        path=(ROOT/Path(source).parent/nodes[0]['attrs']['url']).with_suffix('.scene.json')
+                        return SCENE.VectorScene(path,widths[index]-14)
+                    return inline(nodes,source)
                 rows=[[inline(cell['children'],source) for cell in head]]
-                rows.extend([[inline(cell['children'],source) for cell in row['children']] for row in body])
-                output.append(table(rows))
+                rows.extend([[cell_content(cell,index) for index,cell in enumerate(row['children'])] for row in body])
+                output.append(table(rows,widths))
             elif kind=='thematic_break': output.append(Spacer(1,10))
             else: raise ValueError(f'Unsupported block token {kind} in {source}')
         return output
     rendered = blocks(ast)
+    if source == 'docs/GRAPHICAL_CATALOG.md':
+        grouped=[]; i=0
+        while i < len(rendered):
+            item=rendered[i]
+            if getattr(item,'heading_text','').startswith('Notation: '):
+                group=[item]; i+=1
+                while i < len(rendered) and not hasattr(rendered[i],'heading_level'):
+                    next_item=rendered[i]; group.append(next_item); i+=1
+                    if isinstance(next_item,Table): break
+                grouped.append(KeepTogether(group))
+            else: grouped.append(item); i+=1
+        rendered=grouped
     if source == 'docs/KEYWORD_REFERENCE.md':
         grouped=[]; i=0
         while i < len(rendered):
@@ -355,15 +378,15 @@ def markdown(source: str, status: str):
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument('--output',type=Path,default=ROOT/'output/pdf/SWAML-1.1.0-Specification.pdf')
+    parser.add_argument('--output',type=Path,default=ROOT/'output/pdf/SWAML-1.1.1-Specification.pdf')
     parser.add_argument('--font-dir',type=Path,default=os.environ.get('SWAML_PDF_FONT_DIR','/usr/share/fonts/truetype/dejavu'))
     args=parser.parse_args();fonts(args.font_dir);args.output.parent.mkdir(parents=True,exist_ok=True)
     story=[Cover(),PageBreak(),heading('About this edition',1,'edition')]
-    story.extend([Paragraph('VERSION 1.1.0 / COMPLETE LANGUAGE REFERENCE',STYLES['label']),
-        Paragraph('This book contains the complete SWAML 1.1 language specification, a concern guide and every keyword in alphabetical order, formal execution rules, rendered notation examples, a reference simulation binding, the complete grammar and runnable model examples. The specification and package revision is 1.1.0. Source files begin with packages; hosts select and pin the 1.1 grammar. Explicit type definitions retain <font name="Mono">def</font>; component usages form execution roots and operations own their states directly.',STYLES['body']),
+    story.extend([Paragraph('VERSION 1.1.1 / COMPLETE LANGUAGE REFERENCE',STYLES['label']),
+        Paragraph('This book contains the complete SWAML 1.1 language specification, a concern guide and every keyword in alphabetical order, formal execution rules, rendered notation examples, a reference simulation binding, the complete grammar and runnable model examples. The specification and package revision is 1.1.1. Source files begin with packages; hosts select and pin the 1.1 grammar. Explicit type definitions retain <font name="Mono">def</font>; component usages form execution roots and operations own their states directly.',STYLES['body']),
         Paragraph('Normative chapters define syntax, validity, interface isolation, operation/state behavior and mapping obligations. Tutorials and figures illustrate these rules. This independently authored language is not an OMG UML release or an AUTOSAR implementation. KerML export remains a proposed semantic mapping contract.',STYLES['body']),
         Paragraph('A working Langium parser/validator and deterministic logical-time simulator provide executable evidence. Physical timing proof, a kernel exporter, production runtime and graphical editor require separate implementations. VS Code extension development is outside this repository.',STYLES['body']),
-        table([['Navigation','How to use this PDF'],['Contents and bookmarks','Select a contents entry or use the PDF outline to open a chapter or section.'],['Cross-references','Links to included documents jump inside this book. Other repository links target version v1.1.0.'],['Code and tables','Code is selectable, numbered and wrapped without omitting source text. Tables repeat their headers across pages.'],['Source record','The build manifest lists every included source and its SHA-256 digest. Original source files are embedded as PDF attachments. The release includes a PDF checksum.']]),
+        table([['Navigation','How to use this PDF'],['Contents and bookmarks','Select a contents entry or use the PDF outline to open a chapter or section.'],['Cross-references','Links to included documents jump inside this book. Other repository links target version v1.1.1.'],['Code and tables','Code is selectable, numbered and wrapped without omitting source text. Tables repeat their headers across pages.'],['Source record','The build manifest lists every included source and its SHA-256 digest. Original source files are embedded as PDF attachments. The release includes a PDF checksum.']]),
         Paragraph('Original text and code: MIT license, copyright 2026 Catalin Ilie. Referenced standards retain their own terms; no standards PDFs are redistributed. Full license text appears at the end.',STYLES['small']),
         PageBreak()])
     toc_title=Paragraph('Contents',STYLES['h1']);toc_title.running_title='Contents';story.append(toc_title)

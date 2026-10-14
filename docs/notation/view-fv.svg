@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="320" viewBox="0 0 560 320" role="img" aria-labelledby="title desc">
+<title id="title">Flow View</title><desc id="desc">Flow View. Draw a framed projection titled FV with the semantic subject identity visible; use the canonical element symbols within it.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="320" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="14" y="14" width="532" height="292" rx="0" fill="#ffffff" stroke="#111111"/>
+<polygon points="14,14 174,14 174,40 158,54 14,54" fill="#ffffff" stroke="#111111"/>
+<text x="27" y="40" font-size="19" font-weight="700" fill="#111111">FV</text>
+<text x="194" y="40" font-size="18" font-weight="400" fill="#111111">Device.lifecycle</text>
+<circle cx="80" cy="173" r="10" fill="#111111" stroke="#111111"/>
+<polyline points="91,173 143,173" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="143,173 131.0,178.0 131.0,168.0" fill="#111111" stroke="#111111"/>
+<rect x="146" y="124" width="152" height="100" rx="12" fill="#ffffff" stroke="#111111"/>
+<text x="206.0" y="180.0" font-size="18" font-weight="400" fill="#111111">Idle</text>
+<polyline points="298,173 360,173" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="360,173 348.0,178.0 348.0,168.0" fill="#111111" stroke="#111111"/>
+<rect x="363" y="124" width="157" height="100" rx="12" fill="#ffffff" stroke="#111111"/>
+<text x="405.008" y="180.0" font-size="18" font-weight="400" fill="#111111">Running</text>
+<text x="153.0" y="278" font-size="18" font-weight="400" fill="#111111">on receive commands.begin</text>
+</g></svg>

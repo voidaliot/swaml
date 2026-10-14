@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1 — 2026-10-14
+
+- Complete canonical graphical concept catalog with paired graphical/textual notation, required labels, context and constraints.
+- Original SVG and PNG representations, explicit keyword/grammar coverage, semantic example checks and reproducible exports.
+- Expanded Markdown/PDF publication following the documented SysML v2 presentation conventions, preserving language 1.1 semantics and historical artifacts.
+
 ## 1.1.0 — 2026-10-14
 
 - Keep `component def` and `unit def` as explicit reusable types; concrete root component usages replace `system`, including typed roots with separate deployment bindings.

@@ -55,6 +55,10 @@ Include the language/core version, a minimal model, exact CLI command or editor 
 
 Do not include credentials, private service URLs or production payloads in examples. Replace them with minimal synthetic values.
 
+## Graphical notation changes
+
+Update the graphical contract and `spec/notation.json` together. A concept must identify its semantic owner, required labels, shape or edge grammar, textual example and applicable views. Classify syntax that has no independent glyph explicitly. Generate original SVG and PNG representations from the shared scene geometry with `scripts/build-notation.py`; verify coverage and exports before editing the full publication. Read the [presentation review](docs/SYSML_STYLE_REVIEW.md) for the adopted document style.
+
 ## Publication changes
 
 The source chapters and `spec/keywords.json` are maintained inputs. The complete Markdown and keyword reference are generated. Run `npm run docs:build` after editing those inputs. Figure changes require `python3 scripts/build-graphical-examples.py` and semantic subject checks; commit SVG and scene pairs together. Do not silently edit one rendition.

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="320" viewBox="0 0 560 320" role="img" aria-labelledby="title desc">
+<title id="title">Case request</title><desc id="desc">Case request. Draw a request arrow between occurrence lifelines, labeled the member, connector and step identity.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="320" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="28" y="26" width="206" height="65" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="46.508" y="64.5" font-size="18" font-weight="400" fill="#111111">caller.health.check</text>
+<rect x="326" y="26" width="206" height="65" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="345.0" y="52.0" font-size="18" font-weight="400" fill="#111111">serviceUnit.health.</text>
+<text x="403.0" y="77.0" font-size="18" font-weight="400" fill="#111111">check</text>
+<polyline points="131,92 131,300" fill="none" stroke="#111111" stroke-width="2" stroke-dasharray="7 5"/>
+<polyline points="429,92 429,300" fill="none" stroke="#111111" stroke-width="2" stroke-dasharray="7 5"/>
+<polyline points="131,182 429,182" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="429,182 417.0,187.0 417.0,177.0" fill="#111111" stroke="#111111"/>
+<text x="261.0" y="112" font-size="18" font-weight="400" fill="#111111">sent</text>
+<text x="171.5" y="145" font-size="18" font-weight="400" fill="#111111">request via healthCheck</text>
+</g></svg>

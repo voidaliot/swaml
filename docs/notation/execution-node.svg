@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
+<title id="title">Execution node</title><desc id="desc">Execution node. Draw a distinct execution-location rectangle with «node», its name and mcu/process/container kind.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
+<polygon points="66,65 95,35 495,35 466,65" fill="#ffffff" stroke="#111111"/>
+<polygon points="466,65 495,35 495,218 466,248" fill="#ffffff" stroke="#111111"/>
+<rect x="66" y="65" width="400" height="183" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="85" y="98" font-size="20" font-weight="700" fill="#111111">«node» ecu</text>
+<text x="85" y="140" font-size="18" font-weight="400" fill="#111111">mcu</text>
+<text x="85" y="165" font-size="18" font-weight="400" fill="#111111">other kinds: process, container</text>
+</g></svg>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
+<title id="title">State entry behavior</title><desc id="desc">State entry behavior. Show entry and its statements in a compartment inside the owning state.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="65" y="25" width="430" height="225" rx="18" fill="#ffffff" stroke="#111111"/>
+<text x="86" y="60" font-size="20" font-weight="700" fill="#111111">Idle</text>
+<polyline points="65,91 495,91" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="85" y="123" font-size="18" font-weight="400" fill="#111111">entry / count = 0</text>
+</g></svg>

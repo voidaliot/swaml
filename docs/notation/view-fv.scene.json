@@ -1,0 +1,198 @@
+{
+  "width": 560,
+  "height": 320,
+  "title": "Flow View",
+  "description": "Flow View. Draw a framed projection titled FV with the semantic subject identity visible; use the canonical element symbols within it.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 320,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 14,
+      "y": 14,
+      "width": 532,
+      "height": 292,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          14,
+          14
+        ],
+        [
+          174,
+          14
+        ],
+        [
+          174,
+          40
+        ],
+        [
+          158,
+          54
+        ],
+        [
+          14,
+          54
+        ]
+      ],
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 27,
+      "y": 40,
+      "text": "FV",
+      "size": 19,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 194,
+      "y": 40,
+      "text": "Device.lifecycle",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "circle",
+      "x": 80,
+      "y": 173,
+      "r": 10,
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          91,
+          173
+        ],
+        [
+          143,
+          173
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          143,
+          173
+        ],
+        [
+          131.0,
+          178.0
+        ],
+        [
+          131.0,
+          168.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 146,
+      "y": 124,
+      "width": 152,
+      "height": 100,
+      "rx": 12,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 206.0,
+      "y": 180.0,
+      "text": "Idle",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          298,
+          173
+        ],
+        [
+          360,
+          173
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          360,
+          173
+        ],
+        [
+          348.0,
+          178.0
+        ],
+        [
+          348.0,
+          168.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 363,
+      "y": 124,
+      "width": 157,
+      "height": 100,
+      "rx": 12,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 405.008,
+      "y": 180.0,
+      "text": "Running",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 153.0,
+      "y": 278,
+      "text": "on receive commands.begin",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

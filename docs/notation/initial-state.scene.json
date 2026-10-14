@@ -1,0 +1,80 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Initial state reference",
+  "description": "Initial state reference. Draw a solid initial pseudonode with one outgoing unlabeled initialization edge to the named initial state.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "circle",
+      "x": 70,
+      "y": 142,
+      "r": 12,
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          83,
+          142
+        ],
+        [
+          215,
+          142
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          215,
+          142
+        ],
+        [
+          203.0,
+          147.0
+        ],
+        [
+          203.0,
+          137.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 218,
+      "y": 87,
+      "width": 296,
+      "height": 112,
+      "rx": 12,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 350.0,
+      "y": 149.0,
+      "text": "Idle",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

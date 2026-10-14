@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
+<title id="title">Initial state reference</title><desc id="desc">Initial state reference. Draw a solid initial pseudonode with one outgoing unlabeled initialization edge to the named initial state.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
+<circle cx="70" cy="142" r="12" fill="#111111" stroke="#111111"/>
+<polyline points="83,142 215,142" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="215,142 203.0,147.0 203.0,137.0" fill="#111111" stroke="#111111"/>
+<rect x="218" y="87" width="296" height="112" rx="12" fill="#ffffff" stroke="#111111"/>
+<text x="350.0" y="149.0" font-size="18" font-weight="400" fill="#111111">Idle</text>
+</g></svg>

@@ -1,0 +1,150 @@
+{
+  "width": 560,
+  "height": 320,
+  "title": "Case event exchange",
+  "description": "Case event exchange. Draw a publication arrow labeled publish and the exact connector/member, retaining its step identity.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 320,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 28,
+      "y": 26,
+      "width": 206,
+      "height": 65,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 38.5,
+      "y": 64.5,
+      "text": "settings.api.changed",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 326,
+      "y": 26,
+      "width": 206,
+      "height": 65,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 371.5,
+      "y": 52.0,
+      "text": "front.setting.",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 391.0,
+      "y": 77.0,
+      "text": "changed",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          131,
+          92
+        ],
+        [
+          131,
+          300
+        ]
+      ],
+      "color": "#111111",
+      "dash": true,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          429,
+          92
+        ],
+        [
+          429,
+          300
+        ]
+      ],
+      "color": "#111111",
+      "dash": true,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          131,
+          182
+        ],
+        [
+          429,
+          182
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          429,
+          182
+        ],
+        [
+          417.0,
+          187.0
+        ],
+        [
+          417.0,
+          177.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 173.5,
+      "y": 112,
+      "text": "frontNotice; after adjust",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 190.0,
+      "y": 145,
+      "text": "publish via frontLink",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

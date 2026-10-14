@@ -1,0 +1,110 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Inline root composition",
+  "description": "Inline root composition. Draw a root-component frame containing direct unit occurrences, with no invented wrapper definition.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 36,
+      "y": 24,
+      "width": 488,
+      "height": 190,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 54,
+      "text": "«root component»",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 81,
+      "text": "Minimal",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          36,
+          94
+        ],
+        [
+          524,
+          94
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 122,
+      "text": "profile service (default)",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 147,
+      "text": "counter: Counter",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 485,
+      "y": 34,
+      "width": 22,
+      "height": 31,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 478,
+      "y": 38,
+      "width": 13,
+      "height": 7,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 478,
+      "y": 53,
+      "width": 13,
+      "height": 7,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    }
+  ]
+}

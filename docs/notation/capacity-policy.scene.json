@@ -1,0 +1,83 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Queue capacity",
+  "description": "Queue capacity. Write the positive capacity value in the connector QoS compartment.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          35,
+          25
+        ],
+        [
+          495,
+          25
+        ],
+        [
+          525,
+          55
+        ],
+        [
+          525,
+          252
+        ],
+        [
+          35,
+          252
+        ]
+      ],
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          495,
+          25
+        ],
+        [
+          495,
+          55
+        ],
+        [
+          525,
+          55
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 55,
+      "y": 61,
+      "text": "Connector QoS",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 55,
+      "y": 105,
+      "text": "capacity 4",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

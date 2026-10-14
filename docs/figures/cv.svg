@@ -16,7 +16,8 @@
 <text x="641" y="291" font-size="23" font-weight="700" fill="#17324d">VisibleSetting</text>
 <text x="641" y="326" font-size="18" font-weight="400" fill="#17324d">Both panels can observe</text>
 <text x="641" y="354" font-size="18" font-weight="400" fill="#17324d">accepted setting updates.</text>
-<polyline points="420,301 616,301" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow)"/>
+<polyline points="420,301 616,301" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<polyline points="602.0,307.0 616,301 602.0,295.0" fill="none" stroke="#17324d" stroke-width="2"/>
 <text x="498" y="261" font-size="18" font-weight="400" fill="#17324d">satisfies</text>
 <text x="493" y="282" font-size="18" font-weight="400" fill="#17324d">(claimed)</text>
 <text x="55" y="510" font-size="19" font-weight="400" fill="#516579">Evidence status: unverified case claim. Simulation results are separate artifacts.</text>

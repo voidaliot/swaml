@@ -1,0 +1,320 @@
+{
+  "width": 560,
+  "height": 370,
+  "title": "Conditional branch",
+  "description": "Conditional branch. Draw a decision diamond with the Bool condition and distinct true/false control exits, followed by a merge when control continues.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 370,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          280,
+          35
+        ],
+        [
+          370,
+          90
+        ],
+        [
+          280,
+          145
+        ],
+        [
+          190,
+          90
+        ]
+      ],
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 232.5,
+      "y": 96,
+      "text": "duty > 0.8",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          190,
+          90
+        ],
+        [
+          140,
+          90
+        ],
+        [
+          140,
+          173
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          140,
+          173
+        ],
+        [
+          135.0,
+          161.0
+        ],
+        [
+          145.0,
+          161.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 85,
+      "y": 135,
+      "text": "true",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          370,
+          90
+        ],
+        [
+          420,
+          90
+        ],
+        [
+          420,
+          173
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          420,
+          173
+        ],
+        [
+          415.0,
+          161.0
+        ],
+        [
+          425.0,
+          161.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 438,
+      "y": 135,
+      "text": "false",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 40,
+      "y": 176,
+      "width": 200,
+      "height": 60,
+      "rx": 12,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 91.0,
+      "y": 212.0,
+      "text": "then { … }",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 320,
+      "y": 176,
+      "width": 200,
+      "height": 60,
+      "rx": 12,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 373.0,
+      "y": 212.0,
+      "text": "else { … }",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          140,
+          237
+        ],
+        [
+          140,
+          285
+        ],
+        [
+          249,
+          285
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          249,
+          285
+        ],
+        [
+          237.0,
+          290.0
+        ],
+        [
+          237.0,
+          280.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          420,
+          237
+        ],
+        [
+          420,
+          285
+        ],
+        [
+          311,
+          285
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          311,
+          285
+        ],
+        [
+          323.0,
+          280.0
+        ],
+        [
+          323.0,
+          290.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          280,
+          263
+        ],
+        [
+          310,
+          285
+        ],
+        [
+          280,
+          307
+        ],
+        [
+          250,
+          285
+        ]
+      ],
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          280,
+          308
+        ],
+        [
+          280,
+          351
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          280,
+          351
+        ],
+        [
+          275.0,
+          339.0
+        ],
+        [
+          285.0,
+          339.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    }
+  ]
+}

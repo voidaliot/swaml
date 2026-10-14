@@ -320,7 +320,27 @@
       ],
       "color": "#17324d",
       "dash": true,
-      "arrow": true
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          189.0,
+          567.0
+        ],
+        [
+          175,
+          573
+        ],
+        [
+          189.0,
+          579.0
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": false
     },
     {
       "kind": "text",

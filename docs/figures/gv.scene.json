@@ -422,7 +422,27 @@
       ],
       "color": "#17324d",
       "dash": true,
-      "arrow": true
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          188.0,
+          496.0
+        ],
+        [
+          194,
+          510
+        ],
+        [
+          200.0,
+          496.0
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": false
     },
     {
       "kind": "text",
@@ -447,7 +467,27 @@
       ],
       "color": "#17324d",
       "dash": true,
-      "arrow": true
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          605.7640301542275,
+          504.58362090043005
+        ],
+        [
+          620,
+          510
+        ],
+        [
+          614.1042953163973,
+          495.9557603878407
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": false
     },
     {
       "kind": "text",
@@ -472,7 +512,27 @@
       ],
       "color": "#17324d",
       "dash": true,
-      "arrow": true
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          797.0,
+          496.0
+        ],
+        [
+          803,
+          510
+        ],
+        [
+          809.0,
+          496.0
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": false
     },
     {
       "kind": "text",

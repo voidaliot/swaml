@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="320" viewBox="0 0 560 320" role="img" aria-labelledby="title desc">
+<title id="title">Residence timer transition</title><desc id="desc">Residence timer transition. Label the transition on after with an explicit duration and unit.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="320" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="18" y="209" width="190" height="82" rx="12" fill="#ffffff" stroke="#111111"/>
+<text x="85.0" y="256.0" font-size="18" font-weight="400" fill="#111111">Active</text>
+<rect x="352" y="209" width="190" height="82" rx="12" fill="#ffffff" stroke="#111111"/>
+<text x="423.5" y="256.0" font-size="18" font-weight="400" fill="#111111">Done</text>
+<polyline points="208,250 352,250" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="352,250 340.0,255.0 340.0,245.0" fill="#111111" stroke="#111111"/>
+<text x="25" y="34" font-size="20" font-weight="700" fill="#111111">elapsed</text>
+<text x="243.0" y="94" font-size="18" font-weight="400" fill="#111111">after 1 s</text>
+<text x="25" y="120" font-size="18" font-weight="400" fill="#111111">on after 1 s</text>
+</g></svg>

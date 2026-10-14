@@ -1,4 +1,4 @@
-# Implementation status — 1.1.0
+# Implementation status — 1.1.1
 
 The normative specification defines the complete bounded 1.1 language. The repository implements the Langium parser, CLI, language-server foundation and broad static checking. It also implements a bounded logical-time reference simulator; it does not implement a production runtime, KerML exporter or graphical editor. See the [1.1 migration](MIGRATION_1_1.md), historical [1.0 evidence](RELEASE_1_0.md) and historical [0.1 audit](SPECIFICATION_AUDIT.md) and [conformance obligations](spec/08-conformance-obligations.md).
 
@@ -26,6 +26,8 @@ The normative specification defines the complete bounded 1.1 language. The repos
 | Production-to-spec/normalized mapping inventory | automatic coverage for all 80 grammar rule/type names |
 
 `npm run check` rebuilds, runs tests, validates every example, checks documentation links and executable snippets, and detects missing/duplicate grammar mappings. Mapping coverage is a documentation consistency check, not a KerML validation result.
+
+The [canonical graphical catalog](GRAPHICAL_CATALOG.md) and its SVG/PNG exports define the visual language, with inventory coverage and semantic example checks. These are specification assets; they do not provide the future graphical editing implementation.
 
 ## Limits of static acceptance
 

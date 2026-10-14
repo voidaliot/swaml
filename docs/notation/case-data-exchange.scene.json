@@ -1,0 +1,141 @@
+{
+  "width": 560,
+  "height": 320,
+  "title": "Case data exchange",
+  "description": "Case data exchange. Draw a sequence arrow between occurrence lifelines labeled send, port.member paths, connector and step label.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 320,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 28,
+      "y": 26,
+      "width": 206,
+      "height": 65,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 42.0,
+      "y": 64.5,
+      "text": "source.output.value",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 326,
+      "y": 26,
+      "width": 206,
+      "height": 65,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 358.5,
+      "y": 64.5,
+      "text": "sink.input.value",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          131,
+          92
+        ],
+        [
+          131,
+          300
+        ]
+      ],
+      "color": "#111111",
+      "dash": true,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          429,
+          92
+        ],
+        [
+          429,
+          300
+        ]
+      ],
+      "color": "#111111",
+      "dash": true,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          131,
+          182
+        ],
+        [
+          429,
+          182
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          429,
+          182
+        ],
+        [
+          417.0,
+          187.0
+        ],
+        [
+          417.0,
+          177.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 261.0,
+      "y": 112,
+      "text": "sent",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 160.5,
+      "y": 145,
+      "text": "send via counts; label sent",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}
