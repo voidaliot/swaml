@@ -1,7 +1,7 @@
 [
   {
     "model": "examples/01-hello.swaml",
-    "system": "Hello::Demo",
+    "root": "Hello::Demo",
     "options": "examples/simulation/01-hello.json",
     "expectedStores": {
       "conversation.listener": {
@@ -11,7 +11,7 @@
   },
   {
     "model": "examples/02-realtime-controller.swaml",
-    "system": "Control::Heating",
+    "root": "Control::Heating",
     "options": "examples/simulation/02-realtime-controller.json",
     "expectedStores": {
       "controller.actuator": {
@@ -21,7 +21,7 @@
   },
   {
     "model": "examples/03-service-pubsub.swaml",
-    "system": "Commerce::Shop",
+    "root": "Commerce::Shop",
     "options": "examples/simulation/03-service-pubsub.json",
     "expectedStores": {
       "web.frontend": {
@@ -34,7 +34,7 @@
   },
   {
     "model": "examples/04-stateful-operation.swaml",
-    "system": "Lifecycle::Product",
+    "root": "Lifecycle::Product",
     "options": "examples/simulation/04-stateful-operation.json",
     "expectedStores": {
       "assembly.device": {
@@ -47,7 +47,7 @@
   },
   {
     "model": "examples/05-values-and-flow.swaml",
-    "system": "Values::Demo",
+    "root": "Values::Demo",
     "options": "examples/simulation/05-values-and-flow.json",
     "expectedStores": {
       "pipeline.consumer": {
@@ -57,7 +57,7 @@
   },
   {
     "model": "examples/06-mixed-gateway.swaml",
-    "system": "Gateway::Product",
+    "root": "Gateway::Product",
     "options": "examples/simulation/06-mixed-gateway.json",
     "expectedStores": {
       "display.dashboard": {
@@ -70,7 +70,7 @@
   },
   {
     "model": "examples/07-client-server.swaml",
-    "system": "Rpc::HealthCheck",
+    "root": "Rpc::HealthCheck",
     "options": "examples/simulation/07-client-server.json",
     "expectedStores": {
       "caller.clientUnit": {
@@ -80,7 +80,7 @@
   },
   {
     "model": "examples/08-service-field.swaml",
-    "system": "Settings::Cabin",
+    "root": "Settings::Cabin",
     "options": "examples/simulation/08-service-field.json",
     "expectedStores": {
       "settings.store": {
@@ -91,6 +91,42 @@
       },
       "rear.panel": {
         "displayed": 22
+      }
+    }
+  },
+  {
+    "model": "examples/09-component-roots.swaml",
+    "root": "Roots::Demo",
+    "options": "examples/simulation/09-component-roots.json",
+    "expectedStores": {
+      "left": {
+        "count": 1
+      },
+      "right": {
+        "count": 1
+      }
+    }
+  },
+  {
+    "model": "examples/09-component-roots.swaml",
+    "root": "Roots::Embedded",
+    "options": "examples/simulation/09-component-roots.json",
+    "expectedStores": {
+      "left": {
+        "count": 1
+      },
+      "right": {
+        "count": 1
+      }
+    }
+  },
+  {
+    "model": "examples/09-component-roots.swaml",
+    "root": "Roots::Minimal",
+    "options": "examples/simulation/09-component-roots.json",
+    "expectedStores": {
+      "counter": {
+        "count": 1
       }
     }
   }

@@ -7,14 +7,14 @@ import { createSwamlServices } from '../src/language/swaml-module.js';
 import type { Model } from '../src/language/generated/ast.js';
 import { simulate, type SimulationOptions } from '../src/simulation/simulator.js';
 const fixture = (name: string) => readFileSync(new URL(`../../examples/${name}.swaml`, import.meta.url), 'utf8');
-async function run(text: string, system: string = 'P::S', options: SimulationOptions = { untilNs: 1000000000 }) {
+async function run(text: string, root: string = 'P::S', options: SimulationOptions = { untilNs: 1000000000 }) {
     const { Swaml } = createSwamlServices(EmptyFileSystem);
     const d = await parseHelper<Model>(Swaml)(text, { validation: true });
     assert.deepEqual(d.diagnostics, [], JSON.stringify(d.diagnostics));
-    return simulate([d.parseResult.value], system, options);
+    return simulate([d.parseResult.value], root, options);
 }
 const failed = (r: Awaited<ReturnType<typeof run>>, code: string) => r.trace.some(t => ['failure', 'violation'].includes(t.kind) && t.code === code);
-const program = (body: string, vars = '') => `swaml "1.0"; package P { unit def U { ${vars} operation run(): Void on start { ${body} } } component def C { unit u: U; } system S service { component c: C; } }`;
+const program = (body: string, vars = '') => `package P { unit def U { ${vars} operation run() on start { ${body} } } component def C { unit u: U; } component S service { component c: C; } }`;
 
 test('hello routes copied data through delegated boundaries', async () => {
     const r = await run(fixture('01-hello'), 'Hello::Demo');
@@ -47,16 +47,16 @@ test('stateful operation receives events and expires timer', async () => {
     assert.equal(r.stores['assembly.monitor'].current, 'stopped');
 });
 test('whole-value assignment preserves scalar Real widening and avoids integer overflow semantics', async () => {
-    const r = await run(program('let x: Real = 9007199254740991; set x = x + 1; assert x > 9007199254740991;'));
+    const r = await run(program('let x: Real = 9007199254740991; x = x + 1; assert x > 9007199254740991;'));
     assert.ok(!failed(r, 'Arithmetic'));
 });
 
 for (const [name, body, code] of [
-    ['Int addition overflow', 'let x: Int = 9007199254740991; set x = x + 1;', 'Arithmetic'],
-    ['Int multiplication overflow', 'let x: Int = 9007199254740991; set x = x * 2;', 'Arithmetic'],
+    ['Int addition overflow', 'let x: Int = 9007199254740991; x = x + 1;', 'Arithmetic'],
+    ['Int multiplication overflow', 'let x: Int = 9007199254740991; x = x * 2;', 'Arithmetic'],
     ['division by zero', 'let x: Real = 1 / 0;', 'Arithmetic'],
     ['negative remainder uses dividend sign', 'assert -5 % 2 == -1;', ''],
-    ['computed bounds', 'let x: Int[2] = array [1, 2]; let i: Int = 2; let y: Int = x[i];', 'Bounds'],
+    ['computed bounds', 'let x: Int[2] = [1, 2]; let i: Int = 2; let y: Int = x[i];', 'Bounds'],
     ['loop protection', 'while (true) bound 2 { assert true; }', 'LoopBound'],
     ['assertion', 'assert false;', 'Assertion'],
     ['short circuit avoids division', 'assert true or (1 / 0 == 0); assert not (false and (1 / 0 == 0));', ''],
@@ -66,7 +66,7 @@ for (const [name, body, code] of [
     if (code) assert.ok(failed(r, code), JSON.stringify(r.trace)); else assert.ok(!r.trace.some(t => t.kind === 'failure'));
 });
 test('record equality ignores literal field order; record/array payloads are copied', async () => {
-    const source = program('let a: T = record T { x = 1; y = 2; }; let b: T = record T { y = 2; x = 1; }; assert a == b; let c: T = a; set a = record T { x = 3; y = 4; }; assert c.x == 1;').replace('unit def U', 'datatype T { x: Int; y: Int; } unit def U');
+    const source = program('let a: T = record T { x = 1; y = 2; }; let b: T = record T { y = 2; x = 1; }; assert a == b; let c: T = a; a = record T { x = 3; y = 4; }; assert c.x == 1;').replace('unit def U', 'datatype T { x: Int; y: Int; } unit def U');
     assert.ok(!(await run(source)).trace.some(t => t.kind === 'failure'));
 });
 test('two occurrences never share mutable stores', async () => {
@@ -110,11 +110,11 @@ test('manual harness cannot call a non-manual operation', async () => {
     await assert.rejects(() => run(fixture('01-hello'), 'Hello::Demo', { untilNs: 0, manual: [{ atNs: 0, operation: 'conversation.speaker.greet' }] }), /on manual/);
 });
 test('unbound optional RPC runs explicit Unavailable failure block', async () => {
-    const source = `swaml "1.0"; package P { interface clientServer API version "1.0.0" { operation ping(): Void; } unit def U { port api: API client optional; var result: String = ""; operation run(): Void on start { request api.ping() as completionValue within 1 ns otherwise { set result = failure; return; }; } } component def C { unit u: U; } system S service { component c: C; } }`;
+    const source = `package P { interface clientServer API version "1.0.0" { operation ping(); } unit def U { port api: API client optional; var result: String = ""; operation run() on start { request api.ping() as completionValue within 1 ns otherwise { result = failure; return; }; } } component def C { unit u: U; } component S service { component c: C; } }`;
     assert.equal((await run(source)).stores['c.u'].result, 'Unavailable');
 });
 test('machine priority, payload effects and entry scopes', async () => {
-    const text = fixture('04-stateful-operation').replace('event begin();', 'event begin(value: Int);').replace('commands.begin();', 'commands.begin(7);').replace('on receive commands.begin {}', 'on receive commands.begin when (value == 7) priority 2 { set cycles = value; } transition other: Idle -> Stopped on receive commands.begin priority 1 {}');
+    const text = fixture('04-stateful-operation').replace('event begin();', 'event begin(value: Int);').replace('commands.begin();', 'commands.begin(7);').replace('on receive commands.begin {}', 'on receive commands.begin when (value == 7) priority 2 { cycles = value; } transition other: Idle -> Stopped on receive commands.begin priority 1 {}');
     const r = await run(text, 'Lifecycle::Product', { untilNs: 10, manual: [{ atNs: 0, operation: 'assembly.operatorUnit.startDevice' }] });
     assert.equal(r.stores['assembly.device'].cycles, 8); assert.equal(r.machines['assembly.device.lifecycle'].state, 'Running');
 });
@@ -125,7 +125,7 @@ test('machine timer cancellation and post-final input are observable', async () 
     assert.ok(!r.trace.some(t => t.kind === 'transition' && t.transition === 'expire'));
 });
 test('guarded completion cycle fails on the 1025th edge', async () => {
-    const source = `swaml "1.0"; package P { unit def U { operation run(): Void on start machine { initial A; state A {} transition cycle: A -> A on completion when (true) {} } } component def C { unit u: U; } system S service { component c: C; } }`;
+    const source = `package P { unit def U { operation run() on start { initial A; state A {} transition cycle: A -> A on completion when (true) {} } } component def C { unit u: U; } component S service { component c: C; } }`;
     const r = await run(source);
     assert.ok(failed(r, 'MicrostepLimit')); assert.equal(r.trace.filter(t => t.kind === 'transition').length, 1024);
 });
@@ -173,25 +173,25 @@ test('bounded periodic backlog stops instead of silently dropping releases', asy
     const r = await run(fixture('07-client-server').replace('on every 1 s', 'on every 1 ns'), 'Rpc::HealthCheck', { untilNs: 100, latencyNs: 10, maxPending: 1 });
     assert.equal(r.status, 'violation'); assert.ok(failed(r, 'ActivationOverflow'));
 });
-test('deadline counts request waiting and stops the selected system', async () => {
+test('deadline counts request waiting and stops the selected root', async () => {
     const text = fixture('07-client-server').replace('on every 1 s {', 'on every 1 s timing { wcet 1 ns; deadline 5 ns; concurrency serial; } {');
     const r = await run(text, 'Rpc::HealthCheck', { untilNs: 1100000000, latencyNs: 10 });
     assert.ok(failed(r, 'Deadline')); assert.equal(r.timeNs, 1000000005);
 });
 test('reentrant root and local helper keep their dispatch snapshot across suspension', async () => {
-    const text = `swaml "1.0"; package P {
-      interface clientServer API version "1.0.0" { operation ping(): Void; }
-      unit def Server { port api: API server; operation ping(): Void on call api.ping { return; } }
+    const text = `package P {
+      interface clientServer API version "1.0.0" { operation ping(); }
+      unit def Server { port api: API server; operation ping() on call api.ping { return; } }
       unit def U { port api: API client; var current: Int = 0;
-        operation helper(): Void { assert current == 0; }
-        operation read(): Void on start timing { wcet 1 ns; deadline 100 ns; concurrency reentrant; } {
+        operation helper() { assert current == 0; }
+        operation read() on start timing { wcet 1 ns; deadline 100 ns; concurrency reentrant; } {
           let before: Int = current; request api.ping() as acknowledged within 50 ns otherwise { fail "unavailable"; };
           assert current == before; invoke helper();
         }
-        operation write(): Void on start { set current = 2; }
+        operation write() on start { current = 2; }
       }
       component def C { unit u: U; unit serverUnit: Server; connect api: u.api -> serverUnit.api qos { delivery atMostOnce; ordering fifo; capacity 2; overflow reject; }; }
-      system S service { component c: C; }
+      component S service { component c: C; }
     }`;
     const r = await run(text, 'P::S', { untilNs: 200, latencyNs: 5 });
     assert.equal(r.stores['c.u'].current, 2); assert.ok(!r.trace.some(t => t.kind === 'failure' || t.kind === 'violation'));
@@ -202,7 +202,7 @@ test('input deadline begins at readiness even while serial handler is blocked', 
     assert.ok(failed(r, 'Deadline')); assert.equal(r.timeNs, 1);
 });
 test('string escape decoding retains actual newline and tab values', async () => {
-    const r = await run(program('set textValue = "a\\n\\tβ";', 'var textValue: String = "";'));
+    const r = await run(program('textValue = "a\\n\\tβ";', 'var textValue: String = "";'));
     assert.equal(r.stores['c.u'].textValue, 'a\n\tβ');
 });
 test('manual input and deterministic simulation produce repeatable traces', async () => {
@@ -216,7 +216,7 @@ test('duplicate response is observed and discarded after first completion', asyn
     assert.ok(r.trace.some(t => t.kind === 'discardResponse'));
 });
 test('helper deadline detects suspension before helper returns', async () => {
-    const text = fixture('07-client-server').replace('operation poll(): Void on every 1 s {', 'operation poll(): Void on every 1 s { invoke helper(); } operation helper(): Void timing { wcet 1 ns; deadline 5 ns; concurrency serial; } {');
+    const text = fixture('07-client-server').replace(/operation poll\(\)(?:: Void)? on every 1 s \{/, 'operation poll() on every 1 s { invoke helper(); } operation helper() timing { wcet 1 ns; deadline 5 ns; concurrency serial; } {');
     const r = await run(text, 'Rpc::HealthCheck', { untilNs: 1100000000, latencyNs: 10 });
     assert.ok(failed(r, 'Deadline')); assert.equal(r.timeNs, 1000000005);
 });
@@ -224,29 +224,29 @@ test('reject malformed numeric binding options instead of ignoring resource boun
     await assert.rejects(() => run(program('return;'), 'P::S', { untilNs: 1, maxSteps: 'unbounded' as unknown as number }), /maxSteps/);
 });
 test('machine data payload, exit/effect/entry order and finality execute directly', async () => {
-    const text = `swaml "1.0"; package P {
+    const text = `package P {
       interface senderReceiver Signal version "1.0.0" { data step: Int queued; }
-      unit def Sender { port output: Signal sender; operation run(): Void on start { send output.step(3); } }
+      unit def Sender { port output: Signal sender; operation run() on start { send output.step(3); } }
       unit def Receiver { port input: Signal receiver; var count: Int = 0;
-        operation run(): Void on start machine { initial A;
-          state A { exit { set count = count + 1; } }
+        operation run() on start { initial A;
+          state A { exit { count = count + 1; } }
           state B final { entry { assert count == 4; } }
-          transition next: A -> B on receive input.step when (payload > 0) { set count = count + payload; }
+          transition next: A -> B on receive input.step when (payload > 0) { count = count + payload; }
         }
       }
       component def C { unit senderUnit: Sender; unit receiverUnit: Receiver; connect signal: senderUnit.output -> receiverUnit.input qos { delivery atMostOnce; ordering fifo; capacity 1; overflow reject; }; }
-      system S service { component c: C; }
+      component S service { component c: C; }
     }`;
     const r = await run(text); assert.equal(r.stores['c.receiverUnit'].count, 4); assert.equal(r.machines['c.receiverUnit.run'].live, false); assert.equal(r.outcome, 'no-failure-observed');
 });
 
-const queuedMachine = (termination: string, stopAt = 3, deadline = 5) => `swaml "1.0"; package P {
+const queuedMachine = (termination: string, stopAt = 3, deadline = 5) => `package P {
           interface publishSubscribe I version "1.0.0" { event e(); }
           unit def Sender { port p: I publisher;
-            operation run(): Void on start { publish p.e(); publish p.e(); }
+            operation run() on start { publish p.e(); publish p.e(); }
           }
           unit def Receiver { port p: I subscriber;
-            operation run(): Void on start timing { wcet 1 ns; deadline ${deadline} ns; concurrency serial; } machine {
+            operation run() on start timing { wcet 1 ns; deadline ${deadline} ns; concurrency serial; } {
               initial A; state A {} state B ${termination === 'final' ? 'final' : ''} {}
               transition stop: A -> B on after ${stopAt} ns { ${termination === 'return' ? 'return;' : termination === 'fail' ? 'fail "stopped";' : ''} }
               transition consume: A -> A on receive p.e {}
@@ -255,7 +255,7 @@ const queuedMachine = (termination: string, stopAt = 3, deadline = 5) => `swaml 
           component def C { unit senderUnit: Sender; unit receiverUnit: Receiver;
             connect events: senderUnit.p -> receiverUnit.p qos { delivery atLeastOnce; ordering fifo; capacity 2; overflow reject; };
           }
-          system S service { component c: C; }
+          component S service { component c: C; }
         }`;
 for (const termination of ['final', 'return', 'fail']) for (const readyAt of [2, 4]) {
     test(`terminated machine discards FIFO-blocked inputs: ${termination}, ready at ${readyAt}`, async () => {
@@ -279,4 +279,134 @@ test('live machine input delivery preserves FIFO when later input becomes ready 
     const sent = r.trace.filter(t => t.kind === 'emission').map(t => t.subject);
     assert.deepEqual(r.trace.filter(t => t.kind === 'delivery').map(t => [t.subject, t.timeNs]), sent.map(id => [id, 40]));
     assert.equal(r.outcome, 'no-failure-observed');
+});
+
+test('inline roots directly contain units and preserve typed interface routing', async () => {
+    const source = `package P {
+        interface senderReceiver Numbers version "1.0.0" { data value: Int queued; }
+        unit def Sender { port output: Numbers sender; operation run() on start { send output.value(42); } }
+        unit def Receiver { port input: Numbers receiver; var current: Int = 0; operation take(value: Int) on receive input.value { current = value; } }
+        component S {
+            unit senderUnit: Sender; unit receiverUnit: Receiver;
+            connect values: senderUnit.output -> receiverUnit.input qos { delivery atMostOnce; ordering fifo; capacity 1; overflow reject; };
+        }
+    }`;
+    const r = await run(source);
+    assert.equal(r.profile, 'swaml-reference/1.1'); assert.equal(r.root, 'P::S');
+    assert.deepEqual(Object.keys(r.stores), ['senderUnit', 'receiverUnit']);
+    assert.equal(r.stores.receiverUnit.current, 42);
+    assert.equal(r.trace.filter(t => t.kind === 'delivery').length, 1);
+});
+
+test('typed roots expand definitions with independent stores on each selected run', async () => {
+    const source = `package P {
+        unit def Counter { var count: Int = 0; operation increment() on manual { count = count + 1; } }
+        component def Assembly { unit left: Counter; unit right: Counter; }
+        component first: Assembly;
+        component second: Assembly service;
+    }`;
+    const { Swaml } = createSwamlServices(EmptyFileSystem);
+    const doc = await parseHelper<Model>(Swaml)(source, { validation: true });
+    assert.deepEqual(doc.diagnostics, []);
+    const models = [doc.parseResult.value];
+    const first = simulate(models, 'P::first', { untilNs: 1, manual: [{ atNs: 0, operation: 'left.increment' }] });
+    const second = simulate(models, 'P::second', { untilNs: 1 });
+    assert.equal(first.stores.left.count, 1); assert.equal(first.stores.right.count, 0);
+    assert.equal(second.stores.left.count, 0); assert.equal(second.stores.right.count, 0);
+    assert.equal(first.root, 'P::first'); assert.equal(second.root, 'P::second');
+    assert.equal(simulate(models, 'P::first', { untilNs: 1 }).stores.left.count, 0);
+    assert.throws(() => simulate(models, 'P::Assembly', { untilNs: 1 }), /Unknown root/);
+});
+
+test('typed root expands definition connections through component delegation', async () => {
+    const source = `package P {
+        interface senderReceiver Numbers version "1.0.0" { data value: Int queued; }
+        unit def Sender { port output: Numbers sender; operation run() on start { send output.value(42); } }
+        unit def Receiver { port input: Numbers receiver; var current: Int = 0; operation take(value: Int) on receive input.value { current = value; } }
+        component def Producer { port outgoing: Numbers sender; unit speaker: Sender; delegate outgoing -> speaker.output; }
+        component def Consumer { port incoming: Numbers receiver; unit listener: Receiver; delegate incoming -> listener.input; }
+        component def Assembly {
+            component producer: Producer; component consumer: Consumer;
+            connect values: producer.outgoing -> consumer.incoming qos { delivery atMostOnce; ordering fifo; capacity 1; overflow reject; };
+        }
+        component S: Assembly;
+    }`;
+    const r = await run(source);
+    assert.equal(r.stores['consumer.listener'].current, 42);
+    assert.equal(r.trace.filter(t => t.kind === 'delivery').length, 1);
+    assert.equal(r.outcome, 'no-failure-observed');
+});
+
+test('typed root bindings inherit deployment and use the nearest explicit descendant override', async () => {
+    const source = `package P {
+        unit def Worker { operation run() on start timing { wcet 1 ns; deadline 2 ns; concurrency serial; } { return; } }
+        component def Pair { unit left: Worker; unit right: Worker; }
+        component def Assembly { component pair: Pair; }
+        component S: Assembly realtime { node first mcu; node second mcu; deploy pair on first; deploy pair.right on second; }
+    }`;
+    const r = await run(source);
+    assert.deepEqual({ ...r.deployments }, { pair: 'first', 'pair.left': 'first', 'pair.right': 'second' });
+    assert.equal(r.outcome, 'no-failure-observed');
+});
+
+test('short expression forms distinguish lexical fields from qualified nominal enum literals', async () => {
+    const source = `package P {
+        enum Status { Ready, Done }
+        datatype Holder { Ready: Int; }
+        unit def U {
+            var status: Status = Status.Ready;
+            var count: Int = 0;
+            function next(x: Int): Int = x + 1;
+            function ready(): Status = Status.Ready;
+            operation run() on start {
+                let Status: Holder = record Holder { Ready = 7; };
+                let values: Int[2] = [Status.Ready, next(7)];
+                count = values[1];
+                assert Status.Ready == 7;
+                assert status == P::Status.Ready;
+                assert ready() == P::Status.Ready;
+            }
+        }
+        component S { unit u: U; }
+    }`;
+    const r = await run(source);
+    assert.equal(r.stores.u.count, 8); assert.equal(r.stores.u.status, 'Ready');
+    assert.equal(r.outcome, 'no-failure-observed');
+});
+
+test('imported typed root definitions, enums and function literals execute across documents', async () => {
+    const { Swaml, shared } = createSwamlServices(EmptyFileSystem), parse = parseHelper<Model>(Swaml);
+    const library = await parse(`package Library {
+        enum Status { Ready }
+        unit def Worker {
+            var status: Status = Status.Ready;
+            function ready(): Status = Status.Ready;
+            operation run() on start { assert status == ready(); }
+        }
+        component def Assembly { unit worker: Worker; }
+    }`, { documentUri: 'file:///library.swaml' });
+    const application = await parse('package Application { import Library::*; component S: Assembly; }', { documentUri: 'file:///application.swaml' });
+    await shared.workspace.DocumentBuilder.build([library, application], { validation: true });
+    for (const doc of [library, application]) assert.deepEqual(doc.diagnostics, []);
+    const models = [library.parseResult.value, application.parseResult.value];
+    const r = simulate(models, 'Application::S', { untilNs: 1 });
+    assert.equal(r.stores.worker.status, 'Ready'); assert.equal(r.outcome, 'no-failure-observed');
+    assert.equal(r.sources.length, 2);
+    assert.throws(() => simulate([application.parseResult.value], 'Application::S', { untilNs: 1 }), /every referenced document/);
+});
+
+for (const qualified of [true, false]) test(`enum-only document dependencies must be included: ${qualified ? 'qualified value' : 'imported value'}`, async () => {
+    const { Swaml, shared } = createSwamlServices(EmptyFileSystem), parse = parseHelper<Model>(Swaml);
+    const library = await parse('package Library { enum Status { Ready } }', { documentUri: 'file:///enum.swaml' });
+    const literal = qualified ? 'Library::Status.Ready' : 'Status.Ready';
+    const application = await parse(`package Application {
+        ${qualified ? '' : 'import Library::*;'}
+        unit def U { operation run() on start { assert ${literal} == ${literal}; } }
+        component S { unit u: U; }
+    }`, { documentUri: 'file:///enum-user.swaml' });
+    await shared.workspace.DocumentBuilder.build([library, application], { validation: true });
+    for (const doc of [library, application]) assert.deepEqual(doc.diagnostics, []);
+    const result = simulate([library.parseResult.value, application.parseResult.value], 'Application::S', { untilNs: 1 });
+    assert.equal(result.outcome, 'no-failure-observed');
+    assert.throws(() => simulate([application.parseResult.value], 'Application::S', { untilNs: 1 }), /every referenced document/);
 });

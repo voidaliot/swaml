@@ -1,6 +1,6 @@
 import * as a from '../language/generated/ast.js';
 import { owner } from '../language/swaml-scope.js';
-import { typeKey } from '../language/semantic.js';
+import { resolveEnumLiteral, typeKey } from '../language/semantic.js';
 
 export type Value = { type: string; data: number | boolean | string | Value[] | { [key: string]: Value } };
 export type Cell = { type: string; value: Value };
@@ -40,15 +40,17 @@ function equal(l: Value, r: Value): boolean {
     }
     return l.data === r.data;
 }
-export function evaluate(e: a.Expression, env: Environment, fuel: () => void): Value {
+export function evaluate(e: a.Expression, env: Environment, fuel: () => void, models: readonly a.Model[]): Value {
     fuel();
-    const ev = (x: a.Expression) => evaluate(x, env, fuel);
+    const ev = (x: a.Expression) => evaluate(x, env, fuel, models);
     if (a.isLiteral(e)) {
         if (e.number !== undefined) return numeric(e.$cstNode!.text.includes('.') ? 'Real' : 'Int', e.number);
         if (e.boolean !== undefined) return scalar('Bool', e.boolean === 'true');
         return scalar('String', e.text!);
     }
     if (a.isReferenceExpression(e)) {
+        const literal = resolveEnumLiteral(e, models, env);
+        if (literal) return scalar(`${owner(literal.type, a.isPackage)!.name}::${literal.type.name}`, literal.literal);
         const [root, ...fields] = e.path.split('.');
         let v = env.get(root)?.value;
         if (!v) throw new RuntimeFault('Type', `No live value ${root}`);
@@ -66,7 +68,6 @@ export function evaluate(e: a.Expression, env: Environment, fuel: () => void): V
         for (const f of e.fields) data[f.name] = widen(ev(f.value), typeKey(type.fields.find(x => x.name === f.name)!.type));
         return { type: `${owner(type, a.isPackage)!.name}::${type.name}`, data };
     }
-    if (a.isEnumLiteral(e)) return scalar(`${owner(e.type.ref!, a.isPackage)!.name}::${e.type.ref!.name}`, e.literal);
     if (a.isArrayLiteral(e)) {
         const values = e.values.map(ev);
         const type = values.some(v => v.type === 'Real') && values.every(v => ['Int', 'Real'].includes(v.type)) ? 'Real' : values[0].type;
@@ -75,7 +76,7 @@ export function evaluate(e: a.Expression, env: Environment, fuel: () => void): V
     if (a.isFunctionCall(e)) {
         const f = e.function.ref!, args = e.args.map(ev), scope: Environment = new Map();
         f.parameters.forEach((p, i) => bind(scope, p.name, typeKey(p.type), args[i]));
-        return widen(evaluate(f.value, scope, fuel), typeKey(f.result));
+        return widen(evaluate(f.value, scope, fuel, models), typeKey(f.result));
     }
     if (a.isUnaryExpression(e)) {
         const v = ev(e.operand);
