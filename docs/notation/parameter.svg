@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
-<title id="title">Parameter or record field</title><desc id="desc">Parameter or record field. Show ordered parameters as name: Type within the operation signature; show record fields as name: Type rows in their datatype.</desc>
+<title id="title">Parameter or record field</title><desc id="desc">Parameter or record field. Show ordered parameters as name: Type within the function signature; show record fields as name: Type rows in their datatype.</desc>
 <g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
 <rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
 <rect x="36" y="24" width="488" height="190" rx="0" fill="#ffffff" stroke="#111111"/>
-<text x="54" y="54" font-size="20" font-weight="700" fill="#111111">hear(message: String)</text>
+<text x="54" y="54" font-size="20" font-weight="700" fill="#111111">hear(message: string)</text>
 <polyline points="36,67 524,67" fill="none" stroke="#111111" stroke-width="2"/>
-<text x="54" y="95" font-size="18" font-weight="400" fill="#111111">message: String</text>
+<text x="54" y="95" font-size="18" font-weight="400" fill="#111111">message: string</text>
 <text x="54" y="120" font-size="18" font-weight="400" fill="#111111">copied input value</text>
 </g></svg>

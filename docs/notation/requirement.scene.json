@@ -2,7 +2,7 @@
   "width": 560,
   "height": 280,
   "title": "Requirement",
-  "description": "Requirement. Draw a requirement rectangle labeled «requirement», its name and text compartment.",
+  "description": "A named obligation with typed attributes and one optional formal specification.",
   "shapes": [
     {
       "kind": "rect",

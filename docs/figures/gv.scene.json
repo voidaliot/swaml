@@ -1,8 +1,8 @@
 {
   "width": 1000,
   "height": 650,
-  "title": "GV · General View",
-  "description": "Cabin shows occurrence ownership and explicit deployment; types are shared declarations.",
+  "title": "gv · General View",
+  "description": "Cabin shows instance ownership and explicit deployment; types are shared declarations.",
   "shapes": [
     {
       "kind": "rect",
@@ -18,7 +18,7 @@
       "kind": "text",
       "x": 32,
       "y": 47,
-      "text": "GV · General View",
+      "text": "gv · General View",
       "size": 30,
       "bold": true,
       "color": "#17324d"
@@ -27,7 +27,7 @@
       "kind": "text",
       "x": 32,
       "y": 80,
-      "text": "Cabin shows occurrence ownership and explicit deployment; types are shared declarations.",
+      "text": "Cabin shows instance ownership and explicit deployment; types are shared declarations.",
       "size": 17,
       "bold": false,
       "color": "#516579"
@@ -120,7 +120,7 @@
       "kind": "text",
       "x": 71,
       "y": 251,
-      "text": "«component occurrence»",
+      "text": "«component instance»",
       "size": 17,
       "bold": false,
       "color": "#516579"
@@ -139,7 +139,7 @@
       "kind": "text",
       "x": 87,
       "y": 298,
-      "text": "«unit» store",
+      "text": "«component» store",
       "size": 17,
       "bold": true,
       "color": "#17324d"
@@ -157,7 +157,7 @@
       "kind": "text",
       "x": 87,
       "y": 346,
-      "text": "Private store per occurrence",
+      "text": "Private store per instance",
       "size": 13,
       "bold": false,
       "color": "#17324d"
@@ -215,7 +215,7 @@
       "kind": "text",
       "x": 376,
       "y": 251,
-      "text": "«component occurrence»",
+      "text": "«component instance»",
       "size": 17,
       "bold": false,
       "color": "#516579"
@@ -234,7 +234,7 @@
       "kind": "text",
       "x": 392,
       "y": 298,
-      "text": "«unit» panel",
+      "text": "«component» panel",
       "size": 17,
       "bold": true,
       "color": "#17324d"
@@ -252,7 +252,7 @@
       "kind": "text",
       "x": 392,
       "y": 346,
-      "text": "Private store per occurrence",
+      "text": "Private store per instance",
       "size": 13,
       "bold": false,
       "color": "#17324d"
@@ -310,7 +310,7 @@
       "kind": "text",
       "x": 681,
       "y": 251,
-      "text": "«component occurrence»",
+      "text": "«component instance»",
       "size": 17,
       "bold": false,
       "color": "#516579"
@@ -329,7 +329,7 @@
       "kind": "text",
       "x": 697,
       "y": 298,
-      "text": "«unit» panel",
+      "text": "«component» panel",
       "size": 17,
       "bold": true,
       "color": "#17324d"
@@ -347,7 +347,7 @@
       "kind": "text",
       "x": 697,
       "y": 346,
-      "text": "Private store per occurrence",
+      "text": "Private store per instance",
       "size": 13,
       "bold": false,
       "color": "#17324d"
@@ -366,7 +366,7 @@
       "kind": "text",
       "x": 80,
       "y": 548,
-      "text": "controller",
+      "text": "system:controller",
       "size": 22,
       "bold": true,
       "color": "#17324d"
@@ -375,7 +375,7 @@
       "kind": "text",
       "x": 80,
       "y": 575,
-      "text": "«node: process»",
+      "text": "«external target»",
       "size": 18,
       "bold": false,
       "color": "#17324d"
@@ -394,7 +394,7 @@
       "kind": "text",
       "x": 585,
       "y": 548,
-      "text": "displays",
+      "text": "system:displays",
       "size": 22,
       "bold": true,
       "color": "#17324d"
@@ -403,7 +403,7 @@
       "kind": "text",
       "x": 585,
       "y": 575,
-      "text": "«node: container»",
+      "text": "«external target»",
       "size": 18,
       "bold": false,
       "color": "#17324d"

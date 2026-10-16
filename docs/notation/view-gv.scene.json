@@ -2,7 +2,7 @@
   "width": 560,
   "height": 320,
   "title": "General View",
-  "description": "General View. Draw a framed projection titled GV with the semantic subject identity visible; use the canonical element symbols within it.",
+  "description": "General View. Draw a framed projection titled gv with the semantic subject identity visible; use the canonical element symbols within it.",
   "shapes": [
     {
       "kind": "rect",
@@ -55,7 +55,7 @@
       "kind": "text",
       "x": 27,
       "y": 40,
-      "text": "GV",
+      "text": "gv",
       "size": 19,
       "bold": true,
       "color": "#111111"

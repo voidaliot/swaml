@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1000" height="780" viewBox="0 0 1000 780" role="img" aria-labelledby="title desc">
-<title id="title">FV · Operation flow</title><desc id="desc">SettingStore.update(desired: Int): Bool · on call api.setPoint · directly owned by the unit.</desc>
+<title id="title">fv · Function flow</title><desc id="desc">SettingStore.update(desired: int): bool · on call api.setPoint · directly owned by the component.</desc>
 <defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#17324d"/></marker></defs>
 <g font-family="DejaVu Sans, sans-serif">
 <rect x="0" y="0" width="1000" height="780" rx="8" fill="#ffffff" stroke="none"/>
-<text x="32" y="47" font-size="30" font-weight="700" fill="#17324d">FV · Operation flow</text>
-<text x="32" y="80" font-size="17" font-weight="400" fill="#516579">SettingStore.update(desired: Int): Bool · on call api.setPoint · directly owned by the unit.</text>
+<text x="32" y="47" font-size="30" font-weight="700" fill="#17324d">fv · Function flow</text>
+<text x="32" y="80" font-size="17" font-weight="400" fill="#516579">SettingStore.update(desired: int): bool · on call api.setPoint · directly owned by the component.</text>
 <polyline points="32,99 968,99" fill="none" stroke="#ccd9e2" stroke-width="2"/>
 <rect x="32" y="121" width="935" height="620" rx="8" fill="#f7fafc" stroke="#17324d"/>
-<text x="52" y="153" font-size="20" font-weight="700" fill="#17324d">op update · serial by default</text>
+<text x="52" y="153" font-size="20" font-weight="700" fill="#17324d">function update · serial by default</text>
 <circle cx="382" cy="182" r="9" fill="#17324d" stroke="#17324d"/>
 <polyline points="382,192 382,212" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
 <polygon points="382.0,217 582,282.0 382.0,347 182,282.0" fill="#eef4f8" stroke="#17324d"/>

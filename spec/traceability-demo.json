@@ -1,0 +1,170 @@
+{
+  "model": "examples/16-requirements-and-views.swaml",
+  "views": [
+    {
+      "name": "assurance",
+      "kind": "gv",
+      "source": "view assurance gv {\n        doc /* Requirements, design and verification intent in one projection. */\n        include BoundedResult;\n        include Demo recursive where kind == \"component\";\n        include StartWorkers;\n        include CheckResults;\n    }",
+      "elements": [
+        {
+          "path": "BoundedResult",
+          "name": "BoundedResult",
+          "kind": "requirement",
+          "doc": "Every started worker shall store a result of 2.",
+          "comments": [],
+          "attributes": [
+            {
+              "name": "id",
+              "type": "string",
+              "value": "\"REQ-001\""
+            },
+            {
+              "name": "priority",
+              "type": "uint",
+              "value": "1"
+            },
+            {
+              "name": "expected",
+              "type": "int",
+              "value": "2"
+            }
+          ],
+          "source": "requirement BoundedResult {\n        doc /* Every started worker shall store a result of 2. */\n        attribute id: string = \"REQ-001\";\n        attribute priority: uint = 1;\n        attribute expected: int = 2;\n    }"
+        },
+        {
+          "path": "Demo",
+          "name": "Demo",
+          "kind": "component",
+          "doc": "Start two independent workers.",
+          "comments": [],
+          "attributes": [],
+          "source": "component Demo {\n        doc /* Start two independent workers. */\n        component first: Worker;\n        component second: Worker;\n    }"
+        },
+        {
+          "path": "Demo.first",
+          "name": "first",
+          "kind": "component",
+          "doc": "Keep the result private to each worker instance.",
+          "comments": [
+            "// Each instance has its own result."
+          ],
+          "attributes": [],
+          "source": "component first: Worker;"
+        },
+        {
+          "path": "Demo.second",
+          "name": "second",
+          "kind": "component",
+          "doc": "Keep the result private to each worker instance.",
+          "comments": [
+            "// Each instance has its own result."
+          ],
+          "attributes": [],
+          "source": "component second: Worker;"
+        },
+        {
+          "path": "StartWorkers",
+          "name": "StartWorkers",
+          "kind": "useCase",
+          "doc": "A user starts the application and both workers initialize.",
+          "comments": [],
+          "attributes": [],
+          "source": "useCase StartWorkers for Demo {\n        doc /* A user starts the application and both workers initialize. */\n    }"
+        },
+        {
+          "path": "CheckResults",
+          "name": "CheckResults",
+          "kind": "verificationCase",
+          "doc": "Run the reference simulation and inspect both final result values.\n        Expected: first.result = 2 and second.result = 2.",
+          "comments": [],
+          "attributes": [],
+          "source": "verificationCase CheckResults for Demo {\n        doc /* Run the reference simulation and inspect both final result values.\n        Expected: first.result = 2 and second.result = 2. */\n        verify BoundedResult;\n    }"
+        }
+      ]
+    },
+    {
+      "name": "functions",
+      "kind": "fv",
+      "source": "view functions fv {\n        include Demo recursive where kind == \"function\" and\n            (name == \"startWork\" or path == \"Demo.second.startWork\");\n    }",
+      "elements": [
+        {
+          "path": "Demo.first.startWork",
+          "name": "startWork",
+          "kind": "function",
+          "doc": "Calculate twice the input and store the copied result.",
+          "comments": [],
+          "attributes": [],
+          "source": "function startWork() on start {\n            doc /* Calculate twice the input and store the copied result. */\n            calc twice {\n                in input: int;\n                return output: int = input * 2;\n            }\n            result = twice(1);\n            assert result == 2;\n        }"
+        },
+        {
+          "path": "Demo.second.startWork",
+          "name": "startWork",
+          "kind": "function",
+          "doc": "Calculate twice the input and store the copied result.",
+          "comments": [],
+          "attributes": [],
+          "source": "function startWork() on start {\n            doc /* Calculate twice the input and store the copied result. */\n            calc twice {\n                in input: int;\n                return output: int = input * 2;\n            }\n            result = twice(1);\n            assert result == 2;\n        }"
+        }
+      ]
+    },
+    {
+      "name": "requirements",
+      "kind": "grv",
+      "source": "view requirements grv {\n        include Assurance recursive where kind == \"requirement\";\n    }",
+      "elements": [
+        {
+          "path": "BoundedResult",
+          "name": "BoundedResult",
+          "kind": "requirement",
+          "doc": "Every started worker shall store a result of 2.",
+          "comments": [],
+          "attributes": [
+            {
+              "name": "id",
+              "type": "string",
+              "value": "\"REQ-001\""
+            },
+            {
+              "name": "priority",
+              "type": "uint",
+              "value": "1"
+            },
+            {
+              "name": "expected",
+              "type": "int",
+              "value": "2"
+            }
+          ],
+          "source": "requirement BoundedResult {\n        doc /* Every started worker shall store a result of 2. */\n        attribute id: string = \"REQ-001\";\n        attribute priority: uint = 1;\n        attribute expected: int = 2;\n    }"
+        }
+      ]
+    }
+  ],
+  "relations": [
+    {
+      "source": "Demo.first",
+      "target": "BoundedResult",
+      "kind": "satisfy"
+    },
+    {
+      "source": "Demo.second",
+      "target": "BoundedResult",
+      "kind": "satisfy"
+    },
+    {
+      "source": "StartWorkers",
+      "target": "Demo",
+      "kind": "for"
+    },
+    {
+      "source": "CheckResults",
+      "target": "Demo",
+      "kind": "for"
+    },
+    {
+      "source": "CheckResults",
+      "target": "BoundedResult",
+      "kind": "verify"
+    }
+  ]
+}

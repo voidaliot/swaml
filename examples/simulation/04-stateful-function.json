@@ -3,7 +3,7 @@
   "manual": [
     {
       "atNs": 1,
-      "operation": "assembly.operatorUnit.startDevice"
+      "function": "assembly.operatorUnit.startDevice"
     }
   ]
 }

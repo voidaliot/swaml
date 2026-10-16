@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="560" height="320" viewBox="0 0 560 320" role="img" aria-labelledby="title desc">
-<title id="title">State transition</title><desc id="desc">State transition. Draw a directed edge between states in the same operation; label its identity, stimulus, optional guard/priority and effect.</desc>
+<title id="title">State transition</title><desc id="desc">State transition. Draw a directed edge between states in the same function; label its identity, stimulus, optional guard/priority and effect.</desc>
 <g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
 <rect x="0" y="0" width="560" height="320" rx="0" fill="#ffffff" stroke="none"/>
 <rect x="18" y="209" width="190" height="82" rx="12" fill="#ffffff" stroke="#111111"/>

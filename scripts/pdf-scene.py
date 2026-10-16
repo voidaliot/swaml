@@ -6,7 +6,7 @@ from reportlab.platypus import Flowable
 class VectorScene(Flowable):
     def __init__(self, path, width):
         super().__init__()
-        self.scene=json.loads(Path(path).read_text()); self.width=width
+        self.scene=json.loads(Path(path).read_text(encoding='utf-8')); self.width=width
         self.scale=width/self.scene['width'];self.height=self.scene['height']*self.scale
     def draw(self):
         c=self.canv;c.saveState();c.scale(self.scale,self.scale);h=self.scene['height']

@@ -1,5 +1,6 @@
 import { AstUtils, DefaultScopeProvider, MapScope, type AstNode, type ReferenceInfo, type Scope, type LangiumCoreServices } from 'langium';
 import * as a from './generated/ast.js';
+import { container, members } from './semantic.js';
 
 export function owner<T extends AstNode>(node: AstNode, test: (node: AstNode) => node is T): T | undefined {
     return AstUtils.getContainerOfType(node, test);
@@ -9,11 +10,10 @@ export class SwamlScopeProvider extends DefaultScopeProvider {
     override getScope(context: ReferenceInfo): Scope {
         const node = context.container;
         let candidates: AstNode[] | undefined;
-        if (a.isInvoke(node)) candidates = owner(node, a.isUnit)?.members.filter(a.isOperation);
-        if (a.isFunctionCall(node)) candidates = owner(node, a.isUnit)?.members.filter(a.isFunctionDef);
+        if (a.isLocalCall(node)) candidates = container(node) ? members(container(node)!).filter(a.isFunctionDef) : [];
+        if (a.isCalculationCall(node)) candidates = owner(node, a.isFunctionDef)?.calculations ?? [];
         if (a.isTransition(node) || a.isStateBody(node)) candidates = owner(node, a.isStateBody)?.states;
-        if (a.isDeployment(node)) candidates = owner(node, a.isRootComponent)?.members.filter(a.isNode);
-        if (a.isDelegate(node)) candidates = owner(node, a.isComponent)?.members.filter(a.isPort);
+        if (a.isDelegate(node)) candidates = container(node) ? members(container(node)!).filter(a.isPort) : [];
         const type = this.reflection.getReferenceType(context);
         if (candidates !== undefined) return this.createScopeForNodes(candidates.filter(n => this.reflection.isSubtype(n.$type, type)));
         const pkg = owner(node, a.isPackage);

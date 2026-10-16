@@ -1,0 +1,72 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Ordinary comment",
+  "description": "Draw a plain rectangular note inside its owner or connected by a plain dashed line. Each line comment and each block comment remains separate; there is no comment keyword.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 28,
+      "y": 22,
+      "width": 504,
+      "height": 256,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 46,
+      "y": 56,
+      "text": "Worker",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 72,
+      "y": 115,
+      "width": 416,
+      "height": 120,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 90,
+      "y": 147,
+      "text": "Each instance has its own result.",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          280,
+          75
+        ],
+        [
+          280,
+          114
+        ]
+      ],
+      "color": "#111111",
+      "dash": true,
+      "arrow": false
+    }
+  ]
+}

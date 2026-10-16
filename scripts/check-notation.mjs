@@ -17,10 +17,12 @@ const grammar = await read('src/language/swaml.langium');
 const keywordIndex = JSON.parse(await read('spec/keywords.json'));
 const packageInfo = JSON.parse(await read('package.json'));
 const keywords = new Set([...grammar.matchAll(/'([A-Za-z_]\w*)'/g)].map(m => m[1]));
-const productions = new Set([...grammar.matchAll(/^(?:(?:entry|hidden|terminal|type)\s+)*([A-Za-z]\w*)(?:\s+returns\s+\w+)?\s*[:=]/gm)].map(m => m[1]));
+keywords.add('doc');
+assert([...keywords].every(k => /^[a-z][A-Za-z0-9]*$/.test(k)), 'Keywords must use lower camel case.');
+const productions = new Set([...grammar.matchAll(/^(?:(?:entry|hidden|terminal|type)\s+)*([A-Za-z]\w*)(?:\s+(?:returns|infers)\s+\w+)?\s*[:=]/gm)].map(m => m[1]));
 const kinds = new Set(['node', 'edge', 'compartment', 'label', 'projection']);
-const views = new Set(['Browser', 'GV', 'IV', 'CV', 'SV', 'GRV', 'FV']);
-const templates = new Set(['package', 'classifier', 'component', 'unit', 'usage', 'interface', 'member', 'port', 'connection', 'delegation', 'edge', 'operation', 'flow', 'decision', 'loop', 'request', 'return', 'state', 'initial', 'final', 'transition', 'trigger', 'constraint', 'node', 'deployment', 'case', 'lifeline', 'message', 'browser', 'gv', 'iv', 'cv', 'sv', 'grv', 'fv']);
+const views = new Set(['Browser', 'gv', 'iv', 'cv', 'sv', 'grv', 'fv']);
+const templates = new Set(['package', 'classifier', 'component', 'usage', 'interface', 'member', 'port', 'connection', 'delegation', 'edge', 'function', 'calculation', 'flow', 'decision', 'loop', 'request', 'return', 'state', 'initial', 'final', 'transition', 'trigger', 'constraint', 'deployment-target', 'deployment', 'case', 'lifeline', 'message', 'note', 'browser', 'gv', 'iv', 'cv', 'sv', 'grv', 'fv']);
 const roles = new Set(['sender', 'receiver', 'client', 'server', 'publisher', 'subscriber', 'provides', 'requires']);
 const nonempty = value => typeof value === 'string' && value.trim().length > 0;
 const exactSet = (actual, expected, label) => assert.deepEqual([...actual].sort(), [...expected].sort(), label);
@@ -31,6 +33,8 @@ function checkInventory(doc) {
     assert.equal(doc.languageVersion, SWAML_LANGUAGE_VERSION);
     assert.equal(doc.edition, packageInfo.version);
     assert.equal(doc.style.semanticColor, false, 'Canonical meaning must not rely on color.');
+    assert.equal(doc.style.geometry, 'flat', 'All notation must use flat geometry.');
+    assert.equal(doc.style.effects, 'none', 'Depth effects are not part of the notation.');
     assert(Array.isArray(doc.concepts) && doc.concepts.length > 0);
     unique(doc.concepts.map(c => c.id), 'concept ID');
     const byId = new Map(doc.concepts.map(c => [c.id, c]));
@@ -119,7 +123,7 @@ async function checkContext(c) {
     const tokenize = text => {
         const lexed = lexer.tokenize(text);
         assert.equal(lexed.errors.length, 0, `${c.id}: invalid fragment token`);
-        return lexed.tokens.map(t => t.image);
+        return [...lexed.tokens, ...lexed.hidden.filter(t => /COMMENT/.test(t.tokenType.name))].sort((a,b) => a.startOffset - b.startOffset).map(t => t.image);
     };
     const sample = tokenize(c.syntax), actual = tokenize(node.$cstNode.text);
     assert(sample.length > 0);
@@ -135,7 +139,9 @@ const mutations = [
     d => d.coverage.productions.pop(),
     d => { d.coverage.keywords[0].concepts = ['missing-concept']; },
     d => { d.coverage.productions.find(e => e.mode === 'text-only').rationale = ''; },
-    d => { d.concepts[0].views = ['GEV']; }
+    d => { d.concepts[0].views = ['UNKNOWN_VIEW']; },
+    d => { d.style.geometry = 'isometric'; },
+    d => { d.style.effects = 'shadow'; }
 ];
 for (const mutate of mutations) {
     const broken = structuredClone(inventory); mutate(broken);
@@ -159,6 +165,9 @@ if (!sourceOnly) {
         assert(finite(scene.width) && finite(scene.height) && scene.width > 0 && scene.height > 0);
         const point = (x, y) => assert(finite(x) && finite(y) && x >= 0 && y >= 0 && x <= scene.width && y <= scene.height, `${c.id}: shape lies outside scene (${x}, ${y})`);
         assert(Array.isArray(scene.shapes) && scene.shapes.length > 1);
+        if (['deployment-target', 'deployment'].includes(c.drawing.template)) {
+            assert(!scene.shapes.some(s => s.kind === 'polygon'), `${c.id}: deployment targets must be flat rectangles without cuboid faces`);
+        }
         for (const s of scene.shapes) {
             assert(['rect', 'circle', 'polygon', 'line', 'text'].includes(s.kind), `${c.id}: unsupported shape`);
             for (const key of ['fill', 'stroke', 'color']) if (key in s) assert(monochrome(s[key]), `${c.id}: non-monochrome ${key}`);
@@ -168,6 +177,7 @@ if (!sourceOnly) {
             if (s.kind === 'text') { point(s.x, s.y); assert(nonempty(s.text) && finite(s.size) && s.size >= 18, `${c.id}: unreadable/missing text`); }
         }
         assert(svg.includes('role="img"') && svg.includes('aria-labelledby="title desc"') && svg.includes('<title id="title">') && svg.includes('<desc id="desc">'), `${c.id}: missing accessible SVG title/description`);
+        assert(!/<(?:filter|linearGradient|radialGradient)\b|\bfilter\s*=|\b(?:box|text)-shadow\s*:/i.test(svg), `${c.id}: gradients and shadows are forbidden`);
         assert(svg.includes(`viewBox="0 0 ${scene.width} ${scene.height}"`), `${c.id}: SVG/scene dimensions diverge`);
         assert(png.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])), `${c.id}: invalid PNG`);
         assert.equal(png.toString('ascii', 12, 16), 'IHDR');
@@ -177,4 +187,4 @@ if (!sourceOnly) {
         for (const ext of ['svg', 'png', 'scene.json']) assert(catalog.includes(`(notation/${c.id}.${ext})`), `${c.id}: missing catalogue asset link`);
     }
 }
-console.log(`Notation checked: ${inventory.concepts.length} concepts, ${keywords.size} keywords, ${productions.size} productions, ${documents.size} valid context models, 8 negative regressions${sourceOnly ? ' (source only)' : ', SVG/PNG/scene triples and stable catalogue links'}.`);
+console.log(`Notation checked: ${inventory.concepts.length} concepts, ${keywords.size} keywords, ${productions.size} productions, ${documents.size} valid context models, ${mutations.length + 2} negative regressions${sourceOnly ? ' (source only)' : ', flat SVG/PNG/scene triples and stable catalogue links'}.`);

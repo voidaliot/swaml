@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="770" viewBox="0 0 1080 770" role="img" aria-labelledby="title desc">
+<title id="title">1 · Start with the user outcome</title>
+<desc id="desc">The use case describes the buyer’s intent. Production claims requirement satisfaction; a verification case identifies the procedure that must supply evidence.</desc>
+<g font-family="DejaVu Sans, sans-serif">
+<rect x="0" y="0" width="1080" height="770" rx="0" fill="white" stroke="none"/>
+<polyline points="270,50 270,10 810,10 810,50" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<polygon points="810.000,50.000 804.000,36.000 816.000,36.000" fill="#17324d"/>
+<rect x="484" y="15" width="110.10000000000001" height="27" rx="0" fill="white" stroke="none"/>
+<text x="490" y="36" font-size="20" font-weight="400" fill="#17324d">formalize</text>
+<polyline points="270,340 270,270 810,270 810,200" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<polygon points="810.000,200.000 816.000,214.000 804.000,214.000" fill="#17324d"/>
+<rect x="474" y="239" width="88.3" height="27" rx="0" fill="white" stroke="none"/>
+<text x="480" y="260" font-size="20" font-weight="400" fill="#17324d">satisfy</text>
+<polyline points="560,415 520,415" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<polygon points="520.000,415.000 534.000,409.000 534.000,421.000" fill="#17324d"/>
+<rect x="522" y="369" width="44.7" height="27" rx="0" fill="white" stroke="none"/>
+<text x="528" y="390" font-size="20" font-weight="400" fill="#17324d">for</text>
+<polyline points="1060,650 1073,650 1073,125 1060,125" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<polygon points="1060.000,125.000 1074.000,119.000 1074.000,131.000" fill="#17324d"/>
+<rect x="934" y="534" width="77.4" height="27" rx="0" fill="white" stroke="none"/>
+<text x="940" y="555" font-size="20" font-weight="400" fill="#17324d">verify</text>
+<rect x="20" y="50" width="500" height="150" rx="0" fill="#f8f2e9" stroke="#17324d"/>
+<text x="36" y="82" font-size="20" font-weight="700" fill="#17324d">Buyer: place an order</text>
+<polyline points="20,96 520,96" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="36" y="125" font-size="20" font-weight="400" fill="#17324d">Reserve available stock.</text>
+<text x="36" y="153" font-size="20" font-weight="400" fill="#17324d">Receive confirmation + receipt.</text>
+<rect x="560" y="50" width="500" height="150" rx="0" fill="#f8f2e9" stroke="#17324d"/>
+<text x="576" y="82" font-size="20" font-weight="700" fill="#17324d">ReserveBeforeAccept</text>
+<polyline points="560,96 1060,96" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="576" y="125" font-size="20" font-weight="400" fill="#17324d">Reserve stock before</text>
+<text x="576" y="153" font-size="20" font-weight="400" fill="#17324d">confirmation and receipt.</text>
+<rect x="560" y="340" width="500" height="150" rx="0" fill="#f8f2e9" stroke="#17324d"/>
+<text x="576" y="372" font-size="20" font-weight="700" fill="#17324d">Purchase</text>
+<polyline points="560,386 1060,386" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="576" y="415" font-size="20" font-weight="400" fill="#17324d">useCase for Production</text>
+<text x="576" y="443" font-size="20" font-weight="400" fill="#17324d">Six routed exchanges</text>
+<rect x="20" y="340" width="500" height="150" rx="0" fill="#eef5fa" stroke="#17324d"/>
+<text x="36" y="372" font-size="20" font-weight="700" fill="#17324d">Production</text>
+<polyline points="20,386 520,386" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="36" y="415" font-size="20" font-weight="400" fill="#17324d">Browser → application</text>
+<text x="36" y="443" font-size="20" font-weight="400" fill="#17324d">Inventory + receipt worker</text>
+<rect x="560" y="580" width="500" height="140" rx="0" fill="#f8f2e9" stroke="#17324d"/>
+<text x="576" y="612" font-size="20" font-weight="700" fill="#17324d">CheckPurchase</text>
+<polyline points="560,626 1060,626" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="576" y="655" font-size="20" font-weight="400" fill="#17324d">verificationCase</text>
+<text x="576" y="683" font-size="20" font-weight="400" fill="#17324d">Inspect reservation + receipt</text>
+</g>
+</svg>

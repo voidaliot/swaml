@@ -1,8 +1,8 @@
 {
   "width": 560,
   "height": 280,
-  "title": "Operation timing contract",
-  "description": "Operation timing contract. Attach a timing compartment to the operation, listing wcet, deadline and concurrency explicitly.",
+  "title": "Function timing contract",
+  "description": "Function timing contract. Attach a timing compartment to the function, listing wcet, deadline and concurrency explicitly.",
   "shapes": [
     {
       "kind": "rect",

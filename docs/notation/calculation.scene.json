@@ -1,0 +1,96 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Pure calculation",
+  "description": "A calculation maps named inputs to one named, typed output expression without mutable state or communication.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 36,
+      "y": 24,
+      "width": 488,
+      "height": 232,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 58,
+      "text": "«calc» twice",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          36,
+          84
+        ],
+        [
+          524,
+          84
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 118,
+      "text": "in x: real",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          36,
+          139
+        ],
+        [
+          524,
+          139
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 175,
+      "text": "return result: real",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 200,
+      "text": "= x * 2.0",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

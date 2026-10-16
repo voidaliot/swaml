@@ -1,13 +1,15 @@
 {
   "schemaVersion": "1.0",
-  "languageVersion": "1.1",
-  "edition": "1.1.1",
+  "languageVersion": "1.2",
+  "edition": "1.2.0",
   "title": "SWAML canonical graphical notation",
   "style": {
     "background": "white",
     "stroke": "#202020",
     "semanticColor": false,
-    "ownership": "component → unit → operation; states directly inside operations",
+    "geometry": "flat",
+    "effects": "none",
+    "ownership": "components own nested components, private data, ports and functions; functions own calculations and flow or states",
     "scope": "Original SWAML notation, organized in a SysML-style reference table; not an OMG notation conformance claim."
   },
   "concepts": [
@@ -17,8 +19,8 @@
       "concern": "Structure and values",
       "kind": "node",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [
         "package"
@@ -44,7 +46,7 @@
         ],
         "lines": [
           "interface Greeting",
-          "unit def Speaker",
+          "component def Speaker",
           "component Demo"
         ]
       }
@@ -55,8 +57,8 @@
       "concern": "Structure and values",
       "kind": "edge",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [
         "import"
@@ -93,22 +95,21 @@
       "concern": "Structure and values",
       "kind": "node",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [
         "component",
         "def"
       ],
       "productions": [
-        "Component",
-        "Definition"
+        "Component"
       ],
       "syntax": "component def Conversation",
       "context": "Reusable component type header inside package Hello.",
       "rules": [
         "Draw a sharp-corner classifier rectangle with the component double-tab marker and explicit «component def» heading above its type name.",
-        "Separate the name from structural member compartments; never depict the definition itself as a running singleton."
+        "Separate the name from ports, child instances, private data and functions; definitions do not allocate singleton state."
       ],
       "description": "Component definition. Draw a sharp-corner classifier rectangle with the component double-tab marker and explicit «component def» heading above its type name.",
       "source": {
@@ -133,8 +134,8 @@
       "concern": "Structure and values",
       "kind": "node",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [
         "component"
@@ -164,17 +165,94 @@
       }
     },
     {
+      "id": "component-specialization",
+      "title": "Component specialization",
+      "concern": "Structure and values",
+      "kind": "edge",
+      "views": [
+        "gv",
+        "grv"
+      ],
+      "keywords": [
+        "specializes"
+      ],
+      "productions": [
+        "Component"
+      ],
+      "syntax": "component def FastWorker specializes Worker",
+      "context": "Reusable definition ComponentReuse::FastWorker specializes Worker.",
+      "description": "Single inheritance reuses the base component’s effective members while each instance keeps independent state.",
+      "rules": [
+        "Draw a solid generalization line from the derived definition to the base, ending in an unfilled triangle at the base and labeled specializes.",
+        "The link connects definitions, not running instances. It does not create an extra component instance or shared private store.",
+        "Inherited members may be replaced only through compatible explicit redefines declarations."
+      ],
+      "source": {
+        "model": "examples/15-component-specialization.swaml",
+        "path": "ComponentReuse::FastWorker"
+      },
+      "drawing": {
+        "template": "edge",
+        "header": [
+          "Component specialization"
+        ],
+        "lines": [],
+        "from": "FastWorker",
+        "to": "Worker",
+        "label": "specializes",
+        "variant": "specialization"
+      }
+    },
+    {
+      "id": "member-redefinition",
+      "title": "Member redefinition",
+      "concern": "Structure and values",
+      "kind": "label",
+      "views": [
+        "gv",
+        "grv",
+        "fv"
+      ],
+      "keywords": [
+        "redefines"
+      ],
+      "productions": [
+        "ComponentMember"
+      ],
+      "syntax": "redefines function work() { ticks = ticks + 2; }",
+      "context": "Replacement function owned by ComponentReuse::FastWorker.",
+      "description": "An explicit redefinition replaces an inherited member in the derived component’s effective feature set.",
+      "rules": [
+        "Prefix the owned member label with redefines and preserve its member kind, name and compatible contract.",
+        "Port, variable, child, function, connector and delegation replacements use their ordinary glyphs with this explicit label.",
+        "Display one effective member for the derived instance; an override does not allocate another behavior or store."
+      ],
+      "source": {
+        "model": "examples/15-component-specialization.swaml",
+        "path": "ComponentReuse::FastWorker.work"
+      },
+      "drawing": {
+        "template": "member",
+        "header": [
+          "«redefines function»",
+          "work()"
+        ],
+        "lines": [
+          "ticks = ticks + 2;"
+        ]
+      }
+    },
+    {
       "id": "type-relationship",
       "title": "Occurrence typing relationship",
       "concern": "Structure and values",
       "kind": "edge",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [
-        "component",
-        "unit"
+        "component"
       ],
       "productions": [
         "Instance",
@@ -210,8 +288,8 @@
       "concern": "Structure and values",
       "kind": "node",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [
         "component"
@@ -224,7 +302,7 @@
       "context": "Top-level named occurrence; its type is Roots::Pair.",
       "rules": [
         "Draw a containing component frame labeled «root component» and the selected occurrence name/type.",
-        "Root selection is explicit; the frame is composition context and MUST NOT be drawn as an executable operation or another authored system element."
+        "Root selection is explicit; the frame is composition context and MUST NOT be drawn as an executable function or another authored system element."
       ],
       "description": "Root component. Draw a containing component frame labeled «root component» and the selected occurrence name/type.",
       "source": {
@@ -251,24 +329,23 @@
       "concern": "Structure and values",
       "kind": "node",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [
-        "component",
-        "unit"
+        "component"
       ],
       "productions": [
         "RootComponent",
         "RootMember"
       ],
-      "syntax": "component Minimal { unit counter: Counter; }",
+      "syntax": "component Minimal { component counter: Counter; }",
       "context": "Top-level inline component occurrence in Roots.",
       "rules": [
-        "Draw a root-component frame containing direct unit occurrences, with no invented wrapper definition.",
-        "Inline roots have no outward port/delegation compartment; all cross-unit exchanges still require child ports and connectors."
+        "Draw a root component frame with its owned members: child components, private data, functions and typed routes.",
+        "The root is a closed instance: owned ports participate only in explicit connections or delegation, with no implicit external peer."
       ],
-      "description": "Inline root composition. Draw a root-component frame containing direct unit occurrences, with no invented wrapper definition.",
+      "description": "An inline top-level component directly owns its architecture and local behavior.",
       "source": {
         "model": "examples/09-component-roots.swaml",
         "path": "Roots::Minimal"
@@ -286,89 +363,13 @@
       }
     },
     {
-      "id": "unit-definition",
-      "title": "Unit definition",
-      "concern": "Structure and values",
-      "kind": "node",
-      "views": [
-        "GV",
-        "GRV"
-      ],
-      "keywords": [
-        "unit",
-        "def"
-      ],
-      "productions": [
-        "Unit"
-      ],
-      "syntax": "unit def Listener",
-      "context": "Reusable implementation-boundary type header inside Hello.",
-      "rules": [
-        "Draw a classifier rectangle headed «unit def» with separate private values and operation compartments.",
-        "Only units own executable operations/functions; do not introduce performer or action-allocation shapes."
-      ],
-      "description": "Unit definition. Draw a classifier rectangle headed «unit def» with separate private values and operation compartments.",
-      "source": {
-        "model": "examples/01-hello.swaml",
-        "path": "Hello::Listener"
-      },
-      "drawing": {
-        "template": "unit",
-        "header": [
-          "«unit def»",
-          "Listener"
-        ],
-        "lines": [
-          "var last: String = \"\"",
-          "hear(message: String)"
-        ]
-      }
-    },
-    {
-      "id": "unit-usage",
-      "title": "Unit usage",
-      "concern": "Structure and values",
-      "kind": "node",
-      "views": [
-        "GV",
-        "GRV"
-      ],
-      "keywords": [
-        "unit"
-      ],
-      "productions": [
-        "Instance"
-      ],
-      "syntax": "unit listener: Listener;",
-      "context": "Contained occurrence within component definition Hello::Conversation.",
-      "rules": [
-        "Draw a structural rectangle labeled listener: Listener and «unit»; show its owned ports on its boundary when needed.",
-        "The label denotes an occurrence; private values displayed inside are contextual to this occurrence."
-      ],
-      "description": "Unit usage. Draw a structural rectangle labeled listener: Listener and «unit»; show its owned ports on its boundary when needed.",
-      "source": {
-        "model": "examples/01-hello.swaml",
-        "path": "Hello::Conversation"
-      },
-      "drawing": {
-        "template": "usage",
-        "header": [
-          "«unit»",
-          "listener: Listener"
-        ],
-        "lines": [
-          "input: Greeting receiver"
-        ]
-      }
-    },
-    {
       "id": "datatype",
       "title": "Record datatype",
       "concern": "Structure and values",
       "kind": "node",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [
         "datatype"
@@ -377,7 +378,7 @@
         "DataType",
         "ValueType"
       ],
-      "syntax": "datatype Measurement { value: Real; health: Health; }",
+      "syntax": "datatype Measurement { value: real; health: Health; }",
       "context": "Nominal datatype declaration inside Values.",
       "rules": [
         "Draw a classifier rectangle headed «datatype» and the nominal type name, followed by a field compartment.",
@@ -395,7 +396,7 @@
           "Measurement"
         ],
         "lines": [
-          "value: Real",
+          "value: real",
           "health: Health"
         ]
       }
@@ -406,8 +407,8 @@
       "concern": "Structure and values",
       "kind": "node",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [
         "enum"
@@ -445,26 +446,29 @@
       "concern": "Structure and values",
       "kind": "label",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [
-        "Bool",
-        "Int",
-        "Real",
-        "String",
-        "Void"
+        "bool",
+        "byte",
+        "uint",
+        "int",
+        "real",
+        "string",
+        "void"
       ],
       "productions": [
         "TypeRef"
       ],
-      "syntax": "operation acknowledge(): Void;",
-      "context": "Void is shown as an interface result; other primitive types label fields/parameters/results.",
+      "syntax": "function acknowledge(): void;",
+      "context": "void is shown as an interface result; other primitive types label fields/parameters/results.",
       "rules": [
-        "Display Bool, Int, Real, String or Void as textual type labels after a colon in the owning compartment.",
-        "Void labels results only; omission of an operation result also means Void and requires no separate glyph."
+        "Display bool, byte, uint, int, real, string or void as textual type labels in the owning compartment.",
+        "byte is 0–255 and uint is a nonnegative safe integer. Integral narrowing checks the destination domain; real does not implicitly narrow.",
+        "void labels function results only; an omitted function result means void."
       ],
-      "description": "Primitive types. Display Bool, Int, Real, String or Void as textual type labels after a colon in the owning compartment.",
+      "description": "Basic data types label values and signatures; fixed arrays, nominal records and enums build on them.",
       "source": {
         "model": "examples/notation/catalog.swaml",
         "path": "Notation::Completion"
@@ -475,9 +479,10 @@
           "Type labels"
         ],
         "lines": [
-          "enabled: Bool; count: Int",
-          "temperature: Real; name: String",
-          "acknowledge(): Void"
+          "enabled: bool; octet: byte",
+          "count: uint; delta: int",
+          "temperature: real; name: string",
+          "acknowledge(): void"
         ]
       }
     },
@@ -487,21 +492,21 @@
       "concern": "Structure and values",
       "kind": "compartment",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [],
       "productions": [
         "Argument",
         "Parameter"
       ],
-      "syntax": "hear(message: String)",
-      "context": "Operation signature fragment inside Hello::Listener.",
+      "syntax": "hear(message: string)",
+      "context": "Function signature fragment inside Hello::Listener.",
       "rules": [
-        "Show ordered parameters as name: Type within the operation signature; show record fields as name: Type rows in their datatype.",
+        "Show ordered parameters as name: Type within the function signature; show record fields as name: Type rows in their datatype.",
         "Parameter order is semantic; a graphical editor MUST retain it when reordering unrelated compartments."
       ],
-      "description": "Parameter or record field. Show ordered parameters as name: Type within the operation signature; show record fields as name: Type rows in their datatype.",
+      "description": "Parameter or record field. Show ordered parameters as name: Type within the function signature; show record fields as name: Type rows in their datatype.",
       "source": {
         "model": "examples/01-hello.swaml",
         "path": "Hello::Listener.hear"
@@ -509,22 +514,22 @@
       "drawing": {
         "template": "member",
         "header": [
-          "hear(message: String)"
+          "hear(message: string)"
         ],
         "lines": [
-          "message: String",
+          "message: string",
           "copied input value"
         ]
       }
     },
     {
       "id": "private-variable",
-      "title": "Private unit variable",
+      "title": "Private component variable",
       "concern": "Structure and values",
       "kind": "compartment",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [
         "var"
@@ -532,13 +537,13 @@
       "productions": [
         "Variable"
       ],
-      "syntax": "var last: String = \"\";",
+      "syntax": "var last: string = \"\";",
       "context": "Private values compartment of Hello::Listener.",
       "rules": [
-        "Show a var name: Type = initializer row inside its unit boundary.",
-        "Do not draw shared-storage connectors to this row; another unit cannot read or write it directly."
+        "Show a var name: Type = initializer row inside its component boundary.",
+        "Do not draw shared-storage connectors to this row; another component cannot read or write it directly."
       ],
-      "description": "Private unit variable. Show a var name: Type = initializer row inside its unit boundary.",
+      "description": "Private component variable. Show a var name: Type = initializer row inside its component boundary.",
       "source": {
         "model": "examples/01-hello.swaml",
         "path": "Hello::Listener.last"
@@ -546,47 +551,50 @@
       "drawing": {
         "template": "member",
         "header": [
-          "«unit def» Listener"
+          "«component def» Listener"
         ],
         "lines": [
-          "var last: String = \"\""
+          "var last: string = \"\""
         ]
       }
     },
     {
-      "id": "pure-function",
-      "title": "Pure local function",
-      "concern": "Structure and values",
+      "id": "calculation",
+      "title": "Pure calculation",
+      "concern": "Function flow",
       "kind": "compartment",
       "views": [
-        "GV",
-        "GRV"
+        "fv"
       ],
       "keywords": [
-        "function"
+        "calc",
+        "in",
+        "return"
       ],
       "productions": [
-        "FunctionDef",
-        "FunctionCall"
+        "Calculation",
+        "CalculationCall"
       ],
-      "syntax": "function twice(x: Real): Real = x * 2.0;",
-      "context": "Function member of Values::Producer.",
+      "syntax": "calc twice { in x: real; return result: real = x * 2.0; }",
+      "context": "Calculation declared at the start of Values::Producer.prepare.",
       "rules": [
-        "Show a function signature and expression row in the owning unit, with an explicit result type.",
-        "A function call is expression text such as twice(samples[i]); it is never a cross-unit message or independent activity allocation."
+        "Draw a flat calculation compartment inside its owning function, headed calc and its name.",
+        "List each input with in and its type; show return, the output name/type and expression in a separate row.",
+        "A calculation call is local expression text such as twice(samples[i]); it is not a message or independent executable function."
       ],
-      "description": "Pure local function. Show a function signature and expression row in the owning unit, with an explicit result type.",
+      "description": "A calculation maps named inputs to one named, typed output expression without mutable state or communication.",
       "source": {
         "model": "examples/05-values-and-flow.swaml",
-        "path": "Values::Producer.twice"
+        "path": "Values::Producer.prepare.twice"
       },
       "drawing": {
-        "template": "member",
+        "template": "calculation",
         "header": [
-          "«function»",
-          "twice(x: Real): Real"
+          "«calc» twice"
         ],
         "lines": [
+          "in x: real",
+          "return result: real",
           "= x * 2.0"
         ]
       }
@@ -597,8 +605,8 @@
       "concern": "Structure and values",
       "kind": "label",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [
         "record"
@@ -635,8 +643,8 @@
       "concern": "Structure and values",
       "kind": "label",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [],
       "productions": [
@@ -671,15 +679,15 @@
       "concern": "Structure and values",
       "kind": "label",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [],
       "productions": [
         "ArrayLiteral",
         "TypeRef"
       ],
-      "syntax": "let samples: Real[3] = [1.0, 2.0, 3.0];",
+      "syntax": "var samples: real[3] = [1.0, 2.0, 3.0];",
       "context": "Local declaration in Values::Producer.prepare.",
       "rules": [
         "Display fixed extent in the type label T[n] and ordered elements in brackets within the owning expression.",
@@ -693,7 +701,7 @@
       "drawing": {
         "template": "member",
         "header": [
-          "samples: Real[3]"
+          "samples: real[3]"
         ],
         "lines": [
           "[1.0, 2.0, 3.0]",
@@ -707,8 +715,8 @@
       "concern": "Structure and values",
       "kind": "label",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [
         "and",
@@ -727,7 +735,7 @@
       "context": "Expression inside Notation::Sink.check.",
       "rules": [
         "Keep literals, operators, parentheses and value paths as expression text in the owning label or compartment.",
-        "Expression layout MUST preserve precedence and short-circuit order; it does not add flow nodes for operators unless the FV is explicitly an explanatory expansion."
+        "Expression layout MUST preserve precedence and short-circuit order; it does not add flow nodes for operators unless the fv is explicitly an explanatory expansion."
       ],
       "description": "Expressions and value paths. Keep literals, operators, parentheses and value paths as expression text in the owning label or compartment.",
       "source": {
@@ -751,7 +759,7 @@
       "concern": "Interfaces and connections",
       "kind": "node",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "interface",
@@ -765,7 +773,7 @@
       "context": "Interface declaration header; member rows occupy the contract body.",
       "rules": [
         "Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.",
-        "Keep member categories visible; a contract box is a reusable type and MUST NOT be mistaken for a runtime broker or unit."
+        "Keep member categories visible; a contract box is a reusable type and MUST NOT be mistaken for a runtime broker or component."
       ],
       "description": "Sender–receiver interface. Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.",
       "source": {
@@ -780,7 +788,7 @@
           "version \"1.0.0\""
         ],
         "lines": [
-          "data text: String queued"
+          "data text: string queued"
         ]
       }
     },
@@ -790,7 +798,7 @@
       "concern": "Interfaces and connections",
       "kind": "node",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "interface",
@@ -804,7 +812,7 @@
       "context": "Interface declaration header; member rows occupy the contract body.",
       "rules": [
         "Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.",
-        "Keep member categories visible; a contract box is a reusable type and MUST NOT be mistaken for a runtime broker or unit."
+        "Keep member categories visible; a contract box is a reusable type and MUST NOT be mistaken for a runtime broker or component."
       ],
       "description": "Client–server interface. Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.",
       "source": {
@@ -819,7 +827,7 @@
           "version \"1.0.0\""
         ],
         "lines": [
-          "operation check(): Bool idempotent"
+          "function check(): bool idempotent"
         ]
       }
     },
@@ -829,7 +837,7 @@
       "concern": "Interfaces and connections",
       "kind": "node",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "interface",
@@ -843,11 +851,11 @@
       "context": "Interface declaration header; member rows occupy the contract body.",
       "rules": [
         "Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.",
-        "Keep member categories visible; a contract box is a reusable type and MUST NOT be mistaken for a runtime broker or unit."
+        "Keep member categories visible; a contract box is a reusable type and MUST NOT be mistaken for a runtime broker or component."
       ],
       "description": "Publish–subscribe interface. Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.",
       "source": {
-        "model": "examples/04-stateful-operation.swaml",
+        "model": "examples/04-stateful-function.swaml",
         "path": "Lifecycle::Status"
       },
       "drawing": {
@@ -858,7 +866,7 @@
           "version \"1.0.0\""
         ],
         "lines": [
-          "event changed(value: String)"
+          "event changed(value: string)"
         ]
       }
     },
@@ -868,7 +876,7 @@
       "concern": "Interfaces and connections",
       "kind": "node",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "interface",
@@ -882,7 +890,7 @@
       "context": "Interface declaration header; member rows occupy the contract body.",
       "rules": [
         "Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.",
-        "Keep member categories visible; a contract box is a reusable type and MUST NOT be mistaken for a runtime broker or unit."
+        "Keep member categories visible; a contract box is a reusable type and MUST NOT be mistaken for a runtime broker or component."
       ],
       "description": "Service interface. Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.",
       "source": {
@@ -897,9 +905,9 @@
           "version \"1.0.0\""
         ],
         "lines": [
-          "operation get(): Int idempotent",
-          "operation setPoint(desired: Int): Bool",
-          "event changed(current: Int)"
+          "function get(): int idempotent",
+          "function setPoint(desired: int): bool",
+          "event changed(current: int)"
         ]
       }
     },
@@ -909,7 +917,7 @@
       "concern": "Interfaces and connections",
       "kind": "compartment",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "data",
@@ -920,7 +928,7 @@
         "DataMember",
         "InterfaceMember"
       ],
-      "syntax": "data temperature: Real sampled;",
+      "syntax": "data temperature: real sampled;",
       "context": "Member of Control::Samples; queued is the alternative retention mode.",
       "rules": [
         "Show data name: Type and sampled or queued on one interface-compartment row.",
@@ -934,7 +942,7 @@
       "drawing": {
         "template": "member",
         "header": [
-          "«data» temperature: Real"
+          "«data» temperature: real"
         ],
         "lines": [
           "sampled",
@@ -948,7 +956,7 @@
       "concern": "Interfaces and connections",
       "kind": "compartment",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "event"
@@ -957,21 +965,21 @@
         "EventMember",
         "InterfaceMember"
       ],
-      "syntax": "event changed(value: String);",
+      "syntax": "event changed(value: string);",
       "context": "Member of Lifecycle::Status.",
       "rules": [
         "Show event name(parameters) in its interface compartment; draw no free-floating event definition.",
-        "Every graphical emission or receive label identifies this member through an owned port and operation."
+        "Every graphical emission or receive label identifies this member through an owned port and function."
       ],
       "description": "Event member. Show event name(parameters) in its interface compartment; draw no free-floating event definition.",
       "source": {
-        "model": "examples/04-stateful-operation.swaml",
+        "model": "examples/04-stateful-function.swaml",
         "path": "Lifecycle::Status"
       },
       "drawing": {
         "template": "member",
         "header": [
-          "«event» changed(value: String)"
+          "«event» changed(value: string)"
         ],
         "lines": [
           "owned by Status version \"1.0.0\""
@@ -979,28 +987,28 @@
       }
     },
     {
-      "id": "operation-signature",
-      "title": "Interface operation signature",
+      "id": "function-signature",
+      "title": "Interface function signature",
       "concern": "Interfaces and connections",
       "kind": "compartment",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
-        "operation",
+        "function",
         "idempotent"
       ],
       "productions": [
         "Signature",
         "InterfaceMember"
       ],
-      "syntax": "operation check(): Bool idempotent;",
+      "syntax": "function check(): bool idempotent;",
       "context": "RPC contract member of Rpc::Health.",
       "rules": [
-        "Show operation name(parameters): Result and idempotent when declared, inside the interface contract.",
-        "The signature is distinct from its unit implementation; a contract row has no executable body."
+        "Show function name(parameters): Result and idempotent when declared, inside the interface contract.",
+        "The signature is distinct from its component implementation; a contract row has no executable body."
       ],
-      "description": "Interface operation signature. Show operation name(parameters): Result and idempotent when declared, inside the interface contract.",
+      "description": "Interface function signature. Show function name(parameters): Result and idempotent when declared, inside the interface contract.",
       "source": {
         "model": "examples/07-client-server.swaml",
         "path": "Rpc::Health"
@@ -1008,7 +1016,7 @@
       "drawing": {
         "template": "member",
         "header": [
-          "«operation» check(): Bool"
+          "«function» check(): bool"
         ],
         "lines": [
           "idempotent"
@@ -1021,7 +1029,7 @@
       "concern": "Interfaces and connections",
       "kind": "node",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "port",
@@ -1031,7 +1039,7 @@
         "Port"
       ],
       "syntax": "port output: Greeting sender;",
-      "context": "Port declaration on the displayed unit/component boundary.",
+      "context": "Port declaration on the displayed component boundary.",
       "rules": [
         "Draw a small square centered on the owning boundary and label its name: Interface and exact role.",
         "Data flows outward from the owned port. Do not infer direction only from left/right placement; role text remains mandatory."
@@ -1057,7 +1065,7 @@
       "concern": "Interfaces and connections",
       "kind": "node",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "port",
@@ -1067,10 +1075,10 @@
         "Port"
       ],
       "syntax": "port input: Greeting receiver;",
-      "context": "Port declaration on the displayed unit/component boundary.",
+      "context": "Port declaration on the displayed component boundary.",
       "rules": [
         "Draw a small square centered on the owning boundary and label its name: Interface and exact role.",
-        "Data flows inward to the owned receiving operation. Do not infer direction only from left/right placement; role text remains mandatory."
+        "Data flows inward to the owned receiving function. Do not infer direction only from left/right placement; role text remains mandatory."
       ],
       "description": "Data receiver port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.",
       "source": {
@@ -1093,7 +1101,7 @@
       "concern": "Interfaces and connections",
       "kind": "node",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "port",
@@ -1103,7 +1111,7 @@
         "Port"
       ],
       "syntax": "port health: Health client;",
-      "context": "Port declaration on the displayed unit/component boundary.",
+      "context": "Port declaration on the displayed component boundary.",
       "rules": [
         "Draw a small square centered on the owning boundary and label its name: Interface and exact role.",
         "Requests leave and correlated results return through this same port. Do not infer direction only from left/right placement; role text remains mandatory."
@@ -1129,7 +1137,7 @@
       "concern": "Interfaces and connections",
       "kind": "node",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "port",
@@ -1139,7 +1147,7 @@
         "Port"
       ],
       "syntax": "port health: Health server;",
-      "context": "Port declaration on the displayed unit/component boundary.",
+      "context": "Port declaration on the displayed component boundary.",
       "rules": [
         "Draw a small square centered on the owning boundary and label its name: Interface and exact role.",
         "Requests enter and correlated results leave through this same port. Do not infer direction only from left/right placement; role text remains mandatory."
@@ -1165,7 +1173,7 @@
       "concern": "Interfaces and connections",
       "kind": "node",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "port",
@@ -1175,14 +1183,14 @@
         "Port"
       ],
       "syntax": "port status: Status publisher;",
-      "context": "Port declaration on the displayed unit/component boundary.",
+      "context": "Port declaration on the displayed component boundary.",
       "rules": [
         "Draw a small square centered on the owning boundary and label its name: Interface and exact role.",
         "Events leave this port through explicit subscription connectors. Do not infer direction only from left/right placement; role text remains mandatory."
       ],
       "description": "Event publisher port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.",
       "source": {
-        "model": "examples/04-stateful-operation.swaml",
+        "model": "examples/04-stateful-function.swaml",
         "path": "Lifecycle::Device.status"
       },
       "drawing": {
@@ -1201,7 +1209,7 @@
       "concern": "Interfaces and connections",
       "kind": "node",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "port",
@@ -1211,14 +1219,14 @@
         "Port"
       ],
       "syntax": "port status: Status subscriber;",
-      "context": "Port declaration on the displayed unit/component boundary.",
+      "context": "Port declaration on the displayed component boundary.",
       "rules": [
         "Draw a small square centered on the owning boundary and label its name: Interface and exact role.",
-        "Events enter the declared handling operation through this port. Do not infer direction only from left/right placement; role text remains mandatory."
+        "Events enter the declared handling function through this port. Do not infer direction only from left/right placement; role text remains mandatory."
       ],
       "description": "Event subscriber port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.",
       "source": {
-        "model": "examples/04-stateful-operation.swaml",
+        "model": "examples/04-stateful-function.swaml",
         "path": "Lifecycle::Monitor.status"
       },
       "drawing": {
@@ -1237,7 +1245,7 @@
       "concern": "Interfaces and connections",
       "kind": "node",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "port",
@@ -1247,7 +1255,7 @@
         "Port"
       ],
       "syntax": "port api: TemperatureSetting provides;",
-      "context": "Port declaration on the displayed unit/component boundary.",
+      "context": "Port declaration on the displayed component boundary.",
       "rules": [
         "Draw a small square centered on the owning boundary and label its name: Interface and exact role.",
         "RPC requests enter; results and provider events leave. Do not infer direction only from left/right placement; role text remains mandatory."
@@ -1273,7 +1281,7 @@
       "concern": "Interfaces and connections",
       "kind": "node",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "port",
@@ -1283,7 +1291,7 @@
         "Port"
       ],
       "syntax": "port setting: TemperatureSetting requires;",
-      "context": "Port declaration on the displayed unit/component boundary.",
+      "context": "Port declaration on the displayed component boundary.",
       "rules": [
         "Draw a small square centered on the owning boundary and label its name: Interface and exact role.",
         "RPC requests leave; results and provider events enter. Do not infer direction only from left/right placement; role text remains mandatory."
@@ -1309,7 +1317,7 @@
       "concern": "Interfaces and connections",
       "kind": "label",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "optional"
@@ -1318,7 +1326,7 @@
         "Port"
       ],
       "syntax": "port notices: Notices publisher optional;",
-      "context": "Reusable unit NotationOptions::Emitter; its outgoing member is tied to an operation.",
+      "context": "Reusable component NotationOptions::Emitter; its outgoing member is tied to an function.",
       "rules": [
         "Use the same square port symbol and append optional to its role label.",
         "Optionality only permits an unconnected route; it does not remove contract, provenance or receiving-handler obligations."
@@ -1344,7 +1352,7 @@
       "concern": "Interfaces and connections",
       "kind": "edge",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "connect"
@@ -1382,7 +1390,7 @@
       "concern": "Interfaces and connections",
       "kind": "edge",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "delegate"
@@ -1418,7 +1426,7 @@
       "concern": "Interfaces and connections",
       "kind": "label",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "qos",
@@ -1428,7 +1436,8 @@
         "bestEffort"
       ],
       "productions": [
-        "Qos"
+        "Qos",
+        "QosBody"
       ],
       "syntax": "delivery atLeastOnce;",
       "context": "QoS property on Rpc::HealthCheck.healthCheck; the signature is idempotent.",
@@ -1458,7 +1467,7 @@
       "concern": "Interfaces and connections",
       "kind": "label",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "ordering",
@@ -1466,7 +1475,8 @@
         "unordered"
       ],
       "productions": [
-        "Qos"
+        "Qos",
+        "QosBody"
       ],
       "syntax": "ordering unordered;",
       "context": "QoS property on Notation::Demo.events.",
@@ -1496,13 +1506,14 @@
       "concern": "Interfaces and connections",
       "kind": "label",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "capacity"
       ],
       "productions": [
-        "Qos"
+        "Qos",
+        "QosBody"
       ],
       "syntax": "capacity 4;",
       "context": "QoS property on Hello::Conversation.greeting.",
@@ -1531,7 +1542,7 @@
       "concern": "Interfaces and connections",
       "kind": "label",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "overflow",
@@ -1540,7 +1551,8 @@
         "reject"
       ],
       "productions": [
-        "Qos"
+        "Qos",
+        "QosBody"
       ],
       "syntax": "overflow dropNewest;",
       "context": "QoS property on Notation::Demo.events.",
@@ -1570,22 +1582,23 @@
       "concern": "Interfaces and connections",
       "kind": "label",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "maxLatency"
       ],
       "productions": [
         "Qos",
-        "Duration"
+        "Duration",
+        "QosBody"
       ],
       "syntax": "maxLatency 1 ms;",
       "context": "QoS bound on Control::Controller.measured.",
       "rules": [
-        "Write maxLatency and an explicitly unit-bearing duration beside the corresponding connector.",
+        "Write maxLatency and an explicitly component-bearing duration beside the corresponding connector.",
         "This bound ends at transport readiness; it MUST NOT be labeled as total execution or dispatch deadline."
       ],
-      "description": "Transport latency bound. Write maxLatency and an explicitly unit-bearing duration beside the corresponding connector.",
+      "description": "Transport latency bound. Write maxLatency and an explicitly component-bearing duration beside the corresponding connector.",
       "source": {
         "model": "examples/02-realtime-controller.swaml",
         "path": "Control::Controller.measured"
@@ -1606,22 +1619,23 @@
       "concern": "Interfaces and connections",
       "kind": "label",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "maxAge"
       ],
       "productions": [
         "Qos",
-        "Duration"
+        "Duration",
+        "QosBody"
       ],
       "syntax": "maxAge 20 ms;",
       "context": "QoS freshness bound on Control::Controller.measured.",
       "rules": [
-        "Write maxAge and its explicit unit in the connector QoS compartment.",
+        "Write maxAge and its explicit component in the connector QoS compartment.",
         "Age is measured from original emission, including retries; show expiry as a trace observation only when supported by a run."
       ],
-      "description": "Message freshness bound. Write maxAge and its explicit unit in the connector QoS compartment.",
+      "description": "Message freshness bound. Write maxAge and its explicit component in the connector QoS compartment.",
       "source": {
         "model": "examples/02-realtime-controller.swaml",
         "path": "Control::Controller.measured"
@@ -1637,36 +1651,37 @@
       }
     },
     {
-      "id": "operation",
-      "title": "Executable operation",
-      "concern": "Operation flow",
+      "id": "function",
+      "title": "Executable function",
+      "concern": "Function flow",
       "kind": "node",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
-        "operation"
+        "function"
       ],
       "productions": [
-        "Operation",
+        "FunctionDef",
         "Block",
-        "Statement"
+        "Statement",
+        "FunctionFlow"
       ],
-      "syntax": "operation greet() on start",
-      "context": "Header of Hello::Speaker.greet; its statement body is projected inside the operation frame.",
+      "syntax": "function greet() on start",
+      "context": "Header of Hello::Speaker.greet; its statement body is projected inside the function frame.",
       "rules": [
-        "Draw an operation frame or compartment with its name, ordered parameters, result and activation label.",
-        "Every FV step is an owned statement projection within this frame; it MUST NOT create an independently allocated action or performer."
+        "Draw an function frame or compartment with its name, ordered parameters, result and activation label.",
+        "Every fv step is an owned statement projection within this frame; it MUST NOT create an independently allocated action or performer."
       ],
-      "description": "Executable operation. Draw an operation frame or compartment with its name, ordered parameters, result and activation label.",
+      "description": "Executable function. Draw an function frame or compartment with its name, ordered parameters, result and activation label.",
       "source": {
         "model": "examples/01-hello.swaml",
         "path": "Hello::Speaker.greet"
       },
       "drawing": {
-        "template": "operation",
+        "template": "function",
         "header": [
-          "«operation» greet()"
+          "«function» greet()"
         ],
         "lines": [
           "on start",
@@ -1677,10 +1692,10 @@
     {
       "id": "trigger-start",
       "title": "Startup activation",
-      "concern": "Operation flow",
+      "concern": "Function flow",
       "kind": "label",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "on",
@@ -1689,13 +1704,13 @@
       "productions": [
         "Trigger"
       ],
-      "syntax": "operation greet() on start",
-      "context": "Activation annotation on the displayed operation.",
+      "syntax": "function greet() on start",
+      "context": "Activation annotation on the displayed function.",
       "rules": [
-        "Attach the activation text to its operation header; use no free event symbol or standalone trigger object.",
-        "Once after unit initialization and route readiness."
+        "Attach the activation text to its function header; use no free event symbol or standalone trigger object.",
+        "Once after component initialization and route readiness."
       ],
-      "description": "Startup activation. Attach the activation text to its operation header; use no free event symbol or standalone trigger object.",
+      "description": "Startup activation. Attach the activation text to its function header; use no free event symbol or standalone trigger object.",
       "source": {
         "model": "examples/01-hello.swaml",
         "path": "Hello::Speaker.greet"
@@ -1714,10 +1729,10 @@
     {
       "id": "trigger-manual",
       "title": "Manual activation",
-      "concern": "Operation flow",
+      "concern": "Function flow",
       "kind": "label",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "on",
@@ -1726,13 +1741,13 @@
       "productions": [
         "Trigger"
       ],
-      "syntax": "operation adjust() on manual",
-      "context": "Activation annotation on the displayed operation.",
+      "syntax": "function adjust() on manual",
+      "context": "Activation annotation on the displayed function.",
       "rules": [
-        "Attach the activation text to its operation header; use no free event symbol or standalone trigger object.",
+        "Attach the activation text to its function header; use no free event symbol or standalone trigger object.",
         "Harness activation carries no modeled data; external commands still use ports."
       ],
-      "description": "Manual activation. Attach the activation text to its operation header; use no free event symbol or standalone trigger object.",
+      "description": "Manual activation. Attach the activation text to its function header; use no free event symbol or standalone trigger object.",
       "source": {
         "model": "examples/08-service-field.swaml",
         "path": "Settings::Panel.adjust"
@@ -1751,10 +1766,10 @@
     {
       "id": "trigger-periodic",
       "title": "Periodic activation",
-      "concern": "Operation flow",
+      "concern": "Function flow",
       "kind": "label",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "on",
@@ -1764,12 +1779,12 @@
         "Trigger"
       ],
       "syntax": "on every 10 ms",
-      "context": "Activation annotation on the displayed operation.",
+      "context": "Activation annotation on the displayed function.",
       "rules": [
-        "Attach the activation text to its operation header; use no free event symbol or standalone trigger object.",
+        "Attach the activation text to its function header; use no free event symbol or standalone trigger object.",
         "Release occurs at positive multiples of the declared period."
       ],
-      "description": "Periodic activation. Attach the activation text to its operation header; use no free event symbol or standalone trigger object.",
+      "description": "Periodic activation. Attach the activation text to its function header; use no free event symbol or standalone trigger object.",
       "source": {
         "model": "examples/02-realtime-controller.swaml",
         "path": "Control::Sensor.sample"
@@ -1788,10 +1803,10 @@
     {
       "id": "trigger-receive",
       "title": "Port receive activation",
-      "concern": "Operation flow",
+      "concern": "Function flow",
       "kind": "label",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "on",
@@ -1801,12 +1816,12 @@
         "Trigger"
       ],
       "syntax": "on receive input.text",
-      "context": "Activation annotation on the displayed operation.",
+      "context": "Activation annotation on the displayed function.",
       "rules": [
-        "Attach the activation text to its operation header; use no free event symbol or standalone trigger object.",
+        "Attach the activation text to its function header; use no free event symbol or standalone trigger object.",
         "The port/member label identifies the one incoming handler owner."
       ],
-      "description": "Port receive activation. Attach the activation text to its operation header; use no free event symbol or standalone trigger object.",
+      "description": "Port receive activation. Attach the activation text to its function header; use no free event symbol or standalone trigger object.",
       "source": {
         "model": "examples/01-hello.swaml",
         "path": "Hello::Listener.hear"
@@ -1814,7 +1829,7 @@
       "drawing": {
         "template": "trigger",
         "header": [
-          "hear(message: String)"
+          "hear(message: string)"
         ],
         "lines": [
           "on receive input.text"
@@ -1825,10 +1840,10 @@
     {
       "id": "trigger-call",
       "title": "RPC handler activation",
-      "concern": "Operation flow",
+      "concern": "Function flow",
       "kind": "label",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "on",
@@ -1838,12 +1853,12 @@
         "Trigger"
       ],
       "syntax": "on call health.check",
-      "context": "Activation annotation on the displayed operation.",
+      "context": "Activation annotation on the displayed function.",
       "rules": [
-        "Attach the activation text to its operation header; use no free event symbol or standalone trigger object.",
+        "Attach the activation text to its function header; use no free event symbol or standalone trigger object.",
         "Requests and correlated results remain on the originating interface route."
       ],
-      "description": "RPC handler activation. Attach the activation text to its operation header; use no free event symbol or standalone trigger object.",
+      "description": "RPC handler activation. Attach the activation text to its function header; use no free event symbol or standalone trigger object.",
       "source": {
         "model": "examples/07-client-server.swaml",
         "path": "Rpc::Server.checkHealth"
@@ -1851,7 +1866,7 @@
       "drawing": {
         "template": "trigger",
         "header": [
-          "checkHealth(): Bool"
+          "checkHealth(): bool"
         ],
         "lines": [
           "on call health.check"
@@ -1862,19 +1877,19 @@
     {
       "id": "local-declaration",
       "title": "Local declaration",
-      "concern": "Operation flow",
+      "concern": "Function flow",
       "kind": "node",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
-        "let"
+        "var"
       ],
       "productions": [
-        "Let"
+        "LocalVariable"
       ],
-      "syntax": "let i: Int = 0;",
-      "context": "Statement inside the displayed owning operation; the FV node is a projection.",
+      "syntax": "var i: int = 0;",
+      "context": "Statement inside the displayed owning function; the fv node is a projection.",
       "rules": [
         "Draw an owned statement box with the exact statement label and directed control-flow succession.",
         "Creates a copied typed local value in the enclosing lexical block."
@@ -1887,7 +1902,7 @@
       "drawing": {
         "template": "flow",
         "header": [
-          "let i: Int = 0"
+          "var i: int = 0"
         ],
         "lines": [],
         "variant": "local-declaration"
@@ -1896,20 +1911,20 @@
     {
       "id": "assignment",
       "title": "Assignment",
-      "concern": "Operation flow",
+      "concern": "Function flow",
       "kind": "node",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [],
       "productions": [
         "Assign"
       ],
       "syntax": "i = i + 1;",
-      "context": "Statement inside the displayed owning operation; the FV node is a projection.",
+      "context": "Statement inside the displayed owning function; the fv node is a projection.",
       "rules": [
         "Draw an owned statement box with the exact statement label and directed control-flow succession.",
-        "Replaces an existing permitted whole value; a field path or another unit is not an assignment target."
+        "Replaces an existing permitted whole value; a field path or another component is not an assignment target."
       ],
       "description": "Assignment. Draw an owned statement box with the exact statement label and directed control-flow succession.",
       "source": {
@@ -1926,26 +1941,26 @@
       }
     },
     {
-      "id": "invoke",
-      "title": "Local operation invocation",
-      "concern": "Operation flow",
+      "id": "local-call",
+      "title": "Local function call",
+      "concern": "Function flow",
       "kind": "node",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
-        "invoke"
+        "call"
       ],
       "productions": [
-        "Invoke"
+        "LocalCall"
       ],
-      "syntax": "invoke prepare();",
-      "context": "Statement inside the displayed owning operation; the FV node is a projection.",
+      "syntax": "call prepare();",
+      "context": "Statement inside the displayed owning function; the fv node is a projection.",
       "rules": [
         "Draw an owned statement box with the exact statement label and directed control-flow succession.",
-        "Calls an untriggered Void operation in the same unit, borrowing the activation lock/snapshot."
+        "Calls an untriggered flow function in the same component, borrowing its activation lock/snapshot. Bind a non-void result with as name; omit the binding for void."
       ],
-      "description": "Local operation invocation. Draw an owned statement box with the exact statement label and directed control-flow succession.",
+      "description": "Local function invocation. Draw an owned statement box with the exact statement label and directed control-flow succession.",
       "source": {
         "model": "examples/05-values-and-flow.swaml",
         "path": "Values::Producer.boot"
@@ -1953,19 +1968,19 @@
       "drawing": {
         "template": "flow",
         "header": [
-          "invoke prepare()"
+          "call prepare()"
         ],
         "lines": [],
-        "variant": "invoke"
+        "variant": "call"
       }
     },
     {
       "id": "send",
       "title": "Data send",
-      "concern": "Operation flow",
+      "concern": "Function flow",
       "kind": "node",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "send"
@@ -1974,10 +1989,10 @@
         "Send"
       ],
       "syntax": "send output.text(\"Hello, SWAML\");",
-      "context": "Statement inside the displayed owning operation; the FV node is a projection.",
+      "context": "Statement inside the displayed owning function; the fv node is a projection.",
       "rules": [
         "Draw an owned statement box with the exact statement label and directed control-flow succession.",
-        "The text identifies the emitting operation’s owned sender port and data member."
+        "The text identifies the emitting function’s owned sender port and data member."
       ],
       "description": "Data send. Draw an owned statement box with the exact statement label and directed control-flow succession.",
       "source": {
@@ -1996,10 +2011,10 @@
     {
       "id": "publish",
       "title": "Event publication",
-      "concern": "Operation flow",
+      "concern": "Function flow",
       "kind": "node",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "publish"
@@ -2008,10 +2023,10 @@
         "Send"
       ],
       "syntax": "publish api.changed(currentValue);",
-      "context": "Statement inside the displayed owning operation; the FV node is a projection.",
+      "context": "Statement inside the displayed owning function; the fv node is a projection.",
       "rules": [
         "Draw an owned statement box with the exact statement label and directed control-flow succession.",
-        "The text identifies the emitting operation’s owned publisher/provider port and event member."
+        "The text identifies the emitting function’s owned publisher/provider port and event member."
       ],
       "description": "Event publication. Draw an owned statement box with the exact statement label and directed control-flow succession.",
       "source": {
@@ -2030,10 +2045,10 @@
     {
       "id": "assert",
       "title": "Assertion",
-      "concern": "Operation flow",
+      "concern": "Function flow",
       "kind": "node",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "assert"
@@ -2042,7 +2057,7 @@
         "Assert"
       ],
       "syntax": "assert accepted;",
-      "context": "Statement inside the displayed owning operation; the FV node is a projection.",
+      "context": "Statement inside the displayed owning function; the fv node is a projection.",
       "rules": [
         "Draw an owned statement box with the exact statement label and directed control-flow succession.",
         "False fails the activation; this step is an execution check, not proof of a requirement."
@@ -2064,10 +2079,10 @@
     {
       "id": "fail",
       "title": "Failure",
-      "concern": "Operation flow",
+      "concern": "Function flow",
       "kind": "node",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "fail"
@@ -2076,7 +2091,7 @@
         "Fail"
       ],
       "syntax": "fail \"setting unavailable\";",
-      "context": "Statement inside the displayed owning operation; the FV node is a projection.",
+      "context": "Statement inside the displayed owning function; the fv node is a projection.",
       "rules": [
         "Draw an owned statement box with the exact statement label and directed control-flow succession.",
         "Failure unwinds the activation without rollback; it does not imply an unmodeled broadcast."
@@ -2096,27 +2111,28 @@
       }
     },
     {
-      "id": "request",
-      "title": "RPC request and failure continuation",
-      "concern": "Operation flow",
+      "id": "routed-call",
+      "title": "Routed function call",
+      "concern": "Function flow",
       "kind": "node",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
-        "request",
+        "call",
         "as",
         "within",
         "otherwise"
       ],
       "productions": [
-        "Request"
+        "RemoteCall",
+        "MemberPath"
       ],
-      "syntax": "request setting.get() as observed within 100 ms otherwise { return; };",
+      "syntax": "call setting.get() as observed within 100 ms otherwise { return; };",
       "context": "Statement in Settings::Panel.refresh; successful completion binds observed.",
       "rules": [
         "Draw one request step labeled port.member, result binding and timeout, with distinct success and otherwise continuations.",
-        "The failure continuation remains explicit and terminating; request arrows outside this operation must use the corresponding interface route."
+        "The failure continuation remains explicit and terminating; request arrows outside this function must use the corresponding interface route."
       ],
       "description": "RPC request and failure continuation. Draw one request step labeled port.member, result binding and timeout, with distinct success and otherwise continuations.",
       "source": {
@@ -2126,7 +2142,7 @@
       "drawing": {
         "template": "request",
         "header": [
-          "request setting.get()",
+          "call setting.get()",
           "as observed within 100 ms"
         ],
         "lines": [
@@ -2136,11 +2152,11 @@
     },
     {
       "id": "return",
-      "title": "Operation return",
-      "concern": "Operation flow",
+      "title": "Function return",
+      "concern": "Function flow",
       "kind": "node",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "return"
@@ -2151,10 +2167,10 @@
       "syntax": "return true;",
       "context": "Return statement in Rpc::Server.checkHealth.",
       "rules": [
-        "Show a labeled return terminal in the owning operation flow; retain the returned expression when present.",
-        "Return from a helper resumes its local caller; return from a state body terminates the owning stateful operation."
+        "Show a labeled return terminal in the owning function flow; retain the returned expression when present.",
+        "Return from a helper resumes its local caller; return from a state body terminates the owning stateful function."
       ],
-      "description": "Operation return. Show a labeled return terminal in the owning operation flow; retain the returned expression when present.",
+      "description": "Function return. Show a labeled return terminal in the owning function flow; retain the returned expression when present.",
       "source": {
         "model": "examples/07-client-server.swaml",
         "path": "Rpc::Server.checkHealth"
@@ -2170,10 +2186,10 @@
     {
       "id": "conditional",
       "title": "Conditional branch",
-      "concern": "Operation flow",
+      "concern": "Function flow",
       "kind": "node",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "if",
@@ -2185,10 +2201,10 @@
       "syntax": "if (duty > 0.8) { send output.duty(0.8); } else { send output.duty(duty); }",
       "context": "If/else statement in Control::Regulator.regulate.",
       "rules": [
-        "Draw a decision diamond with the Bool condition and distinct true/false control exits, followed by a merge when control continues.",
+        "Draw a decision diamond with the bool condition and distinct true/false control exits, followed by a merge when control continues.",
         "Exactly one branch executes; the diamond is an if-statement projection, not an independent behavior definition."
       ],
-      "description": "Conditional branch. Draw a decision diamond with the Bool condition and distinct true/false control exits, followed by a merge when control continues.",
+      "description": "Conditional branch. Draw a decision diamond with the bool condition and distinct true/false control exits, followed by a merge when control continues.",
       "source": {
         "model": "examples/02-realtime-controller.swaml",
         "path": "Control::Regulator.regulate"
@@ -2207,10 +2223,10 @@
     {
       "id": "bounded-loop",
       "title": "Bounded loop",
-      "concern": "Operation flow",
+      "concern": "Function flow",
       "kind": "node",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "while",
@@ -2242,36 +2258,36 @@
       }
     },
     {
-      "id": "stateful-operation",
-      "title": "Operation with states",
-      "concern": "Operation states",
+      "id": "stateful-function",
+      "title": "Function with states",
+      "concern": "Function states",
       "kind": "node",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
-        "operation",
+        "function",
         "initial"
       ],
       "productions": [
         "StateBody",
-        "Operation"
+        "FunctionDef"
       ],
-      "syntax": "operation lifecycle() on start",
-      "context": "Operation header in Lifecycle::Device; its direct body begins with initial.",
+      "syntax": "function lifecycle() on start",
+      "context": "Function header in Lifecycle::Device; its direct body begins with initial.",
       "rules": [
-        "Draw the state graph inside the owning operation frame, keeping the operation name and on start label visible.",
-        "There is no machine box, performer, or separate authored state allocation; StateBody contributes only the operation’s contents."
+        "Draw the state graph inside the owning function frame, keeping the function name and on start label visible.",
+        "There is no machine box, performer, or separate authored state allocation; StateBody contributes only the function’s contents."
       ],
-      "description": "Operation with states. Draw the state graph inside the owning operation frame, keeping the operation name and on start label visible.",
+      "description": "Function with states. Draw the state graph inside the owning function frame, keeping the function name and on start label visible.",
       "source": {
-        "model": "examples/04-stateful-operation.swaml",
+        "model": "examples/04-stateful-function.swaml",
         "path": "Lifecycle::Device.lifecycle"
       },
       "drawing": {
-        "template": "operation",
+        "template": "function",
         "header": [
-          "«operation» lifecycle()"
+          "«function» lifecycle()"
         ],
         "lines": [
           "on start",
@@ -2286,10 +2302,10 @@
     {
       "id": "initial-state",
       "title": "Initial state reference",
-      "concern": "Operation states",
+      "concern": "Function states",
       "kind": "node",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "initial"
@@ -2301,11 +2317,11 @@
       "context": "First clause of Lifecycle::Device.lifecycle.",
       "rules": [
         "Draw a solid initial pseudonode with one outgoing unlabeled initialization edge to the named initial state.",
-        "This projects the operation’s unique initial reference; it is not a transmitted event or a second start operation."
+        "This projects the function’s unique initial reference; it is not a transmitted event or a second start function."
       ],
       "description": "Initial state reference. Draw a solid initial pseudonode with one outgoing unlabeled initialization edge to the named initial state.",
       "source": {
-        "model": "examples/04-stateful-operation.swaml",
+        "model": "examples/04-stateful-function.swaml",
         "path": "Lifecycle::Device.lifecycle"
       },
       "drawing": {
@@ -2320,10 +2336,10 @@
     {
       "id": "state",
       "title": "State",
-      "concern": "Operation states",
+      "concern": "Function states",
       "kind": "node",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "state"
@@ -2334,10 +2350,10 @@
       "syntax": "state Active {}",
       "context": "State declaration in Notation::Controller.lifecycle.",
       "rules": [
-        "Draw a rounded state rectangle bearing the operation-local state name, with optional entry/exit compartments.",
-        "State rectangles live inside one owning operation; position does not allocate them to components or performers."
+        "Draw a rounded state rectangle bearing the function-local state name, with optional entry/exit compartments.",
+        "State rectangles live inside one owning function; position does not allocate them to components or performers."
       ],
-      "description": "State. Draw a rounded state rectangle bearing the operation-local state name, with optional entry/exit compartments.",
+      "description": "State. Draw a rounded state rectangle bearing the function-local state name, with optional entry/exit compartments.",
       "source": {
         "model": "examples/notation/catalog.swaml",
         "path": "Notation::Controller.lifecycle.Active"
@@ -2353,10 +2369,10 @@
     {
       "id": "final-state",
       "title": "Final state",
-      "concern": "Operation states",
+      "concern": "Function states",
       "kind": "node",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "final",
@@ -2387,10 +2403,10 @@
     {
       "id": "state-entry",
       "title": "State entry behavior",
-      "concern": "Operation states",
+      "concern": "Function states",
       "kind": "compartment",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "entry"
@@ -2423,10 +2439,10 @@
     {
       "id": "state-exit",
       "title": "State exit behavior",
-      "concern": "Operation states",
+      "concern": "Function states",
       "kind": "compartment",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "exit"
@@ -2459,10 +2475,10 @@
     {
       "id": "transition",
       "title": "State transition",
-      "concern": "Operation states",
+      "concern": "Function states",
       "kind": "edge",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "transition",
@@ -2475,10 +2491,10 @@
       "syntax": "transition begin: Idle -> Active on receive signal.pulse when (value > 0) priority 1 { count = value; }",
       "context": "Transition in Notation::Controller.lifecycle.",
       "rules": [
-        "Draw a directed edge between states in the same operation; label its identity, stimulus, optional guard/priority and effect.",
+        "Draw a directed edge between states in the same function; label its identity, stimulus, optional guard/priority and effect.",
         "Receive labels MUST include port.member; the transition edge is local control, not the interface connector carrying the message."
       ],
-      "description": "State transition. Draw a directed edge between states in the same operation; label its identity, stimulus, optional guard/priority and effect.",
+      "description": "State transition. Draw a directed edge between states in the same function; label its identity, stimulus, optional guard/priority and effect.",
       "source": {
         "model": "examples/notation/catalog.swaml",
         "path": "Notation::Controller.lifecycle.begin"
@@ -2501,10 +2517,10 @@
     {
       "id": "transition-guard",
       "title": "Transition guard",
-      "concern": "Operation states",
+      "concern": "Function states",
       "kind": "label",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "when"
@@ -2515,10 +2531,10 @@
       "syntax": "when (value > 0)",
       "context": "Guard on Notation::Controller.lifecycle.begin.",
       "rules": [
-        "Show the Bool guard in brackets or with its explicit when keyword on the transition label.",
+        "Show the bool guard in brackets or with its explicit when keyword on the transition label.",
         "A false guard disables that transition for the current stimulus; guard text is not a separate executable action."
       ],
-      "description": "Transition guard. Show the Bool guard in brackets or with its explicit when keyword on the transition label.",
+      "description": "Transition guard. Show the bool guard in brackets or with its explicit when keyword on the transition label.",
       "source": {
         "model": "examples/notation/catalog.swaml",
         "path": "Notation::Controller.lifecycle.begin"
@@ -2536,10 +2552,10 @@
     {
       "id": "transition-priority",
       "title": "Transition priority",
-      "concern": "Operation states",
+      "concern": "Function states",
       "kind": "label",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "priority"
@@ -2551,7 +2567,7 @@
       "context": "Priority on Notation::Controller.lifecycle.begin.",
       "rules": [
         "Display priority as an explicit nonnegative integer on a transition label; omitted means zero.",
-        "Larger wins only among enabled transitions for the same state and stimulus; it is not an operation scheduler priority."
+        "Larger wins only among enabled transitions for the same state and stimulus; it is not an function scheduler priority."
       ],
       "description": "Transition priority. Display priority as an explicit nonnegative integer on a transition label; omitted means zero.",
       "source": {
@@ -2571,10 +2587,10 @@
     {
       "id": "completion-transition",
       "title": "Completion transition",
-      "concern": "Operation states",
+      "concern": "Function states",
       "kind": "edge",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "completion"
@@ -2586,7 +2602,7 @@
       "context": "Completion transition in Notation::Controller.lifecycle.",
       "rules": [
         "Label the state edge on completion explicitly, with its guard if present.",
-        "Completion is local to the owning operation and MUST NOT be drawn as an emitted global event."
+        "Completion is local to the owning function and MUST NOT be drawn as an emitted global event."
       ],
       "description": "Completion transition. Label the state edge on completion explicitly, with its guard if present.",
       "source": {
@@ -2609,10 +2625,10 @@
     {
       "id": "timer-transition",
       "title": "Residence timer transition",
-      "concern": "Operation states",
+      "concern": "Function states",
       "kind": "edge",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "after"
@@ -2624,10 +2640,10 @@
       "syntax": "transition elapsed: Active -> Done on after 1 s {}",
       "context": "Timer transition in Notation::Controller.lifecycle.",
       "rules": [
-        "Label the transition on after with an explicit duration and unit.",
+        "Label the transition on after with an explicit duration and component.",
         "The duration starts after state entry completes; leaving the state cancels that entry generation’s timers."
       ],
-      "description": "Residence timer transition. Label the transition on after with an explicit duration and unit.",
+      "description": "Residence timer transition. Label the transition on after with an explicit duration and component.",
       "source": {
         "model": "examples/notation/catalog.swaml",
         "path": "Notation::Controller.lifecycle.elapsed"
@@ -2647,12 +2663,12 @@
     },
     {
       "id": "timing-contract",
-      "title": "Operation timing contract",
+      "title": "Function timing contract",
       "concern": "Timing and deployment",
       "kind": "label",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [
         "timing",
@@ -2665,10 +2681,10 @@
       "syntax": "timing { wcet 1 ms; deadline 3 ms; concurrency serial; }",
       "context": "Contract on Control::Sensor.sample.",
       "rules": [
-        "Attach a timing compartment to the operation, listing wcet, deadline and concurrency explicitly.",
+        "Attach a timing compartment to the function, listing wcet, deadline and concurrency explicitly.",
         "WCET counts active execution, deadline counts elapsed release-to-completion; the graphic alone supplies no schedulability proof."
       ],
-      "description": "Operation timing contract. Attach a timing compartment to the operation, listing wcet, deadline and concurrency explicitly.",
+      "description": "Function timing contract. Attach a timing compartment to the function, listing wcet, deadline and concurrency explicitly.",
       "source": {
         "model": "examples/02-realtime-controller.swaml",
         "path": "Control::Sensor.sample"
@@ -2691,8 +2707,8 @@
       "concern": "Timing and deployment",
       "kind": "label",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [
         "concurrency",
@@ -2705,10 +2721,10 @@
       "syntax": "concurrency reentrant;",
       "context": "Timing property on Settings::SettingStore.read.",
       "rules": [
-        "Write serial or reentrant in the operation timing compartment; no color or parallel-lane icon substitutes for it.",
-        "Reentrant activations read dispatch snapshots and cannot mutate unit data; helper calls inherit the activation’s lock/snapshot context."
+        "Write serial or reentrant in the function timing compartment; no color or parallel-lane icon substitutes for it.",
+        "Reentrant activations read dispatch snapshots and cannot mutate component data; helper calls inherit the activation’s lock/snapshot context."
       ],
-      "description": "Concurrency mode. Write serial or reentrant in the operation timing compartment; no color or parallel-lane icon substitutes for it.",
+      "description": "Concurrency mode. Write serial or reentrant in the function timing compartment; no color or parallel-lane icon substitutes for it.",
       "source": {
         "model": "examples/08-service-field.swaml",
         "path": "Settings::SettingStore.read"
@@ -2716,7 +2732,7 @@
       "drawing": {
         "template": "constraint",
         "header": [
-          "Operation concurrency"
+          "Function concurrency"
         ],
         "lines": [
           "concurrency reentrant",
@@ -2730,8 +2746,8 @@
       "concern": "Timing and deployment",
       "kind": "label",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [
         "ns",
@@ -2746,7 +2762,7 @@
       "context": "Duration value in Roots::Counter.initialize; ns/us/ms/s are explicit alternatives.",
       "rules": [
         "Render an integer and its explicit time unit together in timing, period, timeout or state-timer labels.",
-        "ns, us, ms and s are label units, not separate symbols; never imply a unit from diagram scale."
+        "ns, us, ms and s are label components, not separate symbols; never imply a component from diagram scale."
       ],
       "description": "Duration value. Render an integer and its explicit time unit together in timing, period, timeout or state-timer labels.",
       "source": {
@@ -2769,8 +2785,8 @@
       "concern": "Timing and deployment",
       "kind": "label",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [
         "service",
@@ -2803,44 +2819,38 @@
       }
     },
     {
-      "id": "execution-node",
-      "title": "Execution node",
+      "id": "deployment-target",
+      "title": "External deployment target",
       "concern": "Timing and deployment",
       "kind": "node",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
-      "keywords": [
-        "node",
-        "mcu",
-        "process",
-        "container"
-      ],
+      "keywords": [],
       "productions": [
-        "Node"
+        "Deployment"
       ],
-      "syntax": "node ecu mcu;",
-      "context": "Execution-node declaration in Control::Heating.",
+      "syntax": "deploy left on \"sysml:Vehicle::leftComputer\";",
+      "context": "An external system reference in ComponentReuse::Demo.",
       "rules": [
-        "Draw a distinct execution-location rectangle with «node», its name and mcu/process/container kind.",
-        "A node is deployment metadata, never a component/unit or a permission for bypassing typed interfaces."
+        "Draw a flat rectangle headed external system and show the exact reference as text.",
+        "A sysml: reference may identify a separately modeled SysML part; SWAML does not resolve or validate that external model.",
+        "This endpoint is placement metadata and never grants access to another component’s state."
       ],
-      "description": "Execution node. Draw a distinct execution-location rectangle with «node», its name and mcu/process/container kind.",
+      "description": "An external reference identifies the deployment system without introducing a hardware or execution-node definition into SWAML.",
       "source": {
-        "model": "examples/02-realtime-controller.swaml",
-        "path": "Control::Heating.ecu"
+        "model": "examples/15-component-specialization.swaml",
+        "path": "ComponentReuse::Demo"
       },
       "drawing": {
-        "template": "node",
+        "template": "deployment-target",
         "header": [
-          "«node» ecu"
+          "«external system»"
         ],
         "lines": [
-          "mcu",
-          "other kinds: process, container"
-        ],
-        "kind": "mcu"
+          "sysml:Vehicle::leftComputer"
+        ]
       }
     },
     {
@@ -2849,8 +2859,8 @@
       "concern": "Timing and deployment",
       "kind": "edge",
       "views": [
-        "GV",
-        "GRV"
+        "gv",
+        "grv"
       ],
       "keywords": [
         "deploy",
@@ -2859,16 +2869,17 @@
       "productions": [
         "Deployment"
       ],
-      "syntax": "deploy controller on ecu;",
-      "context": "Binding in Control::Heating.",
+      "syntax": "deploy left on \"sysml:Vehicle::leftComputer\";",
+      "context": "Deployment of one component instance in ComponentReuse::Demo.",
       "rules": [
-        "Draw a dashed allocation arrow labeled deploy from the occurrence to its named execution node.",
-        "Allocation is separate from communication: it MUST NOT be rendered as a data connector, and it targets an occurrence path rather than a definition."
+        "Draw a dashed open-arrow allocation link labeled deploy from the component instance to a flat external-system reference.",
+        "Show the complete URI-like reference; deployment does not imply that a SysML or infrastructure model was loaded.",
+        "Deployment inherits down the component tree unless a descendant supplies a more specific binding."
       ],
-      "description": "Deployment binding. Draw a dashed allocation arrow labeled deploy from the occurrence to its named execution node.",
+      "description": "A deployment binds a component instance or root to an external system reference.",
       "source": {
-        "model": "examples/02-realtime-controller.swaml",
-        "path": "Control::Heating"
+        "model": "examples/15-component-specialization.swaml",
+        "path": "ComponentReuse::Demo"
       },
       "drawing": {
         "template": "deployment",
@@ -2876,10 +2887,10 @@
           "«deploy»"
         ],
         "lines": [],
-        "to": "ecu: mcu",
-        "label": "deploy controller on ecu",
-        "dashed": true,
-        "from": "controller: Controller"
+        "from": "left: SpecializedDevice",
+        "to": "external system",
+        "label": "sysml:Vehicle::leftComputer",
+        "dashed": true
       }
     },
     {
@@ -2888,8 +2899,9 @@
       "concern": "Cases and evidence",
       "kind": "node",
       "views": [
-        "CV",
-        "SV"
+        "gv",
+        "cv",
+        "grv"
       ],
       "keywords": [
         "requirement"
@@ -2897,13 +2909,13 @@
       "productions": [
         "Requirement"
       ],
-      "syntax": "requirement LimitedDuty \"Applied duty shall be at most 0.8.\";",
+      "syntax": "requirement LimitedDuty { doc /* Applied duty shall be at most 0.8. */ }",
       "context": "Requirement declaration in Control.",
       "rules": [
-        "Draw a requirement rectangle labeled «requirement», its name and text compartment.",
-        "Text is a named obligation; the shape does not imply formal verification or executable behavior."
+        "Draw a flat requirement rectangle with its name, optional attributes and one doc compartment.",
+        "A requirement has no subject; satisfaction and verification are separate relations."
       ],
-      "description": "Requirement. Draw a requirement rectangle labeled «requirement», its name and text compartment.",
+      "description": "A named obligation with typed attributes and one optional formal specification.",
       "source": {
         "model": "examples/02-realtime-controller.swaml",
         "path": "Control::LimitedDuty"
@@ -2921,27 +2933,27 @@
     },
     {
       "id": "case",
-      "title": "Case",
+      "title": "Use case",
       "concern": "Cases and evidence",
       "kind": "node",
       "views": [
-        "CV",
-        "SV"
+        "cv",
+        "sv"
       ],
       "keywords": [
-        "case",
+        "useCase",
         "for"
       ],
       "productions": [
         "Scenario"
       ],
-      "syntax": "case Change for Cabin satisfies VisibleSetting",
+      "syntax": "useCase Change for Cabin",
       "context": "Scenario header in Settings; steps reference Cabin’s root-level connectors.",
       "rules": [
-        "Draw a case frame or rectangle labeled «case», its name and for Root identity.",
-        "Cases describe routed exchanges; they MUST NOT introduce performers, free channels or a second executable operation body."
+        "Draw a case frame labeled useCase with its name and selected root.",
+        "The for relation references a root; enclosure never changes package ownership."
       ],
-      "description": "Case. Draw a case frame or rectangle labeled «case», its name and for Root identity.",
+      "description": "A use case describes intended use and routed exchanges.",
       "source": {
         "model": "examples/08-service-field.swaml",
         "path": "Settings::Change"
@@ -2949,7 +2961,7 @@
       "drawing": {
         "template": "case",
         "header": [
-          "«case» Change"
+          "«useCase» Change"
         ],
         "lines": [
           "for Cabin"
@@ -2958,40 +2970,41 @@
     },
     {
       "id": "satisfies-link",
-      "title": "Requirement coverage link",
+      "title": "Satisfaction relation",
       "concern": "Cases and evidence",
       "kind": "edge",
       "views": [
-        "CV",
-        "SV"
+        "cv",
+        "sv"
       ],
       "keywords": [
-        "satisfies"
+        "satisfy",
+        "by"
       ],
       "productions": [
-        "Scenario"
+        "Satisfaction"
       ],
-      "syntax": "satisfies VisibleSetting",
-      "context": "Trace clause on Settings::Change.",
+      "syntax": "satisfy VisibleSetting by Cabin;",
+      "context": "Package-owned design-to-requirement relation.",
       "rules": [
-        "Draw a dashed arrow labeled satisfies from the case to the requirement.",
-        "The link records intended coverage; display verification status separately and never infer proof from the arrow."
+        "Draw a dashed open arrow from the design element to the requirement, labeled satisfy.",
+        "A satisfaction claim does not establish verification evidence."
       ],
-      "description": "Requirement coverage link. Draw a dashed arrow labeled satisfies from the case to the requirement.",
+      "description": "Design claims satisfaction of a requirement.",
       "source": {
         "model": "examples/08-service-field.swaml",
-        "path": "Settings::Change"
+        "path": "Settings"
       },
       "drawing": {
         "template": "edge",
         "header": [
-          "«satisfies»"
+          "«satisfy»"
         ],
         "lines": [],
         "to": "VisibleSetting",
-        "label": "satisfies (claimed)",
+        "label": "satisfy",
         "dashed": true,
-        "from": "Change"
+        "from": "Cabin"
       }
     },
     {
@@ -3000,8 +3013,8 @@
       "concern": "Cases and evidence",
       "kind": "edge",
       "views": [
-        "CV",
-        "SV"
+        "cv",
+        "sv"
       ],
       "keywords": [
         "send",
@@ -3039,8 +3052,8 @@
       "concern": "Cases and evidence",
       "kind": "edge",
       "views": [
-        "CV",
-        "SV"
+        "cv",
+        "sv"
       ],
       "keywords": [
         "publish",
@@ -3078,19 +3091,19 @@
       "concern": "Cases and evidence",
       "kind": "edge",
       "views": [
-        "CV",
-        "SV"
+        "cv",
+        "sv"
       ],
       "keywords": [
-        "request",
+        "call",
         "via",
         "label"
       ],
       "productions": [
         "ScenarioStep"
       ],
-      "syntax": "request caller.health.check -> serviceUnit.health.check via healthCheck label sent;",
-      "context": "Request step in Rpc::Poll.",
+      "syntax": "call caller.health.check -> serviceUnit.health.check via healthCheck label sent;",
+      "context": "Routed call step in Rpc::Poll.",
       "rules": [
         "Draw a request arrow between occurrence lifelines, labeled the member, connector and step identity.",
         "Its later reply must be uniquely correlated by case ancestry and route/member; vertical spacing does not create that relationship."
@@ -3117,8 +3130,8 @@
       "concern": "Cases and evidence",
       "kind": "edge",
       "views": [
-        "CV",
-        "SV"
+        "cv",
+        "sv"
       ],
       "keywords": [
         "reply",
@@ -3158,8 +3171,8 @@
       "concern": "Cases and evidence",
       "kind": "edge",
       "views": [
-        "CV",
-        "SV"
+        "cv",
+        "sv"
       ],
       "keywords": [
         "after",
@@ -3197,8 +3210,8 @@
       "concern": "Cases and evidence",
       "kind": "node",
       "views": [
-        "CV",
-        "SV"
+        "cv",
+        "sv"
       ],
       "keywords": [],
       "productions": [
@@ -3208,7 +3221,7 @@
       "context": "Occurrence in Rpc::HealthCheck used as a sequence lifeline.",
       "rules": [
         "Draw a lifeline headed by the occurrence name: Type and a dashed vertical line.",
-        "A lifeline identifies an existing component/unit occurrence; an actor/performer glyph MUST NOT replace a modeled communication boundary."
+        "A lifeline identifies an existing component occurrence; an actor/performer glyph MUST NOT replace a modeled communication boundary."
       ],
       "description": "Occurrence lifeline. Draw a lifeline headed by the occurrence name: Type and a dashed vertical line.",
       "source": {
@@ -3268,23 +3281,23 @@
       "concern": "View projections",
       "kind": "projection",
       "views": [
-        "GV"
+        "gv"
       ],
       "keywords": [
         "view",
-        "GV",
+        "gv",
         "of"
       ],
       "productions": [
         "View"
       ],
-      "syntax": "view overview GV of Demo;",
+      "syntax": "view overview gv of Demo;",
       "context": "View projection context; syntax refers to an existing semantic subject.",
       "rules": [
-        "Draw a framed projection titled GV with the semantic subject identity visible; use the canonical element symbols within it.",
-        "The view adds presentation only. It MUST NOT introduce new routes, operations, performers or execution semantics."
+        "Draw a framed projection titled gv with the semantic subject identity visible; use the canonical element symbols within it.",
+        "The view adds presentation only. It MUST NOT introduce new routes, functions, performers or execution semantics."
       ],
-      "description": "General View. Draw a framed projection titled GV with the semantic subject identity visible; use the canonical element symbols within it.",
+      "description": "General View. Draw a framed projection titled gv with the semantic subject identity visible; use the canonical element symbols within it.",
       "source": {
         "model": "examples/01-hello.swaml",
         "path": "Hello::overview"
@@ -3305,23 +3318,23 @@
       "concern": "View projections",
       "kind": "projection",
       "views": [
-        "IV"
+        "iv"
       ],
       "keywords": [
         "view",
-        "IV",
+        "iv",
         "of"
       ],
       "productions": [
         "View"
       ],
-      "syntax": "view wiring IV of Conversation;",
+      "syntax": "view wiring iv of Conversation;",
       "context": "View projection context; syntax refers to an existing semantic subject.",
       "rules": [
-        "Draw a framed projection titled IV with the semantic subject identity visible; use the canonical element symbols within it.",
-        "The view adds presentation only. It MUST NOT introduce new routes, operations, performers or execution semantics."
+        "Draw a framed projection titled iv with the semantic subject identity visible; use the canonical element symbols within it.",
+        "The view adds presentation only. It MUST NOT introduce new routes, functions, performers or execution semantics."
       ],
-      "description": "Interconnect View. Draw a framed projection titled IV with the semantic subject identity visible; use the canonical element symbols within it.",
+      "description": "Interconnect View. Draw a framed projection titled iv with the semantic subject identity visible; use the canonical element symbols within it.",
       "source": {
         "model": "examples/01-hello.swaml",
         "path": "Hello::wiring"
@@ -3343,23 +3356,23 @@
       "concern": "View projections",
       "kind": "projection",
       "views": [
-        "CV"
+        "cv"
       ],
       "keywords": [
         "view",
-        "CV",
+        "cv",
         "of"
       ],
       "productions": [
         "View"
       ],
-      "syntax": "view cases CV of Shop;",
+      "syntax": "view cases cv of Shop;",
       "context": "View projection context; syntax refers to an existing semantic subject.",
       "rules": [
-        "Draw a framed projection titled CV with the semantic subject identity visible; use the canonical element symbols within it.",
-        "The view adds presentation only. It MUST NOT introduce new routes, operations, performers or execution semantics."
+        "Draw a framed projection titled cv with the semantic subject identity visible; use the canonical element symbols within it.",
+        "The view adds presentation only. It MUST NOT introduce new routes, functions, performers or execution semantics."
       ],
-      "description": "Case View. Draw a framed projection titled CV with the semantic subject identity visible; use the canonical element symbols within it.",
+      "description": "Case View. Draw a framed projection titled cv with the semantic subject identity visible; use the canonical element symbols within it.",
       "source": {
         "model": "examples/03-service-pubsub.swaml",
         "path": "Commerce::cases"
@@ -3370,9 +3383,9 @@
           "Case View: Shop"
         ],
         "lines": [],
-        "from": "Checkout",
+        "from": "Shop",
         "to": "AcceptedOrder",
-        "label": "satisfies (claimed)"
+        "label": "satisfy"
       }
     },
     {
@@ -3381,23 +3394,23 @@
       "concern": "View projections",
       "kind": "projection",
       "views": [
-        "SV"
+        "sv"
       ],
       "keywords": [
         "view",
-        "SV",
+        "sv",
         "of"
       ],
       "productions": [
         "View"
       ],
-      "syntax": "view interaction SV of Poll;",
+      "syntax": "view interaction sv of Poll;",
       "context": "View projection context; syntax refers to an existing semantic subject.",
       "rules": [
-        "Draw a framed projection titled SV with the semantic subject identity visible; use the canonical element symbols within it.",
-        "The view adds presentation only. It MUST NOT introduce new routes, operations, performers or execution semantics."
+        "Draw a framed projection titled sv with the semantic subject identity visible; use the canonical element symbols within it.",
+        "The view adds presentation only. It MUST NOT introduce new routes, functions, performers or execution semantics."
       ],
-      "description": "Sequence View. Draw a framed projection titled SV with the semantic subject identity visible; use the canonical element symbols within it.",
+      "description": "Sequence View. Draw a framed projection titled sv with the semantic subject identity visible; use the canonical element symbols within it.",
       "source": {
         "model": "examples/07-client-server.swaml",
         "path": "Rpc::interaction"
@@ -3421,23 +3434,23 @@
       "concern": "View projections",
       "kind": "projection",
       "views": [
-        "GRV"
+        "grv"
       ],
       "keywords": [
         "view",
-        "GRV",
+        "grv",
         "of"
       ],
       "productions": [
         "View"
       ],
-      "syntax": "view inventory GRV of Demo;",
+      "syntax": "view inventory grv of Demo;",
       "context": "View projection context; syntax refers to an existing semantic subject.",
       "rules": [
-        "Draw a framed projection titled GRV with the semantic subject identity visible; use the canonical element symbols within it.",
-        "The view adds presentation only. It MUST NOT introduce new routes, operations, performers or execution semantics."
+        "Draw a framed projection titled grv with the semantic subject identity visible; use the canonical element symbols within it.",
+        "The view adds presentation only. It MUST NOT introduce new routes, functions, performers or execution semantics."
       ],
-      "description": "Grid View. Draw a framed projection titled GRV with the semantic subject identity visible; use the canonical element symbols within it.",
+      "description": "Grid View. Draw a framed projection titled grv with the semantic subject identity visible; use the canonical element symbols within it.",
       "source": {
         "model": "examples/01-hello.swaml",
         "path": "Hello::inventory"
@@ -3458,25 +3471,25 @@
       "concern": "View projections",
       "kind": "projection",
       "views": [
-        "FV"
+        "fv"
       ],
       "keywords": [
         "view",
-        "FV",
+        "fv",
         "of"
       ],
       "productions": [
         "View"
       ],
-      "syntax": "view lifecycle FV of Device.lifecycle;",
+      "syntax": "view lifecycle fv of Device.lifecycle;",
       "context": "View projection context; syntax refers to an existing semantic subject.",
       "rules": [
-        "Draw a framed projection titled FV with the semantic subject identity visible; use the canonical element symbols within it.",
-        "FV supports both statement flow and operation-owned states. Keep the owning operation frame and never reintroduce separate action/state views or a machine element."
+        "Draw a framed projection titled fv with the semantic subject identity visible; use the canonical element symbols within it.",
+        "fv supports both statement flow and function-owned states. Keep the owning function frame and never reintroduce separate action/state views or a machine element."
       ],
-      "description": "Flow View. Draw a framed projection titled FV with the semantic subject identity visible; use the canonical element symbols within it.",
+      "description": "Flow View. Draw a framed projection titled fv with the semantic subject identity visible; use the canonical element symbols within it.",
       "source": {
-        "model": "examples/04-stateful-operation.swaml",
+        "model": "examples/04-stateful-function.swaml",
         "path": "Lifecycle::lifecycle"
       },
       "drawing": {
@@ -3489,616 +3502,553 @@
         "to": "Running",
         "label": "on receive commands.begin"
       }
+    },
+    {
+      "id": "qos-policy-definition",
+      "title": "Reusable QoS policy",
+      "concern": "Interfaces and connections",
+      "kind": "node",
+      "views": [
+        "gv",
+        "grv"
+      ],
+      "keywords": [
+        "qos",
+        "def"
+      ],
+      "productions": [
+        "QosPolicy",
+        "QosBody"
+      ],
+      "syntax": "qos def LocalLink { delivery atMostOnce; ordering fifo; capacity 8; overflow reject; }",
+      "context": "Package-owned policy in Settings; selected independently by both Cabin connector occurrences.",
+      "rules": [
+        "Draw a flat contract rectangle labeled «qos def» and its name, with all four base fields in a property compartment.",
+        "Expose optional latency/age bounds and declaration identity. Reuse shares values only; queues remain per connector occurrence, direction and member."
+      ],
+      "description": "Named complete connector policy, shown as a flat declaration card. It has no port, behavior, deployment or runtime queue of its own.",
+      "source": {
+        "model": "examples/08-service-field.swaml",
+        "path": "Settings::LocalLink"
+      },
+      "drawing": {
+        "template": "classifier",
+        "header": [
+          "«qos def» LocalLink"
+        ],
+        "lines": [
+          "delivery atMostOnce",
+          "ordering fifo",
+          "capacity 8",
+          "overflow reject"
+        ]
+      }
+    },
+    {
+      "id": "qos-policy-reference",
+      "title": "Named connector policy",
+      "concern": "Interfaces and connections",
+      "kind": "label",
+      "views": [
+        "iv",
+        "grv"
+      ],
+      "keywords": [
+        "qos"
+      ],
+      "productions": [
+        "Qos"
+      ],
+      "syntax": "qos LocalLink",
+      "context": "Explicit policy selection on Settings::Cabin.frontLink.",
+      "rules": [
+        "Attach qos PolicyName to the existing typed connector; the name is a reference, not another communication edge.",
+        "Inspection exposes the qualified policy identity, effective base fields and bounds. Do not merge connector queues or hide invalid policy uses."
+      ],
+      "description": "A connector explicitly selects a package-visible QoS declaration while keeping its own route and queue identity.",
+      "source": {
+        "model": "examples/08-service-field.swaml",
+        "path": "Settings::Cabin.frontLink"
+      },
+      "drawing": {
+        "template": "constraint",
+        "header": [
+          "frontLink · connector QoS"
+        ],
+        "lines": [
+          "qos LocalLink",
+          "atMostOnce · fifo",
+          "capacity 8 · reject",
+          "independent route queue"
+        ]
+      }
+    },
+    {
+      "id": "requirement-attribute",
+      "title": "Requirement attribute",
+      "concern": "Cases and evidence",
+      "kind": "compartment",
+      "views": [
+        "gv",
+        "grv",
+        "cv"
+      ],
+      "keywords": [
+        "attribute"
+      ],
+      "productions": [
+        "Attribute"
+      ],
+      "syntax": "attribute priority: uint = 1;",
+      "context": "Owned source element in the Assurance example.",
+      "rules": [
+        "Display immutable typed metadata in an attribute compartment or table cell.",
+        "Names are unique within their requirement; metadata is not runtime state."
+      ],
+      "description": "Display immutable typed metadata in an attribute compartment or table cell. Names are unique within their requirement; metadata is not runtime state.",
+      "source": {
+        "model": "examples/16-requirements-and-views.swaml",
+        "path": "Assurance::BoundedResult"
+      },
+      "drawing": {
+        "template": "member",
+        "header": [
+          "«attribute» priority: uint"
+        ],
+        "lines": [
+          "value = 1"
+        ]
+      }
+    },
+    {
+      "id": "formal-documentation",
+      "title": "Formal documentation",
+      "concern": "Cases and evidence",
+      "kind": "compartment",
+      "views": [
+        "gv",
+        "grv",
+        "cv"
+      ],
+      "keywords": [
+        "doc"
+      ],
+      "productions": [
+        "Documentation",
+        "DOC_COMMENT"
+      ],
+      "syntax": "doc /* Every started worker shall store a result of 2. */",
+      "context": "Owned source element in the Assurance example.",
+      "rules": [
+        "Draw one labeled doc compartment or one doc table cell for the owner.",
+        "Keep multiline formal text distinct from ordinary comment notes."
+      ],
+      "description": "Draw one labeled doc compartment or one doc table cell for the owner. Keep multiline formal text distinct from ordinary comment notes.",
+      "source": {
+        "model": "examples/16-requirements-and-views.swaml",
+        "path": "Assurance::BoundedResult"
+      },
+      "drawing": {
+        "template": "member",
+        "header": [
+          "«requirement» BoundedResult"
+        ],
+        "lines": [
+          "doc",
+          "Every started worker shall",
+          "store a result of 2."
+        ]
+      }
+    },
+    {
+      "id": "ordinary-comment",
+      "title": "Ordinary comment",
+      "concern": "Cases and evidence",
+      "kind": "node",
+      "views": [
+        "gv",
+        "grv",
+        "cv"
+      ],
+      "keywords": [],
+      "productions": [
+        "SL_COMMENT",
+        "ML_COMMENT"
+      ],
+      "syntax": "// Each instance has its own result.",
+      "context": "Owned source element in the Assurance example.",
+      "rules": [
+        "Draw a plain rectangular note inside its owner or connected by a plain dashed line.",
+        "Each line comment and each block comment remains separate; there is no comment keyword."
+      ],
+      "description": "Draw a plain rectangular note inside its owner or connected by a plain dashed line. Each line comment and each block comment remains separate; there is no comment keyword.",
+      "source": {
+        "model": "examples/16-requirements-and-views.swaml",
+        "path": "Assurance::Worker"
+      },
+      "drawing": {
+        "template": "note",
+        "header": [
+          "Worker"
+        ],
+        "lines": [
+          "Each instance has its own result."
+        ]
+      }
+    },
+    {
+      "id": "verification-case",
+      "title": "Verification case",
+      "concern": "Cases and evidence",
+      "kind": "node",
+      "views": [
+        "gv",
+        "grv",
+        "cv"
+      ],
+      "keywords": [
+        "verificationCase"
+      ],
+      "productions": [
+        "Scenario"
+      ],
+      "syntax": "verificationCase CheckResults for Demo",
+      "context": "Owned source element in the Assurance example.",
+      "rules": [
+        "Draw a case frame labeled verificationCase with its name and root context.",
+        "Documentation describes the procedure; verify links identify requirements without asserting a passed result."
+      ],
+      "description": "Draw a case frame labeled verificationCase with its name and root context. Documentation describes the procedure; verify links identify requirements without asserting a passed result.",
+      "source": {
+        "model": "examples/16-requirements-and-views.swaml",
+        "path": "Assurance::CheckResults"
+      },
+      "drawing": {
+        "template": "case",
+        "header": [
+          "«verificationCase» CheckResults"
+        ],
+        "lines": [
+          "for Demo"
+        ]
+      }
+    },
+    {
+      "id": "verification-link",
+      "title": "Verification relation",
+      "concern": "Cases and evidence",
+      "kind": "edge",
+      "views": [
+        "gv",
+        "grv",
+        "cv"
+      ],
+      "keywords": [
+        "verify"
+      ],
+      "productions": [
+        "Verification"
+      ],
+      "syntax": "verify BoundedResult;",
+      "context": "Owned source element in the Assurance example.",
+      "rules": [
+        "Draw a dashed open arrow from the verification case to the requirement, labeled verify.",
+        "A relation expresses verification intent; evidence and outcome are recorded separately."
+      ],
+      "description": "Draw a dashed open arrow from the verification case to the requirement, labeled verify. A relation expresses verification intent; evidence and outcome are recorded separately.",
+      "source": {
+        "model": "examples/16-requirements-and-views.swaml",
+        "path": "Assurance::CheckResults"
+      },
+      "drawing": {
+        "template": "edge",
+        "header": [
+          "«verify»"
+        ],
+        "lines": [],
+        "from": "CheckResults",
+        "to": "BoundedResult",
+        "label": "verify",
+        "dashed": true
+      }
+    },
+    {
+      "id": "view-selection",
+      "title": "Filtered view selection",
+      "concern": "Cases and evidence",
+      "kind": "projection",
+      "views": [
+        "gv",
+        "grv",
+        "cv"
+      ],
+      "keywords": [
+        "include",
+        "recursive",
+        "where"
+      ],
+      "productions": [
+        "ViewSelection"
+      ],
+      "syntax": "include Demo recursive where kind == \"component\";",
+      "context": "Owned source element in the Assurance example.",
+      "rules": [
+        "Show the selected occurrence paths within the named view frame.",
+        "Combine include clauses as a stable union; filters do not alter model ownership or execution."
+      ],
+      "description": "Show the selected occurrence paths within the named view frame. Combine include clauses as a stable union; filters do not alter model ownership or execution.",
+      "source": {
+        "model": "examples/16-requirements-and-views.swaml",
+        "path": "Assurance::assurance"
+      },
+      "drawing": {
+        "template": "classifier",
+        "header": [
+          "view assurance gv"
+        ],
+        "lines": [
+          "include Demo recursive",
+          "where kind == \"component\""
+        ]
+      }
     }
   ],
   "coverage": {
     "keywords": [
       {
-        "term": "after",
+        "term": "package",
         "mode": "glyph",
+        "rationale": "Package.",
         "concepts": [
-          "timer-transition",
-          "case-causal-order"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "and",
-        "mode": "label",
-        "concepts": [
-          "expression"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "as",
-        "mode": "glyph",
-        "concepts": [
-          "request"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "assert",
-        "mode": "glyph",
-        "concepts": [
-          "assert"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "atLeastOnce",
-        "mode": "label",
-        "concepts": [
-          "delivery-policy"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "atMostOnce",
-        "mode": "label",
-        "concepts": [
-          "delivery-policy"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "bestEffort",
-        "mode": "label",
-        "concepts": [
-          "delivery-policy"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "Bool",
-        "mode": "label",
-        "concepts": [
-          "primitive-types"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "bound",
-        "mode": "glyph",
-        "concepts": [
-          "bounded-loop"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "call",
-        "mode": "label",
-        "concepts": [
-          "trigger-call"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "capacity",
-        "mode": "label",
-        "concepts": [
-          "capacity-policy"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "case",
-        "mode": "glyph",
-        "concepts": [
-          "case"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "client",
-        "mode": "glyph",
-        "concepts": [
-          "port-client"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "clientServer",
-        "mode": "glyph",
-        "concepts": [
-          "client-server-interface"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "completion",
-        "mode": "glyph",
-        "concepts": [
-          "completion-transition"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "component",
-        "mode": "glyph",
-        "concepts": [
-          "component-definition",
-          "component-usage",
-          "root-component",
-          "inline-root",
-          "type-relationship"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "concurrency",
-        "mode": "label",
-        "concepts": [
-          "concurrency-mode"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "connect",
-        "mode": "glyph",
-        "concepts": [
-          "connector"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "container",
-        "mode": "glyph",
-        "concepts": [
-          "execution-node"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "CV",
-        "mode": "glyph",
-        "concepts": [
-          "view-cv"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "data",
-        "mode": "label",
-        "concepts": [
-          "data-member"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "datatype",
-        "mode": "glyph",
-        "concepts": [
-          "datatype"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "deadline",
-        "mode": "label",
-        "concepts": [
-          "timing-contract"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "def",
-        "mode": "glyph",
-        "concepts": [
-          "component-definition",
-          "unit-definition"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "delegate",
-        "mode": "glyph",
-        "concepts": [
-          "delegation"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "delivery",
-        "mode": "label",
-        "concepts": [
-          "delivery-policy"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "deploy",
-        "mode": "glyph",
-        "concepts": [
-          "deployment"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "dropNewest",
-        "mode": "label",
-        "concepts": [
-          "overflow-policy"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "dropOldest",
-        "mode": "label",
-        "concepts": [
-          "overflow-policy"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "else",
-        "mode": "glyph",
-        "concepts": [
-          "conditional"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "entry",
-        "mode": "label",
-        "concepts": [
-          "state-entry"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "enum",
-        "mode": "glyph",
-        "concepts": [
-          "enumeration"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "event",
-        "mode": "label",
-        "concepts": [
-          "event-member"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "every",
-        "mode": "label",
-        "concepts": [
-          "trigger-periodic"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "exit",
-        "mode": "label",
-        "concepts": [
-          "state-exit"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "fail",
-        "mode": "glyph",
-        "concepts": [
-          "fail"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "false",
-        "mode": "label",
-        "concepts": [
-          "expression"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "fifo",
-        "mode": "label",
-        "concepts": [
-          "ordering-policy"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "final",
-        "mode": "glyph",
-        "concepts": [
-          "final-state"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "for",
-        "mode": "glyph",
-        "concepts": [
-          "case"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "function",
-        "mode": "label",
-        "concepts": [
-          "pure-function"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "FV",
-        "mode": "glyph",
-        "concepts": [
-          "view-fv"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "GRV",
-        "mode": "glyph",
-        "concepts": [
-          "view-grv"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "GV",
-        "mode": "glyph",
-        "concepts": [
-          "view-gv"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "idempotent",
-        "mode": "label",
-        "concepts": [
-          "operation-signature"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "if",
-        "mode": "glyph",
-        "concepts": [
-          "conditional"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+          "package"
+        ]
       },
       {
         "term": "import",
         "mode": "glyph",
+        "rationale": "Package import.",
         "concepts": [
           "import"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+        ]
       },
       {
-        "term": "initial",
+        "term": "datatype",
         "mode": "glyph",
+        "rationale": "Record datatype.",
         "concepts": [
-          "stateful-operation",
-          "initial-state"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+          "datatype"
+        ]
       },
       {
-        "term": "Int",
+        "term": "enum",
+        "mode": "glyph",
+        "rationale": "Enumeration.",
+        "concepts": [
+          "enumeration"
+        ]
+      },
+      {
+        "term": "bool",
         "mode": "label",
+        "rationale": "Primitive types.",
         "concepts": [
           "primitive-types"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
+        ]
+      },
+      {
+        "term": "byte",
+        "mode": "label",
+        "rationale": "Primitive types.",
+        "concepts": [
+          "primitive-types"
+        ]
+      },
+      {
+        "term": "uint",
+        "mode": "label",
+        "rationale": "Primitive types.",
+        "concepts": [
+          "primitive-types"
+        ]
+      },
+      {
+        "term": "int",
+        "mode": "label",
+        "rationale": "Primitive types.",
+        "concepts": [
+          "primitive-types"
+        ]
+      },
+      {
+        "term": "real",
+        "mode": "label",
+        "rationale": "Primitive types.",
+        "concepts": [
+          "primitive-types"
+        ]
+      },
+      {
+        "term": "string",
+        "mode": "label",
+        "rationale": "Primitive types.",
+        "concepts": [
+          "primitive-types"
+        ]
+      },
+      {
+        "term": "void",
+        "mode": "label",
+        "rationale": "Primitive types.",
+        "concepts": [
+          "primitive-types"
+        ]
       },
       {
         "term": "interface",
         "mode": "glyph",
+        "rationale": "Sender–receiver interface; Client–server interface; Publish–subscribe interface; Service interface.",
         "concepts": [
           "sender-receiver-interface",
           "client-server-interface",
           "publish-subscribe-interface",
           "service-interface"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+        ]
       },
       {
-        "term": "invoke",
+        "term": "senderReceiver",
         "mode": "glyph",
+        "rationale": "Sender–receiver interface.",
         "concepts": [
-          "invoke"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+          "sender-receiver-interface"
+        ]
       },
       {
-        "term": "IV",
+        "term": "clientServer",
         "mode": "glyph",
+        "rationale": "Client–server interface.",
         "concepts": [
-          "view-iv"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+          "client-server-interface"
+        ]
       },
       {
-        "term": "label",
+        "term": "publishSubscribe",
         "mode": "glyph",
+        "rationale": "Publish–subscribe interface.",
         "concepts": [
-          "case-data-exchange",
-          "case-event-exchange",
-          "case-request",
-          "case-reply",
-          "case-causal-order"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+          "publish-subscribe-interface"
+        ]
       },
       {
-        "term": "let",
+        "term": "service",
         "mode": "glyph",
+        "rationale": "Service interface; Root execution profile.",
         "concepts": [
-          "local-declaration"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "manual",
-        "mode": "label",
-        "concepts": [
-          "trigger-manual"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "maxAge",
-        "mode": "label",
-        "concepts": [
-          "freshness-bound"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "maxLatency",
-        "mode": "label",
-        "concepts": [
-          "latency-bound"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "mcu",
-        "mode": "glyph",
-        "concepts": [
-          "execution-node"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "mixed",
-        "mode": "label",
-        "concepts": [
+          "service-interface",
           "execution-profile"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
+        ]
       },
       {
-        "term": "ms",
-        "mode": "label",
-        "concepts": [
-          "duration"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "node",
+        "term": "version",
         "mode": "glyph",
+        "rationale": "Sender–receiver interface; Client–server interface; Publish–subscribe interface; Service interface.",
         "concepts": [
-          "execution-node"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+          "sender-receiver-interface",
+          "client-server-interface",
+          "publish-subscribe-interface",
+          "service-interface"
+        ]
       },
       {
-        "term": "not",
+        "term": "data",
         "mode": "label",
+        "rationale": "Data member.",
         "concepts": [
-          "expression"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
+          "data-member"
+        ]
       },
       {
-        "term": "ns",
+        "term": "sampled",
         "mode": "label",
+        "rationale": "Data member.",
         "concepts": [
-          "duration"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
+          "data-member"
+        ]
       },
       {
-        "term": "of",
+        "term": "queued",
+        "mode": "label",
+        "rationale": "Data member.",
+        "concepts": [
+          "data-member"
+        ]
+      },
+      {
+        "term": "event",
+        "mode": "label",
+        "rationale": "Event member.",
+        "concepts": [
+          "event-member"
+        ]
+      },
+      {
+        "term": "function",
         "mode": "glyph",
+        "rationale": "Interface function signature; Executable function; Function with states.",
         "concepts": [
-          "view-gv",
-          "view-iv",
-          "view-cv",
-          "view-sv",
-          "view-grv",
-          "view-fv"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+          "function-signature",
+          "function",
+          "stateful-function"
+        ]
       },
       {
-        "term": "on",
-        "mode": "glyph",
-        "concepts": [
-          "trigger-start",
-          "trigger-manual",
-          "trigger-periodic",
-          "trigger-receive",
-          "trigger-call",
-          "transition",
-          "deployment"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "operation",
-        "mode": "glyph",
-        "concepts": [
-          "operation-signature",
-          "operation",
-          "stateful-operation"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "optional",
+        "term": "idempotent",
         "mode": "label",
+        "rationale": "Interface function signature.",
         "concepts": [
-          "optional-port"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
+          "function-signature"
+        ]
       },
       {
-        "term": "or",
-        "mode": "label",
-        "concepts": [
-          "expression"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "ordering",
-        "mode": "label",
-        "concepts": [
-          "ordering-policy"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "otherwise",
+        "term": "component",
         "mode": "glyph",
+        "rationale": "Component definition; Component usage; Occurrence typing relationship; Root component; Inline root composition.",
         "concepts": [
-          "request"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+          "component-definition",
+          "component-usage",
+          "type-relationship",
+          "root-component",
+          "inline-root"
+        ]
       },
       {
-        "term": "overflow",
-        "mode": "label",
-        "concepts": [
-          "overflow-policy"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "package",
+        "term": "def",
         "mode": "glyph",
+        "rationale": "Component definition; Reusable QoS policy.",
         "concepts": [
-          "package"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+          "component-definition",
+          "qos-policy-definition"
+        ]
+      },
+      {
+        "term": "specializes",
+        "mode": "glyph",
+        "rationale": "Component specialization.",
+        "concepts": [
+          "component-specialization"
+        ]
+      },
+      {
+        "term": "redefines",
+        "mode": "label",
+        "rationale": "Member redefinition.",
+        "concepts": [
+          "member-redefinition"
+        ]
       },
       {
         "term": "port",
         "mode": "glyph",
+        "rationale": "Data sender port; Data receiver port; RPC client port; RPC server port; Event publisher port; Event subscriber port; Service provider port; Service consumer port.",
         "concepts": [
           "port-sender",
           "port-receiver",
@@ -4108,371 +4058,654 @@
           "port-subscriber",
           "port-provides",
           "port-requires"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "priority",
-        "mode": "label",
-        "concepts": [
-          "transition-priority"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "process",
-        "mode": "glyph",
-        "concepts": [
-          "execution-node"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "provides",
-        "mode": "glyph",
-        "concepts": [
-          "port-provides"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "publish",
-        "mode": "glyph",
-        "concepts": [
-          "publish",
-          "case-event-exchange"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "publisher",
-        "mode": "glyph",
-        "concepts": [
-          "port-publisher"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "publishSubscribe",
-        "mode": "glyph",
-        "concepts": [
-          "publish-subscribe-interface"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "qos",
-        "mode": "label",
-        "concepts": [
-          "delivery-policy"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "queued",
-        "mode": "label",
-        "concepts": [
-          "data-member"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "Real",
-        "mode": "label",
-        "concepts": [
-          "primitive-types"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "realtime",
-        "mode": "label",
-        "concepts": [
-          "execution-profile"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "receive",
-        "mode": "glyph",
-        "concepts": [
-          "trigger-receive",
-          "transition"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "receiver",
-        "mode": "glyph",
-        "concepts": [
-          "port-receiver"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "record",
-        "mode": "label",
-        "concepts": [
-          "record-value"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "reentrant",
-        "mode": "label",
-        "concepts": [
-          "concurrency-mode"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "reject",
-        "mode": "label",
-        "concepts": [
-          "overflow-policy"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "reply",
-        "mode": "glyph",
-        "concepts": [
-          "case-reply"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "request",
-        "mode": "glyph",
-        "concepts": [
-          "request",
-          "case-request"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "requirement",
-        "mode": "glyph",
-        "concepts": [
-          "requirement"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "requires",
-        "mode": "glyph",
-        "concepts": [
-          "port-requires"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "return",
-        "mode": "glyph",
-        "concepts": [
-          "return"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "s",
-        "mode": "label",
-        "concepts": [
-          "duration"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "sampled",
-        "mode": "label",
-        "concepts": [
-          "data-member"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "satisfies",
-        "mode": "glyph",
-        "concepts": [
-          "satisfies-link"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "send",
-        "mode": "glyph",
-        "concepts": [
-          "send",
-          "case-data-exchange"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+        ]
       },
       {
         "term": "sender",
         "mode": "glyph",
+        "rationale": "Data sender port.",
         "concepts": [
           "port-sender"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+        ]
       },
       {
-        "term": "senderReceiver",
+        "term": "receiver",
         "mode": "glyph",
+        "rationale": "Data receiver port.",
         "concepts": [
-          "sender-receiver-interface"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+          "port-receiver"
+        ]
       },
       {
-        "term": "serial",
-        "mode": "label",
+        "term": "client",
+        "mode": "glyph",
+        "rationale": "RPC client port.",
         "concepts": [
-          "concurrency-mode"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
+          "port-client"
+        ]
       },
       {
         "term": "server",
         "mode": "glyph",
+        "rationale": "RPC server port.",
         "concepts": [
           "port-server"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+        ]
       },
       {
-        "term": "service",
+        "term": "publisher",
         "mode": "glyph",
+        "rationale": "Event publisher port.",
         "concepts": [
-          "service-interface",
-          "execution-profile"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "start",
-        "mode": "label",
-        "concepts": [
-          "trigger-start"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "state",
-        "mode": "glyph",
-        "concepts": [
-          "state",
-          "final-state"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
-      },
-      {
-        "term": "String",
-        "mode": "label",
-        "concepts": [
-          "primitive-types"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
+          "port-publisher"
+        ]
       },
       {
         "term": "subscriber",
         "mode": "glyph",
+        "rationale": "Event subscriber port.",
         "concepts": [
           "port-subscriber"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+        ]
       },
       {
-        "term": "SV",
+        "term": "provides",
         "mode": "glyph",
+        "rationale": "Service provider port.",
         "concepts": [
-          "view-sv"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+          "port-provides"
+        ]
       },
       {
-        "term": "timing",
+        "term": "requires",
+        "mode": "glyph",
+        "rationale": "Service consumer port.",
+        "concepts": [
+          "port-requires"
+        ]
+      },
+      {
+        "term": "optional",
         "mode": "label",
+        "rationale": "Optional port.",
         "concepts": [
-          "timing-contract"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
+          "optional-port"
+        ]
       },
       {
-        "term": "transition",
+        "term": "var",
         "mode": "glyph",
+        "rationale": "Private component variable; Local declaration.",
         "concepts": [
-          "transition"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+          "private-variable",
+          "local-declaration"
+        ]
       },
       {
-        "term": "true",
+        "term": "realtime",
         "mode": "label",
+        "rationale": "Root execution profile.",
         "concepts": [
-          "expression"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
+          "execution-profile"
+        ]
       },
       {
-        "term": "unit",
-        "mode": "glyph",
+        "term": "mixed",
+        "mode": "label",
+        "rationale": "Root execution profile.",
         "concepts": [
-          "inline-root",
-          "unit-definition",
-          "unit-usage",
-          "type-relationship"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+          "execution-profile"
+        ]
+      },
+      {
+        "term": "deploy",
+        "mode": "glyph",
+        "rationale": "Deployment binding.",
+        "concepts": [
+          "deployment"
+        ]
+      },
+      {
+        "term": "on",
+        "mode": "glyph",
+        "rationale": "Startup activation; Manual activation; Periodic activation; Port receive activation; RPC handler activation; State transition; Deployment binding.",
+        "concepts": [
+          "trigger-start",
+          "trigger-manual",
+          "trigger-periodic",
+          "trigger-receive",
+          "trigger-call",
+          "transition",
+          "deployment"
+        ]
+      },
+      {
+        "term": "connect",
+        "mode": "glyph",
+        "rationale": "Interface connector.",
+        "concepts": [
+          "connector"
+        ]
+      },
+      {
+        "term": "delegate",
+        "mode": "glyph",
+        "rationale": "Boundary delegation.",
+        "concepts": [
+          "delegation"
+        ]
+      },
+      {
+        "term": "qos",
+        "mode": "glyph",
+        "rationale": "Delivery policy; Reusable QoS policy; Named connector policy.",
+        "concepts": [
+          "delivery-policy",
+          "qos-policy-definition",
+          "qos-policy-reference"
+        ]
+      },
+      {
+        "term": "delivery",
+        "mode": "label",
+        "rationale": "Delivery policy.",
+        "concepts": [
+          "delivery-policy"
+        ]
+      },
+      {
+        "term": "bestEffort",
+        "mode": "label",
+        "rationale": "Delivery policy.",
+        "concepts": [
+          "delivery-policy"
+        ]
+      },
+      {
+        "term": "atMostOnce",
+        "mode": "label",
+        "rationale": "Delivery policy.",
+        "concepts": [
+          "delivery-policy"
+        ]
+      },
+      {
+        "term": "atLeastOnce",
+        "mode": "label",
+        "rationale": "Delivery policy.",
+        "concepts": [
+          "delivery-policy"
+        ]
+      },
+      {
+        "term": "ordering",
+        "mode": "label",
+        "rationale": "Queue ordering.",
+        "concepts": [
+          "ordering-policy"
+        ]
+      },
+      {
+        "term": "fifo",
+        "mode": "label",
+        "rationale": "Queue ordering.",
+        "concepts": [
+          "ordering-policy"
+        ]
       },
       {
         "term": "unordered",
         "mode": "label",
+        "rationale": "Queue ordering.",
         "concepts": [
           "ordering-policy"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
+        ]
       },
       {
-        "term": "us",
+        "term": "capacity",
         "mode": "label",
+        "rationale": "Queue capacity.",
         "concepts": [
-          "duration"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
+          "capacity-policy"
+        ]
       },
       {
-        "term": "var",
+        "term": "overflow",
         "mode": "label",
+        "rationale": "Overflow behavior.",
         "concepts": [
-          "private-variable"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
+          "overflow-policy"
+        ]
       },
       {
-        "term": "version",
+        "term": "dropOldest",
+        "mode": "label",
+        "rationale": "Overflow behavior.",
+        "concepts": [
+          "overflow-policy"
+        ]
+      },
+      {
+        "term": "dropNewest",
+        "mode": "label",
+        "rationale": "Overflow behavior.",
+        "concepts": [
+          "overflow-policy"
+        ]
+      },
+      {
+        "term": "reject",
+        "mode": "label",
+        "rationale": "Overflow behavior.",
+        "concepts": [
+          "overflow-policy"
+        ]
+      },
+      {
+        "term": "maxLatency",
+        "mode": "label",
+        "rationale": "Transport latency bound.",
+        "concepts": [
+          "latency-bound"
+        ]
+      },
+      {
+        "term": "maxAge",
+        "mode": "label",
+        "rationale": "Message freshness bound.",
+        "concepts": [
+          "freshness-bound"
+        ]
+      },
+      {
+        "term": "start",
+        "mode": "label",
+        "rationale": "Startup activation.",
+        "concepts": [
+          "trigger-start"
+        ]
+      },
+      {
+        "term": "manual",
+        "mode": "label",
+        "rationale": "Manual activation.",
+        "concepts": [
+          "trigger-manual"
+        ]
+      },
+      {
+        "term": "every",
+        "mode": "label",
+        "rationale": "Periodic activation.",
+        "concepts": [
+          "trigger-periodic"
+        ]
+      },
+      {
+        "term": "receive",
         "mode": "glyph",
+        "rationale": "Port receive activation; State transition.",
         "concepts": [
-          "sender-receiver-interface",
-          "client-server-interface",
-          "publish-subscribe-interface",
-          "service-interface"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+          "trigger-receive",
+          "transition"
+        ]
+      },
+      {
+        "term": "call",
+        "mode": "glyph",
+        "rationale": "RPC handler activation; Local function call; Routed function call; Case request.",
+        "concepts": [
+          "trigger-call",
+          "local-call",
+          "routed-call",
+          "case-request"
+        ]
+      },
+      {
+        "term": "timing",
+        "mode": "label",
+        "rationale": "Function timing contract.",
+        "concepts": [
+          "timing-contract"
+        ]
+      },
+      {
+        "term": "wcet",
+        "mode": "label",
+        "rationale": "Function timing contract.",
+        "concepts": [
+          "timing-contract"
+        ]
+      },
+      {
+        "term": "deadline",
+        "mode": "label",
+        "rationale": "Function timing contract.",
+        "concepts": [
+          "timing-contract"
+        ]
+      },
+      {
+        "term": "concurrency",
+        "mode": "label",
+        "rationale": "Concurrency mode.",
+        "concepts": [
+          "concurrency-mode"
+        ]
+      },
+      {
+        "term": "serial",
+        "mode": "label",
+        "rationale": "Concurrency mode.",
+        "concepts": [
+          "concurrency-mode"
+        ]
+      },
+      {
+        "term": "reentrant",
+        "mode": "label",
+        "rationale": "Concurrency mode.",
+        "concepts": [
+          "concurrency-mode"
+        ]
+      },
+      {
+        "term": "calc",
+        "mode": "label",
+        "rationale": "Pure calculation.",
+        "concepts": [
+          "calculation"
+        ]
+      },
+      {
+        "term": "in",
+        "mode": "label",
+        "rationale": "Pure calculation.",
+        "concepts": [
+          "calculation"
+        ]
+      },
+      {
+        "term": "return",
+        "mode": "glyph",
+        "rationale": "Pure calculation; Function return.",
+        "concepts": [
+          "calculation",
+          "return"
+        ]
+      },
+      {
+        "term": "send",
+        "mode": "glyph",
+        "rationale": "Data send; Case data exchange.",
+        "concepts": [
+          "send",
+          "case-data-exchange"
+        ]
+      },
+      {
+        "term": "publish",
+        "mode": "glyph",
+        "rationale": "Event publication; Case event exchange.",
+        "concepts": [
+          "publish",
+          "case-event-exchange"
+        ]
+      },
+      {
+        "term": "as",
+        "mode": "glyph",
+        "rationale": "Routed function call.",
+        "concepts": [
+          "routed-call"
+        ]
+      },
+      {
+        "term": "within",
+        "mode": "glyph",
+        "rationale": "Routed function call.",
+        "concepts": [
+          "routed-call"
+        ]
+      },
+      {
+        "term": "otherwise",
+        "mode": "glyph",
+        "rationale": "Routed function call.",
+        "concepts": [
+          "routed-call"
+        ]
+      },
+      {
+        "term": "if",
+        "mode": "glyph",
+        "rationale": "Conditional branch.",
+        "concepts": [
+          "conditional"
+        ]
+      },
+      {
+        "term": "else",
+        "mode": "glyph",
+        "rationale": "Conditional branch.",
+        "concepts": [
+          "conditional"
+        ]
+      },
+      {
+        "term": "while",
+        "mode": "glyph",
+        "rationale": "Bounded loop.",
+        "concepts": [
+          "bounded-loop"
+        ]
+      },
+      {
+        "term": "bound",
+        "mode": "glyph",
+        "rationale": "Bounded loop.",
+        "concepts": [
+          "bounded-loop"
+        ]
+      },
+      {
+        "term": "fail",
+        "mode": "glyph",
+        "rationale": "Failure.",
+        "concepts": [
+          "fail"
+        ]
+      },
+      {
+        "term": "assert",
+        "mode": "glyph",
+        "rationale": "Assertion.",
+        "concepts": [
+          "assert"
+        ]
+      },
+      {
+        "term": "initial",
+        "mode": "glyph",
+        "rationale": "Function with states; Initial state reference.",
+        "concepts": [
+          "stateful-function",
+          "initial-state"
+        ]
+      },
+      {
+        "term": "state",
+        "mode": "glyph",
+        "rationale": "State; Final state.",
+        "concepts": [
+          "state",
+          "final-state"
+        ]
+      },
+      {
+        "term": "final",
+        "mode": "glyph",
+        "rationale": "Final state.",
+        "concepts": [
+          "final-state"
+        ]
+      },
+      {
+        "term": "entry",
+        "mode": "label",
+        "rationale": "State entry behavior.",
+        "concepts": [
+          "state-entry"
+        ]
+      },
+      {
+        "term": "exit",
+        "mode": "label",
+        "rationale": "State exit behavior.",
+        "concepts": [
+          "state-exit"
+        ]
+      },
+      {
+        "term": "transition",
+        "mode": "glyph",
+        "rationale": "State transition.",
+        "concepts": [
+          "transition"
+        ]
+      },
+      {
+        "term": "completion",
+        "mode": "glyph",
+        "rationale": "Completion transition.",
+        "concepts": [
+          "completion-transition"
+        ]
+      },
+      {
+        "term": "after",
+        "mode": "glyph",
+        "rationale": "Residence timer transition; Case causal order.",
+        "concepts": [
+          "timer-transition",
+          "case-causal-order"
+        ]
+      },
+      {
+        "term": "when",
+        "mode": "label",
+        "rationale": "Transition guard.",
+        "concepts": [
+          "transition-guard"
+        ]
+      },
+      {
+        "term": "priority",
+        "mode": "label",
+        "rationale": "Transition priority.",
+        "concepts": [
+          "transition-priority"
+        ]
+      },
+      {
+        "term": "requirement",
+        "mode": "glyph",
+        "rationale": "Requirement.",
+        "concepts": [
+          "requirement"
+        ]
+      },
+      {
+        "term": "attribute",
+        "mode": "label",
+        "rationale": "Requirement attribute.",
+        "concepts": [
+          "requirement-attribute"
+        ]
+      },
+      {
+        "term": "satisfy",
+        "mode": "glyph",
+        "rationale": "Satisfaction relation.",
+        "concepts": [
+          "satisfies-link"
+        ]
+      },
+      {
+        "term": "by",
+        "mode": "glyph",
+        "rationale": "Satisfaction relation.",
+        "concepts": [
+          "satisfies-link"
+        ]
+      },
+      {
+        "term": "verify",
+        "mode": "glyph",
+        "rationale": "Verification relation.",
+        "concepts": [
+          "verification-link"
+        ]
+      },
+      {
+        "term": "useCase",
+        "mode": "glyph",
+        "rationale": "Use case.",
+        "concepts": [
+          "case"
+        ]
+      },
+      {
+        "term": "verificationCase",
+        "mode": "glyph",
+        "rationale": "Verification case.",
+        "concepts": [
+          "verification-case"
+        ]
+      },
+      {
+        "term": "for",
+        "mode": "glyph",
+        "rationale": "Use case.",
+        "concepts": [
+          "case"
+        ]
+      },
+      {
+        "term": "reply",
+        "mode": "glyph",
+        "rationale": "Correlated case reply.",
+        "concepts": [
+          "case-reply"
+        ]
       },
       {
         "term": "via",
         "mode": "glyph",
+        "rationale": "Case data exchange; Case event exchange; Case request; Correlated case reply.",
         "concepts": [
           "case-data-exchange",
           "case-event-exchange",
           "case-request",
           "case-reply"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+        ]
+      },
+      {
+        "term": "label",
+        "mode": "glyph",
+        "rationale": "Case data exchange; Case event exchange; Case request; Correlated case reply; Case causal order.",
+        "concepts": [
+          "case-data-exchange",
+          "case-event-exchange",
+          "case-request",
+          "case-reply",
+          "case-causal-order"
+        ]
       },
       {
         "term": "view",
         "mode": "glyph",
+        "rationale": "General View; Interconnect View; Case View; Sequence View; Grid View; Flow View.",
         "concepts": [
           "view-gv",
           "view-iv",
@@ -4480,216 +4713,338 @@
           "view-sv",
           "view-grv",
           "view-fv"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+        ]
       },
       {
-        "term": "Void",
-        "mode": "label",
-        "concepts": [
-          "primitive-types"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "wcet",
-        "mode": "label",
-        "concepts": [
-          "timing-contract"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "when",
-        "mode": "label",
-        "concepts": [
-          "transition-guard"
-        ],
-        "rationale": "Rendered as text in its owning compartment/property; no independent semantic glyph is introduced."
-      },
-      {
-        "term": "while",
+        "term": "gv",
         "mode": "glyph",
+        "rationale": "General View.",
         "concepts": [
-          "bounded-loop"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+          "view-gv"
+        ]
       },
       {
-        "term": "within",
+        "term": "iv",
         "mode": "glyph",
+        "rationale": "Interconnect View.",
         "concepts": [
-          "request"
-        ],
-        "rationale": "Represented by the named semantic construct; the keyword remains explicit in its heading/edge label."
+          "view-iv"
+        ]
+      },
+      {
+        "term": "cv",
+        "mode": "glyph",
+        "rationale": "Case View.",
+        "concepts": [
+          "view-cv"
+        ]
+      },
+      {
+        "term": "sv",
+        "mode": "glyph",
+        "rationale": "Sequence View.",
+        "concepts": [
+          "view-sv"
+        ]
+      },
+      {
+        "term": "grv",
+        "mode": "glyph",
+        "rationale": "Grid View.",
+        "concepts": [
+          "view-grv"
+        ]
+      },
+      {
+        "term": "fv",
+        "mode": "glyph",
+        "rationale": "Flow View.",
+        "concepts": [
+          "view-fv"
+        ]
+      },
+      {
+        "term": "of",
+        "mode": "glyph",
+        "rationale": "General View; Interconnect View; Case View; Sequence View; Grid View; Flow View.",
+        "concepts": [
+          "view-gv",
+          "view-iv",
+          "view-cv",
+          "view-sv",
+          "view-grv",
+          "view-fv"
+        ]
+      },
+      {
+        "term": "include",
+        "mode": "glyph",
+        "rationale": "Filtered view selection.",
+        "concepts": [
+          "view-selection"
+        ]
+      },
+      {
+        "term": "recursive",
+        "mode": "glyph",
+        "rationale": "Filtered view selection.",
+        "concepts": [
+          "view-selection"
+        ]
+      },
+      {
+        "term": "where",
+        "mode": "glyph",
+        "rationale": "Filtered view selection.",
+        "concepts": [
+          "view-selection"
+        ]
+      },
+      {
+        "term": "ns",
+        "mode": "label",
+        "rationale": "Duration value.",
+        "concepts": [
+          "duration"
+        ]
+      },
+      {
+        "term": "us",
+        "mode": "label",
+        "rationale": "Duration value.",
+        "concepts": [
+          "duration"
+        ]
+      },
+      {
+        "term": "ms",
+        "mode": "label",
+        "rationale": "Duration value.",
+        "concepts": [
+          "duration"
+        ]
+      },
+      {
+        "term": "s",
+        "mode": "label",
+        "rationale": "Duration value.",
+        "concepts": [
+          "duration"
+        ]
+      },
+      {
+        "term": "or",
+        "mode": "label",
+        "rationale": "Expressions and value paths.",
+        "concepts": [
+          "expression"
+        ]
+      },
+      {
+        "term": "and",
+        "mode": "label",
+        "rationale": "Expressions and value paths.",
+        "concepts": [
+          "expression"
+        ]
+      },
+      {
+        "term": "not",
+        "mode": "label",
+        "rationale": "Expressions and value paths.",
+        "concepts": [
+          "expression"
+        ]
+      },
+      {
+        "term": "true",
+        "mode": "label",
+        "rationale": "Expressions and value paths.",
+        "concepts": [
+          "expression"
+        ]
+      },
+      {
+        "term": "false",
+        "mode": "label",
+        "rationale": "Expressions and value paths.",
+        "concepts": [
+          "expression"
+        ]
+      },
+      {
+        "term": "record",
+        "mode": "label",
+        "rationale": "Record construction.",
+        "concepts": [
+          "record-value"
+        ]
+      },
+      {
+        "term": "doc",
+        "mode": "label",
+        "rationale": "Formal documentation.",
+        "concepts": [
+          "formal-documentation"
+        ]
       }
     ],
     "productions": [
       {
         "term": "Model",
         "mode": "text-only",
-        "concepts": [],
-        "rationale": "A source/workspace container, shown by Browser/package context; it has no additional authored glyph."
+        "rationale": "A source/workspace container, shown by Browser/package context; it has no additional authored glyph.",
+        "concepts": []
       },
       {
         "term": "Package",
         "mode": "glyph",
+        "rationale": "Package; Browser.",
         "concepts": [
           "package",
           "view-browser"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
       },
       {
         "term": "Import",
         "mode": "glyph",
+        "rationale": "Package import.",
         "concepts": [
           "import"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
       },
       {
         "term": "Element",
         "mode": "text-only",
-        "concepts": [],
-        "rationale": "Grammar union selecting a top-level element; each concrete alternative has its own notation."
+        "rationale": "Grammar union selecting a top-level element; each concrete alternative has its own notation.",
+        "concepts": []
       },
       {
         "term": "DataType",
         "mode": "glyph",
+        "rationale": "Record datatype.",
         "concepts": [
           "datatype"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
       },
       {
         "term": "EnumType",
         "mode": "glyph",
+        "rationale": "Enumeration.",
         "concepts": [
           "enumeration"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
       },
       {
         "term": "Parameter",
         "mode": "label",
+        "rationale": "Parameter or record field.",
         "concepts": [
           "parameter"
-        ],
-        "rationale": "Owned textual value, member or property rendered in the referenced concept."
+        ]
       },
       {
         "term": "TypeRef",
         "mode": "label",
+        "rationale": "Primitive types; Fixed array type and value.",
         "concepts": [
           "primitive-types",
           "array-value"
-        ],
-        "rationale": "Owned textual value, member or property rendered in the referenced concept."
+        ]
       },
       {
         "term": "ValueType",
-        "mode": "text-only",
-        "concepts": [],
-        "rationale": "A type union of records/enums; concrete value declarations carry the symbols."
+        "mode": "glyph",
+        "rationale": "Record datatype; Enumeration.",
+        "concepts": [
+          "datatype",
+          "enumeration"
+        ]
       },
       {
         "term": "Interface",
         "mode": "glyph",
+        "rationale": "Sender–receiver interface; Client–server interface; Publish–subscribe interface; Service interface.",
         "concepts": [
           "sender-receiver-interface",
           "client-server-interface",
           "publish-subscribe-interface",
           "service-interface"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
       },
       {
         "term": "InterfaceMember",
-        "mode": "text-only",
-        "concepts": [],
-        "rationale": "A member union; data/event/signature rows are shown in their interface compartment."
+        "mode": "label",
+        "rationale": "Data member; Event member; Interface function signature.",
+        "concepts": [
+          "data-member",
+          "event-member",
+          "function-signature"
+        ]
       },
       {
         "term": "DataMember",
         "mode": "label",
+        "rationale": "Data member.",
         "concepts": [
           "data-member"
-        ],
-        "rationale": "Owned textual value, member or property rendered in the referenced concept."
+        ]
       },
       {
         "term": "EventMember",
         "mode": "label",
+        "rationale": "Event member.",
         "concepts": [
           "event-member"
-        ],
-        "rationale": "Owned textual value, member or property rendered in the referenced concept."
+        ]
       },
       {
         "term": "Signature",
         "mode": "label",
+        "rationale": "Interface function signature.",
         "concepts": [
-          "operation-signature"
-        ],
-        "rationale": "Owned textual value, member or property rendered in the referenced concept."
+          "function-signature"
+        ]
       },
       {
         "term": "Argument",
         "mode": "label",
+        "rationale": "Parameter or record field.",
         "concepts": [
           "parameter"
-        ],
-        "rationale": "Owned textual value, member or property rendered in the referenced concept."
+        ]
       },
       {
         "term": "Component",
         "mode": "glyph",
+        "rationale": "Component definition; Component specialization.",
         "concepts": [
-          "component-definition"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+          "component-definition",
+          "component-specialization"
+        ]
       },
       {
         "term": "ComponentMember",
-        "mode": "text-only",
-        "concepts": [],
-        "rationale": "Grammar union of component members; represented by the concrete member not by another box."
-      },
-      {
-        "term": "Unit",
-        "mode": "glyph",
+        "mode": "label",
+        "rationale": "Member redefinition.",
         "concepts": [
-          "unit-definition"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
-      },
-      {
-        "term": "UnitMember",
-        "mode": "text-only",
-        "concepts": [],
-        "rationale": "Grammar union of unit members; represented by ports, values, functions and operations."
-      },
-      {
-        "term": "Definition",
-        "mode": "text-only",
-        "concepts": [],
-        "rationale": "A type union of component/unit definitions; concrete definitions carry the graphical symbols."
+          "member-redefinition"
+        ]
       },
       {
         "term": "Instance",
         "mode": "glyph",
+        "rationale": "Component usage; Occurrence typing relationship; Occurrence lifeline.",
         "concepts": [
           "component-usage",
-          "unit-usage",
-          "sequence-lifeline",
-          "type-relationship"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+          "type-relationship",
+          "sequence-lifeline"
+        ]
       },
       {
         "term": "Port",
         "mode": "glyph",
+        "rationale": "Data sender port; Data receiver port; RPC client port; RPC server port; Event publisher port; Event subscriber port; Service provider port; Service consumer port; Optional port.",
         "concepts": [
           "port-sender",
           "port-receiver",
@@ -4700,271 +5055,339 @@
           "port-provides",
           "port-requires",
           "optional-port"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
       },
       {
         "term": "Variable",
         "mode": "label",
+        "rationale": "Private component variable.",
         "concepts": [
           "private-variable"
-        ],
-        "rationale": "Owned textual value, member or property rendered in the referenced concept."
+        ]
       },
       {
         "term": "RootComponent",
         "mode": "glyph",
+        "rationale": "Occurrence typing relationship; Root component; Inline root composition; Root execution profile.",
         "concepts": [
+          "type-relationship",
           "root-component",
           "inline-root",
-          "execution-profile",
-          "type-relationship"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+          "execution-profile"
+        ]
       },
       {
         "term": "RootMember",
-        "mode": "text-only",
-        "concepts": [],
-        "rationale": "A grammar union of root composition/binding members; it adds no separate graphical node."
-      },
-      {
-        "term": "Node",
         "mode": "glyph",
+        "rationale": "Root component; Inline root composition.",
         "concepts": [
-          "execution-node"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+          "root-component",
+          "inline-root"
+        ]
       },
       {
         "term": "Deployment",
         "mode": "glyph",
+        "rationale": "External deployment target; Deployment binding.",
         "concepts": [
+          "deployment-target",
           "deployment"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
       },
       {
         "term": "Connect",
         "mode": "glyph",
+        "rationale": "Interface connector.",
         "concepts": [
           "connector"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
       },
       {
         "term": "Delegate",
         "mode": "glyph",
+        "rationale": "Boundary delegation.",
         "concepts": [
           "delegation"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
+      },
+      {
+        "term": "QosPolicy",
+        "mode": "glyph",
+        "rationale": "Reusable QoS policy.",
+        "concepts": [
+          "qos-policy-definition"
+        ]
       },
       {
         "term": "Qos",
         "mode": "label",
+        "rationale": "Delivery policy; Queue ordering; Queue capacity; Overflow behavior; Transport latency bound; Message freshness bound; Named connector policy.",
         "concepts": [
           "delivery-policy",
           "ordering-policy",
           "capacity-policy",
           "overflow-policy",
           "latency-bound",
-          "freshness-bound"
-        ],
-        "rationale": "Owned textual value, member or property rendered in the referenced concept."
+          "freshness-bound",
+          "qos-policy-reference"
+        ]
       },
       {
-        "term": "Operation",
+        "term": "QosBody",
         "mode": "glyph",
+        "rationale": "Delivery policy; Queue ordering; Queue capacity; Overflow behavior; Transport latency bound; Message freshness bound; Reusable QoS policy.",
         "concepts": [
-          "operation",
-          "stateful-operation"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+          "delivery-policy",
+          "ordering-policy",
+          "capacity-policy",
+          "overflow-policy",
+          "latency-bound",
+          "freshness-bound",
+          "qos-policy-definition"
+        ]
+      },
+      {
+        "term": "FunctionDef",
+        "mode": "glyph",
+        "rationale": "Executable function; Function with states.",
+        "concepts": [
+          "function",
+          "stateful-function"
+        ]
+      },
+      {
+        "term": "FunctionFlow",
+        "mode": "glyph",
+        "rationale": "Executable function.",
+        "concepts": [
+          "function"
+        ]
       },
       {
         "term": "Trigger",
         "mode": "label",
+        "rationale": "Startup activation; Manual activation; Periodic activation; Port receive activation; RPC handler activation.",
         "concepts": [
           "trigger-start",
           "trigger-manual",
           "trigger-periodic",
           "trigger-receive",
           "trigger-call"
-        ],
-        "rationale": "Owned textual value, member or property rendered in the referenced concept."
+        ]
       },
       {
         "term": "Timing",
         "mode": "label",
+        "rationale": "Function timing contract; Concurrency mode.",
         "concepts": [
           "timing-contract",
           "concurrency-mode"
-        ],
-        "rationale": "Owned textual value, member or property rendered in the referenced concept."
+        ]
       },
       {
-        "term": "FunctionDef",
+        "term": "Calculation",
         "mode": "label",
+        "rationale": "Pure calculation.",
         "concepts": [
-          "pure-function"
-        ],
-        "rationale": "Owned textual value, member or property rendered in the referenced concept."
+          "calculation"
+        ]
       },
       {
         "term": "Block",
-        "mode": "text-only",
-        "concepts": [],
-        "rationale": "A lexical ordered grouping projected as its owning flow/state compartment; no independent executable identity."
+        "mode": "glyph",
+        "rationale": "Executable function; State entry behavior; State exit behavior.",
+        "concepts": [
+          "function",
+          "state-entry",
+          "state-exit"
+        ]
       },
       {
         "term": "Statement",
-        "mode": "text-only",
-        "concepts": [],
-        "rationale": "A statement union; concrete flow statements have their own owned projections."
+        "mode": "glyph",
+        "rationale": "Executable function.",
+        "concepts": [
+          "function"
+        ]
       },
       {
-        "term": "Let",
+        "term": "LocalVariable",
         "mode": "glyph",
+        "rationale": "Local declaration.",
         "concepts": [
           "local-declaration"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
       },
       {
         "term": "Assign",
         "mode": "glyph",
+        "rationale": "Assignment.",
         "concepts": [
           "assignment"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
       },
       {
         "term": "Send",
         "mode": "glyph",
+        "rationale": "Data send; Event publication.",
         "concepts": [
           "send",
           "publish"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
       },
       {
-        "term": "Request",
+        "term": "RemoteCall",
         "mode": "glyph",
+        "rationale": "Routed function call.",
         "concepts": [
-          "request"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+          "routed-call"
+        ]
       },
       {
-        "term": "Invoke",
+        "term": "LocalCall",
         "mode": "glyph",
+        "rationale": "Local function call.",
         "concepts": [
-          "invoke"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+          "local-call"
+        ]
       },
       {
         "term": "Return",
         "mode": "glyph",
+        "rationale": "Function return.",
         "concepts": [
           "return"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
       },
       {
         "term": "If",
         "mode": "glyph",
+        "rationale": "Conditional branch.",
         "concepts": [
           "conditional"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
       },
       {
         "term": "While",
         "mode": "glyph",
+        "rationale": "Bounded loop.",
         "concepts": [
           "bounded-loop"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
       },
       {
         "term": "Fail",
         "mode": "glyph",
+        "rationale": "Failure.",
         "concepts": [
           "fail"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
       },
       {
         "term": "Assert",
         "mode": "glyph",
+        "rationale": "Assertion.",
         "concepts": [
           "assert"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
       },
       {
         "term": "StateBody",
-        "mode": "text-only",
-        "concepts": [],
-        "rationale": "Direct state contents grouped by the owning operation; no independent machine element, allocation or glyph."
+        "mode": "glyph",
+        "rationale": "Function with states; Initial state reference.",
+        "concepts": [
+          "stateful-function",
+          "initial-state"
+        ]
       },
       {
         "term": "State",
         "mode": "glyph",
+        "rationale": "State; Final state; State entry behavior; State exit behavior.",
         "concepts": [
           "state",
           "final-state",
           "state-entry",
           "state-exit"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
       },
       {
         "term": "Transition",
         "mode": "glyph",
+        "rationale": "State transition; Transition guard; Transition priority; Completion transition; Residence timer transition.",
         "concepts": [
           "transition",
           "transition-guard",
           "transition-priority",
           "completion-transition",
           "timer-transition"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
       },
       {
         "term": "Requirement",
         "mode": "glyph",
+        "rationale": "Requirement.",
         "concepts": [
           "requirement"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
+      },
+      {
+        "term": "Attribute",
+        "mode": "label",
+        "rationale": "Requirement attribute.",
+        "concepts": [
+          "requirement-attribute"
+        ]
+      },
+      {
+        "term": "Documentation",
+        "mode": "label",
+        "rationale": "Formal documentation.",
+        "concepts": [
+          "formal-documentation"
+        ]
+      },
+      {
+        "term": "Satisfaction",
+        "mode": "glyph",
+        "rationale": "Satisfaction relation.",
+        "concepts": [
+          "satisfies-link"
+        ]
+      },
+      {
+        "term": "Verification",
+        "mode": "glyph",
+        "rationale": "Verification relation.",
+        "concepts": [
+          "verification-link"
+        ]
       },
       {
         "term": "Scenario",
         "mode": "glyph",
+        "rationale": "Use case; Verification case.",
         "concepts": [
           "case",
-          "satisfies-link"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+          "verification-case"
+        ]
       },
       {
         "term": "ScenarioStep",
         "mode": "glyph",
+        "rationale": "Case data exchange; Case event exchange; Case request; Correlated case reply; Case causal order.",
         "concepts": [
           "case-data-exchange",
           "case-event-exchange",
           "case-request",
           "case-reply",
           "case-causal-order"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
       },
       {
         "term": "View",
         "mode": "glyph",
+        "rationale": "General View; Interconnect View; Case View; Sequence View; Grid View; Flow View.",
         "concepts": [
           "view-gv",
           "view-iv",
@@ -4972,194 +5395,221 @@
           "view-sv",
           "view-grv",
           "view-fv"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
+      },
+      {
+        "term": "ViewSelection",
+        "mode": "glyph",
+        "rationale": "Filtered view selection.",
+        "concepts": [
+          "view-selection"
+        ]
       },
       {
         "term": "Duration",
         "mode": "glyph",
+        "rationale": "Transport latency bound; Message freshness bound; Residence timer transition; Duration value.",
         "concepts": [
           "latency-bound",
           "freshness-bound",
           "timer-transition",
           "duration"
-        ],
-        "rationale": "Concrete semantic concept projected using the referenced canonical notation."
+        ]
+      },
+      {
+        "term": "MemberPath",
+        "mode": "glyph",
+        "rationale": "Routed function call.",
+        "concepts": [
+          "routed-call"
+        ]
       },
       {
         "term": "Path",
         "mode": "text-only",
-        "concepts": [],
-        "rationale": "Containment/member path text identifies diagram subjects or endpoints, not an independent shape."
+        "rationale": "Containment/member path text identifies diagram subjects or endpoints, not an independent shape.",
+        "concepts": []
       },
       {
         "term": "QualifiedName",
         "mode": "text-only",
-        "concepts": [],
-        "rationale": "Package-qualified declaration identity is text in the owning label."
+        "rationale": "Package-qualified declaration identity is text in the owning label.",
+        "concepts": []
       },
       {
         "term": "ValuePath",
         "mode": "label",
+        "rationale": "Enumeration value.",
         "concepts": [
           "enum-value"
-        ],
-        "rationale": "Owned textual value, member or property rendered in the referenced concept."
+        ]
       },
       {
         "term": "Expression",
         "mode": "label",
+        "rationale": "Expressions and value paths.",
         "concepts": [
           "expression"
-        ],
-        "rationale": "Owned textual value, member or property rendered in the referenced concept."
+        ]
       },
       {
         "term": "OrExpression",
         "mode": "text-only",
-        "concepts": [],
-        "rationale": "Precedence grouping only; operator text belongs to the expression label."
+        "rationale": "Precedence grouping only; operator text belongs to the expression label.",
+        "concepts": []
       },
       {
         "term": "AndExpression",
         "mode": "text-only",
-        "concepts": [],
-        "rationale": "Precedence grouping only; operator text belongs to the expression label."
+        "rationale": "Precedence grouping only; operator text belongs to the expression label.",
+        "concepts": []
       },
       {
         "term": "EqualityExpression",
         "mode": "text-only",
-        "concepts": [],
-        "rationale": "Precedence grouping only; equality text belongs to the expression label."
+        "rationale": "Precedence grouping only; equality text belongs to the expression label.",
+        "concepts": []
       },
       {
         "term": "RelationalExpression",
         "mode": "text-only",
-        "concepts": [],
-        "rationale": "Precedence grouping only; comparison text belongs to the expression label."
+        "rationale": "Precedence grouping only; comparison text belongs to the expression label.",
+        "concepts": []
       },
       {
         "term": "AdditiveExpression",
         "mode": "text-only",
-        "concepts": [],
-        "rationale": "Precedence grouping only; arithmetic text belongs to the expression label."
+        "rationale": "Precedence grouping only; arithmetic text belongs to the expression label.",
+        "concepts": []
       },
       {
         "term": "MultiplicativeExpression",
         "mode": "text-only",
-        "concepts": [],
-        "rationale": "Precedence grouping only; arithmetic text belongs to the expression label."
+        "rationale": "Precedence grouping only; arithmetic text belongs to the expression label.",
+        "concepts": []
       },
       {
         "term": "UnaryExpression",
         "mode": "label",
+        "rationale": "Expressions and value paths.",
         "concepts": [
           "expression"
-        ],
-        "rationale": "Owned textual value, member or property rendered in the referenced concept."
+        ]
       },
       {
         "term": "PrimaryExpression",
         "mode": "text-only",
-        "concepts": [],
-        "rationale": "Grammar grouping of concrete expression forms; no separate authored semantic element."
+        "rationale": "Grammar grouping of concrete expression forms; no separate authored semantic element.",
+        "concepts": []
       },
       {
         "term": "Literal",
         "mode": "label",
+        "rationale": "Expressions and value paths.",
         "concepts": [
           "expression"
-        ],
-        "rationale": "Owned textual value, member or property rendered in the referenced concept."
+        ]
       },
       {
-        "term": "FunctionCall",
+        "term": "CalculationCall",
         "mode": "label",
+        "rationale": "Pure calculation.",
         "concepts": [
-          "pure-function"
-        ],
-        "rationale": "Owned textual value, member or property rendered in the referenced concept."
+          "calculation"
+        ]
       },
       {
         "term": "ReferenceExpression",
         "mode": "label",
+        "rationale": "Enumeration value; Expressions and value paths.",
         "concepts": [
           "enum-value",
           "expression"
-        ],
-        "rationale": "Owned textual value, member or property rendered in the referenced concept."
+        ]
       },
       {
         "term": "RecordLiteral",
         "mode": "label",
+        "rationale": "Record construction.",
         "concepts": [
           "record-value"
-        ],
-        "rationale": "Owned textual value, member or property rendered in the referenced concept."
+        ]
       },
       {
         "term": "FieldValue",
         "mode": "label",
+        "rationale": "Record construction.",
         "concepts": [
           "record-value"
-        ],
-        "rationale": "Owned textual value, member or property rendered in the referenced concept."
+        ]
       },
       {
         "term": "ArrayLiteral",
         "mode": "label",
+        "rationale": "Fixed array type and value.",
         "concepts": [
           "array-value"
-        ],
-        "rationale": "Owned textual value, member or property rendered in the referenced concept."
+        ]
       },
       {
         "term": "Numeric",
         "mode": "text-only",
-        "concepts": [],
-        "rationale": "Number conversion/lexical grouping; render the resulting value text in its owning label."
+        "rationale": "Number conversion/lexical grouping; render the resulting value text in its owning label.",
+        "concepts": []
       },
       {
         "term": "WS",
         "mode": "text-only",
-        "concepts": [],
-        "rationale": "Whitespace affects textual layout only; no semantic graphical representation."
+        "rationale": "Whitespace affects textual layout only; no semantic graphical representation.",
+        "concepts": []
+      },
+      {
+        "term": "DOC_COMMENT",
+        "mode": "label",
+        "rationale": "Formal documentation.",
+        "concepts": [
+          "formal-documentation"
+        ]
       },
       {
         "term": "ID",
         "mode": "text-only",
-        "concepts": [],
-        "rationale": "Identifier token supplies names on shapes and labels; no independent glyph."
+        "rationale": "Identifier token supplies names on shapes and labels; no independent glyph.",
+        "concepts": []
       },
       {
         "term": "NUMBER",
         "mode": "text-only",
-        "concepts": [],
-        "rationale": "Real literal token is rendered as exact expression text; no independent glyph."
+        "rationale": "real literal token is rendered as exact expression text; no independent glyph.",
+        "concepts": []
       },
       {
         "term": "INT",
         "mode": "text-only",
-        "concepts": [],
-        "rationale": "Integer literal token is rendered as exact expression/property text; no independent glyph."
+        "rationale": "Integer literal token is rendered as exact expression/property text; no independent glyph.",
+        "concepts": []
       },
       {
         "term": "STRING",
         "mode": "text-only",
-        "concepts": [],
-        "rationale": "String literal token supplies values/requirement text; preserve escaping in source notation."
+        "rationale": "string literal token supplies values/requirement text; preserve escaping in source notation.",
+        "concepts": []
       },
       {
         "term": "ML_COMMENT",
-        "mode": "text-only",
-        "concepts": [],
-        "rationale": "Source comments are nonsemantic annotations and are not model elements."
+        "mode": "glyph",
+        "rationale": "Ordinary comment.",
+        "concepts": [
+          "ordinary-comment"
+        ]
       },
       {
         "term": "SL_COMMENT",
-        "mode": "text-only",
-        "concepts": [],
-        "rationale": "Source comments are nonsemantic annotations and are not model elements."
+        "mode": "glyph",
+        "rationale": "Ordinary comment.",
+        "concepts": [
+          "ordinary-comment"
+        ]
       }
     ]
   }

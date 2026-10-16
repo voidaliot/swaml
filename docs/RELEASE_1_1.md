@@ -19,6 +19,6 @@ The release gate passes **212 tests**, validates **nine example models**, checks
 
 The publication gate runs `npm run check`, covering the full test suite, every model validation and expected simulation, the complete grammar mapping, keyword coverage and graphical subjects. PDF verification checks the source bytes and hashes, bookmarks, links and page bounds. Every rendered page is visually inspected before release.
 
-The reference core provides parsing, broad static validation and bounded logical-time simulation. It remains S and partial V pending an independent conformance audit. It does not claim a kernel-validated exporter, physical realtime schedulability, universal safety/liveness, automatically realized cases, production middleware or a graphical editor. The VS Code extension is developed elsewhere against the documented language and host contracts.
+The reference core provides parsing, broad static validation and bounded logical-time simulation. It remains S and partial V pending an independent conformance audit. It does not claim a kernel-validated exporter, physical realtime schedulability, universal safety/liveness, automatically realized cases, production middleware or a graphical editor.
 
 The v0.1.0 release and v1.0.0 tagged edition remain immutable. Current artifacts are named 1.1.0 and embed their exact maintained sources; current syntax is not retroactively applied to historical editions.

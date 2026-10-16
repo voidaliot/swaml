@@ -2,7 +2,7 @@
   "width": 560,
   "height": 280,
   "title": "Transport latency bound",
-  "description": "Transport latency bound. Write maxLatency and an explicitly unit-bearing duration beside the corresponding connector.",
+  "description": "Transport latency bound. Write maxLatency and an explicitly component-bearing duration beside the corresponding connector.",
   "shapes": [
     {
       "kind": "rect",

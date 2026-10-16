@@ -1,0 +1,295 @@
+{
+  "width": 1080,
+  "height": 610,
+  "title": "4 · Keep behavior with its owning component",
+  "description": "Each card is a concrete component instance and lists its owned functions. A component can own private data and behavior together with child components; every function belongs to exactly one instance.",
+  "source": "spec/modeling-overview.json",
+  "graph": "functions",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 1080,
+      "height": 610,
+      "fill": "white",
+      "stroke": "none",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 20,
+      "y": 40,
+      "width": 500,
+      "height": 220,
+      "fill": "#eef5fa",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 72,
+      "text": "browser : BrowserClient",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          20,
+          86
+        ],
+        [
+          520,
+          86
+        ]
+      ],
+      "color": "#cad6df",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 115,
+      "text": "buy() · on start",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 143,
+      "text": "overOrder() · on manual",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 171,
+      "text": "confirmation(orderId)",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 199,
+      "text": "on receive checkout.accepted",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 560,
+      "y": 40,
+      "width": 500,
+      "height": 220,
+      "fill": "#eef5fa",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 576,
+      "y": 72,
+      "text": "application.checkout",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          560,
+          86
+        ],
+        [
+          1060,
+          86
+        ]
+      ],
+      "color": "#cad6df",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 576,
+      "y": 115,
+      "text": ": CheckoutService",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 576,
+      "y": 143,
+      "text": "submit(orderId, quantity): bool",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 576,
+      "y": 171,
+      "text": "on call api.submit",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 576,
+      "y": 199,
+      "text": "private acceptedOrders",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 20,
+      "y": 340,
+      "width": 500,
+      "height": 220,
+      "fill": "#eef5fa",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 372,
+      "text": "inventory.stock",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          20,
+          386
+        ],
+        [
+          520,
+          386
+        ]
+      ],
+      "color": "#cad6df",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 415,
+      "text": ": StockStore",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 443,
+      "text": "reserve(quantity): bool",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 471,
+      "text": "on call api.reserve",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 499,
+      "text": "private available",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 560,
+      "y": 340,
+      "width": 500,
+      "height": 220,
+      "fill": "#eef5fa",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 576,
+      "y": 372,
+      "text": "mailer : ReceiptWorker",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          560,
+          386
+        ],
+        [
+          1060,
+          386
+        ]
+      ],
+      "color": "#cad6df",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 576,
+      "y": 415,
+      "text": "prepareReceipt(orderId)",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 576,
+      "y": 443,
+      "text": "on receive input.created",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 576,
+      "y": 471,
+      "text": "private lastOrder + sent",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "width": 1000,
   "height": 750,
-  "title": "SV · Sequence View",
+  "title": "sv · Sequence View",
   "description": "Change: causality follows after labels. Rear notification is unordered with front notice/reply.",
   "shapes": [
     {
@@ -18,7 +18,7 @@
       "kind": "text",
       "x": 32,
       "y": 47,
-      "text": "SV · Sequence View",
+      "text": "sv · Sequence View",
       "size": 30,
       "bold": true,
       "color": "#17324d"

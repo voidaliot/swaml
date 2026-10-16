@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
-<title id="title">Operation return</title><desc id="desc">Operation return. Show a labeled return terminal in the owning operation flow; retain the returned expression when present.</desc>
+<title id="title">Function return</title><desc id="desc">Function return. Show a labeled return terminal in the owning function flow; retain the returned expression when present.</desc>
 <g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
 <rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
 <rect x="55" y="35" width="450" height="120" rx="12" fill="#ffffff" stroke="#111111"/>

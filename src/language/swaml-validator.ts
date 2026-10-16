@@ -1,10 +1,13 @@
 import { AstUtils, type AstNode, type ValidationAcceptor, type LangiumCoreServices } from 'langium';
 import * as a from './generated/ast.js';
 import { owner } from './swaml-scope.js';
-import { container, endpoint, members, named, nanos, resolvePath, resolveEnumLiteral, typeKey, type Container } from './semantic.js';
+import { container, effectiveQos, endpoint, members, named, nanos, resolvePath, resolveEnumLiteral, typeKey, type Container, specializes, effectiveFunction, isIntegralType, isNumericType, numericAssignable, integralInRange } from './semantic.js';
+
+import { resolvePresentationPath, selectView, validViewFilter } from './presentation.js';
 
 type Env = Map<string, string>;
 export class SwamlValidator {
+    private context?: Container;
     constructor(private services: LangiumCoreServices) {}
     checkModel(model: a.Model, accept: ValidationAcceptor): void {
         const parseResult = AstUtils.getDocument(model).parseResult;
@@ -13,8 +16,10 @@ export class SwamlValidator {
         const nodes = [model, ...AstUtils.streamAllContents(model)];
         const packages = [...this.services.shared.workspace.LangiumDocuments.all].flatMap(d => a.isModel(d.parseResult.value) ? d.parseResult.value.packages : []);
         for (const pkg of model.packages) if (packages.filter(p => p.name === pkg.name).length > 1) error(pkg, 'SW002', 'Package names must be unique across the workspace.');
-        
+
         for (const node of nodes) {
+            if ('name' in node && node.name === 'doc') error(node, 'SW003', 'doc is reserved for formal documentation.');
+            if (a.isEnumType(node) && node.literals.includes('doc')) error(node, 'SW003', 'doc is reserved for formal documentation.');
             const children = [...AstUtils.streamContents(node)].filter((n): n is AstNode & { name: string } => 'name' in n);
             const names = new Set<string>();
             for (const child of children) {
@@ -37,67 +42,75 @@ export class SwamlValidator {
             }
             if (a.isPort(node) && node.interface.ref) {
                 const roles = { senderReceiver: ['sender', 'receiver'], clientServer: ['client', 'server'], publishSubscribe: ['publisher', 'subscriber'], service: ['provides', 'requires'] };
-                if (!roles[node.interface.ref.kind].includes(node.role)) error(node, 'SW011', 'Port role does not match interface kind.');
+                if (!roles[node.interface.ref.kind].includes(node.role)) error(node, 'SW011', `Interface '${node.interface.ref.name}' has kind ${node.interface.ref.kind}; use port role ${roles[node.interface.ref.kind].join(' or ')}.`);
             }
             if (a.isRootComponent(node) && node.definition?.ref) {
                 for (const member of node.members) {
-                    if (!a.isNode(member) && !a.isDeployment(member)) error(member, 'SW012', 'A typed root may bind nodes and deployment only; change topology in its component definition.');
+                    if (!a.isDeployment(member)) error(member, 'SW012', 'A typed root may bind deployment only; change topology in its component definition.');
                     if ('name' in member && node.definition.ref.members.some(m => 'name' in m && m.name === member.name)) error(member, 'SW002', `Root binding name '${member.name}' duplicates a member of its definition.`);
                 }
             }
             if (a.isInstance(node) && node.definition.ref) {
-                if ((node.kind === 'unit') !== a.isUnit(node.definition.ref)) error(node, 'SW012', 'Instance kind must match its definition.');
-                const visit = (d: a.Definition, seen: Set<a.Definition>): boolean => {
+                const visit = (d: a.Component, seen: Set<a.Component>): boolean => {
                     if (seen.has(d)) return true;
                     const next = new Set(seen).add(d);
-                    return a.isComponent(d) && d.members.filter(a.isInstance).some(i => i.definition.ref && visit(i.definition.ref, next));
+                    return members(d).filter(a.isInstance).some(i => i.definition.ref && visit(i.definition.ref, next));
                 };
                 if (visit(node.definition.ref, new Set())) error(node, 'SW013', 'Recursive component containment is not allowed.');
             }
             if (a.isTypeRef(node)) {
                 if (node.size !== undefined && (!Number.isSafeInteger(node.size) || node.size <= 0)) error(node, 'SW020', 'Array size must be positive.');
-                if (node.primitive === 'Void' && !(a.isOperation(node.$container!) || a.isSignature(node.$container!) || a.isFunctionDef(node.$container!))) error(node, 'SW020', 'Void is allowed only as a result type.');
-                if (node.primitive === 'Void' && node.size !== undefined) error(node, 'SW020', 'Void cannot be an array.');
+                if (node.primitive === 'void' && !(a.isFunctionDef(node.$container!) || a.isSignature(node.$container!) || a.isCalculation(node.$container!))) error(node, 'SW020', 'void is allowed only as a result type.');
+                if (node.primitive === 'void' && node.size !== undefined) error(node, 'SW020', 'void cannot be an array.');
             }
             if (a.isDuration(node) && (!Number.isSafeInteger(nanos(node)) || node.value <= 0)) error(node, 'SW040', 'Duration must be positive and exactly representable in nanoseconds.');
-            if (a.isQos(node) && (!Number.isSafeInteger(node.capacity) || node.capacity <= 0)) error(node, 'SW041', 'Queue capacity must be a positive safe integer.');
+            if (a.isQosBody(node) && (!Number.isSafeInteger(node.capacity) || node.capacity <= 0)) error(node, 'SW041', 'Queue capacity must be a positive safe integer.');
             if (a.isTiming(node) && nanos(node.wcet) > nanos(node.deadline)) error(node, 'SW042', 'WCET must not exceed deadline.');
-            if (a.isConnect(node)) this.checkConnect(node, error);
             if (a.isDelegate(node)) {
-                const c = owner(node, a.isComponent);
+                const c = container(node);
                 const target = c && resolvePath(c, node.target);
                 const outer = node.outer.ref;
                 if (node.target.split('.').length !== 2 || !target || !a.isPort(target)) error(node, 'SW030', 'Delegate to one immediate child port: child.port.');
                 else if (outer && (outer.interface.ref !== target.interface.ref || outer.role !== target.role)) error(node, 'SW032', 'Delegation preserves interface identity and port role.');
             }
             if (a.isComponent(node) || a.isRootComponent(node)) {
-                const links = node.members.filter(a.isConnect);
+                const links = members(node).filter(a.isConnect);
                 for (const link of links) if (links.some(other => other !== link && other.source === link.source && other.target === link.target)) error(link, 'SW035', 'Duplicate connector endpoints are not allowed.');
-                if (a.isComponent(node)) {
-                    const delegates = node.members.filter(a.isDelegate);
-                    for (const d of delegates) if (delegates.some(other => other !== d && other.target === d.target)) error(d, 'SW033', 'A child port cannot have multiple boundary aliases.');
-                }
+                const delegates = members(node).filter(a.isDelegate);
+                for (const d of delegates) if (delegates.some(other => other !== d && other.target === d.target)) error(d, 'SW033', 'A child port cannot have multiple boundary aliases.');
             }
-            if (a.isComponent(node)) for (const port of node.members.filter(a.isPort)) {
-                if (node.members.filter(a.isDelegate).filter(d => d.outer.ref === port).length !== 1) error(port, 'SW033', 'Each component boundary port must delegate to exactly one child port.');
-            }
-            if (a.isUnit(node)) this.checkUnit(node, error);
+            if (a.isComponent(node)) this.checkInheritance(node, error);
+            if (a.isComponent(node) || (a.isRootComponent(node) && !node.definition)) this.checkComponent(node, error);
             if (a.isRootComponent(node)) this.checkRoot(node, error);
             if (a.isStateBody(node)) this.checkStateBody(node, error);
             if (a.isScenario(node)) this.checkScenario(node, error);
-            if (a.isView(node)) {
+            if (a.isAttribute(node)) this.expect(node.value, typeKey(node.type), new Map(), error);
+            if (a.isSatisfaction(node)) {
                 const pkg = owner(node, a.isPackage);
-                const [root, ...rest] = node.subject.split('.');
-                if (root === pkg?.name && pkg.elements.some(e => e.name === root)) error(node, 'SW080', 'View subject is ambiguous between its package and a declaration.');
-                let subject: AstNode | undefined = root === pkg?.name ? pkg : pkg?.elements.find(e => e.name === root);
-                if (subject && rest.length && (a.isUnit(subject) || a.isComponent(subject) || a.isRootComponent(subject))) subject = resolvePath(subject, rest.join('.'));
-                else if (rest.length) subject = undefined;
-                if (!subject) error(node, 'SW080', 'View subject must resolve in its package.');
-                if (subject && a.isInstance(subject)) subject = subject.definition.ref;
-                if (subject && a.isView(subject)) error(node, 'SW080', 'A view cannot use another view as its semantic subject.');
-                if (subject && node.kind === 'IV' && !a.isComponent(subject) && !a.isRootComponent(subject)) error(node, 'SW080', 'IV subject must be a component or root.');
-                if (subject && node.kind === 'FV' && !a.isOperation(subject)) error(node, 'SW080', 'FV subject must be an operation.');
-                if (subject && ['SV', 'CV'].includes(node.kind) && !a.isScenario(subject) && !a.isRootComponent(subject)) error(node, 'SW080', 'SV/CV subject must be a case or root.');
+                const target = pkg && resolvePresentationPath(pkg, node.source);
+                if (!target || a.isRequirement(target.node) || a.isScenario(target.node) || a.isPackage(target.node)) error(node, 'SW090', 'Satisfaction source must resolve to a design element in its package.');
+                if (target && pkg?.satisfactions.some(other => other !== node && resolvePresentationPath(pkg, other.source)?.path === target.path && other.requirement.ref === node.requirement.ref)) error(node, 'SW090', 'Duplicate satisfaction relation.');
+            }
+            if (a.isVerification(node)) {
+                const scenario = owner(node, a.isScenario);
+                if (scenario?.kind !== 'verificationCase') error(node, 'SW091', 'Only a verificationCase can own verify relations.');
+                if (scenario?.verifications.some(other => other !== node && other.requirement.ref === node.requirement.ref)) error(node, 'SW091', 'Duplicate verification relation.');
+            }
+            if (a.isView(node)) {
+                const pkg = owner(node, a.isPackage)!;
+                for (const selection of node.subject ? [{subject:node.subject, filter:undefined}] : node.selections) {
+                    if (!resolvePresentationPath(pkg,selection.subject)) error(node, 'SW080', 'View selection must resolve unambiguously in its package; views cannot select views.');
+                    if (selection.filter) {
+                        if (!validViewFilter(selection.filter)) error(selection.filter, 'SW080', 'Filters use name, kind or path, string/Boolean literals, ==, !=, and, or, not and parentheses.');
+                        else this.expect(selection.filter, 'bool', new Map([['name','string'],['kind','string'],['path','string']]), error);
+                    }
+                }
+                for (const selection of selectView(node)) {
+                    const subject = selection.node;
+                    if (node.kind === 'iv' && !a.isComponent(subject) && !a.isRootComponent(subject) && !a.isInstance(subject)) error(node, 'SW080', 'iv selects components.');
+                    if (node.kind === 'fv' && !a.isFunctionDef(subject)) error(node, 'SW080', 'fv selects executable functions.');
+                    if (['sv','cv'].includes(node.kind) && !a.isScenario(subject) && !a.isRootComponent(subject)) error(node, 'SW080', 'sv/cv select cases or roots.');
+                }
             }
         }
         for (const d of nodes.filter(a.isDataType)) {
@@ -108,92 +121,137 @@ export class SwamlValidator {
             if (visit(d, new Set())) error(d, 'SW021', 'Recursive value datatypes are not supported.');
         }
     }
-    private checkConnect(n: a.Connect, error: Reporter): void {
-        const c = container(n);
+    private checkInheritance(component: a.Component, error: Reporter): void {
+        const seen = new Set<a.Component>([component]);
+        let ancestor = component.specializes?.ref;
+        while (ancestor) {
+            if (seen.has(ancestor)) { error(component, 'SW015', 'Component specialization must be acyclic.'); break; }
+            seen.add(ancestor); ancestor = ancestor.specializes?.ref;
+        }
+        const inherited = component.specializes?.ref ? members(component.specializes.ref) : [];
+        const signature = (fn: a.FunctionDef) => `${fn.parameters.map(p => `${p.name}:${typeKey(p.type)}`).join(',')}):${typeKey(fn.result)}`;
+        const trigger = (fn: a.FunctionDef) => `${fn.trigger?.kind ?? ''}:${fn.trigger?.endpoint ?? ''}:${fn.trigger?.period ? nanos(fn.trigger.period) : ''}`;
+        for (const member of component.members) {
+            const base = inherited.find(n => a.isDelegate(member) ? a.isDelegate(n) && n.outer.$refText === member.outer.$refText : 'name' in member && 'name' in n && member.name === n.name);
+            if (!base) { if (member.redefines) error(member, 'SW014', 'redefines requires an inherited member with the same name.'); continue; }
+            if (!member.redefines) { error(member, 'SW014', 'An inherited member can only be replaced with redefines.'); continue; }
+            let compatible = member.$type === base.$type;
+            if (a.isPort(member) && a.isPort(base)) compatible &&= member.interface.ref === base.interface.ref && member.role === base.role && member.optional === base.optional;
+            if (a.isVariable(member) && a.isVariable(base)) compatible &&= typeKey(member.type) === typeKey(base.type);
+            if (a.isInstance(member) && a.isInstance(base)) compatible &&= !!member.definition.ref && !!base.definition.ref && specializes(member.definition.ref, base.definition.ref);
+            if (a.isFunctionDef(member) && a.isFunctionDef(base)) {
+                compatible &&= signature(member) === signature(base) && trigger(member) === trigger(base) && !!member.stateBody === !!base.stateBody;
+                if (base.timing) compatible &&= !!member.timing && member.timing.concurrency === base.timing.concurrency && nanos(member.timing.wcet) <= nanos(base.timing.wcet) && nanos(member.timing.deadline) <= nanos(base.timing.deadline);
+                else compatible &&= !member.timing || member.timing.concurrency === 'serial';
+            }
+            if (a.isConnect(member) && a.isConnect(base)) compatible &&= member.source === base.source && member.target === base.target;
+            if (a.isDelegate(member) && a.isDelegate(base)) compatible &&= member.outer.$refText === base.outer.$refText && member.target === base.target;
+            if (!compatible) error(member, 'SW014', 'Redefinition must preserve the inherited feature contract, signature and endpoint paths; child definitions may specialize the original type.');
+        }
+    }
+    private checkConnect(n: a.Connect, error: Reporter, c = container(n)): void {
         if (!c) return;
         const source = resolvePath(c, n.source), target = resolvePath(c, n.target);
-        if (n.source.split('.').length !== 2 || n.target.split('.').length !== 2 || !source || !target || !a.isPort(source) || !a.isPort(target)) {
-            error(n, 'SW030', 'Connect immediate child ports only: child.port -> child.port.'); return;
+        if (![1, 2].includes(n.source.split('.').length) || ![1, 2].includes(n.target.split('.').length) || !source || !target || !a.isPort(source) || !a.isPort(target)) {
+            error(n, 'SW030', 'Connect an owned port or immediate child port: port or child.port.'); return;
         }
         if (source.interface.ref !== target.interface.ref) error(n, 'SW031', 'Connected ports must reference the same nominal interface and version.');
         const pairs: Record<string, string> = { sender: 'receiver', client: 'server', publisher: 'subscriber', requires: 'provides' };
-        if (pairs[source.role] !== target.role) error(n, 'SW032', 'Incompatible connector direction or port roles.');
-        if (!n.qos) error(n, 'SW041', 'Every connector must declare explicit QoS.');
-        if (n.qos && source.interface.ref?.members.some(m => a.isDataMember(m) && m.mode === 'sampled') && (n.qos.capacity !== 1 || n.qos.overflow !== 'dropOldest')) error(n, 'SW041', 'Sampled interfaces use capacity 1 and dropOldest.');
-        if (n.qos?.delivery === 'atLeastOnce' && source.interface.ref?.members.some(m => a.isSignature(m) && !m.idempotent)) error(n, 'SW043', 'At-least-once RPC requires idempotent operations.');
+        if (pairs[source.role] !== target.role) error(n, 'SW032', 'Connect sender -> receiver, client -> server, publisher -> subscriber, or requires -> provides. Replies and service events use the reverse route.');
+        if (!n.qos) error(n, 'SW041', 'Select a complete connector policy: qos PolicyName or qos { delivery ...; ordering ...; capacity ...; overflow ...; }.');
+        const qos = effectiveQos(n.qos);
+        if (qos && source.interface.ref?.members.some(m => a.isDataMember(m) && m.mode === 'sampled') && (qos.capacity !== 1 || qos.overflow !== 'dropOldest')) error(n, 'SW041', 'Sampled interfaces use capacity 1 and dropOldest.');
+        if (qos?.delivery === 'atLeastOnce' && source.interface.ref?.members.some(m => a.isSignature(m) && !m.idempotent)) error(n, 'SW043', 'At-least-once RPC requires idempotent functions.');
     }
-    private checkUnit(unit: a.Unit, error: Reporter): void {
-        const vars = unit.members.filter(a.isVariable);
+    private checkComponent(component: Container, error: Reporter): void {
+        const previous = this.context; this.context = component;
+        const report = error;
+        error = (node, code, message) => report(AstUtils.getDocument(node) === AstUtils.getDocument(component) ? node : component, code, message);
+        if (a.isRootComponent(component)) for (const member of component.members) if ('redefines' in member && member.redefines) error(member, 'SW014', 'An inline root has no inherited members to redefine.');
+        for (const connection of members(component).filter(a.isConnect)) this.checkConnect(connection, error, component);
+        for (const delegation of members(component).filter(a.isDelegate)) {
+            const outer = named(component, delegation.outer.$refText), target = resolvePath(component, delegation.target);
+            if (!outer || !a.isPort(outer) || !target || !a.isPort(target) || outer.interface.ref !== target.interface.ref || outer.role !== target.role) error(delegation, 'SW032', 'Effective delegation preserves interface identity and port role.');
+        }
+        const vars = members(component).filter(a.isVariable);
         const base: Env = new Map(vars.map(v => [v.name, typeKey(v.type)]));
         for (const v of vars) this.expect(v.value, typeKey(v.type), new Map(), error);
-        for (const fn of unit.members.filter(a.isFunctionDef)) {
-            if (typeKey(fn.result) === 'Void') error(fn, 'SW020', 'Pure functions must return a value.');
-            for (const p of fn.parameters) if (base.has(p.name)) error(p, 'SW002', 'A parameter cannot shadow unit data.');
-            const env = new Map(fn.parameters.map(p => [p.name, typeKey(p.type)]));
-            this.expect(fn.value, typeKey(fn.result), env, error);
-        }
-        const operations = unit.members.filter(a.isOperation);
-        for (const op of operations) {
+        const functions = members(component).filter(a.isFunctionDef);
+        for (const op of functions) {
+            for (const fn of op.calculations) {
+                if (typeKey(fn.result) === 'void') error(fn, 'SW020', 'Calculations must return a value.');
+                if (fn.parameters.some(p => p.name === fn.outputName)) error(fn, 'SW002', 'A calculation output must have a distinct name from its inputs.');
+                for (const p of fn.parameters) if (base.has(p.name)) error(p, 'SW002', 'A parameter cannot shadow component data.');
+                const env = new Map(fn.parameters.map(p => [p.name, typeKey(p.type)]));
+                this.expect(fn.value, typeKey(fn.result), env, error);
+            }
+
             const env: Env = new Map(base);
             for (const p of op.parameters) {
-                if (env.has(p.name)) error(p, 'SW002', 'A parameter cannot shadow unit data.');
+                if (env.has(p.name)) error(p, 'SW002', 'A parameter cannot shadow component data.');
                 env.set(p.name, typeKey(p.type));
             }
             if (op.trigger?.endpoint) {
-                const ep = endpoint(op, op.trigger.endpoint);
-                if (!ep) error(op.trigger, 'SW050', 'Trigger must identify a member of this unit’s port.');
+                const ep = endpoint(op, op.trigger.endpoint, component);
+                if (!ep) error(op.trigger, 'SW050', 'Trigger must identify a member of this component’s port.');
                 else {
                     const isCall = op.trigger.kind === 'call';
                     const valid = isCall ? a.isSignature(ep.member) && ['server', 'provides'].includes(ep.port.role) : !a.isSignature(ep.member) && ['receiver', 'subscriber', 'requires'].includes(ep.port.role);
                     if (!valid) error(op.trigger, 'SW051', 'Trigger member or port direction is incompatible.');
                     const types = a.isDataMember(ep.member) ? [typeKey(ep.member.type)] : ep.member.parameters.map(p => typeKey(p.type));
                     if (types.join('|') !== op.parameters.map(p => typeKey(p.type)).join('|')) error(op, 'SW052', 'Handler parameters must match the interface member in order and type.');
-                    const result = a.isSignature(ep.member) ? typeKey(ep.member.result) : 'Void';
+                    const result = a.isSignature(ep.member) ? typeKey(ep.member.result) : 'void';
                     if (typeKey(op.result) !== result) error(op, 'SW052', 'Handler result must match the interface member.');
                 }
-            } else if (op.trigger && op.parameters.length) error(op, 'SW052', 'Start, manual and periodic operations have no parameters.');
-            if (op.trigger && op.trigger.kind !== 'call' && typeKey(op.result) !== 'Void') error(op, 'SW052', 'Non-call activations return Void.');
+            } else if (op.trigger && op.parameters.length) error(op, 'SW052', 'Start, manual and periodic functions have no parameters.');
+            if (op.trigger && op.trigger.kind !== 'call' && typeKey(op.result) !== 'void') error(op, 'SW052', 'Non-call activations return void.');
             if (op.trigger?.period && op.timing && nanos(op.timing.deadline) > nanos(op.trigger.period)) error(op, 'SW042', 'Periodic deadline must not exceed period.');
             if (op.body) this.block(op.body, env, typeKey(op.result), error);
-            if (op.body && typeKey(op.result) !== 'Void' && !this.terminates(op.body)) error(op, 'SW053', 'Every path of a value-returning operation must return or fail.');
+            if (!op.stateBody && typeKey(op.result) !== 'void' && (!op.body || !this.terminates(op.body))) error(op, 'SW053', 'Every path of a value-returning function must return or fail.');
             if (op.stateBody) {
-                if (typeKey(op.result) !== 'Void' || op.parameters.length || op.trigger?.kind !== 'start') error(op, 'SW060', 'Stateful operations must have no parameters, return Void and start on start.');
+                if (typeKey(op.result) !== 'void' || op.parameters.length || op.trigger?.kind !== 'start') error(op, 'SW060', 'Stateful functions must have no parameters, return void and start on start.');
                 for (const state of op.stateBody.states) {
-                    if (state.entry) this.block(state.entry, new Map(env), 'Void', error);
-                    if (state.exit) this.block(state.exit, new Map(env), 'Void', error);
+                    if (state.entry) this.block(state.entry, new Map(env), 'void', error);
+                    if (state.exit) this.block(state.exit, new Map(env), 'void', error);
                 }
                 for (const t of op.stateBody.transitions) {
                     const local = new Map(env);
                     if (t.endpoint) {
-                        const ep = endpoint(t, t.endpoint);
+                        const ep = endpoint(t, t.endpoint, component);
                         if (!ep || a.isSignature(ep.member) || !['receiver', 'subscriber', 'requires'].includes(ep.port.role)) error(t, 'SW051', 'State transition receives data/events through an input port.');
                         else if (a.isDataMember(ep.member)) {
-                            if (local.has('payload')) error(t, 'SW002', 'Transition payload cannot shadow unit data.');
+                            if (local.has('payload')) error(t, 'SW002', 'Transition payload cannot shadow component data.');
                             local.set('payload', typeKey(ep.member.type));
                         }
                         else for (const p of ep.member.parameters) {
-                            if (local.has(p.name)) error(t, 'SW002', 'Transition payload parameters cannot shadow unit data.');
+                            if (local.has(p.name)) error(t, 'SW002', 'Transition payload parameters cannot shadow component data.');
                             local.set(p.name, typeKey(p.type));
                         }
                     }
-                    if (t.guard) this.expect(t.guard, 'Bool', local, error);
-                    this.block(t.effect, local, 'Void', error);
+                    if (t.guard) this.expect(t.guard, 'bool', local, error);
+                    this.block(t.effect, local, 'void', error);
                 }
             }
-            const mutates = (current: a.Operation, seen = new Set<a.Operation>()): boolean => {
+            const mutates = (current: a.FunctionDef, seen = new Set<a.FunctionDef>()): boolean => {
                 if (seen.has(current)) return false;
                 seen.add(current);
                 return [...AstUtils.streamAllContents(current)].some(n =>
-                    (a.isAssign(n) && base.has(n.target)) || (a.isInvoke(n) && !!n.operation.ref && mutates(n.operation.ref, seen)));
+                    (a.isAssign(n) && base.has(n.target)) || (a.isLocalCall(n) && !!n.function.ref && mutates(effectiveFunction(n.function.ref, component), seen)));
             };
-            if (op.timing?.concurrency === 'reentrant' && mutates(op)) error(op, 'SW054', 'Reentrant operations may not mutate unit data, including through local helpers.');
+            if (op.timing?.concurrency === 'reentrant' && mutates(op)) error(op, 'SW054', 'Reentrant functions may not mutate component data, including through local helpers.');
         }
-        for (const port of unit.members.filter(a.isPort)) {
+        for (const port of members(component).filter(a.isPort)) {
+            const delegation = members(component).filter(a.isDelegate).filter(d => d.outer.$refText === port.name);
+            if (delegation.length > 1) error(port, 'SW033', 'A component port can delegate to at most one immediate child.');
+            if (delegation.length) {
+                if (functions.some(op => [...AstUtils.streamAllContents(op)].some(n => ((a.isSend(n) || a.isRemoteCall(n) || a.isTransition(n) || a.isTrigger(n)) && n.endpoint?.startsWith(`${port.name}.`))))) error(port, 'SW033', 'A delegated port cannot also be handled or used by local functions.');
+                continue;
+            }
             if (['sender', 'publisher', 'provides'].includes(port.role)) {
                 for (const member of port.interface.ref?.members ?? []) {
                     if (a.isSignature(member)) continue;
                     const path = `${port.name}.${member.name}`;
-                    if (!operations.some(op => [...AstUtils.streamAllContents(op)].some(n => a.isSend(n) && n.endpoint === path))) error(port, 'SW050', `Outgoing member '${path}' must be tied to an emitting operation.`);
+                    if (!functions.some(op => [...AstUtils.streamAllContents(op)].some(n => a.isSend(n) && n.endpoint === path))) error(port, 'SW050', `Outgoing member '${path}' must be tied to an emitting function.`);
                 }
             }
             if (!['server', 'provides', 'receiver', 'subscriber', 'requires'].includes(port.role)) continue;
@@ -201,28 +259,29 @@ export class SwamlValidator {
                 if (port.role === 'requires' && a.isSignature(member)) continue;
                 if (port.role === 'provides' && a.isEventMember(member)) continue;
                 const path = `${port.name}.${member.name}`;
-                const handlers = operations.filter(op => op.trigger?.endpoint === path).length;
-                const machines = operations.filter(op => op.stateBody?.transitions.some(t => t.endpoint === path)).length;
-                if (handlers + machines !== 1) error(port, 'SW055', `Member '${path}' requires exactly one receiving operation (or one stateful operation).`);
+                const handlers = functions.filter(op => op.trigger?.endpoint === path).length;
+                const machines = functions.filter(op => op.stateBody?.transitions.some(t => t.endpoint === path)).length;
+                if (handlers + machines !== 1) error(port, 'SW055', `Member '${path}' requires exactly one receiving function (or one stateful function).`);
             }
         }
         const visiting = new Set<AstNode>(), visited = new Set<AstNode>();
-        const walk = (node: a.Operation | a.FunctionDef): void => {
-            if (visiting.has(node)) { error(node, 'SW056', 'Recursive local call cycles are not supported in 1.1.'); return; }
+        const walk = (node: a.FunctionDef | a.Calculation): void => {
+            if (visiting.has(node)) { error(node, 'SW056', 'Recursive local call cycles are not supported in 1.2.'); return; }
             if (visited.has(node)) return;
             visiting.add(node);
             for (const n of AstUtils.streamAllContents(node)) {
-                if (a.isInvoke(n) && n.operation.ref) walk(n.operation.ref);
-                if (a.isFunctionCall(n) && n.function.ref) walk(n.function.ref);
+                if (a.isLocalCall(n) && n.function.ref) walk(effectiveFunction(n.function.ref, component));
+                if (a.isCalculationCall(n) && n.calculation.ref) walk(n.calculation.ref);
             }
             visiting.delete(node); visited.add(node);
         };
-        for (const node of unit.members) if (a.isOperation(node) || a.isFunctionDef(node)) walk(node);
+        for (const node of members(component)) if (a.isFunctionDef(node)) walk(node);
+        this.context = previous;
     }
     private block(block: a.Block, inherited: Env, result: string, error: Reporter): void {
         const env = new Map(inherited);
         for (const s of block.statements) {
-            if (a.isLet(s)) {
+            if (a.isLocalVariable(s)) {
                 if (env.has(s.name)) error(s, 'SW002', 'Local variables may not shadow an existing value.');
                 this.expect(s.value, typeKey(s.type), env, error); env.set(s.name, typeKey(s.type));
             } else if (a.isAssign(s)) {
@@ -230,37 +289,44 @@ export class SwamlValidator {
                 if (!t) error(s, 'SW022', 'Assignment target is not local data.');
                 else this.expect(s.value, t, env, error);
             } else if (a.isReturn(s)) {
-                if (s.value && result === 'Void') error(s, 'SW023', 'Void operations must use a bare return.');
+                if (s.value && result === 'void') error(s, 'SW023', 'void functions must use a bare return.');
                 else if (s.value) this.expect(s.value, result, env, error);
-                else if (result !== 'Void') error(s, 'SW023', 'Return value is required.');
-            } else if (a.isSend(s) || a.isRequest(s)) {
-                const ep = endpoint(s, s.endpoint);
-                if (!ep) error(s, 'SW050', 'Communication must use a member of a port owned by this unit.');
+                else if (result !== 'void') error(s, 'SW023', 'Return value is required.');
+            } else if (a.isSend(s) || a.isRemoteCall(s)) {
+                const ep = endpoint(s, s.endpoint, this.context);
+                if (!ep) error(s, 'SW050', 'Communication must use a member of a port owned by this component.');
                 else {
-                    const valid = a.isRequest(s) ? a.isSignature(ep.member) && ['client', 'requires'].includes(ep.port.role) : s.kind === 'send' ? a.isDataMember(ep.member) && ep.port.role === 'sender' : a.isEventMember(ep.member) && ['publisher', 'provides'].includes(ep.port.role);
+                    const valid = a.isRemoteCall(s) ? a.isSignature(ep.member) && ['client', 'requires'].includes(ep.port.role) : s.kind === 'send' ? a.isDataMember(ep.member) && ep.port.role === 'sender' : a.isEventMember(ep.member) && ['publisher', 'provides'].includes(ep.port.role);
                     if (!valid) error(s, 'SW051', 'Communication verb, member and port role do not agree.');
                     const types = a.isDataMember(ep.member) ? [typeKey(ep.member.type)] : ep.member.parameters.map(p => typeKey(p.type));
                     this.args(s, s.args, types, env, error);
                 }
-                if (a.isRequest(s)) {
+                if (a.isRemoteCall(s)) {
                     if (env.has('failure')) error(s, 'SW002', 'The implicit request failure binding cannot shadow an existing value.');
-                    this.block(s.failure, new Map(env).set('failure', 'String'), result, error);
+                    this.block(s.failure, new Map(env).set('failure', 'string'), result, error);
                     if (!this.terminates(s.failure)) error(s.failure, 'SW057', 'Request failure path must return or fail.');
                     if (env.has(s.name)) error(s, 'SW002', 'Request result may not shadow local data.');
                     env.set(s.name, ep && a.isSignature(ep.member) ? typeKey(ep.member.result) : '?');
                 }
-            } else if (a.isInvoke(s)) {
-                if (s.operation.ref) {
-                    this.args(s, s.args, s.operation.ref.parameters.map(p => typeKey(p.type)), env, error);
-                    if (s.operation.ref.trigger || s.operation.ref.stateBody || typeKey(s.operation.ref.result) !== 'Void') error(s, 'SW058', 'invoke targets an untriggered local Void operation; call a pure function for results.');
+            } else if (a.isLocalCall(s)) {
+                if (s.function.ref) {
+                    this.args(s, s.args, s.function.ref.parameters.map(p => typeKey(p.type)), env, error);
+                    if (s.function.ref.trigger || s.function.ref.stateBody) error(s, 'SW058', 'A local call targets an untriggered flow function owned by this component.');
+                    const type = typeKey(s.function.ref.result);
+                    if (type === 'void' && s.name) error(s, 'SW058', 'A local void call has no result binding.');
+                    if (type !== 'void' && !s.name) error(s, 'SW058', 'Bind a value-returning local call with as name.');
+                    if (s.name) {
+                        if (env.has(s.name)) error(s, 'SW002', 'Call result may not shadow an existing value.');
+                        env.set(s.name, type);
+                    }
                 }
             } else if (a.isIf(s)) {
-                this.expect(s.condition, 'Bool', env, error); this.block(s.then, env, result, error);
+                this.expect(s.condition, 'bool', env, error); this.block(s.then, env, result, error);
                 if (s.otherwise) this.block(s.otherwise, env, result, error);
             } else if (a.isWhile(s)) {
                 if (!Number.isSafeInteger(s.bound) || s.bound <= 0) error(s, 'SW059', 'Loop bound must be positive.');
-                this.expect(s.condition, 'Bool', env, error); this.block(s.body, env, result, error);
-            } else if (a.isAssert(s)) this.expect(s.condition, 'Bool', env, error);
+                this.expect(s.condition, 'bool', env, error); this.block(s.body, env, result, error);
+            } else if (a.isAssert(s)) this.expect(s.condition, 'bool', env, error);
         }
     }
     private terminates(b: a.Block): boolean {
@@ -272,10 +338,19 @@ export class SwamlValidator {
     }
     private expect(e: a.Expression, expected: string, env: Env, error: Reporter): void {
         const actual = this.expression(e, env, error);
-        if (actual !== '?' && expected !== '?' && actual !== expected && !(actual === 'Int' && expected === 'Real')) error(e, 'SW023', `Expected ${expected}, found ${actual}.`);
+        if (a.isArrayLiteral(e)) {
+            const target = /^(.*)\[(\d+)\]$/.exec(expected);
+            if (target && e.values.length === Number(target[2])) {
+                for (const value of e.values) this.expect(value, target[1], env, error);
+                return;
+            }
+        }
+        if (actual !== '?' && expected !== '?' && actual !== expected && !numericAssignable(actual, expected)) error(e, 'SW023', `Expected ${expected}, found ${actual}.`);
+        const constant = this.constantNumber(e);
+        if (constant !== undefined && isIntegralType(expected) && !integralInRange(constant, expected)) error(e, 'SW025', `Value is outside the ${expected} range.`);
     }
     private expression(e: a.Expression, env: Env, error: Reporter): string {
-        if (a.isLiteral(e)) return e.boolean !== undefined ? 'Bool' : e.text !== undefined ? 'String' : e.$cstNode?.text.includes('.') ? 'Real' : 'Int';
+        if (a.isLiteral(e)) return e.boolean !== undefined ? 'bool' : e.text !== undefined ? 'string' : e.$cstNode?.text.includes('.') ? 'real' : 'int';
         if (a.isReferenceExpression(e)) {
             const parts = e.path.split('.');
             let t = env.get(parts[0]);
@@ -286,8 +361,8 @@ export class SwamlValidator {
                 if (e.index) error(e, 'SW023', 'Only arrays can be indexed.');
                 return `${owner(enumLiteral.type, a.isPackage)?.name}::${enumLiteral.type.name}`;
             }
-            if (!t) { error(e, 'SW022', `Unknown local value or enum type '${parts[0]}'. Cross-unit data access is forbidden.`); return '?'; }
-            if (t === 'Void') { error(e, 'SW022', 'A Void request result names completion only and cannot be read as a value.'); return '?'; }
+            if (!t) { error(e, 'SW022', `Unknown local value or enum type '${parts[0]}'. Cross-component data access is forbidden.`); return '?'; }
+            if (t === 'void') { error(e, 'SW022', 'A void request result names completion only and cannot be read as a value.'); return '?'; }
             for (const field of parts.slice(1)) {
                 const all = [...this.services.shared.workspace.LangiumDocuments.all].flatMap(d => a.isModel(d.parseResult.value) ? d.parseResult.value.packages.flatMap(p => p.elements) : []);
                 const dtype = all.find(d => a.isDataType(d) && typeKey({ type: { ref: d } } as a.TypeRef) === t);
@@ -296,7 +371,7 @@ export class SwamlValidator {
                 t = typeKey(f.type);
             }
             if (e.index) {
-                this.expect(e.index, 'Int', env, error);
+                this.expect(e.index, 'int', env, error);
                 const match = /^(.*)\[(\d+)\]$/.exec(t);
                 if (!match) { error(e, 'SW023', 'Only arrays can be indexed.'); return '?'; }
                 const constant = this.constantNumber(e.index);
@@ -319,37 +394,37 @@ export class SwamlValidator {
         if (a.isArrayLiteral(e)) {
             if (!e.values.length) { error(e, 'SW028', 'Fixed-size arrays cannot be empty.'); return '?'; }
             const types = e.values.map(v => this.expression(v, env, error));
-            const t = types.every(t => ['Int', 'Real'].includes(t)) && types.includes('Real') ? 'Real' : types[0];
+            const t = types.every(isNumericType) ? types.includes('real') ? 'real' : types.includes('int') ? 'int' : types.every(t => t === 'byte') ? 'byte' : 'uint' : types[0];
             for (const value of e.values) this.expect(value, t, env, error);
             return `${t}[${types.length}]`;
         }
-        if (a.isFunctionCall(e)) {
-            if (e.function.ref) {
-                this.args(e, e.args, e.function.ref.parameters.map(p => typeKey(p.type)), env, error);
-                return typeKey(e.function.ref.result);
+        if (a.isCalculationCall(e)) {
+            if (e.calculation.ref) {
+                this.args(e, e.args, e.calculation.ref.parameters.map(p => typeKey(p.type)), env, error);
+                return typeKey(e.calculation.ref.result);
             }
             return '?';
         }
         if (a.isUnaryExpression(e)) {
             const t = e.operand ? this.expression(e.operand, env, error) : '?';
-            if (e.operator === 'not' ? t !== 'Bool' : !['Int', 'Real', '?'].includes(t)) error(e, 'SW023', 'Invalid unary operand.');
-            return e.operator === 'not' ? 'Bool' : t;
+            if (e.operator === 'not' ? t !== 'bool' : !isNumericType(t) && t !== '?') error(e, 'SW023', 'Invalid unary operand.');
+            return e.operator === 'not' ? 'bool' : isIntegralType(t) ? 'int' : t;
         }
         if (a.isBinaryExpression(e)) {
             const l = this.expression(e.left, env, error), r = this.expression(e.right, env, error);
-            const numeric = ['Int', 'Real'].includes(l) && ['Int', 'Real'].includes(r);
+            const numeric = isNumericType(l) && isNumericType(r);
             if (['and', 'or'].includes(e.operator)) {
-                if (l !== 'Bool' || r !== 'Bool') error(e, 'SW023', 'Boolean operands required.');
-                return 'Bool';
+                if (l !== 'bool' || r !== 'bool') error(e, 'SW023', 'Boolean operands required.');
+                return 'bool';
             }
             if (['==', '!='].includes(e.operator)) {
                 if (l !== r && !numeric) error(e, 'SW023', 'Equality operands must have compatible types.');
-                return 'Bool';
+                return 'bool';
             }
             if (!numeric) error(e, 'SW023', 'Numeric operands required.');
-            if (e.operator === '%' && (l !== 'Int' || r !== 'Int')) error(e, 'SW023', 'Remainder requires Int operands.');
-            if (['<', '<=', '>', '>='].includes(e.operator)) return 'Bool';
-            return l === 'Real' || r === 'Real' || e.operator === '/' ? 'Real' : 'Int';
+            if (e.operator === '%' && (!isIntegralType(l) || !isIntegralType(r))) error(e, 'SW023', 'Remainder requires integral operands.');
+            if (['<', '<=', '>', '>='].includes(e.operator)) return 'bool';
+            return l === 'real' || r === 'real' || e.operator === '/' ? 'real' : 'int';
         }
         return '?';
     }
@@ -358,6 +433,17 @@ export class SwamlValidator {
         if (a.isUnaryExpression(e) && e.operator === '-') {
             const operand = this.constantNumber(e.operand);
             return operand === undefined ? undefined : -operand;
+        }
+        if (a.isBinaryExpression(e)) {
+            const left = this.constantNumber(e.left), right = this.constantNumber(e.right);
+            if (left === undefined || right === undefined) return undefined;
+            switch (e.operator) {
+                case '+': return left + right;
+                case '-': return left - right;
+                case '*': return left * right;
+                case '/': return left / right;
+                case '%': return left % right;
+            }
         }
         return undefined;
     }
@@ -401,7 +487,7 @@ export class SwamlValidator {
         const ports = new Map<string, a.Port>(), aliases = new Map<string, string>();
         const connections: { n: a.Connect; s: string; t: string }[] = [];
         const instances = new Set<string>();
-        const expand = (c: Container, prefix: string, seen: Set<a.Definition>) => {
+        const expand = (c: Container, prefix: string, seen: Set<a.Component>) => {
             for (const m of members(c)) {
                 if (a.isPort(m)) ports.set(prefix + m.name, m);
                 if (a.isConnect(m)) connections.push({ n: m, s: prefix + m.source, t: prefix + m.target });
@@ -433,9 +519,10 @@ export class SwamlValidator {
                 }
             }
             if (root.profile === 'realtime' || root.profile === 'mixed') {
-                if (!n.qos?.maxLatency) error(n, 'SW044', 'Realtime/mixed roots require connector maxLatency.');
+                const qos = effectiveQos(n.qos);
+                if (!qos?.maxLatency) error(n, 'SW044', 'Realtime/mixed roots require connector maxLatency.');
                 const port = ports.get(resolve(s));
-                if (port?.interface.ref?.members.some(m => a.isDataMember(m) && m.mode === 'sampled') && !n.qos?.maxAge) error(n, 'SW044', 'Sampled realtime data requires maxAge.');
+                if (port?.interface.ref?.members.some(m => a.isDataMember(m) && m.mode === 'sampled') && !qos?.maxAge) error(n, 'SW044', 'Sampled realtime data requires maxAge.');
             }
         }
         for (const [path, port] of ports) {
@@ -445,23 +532,21 @@ export class SwamlValidator {
         }
         const deployed = new Set<string>();
         for (const d of root.members.filter(a.isDeployment)) {
-            if (!instances.has(d.target)) error(d, 'SW070', 'Deployment must name an instance path.');
+            if (d.target !== root.name && !instances.has(d.target)) error(d, 'SW070', 'Deployment must name an instance path.');
+            if (d.target === root.name && instances.has(d.target)) error(d, 'SW070', 'Deployment is ambiguous between the root and an immediate child with the same name. Rename that child.');
+            if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:[^\s]+$/.test(d.system)) error(d, 'SW070', 'Deployment requires a nonempty external system reference, for example sysml:Vehicle::ecu.');
             if (deployed.has(d.target)) error(d, 'SW070', 'An instance cannot be deployed twice.');
             deployed.add(d.target);
         }
         if ((root.profile ?? 'service') !== 'service') {
-            const units = new Set([...ports.values()].map(p => owner(p, a.isUnit)).filter(Boolean));
-            // Include port-free units too.
-            const walk = (c: Container, seen: Set<a.Definition>) => {
-                for (const i of members(c).filter(a.isInstance)) if (i.definition.ref && !seen.has(i.definition.ref)) {
-                    if (a.isUnit(i.definition.ref)) units.add(i.definition.ref);
-                    else walk(i.definition.ref, new Set(seen).add(i.definition.ref));
-                }
+            const walk = (c: Container, seen: Set<a.Component>) => {
+                for (const fn of members(c).filter(a.isFunctionDef)) if (!fn.timing) error(fn, 'SW045', 'Functions used in realtime/mixed roots require timing contracts.');
+                for (const i of members(c).filter(a.isInstance)) if (i.definition.ref && !seen.has(i.definition.ref)) walk(i.definition.ref, new Set(seen).add(i.definition.ref));
             };
             walk(root, new Set());
-            for (const unit of units) for (const op of unit!.members.filter(a.isOperation)) if (!op.timing) error(op, 'SW045', 'Operations used in realtime/mixed roots require timing contracts.');
         }
     }
+
     private checkScenario(n: a.Scenario, error: Reporter): void {
         const root = n.root.ref;
         if (!root) return;
@@ -489,7 +574,7 @@ export class SwamlValidator {
             if (step.kind === 'reply') {
                 // A reply in a different causal branch must not close a request merely
                 // because it is printed earlier. Source order is not happens-before.
-                const requests = [...ancestors].filter(prior => prior.kind === 'request' && prior.connector === step.connector && prior.source === step.target && prior.target === step.source && !(replies.has(prior) && ancestors.has(replies.get(prior)!)));
+                const requests = [...ancestors].filter(prior => prior.kind === 'call' && prior.connector === step.connector && prior.source === step.target && prior.target === step.source && !(replies.has(prior) && ancestors.has(replies.get(prior)!)));
                 if (requests.length !== 1) error(step, 'SW083', 'Reply requires exactly one causally preceding, unanswered request on the same route/member.');
                 else if (replies.has(requests[0])) error(step, 'SW083', 'A request cannot have multiple replies, including on independent causal branches.');
                 else replies.set(requests[0], step);

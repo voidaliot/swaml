@@ -7,7 +7,7 @@ import { createSwamlServices } from '../out/src/language/swaml-module.js';
 const root = resolve(import.meta.dirname, '..');
 async function walk(dir) {
     const entries = await readdir(dir, { withFileTypes: true });
-    const paths = await Promise.all(entries.filter(e => !['node_modules', '.git', 'out'].includes(e.name)).map(e => e.isDirectory() ? walk(resolve(dir, e.name)) : [resolve(dir, e.name)]));
+    const paths = await Promise.all(entries.filter(e => !['node_modules', '.git', 'out', '.venv-pdf', 'dist', 'tmp'].includes(e.name)).map(e => e.isDirectory() ? walk(resolve(dir, e.name)) : [resolve(dir, e.name)]));
     return paths.flat();
 }
 let snippets = 0, links = 0;
@@ -21,7 +21,7 @@ for (const file of (await walk(root)).filter(f => f.endsWith('.md'))) {
         links++;
     }
     // Historical consolidated editions retain the grammar of their immutable release.
-    if (['SWAML-1.0.0-Reference.md', 'SWAML-1.1.0-Reference.md'].some(name => file.endsWith('/docs/' + name))) continue;
+    if (['SWAML-1.0.0-Reference.md', 'SWAML-1.1.0-Reference.md', 'SWAML-1.1.1-Reference.md'].some(name => file.replaceAll('\\', '/').endsWith('/docs/' + name))) continue;
     for (const match of text.matchAll(/```swaml\n([\s\S]*?)```/g)) {
         const { Swaml } = createSwamlServices(EmptyFileSystem);
         const doc = await parseHelper(Swaml)(match[1], { validation: true });
@@ -30,9 +30,9 @@ for (const file of (await walk(root)).filter(f => f.endsWith('.md'))) {
     }
 }
 const mapping = JSON.parse(await readFile(resolve(root, 'spec/kerml-mapping.json'), 'utf8'));
-if (mapping.languageVersion !== '1.1' || mapping.schemaVersion !== '2.0') throw new Error('Invalid mapping inventory');
+if (mapping.languageVersion !== '1.2' || mapping.schemaVersion !== '2.0') throw new Error('Invalid mapping inventory');
 const grammar = await readFile(resolve(root, 'src/language/swaml.langium'), 'utf8');
-const productions = new Set([...grammar.matchAll(/^(?:(?:entry|hidden|terminal|type)\s+)*([A-Za-z]\w*)(?:\s+returns\s+\w+)?\s*[:=]/gm)].map(m => m[1]));
+const productions = new Set([...grammar.matchAll(/^(?:(?:entry|hidden|terminal|type)\s+)*([A-Za-z]\w*)(?:\s+(?:returns|infers)\s+\w+)?\s*[:=]/gm)].map(m => m[1]));
 const sources = new Set();
 const kinds = new Set(['element', 'grouping', 'reference', 'value', 'lowering', 'lexical']);
 const bases = new Set(['Package', 'NamespaceImport', 'DataType', 'Feature', 'FeatureTyping', 'Classifier', 'Behavior', 'Structure', 'FeatureValue', 'MetadataFeature', 'Connector', 'Step', 'Function', 'Succession', 'LiteralInteger', 'Expression']);

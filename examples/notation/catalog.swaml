@@ -4,22 +4,22 @@ package Shared {
 }
 package Notation {
     import Shared::*;
-    interface publishSubscribe Signals version "1.0.0" { event pulse(value: Int); }
-    interface senderReceiver Counts version "1.0.0" { data value: Int queued; }
-    interface clientServer Completion version "1.0.0" { operation acknowledge(): Void; }
-    unit def Source {
+    interface publishSubscribe Signals version "1.0.0" { event pulse(value: int); }
+    interface senderReceiver Counts version "1.0.0" { data value: int queued; }
+    interface clientServer Completion version "1.0.0" { function acknowledge(): void; }
+    component def Source {
         port signal: Signals publisher;
         port output: Counts sender;
-        operation emit() on start {
+        function emit() on start {
             publish signal.pulse(1);
             send output.value(1);
         }
     }
-    unit def Controller {
+    component def Controller {
         port signal: Signals subscriber;
-        var count: Int = 0;
+        var count: int = 0;
         var mode: Mode = Shared::Mode.Idle;
-        operation lifecycle() on start {
+        function lifecycle() on start {
             initial Idle;
             state Idle {
                 entry { count = 0; }
@@ -33,19 +33,19 @@ package Notation {
             transition elapsed: Active -> Done on after 1 s {}
         }
     }
-    unit def Sink {
+    component def Sink {
         port input: Counts receiver;
-        var latest: Int = 0;
-        operation accept(value: Int) on receive input.value { latest = value; }
-        operation check() on manual {
+        var latest: int = 0;
+        function accept(value: int) on receive input.value { latest = value; }
+        function check() on manual {
             assert not false and (1 + 2 * 3 >= 7) or true;
             assert (5 % 2 == 1) and (4 - 2 != 0) and (8 / 2 <= 4.0);
         }
     }
     component Demo {
-        unit source: Source;
-        unit controller: Controller;
-        unit sink: Sink;
+        component source: Source;
+        component controller: Controller;
+        component sink: Sink;
         connect events: source.signal -> controller.signal qos {
             delivery bestEffort; ordering unordered; capacity 2; overflow dropNewest;
             maxLatency 10 us; maxAge 1 ms;
@@ -54,22 +54,22 @@ package Notation {
             delivery atMostOnce; ordering fifo; capacity 4; overflow reject;
         };
     }
-    requirement CountObserved "A sent count can reach the receiving operation.";
-    case Observe for Demo satisfies CountObserved {
+    requirement CountObserved { doc /* A sent count can reach the receiving function. */ }
+    satisfy CountObserved by Demo; useCase Observe for Demo {
         send source.output.value -> sink.input.value via counts label sent;
         publish source.signal.pulse -> controller.signal.pulse via events after sent label notified;
     }
-    view inventory GRV of Notation;
-    view overview GV of Demo;
-    view interconnect IV of Demo;
-    view cases CV of Demo;
-    view sequence SV of Observe;
-    view lifecycle FV of Controller.lifecycle;
+    view inventory grv of Notation;
+    view overview gv of Demo;
+    view interconnect iv of Demo;
+    view cases cv of Demo;
+    view sequence sv of Observe;
+    view lifecycle fv of Controller.lifecycle;
 }
 package NotationOptions {
     interface publishSubscribe Notices version "1.0.0" { event changed(); }
-    unit def Emitter {
+    component def Emitter {
         port notices: Notices publisher optional;
-        operation emit() on manual { publish notices.changed(); }
+        function emit() on manual { publish notices.changed(); }
     }
 }

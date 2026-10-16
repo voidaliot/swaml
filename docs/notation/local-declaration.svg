@@ -6,7 +6,7 @@
 <polyline points="280,35 280,75" fill="none" stroke="#111111" stroke-width="2"/>
 <polygon points="280,75 275.0,63.0 285.0,63.0" fill="#111111" stroke="#111111"/>
 <rect x="45" y="78" width="470" height="135" rx="13" fill="#ffffff" stroke="#111111"/>
-<text x="64" y="111" font-size="20" font-weight="700" fill="#111111">let i: Int = 0</text>
+<text x="64" y="111" font-size="20" font-weight="700" fill="#111111">var i: int = 0</text>
 <polyline points="280,214 280,260" fill="none" stroke="#111111" stroke-width="2"/>
 <polygon points="280,260 275.0,248.0 285.0,248.0" fill="#111111" stroke="#111111"/>
 </g></svg>

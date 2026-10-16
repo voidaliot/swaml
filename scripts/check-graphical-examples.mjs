@@ -6,7 +6,7 @@ import { createSwamlServices } from '../out/src/language/swaml-module.js';
 import { resolvePath } from '../out/src/language/semantic.js';
 import * as a from '../out/src/language/generated/ast.js';
 const manifest = JSON.parse(await readFile(new URL('../spec/graphical-examples.json', import.meta.url), 'utf8'));
-assert.equal(manifest.languageVersion, '1.1');
+assert.equal(manifest.languageVersion, '1.2');
 const kinds = new Set(), bodies = new Set();
 for (const item of manifest.examples) {
     const { Swaml } = createSwamlServices(EmptyFileSystem);
@@ -18,14 +18,14 @@ for (const item of manifest.examples) {
     let subject = pkg.elements.find(e => e.name === root);
     if (tail.length) subject = resolvePath(subject, tail.join('.'));
     assert.ok(subject, `${item.figure} subject`);
-    if (item.view === 'FV') { assert.ok(a.isOperation(subject)); bodies.add(subject.stateBody ? 'state' : 'flow'); }
-    if (item.view === 'IV') assert.ok(a.isRootComponent(subject) || a.isComponent(subject));
-    if (['CV', 'SV'].includes(item.view)) assert.ok(a.isRootComponent(subject) || a.isScenario(subject));
+    if (item.view === 'fv') { assert.ok(a.isFunctionDef(subject)); bodies.add(subject.stateBody ? 'state' : 'flow'); }
+    if (item.view === 'iv') assert.ok(a.isRootComponent(subject) || a.isComponent(subject));
+    if (['cv', 'sv'].includes(item.view)) assert.ok(a.isRootComponent(subject) || a.isScenario(subject));
     kinds.add(item.view);
     const svg = await readFile(new URL(`../docs/figures/${item.figure}.svg`, import.meta.url), 'utf8');
     assert.ok(svg.includes('role="img"') && svg.includes('<title') && svg.includes('<desc'));
     await access(new URL(`../docs/figures/${item.figure}.scene.json`, import.meta.url));
 }
-assert.deepEqual([...kinds].sort(), ['Browser', 'CV', 'FV', 'GRV', 'GV', 'IV', 'SV']);
+assert.deepEqual([...kinds].sort(), ['Browser', 'cv', 'fv', 'grv', 'gv', 'iv', 'sv']);
 assert.deepEqual([...bodies].sort(), ['flow', 'state']);
-console.log('Verified 8 graphical subjects, all 7 view families, and both FV forms.');
+console.log('Verified 8 graphical subjects, all 7 view families, and both fv forms.');

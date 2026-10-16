@@ -2,7 +2,7 @@
   "width": 560,
   "height": 320,
   "title": "Deployment binding",
-  "description": "Deployment binding. Draw a dashed allocation arrow labeled deploy from the occurrence to its named execution node.",
+  "description": "A deployment binds a component instance or root to an external system reference.",
   "shapes": [
     {
       "kind": "rect",
@@ -26,74 +26,37 @@
     },
     {
       "kind": "text",
-      "x": 44.0,
-      "y": 93.5,
-      "text": "controller: Controller",
+      "x": 119.0,
+      "y": 81.0,
+      "text": "left:",
       "size": 18,
       "bold": false,
       "color": "#111111"
     },
     {
-      "kind": "polygon",
-      "points": [
-        [
-          325,
-          65
-        ],
-        [
-          345,
-          45
-        ],
-        [
-          525,
-          45
-        ],
-        [
-          505,
-          65
-        ]
-      ],
-      "fill": "#ffffff",
-      "stroke": "#111111"
-    },
-    {
-      "kind": "polygon",
-      "points": [
-        [
-          505,
-          65
-        ],
-        [
-          525,
-          45
-        ],
-        [
-          525,
-          133
-        ],
-        [
-          505,
-          153
-        ]
-      ],
-      "fill": "#ffffff",
-      "stroke": "#111111"
+      "kind": "text",
+      "x": 55.5,
+      "y": 106.0,
+      "text": "SpecializedDevice",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
     },
     {
       "kind": "rect",
       "x": 325,
-      "y": 65,
-      "width": 180,
-      "height": 88,
+      "y": 42,
+      "width": 205,
+      "height": 91,
       "rx": 0,
       "fill": "#ffffff",
       "stroke": "#111111"
     },
     {
       "kind": "text",
-      "x": 373.5,
-      "y": 115.0,
-      "text": "ecu: mcu",
+      "x": 355.0,
+      "y": 93.5,
+      "text": "external system",
       "size": 18,
       "bold": false,
       "color": "#111111"
@@ -102,12 +65,12 @@
       "kind": "line",
       "points": [
         [
-          243,
-          90
+          244,
+          88
         ],
         [
-          323,
-          105
+          325,
+          88
         ]
       ],
       "color": "#111111",
@@ -118,16 +81,16 @@
       "kind": "line",
       "points": [
         [
-          310.2840910815372,
-          107.70289851406937
+          313.0,
+          93.0
         ],
         [
-          323,
-          105
+          325,
+          88
         ],
         [
-          312.1269764320391,
-          97.87417664472616
+          313.0,
+          83.0
         ]
       ],
       "color": "#111111",
@@ -136,9 +99,9 @@
     },
     {
       "kind": "text",
-      "x": 171.5,
+      "x": 153.508,
       "y": 188,
-      "text": "deploy controller on ecu",
+      "text": "sysml:Vehicle::leftComputer",
       "size": 18,
       "bold": false,
       "color": "#111111"

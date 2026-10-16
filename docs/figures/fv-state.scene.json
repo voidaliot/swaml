@@ -1,8 +1,8 @@
 {
   "width": 1000,
   "height": 740,
-  "title": "FV · Operation states",
-  "description": "Device.lifecycle(): Void · on start · state ownership replaces a separate performer allocation.",
+  "title": "fv · Function states",
+  "description": "Device.lifecycle(): void · on start · states and transitions belong to this function.",
   "shapes": [
     {
       "kind": "rect",
@@ -18,7 +18,7 @@
       "kind": "text",
       "x": 32,
       "y": 47,
-      "text": "FV · Operation states",
+      "text": "fv · Function states",
       "size": 30,
       "bold": true,
       "color": "#17324d"
@@ -27,7 +27,7 @@
       "kind": "text",
       "x": 32,
       "y": 80,
-      "text": "Device.lifecycle(): Void · on start · state ownership replaces a separate performer allocation.",
+      "text": "Device.lifecycle(): void · on start · states and transitions belong to this function.",
       "size": 17,
       "bold": false,
       "color": "#516579"
@@ -62,7 +62,7 @@
       "kind": "text",
       "x": 50,
       "y": 158,
-      "text": "op lifecycle",
+      "text": "function lifecycle",
       "size": 22,
       "bold": true,
       "color": "#17324d"

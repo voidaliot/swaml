@@ -1,8 +1,8 @@
 # SWAML language specification
 
-**Version:** 1.1.1 · **Source:** headerless packages; parser/host pinned to 1.1 · **Status:** complete 1.1 specification · **Date:** 2026-10-14
+**Version:** 1.2.0 · **Source:** headerless packages; parser/host pinned to 1.2 · **Status:** 1.2.0 release · **Date:** 2026-10-16
 
-SWAML means Software Architecture Modeling Language. This document and its normative chapters define a software architecture language over a KerML-based semantic model. SWAML is independently authored; “unofficial UML 3.0” describes its motivation and does not denote an OMG standard or compatibility level.
+SWAML means Software Architecture Modeling Language. This document and its normative chapters define a software architecture language with a proposed KerML semantic mapping. SWAML is independently authored and does not denote an OMG standard or UML compatibility level. Architects familiar with UML can begin with the informative [UML transition guide](UML_GUIDE.md); implemented capabilities are identified separately from mapping and execution contracts.
 
 ## 1. Normative document set
 
@@ -10,7 +10,7 @@ Read these chapters together. Their requirements have equal standing:
 
 1. [Structure, names and types](spec/01-structure-and-types.md).
 2. [Interfaces and communication](spec/02-communication.md).
-3. [Operation and state semantics](spec/03-behavior.md).
+3. [Function and state semantics](spec/03-behavior.md).
 4. [Timing, deployment, cases and conformance](spec/04-systems-and-conformance.md).
 5. [KerML semantic mapping](spec/05-kerml-mapping.md).
 6. [Graphical notation](GRAPHICAL_NOTATION.md) and [canonical concept catalog](GRAPHICAL_CATALOG.md).
@@ -27,49 +27,50 @@ The [user guide](USER_GUIDE.md), [architecture comparison](ARCHITECTURE_COMPARIS
 
 MUST and MUST NOT state conformance requirements. SHOULD states a recommendation with an explicitly documented justification needed for deviation. MAY grants permission. “Error” means a model is not valid under this version. An implementation may retain an invalid model for editing but MUST NOT report it as fully valid.
 
-The grammar determines tokens and parse structure. Prose determines validity and meaning. If grammar accepts text that violates a semantic rule, that text is invalid. If a discovered conflict makes the two impossible to satisfy, record a specification defect; do not silently choose a runtime meaning. Unknown syntax and unsupported requested language versions MUST be rejected. The host selects a pinned 1.1 parser before loading source; a file does not guess its own edition. See the [1.1 migration guide](MIGRATION_1_1.md) for the intentional syntax migration from 1.0.
+The grammar determines tokens and parse structure. Prose determines validity and meaning. If grammar accepts text that violates a semantic rule, that text is invalid. If a discovered conflict makes the two impossible to satisfy, record a specification defect; do not silently choose a runtime meaning. Unknown syntax and unsupported requested language versions MUST be rejected. The host selects a pinned 1.2 parser before loading source; a file does not guess its own edition. See the [1.2 migration guide](MIGRATION_1_2.md) and [historical 1.1 migration guide](MIGRATION_1_1.md) for the intentional syntax migration from 1.0.
 
-The language is closed at version 1.1: constructs not listed in the grammar are not implicitly inherited from UML, SysML or KerML. Definitions may be reused by instantiation, but inheritance, generics, redefinition, unrestricted KerML embedding and dynamic creation are not part of this version. This constraint makes the whole v1.1 language implementable without pretending to reproduce three other standards.
+The language is closed at version 1.2: constructs not listed in the grammar are not implicitly inherited from UML, SysML or KerML. Component definitions support instantiation, single specialization and compatible explicit member redefinition. Generics, unrestricted KerML embedding and dynamic creation remain outside this version. External system identities support deployment integration without importing another modeling language.
 
 ## 3. Design invariants
 
-- **I1 — Boundary:** every exchange between distinct unit instances crosses port instances typed by the same interface contract and a permitted connector/delegation path.
-- **I2 — Ownership:** components own composition; units own private data, functions and operations; operations own statement flow or states. No performer element, behavior allocation, free action, free signal, or global variable exists.
-- **I3 — Event provenance:** every outgoing data/event member of a unit port has at least one syntactically associated emitting operation. Every incoming member has exactly one handling operation, including a stateful operation where applicable.
-- **I4 — Type safety:** payloads and results conform to nominal contracts. Messages transfer values, never aliases to another unit's private state.
+- **I1 — Boundary:** every exchange between distinct component instances crosses port instances typed by the same interface contract and a permitted connector/delegation path.
+- **I2 — Ownership:** components own child components, ports, private data and functions; functions own calculations and statement flow or states. No performer element, behavior allocation, free action, free signal, or global variable exists.
+- **I3 — Event provenance:** after resolving any delegation, every outgoing data/event member has at least one syntactically associated emitting function in the resolved owning component. Every incoming member has exactly one handling function in that context, including a stateful function where applicable. A delegated boundary has no additional local handler or emitter.
+- **I4 — Type safety:** payloads and results conform to nominal contracts. Messages transfer values, never aliases to another component's private state.
 - **I5 — Explicit communication policy:** every connector declares delivery, ordering, capacity and overflow. Time-sensitive connections add latency/freshness bounds.
 - **I6 — Views preserve meaning:** views reference existing semantic elements. Drawing a message cannot create a hidden communication channel.
 
-Local calls, calculation values, timer expiration, initial activation and state completion do not constitute exchanges between units. They are the only exceptions needed for local computation and lifecycle. An external actor or device that exchanges model data MUST be represented through a component/unit port; a case actor label cannot bypass I1.
+Local calls, calculation values, timer expiration, initial activation and state completion do not constitute exchanges between components. They are the only exceptions needed for local computation and lifecycle. An external actor or device that exchanges model data MUST be represented through a component port; a case actor label cannot bypass I1.
 
 ## 4. Abstract model inventory
 
 | Element | Owns | References / meaning |
 | --- | --- | --- |
-| Model | packages | language version supplied by the pinned parser/host |
-| Package | imports, named elements | namespace |
-| DataType / EnumType | fields / literals | immutable value shape |
-| Interface | data, event or operation members | nominal versioned contract |
-| Component definition | ports, child instances, connectors, delegation | reusable composition type |
-| Unit definition | ports, private variables, operations, functions | reusable behavior/data boundary |
-| Contained instance | no inline definitions | one component or unit definition |
+| Model | packages | language edition selected by the parser/host |
+| Package | imports and named declarations | namespace |
+| DataType / EnumType | typed fields / literals | immutable nominal value shape |
+| Interface | data, event or function signatures | nominal versioned communication contract |
+| Component definition | child component instances, ports, variables, functions, connectors and delegation | reusable software boundary; optional base definition |
+| Component instance | distinct private stores and expanded effective members | one component definition; multiplicity one |
+| Root component | inline members or a component-definition instance; deployment bindings | closed architecture selected for execution; default service profile |
 | Port | role and optionality | one interface |
-| Connector | QoS | source and target port paths |
-| Delegation | no data conversion | outer port and immediate child port |
-| Operation | parameters, result, trigger, timing; flow **or** owned states | executable behavior owned by a unit |
-| Function | parameters, result, expression | pure local calculation |
-| State body | states, transitions, initial reference | syntax grouping of one operation; not an independent model element |
-| State | entry and exit blocks | one operation-local condition |
-| Transition | guard, effect, priority, trigger | source and target states |
-| Root component | inline unit/component occurrences and connectors, or one component definition; execution nodes/deployment | named closed occurrence; default service profile |
-| Requirement | text | named obligation |
-| Case | exchange steps, trace links | one root component and requirements |
-| View | kind | one subject, no runtime semantics |
+| QoS policy definition | complete policy values | package-owned reuse without queue sharing |
+| Connector / delegation | policy selection / boundary alias | explicit typed route / same-contract forwarding |
+| Function | typed parameters/result, trigger, timing, calculations; statements **or** states | executable behavior owned by one component |
+| Calculation | typed inputs, named non-void output and expression | pure value computation owned by one function |
+| State / transition | entry/exit blocks / trigger, guard, priority and effect | behavior directly owned by one function |
+| Deployment | no system definition | component-instance path and external system/part identity |
+| Requirement / case | obligation text / exchange steps and trace links | intended behavior and claimed coverage |
+| View | kind and subject reference | projection with no added runtime semantics |
 
-All named elements have stable identity within a model version. Tools SHOULD persist a separate UUID identity map for editing; the language's normative textual identity is its qualified declaration/instance path. A rename is an identity-preserving edit only when the tool updates that map and all references atomically.
+Definitions and instances retain different identities. Specialization and redefinition reference source declarations; neither shares private state across instances. Tools SHOULD persist a separate identity map for editing. A rename preserves identity only when the tool updates that map and all references atomically.
 
 ## 5. Conformance summary
 
 A parser supports concrete syntax. A semantic validator additionally enforces static rules. A KerML mapper additionally produces the normalized representation in chapter 5. An execution backend additionally realizes chapter 3 and communication policies. A graphical editor additionally satisfies the view/editing contract. A tool MUST state which levels it implements; success at one level MUST NOT imply the others.
 
 This repository supplies a parser, LSP foundation, documented static validation and a [reference simulator](SIMULATION.md). The specification defines more than that implementation, especially runtime delivery, idempotency, target snapshot realization, timing proof, interchange and graphical editing. See the [exact support matrix](IMPLEMENTATION_STATUS.md).
+
+## Requirements and formal documentation
+
+Requirements own typed attributes and one optional `doc /* ... */` specification. Design elements link through `satisfy`; verification cases link through `verify`. Use cases describe intent. Ordinary comments remain independent notes. View kinds use lower camel case, and view blocks combine multiple selections and Boolean filters. See the [guide](REQUIREMENTS_AND_DOCUMENTATION.md) and [complete model](../examples/16-requirements-and-views.swaml).

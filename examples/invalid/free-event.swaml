@@ -1,4 +1,4 @@
 package Invalid {
     // Parser error: events belong to interface contracts.
-    event Unowned(value: Int);
+    event Unowned(value: int);
 }

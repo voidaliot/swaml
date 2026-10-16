@@ -1,0 +1,65 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Verification case",
+  "description": "Draw a case frame labeled verificationCase with its name and root context. Documentation describes the procedure; verify links identify requirements without asserting a passed result.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 25,
+      "y": 26,
+      "width": 510,
+      "height": 229,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 44,
+      "y": 59,
+      "text": "case context: Demo",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 95,
+      "y": 106,
+      "width": 370,
+      "height": 102,
+      "rx": 50,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 174.0,
+      "y": 164,
+      "text": "«verificationCase»",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 204.0,
+      "y": 191,
+      "text": "CheckResults",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    }
+  ]
+}

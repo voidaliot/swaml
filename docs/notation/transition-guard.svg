@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
-<title id="title">Transition guard</title><desc id="desc">Transition guard. Show the Bool guard in brackets or with its explicit when keyword on the transition label.</desc>
+<title id="title">Transition guard</title><desc id="desc">Transition guard. Show the bool guard in brackets or with its explicit when keyword on the transition label.</desc>
 <g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
 <rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
 <polygon points="35,25 495,25 525,55 525,252 35,252" fill="#ffffff" stroke="#111111"/>

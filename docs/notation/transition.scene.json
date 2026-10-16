@@ -2,7 +2,7 @@
   "width": 560,
   "height": 320,
   "title": "State transition",
-  "description": "State transition. Draw a directed edge between states in the same operation; label its identity, stimulus, optional guard/priority and effect.",
+  "description": "State transition. Draw a directed edge between states in the same function; label its identity, stimulus, optional guard/priority and effect.",
   "shapes": [
     {
       "kind": "rect",

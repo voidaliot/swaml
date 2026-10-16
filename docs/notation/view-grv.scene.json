@@ -2,7 +2,7 @@
   "width": 560,
   "height": 320,
   "title": "Grid View",
-  "description": "Grid View. Draw a framed projection titled GRV with the semantic subject identity visible; use the canonical element symbols within it.",
+  "description": "Grid View. Draw a framed projection titled grv with the semantic subject identity visible; use the canonical element symbols within it.",
   "shapes": [
     {
       "kind": "rect",
@@ -55,7 +55,7 @@
       "kind": "text",
       "x": 27,
       "y": 40,
-      "text": "GRV",
+      "text": "grv",
       "size": 19,
       "bold": true,
       "color": "#111111"

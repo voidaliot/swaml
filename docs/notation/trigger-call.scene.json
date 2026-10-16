@@ -2,7 +2,7 @@
   "width": 560,
   "height": 280,
   "title": "RPC handler activation",
-  "description": "RPC handler activation. Attach the activation text to its operation header; use no free event symbol or standalone trigger object.",
+  "description": "RPC handler activation. Attach the activation text to its function header; use no free event symbol or standalone trigger object.",
   "shapes": [
     {
       "kind": "rect",
@@ -28,7 +28,7 @@
       "kind": "text",
       "x": 55,
       "y": 67,
-      "text": "checkHealth(): Bool",
+      "text": "checkHealth(): bool",
       "size": 20,
       "bold": true,
       "color": "#111111"

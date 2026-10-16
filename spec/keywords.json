@@ -1,5 +1,5 @@
 {
-  "languageVersion": "1.1",
+  "languageVersion": "1.2",
   "entries": [
     {
       "keyword": "after",
@@ -10,19 +10,19 @@
     {
       "keyword": "and",
       "concern": "Values and calculation",
-      "meaning": "Short-circuit Boolean conjunction. Both operands must be Bool; the right operand is evaluated only when the left is true.",
+      "meaning": "Short-circuit Boolean conjunction. Both operands must be bool; the right operand is evaluated only when the left is true.",
       "example": "ready and enabled"
     },
     {
       "keyword": "as",
       "concern": "Communication",
-      "meaning": "Names the successful awaited RPC result. A Void result reserves the name without creating a readable value. The name must be fresh in the live lexical environment.",
-      "example": "request api.read() as value within 1 s otherwise { return; };"
+      "meaning": "Names a fresh local-call result or awaited RPC result. Local void calls omit it; routed void calls reserve a completion name without a readable value.",
+      "example": "call api.read() as value within 1 s otherwise { return; };"
     },
     {
       "keyword": "assert",
       "concern": "Behavior and states",
-      "meaning": "Evaluates a Bool; false fails the activation without rollback. A failed RPC handler returns RemoteFailure through its correlation. Assertions are executable checks, not static proofs.",
+      "meaning": "Evaluates a bool; false fails the activation without rollback. A failed RPC handler returns RemoteFailure through its correlation. Assertions are executable checks, not static proofs.",
       "example": "assert measured <= 100;"
     },
     {
@@ -38,16 +38,22 @@
       "example": "delivery atMostOnce;"
     },
     {
+      "keyword": "attribute",
+      "concern": "Cases and evidence",
+      "meaning": "Immutable typed requirement metadata.",
+      "example": "attribute priority: uint = 1;"
+    },
+    {
       "keyword": "bestEffort",
       "concern": "Communication",
       "meaning": "Permits loss without an eventual-delivery guarantee and without duplicate delivery. Queue capacity, overflow and declared timing bounds still apply.",
       "example": "delivery bestEffort;"
     },
     {
-      "keyword": "Bool",
+      "keyword": "bool",
       "concern": "Values and calculation",
-      "meaning": "Primitive two-valued Boolean type. Conditions and logical operators require Bool; numbers and strings are not truthy substitutes.",
-      "example": "let ready: Bool = true;"
+      "meaning": "Primitive two-valued Boolean type. Conditions and logical operators require bool; numbers and strings are not truthy substitutes.",
+      "example": "var ready: bool = true;"
     },
     {
       "keyword": "bound",
@@ -56,22 +62,34 @@
       "example": "while (i < 3) bound 3 { i = i + 1; }"
     },
     {
+      "keyword": "by",
+      "concern": "Cases and evidence",
+      "meaning": "Identifies the design source of satisfaction.",
+      "example": "satisfy Reliable by Demo;"
+    },
+    {
+      "keyword": "byte",
+      "concern": "Values and calculation",
+      "meaning": "Exact unsigned eight-bit values from 0 through 255. Integral assignment checks the destination range statically for known constants and at runtime for computed values.",
+      "example": "var payload: byte[2] = [0, 255];"
+    },
+    {
+      "keyword": "calc",
+      "concern": "Values and calculation",
+      "meaning": "Declares a pure calculation at the start of a function body. Its typed inputs and named result expression are visible only within that owning function, including its states and guards.",
+      "example": "calc twice { in x: int; return result: int = x * 2; }"
+    },
+    {
       "keyword": "call",
       "concern": "Behavior and states",
-      "meaning": "Activates a unit operation for an incoming RPC interface member. Parameters and result must match the contract, and the member has exactly one handler owner.",
-      "example": "operation read(): Int on call api.get { return current; }"
+      "meaning": "Calls an untriggered local function, awaits a routed port.member function, marks an incoming RPC trigger, or describes a case RPC step. Local non-void calls require as name; routed calls require a result/completion name, timeout and terminating failure path.",
+      "example": "call normalize(input) as value; / call api.read() as reply within 1 s otherwise { return; };"
     },
     {
       "keyword": "capacity",
       "concern": "Communication",
       "meaning": "Positive safe-integer retained-message limit per connector occurrence, direction and member. Transport-pending messages count; running handlers do not. Sampled data requires capacity 1.",
       "example": "capacity 8;"
-    },
-    {
-      "keyword": "case",
-      "concern": "Cases and evidence",
-      "meaning": "Defines a descriptive scenario for a root component with labeled interface exchanges and optional requirement traces. It does not execute or prove itself and cannot introduce hidden traffic.",
-      "example": "case Checkout for Shop satisfies Accepted { ... }"
     },
     {
       "keyword": "client",
@@ -82,8 +100,8 @@
     {
       "keyword": "clientServer",
       "concern": "Communication",
-      "meaning": "Interface kind containing operation signatures only. A client issues request; a server implements on call handlers. Events belong in service or publishSubscribe contracts.",
-      "example": "interface clientServer Health version \"1.0.0\" { operation check(): Bool; }"
+      "meaning": "Interface kind containing function signatures only. A client issues request; a server implements on call handlers. Events belong in service or publishSubscribe contracts.",
+      "example": "interface clientServer Health version \"1.0.0\" { function check(): bool; }"
     },
     {
       "keyword": "completion",
@@ -94,61 +112,55 @@
     {
       "keyword": "component",
       "concern": "Structure and names",
-      "meaning": "With def, declares a reusable composition type. Without def, a typed child occurrence uses name: Type; at package level a root occurrence either supplies inline unit/component children and connectors or instantiates a component definition. A typed root body may bind nodes/deployment only. The root profile defaults to service.",
-      "example": "component def Assembly { unit controller: Controller; } / component Demo: Assembly;"
+      "meaning": "Defines a reusable software boundary with def, or a concrete instance. Components own child components, ports, private data and executable functions. Functions own calculations. Each instance receives distinct state and activation locks.",
+      "example": "component def Controller { } / component controller: Controller;"
     },
     {
       "keyword": "concurrency",
       "concern": "Timing and deployment",
-      "meaning": "Selects serial or reentrant operation activation policy in a timing contract. Helpers inherit the activation mode. Stateful operations never overlap their own reactions.",
+      "meaning": "Selects serial or reentrant function activation policy in a timing contract. Helpers inherit the activation mode. Stateful functions never overlap their own reactions.",
       "example": "concurrency serial;"
     },
     {
       "keyword": "connect",
       "concern": "Communication",
-      "meaning": "Creates an explicit connector between immediate child ports of a component definition or root component. Contracts must be identical and roles complementary. Every connector supplies QoS.",
+      "meaning": "Creates an explicit connector between owned or immediate-child ports. Contracts must be identical and roles complementary. Every connector supplies a complete QoS selection.",
       "example": "connect samples: sensor.output -> controller.input qos { ... };"
     },
     {
-      "keyword": "container",
-      "concern": "Timing and deployment",
-      "meaning": "Execution-node kind representing a container deployment location. It does not create a component, communication channel or container runtime configuration.",
-      "example": "node application container;"
-    },
-    {
-      "keyword": "CV",
+      "keyword": "cv",
       "concern": "Graphical views",
       "meaning": "Case View kind: displays cases, requirements and claimed coverage for a case or root component. Verified coverage requires separate linked evidence.",
-      "example": "view coverage CV of Shop;"
+      "example": "view coverage cv of Shop;"
     },
     {
       "keyword": "data",
       "concern": "Communication",
       "meaning": "Declares one senderReceiver member with a value type and sampled or queued mode. Outgoing use is send; incoming handling is on receive with one typed argument.",
-      "example": "data sample: Real sampled;"
+      "example": "data sample: real sampled;"
     },
     {
       "keyword": "datatype",
       "concern": "Values and calculation",
       "meaning": "Declares a nominal finite record. Field names are unique, every literal supplies all fields once, and recursive value containment is invalid. Empty records have one value.",
-      "example": "datatype Point { x: Real; y: Real; }"
+      "example": "datatype Point { x: real; y: real; }"
     },
     {
       "keyword": "deadline",
       "concern": "Timing and deployment",
-      "meaning": "Positive elapsed-time bound from activation release to completion, including queueing and request suspension. For stateful operations it applies per reaction. WCET must not exceed it.",
+      "meaning": "Positive elapsed-time bound from activation release to completion, including queueing and request suspension. For stateful functions it applies per reaction. WCET must not exceed it.",
       "example": "deadline 5 ms;"
     },
     {
       "keyword": "def",
       "concern": "Structure and names",
-      "meaning": "Required marker for a reusable component or unit type. Definitions create no running singleton. An occurrence without def must either refer to the matching definition kind or, for a package-level component root, supply inline composition.",
-      "example": "unit def Worker { ... }"
+      "meaning": "Declares a reusable component type or complete package-owned QoS policy. Component definitions may specialize one base; definitions create no runtime singleton.",
+      "example": "component def Controller { } / qos def LocalLink { ... }"
     },
     {
       "keyword": "delegate",
       "concern": "Communication",
-      "meaning": "Aliases a component boundary port to one immediate child port of the same role and interface. Every component port delegates once. Delegation adds neither conversion nor a queue.",
+      "meaning": "Aliases a component boundary port to one immediate child port of the same role and interface. A port has at most one delegation and cannot also have local behavior owners. Delegation adds neither conversion nor a queue.",
       "example": "delegate api -> worker.api;"
     },
     {
@@ -160,8 +172,14 @@
     {
       "keyword": "deploy",
       "concern": "Timing and deployment",
-      "meaning": "Assigns an existing component or descendant occurrence to a root component node. Descendants inherit the nearest explicit allocation. Duplicate exact-path allocations are invalid.",
-      "example": "deploy backend.worker on application;"
+      "meaning": "Associates a component instance path, or the root name itself, with an external system/part identity string. Descendants inherit the nearest binding. The host resolves the external destination.",
+      "example": "deploy controller on \"sysml:Vehicle::ecu\";"
+    },
+    {
+      "keyword": "doc",
+      "concern": "Cases and evidence",
+      "meaning": "One owned formal multiline specification.",
+      "example": "doc /* Formal text. */"
     },
     {
       "keyword": "dropNewest",
@@ -184,7 +202,7 @@
     {
       "keyword": "entry",
       "concern": "Behavior and states",
-      "meaning": "State-entry block executed after that state becomes current. It has no incoming payload scope. Residence timers begin after entry finishes; return/fail terminates the owning operation.",
+      "meaning": "State-entry block executed after that state becomes current. It has no incoming payload scope. Residence timers begin after entry finishes; return/fail terminates the owning function.",
       "example": "state Idle { entry { count = 0; } }"
     },
     {
@@ -196,14 +214,14 @@
     {
       "keyword": "event",
       "concern": "Communication",
-      "meaning": "Declares a typed asynchronous member in publishSubscribe or service. It must be emitted by an operation through a port and owned by one receiving operation; free global events are absent.",
-      "example": "event changed(value: Real);"
+      "meaning": "Declares a typed asynchronous member in publishSubscribe or service. It must be emitted by a function through a port and owned by one receiving function; free global events are absent.",
+      "example": "event changed(value: real);"
     },
     {
       "keyword": "every",
       "concern": "Behavior and states",
-      "meaning": "Periodic parameterless Void activation at epoch plus k periods, k starting at 1. Releases do not merge when earlier activations are busy; pending work is bounded by the binding.",
-      "example": "operation sample(): Void on every 10 ms { ... }"
+      "meaning": "Periodic parameterless void activation at epoch plus k periods, k starting at 1. Releases do not merge when earlier activations are busy; pending work is bounded by the binding.",
+      "example": "function sample(): void on every 10 ms { ... }"
     },
     {
       "keyword": "exit",
@@ -214,14 +232,14 @@
     {
       "keyword": "fail",
       "concern": "Behavior and states",
-      "meaning": "Raises a local failure with a String literal reason, unwinds synchronous callers, and preserves committed effects. An RPC caller receives the correlated RemoteFailure outcome.",
+      "meaning": "Raises a local failure with a string literal reason, unwinds synchronous callers, and preserves committed effects. An RPC caller receives the correlated RemoteFailure outcome.",
       "example": "fail \"invalid operating mode\";"
     },
     {
       "keyword": "false",
       "concern": "Values and calculation",
-      "meaning": "The false Bool literal. Distinct from numeric zero, empty strings or absent values; no implicit coercion exists.",
-      "example": "let ready: Bool = false;"
+      "meaning": "The false bool literal. Distinct from numeric zero, empty strings or absent values; no implicit coercion exists.",
+      "example": "var ready: bool = false;"
     },
     {
       "keyword": "fifo",
@@ -232,49 +250,49 @@
     {
       "keyword": "final",
       "concern": "Behavior and states",
-      "meaning": "Marks a state that completes its owning operation after entry. It has no outgoing transition. Future input to that operation is undeliverable, not rerouted.",
+      "meaning": "Marks a state that completes its owning function after entry. It has no outgoing transition. Future input to that function is undeliverable, not rerouted.",
       "example": "state Stopped final {}"
     },
     {
       "keyword": "for",
       "concern": "Cases and evidence",
-      "meaning": "Selects the root component described by a case. The steps use root-level connectors and immediate child unit/component port-member paths. Typed roots resolve topology through their component definition.",
-      "example": "case Startup for Product { ... }"
+      "meaning": "Selects the root component described by a case. Steps use root-level connectors and owned or immediate-child port-member paths. Typed roots resolve topology through their component definition.",
+      "example": "useCase Startup for Product { ... }"
     },
     {
       "keyword": "function",
-      "concern": "Values and calculation",
-      "meaning": "Defines a pure expression with a non-Void result. It sees only copied parameters and other local pure functions, never unit variables. The call graph is acyclic.",
-      "example": "function twice(value: Int): Int = value * 2; / twice(3)"
+      "concern": "Behavior and states",
+      "meaning": "Declares an executable component-owned behavior or an interface contract signature. A body contains optional local calculations followed by statements or directly owned states. An omitted result means void; triggers select activation.",
+      "example": "function startUp() on start { return; }"
     },
     {
-      "keyword": "FV",
+      "keyword": "fv",
       "concern": "Graphical views",
-      "meaning": "Flow View of an operation. Projects either its statement body or its owned states/transitions in the same view family. There are no performer allocations or separate AFV/STV kinds.",
-      "example": "view control FV of Controller.regulate;"
+      "meaning": "Flow View of a function. Projects either its statement body or its owned states/transitions in the same view family.",
+      "example": "view control fv of Controller.regulate;"
     },
     {
-      "keyword": "GRV",
+      "keyword": "grv",
       "concern": "Graphical views",
       "meaning": "Grid View of a package or named semantic declaration other than a view. Presents inventory, contracts, timing, allocation or trace tables; sorting does not change model meaning.",
-      "example": "view inventory GRV of Architecture;"
+      "example": "view inventory grv of Architecture;"
     },
     {
-      "keyword": "GV",
+      "keyword": "gv",
       "concern": "Graphical views",
       "meaning": "General View of a package or resolvable named semantic declaration other than a view. Shows ownership, types, attributes and relations, retaining definition/occurrence distinction.",
-      "example": "view overview GV of Product;"
+      "example": "view overview gv of Product;"
     },
     {
       "keyword": "idempotent",
       "concern": "Communication",
       "meaning": "Contract assertion required for RPC under atLeastOnce delivery. Repeated requests must have idempotent effects including published side effects. The keyword alone is not a proof.",
-      "example": "operation read(): Int idempotent;"
+      "example": "function read(): int idempotent;"
     },
     {
       "keyword": "if",
       "concern": "Behavior and states",
-      "meaning": "Evaluates one Bool and executes the selected lexical block. It supplies no concurrency or implicit variable merging. Value-returning operations must cover both paths or fail.",
+      "meaning": "Evaluates one bool and executes the selected lexical block. It supplies no concurrency or implicit variable merging. Value-returning functions must cover both paths or fail.",
       "example": "if (value > limit) { return false; } else { return true; }"
     },
     {
@@ -284,16 +302,28 @@
       "example": "import Common::*;"
     },
     {
+      "keyword": "in",
+      "concern": "Values and calculation",
+      "meaning": "Declares one ordered typed input of a calculation. Arguments are copied values and must match the declared input types.",
+      "example": "in measured: real;"
+    },
+    {
+      "keyword": "include",
+      "concern": "Graphical views",
+      "meaning": "Adds a subject selection to a view.",
+      "example": "include Demo;"
+    },
+    {
       "keyword": "initial",
       "concern": "Behavior and states",
-      "meaning": "The first item in a stateful operation body. References exactly one state owned by that operation and distinguishes state behavior from a statement block without a wrapper keyword. Initialization enters it once per run epoch before input consumption.",
+      "meaning": "Introduces the state body after optional function-local calculation declarations. References exactly one state owned by that function and distinguishes state behavior from a statement block without a wrapper keyword. Initialization enters it once per run epoch before input consumption.",
       "example": "initial Idle;"
     },
     {
-      "keyword": "Int",
+      "keyword": "int",
       "concern": "Values and calculation",
-      "meaning": "Exact signed integer type from -(2^53-1) through 2^53-1. Overflow, invalid indexing and division/remainder by zero fail execution. Scalar Int may widen to Real.",
-      "example": "var count: Int = 0;"
+      "meaning": "Exact signed safe integers from âˆ’(2^53âˆ’1) through 2^53âˆ’1. Integral arithmetic produces int, with exact intermediate checks; division returns real.",
+      "example": "var delta: int = -2;"
     },
     {
       "keyword": "interface",
@@ -302,16 +332,10 @@
       "example": "interface service Orders version \"1.0.0\" { ... }"
     },
     {
-      "keyword": "invoke",
-      "concern": "Behavior and states",
-      "meaning": "Synchronously calls an untriggered Void operation in the same unit. It shares the activation lock and snapshot; copied parameters are local. Remote invocation requires request through a port.",
-      "example": "invoke prepare();"
-    },
-    {
-      "keyword": "IV",
+      "keyword": "iv",
       "concern": "Graphical views",
-      "meaning": "Interconnect View of a root component/component definition or occurrence. Shows immediate children, boundary ports, connectors and delegation with exact interface paths.",
-      "example": "view wiring IV of Product;"
+      "meaning": "Interconnect View of a root component, component definition or component instance. Shows owned and immediate-child ports, connectors and delegation with exact interface paths.",
+      "example": "view wiring iv of Product;"
     },
     {
       "keyword": "label",
@@ -320,16 +344,10 @@
       "example": "via orderLink label submitted;"
     },
     {
-      "keyword": "let",
-      "concern": "Behavior and states",
-      "meaning": "Creates a typed mutable local value from a copied initializer. It cannot shadow a live local, parameter or unit variable, and disappears at block exit.",
-      "example": "let count: Int = 0;"
-    },
-    {
       "keyword": "manual",
       "concern": "Behavior and states",
-      "meaning": "Parameterless Void operation trigger released by a harness. It is control of execution, not a route for injecting external model payloads or bypassing interfaces.",
-      "example": "operation refresh(): Void on manual { ... }"
+      "meaning": "Parameterless void function trigger released by a harness. It is control of execution, not a route for injecting external model payloads or bypassing interfaces.",
+      "example": "function refresh(): void on manual { ... }"
     },
     {
       "keyword": "maxAge",
@@ -344,15 +362,9 @@
       "example": "maxLatency 1 ms;"
     },
     {
-      "keyword": "mcu",
-      "concern": "Timing and deployment",
-      "meaning": "Execution-node kind for an embedded microcontroller location. The core does not infer interrupts, task priorities, processor speed or memory limits.",
-      "example": "node controller mcu;"
-    },
-    {
       "keyword": "mixed",
       "concern": "Timing and deployment",
-      "meaning": "Root component profile covering embedded/service combinations. All used operations carry timing and all connectors latency; sampled data also carries age. It does not silently exempt cloud-facing paths.",
+      "meaning": "Root component profile covering embedded/service combinations. All used functions carry timing and all connectors latency; sampled data also carries age. It does not silently exempt cloud-facing paths.",
       "example": "component Product mixed { ... }"
     },
     {
@@ -362,15 +374,9 @@
       "example": "within 25 ms"
     },
     {
-      "keyword": "node",
-      "concern": "Timing and deployment",
-      "meaning": "Declares a named execution location in a root component with mcu, process or container kind. Nodes affect allocation only; traffic still follows interfaces.",
-      "example": "node edge process;"
-    },
-    {
       "keyword": "not",
       "concern": "Values and calculation",
-      "meaning": "Unary Bool negation with precedence above multiplication. No numeric or string coercion is allowed.",
+      "meaning": "Unary bool negation with precedence above multiplication. No numeric or string coercion is allowed.",
       "example": "not ready"
     },
     {
@@ -383,19 +389,13 @@
       "keyword": "of",
       "concern": "Graphical views",
       "meaning": "Introduces a view subject path rooted in the owning package or its top-level declaration. Allowed subject kinds depend on the view kind.",
-      "example": "view flow FV of Product.controller.worker.run;"
+      "example": "view flow fv of Product.controller.worker.run;"
     },
     {
       "keyword": "on",
       "concern": "Behavior and states",
-      "meaning": "Introduces an operation or transition trigger. Operations use start/manual/every/receive/call; transitions use completion/after/receive. Triggers do not introduce free signals.",
-      "example": "on receive input.sample"
-    },
-    {
-      "keyword": "operation",
-      "concern": "Behavior and states",
-      "meaning": "In an interface, declares an RPC signature. In a unit, declares executable statements or directly owned states. An omitted result annotation means Void. An incoming signature is implemented by exactly one on call operation.",
-      "example": "operation reset(); / operation reset() on call api.reset { return; }"
+      "meaning": "Introduces a function activation trigger, state transition trigger, or deployment destination. Deployment destinations are quoted external identities; behavior triggers retain their local semantics.",
+      "example": "function tick() on every 10 ms { return; } / deploy app on \"system:production\";"
     },
     {
       "keyword": "optional",
@@ -406,7 +406,7 @@
     {
       "keyword": "or",
       "concern": "Values and calculation",
-      "meaning": "Short-circuit Boolean disjunction. The right Bool operand is evaluated only when the left is false.",
+      "meaning": "Short-circuit Boolean disjunction. The right bool operand is evaluated only when the left is false.",
       "example": "ready or retryAllowed"
     },
     {
@@ -418,7 +418,7 @@
     {
       "keyword": "otherwise",
       "concern": "Communication",
-      "meaning": "Mandatory request failure block with implicit copied failure:String. It must return or fail on every path and cannot fall through to successful result use.",
+      "meaning": "Mandatory request failure block with implicit copied failure:string. It must return or fail on every path and cannot fall through to successful result use.",
       "example": "within 1 s otherwise { lastError = failure; return; };"
     },
     {
@@ -436,20 +436,14 @@
     {
       "keyword": "port",
       "concern": "Communication",
-      "meaning": "Owned communication boundary feature typed by one interface, with a compatible role and optionality. Component ports delegate to children; unit ports bind operations to members.",
+      "meaning": "Owned communication boundary typed by one interface with a compatible role and optionality. A port may bind local functions to members or delegate to a child while retaining one resolved handler owner.",
       "example": "port api: Orders requires;"
     },
     {
       "keyword": "priority",
       "concern": "Behavior and states",
-      "meaning": "Nonnegative safe-integer tie-break among matching transitions for the same state and stimulus; larger wins, default 0. It is not an operation scheduling priority.",
+      "meaning": "Nonnegative safe-integer tie-break among matching transitions for the same state and stimulus; larger wins, default 0. It is not a function scheduling priority.",
       "example": "on receive commands.begin priority 2 {}"
-    },
-    {
-      "keyword": "process",
-      "concern": "Timing and deployment",
-      "meaning": "Execution-node kind for a logical process. It supplies no hidden IPC access, shared memory or task scheduling policy.",
-      "example": "node worker process;"
     },
     {
       "keyword": "provides",
@@ -466,49 +460,49 @@
     {
       "keyword": "publisher",
       "concern": "Communication",
-      "meaning": "Outgoing role for a publishSubscribe contract. One port may fan out through several connectors; every outgoing member is tied to an emitting operation.",
+      "meaning": "Outgoing role for a publishSubscribe contract. One port may fan out through several connectors; every outgoing member is tied to an emitting function.",
       "example": "port events: Notices publisher;"
     },
     {
       "keyword": "publishSubscribe",
       "concern": "Communication",
-      "meaning": "Event-only contract kind with publisher/subscriber ports. Subscriptions are explicit static connectors. Runtime subscribe/unsubscribe and wildcard topics are outside 1.1.",
+      "meaning": "Event-only contract kind with publisher/subscriber ports. Subscriptions are explicit static connectors. Runtime subscribe/unsubscribe and wildcard topics are outside 1.2.",
       "example": "interface publishSubscribe Notices version \"1.0.0\" { event changed(); }"
     },
     {
       "keyword": "qos",
       "concern": "Communication",
-      "meaning": "Introduces connector delivery, ordering, capacity and overflow, followed by optional latency and age in the grammar's order. Each connector must supply the block.",
-      "example": "qos { delivery atMostOnce; ordering fifo; capacity 4; overflow reject; }"
+      "meaning": "Introduces a complete inline connector policy, an explicit named-policy reference, or a package-owned qos def declaration. A named policy reuses values without sharing connector queues. Every body declares delivery, ordering, capacity and overflow, then optional latency and age.",
+      "example": "qos def LocalLink { delivery atMostOnce; ordering fifo; capacity 8; overflow reject; } / qos LocalLink"
     },
     {
       "keyword": "queued",
       "concern": "Communication",
       "meaning": "SenderReceiver data mode representing a sequence of retained values under queue policy. It does not imply losslessness or unbounded history.",
-      "example": "data text: String queued;"
+      "example": "data text: string queued;"
     },
     {
-      "keyword": "Real",
+      "keyword": "real",
       "concern": "Values and calculation",
-      "meaning": "Finite IEEE 754 binary64 type. Arithmetic is nearest-even; non-finite results and division by zero fail. Scalar Int widens, but fixed arrays do not implicitly widen.",
-      "example": "var temperature: Real = 20.0;"
+      "meaning": "Finite IEEE 754 binary64 values. Scalar byte, uint and int may widen to real; real does not implicitly narrow to an integral type.",
+      "example": "var gain: real = 0.5;"
     },
     {
       "keyword": "realtime",
       "concern": "Timing and deployment",
-      "meaning": "Root component profile requiring operation timing, connector latency and sampled freshness contracts. Those declarations require target evidence before any hard realtime claim.",
+      "meaning": "Root component profile requiring function timing, connector latency and sampled freshness contracts. Those declarations require target evidence before any hard realtime claim.",
       "example": "component Heating realtime { ... }"
     },
     {
       "keyword": "receive",
       "concern": "Behavior and states",
-      "meaning": "Consumes an incoming data/event member through a receiver/subscriber/requires port. An ordinary operation receives copied parameters; a transition exposes event parameters or data payload in guard/effect.",
+      "meaning": "Consumes an incoming data/event member through a receiver/subscriber/requires port. An ordinary function receives copied parameters; a transition exposes event parameters or data payload in guard/effect.",
       "example": "on receive commands.begin"
     },
     {
       "keyword": "receiver",
       "concern": "Communication",
-      "meaning": "Incoming senderReceiver role. Every data member has one handler owner; at most one route feeds a closed receiver port. Multiple sources require an explicit merge/adaptor unit.",
+      "meaning": "Incoming senderReceiver role. Every data member has one handler owner; at most one route feeds a closed receiver port. Multiple sources require an explicit merge/adaptor component.",
       "example": "port input: Samples receiver;"
     },
     {
@@ -518,9 +512,21 @@
       "example": "record Point { x = 1.0; y = 2.0; }"
     },
     {
+      "keyword": "recursive",
+      "concern": "Graphical views",
+      "meaning": "Includes descendants before filtering.",
+      "example": "include Demo recursive;"
+    },
+    {
+      "keyword": "redefines",
+      "concern": "Structure and names",
+      "meaning": "Explicitly replaces an inherited member while preserving its category and compatible contract. Unmarked inherited-name collisions and missing inherited targets are errors.",
+      "example": "redefines function startUp() on start { return; }"
+    },
+    {
       "keyword": "reentrant",
       "concern": "Timing and deployment",
-      "meaning": "Allows overlapping operation activations with independent dispatch-time unit snapshots. Direct or helper writes to unit state are statically invalid. Local variables remain mutable; one state reaction cannot overlap itself.",
+      "meaning": "Allows overlapping function activations with independent dispatch-time component snapshots. Direct or helper writes to component state are statically invalid. Local variables remain mutable; one state reaction cannot overlap itself.",
       "example": "concurrency reentrant;"
     },
     {
@@ -536,16 +542,10 @@
       "example": "reply backend.api.get -> client.api.get via link after asked label answered;"
     },
     {
-      "keyword": "request",
-      "concern": "Communication",
-      "meaning": "Awaits one RPC on a local client/requires port with fresh correlation, result name, finite timeout and explicit failure block. In cases it describes the corresponding routed exchange.",
-      "example": "request api.get() as value within 1 s otherwise { return; };"
-    },
-    {
       "keyword": "requirement",
       "concern": "Cases and evidence",
       "meaning": "Named natural-language obligation. It has descriptive text and can be referenced by cases; the core supplies no implicit requirements solver or verified checkmark.",
-      "example": "requirement Safe \"Duty shall remain within the allowed range.\";"
+      "example": "requirement Safe { doc /* Duty shall remain within the allowed range. */ }"
     },
     {
       "keyword": "requires",
@@ -556,8 +556,8 @@
     {
       "keyword": "return",
       "concern": "Behavior and states",
-      "meaning": "Completes the current operation with a copied typed result or bare Void. Inside an invoked helper it resumes the caller; inside state behavior it terminates the owning operation immediately.",
-      "example": "return accepted;"
+      "meaning": "Completes a function activation or local call with its required result; bare return completes void. In a calc declaration it introduces the one named typed output and pure expression.",
+      "example": "return true; / return result: real = value * gain;"
     },
     {
       "keyword": "s",
@@ -569,67 +569,73 @@
       "keyword": "sampled",
       "concern": "Communication",
       "meaning": "SenderReceiver data mode retaining the latest pending sample: capacity 1 and dropOldest are mandatory. Dispatch removes the sample; the core does not define a remote shared-variable read.",
-      "example": "data temperature: Real sampled;"
+      "example": "data temperature: real sampled;"
     },
     {
-      "keyword": "satisfies",
+      "keyword": "satisfy",
       "concern": "Cases and evidence",
-      "meaning": "Links a case to one or more requirement declarations as intended coverage. It is a claim requiring test/analysis/review evidence, not a proof by syntax.",
-      "example": "case Checkout for Shop satisfies Accepted, Audited { ... }"
+      "meaning": "Design-to-requirement satisfaction claim.",
+      "example": "satisfy Reliable by Demo;"
     },
     {
       "keyword": "send",
       "concern": "Communication",
-      "meaning": "Emits an outgoing senderReceiver data member through a sender port with exactly one value. In a case it describes a data exchange. It cannot publish events or bypass another unit's interface.",
+      "meaning": "Emits an outgoing senderReceiver data member through a sender port with exactly one value. In a case it describes a data exchange. It cannot publish events or bypass another component's interface.",
       "example": "send output.temperature(23.5);"
     },
     {
       "keyword": "sender",
       "concern": "Communication",
-      "meaning": "Outgoing senderReceiver role. May fan out through multiple explicit connectors; each member has at least one syntactically associated emitting operation.",
+      "meaning": "Outgoing senderReceiver role. May fan out through multiple explicit connectors; each member has at least one syntactically associated emitting function.",
       "example": "port output: Samples sender;"
     },
     {
       "keyword": "senderReceiver",
       "concern": "Communication",
-      "meaning": "Data-only contract kind with sampled/queued members and sender/receiver roles. No RPC operations or event members may be declared inside it.",
-      "example": "interface senderReceiver Samples version \"1.0.0\" { data value: Real sampled; }"
+      "meaning": "Data-only contract kind with sampled/queued members and sender/receiver roles. No RPC functions or event members may be declared inside it.",
+      "example": "interface senderReceiver Samples version \"1.0.0\" { data value: real sampled; }"
     },
     {
       "keyword": "serial",
       "concern": "Timing and deployment",
-      "meaning": "Default activation mode: acquire the unit's one serial lock until completion/failure, including RPC waits. Local invokes share the activation lock. Independent unit activations may still interleave.",
+      "meaning": "Default activation mode: acquire the component's one serial lock until completion/failure, including RPC waits. Local invokes share the activation lock. Independent component activations may still interleave.",
       "example": "concurrency serial;"
     },
     {
       "keyword": "server",
       "concern": "Communication",
-      "meaning": "Provider role for clientServer contracts. Each operation signature has exactly one on call handler; results/failures follow the request correlation.",
+      "meaning": "Provider role for clientServer contracts. Each function signature has exactly one on call handler; results/failures follow the request correlation.",
       "example": "port health: Health server;"
     },
     {
       "keyword": "service",
       "concern": "Communication",
-      "meaning": "As an interface kind, combines RPC operations and events with requires/provides roles. As a root component profile, makes timing contracts optional while retaining interfaces, explicit QoS and static validity; it is the default when no profile is written.",
+      "meaning": "As an interface kind, combines RPC functions and events with requires/provides roles. As a root component profile, makes timing contracts optional while retaining interfaces, explicit QoS and static validity; it is the default when no profile is written.",
       "example": "interface service Orders version \"1.0.0\" { ... } / component Shop service { ... }"
+    },
+    {
+      "keyword": "specializes",
+      "concern": "Structure and names",
+      "meaning": "Names one visible base component definition. Effective inherited members are reused; specialization and effective containment must be acyclic.",
+      "example": "component def Tuned specializes Controller { }"
     },
     {
       "keyword": "start",
       "concern": "Behavior and states",
-      "meaning": "Once-per-run startup trigger for a parameterless Void operation. Stateful operations require it. All stores/routes/handlers exist before startup work runs; readiness protocols still need explicit ports.",
-      "example": "operation boot(): Void on start { ... }"
+      "meaning": "Once-per-run startup trigger for a parameterless void function. Stateful functions require it. All stores/routes/handlers exist before startup work runs; readiness protocols still need explicit ports.",
+      "example": "function boot(): void on start { ... }"
     },
     {
       "keyword": "state",
       "concern": "Behavior and states",
-      "meaning": "Declares a named state directly inside an operation after its initial reference. Optional entry/exit blocks contain ordinary operation statements. State names are operation-local; no separate state allocation or performer exists.",
+      "meaning": "Declares a named state directly inside a function after its initial reference. Optional entry/exit blocks contain ordinary function statements. State names are function-local; no separate state allocation or performer exists.",
       "example": "state Idle { entry { active = false; } }"
     },
     {
-      "keyword": "String",
+      "keyword": "string",
       "concern": "Values and calculation",
       "meaning": "Finite Unicode text with exact equality and no normalization. Strings support portable escapes; implicit concatenation, ordering and bounded transport size are absent.",
-      "example": "var lastError: String = \"\";"
+      "example": "var lastError: string = \"\";"
     },
     {
       "keyword": "subscriber",
@@ -638,34 +644,34 @@
       "example": "port input: Notices subscriber;"
     },
     {
-      "keyword": "SV",
+      "keyword": "sv",
       "concern": "Graphical views",
       "meaning": "Sequence View of a case or a root component's selected case. Lifelines are occurrences; arrows show port/member/connector and request correlation. Independent steps must remain visibly unordered.",
-      "example": "view checkout SV of Checkout;"
+      "example": "view checkout sv of Checkout;"
     },
     {
       "keyword": "timing",
       "concern": "Timing and deployment",
-      "meaning": "Operation contract containing wcet, deadline and concurrency in that order. Required on used operations in realtime/mixed roots; stateful operation timing applies per reaction.",
+      "meaning": "Function contract containing wcet, deadline and concurrency in that order. Required on used functions in realtime/mixed roots; stateful function timing applies per reaction.",
       "example": "timing { wcet 1 ms; deadline 5 ms; concurrency serial; }"
     },
     {
       "keyword": "transition",
       "concern": "Behavior and states",
-      "meaning": "Named state edge owned by one operation, with source/target, stimulus, optional guard/priority and effect. Execution orders exit, effect, state update, entry, then completion processing.",
+      "meaning": "Named state edge owned by one function, with source/target, stimulus, optional guard/priority and effect. Execution orders exit, effect, state update, entry, then completion processing.",
       "example": "transition beginRun: Idle -> Running on receive commands.begin {}"
     },
     {
       "keyword": "true",
       "concern": "Values and calculation",
-      "meaning": "The true Bool literal, with no implicit equivalence to numeric one or other nonempty values.",
+      "meaning": "The true bool literal, with no implicit equivalence to numeric one or other nonempty values.",
       "example": "assert true;"
     },
     {
-      "keyword": "unit",
-      "concern": "Structure and names",
-      "meaning": "Smallest interface-protected software boundary. With def, defines private data/functions/operations; a typed usage creates an occurrence inside a nested or root component. Each occurrence has distinct storage and handlers.",
-      "example": "unit def Worker { ... } / unit worker: Worker;"
+      "keyword": "uint",
+      "concern": "Values and calculation",
+      "meaning": "Exact nonnegative integers from 0 through 2^53âˆ’1. Scalar widening is supported; assigning an integral expression to uint checks its range instead of wrapping.",
+      "example": "var count: uint = 0;"
     },
     {
       "keyword": "unordered",
@@ -680,10 +686,28 @@
       "example": "wcet 100 us;"
     },
     {
+      "keyword": "useCase",
+      "concern": "Cases and evidence",
+      "meaning": "Intended use with optional routed exchanges.",
+      "example": "useCase Start for Demo {}"
+    },
+    {
       "keyword": "var",
       "concern": "Values and calculation",
-      "meaning": "Declares private per-unit mutable state with a typed pure initializer independent of mutable variables. Each unit occurrence owns separate storage; other units cannot read it directly.",
-      "example": "var count: Int = 0;"
+      "meaning": "Declares mutable private component data or a block-local copied value. Ownership determines scope; local declarations cannot shadow live values.",
+      "example": "var count: int = 0;"
+    },
+    {
+      "keyword": "verificationCase",
+      "concern": "Cases and evidence",
+      "meaning": "Verification intent with explicit verify links.",
+      "example": "verificationCase Check for Demo { verify Reliable; }"
+    },
+    {
+      "keyword": "verify",
+      "concern": "Cases and evidence",
+      "meaning": "Links a verification case to a requirement.",
+      "example": "verify Reliable;"
     },
     {
       "keyword": "version",
@@ -694,20 +718,20 @@
     {
       "keyword": "via",
       "concern": "Cases and evidence",
-      "meaning": "Names the root-level connector used by a case exchange. Endpoint-member paths must resolve on its immediate child component/unit ports with a legal orientation.",
+      "meaning": "Names the root-level connector used by a case exchange. Endpoint-member paths must resolve on its immediate child component ports with a legal orientation.",
       "example": "via orderLink label submitted;"
     },
     {
       "keyword": "view",
       "concern": "Graphical views",
-      "meaning": "Declares a named projection of an existing semantic subject with GV/IV/CV/SV/GRV/FV kind. It carries no executable behavior or diagram geometry.",
-      "example": "view wiring IV of Product;"
+      "meaning": "Declares a named projection of an existing semantic subject with gv/iv/cv/sv/grv/fv kind. It carries no executable behavior or diagram geometry.",
+      "example": "view wiring iv of Product;"
     },
     {
-      "keyword": "Void",
+      "keyword": "void",
       "concern": "Values and calculation",
-      "meaning": "No result value. Operation implementations and interface signatures default to Void when : Type is omitted; an explicit : Void is equivalent. Forbidden for parameters, variables, fields, arrays and pure function results. A Void RPC completion label is not readable data.",
-      "example": "operation notify(): Void { return; }"
+      "meaning": "No result value. It is the default function/signature result and cannot type data, input parameters, fields, arrays or calculation outputs.",
+      "example": "function reset() { return; }"
     },
     {
       "keyword": "wcet",
@@ -718,13 +742,19 @@
     {
       "keyword": "when",
       "concern": "Behavior and states",
-      "meaning": "Optional pure Bool transition guard evaluated against the unit snapshot/live environment and stimulus payload as applicable. False consumes/ignores the stimulus when no other transition matches.",
+      "meaning": "Optional pure bool transition guard evaluated against the component snapshot/live environment and stimulus payload as applicable. False consumes/ignores the stimulus when no other transition matches.",
       "example": "on receive commands.begin when (enabled) {}"
+    },
+    {
+      "keyword": "where",
+      "concern": "Graphical views",
+      "meaning": "Filters selected candidates with a Boolean predicate.",
+      "example": "include Demo recursive where kind == \"function\";"
     },
     {
       "keyword": "while",
       "concern": "Behavior and states",
-      "meaning": "Pretest Bool loop with mandatory positive bound. Each iteration has a lexical body scope. A still-true condition after the bound fails instead of silently exiting.",
+      "meaning": "Pretest bool loop with mandatory positive bound. Each iteration has a lexical body scope. A still-true condition after the bound fails instead of silently exiting.",
       "example": "while (i < 3) bound 3 { i = i + 1; }"
     },
     {

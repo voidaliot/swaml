@@ -1,7 +1,7 @@
 {
   "width": 1000,
   "height": 570,
-  "title": "CV · Case View",
+  "title": "cv · Case View",
   "description": "Claimed coverage is explicit; no verification checkmark appears without evidence.",
   "shapes": [
     {
@@ -18,7 +18,7 @@
       "kind": "text",
       "x": 32,
       "y": 47,
-      "text": "CV · Case View",
+      "text": "cv · Case View",
       "size": 30,
       "bold": true,
       "color": "#17324d"
@@ -81,7 +81,7 @@
       "kind": "text",
       "x": 123,
       "y": 286,
-      "text": "«case» Change",
+      "text": "«useCase» Change",
       "size": 24,
       "bold": true,
       "color": "#17324d"
@@ -145,7 +145,7 @@
       "kind": "line",
       "points": [
         [
-          420,
+          478,
           301
         ],
         [
@@ -181,7 +181,7 @@
       "kind": "text",
       "x": 498,
       "y": 261,
-      "text": "satisfies",
+      "text": "satisfy",
       "size": 18,
       "bold": false,
       "color": "#17324d"
@@ -199,7 +199,7 @@
       "kind": "text",
       "x": 55,
       "y": 510,
-      "text": "Evidence status: unverified case claim. Simulation results are separate artifacts.",
+      "text": "Evidence status: design claim. Simulation results are separate artifacts.",
       "size": 19,
       "bold": false,
       "color": "#516579"

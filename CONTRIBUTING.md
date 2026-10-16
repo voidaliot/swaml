@@ -1,8 +1,8 @@
 # Contributing to SWAML
 
-SWAML is developed as a language: specification, grammar, semantics, diagnostics and examples must evolve together. The 1.1 syntax keeps explicit `def` declarations and distinguishes them from concrete component usages. Source files are headerless; a host must pin the grammar version. Read the [1.1 migration](docs/MIGRATION_1_1.md) when converting old models.
+SWAML is developed as a language: specification, grammar, semantics, diagnostics and examples must evolve together. The 1.2 syntax keeps explicit `def` declarations and distinguishes them from concrete component usages; named QoS policies reuse complete values while connector queues stay independent. Source files are headerless; a host must pin language 1.2. Read the [1.2 migration](docs/MIGRATION_1_2.md) when updating hosts and the [historical 1.1 migration](docs/MIGRATION_1_1.md) when converting 1.0 models.
 
-Start with the [language specification](docs/LANGUAGE_SPECIFICATION.md), [ownership decision](docs/decisions/0001-language-boundaries.md) and [implementation status](docs/IMPLEMENTATION_STATUS.md).
+Start with the [language specification](docs/LANGUAGE_SPECIFICATION.md), [ownership and reuse decision](docs/decisions/0007-component-functions-and-calculations.md) and [implementation status](docs/IMPLEMENTATION_STATUS.md).
 
 ## Development setup
 
@@ -19,9 +19,9 @@ This generates the AST/TextMate files, compiles TypeScript, runs the test suite,
 
 Describe the actual modeling problem and a small before/after model. Identify the affected grammar productions, normative clauses, KerML representation, validation rules, view projections and migration behavior. Distinguish a new language feature from a new target-platform binding.
 
-A proposal that adds cross-unit communication must identify the port/interface/member route. A proposal for an event must identify its declaration, emitting operation, receiving owner, delivery policy and failure behavior. A proposal for state or control flow must define ordering, concurrency and termination. Avoid accepting syntax before its semantics exists.
+A proposal that adds cross-component communication must identify the port/interface/member route. A proposal for an event must identify its declaration, emitting function, receiving owner, delivery policy and failure behavior. A proposal for state or control flow must define ordering, concurrency and termination. Avoid accepting syntax before its semantics exists.
 
-Breaking changes require a new language version and migration notes. Additive keywords can still break existing identifiers; document that impact. Record substantial decisions under `docs/decisions/`.
+Published breaking changes require a new language version and migration notes. The unpublished 1.2 release candidate includes the owner-approved component/function/calculation revision; its migration guide records the changes from earlier 1.2 drafts and 1.1. Additive keywords can still break existing identifiers; document that impact. Record substantial decisions under `docs/decisions/`.
 
 ## Implement and test
 

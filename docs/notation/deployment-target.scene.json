@@ -1,0 +1,62 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "External deployment target",
+  "description": "An external reference identifies the deployment system without introducing a hardware or execution-node definition into SWAML.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 45,
+      "y": 35,
+      "width": 470,
+      "height": 210,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 65,
+      "y": 73,
+      "text": "«external system»",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          45,
+          106
+        ],
+        [
+          515,
+          106
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 65,
+      "y": 139,
+      "text": "sysml:Vehicle::leftComputer",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

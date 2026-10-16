@@ -1,0 +1,567 @@
+{
+  "width": 1080,
+  "height": 570,
+  "title": "2 · Follow the routed message flow",
+  "description": "Purchase describes the successful exchange order. Arrows below are case after dependencies, not additional software connectors or a measured execution trace.",
+  "source": "spec/modeling-overview.json",
+  "graph": "interactions",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 1080,
+      "height": 570,
+      "fill": "white",
+      "stroke": "none",
+      "rx": 0
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          320,
+          125
+        ],
+        [
+          390,
+          125
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "rect",
+      "x": 323,
+      "y": 89,
+      "width": 66.5,
+      "height": 27,
+      "fill": "white",
+      "stroke": "none",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 329,
+      "y": 110,
+      "text": "after",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          690,
+          125
+        ],
+        [
+          760,
+          125
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "rect",
+      "x": 693,
+      "y": 89,
+      "width": 66.5,
+      "height": 27,
+      "fill": "white",
+      "stroke": "none",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 699,
+      "y": 110,
+      "text": "after",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          910,
+          210
+        ],
+        [
+          910,
+          350
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "rect",
+      "x": 918,
+      "y": 264,
+      "width": 66.5,
+      "height": 27,
+      "fill": "white",
+      "stroke": "none",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 924,
+      "y": 285,
+      "text": "after",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          760,
+          435
+        ],
+        [
+          690,
+          435
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "rect",
+      "x": 693,
+      "y": 399,
+      "width": 66.5,
+      "height": 27,
+      "fill": "white",
+      "stroke": "none",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 699,
+      "y": 420,
+      "text": "after",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          390,
+          435
+        ],
+        [
+          320,
+          435
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "rect",
+      "x": 323,
+      "y": 399,
+      "width": 66.5,
+      "height": 27,
+      "fill": "white",
+      "stroke": "none",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 329,
+      "y": 420,
+      "text": "after",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 20,
+      "y": 40,
+      "width": 300,
+      "height": 170,
+      "fill": "#f0eef9",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 72,
+      "text": "1 · Submit order",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          20,
+          86
+        ],
+        [
+          320,
+          86
+        ]
+      ],
+      "color": "#cad6df",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 115,
+      "text": "Checkout.submit",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 143,
+      "text": "browser → application",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 171,
+      "text": "via checkoutLink",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 390,
+      "y": 40,
+      "width": 300,
+      "height": 170,
+      "fill": "#f0eef9",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 406,
+      "y": 72,
+      "text": "2 · Reserve stock",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          390,
+          86
+        ],
+        [
+          690,
+          86
+        ]
+      ],
+      "color": "#cad6df",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 406,
+      "y": 115,
+      "text": "Inventory.reserve",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 406,
+      "y": 143,
+      "text": "application → inventory",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 406,
+      "y": 171,
+      "text": "via inventoryLink",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 760,
+      "y": 40,
+      "width": 300,
+      "height": 170,
+      "fill": "#f0eef9",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 776,
+      "y": 72,
+      "text": "3 · Return reservation",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          760,
+          86
+        ],
+        [
+          1060,
+          86
+        ]
+      ],
+      "color": "#cad6df",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 776,
+      "y": 115,
+      "text": "Inventory.reserve reply",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 776,
+      "y": 143,
+      "text": "inventory → application",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 776,
+      "y": 171,
+      "text": "via inventoryLink",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 760,
+      "y": 350,
+      "width": 300,
+      "height": 170,
+      "fill": "#f0eef9",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 776,
+      "y": 382,
+      "text": "4 · Publish acceptance",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          760,
+          396
+        ],
+        [
+          1060,
+          396
+        ]
+      ],
+      "color": "#cad6df",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 776,
+      "y": 425,
+      "text": "Checkout.accepted",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 776,
+      "y": 453,
+      "text": "application → browser",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 776,
+      "y": 481,
+      "text": "via checkoutLink",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 390,
+      "y": 350,
+      "width": 300,
+      "height": 170,
+      "fill": "#f0eef9",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 406,
+      "y": 382,
+      "text": "5 · Publish receipt",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          390,
+          396
+        ],
+        [
+          690,
+          396
+        ]
+      ],
+      "color": "#cad6df",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 406,
+      "y": 425,
+      "text": "Receipts.created",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 406,
+      "y": 453,
+      "text": "application → mailer",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 406,
+      "y": 481,
+      "text": "via receiptLink",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 20,
+      "y": 350,
+      "width": 300,
+      "height": 170,
+      "fill": "#f0eef9",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 382,
+      "text": "6 · Return acceptance",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          20,
+          396
+        ],
+        [
+          320,
+          396
+        ]
+      ],
+      "color": "#cad6df",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 425,
+      "text": "Checkout.submit reply",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 453,
+      "text": "application → browser",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 481,
+      "text": "via checkoutLink",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    }
+  ]
+}

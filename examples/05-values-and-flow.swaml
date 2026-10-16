@@ -1,15 +1,16 @@
 package Values {
     enum Health { Good, Failed }
-    datatype Measurement { value: Real; health: Health; }
+    datatype Measurement { value: real; health: Health; }
     interface senderReceiver Measurements version "1.0.0" { data sample: Measurement queued; }
-    unit def Producer {
+    component def Producer {
         port output: Measurements sender;
-        function twice(x: Real): Real = x * 2.0;
-        operation prepare() {
-            let samples: Real[3] = [1.0, 2.0, 3.0];
-            let i: Int = 0;
+        function prepare() {
+            calc twice { in x: real; return result: real = x * 2.0; }
+
+            var samples: real[3] = [1.0, 2.0, 3.0];
+            var i: int = 0;
             while (i < 3) bound 3 {
-                let measurement: Measurement = record Measurement {
+                var measurement: Measurement = record Measurement {
                     value = twice(samples[i]);
                     health = Health.Good;
                 };
@@ -18,21 +19,21 @@ package Values {
             }
             return;
         }
-        operation boot() on start { invoke prepare(); return; }
+        function boot() on start { call prepare(); return; }
     }
-    unit def Consumer {
+    component def Consumer {
         port input: Measurements receiver;
-        var latest: Real = 0.0;
-        operation update(measurement: Measurement) on receive input.sample {
+        var latest: real = 0.0;
+        function update(measurement: Measurement) on receive input.sample {
             if (measurement.health == Health.Good) { latest = measurement.value; }
             return;
         }
     }
     component def Pipeline {
-        unit producer: Producer;
-        unit consumer: Consumer;
+        component producer: Producer;
+        component consumer: Consumer;
         connect samples: producer.output -> consumer.input qos { delivery atMostOnce; ordering fifo; capacity 3; overflow reject; };
     }
     component Demo { component pipeline: Pipeline; }
-    view preparation FV of Producer.prepare;
+    view preparation fv of Producer.prepare;
 }

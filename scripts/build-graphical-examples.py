@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reproducible vector notation scenes. No editor/extension implementation."""
+"""Reproducible vector notation scenes from the worked model examples."""
 from pathlib import Path
 import json, html, sys, math
 ROOT = Path(__file__).resolve().parents[1]
@@ -44,45 +44,45 @@ class Scene:
         svg=f'<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="{self.doc["height"]}" viewBox="0 0 1000 {self.doc["height"]}" role="img" aria-labelledby="title desc">\n<title id="title">{html.escape(self.doc["title"])}</title><desc id="desc">{html.escape(self.doc["description"])}</desc>\n<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="{NAVY}"/></marker></defs>\n<g font-family="DejaVu Sans, sans-serif">\n'+ '\n'.join(shapes)+'\n</g></svg>\n'
         for ext,data in [('svg',svg),('scene.json',json.dumps(self.doc,ensure_ascii=False,indent=2)+'\n')]:
             p=OUT/f'{self.name}.{ext}'
-            if CHECK: assert p.read_text()==data, f'Stale graphical example: {p}'
-            else: p.write_text(data)
+            if CHECK: assert p.read_text(encoding='utf-8')==data, f'Stale graphical example: {p}'
+            elif not p.exists() or p.read_text(encoding='utf-8')!=data: p.write_text(data,encoding='utf-8',newline='\n')
 
-s=Scene('browser','Model Browser · ownership and occurrence context','Settings example: declarations and usages have distinct badges.',700)
+s=Scene('browser','Model Browser · ownership and instance context','Settings example: declarations and usages have distinct badges.',700)
 s.rect(32,123,560,532,fill='#f7fafc');s.rect(615,123,352,532,fill='white')
-rows=[(0,'Settings  [package]'),(1,'TemperatureSetting  [interface]'),(1,'SettingStore  [unit def]'),(2,'api  [port: provides]'),(2,'currentValue  [var: Int]'),(2,'read / update  [operations]'),(1,'Cabin  [component root]'),(2,'settings : Service  [occurrence]'),(3,'store : SettingStore  [occurrence]'),(4,'api  [port: provides]'),(4,'update  [operation occurrence]'),(2,'front : Client  [occurrence]'),(2,'rear : Client  [occurrence]')]
+rows=[(0,'Settings  [package]'),(1,'TemperatureSetting  [interface]'),(1,'SettingStore  [component def]'),(2,'api  [port: provides]'),(2,'currentValue  [var: int]'),(2,'read / update  [functions]'),(1,'Cabin  [component root]'),(2,'settings : Service  [instance]'),(3,'store : SettingStore  [instance]'),(4,'api  [port: provides]'),(4,'update  [function instance]'),(2,'front : Client  [instance]'),(2,'rear : Client  [instance]')]
 for i,(depth,label) in enumerate(rows):
  y=156+i*36
  if i==10:s.rect(40,y-24,544,33,fill='#d5edf0',stroke='none',rx=3)
  s.text(52+depth*22,y,('▸ ' if i in (1,5,11,12) else '  ')+label,18,bold=i in (0,6,10))
-s.text(637,158,'Selected operation',22,True)
-for i,t in enumerate(['Instance context:','Cabin.settings.store.update','','Shared declaration:','SettingStore.update','','Trigger: on call api.setPoint','Parameters: desired: Int','Result: Bool','','Open declaration → GV','Open behavior → FV','Up → store occurrence']):s.text(637,202+i*30,t,17,color=TEAL if i in (1,4) else NAVY)
+s.text(637,158,'Selected function',22,True)
+for i,t in enumerate(['Instance context:','Cabin.settings.store.update','','Shared declaration:','SettingStore.update','','Trigger: on call api.setPoint','Parameters: desired: int','Result: bool','','Open declaration → gv','Open behavior → fv','Up → store instance']):s.text(637,202+i*30,t,17,color=TEAL if i in (1,4) else NAVY)
 s.save()
 
-s=Scene('gv','GV · General View','Cabin shows occurrence ownership and explicit deployment; types are shared declarations.',650)
+s=Scene('gv','gv · General View','Cabin shows instance ownership and explicit deployment; types are shared declarations.',650)
 s.rect(32,122,935,330,fill='#f7fafc');s.text(50,156,'«component» Cabin · root',24,True)
 for x,name,typ in [(55,'settings','Service'),(360,'front','Client'),(665,'rear','Client')]:
  s.component(x,188,280,205,f'{name} : {typ}')
- s.text(x+16,251,'«component occurrence»',17,color=GRAY)
+ s.text(x+16,251,'«component instance»',17,color=GRAY)
  s.rect(x+18,275,244,82,fill=PALE)
- s.text(x+32,298,'«unit» '+('store' if name=='settings' else 'panel'),17,True)
+ s.text(x+32,298,'«component» '+('store' if name=='settings' else 'panel'),17,True)
  s.text(x+32,323,': '+('SettingStore' if name=='settings' else 'Panel'),17)
- s.text(x+32,346,'Private store per occurrence',13)
-s.rect(60,516,285,80);s.text(80,548,'controller',22,True);s.text(80,575,'«node: process»',18)
-s.rect(565,516,300,80);s.text(585,548,'displays',22,True);s.text(585,575,'«node: container»',18)
+ s.text(x+32,346,'Private store per instance',13)
+s.rect(60,516,285,80);s.text(80,548,'system:controller',22,True);s.text(80,575,'«external target»',18)
+s.rect(565,516,300,80);s.text(585,548,'system:displays',22,True);s.text(585,575,'«external target»',18)
 s.line([(194,394),(194,510)],dash=True,arrow=True,open=True);s.text(207,485,'deploy',17)
 s.line([(500,394),(620,510)],dash=True,arrow=True,open=True);s.text(518,480,'deploy',17)
 s.line([(803,394),(803,510)],dash=True,arrow=True,open=True);s.text(817,485,'deploy',17)
 s.save()
 
-s=Scene('iv','IV · Interconnect View','Cabin: two required service ports connect to one provided port; delegation reaches units.',750)
+s=Scene('iv','iv · Interconnect View','Cabin: two required service ports connect to one provided port; delegation reaches components.',750)
 s.component(32,125,282,205,'front : Client');s.component(32,385,282,205,'rear : Client');s.component(680,173,287,380,'settings : Service')
 for y in (125,385):
  s.text(49,y+66,'setting [Req]',18,color=TEAL)
- s.rect(57,y+112,225,66);s.text(68,y+138,'«unit» panel : Panel',17,True);s.text(68,y+162,'setting [Req]',16)
+ s.rect(57,y+112,225,66);s.text(68,y+138,'panel : Panel',17,True);s.text(68,y+162,'setting [Req]',16)
  s.line([(314,y+80),(303,y+80),(303,y+145),(282,y+145)],color=TEAL)
  s.text(66,y+199,'delegate setting → panel.setting',15,color=TEAL)
  s.port(314,y+80,'');s.port(282,y+145,'')
-s.rect(717,328,224,119);s.text(730,360,'«unit» store',21,True);s.text(730,388,': SettingStore',19);s.text(739,423,'api [Prov]',17,color=TEAL)
+s.rect(717,328,224,119);s.text(730,360,'store',21,True);s.text(730,388,': SettingStore',19);s.text(739,423,'api [Prov]',17,color=TEAL)
 s.line([(680,293),(699,293),(699,411),(717,411)],color=TEAL);s.port(680,293,'api [Prov]',702,274);s.port(717,411,'')
 s.text(704,483,'delegate api → store.api',17,color=TEAL)
 s.line([(320,205),(450,205),(450,293),(674,293)],arrow=True);s.text(346,181,'frontLink «service»',18,True)
@@ -91,15 +91,15 @@ s.rect(32,624,935,92,fill=PALE,stroke='none');s.text(50,655,'Contract: Temperatu
 s.text(50,684,'Both links: atMostOnce · fifo · capacity 8 · reject. Requests → provider; events/replies reverse.',17)
 s.save()
 
-s=Scene('cv','CV · Case View','Claimed coverage is explicit; no verification checkmark appears without evidence.',570)
+s=Scene('cv','cv · Case View','Claimed coverage is explicit; no verification checkmark appears without evidence.',570)
 s.rect(35,134,443,318,fill='#f7fafc');s.text(55,170,'«component» Cabin',24,True)
-s.rect(93,248,327,116,fill='#e3f2f3',rx=35);s.text(123,286,'«case» Change',24,True);s.text(123,323,'for Cabin',20)
+s.rect(93,248,327,116,fill='#e3f2f3',rx=35);s.text(123,286,'«useCase» Change',24,True);s.text(123,323,'for Cabin',20)
 s.rect(623,225,337,162,fill='white',rx=0);s.text(641,257,'«requirement»',19,color=TEAL);s.text(641,291,'VisibleSetting',23,True);s.text(641,326,'Both panels can observe',18);s.text(641,354,'accepted setting updates.',18)
-s.line([(420,301),(616,301)],dash=True,arrow=True,open=True);s.text(498,261,'satisfies',18);s.text(493,282,'(claimed)',18)
-s.text(55,510,'Evidence status: unverified case claim. Simulation results are separate artifacts.',19,color=GRAY)
+s.line([(478,301),(616,301)],dash=True,arrow=True,open=True);s.text(498,261,'satisfy',18);s.text(493,282,'(claimed)',18)
+s.text(55,510,'Evidence status: design claim. Simulation results are separate artifacts.',19,color=GRAY)
 s.save()
 
-s=Scene('sv','SV · Sequence View','Change: causality follows after labels. Rear notification is unordered with front notice/reply.',750)
+s=Scene('sv','sv · Sequence View','Change: causality follows after labels. Rear notification is unordered with front notice/reply.',750)
 for x,title in [(65,'front : Client'),(400,'settings : Service'),(757,'rear : Client')]:
  s.rect(x,127,205,57,fill=PALE);s.text(x+10,161,title,18,True)
  s.line([(x+102,185),(x+102,603)],dash=True)
@@ -115,18 +115,18 @@ s.text(36,662,'The rearNotice row is positioned for readability: it may occur be
 s.text(36,694,'Causal chains: adjust → frontNotice → accepted; adjust → rearNotice.',18,True)
 s.save()
 
-s=Scene('grv','GRV · Grid View','Operation inventory from Cabin; blank timing means no declared contract in service profile.',540)
-columns=[32,254,426,683,798,866,968];headers=['Occurrence','Operation','Trigger','Result','WCET','Deadline']
+s=Scene('grv','grv · Grid View','Function inventory from Cabin; blank timing means no declared contract in service profile.',540)
+columns=[32,254,426,683,798,866,968];headers=['Instance','Function','Trigger','Result','WCET','Deadline']
 for i in range(6):s.rect(columns[i],131,columns[i+1]-columns[i],48,fill=NAVY,stroke='white',rx=0);s.text(columns[i]+10,162,headers[i],16,True,color='white')
-rows=[['settings.store','read()','call api.get','Int','1 ms','5 ms'],['settings.store','update(desired)','call api.setPoint','Bool','-','-'],['front.panel','adjust()','manual','Void','-','-'],['front.panel','refresh()','manual','Void','-','-'],['front.panel','display(current)','receive setting.changed','Void','-','-'],['rear.panel','(same operations)','distinct occurrence','Void','-','-']]
+rows=[['settings.store','read()','call api.get','int','1 ms','5 ms'],['settings.store','update(desired)','call api.setPoint','bool','-','-'],['front.panel','adjust()','manual','void','-','-'],['front.panel','refresh()','manual','void','-','-'],['front.panel','display(current)','receive setting.changed','void','-','-'],['rear.panel','(same functions)','distinct instance','void','-','-']]
 for row,data in enumerate(rows):
  y=179+row*43
  for i,value in enumerate(data):s.rect(columns[i],y,columns[i+1]-columns[i],43,fill=PALE if row%2==0 else 'white',stroke='#ccd9e2',rx=0);s.text(columns[i]+9,y+28,value,15)
-s.text(35,477,'read is reentrant; other operations default to serial. Sorting this grid changes no execution order.',17,color=GRAY)
+s.text(35,477,'read is reentrant; other functions default to serial. Sorting this grid changes no execution order.',17,color=GRAY)
 s.save()
 
-s=Scene('fv-flow','FV · Operation flow','SettingStore.update(desired: Int): Bool · on call api.setPoint · directly owned by the unit.',780)
-s.rect(32,121,935,620,fill='#f7fafc');s.text(52,153,'op update · serial by default',20,True)
+s=Scene('fv-flow','fv · Function flow','SettingStore.update(desired: int): bool · on call api.setPoint · directly owned by the component.',780)
+s.rect(32,121,935,620,fill='#f7fafc');s.text(52,153,'function update · serial by default',20,True)
 s.circle(382,182,9);s.line([(382,192),(382,212)],arrow=True)
 s.diamond(182,217,400,130);s.text(270,276,'desired < 10 or',21,True);s.text(278,303,'desired > 30',21,True)
 s.line([(582,282),(745,282),(745,338)],arrow=True);s.text(602,259,'true',18)
@@ -140,8 +140,8 @@ s.rect(271,599,222,58,rx=25);s.text(314,636,'return true',21,True)
 s.text(55,709,'The publish node names an interface member. It creates no free event or remote action.',17,color=GRAY)
 s.save()
 
-s=Scene('fv-state','FV · Operation states','Device.lifecycle(): Void · on start · state ownership replaces a separate performer allocation.',740)
-s.rect(32,125,936,562,fill='#f7fafc');s.text(50,158,'op lifecycle',22,True)
+s=Scene('fv-state','fv · Function states','Device.lifecycle(): void · on start · states and transitions belong to this function.',740)
+s.rect(32,125,936,562,fill='#f7fafc');s.text(50,158,'function lifecycle',22,True)
 s.circle(82,229,9);s.line([(94,229),(140,229)],arrow=True)
 s.rect(145,186,270,133,fill='white',rx=18);s.text(166,219,'state Idle',22,True);s.line([(145,235),(415,235)]);s.text(164,264,'entry: publish status.changed',16);s.text(165,291,'("idle")',17)
 s.rect(592,186,330,153,fill='white',rx=18);s.text(612,219,'state Running',22,True);s.line([(592,235),(922,235)]);s.text(610,263,'entry: cycles = cycles + 1;',16);s.text(610,291,'publish status.changed("running")',16)

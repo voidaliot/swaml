@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
-<title id="title">Port receive activation</title><desc id="desc">Port receive activation. Attach the activation text to its operation header; use no free event symbol or standalone trigger object.</desc>
+<title id="title">Port receive activation</title><desc id="desc">Port receive activation. Attach the activation text to its function header; use no free event symbol or standalone trigger object.</desc>
 <g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
 <rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
 <rect x="35" y="30" width="490" height="220" rx="12" fill="#ffffff" stroke="#111111"/>
-<text x="55" y="67" font-size="20" font-weight="700" fill="#111111">hear(message: String)</text>
+<text x="55" y="67" font-size="20" font-weight="700" fill="#111111">hear(message: string)</text>
 <polyline points="35,100 525,100" fill="none" stroke="#111111" stroke-width="2"/>
 <text x="55" y="134" font-size="18" font-weight="400" fill="#111111">on receive input.text</text>
 </g></svg>

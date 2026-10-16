@@ -8,4 +8,4 @@ Revalidate the entire workspace using `npm run check` or the CLI. Exercise the s
 
 The v0.1.0 Git tag and its published PDF remain historical, immutable artifacts. That release packaged draft/core revision 0.1.1 with header 0.1. From this release forward, package, specification and release use the same semantic version (1.0.0); the source header identifies the compatible major/minor language (1.0). Patch errata cannot silently change valid-model meaning. A later incompatible semantic or syntax change requires a new header version and a migration document.
 
-VS Code extension implementation is maintained separately. This repository owns the language definition, parser/validator foundation, reference semantics, examples and publication artifacts. An extension must declare which language versions and conformance obligations it supports.
+This repository owns the language definition, parser/validator foundation, reference semantics, examples and publication artifacts. Each consuming tool must declare which language versions and conformance obligations it supports.

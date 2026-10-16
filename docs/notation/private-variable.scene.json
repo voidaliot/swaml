@@ -1,8 +1,8 @@
 {
   "width": 560,
   "height": 280,
-  "title": "Private unit variable",
-  "description": "Private unit variable. Show a var name: Type = initializer row inside its unit boundary.",
+  "title": "Private component variable",
+  "description": "Private component variable. Show a var name: Type = initializer row inside its component boundary.",
   "shapes": [
     {
       "kind": "rect",
@@ -28,7 +28,7 @@
       "kind": "text",
       "x": 54,
       "y": 54,
-      "text": "«unit def» Listener",
+      "text": "«component def» Listener",
       "size": 20,
       "bold": true,
       "color": "#111111"
@@ -53,7 +53,7 @@
       "kind": "text",
       "x": 54,
       "y": 95,
-      "text": "var last: String = \"\"",
+      "text": "var last: string = \"\"",
       "size": 18,
       "bold": false,
       "color": "#111111"

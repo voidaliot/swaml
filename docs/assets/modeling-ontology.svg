@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="1040" viewBox="0 0 1100 1040" role="img" aria-labelledby="title desc">
+<title id="title">One component concept, from architecture to behavior</title>
+<desc id="desc">Components own child components, private data, functions and ports. Functions own calculations and flow or states. Solid arrows show ownership; dashed arrows show references. Requirements and cases describe intent; all views project the same model.</desc>
+<g font-family="DejaVu Sans, sans-serif">
+<rect x="0" y="0" width="1100" height="1040" rx="0" fill="white" stroke="none"/>
+<polyline points="260,90 350,90" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<polygon points="350.000,90.000 336.000,96.000 336.000,84.000" fill="#17324d"/>
+<rect x="259" y="59" width="55.6" height="27" rx="0" fill="white" stroke="none"/>
+<text x="265" y="80" font-size="20" font-weight="400" fill="#17324d">uses</text>
+<polyline points="830,90 710,90" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<polygon points="710.000,90.000 724.000,84.000 724.000,96.000" fill="#17324d"/>
+<rect x="710" y="59" width="88.3" height="27" rx="0" fill="white" stroke="none"/>
+<text x="716" y="80" font-size="20" font-weight="400" fill="#17324d">extends</text>
+<polyline points="410,160 410,220 140,220 140,300" fill="none" stroke="#17324d" stroke-width="2"/>
+<polygon points="140.000,300.000 134.000,286.000 146.000,286.000" fill="#17324d"/>
+<rect x="144" y="189" width="55.6" height="27" rx="0" fill="white" stroke="none"/>
+<text x="150" y="210" font-size="20" font-weight="400" fill="#17324d">owns</text>
+<polyline points="480,160 480,250 410,250 410,300" fill="none" stroke="#17324d" stroke-width="2"/>
+<polygon points="410.000,300.000 404.000,286.000 416.000,286.000" fill="#17324d"/>
+<rect x="414" y="219" width="55.6" height="27" rx="0" fill="white" stroke="none"/>
+<text x="420" y="240" font-size="20" font-weight="400" fill="#17324d">owns</text>
+<polyline points="470,440 470,485 620,485 620,440" fill="none" stroke="#17324d" stroke-width="2"/>
+<polygon points="620.000,440.000 626.000,454.000 614.000,454.000" fill="#17324d"/>
+<rect x="524" y="454" width="55.6" height="27" rx="0" fill="white" stroke="none"/>
+<text x="530" y="475" font-size="20" font-weight="400" fill="#17324d">owns</text>
+<polyline points="650,160 650,220 950,220 950,300" fill="none" stroke="#17324d" stroke-width="2"/>
+<polygon points="950.000,300.000 944.000,286.000 956.000,286.000" fill="#17324d"/>
+<rect x="849" y="189" width="55.6" height="27" rx="0" fill="white" stroke="none"/>
+<text x="855" y="210" font-size="20" font-weight="400" fill="#17324d">owns</text>
+<polyline points="50,160 50,260 8,260 8,520 140,520 140,580" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<polygon points="140.000,580.000 134.000,566.000 146.000,566.000" fill="#17324d"/>
+<rect x="39" y="489" width="110.10000000000001" height="27" rx="0" fill="white" stroke="none"/>
+<text x="45" y="510" font-size="20" font-weight="400" fill="#17324d">allocates</text>
+<polyline points="410,440 410,580" fill="none" stroke="#17324d" stroke-width="2"/>
+<polygon points="410.000,580.000 404.000,566.000 416.000,566.000" fill="#17324d"/>
+<rect x="414" y="489" width="55.6" height="27" rx="0" fill="white" stroke="none"/>
+<text x="420" y="510" font-size="20" font-weight="400" fill="#17324d">owns</text>
+<polyline points="680,440 680,580" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<polygon points="680.000,580.000 674.000,566.000 686.000,566.000" fill="#17324d"/>
+<rect x="684" y="489" width="99.2" height="27" rx="0" fill="white" stroke="none"/>
+<text x="690" y="510" font-size="20" font-weight="400" fill="#17324d">typed by</text>
+<polyline points="950,440 950,580" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<polygon points="950.000,580.000 944.000,566.000 956.000,566.000" fill="#17324d"/>
+<rect x="954" y="489" width="121.0" height="27" rx="0" fill="white" stroke="none"/>
+<text x="960" y="510" font-size="20" font-weight="400" fill="#17324d">references</text>
+<polyline points="680,860 680,800 140,800 140,860" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<polygon points="140.000,860.000 134.000,846.000 146.000,846.000" fill="#17324d"/>
+<rect x="384" y="769" width="77.4" height="27" rx="0" fill="white" stroke="none"/>
+<text x="390" y="790" font-size="20" font-weight="400" fill="#17324d">verify</text>
+<rect x="20" y="20" width="240" height="140" rx="0" fill="#eef5fa" stroke="#17324d"/>
+<text x="36" y="52" font-size="20" font-weight="700" fill="#17324d">Execution root</text>
+<polyline points="20,66 260,66" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="36" y="95" font-size="20" font-weight="400" fill="#17324d">Inline or typed</text>
+<text x="36" y="123" font-size="20" font-weight="400" fill="#17324d">Closed architecture</text>
+<rect x="350" y="20" width="360" height="140" rx="0" fill="#eaf1f8" stroke="#17324d"/>
+<text x="366" y="52" font-size="20" font-weight="700" fill="#17324d">Component definition</text>
+<polyline points="350,66 710,66" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="366" y="95" font-size="20" font-weight="400" fill="#17324d">Private variables + ports</text>
+<text x="366" y="123" font-size="20" font-weight="400" fill="#17324d">Behavior + children</text>
+<rect x="830" y="20" width="240" height="140" rx="0" fill="#eaf1f8" stroke="#17324d"/>
+<text x="846" y="52" font-size="20" font-weight="700" fill="#17324d">Specialization</text>
+<polyline points="830,66 1070,66" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="846" y="95" font-size="20" font-weight="400" fill="#17324d">One base component</text>
+<text x="846" y="123" font-size="20" font-weight="400" fill="#17324d">Explicit redefines</text>
+<rect x="20" y="300" width="240" height="140" rx="0" fill="#eef5fa" stroke="#17324d"/>
+<text x="36" y="332" font-size="20" font-weight="700" fill="#17324d">Child components</text>
+<polyline points="20,346 260,346" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="36" y="375" font-size="20" font-weight="400" fill="#17324d">Named instances</text>
+<text x="36" y="403" font-size="20" font-weight="400" fill="#17324d">Separate stores</text>
+<rect x="290" y="300" width="240" height="140" rx="4" fill="#e7f3f2" stroke="#17324d"/>
+<text x="306" y="332" font-size="20" font-weight="700" fill="#17324d">Functions</text>
+<polyline points="290,346 530,346" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="306" y="375" font-size="20" font-weight="400" fill="#17324d">Triggers + inputs</text>
+<text x="306" y="403" font-size="20" font-weight="400" fill="#17324d">Optional result</text>
+<rect x="560" y="300" width="240" height="140" rx="4" fill="#e7f3f2" stroke="#17324d"/>
+<text x="576" y="332" font-size="20" font-weight="700" fill="#17324d">Calculations</text>
+<polyline points="560,346 800,346" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="576" y="375" font-size="20" font-weight="400" fill="#17324d">Typed inputs</text>
+<text x="576" y="403" font-size="20" font-weight="400" fill="#17324d">Expression + result</text>
+<rect x="830" y="300" width="240" height="140" rx="0" fill="#f0eef9" stroke="#17324d"/>
+<text x="846" y="332" font-size="20" font-weight="700" fill="#17324d">Ports and routes</text>
+<polyline points="830,346 1070,346" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="846" y="375" font-size="20" font-weight="400" fill="#17324d">Typed boundary</text>
+<text x="846" y="403" font-size="20" font-weight="400" fill="#17324d">Connect / delegate</text>
+<rect x="20" y="580" width="240" height="140" rx="0" fill="#eef5fa" stroke="#17324d"/>
+<text x="36" y="612" font-size="20" font-weight="700" fill="#17324d">Deployment</text>
+<polyline points="20,626 260,626" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="36" y="655" font-size="20" font-weight="400" fill="#17324d">system: or sysml: URI</text>
+<text x="36" y="683" font-size="20" font-weight="400" fill="#17324d">Host resolves target</text>
+<rect x="290" y="580" width="240" height="140" rx="4" fill="#e7f3f2" stroke="#17324d"/>
+<text x="306" y="612" font-size="20" font-weight="700" fill="#17324d">Flow or states</text>
+<polyline points="290,626 530,626" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="306" y="655" font-size="20" font-weight="400" fill="#17324d">Decisions + loops</text>
+<text x="306" y="683" font-size="20" font-weight="400" fill="#17324d">Calls + states</text>
+<rect x="560" y="580" width="240" height="140" rx="0" fill="#f7f4e9" stroke="#17324d"/>
+<text x="576" y="612" font-size="20" font-weight="700" fill="#17324d">Value types</text>
+<polyline points="560,626 800,626" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="576" y="655" font-size="20" font-weight="400" fill="#17324d">bool · byte · uint · int</text>
+<text x="576" y="683" font-size="20" font-weight="400" fill="#17324d">real · string</text>
+<rect x="830" y="580" width="240" height="140" rx="0" fill="#f0eef9" stroke="#17324d"/>
+<text x="846" y="612" font-size="20" font-weight="700" fill="#17324d">Interfaces</text>
+<polyline points="830,626 1070,626" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="846" y="655" font-size="20" font-weight="400" fill="#17324d">Data · events · RPC</text>
+<text x="846" y="683" font-size="20" font-weight="400" fill="#17324d">Versioned contracts</text>
+<rect x="20" y="860" width="240" height="140" rx="0" fill="#f8f2e9" stroke="#17324d"/>
+<text x="36" y="892" font-size="20" font-weight="700" fill="#17324d">Requirements</text>
+<polyline points="20,906 260,906" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="36" y="935" font-size="20" font-weight="400" fill="#17324d">Attributes + doc</text>
+<text x="36" y="963" font-size="20" font-weight="400" fill="#17324d">No subject</text>
+<rect x="290" y="860" width="240" height="140" rx="0" fill="#f8f2e9" stroke="#17324d"/>
+<text x="306" y="892" font-size="20" font-weight="700" fill="#17324d">Use cases</text>
+<polyline points="290,906 530,906" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="306" y="935" font-size="20" font-weight="400" fill="#17324d">Intended use</text>
+<text x="306" y="963" font-size="20" font-weight="400" fill="#17324d">Root + exchanges</text>
+<rect x="560" y="860" width="240" height="140" rx="0" fill="#f8f2e9" stroke="#17324d"/>
+<text x="576" y="892" font-size="20" font-weight="700" fill="#17324d">Verification cases</text>
+<polyline points="560,906 800,906" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="576" y="935" font-size="20" font-weight="400" fill="#17324d">Procedure + verify</text>
+<text x="576" y="963" font-size="20" font-weight="400" fill="#17324d">Evidence stays explicit</text>
+<rect x="830" y="860" width="240" height="140" rx="0" fill="#f8f2e9" stroke="#17324d"/>
+<text x="846" y="892" font-size="20" font-weight="700" fill="#17324d">Docs + comments</text>
+<polyline points="830,906 1070,906" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="846" y="935" font-size="20" font-weight="400" fill="#17324d">One formal doc</text>
+<text x="846" y="963" font-size="20" font-weight="400" fill="#17324d">Ordinary notes</text>
+</g>
+</svg>

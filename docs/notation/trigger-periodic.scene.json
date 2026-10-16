@@ -2,7 +2,7 @@
   "width": 560,
   "height": 280,
   "title": "Periodic activation",
-  "description": "Periodic activation. Attach the activation text to its operation header; use no free event symbol or standalone trigger object.",
+  "description": "Periodic activation. Attach the activation text to its function header; use no free event symbol or standalone trigger object.",
   "shapes": [
     {
       "kind": "rect",

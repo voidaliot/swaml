@@ -1,0 +1,109 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Component specialization",
+  "description": "Single inheritance reuses the base component’s effective members while each instance keeps independent state.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 20,
+      "y": 128,
+      "width": 170,
+      "height": 85,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 54.516,
+      "y": 176.5,
+      "text": "FastWorker",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 370,
+      "y": 128,
+      "width": 170,
+      "height": 85,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 423.008,
+      "y": 176.5,
+      "text": "Worker",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          190,
+          171
+        ],
+        [
+          370,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          370,
+          171
+        ],
+        [
+          354,
+          163
+        ],
+        [
+          354,
+          179
+        ]
+      ],
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 35,
+      "text": "Component specialization",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 232.0,
+      "y": 113,
+      "text": "specializes",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

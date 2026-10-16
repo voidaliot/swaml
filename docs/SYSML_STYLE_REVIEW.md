@@ -7,8 +7,8 @@ The review used the official **OMG SysML 2.0, Part 1: Language Specification**, 
 | 8.2.3.5 | Namespaces and packages | namespace frame and explicit import reference |
 | 8.2.3.6 | Definition and usage | mandatory def distinction and occurrence typing |
 | 8.2.3.12–14 | Ports, connections, interfaces | boundary squares, nominal contracts, explicit routes |
-| 8.2.3.17 | Actions | owned operation flow only |
-| 8.2.3.18 | States | flat states directly owned by an operation |
+| 8.2.3.17 | Actions | owned function flow only |
+| 8.2.3.18 | States | flat states directly owned by a function |
 | 8.2.3.21 | Requirements | prose obligations and claimed coverage |
 | 8.2.3.26 | Views and viewpoints | existing SWAML view families |
 

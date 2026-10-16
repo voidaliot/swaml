@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1000" height="750" viewBox="0 0 1000 750" role="img" aria-labelledby="title desc">
-<title id="title">SV · Sequence View</title><desc id="desc">Change: causality follows after labels. Rear notification is unordered with front notice/reply.</desc>
+<title id="title">sv · Sequence View</title><desc id="desc">Change: causality follows after labels. Rear notification is unordered with front notice/reply.</desc>
 <defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#17324d"/></marker></defs>
 <g font-family="DejaVu Sans, sans-serif">
 <rect x="0" y="0" width="1000" height="750" rx="8" fill="#ffffff" stroke="none"/>
-<text x="32" y="47" font-size="30" font-weight="700" fill="#17324d">SV · Sequence View</text>
+<text x="32" y="47" font-size="30" font-weight="700" fill="#17324d">sv · Sequence View</text>
 <text x="32" y="80" font-size="17" font-weight="400" fill="#516579">Change: causality follows after labels. Rear notification is unordered with front notice/reply.</text>
 <polyline points="32,99 968,99" fill="none" stroke="#ccd9e2" stroke-width="2"/>
 <rect x="65" y="127" width="205" height="57" rx="8" fill="#eef4f8" stroke="#17324d"/>

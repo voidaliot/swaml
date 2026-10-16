@@ -13,7 +13,7 @@ for (const run of runs) {
     const options = JSON.parse(await readFile(new URL(`../${run.options}`, import.meta.url), 'utf8'));
     const result = simulate([document.parseResult.value], run.root, options);
     assert.equal(result.outcome, 'no-failure-observed', JSON.stringify(result.trace.filter(t => t.kind === 'failure' || t.kind === 'violation')));
-    for (const [unit, store] of Object.entries(run.expectedStores)) for (const [name, value] of Object.entries(store)) assert.deepEqual(result.stores[unit][name], value, `${run.root}: ${unit}.${name}`);
+    for (const [component, store] of Object.entries(run.expectedStores)) for (const [name, value] of Object.entries(store)) assert.deepEqual(result.stores[component][name], value, `${run.root}: ${component}.${name}`);
     const repeated = simulate([document.parseResult.value], run.root, options);
     assert.deepEqual(result, repeated, 'Reproducibility');
     if (run.root === 'Hello::Demo') {

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
+<title id="title">Component specialization</title><desc id="desc">Single inheritance reuses the base component’s effective members while each instance keeps independent state.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="20" y="128" width="170" height="85" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="54.516" y="176.5" font-size="18" font-weight="400" fill="#111111">FastWorker</text>
+<rect x="370" y="128" width="170" height="85" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="423.008" y="176.5" font-size="18" font-weight="400" fill="#111111">Worker</text>
+<polyline points="190,171 370,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="370,171 354,163 354,179" fill="#ffffff" stroke="#111111"/>
+<text x="26" y="35" font-size="20" font-weight="700" fill="#111111">Component specialization</text>
+<text x="232.0" y="113" font-size="18" font-weight="400" fill="#111111">specializes</text>
+</g></svg>

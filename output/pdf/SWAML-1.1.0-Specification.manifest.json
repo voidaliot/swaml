@@ -28,7 +28,7 @@
     {
       "path": "docs/spec/04-systems-and-conformance.md",
       "attachmentName": "docs__spec__04-systems-and-conformance.md",
-      "sha256": "a882f55d9ef899dc310613fab2eebccc94c2cea704cce09bc719d6b60849008c"
+      "sha256": "0cee9f81c3dbac2e1496f0c19a24f38e860d9169de6d07c31c3f1fe4b050b50e"
     },
     {
       "path": "docs/spec/05-kerml-mapping.md",
@@ -58,62 +58,62 @@
     {
       "path": "docs/GRAPHICAL_NOTATION.md",
       "attachmentName": "docs__GRAPHICAL_NOTATION.md",
-      "sha256": "ddc739680e111c5878cbb22d1ce38040a339a91a7d322e13e74ac83c4991893e"
+      "sha256": "0d2985913d4323e47cc0ce4ce7a1c0f4645426b64cfb554a351bd41ad3ee929e"
     },
     {
       "path": "docs/CONCERN_GUIDE.md",
       "attachmentName": "docs__CONCERN_GUIDE.md",
-      "sha256": "032540aed0b08742d5998fa811c54ba0177c84ebd74fccabff58b5f5ceb82915"
+      "sha256": "7780a73e42e76d49d32e96ed8733036d576c2f0bee5d3aba34e7cdc018d2cd78"
     },
     {
       "path": "docs/KEYWORD_REFERENCE.md",
       "attachmentName": "docs__KEYWORD_REFERENCE.md",
-      "sha256": "5d9ccc249681ac9cd88f5e95c922173ea01f6c12a829cd9a3648338de996f519"
+      "sha256": "b7e9d5d8a5389296b2e8f0586d7de934f6688942737c4b7b74a523708ffbb2be"
     },
     {
       "path": "docs/GRAPHICAL_EXAMPLES.md",
       "attachmentName": "docs__GRAPHICAL_EXAMPLES.md",
-      "sha256": "a0edd20eab754f626f51af389e34c8cd0e0606e98a873ca61ac0d6b6a635a14a"
+      "sha256": "585738778210729df972a4d63191f31323caa48c3dbe9a7b925135b5ee2d10c7"
     },
     {
       "path": "docs/SIMULATION.md",
       "attachmentName": "docs__SIMULATION.md",
-      "sha256": "6aeb97eeaeba82bbdfcb4c56a0f02e5e4139064fc8f4a98a0acec515f84ace35"
+      "sha256": "ebe0de8cafd2e9a120f15d6b59066de87af0841de311e3cf0d6ccb63cb3a4aa5"
     },
     {
       "path": "docs/MIGRATION_1_1.md",
       "attachmentName": "docs__MIGRATION_1_1.md",
-      "sha256": "7ae6ef61534472c39cce342686045c0a7707ce192938c28d2151c4dafbc3c181"
+      "sha256": "f02c736bdc72b7b7d52858fe87e74dd2b3a2f488f186b0a314fd22500d326011"
     },
     {
       "path": "docs/USER_GUIDE.md",
       "attachmentName": "docs__USER_GUIDE.md",
-      "sha256": "a92188b77dffdc11020e1cec99ffa8ef2b52897a52fd01f524886e413e3db5bf"
+      "sha256": "f632ca3900bd512a5c4f78ee48de87f3a118f651390ea11c4656117511d084ab"
     },
     {
       "path": "docs/ARCHITECTURE_COMPARISON.md",
       "attachmentName": "docs__ARCHITECTURE_COMPARISON.md",
-      "sha256": "871204c8d3edbbfc12ed0f86080f4cd65ee71ef70676e00b882ac4cd350915f0"
+      "sha256": "5c0aa22ae05e441df61781a3f0ac802b0dfe44f51c8b4c63ea1ccd02f91edde7"
     },
     {
       "path": "docs/TOOLING.md",
       "attachmentName": "docs__TOOLING.md",
-      "sha256": "f330435874ca7ba299f2b058fa5062c61c3f48f619112450157273356ca97266"
+      "sha256": "51533a2e6eb7ec8c987be73816c85ba8fe1adf451c1ef1fe4b0607cbe363a05c"
     },
     {
       "path": "docs/IMPLEMENTATION_STATUS.md",
       "attachmentName": "docs__IMPLEMENTATION_STATUS.md",
-      "sha256": "22f12a544943e61031432e774b790423ab244d8aa15f61e7a1b796558b7b610f"
+      "sha256": "e4031d67d76834b47191e78791a902eced4fdbadbddb0e1ad83efb4a8e3d9254"
     },
     {
       "path": "docs/RELEASE_1_1.md",
       "attachmentName": "docs__RELEASE_1_1.md",
-      "sha256": "0d8d6a27846a7147d4b7e9cf634e99c2eb60b3b76415bba515d4d0951dc36892"
+      "sha256": "215906c079eca47ddbdac517621f7846b85541d2e0640626b776edcf14761af9"
     },
     {
       "path": "docs/decisions/0001-language-boundaries.md",
       "attachmentName": "docs__decisions__0001-language-boundaries.md",
-      "sha256": "8e5a915407a9a5445dd4416d9d80cabb369dc252c912cde34d2dccd5dbc0230b"
+      "sha256": "43926d37d25619a3f5a720304ff85be0bcd39240e5793492d1e67cf378b6bbb7"
     },
     {
       "path": "docs/decisions/0002-auditable-semantics.md",
@@ -123,12 +123,12 @@
     {
       "path": "docs/decisions/0003-reference-execution-and-publication.md",
       "attachmentName": "docs__decisions__0003-reference-execution-and-publication.md",
-      "sha256": "6dd2c50dc573c6039656a62c8105e36d69daebc944717b1cbf7ad3611e970990"
+      "sha256": "d9985d6ac4efe47b98b5f1c21398f27669b8d5fedd5379657d33ac95db59dbc3"
     },
     {
       "path": "docs/decisions/0004-compact-component-language.md",
       "attachmentName": "docs__decisions__0004-compact-component-language.md",
-      "sha256": "63edc468940b0c4152aca2331aa5ec0a427a09b24d2077323da8accce897081d"
+      "sha256": "c3b85485e3a587e44b6bed20a5edd889d5c31b179fd81fc4b9a381e35c339ba5"
     },
     {
       "path": "docs/PDF_PUBLICATION.md",
@@ -143,7 +143,7 @@
     {
       "path": "AGENTS.md",
       "attachmentName": "AGENTS.md",
-      "sha256": "25f7be375b396e44e4eb13dc7e448fb89fe331b8b082092a00bf7e481b1faabc"
+      "sha256": "c7c4a8fdd8ee22f956fb9c030dd58084066b52f824be0fab5c508c378ffaeda4"
     },
     {
       "path": "src/language/swaml.langium",
@@ -208,12 +208,12 @@
     {
       "path": "docs/SWAML-1.1.0-Reference.md",
       "attachmentName": "docs__SWAML-1.1.0-Reference.md",
-      "sha256": "811e3f1d2c56cedb142019ea6ccab4a2fafdc9024f54606d59a003b39e65b852"
+      "sha256": "9ef8c9a27c45ea5efa963f3a68db0a61898841ed875a68c471ab9ebaee6bb377"
     },
     {
       "path": "spec/keywords.json",
       "attachmentName": "spec__keywords.json",
-      "sha256": "c8dfae0c800a99fee37db208f6e6208a446e0492e8c94b02dc96f1aafe0cc2a0"
+      "sha256": "e37ee3f232cce0d31fc4052e9d74b81d5cb48a1bb3a0da1e32dd944983443395"
     },
     {
       "path": "spec/graphical-examples.json",
@@ -356,5 +356,8 @@
       "sha256": "f4e7bfd5995f00c485f4e276e30b47746146afc9ed568b2094d64678319bb434"
     }
   ],
-  "pdfSha256": "44ca140b157d1061f75057c3243393fcc54e14e0eabc485c529e325c0496d153"
+  "pdfSha256": "9c7b73a96d38cf22913287b18ecde38406f123547655945ed20f3431d057197f",
+  "editorialRevision": "2026-10-16",
+  "editorialChanges": "Platform-neutral tooling guidance and view descriptions; historical language syntax and semantics retained.",
+  "originalPdfSha256": "44ca140b157d1061f75057c3243393fcc54e14e0eabc485c529e325c0496d153"
 }

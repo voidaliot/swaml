@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="560" height="320" viewBox="0 0 560 320" role="img" aria-labelledby="title desc">
-<title id="title">Sequence View</title><desc id="desc">Sequence View. Draw a framed projection titled SV with the semantic subject identity visible; use the canonical element symbols within it.</desc>
+<title id="title">Sequence View</title><desc id="desc">Sequence View. Draw a framed projection titled sv with the semantic subject identity visible; use the canonical element symbols within it.</desc>
 <g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
 <rect x="0" y="0" width="560" height="320" rx="0" fill="#ffffff" stroke="none"/>
 <rect x="14" y="14" width="532" height="292" rx="0" fill="#ffffff" stroke="#111111"/>
 <polygon points="14,14 174,14 174,40 158,54 14,54" fill="#ffffff" stroke="#111111"/>
-<text x="27" y="40" font-size="19" font-weight="700" fill="#111111">SV</text>
+<text x="27" y="40" font-size="19" font-weight="700" fill="#111111">sv</text>
 <text x="194" y="40" font-size="18" font-weight="400" fill="#111111">Poll</text>
 <rect x="39" y="75" width="186" height="54" rx="0" fill="#ffffff" stroke="#111111"/>
 <text x="76.508" y="108.0" font-size="18" font-weight="400" fill="#111111">caller.health</text>

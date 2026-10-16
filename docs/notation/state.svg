@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
-<title id="title">State</title><desc id="desc">State. Draw a rounded state rectangle bearing the operation-local state name, with optional entry/exit compartments.</desc>
+<title id="title">State</title><desc id="desc">State. Draw a rounded state rectangle bearing the function-local state name, with optional entry/exit compartments.</desc>
 <g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
 <rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
 <rect x="65" y="25" width="430" height="225" rx="18" fill="#ffffff" stroke="#111111"/>

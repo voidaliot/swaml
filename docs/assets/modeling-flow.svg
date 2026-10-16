@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="765" viewBox="0 0 1080 765" role="img" aria-labelledby="title desc">
+<title id="title">3 · Open the checkout function</title>
+<desc id="desc">fv subject: Production.application.checkout.submit. Control flow stays inside CheckoutService; inventory.reserve uses its owned client port and explicit route.</desc>
+<g font-family="DejaVu Sans, sans-serif">
+<rect x="0" y="0" width="1080" height="765" rx="0" fill="white" stroke="none"/>
+<polyline points="340,180 340,280" fill="none" stroke="#17324d" stroke-width="2"/>
+<polygon points="340.000,280.000 334.000,266.000 346.000,266.000" fill="#17324d"/>
+<rect x="350" y="214" width="66.5" height="27" rx="0" fill="white" stroke="none"/>
+<text x="356" y="235" font-size="20" font-weight="400" fill="#17324d">reply</text>
+<polyline points="660,110 895,110 895,155" fill="none" stroke="#17324d" stroke-width="2"/>
+<polygon points="895.000,155.000 889.000,141.000 901.000,141.000" fill="#17324d"/>
+<rect x="738" y="75" width="110.10000000000001" height="27" rx="0" fill="white" stroke="none"/>
+<text x="744" y="96" font-size="20" font-weight="400" fill="#17324d">otherwise</text>
+<polyline points="660,350 895,350 895,310" fill="none" stroke="#17324d" stroke-width="2"/>
+<polygon points="895.000,310.000 901.000,324.000 889.000,324.000" fill="#17324d"/>
+<rect x="738" y="317" width="55.6" height="27" rx="0" fill="white" stroke="none"/>
+<text x="744" y="338" font-size="20" font-weight="400" fill="#17324d">true</text>
+<polyline points="340,420 340,520" fill="none" stroke="#17324d" stroke-width="2"/>
+<polygon points="340.000,520.000 334.000,506.000 346.000,506.000" fill="#17324d"/>
+<rect x="350" y="454" width="66.5" height="27" rx="0" fill="white" stroke="none"/>
+<text x="356" y="475" font-size="20" font-weight="400" fill="#17324d">false</text>
+<polyline points="660,620 730,620" fill="none" stroke="#17324d" stroke-width="2"/>
+<polygon points="730.000,620.000 716.000,626.000 716.000,614.000" fill="#17324d"/>
+<rect x="659" y="581" width="77.4" height="27" rx="0" fill="white" stroke="none"/>
+<text x="665" y="602" font-size="20" font-weight="400" fill="#17324d">reject</text>
+<rect x="20" y="40" width="640" height="140" rx="4" fill="#e7f3f2" stroke="#17324d"/>
+<text x="36" y="72" font-size="20" font-weight="700" fill="#17324d">Call inventory</text>
+<polyline points="20,86 660,86" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="36" y="115" font-size="20" font-weight="400" fill="#17324d">call inventory.reserve(quantity)</text>
+<text x="36" y="143" font-size="20" font-weight="400" fill="#17324d">as reserved within 200 ms</text>
+<polygon points="340.0,280 660,350.0 340.0,420 20,350.0" fill="#f7f4e9" stroke="#17324d"/>
+<text x="260.7" y="357.0" font-size="20" font-weight="700" fill="#17324d">not reserved?</text>
+<rect x="730" y="155" width="330" height="155" rx="4" fill="#fcf0ed" stroke="#17324d"/>
+<text x="746" y="187" font-size="20" font-weight="700" fill="#17324d">Return false</text>
+<polyline points="730,201 1060,201" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="746" y="230" font-size="20" font-weight="400" fill="#17324d">Do not emit acceptance.</text>
+<text x="746" y="258" font-size="20" font-weight="400" fill="#17324d">Do not emit receipt.</text>
+<rect x="20" y="520" width="640" height="200" rx="4" fill="#e7f3f2" stroke="#17324d"/>
+<text x="36" y="552" font-size="20" font-weight="700" fill="#17324d">Accept in statement order</text>
+<polyline points="20,566 660,566" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="36" y="595" font-size="20" font-weight="400" fill="#17324d">acceptedOrders = acceptedOrders + 1;</text>
+<text x="36" y="623" font-size="20" font-weight="400" fill="#17324d">publish api.accepted(orderId);</text>
+<text x="36" y="651" font-size="20" font-weight="400" fill="#17324d">publish receipts.created(orderId);</text>
+<text x="36" y="679" font-size="20" font-weight="400" fill="#17324d">return true;</text>
+<rect x="730" y="545" width="330" height="150" rx="4" fill="#fcf0ed" stroke="#17324d"/>
+<text x="746" y="577" font-size="20" font-weight="700" fill="#17324d">Publication failure</text>
+<polyline points="730,591 1060,591" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="746" y="620" font-size="20" font-weight="400" fill="#17324d">Activation fails.</text>
+<text x="746" y="648" font-size="20" font-weight="400" fill="#17324d">Prior effects remain.</text>
+</g>
+</svg>

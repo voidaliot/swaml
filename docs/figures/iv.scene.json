@@ -1,8 +1,8 @@
 {
   "width": 1000,
   "height": 750,
-  "title": "IV · Interconnect View",
-  "description": "Cabin: two required service ports connect to one provided port; delegation reaches units.",
+  "title": "iv · Interconnect View",
+  "description": "Cabin: two required service ports connect to one provided port; delegation reaches components.",
   "shapes": [
     {
       "kind": "rect",
@@ -18,7 +18,7 @@
       "kind": "text",
       "x": 32,
       "y": 47,
-      "text": "IV · Interconnect View",
+      "text": "iv · Interconnect View",
       "size": 30,
       "bold": true,
       "color": "#17324d"
@@ -27,7 +27,7 @@
       "kind": "text",
       "x": 32,
       "y": 80,
-      "text": "Cabin: two required service ports connect to one provided port; delegation reaches units.",
+      "text": "Cabin: two required service ports connect to one provided port; delegation reaches components.",
       "size": 17,
       "bold": false,
       "color": "#516579"
@@ -218,7 +218,7 @@
       "kind": "text",
       "x": 68,
       "y": 263,
-      "text": "«unit» panel : Panel",
+      "text": "panel : Panel",
       "size": 17,
       "bold": true,
       "color": "#17324d"
@@ -308,7 +308,7 @@
       "kind": "text",
       "x": 68,
       "y": 523,
-      "text": "«unit» panel : Panel",
+      "text": "panel : Panel",
       "size": 17,
       "bold": true,
       "color": "#17324d"
@@ -389,7 +389,7 @@
       "kind": "text",
       "x": 730,
       "y": 360,
-      "text": "«unit» store",
+      "text": "store",
       "size": 21,
       "bold": true,
       "color": "#17324d"

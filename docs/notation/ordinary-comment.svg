@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
+<title id="title">Ordinary comment</title><desc id="desc">Draw a plain rectangular note inside its owner or connected by a plain dashed line. Each line comment and each block comment remains separate; there is no comment keyword.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="28" y="22" width="504" height="256" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="46" y="56" font-size="20" font-weight="700" fill="#111111">Worker</text>
+<rect x="72" y="115" width="416" height="120" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="90" y="147" font-size="18" font-weight="400" fill="#111111">Each instance has its own result.</text>
+<polyline points="280,75 280,114" fill="none" stroke="#111111" stroke-width="2" stroke-dasharray="7 5"/>
+</g></svg>

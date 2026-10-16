@@ -2,7 +2,7 @@
   "width": 560,
   "height": 280,
   "title": "Primitive types",
-  "description": "Primitive types. Display Bool, Int, Real, String or Void as textual type labels after a colon in the owning compartment.",
+  "description": "Basic data types label values and signatures; fixed arrays, nominal records and enums build on them.",
   "shapes": [
     {
       "kind": "rect",
@@ -53,7 +53,7 @@
       "kind": "text",
       "x": 54,
       "y": 95,
-      "text": "enabled: Bool; count: Int",
+      "text": "enabled: bool; octet: byte",
       "size": 18,
       "bold": false,
       "color": "#111111"
@@ -62,7 +62,7 @@
       "kind": "text",
       "x": 54,
       "y": 120,
-      "text": "temperature: Real; name: String",
+      "text": "count: uint; delta: int",
       "size": 18,
       "bold": false,
       "color": "#111111"
@@ -71,7 +71,16 @@
       "kind": "text",
       "x": 54,
       "y": 145,
-      "text": "acknowledge(): Void",
+      "text": "temperature: real; name: string",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 170,
+      "text": "acknowledge(): void",
       "size": 18,
       "bold": false,
       "color": "#111111"

@@ -2,7 +2,7 @@
   "width": 560,
   "height": 320,
   "title": "Case View",
-  "description": "Case View. Draw a framed projection titled CV with the semantic subject identity visible; use the canonical element symbols within it.",
+  "description": "Case View. Draw a framed projection titled cv with the semantic subject identity visible; use the canonical element symbols within it.",
   "shapes": [
     {
       "kind": "rect",
@@ -55,7 +55,7 @@
       "kind": "text",
       "x": 27,
       "y": 40,
-      "text": "CV",
+      "text": "cv",
       "size": 19,
       "bold": true,
       "color": "#111111"
@@ -100,9 +100,9 @@
     },
     {
       "kind": "text",
-      "x": 102.0,
+      "x": 122.0,
       "y": 191,
-      "text": "Checkout",
+      "text": "Shop",
       "size": 18,
       "bold": false,
       "color": "#111111"
@@ -164,9 +164,9 @@
     },
     {
       "kind": "text",
-      "x": 198.5,
+      "x": 251.0,
       "y": 76,
-      "text": "satisfies (claimed)",
+      "text": "satisfy",
       "size": 18,
       "bold": false,
       "color": "#111111"

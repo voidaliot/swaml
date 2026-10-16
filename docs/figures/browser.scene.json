@@ -1,7 +1,7 @@
 {
   "width": 1000,
   "height": 700,
-  "title": "Model Browser · ownership and occurrence context",
+  "title": "Model Browser · ownership and instance context",
   "description": "Settings example: declarations and usages have distinct badges.",
   "shapes": [
     {
@@ -18,7 +18,7 @@
       "kind": "text",
       "x": 32,
       "y": 47,
-      "text": "Model Browser · ownership and occurrence context",
+      "text": "Model Browser · ownership and instance context",
       "size": 30,
       "bold": true,
       "color": "#17324d"
@@ -90,7 +90,7 @@
       "kind": "text",
       "x": 74,
       "y": 228,
-      "text": "  SettingStore  [unit def]",
+      "text": "  SettingStore  [component def]",
       "size": 18,
       "bold": false,
       "color": "#17324d"
@@ -108,7 +108,7 @@
       "kind": "text",
       "x": 96,
       "y": 300,
-      "text": "  currentValue  [var: Int]",
+      "text": "  currentValue  [var: int]",
       "size": 18,
       "bold": false,
       "color": "#17324d"
@@ -117,7 +117,7 @@
       "kind": "text",
       "x": 96,
       "y": 336,
-      "text": "▸ read / update  [operations]",
+      "text": "▸ read / update  [functions]",
       "size": 18,
       "bold": false,
       "color": "#17324d"
@@ -135,7 +135,7 @@
       "kind": "text",
       "x": 96,
       "y": 408,
-      "text": "  settings : Service  [occurrence]",
+      "text": "  settings : Service  [instance]",
       "size": 18,
       "bold": false,
       "color": "#17324d"
@@ -144,7 +144,7 @@
       "kind": "text",
       "x": 118,
       "y": 444,
-      "text": "  store : SettingStore  [occurrence]",
+      "text": "  store : SettingStore  [instance]",
       "size": 18,
       "bold": false,
       "color": "#17324d"
@@ -172,7 +172,7 @@
       "kind": "text",
       "x": 140,
       "y": 516,
-      "text": "  update  [operation occurrence]",
+      "text": "  update  [function instance]",
       "size": 18,
       "bold": true,
       "color": "#17324d"
@@ -181,7 +181,7 @@
       "kind": "text",
       "x": 96,
       "y": 552,
-      "text": "▸ front : Client  [occurrence]",
+      "text": "▸ front : Client  [instance]",
       "size": 18,
       "bold": false,
       "color": "#17324d"
@@ -190,7 +190,7 @@
       "kind": "text",
       "x": 96,
       "y": 588,
-      "text": "▸ rear : Client  [occurrence]",
+      "text": "▸ rear : Client  [instance]",
       "size": 18,
       "bold": false,
       "color": "#17324d"
@@ -199,7 +199,7 @@
       "kind": "text",
       "x": 637,
       "y": 158,
-      "text": "Selected operation",
+      "text": "Selected function",
       "size": 22,
       "bold": true,
       "color": "#17324d"
@@ -271,7 +271,7 @@
       "kind": "text",
       "x": 637,
       "y": 412,
-      "text": "Parameters: desired: Int",
+      "text": "Parameters: desired: int",
       "size": 17,
       "bold": false,
       "color": "#17324d"
@@ -280,7 +280,7 @@
       "kind": "text",
       "x": 637,
       "y": 442,
-      "text": "Result: Bool",
+      "text": "Result: bool",
       "size": 17,
       "bold": false,
       "color": "#17324d"
@@ -298,7 +298,7 @@
       "kind": "text",
       "x": 637,
       "y": 502,
-      "text": "Open declaration → GV",
+      "text": "Open declaration → gv",
       "size": 17,
       "bold": false,
       "color": "#17324d"
@@ -307,7 +307,7 @@
       "kind": "text",
       "x": 637,
       "y": 532,
-      "text": "Open behavior → FV",
+      "text": "Open behavior → fv",
       "size": 17,
       "bold": false,
       "color": "#17324d"
@@ -316,7 +316,7 @@
       "kind": "text",
       "x": 637,
       "y": 562,
-      "text": "Up → store occurrence",
+      "text": "Up → store instance",
       "size": 17,
       "bold": false,
       "color": "#17324d"

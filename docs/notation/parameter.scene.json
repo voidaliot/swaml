@@ -2,7 +2,7 @@
   "width": 560,
   "height": 280,
   "title": "Parameter or record field",
-  "description": "Parameter or record field. Show ordered parameters as name: Type within the operation signature; show record fields as name: Type rows in their datatype.",
+  "description": "Parameter or record field. Show ordered parameters as name: Type within the function signature; show record fields as name: Type rows in their datatype.",
   "shapes": [
     {
       "kind": "rect",
@@ -28,7 +28,7 @@
       "kind": "text",
       "x": 54,
       "y": 54,
-      "text": "hear(message: String)",
+      "text": "hear(message: string)",
       "size": 20,
       "bold": true,
       "color": "#111111"
@@ -53,7 +53,7 @@
       "kind": "text",
       "x": 54,
       "y": 95,
-      "text": "message: String",
+      "text": "message: string",
       "size": 18,
       "bold": false,
       "color": "#111111"

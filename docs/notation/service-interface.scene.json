@@ -71,7 +71,7 @@
       "kind": "text",
       "x": 54,
       "y": 149,
-      "text": "operation get(): Int idempotent",
+      "text": "function get(): int idempotent",
       "size": 18,
       "bold": false,
       "color": "#111111"
@@ -80,7 +80,7 @@
       "kind": "text",
       "x": 54,
       "y": 174,
-      "text": "operation setPoint(desired: Int): Bool",
+      "text": "function setPoint(desired: int): bool",
       "size": 18,
       "bold": false,
       "color": "#111111"
@@ -89,7 +89,7 @@
       "kind": "text",
       "x": 54,
       "y": 199,
-      "text": "event changed(current: Int)",
+      "text": "event changed(current: int)",
       "size": 18,
       "bold": false,
       "color": "#111111"

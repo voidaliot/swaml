@@ -1,8 +1,8 @@
 {
   "width": 1000,
   "height": 540,
-  "title": "GRV · Grid View",
-  "description": "Operation inventory from Cabin; blank timing means no declared contract in service profile.",
+  "title": "grv · Grid View",
+  "description": "Function inventory from Cabin; blank timing means no declared contract in service profile.",
   "shapes": [
     {
       "kind": "rect",
@@ -18,7 +18,7 @@
       "kind": "text",
       "x": 32,
       "y": 47,
-      "text": "GRV · Grid View",
+      "text": "grv · Grid View",
       "size": 30,
       "bold": true,
       "color": "#17324d"
@@ -27,7 +27,7 @@
       "kind": "text",
       "x": 32,
       "y": 80,
-      "text": "Operation inventory from Cabin; blank timing means no declared contract in service profile.",
+      "text": "Function inventory from Cabin; blank timing means no declared contract in service profile.",
       "size": 17,
       "bold": false,
       "color": "#516579"
@@ -62,7 +62,7 @@
       "kind": "text",
       "x": 42,
       "y": 162,
-      "text": "Occurrence",
+      "text": "Instance",
       "size": 16,
       "bold": true,
       "color": "white"
@@ -81,7 +81,7 @@
       "kind": "text",
       "x": 264,
       "y": 162,
-      "text": "Operation",
+      "text": "Function",
       "size": 16,
       "bold": true,
       "color": "white"
@@ -233,7 +233,7 @@
       "kind": "text",
       "x": 692,
       "y": 207,
-      "text": "Int",
+      "text": "int",
       "size": 15,
       "bold": false,
       "color": "#17324d"
@@ -347,7 +347,7 @@
       "kind": "text",
       "x": 692,
       "y": 250,
-      "text": "Bool",
+      "text": "bool",
       "size": 15,
       "bold": false,
       "color": "#17324d"
@@ -461,7 +461,7 @@
       "kind": "text",
       "x": 692,
       "y": 293,
-      "text": "Void",
+      "text": "void",
       "size": 15,
       "bold": false,
       "color": "#17324d"
@@ -575,7 +575,7 @@
       "kind": "text",
       "x": 692,
       "y": 336,
-      "text": "Void",
+      "text": "void",
       "size": 15,
       "bold": false,
       "color": "#17324d"
@@ -689,7 +689,7 @@
       "kind": "text",
       "x": 692,
       "y": 379,
-      "text": "Void",
+      "text": "void",
       "size": 15,
       "bold": false,
       "color": "#17324d"
@@ -765,7 +765,7 @@
       "kind": "text",
       "x": 263,
       "y": 422,
-      "text": "(same operations)",
+      "text": "(same functions)",
       "size": 15,
       "bold": false,
       "color": "#17324d"
@@ -784,7 +784,7 @@
       "kind": "text",
       "x": 435,
       "y": 422,
-      "text": "distinct occurrence",
+      "text": "distinct instance",
       "size": 15,
       "bold": false,
       "color": "#17324d"
@@ -803,7 +803,7 @@
       "kind": "text",
       "x": 692,
       "y": 422,
-      "text": "Void",
+      "text": "void",
       "size": 15,
       "bold": false,
       "color": "#17324d"
@@ -850,7 +850,7 @@
       "kind": "text",
       "x": 35,
       "y": 477,
-      "text": "read is reentrant; other operations default to serial. Sorting this grid changes no execution order.",
+      "text": "read is reentrant; other functions default to serial. Sorting this grid changes no execution order.",
       "size": 17,
       "bold": false,
       "color": "#516579"

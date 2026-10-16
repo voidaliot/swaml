@@ -2,7 +2,7 @@
   "width": 560,
   "height": 320,
   "title": "Sequence View",
-  "description": "Sequence View. Draw a framed projection titled SV with the semantic subject identity visible; use the canonical element symbols within it.",
+  "description": "Sequence View. Draw a framed projection titled sv with the semantic subject identity visible; use the canonical element symbols within it.",
   "shapes": [
     {
       "kind": "rect",
@@ -55,7 +55,7 @@
       "kind": "text",
       "x": 27,
       "y": 40,
-      "text": "SV",
+      "text": "sv",
       "size": 19,
       "bold": true,
       "color": "#111111"

@@ -1,37 +1,37 @@
 package Control {
-    interface senderReceiver Samples version "1.0.0" { data temperature: Real sampled; }
-    interface senderReceiver Commands version "1.0.0" { data duty: Real sampled; }
-    unit def Sensor {
+    interface senderReceiver Samples version "1.0.0" { data temperature: real sampled; }
+    interface senderReceiver Commands version "1.0.0" { data duty: real sampled; }
+    component def Sensor {
         port output: Samples sender;
-        operation sample() on every 10 ms timing { wcet 1 ms; deadline 3 ms; concurrency serial; } {
+        function sample() on every 10 ms timing { wcet 1 ms; deadline 3 ms; concurrency serial; } {
             send output.temperature(23.5);
             return;
         }
     }
-    unit def Regulator {
+    component def Regulator {
         port input: Samples receiver;
         port output: Commands sender;
-        function clamp(x: Real): Real = x / 100.0;
-        operation regulate(temperature: Real) on receive input.temperature timing { wcet 1 ms; deadline 3 ms; concurrency serial; } {
-            let duty: Real = clamp(temperature);
+        function regulate(temperature: real) on receive input.temperature timing { wcet 1 ms; deadline 3 ms; concurrency serial; } {
+            calc clamp { in x: real; return result: real = x / 100.0; }
+            var duty: real = clamp(temperature);
             if (duty > 0.8) { send output.duty(0.8); }
             else { send output.duty(duty); }
             return;
         }
     }
-    unit def Actuator {
+    component def Actuator {
         port input: Commands receiver;
-        var applied: Real = 0.0;
-        operation apply(duty: Real) on receive input.duty timing { wcet 1 ms; deadline 2 ms; concurrency serial; } {
+        var applied: real = 0.0;
+        function apply(duty: real) on receive input.duty timing { wcet 1 ms; deadline 2 ms; concurrency serial; } {
             applied = duty;
             assert applied <= 0.8;
             return;
         }
     }
     component def Controller {
-        unit sensor: Sensor;
-        unit regulator: Regulator;
-        unit actuator: Actuator;
+        component sensor: Sensor;
+        component regulator: Regulator;
+        component actuator: Actuator;
         connect measured: sensor.output -> regulator.input qos {
             delivery atMostOnce; ordering fifo; capacity 1; overflow dropOldest; maxLatency 1 ms; maxAge 20 ms;
         };
@@ -41,12 +41,11 @@ package Control {
     }
     component Heating realtime {
         component controller: Controller;
-        node ecu mcu;
-        deploy controller on ecu;
+        deploy controller on "system:ecu";
     }
-    requirement LimitedDuty "Applied duty shall be at most 0.8.";
-    view overview GV of Heating;
-    view wiring IV of Controller;
-    view regulating FV of Regulator.regulate;
-    view deployment GRV of Heating;
+    requirement LimitedDuty { doc /* Applied duty shall be at most 0.8. */ }
+    view overview gv of Heating;
+    view wiring iv of Controller;
+    view regulating fv of Regulator.regulate;
+    view deployment grv of Heating;
 }

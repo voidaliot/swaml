@@ -1,10 +1,10 @@
 # 9. Formal core and simulation relation
 
-Normative chapter of the [SWAML 1.1 specification](../LANGUAGE_SPECIFICATION.md). These judgments constrain implementations alongside chapters 1–8. They make explicit the distinction between static validity, allowed executions, and a particular target's choice among them. They do not assert a mechanically proved metatheory.
+Normative chapter of the [SWAML 1.2 specification](../LANGUAGE_SPECIFICATION.md). These judgments constrain implementations alongside chapters 1–8. They make explicit the distinction between static validity, allowed executions, and a particular target's choice among them. They do not assert a mechanically proved metatheory.
 
 ## 9.1 Domains and judgments
 
-Let D be the resolved declaration graph; O the finite expanded occurrence tree; Γ a lexical environment mapping names to types; σ an occurrence-indexed store of copied values; ρ an activation's parameter/local store; Q the connector queues; A the live activations; M the machine states and timer generations; R the correlation table; L the unit serial locks; B the released lifecycle/timer work; and t an integer nanosecond time. A runtime configuration is:
+Let D be the resolved declaration graph; O the finite expanded occurrence tree; Γ a lexical environment mapping names to types; σ an occurrence-indexed store of copied values; ρ an activation's parameter/local store; Q the connector queues; A the live activations; M the machine states and timer generations; R the correlation table; L the component serial locks; B the released lifecycle/timer work; and t an integer nanosecond time. A runtime configuration is:
 
 ```text
 C = (D, O, σ, Q, A, M, R, L, B, t)
@@ -17,9 +17,9 @@ C —label→ C'                one permitted observable/local step
 trace(C) = label₀ label₁ …   finite or infinite execution trace
 ```
 
-A value is a Bool, bounded Int, finite Real, String, nominal enum literal, finite nominal record of values, or fixed array of values. Void has no inhabitants. Record identity includes its qualified declaration identity; arrays include element type and extent. Values never contain references into O, σ, A or Q. An environment binding also carries its declared type; widening an Int into a Real binding preserves Real type even when its mathematical value is integral.
+A value is a bool, bounded byte/uint/int, finite real, string, nominal enum literal, finite nominal record of values, or fixed array of values. void has no inhabitants. Record identity includes its qualified declaration identity; arrays include element type and extent. Values never contain references into O, σ, A or Q. An environment binding also carries its declared type; widening an int into a real binding preserves real type even when its mathematical value is integral.
 
-The only assignment compatibility relation is T ≤ T and Int ≤ Real for scalars. Numeric common type is Real if either operand is Real, otherwise Int. There is no array covariance. A scope extension Γ[x:T] requires x absent from the live environment. Block-local extensions are discarded at block exit; assignments to existing cells remain.
+Assignment compatibility includes identity and scalar widening byte ≤ uint ≤ int ≤ real. Integral assignment into uint or byte additionally requires a destination-domain range check, statically for known constants and at runtime for computed values. real never implicitly narrows. Integral arithmetic yields int; division or a real operand yields real. Numeric array literals preserve a common identical type; mixed types yield real when any element is real, otherwise int when any is int, otherwise uint. A literal checked against a declared array type checks each element against that destination domain. Existing array values retain invariant element type and length. A scope extension Γ[x:T] requires x absent from the live environment. Block-local extensions are discarded at block exit; assignments to existing cells remain.
 
 ## 9.2 Static rule schemas
 
@@ -31,34 +31,40 @@ The schemas below apply recursively, together with the name, ownership, route an
 | Enum T.literal | no first-segment value T in the current expression environment Γ; one unambiguous accessible enum T; literal in its domain | nominal value:T |
 | Qualified enum P::T.literal | loaded package P declares enum T and its literal | nominal value:P::T, independent of lexical T |
 | Field e.f | e has nominal record T; T declares f:U | e.f:U |
-| Index e[i] | e:T[n], i:Int | e[i]:T; runtime requires 0 ≤ i < n |
+| Index e[i] | e:T[n], i:byte/uint/int | e[i]:T; runtime requires 0 ≤ i < n |
 | Record T | one value for every declared field; each value assignable to that field | constructed value:T |
 | Array | nonempty values have one nominal type or numeric common type T | value:T[n] |
-| Arithmetic | numeric operands, `%` additionally Int operands | `/`:Real; `%`:Int; other operators:numeric common type |
-| Boolean/comparison | chapter 1 operand conditions | result:Bool |
-| f(args) | f owned by current unit; signature-compatible copied args; pure acyclic graph | result has f's declared non-Void type |
-| let x:T=e | e:U, U ≤ T, fresh x | Γ ⇒ Γ[x:T] |
-| x=e | x:T in Γ, e:U, U ≤ T; activation effect rules permit write | Γ ⇒ Γ |
-| invoke f(args) | same-unit untriggered Void operation; signature-compatible args; acyclic graph | Γ ⇒ Γ |
-| send/publish p.m | p owned by current unit; correct outward member and verb; compatible args | Γ ⇒ Γ |
-| request p.m as x | p owned by unit; outward RPC; compatible args; positive timeout; fresh x and failure name; failure block cannot fall through | Γ ⇒ Γ[x:result] on success; Void x is reserved but uninhabited |
-| return e | e assignable to owning operation result | current operation terminates |
-| if / while / assert | condition:Bool; loop bound positive safe integer | each nested block checked in a fresh child scope |
-| transition | states in same operation; legal stimulus; Bool guard; effect typed with payload; distinct competing priorities | transition belongs directly to its operation |
+| Arithmetic | numeric operands, `%` additionally integral operands | `/`:real; `%`:int; other operators:real when either operand is real, otherwise int |
+| Boolean/comparison | chapter 1 operand conditions | result:bool |
+| f(args) | calculation f owned by enclosing function; signature-compatible copied args; pure acyclic graph | result has f's declared non-void type |
+| var x:T=e | e:U, U assignable to T with required range check, fresh x | Γ ⇒ Γ[x:T] |
+| x=e | x:T in Γ, e:U, U assignable to T with required range check; activation effect rules permit write | Γ ⇒ Γ |
+| call f(args) [as x] | same-component untriggered flow function; compatible copied args; acyclic graph; fresh x required exactly for non-void | Γ ⇒ Γ[x:result] for value return, otherwise Γ ⇒ Γ |
+| send/publish p.m | p owned by current component; correct outward member and verb; compatible args | Γ ⇒ Γ |
+| call p.m as x | p owned by component; outward RPC; compatible args; positive timeout; fresh x and failure name; failure block cannot fall through | Γ ⇒ Γ[x:result] on success; void x is reserved but uninhabited |
+| return e | e assignable to owning function result | current function terminates |
+| if / while / assert | condition:bool; loop bound positive safe integer | each nested block checked in a fresh child scope |
+| transition | states in same function; legal stimulus; bool guard; effect typed with payload; distinct competing priorities | transition belongs directly to its function |
 
-For root validity, an inline root expands only its authored component/unit children and connectors; a typed root expands exactly its referenced component definition. Both require an acyclic expansion, distinct occurrence stores and port closure. A typed root binding contains only nodes/deployments and introduces no topology. An omitted profile normalizes to service. An omitted operation/signature result normalizes to Void; parameter/data/function result types cannot be omitted. These are defined elaborations, not inference from body behavior.
+For root validity, an inline root expands its authored component children, connections and local behavior; a typed root expands exactly its referenced component definition. Both require an acyclic expansion, distinct occurrence stores and port closure. A typed root binding contains only deployments and introduces no topology. An omitted profile normalizes to service. An omitted function/signature result normalizes to void; parameter/data/calculation result types cannot be omitted. These are defined elaborations, not inference from body behavior.
 
-Let F(op) be the set of unit-variable assignments in op and recursively in every locally invoked helper. For every reentrant activation root, F(op) = ∅. Pure functions have no unit-variable environment and no operation edges. These finite graphs are acyclic, so both checks terminate.
+A connector selecting `qos P` requires one unambiguous package-visible QoS policy declaration P. Its effective policy equals P.body; an inline selection uses its own body. The base-field, sampled, idempotency and realtime premises are checked on that effective body for every use. Queue identity is still the connector occurrence, direction and member, independent of policy identity.
 
-For every normalized connector (p,q), contracts(p) = contracts(q) by declaration identity and roles(p,q) are complementary in the orientation defined in chapter 2. Delegation preserves both identity and role and introduces no queue. Every cross-unit effect is an offer to a member projection of such a connector. Thus a successful path lookup into a remote private store is never an execution rule.
+Before expansion, compute effective members by following the acyclic single-specialization relation. Every duplicate inherited name requires compatible explicit redefinition. Resolve inherited local references against the effective component context. Expansion then assigns a distinct store and lock to every instance, including a root with local behavior. Type reuse never identifies stores.
+
+Let F(op) be the set of component-variable assignments in op and recursively in every locally invoked helper. For every reentrant activation root, F(op) = ∅. Calculations have no component-variable environment and no function edges. These finite graphs are acyclic, so both checks terminate.
+
+For every normalized connector (p,q), contracts(p) = contracts(q) by declaration identity and roles(p,q) are complementary in the orientation defined in chapter 2. Delegation preserves both identity and role and introduces no queue. Every cross-component effect is an offer to a member projection of such a connector. Thus a successful path lookup into a remote private store is never an execution rule.
+
+The integral domains are `byte = {0,…,255}`, `uint = {0,…,2^53−1}` and `int = {−(2^53−1),…,2^53−1}`. Scalar widening preserves value along byte → uint → int → real. A checked integral assignment into byte or uint either yields an in-range value or raises a range failure; it never wraps. Integral arithmetic produces int unless division or a real operand determines real. A calculation evaluates its one expression in a copied input-only environment and returns its named output value; it creates no component activation or shared store.
 
 ## 9.3 Local execution rules
 
-Expressions evaluate operands left to right, except short-circuit `and`/`or`. A checked arithmetic operation either produces a value in its result domain or raises a local Arithmetic failure. Integer arithmetic is mathematically exact before checking the bounded result; implementations MUST NOT let floating-point rounding turn an out-of-range integer into a valid one. Remainder uses truncation toward zero. Real arithmetic uses binary64. Equality recursively compares typed values; Int/Real numerics compare after scalar promotion.
+Expressions evaluate operands left to right, except short-circuit `and`/`or`. A checked arithmetic operation either produces a value in its result domain or raises a local Arithmetic failure. Integer arithmetic is mathematically exact before checking the bounded result; implementations MUST NOT let floating-point rounding turn an out-of-range integer into a valid one. Remainder uses truncation toward zero. real arithmetic uses binary64. Equality recursively compares typed values; integral/real numerics compare after scalar promotion.
 
-A let creates a new local cell initialized by a copied, widened value. An assignment evaluates first, then atomically replaces the target cell. An invoke pushes a copied parameter frame on the existing activation root, preserving its lock and snapshot. A helper return pops only that frame. Returning from the outermost activation frame completes the activation. A failure unwinds all frames of that activation root without rollback. A loop tracks completed body iterations: after n executions, it evaluates the condition once more and fails if still true.
+A local var creates a new local cell initialized by a copied, widened value. An assignment evaluates first, then atomically replaces the target cell. A call pushes a copied parameter frame on the existing activation root, preserving its lock and snapshot. A helper return copies and typechecks its result, pops only that frame, and binds the successful non-void result in the caller’s lexical environment. Returning from the outermost activation frame completes the activation. A failure unwinds all frames of that activation root without rollback. A loop tracks completed body iterations: after n executions, it evaluates the condition once more and fails if still true.
 
-A reentrant dispatch snapshots σ for its unit. All unit reads by that activation, including helpers after suspension, use that snapshot. A serial dispatch reads the live store and holds its lock through requests. Local statements may interleave with other enabled activation roots at statement boundaries, but no competing serial activation root can acquire the same lock.
+A reentrant dispatch snapshots σ for its component. All component reads by that activation, including helpers after suspension, use that snapshot. A serial dispatch reads the live store and holds its lock through requests. Local statements may interleave with other enabled activation roots at statement boundaries, but no competing serial activation root can acquire the same lock.
 
 ## 9.4 Communication transition schemas
 
@@ -81,7 +87,7 @@ Let q be a route/direction/member queue, capacity k, m a copied message, and c a
 
 Fanout applies offer independently to every selected route before propagating any rejection. Running handlers are not queue entries. A dispatch or response cannot fabricate another member, route or correlation. Lifecycle releases, observations and local failures are not message offers. All queue loss and duplicate dispatch must be visible in a checking trace. Delivery policies constrain allowed traces, not source-language branches.
 
-## 9.5 Stateful operation transition schemas
+## 9.5 Stateful function transition schemas
 
 M(op) contains (state, generation, ready, live, reacting). One reaction at a time may execute. Initialization runs initial entry before setting ready. For stimulus z in state s, form candidates with matching source and trigger, evaluate their guards in the appropriate copied payload environment, and select the enabled candidate of maximum priority. No candidate means consume/ignore z. Selection is not applied across unrelated stimuli.
 
@@ -96,3 +102,7 @@ Logical time never decreases. A target may advance to the next release, transpor
 An implementation binding refines this specification when every trace it produces can be matched by the core relation, with any internal bookkeeping steps hidden, and it satisfies its declared progress/fairness assumptions. A deterministic simulator chooses one such trace. Passing that run does not establish universal safety or liveness across all allowed schedules, nor realize every descriptive case automatically.
 
 The [reference simulation profile](../SIMULATION.md) specifies a concrete, bounded choice of these rules. Reproducible inputs include all model source digests, selected root component, profile version, time horizon, harness releases, transport parameters and resource limits. No theorem of type preservation, kernel compatibility or trace equivalence is claimed without a separately checked proof artifact.
+
+## Requirement and presentation extension
+
+The rules in [chapter 4](04-systems-and-conformance.md) preserve requirements as named obligations with immutable attributes and at most one owned formal doc. Satisfaction references a design identity and requirement identity; verification references a verificationCase identity and requirement identity. Use cases cannot own verification links. Ordinary comments retain source extents and owner identities separately from formal documentation. Cases and links express intent, with no automatic proof status. View include/filter clauses resolve to a stable union of occurrence paths and have no execution steps or store effects. These constructs remain part of the proposed mapping contract; no kernel exporter is implemented.

@@ -2,7 +2,7 @@
   "width": 560,
   "height": 280,
   "title": "Message freshness bound",
-  "description": "Message freshness bound. Write maxAge and its explicit unit in the connector QoS compartment.",
+  "description": "Message freshness bound. Write maxAge and its explicit component in the connector QoS compartment.",
   "shapes": [
     {
       "kind": "rect",

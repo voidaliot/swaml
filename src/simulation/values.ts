@@ -16,23 +16,34 @@ export function plain(v: Value): unknown {
     return v.data;
 }
 export function widen(v: Value, type: string): Value {
-    if (type === 'Real' && v.type === 'Int') return scalar('Real', v.data as number);
+    const array = /^(.*)\[(\d+)\]$/.exec(type);
+    if (array && Array.isArray(v.data) && v.data.length === Number(array[2])) {
+        return { type, data: v.data.map(element => widen(element, array[1])) };
+    }
+    if (type === 'real' && integral(v.type)) return scalar('real', v.data as number);
+    if (integral(type) && integral(v.type)) {
+        const n = v.data as number;
+        if (!Number.isSafeInteger(n) || (type === 'uint' && n < 0) || (type === 'byte' && (n < 0 || n > 255))) throw new RuntimeFault('Bounds', `Value ${n} is outside ${type}`);
+        return scalar(type, n);
+    }
     if (v.type !== type) throw new RuntimeFault('Type', `Expected ${type}, received ${v.type}`);
     return copy(v);
 }
+const integral = (type: string): boolean => ['byte', 'uint', 'int'].includes(type);
+const numericType = (type: string): boolean => integral(type) || type === 'real';
 export function bind(env: Environment, name: string, type: string, value: Value): void {
     env.set(name, { type, value: widen(value, type) });
 }
 function numeric(type: string, n: number | bigint): Value {
     if (typeof n === 'bigint') {
-        if (n < -9007199254740991n || n > 9007199254740991n) throw new RuntimeFault('Arithmetic', 'Int overflow');
+        if (n < -9007199254740991n || n > 9007199254740991n) throw new RuntimeFault('Arithmetic', 'int overflow');
         n = Number(n);
     }
-    if (!Number.isFinite(n) || (type === 'Int' && !Number.isSafeInteger(n))) throw new RuntimeFault('Arithmetic', 'Non-finite or out-of-range arithmetic');
+    if (!Number.isFinite(n) || (integral(type) && !Number.isSafeInteger(n))) throw new RuntimeFault('Arithmetic', 'Non-finite or out-of-range arithmetic');
     return scalar(type, Object.is(n, -0) ? 0 : n);
 }
 function equal(l: Value, r: Value): boolean {
-    if (['Int', 'Real'].includes(l.type) && ['Int', 'Real'].includes(r.type)) return l.data === r.data;
+    if (numericType(l.type) && numericType(r.type)) return l.data === r.data;
     if (l.type !== r.type) return false;
     if (Array.isArray(l.data) && Array.isArray(r.data)) return l.data.length === r.data.length && l.data.every((v, i) => equal(v, (r.data as Value[])[i]));
     if (typeof l.data === 'object' && typeof r.data === 'object' && !Array.isArray(l.data) && !Array.isArray(r.data)) {
@@ -40,13 +51,13 @@ function equal(l: Value, r: Value): boolean {
     }
     return l.data === r.data;
 }
-export function evaluate(e: a.Expression, env: Environment, fuel: () => void, models: readonly a.Model[]): Value {
+export function evaluate(e: a.Expression, env: Environment, fuel: () => void, models: readonly a.Model[], context?: a.Component | a.RootComponent): Value {
     fuel();
-    const ev = (x: a.Expression) => evaluate(x, env, fuel, models);
+    const ev = (x: a.Expression) => evaluate(x, env, fuel, models, context);
     if (a.isLiteral(e)) {
-        if (e.number !== undefined) return numeric(e.$cstNode!.text.includes('.') ? 'Real' : 'Int', e.number);
-        if (e.boolean !== undefined) return scalar('Bool', e.boolean === 'true');
-        return scalar('String', e.text!);
+        if (e.number !== undefined) return numeric(e.$cstNode!.text.includes('.') ? 'real' : 'int', e.number);
+        if (e.boolean !== undefined) return scalar('bool', e.boolean === 'true');
+        return scalar('string', e.text!);
     }
     if (a.isReferenceExpression(e)) {
         const literal = resolveEnumLiteral(e, models, env);
@@ -70,34 +81,35 @@ export function evaluate(e: a.Expression, env: Environment, fuel: () => void, mo
     }
     if (a.isArrayLiteral(e)) {
         const values = e.values.map(ev);
-        const type = values.some(v => v.type === 'Real') && values.every(v => ['Int', 'Real'].includes(v.type)) ? 'Real' : values[0].type;
+        const types = new Set(values.map(v => v.type));
+        const type = types.size === 1 ? values[0].type : values.every(v => numericType(v.type)) ? (types.has('real') ? 'real' : types.has('int') ? 'int' : 'uint') : values[0].type;
         return { type: `${type}[${values.length}]`, data: values.map(v => widen(v, type)) };
     }
-    if (a.isFunctionCall(e)) {
-        const f = e.function.ref!, args = e.args.map(ev), scope: Environment = new Map();
+    if (a.isCalculationCall(e)) {
+        const f = e.calculation.ref!, args = e.args.map(ev), scope: Environment = new Map();
         f.parameters.forEach((p, i) => bind(scope, p.name, typeKey(p.type), args[i]));
-        return widen(evaluate(f.value, scope, fuel, models), typeKey(f.result));
+        return widen(evaluate(f.value, scope, fuel, models, context), typeKey(f.result));
     }
     if (a.isUnaryExpression(e)) {
         const v = ev(e.operand);
-        return e.operator === 'not' ? scalar('Bool', !v.data) : numeric(v.type, v.type === 'Int' ? -BigInt(v.data as number) : -(v.data as number));
+        return e.operator === 'not' ? scalar('bool', !v.data) : numeric(integral(v.type) ? 'int' : 'real', integral(v.type) ? -BigInt(v.data as number) : -(v.data as number));
     }
     const l = ev(e.left);
-    if (e.operator === 'and' && l.data === false) return scalar('Bool', false);
-    if (e.operator === 'or' && l.data === true) return scalar('Bool', true);
+    if (e.operator === 'and' && l.data === false) return scalar('bool', false);
+    if (e.operator === 'or' && l.data === true) return scalar('bool', true);
     const r = ev(e.right), x = l.data as number, y = r.data as number;
     switch (e.operator) {
-        case 'and': case 'or': return scalar('Bool', r.data as boolean);
-        case '==': return scalar('Bool', equal(l, r));
-        case '!=': return scalar('Bool', !equal(l, r));
-        case '<': return scalar('Bool', x < y);
-        case '<=': return scalar('Bool', x <= y);
-        case '>': return scalar('Bool', x > y);
-        case '>=': return scalar('Bool', x >= y);
+        case 'and': case 'or': return scalar('bool', r.data as boolean);
+        case '==': return scalar('bool', equal(l, r));
+        case '!=': return scalar('bool', !equal(l, r));
+        case '<': return scalar('bool', x < y);
+        case '<=': return scalar('bool', x <= y);
+        case '>': return scalar('bool', x > y);
+        case '>=': return scalar('bool', x >= y);
     }
     if ((e.operator === '/' || e.operator === '%') && y === 0) throw new RuntimeFault('Arithmetic', 'Division by zero');
-    const type = e.operator === '/' || l.type === 'Real' || r.type === 'Real' ? 'Real' : 'Int';
-    if (type === 'Int') {
+    const type = e.operator === '/' || l.type === 'real' || r.type === 'real' ? 'real' : 'int';
+    if (type === 'int') {
         const b = BigInt(x), c = BigInt(y);
         return numeric(type, e.operator === '+' ? b + c : e.operator === '-' ? b - c : e.operator === '*' ? b * c : b % c);
     }

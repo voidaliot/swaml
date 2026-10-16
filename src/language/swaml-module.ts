@@ -5,8 +5,11 @@ import { SwamlScopeProvider } from './swaml-scope.js';
 import { SwamlValidator } from './swaml-validator.js';
 import { SwamlDocumentBuilder } from './swaml-document-builder.js';
 
+export { effectiveQos } from './semantic.js';
+export { documentationText, modelComments, selectView, viewCandidates } from './presentation.js';
+
 /** Headerless models are interpreted only under this explicitly pinned language edition. */
-export const SWAML_LANGUAGE_VERSION = '1.1' as const;
+export const SWAML_LANGUAGE_VERSION = '1.2' as const;
 
 export type SwamlServices = LangiumServices & { validation: { SwamlValidator: SwamlValidator } };
 export const SwamlModule: Module<SwamlServices, PartialLangiumServices & { validation: { SwamlValidator: SwamlValidator } }> = {

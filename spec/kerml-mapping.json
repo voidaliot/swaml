@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0",
   "language": "SWAML",
-  "languageVersion": "1.1",
+  "languageVersion": "1.2",
   "foundation": {
     "name": "KerML",
     "version": "1.0",
@@ -17,7 +17,7 @@
         "Package"
       ],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Workspace source container under a host-pinned 1.1 language edition; no file version header."
+      "semantic": "Workspace source container under a host-pinned 1.2 language edition; no file version header."
     },
     {
       "source": "Package",
@@ -75,10 +75,10 @@
       "source": "TypeRef",
       "kind": "reference",
       "kernel": [
-        "FeatureTyping"
+        "Feature"
       ],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Reference to primitive/nominal type, plus optional fixed-array shape."
+      "semantic": "Primitive bool/byte/uint/int/real/string/void or nominal value type and optional fixed extent; copied value domains and checked integral assignments."
     },
     {
       "source": "ValueType",
@@ -119,7 +119,7 @@
         "Behavior"
       ],
       "normative": "docs/spec/02-communication.md",
-      "semantic": "Contract-only payload signature; only port-projected operation emission can instantiate an exchange."
+      "semantic": "Contract-only payload signature; only port-projected function emission can instantiate an exchange."
     },
     {
       "source": "Signature",
@@ -128,7 +128,7 @@
         "Behavior"
       ],
       "normative": "docs/spec/02-communication.md",
-      "semantic": "Contract-only RPC signature with copied parameters/result and idempotency assertion; omitted result is Void."
+      "semantic": "Interface-owned function signature with copied input/result types, optional void result and idempotency declaration; distinct from implementing component behavior."
     },
     {
       "source": "Argument",
@@ -146,37 +146,14 @@
         "Structure"
       ],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Component composition or unit private-state/executable boundary; distinct occurrence contexts."
+      "semantic": "Reusable software structure owning child instances, ports, private values and functions; single specialization with compatible member redefinition."
     },
     {
       "source": "ComponentMember",
       "kind": "grouping",
       "kernel": [],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Grammar union; normalize the selected concrete alternative exactly once."
-    },
-    {
-      "source": "Unit",
-      "kind": "element",
-      "kernel": [
-        "Structure"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Component composition or unit private-state/executable boundary; distinct occurrence contexts."
-    },
-    {
-      "source": "UnitMember",
-      "kind": "grouping",
-      "kernel": [],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Grammar union; normalize the selected concrete alternative exactly once."
-    },
-    {
-      "source": "Definition",
-      "kind": "grouping",
-      "kernel": [],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Grammar union; normalize the selected concrete alternative exactly once."
+      "semantic": "Owned structural or behavioral member of a component; effective members include inherited definitions and compatible explicit replacements."
     },
     {
       "source": "Instance",
@@ -185,7 +162,7 @@
         "Feature"
       ],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Composite owned occurrence typed by a definition, multiplicity one."
+      "semantic": "Exactly-one composite component usage typed by a definition; distinct instance path, private store and activation state; compatible redefinition may select a specialization."
     },
     {
       "source": "Port",
@@ -194,7 +171,7 @@
         "Feature"
       ],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Interface-typed role projection with optionality and instance-local endpoints."
+      "semantic": "Component-owned nominal interface endpoint with role/optionality; same-contract compatible redefinition. Effective behavior may be local or uniquely delegated."
     },
     {
       "source": "Variable",
@@ -204,33 +181,23 @@
         "FeatureValue"
       ],
       "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Private variable with pure initializer and per-unit-occurrence storage."
+      "semantic": "Private variable with pure initializer and per-component-occurrence storage."
     },
     {
       "source": "RootComponent",
       "kind": "element",
       "kernel": [
-        "Feature",
-        "Structure"
+        "Feature"
       ],
       "normative": "docs/spec/04-systems-and-conformance.md",
-      "semantic": "Named root component occurrence: typed composite Feature, or inline composition lowered through a synthetic Structure; effective profile defaults to service. Binding nodes/deployments cannot extend typed topology. Preserve root and child occurrence identity without an extra wrapper."
+      "semantic": "Closed concrete component occurrence with inline structural/behavioral members or a referenced component definition; service default; typed body is deployment-only."
     },
     {
       "source": "RootMember",
       "kind": "grouping",
       "kernel": [],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Grammar union; normalize the selected concrete alternative exactly once."
-    },
-    {
-      "source": "Node",
-      "kind": "element",
-      "kernel": [
-        "Structure"
-      ],
-      "normative": "docs/spec/04-systems-and-conformance.md",
-      "semantic": "Logical execution-node declaration with mcu/process/container binding metadata."
+      "semantic": "Inline root structural/behavioral member or external deployment binding; typed roots accept deployments only."
     },
     {
       "source": "Deployment",
@@ -239,7 +206,7 @@
         "MetadataFeature"
       ],
       "normative": "docs/spec/04-systems-and-conformance.md",
-      "semantic": "Explicit occurrence-to-node allocation; nearest ancestor determines inherited allocation."
+      "semantic": "Existing component-instance path and exact external system/part identity string; nearest-ancestor inheritance. A host resolves the external identity without implying SysML import or conformance."
     },
     {
       "source": "Connect",
@@ -248,7 +215,7 @@
         "Connector"
       ],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Port route or queue-free forwarding alias; preserve hierarchy and nominal interface identity."
+      "semantic": "Explicit route between local or immediate-child typed ports; independent occurrence/direction/member queues and complete effective policy. Redefinition preserves endpoints."
     },
     {
       "source": "Delegate",
@@ -261,22 +228,37 @@
     },
     {
       "source": "Qos",
+      "kind": "reference",
+      "kernel": [
+        "MetadataFeature"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Explicit inline body or package-visible named policy selection; preserve reference and use provenance and elaborate effective values independently per connector occurrence."
+    },
+    {
+      "source": "QosPolicy",
       "kind": "element",
       "kernel": [
         "MetadataFeature"
       ],
-      "normative": "docs/spec/06-execution-contract.md",
-      "semantic": "Per-route/member/direction queue capacity, overflow, delivery, order, latency and age constraints."
+      "normative": "docs/spec/02-communication.md",
+      "semantic": "Package-owned named complete queue policy; same namespace/import ambiguity rules as other declarations. No inheritance, overrides, queue identity or runtime storage."
     },
     {
-      "source": "Operation",
+      "source": "QosBody",
+      "kind": "grouping",
+      "kernel": [],
+      "normative": "docs/spec/02-communication.md",
+      "semantic": "Complete ordered delivery, ordering, capacity, overflow and optional latency/age fields; checked at declaration and every connector use. No independent executable identity."
+    },
+    {
+      "source": "FunctionDef",
       "kind": "element",
       "kernel": [
-        "Behavior",
-        "Step"
+        "Behavior"
       ],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Owned implementation plus synthetic executable feature; typed unit context and exactly one statement or directly owned state body; omitted result is Void."
+      "semantic": "Executable function plus synthetic component-owned executable feature; copied parameters, activation/trigger, timing and one statement or state body. Local references use the effective component context."
     },
     {
       "source": "Trigger",
@@ -297,13 +279,13 @@
       "semantic": "WCET, elapsed deadline and concurrency contract; activation root and local helper interpretation."
     },
     {
-      "source": "FunctionDef",
+      "source": "Calculation",
       "kind": "element",
       "kernel": [
         "Function"
       ],
       "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Pure parameter-only expression with acyclic local call graph."
+      "semantic": "Function-owned pure calculation with copied explicit inputs and one named non-void output expression. Lexical ownership prevents capture of mutable or function-local values and access from sibling functions."
     },
     {
       "source": "Block",
@@ -323,7 +305,7 @@
       "semantic": "Grammar union; normalize the selected concrete alternative exactly once."
     },
     {
-      "source": "Let",
+      "source": "LocalVariable",
       "kind": "element",
       "kernel": [
         "Step",
@@ -349,10 +331,10 @@
         "Step"
       ],
       "normative": "docs/spec/06-execution-contract.md",
-      "semantic": "SWAML library emission behavior with operation/port/member provenance and independent route offers."
+      "semantic": "SWAML library emission behavior with function/port/member provenance and independent route offers."
     },
     {
-      "source": "Request",
+      "source": "RemoteCall",
       "kind": "element",
       "kernel": [
         "Step"
@@ -361,13 +343,13 @@
       "semantic": "SWAML library awaited RPC behavior with correlation, bounded timeout and exclusive success/failure."
     },
     {
-      "source": "Invoke",
+      "source": "LocalCall",
       "kind": "element",
       "kernel": [
         "Step"
       ],
       "normative": "docs/spec/06-execution-contract.md",
-      "semantic": "Same-unit synchronous call preserving caller context, lock, snapshot and continuation."
+      "semantic": "Synchronous untriggered flow function call in the same component, resolved against effective inherited functions. Borrows activation lock/snapshot; copied non-void result binds a fresh caller local."
     },
     {
       "source": "Return",
@@ -421,7 +403,7 @@
       "kind": "grouping",
       "kernel": [],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Initial-first syntax grouping contributing directly to its operation: states, transitions, current-state, timer generations and ordered reactions. No independently authored/executable element."
+      "semantic": "Initial-first syntax grouping contributing directly to its function: states, transitions, current-state, timer generations and ordered reactions. No independently authored/executable element."
     },
     {
       "source": "State",
@@ -430,7 +412,7 @@
         "Step"
       ],
       "normative": "docs/spec/06-execution-contract.md",
-      "semantic": "State identity, entry/exit groups and finality in one operation context."
+      "semantic": "State identity, entry/exit groups and finality in one function context."
     },
     {
       "source": "Transition",
@@ -449,7 +431,7 @@
         "MetadataFeature"
       ],
       "normative": "docs/spec/04-systems-and-conformance.md",
-      "semantic": "Named text obligation; coverage claims carry no automatic proof."
+      "semantic": "Named obligation owning immutable typed attributes and optional formal doc, without a subject."
     },
     {
       "source": "Scenario",
@@ -458,7 +440,7 @@
         "Behavior"
       ],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Descriptive partial trace tied to a root component and requirements; inline or definition-derived root topology, never a second executable program."
+      "semantic": "Use or verification case with root context and partial-order exchanges; only verification cases own verify links."
     },
     {
       "source": "ScenarioStep",
@@ -477,7 +459,7 @@
         "MetadataFeature"
       ],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Projection kind and resolved declaration/occurrence subject; presentation has no runtime effects."
+      "semantic": "Named projection of the stable union of selected occurrence paths; no executable effects."
     },
     {
       "source": "Duration",
@@ -486,7 +468,7 @@
         "LiteralInteger"
       ],
       "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Exact positive integer nanoseconds with retained authoring unit."
+      "semantic": "Exact positive integer nanoseconds with retained authoring time unit."
     },
     {
       "source": "Path",
@@ -507,7 +489,7 @@
       "kind": "reference",
       "kernel": [],
       "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Value-reference syntax permitting local field paths and explicit package-qualified enum literals. An accessible value first segment wins over an unqualified enum with no field-failure fallback; cross-unit private lookup remains forbidden."
+      "semantic": "Value-reference syntax permitting local field paths and explicit package-qualified enum literals. An accessible value first segment wins over an unqualified enum with no field-failure fallback; cross-component private lookup remains forbidden."
     },
     {
       "source": "Expression",
@@ -597,16 +579,16 @@
         "Expression"
       ],
       "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Concrete typed literal expression: Bool, bounded Int, finite Real or portable String."
+      "semantic": "Concrete typed literal expression: bool, bounded int, finite real or portable string."
     },
     {
-      "source": "FunctionCall",
+      "source": "CalculationCall",
       "kind": "lowering",
       "kernel": [
         "Expression"
       ],
       "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Typed pure local function invocation with ordered copied arguments."
+      "semantic": "Copied argument evaluation and acyclic expression evaluation resolved only within the enclosing function calculation namespace."
     },
     {
       "source": "ReferenceExpression",
@@ -699,6 +681,76 @@
       "kernel": [],
       "normative": "docs/spec/01-structure-and-types.md",
       "semantic": "Insignificant source trivia; retain only for authoring round trips."
+    },
+    {
+      "source": "FunctionFlow",
+      "kind": "grouping",
+      "kernel": [
+        "Step"
+      ],
+      "normative": "docs/spec/03-behavior.md",
+      "semantic": "Nonempty statement sequence after function-local calculation declarations; normalizes to Block. An absent sequence is an empty void flow."
+    },
+    {
+      "source": "MemberPath",
+      "kind": "reference",
+      "kernel": [
+        "Feature"
+      ],
+      "normative": "docs/spec/02-communication.md",
+      "semantic": "Exactly port.member for a routed call; distinguishes it from a bare local function identifier."
+    },
+    {
+      "source": "Attribute",
+      "kind": "element",
+      "kernel": [
+        "MetadataFeature"
+      ],
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "semantic": "Immutable typed requirement metadata with no runtime store."
+    },
+    {
+      "source": "Documentation",
+      "kind": "element",
+      "kernel": [
+        "MetadataFeature"
+      ],
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "semantic": "One owned raw formal specification; preserve text and ownership without executable effects."
+    },
+    {
+      "source": "Satisfaction",
+      "kind": "element",
+      "kernel": [
+        "MetadataFeature"
+      ],
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "semantic": "Directed design-identity to requirement-identity claim; no automatic evidence."
+    },
+    {
+      "source": "Verification",
+      "kind": "element",
+      "kernel": [
+        "MetadataFeature"
+      ],
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "semantic": "Directed verificationCase to requirement claim; source kind and uniqueness are checked."
+    },
+    {
+      "source": "ViewSelection",
+      "kind": "reference",
+      "kernel": [
+        "MetadataFeature"
+      ],
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "semantic": "Occurrence-path selection, optional recursive expansion and pure Boolean filtering; stable union."
+    },
+    {
+      "source": "DOC_COMMENT",
+      "kind": "lexical",
+      "kernel": [],
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "semantic": "Visible lexical token containing doc and its non-nested raw block; distinct from hidden comments."
     }
   ],
   "invariants": [

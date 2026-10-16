@@ -1,5 +1,5 @@
 {
-  "profile": "swaml-reference/1.1",
+  "profile": "swaml-reference/1.2",
   "outcome": "no-failure-observed",
   "root": "Hello::Demo",
   "options": {
@@ -13,11 +13,11 @@
   },
   "status": "quiescent",
   "timeNs": 0,
-  "steps": 17,
+  "steps": 22,
   "sources": [
     {
       "uri": "file:///examples/01-hello.swaml",
-      "text": "package Hello {\n    interface senderReceiver Greeting version \"1.0.0\" {\n        data text: String queued;\n    }\n    unit def Speaker {\n        port output: Greeting sender;\n        operation greet() on start {\n            send output.text(\"Hello, SWAML\");\n            return;\n        }\n    }\n    unit def Listener {\n        port input: Greeting receiver;\n        var last: String = \"\";\n        operation hear(message: String) on receive input.text {\n            last = message;\n            return;\n        }\n    }\n    component def Conversation {\n        unit speaker: Speaker;\n        unit listener: Listener;\n        connect greeting: speaker.output -> listener.input qos {\n            delivery atMostOnce; ordering fifo; capacity 4; overflow reject;\n        };\n    }\n    component Demo { component conversation: Conversation; }\n    view overview GV of Demo;\n    view wiring IV of Conversation;\n    view greetingFlow FV of Speaker.greet;\n    view inventory GRV of Demo;\n}\n"
+      "text": "package Hello {\n    interface senderReceiver Greeting version \"1.0.0\" {\n        data text: string queued;\n    }\n    component def Speaker {\n        port output: Greeting sender;\n        function greet() on start {\n            send output.text(\"Hello, SWAML\");\n            return;\n        }\n    }\n    component def Listener {\n        port input: Greeting receiver;\n        var last: string = \"\";\n        function hear(message: string) on receive input.text {\n            last = message;\n            return;\n        }\n    }\n    component def Conversation {\n        component speaker: Speaker;\n        component listener: Listener;\n        connect greeting: speaker.output -> listener.input qos {\n            delivery atMostOnce; ordering fifo; capacity 4; overflow reject;\n        };\n    }\n    component Demo { component conversation: Conversation; }\n    view overview gv of Demo;\n    view wiring iv of Conversation;\n    view greetingFlow fv of Speaker.greet;\n    view inventory grv of Demo;\n}\n"
     }
   ],
   "trace": [
@@ -25,36 +25,52 @@
       "timeNs": 0,
       "ordinal": 1,
       "kind": "initialize",
-      "subject": "conversation.speaker",
-      "definition": "Hello::Speaker",
-      "node": null
+      "subject": "",
+      "definition": "Hello::Demo",
+      "system": null
     },
     {
       "timeNs": 0,
       "ordinal": 2,
       "kind": "initialize",
-      "subject": "conversation.listener",
-      "definition": "Hello::Listener",
-      "node": null
+      "subject": "conversation",
+      "definition": "Hello::Conversation",
+      "system": null
     },
     {
       "timeNs": 0,
       "ordinal": 3,
-      "kind": "release",
-      "subject": "a1",
-      "operation": "conversation.speaker.greet"
+      "kind": "initialize",
+      "subject": "conversation.speaker",
+      "definition": "Hello::Speaker",
+      "system": null
     },
     {
       "timeNs": 0,
       "ordinal": 4,
-      "kind": "dispatch",
-      "subject": "a1",
-      "operation": "conversation.speaker.greet",
-      "mode": "serial"
+      "kind": "initialize",
+      "subject": "conversation.listener",
+      "definition": "Hello::Listener",
+      "system": null
     },
     {
       "timeNs": 0,
       "ordinal": 5,
+      "kind": "release",
+      "subject": "a1",
+      "function": "conversation.speaker.greet"
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 6,
+      "kind": "dispatch",
+      "subject": "a1",
+      "function": "conversation.speaker.greet",
+      "mode": "serial"
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 7,
       "kind": "emission",
       "subject": "m2",
       "offer": 1,
@@ -69,14 +85,14 @@
     },
     {
       "timeNs": 0,
-      "ordinal": 6,
+      "ordinal": 8,
       "kind": "admission",
       "subject": "m2",
       "queue": "conversation.greeting/forward/text"
     },
     {
       "timeNs": 0,
-      "ordinal": 7,
+      "ordinal": 9,
       "kind": "statement",
       "subject": "a1",
       "kindOfStatement": "Send",
@@ -84,21 +100,21 @@
     },
     {
       "timeNs": 0,
-      "ordinal": 8,
+      "ordinal": 10,
       "kind": "ready",
       "subject": "m2",
       "queue": "conversation.greeting/forward/text"
     },
     {
       "timeNs": 0,
-      "ordinal": 9,
+      "ordinal": 11,
       "kind": "release",
       "subject": "a3",
-      "operation": "conversation.listener.hear"
+      "function": "conversation.listener.hear"
     },
     {
       "timeNs": 0,
-      "ordinal": 10,
+      "ordinal": 12,
       "kind": "delivery",
       "subject": "m2",
       "attempt": 1,
@@ -108,22 +124,22 @@
     },
     {
       "timeNs": 0,
-      "ordinal": 11,
+      "ordinal": 13,
       "kind": "dispatch",
       "subject": "a3",
-      "operation": "conversation.listener.hear",
+      "function": "conversation.listener.hear",
       "mode": "serial"
     },
     {
       "timeNs": 0,
-      "ordinal": 12,
+      "ordinal": 14,
       "kind": "complete",
       "subject": "a1",
-      "operation": "conversation.speaker.greet"
+      "function": "conversation.speaker.greet"
     },
     {
       "timeNs": 0,
-      "ordinal": 13,
+      "ordinal": 15,
       "kind": "statement",
       "subject": "a3",
       "kindOfStatement": "Assign",
@@ -131,13 +147,15 @@
     },
     {
       "timeNs": 0,
-      "ordinal": 14,
+      "ordinal": 16,
       "kind": "complete",
       "subject": "a3",
-      "operation": "conversation.listener.hear"
+      "function": "conversation.listener.hear"
     }
   ],
   "stores": {
+    "": {},
+    "conversation": {},
     "conversation.speaker": {},
     "conversation.listener": {
       "last": "Hello, SWAML"
@@ -145,6 +163,7 @@
   },
   "machines": {},
   "deployments": {
+    "": null,
     "conversation": null,
     "conversation.speaker": null,
     "conversation.listener": null

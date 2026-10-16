@@ -20,6 +20,6 @@ The release gate passes **138 tests**, validates and simulates **8 example syste
 
 ## Scope and remaining backend work
 
-The repository fully specifies SWAML 1.0's supported constructs and rejects unsupported syntax. It provides parsing, broad static validation and a deterministic reference simulator with explicit abstractions. It does not assert kernel-validated export, physical realtime schedulability, universal safety/liveness, exactly-once application effects, case realization from syntax alone, production middleware, or a graphical editor. The actual VS Code extension is implemented separately against these contracts.
+The repository fully specifies SWAML 1.0's supported constructs and rejects unsupported syntax. It provides parsing, broad static validation and a deterministic reference simulator with explicit abstractions. It does not assert kernel-validated export, physical realtime schedulability, universal safety/liveness, exactly-once application effects, case realization from syntax alone, production middleware, or a graphical editor.
 
 The consolidated Markdown is generated from maintained chapters and contains the exact grammar and complete models. The PDF embeds exact sources and diagrams with a hash manifest. Published 0.1 artifacts remain historical; future corrections must identify the specification patch and whether any model meaning changes.

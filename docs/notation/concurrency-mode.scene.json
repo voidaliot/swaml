@@ -2,7 +2,7 @@
   "width": 560,
   "height": 280,
   "title": "Concurrency mode",
-  "description": "Concurrency mode. Write serial or reentrant in the operation timing compartment; no color or parallel-lane icon substitutes for it.",
+  "description": "Concurrency mode. Write serial or reentrant in the function timing compartment; no color or parallel-lane icon substitutes for it.",
   "shapes": [
     {
       "kind": "rect",
@@ -65,7 +65,7 @@
       "kind": "text",
       "x": 55,
       "y": 61,
-      "text": "Operation concurrency",
+      "text": "Function concurrency",
       "size": 20,
       "bold": true,
       "color": "#111111"

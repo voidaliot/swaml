@@ -1,8 +1,8 @@
 # Alphabetical keyword reference
 
-This user-facing reference covers every reserved word in the SWAML 1.1 grammar. Entries are sorted alphabetically, ignoring case for sorting only; source keywords remain case-sensitive. Example fragments illustrate a use and are not standalone models. Read the linked normative concern for full constraints. Punctuation and operator precedence follow the final section.
+This user-facing reference covers every reserved word in the SWAML 1.2 grammar. Entries are sorted alphabetically, ignoring case for sorting only; source keywords remain case-sensitive. Example fragments illustrate a use and are not standalone models. Read the linked normative concern for full constraints. Punctuation and operator precedence follow the final section.
 
-[`after`](#keyword-after) · [`and`](#keyword-and) · [`as`](#keyword-as) · [`assert`](#keyword-assert) · [`atLeastOnce`](#keyword-atleastonce) · [`atMostOnce`](#keyword-atmostonce) · [`bestEffort`](#keyword-besteffort) · [`Bool`](#keyword-bool) · [`bound`](#keyword-bound) · [`call`](#keyword-call) · [`capacity`](#keyword-capacity) · [`case`](#keyword-case) · [`client`](#keyword-client) · [`clientServer`](#keyword-clientserver) · [`completion`](#keyword-completion) · [`component`](#keyword-component) · [`concurrency`](#keyword-concurrency) · [`connect`](#keyword-connect) · [`container`](#keyword-container) · [`CV`](#keyword-cv) · [`data`](#keyword-data) · [`datatype`](#keyword-datatype) · [`deadline`](#keyword-deadline) · [`def`](#keyword-def) · [`delegate`](#keyword-delegate) · [`delivery`](#keyword-delivery) · [`deploy`](#keyword-deploy) · [`dropNewest`](#keyword-dropnewest) · [`dropOldest`](#keyword-dropoldest) · [`else`](#keyword-else) · [`entry`](#keyword-entry) · [`enum`](#keyword-enum) · [`event`](#keyword-event) · [`every`](#keyword-every) · [`exit`](#keyword-exit) · [`fail`](#keyword-fail) · [`false`](#keyword-false) · [`fifo`](#keyword-fifo) · [`final`](#keyword-final) · [`for`](#keyword-for) · [`function`](#keyword-function) · [`FV`](#keyword-fv) · [`GRV`](#keyword-grv) · [`GV`](#keyword-gv) · [`idempotent`](#keyword-idempotent) · [`if`](#keyword-if) · [`import`](#keyword-import) · [`initial`](#keyword-initial) · [`Int`](#keyword-int) · [`interface`](#keyword-interface) · [`invoke`](#keyword-invoke) · [`IV`](#keyword-iv) · [`label`](#keyword-label) · [`let`](#keyword-let) · [`manual`](#keyword-manual) · [`maxAge`](#keyword-maxage) · [`maxLatency`](#keyword-maxlatency) · [`mcu`](#keyword-mcu) · [`mixed`](#keyword-mixed) · [`ms`](#keyword-ms) · [`node`](#keyword-node) · [`not`](#keyword-not) · [`ns`](#keyword-ns) · [`of`](#keyword-of) · [`on`](#keyword-on) · [`operation`](#keyword-operation) · [`optional`](#keyword-optional) · [`or`](#keyword-or) · [`ordering`](#keyword-ordering) · [`otherwise`](#keyword-otherwise) · [`overflow`](#keyword-overflow) · [`package`](#keyword-package) · [`port`](#keyword-port) · [`priority`](#keyword-priority) · [`process`](#keyword-process) · [`provides`](#keyword-provides) · [`publish`](#keyword-publish) · [`publisher`](#keyword-publisher) · [`publishSubscribe`](#keyword-publishsubscribe) · [`qos`](#keyword-qos) · [`queued`](#keyword-queued) · [`Real`](#keyword-real) · [`realtime`](#keyword-realtime) · [`receive`](#keyword-receive) · [`receiver`](#keyword-receiver) · [`record`](#keyword-record) · [`reentrant`](#keyword-reentrant) · [`reject`](#keyword-reject) · [`reply`](#keyword-reply) · [`request`](#keyword-request) · [`requirement`](#keyword-requirement) · [`requires`](#keyword-requires) · [`return`](#keyword-return) · [`s`](#keyword-s) · [`sampled`](#keyword-sampled) · [`satisfies`](#keyword-satisfies) · [`send`](#keyword-send) · [`sender`](#keyword-sender) · [`senderReceiver`](#keyword-senderreceiver) · [`serial`](#keyword-serial) · [`server`](#keyword-server) · [`service`](#keyword-service) · [`start`](#keyword-start) · [`state`](#keyword-state) · [`String`](#keyword-string) · [`subscriber`](#keyword-subscriber) · [`SV`](#keyword-sv) · [`timing`](#keyword-timing) · [`transition`](#keyword-transition) · [`true`](#keyword-true) · [`unit`](#keyword-unit) · [`unordered`](#keyword-unordered) · [`us`](#keyword-us) · [`var`](#keyword-var) · [`version`](#keyword-version) · [`via`](#keyword-via) · [`view`](#keyword-view) · [`Void`](#keyword-void) · [`wcet`](#keyword-wcet) · [`when`](#keyword-when) · [`while`](#keyword-while) · [`within`](#keyword-within)
+[`after`](#keyword-after) · [`and`](#keyword-and) · [`as`](#keyword-as) · [`assert`](#keyword-assert) · [`atLeastOnce`](#keyword-atleastonce) · [`atMostOnce`](#keyword-atmostonce) · [`attribute`](#keyword-attribute) · [`bestEffort`](#keyword-besteffort) · [`bool`](#keyword-bool) · [`bound`](#keyword-bound) · [`by`](#keyword-by) · [`byte`](#keyword-byte) · [`calc`](#keyword-calc) · [`call`](#keyword-call) · [`capacity`](#keyword-capacity) · [`client`](#keyword-client) · [`clientServer`](#keyword-clientserver) · [`completion`](#keyword-completion) · [`component`](#keyword-component) · [`concurrency`](#keyword-concurrency) · [`connect`](#keyword-connect) · [`cv`](#keyword-cv) · [`data`](#keyword-data) · [`datatype`](#keyword-datatype) · [`deadline`](#keyword-deadline) · [`def`](#keyword-def) · [`delegate`](#keyword-delegate) · [`delivery`](#keyword-delivery) · [`deploy`](#keyword-deploy) · [`doc`](#keyword-doc) · [`dropNewest`](#keyword-dropnewest) · [`dropOldest`](#keyword-dropoldest) · [`else`](#keyword-else) · [`entry`](#keyword-entry) · [`enum`](#keyword-enum) · [`event`](#keyword-event) · [`every`](#keyword-every) · [`exit`](#keyword-exit) · [`fail`](#keyword-fail) · [`false`](#keyword-false) · [`fifo`](#keyword-fifo) · [`final`](#keyword-final) · [`for`](#keyword-for) · [`function`](#keyword-function) · [`fv`](#keyword-fv) · [`grv`](#keyword-grv) · [`gv`](#keyword-gv) · [`idempotent`](#keyword-idempotent) · [`if`](#keyword-if) · [`import`](#keyword-import) · [`in`](#keyword-in) · [`include`](#keyword-include) · [`initial`](#keyword-initial) · [`int`](#keyword-int) · [`interface`](#keyword-interface) · [`iv`](#keyword-iv) · [`label`](#keyword-label) · [`manual`](#keyword-manual) · [`maxAge`](#keyword-maxage) · [`maxLatency`](#keyword-maxlatency) · [`mixed`](#keyword-mixed) · [`ms`](#keyword-ms) · [`not`](#keyword-not) · [`ns`](#keyword-ns) · [`of`](#keyword-of) · [`on`](#keyword-on) · [`optional`](#keyword-optional) · [`or`](#keyword-or) · [`ordering`](#keyword-ordering) · [`otherwise`](#keyword-otherwise) · [`overflow`](#keyword-overflow) · [`package`](#keyword-package) · [`port`](#keyword-port) · [`priority`](#keyword-priority) · [`provides`](#keyword-provides) · [`publish`](#keyword-publish) · [`publisher`](#keyword-publisher) · [`publishSubscribe`](#keyword-publishsubscribe) · [`qos`](#keyword-qos) · [`queued`](#keyword-queued) · [`real`](#keyword-real) · [`realtime`](#keyword-realtime) · [`receive`](#keyword-receive) · [`receiver`](#keyword-receiver) · [`record`](#keyword-record) · [`recursive`](#keyword-recursive) · [`redefines`](#keyword-redefines) · [`reentrant`](#keyword-reentrant) · [`reject`](#keyword-reject) · [`reply`](#keyword-reply) · [`requirement`](#keyword-requirement) · [`requires`](#keyword-requires) · [`return`](#keyword-return) · [`s`](#keyword-s) · [`sampled`](#keyword-sampled) · [`satisfy`](#keyword-satisfy) · [`send`](#keyword-send) · [`sender`](#keyword-sender) · [`senderReceiver`](#keyword-senderreceiver) · [`serial`](#keyword-serial) · [`server`](#keyword-server) · [`service`](#keyword-service) · [`specializes`](#keyword-specializes) · [`start`](#keyword-start) · [`state`](#keyword-state) · [`string`](#keyword-string) · [`subscriber`](#keyword-subscriber) · [`sv`](#keyword-sv) · [`timing`](#keyword-timing) · [`transition`](#keyword-transition) · [`true`](#keyword-true) · [`uint`](#keyword-uint) · [`unordered`](#keyword-unordered) · [`us`](#keyword-us) · [`useCase`](#keyword-usecase) · [`var`](#keyword-var) · [`verificationCase`](#keyword-verificationcase) · [`verify`](#keyword-verify) · [`version`](#keyword-version) · [`via`](#keyword-via) · [`view`](#keyword-view) · [`void`](#keyword-void) · [`wcet`](#keyword-wcet) · [`when`](#keyword-when) · [`where`](#keyword-where) · [`while`](#keyword-while) · [`within`](#keyword-within)
 
 ## Keyword: after
 
@@ -12,77 +12,87 @@ In a transition, creates a timer measured from source-state entry completion; le
 
 **Example fragment:** `on after 10 ms / via link after sent label received;`
 
-**Graphical notation:** [Residence timer transition](GRAPHICAL_CATALOG.md#notation-timer-transition), [Case causal order](GRAPHICAL_CATALOG.md#notation-case-causal-order). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Residence timer transition](GRAPHICAL_CATALOG.md#notation-timer-transition), [Case causal order](GRAPHICAL_CATALOG.md#notation-case-causal-order). Residence timer transition; Case causal order.
 
 ## Keyword: and
 
 **Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `AndExpression`.
 
-Short-circuit Boolean conjunction. Both operands must be Bool; the right operand is evaluated only when the left is true.
+Short-circuit Boolean conjunction. Both operands must be bool; the right operand is evaluated only when the left is true.
 
 **Example fragment:** `ready and enabled`
 
-**Graphical notation:** [Expressions and value paths](GRAPHICAL_CATALOG.md#notation-expression). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Expressions and value paths](GRAPHICAL_CATALOG.md#notation-expression). Expressions and value paths.
 
 ## Keyword: as
 
-**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Request`.
+**Concern:** [Communication](spec/02-communication.md). **Grammar:** `RemoteCall`, `LocalCall`.
 
-Names the successful awaited RPC result. A Void result reserves the name without creating a readable value. The name must be fresh in the live lexical environment.
+Names a fresh local-call result or awaited RPC result. Local void calls omit it; routed void calls reserve a completion name without a readable value.
 
-**Example fragment:** `request api.read() as value within 1 s otherwise { return; };`
+**Example fragment:** `call api.read() as value within 1 s otherwise { return; };`
 
-**Graphical notation:** [RPC request and failure continuation](GRAPHICAL_CATALOG.md#notation-request). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Routed function call](GRAPHICAL_CATALOG.md#notation-routed-call). Routed function call.
 
 ## Keyword: assert
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Assert`.
 
-Evaluates a Bool; false fails the activation without rollback. A failed RPC handler returns RemoteFailure through its correlation. Assertions are executable checks, not static proofs.
+Evaluates a bool; false fails the activation without rollback. A failed RPC handler returns RemoteFailure through its correlation. Assertions are executable checks, not static proofs.
 
 **Example fragment:** `assert measured <= 100;`
 
-**Graphical notation:** [Assertion](GRAPHICAL_CATALOG.md#notation-assert). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Assertion](GRAPHICAL_CATALOG.md#notation-assert). Assertion.
 
 ## Keyword: atLeastOnce
 
-**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Qos`.
+**Concern:** [Communication](spec/02-communication.md). **Grammar:** `QosBody`.
 
 Permits retries and duplicate delivery subject to liveness, overflow and freshness. RPC members on such a connector must declare idempotent behavior. It never implies exactly-once effects.
 
 **Example fragment:** `delivery atLeastOnce;`
 
-**Graphical notation:** [Delivery policy](GRAPHICAL_CATALOG.md#notation-delivery-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Delivery policy](GRAPHICAL_CATALOG.md#notation-delivery-policy). Delivery policy.
 
 ## Keyword: atMostOnce
 
-**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Qos`.
+**Concern:** [Communication](spec/02-communication.md). **Grammar:** `QosBody`.
 
 Allows loss but no duplicate delivery for a logical message. A lost request or response can still lead to timeout. This policy does not guarantee admission or successful execution.
 
 **Example fragment:** `delivery atMostOnce;`
 
-**Graphical notation:** [Delivery policy](GRAPHICAL_CATALOG.md#notation-delivery-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Delivery policy](GRAPHICAL_CATALOG.md#notation-delivery-policy). Delivery policy.
+
+## Keyword: attribute
+
+**Concern:** [Cases and evidence](spec/04-systems-and-conformance.md). **Grammar:** `Attribute`.
+
+Immutable typed requirement metadata.
+
+**Example fragment:** `attribute priority: uint = 1;`
+
+**Graphical notation:** [Requirement attribute](GRAPHICAL_CATALOG.md#notation-requirement-attribute). Requirement attribute.
 
 ## Keyword: bestEffort
 
-**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Qos`.
+**Concern:** [Communication](spec/02-communication.md). **Grammar:** `QosBody`.
 
 Permits loss without an eventual-delivery guarantee and without duplicate delivery. Queue capacity, overflow and declared timing bounds still apply.
 
 **Example fragment:** `delivery bestEffort;`
 
-**Graphical notation:** [Delivery policy](GRAPHICAL_CATALOG.md#notation-delivery-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Delivery policy](GRAPHICAL_CATALOG.md#notation-delivery-policy). Delivery policy.
 
-## Keyword: Bool
+## Keyword: bool
 
 **Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `TypeRef`.
 
-Primitive two-valued Boolean type. Conditions and logical operators require Bool; numbers and strings are not truthy substitutes.
+Primitive two-valued Boolean type. Conditions and logical operators require bool; numbers and strings are not truthy substitutes.
 
-**Example fragment:** `let ready: Bool = true;`
+**Example fragment:** `var ready: bool = true;`
 
-**Graphical notation:** [Primitive types](GRAPHICAL_CATALOG.md#notation-primitive-types). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Primitive types](GRAPHICAL_CATALOG.md#notation-primitive-types). Primitive types.
 
 ## Keyword: bound
 
@@ -92,37 +102,57 @@ Sets the positive safe-integer maximum number of loop-body executions. After tha
 
 **Example fragment:** `while (i < 3) bound 3 { i = i + 1; }`
 
-**Graphical notation:** [Bounded loop](GRAPHICAL_CATALOG.md#notation-bounded-loop). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Bounded loop](GRAPHICAL_CATALOG.md#notation-bounded-loop). Bounded loop.
+
+## Keyword: by
+
+**Concern:** [Cases and evidence](spec/04-systems-and-conformance.md). **Grammar:** `Satisfaction`.
+
+Identifies the design source of satisfaction.
+
+**Example fragment:** `satisfy Reliable by Demo;`
+
+**Graphical notation:** [Satisfaction relation](GRAPHICAL_CATALOG.md#notation-satisfies-link). Satisfaction relation.
+
+## Keyword: byte
+
+**Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `TypeRef`.
+
+Exact unsigned eight-bit values from 0 through 255. Integral assignment checks the destination range statically for known constants and at runtime for computed values.
+
+**Example fragment:** `var payload: byte[2] = [0, 255];`
+
+**Graphical notation:** [Primitive types](GRAPHICAL_CATALOG.md#notation-primitive-types). Primitive types.
+
+## Keyword: calc
+
+**Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `Calculation`.
+
+Declares a pure calculation at the start of a function body. Its typed inputs and named result expression are visible only within that owning function, including its states and guards.
+
+**Example fragment:** `calc twice { in x: int; return result: int = x * 2; }`
+
+**Graphical notation:** [Pure calculation](GRAPHICAL_CATALOG.md#notation-calculation). Pure calculation.
 
 ## Keyword: call
 
-**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Trigger`.
+**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Trigger`, `RemoteCall`, `LocalCall`, `ScenarioStep`.
 
-Activates a unit operation for an incoming RPC interface member. Parameters and result must match the contract, and the member has exactly one handler owner.
+Calls an untriggered local function, awaits a routed port.member function, marks an incoming RPC trigger, or describes a case RPC step. Local non-void calls require as name; routed calls require a result/completion name, timeout and terminating failure path.
 
-**Example fragment:** `operation read(): Int on call api.get { return current; }`
+**Example fragment:** `call normalize(input) as value; / call api.read() as reply within 1 s otherwise { return; };`
 
-**Graphical notation:** [RPC handler activation](GRAPHICAL_CATALOG.md#notation-trigger-call). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [RPC handler activation](GRAPHICAL_CATALOG.md#notation-trigger-call), [Local function call](GRAPHICAL_CATALOG.md#notation-local-call), [Routed function call](GRAPHICAL_CATALOG.md#notation-routed-call), [Case request](GRAPHICAL_CATALOG.md#notation-case-request). RPC handler activation; Local function call; Routed function call; Case request.
 
 ## Keyword: capacity
 
-**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Qos`.
+**Concern:** [Communication](spec/02-communication.md). **Grammar:** `QosBody`.
 
 Positive safe-integer retained-message limit per connector occurrence, direction and member. Transport-pending messages count; running handlers do not. Sampled data requires capacity 1.
 
 **Example fragment:** `capacity 8;`
 
-**Graphical notation:** [Queue capacity](GRAPHICAL_CATALOG.md#notation-capacity-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
-
-## Keyword: case
-
-**Concern:** [Cases and evidence](spec/04-systems-and-conformance.md). **Grammar:** `Scenario`.
-
-Defines a descriptive scenario for a root component with labeled interface exchanges and optional requirement traces. It does not execute or prove itself and cannot introduce hidden traffic.
-
-**Example fragment:** `case Checkout for Shop satisfies Accepted { ... }`
-
-**Graphical notation:** [Case](GRAPHICAL_CATALOG.md#notation-case). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Queue capacity](GRAPHICAL_CATALOG.md#notation-capacity-policy). Queue capacity.
 
 ## Keyword: client
 
@@ -132,17 +162,17 @@ Port role for the requesting side of a clientServer interface. A closed client p
 
 **Example fragment:** `port api: Health client;`
 
-**Graphical notation:** [RPC client port](GRAPHICAL_CATALOG.md#notation-port-client). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [RPC client port](GRAPHICAL_CATALOG.md#notation-port-client). RPC client port.
 
 ## Keyword: clientServer
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Interface`.
 
-Interface kind containing operation signatures only. A client issues request; a server implements on call handlers. Events belong in service or publishSubscribe contracts.
+Interface kind containing function signatures only. A client issues request; a server implements on call handlers. Events belong in service or publishSubscribe contracts.
 
-**Example fragment:** `interface clientServer Health version "1.0.0" { operation check(): Bool; }`
+**Example fragment:** `interface clientServer Health version "1.0.0" { function check(): bool; }`
 
-**Graphical notation:** [Client–server interface](GRAPHICAL_CATALOG.md#notation-client-server-interface). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Client–server interface](GRAPHICAL_CATALOG.md#notation-client-server-interface). Client–server interface.
 
 ## Keyword: completion
 
@@ -152,57 +182,47 @@ Local state stimulus reconsidered after entry and each reaction until quiescent.
 
 **Example fragment:** `transition next: A -> B on completion {}`
 
-**Graphical notation:** [Completion transition](GRAPHICAL_CATALOG.md#notation-completion-transition). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Completion transition](GRAPHICAL_CATALOG.md#notation-completion-transition). Completion transition.
 
 ## Keyword: component
 
 **Concern:** [Structure and names](spec/01-structure-and-types.md). **Grammar:** `Component`, `Instance`, `RootComponent`.
 
-With def, declares a reusable composition type. Without def, a typed child occurrence uses name: Type; at package level a root occurrence either supplies inline unit/component children and connectors or instantiates a component definition. A typed root body may bind nodes/deployment only. The root profile defaults to service.
+Defines a reusable software boundary with def, or a concrete instance. Components own child components, ports, private data and executable functions. Functions own calculations. Each instance receives distinct state and activation locks.
 
-**Example fragment:** `component def Assembly { unit controller: Controller; } / component Demo: Assembly;`
+**Example fragment:** `component def Controller { } / component controller: Controller;`
 
-**Graphical notation:** [Component definition](GRAPHICAL_CATALOG.md#notation-component-definition), [Component usage](GRAPHICAL_CATALOG.md#notation-component-usage), [Root component](GRAPHICAL_CATALOG.md#notation-root-component), [Inline root composition](GRAPHICAL_CATALOG.md#notation-inline-root), [Occurrence typing relationship](GRAPHICAL_CATALOG.md#notation-type-relationship). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Component definition](GRAPHICAL_CATALOG.md#notation-component-definition), [Component usage](GRAPHICAL_CATALOG.md#notation-component-usage), [Occurrence typing relationship](GRAPHICAL_CATALOG.md#notation-type-relationship), [Root component](GRAPHICAL_CATALOG.md#notation-root-component), [Inline root composition](GRAPHICAL_CATALOG.md#notation-inline-root). Component definition; Component usage; Occurrence typing relationship; Root component; Inline root composition.
 
 ## Keyword: concurrency
 
 **Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `Timing`.
 
-Selects serial or reentrant operation activation policy in a timing contract. Helpers inherit the activation mode. Stateful operations never overlap their own reactions.
+Selects serial or reentrant function activation policy in a timing contract. Helpers inherit the activation mode. Stateful functions never overlap their own reactions.
 
 **Example fragment:** `concurrency serial;`
 
-**Graphical notation:** [Concurrency mode](GRAPHICAL_CATALOG.md#notation-concurrency-mode). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Concurrency mode](GRAPHICAL_CATALOG.md#notation-concurrency-mode). Concurrency mode.
 
 ## Keyword: connect
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Connect`.
 
-Creates an explicit connector between immediate child ports of a component definition or root component. Contracts must be identical and roles complementary. Every connector supplies QoS.
+Creates an explicit connector between owned or immediate-child ports. Contracts must be identical and roles complementary. Every connector supplies a complete QoS selection.
 
 **Example fragment:** `connect samples: sensor.output -> controller.input qos { ... };`
 
-**Graphical notation:** [Interface connector](GRAPHICAL_CATALOG.md#notation-connector). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Interface connector](GRAPHICAL_CATALOG.md#notation-connector). Interface connector.
 
-## Keyword: container
-
-**Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `Node`.
-
-Execution-node kind representing a container deployment location. It does not create a component, communication channel or container runtime configuration.
-
-**Example fragment:** `node application container;`
-
-**Graphical notation:** [Execution node](GRAPHICAL_CATALOG.md#notation-execution-node). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
-
-## Keyword: CV
+## Keyword: cv
 
 **Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `View`.
 
 Case View kind: displays cases, requirements and claimed coverage for a case or root component. Verified coverage requires separate linked evidence.
 
-**Example fragment:** `view coverage CV of Shop;`
+**Example fragment:** `view coverage cv of Shop;`
 
-**Graphical notation:** [Case View](GRAPHICAL_CATALOG.md#notation-view-cv). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Case View](GRAPHICAL_CATALOG.md#notation-view-cv). Case View.
 
 ## Keyword: data
 
@@ -210,9 +230,9 @@ Case View kind: displays cases, requirements and claimed coverage for a case or 
 
 Declares one senderReceiver member with a value type and sampled or queued mode. Outgoing use is send; incoming handling is on receive with one typed argument.
 
-**Example fragment:** `data sample: Real sampled;`
+**Example fragment:** `data sample: real sampled;`
 
-**Graphical notation:** [Data member](GRAPHICAL_CATALOG.md#notation-data-member). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Data member](GRAPHICAL_CATALOG.md#notation-data-member). Data member.
 
 ## Keyword: datatype
 
@@ -220,79 +240,89 @@ Declares one senderReceiver member with a value type and sampled or queued mode.
 
 Declares a nominal finite record. Field names are unique, every literal supplies all fields once, and recursive value containment is invalid. Empty records have one value.
 
-**Example fragment:** `datatype Point { x: Real; y: Real; }`
+**Example fragment:** `datatype Point { x: real; y: real; }`
 
-**Graphical notation:** [Record datatype](GRAPHICAL_CATALOG.md#notation-datatype). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Record datatype](GRAPHICAL_CATALOG.md#notation-datatype). Record datatype.
 
 ## Keyword: deadline
 
 **Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `Timing`.
 
-Positive elapsed-time bound from activation release to completion, including queueing and request suspension. For stateful operations it applies per reaction. WCET must not exceed it.
+Positive elapsed-time bound from activation release to completion, including queueing and request suspension. For stateful functions it applies per reaction. WCET must not exceed it.
 
 **Example fragment:** `deadline 5 ms;`
 
-**Graphical notation:** [Operation timing contract](GRAPHICAL_CATALOG.md#notation-timing-contract). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Function timing contract](GRAPHICAL_CATALOG.md#notation-timing-contract). Function timing contract.
 
 ## Keyword: def
 
-**Concern:** [Structure and names](spec/01-structure-and-types.md). **Grammar:** `Component`, `Unit`.
+**Concern:** [Structure and names](spec/01-structure-and-types.md). **Grammar:** `Component`, `QosPolicy`.
 
-Required marker for a reusable component or unit type. Definitions create no running singleton. An occurrence without def must either refer to the matching definition kind or, for a package-level component root, supply inline composition.
+Declares a reusable component type or complete package-owned QoS policy. Component definitions may specialize one base; definitions create no runtime singleton.
 
-**Example fragment:** `unit def Worker { ... }`
+**Example fragment:** `component def Controller { } / qos def LocalLink { ... }`
 
-**Graphical notation:** [Component definition](GRAPHICAL_CATALOG.md#notation-component-definition), [Unit definition](GRAPHICAL_CATALOG.md#notation-unit-definition). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Component definition](GRAPHICAL_CATALOG.md#notation-component-definition), [Reusable QoS policy](GRAPHICAL_CATALOG.md#notation-qos-policy-definition). Component definition; Reusable QoS policy.
 
 ## Keyword: delegate
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Delegate`.
 
-Aliases a component boundary port to one immediate child port of the same role and interface. Every component port delegates once. Delegation adds neither conversion nor a queue.
+Aliases a component boundary port to one immediate child port of the same role and interface. A port has at most one delegation and cannot also have local behavior owners. Delegation adds neither conversion nor a queue.
 
 **Example fragment:** `delegate api -> worker.api;`
 
-**Graphical notation:** [Boundary delegation](GRAPHICAL_CATALOG.md#notation-delegation). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Boundary delegation](GRAPHICAL_CATALOG.md#notation-delegation). Boundary delegation.
 
 ## Keyword: delivery
 
-**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Qos`.
+**Concern:** [Communication](spec/02-communication.md). **Grammar:** `QosBody`.
 
 Chooses bestEffort, atMostOnce or atLeastOnce for all member queues of a connector. Delivery is separate from FIFO ordering, admission and application success.
 
 **Example fragment:** `delivery atMostOnce;`
 
-**Graphical notation:** [Delivery policy](GRAPHICAL_CATALOG.md#notation-delivery-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Delivery policy](GRAPHICAL_CATALOG.md#notation-delivery-policy). Delivery policy.
 
 ## Keyword: deploy
 
 **Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `Deployment`.
 
-Assigns an existing component or descendant occurrence to a root component node. Descendants inherit the nearest explicit allocation. Duplicate exact-path allocations are invalid.
+Associates a component instance path, or the root name itself, with an external system/part identity string. Descendants inherit the nearest binding. The host resolves the external destination.
 
-**Example fragment:** `deploy backend.worker on application;`
+**Example fragment:** `deploy controller on "sysml:Vehicle::ecu";`
 
-**Graphical notation:** [Deployment binding](GRAPHICAL_CATALOG.md#notation-deployment). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Deployment binding](GRAPHICAL_CATALOG.md#notation-deployment). Deployment binding.
+
+## Keyword: doc
+
+**Concern:** [Cases and evidence](spec/04-systems-and-conformance.md). **Grammar:** `Documentation`, `DOC_COMMENT`.
+
+One owned formal multiline specification.
+
+**Example fragment:** `doc /* Formal text. */`
+
+**Graphical notation:** [Formal documentation](GRAPHICAL_CATALOG.md#notation-formal-documentation). Formal documentation.
 
 ## Keyword: dropNewest
 
-**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Qos`.
+**Concern:** [Communication](spec/02-communication.md). **Grammar:** `QosBody`.
 
 On a full queue, discards the offered message observably. Admission does not fail the producer; an RPC can later time out. Existing retained messages stay.
 
 **Example fragment:** `overflow dropNewest;`
 
-**Graphical notation:** [Overflow behavior](GRAPHICAL_CATALOG.md#notation-overflow-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Overflow behavior](GRAPHICAL_CATALOG.md#notation-overflow-policy). Overflow behavior.
 
 ## Keyword: dropOldest
 
-**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Qos`.
+**Concern:** [Communication](spec/02-communication.md). **Grammar:** `QosBody`.
 
 On a full queue, discards the oldest retained message and admits the new one. Required with capacity 1 for sampled data. It does not undo effects of already dispatched handlers.
 
 **Example fragment:** `overflow dropOldest;`
 
-**Graphical notation:** [Overflow behavior](GRAPHICAL_CATALOG.md#notation-overflow-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Overflow behavior](GRAPHICAL_CATALOG.md#notation-overflow-policy). Overflow behavior.
 
 ## Keyword: else
 
@@ -302,17 +332,17 @@ Optional alternative block of an if statement. Only the chosen branch executes; 
 
 **Example fragment:** `if (ready) { return; } else { fail "not ready"; }`
 
-**Graphical notation:** [Conditional branch](GRAPHICAL_CATALOG.md#notation-conditional). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Conditional branch](GRAPHICAL_CATALOG.md#notation-conditional). Conditional branch.
 
 ## Keyword: entry
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `State`.
 
-State-entry block executed after that state becomes current. It has no incoming payload scope. Residence timers begin after entry finishes; return/fail terminates the owning operation.
+State-entry block executed after that state becomes current. It has no incoming payload scope. Residence timers begin after entry finishes; return/fail terminates the owning function.
 
 **Example fragment:** `state Idle { entry { count = 0; } }`
 
-**Graphical notation:** [State entry behavior](GRAPHICAL_CATALOG.md#notation-state-entry). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [State entry behavior](GRAPHICAL_CATALOG.md#notation-state-entry). State entry behavior.
 
 ## Keyword: enum
 
@@ -322,27 +352,27 @@ Declares a nominal set of one or more unique literals. Values use Type.Literal o
 
 **Example fragment:** `enum Status { Ready, Failed } / Status.Ready / Contracts::Status.Ready`
 
-**Graphical notation:** [Enumeration](GRAPHICAL_CATALOG.md#notation-enumeration). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Enumeration](GRAPHICAL_CATALOG.md#notation-enumeration). Enumeration.
 
 ## Keyword: event
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `EventMember`.
 
-Declares a typed asynchronous member in publishSubscribe or service. It must be emitted by an operation through a port and owned by one receiving operation; free global events are absent.
+Declares a typed asynchronous member in publishSubscribe or service. It must be emitted by a function through a port and owned by one receiving function; free global events are absent.
 
-**Example fragment:** `event changed(value: Real);`
+**Example fragment:** `event changed(value: real);`
 
-**Graphical notation:** [Event member](GRAPHICAL_CATALOG.md#notation-event-member). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Event member](GRAPHICAL_CATALOG.md#notation-event-member). Event member.
 
 ## Keyword: every
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Trigger`.
 
-Periodic parameterless Void activation at epoch plus k periods, k starting at 1. Releases do not merge when earlier activations are busy; pending work is bounded by the binding.
+Periodic parameterless void activation at epoch plus k periods, k starting at 1. Releases do not merge when earlier activations are busy; pending work is bounded by the binding.
 
-**Example fragment:** `operation sample(): Void on every 10 ms { ... }`
+**Example fragment:** `function sample(): void on every 10 ms { ... }`
 
-**Graphical notation:** [Periodic activation](GRAPHICAL_CATALOG.md#notation-trigger-periodic). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Periodic activation](GRAPHICAL_CATALOG.md#notation-trigger-periodic). Periodic activation.
 
 ## Keyword: exit
 
@@ -352,97 +382,97 @@ State-exit block runs after timer cancellation and before the transition effect.
 
 **Example fragment:** `state Running { exit { active = false; } }`
 
-**Graphical notation:** [State exit behavior](GRAPHICAL_CATALOG.md#notation-state-exit). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [State exit behavior](GRAPHICAL_CATALOG.md#notation-state-exit). State exit behavior.
 
 ## Keyword: fail
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Fail`.
 
-Raises a local failure with a String literal reason, unwinds synchronous callers, and preserves committed effects. An RPC caller receives the correlated RemoteFailure outcome.
+Raises a local failure with a string literal reason, unwinds synchronous callers, and preserves committed effects. An RPC caller receives the correlated RemoteFailure outcome.
 
 **Example fragment:** `fail "invalid operating mode";`
 
-**Graphical notation:** [Failure](GRAPHICAL_CATALOG.md#notation-fail). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Failure](GRAPHICAL_CATALOG.md#notation-fail). Failure.
 
 ## Keyword: false
 
 **Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `Literal`.
 
-The false Bool literal. Distinct from numeric zero, empty strings or absent values; no implicit coercion exists.
+The false bool literal. Distinct from numeric zero, empty strings or absent values; no implicit coercion exists.
 
-**Example fragment:** `let ready: Bool = false;`
+**Example fragment:** `var ready: bool = false;`
 
-**Graphical notation:** [Expressions and value paths](GRAPHICAL_CATALOG.md#notation-expression). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Expressions and value paths](GRAPHICAL_CATALOG.md#notation-expression). Expressions and value paths.
 
 ## Keyword: fifo
 
-**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Qos`.
+**Concern:** [Communication](spec/02-communication.md). **Grammar:** `QosBody`.
 
 Dispatches retained messages in queue order for one connector/direction/member. Independent queues and handler completion order are not globally ordered.
 
 **Example fragment:** `ordering fifo;`
 
-**Graphical notation:** [Queue ordering](GRAPHICAL_CATALOG.md#notation-ordering-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Queue ordering](GRAPHICAL_CATALOG.md#notation-ordering-policy). Queue ordering.
 
 ## Keyword: final
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `State`.
 
-Marks a state that completes its owning operation after entry. It has no outgoing transition. Future input to that operation is undeliverable, not rerouted.
+Marks a state that completes its owning function after entry. It has no outgoing transition. Future input to that function is undeliverable, not rerouted.
 
 **Example fragment:** `state Stopped final {}`
 
-**Graphical notation:** [Final state](GRAPHICAL_CATALOG.md#notation-final-state). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Final state](GRAPHICAL_CATALOG.md#notation-final-state). Final state.
 
 ## Keyword: for
 
 **Concern:** [Cases and evidence](spec/04-systems-and-conformance.md). **Grammar:** `Scenario`.
 
-Selects the root component described by a case. The steps use root-level connectors and immediate child unit/component port-member paths. Typed roots resolve topology through their component definition.
+Selects the root component described by a case. Steps use root-level connectors and owned or immediate-child port-member paths. Typed roots resolve topology through their component definition.
 
-**Example fragment:** `case Startup for Product { ... }`
+**Example fragment:** `useCase Startup for Product { ... }`
 
-**Graphical notation:** [Case](GRAPHICAL_CATALOG.md#notation-case). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Use case](GRAPHICAL_CATALOG.md#notation-case). Use case.
 
 ## Keyword: function
 
-**Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `FunctionDef`.
+**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Signature`, `FunctionDef`.
 
-Defines a pure expression with a non-Void result. It sees only copied parameters and other local pure functions, never unit variables. The call graph is acyclic.
+Declares an executable component-owned behavior or an interface contract signature. A body contains optional local calculations followed by statements or directly owned states. An omitted result means void; triggers select activation.
 
-**Example fragment:** `function twice(value: Int): Int = value * 2; / twice(3)`
+**Example fragment:** `function startUp() on start { return; }`
 
-**Graphical notation:** [Pure local function](GRAPHICAL_CATALOG.md#notation-pure-function). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Interface function signature](GRAPHICAL_CATALOG.md#notation-function-signature), [Executable function](GRAPHICAL_CATALOG.md#notation-function), [Function with states](GRAPHICAL_CATALOG.md#notation-stateful-function). Interface function signature; Executable function; Function with states.
 
-## Keyword: FV
+## Keyword: fv
 
 **Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `View`.
 
-Flow View of an operation. Projects either its statement body or its owned states/transitions in the same view family. There are no performer allocations or separate AFV/STV kinds.
+Flow View of a function. Projects either its statement body or its owned states/transitions in the same view family.
 
-**Example fragment:** `view control FV of Controller.regulate;`
+**Example fragment:** `view control fv of Controller.regulate;`
 
-**Graphical notation:** [Flow View](GRAPHICAL_CATALOG.md#notation-view-fv). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Flow View](GRAPHICAL_CATALOG.md#notation-view-fv). Flow View.
 
-## Keyword: GRV
+## Keyword: grv
 
 **Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `View`.
 
 Grid View of a package or named semantic declaration other than a view. Presents inventory, contracts, timing, allocation or trace tables; sorting does not change model meaning.
 
-**Example fragment:** `view inventory GRV of Architecture;`
+**Example fragment:** `view inventory grv of Architecture;`
 
-**Graphical notation:** [Grid View](GRAPHICAL_CATALOG.md#notation-view-grv). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Grid View](GRAPHICAL_CATALOG.md#notation-view-grv). Grid View.
 
-## Keyword: GV
+## Keyword: gv
 
 **Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `View`.
 
 General View of a package or resolvable named semantic declaration other than a view. Shows ownership, types, attributes and relations, retaining definition/occurrence distinction.
 
-**Example fragment:** `view overview GV of Product;`
+**Example fragment:** `view overview gv of Product;`
 
-**Graphical notation:** [General View](GRAPHICAL_CATALOG.md#notation-view-gv). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [General View](GRAPHICAL_CATALOG.md#notation-view-gv). General View.
 
 ## Keyword: idempotent
 
@@ -450,19 +480,19 @@ General View of a package or resolvable named semantic declaration other than a 
 
 Contract assertion required for RPC under atLeastOnce delivery. Repeated requests must have idempotent effects including published side effects. The keyword alone is not a proof.
 
-**Example fragment:** `operation read(): Int idempotent;`
+**Example fragment:** `function read(): int idempotent;`
 
-**Graphical notation:** [Interface operation signature](GRAPHICAL_CATALOG.md#notation-operation-signature). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Interface function signature](GRAPHICAL_CATALOG.md#notation-function-signature). Interface function signature.
 
 ## Keyword: if
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `If`.
 
-Evaluates one Bool and executes the selected lexical block. It supplies no concurrency or implicit variable merging. Value-returning operations must cover both paths or fail.
+Evaluates one bool and executes the selected lexical block. It supplies no concurrency or implicit variable merging. Value-returning functions must cover both paths or fail.
 
 **Example fragment:** `if (value > limit) { return false; } else { return true; }`
 
-**Graphical notation:** [Conditional branch](GRAPHICAL_CATALOG.md#notation-conditional). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Conditional branch](GRAPHICAL_CATALOG.md#notation-conditional). Conditional branch.
 
 ## Keyword: import
 
@@ -472,27 +502,47 @@ Imports top-level names from one package using namespace::*; imports are not tra
 
 **Example fragment:** `import Common::*;`
 
-**Graphical notation:** [Package import](GRAPHICAL_CATALOG.md#notation-import). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Package import](GRAPHICAL_CATALOG.md#notation-import). Package import.
+
+## Keyword: in
+
+**Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `Calculation`.
+
+Declares one ordered typed input of a calculation. Arguments are copied values and must match the declared input types.
+
+**Example fragment:** `in measured: real;`
+
+**Graphical notation:** [Pure calculation](GRAPHICAL_CATALOG.md#notation-calculation). Pure calculation.
+
+## Keyword: include
+
+**Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `ViewSelection`.
+
+Adds a subject selection to a view.
+
+**Example fragment:** `include Demo;`
+
+**Graphical notation:** [Filtered view selection](GRAPHICAL_CATALOG.md#notation-view-selection). Filtered view selection.
 
 ## Keyword: initial
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `StateBody`.
 
-The first item in a stateful operation body. References exactly one state owned by that operation and distinguishes state behavior from a statement block without a wrapper keyword. Initialization enters it once per run epoch before input consumption.
+Introduces the state body after optional function-local calculation declarations. References exactly one state owned by that function and distinguishes state behavior from a statement block without a wrapper keyword. Initialization enters it once per run epoch before input consumption.
 
 **Example fragment:** `initial Idle;`
 
-**Graphical notation:** [Operation with states](GRAPHICAL_CATALOG.md#notation-stateful-operation), [Initial state reference](GRAPHICAL_CATALOG.md#notation-initial-state). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Function with states](GRAPHICAL_CATALOG.md#notation-stateful-function), [Initial state reference](GRAPHICAL_CATALOG.md#notation-initial-state). Function with states; Initial state reference.
 
-## Keyword: Int
+## Keyword: int
 
 **Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `TypeRef`.
 
-Exact signed integer type from -(2^53-1) through 2^53-1. Overflow, invalid indexing and division/remainder by zero fail execution. Scalar Int may widen to Real.
+Exact signed safe integers from âˆ’(2^53âˆ’1) through 2^53âˆ’1. Integral arithmetic produces int, with exact intermediate checks; division returns real.
 
-**Example fragment:** `var count: Int = 0;`
+**Example fragment:** `var delta: int = -2;`
 
-**Graphical notation:** [Primitive types](GRAPHICAL_CATALOG.md#notation-primitive-types). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Primitive types](GRAPHICAL_CATALOG.md#notation-primitive-types). Primitive types.
 
 ## Keyword: interface
 
@@ -502,27 +552,17 @@ Declares a nominal, versioned contract of one of four kinds. Port endpoints must
 
 **Example fragment:** `interface service Orders version "1.0.0" { ... }`
 
-**Graphical notation:** [Sender–receiver interface](GRAPHICAL_CATALOG.md#notation-sender-receiver-interface), [Client–server interface](GRAPHICAL_CATALOG.md#notation-client-server-interface), [Publish–subscribe interface](GRAPHICAL_CATALOG.md#notation-publish-subscribe-interface), [Service interface](GRAPHICAL_CATALOG.md#notation-service-interface). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Sender–receiver interface](GRAPHICAL_CATALOG.md#notation-sender-receiver-interface), [Client–server interface](GRAPHICAL_CATALOG.md#notation-client-server-interface), [Publish–subscribe interface](GRAPHICAL_CATALOG.md#notation-publish-subscribe-interface), [Service interface](GRAPHICAL_CATALOG.md#notation-service-interface). Sender–receiver interface; Client–server interface; Publish–subscribe interface; Service interface.
 
-## Keyword: invoke
-
-**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Invoke`.
-
-Synchronously calls an untriggered Void operation in the same unit. It shares the activation lock and snapshot; copied parameters are local. Remote invocation requires request through a port.
-
-**Example fragment:** `invoke prepare();`
-
-**Graphical notation:** [Local operation invocation](GRAPHICAL_CATALOG.md#notation-invoke). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
-
-## Keyword: IV
+## Keyword: iv
 
 **Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `View`.
 
-Interconnect View of a root component/component definition or occurrence. Shows immediate children, boundary ports, connectors and delegation with exact interface paths.
+Interconnect View of a root component, component definition or component instance. Shows owned and immediate-child ports, connectors and delegation with exact interface paths.
 
-**Example fragment:** `view wiring IV of Product;`
+**Example fragment:** `view wiring iv of Product;`
 
-**Graphical notation:** [Interconnect View](GRAPHICAL_CATALOG.md#notation-view-iv). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Interconnect View](GRAPHICAL_CATALOG.md#notation-view-iv). Interconnect View.
 
 ## Keyword: label
 
@@ -532,67 +572,47 @@ Assigns a unique name to a scenario step. Later after clauses use that label as 
 
 **Example fragment:** `via orderLink label submitted;`
 
-**Graphical notation:** [Case data exchange](GRAPHICAL_CATALOG.md#notation-case-data-exchange), [Case event exchange](GRAPHICAL_CATALOG.md#notation-case-event-exchange), [Case request](GRAPHICAL_CATALOG.md#notation-case-request), [Correlated case reply](GRAPHICAL_CATALOG.md#notation-case-reply), [Case causal order](GRAPHICAL_CATALOG.md#notation-case-causal-order). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
-
-## Keyword: let
-
-**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Let`.
-
-Creates a typed mutable local value from a copied initializer. It cannot shadow a live local, parameter or unit variable, and disappears at block exit.
-
-**Example fragment:** `let count: Int = 0;`
-
-**Graphical notation:** [Local declaration](GRAPHICAL_CATALOG.md#notation-local-declaration). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Case data exchange](GRAPHICAL_CATALOG.md#notation-case-data-exchange), [Case event exchange](GRAPHICAL_CATALOG.md#notation-case-event-exchange), [Case request](GRAPHICAL_CATALOG.md#notation-case-request), [Correlated case reply](GRAPHICAL_CATALOG.md#notation-case-reply), [Case causal order](GRAPHICAL_CATALOG.md#notation-case-causal-order). Case data exchange; Case event exchange; Case request; Correlated case reply; Case causal order.
 
 ## Keyword: manual
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Trigger`.
 
-Parameterless Void operation trigger released by a harness. It is control of execution, not a route for injecting external model payloads or bypassing interfaces.
+Parameterless void function trigger released by a harness. It is control of execution, not a route for injecting external model payloads or bypassing interfaces.
 
-**Example fragment:** `operation refresh(): Void on manual { ... }`
+**Example fragment:** `function refresh(): void on manual { ... }`
 
-**Graphical notation:** [Manual activation](GRAPHICAL_CATALOG.md#notation-trigger-manual). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Manual activation](GRAPHICAL_CATALOG.md#notation-trigger-manual). Manual activation.
 
 ## Keyword: maxAge
 
-**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Qos`.
+**Concern:** [Communication](spec/02-communication.md). **Grammar:** `QosBody`.
 
 Maximum message age measured from original emission through retries. Eligibility is inclusive; greater age discards before dispatch. Required for sampled data in realtime/mixed roots.
 
 **Example fragment:** `maxAge 20 ms;`
 
-**Graphical notation:** [Message freshness bound](GRAPHICAL_CATALOG.md#notation-freshness-bound). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Message freshness bound](GRAPHICAL_CATALOG.md#notation-freshness-bound). Message freshness bound.
 
 ## Keyword: maxLatency
 
-**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Qos`.
+**Concern:** [Communication](spec/02-communication.md). **Grammar:** `QosBody`.
 
 Positive bound from admitted emission to destination readiness, excluding dispatch wait. Exceeding it is an observable contract violation. Required on realtime/mixed connectors.
 
 **Example fragment:** `maxLatency 1 ms;`
 
-**Graphical notation:** [Transport latency bound](GRAPHICAL_CATALOG.md#notation-latency-bound). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
-
-## Keyword: mcu
-
-**Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `Node`.
-
-Execution-node kind for an embedded microcontroller location. The core does not infer interrupts, task priorities, processor speed or memory limits.
-
-**Example fragment:** `node controller mcu;`
-
-**Graphical notation:** [Execution node](GRAPHICAL_CATALOG.md#notation-execution-node). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Transport latency bound](GRAPHICAL_CATALOG.md#notation-latency-bound). Transport latency bound.
 
 ## Keyword: mixed
 
 **Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `RootComponent`.
 
-Root component profile covering embedded/service combinations. All used operations carry timing and all connectors latency; sampled data also carries age. It does not silently exempt cloud-facing paths.
+Root component profile covering embedded/service combinations. All used functions carry timing and all connectors latency; sampled data also carries age. It does not silently exempt cloud-facing paths.
 
 **Example fragment:** `component Product mixed { ... }`
 
-**Graphical notation:** [Root execution profile](GRAPHICAL_CATALOG.md#notation-execution-profile). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Root execution profile](GRAPHICAL_CATALOG.md#notation-execution-profile). Root execution profile.
 
 ## Keyword: ms
 
@@ -602,27 +622,17 @@ Millisecond duration unit; one ms equals 1,000,000 ns. Duration magnitude must b
 
 **Example fragment:** `within 25 ms`
 
-**Graphical notation:** [Duration value](GRAPHICAL_CATALOG.md#notation-duration). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
-
-## Keyword: node
-
-**Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `Node`.
-
-Declares a named execution location in a root component with mcu, process or container kind. Nodes affect allocation only; traffic still follows interfaces.
-
-**Example fragment:** `node edge process;`
-
-**Graphical notation:** [Execution node](GRAPHICAL_CATALOG.md#notation-execution-node). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Duration value](GRAPHICAL_CATALOG.md#notation-duration). Duration value.
 
 ## Keyword: not
 
 **Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `UnaryExpression`.
 
-Unary Bool negation with precedence above multiplication. No numeric or string coercion is allowed.
+Unary bool negation with precedence above multiplication. No numeric or string coercion is allowed.
 
 **Example fragment:** `not ready`
 
-**Graphical notation:** [Expressions and value paths](GRAPHICAL_CATALOG.md#notation-expression). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Expressions and value paths](GRAPHICAL_CATALOG.md#notation-expression). Expressions and value paths.
 
 ## Keyword: ns
 
@@ -632,7 +642,7 @@ Nanosecond duration unit and the reference simulation clock's integral base. All
 
 **Example fragment:** `after 1 ns`
 
-**Graphical notation:** [Duration value](GRAPHICAL_CATALOG.md#notation-duration). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Duration value](GRAPHICAL_CATALOG.md#notation-duration). Duration value.
 
 ## Keyword: of
 
@@ -640,29 +650,19 @@ Nanosecond duration unit and the reference simulation clock's integral base. All
 
 Introduces a view subject path rooted in the owning package or its top-level declaration. Allowed subject kinds depend on the view kind.
 
-**Example fragment:** `view flow FV of Product.controller.worker.run;`
+**Example fragment:** `view flow fv of Product.controller.worker.run;`
 
-**Graphical notation:** [General View](GRAPHICAL_CATALOG.md#notation-view-gv), [Interconnect View](GRAPHICAL_CATALOG.md#notation-view-iv), [Case View](GRAPHICAL_CATALOG.md#notation-view-cv), [Sequence View](GRAPHICAL_CATALOG.md#notation-view-sv), [Grid View](GRAPHICAL_CATALOG.md#notation-view-grv), [Flow View](GRAPHICAL_CATALOG.md#notation-view-fv). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [General View](GRAPHICAL_CATALOG.md#notation-view-gv), [Interconnect View](GRAPHICAL_CATALOG.md#notation-view-iv), [Case View](GRAPHICAL_CATALOG.md#notation-view-cv), [Sequence View](GRAPHICAL_CATALOG.md#notation-view-sv), [Grid View](GRAPHICAL_CATALOG.md#notation-view-grv), [Flow View](GRAPHICAL_CATALOG.md#notation-view-fv). General View; Interconnect View; Case View; Sequence View; Grid View; Flow View.
 
 ## Keyword: on
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Deployment`, `Trigger`, `Transition`.
 
-Introduces an operation or transition trigger. Operations use start/manual/every/receive/call; transitions use completion/after/receive. Triggers do not introduce free signals.
+Introduces a function activation trigger, state transition trigger, or deployment destination. Deployment destinations are quoted external identities; behavior triggers retain their local semantics.
 
-**Example fragment:** `on receive input.sample`
+**Example fragment:** `function tick() on every 10 ms { return; } / deploy app on "system:production";`
 
-**Graphical notation:** [Startup activation](GRAPHICAL_CATALOG.md#notation-trigger-start), [Manual activation](GRAPHICAL_CATALOG.md#notation-trigger-manual), [Periodic activation](GRAPHICAL_CATALOG.md#notation-trigger-periodic), [Port receive activation](GRAPHICAL_CATALOG.md#notation-trigger-receive), [RPC handler activation](GRAPHICAL_CATALOG.md#notation-trigger-call), [State transition](GRAPHICAL_CATALOG.md#notation-transition), [Deployment binding](GRAPHICAL_CATALOG.md#notation-deployment). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
-
-## Keyword: operation
-
-**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Signature`, `Operation`.
-
-In an interface, declares an RPC signature. In a unit, declares executable statements or directly owned states. An omitted result annotation means Void. An incoming signature is implemented by exactly one on call operation.
-
-**Example fragment:** `operation reset(); / operation reset() on call api.reset { return; }`
-
-**Graphical notation:** [Interface operation signature](GRAPHICAL_CATALOG.md#notation-operation-signature), [Executable operation](GRAPHICAL_CATALOG.md#notation-operation), [Operation with states](GRAPHICAL_CATALOG.md#notation-stateful-operation). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Startup activation](GRAPHICAL_CATALOG.md#notation-trigger-start), [Manual activation](GRAPHICAL_CATALOG.md#notation-trigger-manual), [Periodic activation](GRAPHICAL_CATALOG.md#notation-trigger-periodic), [Port receive activation](GRAPHICAL_CATALOG.md#notation-trigger-receive), [RPC handler activation](GRAPHICAL_CATALOG.md#notation-trigger-call), [State transition](GRAPHICAL_CATALOG.md#notation-transition), [Deployment binding](GRAPHICAL_CATALOG.md#notation-deployment). Startup activation; Manual activation; Periodic activation; Port receive activation; RPC handler activation; State transition; Deployment binding.
 
 ## Keyword: optional
 
@@ -672,47 +672,47 @@ Allows a port to remain unconnected in a closed root component. It does not chan
 
 **Example fragment:** `port diagnostics: Notices publisher optional;`
 
-**Graphical notation:** [Optional port](GRAPHICAL_CATALOG.md#notation-optional-port). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Optional port](GRAPHICAL_CATALOG.md#notation-optional-port). Optional port.
 
 ## Keyword: or
 
 **Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `OrExpression`.
 
-Short-circuit Boolean disjunction. The right Bool operand is evaluated only when the left is false.
+Short-circuit Boolean disjunction. The right bool operand is evaluated only when the left is false.
 
 **Example fragment:** `ready or retryAllowed`
 
-**Graphical notation:** [Expressions and value paths](GRAPHICAL_CATALOG.md#notation-expression). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Expressions and value paths](GRAPHICAL_CATALOG.md#notation-expression). Expressions and value paths.
 
 ## Keyword: ordering
 
-**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Qos`.
+**Concern:** [Communication](spec/02-communication.md). **Grammar:** `QosBody`.
 
 Selects fifo or unordered independently of delivery reliability. Ordering applies per connector occurrence, direction and member, not across an entire interface or root.
 
 **Example fragment:** `ordering fifo;`
 
-**Graphical notation:** [Queue ordering](GRAPHICAL_CATALOG.md#notation-ordering-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Queue ordering](GRAPHICAL_CATALOG.md#notation-ordering-policy). Queue ordering.
 
 ## Keyword: otherwise
 
-**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Request`.
+**Concern:** [Communication](spec/02-communication.md). **Grammar:** `RemoteCall`.
 
-Mandatory request failure block with implicit copied failure:String. It must return or fail on every path and cannot fall through to successful result use.
+Mandatory request failure block with implicit copied failure:string. It must return or fail on every path and cannot fall through to successful result use.
 
 **Example fragment:** `within 1 s otherwise { lastError = failure; return; };`
 
-**Graphical notation:** [RPC request and failure continuation](GRAPHICAL_CATALOG.md#notation-request). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Routed function call](GRAPHICAL_CATALOG.md#notation-routed-call). Routed function call.
 
 ## Keyword: overflow
 
-**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Qos`.
+**Concern:** [Communication](spec/02-communication.md). **Grammar:** `QosBody`.
 
 Required admission policy when a member queue is full: dropOldest, dropNewest or reject. Policies apply independently to every route in fanout.
 
 **Example fragment:** `overflow reject;`
 
-**Graphical notation:** [Overflow behavior](GRAPHICAL_CATALOG.md#notation-overflow-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Overflow behavior](GRAPHICAL_CATALOG.md#notation-overflow-policy). Overflow behavior.
 
 ## Keyword: package
 
@@ -722,37 +722,27 @@ Top-level, non-nested namespace for declarations and direct imports. A package i
 
 **Example fragment:** `package Control { ... }`
 
-**Graphical notation:** [Package](GRAPHICAL_CATALOG.md#notation-package). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Package](GRAPHICAL_CATALOG.md#notation-package). Package.
 
 ## Keyword: port
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Port`.
 
-Owned communication boundary feature typed by one interface, with a compatible role and optionality. Component ports delegate to children; unit ports bind operations to members.
+Owned communication boundary typed by one interface with a compatible role and optionality. A port may bind local functions to members or delegate to a child while retaining one resolved handler owner.
 
 **Example fragment:** `port api: Orders requires;`
 
-**Graphical notation:** [Data sender port](GRAPHICAL_CATALOG.md#notation-port-sender), [Data receiver port](GRAPHICAL_CATALOG.md#notation-port-receiver), [RPC client port](GRAPHICAL_CATALOG.md#notation-port-client), [RPC server port](GRAPHICAL_CATALOG.md#notation-port-server), [Event publisher port](GRAPHICAL_CATALOG.md#notation-port-publisher), [Event subscriber port](GRAPHICAL_CATALOG.md#notation-port-subscriber), [Service provider port](GRAPHICAL_CATALOG.md#notation-port-provides), [Service consumer port](GRAPHICAL_CATALOG.md#notation-port-requires). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Data sender port](GRAPHICAL_CATALOG.md#notation-port-sender), [Data receiver port](GRAPHICAL_CATALOG.md#notation-port-receiver), [RPC client port](GRAPHICAL_CATALOG.md#notation-port-client), [RPC server port](GRAPHICAL_CATALOG.md#notation-port-server), [Event publisher port](GRAPHICAL_CATALOG.md#notation-port-publisher), [Event subscriber port](GRAPHICAL_CATALOG.md#notation-port-subscriber), [Service provider port](GRAPHICAL_CATALOG.md#notation-port-provides), [Service consumer port](GRAPHICAL_CATALOG.md#notation-port-requires). Data sender port; Data receiver port; RPC client port; RPC server port; Event publisher port; Event subscriber port; Service provider port; Service consumer port.
 
 ## Keyword: priority
 
-**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Transition`.
+**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Transition`, `Attribute`.
 
-Nonnegative safe-integer tie-break among matching transitions for the same state and stimulus; larger wins, default 0. It is not an operation scheduling priority.
+Nonnegative safe-integer tie-break among matching transitions for the same state and stimulus; larger wins, default 0. It is not a function scheduling priority.
 
 **Example fragment:** `on receive commands.begin priority 2 {}`
 
-**Graphical notation:** [Transition priority](GRAPHICAL_CATALOG.md#notation-transition-priority). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
-
-## Keyword: process
-
-**Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `Node`.
-
-Execution-node kind for a logical process. It supplies no hidden IPC access, shared memory or task scheduling policy.
-
-**Example fragment:** `node worker process;`
-
-**Graphical notation:** [Execution node](GRAPHICAL_CATALOG.md#notation-execution-node). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Transition priority](GRAPHICAL_CATALOG.md#notation-transition-priority). Transition priority.
 
 ## Keyword: provides
 
@@ -762,7 +752,7 @@ Provider role of a service interface. Handles incoming RPC, returns correlated r
 
 **Example fragment:** `port api: Orders provides;`
 
-**Graphical notation:** [Service provider port](GRAPHICAL_CATALOG.md#notation-port-provides). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Service provider port](GRAPHICAL_CATALOG.md#notation-port-provides). Service provider port.
 
 ## Keyword: publish
 
@@ -772,37 +762,37 @@ Emits an outgoing event through a publisher/provides port. In a case, describes 
 
 **Example fragment:** `publish api.changed(current);`
 
-**Graphical notation:** [Event publication](GRAPHICAL_CATALOG.md#notation-publish), [Case event exchange](GRAPHICAL_CATALOG.md#notation-case-event-exchange). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Event publication](GRAPHICAL_CATALOG.md#notation-publish), [Case event exchange](GRAPHICAL_CATALOG.md#notation-case-event-exchange). Event publication; Case event exchange.
 
 ## Keyword: publisher
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Port`.
 
-Outgoing role for a publishSubscribe contract. One port may fan out through several connectors; every outgoing member is tied to an emitting operation.
+Outgoing role for a publishSubscribe contract. One port may fan out through several connectors; every outgoing member is tied to an emitting function.
 
 **Example fragment:** `port events: Notices publisher;`
 
-**Graphical notation:** [Event publisher port](GRAPHICAL_CATALOG.md#notation-port-publisher). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Event publisher port](GRAPHICAL_CATALOG.md#notation-port-publisher). Event publisher port.
 
 ## Keyword: publishSubscribe
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Interface`.
 
-Event-only contract kind with publisher/subscriber ports. Subscriptions are explicit static connectors. Runtime subscribe/unsubscribe and wildcard topics are outside 1.1.
+Event-only contract kind with publisher/subscriber ports. Subscriptions are explicit static connectors. Runtime subscribe/unsubscribe and wildcard topics are outside 1.2.
 
 **Example fragment:** `interface publishSubscribe Notices version "1.0.0" { event changed(); }`
 
-**Graphical notation:** [Publish–subscribe interface](GRAPHICAL_CATALOG.md#notation-publish-subscribe-interface). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Publish–subscribe interface](GRAPHICAL_CATALOG.md#notation-publish-subscribe-interface). Publish–subscribe interface.
 
 ## Keyword: qos
 
-**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Qos`.
+**Concern:** [Communication](spec/02-communication.md). **Grammar:** `QosPolicy`, `Qos`.
 
-Introduces connector delivery, ordering, capacity and overflow, followed by optional latency and age in the grammar's order. Each connector must supply the block.
+Introduces a complete inline connector policy, an explicit named-policy reference, or a package-owned qos def declaration. A named policy reuses values without sharing connector queues. Every body declares delivery, ordering, capacity and overflow, then optional latency and age.
 
-**Example fragment:** `qos { delivery atMostOnce; ordering fifo; capacity 4; overflow reject; }`
+**Example fragment:** `qos def LocalLink { delivery atMostOnce; ordering fifo; capacity 8; overflow reject; } / qos LocalLink`
 
-**Graphical notation:** [Delivery policy](GRAPHICAL_CATALOG.md#notation-delivery-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Delivery policy](GRAPHICAL_CATALOG.md#notation-delivery-policy), [Reusable QoS policy](GRAPHICAL_CATALOG.md#notation-qos-policy-definition), [Named connector policy](GRAPHICAL_CATALOG.md#notation-qos-policy-reference). Delivery policy; Reusable QoS policy; Named connector policy.
 
 ## Keyword: queued
 
@@ -810,49 +800,49 @@ Introduces connector delivery, ordering, capacity and overflow, followed by opti
 
 SenderReceiver data mode representing a sequence of retained values under queue policy. It does not imply losslessness or unbounded history.
 
-**Example fragment:** `data text: String queued;`
+**Example fragment:** `data text: string queued;`
 
-**Graphical notation:** [Data member](GRAPHICAL_CATALOG.md#notation-data-member). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Data member](GRAPHICAL_CATALOG.md#notation-data-member). Data member.
 
-## Keyword: Real
+## Keyword: real
 
 **Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `TypeRef`.
 
-Finite IEEE 754 binary64 type. Arithmetic is nearest-even; non-finite results and division by zero fail. Scalar Int widens, but fixed arrays do not implicitly widen.
+Finite IEEE 754 binary64 values. Scalar byte, uint and int may widen to real; real does not implicitly narrow to an integral type.
 
-**Example fragment:** `var temperature: Real = 20.0;`
+**Example fragment:** `var gain: real = 0.5;`
 
-**Graphical notation:** [Primitive types](GRAPHICAL_CATALOG.md#notation-primitive-types). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Primitive types](GRAPHICAL_CATALOG.md#notation-primitive-types). Primitive types.
 
 ## Keyword: realtime
 
 **Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `RootComponent`.
 
-Root component profile requiring operation timing, connector latency and sampled freshness contracts. Those declarations require target evidence before any hard realtime claim.
+Root component profile requiring function timing, connector latency and sampled freshness contracts. Those declarations require target evidence before any hard realtime claim.
 
 **Example fragment:** `component Heating realtime { ... }`
 
-**Graphical notation:** [Root execution profile](GRAPHICAL_CATALOG.md#notation-execution-profile). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Root execution profile](GRAPHICAL_CATALOG.md#notation-execution-profile). Root execution profile.
 
 ## Keyword: receive
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Trigger`, `Transition`.
 
-Consumes an incoming data/event member through a receiver/subscriber/requires port. An ordinary operation receives copied parameters; a transition exposes event parameters or data payload in guard/effect.
+Consumes an incoming data/event member through a receiver/subscriber/requires port. An ordinary function receives copied parameters; a transition exposes event parameters or data payload in guard/effect.
 
 **Example fragment:** `on receive commands.begin`
 
-**Graphical notation:** [Port receive activation](GRAPHICAL_CATALOG.md#notation-trigger-receive), [State transition](GRAPHICAL_CATALOG.md#notation-transition). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Port receive activation](GRAPHICAL_CATALOG.md#notation-trigger-receive), [State transition](GRAPHICAL_CATALOG.md#notation-transition). Port receive activation; State transition.
 
 ## Keyword: receiver
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Port`.
 
-Incoming senderReceiver role. Every data member has one handler owner; at most one route feeds a closed receiver port. Multiple sources require an explicit merge/adaptor unit.
+Incoming senderReceiver role. Every data member has one handler owner; at most one route feeds a closed receiver port. Multiple sources require an explicit merge/adaptor component.
 
 **Example fragment:** `port input: Samples receiver;`
 
-**Graphical notation:** [Data receiver port](GRAPHICAL_CATALOG.md#notation-port-receiver). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Data receiver port](GRAPHICAL_CATALOG.md#notation-port-receiver). Data receiver port.
 
 ## Keyword: record
 
@@ -862,27 +852,47 @@ Constructs a nominal datatype value by assigning each declared field exactly onc
 
 **Example fragment:** `record Point { x = 1.0; y = 2.0; }`
 
-**Graphical notation:** [Record construction](GRAPHICAL_CATALOG.md#notation-record-value). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Record construction](GRAPHICAL_CATALOG.md#notation-record-value). Record construction.
+
+## Keyword: recursive
+
+**Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `ViewSelection`.
+
+Includes descendants before filtering.
+
+**Example fragment:** `include Demo recursive;`
+
+**Graphical notation:** [Filtered view selection](GRAPHICAL_CATALOG.md#notation-view-selection). Filtered view selection.
+
+## Keyword: redefines
+
+**Concern:** [Structure and names](spec/01-structure-and-types.md). **Grammar:** `Instance`, `Port`, `Variable`, `Connect`, `Delegate`, `FunctionDef`.
+
+Explicitly replaces an inherited member while preserving its category and compatible contract. Unmarked inherited-name collisions and missing inherited targets are errors.
+
+**Example fragment:** `redefines function startUp() on start { return; }`
+
+**Graphical notation:** [Member redefinition](GRAPHICAL_CATALOG.md#notation-member-redefinition). Member redefinition.
 
 ## Keyword: reentrant
 
 **Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `Timing`.
 
-Allows overlapping operation activations with independent dispatch-time unit snapshots. Direct or helper writes to unit state are statically invalid. Local variables remain mutable; one state reaction cannot overlap itself.
+Allows overlapping function activations with independent dispatch-time component snapshots. Direct or helper writes to component state are statically invalid. Local variables remain mutable; one state reaction cannot overlap itself.
 
 **Example fragment:** `concurrency reentrant;`
 
-**Graphical notation:** [Concurrency mode](GRAPHICAL_CATALOG.md#notation-concurrency-mode). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Concurrency mode](GRAPHICAL_CATALOG.md#notation-concurrency-mode). Concurrency mode.
 
 ## Keyword: reject
 
-**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Qos`.
+**Concern:** [Communication](spec/02-communication.md). **Grammar:** `QosBody`.
 
 On full queue, rejects the offer. Data/event producers fail after all fanout offers; requests take otherwise with Rejected. Previously accepted offers and effects are preserved.
 
 **Example fragment:** `overflow reject;`
 
-**Graphical notation:** [Overflow behavior](GRAPHICAL_CATALOG.md#notation-overflow-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Overflow behavior](GRAPHICAL_CATALOG.md#notation-overflow-policy). Overflow behavior.
 
 ## Keyword: reply
 
@@ -892,17 +902,7 @@ Describes a response step in a case, reversing an existing connector/member requ
 
 **Example fragment:** `reply backend.api.get -> client.api.get via link after asked label answered;`
 
-**Graphical notation:** [Correlated case reply](GRAPHICAL_CATALOG.md#notation-case-reply). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
-
-## Keyword: request
-
-**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Request`, `ScenarioStep`.
-
-Awaits one RPC on a local client/requires port with fresh correlation, result name, finite timeout and explicit failure block. In cases it describes the corresponding routed exchange.
-
-**Example fragment:** `request api.get() as value within 1 s otherwise { return; };`
-
-**Graphical notation:** [RPC request and failure continuation](GRAPHICAL_CATALOG.md#notation-request), [Case request](GRAPHICAL_CATALOG.md#notation-case-request). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Correlated case reply](GRAPHICAL_CATALOG.md#notation-case-reply). Correlated case reply.
 
 ## Keyword: requirement
 
@@ -910,9 +910,9 @@ Awaits one RPC on a local client/requires port with fresh correlation, result na
 
 Named natural-language obligation. It has descriptive text and can be referenced by cases; the core supplies no implicit requirements solver or verified checkmark.
 
-**Example fragment:** `requirement Safe "Duty shall remain within the allowed range.";`
+**Example fragment:** `requirement Safe { doc /* Duty shall remain within the allowed range. */ }`
 
-**Graphical notation:** [Requirement](GRAPHICAL_CATALOG.md#notation-requirement). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Requirement](GRAPHICAL_CATALOG.md#notation-requirement). Requirement.
 
 ## Keyword: requires
 
@@ -922,17 +922,17 @@ Consumer role of a service interface. Issues RPC and handles reverse-direction p
 
 **Example fragment:** `port orders: Orders requires;`
 
-**Graphical notation:** [Service consumer port](GRAPHICAL_CATALOG.md#notation-port-requires). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Service consumer port](GRAPHICAL_CATALOG.md#notation-port-requires). Service consumer port.
 
 ## Keyword: return
 
-**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Return`.
+**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Calculation`, `Return`.
 
-Completes the current operation with a copied typed result or bare Void. Inside an invoked helper it resumes the caller; inside state behavior it terminates the owning operation immediately.
+Completes a function activation or local call with its required result; bare return completes void. In a calc declaration it introduces the one named typed output and pure expression.
 
-**Example fragment:** `return accepted;`
+**Example fragment:** `return true; / return result: real = value * gain;`
 
-**Graphical notation:** [Operation return](GRAPHICAL_CATALOG.md#notation-return). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Pure calculation](GRAPHICAL_CATALOG.md#notation-calculation), [Function return](GRAPHICAL_CATALOG.md#notation-return). Pure calculation; Function return.
 
 ## Keyword: s
 
@@ -942,7 +942,7 @@ Second duration unit; one s equals 1,000,000,000 ns. A duration must still fit t
 
 **Example fragment:** `within 2 s`
 
-**Graphical notation:** [Duration value](GRAPHICAL_CATALOG.md#notation-duration). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Duration value](GRAPHICAL_CATALOG.md#notation-duration). Duration value.
 
 ## Keyword: sampled
 
@@ -950,109 +950,119 @@ Second duration unit; one s equals 1,000,000,000 ns. A duration must still fit t
 
 SenderReceiver data mode retaining the latest pending sample: capacity 1 and dropOldest are mandatory. Dispatch removes the sample; the core does not define a remote shared-variable read.
 
-**Example fragment:** `data temperature: Real sampled;`
+**Example fragment:** `data temperature: real sampled;`
 
-**Graphical notation:** [Data member](GRAPHICAL_CATALOG.md#notation-data-member). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Data member](GRAPHICAL_CATALOG.md#notation-data-member). Data member.
 
-## Keyword: satisfies
+## Keyword: satisfy
 
-**Concern:** [Cases and evidence](spec/04-systems-and-conformance.md). **Grammar:** `Scenario`.
+**Concern:** [Cases and evidence](spec/04-systems-and-conformance.md). **Grammar:** `Satisfaction`.
 
-Links a case to one or more requirement declarations as intended coverage. It is a claim requiring test/analysis/review evidence, not a proof by syntax.
+Design-to-requirement satisfaction claim.
 
-**Example fragment:** `case Checkout for Shop satisfies Accepted, Audited { ... }`
+**Example fragment:** `satisfy Reliable by Demo;`
 
-**Graphical notation:** [Requirement coverage link](GRAPHICAL_CATALOG.md#notation-satisfies-link). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Satisfaction relation](GRAPHICAL_CATALOG.md#notation-satisfies-link). Satisfaction relation.
 
 ## Keyword: send
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Send`, `ScenarioStep`.
 
-Emits an outgoing senderReceiver data member through a sender port with exactly one value. In a case it describes a data exchange. It cannot publish events or bypass another unit's interface.
+Emits an outgoing senderReceiver data member through a sender port with exactly one value. In a case it describes a data exchange. It cannot publish events or bypass another component's interface.
 
 **Example fragment:** `send output.temperature(23.5);`
 
-**Graphical notation:** [Data send](GRAPHICAL_CATALOG.md#notation-send), [Case data exchange](GRAPHICAL_CATALOG.md#notation-case-data-exchange). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Data send](GRAPHICAL_CATALOG.md#notation-send), [Case data exchange](GRAPHICAL_CATALOG.md#notation-case-data-exchange). Data send; Case data exchange.
 
 ## Keyword: sender
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Port`.
 
-Outgoing senderReceiver role. May fan out through multiple explicit connectors; each member has at least one syntactically associated emitting operation.
+Outgoing senderReceiver role. May fan out through multiple explicit connectors; each member has at least one syntactically associated emitting function.
 
 **Example fragment:** `port output: Samples sender;`
 
-**Graphical notation:** [Data sender port](GRAPHICAL_CATALOG.md#notation-port-sender). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Data sender port](GRAPHICAL_CATALOG.md#notation-port-sender). Data sender port.
 
 ## Keyword: senderReceiver
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Interface`.
 
-Data-only contract kind with sampled/queued members and sender/receiver roles. No RPC operations or event members may be declared inside it.
+Data-only contract kind with sampled/queued members and sender/receiver roles. No RPC functions or event members may be declared inside it.
 
-**Example fragment:** `interface senderReceiver Samples version "1.0.0" { data value: Real sampled; }`
+**Example fragment:** `interface senderReceiver Samples version "1.0.0" { data value: real sampled; }`
 
-**Graphical notation:** [Sender–receiver interface](GRAPHICAL_CATALOG.md#notation-sender-receiver-interface). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Sender–receiver interface](GRAPHICAL_CATALOG.md#notation-sender-receiver-interface). Sender–receiver interface.
 
 ## Keyword: serial
 
 **Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `Timing`.
 
-Default activation mode: acquire the unit's one serial lock until completion/failure, including RPC waits. Local invokes share the activation lock. Independent unit activations may still interleave.
+Default activation mode: acquire the component's one serial lock until completion/failure, including RPC waits. Local invokes share the activation lock. Independent component activations may still interleave.
 
 **Example fragment:** `concurrency serial;`
 
-**Graphical notation:** [Concurrency mode](GRAPHICAL_CATALOG.md#notation-concurrency-mode). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Concurrency mode](GRAPHICAL_CATALOG.md#notation-concurrency-mode). Concurrency mode.
 
 ## Keyword: server
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Port`.
 
-Provider role for clientServer contracts. Each operation signature has exactly one on call handler; results/failures follow the request correlation.
+Provider role for clientServer contracts. Each function signature has exactly one on call handler; results/failures follow the request correlation.
 
 **Example fragment:** `port health: Health server;`
 
-**Graphical notation:** [RPC server port](GRAPHICAL_CATALOG.md#notation-port-server). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [RPC server port](GRAPHICAL_CATALOG.md#notation-port-server). RPC server port.
 
 ## Keyword: service
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Interface`, `RootComponent`.
 
-As an interface kind, combines RPC operations and events with requires/provides roles. As a root component profile, makes timing contracts optional while retaining interfaces, explicit QoS and static validity; it is the default when no profile is written.
+As an interface kind, combines RPC functions and events with requires/provides roles. As a root component profile, makes timing contracts optional while retaining interfaces, explicit QoS and static validity; it is the default when no profile is written.
 
 **Example fragment:** `interface service Orders version "1.0.0" { ... } / component Shop service { ... }`
 
-**Graphical notation:** [Service interface](GRAPHICAL_CATALOG.md#notation-service-interface), [Root execution profile](GRAPHICAL_CATALOG.md#notation-execution-profile). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Service interface](GRAPHICAL_CATALOG.md#notation-service-interface), [Root execution profile](GRAPHICAL_CATALOG.md#notation-execution-profile). Service interface; Root execution profile.
+
+## Keyword: specializes
+
+**Concern:** [Structure and names](spec/01-structure-and-types.md). **Grammar:** `Component`.
+
+Names one visible base component definition. Effective inherited members are reused; specialization and effective containment must be acyclic.
+
+**Example fragment:** `component def Tuned specializes Controller { }`
+
+**Graphical notation:** [Component specialization](GRAPHICAL_CATALOG.md#notation-component-specialization). Component specialization.
 
 ## Keyword: start
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Trigger`.
 
-Once-per-run startup trigger for a parameterless Void operation. Stateful operations require it. All stores/routes/handlers exist before startup work runs; readiness protocols still need explicit ports.
+Once-per-run startup trigger for a parameterless void function. Stateful functions require it. All stores/routes/handlers exist before startup work runs; readiness protocols still need explicit ports.
 
-**Example fragment:** `operation boot(): Void on start { ... }`
+**Example fragment:** `function boot(): void on start { ... }`
 
-**Graphical notation:** [Startup activation](GRAPHICAL_CATALOG.md#notation-trigger-start). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Startup activation](GRAPHICAL_CATALOG.md#notation-trigger-start). Startup activation.
 
 ## Keyword: state
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `State`.
 
-Declares a named state directly inside an operation after its initial reference. Optional entry/exit blocks contain ordinary operation statements. State names are operation-local; no separate state allocation or performer exists.
+Declares a named state directly inside a function after its initial reference. Optional entry/exit blocks contain ordinary function statements. State names are function-local; no separate state allocation or performer exists.
 
 **Example fragment:** `state Idle { entry { active = false; } }`
 
-**Graphical notation:** [State](GRAPHICAL_CATALOG.md#notation-state), [Final state](GRAPHICAL_CATALOG.md#notation-final-state). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [State](GRAPHICAL_CATALOG.md#notation-state), [Final state](GRAPHICAL_CATALOG.md#notation-final-state). State; Final state.
 
-## Keyword: String
+## Keyword: string
 
 **Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `TypeRef`.
 
 Finite Unicode text with exact equality and no normalization. Strings support portable escapes; implicit concatenation, ordering and bounded transport size are absent.
 
-**Example fragment:** `var lastError: String = "";`
+**Example fragment:** `var lastError: string = "";`
 
-**Graphical notation:** [Primitive types](GRAPHICAL_CATALOG.md#notation-primitive-types). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Primitive types](GRAPHICAL_CATALOG.md#notation-primitive-types). Primitive types.
 
 ## Keyword: subscriber
 
@@ -1062,67 +1072,67 @@ Incoming publishSubscribe role. Multiple publishers may feed one subscriber port
 
 **Example fragment:** `port input: Notices subscriber;`
 
-**Graphical notation:** [Event subscriber port](GRAPHICAL_CATALOG.md#notation-port-subscriber). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Event subscriber port](GRAPHICAL_CATALOG.md#notation-port-subscriber). Event subscriber port.
 
-## Keyword: SV
+## Keyword: sv
 
 **Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `View`.
 
 Sequence View of a case or a root component's selected case. Lifelines are occurrences; arrows show port/member/connector and request correlation. Independent steps must remain visibly unordered.
 
-**Example fragment:** `view checkout SV of Checkout;`
+**Example fragment:** `view checkout sv of Checkout;`
 
-**Graphical notation:** [Sequence View](GRAPHICAL_CATALOG.md#notation-view-sv). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Sequence View](GRAPHICAL_CATALOG.md#notation-view-sv). Sequence View.
 
 ## Keyword: timing
 
 **Concern:** [Timing and deployment](spec/04-systems-and-conformance.md). **Grammar:** `Timing`.
 
-Operation contract containing wcet, deadline and concurrency in that order. Required on used operations in realtime/mixed roots; stateful operation timing applies per reaction.
+Function contract containing wcet, deadline and concurrency in that order. Required on used functions in realtime/mixed roots; stateful function timing applies per reaction.
 
 **Example fragment:** `timing { wcet 1 ms; deadline 5 ms; concurrency serial; }`
 
-**Graphical notation:** [Operation timing contract](GRAPHICAL_CATALOG.md#notation-timing-contract). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Function timing contract](GRAPHICAL_CATALOG.md#notation-timing-contract). Function timing contract.
 
 ## Keyword: transition
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Transition`.
 
-Named state edge owned by one operation, with source/target, stimulus, optional guard/priority and effect. Execution orders exit, effect, state update, entry, then completion processing.
+Named state edge owned by one function, with source/target, stimulus, optional guard/priority and effect. Execution orders exit, effect, state update, entry, then completion processing.
 
 **Example fragment:** `transition beginRun: Idle -> Running on receive commands.begin {}`
 
-**Graphical notation:** [State transition](GRAPHICAL_CATALOG.md#notation-transition). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [State transition](GRAPHICAL_CATALOG.md#notation-transition). State transition.
 
 ## Keyword: true
 
 **Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `Literal`.
 
-The true Bool literal, with no implicit equivalence to numeric one or other nonempty values.
+The true bool literal, with no implicit equivalence to numeric one or other nonempty values.
 
 **Example fragment:** `assert true;`
 
-**Graphical notation:** [Expressions and value paths](GRAPHICAL_CATALOG.md#notation-expression). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Expressions and value paths](GRAPHICAL_CATALOG.md#notation-expression). Expressions and value paths.
 
-## Keyword: unit
+## Keyword: uint
 
-**Concern:** [Structure and names](spec/01-structure-and-types.md). **Grammar:** `Unit`, `Instance`.
+**Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `TypeRef`.
 
-Smallest interface-protected software boundary. With def, defines private data/functions/operations; a typed usage creates an occurrence inside a nested or root component. Each occurrence has distinct storage and handlers.
+Exact nonnegative integers from 0 through 2^53âˆ’1. Scalar widening is supported; assigning an integral expression to uint checks its range instead of wrapping.
 
-**Example fragment:** `unit def Worker { ... } / unit worker: Worker;`
+**Example fragment:** `var count: uint = 0;`
 
-**Graphical notation:** [Inline root composition](GRAPHICAL_CATALOG.md#notation-inline-root), [Unit definition](GRAPHICAL_CATALOG.md#notation-unit-definition), [Unit usage](GRAPHICAL_CATALOG.md#notation-unit-usage), [Occurrence typing relationship](GRAPHICAL_CATALOG.md#notation-type-relationship). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Primitive types](GRAPHICAL_CATALOG.md#notation-primitive-types). Primitive types.
 
 ## Keyword: unordered
 
-**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Qos`.
+**Concern:** [Communication](spec/02-communication.md). **Grammar:** `QosBody`.
 
 No source-language dispatch ordering guarantee beyond other causal rules. A deterministic backend may still choose FIFO; this choice must not be mistaken for a model guarantee.
 
 **Example fragment:** `ordering unordered;`
 
-**Graphical notation:** [Queue ordering](GRAPHICAL_CATALOG.md#notation-ordering-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Queue ordering](GRAPHICAL_CATALOG.md#notation-ordering-policy). Queue ordering.
 
 ## Keyword: us
 
@@ -1132,17 +1142,47 @@ Microsecond duration unit; one us equals 1,000 ns. The source spelling is ASCII 
 
 **Example fragment:** `wcet 100 us;`
 
-**Graphical notation:** [Duration value](GRAPHICAL_CATALOG.md#notation-duration). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Duration value](GRAPHICAL_CATALOG.md#notation-duration). Duration value.
+
+## Keyword: useCase
+
+**Concern:** [Cases and evidence](spec/04-systems-and-conformance.md). **Grammar:** `Scenario`.
+
+Intended use with optional routed exchanges.
+
+**Example fragment:** `useCase Start for Demo {}`
+
+**Graphical notation:** [Use case](GRAPHICAL_CATALOG.md#notation-case). Use case.
 
 ## Keyword: var
 
-**Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `Variable`.
+**Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `Variable`, `LocalVariable`.
 
-Declares private per-unit mutable state with a typed pure initializer independent of mutable variables. Each unit occurrence owns separate storage; other units cannot read it directly.
+Declares mutable private component data or a block-local copied value. Ownership determines scope; local declarations cannot shadow live values.
 
-**Example fragment:** `var count: Int = 0;`
+**Example fragment:** `var count: int = 0;`
 
-**Graphical notation:** [Private unit variable](GRAPHICAL_CATALOG.md#notation-private-variable). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Private component variable](GRAPHICAL_CATALOG.md#notation-private-variable), [Local declaration](GRAPHICAL_CATALOG.md#notation-local-declaration). Private component variable; Local declaration.
+
+## Keyword: verificationCase
+
+**Concern:** [Cases and evidence](spec/04-systems-and-conformance.md). **Grammar:** `Scenario`.
+
+Verification intent with explicit verify links.
+
+**Example fragment:** `verificationCase Check for Demo { verify Reliable; }`
+
+**Graphical notation:** [Verification case](GRAPHICAL_CATALOG.md#notation-verification-case). Verification case.
+
+## Keyword: verify
+
+**Concern:** [Cases and evidence](spec/04-systems-and-conformance.md). **Grammar:** `Verification`.
+
+Links a verification case to a requirement.
+
+**Example fragment:** `verify Reliable;`
+
+**Graphical notation:** [Verification relation](GRAPHICAL_CATALOG.md#notation-verification-link). Verification relation.
 
 ## Keyword: version
 
@@ -1152,37 +1192,37 @@ Required interface semantic-version string major.minor.patch. Compatibility is n
 
 **Example fragment:** `interface clientServer API version "1.0.0" { ... }`
 
-**Graphical notation:** [Sender–receiver interface](GRAPHICAL_CATALOG.md#notation-sender-receiver-interface), [Client–server interface](GRAPHICAL_CATALOG.md#notation-client-server-interface), [Publish–subscribe interface](GRAPHICAL_CATALOG.md#notation-publish-subscribe-interface), [Service interface](GRAPHICAL_CATALOG.md#notation-service-interface). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Sender–receiver interface](GRAPHICAL_CATALOG.md#notation-sender-receiver-interface), [Client–server interface](GRAPHICAL_CATALOG.md#notation-client-server-interface), [Publish–subscribe interface](GRAPHICAL_CATALOG.md#notation-publish-subscribe-interface), [Service interface](GRAPHICAL_CATALOG.md#notation-service-interface). Sender–receiver interface; Client–server interface; Publish–subscribe interface; Service interface.
 
 ## Keyword: via
 
 **Concern:** [Cases and evidence](spec/04-systems-and-conformance.md). **Grammar:** `ScenarioStep`.
 
-Names the root-level connector used by a case exchange. Endpoint-member paths must resolve on its immediate child component/unit ports with a legal orientation.
+Names the root-level connector used by a case exchange. Endpoint-member paths must resolve on its immediate child component ports with a legal orientation.
 
 **Example fragment:** `via orderLink label submitted;`
 
-**Graphical notation:** [Case data exchange](GRAPHICAL_CATALOG.md#notation-case-data-exchange), [Case event exchange](GRAPHICAL_CATALOG.md#notation-case-event-exchange), [Case request](GRAPHICAL_CATALOG.md#notation-case-request), [Correlated case reply](GRAPHICAL_CATALOG.md#notation-case-reply). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Case data exchange](GRAPHICAL_CATALOG.md#notation-case-data-exchange), [Case event exchange](GRAPHICAL_CATALOG.md#notation-case-event-exchange), [Case request](GRAPHICAL_CATALOG.md#notation-case-request), [Correlated case reply](GRAPHICAL_CATALOG.md#notation-case-reply). Case data exchange; Case event exchange; Case request; Correlated case reply.
 
 ## Keyword: view
 
 **Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `View`.
 
-Declares a named projection of an existing semantic subject with GV/IV/CV/SV/GRV/FV kind. It carries no executable behavior or diagram geometry.
+Declares a named projection of an existing semantic subject with gv/iv/cv/sv/grv/fv kind. It carries no executable behavior or diagram geometry.
 
-**Example fragment:** `view wiring IV of Product;`
+**Example fragment:** `view wiring iv of Product;`
 
-**Graphical notation:** [General View](GRAPHICAL_CATALOG.md#notation-view-gv), [Interconnect View](GRAPHICAL_CATALOG.md#notation-view-iv), [Case View](GRAPHICAL_CATALOG.md#notation-view-cv), [Sequence View](GRAPHICAL_CATALOG.md#notation-view-sv), [Grid View](GRAPHICAL_CATALOG.md#notation-view-grv), [Flow View](GRAPHICAL_CATALOG.md#notation-view-fv). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [General View](GRAPHICAL_CATALOG.md#notation-view-gv), [Interconnect View](GRAPHICAL_CATALOG.md#notation-view-iv), [Case View](GRAPHICAL_CATALOG.md#notation-view-cv), [Sequence View](GRAPHICAL_CATALOG.md#notation-view-sv), [Grid View](GRAPHICAL_CATALOG.md#notation-view-grv), [Flow View](GRAPHICAL_CATALOG.md#notation-view-fv). General View; Interconnect View; Case View; Sequence View; Grid View; Flow View.
 
-## Keyword: Void
+## Keyword: void
 
 **Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `TypeRef`.
 
-No result value. Operation implementations and interface signatures default to Void when : Type is omitted; an explicit : Void is equivalent. Forbidden for parameters, variables, fields, arrays and pure function results. A Void RPC completion label is not readable data.
+No result value. It is the default function/signature result and cannot type data, input parameters, fields, arrays or calculation outputs.
 
-**Example fragment:** `operation notify(): Void { return; }`
+**Example fragment:** `function reset() { return; }`
 
-**Graphical notation:** [Primitive types](GRAPHICAL_CATALOG.md#notation-primitive-types). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Primitive types](GRAPHICAL_CATALOG.md#notation-primitive-types). Primitive types.
 
 ## Keyword: wcet
 
@@ -1192,37 +1232,47 @@ Positive active-execution-time bound including local helpers and state reaction 
 
 **Example fragment:** `wcet 1 ms;`
 
-**Graphical notation:** [Operation timing contract](GRAPHICAL_CATALOG.md#notation-timing-contract). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Function timing contract](GRAPHICAL_CATALOG.md#notation-timing-contract). Function timing contract.
 
 ## Keyword: when
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Transition`.
 
-Optional pure Bool transition guard evaluated against the unit snapshot/live environment and stimulus payload as applicable. False consumes/ignores the stimulus when no other transition matches.
+Optional pure bool transition guard evaluated against the component snapshot/live environment and stimulus payload as applicable. False consumes/ignores the stimulus when no other transition matches.
 
 **Example fragment:** `on receive commands.begin when (enabled) {}`
 
-**Graphical notation:** [Transition guard](GRAPHICAL_CATALOG.md#notation-transition-guard). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced.
+**Graphical notation:** [Transition guard](GRAPHICAL_CATALOG.md#notation-transition-guard). Transition guard.
+
+## Keyword: where
+
+**Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `ViewSelection`.
+
+Filters selected candidates with a Boolean predicate.
+
+**Example fragment:** `include Demo recursive where kind == "function";`
+
+**Graphical notation:** [Filtered view selection](GRAPHICAL_CATALOG.md#notation-view-selection). Filtered view selection.
 
 ## Keyword: while
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `While`.
 
-Pretest Bool loop with mandatory positive bound. Each iteration has a lexical body scope. A still-true condition after the bound fails instead of silently exiting.
+Pretest bool loop with mandatory positive bound. Each iteration has a lexical body scope. A still-true condition after the bound fails instead of silently exiting.
 
 **Example fragment:** `while (i < 3) bound 3 { i = i + 1; }`
 
-**Graphical notation:** [Bounded loop](GRAPHICAL_CATALOG.md#notation-bounded-loop). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Bounded loop](GRAPHICAL_CATALOG.md#notation-bounded-loop). Bounded loop.
 
 ## Keyword: within
 
-**Concern:** [Communication](spec/02-communication.md). **Grammar:** `Request`.
+**Concern:** [Communication](spec/02-communication.md). **Grammar:** `RemoteCall`.
 
 Required positive RPC timeout measured from issuance. Only a response observed strictly before expiry can win; equal-time expiry wins and late server effects are not canceled.
 
 **Example fragment:** `within 100 ms otherwise { return; };`
 
-**Graphical notation:** [RPC request and failure continuation](GRAPHICAL_CATALOG.md#notation-request). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label.
+**Graphical notation:** [Routed function call](GRAPHICAL_CATALOG.md#notation-routed-call). Routed function call.
 
 ## Punctuation and operator reference
 
@@ -1232,15 +1282,15 @@ Required positive RPC timeout measured from issuance. Only a response observed s
 | `{ }` | Owned declarations, block scope, record assignments, QoS or timing block according to context. |
 | `( )` | Arguments, parameters, conditions or precedence grouping. |
 | `[ ]` | Fixed type extent, array literal or one final index read. |
-| `:` | Name/type separator, operation result or connector/transition header separator. |
+| `:` | Name/type separator, function result or connector/transition header separator. |
 | `,` | List separator; no implicit trailing comma. |
 | `::` | Package qualification; imports append `::*`. |
 | `.` | Structural/member path, local record field, enum literal separator or real-literal decimal point. |
 | `->` | Connector, delegation, state transition or case exchange direction. |
-| `=` | Initialization, assignment, pure function body or record field assignment; never equality. |
+| `=` | Initialization, assignment, calculation result expression or record field assignment; never equality. |
 | `== !=` | Typed recursive equality/inequality; numeric scalar promotion permitted. |
-| `< <= > >=` | Numeric ordering; no String ordering. |
-| `+ - * / %` | Checked numeric arithmetic; slash always Real, remainder Int only; minus also unary. |
+| `< <= > >=` | Numeric ordering; no string ordering. |
+| `+ - * / %` | Checked numeric arithmetic; slash always real, remainder integral only; minus also unary. |
 | `//` / `/* */` | Line / non-nested block comments outside strings. |
 
 Precedence, lowest first: or; and; equality; ordered comparison; addition/subtraction; multiplication/division/remainder; unary not/minus; primary. Binary operators associate left. Only and/or short-circuit. Identifiers, strings, numerics and durations have the exact lexical rules in [chapter 1](spec/01-structure-and-types.md); the [complete grammar](../src/language/swaml.langium) is authoritative for concrete syntax.

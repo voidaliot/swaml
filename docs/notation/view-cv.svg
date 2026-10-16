@@ -1,18 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="560" height="320" viewBox="0 0 560 320" role="img" aria-labelledby="title desc">
-<title id="title">Case View</title><desc id="desc">Case View. Draw a framed projection titled CV with the semantic subject identity visible; use the canonical element symbols within it.</desc>
+<title id="title">Case View</title><desc id="desc">Case View. Draw a framed projection titled cv with the semantic subject identity visible; use the canonical element symbols within it.</desc>
 <g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
 <rect x="0" y="0" width="560" height="320" rx="0" fill="#ffffff" stroke="none"/>
 <rect x="14" y="14" width="532" height="292" rx="0" fill="#ffffff" stroke="#111111"/>
 <polygon points="14,14 174,14 174,40 158,54 14,54" fill="#ffffff" stroke="#111111"/>
-<text x="27" y="40" font-size="19" font-weight="700" fill="#111111">CV</text>
+<text x="27" y="40" font-size="19" font-weight="700" fill="#111111">cv</text>
 <text x="194" y="40" font-size="18" font-weight="400" fill="#111111">Shop</text>
 <rect x="35" y="86" width="220" height="186" rx="0" fill="#ffffff" stroke="#111111"/>
 <text x="53" y="113" font-size="18" font-weight="400" fill="#111111">context: Shop</text>
 <rect x="53" y="149" width="182" height="77" rx="38" fill="#ffffff" stroke="#111111"/>
-<text x="102.0" y="191" font-size="18" font-weight="400" fill="#111111">Checkout</text>
+<text x="122.0" y="191" font-size="18" font-weight="400" fill="#111111">Shop</text>
 <rect x="353" y="142" width="178" height="100" rx="0" fill="#ffffff" stroke="#111111"/>
 <text x="375.5" y="198.0" font-size="18" font-weight="400" fill="#111111">AcceptedOrder</text>
 <polyline points="235,190 352,190" fill="none" stroke="#111111" stroke-width="2" stroke-dasharray="7 5"/>
 <polyline points="340.0,195.0 352,190 340.0,185.0" fill="none" stroke="#111111" stroke-width="2"/>
-<text x="198.5" y="76" font-size="18" font-weight="400" fill="#111111">satisfies (claimed)</text>
+<text x="251.0" y="76" font-size="18" font-weight="400" fill="#111111">satisfy</text>
 </g></svg>

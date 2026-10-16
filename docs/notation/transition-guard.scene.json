@@ -2,7 +2,7 @@
   "width": 560,
   "height": 280,
   "title": "Transition guard",
-  "description": "Transition guard. Show the Bool guard in brackets or with its explicit when keyword on the transition label.",
+  "description": "Transition guard. Show the bool guard in brackets or with its explicit when keyword on the transition label.",
   "shapes": [
     {
       "kind": "rect",

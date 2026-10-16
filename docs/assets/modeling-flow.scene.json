@@ -1,0 +1,465 @@
+{
+  "width": 1080,
+  "height": 765,
+  "title": "3 · Open the checkout function",
+  "description": "fv subject: Production.application.checkout.submit. Control flow stays inside CheckoutService; inventory.reserve uses its owned client port and explicit route.",
+  "source": "spec/modeling-overview.json",
+  "graph": "flow",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 1080,
+      "height": 765,
+      "fill": "white",
+      "stroke": "none",
+      "rx": 0
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          340,
+          180
+        ],
+        [
+          340,
+          280
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "rect",
+      "x": 350,
+      "y": 214,
+      "width": 66.5,
+      "height": 27,
+      "fill": "white",
+      "stroke": "none",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 356,
+      "y": 235,
+      "text": "reply",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          660,
+          110
+        ],
+        [
+          895,
+          110
+        ],
+        [
+          895,
+          155
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "rect",
+      "x": 738,
+      "y": 75,
+      "width": 110.10000000000001,
+      "height": 27,
+      "fill": "white",
+      "stroke": "none",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 744,
+      "y": 96,
+      "text": "otherwise",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          660,
+          350
+        ],
+        [
+          895,
+          350
+        ],
+        [
+          895,
+          310
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "rect",
+      "x": 738,
+      "y": 317,
+      "width": 55.6,
+      "height": 27,
+      "fill": "white",
+      "stroke": "none",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 744,
+      "y": 338,
+      "text": "true",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          340,
+          420
+        ],
+        [
+          340,
+          520
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "rect",
+      "x": 350,
+      "y": 454,
+      "width": 66.5,
+      "height": 27,
+      "fill": "white",
+      "stroke": "none",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 356,
+      "y": 475,
+      "text": "false",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          660,
+          620
+        ],
+        [
+          730,
+          620
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "rect",
+      "x": 659,
+      "y": 581,
+      "width": 77.4,
+      "height": 27,
+      "fill": "white",
+      "stroke": "none",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 665,
+      "y": 602,
+      "text": "reject",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 20,
+      "y": 40,
+      "width": 640,
+      "height": 140,
+      "fill": "#e7f3f2",
+      "stroke": "#17324d",
+      "rx": 4
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 72,
+      "text": "Call inventory",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          20,
+          86
+        ],
+        [
+          660,
+          86
+        ]
+      ],
+      "color": "#cad6df",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 115,
+      "text": "call inventory.reserve(quantity)",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 143,
+      "text": "as reserved within 200 ms",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          340.0,
+          280
+        ],
+        [
+          660,
+          350.0
+        ],
+        [
+          340.0,
+          420
+        ],
+        [
+          20,
+          350.0
+        ]
+      ],
+      "fill": "#f7f4e9",
+      "stroke": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 260.7,
+      "y": 357.0,
+      "text": "not reserved?",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 730,
+      "y": 155,
+      "width": 330,
+      "height": 155,
+      "fill": "#fcf0ed",
+      "stroke": "#17324d",
+      "rx": 4
+    },
+    {
+      "kind": "text",
+      "x": 746,
+      "y": 187,
+      "text": "Return false",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          730,
+          201
+        ],
+        [
+          1060,
+          201
+        ]
+      ],
+      "color": "#cad6df",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 746,
+      "y": 230,
+      "text": "Do not emit acceptance.",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 746,
+      "y": 258,
+      "text": "Do not emit receipt.",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 20,
+      "y": 520,
+      "width": 640,
+      "height": 200,
+      "fill": "#e7f3f2",
+      "stroke": "#17324d",
+      "rx": 4
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 552,
+      "text": "Accept in statement order",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          20,
+          566
+        ],
+        [
+          660,
+          566
+        ]
+      ],
+      "color": "#cad6df",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 595,
+      "text": "acceptedOrders = acceptedOrders + 1;",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 623,
+      "text": "publish api.accepted(orderId);",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 651,
+      "text": "publish receipts.created(orderId);",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 679,
+      "text": "return true;",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 730,
+      "y": 545,
+      "width": 330,
+      "height": 150,
+      "fill": "#fcf0ed",
+      "stroke": "#17324d",
+      "rx": 4
+    },
+    {
+      "kind": "text",
+      "x": 746,
+      "y": 577,
+      "text": "Publication failure",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          730,
+          591
+        ],
+        [
+          1060,
+          591
+        ]
+      ],
+      "color": "#cad6df",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 746,
+      "y": 620,
+      "text": "Activation fails.",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 746,
+      "y": 648,
+      "text": "Prior effects remain.",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    }
+  ]
+}

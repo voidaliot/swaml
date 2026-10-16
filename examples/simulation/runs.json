@@ -33,9 +33,9 @@
     }
   },
   {
-    "model": "examples/04-stateful-operation.swaml",
+    "model": "examples/04-stateful-function.swaml",
     "root": "Lifecycle::Product",
-    "options": "examples/simulation/04-stateful-operation.json",
+    "options": "examples/simulation/04-stateful-function.json",
     "expectedStores": {
       "assembly.device": {
         "cycles": 1
@@ -127,6 +127,151 @@
     "expectedStores": {
       "counter": {
         "count": 1
+      }
+    }
+  },
+  {
+    "model": "examples/10-reusable-qos.swaml",
+    "root": "ReusablePolicies::Demo",
+    "options": "examples/simulation/10-reusable-qos.json",
+    "expectedStores": {
+      "first": {
+        "latest": 7
+      },
+      "second": {
+        "latest": 7
+      }
+    }
+  },
+  {
+    "model": "examples/11-autosar-classic.swaml",
+    "root": "ClassicClimate::Vehicle",
+    "options": "examples/simulation/11-autosar-classic.json",
+    "expectedStores": {
+      "controller.control": {
+        "lastTemperature": 28,
+        "commandedDuty": 0.6
+      },
+      "calibration": {
+        "desiredTemperature": 22
+      },
+      "actuator": {
+        "appliedDuty": 0.6
+      }
+    }
+  },
+  {
+    "model": "examples/12-autosar-adaptive.swaml",
+    "root": "AdaptiveDiagnostics::Vehicle",
+    "options": "examples/simulation/12-autosar-adaptive.json",
+    "expectedStores": {
+      "application.diagnostic": {
+        "observedHealthy": true,
+        "lastCode": 200,
+        "notifications": 1
+      },
+      "health.monitor": {
+        "completedChecks": 1
+      },
+      "audit": {
+        "lastCode": 200,
+        "entries": 1
+      }
+    }
+  },
+  {
+    "model": "examples/13-web-application.swaml",
+    "root": "WebShop::Production",
+    "options": "examples/simulation/13-web-application.json",
+    "expectedStores": {
+      "browser": {
+        "lastOrder": "order-1042",
+        "accepted": true,
+        "rejectedOversize": true
+      },
+      "application.checkout": {
+        "acceptedOrders": 1
+      },
+      "inventory.stock": {
+        "available": 8
+      },
+      "mailer": {
+        "lastOrder": "order-1042",
+        "sent": 1
+      }
+    }
+  },
+  {
+    "model": "examples/14-cloud-service.swaml",
+    "root": "CloudTelemetry::Production",
+    "options": "examples/simulation/14-cloud-service.json",
+    "expectedStores": {
+      "device": {
+        "uploaded": 2,
+        "retryAccepted": true,
+        "invalidRejected": true
+      },
+      "ingestion.gateway": {
+        "lastSequence": 2,
+        "acceptedCount": 2
+      },
+      "broker": {
+        "lastSequence": 2,
+        "forwarded": 2
+      },
+      "analytics": {
+        "lastSequence": 2,
+        "processed": 2,
+        "latestTemperature": 28.5
+      },
+      "archive": {
+        "lastSequence": 2,
+        "records": 2,
+        "lastDevice": "sensor-01"
+      }
+    }
+  },
+  {
+    "model": "examples/15-component-specialization.swaml",
+    "root": "ComponentReuse::Demo",
+    "options": "examples/simulation/15-component-specialization.json",
+    "expectedStores": {
+      "": {
+        "running": true
+      },
+      "base": {
+        "count": 1,
+        "sample": 2
+      },
+      "base.worker": {
+        "ticks": 1
+      },
+      "left": {
+        "count": 4,
+        "sample": 14
+      },
+      "left.worker": {
+        "ticks": 2
+      },
+      "right": {
+        "count": 2,
+        "sample": 12
+      },
+      "right.worker": {
+        "ticks": 2
+      }
+    }
+  },
+  {
+    "model": "examples/16-requirements-and-views.swaml",
+    "root": "Assurance::Demo",
+    "options": "examples/simulation/16-requirements-and-views.json",
+    "expectedStores": {
+      "first": {
+        "result": 2
+      },
+      "second": {
+        "result": 2
       }
     }
   }

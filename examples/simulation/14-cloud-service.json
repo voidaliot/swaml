@@ -1,0 +1,8 @@
+{
+  "untilNs": 2000000000,
+  "latencyNs": 1000000,
+  "manual": [
+    { "atNs": 100000000, "function": "device.retry" },
+    { "atNs": 200000000, "function": "device.sendInvalid" }
+  ]
+}

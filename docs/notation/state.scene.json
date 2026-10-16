@@ -2,7 +2,7 @@
   "width": 560,
   "height": 280,
   "title": "State",
-  "description": "State. Draw a rounded state rectangle bearing the operation-local state name, with optional entry/exit compartments.",
+  "description": "State. Draw a rounded state rectangle bearing the function-local state name, with optional entry/exit compartments.",
   "shapes": [
     {
       "kind": "rect",

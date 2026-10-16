@@ -71,7 +71,7 @@
       "kind": "text",
       "x": 64,
       "y": 111,
-      "text": "let i: Int = 0",
+      "text": "var i: int = 0",
       "size": 20,
       "bold": true,
       "color": "#111111"

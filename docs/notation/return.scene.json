@@ -1,8 +1,8 @@
 {
   "width": 560,
   "height": 280,
-  "title": "Operation return",
-  "description": "Operation return. Show a labeled return terminal in the owning operation flow; retain the returned expression when present.",
+  "title": "Function return",
+  "description": "Function return. Show a labeled return terminal in the owning function flow; retain the returned expression when present.",
   "shapes": [
     {
       "kind": "rect",

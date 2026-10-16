@@ -1,10 +1,10 @@
-# Langium setup and VS Code integration
+# Language tooling and integration
 
 ## Package contract
 
-The current package is a reusable language core. It is marked `private` to prevent accidental npm publication. The existing `voidaliot/swaml-vsc-ext` repository can consume a reviewed version through a local workspace dependency or a future published package; that repository has not been modified by this setup.
+The package supplies a reusable language core, command-line tools and a language-server adapter. It is marked `private` to prevent accidental npm publication. Consumers can build it locally and use the documented APIs with an explicitly selected language version.
 
-This edition parses headerless **SWAML 1.1** only. The extension must pin its language-core dependency and identify 1.1 in project/workspace settings before source loading; these settings belong to the host, not to an undocumented model grammar. The repository CLI is itself pinned to 1.1. Unsupported requested editions must be rejected explicitly; a host must never silently upgrade models to the latest parser. Read the [migration guide](MIGRATION_1_1.md) before consuming this incompatible source update.
+This edition parses headerless **SWAML 1.2** only. A host must pin its language-core dependency and identify 1.2 in project/workspace settings before source loading; these settings belong to the host, not to an undocumented model grammar. The repository CLI is itself pinned to 1.2. Unsupported requested editions must be rejected explicitly; a host must never silently upgrade models to the latest parser. Read the [migration guide](MIGRATION_1_2.md) before consuming the named-policy AST and host-pin update.
 
 The source of concrete syntax is [swaml.langium](../src/language/swaml.langium). Langium generates AST types, grammar metadata, reflection and TextMate syntax. Generated files and `out/` are ignored; rebuild them after checkout.
 
@@ -51,37 +51,19 @@ For multiple files, create all documents first and build them together so that i
 | [CLI](../src/cli/main.ts) | File loading, diagnostics, exit status |
 | [LSP server](../src/server/main.ts) | Standard language-server transport and startup |
 
-Cross-references use Langium references for declarations, functions, local operations, states and nodes. Composite endpoint/value/view paths are strings with explicit SWAML resolution. This keeps encapsulation checks explicit, but **generic rename/find-references/navigation does not cover those strings**. The extension must supply those providers before advertising full refactoring.
+Cross-references use Langium references for declarations, base component types, calculations, local functions and states. Composite endpoint/value/view paths are strings with explicit SWAML resolution; deployment target identities are external strings. This keeps encapsulation checks explicit, but **generic rename/find-references/navigation does not cover those strings**. A host must supply path-aware providers before advertising full refactoring.
 
 The current scope provider scans loaded documents for clarity. Every changed/added/deleted document conservatively relinks and revalidates all loaded SWAML models, including string paths and previously absent declarations. This favors correct editor diagnostics over incremental performance. Large-model dependency indexing and cancellation-aware expensive checks remain optimization work. The validator skips semantic checks after parser/lexer errors; built-in diagnostics still report malformed input.
 
-## Desktop extension scaffold contract
+## Language-server integration
 
-The extension manifest should register:
+The server implements the Language Server Protocol over a standard transport. Start it with `node out/src/server/main.js --stdio`; reserve stdout for protocol messages and send diagnostic logging to stderr. Clients supply document URIs, text versions, changes and the complete loaded workspace. They consume diagnostics with source ranges and stable diagnostic codes.
 
-```json
-{
-  "activationEvents": ["onLanguage:swaml"],
-  "contributes": {
-    "languages": [{ "id": "swaml", "aliases": ["SWAML"], "extensions": [".swaml"], "configuration": "./language-configuration.json" }],
-    "grammars": [{ "language": "swaml", "scopeName": "source.swaml", "path": "./syntaxes/swaml.tmLanguage.json" }]
-  }
-}
-```
+Language hosts must select the supported SWAML edition before loading a document, preserve source ranges, and rebuild affected documents after changes. A formatter or graphical host must apply semantic changes to source and validate the result. File associations, transport startup and presentation are host responsibilities.
 
-This is a contribution fragment, not a complete publishable `package.json`. Supply the extension's own name, publisher, version, VS Code engine, entry point and client dependency. Copy the generated TextMate file from this package's `syntax/` after building.
+## Browser hosts
 
-Use a `vscode-languageclient` client compatible with the selected `vscode-languageserver` version. Launch a bundled `src/server/main.ts` Node target with IPC or stdio. For example, the server entry already accepts `--stdio`; the host should not send logs on stdout. Diagnostics must be presented in Problems and linked to source ranges.
-
-A language-configuration file can declare `//`, `/* */`, bracket pairs `{}`, `[]`, `()`, and matching quotes. Do not use semantic indentation that changes SWAML meaning.
-
-Suggested host commands: `swaml.validateWorkspace`, `swaml.openBrowser`, `swaml.showView`, `swaml.openDeclaration`, `swaml.restartLanguageServer`. These are proposed command IDs; this repository does not register them in VS Code.
-
-## Browser extension path
-
-The reusable grammar/validator should remain independent of Node filesystem APIs. The server and CLI import `NodeFileSystem`; the language core does not. A browser host can create services with an in-memory/browser filesystem, bundle a web-worker language server, and supply model documents through LSP. The current Node server is not a browser-worker bundle, so a web extension needs a separate entry point and transport integration.
-
-Test browser dependency bundling and import resolution explicitly. Do not carry the CLI's filesystem assumptions into `vscode.dev` or `github.dev`.
+The language core has no Node filesystem dependency. Browser applications can create services with an in-memory filesystem and supply document text directly. The Node CLI and language-server adapter own their filesystem access. A worker-based browser host needs its own transport adapter; test document loading, dependency bundling and import resolution in that environment.
 
 ## Graphical architecture
 
@@ -95,7 +77,7 @@ Build a separate normalized model from the linked/validated authoring AST, then 
 
 ## Validation and release gates
 
-Before an extension consumes a new language-core version, run `npm ci && npm run check`, inspect the spec/grammar changes and update versioned fixtures. A grammar change, even if additive, can reserve an identifier previously used in source. Release notes must explain migration.
+Before a host consumes a new language-core version, run `npm ci && npm run check`, inspect the spec/grammar changes and update versioned fixtures. A grammar change, even if additive, can reserve an identifier previously used in source. Release notes must explain migration.
 
 Tests cover valid fixtures, illegal interface access, scoping, type errors, QoS, state/timing rules and the LSP transport lifecycle. Broader conformance claims require the additional tests in [implementation status](IMPLEMENTATION_STATUS.md).
 
@@ -103,4 +85,8 @@ Tests cover valid fixtures, illegal interface access, scoping, type errors, QoS,
 
 After linking and validating every referenced document, call `simulate(models, "Package::Root", options)` from the package's `./simulation` export. It has no Node filesystem dependency. The host supplies a finite horizon and may supply manual releases, transport fault schedule and resource limits. The [profile contract](SIMULATION.md) defines the exact scheduler, observability and limits. The CLI adapter adds file loading and SHA-256 source digests.
 
-Present `outcome` and `status` together: a run can quiesce after a failed activation, and a bounded horizon is not a proof of liveness. A future extension can connect trace source lines and occurrence paths to FV/IV/GRV selections. That UI belongs in the extension repository; it must not introduce an independent runtime meaning or bypass validation.
+Present `outcome` and `status` together: a run can quiesce after a failed activation, and a bounded horizon is not a proof of liveness. Hosts can connect trace source lines and occurrence paths to fv/iv/grv selections. They must preserve the simulation contract and validate every semantic edit.
+
+## Component-model integration
+
+Use the generated `FunctionDef` AST for executable `function` bodies and `Calculation`/`CalculationCall` for pure `calc` expressions. Build semantic projections from effective inherited members, retaining declaration and instance identity. `specializes` and `redefines` are validated source relationships; a generic AST reference is insufficient for context-sensitive inherited paths. Deployment destinations are external identity strings; hosts own resolution and platform validation. The portable language core must not acquire a filesystem or SysML download dependency to resolve them.

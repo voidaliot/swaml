@@ -1,52 +1,52 @@
 package Gateway {
-    interface senderReceiver Samples version "1.0.0" { data value: Real sampled; }
+    interface senderReceiver Samples version "1.0.0" { data value: real sampled; }
     interface service Telemetry version "1.0.0" {
-        operation read(): Real idempotent;
-        event observed(value: Real);
+        function read(): real idempotent;
+        event observed(value: real);
     }
-    unit def Sensor {
+    component def Sensor {
         port output: Samples sender;
-        operation sample() on every 10 ms timing { wcet 1 ms; deadline 2 ms; concurrency serial; } {
+        function sample() on every 10 ms timing { wcet 1 ms; deadline 2 ms; concurrency serial; } {
             send output.value(21.0); return;
         }
     }
-    unit def Adapter {
+    component def Adapter {
         port input: Samples receiver;
         port api: Telemetry provides;
-        var latest: Real = 0.0;
-        operation receiveSample(value: Real) on receive input.value timing { wcet 1 ms; deadline 3 ms; concurrency serial; } {
+        var latest: real = 0.0;
+        function receiveSample(value: real) on receive input.value timing { wcet 1 ms; deadline 3 ms; concurrency serial; } {
             latest = value;
             publish api.observed(value);
             return;
         }
-        operation readLatest(): Real on call api.read timing { wcet 1 ms; deadline 3 ms; concurrency serial; } { return latest; }
+        function readLatest(): real on call api.read timing { wcet 1 ms; deadline 3 ms; concurrency serial; } { return latest; }
     }
-    unit def Dashboard {
+    component def Dashboard {
         port telemetry: Telemetry requires;
-        var displayed: Real = 0.0;
-        operation refresh() on manual timing { wcet 1 ms; deadline 30 ms; concurrency serial; } {
-            request telemetry.read() as measured within 25 ms otherwise { return; };
+        var displayed: real = 0.0;
+        function refresh() on manual timing { wcet 1 ms; deadline 30 ms; concurrency serial; } {
+            call telemetry.read() as measured within 25 ms otherwise { return; };
             displayed = measured; return;
         }
-        operation update(value: Real) on receive telemetry.observed timing { wcet 1 ms; deadline 5 ms; concurrency serial; } {
+        function update(value: real) on receive telemetry.observed timing { wcet 1 ms; deadline 5 ms; concurrency serial; } {
             displayed = value; return;
         }
     }
     component def Acquisition {
         port output: Samples sender;
-        unit sensor: Sensor;
+        component sensor: Sensor;
         delegate output -> sensor.output;
     }
     component def Bridge {
         port input: Samples receiver;
         port api: Telemetry provides;
-        unit adapter: Adapter;
+        component adapter: Adapter;
         delegate input -> adapter.input;
         delegate api -> adapter.api;
     }
     component def Display {
         port telemetry: Telemetry requires;
-        unit dashboard: Dashboard;
+        component dashboard: Dashboard;
         delegate telemetry -> dashboard.telemetry;
     }
     component Product mixed {
@@ -59,14 +59,12 @@ package Gateway {
         connect observing: display.telemetry -> bridge.api qos {
             delivery atMostOnce; ordering fifo; capacity 8; overflow reject; maxLatency 2 ms;
         };
-        node controller mcu;
-        node edge process;
-        deploy acquisition on controller;
-        deploy bridge on edge;
-        deploy display on edge;
+        deploy acquisition on "system:controller";
+        deploy bridge on "system:edge";
+        deploy display on "system:edge";
     }
-    view overview GV of Product;
-    view connections IV of Product;
-    view conversion FV of Adapter.receiveSample;
-    view allocation GRV of Product;
+    view overview gv of Product;
+    view connections iv of Product;
+    view conversion fv of Adapter.receiveSample;
+    view allocation grv of Product;
 }

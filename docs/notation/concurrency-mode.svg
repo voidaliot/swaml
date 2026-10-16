@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
-<title id="title">Concurrency mode</title><desc id="desc">Concurrency mode. Write serial or reentrant in the operation timing compartment; no color or parallel-lane icon substitutes for it.</desc>
+<title id="title">Concurrency mode</title><desc id="desc">Concurrency mode. Write serial or reentrant in the function timing compartment; no color or parallel-lane icon substitutes for it.</desc>
 <g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
 <rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
 <polygon points="35,25 495,25 525,55 525,252 35,252" fill="#ffffff" stroke="#111111"/>
 <polyline points="495,25 495,55 525,55" fill="none" stroke="#111111" stroke-width="2"/>
-<text x="55" y="61" font-size="20" font-weight="700" fill="#111111">Operation concurrency</text>
+<text x="55" y="61" font-size="20" font-weight="700" fill="#111111">Function concurrency</text>
 <text x="55" y="105" font-size="18" font-weight="400" fill="#111111">concurrency reentrant</text>
 <text x="55" y="130" font-size="18" font-weight="400" fill="#111111">alternative: serial</text>
 </g></svg>

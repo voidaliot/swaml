@@ -1,0 +1,449 @@
+{
+  "width": 1080,
+  "height": 770,
+  "title": "1 · Start with the user outcome",
+  "description": "The use case describes the buyer’s intent. Production claims requirement satisfaction; a verification case identifies the procedure that must supply evidence.",
+  "source": "spec/modeling-overview.json",
+  "graph": "intent",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 1080,
+      "height": 770,
+      "fill": "white",
+      "stroke": "none",
+      "rx": 0
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          270,
+          50
+        ],
+        [
+          270,
+          10
+        ],
+        [
+          810,
+          10
+        ],
+        [
+          810,
+          50
+        ]
+      ],
+      "color": "#17324d",
+      "dash": true,
+      "arrow": true
+    },
+    {
+      "kind": "rect",
+      "x": 484,
+      "y": 15,
+      "width": 110.10000000000001,
+      "height": 27,
+      "fill": "white",
+      "stroke": "none",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 490,
+      "y": 36,
+      "text": "formalize",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          270,
+          340
+        ],
+        [
+          270,
+          270
+        ],
+        [
+          810,
+          270
+        ],
+        [
+          810,
+          200
+        ]
+      ],
+      "color": "#17324d",
+      "dash": true,
+      "arrow": true
+    },
+    {
+      "kind": "rect",
+      "x": 474,
+      "y": 239,
+      "width": 88.3,
+      "height": 27,
+      "fill": "white",
+      "stroke": "none",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 480,
+      "y": 260,
+      "text": "satisfy",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          560,
+          415
+        ],
+        [
+          520,
+          415
+        ]
+      ],
+      "color": "#17324d",
+      "dash": true,
+      "arrow": true
+    },
+    {
+      "kind": "rect",
+      "x": 522,
+      "y": 369,
+      "width": 44.7,
+      "height": 27,
+      "fill": "white",
+      "stroke": "none",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 528,
+      "y": 390,
+      "text": "for",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          1060,
+          650
+        ],
+        [
+          1073,
+          650
+        ],
+        [
+          1073,
+          125
+        ],
+        [
+          1060,
+          125
+        ]
+      ],
+      "color": "#17324d",
+      "dash": true,
+      "arrow": true
+    },
+    {
+      "kind": "rect",
+      "x": 934,
+      "y": 534,
+      "width": 77.4,
+      "height": 27,
+      "fill": "white",
+      "stroke": "none",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 940,
+      "y": 555,
+      "text": "verify",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 20,
+      "y": 50,
+      "width": 500,
+      "height": 150,
+      "fill": "#f8f2e9",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 82,
+      "text": "Buyer: place an order",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          20,
+          96
+        ],
+        [
+          520,
+          96
+        ]
+      ],
+      "color": "#cad6df",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 125,
+      "text": "Reserve available stock.",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 153,
+      "text": "Receive confirmation + receipt.",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 560,
+      "y": 50,
+      "width": 500,
+      "height": 150,
+      "fill": "#f8f2e9",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 576,
+      "y": 82,
+      "text": "ReserveBeforeAccept",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          560,
+          96
+        ],
+        [
+          1060,
+          96
+        ]
+      ],
+      "color": "#cad6df",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 576,
+      "y": 125,
+      "text": "Reserve stock before",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 576,
+      "y": 153,
+      "text": "confirmation and receipt.",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 560,
+      "y": 340,
+      "width": 500,
+      "height": 150,
+      "fill": "#f8f2e9",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 576,
+      "y": 372,
+      "text": "Purchase",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          560,
+          386
+        ],
+        [
+          1060,
+          386
+        ]
+      ],
+      "color": "#cad6df",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 576,
+      "y": 415,
+      "text": "useCase for Production",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 576,
+      "y": 443,
+      "text": "Six routed exchanges",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 20,
+      "y": 340,
+      "width": 500,
+      "height": 150,
+      "fill": "#eef5fa",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 372,
+      "text": "Production",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          20,
+          386
+        ],
+        [
+          520,
+          386
+        ]
+      ],
+      "color": "#cad6df",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 415,
+      "text": "Browser → application",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 36,
+      "y": 443,
+      "text": "Inventory + receipt worker",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 560,
+      "y": 580,
+      "width": 500,
+      "height": 140,
+      "fill": "#f8f2e9",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 576,
+      "y": 612,
+      "text": "CheckPurchase",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          560,
+          626
+        ],
+        [
+          1060,
+          626
+        ]
+      ],
+      "color": "#cad6df",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 576,
+      "y": 655,
+      "text": "verificationCase",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 576,
+      "y": 683,
+      "text": "Inspect reservation + receipt",
+      "size": 20,
+      "bold": false,
+      "color": "#17324d"
+    }
+  ]
+}

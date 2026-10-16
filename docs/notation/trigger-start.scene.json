@@ -2,7 +2,7 @@
   "width": 560,
   "height": 280,
   "title": "Startup activation",
-  "description": "Startup activation. Attach the activation text to its operation header; use no free event symbol or standalone trigger object.",
+  "description": "Startup activation. Attach the activation text to its function header; use no free event symbol or standalone trigger object.",
   "shapes": [
     {
       "kind": "rect",

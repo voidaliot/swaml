@@ -2,7 +2,7 @@
   "width": 560,
   "height": 320,
   "title": "Flow View",
-  "description": "Flow View. Draw a framed projection titled FV with the semantic subject identity visible; use the canonical element symbols within it.",
+  "description": "Flow View. Draw a framed projection titled fv with the semantic subject identity visible; use the canonical element symbols within it.",
   "shapes": [
     {
       "kind": "rect",
@@ -55,7 +55,7 @@
       "kind": "text",
       "x": 27,
       "y": 40,
-      "text": "FV",
+      "text": "fv",
       "size": 19,
       "bold": true,
       "color": "#111111"

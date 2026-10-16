@@ -1,8 +1,8 @@
 {
   "width": 560,
   "height": 280,
-  "title": "Case",
-  "description": "Case. Draw a case frame or rectangle labeled «case», its name and for Root identity.",
+  "title": "Use case",
+  "description": "A use case describes intended use and routed exchanges.",
   "shapes": [
     {
       "kind": "rect",
@@ -45,9 +45,9 @@
     },
     {
       "kind": "text",
-      "x": 195.0,
+      "x": 173.5,
       "y": 164,
-      "text": "«case» Change",
+      "text": "«useCase» Change",
       "size": 20,
       "bold": true,
       "color": "#111111"

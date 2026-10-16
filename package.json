@@ -1,6 +1,6 @@
 {
   "name": "@swaml/language",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "private": true,
   "description": "Software Architecture Modeling Language: specification and Langium reference workbench",
   "license": "MIT",
@@ -22,8 +22,8 @@
     "langium:generate": "langium generate",
     "build": "npm run langium:generate && tsc -p tsconfig.json",
     "test": "node --test out/test/*.test.js",
-    "validate:examples": "node out/src/cli/main.js examples/*.swaml",
-    "check": "npm run build && npm test && npm run validate:examples && node scripts/check-docs.mjs && node scripts/check-simulations.mjs && node scripts/build-reference.mjs --check && node scripts/check-graphical-examples.mjs && node scripts/check-notation.mjs",
+    "validate:examples": "node scripts/validate-examples.mjs",
+    "check": "npm run build && npm test && npm run validate:examples && node scripts/check-docs.mjs && node scripts/check-simulations.mjs && node scripts/build-reference.mjs --check && node scripts/check-graphical-examples.mjs && node scripts/check-notation.mjs && node scripts/check-showcase.mjs && node scripts/check-modeling-overview.mjs && node scripts/check-public-content.mjs && node scripts/build-traceability-demo.mjs --check",
     "simulate": "node out/src/cli/simulate.js",
     "docs:build": "node scripts/build-reference.mjs"
   },

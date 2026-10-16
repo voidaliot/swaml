@@ -6,6 +6,6 @@
 <rect x="30" y="22" width="230" height="33" rx="0" fill="#ffffff" stroke="#111111"/>
 <text x="44" y="47" font-size="20" font-weight="700" fill="#111111">Hello</text>
 <text x="48" y="89" font-size="18" font-weight="400" fill="#111111">interface Greeting</text>
-<text x="48" y="114" font-size="18" font-weight="400" fill="#111111">unit def Speaker</text>
+<text x="48" y="114" font-size="18" font-weight="400" fill="#111111">component def Speaker</text>
 <text x="48" y="139" font-size="18" font-weight="400" fill="#111111">component Demo</text>
 </g></svg>

@@ -1,0 +1,101 @@
+package ClassicClimate {
+    // Logical Classic SW-C architecture; platform-specific RTE/OS bindings are separate.
+    interface senderReceiver CabinTemperature version "1.0.0" {
+        data measured: real sampled;
+    }
+    interface senderReceiver FanCommand version "1.0.0" {
+        data duty: real sampled;
+    }
+    interface clientServer Setpoint version "1.0.0" {
+        function read(): real idempotent;
+    }
+    qos def LatestSample {
+        delivery atMostOnce; ordering fifo; capacity 1; overflow dropOldest;
+        maxLatency 1 ms; maxAge 20 ms;
+    }
+    qos def CalibrationCall {
+        delivery atMostOnce; ordering fifo; capacity 4; overflow reject;
+        maxLatency 1 ms;
+    }
+    component def TemperatureSensor {
+        port output: CabinTemperature sender;
+        function sample() on every 10 ms timing {
+            wcet 1 ms; deadline 2 ms; concurrency serial;
+        } { send output.measured(28.0); }
+    }
+    component def ClimateLogic {
+        port temperature: CabinTemperature receiver;
+        port fan: FanCommand sender;
+        port calibration: Setpoint client;
+        var lastTemperature: real = 0.0;
+        var commandedDuty: real = 0.0;
+        function regulate(value: real) on receive temperature.measured timing { wcet 1 ms; deadline 8 ms; concurrency serial; } {
+            calc proportional { in error: real; return result: real = error / 10.0; }
+            lastTemperature = value;
+            call calibration.read() as target within 5 ms otherwise {
+                commandedDuty = 0.0;
+                send fan.duty(commandedDuty);
+                return;
+            };
+            var calculated: real = proportional(value - target);
+            if (calculated < 0.0) { commandedDuty = 0.0; }
+            else {
+                if (calculated > 1.0) { commandedDuty = 1.0; }
+                else { commandedDuty = calculated; }
+            }
+            send fan.duty(commandedDuty);
+        }
+    }
+    component def SetpointCalibration {
+        port api: Setpoint server;
+        var desiredTemperature: real = 22.0;
+        function readSetpoint(): real on call api.read timing {
+            wcet 1 ms; deadline 2 ms; concurrency reentrant;
+        } { return desiredTemperature; }
+    }
+    component def FanActuator {
+        port input: FanCommand receiver;
+        var appliedDuty: real = 0.0;
+        function apply(value: real) on receive input.duty timing {
+            wcet 1 ms; deadline 2 ms; concurrency serial;
+        } {
+            assert value >= 0.0 and value <= 1.0;
+            appliedDuty = value;
+        }
+    }
+    component def ClimateController {
+        port temperature: CabinTemperature receiver;
+        port fan: FanCommand sender;
+        port calibration: Setpoint client;
+        component control: ClimateLogic;
+        delegate temperature -> control.temperature;
+        delegate fan -> control.fan;
+        delegate calibration -> control.calibration;
+    }
+    component Vehicle realtime {
+        component sensor: TemperatureSensor;
+        component controller: ClimateController;
+        component calibration: SetpointCalibration;
+        component actuator: FanActuator;
+        connect measured: sensor.output -> controller.temperature qos LatestSample;
+        connect calibrated: controller.calibration -> calibration.api qos CalibrationCall;
+        connect commanded: controller.fan -> actuator.input qos LatestSample;
+        deploy sensor on "system:bodyEcu";
+        deploy controller on "system:bodyEcu";
+        deploy calibration on "system:bodyEcu";
+        deploy actuator on "system:bodyEcu";
+    }
+    requirement BoundedFan { doc /* The climate SW-C commands a duty in [0, 1] using the current setpoint. */ }
+    satisfy BoundedFan by Vehicle; useCase RegulateCabin for Vehicle {
+        send sensor.output.measured -> controller.temperature.measured via measured label measurement;
+        call controller.calibration.read -> calibration.api.read via calibrated after measurement label readTarget;
+        reply calibration.api.read -> controller.calibration.read via calibrated after readTarget label target;
+        send controller.fan.duty -> actuator.input.duty via commanded after target label command;
+    }
+    view overview gv of Vehicle;
+    view contracts iv of Vehicle;
+    view requirements cv of Vehicle;
+    view regulation sv of RegulateCabin;
+    view allocation grv of Vehicle;
+    view controlFlow fv of Vehicle.controller.control.regulate;
+}

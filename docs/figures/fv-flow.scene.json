@@ -1,8 +1,8 @@
 {
   "width": 1000,
   "height": 780,
-  "title": "FV · Operation flow",
-  "description": "SettingStore.update(desired: Int): Bool · on call api.setPoint · directly owned by the unit.",
+  "title": "fv · Function flow",
+  "description": "SettingStore.update(desired: int): bool · on call api.setPoint · directly owned by the component.",
   "shapes": [
     {
       "kind": "rect",
@@ -18,7 +18,7 @@
       "kind": "text",
       "x": 32,
       "y": 47,
-      "text": "FV · Operation flow",
+      "text": "fv · Function flow",
       "size": 30,
       "bold": true,
       "color": "#17324d"
@@ -27,7 +27,7 @@
       "kind": "text",
       "x": 32,
       "y": 80,
-      "text": "SettingStore.update(desired: Int): Bool · on call api.setPoint · directly owned by the unit.",
+      "text": "SettingStore.update(desired: int): bool · on call api.setPoint · directly owned by the component.",
       "size": 17,
       "bold": false,
       "color": "#516579"
@@ -62,7 +62,7 @@
       "kind": "text",
       "x": 52,
       "y": 153,
-      "text": "op update · serial by default",
+      "text": "function update · serial by default",
       "size": 20,
       "bold": true,
       "color": "#17324d"

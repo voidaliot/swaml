@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1000" height="740" viewBox="0 0 1000 740" role="img" aria-labelledby="title desc">
-<title id="title">FV · Operation states</title><desc id="desc">Device.lifecycle(): Void · on start · state ownership replaces a separate performer allocation.</desc>
+<title id="title">fv · Function states</title><desc id="desc">Device.lifecycle(): void · on start · states and transitions belong to this function.</desc>
 <defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#17324d"/></marker></defs>
 <g font-family="DejaVu Sans, sans-serif">
 <rect x="0" y="0" width="1000" height="740" rx="8" fill="#ffffff" stroke="none"/>
-<text x="32" y="47" font-size="30" font-weight="700" fill="#17324d">FV · Operation states</text>
-<text x="32" y="80" font-size="17" font-weight="400" fill="#516579">Device.lifecycle(): Void · on start · state ownership replaces a separate performer allocation.</text>
+<text x="32" y="47" font-size="30" font-weight="700" fill="#17324d">fv · Function states</text>
+<text x="32" y="80" font-size="17" font-weight="400" fill="#516579">Device.lifecycle(): void · on start · states and transitions belong to this function.</text>
 <polyline points="32,99 968,99" fill="none" stroke="#ccd9e2" stroke-width="2"/>
 <rect x="32" y="125" width="936" height="562" rx="8" fill="#f7fafc" stroke="#17324d"/>
-<text x="50" y="158" font-size="22" font-weight="700" fill="#17324d">op lifecycle</text>
+<text x="50" y="158" font-size="22" font-weight="700" fill="#17324d">function lifecycle</text>
 <circle cx="82" cy="229" r="9" fill="#17324d" stroke="#17324d"/>
 <polyline points="94,229 140,229" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
 <rect x="145" y="186" width="270" height="133" rx="18" fill="white" stroke="#17324d"/>

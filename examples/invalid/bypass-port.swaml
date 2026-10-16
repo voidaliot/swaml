@@ -1,7 +1,7 @@
 package Invalid {
-    unit def Bad {
-        operation leak(): Void {
-            // SW050: a different unit cannot be addressed directly.
+    component def Bad {
+        function leak(): void {
+            // SW050: a different component cannot be addressed directly.
             publish otherUnit.output.updated(42);
             return;
         }

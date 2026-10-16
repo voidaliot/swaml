@@ -3,7 +3,7 @@
   "manual": [
     {
       "atNs": 0,
-      "operation": "web.frontend.checkout"
+      "function": "web.frontend.checkout"
     }
   ]
 }

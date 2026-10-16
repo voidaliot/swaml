@@ -2,7 +2,7 @@
   "width": 560,
   "height": 280,
   "title": "Inline root composition",
-  "description": "Inline root composition. Draw a root-component frame containing direct unit occurrences, with no invented wrapper definition.",
+  "description": "An inline top-level component directly owns its architecture and local behavior.",
   "shapes": [
     {
       "kind": "rect",

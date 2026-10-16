@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="570" viewBox="0 0 1080 570" role="img" aria-labelledby="title desc">
+<title id="title">2 · Follow the routed message flow</title>
+<desc id="desc">Purchase describes the successful exchange order. Arrows below are case after dependencies, not additional software connectors or a measured execution trace.</desc>
+<g font-family="DejaVu Sans, sans-serif">
+<rect x="0" y="0" width="1080" height="570" rx="0" fill="white" stroke="none"/>
+<polyline points="320,125 390,125" fill="none" stroke="#17324d" stroke-width="2"/>
+<polygon points="390.000,125.000 376.000,131.000 376.000,119.000" fill="#17324d"/>
+<rect x="323" y="89" width="66.5" height="27" rx="0" fill="white" stroke="none"/>
+<text x="329" y="110" font-size="20" font-weight="400" fill="#17324d">after</text>
+<polyline points="690,125 760,125" fill="none" stroke="#17324d" stroke-width="2"/>
+<polygon points="760.000,125.000 746.000,131.000 746.000,119.000" fill="#17324d"/>
+<rect x="693" y="89" width="66.5" height="27" rx="0" fill="white" stroke="none"/>
+<text x="699" y="110" font-size="20" font-weight="400" fill="#17324d">after</text>
+<polyline points="910,210 910,350" fill="none" stroke="#17324d" stroke-width="2"/>
+<polygon points="910.000,350.000 904.000,336.000 916.000,336.000" fill="#17324d"/>
+<rect x="918" y="264" width="66.5" height="27" rx="0" fill="white" stroke="none"/>
+<text x="924" y="285" font-size="20" font-weight="400" fill="#17324d">after</text>
+<polyline points="760,435 690,435" fill="none" stroke="#17324d" stroke-width="2"/>
+<polygon points="690.000,435.000 704.000,429.000 704.000,441.000" fill="#17324d"/>
+<rect x="693" y="399" width="66.5" height="27" rx="0" fill="white" stroke="none"/>
+<text x="699" y="420" font-size="20" font-weight="400" fill="#17324d">after</text>
+<polyline points="390,435 320,435" fill="none" stroke="#17324d" stroke-width="2"/>
+<polygon points="320.000,435.000 334.000,429.000 334.000,441.000" fill="#17324d"/>
+<rect x="323" y="399" width="66.5" height="27" rx="0" fill="white" stroke="none"/>
+<text x="329" y="420" font-size="20" font-weight="400" fill="#17324d">after</text>
+<rect x="20" y="40" width="300" height="170" rx="0" fill="#f0eef9" stroke="#17324d"/>
+<text x="36" y="72" font-size="20" font-weight="700" fill="#17324d">1 · Submit order</text>
+<polyline points="20,86 320,86" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="36" y="115" font-size="20" font-weight="400" fill="#17324d">Checkout.submit</text>
+<text x="36" y="143" font-size="20" font-weight="400" fill="#17324d">browser → application</text>
+<text x="36" y="171" font-size="20" font-weight="400" fill="#17324d">via checkoutLink</text>
+<rect x="390" y="40" width="300" height="170" rx="0" fill="#f0eef9" stroke="#17324d"/>
+<text x="406" y="72" font-size="20" font-weight="700" fill="#17324d">2 · Reserve stock</text>
+<polyline points="390,86 690,86" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="406" y="115" font-size="20" font-weight="400" fill="#17324d">Inventory.reserve</text>
+<text x="406" y="143" font-size="20" font-weight="400" fill="#17324d">application → inventory</text>
+<text x="406" y="171" font-size="20" font-weight="400" fill="#17324d">via inventoryLink</text>
+<rect x="760" y="40" width="300" height="170" rx="0" fill="#f0eef9" stroke="#17324d"/>
+<text x="776" y="72" font-size="20" font-weight="700" fill="#17324d">3 · Return reservation</text>
+<polyline points="760,86 1060,86" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="776" y="115" font-size="20" font-weight="400" fill="#17324d">Inventory.reserve reply</text>
+<text x="776" y="143" font-size="20" font-weight="400" fill="#17324d">inventory → application</text>
+<text x="776" y="171" font-size="20" font-weight="400" fill="#17324d">via inventoryLink</text>
+<rect x="760" y="350" width="300" height="170" rx="0" fill="#f0eef9" stroke="#17324d"/>
+<text x="776" y="382" font-size="20" font-weight="700" fill="#17324d">4 · Publish acceptance</text>
+<polyline points="760,396 1060,396" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="776" y="425" font-size="20" font-weight="400" fill="#17324d">Checkout.accepted</text>
+<text x="776" y="453" font-size="20" font-weight="400" fill="#17324d">application → browser</text>
+<text x="776" y="481" font-size="20" font-weight="400" fill="#17324d">via checkoutLink</text>
+<rect x="390" y="350" width="300" height="170" rx="0" fill="#f0eef9" stroke="#17324d"/>
+<text x="406" y="382" font-size="20" font-weight="700" fill="#17324d">5 · Publish receipt</text>
+<polyline points="390,396 690,396" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="406" y="425" font-size="20" font-weight="400" fill="#17324d">Receipts.created</text>
+<text x="406" y="453" font-size="20" font-weight="400" fill="#17324d">application → mailer</text>
+<text x="406" y="481" font-size="20" font-weight="400" fill="#17324d">via receiptLink</text>
+<rect x="20" y="350" width="300" height="170" rx="0" fill="#f0eef9" stroke="#17324d"/>
+<text x="36" y="382" font-size="20" font-weight="700" fill="#17324d">6 · Return acceptance</text>
+<polyline points="20,396 320,396" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="36" y="425" font-size="20" font-weight="400" fill="#17324d">Checkout.submit reply</text>
+<text x="36" y="453" font-size="20" font-weight="400" fill="#17324d">application → browser</text>
+<text x="36" y="481" font-size="20" font-weight="400" fill="#17324d">via checkoutLink</text>
+</g>
+</svg>

@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 parser=argparse.ArgumentParser();parser.add_argument('--check',action='store_true');parser.add_argument('--font-dir');parser.add_argument('--diagnostics',type=Path,help='Write renderer metadata and mismatch images for CI investigation.');args=parser.parse_args()
 if args.font_dir:os.environ['SWAML_FONT_DIR']=args.font_dir
 from notation_scene import render, Scene, font, font_path
-inventory=json.loads((ROOT/'spec/notation.json').read_text())
+inventory=json.loads((ROOT/'spec/notation.json').read_text(encoding='utf-8'))
 out=ROOT/'docs/notation'
 if not args.check:out.mkdir(parents=True,exist_ok=True)
 concepts=inventory['concepts']
@@ -36,7 +36,7 @@ def write(path,data):
     if args.check:
         if path.read_bytes()!=data:
             mismatch(path,{'kind':'exact-source'});save_diagnostic(path,data)
-    else:path.write_bytes(data)
+    elif not path.exists() or path.read_bytes()!=data:path.write_bytes(data)
 
 def write_png(path,png):
     if args.check:
@@ -56,7 +56,7 @@ def write_png(path,png):
                 detail['threshold128ChangedPixels']=pixels-ImageChops.difference(*masks).histogram()[0]
                 data=io.BytesIO();maximum.point(lambda v:min(255,v*4)).save(data,format='PNG');save_diagnostic(path,data.getvalue(),'difference-x4')
             mismatch(path,detail);save_diagnostic(path,png);save_diagnostic(path,path.read_bytes(),'committed')
-    else:path.write_bytes(png)
+    elif not path.exists() or path.read_bytes()!=png:path.write_bytes(png)
 
 for concept in concepts:
     scene=render(concept)
@@ -66,15 +66,15 @@ for concept in concepts:
 
 worked=sorted((ROOT/'docs/figures').glob('*.scene.json'))
 for path in worked:
-    scene=Scene.__new__(Scene);scene.doc=json.loads(path.read_text())
+    scene=Scene.__new__(Scene);scene.doc=json.loads(path.read_text(encoding='utf-8'))
     write_png(path.with_name(path.name.replace('.scene.json','.png')),scene.png())
 
 expected={f'{c["id"]}.{ext}' for c in concepts for ext in ['svg','png','scene.json']}
 assert {p.name for p in out.iterdir() if p.is_file()}==expected, 'Unlisted/missing notation artifacts; remove stale concept files deliberately.'
 
 lines=['# Canonical graphical notation catalog','',f'SWAML {inventory["languageVersion"]} · publication {inventory["edition"]}. This generated catalog defines the original monochrome notation for each authored concept and meaningful label group. All specimens derive from [the semantic inventory](../spec/notation.json); complete examples supply their validation context.','',
-'Each SVG, PNG and vector scene shares the same geometry. A graphical specimen is a projection of its textual model; it does not create additional ports, events, state owners or execution semantics. Labels such as QoS values and expression operators appear within their owning element rather than introducing independent nodes.','',
-'The following fragments are contextual notation samples, not standalone SWAML files. `def` identifies reusable component/unit types; a root is an occurrence selected for execution.','',
+'Each SVG, PNG and vector scene shares the same flat two-dimensional geometry, without perspective, extrusion, gradients or shadows. A graphical specimen is a projection of its textual model; it does not create additional ports, events, state owners or execution semantics. Labels such as QoS values and expression operators appear within their owning element rather than introducing independent nodes.','',
+'The following fragments are contextual notation samples, not standalone SWAML files. `def` identifies reusable component types; a root is an instance selected for execution.','',
 '## Concept index','']
 for c in sorted(concepts,key=lambda c:c['title'].casefold()):lines.append(f'- [{c["title"]}](#notation-{c["id"]}) — {c["concern"]}.')
 for concern in sorted({c['concern'] for c in concepts},key=str.casefold):
@@ -103,6 +103,6 @@ for key,title in [('keywords','Keyword coverage'),('productions','Grammar produc
 write(ROOT/'docs/GRAPHICAL_CATALOG.md','\n'.join(lines).encode())
 if args.diagnostics:
     args.diagnostics.mkdir(parents=True,exist_ok=True)
-    (args.diagnostics/'report.json').write_text(json.dumps(diagnostics,indent=2)+'\n')
+    (args.diagnostics/'report.json').write_text(json.dumps(diagnostics,indent=2)+'\n',encoding='utf-8',newline='\n')
 assert not failures, 'Stale notation artifacts: '+', '.join(failures)+(f'; diagnostics: {args.diagnostics}/report.json' if args.diagnostics else '')
 print(('Verified' if args.check else 'Built')+f' {len(concepts)} canonical SVG/PNG/vector-scene triples, {len(worked)} worked-view PNGs and the graphical catalog.')

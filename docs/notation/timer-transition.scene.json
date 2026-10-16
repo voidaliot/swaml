@@ -2,7 +2,7 @@
   "width": 560,
   "height": 320,
   "title": "Residence timer transition",
-  "description": "Residence timer transition. Label the transition on after with an explicit duration and unit.",
+  "description": "Residence timer transition. Label the transition on after with an explicit duration and component.",
   "shapes": [
     {
       "kind": "rect",

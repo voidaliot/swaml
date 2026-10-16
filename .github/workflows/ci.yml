@@ -45,6 +45,8 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y fonts-dejavu-core poppler-utils
       - name: Verify generated vector examples
         run: python scripts/build-graphical-examples.py --check
+      - name: Verify graphical modeling overview
+        run: python scripts/build-modeling-overview.py --check
       - name: Verify canonical SVG and PNG notation
         run: python scripts/build-notation.py --check --diagnostics tmp/pdfs/notation-raster
       - name: Preserve notation renderer diagnostics

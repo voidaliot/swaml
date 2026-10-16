@@ -1,0 +1,135 @@
+package CloudTelemetry {
+    datatype Sample { deviceId: string; sequence: int; temperature: real; }
+    interface service TelemetryIngest version "1.0.0" {
+        function submit(sample: Sample): bool;
+    }
+    interface publishSubscribe AcceptedSamples version "1.0.0" {
+        event accepted(sample: Sample);
+    }
+    interface publishSubscribe Measurements version "1.0.0" {
+        event recorded(sample: Sample);
+    }
+    qos def IngressQueue {
+        delivery atMostOnce; ordering fifo; capacity 8; overflow reject;
+    }
+    qos def EventQueue {
+        delivery atLeastOnce; ordering fifo; capacity 32; overflow reject;
+    }
+    component def DeviceClient {
+        port ingest: TelemetryIngest requires;
+        var uploaded: int = 0;
+        var retryAccepted: bool = false;
+        var invalidRejected: bool = false;
+        function upload() on start {
+            call ingest.submit(record Sample { deviceId = "sensor-01"; sequence = 1; temperature = 27.0; })
+                as first within 1 s otherwise { fail "ingestion unavailable"; };
+            assert first;
+            uploaded = uploaded + 1;
+            call ingest.submit(record Sample { deviceId = "sensor-01"; sequence = 2; temperature = 28.5; })
+                as second within 1 s otherwise { fail "ingestion unavailable"; };
+            assert second;
+            uploaded = uploaded + 1;
+        }
+        function retry() on manual {
+            call ingest.submit(record Sample { deviceId = "sensor-01"; sequence = 2; temperature = 28.5; })
+                as result within 1 s otherwise { fail "retry unavailable"; };
+            retryAccepted = result;
+            assert retryAccepted;
+        }
+        function sendInvalid() on manual {
+            call ingest.submit(record Sample { deviceId = "sensor-01"; sequence = 3; temperature = 200.0; })
+                as result within 1 s otherwise { fail "ingestion unavailable"; };
+            invalidRejected = not result;
+            assert invalidRejected;
+        }
+    }
+    component def IngestionGateway {
+        port api: TelemetryIngest provides;
+        port accepted: AcceptedSamples publisher;
+        var lastSequence: int = 0;
+        var acceptedCount: int = 0;
+        function ingest(sample: Sample): bool on call api.submit {
+            if (sample.deviceId != "sensor-01" or sample.sequence <= 0 or
+                sample.temperature < -50.0 or sample.temperature > 100.0) { return false; }
+            // This example admits one ordered device stream, with an in-memory high watermark.
+            if (sample.sequence <= lastSequence) { return true; }
+            publish accepted.accepted(sample);
+            lastSequence = sample.sequence;
+            acceptedCount = acceptedCount + 1;
+            return true;
+        }
+    }
+    component def MessageBroker {
+        port input: AcceptedSamples subscriber;
+        port output: Measurements publisher;
+        var lastSequence: int = 0;
+        var forwarded: int = 0;
+        function route(sample: Sample) on receive input.accepted {
+            if (sample.sequence <= lastSequence) { return; }
+            publish output.recorded(sample);
+            lastSequence = sample.sequence;
+            forwarded = forwarded + 1;
+        }
+    }
+    component def AnalyticsWorker {
+        port input: Measurements subscriber;
+        var lastSequence: int = 0;
+        var processed: int = 0;
+        var latestTemperature: real = 0.0;
+        function aggregate(sample: Sample) on receive input.recorded {
+            if (sample.sequence <= lastSequence) { return; }
+            lastSequence = sample.sequence;
+            processed = processed + 1;
+            latestTemperature = sample.temperature;
+        }
+    }
+    component def ArchiveWriter {
+        port input: Measurements subscriber;
+        var lastSequence: int = 0;
+        var records: int = 0;
+        var lastDevice: string = "";
+        function append(sample: Sample) on receive input.recorded {
+            if (sample.sequence <= lastSequence) { return; }
+            lastSequence = sample.sequence;
+            records = records + 1;
+            lastDevice = sample.deviceId;
+        }
+    }
+    component def IngestionService {
+        port api: TelemetryIngest provides;
+        port accepted: AcceptedSamples publisher;
+        component gateway: IngestionGateway;
+        delegate api -> gateway.api;
+        delegate accepted -> gateway.accepted;
+    }
+    component Production {
+        component device: DeviceClient;
+        component ingestion: IngestionService;
+        component broker: MessageBroker;
+        component analytics: AnalyticsWorker;
+        component archive: ArchiveWriter;
+        connect ingestionLink: device.ingest -> ingestion.api qos IngressQueue;
+        connect brokerLink: ingestion.accepted -> broker.input qos EventQueue;
+        connect analyticsLink: broker.output -> analytics.input qos EventQueue;
+        connect archiveLink: broker.output -> archive.input qos EventQueue;
+        deploy device on "system:edgeProcess";
+        deploy ingestion on "system:apiContainer";
+        deploy broker on "system:brokerContainer";
+        deploy analytics on "system:analyticsContainer";
+        deploy archive on "system:archiveContainer";
+    }
+    requirement ValidatedTelemetry { doc /* Accepted samples from the ordered device stream reach analytics and archive without duplicate local processing. */ }
+    satisfy ValidatedTelemetry by Production; useCase IngestSample for Production {
+        call device.ingest.submit -> ingestion.api.submit via ingestionLink label upload;
+        publish ingestion.accepted.accepted -> broker.input.accepted via brokerLink after upload label admitted;
+        publish broker.output.recorded -> analytics.input.recorded via analyticsLink after admitted label analytics;
+        publish broker.output.recorded -> archive.input.recorded via archiveLink after admitted label archived;
+        reply ingestion.api.submit -> device.ingest.submit via ingestionLink after admitted label acknowledged;
+    }
+    view overview gv of Production;
+    view contracts iv of Production;
+    view requirements cv of Production;
+    view ingestion sv of IngestSample;
+    view allocation grv of Production;
+    view validationFlow fv of Production.ingestion.gateway.ingest;
+}

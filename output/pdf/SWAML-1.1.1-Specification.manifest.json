@@ -28,7 +28,7 @@
     {
       "path": "docs/spec/04-systems-and-conformance.md",
       "attachmentName": "docs__spec__04-systems-and-conformance.md",
-      "sha256": "a882f55d9ef899dc310613fab2eebccc94c2cea704cce09bc719d6b60849008c"
+      "sha256": "0cee9f81c3dbac2e1496f0c19a24f38e860d9169de6d07c31c3f1fe4b050b50e"
     },
     {
       "path": "docs/spec/05-kerml-mapping.md",
@@ -58,7 +58,7 @@
     {
       "path": "docs/GRAPHICAL_NOTATION.md",
       "attachmentName": "docs__GRAPHICAL_NOTATION.md",
-      "sha256": "779289dbee42084601234f7d1b51e613ac33139b03a4848e29ab64d05951f529"
+      "sha256": "1542cf5fa9f80e32b82d8e9ae1879b43032b871621189d87f6d211067d4ac5c7"
     },
     {
       "path": "docs/GRAPHICAL_CATALOG.md",
@@ -68,52 +68,52 @@
     {
       "path": "docs/CONCERN_GUIDE.md",
       "attachmentName": "docs__CONCERN_GUIDE.md",
-      "sha256": "68cbc1b9e3c27782e2ef0f53832349c41bfb3f6e22025e165ede35b597775230"
+      "sha256": "af0f48778b3f541796d6e44c276cd186e7a9e27fc206e9dd38770a47a501388a"
     },
     {
       "path": "docs/KEYWORD_REFERENCE.md",
       "attachmentName": "docs__KEYWORD_REFERENCE.md",
-      "sha256": "ae4e6a8bf4b2062d18f781c020b252f2354e4d872ed08608578d98e4484aca9e"
+      "sha256": "a1b3978660cfb8608f2804fcbef7287b42e13753978ffcca61c815a507d7aa17"
     },
     {
       "path": "docs/GRAPHICAL_EXAMPLES.md",
       "attachmentName": "docs__GRAPHICAL_EXAMPLES.md",
-      "sha256": "43aec4bf96c43677427ea70224ffeb2acb452c6afef51e8eda02619097c2d794"
+      "sha256": "bd3ce63101173bc1f7a9080790944b17a90a77bdb1e21ec5248cdf36b23a9716"
     },
     {
       "path": "docs/SIMULATION.md",
       "attachmentName": "docs__SIMULATION.md",
-      "sha256": "6aeb97eeaeba82bbdfcb4c56a0f02e5e4139064fc8f4a98a0acec515f84ace35"
+      "sha256": "ebe0de8cafd2e9a120f15d6b59066de87af0841de311e3cf0d6ccb63cb3a4aa5"
     },
     {
       "path": "docs/MIGRATION_1_1.md",
       "attachmentName": "docs__MIGRATION_1_1.md",
-      "sha256": "7ae6ef61534472c39cce342686045c0a7707ce192938c28d2151c4dafbc3c181"
+      "sha256": "f02c736bdc72b7b7d52858fe87e74dd2b3a2f488f186b0a314fd22500d326011"
     },
     {
       "path": "docs/USER_GUIDE.md",
       "attachmentName": "docs__USER_GUIDE.md",
-      "sha256": "579a0dc7287804b40a8cc0fda318fb41da6232965870a846c75c86690d873cdb"
+      "sha256": "54274212e6b37441116b12a8e10397e35fef9a5d3e79e6aef74f643508047cdc"
     },
     {
       "path": "docs/ARCHITECTURE_COMPARISON.md",
       "attachmentName": "docs__ARCHITECTURE_COMPARISON.md",
-      "sha256": "871204c8d3edbbfc12ed0f86080f4cd65ee71ef70676e00b882ac4cd350915f0"
+      "sha256": "5c0aa22ae05e441df61781a3f0ac802b0dfe44f51c8b4c63ea1ccd02f91edde7"
     },
     {
       "path": "docs/TOOLING.md",
       "attachmentName": "docs__TOOLING.md",
-      "sha256": "f330435874ca7ba299f2b058fa5062c61c3f48f619112450157273356ca97266"
+      "sha256": "51533a2e6eb7ec8c987be73816c85ba8fe1adf451c1ef1fe4b0607cbe363a05c"
     },
     {
       "path": "docs/IMPLEMENTATION_STATUS.md",
       "attachmentName": "docs__IMPLEMENTATION_STATUS.md",
-      "sha256": "6a41b9c8a163a8d7033bc0c82dc203db077daeb79ced96212965658384d65564"
+      "sha256": "230b26b43b102b0ad18332f1c0635050e738ed869a33df218d06128b62f08931"
     },
     {
       "path": "docs/RELEASE_1_1_1.md",
       "attachmentName": "docs__RELEASE_1_1_1.md",
-      "sha256": "73e9c31149dda06725f64c901de483a3a73b4cb5383d01f02d9b358bc41cc3b7"
+      "sha256": "48b90e7af553af96491c4c463573027a39a6d7c0370d1527740b08b9642971df"
     },
     {
       "path": "docs/SYSML_STYLE_REVIEW.md",
@@ -123,7 +123,7 @@
     {
       "path": "docs/decisions/0001-language-boundaries.md",
       "attachmentName": "docs__decisions__0001-language-boundaries.md",
-      "sha256": "8e5a915407a9a5445dd4416d9d80cabb369dc252c912cde34d2dccd5dbc0230b"
+      "sha256": "43926d37d25619a3f5a720304ff85be0bcd39240e5793492d1e67cf378b6bbb7"
     },
     {
       "path": "docs/decisions/0002-auditable-semantics.md",
@@ -133,12 +133,12 @@
     {
       "path": "docs/decisions/0003-reference-execution-and-publication.md",
       "attachmentName": "docs__decisions__0003-reference-execution-and-publication.md",
-      "sha256": "6dd2c50dc573c6039656a62c8105e36d69daebc944717b1cbf7ad3611e970990"
+      "sha256": "d9985d6ac4efe47b98b5f1c21398f27669b8d5fedd5379657d33ac95db59dbc3"
     },
     {
       "path": "docs/decisions/0004-compact-component-language.md",
       "attachmentName": "docs__decisions__0004-compact-component-language.md",
-      "sha256": "63edc468940b0c4152aca2331aa5ec0a427a09b24d2077323da8accce897081d"
+      "sha256": "c3b85485e3a587e44b6bed20a5edd889d5c31b179fd81fc4b9a381e35c339ba5"
     },
     {
       "path": "docs/decisions/0005-canonical-graphical-notation.md",
@@ -158,7 +158,7 @@
     {
       "path": "AGENTS.md",
       "attachmentName": "AGENTS.md",
-      "sha256": "46e9a7e86519ce26d7ffd73befc48790ff955084d2c70b89fdca807002cb36f1"
+      "sha256": "5fb9912b4a67d25d613d9ac8bd3132ef1110ff16dea7ec231cfed2a402810a3d"
     },
     {
       "path": "src/language/swaml.langium",
@@ -228,12 +228,12 @@
     {
       "path": "docs/SWAML-1.1.1-Reference.md",
       "attachmentName": "docs__SWAML-1.1.1-Reference.md",
-      "sha256": "5f0bffd9c5979b0d2a06128e273435d323fb6aeaed8cf925d4ef816b90d90d46"
+      "sha256": "c9c41be9a785572528980251cac89dba353bc2989cee9c03c1ba44a060470110"
     },
     {
       "path": "spec/keywords.json",
       "attachmentName": "spec__keywords.json",
-      "sha256": "c8dfae0c800a99fee37db208f6e6208a446e0492e8c94b02dc96f1aafe0cc2a0"
+      "sha256": "e37ee3f232cce0d31fc4052e9d74b81d5cb48a1bb3a0da1e32dd944983443395"
     },
     {
       "path": "spec/graphical-examples.json",
@@ -1826,5 +1826,8 @@
       "sha256": "f4e7bfd5995f00c485f4e276e30b47746146afc9ed568b2094d64678319bb434"
     }
   ],
-  "pdfSha256": "b4c76fdf03a3da211797dae27245cb3e45fbf366f509f1988eb7d1e5929f2d36"
+  "pdfSha256": "126cdd3de1e167f36d9268066442fc1b025bac518952dddc2a88c507daa4527b",
+  "editorialRevision": "2026-10-16",
+  "editorialChanges": "Platform-neutral tooling guidance and view descriptions; historical language syntax and semantics retained.",
+  "originalPdfSha256": "b4c76fdf03a3da211797dae27245cb3e45fbf366f509f1988eb7d1e5929f2d36"
 }

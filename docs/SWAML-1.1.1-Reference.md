@@ -253,7 +253,7 @@ Model a broker as a component with incoming and outgoing interfaces if broker be
 
 ## 7. Put states inside an operation
 
-The [stateful operation example](../examples/04-stateful-operation.swaml) owns `Idle`, `Running`, and `Stopped` inside `Device.lifecycle`. It starts once with its unit. No performer or external behavior allocation is required.
+The [stateful operation example](../examples/04-stateful-function.swaml) owns `Idle`, `Running`, and `Stopped` inside `Device.lifecycle`. It starts once with its unit. No performer or external behavior allocation is required.
 
 A stateful operation has no parameters, a Void result (usually omitted), and `on start { initial Idle; … }`. The initial reference is the first item in its body. There is no extra behavior wrapper. It declares an initial state, states with optional entry/exit blocks, and transitions. Triggers are an incoming port member, a positive delay after entering a state, or completion. A receiving transition makes event parameter names available in its guard and effect; sender–receiver data uses `payload`.
 
@@ -277,7 +277,7 @@ package TimerExample {
 }
 ```
 
-The root contains its unit directly. The delay is local to that operation; it is not a free event or cross-unit channel. The [interface-triggered lifecycle model](../examples/04-stateful-operation.swaml) adds commands and status ports.
+The root contains its unit directly. The delay is local to that operation; it is not a free event or cross-unit channel. The [interface-triggered lifecycle model](../examples/04-stateful-function.swaml) adds commands and status ports.
 
 On a transition: run the source exit block, the transition effect, then the destination entry block. A final state completes the stateful operation. A received event with no enabled transition in the current state is consumed and ignored. Add an explicit transition if ignoring it is unacceptable.
 
@@ -327,7 +327,7 @@ The editor host should load the whole model workspace. The CLI deliberately load
 | GRV — Grid View | Inspect sortable model, interface, timing and deployment tables |
 | FV — Flow View | Inspect an operation's control flow or owned state transitions |
 
-These are specified editor behaviors. The current package supplies the model syntax and language server, not a diagram renderer. View declarations can already be parsed and checked. See [graphical notation](#source-5798f00f85a6) for the drawing and editing contract. There is no GEV, and AFV/STV are combined into FV.
+These are specified editor behaviors. The current package supplies the model syntax and language server, not a diagram renderer. View declarations can already be parsed and checked. See [graphical notation](#source-5798f00f85a6) for the drawing and editing contract.
 
 <a id="source-c9e79bd9c348-12-resolve-diagnostics"></a>
 
@@ -425,7 +425,7 @@ A parsed but invalid model is not executable. A valid model may deliberately fai
 
 See [graphical notation](#source-5798f00f85a6) and the [canonical concept catalog](#source-2d93a6cc8eab), with original SVG/PNG drawings and graphical/textual notation tables. The Model Browser exposes ownership and definition/occurrence identity. GV shows general structure, IV connections, CV cases/coverage, SV exchanges, GRV tabular properties, and FV operation flow or states. A selected occurrence retains its instance path when its shared declaration is displayed.
 
-A diagram is a projection of the same semantic model as the text. Layout belongs in a sidecar. Port/member paths and connector identities must remain discoverable; a drawing cannot create a hidden channel. Source edits require parse/link/validation and undo. Full VS Code extension/editor implementation belongs in a separate repository.
+A diagram is a projection of the same semantic model as the text. Layout belongs in a sidecar. Port/member paths and connector identities must remain discoverable; a drawing cannot create a hidden channel. Source edits require parse/link/validation and undo.
 
 <a id="source-62d51cd6e7d4-kernel-foundation-and-interchange"></a>
 
@@ -539,7 +539,7 @@ SysML 2.0 uses KerML as its foundation and provides definition/usage modeling, t
 
 **SWAML inference:** keep type versus occurrence and a common semantic foundation, but scope the authoring language to software. Operations and states live where they are used, removing a separate performer allocation from the user model. The [mapping contract](#source-237cbcd491f2) states what kernel normalization must preserve; the reference Langium AST is not advertised as a conforming kernel implementation.
 
-The existing Aliot view family supplies the navigation vocabulary. Its public guide describes Browser navigation and structural/behavioral views. SWAML preserves General, Interconnect, Case, Sequence and Grid views, removes geometry and combines flow/state views into FV. [Existing Aliot documentation](https://github.com/voidaliot/sysml-v2-vscext-release/blob/main/README.md).
+SWAML defines Browser navigation and six view families: General, Interconnect, Case, Sequence, Grid and Flow. Each view projects the same semantic model and retains links to its source declarations and occurrences.
 
 SWAML 1.1 retains `component def` and `unit def` so reusable types remain visibly distinct from occurrences. A top-level component usage also supplies the closed execution root; no second `system` concept is needed. States remain directly inside their owning operation, distinguished by its initial-state declaration, rather than an extra authored `machine` wrapper. This reduces authoring vocabulary without changing interface boundaries or runtime state semantics.
 
@@ -1222,7 +1222,7 @@ Case diagrams never introduce free actor messages, topic names, hidden connector
 | GRV — Grid View | package or named semantic declaration except another view | sortable identity-aware properties, contracts and allocation |
 | FV — Flow View | operation | statement/control-flow or directly owned states |
 
-These are the complete view families. GEV is absent; AFV and STV are unified as FV. Browser is navigation, not a new declaration keyword. A package subject is its own name; nested view subjects retain occurrence context while resolving shared members through definitions.
+These are the complete view families. FV projects both statement flow and operation-owned states. Browser is navigation, not a new declaration keyword. A package subject is its own name; nested view subjects retain occurrence context while resolving shared members through definitions.
 
 The Browser follows packages → definitions/root occurrences → child occurrences → ports, variables, functions and operations → statements or states. Opening a usage keeps its occurrence context. Open declaration selects the shared definition; Up selects the owner; Diagram chooses an applicable view. Selection updates Properties. These are host requirements, not commands already implemented by this repository.
 
@@ -1260,11 +1260,11 @@ A graphical-conformance claim requires every applicable projection, identity rul
 
 # Graphical notation examples
 
-These rendered figures illustrate the normative [view contract](#source-5798f00f85a6). They are notation examples, not screenshots of a shipped extension. The same vector scene sources are rendered into the PDF so labels and lines remain sharp; PNG copies support tools that require raster images. Every figure has accessible text and a specific model source; the source model remains authoritative.
+These rendered figures illustrate the normative [view contract](#source-5798f00f85a6). The same vector scene sources are rendered into the PDF so labels and lines remain sharp; PNG copies support tools that require raster images. Every figure has accessible text and a specific model source; the source model remains authoritative.
 
 For individual language concepts, use the [canonical notation catalog](#source-2d93a6cc8eab), with paired SVG/PNG downloads and textual counterparts. The [notation inventory](../spec/notation.json) covers every grammar production and keyword, distinguishing standalone glyphs from compartments, labels and text-only syntax. The figures below are worked compositions of those rules, not the exhaustive symbol index.
 
-The first seven figures use the [service setting model](../examples/08-service-field.swaml). A provider owns the setting, two client components use its RPC/events, and private storage remains behind unit ports. The state figure uses the [lifecycle model](../examples/04-stateful-operation.swaml). The [figure manifest](../spec/graphical-examples.json) links each illustration to its model and semantic subject.
+The first seven figures use the [service setting model](../examples/08-service-field.swaml). A provider owns the setting, two client components use its RPC/events, and private storage remains behind unit ports. The state figure uses the [lifecycle model](../examples/04-stateful-function.swaml). The [figure manifest](../spec/graphical-examples.json) links each illustration to its model and semantic subject.
 
 <a id="source-49c5dd8a67d1-model-browser-actual-ownership"></a>
 
@@ -1344,7 +1344,7 @@ The frame belongs directly to `SettingStore.update`. The decision tests the actu
 
 [SVG](figures/fv-state.svg) · [PNG](figures/fv-state.png)
 
-`Idle`, `Running` and `Stopped` belong directly to `Device.lifecycle`. Initial entry publishes idle status. The interface event `commands.begin` enters Running; entry increments cycles and publishes running. Either `commands.stop` or the local 30-second timer enters the final state. The timer edge first publishes timeout in its effect. Final entry publishes stopped and terminates its owning operation. Leaving Running cancels the old timer generation. Both state and statement projections are FV; no GEV, AFV, STV or performer layer is introduced.
+`Idle`, `Running` and `Stopped` belong directly to `Device.lifecycle`. Initial entry publishes idle status. The interface event `commands.begin` enters Running; entry increments cycles and publishes running. Either `commands.stop` or the local 30-second timer enters the final state. The timer edge first publishes timeout in its effect. Final entry publishes stopped and terminates its owning operation. Leaving Running cancels the old timer generation. FV projects both state behavior and statement flow from their owning operations.
 
 <a id="source-49c5dd8a67d1-reproduction-and-semantic-checks"></a>
 
@@ -1805,7 +1805,7 @@ Event member. Show event name(parameters) in its interface compartment; draw no 
 - Show event name(parameters) in its interface compartment; draw no free-floating event definition.
 - Every graphical emission or receive label identifies this member through an owned port and operation.
 
-[Complete model](../examples/04-stateful-operation.swaml) · `Lifecycle::Status`.
+[Complete model](../examples/04-stateful-function.swaml) · `Lifecycle::Status`.
 
 [SVG](notation/event-member.svg) · [PNG](notation/event-member.png) · [Vector scene](notation/event-member.scene.json)
 
@@ -1826,7 +1826,7 @@ Event publisher port. Draw a small square centered on the owning boundary and la
 - Draw a small square centered on the owning boundary and label its name: Interface and exact role.
 - Events leave this port through explicit subscription connectors. Do not infer direction only from left/right placement; role text remains mandatory.
 
-[Complete model](../examples/04-stateful-operation.swaml) · `Lifecycle::Device.status`.
+[Complete model](../examples/04-stateful-function.swaml) · `Lifecycle::Device.status`.
 
 [SVG](notation/port-publisher.svg) · [PNG](notation/port-publisher.png) · [Vector scene](notation/port-publisher.scene.json)
 
@@ -1847,7 +1847,7 @@ Event subscriber port. Draw a small square centered on the owning boundary and l
 - Draw a small square centered on the owning boundary and label its name: Interface and exact role.
 - Events enter the declared handling operation through this port. Do not infer direction only from left/right placement; role text remains mandatory.
 
-[Complete model](../examples/04-stateful-operation.swaml) · `Lifecycle::Monitor.status`.
+[Complete model](../examples/04-stateful-function.swaml) · `Lifecycle::Monitor.status`.
 
 [SVG](notation/port-subscriber.svg) · [PNG](notation/port-subscriber.png) · [Vector scene](notation/port-subscriber.scene.json)
 
@@ -1880,7 +1880,7 @@ Interface connector. Draw a solid directed connector between port squares, with 
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Interface operation signature (compartment) | ![Interface operation signature](notation/operation-signature.svg) | `operation check(): Bool idempotent;` |
+| Interface operation signature (compartment) | ![Interface operation signature](notation-history/1.1/operation-signature.svg) | `operation check(): Bool idempotent;` |
 
 Interface operation signature. Show operation name(parameters): Result and idempotent when declared, inside the interface contract.
 
@@ -1891,7 +1891,7 @@ Interface operation signature. Show operation name(parameters): Result and idemp
 
 [Complete model](../examples/07-client-server.swaml) · `Rpc::Health`.
 
-[SVG](notation/operation-signature.svg) · [PNG](notation/operation-signature.png) · [Vector scene](notation/operation-signature.scene.json)
+[SVG](notation-history/1.1/operation-signature.svg) · [PNG](notation-history/1.1/operation-signature.png) · [Vector scene](notation-history/1.1/operation-signature.scene.json)
 
 <a id="source-2d93a6cc8eab-notation-freshness-bound"></a>
 
@@ -1973,7 +1973,7 @@ Publish–subscribe interface. Draw an interface classifier rectangle with the e
 - Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.
 - Keep member categories visible; a contract box is a reusable type and MUST NOT be mistaken for a runtime broker or unit.
 
-[Complete model](../examples/04-stateful-operation.swaml) · `Lifecycle::Status`.
+[Complete model](../examples/04-stateful-function.swaml) · `Lifecycle::Status`.
 
 [SVG](notation/publish-subscribe-interface.svg) · [PNG](notation/publish-subscribe-interface.png) · [Vector scene](notation/publish-subscribe-interface.scene.json)
 
@@ -2305,7 +2305,7 @@ Event publication. Draw an owned statement box with the exact statement label an
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Executable operation (node) | ![Executable operation](notation/operation.svg) | `operation greet() on start` |
+| Executable operation (node) | ![Executable operation](notation-history/1.1/operation.svg) | `operation greet() on start` |
 
 Executable operation. Draw an operation frame or compartment with its name, ordered parameters, result and activation label.
 
@@ -2316,7 +2316,7 @@ Executable operation. Draw an operation frame or compartment with its name, orde
 
 [Complete model](../examples/01-hello.swaml) · `Hello::Speaker.greet`.
 
-[SVG](notation/operation.svg) · [PNG](notation/operation.png) · [Vector scene](notation/operation.scene.json)
+[SVG](notation-history/1.1/operation.svg) · [PNG](notation-history/1.1/operation.png) · [Vector scene](notation-history/1.1/operation.scene.json)
 
 <a id="source-2d93a6cc8eab-notation-fail"></a>
 
@@ -2368,7 +2368,7 @@ Local declaration. Draw an owned statement box with the exact statement label an
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Local operation invocation (node) | ![Local operation invocation](notation/invoke.svg) | `invoke prepare();` |
+| Local operation invocation (node) | ![Local operation invocation](notation-history/1.1/invoke.svg) | `invoke prepare();` |
 
 Local operation invocation. Draw an owned statement box with the exact statement label and directed control-flow succession.
 
@@ -2379,7 +2379,7 @@ Local operation invocation. Draw an owned statement box with the exact statement
 
 [Complete model](../examples/05-values-and-flow.swaml) · `Values::Producer.boot`.
 
-[SVG](notation/invoke.svg) · [PNG](notation/invoke.png) · [Vector scene](notation/invoke.scene.json)
+[SVG](notation-history/1.1/invoke.svg) · [PNG](notation-history/1.1/invoke.png) · [Vector scene](notation-history/1.1/invoke.scene.json)
 
 <a id="source-2d93a6cc8eab-notation-trigger-manual"></a>
 
@@ -2494,7 +2494,7 @@ RPC handler activation. Attach the activation text to its operation header; use 
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| RPC request and failure continuation (node) | ![RPC request and failure continuation](notation/request.svg) | `request setting.get() as observed within 100 ms otherwise { return; };` |
+| RPC request and failure continuation (node) | ![RPC request and failure continuation](notation-history/1.1/request.svg) | `request setting.get() as observed within 100 ms otherwise { return; };` |
 
 RPC request and failure continuation. Draw one request step labeled port.member, result binding and timeout, with distinct success and otherwise continuations.
 
@@ -2505,7 +2505,7 @@ RPC request and failure continuation. Draw one request step labeled port.member,
 
 [Complete model](../examples/08-service-field.swaml) · `Settings::Panel.refresh`.
 
-[SVG](notation/request.svg) · [PNG](notation/request.png) · [Vector scene](notation/request.scene.json)
+[SVG](notation-history/1.1/request.svg) · [PNG](notation-history/1.1/request.png) · [Vector scene](notation-history/1.1/request.scene.json)
 
 <a id="source-2d93a6cc8eab-notation-trigger-start"></a>
 
@@ -2592,7 +2592,7 @@ Initial state reference. Draw a solid initial pseudonode with one outgoing unlab
 - Draw a solid initial pseudonode with one outgoing unlabeled initialization edge to the named initial state.
 - This projects the operation’s unique initial reference; it is not a transmitted event or a second start operation.
 
-[Complete model](../examples/04-stateful-operation.swaml) · `Lifecycle::Device.lifecycle`.
+[Complete model](../examples/04-stateful-function.swaml) · `Lifecycle::Device.lifecycle`.
 
 [SVG](notation/initial-state.svg) · [PNG](notation/initial-state.png) · [Vector scene](notation/initial-state.scene.json)
 
@@ -2604,7 +2604,7 @@ Initial state reference. Draw a solid initial pseudonode with one outgoing unlab
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Operation with states (node) | ![Operation with states](notation/stateful-operation.svg) | `operation lifecycle() on start` |
+| Operation with states (node) | ![Operation with states](notation-history/1.1/stateful-operation.svg) | `operation lifecycle() on start` |
 
 Operation with states. Draw the state graph inside the owning operation frame, keeping the operation name and on start label visible.
 
@@ -2613,9 +2613,9 @@ Operation with states. Draw the state graph inside the owning operation frame, k
 - Draw the state graph inside the owning operation frame, keeping the operation name and on start label visible.
 - There is no machine box, performer, or separate authored state allocation; StateBody contributes only the operation’s contents.
 
-[Complete model](../examples/04-stateful-operation.swaml) · `Lifecycle::Device.lifecycle`.
+[Complete model](../examples/04-stateful-function.swaml) · `Lifecycle::Device.lifecycle`.
 
-[SVG](notation/stateful-operation.svg) · [PNG](notation/stateful-operation.png) · [Vector scene](notation/stateful-operation.scene.json)
+[SVG](notation-history/1.1/stateful-operation.svg) · [PNG](notation-history/1.1/stateful-operation.png) · [Vector scene](notation-history/1.1/stateful-operation.scene.json)
 
 <a id="source-2d93a6cc8eab-notation-timer-transition"></a>
 
@@ -3050,7 +3050,7 @@ Private unit variable. Show a var name: Type = initializer row inside its unit b
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Pure local function (compartment) | ![Pure local function](notation/pure-function.svg) | `function twice(x: Real): Real = x * 2.0;` |
+| Pure local function (compartment) | ![Pure local function](notation-history/1.1/pure-function.svg) | `function twice(x: Real): Real = x * 2.0;` |
 
 Pure local function. Show a function signature and expression row in the owning unit, with an explicit result type.
 
@@ -3061,7 +3061,7 @@ Pure local function. Show a function signature and expression row in the owning 
 
 [Complete model](../examples/05-values-and-flow.swaml) · `Values::Producer.twice`.
 
-[SVG](notation/pure-function.svg) · [PNG](notation/pure-function.png) · [Vector scene](notation/pure-function.scene.json)
+[SVG](notation-history/1.1/pure-function.svg) · [PNG](notation-history/1.1/pure-function.png) · [Vector scene](notation-history/1.1/pure-function.scene.json)
 
 <a id="source-2d93a6cc8eab-notation-record-value"></a>
 
@@ -3134,7 +3134,7 @@ Root component. Draw a containing component frame labeled «root component» and
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Unit definition (node) | ![Unit definition](notation/unit-definition.svg) | `unit def Listener` |
+| Unit definition (node) | ![Unit definition](notation-history/1.1/unit-definition.svg) | `unit def Listener` |
 
 Unit definition. Draw a classifier rectangle headed «unit def» with separate private values and operation compartments.
 
@@ -3145,7 +3145,7 @@ Unit definition. Draw a classifier rectangle headed «unit def» with separate p
 
 [Complete model](../examples/01-hello.swaml) · `Hello::Listener`.
 
-[SVG](notation/unit-definition.svg) · [PNG](notation/unit-definition.png) · [Vector scene](notation/unit-definition.scene.json)
+[SVG](notation-history/1.1/unit-definition.svg) · [PNG](notation-history/1.1/unit-definition.png) · [Vector scene](notation-history/1.1/unit-definition.scene.json)
 
 <a id="source-2d93a6cc8eab-notation-unit-usage"></a>
 
@@ -3155,7 +3155,7 @@ Unit definition. Draw a classifier rectangle headed «unit def» with separate p
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Unit usage (node) | ![Unit usage](notation/unit-usage.svg) | `unit listener: Listener;` |
+| Unit usage (node) | ![Unit usage](notation-history/1.1/unit-usage.svg) | `unit listener: Listener;` |
 
 Unit usage. Draw a structural rectangle labeled listener: Listener and «unit»; show its owned ports on its boundary when needed.
 
@@ -3166,7 +3166,7 @@ Unit usage. Draw a structural rectangle labeled listener: Listener and «unit»;
 
 [Complete model](../examples/01-hello.swaml) · `Hello::Conversation`.
 
-[SVG](notation/unit-usage.svg) · [PNG](notation/unit-usage.png) · [Vector scene](notation/unit-usage.scene.json)
+[SVG](notation-history/1.1/unit-usage.svg) · [PNG](notation-history/1.1/unit-usage.png) · [Vector scene](notation-history/1.1/unit-usage.scene.json)
 
 
 <a id="source-2d93a6cc8eab-timing-and-deployment"></a>
@@ -3244,7 +3244,7 @@ Duration value. Render an integer and its explicit time unit together in timing,
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Execution node (node) | ![Execution node](notation/execution-node.svg) | `node ecu mcu;` |
+| Execution node (node) | ![Execution node](notation-history/1.1/execution-node.svg) | `node ecu mcu;` |
 
 Execution node. Draw a distinct execution-location rectangle with «node», its name and mcu/process/container kind.
 
@@ -3255,7 +3255,7 @@ Execution node. Draw a distinct execution-location rectangle with «node», its 
 
 [Complete model](../examples/02-realtime-controller.swaml) · `Control::Heating.ecu`.
 
-[SVG](notation/execution-node.svg) · [PNG](notation/execution-node.png) · [Vector scene](notation/execution-node.scene.json)
+[SVG](notation-history/1.1/execution-node.svg) · [PNG](notation-history/1.1/execution-node.png) · [Vector scene](notation-history/1.1/execution-node.scene.json)
 
 <a id="source-2d93a6cc8eab-notation-timing-contract"></a>
 
@@ -3363,7 +3363,7 @@ Flow View. Draw a framed projection titled FV with the semantic subject identity
 - Draw a framed projection titled FV with the semantic subject identity visible; use the canonical element symbols within it.
 - FV supports both statement flow and operation-owned states. Keep the owning operation frame and never reintroduce separate action/state views or a machine element.
 
-[Complete model](../examples/04-stateful-operation.swaml) · `Lifecycle::lifecycle`.
+[Complete model](../examples/04-stateful-function.swaml) · `Lifecycle::lifecycle`.
 
 [SVG](notation/view-fv.svg) · [PNG](notation/view-fv.png) · [Vector scene](notation/view-fv.scene.json)
 
@@ -4136,7 +4136,7 @@ Trace records have monotonically increasing `ordinal`, nondecreasing `timeNs`, `
 
 The CLI supplies SHA-256 per source; the portable library returns exact sources and leaves hashing/storage to its host. Keep those sources, digests, selected root, complete options, profile version and output together. Absolute source URIs may identify the local workspace; the published hello artifact uses stable repository-relative file URIs.
 
-The implementation provides **reference simulation evidence with an explicit logical-time abstraction**. It is not a blanket E certification, model checker, production runtime, KerML exporter, AUTOSAR generator or graphical editor. Physical WCET/schedulability, distributed clock error, real serialization, middleware outages and independent conformance assessment still require separate evidence. An extension can invoke the portable API after building and validating the entire referenced workspace; that host implementation belongs in its own repository.
+The implementation provides **reference simulation evidence with an explicit logical-time abstraction**. It is not a blanket E certification, model checker, production runtime, KerML exporter, AUTOSAR generator or graphical editor. Physical WCET/schedulability, distributed clock error, real serialization, middleware outages and independent conformance assessment still require separate evidence. A host can invoke the portable API after building and validating the entire referenced workspace.
 
 ---
 
@@ -4334,7 +4334,7 @@ The following groups collectively define semantic validity. Diagnostic numbers i
 
 **Execution conformance (E):** V plus the operational, correlation, queue, timing-observation, failure and concurrency semantics. Target binding assumptions must be explicit. A simulator may abstract physical time while still reporting which timing obligations it does not check.
 
-**Graphical conformance (G):** S and the graphical specification's projection and edit rules. G may present invalid models with diagnostics, but must not invent valid connectivity from layout. FV combines flow/state projection; GEV/AFV/STV are not SWAML view kinds.
+**Graphical conformance (G):** S and the graphical specification's projection and edit rules. G may present invalid models with diagnostics, but must not invent valid connectivity from layout. FV projects operation-owned statement flow and state behavior.
 
 A tool claiming `SWAML 1.1 S, partial V` accurately describes this repository's current core. It must not advertise K, E or G until those implementations and checks exist. A language host must require an explicit supported edition, and incompatible changes require documented migration. Version 1.1 is an intentional syntax revision; it is not backward-compatible with 1.0 despite the minor version number. Migration tooling must not change the meaning of models silently.
 
@@ -4444,7 +4444,7 @@ The removed words `swaml`, `system`, `machine`, `set`, `compute`, `array` and `e
 
 ## Preserve architecture and check evidence
 
-No 1.1 simplification removes interface versions, typed ports, handler ownership, emission provenance, explicit connectors/delegation, mandatory QoS, RPC timeout/failure branches or bounded loops. All exchange between distinct units/components still follows interfaces. States and operations retain direct ownership. Browser, GV, IV, CV, SV, GRV and FV remain; there is no GEV or performer concept.
+No 1.1 simplification removes interface versions, typed ports, handler ownership, emission provenance, explicit connectors/delegation, mandatory QoS, RPC timeout/failure branches or bounded loops. All exchange between distinct units/components still follows interfaces. States and operations retain direct ownership. Browser, GV, IV, CV, SV, GRV and FV remain.
 
 Run `npm run check` after migrating. It checks current examples, executable documentation, reserved-word coverage, grammar mapping, simulation values and trace freshness. The simulation binding is now `swaml-reference/1.1`; its selector and result field are named `root`, replacing `system`. Rebuild any host using generated AST types: `RootComponent`/`RootMember` replace `System`/`SystemMember`, `StateBody` replaces `Machine`, and enum values resolve from `ReferenceExpression` using `ValuePath` rather than an `EnumLiteral` node.
 
@@ -4960,7 +4960,7 @@ Defines a pure expression with a non-Void result. It sees only copied parameters
 
 **Concern:** [Graphical views](#source-5798f00f85a6). **Grammar:** `View`.
 
-Flow View of an operation. Projects either its statement body or its owned states/transitions in the same view family. There are no performer allocations or separate AFV/STV kinds.
+Flow View of an operation. Projects either its statement body or its owned states/transitions in the same view family.
 
 **Example fragment:** `view control FV of Controller.regulate;`
 
@@ -6009,7 +6009,6 @@ String-valued paths now receive conservative dependency invalidation. Path-aware
 | Timing/behavioral analysis | target scheduling model, case witnesses, idempotency and safety/liveness evidence |
 | Browser and graphical G workbench | projections, layout sidecars, Properties, validated source edits and undo |
 | Complete IDE refactoring | path-aware rename/find references/navigation and stable identity map |
-| VS Code package | language client activation, bundling, desktop/web entry points, commands and release pipeline |
 | Platform exports | target bindings and serialization such as AUTOSAR ARXML |
 
 No blanket K, E or G certification is claimed. The [reference simulation profile](#source-fedc6631cb48) documents its executable scope and time abstraction. These implementation milestones have complete language-side contracts; they are not necessary to claim that the 1.1 specification has defined its syntax and meaning.
@@ -6024,17 +6023,17 @@ Inheritance/redefinition, generics, dynamic object creation, unbounded arrays, r
 
 <a id="source-5ec3282569db"></a>
 
-<a id="source-5ec3282569db-langium-setup-and-vs-code-integration"></a>
+<a id="source-5ec3282569db-language-tooling-and-integration"></a>
 
-# Langium setup and VS Code integration
+# Language tooling and integration
 
 <a id="source-5ec3282569db-package-contract"></a>
 
 ## Package contract
 
-The current package is a reusable language core. It is marked `private` to prevent accidental npm publication. The existing `voidaliot/swaml-vsc-ext` repository can consume a reviewed version through a local workspace dependency or a future published package; that repository has not been modified by this setup.
+The package supplies a reusable language core, command-line tools and a language-server adapter. It is marked `private` to prevent accidental npm publication. Consumers can build it locally and use the documented APIs with an explicitly selected language version.
 
-This edition parses headerless **SWAML 1.1** only. The extension must pin its language-core dependency and identify 1.1 in project/workspace settings before source loading; these settings belong to the host, not to an undocumented model grammar. The repository CLI is itself pinned to 1.1. Unsupported requested editions must be rejected explicitly; a host must never silently upgrade models to the latest parser. Read the [migration guide](#source-23a5a389cd4b) before consuming this incompatible source update.
+This edition parses headerless **SWAML 1.1** only. A host must pin its language-core dependency and identify 1.1 in project/workspace settings before source loading; these settings belong to the host, not to an undocumented model grammar. The repository CLI is itself pinned to 1.1. Unsupported requested editions must be rejected explicitly; a host must never silently upgrade models to the latest parser. Read the [migration guide](#source-23a5a389cd4b) before consuming this incompatible source update.
 
 The source of concrete syntax is [swaml.langium](../src/language/swaml.langium). Langium generates AST types, grammar metadata, reflection and TextMate syntax. Generated files and `out/` are ignored; rebuild them after checkout.
 
@@ -6085,41 +6084,23 @@ For multiple files, create all documents first and build them together so that i
 | [CLI](../src/cli/main.ts) | File loading, diagnostics, exit status |
 | [LSP server](../src/server/main.ts) | Standard language-server transport and startup |
 
-Cross-references use Langium references for declarations, functions, local operations, states and nodes. Composite endpoint/value/view paths are strings with explicit SWAML resolution. This keeps encapsulation checks explicit, but **generic rename/find-references/navigation does not cover those strings**. The extension must supply those providers before advertising full refactoring.
+Cross-references use Langium references for declarations, functions, local operations, states and nodes. Composite endpoint/value/view paths are strings with explicit SWAML resolution. This keeps encapsulation checks explicit, but **generic rename/find-references/navigation does not cover those strings**. A host must supply path-aware providers before advertising full refactoring.
 
 The current scope provider scans loaded documents for clarity. Every changed/added/deleted document conservatively relinks and revalidates all loaded SWAML models, including string paths and previously absent declarations. This favors correct editor diagnostics over incremental performance. Large-model dependency indexing and cancellation-aware expensive checks remain optimization work. The validator skips semantic checks after parser/lexer errors; built-in diagnostics still report malformed input.
 
-<a id="source-5ec3282569db-desktop-extension-scaffold-contract"></a>
+<a id="source-5ec3282569db-language-server-integration"></a>
 
-## Desktop extension scaffold contract
+## Language-server integration
 
-The extension manifest should register:
+The server implements the Language Server Protocol over a standard transport. Start it with `node out/src/server/main.js --stdio`; reserve stdout for protocol messages and send diagnostic logging to stderr. Clients supply document URIs, text versions, changes and the complete loaded workspace. They consume diagnostics with source ranges and stable diagnostic codes.
 
-```json
-{
-  "activationEvents": ["onLanguage:swaml"],
-  "contributes": {
-    "languages": [{ "id": "swaml", "aliases": ["SWAML"], "extensions": [".swaml"], "configuration": "./language-configuration.json" }],
-    "grammars": [{ "language": "swaml", "scopeName": "source.swaml", "path": "./syntaxes/swaml.tmLanguage.json" }]
-  }
-}
-```
+Language hosts must select the supported SWAML edition before loading a document, preserve source ranges, and rebuild affected documents after changes. A formatter or graphical host must apply semantic changes to source and validate the result. File associations, transport startup and presentation are host responsibilities.
 
-This is a contribution fragment, not a complete publishable `package.json`. Supply the extension's own name, publisher, version, VS Code engine, entry point and client dependency. Copy the generated TextMate file from this package's `syntax/` after building.
+<a id="source-5ec3282569db-browser-hosts"></a>
 
-Use a `vscode-languageclient` client compatible with the selected `vscode-languageserver` version. Launch a bundled `src/server/main.ts` Node target with IPC or stdio. For example, the server entry already accepts `--stdio`; the host should not send logs on stdout. Diagnostics must be presented in Problems and linked to source ranges.
+## Browser hosts
 
-A language-configuration file can declare `//`, `/* */`, bracket pairs `{}`, `[]`, `()`, and matching quotes. Do not use semantic indentation that changes SWAML meaning.
-
-Suggested host commands: `swaml.validateWorkspace`, `swaml.openBrowser`, `swaml.showView`, `swaml.openDeclaration`, `swaml.restartLanguageServer`. These are proposed command IDs; this repository does not register them in VS Code.
-
-<a id="source-5ec3282569db-browser-extension-path"></a>
-
-## Browser extension path
-
-The reusable grammar/validator should remain independent of Node filesystem APIs. The server and CLI import `NodeFileSystem`; the language core does not. A browser host can create services with an in-memory/browser filesystem, bundle a web-worker language server, and supply model documents through LSP. The current Node server is not a browser-worker bundle, so a web extension needs a separate entry point and transport integration.
-
-Test browser dependency bundling and import resolution explicitly. Do not carry the CLI's filesystem assumptions into `vscode.dev` or `github.dev`.
+The language core has no Node filesystem dependency. Browser applications can create services with an in-memory filesystem and supply document text directly. The Node CLI and language-server adapter own their filesystem access. A worker-based browser host needs its own transport adapter; test document loading, dependency bundling and import resolution in that environment.
 
 <a id="source-5ec3282569db-graphical-architecture"></a>
 
@@ -6139,7 +6120,7 @@ Build a separate normalized model from the linked/validated authoring AST, then 
 
 ## Validation and release gates
 
-Before an extension consumes a new language-core version, run `npm ci && npm run check`, inspect the spec/grammar changes and update versioned fixtures. A grammar change, even if additive, can reserve an identifier previously used in source. Release notes must explain migration.
+Before a host consumes a new language-core version, run `npm ci && npm run check`, inspect the spec/grammar changes and update versioned fixtures. A grammar change, even if additive, can reserve an identifier previously used in source. Release notes must explain migration.
 
 Tests cover valid fixtures, illegal interface access, scoping, type errors, QoS, state/timing rules and the LSP transport lifecycle. Broader conformance claims require the additional tests in [implementation status](#source-f25fc4312adb).
 
@@ -6149,7 +6130,7 @@ Tests cover valid fixtures, illegal interface access, scoping, type errors, QoS,
 
 After linking and validating every referenced document, call `simulate(models, "Package::Root", options)` from the package's `./simulation` export. It has no Node filesystem dependency. The host supplies a finite horizon and may supply manual releases, transport fault schedule and resource limits. The [profile contract](#source-fedc6631cb48) defines the exact scheduler, observability and limits. The CLI adapter adds file loading and SHA-256 source digests.
 
-Present `outcome` and `status` together: a run can quiesce after a failed activation, and a bounded horizon is not a proof of liveness. A future extension can connect trace source lines and occurrence paths to FV/IV/GRV selections. That UI belongs in the extension repository; it must not introduce an independent runtime meaning or bypass validation.
+Present `outcome` and `status` together: a run can quiesce after a failed activation, and a bounded horizon is not a proof of liveness. Hosts can connect trace source lines and occurrence paths to FV/IV/GRV selections. They must preserve the simulation contract and validate every semantic edit.
 
 ---
 
@@ -6427,7 +6408,7 @@ package Commerce {
 
 ## 04-stateful-operation
 
-- Root component: `Lifecycle::Product`. [Simulation options](../examples/simulation/04-stateful-operation.json).
+- Root component: `Lifecycle::Product`. [Simulation options](../examples/simulation/04-stateful-function.json).
 
 ```swaml
 package Lifecycle {

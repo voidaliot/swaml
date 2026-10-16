@@ -2,7 +2,7 @@
   "width": 560,
   "height": 320,
   "title": "Interconnect View",
-  "description": "Interconnect View. Draw a framed projection titled IV with the semantic subject identity visible; use the canonical element symbols within it.",
+  "description": "Interconnect View. Draw a framed projection titled iv with the semantic subject identity visible; use the canonical element symbols within it.",
   "shapes": [
     {
       "kind": "rect",
@@ -55,7 +55,7 @@
       "kind": "text",
       "x": 27,
       "y": 40,
-      "text": "IV",
+      "text": "iv",
       "size": 19,
       "bold": true,
       "color": "#111111"

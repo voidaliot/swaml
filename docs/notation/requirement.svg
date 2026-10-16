@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
-<title id="title">Requirement</title><desc id="desc">Requirement. Draw a requirement rectangle labeled «requirement», its name and text compartment.</desc>
+<title id="title">Requirement</title><desc id="desc">A named obligation with typed attributes and one optional formal specification.</desc>
 <g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
 <rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
 <rect x="36" y="24" width="488" height="190" rx="0" fill="#ffffff" stroke="#111111"/>

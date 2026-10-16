@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
+<title id="title">External deployment target</title><desc id="desc">An external reference identifies the deployment system without introducing a hardware or execution-node definition into SWAML.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="45" y="35" width="470" height="210" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="65" y="73" font-size="20" font-weight="700" fill="#111111">«external system»</text>
+<polyline points="45,106 515,106" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="65" y="139" font-size="18" font-weight="400" fill="#111111">sysml:Vehicle::leftComputer</text>
+</g></svg>

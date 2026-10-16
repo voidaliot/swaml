@@ -1,0 +1,187 @@
+{
+  "width": 560,
+  "height": 320,
+  "title": "Function with states",
+  "description": "Function with states. Draw the state graph inside the owning function frame, keeping the function name and on start label visible.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 320,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 25,
+      "y": 25,
+      "width": 510,
+      "height": 270,
+      "rx": 12,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 43,
+      "y": 61,
+      "text": "«function» lifecycle()",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          25,
+          91
+        ],
+        [
+          535,
+          91
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 43,
+      "y": 118,
+      "text": "on start",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "circle",
+      "x": 65,
+      "y": 185,
+      "r": 9,
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          75,
+          185
+        ],
+        [
+          130,
+          185
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          130,
+          185
+        ],
+        [
+          118.0,
+          190.0
+        ],
+        [
+          118.0,
+          180.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 133,
+      "y": 145,
+      "width": 153,
+      "height": 80,
+      "rx": 12,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 193.5,
+      "y": 191.0,
+      "text": "Idle",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          287,
+          185
+        ],
+        [
+          344,
+          185
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          344,
+          185
+        ],
+        [
+          332.0,
+          190.0
+        ],
+        [
+          332.0,
+          180.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 347,
+      "y": 145,
+      "width": 157,
+      "height": 80,
+      "rx": 12,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 389.008,
+      "y": 191.0,
+      "text": "Running",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 153.0,
+      "y": 267,
+      "text": "on receive commands.begin",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

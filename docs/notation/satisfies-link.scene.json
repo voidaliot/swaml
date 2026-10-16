@@ -1,8 +1,8 @@
 {
   "width": 560,
   "height": 280,
-  "title": "Requirement coverage link",
-  "description": "Requirement coverage link. Draw a dashed arrow labeled satisfies from the case to the requirement.",
+  "title": "Satisfaction relation",
+  "description": "Design claims satisfaction of a requirement.",
   "shapes": [
     {
       "kind": "rect",
@@ -26,9 +26,9 @@
     },
     {
       "kind": "text",
-      "x": 71.0,
+      "x": 79.5,
       "y": 176.5,
-      "text": "Change",
+      "text": "Cabin",
       "size": 18,
       "bold": false,
       "color": "#111111"
@@ -92,16 +92,16 @@
       "kind": "text",
       "x": 26,
       "y": 35,
-      "text": "«satisfies»",
+      "text": "«satisfy»",
       "size": 20,
       "bold": true,
       "color": "#111111"
     },
     {
       "kind": "text",
-      "x": 198.5,
+      "x": 251.0,
       "y": 113,
-      "text": "satisfies (claimed)",
+      "text": "satisfy",
       "size": 18,
       "bold": false,
       "color": "#111111"

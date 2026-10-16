@@ -1,7 +1,7 @@
 package Roots {
-    unit def Counter {
-        var count: Int = 0;
-        operation initialize() on start
+    component def Counter {
+        var count: int = 0;
+        function initialize() on start
             timing { wcet 1 us; deadline 1 ms; concurrency serial; }
         {
             count = count + 1;
@@ -10,21 +10,20 @@ package Roots {
 
     // A reusable type defines topology. A typed root creates a concrete occurrence.
     component def Pair {
-        unit left: Counter;
-        unit right: Counter;
+        component left: Counter;
+        component right: Counter;
     }
     component Demo: Pair;
     component Embedded: Pair realtime {
-        node cpu mcu;
-        deploy left on cpu;
-        deploy right on cpu;
+        deploy left on "system:cpu";
+        deploy right on "system:cpu";
     }
 
-    // An inline root may contain a unit directly, without a wrapper definition.
-    component Minimal { unit counter: Counter; }
+    // An inline root may contain a component directly, without a wrapper definition.
+    component Minimal { component counter: Counter; }
 
-    view reusable GV of Pair;
-    view deployed IV of Embedded;
-    view initializeFlow FV of Minimal.counter.initialize;
-    view inventory GRV of Demo;
+    view reusable gv of Pair;
+    view deployed iv of Embedded;
+    view initializeFlow fv of Minimal.counter.initialize;
+    view inventory grv of Demo;
 }

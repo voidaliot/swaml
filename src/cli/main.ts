@@ -7,7 +7,7 @@ import { LANGUAGE_VERSION, languageArguments } from './options.js';
 
 try {
     const files = languageArguments(process.argv.slice(2));
-    if (!files.length) throw new Error('Usage: swaml [--language-version 1.1] <file.swaml> [more files...]');
+    if (!files.length) throw new Error('Usage: swaml [--language-version 1.2] <file.swaml> [more files...]');
     const { shared } = createSwamlServices(NodeFileSystem);
     const docs = await Promise.all(files.map(f => shared.workspace.LangiumDocuments.getOrCreateDocument(URI.file(resolve(f)))));
     await shared.workspace.DocumentBuilder.build(docs, { validation: true });

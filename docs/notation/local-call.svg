@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
+<title id="title">Local function call</title><desc id="desc">Local function invocation. Draw an owned statement box with the exact statement label and directed control-flow succession.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
+<circle cx="280" cy="27" r="7" fill="#111111" stroke="#111111"/>
+<polyline points="280,35 280,75" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="280,75 275.0,63.0 285.0,63.0" fill="#111111" stroke="#111111"/>
+<rect x="45" y="78" width="470" height="135" rx="13" fill="#ffffff" stroke="#111111"/>
+<text x="64" y="111" font-size="20" font-weight="700" fill="#111111">call prepare()</text>
+<polyline points="280,214 280,260" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="280,260 275.0,248.0 285.0,248.0" fill="#111111" stroke="#111111"/>
+</g></svg>

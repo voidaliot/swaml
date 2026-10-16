@@ -1,0 +1,110 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Verification relation",
+  "description": "Draw a dashed open arrow from the verification case to the requirement, labeled verify. A relation expresses verification intent; evidence and outcome are recorded separately.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 20,
+      "y": 128,
+      "width": 170,
+      "height": 85,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 45.008,
+      "y": 176.5,
+      "text": "CheckResults",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 370,
+      "y": 128,
+      "width": 170,
+      "height": 85,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 388.008,
+      "y": 176.5,
+      "text": "BoundedResult",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          190,
+          171
+        ],
+        [
+          370,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": true,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          358.0,
+          176.0
+        ],
+        [
+          370,
+          171
+        ],
+        [
+          358.0,
+          166.0
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 35,
+      "text": "«verify»",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 254.5,
+      "y": 113,
+      "text": "verify",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

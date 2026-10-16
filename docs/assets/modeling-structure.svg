@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="675" viewBox="0 0 1080 675" role="img" aria-labelledby="title desc">
+<title id="title">5 · Read the resulting software structure</title>
+<desc id="desc">All four cards are immediate children of WebShop::Production. Named connectors join the shown owned ports; component cards expose their delegated component child.</desc>
+<g font-family="DejaVu Sans, sans-serif">
+<rect x="0" y="0" width="1080" height="675" rx="0" fill="white" stroke="none"/>
+<polyline points="255,40 255,8 825,8 825,40" fill="none" stroke="#087f8c" stroke-width="2"/>
+<polygon points="825.000,40.000 819.000,26.000 831.000,26.000" fill="#17324d"/>
+<rect x="462" y="13" width="142.8" height="27" rx="0" fill="white" stroke="none"/>
+<text x="468" y="34" font-size="20" font-weight="400" fill="#17324d">checkoutLink</text>
+<polyline points="825,210 825,450" fill="none" stroke="#087f8c" stroke-width="2"/>
+<polygon points="825.000,450.000 819.000,436.000 831.000,436.000" fill="#17324d"/>
+<rect x="838" y="313" width="153.70000000000002" height="27" rx="0" fill="white" stroke="none"/>
+<text x="844" y="334" font-size="20" font-weight="400" fill="#17324d">inventoryLink</text>
+<polyline points="700,210 700,345 255,345 255,450" fill="none" stroke="#087f8c" stroke-width="2"/>
+<polygon points="255.000,450.000 249.000,436.000 261.000,436.000" fill="#17324d"/>
+<rect x="378" y="312" width="131.9" height="27" rx="0" fill="white" stroke="none"/>
+<text x="384" y="333" font-size="20" font-weight="400" fill="#17324d">receiptLink</text>
+<rect x="20" y="40" width="470" height="170" rx="0" fill="#eef5fa" stroke="#17324d"/>
+<text x="36" y="72" font-size="20" font-weight="700" fill="#17324d">browser : BrowserClient</text>
+<polyline points="20,86 490,86" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="36" y="115" font-size="20" font-weight="400" fill="#17324d">checkout : Checkout</text>
+<text x="36" y="143" font-size="20" font-weight="400" fill="#17324d">requires</text>
+<text x="36" y="171" font-size="20" font-weight="400" fill="#17324d">on clientProcess</text>
+<rect x="590" y="40" width="470" height="170" rx="0" fill="#eef5fa" stroke="#17324d"/>
+<text x="606" y="72" font-size="20" font-weight="700" fill="#17324d">application : WebApplication</text>
+<polyline points="590,86 1060,86" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="606" y="115" font-size="20" font-weight="400" fill="#17324d">checkout : CheckoutService</text>
+<text x="606" y="143" font-size="20" font-weight="400" fill="#17324d">api / inventory / receipts</text>
+<text x="606" y="171" font-size="20" font-weight="400" fill="#17324d">on applicationContainer</text>
+<rect x="590" y="450" width="470" height="170" rx="0" fill="#eef5fa" stroke="#17324d"/>
+<text x="606" y="482" font-size="20" font-weight="700" fill="#17324d">inventory : InventoryService</text>
+<polyline points="590,496 1060,496" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="606" y="525" font-size="20" font-weight="400" fill="#17324d">stock : StockStore</text>
+<text x="606" y="553" font-size="20" font-weight="400" fill="#17324d">api : Inventory server</text>
+<text x="606" y="581" font-size="20" font-weight="400" fill="#17324d">on inventoryContainer</text>
+<rect x="20" y="450" width="470" height="170" rx="0" fill="#eef5fa" stroke="#17324d"/>
+<text x="36" y="482" font-size="20" font-weight="700" fill="#17324d">mailer : ReceiptWorker</text>
+<polyline points="20,496 490,496" fill="none" stroke="#cad6df" stroke-width="2"/>
+<text x="36" y="525" font-size="20" font-weight="400" fill="#17324d">input : Receipts subscriber</text>
+<text x="36" y="553" font-size="20" font-weight="400" fill="#17324d">on workerContainer</text>
+<rect x="249" y="34" width="12" height="12" rx="0" fill="white" stroke="#087f8c"/>
+<rect x="819" y="34" width="12" height="12" rx="0" fill="white" stroke="#087f8c"/>
+<rect x="819" y="204" width="12" height="12" rx="0" fill="white" stroke="#087f8c"/>
+<rect x="819" y="444" width="12" height="12" rx="0" fill="white" stroke="#087f8c"/>
+<rect x="694" y="204" width="12" height="12" rx="0" fill="white" stroke="#087f8c"/>
+<rect x="249" y="444" width="12" height="12" rx="0" fill="white" stroke="#087f8c"/>
+</g>
+</svg>

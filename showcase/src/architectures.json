@@ -1,0 +1,310 @@
+[
+  {
+    "id": "classic",
+    "title": "AUTOSAR Classic",
+    "subtitle": "Climate software component",
+    "file": "11-autosar-classic.swaml",
+    "package": "ClassicClimate",
+    "root": "Vehicle",
+    "description": "A climate controller consumes sampled temperature, requests a calibration value and sends a fan command. Its application logic is composed behind component ports and allocated to an MCU.",
+    "focus": "Sampled sender–receiver data · client–server calibration · periodic execution",
+    "nodes": [
+      {
+        "id": "sensor",
+        "kind": "component",
+        "definition": "TemperatureSensor",
+        "deployment": "system:bodyEcu",
+        "description": "Acquires temperature values and emits them through the sampled output contract.",
+        "x": 0,
+        "y": 110
+      },
+      {
+        "id": "controller",
+        "kind": "component",
+        "definition": "ClimateController",
+        "deployment": "system:bodyEcu",
+        "description": "Exposes temperature, calibration and fan ports. Its control component reacts to temperature updates and owns the regulation calculation.",
+        "x": 350,
+        "y": 110
+      },
+      {
+        "id": "calibration",
+        "kind": "component",
+        "definition": "SetpointCalibration",
+        "deployment": "system:bodyEcu",
+        "description": "Provides the setpoint through a client–server contract.",
+        "x": 700,
+        "y": 0
+      },
+      {
+        "id": "actuator",
+        "kind": "component",
+        "definition": "FanActuator",
+        "deployment": "system:bodyEcu",
+        "description": "Receives the fan command into its own private state.",
+        "x": 700,
+        "y": 330
+      }
+    ],
+    "routes": [
+      {
+        "id": "measured",
+        "source": "sensor.output",
+        "target": "controller.temperature",
+        "contract": "CabinTemperature",
+        "kind": "senderReceiver",
+        "sourceRole": "sender",
+        "targetRole": "receiver"
+      },
+      {
+        "id": "calibrated",
+        "source": "controller.calibration",
+        "target": "calibration.api",
+        "contract": "Setpoint",
+        "kind": "clientServer",
+        "sourceRole": "client",
+        "targetRole": "server"
+      },
+      {
+        "id": "commanded",
+        "source": "controller.fan",
+        "target": "actuator.input",
+        "contract": "FanCommand",
+        "kind": "senderReceiver",
+        "sourceRole": "sender",
+        "targetRole": "receiver"
+      }
+    ]
+  },
+  {
+    "id": "adaptive",
+    "title": "AUTOSAR Adaptive",
+    "subtitle": "ARA application and services",
+    "file": "12-autosar-adaptive.swaml",
+    "package": "AdaptiveDiagnostics",
+    "root": "Vehicle",
+    "description": "A diagnostic application requests vehicle health and receives service notifications. The provider also publishes audit events to a separate consumer. Process allocations distinguish the application boundaries.",
+    "focus": "Required/provided services · functions and events · process allocation",
+    "nodes": [
+      {
+        "id": "application",
+        "kind": "component",
+        "definition": "DiagnosticApplication",
+        "deployment": "system:applicationProcess",
+        "description": "Contains the diagnostic client that calls the health service and handles its notifications.",
+        "x": 0,
+        "y": 90
+      },
+      {
+        "id": "health",
+        "kind": "component",
+        "definition": "HealthService",
+        "deployment": "system:healthProcess",
+        "description": "Delegates its public contracts to a monitor component that owns health state and service behavior.",
+        "x": 350,
+        "y": 90
+      },
+      {
+        "id": "audit",
+        "kind": "component",
+        "definition": "DiagnosticLog",
+        "deployment": "system:auditProcess",
+        "description": "Consumes diagnostic audit events over its explicit subscription.",
+        "x": 700,
+        "y": 90
+      }
+    ],
+    "routes": [
+      {
+        "id": "healthLink",
+        "source": "application.health",
+        "target": "health.api",
+        "contract": "VehicleHealth",
+        "kind": "service",
+        "sourceRole": "requires",
+        "targetRole": "provides"
+      },
+      {
+        "id": "auditLink",
+        "source": "health.audit",
+        "target": "audit.input",
+        "contract": "DiagnosticAudit",
+        "kind": "publishSubscribe",
+        "sourceRole": "publisher",
+        "targetRole": "subscriber"
+      }
+    ]
+  },
+  {
+    "id": "web",
+    "title": "Web application",
+    "subtitle": "Service-based checkout",
+    "file": "13-web-application.swaml",
+    "package": "WebShop",
+    "root": "Production",
+    "description": "A browser calls a checkout service, which requests inventory and publishes receipt work. Each dependency is a typed boundary, and a dedicated worker owns receipt handling.",
+    "focus": "Service composition · request failure paths · asynchronous work",
+    "nodes": [
+      {
+        "id": "browser",
+        "kind": "component",
+        "definition": "BrowserClient",
+        "deployment": "system:clientProcess",
+        "description": "Owns browser-side behavior and consumes checkout results and service events.",
+        "x": 0,
+        "y": 110
+      },
+      {
+        "id": "application",
+        "kind": "component",
+        "definition": "WebApplication",
+        "deployment": "system:applicationContainer",
+        "description": "Composes checkout behavior behind the public API, inventory dependency and receipt publisher ports.",
+        "x": 350,
+        "y": 110
+      },
+      {
+        "id": "inventory",
+        "kind": "component",
+        "definition": "InventoryService",
+        "deployment": "system:inventoryContainer",
+        "description": "Owns inventory through its stock component and exposes client–server functions.",
+        "x": 700,
+        "y": 0
+      },
+      {
+        "id": "mailer",
+        "kind": "component",
+        "definition": "ReceiptWorker",
+        "deployment": "system:workerContainer",
+        "description": "Handles receipt events independently from the browser request route.",
+        "x": 700,
+        "y": 330
+      }
+    ],
+    "routes": [
+      {
+        "id": "checkoutLink",
+        "source": "browser.checkout",
+        "target": "application.api",
+        "contract": "Checkout",
+        "kind": "service",
+        "sourceRole": "requires",
+        "targetRole": "provides"
+      },
+      {
+        "id": "inventoryLink",
+        "source": "application.inventory",
+        "target": "inventory.api",
+        "contract": "Inventory",
+        "kind": "clientServer",
+        "sourceRole": "client",
+        "targetRole": "server"
+      },
+      {
+        "id": "receiptLink",
+        "source": "application.receipts",
+        "target": "mailer.input",
+        "contract": "Receipts",
+        "kind": "publishSubscribe",
+        "sourceRole": "publisher",
+        "targetRole": "subscriber"
+      }
+    ]
+  },
+  {
+    "id": "cloud",
+    "title": "Cloud service",
+    "subtitle": "Telemetry ingestion and fan-out",
+    "file": "14-cloud-service.swaml",
+    "package": "CloudTelemetry",
+    "root": "Production",
+    "description": "A device calls an ingestion service. Accepted samples pass through an explicit broker and fan out to analytics and archive consumers. Separate routes preserve independent buffering for each consumer.",
+    "focus": "Ingestion API · explicit broker · independent event subscriptions",
+    "nodes": [
+      {
+        "id": "device",
+        "kind": "component",
+        "definition": "DeviceClient",
+        "deployment": "system:edgeProcess",
+        "description": "Submits typed telemetry through the ingestion service and handles its acceptance results.",
+        "x": 0,
+        "y": 50
+      },
+      {
+        "id": "ingestion",
+        "kind": "component",
+        "definition": "IngestionService",
+        "deployment": "system:apiContainer",
+        "description": "Owns the ingestion gateway behind a public service contract and a separate accepted-sample publisher.",
+        "x": 350,
+        "y": 50
+      },
+      {
+        "id": "broker",
+        "kind": "component",
+        "definition": "MessageBroker",
+        "deployment": "system:brokerContainer",
+        "description": "Handles accepted samples and republishes measurements. Broker behavior has an explicit function owner.",
+        "x": 700,
+        "y": 50
+      },
+      {
+        "id": "analytics",
+        "kind": "component",
+        "definition": "AnalyticsWorker",
+        "deployment": "system:analyticsContainer",
+        "description": "Consumes broker measurements through its own connector and private processing state.",
+        "x": 350,
+        "y": 420
+      },
+      {
+        "id": "archive",
+        "kind": "component",
+        "definition": "ArchiveWriter",
+        "deployment": "system:archiveContainer",
+        "description": "Consumes the same measurements through a separate subscription with an independent queue.",
+        "x": 700,
+        "y": 420
+      }
+    ],
+    "routes": [
+      {
+        "id": "ingestionLink",
+        "source": "device.ingest",
+        "target": "ingestion.api",
+        "contract": "TelemetryIngest",
+        "kind": "service",
+        "sourceRole": "requires",
+        "targetRole": "provides"
+      },
+      {
+        "id": "brokerLink",
+        "source": "ingestion.accepted",
+        "target": "broker.input",
+        "contract": "AcceptedSamples",
+        "kind": "publishSubscribe",
+        "sourceRole": "publisher",
+        "targetRole": "subscriber"
+      },
+      {
+        "id": "analyticsLink",
+        "source": "broker.output",
+        "target": "analytics.input",
+        "contract": "Measurements",
+        "kind": "publishSubscribe",
+        "sourceRole": "publisher",
+        "targetRole": "subscriber"
+      },
+      {
+        "id": "archiveLink",
+        "source": "broker.output",
+        "target": "archive.input",
+        "contract": "Measurements",
+        "kind": "publishSubscribe",
+        "sourceRole": "publisher",
+        "targetRole": "subscriber"
+      }
+    ]
+  }
+]

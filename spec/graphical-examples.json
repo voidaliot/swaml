@@ -1,5 +1,5 @@
 {
-  "languageVersion": "1.1",
+  "languageVersion": "1.2",
   "examples": [
     {
       "figure": "browser",
@@ -10,50 +10,50 @@
     },
     {
       "figure": "gv",
-      "view": "GV",
+      "view": "gv",
       "model": "examples/08-service-field.swaml",
       "package": "Settings",
       "subject": "Cabin"
     },
     {
       "figure": "iv",
-      "view": "IV",
+      "view": "iv",
       "model": "examples/08-service-field.swaml",
       "package": "Settings",
       "subject": "Cabin"
     },
     {
       "figure": "cv",
-      "view": "CV",
+      "view": "cv",
       "model": "examples/08-service-field.swaml",
       "package": "Settings",
       "subject": "Cabin"
     },
     {
       "figure": "sv",
-      "view": "SV",
+      "view": "sv",
       "model": "examples/08-service-field.swaml",
       "package": "Settings",
       "subject": "Change"
     },
     {
       "figure": "grv",
-      "view": "GRV",
+      "view": "grv",
       "model": "examples/08-service-field.swaml",
       "package": "Settings",
       "subject": "Cabin"
     },
     {
       "figure": "fv-flow",
-      "view": "FV",
+      "view": "fv",
       "model": "examples/08-service-field.swaml",
       "package": "Settings",
       "subject": "Cabin.settings.store.update"
     },
     {
       "figure": "fv-state",
-      "view": "FV",
-      "model": "examples/04-stateful-operation.swaml",
+      "view": "fv",
+      "model": "examples/04-stateful-function.swaml",
       "package": "Lifecycle",
       "subject": "Device.lifecycle"
     }

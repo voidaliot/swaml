@@ -1,24 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1000" height="570" viewBox="0 0 1000 570" role="img" aria-labelledby="title desc">
-<title id="title">CV · Case View</title><desc id="desc">Claimed coverage is explicit; no verification checkmark appears without evidence.</desc>
+<title id="title">cv · Case View</title><desc id="desc">Claimed coverage is explicit; no verification checkmark appears without evidence.</desc>
 <defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#17324d"/></marker></defs>
 <g font-family="DejaVu Sans, sans-serif">
 <rect x="0" y="0" width="1000" height="570" rx="8" fill="#ffffff" stroke="none"/>
-<text x="32" y="47" font-size="30" font-weight="700" fill="#17324d">CV · Case View</text>
+<text x="32" y="47" font-size="30" font-weight="700" fill="#17324d">cv · Case View</text>
 <text x="32" y="80" font-size="17" font-weight="400" fill="#516579">Claimed coverage is explicit; no verification checkmark appears without evidence.</text>
 <polyline points="32,99 968,99" fill="none" stroke="#ccd9e2" stroke-width="2"/>
 <rect x="35" y="134" width="443" height="318" rx="8" fill="#f7fafc" stroke="#17324d"/>
 <text x="55" y="170" font-size="24" font-weight="700" fill="#17324d">«component» Cabin</text>
 <rect x="93" y="248" width="327" height="116" rx="35" fill="#e3f2f3" stroke="#17324d"/>
-<text x="123" y="286" font-size="24" font-weight="700" fill="#17324d">«case» Change</text>
+<text x="123" y="286" font-size="24" font-weight="700" fill="#17324d">«useCase» Change</text>
 <text x="123" y="323" font-size="20" font-weight="400" fill="#17324d">for Cabin</text>
 <rect x="623" y="225" width="337" height="162" rx="0" fill="white" stroke="#17324d"/>
 <text x="641" y="257" font-size="19" font-weight="400" fill="#087f8c">«requirement»</text>
 <text x="641" y="291" font-size="23" font-weight="700" fill="#17324d">VisibleSetting</text>
 <text x="641" y="326" font-size="18" font-weight="400" fill="#17324d">Both panels can observe</text>
 <text x="641" y="354" font-size="18" font-weight="400" fill="#17324d">accepted setting updates.</text>
-<polyline points="420,301 616,301" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
+<polyline points="478,301 616,301" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
 <polyline points="602.0,307.0 616,301 602.0,295.0" fill="none" stroke="#17324d" stroke-width="2"/>
-<text x="498" y="261" font-size="18" font-weight="400" fill="#17324d">satisfies</text>
+<text x="498" y="261" font-size="18" font-weight="400" fill="#17324d">satisfy</text>
 <text x="493" y="282" font-size="18" font-weight="400" fill="#17324d">(claimed)</text>
-<text x="55" y="510" font-size="19" font-weight="400" fill="#516579">Evidence status: unverified case claim. Simulation results are separate artifacts.</text>
+<text x="55" y="510" font-size="19" font-weight="400" fill="#516579">Evidence status: design claim. Simulation results are separate artifacts.</text>
 </g></svg>

@@ -28,7 +28,7 @@
     {
       "path": "docs/spec/04-systems-and-conformance.md",
       "attachmentName": "docs__spec__04-systems-and-conformance.md",
-      "sha256": "033e9b73d7a2163df84319cf59c609af34f946d036417f6de69149dc67d3b26f"
+      "sha256": "9bf43de339a9d1cd23a8283cddef2d667123dfeaf2dacccfcf122d75fb5697b0"
     },
     {
       "path": "docs/spec/05-kerml-mapping.md",
@@ -53,37 +53,37 @@
     {
       "path": "docs/GRAPHICAL_NOTATION.md",
       "attachmentName": "docs__GRAPHICAL_NOTATION.md",
-      "sha256": "e6a9c4dae4130d67b47ab88497e4f9247f400953c33df6f0d01887308f901b47"
+      "sha256": "46d4519b9abd703f198c1cf224c9ea7e2fa01c36a1dd5bac564f225a777f303b"
     },
     {
       "path": "docs/USER_GUIDE.md",
       "attachmentName": "docs__USER_GUIDE.md",
-      "sha256": "611aec7ca54aab5bb79a0558a8d95202d81285966c4613b73de79d038a352753"
+      "sha256": "4a83a4442f14cdf65bc3d97fd919867d2a52f0fff5930e65b5a0e9422d1b569d"
     },
     {
       "path": "docs/ARCHITECTURE_COMPARISON.md",
       "attachmentName": "docs__ARCHITECTURE_COMPARISON.md",
-      "sha256": "8b69dab350cbc74166acb6adabb13d462a837d7813e29be5471018e4c242cfc1"
+      "sha256": "cfa79b490ebee2959ae3aa3426025575159884531b3fe2e664daa4b18656a46c"
     },
     {
       "path": "docs/TOOLING.md",
       "attachmentName": "docs__TOOLING.md",
-      "sha256": "c586b3e5acdd9aa45f03920b29ac2055f4c34effa4dc63945e9ab6a2617607f2"
+      "sha256": "706b64f6307748e251e0708d47e886e9126ab9011f306784a0c020b129fa83cc"
     },
     {
       "path": "docs/IMPLEMENTATION_STATUS.md",
       "attachmentName": "docs__IMPLEMENTATION_STATUS.md",
-      "sha256": "e107c535c2fe86f09fb7a27134bde3ac6d55a398055ee48a2b3ab412e3d95717"
+      "sha256": "cc85b8e78aad89ea35fdb166dd13e48f43809a6785a44ca72b4e221f486f8f90"
     },
     {
       "path": "docs/SPECIFICATION_AUDIT.md",
       "attachmentName": "docs__SPECIFICATION_AUDIT.md",
-      "sha256": "c9d81e0cd09caef187c9e02b576ef8deae1b0ce5dcfebc9e66c6142bb5a7c6c6"
+      "sha256": "53cf1e62247a05c06be9cf3fe4eb60645f8495b7cd29ba794faf93176501c487"
     },
     {
       "path": "docs/decisions/0001-language-boundaries.md",
       "attachmentName": "docs__decisions__0001-language-boundaries.md",
-      "sha256": "8e5a915407a9a5445dd4416d9d80cabb369dc252c912cde34d2dccd5dbc0230b"
+      "sha256": "43926d37d25619a3f5a720304ff85be0bcd39240e5793492d1e67cf378b6bbb7"
     },
     {
       "path": "docs/decisions/0002-auditable-semantics.md",
@@ -103,7 +103,7 @@
     {
       "path": "AGENTS.md",
       "attachmentName": "AGENTS.md",
-      "sha256": "8f23e1f5ed77c0da17d02c436157e9405ca22c45a22aec573cc504d8f51239e5"
+      "sha256": "8ae4b96e620c4c27aa4b832130285637785c8585ed516856c2a1af7ea33ecd52"
     },
     {
       "path": "src/language/swaml.langium",
@@ -161,5 +161,8 @@
       "sha256": "24d1618025e85d72fb57a7e108712a9a12799f83aa723006abc9ce71296ec46b"
     }
   ],
-  "pdfSha256": "f1c2a94e9ffc7025112ebd11e2b1ca95170991a7b84e270c4a1f25360e4aa946"
+  "pdfSha256": "df8dff483eb4b31a93a7ccf140698ff47b53086faf0493dccea978fe2549d9bc",
+  "editorialRevision": "2026-10-16",
+  "editorialChanges": "Platform-neutral tooling guidance and view descriptions; historical language syntax and semantics retained.",
+  "originalPdfSha256": "f1c2a94e9ffc7025112ebd11e2b1ca95170991a7b84e270c4a1f25360e4aa946"
 }

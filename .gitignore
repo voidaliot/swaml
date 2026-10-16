@@ -4,7 +4,9 @@ src/language/generated/
 syntax/*.tmLanguage.json
 *.tsbuildinfo
 .DS_Store
-*.vsix
-tmp/pdfs/
+tmp/
 .venv-pdf/
 __pycache__/
+
+showcase/dist/
+showcase/.vite/

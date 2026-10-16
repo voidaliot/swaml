@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="560" height="370" viewBox="0 0 560 370" role="img" aria-labelledby="title desc">
-<title id="title">Conditional branch</title><desc id="desc">Conditional branch. Draw a decision diamond with the Bool condition and distinct true/false control exits, followed by a merge when control continues.</desc>
+<title id="title">Conditional branch</title><desc id="desc">Conditional branch. Draw a decision diamond with the bool condition and distinct true/false control exits, followed by a merge when control continues.</desc>
 <g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
 <rect x="0" y="0" width="560" height="370" rx="0" fill="#ffffff" stroke="none"/>
 <polygon points="280,35 370,90 280,145 190,90" fill="#ffffff" stroke="#111111"/>

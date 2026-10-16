@@ -1,33 +1,39 @@
-# Implementation status — 1.1.1
+# Implementation status — 1.2.0
 
-The normative specification defines the complete bounded 1.1 language. The repository implements the Langium parser, CLI, language-server foundation and broad static checking. It also implements a bounded logical-time reference simulator; it does not implement a production runtime, KerML exporter or graphical editor. See the [1.1 migration](MIGRATION_1_1.md), historical [1.0 evidence](RELEASE_1_0.md) and historical [0.1 audit](SPECIFICATION_AUDIT.md) and [conformance obligations](spec/08-conformance-obligations.md).
+The normative specification defines the bounded 1.2.0 language. The repository implements the Langium parser, CLI, language-server foundation and broad static checking. It also implements a bounded logical-time reference simulator; it does not implement a production runtime, KerML exporter or graphical editor. See the [1.2 migration](MIGRATION_1_2.md), [historical 1.1 migration](MIGRATION_1_1.md), historical [1.0 evidence](RELEASE_1_0.md) and historical [0.1 audit](SPECIFICATION_AUDIT.md) and [conformance obligations](spec/08-conformance-obligations.md).
 
 ## Implemented and tested
 
 | Capability | Evidence |
 | --- | --- |
-| Headerless 1.1 grammar, portable string escapes, generated AST/TextMate syntax | generator, all examples, lexical regressions |
-| Explicit definitions, inline/typed root components, direct unit children, deployment-only typed binding and default service profile | 1.1 root/migration regressions |
-| Direct operation states, optional Void results, assignment/function/array/enum syntax | 1.1 parser, type, shadowing and simulation regressions |
+| Headerless 1.2 grammar, portable string escapes, generated AST/TextMate syntax | generator, all examples, lexical regressions |
+| Unified components, local behavior in composite/root components, explicit definitions/instances, deployment-only typed bindings | component-model parser and simulation regressions |
+| Single specialization and compatible explicit redefinition, with distinct inherited stores | reuse, cycle, contract and isolation regressions |
+| Executable functions with direct states or statements; typed calc inputs and named pure output | parser, purity, shadowing and simulation regressions |
+| Function-local calculation scope, value-returning local functions, unified call and var syntax | lexical isolation, state actions/guards, inherited results, copying/ranges, failures and malformed-input regressions |
+| uint and byte domains with checked integral conversion | static constant-range and runtime range regressions |
 | Imports, qualified names, ambiguity across declaration kinds and owner-scoped references | multi-document and namespace tests |
-| Interface member/role/signature checks; no cross-unit operation/data bypass | contract and isolation tests |
+| Interface member/role/signature checks; no cross-component function/data bypass | contract and isolation tests |
 | Composition, delegation, required boundary/leaf closure, route uniqueness and cardinality | topology tests |
-| Emitting-operation provenance and unique handler ownership | SW050/SW055 tests |
-| Value typing, records/enums/arrays, expressions, pure functions, Void completion restrictions | values/flow and audit tests |
+| Emitting-function provenance and unique handler ownership | SW050/SW055 tests |
+| Value typing, records/enums/arrays, expressions, calculations, void completion restrictions | values/flow and audit tests |
 | Local calls, acyclic call/containment graphs, transitive reentrant write analysis | call-cycle and helper-effect tests |
+| Named complete QoS policies and inline selections; imported/qualified resolution, effective-use validation and queue independence | 1.2 policy regressions |
 | Explicit QoS, sampled buffering and idempotency declaration checks | QoS tests |
 | Positive safe bounds, WCET/deadline/period consistency and realtime completeness | timing and numeric tests |
 | Stateful signature, transition priorities, graph reachability, finality and unconditional-cycle checks | state tests |
-| Deployment references, case direction/dependencies and unique causal reply correlation | allocation/case regressions |
+| External system deployment identities, case direction/dependencies and unique causal reply correlation | allocation/case regressions |
 | All six view subject categories, package and occurrence contexts | view regressions |
 | Conservative workspace relink/revalidation after change/addition/deletion | editor update tests including newly ambiguous names |
 | LSP initialize/diagnostics/shutdown and CLI exit behavior | integration tests |
 | Reference execution | all statements/expressions, startup/periodic/manual activation, machines, queue policies, RPC, snapshots, fault injection and bounded trace evidence |
-| Production-to-spec/normalized mapping inventory | automatic coverage for all 80 grammar rule/type names |
+| Classic, Adaptive, web and cloud architecture examples | four complete models and configured simulations; six timeout, transport, duplicate-delivery and partial-fanout regressions |
+| Graphical ontology and end-to-end modeling walkthrough | shared diagram inventory, reproducible flat SVG/vector scenes, parsed subject and source-excerpt checks, interactive stage navigation |
+| Production-to-spec/normalized mapping inventory | automatic coverage for every current grammar rule/type name |
 
 `npm run check` rebuilds, runs tests, validates every example, checks documentation links and executable snippets, and detects missing/duplicate grammar mappings. Mapping coverage is a documentation consistency check, not a KerML validation result.
 
-The [canonical graphical catalog](GRAPHICAL_CATALOG.md) and its SVG/PNG exports define the visual language, with inventory coverage and semantic example checks. These are specification assets; they do not provide the future graphical editing implementation.
+The [canonical graphical catalog](GRAPHICAL_CATALOG.md) and its SVG/PNG exports define the visual language, with inventory coverage and semantic example checks. The current notation is entirely flat and reproducibly exported. `scripts/check-showcase.mjs` checks five interface patterns and four domain architectures against parsed definitions, occurrences, ports, routes and deployment allocations. The [quick start](QUICK_START.md), [architecture patterns](ARCHITECTURE_PATTERNS.md) and [UML transition guide](UML_GUIDE.md) provide authoring guidance. The [React Flow showcase](../showcase/README.md) implements selection, navigation and layout interactions over curated checked-in models. It is an interactive presentation, not arbitrary graphical source editing; it makes no G conformance claim.
 
 ## Limits of static acceptance
 
@@ -35,7 +41,7 @@ The reference core checks the static groups listed in chapter 8; it remains labe
 
 General arithmetic ranges and computed array bounds are runtime checks. Guarded completion cycles are protected by a specified runtime limit. Activation backlog is bounded by a required execution binding. These are specified execution/analysis obligations, not unimplemented syntax disguised as successful static proof.
 
-String-valued paths now receive conservative dependency invalidation. Path-aware rename, navigation, reference search and persisted editor IDs still need dedicated IDE providers. The all-document rebuild is correct for the loaded workspace but may be expensive on large projects.
+string-valued paths now receive conservative dependency invalidation. Path-aware rename, navigation, reference search and persisted editor IDs still need dedicated IDE providers. The all-document rebuild is correct for the loaded workspace but may be expensive on large projects.
 
 ## Specified, not implemented
 
@@ -46,11 +52,15 @@ String-valued paths now receive conservative dependency invalidation. Path-aware
 | Timing/behavioral analysis | target scheduling model, case witnesses, idempotency and safety/liveness evidence |
 | Browser and graphical G workbench | projections, layout sidecars, Properties, validated source edits and undo |
 | Complete IDE refactoring | path-aware rename/find references/navigation and stable identity map |
-| VS Code package | language client activation, bundling, desktop/web entry points, commands and release pipeline |
 | Platform exports | target bindings and serialization such as AUTOSAR ARXML |
+| External system integration | resolve and validate deployment destinations, including SysML part identities; core checks local paths and reference syntax only |
 
-No blanket K, E or G certification is claimed. The [reference simulation profile](SIMULATION.md) documents its executable scope and time abstraction. These implementation milestones have complete language-side contracts; they are not necessary to claim that the 1.1 specification has defined its syntax and meaning.
+No blanket K, E or G certification is claimed. The [reference simulation profile](SIMULATION.md) documents its executable scope and time abstraction. These implementation milestones have complete language-side contracts; they are not necessary to claim that the 1.2 specification has defined its syntax and meaning.
 
-## Intentionally outside 1.1
+## Intentionally outside 1.2
 
-Inheritance/redefinition, generics, dynamic object creation, unbounded arrays, reference-valued payloads, hierarchical/orthogonal state regions, fork/join syntax, host-language code blocks, dynamic service discovery, runtime subscribe/unsubscribe, topic wildcards, exactly-once delivery, full requirements algebra and geometry require a versioned language proposal. They cannot be introduced as undocumented backend behavior.
+Multiple inheritance, generics, dynamic object creation, unbounded arrays, reference-valued payloads, hierarchical/orthogonal state regions, fork/join syntax, host-language code blocks, dynamic service discovery, runtime subscribe/unsubscribe, topic wildcards, exactly-once delivery, full requirements algebra and geometry require a versioned language proposal. They cannot be introduced as undocumented backend behavior.
+
+## Requirements and selected views in 1.2.0
+
+Implemented: typed requirement attributes; one raw formal documentation block per grammar owner; lexical-comment projection with owner/source extents; separate useCase and verificationCase; satisfy/verify target and duplicate checks; lower camel case primitive/view keywords; occurrence-preserving multi-subject views and typed Boolean predicates. The exported documentationText, modelComments, viewCandidates and selectView helpers are portable. Requirement links are claims; verification cases are not an automatic test runner. The showcase includes source-checked diagram/table projections.

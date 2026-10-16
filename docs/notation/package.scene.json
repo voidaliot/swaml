@@ -56,7 +56,7 @@
       "kind": "text",
       "x": 48,
       "y": 114,
-      "text": "unit def Speaker",
+      "text": "component def Speaker",
       "size": 18,
       "bold": false,
       "color": "#111111"

@@ -1,0 +1,52 @@
+package Assurance {
+    doc /* A compact architecture with explicit requirements and verification intent. */
+    requirement BoundedResult {
+        doc /* Every started worker shall store a result of 2. */
+        attribute id: string = "REQ-001";
+        attribute priority: uint = 1;
+        attribute expected: int = 2;
+    }
+    component def Worker {
+        doc /* Keep the result private to each worker instance. */
+        // Each instance has its own result.
+        var result: int = 0;
+        function startWork() on start {
+            doc /* Calculate twice the input and store the copied result. */
+            calc twice {
+                in input: int;
+                return output: int = input * 2;
+            }
+            result = twice(1);
+            assert result == 2;
+        }
+    }
+    component Demo {
+        doc /* Start two independent workers. */
+        component first: Worker;
+        component second: Worker;
+    }
+    satisfy BoundedResult by Demo.first;
+    satisfy BoundedResult by Demo.second;
+    useCase StartWorkers for Demo {
+        doc /* A user starts the application and both workers initialize. */
+    }
+    verificationCase CheckResults for Demo {
+        doc /* Run the reference simulation and inspect both final result values.
+        Expected: first.result = 2 and second.result = 2. */
+        verify BoundedResult;
+    }
+    view assurance gv {
+        doc /* Requirements, design and verification intent in one projection. */
+        include BoundedResult;
+        include Demo recursive where kind == "component";
+        include StartWorkers;
+        include CheckResults;
+    }
+    view functions fv {
+        include Demo recursive where kind == "function" and
+            (name == "startWork" or path == "Demo.second.startWork");
+    }
+    view requirements grv {
+        include Assurance recursive where kind == "requirement";
+    }
+}

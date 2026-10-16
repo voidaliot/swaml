@@ -1,4 +1,4 @@
-"""Deterministic monochrome notation scenes shared by SVG, PNG and PDF exports.
+"""Deterministic flat monochrome scenes shared by SVG, PNG and PDF exports.
 
 Scenes use the six primitive kinds understood by pdf-scene.py. Arrowheads are
 explicit polygons/lines so SVG, raster and publication exports share geometry.
@@ -141,25 +141,33 @@ def render(concept):
     d=concept['drawing'];t=d['template'];head=d.get('header',[concept['title']]);head=[head] if isinstance(head,str) else head
     lines=d.get('lines',[]); label=d.get('label','');left=d.get('from','source');right=d.get('to','target')
     s=Scene(concept,320 if t in ['browser','gv','iv','cv','sv','grv','fv','deployment','delegation','loop','request','transition'] else 280)
-    if t=='operation' and d.get('variant')=='state-body':
+    if t=='function' and d.get('variant')=='state-body':
         s.doc['height']=320;s.doc['shapes'][0]['height']=320
         s.rect(25,25,510,270,rx=12);s.labels(head,43,61,470,20,True);s.line([(25,91),(535,91)]);s.text(43,118,'on start',18)
         s.circle(65,185,9,BLACK);s.arrow([(75,185),(130,185)])
         s.box(133,145,153,80,left,True);s.arrow([(287,185),(344,185)]);s.box(347,145,157,80,right,True)
         s.text(280,267,label,18,width=480,center=True)
-    elif t in ['classifier','component','unit','usage','interface','member','operation']:
+    elif t=='note':
+        s.rect(28,22,504,256);s.labels(head,46,56,468,20,True)
+        s.rect(72,115,416,120);s.labels(lines,90,147,380)
+        s.line([(280,75),(280,114)],dash=True)
+    elif t in ['classifier','component','usage','interface','member','function']:
         x,y,w=36,24,488
         header=sum(len(wrapped(v,w-36,20,True)) for v in head)*27
         body=sum(len(wrapped(v,w-36)) for v in lines)*25
         h=max(190,header+body+42)
         if h+48>s.doc['height']: s.doc['height']=h+48;s.doc['shapes'][0]['height']=h+48
-        s.rect(x,y,w,h,rx=12 if t=='operation' else 0)
+        s.rect(x,y,w,h,rx=12 if t=='function' else 0)
         s.labels(head,x+18,y+30,w-(86 if t=='component' else 36),20,True)
         bar=y+header+16;s.line([(x,bar),(x+w,bar)])
         s.labels(lines,x+18,bar+28,w-36)
         if t=='component' or d.get('variant')=='component':
             # UML-style component icon complements the explicit SWAML def label.
             s.component_icon(x+w-39,y+10)
+    elif t=='calculation':
+        s.rect(36,24,488,232);s.labels(head,54,58,452,20,True);s.line([(36,84),(524,84)])
+        s.text(54,118,lines[0],18,width=452);s.line([(36,139),(524,139)])
+        s.labels(lines[1:],54,175,452)
     elif t=='package':
         s.rect(30,55,500,200);s.rect(30,22,230,33)
         s.text(44,47,head[0],20,True,width=205)
@@ -182,8 +190,8 @@ def render(concept):
         if t=='connection':s.port(190,171);s.port(370,171)
         pts=[(198 if t=='connection' else 190,171),(362 if t=='connection' else 370,171)]
         if d.get('direction')=='reverse':pts.reverse()
-        if d.get('variant')=='typing':
-            s.line(pts,dash=True);x,y=pts[-1];direction=1 if pts[-1][0]>pts[-2][0] else -1
+        if d.get('variant') in ['typing','specialization']:
+            s.line(pts,dash=d.get('variant')=='typing');x,y=pts[-1];direction=1 if pts[-1][0]>pts[-2][0] else -1
             s.polygon([(x,y),(x-direction*16,y-8),(x-direction*16,y+8)])
         else:s.arrow(pts,dash=d.get('dashed',t=='edge'),open=t=='edge')
         s.labels(head,26,35,508,20,True);s.text(280,113,label,18,width=515,center=True)
@@ -259,16 +267,14 @@ def render(concept):
         s.line([(495,25),(495,55),(525,55)])
         bottom=s.labels(head,55,61,423,20,True);s.labels(lines,55,max(105,bottom+4),442)
         if label:s.text(55,217,label,18,width=442)
-    elif t=='node':
-        s.polygon([(66,65),(95,35),(495,35),(466,65)])
-        s.polygon([(466,65),(495,35),(495,218),(466,248)])
-        s.rect(66,65,400,183);bottom=s.labels(head,85,98,361,20,True);s.labels(lines,85,max(140,bottom+4),361)
+    elif t=='deployment-target':
+        s.rect(45,35,470,210);bottom=s.labels(head,65,73,430,20,True)
+        bar=max(99,bottom+6);s.line([(45,bar),(515,bar)])
+        s.labels(lines,65,bar+33,430)
     elif t=='deployment':
         s.box(29,42,215,91,left)
-        s.polygon([(325,65),(345,45),(525,45),(505,65)])
-        s.polygon([(505,65),(525,45),(525,133),(505,153)])
-        s.box(325,65,180,88,right)
-        s.arrow([(243,90),(323,105)],dash=True,open=True)
+        s.box(325,42,205,91,right)
+        s.arrow([(244,88),(325,88)],dash=True,open=True)
         s.text(280,188,label or '«deploy»',18,center=True)
         s.labels(head+lines,29,222,501)
     elif t=='case':
@@ -294,7 +300,7 @@ def render(concept):
         for value in head:y=s.text(280,y,value,18,width=500,center=True)
         s.text(280,label_y,label or head[-1],18,width=500,center=True);s.labels(lines,29,arrow_y+42,500)
     elif t=='browser':
-        s.frame('Browser',head[-1]);rows=lines or ['package P','  component def C','  component demo: C','    unit child: U']
+        s.frame('Browser',head[-1]);rows=lines or ['package P','  component def C','  component demo: C','    component child: C']
         parents={}
         for i,row in enumerate(rows[:6]):
             depth=(len(row)-len(row.lstrip()))//2;y=90+i*34;x=44+depth*34
@@ -302,40 +308,40 @@ def render(concept):
                 px,py=parents[depth-1];s.line([(px+7,py+8),(px+7,y-7),(x-7,y-7)])
             s.text(x,y,row.strip(),18,width=490-depth*34);parents[depth]=(x,y)
     elif t=='gv':
-        s.frame('GV',head[-1]);s.rect(44,84,472,193);s.text(61,111,label or '«root component» '+head[-1].split(': ',1)[-1],18,True)
+        s.frame('gv',head[-1]);s.rect(44,84,472,193);s.text(61,111,label or '«root component» '+head[-1].split(': ',1)[-1],18,True)
         s.component_icon(478,94);s.text(61,137,'profile: service (default)',18)
         if len(lines)==1:s.box(95,158,370,91,lines[0]);s.component_icon(429,167)
         elif len(lines)==2:s.box(66,147,185,91,lines[0]);s.box(306,147,185,91,lines[1])
         else:s.box(66,147,185,91,left);s.box(306,147,185,91,right)
     elif t=='iv':
         if len(lines)>1 and '→' in lines[1]:left,right=[part.strip() for part in lines[1].split('→',1)]
-        s.frame('IV',head[-1]);s.box(39,122,173,118,left);s.box(348,122,173,118,right)
+        s.frame('iv',head[-1]);s.box(39,122,173,118,left);s.box(348,122,173,118,right)
         s.port(212,179);s.port(348,179);s.arrow([(219,179),(341,179)])
         s.text(280,101,label or 'typed connector',18,width=480,center=True);s.labels(lines[:1],40,278,480)
     elif t=='cv':
         if len(lines)>1 and '→' in lines[1]:left,right=[part.strip() for part in lines[1].split('→',1)]
-        s.frame('CV',head[-1]);s.rect(35,86,220,186);s.text(53,113,'context: '+head[-1].split(': ',1)[-1],18)
+        s.frame('cv',head[-1]);s.rect(35,86,220,186);s.text(53,113,'context: '+head[-1].split(': ',1)[-1],18)
         s.rect(53,149,182,77,rx=38);s.text(144,191,left,18,width=163,center=True)
         s.box(353,142,178,100,right);s.arrow([(235,190),(352,190)],dash=True,open=True)
-        s.text(280,76,label or 'satisfies',18,center=True)
+        s.text(280,76,label or 'satisfy',18,center=True)
     elif t=='sv':
-        s.frame('SV',head[-1]);s.box(39,75,186,54,left);s.box(335,75,186,54,right)
+        s.frame('sv',head[-1]);s.box(39,75,186,54,left);s.box(335,75,186,54,right)
         s.line([(132,130),(132,286)],dash=True);s.line([(428,130),(428,286)],dash=True)
         s.arrow([(132,181),(428,181)]);s.text(280,165,lines[0] if lines else 'request via port',18,width=505,center=True)
         s.arrow([(428,253),(132,253)],dash=True,open=True);s.text(280,235,lines[1] if len(lines)>1 else 'reply after request',18,width=505,center=True)
     elif t=='grv':
-        s.frame('GRV',head[-1]);columns=[31,208,377,529]
+        s.frame('grv',head[-1]);columns=[31,208,377,529]
         for i in range(4):s.line([(columns[i],91),(columns[i],276)])
         for y in [91,134,181,228,276]:s.line([(31,y),(529,y)])
         for i,value in enumerate(['Element','Type','Concern']):s.text(columns[i]+10,119,value,18,True)
-        rows=lines or ['u | Unit | private data','op | Operation | behavior','p | Port | interface']
+        rows=lines or ['c | Component | private data','fn | Function | behavior','p | Port | interface']
         for n,row in enumerate(rows[:3]):
             for i,value in enumerate(row.split('|')[:3]):s.text(columns[i]+8,165+n*47,value.strip(),18,width=columns[i+1]-columns[i]-16)
     elif t=='fv':
-        s.frame('FV',head[-1]);s.circle(80,173,10,BLACK);s.arrow([(91,173),(143,173)])
-        s.box(146,124,152,100,left if left!='source' else 'operation',True)
+        s.frame('fv',head[-1]);s.circle(80,173,10,BLACK);s.arrow([(91,173),(143,173)])
+        s.box(146,124,152,100,left if left!='source' else 'function',True)
         s.arrow([(298,173),(360,173)]);s.box(363,124,157,100,right if right!='target' else 'state',True)
-        s.text(280,278,label or 'flow and states share FV',18,width=495,center=True)
+        s.text(280,278,label or 'flow and states share fv',18,width=495,center=True)
     else: raise ValueError(f'Unknown notation template {t}: {concept["id"]}')
     return validate(s,concept)
 

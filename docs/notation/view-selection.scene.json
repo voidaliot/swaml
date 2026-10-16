@@ -1,0 +1,71 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Filtered view selection",
+  "description": "Show the selected occurrence paths within the named view frame. Combine include clauses as a stable union; filters do not alter model ownership or execution.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 36,
+      "y": 24,
+      "width": 488,
+      "height": 190,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 54,
+      "text": "view assurance gv",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          36,
+          67
+        ],
+        [
+          524,
+          67
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 95,
+      "text": "include Demo recursive",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 120,
+      "text": "where kind == \"component\"",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

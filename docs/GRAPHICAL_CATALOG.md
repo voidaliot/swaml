@@ -1,34 +1,34 @@
 # Canonical graphical notation catalog
 
-SWAML 1.1 · publication 1.1.1. This generated catalog defines the original monochrome notation for each authored concept and meaningful label group. All specimens derive from [the semantic inventory](../spec/notation.json); complete examples supply their validation context.
+SWAML 1.2 · publication 1.2.0. This generated catalog defines the original monochrome notation for each authored concept and meaningful label group. All specimens derive from [the semantic inventory](../spec/notation.json); complete examples supply their validation context.
 
-Each SVG, PNG and vector scene shares the same geometry. A graphical specimen is a projection of its textual model; it does not create additional ports, events, state owners or execution semantics. Labels such as QoS values and expression operators appear within their owning element rather than introducing independent nodes.
+Each SVG, PNG and vector scene shares the same flat two-dimensional geometry, without perspective, extrusion, gradients or shadows. A graphical specimen is a projection of its textual model; it does not create additional ports, events, state owners or execution semantics. Labels such as QoS values and expression operators appear within their owning element rather than introducing independent nodes.
 
-The following fragments are contextual notation samples, not standalone SWAML files. `def` identifies reusable component/unit types; a root is an occurrence selected for execution.
+The following fragments are contextual notation samples, not standalone SWAML files. `def` identifies reusable component types; a root is an instance selected for execution.
 
 ## Concept index
 
-- [Assertion](#notation-assert) — Operation flow.
-- [Assignment](#notation-assignment) — Operation flow.
+- [Assertion](#notation-assert) — Function flow.
+- [Assignment](#notation-assignment) — Function flow.
 - [Boundary delegation](#notation-delegation) — Interfaces and connections.
-- [Bounded loop](#notation-bounded-loop) — Operation flow.
+- [Bounded loop](#notation-bounded-loop) — Function flow.
 - [Browser](#notation-view-browser) — View projections.
-- [Case](#notation-case) — Cases and evidence.
 - [Case causal order](#notation-case-causal-order) — Cases and evidence.
 - [Case data exchange](#notation-case-data-exchange) — Cases and evidence.
 - [Case event exchange](#notation-case-event-exchange) — Cases and evidence.
 - [Case request](#notation-case-request) — Cases and evidence.
 - [Case View](#notation-view-cv) — View projections.
 - [Client–server interface](#notation-client-server-interface) — Interfaces and connections.
-- [Completion transition](#notation-completion-transition) — Operation states.
+- [Completion transition](#notation-completion-transition) — Function states.
 - [Component definition](#notation-component-definition) — Structure and values.
+- [Component specialization](#notation-component-specialization) — Structure and values.
 - [Component usage](#notation-component-usage) — Structure and values.
 - [Concurrency mode](#notation-concurrency-mode) — Timing and deployment.
-- [Conditional branch](#notation-conditional) — Operation flow.
+- [Conditional branch](#notation-conditional) — Function flow.
 - [Correlated case reply](#notation-case-reply) — Cases and evidence.
 - [Data member](#notation-data-member) — Interfaces and connections.
 - [Data receiver port](#notation-port-receiver) — Interfaces and connections.
-- [Data send](#notation-send) — Operation flow.
+- [Data send](#notation-send) — Function flow.
 - [Data sender port](#notation-port-sender) — Interfaces and connections.
 - [Delivery policy](#notation-delivery-policy) — Interfaces and connections.
 - [Deployment binding](#notation-deployment) — Timing and deployment.
@@ -36,92 +36,81 @@ The following fragments are contextual notation samples, not standalone SWAML fi
 - [Enumeration](#notation-enumeration) — Structure and values.
 - [Enumeration value](#notation-enum-value) — Structure and values.
 - [Event member](#notation-event-member) — Interfaces and connections.
-- [Event publication](#notation-publish) — Operation flow.
+- [Event publication](#notation-publish) — Function flow.
 - [Event publisher port](#notation-port-publisher) — Interfaces and connections.
 - [Event subscriber port](#notation-port-subscriber) — Interfaces and connections.
-- [Executable operation](#notation-operation) — Operation flow.
-- [Execution node](#notation-execution-node) — Timing and deployment.
+- [Executable function](#notation-function) — Function flow.
 - [Expressions and value paths](#notation-expression) — Structure and values.
-- [Failure](#notation-fail) — Operation flow.
-- [Final state](#notation-final-state) — Operation states.
+- [External deployment target](#notation-deployment-target) — Timing and deployment.
+- [Failure](#notation-fail) — Function flow.
+- [Filtered view selection](#notation-view-selection) — Cases and evidence.
+- [Final state](#notation-final-state) — Function states.
 - [Fixed array type and value](#notation-array-value) — Structure and values.
 - [Flow View](#notation-view-fv) — View projections.
+- [Formal documentation](#notation-formal-documentation) — Cases and evidence.
+- [Function return](#notation-return) — Function flow.
+- [Function timing contract](#notation-timing-contract) — Timing and deployment.
+- [Function with states](#notation-stateful-function) — Function states.
 - [General View](#notation-view-gv) — View projections.
 - [Grid View](#notation-view-grv) — View projections.
-- [Initial state reference](#notation-initial-state) — Operation states.
+- [Initial state reference](#notation-initial-state) — Function states.
 - [Inline root composition](#notation-inline-root) — Structure and values.
 - [Interconnect View](#notation-view-iv) — View projections.
 - [Interface connector](#notation-connector) — Interfaces and connections.
-- [Interface operation signature](#notation-operation-signature) — Interfaces and connections.
-- [Local declaration](#notation-local-declaration) — Operation flow.
-- [Local operation invocation](#notation-invoke) — Operation flow.
-- [Manual activation](#notation-trigger-manual) — Operation flow.
+- [Interface function signature](#notation-function-signature) — Interfaces and connections.
+- [Local declaration](#notation-local-declaration) — Function flow.
+- [Local function call](#notation-local-call) — Function flow.
+- [Manual activation](#notation-trigger-manual) — Function flow.
+- [Member redefinition](#notation-member-redefinition) — Structure and values.
 - [Message freshness bound](#notation-freshness-bound) — Interfaces and connections.
+- [Named connector policy](#notation-qos-policy-reference) — Interfaces and connections.
 - [Occurrence lifeline](#notation-sequence-lifeline) — Cases and evidence.
 - [Occurrence typing relationship](#notation-type-relationship) — Structure and values.
-- [Operation return](#notation-return) — Operation flow.
-- [Operation timing contract](#notation-timing-contract) — Timing and deployment.
-- [Operation with states](#notation-stateful-operation) — Operation states.
 - [Optional port](#notation-optional-port) — Interfaces and connections.
+- [Ordinary comment](#notation-ordinary-comment) — Cases and evidence.
 - [Overflow behavior](#notation-overflow-policy) — Interfaces and connections.
 - [Package](#notation-package) — Structure and values.
 - [Package import](#notation-import) — Structure and values.
 - [Parameter or record field](#notation-parameter) — Structure and values.
-- [Periodic activation](#notation-trigger-periodic) — Operation flow.
-- [Port receive activation](#notation-trigger-receive) — Operation flow.
+- [Periodic activation](#notation-trigger-periodic) — Function flow.
+- [Port receive activation](#notation-trigger-receive) — Function flow.
 - [Primitive types](#notation-primitive-types) — Structure and values.
-- [Private unit variable](#notation-private-variable) — Structure and values.
+- [Private component variable](#notation-private-variable) — Structure and values.
 - [Publish–subscribe interface](#notation-publish-subscribe-interface) — Interfaces and connections.
-- [Pure local function](#notation-pure-function) — Structure and values.
+- [Pure calculation](#notation-calculation) — Function flow.
 - [Queue capacity](#notation-capacity-policy) — Interfaces and connections.
 - [Queue ordering](#notation-ordering-policy) — Interfaces and connections.
 - [Record construction](#notation-record-value) — Structure and values.
 - [Record datatype](#notation-datatype) — Structure and values.
 - [Requirement](#notation-requirement) — Cases and evidence.
-- [Requirement coverage link](#notation-satisfies-link) — Cases and evidence.
-- [Residence timer transition](#notation-timer-transition) — Operation states.
+- [Requirement attribute](#notation-requirement-attribute) — Cases and evidence.
+- [Residence timer transition](#notation-timer-transition) — Function states.
+- [Reusable QoS policy](#notation-qos-policy-definition) — Interfaces and connections.
 - [Root component](#notation-root-component) — Structure and values.
 - [Root execution profile](#notation-execution-profile) — Timing and deployment.
+- [Routed function call](#notation-routed-call) — Function flow.
 - [RPC client port](#notation-port-client) — Interfaces and connections.
-- [RPC handler activation](#notation-trigger-call) — Operation flow.
-- [RPC request and failure continuation](#notation-request) — Operation flow.
+- [RPC handler activation](#notation-trigger-call) — Function flow.
 - [RPC server port](#notation-port-server) — Interfaces and connections.
+- [Satisfaction relation](#notation-satisfies-link) — Cases and evidence.
 - [Sender–receiver interface](#notation-sender-receiver-interface) — Interfaces and connections.
 - [Sequence View](#notation-view-sv) — View projections.
 - [Service consumer port](#notation-port-requires) — Interfaces and connections.
 - [Service interface](#notation-service-interface) — Interfaces and connections.
 - [Service provider port](#notation-port-provides) — Interfaces and connections.
-- [Startup activation](#notation-trigger-start) — Operation flow.
-- [State](#notation-state) — Operation states.
-- [State entry behavior](#notation-state-entry) — Operation states.
-- [State exit behavior](#notation-state-exit) — Operation states.
-- [State transition](#notation-transition) — Operation states.
-- [Transition guard](#notation-transition-guard) — Operation states.
-- [Transition priority](#notation-transition-priority) — Operation states.
+- [Startup activation](#notation-trigger-start) — Function flow.
+- [State](#notation-state) — Function states.
+- [State entry behavior](#notation-state-entry) — Function states.
+- [State exit behavior](#notation-state-exit) — Function states.
+- [State transition](#notation-transition) — Function states.
+- [Transition guard](#notation-transition-guard) — Function states.
+- [Transition priority](#notation-transition-priority) — Function states.
 - [Transport latency bound](#notation-latency-bound) — Interfaces and connections.
-- [Unit definition](#notation-unit-definition) — Structure and values.
-- [Unit usage](#notation-unit-usage) — Structure and values.
+- [Use case](#notation-case) — Cases and evidence.
+- [Verification case](#notation-verification-case) — Cases and evidence.
+- [Verification relation](#notation-verification-link) — Cases and evidence.
 
 ## Cases and evidence
-
-## Notation: case
-
-**Case**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Case (node) | ![Case](notation/case.svg) | `case Change for Cabin satisfies VisibleSetting` |
-
-Case. Draw a case frame or rectangle labeled «case», its name and for Root identity.
-
-**Context:** Scenario header in Settings; steps reference Cabin’s root-level connectors. **Views:** CV, SV.
-
-- Draw a case frame or rectangle labeled «case», its name and for Root identity.
-- Cases describe routed exchanges; they MUST NOT introduce performers, free channels or a second executable operation body.
-
-[Complete model](../examples/08-service-field.swaml) · `Settings::Change`.
-
-[SVG](notation/case.svg) · [PNG](notation/case.png) · [Vector scene](notation/case.scene.json)
 
 ## Notation: case-causal-order
 
@@ -133,7 +122,7 @@ Case. Draw a case frame or rectangle labeled «case», its name and for Root ide
 
 Case causal order. Draw an explicitly labeled after dependency between step labels, or show the predecessor in the arrow label.
 
-**Context:** Dependency fragment of Rpc::Poll’s reply step. **Views:** CV, SV.
+**Context:** Dependency fragment of Rpc::Poll’s reply step. **Views:** cv, sv.
 
 - Draw an explicitly labeled after dependency between step labels, or show the predecessor in the arrow label.
 - Unrelated steps remain unordered; source order and vertical placement are layout choices, not happens-before edges.
@@ -152,7 +141,7 @@ Case causal order. Draw an explicitly labeled after dependency between step labe
 
 Case data exchange. Draw a sequence arrow between occurrence lifelines labeled send, port.member paths, connector and step label.
 
-**Context:** Step in Notation::Observe; source and destination are immediate child port/member paths. **Views:** CV, SV.
+**Context:** Step in Notation::Observe; source and destination are immediate child port/member paths. **Views:** cv, sv.
 
 - Draw a sequence arrow between occurrence lifelines labeled send, port.member paths, connector and step label.
 - The arrow projects an existing sender–receiver route; it creates neither a free event nor a connector by itself.
@@ -171,7 +160,7 @@ Case data exchange. Draw a sequence arrow between occurrence lifelines labeled s
 
 Case event exchange. Draw a publication arrow labeled publish and the exact connector/member, retaining its step identity.
 
-**Context:** Step in Settings::Change, using the reverse event direction of a service route. **Views:** CV, SV.
+**Context:** Step in Settings::Change, using the reverse event direction of a service route. **Views:** cv, sv.
 
 - Draw a publication arrow labeled publish and the exact connector/member, retaining its step identity.
 - For service contracts events travel provider-to-consumer; line orientation follows that role even when opposite the connector’s request orientation.
@@ -186,11 +175,11 @@ Case event exchange. Draw a publication arrow labeled publish and the exact conn
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Case request (edge) | ![Case request](notation/case-request.svg) | `request caller.health.check -> serviceUnit.health.check via healthCheck label sent;` |
+| Case request (edge) | ![Case request](notation/case-request.svg) | `call caller.health.check -> serviceUnit.health.check via healthCheck label sent;` |
 
 Case request. Draw a request arrow between occurrence lifelines, labeled the member, connector and step identity.
 
-**Context:** Request step in Rpc::Poll. **Views:** CV, SV.
+**Context:** Routed call step in Rpc::Poll. **Views:** cv, sv.
 
 - Draw a request arrow between occurrence lifelines, labeled the member, connector and step identity.
 - Its later reply must be uniquely correlated by case ancestry and route/member; vertical spacing does not create that relationship.
@@ -209,7 +198,7 @@ Case request. Draw a request arrow between occurrence lifelines, labeled the mem
 
 Correlated case reply. Draw a dashed reply arrow reversing the matching request route and label its step identity and correlation.
 
-**Context:** Reply step in Rpc::Poll; after sent identifies its causal request ancestor. **Views:** CV, SV.
+**Context:** Reply step in Rpc::Poll; after sent identifies its causal request ancestor. **Views:** cv, sv.
 
 - Draw a dashed reply arrow reversing the matching request route and label its step identity and correlation.
 - A reply cannot be matched by visual proximity alone; preserve the unique causal request ancestor.
@@ -217,6 +206,44 @@ Correlated case reply. Draw a dashed reply arrow reversing the matching request 
 [Complete model](../examples/07-client-server.swaml) · `Rpc::Poll`.
 
 [SVG](notation/case-reply.svg) · [PNG](notation/case-reply.png) · [Vector scene](notation/case-reply.scene.json)
+
+## Notation: view-selection
+
+**Filtered view selection**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Filtered view selection (projection) | ![Filtered view selection](notation/view-selection.svg) | `include Demo recursive where kind == "component";` |
+
+Show the selected occurrence paths within the named view frame. Combine include clauses as a stable union; filters do not alter model ownership or execution.
+
+**Context:** Owned source element in the Assurance example. **Views:** gv, grv, cv.
+
+- Show the selected occurrence paths within the named view frame.
+- Combine include clauses as a stable union; filters do not alter model ownership or execution.
+
+[Complete model](../examples/16-requirements-and-views.swaml) · `Assurance::assurance`.
+
+[SVG](notation/view-selection.svg) · [PNG](notation/view-selection.png) · [Vector scene](notation/view-selection.scene.json)
+
+## Notation: formal-documentation
+
+**Formal documentation**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Formal documentation (compartment) | ![Formal documentation](notation/formal-documentation.svg) | `doc /* Every started worker shall store a result of 2. */` |
+
+Draw one labeled doc compartment or one doc table cell for the owner. Keep multiline formal text distinct from ordinary comment notes.
+
+**Context:** Owned source element in the Assurance example. **Views:** gv, grv, cv.
+
+- Draw one labeled doc compartment or one doc table cell for the owner.
+- Keep multiline formal text distinct from ordinary comment notes.
+
+[Complete model](../examples/16-requirements-and-views.swaml) · `Assurance::BoundedResult`.
+
+[SVG](notation/formal-documentation.svg) · [PNG](notation/formal-documentation.png) · [Vector scene](notation/formal-documentation.scene.json)
 
 ## Notation: sequence-lifeline
 
@@ -228,14 +255,33 @@ Correlated case reply. Draw a dashed reply arrow reversing the matching request 
 
 Occurrence lifeline. Draw a lifeline headed by the occurrence name: Type and a dashed vertical line.
 
-**Context:** Occurrence in Rpc::HealthCheck used as a sequence lifeline. **Views:** CV, SV.
+**Context:** Occurrence in Rpc::HealthCheck used as a sequence lifeline. **Views:** cv, sv.
 
 - Draw a lifeline headed by the occurrence name: Type and a dashed vertical line.
-- A lifeline identifies an existing component/unit occurrence; an actor/performer glyph MUST NOT replace a modeled communication boundary.
+- A lifeline identifies an existing component occurrence; an actor/performer glyph MUST NOT replace a modeled communication boundary.
 
 [Complete model](../examples/07-client-server.swaml) · `Rpc::HealthCheck.caller`.
 
 [SVG](notation/sequence-lifeline.svg) · [PNG](notation/sequence-lifeline.png) · [Vector scene](notation/sequence-lifeline.scene.json)
+
+## Notation: ordinary-comment
+
+**Ordinary comment**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Ordinary comment (node) | ![Ordinary comment](notation/ordinary-comment.svg) | `// Each instance has its own result.` |
+
+Draw a plain rectangular note inside its owner or connected by a plain dashed line. Each line comment and each block comment remains separate; there is no comment keyword.
+
+**Context:** Owned source element in the Assurance example. **Views:** gv, grv, cv.
+
+- Draw a plain rectangular note inside its owner or connected by a plain dashed line.
+- Each line comment and each block comment remains separate; there is no comment keyword.
+
+[Complete model](../examples/16-requirements-and-views.swaml) · `Assurance::Worker`.
+
+[SVG](notation/ordinary-comment.svg) · [PNG](notation/ordinary-comment.png) · [Vector scene](notation/ordinary-comment.scene.json)
 
 ## Notation: requirement
 
@@ -243,499 +289,116 @@ Occurrence lifeline. Draw a lifeline headed by the occurrence name: Type and a d
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Requirement (node) | ![Requirement](notation/requirement.svg) | `requirement LimitedDuty "Applied duty shall be at most 0.8.";` |
+| Requirement (node) | ![Requirement](notation/requirement.svg) | `requirement LimitedDuty { doc /* Applied duty shall be at most 0.8. */ }` |
 
-Requirement. Draw a requirement rectangle labeled «requirement», its name and text compartment.
+A named obligation with typed attributes and one optional formal specification.
 
-**Context:** Requirement declaration in Control. **Views:** CV, SV.
+**Context:** Requirement declaration in Control. **Views:** gv, cv, grv.
 
-- Draw a requirement rectangle labeled «requirement», its name and text compartment.
-- Text is a named obligation; the shape does not imply formal verification or executable behavior.
+- Draw a flat requirement rectangle with its name, optional attributes and one doc compartment.
+- A requirement has no subject; satisfaction and verification are separate relations.
 
 [Complete model](../examples/02-realtime-controller.swaml) · `Control::LimitedDuty`.
 
 [SVG](notation/requirement.svg) · [PNG](notation/requirement.png) · [Vector scene](notation/requirement.scene.json)
 
-## Notation: satisfies-link
+## Notation: requirement-attribute
 
-**Requirement coverage link**
+**Requirement attribute**
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Requirement coverage link (edge) | ![Requirement coverage link](notation/satisfies-link.svg) | `satisfies VisibleSetting` |
+| Requirement attribute (compartment) | ![Requirement attribute](notation/requirement-attribute.svg) | `attribute priority: uint = 1;` |
 
-Requirement coverage link. Draw a dashed arrow labeled satisfies from the case to the requirement.
+Display immutable typed metadata in an attribute compartment or table cell. Names are unique within their requirement; metadata is not runtime state.
 
-**Context:** Trace clause on Settings::Change. **Views:** CV, SV.
+**Context:** Owned source element in the Assurance example. **Views:** gv, grv, cv.
 
-- Draw a dashed arrow labeled satisfies from the case to the requirement.
-- The link records intended coverage; display verification status separately and never infer proof from the arrow.
+- Display immutable typed metadata in an attribute compartment or table cell.
+- Names are unique within their requirement; metadata is not runtime state.
 
-[Complete model](../examples/08-service-field.swaml) · `Settings::Change`.
+[Complete model](../examples/16-requirements-and-views.swaml) · `Assurance::BoundedResult`.
+
+[SVG](notation/requirement-attribute.svg) · [PNG](notation/requirement-attribute.png) · [Vector scene](notation/requirement-attribute.scene.json)
+
+## Notation: satisfies-link
+
+**Satisfaction relation**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Satisfaction relation (edge) | ![Satisfaction relation](notation/satisfies-link.svg) | `satisfy VisibleSetting by Cabin;` |
+
+Design claims satisfaction of a requirement.
+
+**Context:** Package-owned design-to-requirement relation. **Views:** cv, sv.
+
+- Draw a dashed open arrow from the design element to the requirement, labeled satisfy.
+- A satisfaction claim does not establish verification evidence.
+
+[Complete model](../examples/08-service-field.swaml) · `Settings`.
 
 [SVG](notation/satisfies-link.svg) · [PNG](notation/satisfies-link.png) · [Vector scene](notation/satisfies-link.scene.json)
 
+## Notation: case
 
-## Interfaces and connections
-
-## Notation: delegation
-
-**Boundary delegation**
+**Use case**
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Boundary delegation (edge) | ![Boundary delegation](notation/delegation.svg) | `delegate api -> store.api;` |
+| Use case (node) | ![Use case](notation/case.svg) | `useCase Change for Cabin` |
 
-Boundary delegation. Draw a solid unarrowed line labeled delegate from a boundary port to one immediate child port inside its owner.
+A use case describes intended use and routed exchanges.
 
-**Context:** Boundary-to-immediate-child alias inside Settings::Service. **Views:** IV.
+**Context:** Scenario header in Settings; steps reference Cabin’s root-level connectors. **Views:** cv, sv.
 
-- Draw a solid unarrowed line labeled delegate from a boundary port to one immediate child port inside its owner.
-- Both endpoints keep identical interface identity and role; this alias creates no queue, service call, adapter or extra message.
+- Draw a case frame labeled useCase with its name and selected root.
+- The for relation references a root; enclosure never changes package ownership.
 
-[Complete model](../examples/08-service-field.swaml) · `Settings::Service`.
+[Complete model](../examples/08-service-field.swaml) · `Settings::Change`.
 
-[SVG](notation/delegation.svg) · [PNG](notation/delegation.png) · [Vector scene](notation/delegation.scene.json)
+[SVG](notation/case.svg) · [PNG](notation/case.png) · [Vector scene](notation/case.scene.json)
 
-## Notation: client-server-interface
+## Notation: verification-case
 
-**Client–server interface**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Client–server interface (node) | ![Client–server interface](notation/client-server-interface.svg) | `interface clientServer Health version "1.0.0"` |
-
-Client–server interface. Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.
-
-**Context:** Interface declaration header; member rows occupy the contract body. **Views:** IV.
-
-- Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.
-- Keep member categories visible; a contract box is a reusable type and MUST NOT be mistaken for a runtime broker or unit.
-
-[Complete model](../examples/07-client-server.swaml) · `Rpc::Health`.
-
-[SVG](notation/client-server-interface.svg) · [PNG](notation/client-server-interface.png) · [Vector scene](notation/client-server-interface.scene.json)
-
-## Notation: data-member
-
-**Data member**
+**Verification case**
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Data member (compartment) | ![Data member](notation/data-member.svg) | `data temperature: Real sampled;` |
+| Verification case (node) | ![Verification case](notation/verification-case.svg) | `verificationCase CheckResults for Demo` |
 
-Data member. Show data name: Type and sampled or queued on one interface-compartment row.
+Draw a case frame labeled verificationCase with its name and root context. Documentation describes the procedure; verify links identify requirements without asserting a passed result.
 
-**Context:** Member of Control::Samples; queued is the alternative retention mode. **Views:** IV.
+**Context:** Owned source element in the Assurance example. **Views:** gv, grv, cv.
 
-- Show data name: Type and sampled or queued on one interface-compartment row.
-- Retention mode is explicit text, not color; sampled uses latest-value buffering while queued retains individual values under QoS.
+- Draw a case frame labeled verificationCase with its name and root context.
+- Documentation describes the procedure; verify links identify requirements without asserting a passed result.
 
-[Complete model](../examples/02-realtime-controller.swaml) · `Control::Samples`.
+[Complete model](../examples/16-requirements-and-views.swaml) · `Assurance::CheckResults`.
 
-[SVG](notation/data-member.svg) · [PNG](notation/data-member.png) · [Vector scene](notation/data-member.scene.json)
+[SVG](notation/verification-case.svg) · [PNG](notation/verification-case.png) · [Vector scene](notation/verification-case.scene.json)
 
-## Notation: port-receiver
+## Notation: verification-link
 
-**Data receiver port**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Data receiver port (node) | ![Data receiver port](notation/port-receiver.svg) | `port input: Greeting receiver;` |
-
-Data receiver port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.
-
-**Context:** Port declaration on the displayed unit/component boundary. **Views:** IV.
-
-- Draw a small square centered on the owning boundary and label its name: Interface and exact role.
-- Data flows inward to the owned receiving operation. Do not infer direction only from left/right placement; role text remains mandatory.
-
-[Complete model](../examples/01-hello.swaml) · `Hello::Listener.input`.
-
-[SVG](notation/port-receiver.svg) · [PNG](notation/port-receiver.png) · [Vector scene](notation/port-receiver.scene.json)
-
-## Notation: port-sender
-
-**Data sender port**
+**Verification relation**
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Data sender port (node) | ![Data sender port](notation/port-sender.svg) | `port output: Greeting sender;` |
+| Verification relation (edge) | ![Verification relation](notation/verification-link.svg) | `verify BoundedResult;` |
 
-Data sender port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.
+Draw a dashed open arrow from the verification case to the requirement, labeled verify. A relation expresses verification intent; evidence and outcome are recorded separately.
 
-**Context:** Port declaration on the displayed unit/component boundary. **Views:** IV.
+**Context:** Owned source element in the Assurance example. **Views:** gv, grv, cv.
 
-- Draw a small square centered on the owning boundary and label its name: Interface and exact role.
-- Data flows outward from the owned port. Do not infer direction only from left/right placement; role text remains mandatory.
+- Draw a dashed open arrow from the verification case to the requirement, labeled verify.
+- A relation expresses verification intent; evidence and outcome are recorded separately.
 
-[Complete model](../examples/01-hello.swaml) · `Hello::Speaker.output`.
+[Complete model](../examples/16-requirements-and-views.swaml) · `Assurance::CheckResults`.
 
-[SVG](notation/port-sender.svg) · [PNG](notation/port-sender.png) · [Vector scene](notation/port-sender.scene.json)
+[SVG](notation/verification-link.svg) · [PNG](notation/verification-link.png) · [Vector scene](notation/verification-link.scene.json)
 
-## Notation: delivery-policy
 
-**Delivery policy**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Delivery policy (label) | ![Delivery policy](notation/delivery-policy.svg) | `delivery atLeastOnce;` |
-
-Delivery policy. Attach a QoS property compartment to its connector; write the exact delivery value.
-
-**Context:** QoS property on Rpc::HealthCheck.healthCheck; the signature is idempotent. **Views:** IV.
-
-- Attach a QoS property compartment to its connector; write the exact delivery value.
-- atLeastOnce, atMostOnce and bestEffort are textual alternatives, not three different edge shapes; atLeastOnce RPC requires idempotent signatures.
-
-[Complete model](../examples/07-client-server.swaml) · `Rpc::HealthCheck.healthCheck`.
-
-[SVG](notation/delivery-policy.svg) · [PNG](notation/delivery-policy.png) · [Vector scene](notation/delivery-policy.scene.json)
-
-## Notation: event-member
-
-**Event member**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Event member (compartment) | ![Event member](notation/event-member.svg) | `event changed(value: String);` |
-
-Event member. Show event name(parameters) in its interface compartment; draw no free-floating event definition.
-
-**Context:** Member of Lifecycle::Status. **Views:** IV.
-
-- Show event name(parameters) in its interface compartment; draw no free-floating event definition.
-- Every graphical emission or receive label identifies this member through an owned port and operation.
-
-[Complete model](../examples/04-stateful-operation.swaml) · `Lifecycle::Status`.
-
-[SVG](notation/event-member.svg) · [PNG](notation/event-member.png) · [Vector scene](notation/event-member.scene.json)
-
-## Notation: port-publisher
-
-**Event publisher port**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Event publisher port (node) | ![Event publisher port](notation/port-publisher.svg) | `port status: Status publisher;` |
-
-Event publisher port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.
-
-**Context:** Port declaration on the displayed unit/component boundary. **Views:** IV.
-
-- Draw a small square centered on the owning boundary and label its name: Interface and exact role.
-- Events leave this port through explicit subscription connectors. Do not infer direction only from left/right placement; role text remains mandatory.
-
-[Complete model](../examples/04-stateful-operation.swaml) · `Lifecycle::Device.status`.
-
-[SVG](notation/port-publisher.svg) · [PNG](notation/port-publisher.png) · [Vector scene](notation/port-publisher.scene.json)
-
-## Notation: port-subscriber
-
-**Event subscriber port**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Event subscriber port (node) | ![Event subscriber port](notation/port-subscriber.svg) | `port status: Status subscriber;` |
-
-Event subscriber port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.
-
-**Context:** Port declaration on the displayed unit/component boundary. **Views:** IV.
-
-- Draw a small square centered on the owning boundary and label its name: Interface and exact role.
-- Events enter the declared handling operation through this port. Do not infer direction only from left/right placement; role text remains mandatory.
-
-[Complete model](../examples/04-stateful-operation.swaml) · `Lifecycle::Monitor.status`.
-
-[SVG](notation/port-subscriber.svg) · [PNG](notation/port-subscriber.png) · [Vector scene](notation/port-subscriber.scene.json)
-
-## Notation: connector
-
-**Interface connector**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Interface connector (edge) | ![Interface connector](notation/connector.svg) | `connect greeting: speaker.output -> listener.input qos { delivery atMostOnce; ordering fifo; capacity 4; overflow reject; };` |
-
-Interface connector. Draw a solid directed connector between port squares, with connector identity and interface name visible.
-
-**Context:** Connection between immediate child ports of Hello::Conversation. **Views:** IV.
-
-- Draw a solid directed connector between port squares, with connector identity and interface name visible.
-- The arrow follows declared source-to-target roles; replies/service events reverse that route rather than creating a second hidden channel.
-
-[Complete model](../examples/01-hello.swaml) · `Hello::Conversation.greeting`.
-
-[SVG](notation/connector.svg) · [PNG](notation/connector.png) · [Vector scene](notation/connector.scene.json)
-
-## Notation: operation-signature
-
-**Interface operation signature**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Interface operation signature (compartment) | ![Interface operation signature](notation/operation-signature.svg) | `operation check(): Bool idempotent;` |
-
-Interface operation signature. Show operation name(parameters): Result and idempotent when declared, inside the interface contract.
-
-**Context:** RPC contract member of Rpc::Health. **Views:** IV.
-
-- Show operation name(parameters): Result and idempotent when declared, inside the interface contract.
-- The signature is distinct from its unit implementation; a contract row has no executable body.
-
-[Complete model](../examples/07-client-server.swaml) · `Rpc::Health`.
-
-[SVG](notation/operation-signature.svg) · [PNG](notation/operation-signature.png) · [Vector scene](notation/operation-signature.scene.json)
-
-## Notation: freshness-bound
-
-**Message freshness bound**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Message freshness bound (label) | ![Message freshness bound](notation/freshness-bound.svg) | `maxAge 20 ms;` |
-
-Message freshness bound. Write maxAge and its explicit unit in the connector QoS compartment.
-
-**Context:** QoS freshness bound on Control::Controller.measured. **Views:** IV.
-
-- Write maxAge and its explicit unit in the connector QoS compartment.
-- Age is measured from original emission, including retries; show expiry as a trace observation only when supported by a run.
-
-[Complete model](../examples/02-realtime-controller.swaml) · `Control::Controller.measured`.
-
-[SVG](notation/freshness-bound.svg) · [PNG](notation/freshness-bound.png) · [Vector scene](notation/freshness-bound.scene.json)
-
-## Notation: optional-port
-
-**Optional port**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Optional port (label) | ![Optional port](notation/optional-port.svg) | `port notices: Notices publisher optional;` |
-
-Optional port. Use the same square port symbol and append optional to its role label.
-
-**Context:** Reusable unit NotationOptions::Emitter; its outgoing member is tied to an operation. **Views:** IV.
-
-- Use the same square port symbol and append optional to its role label.
-- Optionality only permits an unconnected route; it does not remove contract, provenance or receiving-handler obligations.
-
-[Complete model](../examples/notation/catalog.swaml) · `NotationOptions::Emitter.notices`.
-
-[SVG](notation/optional-port.svg) · [PNG](notation/optional-port.png) · [Vector scene](notation/optional-port.scene.json)
-
-## Notation: overflow-policy
-
-**Overflow behavior**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Overflow behavior (label) | ![Overflow behavior](notation/overflow-policy.svg) | `overflow dropNewest;` |
-
-Overflow behavior. Write overflow plus dropNewest, dropOldest or reject in the connector QoS compartment.
-
-**Context:** QoS property on Notation::Demo.events. **Views:** IV.
-
-- Write overflow plus dropNewest, dropOldest or reject in the connector QoS compartment.
-- The label determines retention/rejection semantics; no style variation may silently substitute another policy.
-
-[Complete model](../examples/notation/catalog.swaml) · `Notation::Demo.events`.
-
-[SVG](notation/overflow-policy.svg) · [PNG](notation/overflow-policy.png) · [Vector scene](notation/overflow-policy.scene.json)
-
-## Notation: publish-subscribe-interface
-
-**Publish–subscribe interface**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Publish–subscribe interface (node) | ![Publish–subscribe interface](notation/publish-subscribe-interface.svg) | `interface publishSubscribe Status version "1.0.0"` |
-
-Publish–subscribe interface. Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.
-
-**Context:** Interface declaration header; member rows occupy the contract body. **Views:** IV.
-
-- Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.
-- Keep member categories visible; a contract box is a reusable type and MUST NOT be mistaken for a runtime broker or unit.
-
-[Complete model](../examples/04-stateful-operation.swaml) · `Lifecycle::Status`.
-
-[SVG](notation/publish-subscribe-interface.svg) · [PNG](notation/publish-subscribe-interface.png) · [Vector scene](notation/publish-subscribe-interface.scene.json)
-
-## Notation: capacity-policy
-
-**Queue capacity**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Queue capacity (label) | ![Queue capacity](notation/capacity-policy.svg) | `capacity 4;` |
-
-Queue capacity. Write the positive capacity value in the connector QoS compartment.
-
-**Context:** QoS property on Hello::Conversation.greeting. **Views:** IV.
-
-- Write the positive capacity value in the connector QoS compartment.
-- Capacity counts pending logical messages for the route/direction/member; do not encode capacity as line thickness.
-
-[Complete model](../examples/01-hello.swaml) · `Hello::Conversation.greeting`.
-
-[SVG](notation/capacity-policy.svg) · [PNG](notation/capacity-policy.png) · [Vector scene](notation/capacity-policy.scene.json)
-
-## Notation: ordering-policy
-
-**Queue ordering**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Queue ordering (label) | ![Queue ordering](notation/ordering-policy.svg) | `ordering unordered;` |
-
-Queue ordering. Write ordering fifo or ordering unordered in the connector QoS compartment.
-
-**Context:** QoS property on Notation::Demo.events. **Views:** IV.
-
-- Write ordering fifo or ordering unordered in the connector QoS compartment.
-- Ordering applies per route, direction and member; line position or crossing MUST NOT imply a global order.
-
-[Complete model](../examples/notation/catalog.swaml) · `Notation::Demo.events`.
-
-[SVG](notation/ordering-policy.svg) · [PNG](notation/ordering-policy.png) · [Vector scene](notation/ordering-policy.scene.json)
-
-## Notation: port-client
-
-**RPC client port**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| RPC client port (node) | ![RPC client port](notation/port-client.svg) | `port health: Health client;` |
-
-RPC client port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.
-
-**Context:** Port declaration on the displayed unit/component boundary. **Views:** IV.
-
-- Draw a small square centered on the owning boundary and label its name: Interface and exact role.
-- Requests leave and correlated results return through this same port. Do not infer direction only from left/right placement; role text remains mandatory.
-
-[Complete model](../examples/07-client-server.swaml) · `Rpc::Client.health`.
-
-[SVG](notation/port-client.svg) · [PNG](notation/port-client.png) · [Vector scene](notation/port-client.scene.json)
-
-## Notation: port-server
-
-**RPC server port**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| RPC server port (node) | ![RPC server port](notation/port-server.svg) | `port health: Health server;` |
-
-RPC server port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.
-
-**Context:** Port declaration on the displayed unit/component boundary. **Views:** IV.
-
-- Draw a small square centered on the owning boundary and label its name: Interface and exact role.
-- Requests enter and correlated results leave through this same port. Do not infer direction only from left/right placement; role text remains mandatory.
-
-[Complete model](../examples/07-client-server.swaml) · `Rpc::Server.health`.
-
-[SVG](notation/port-server.svg) · [PNG](notation/port-server.png) · [Vector scene](notation/port-server.scene.json)
-
-## Notation: sender-receiver-interface
-
-**Sender–receiver interface**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Sender–receiver interface (node) | ![Sender–receiver interface](notation/sender-receiver-interface.svg) | `interface senderReceiver Greeting version "1.0.0"` |
-
-Sender–receiver interface. Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.
-
-**Context:** Interface declaration header; member rows occupy the contract body. **Views:** IV.
-
-- Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.
-- Keep member categories visible; a contract box is a reusable type and MUST NOT be mistaken for a runtime broker or unit.
-
-[Complete model](../examples/01-hello.swaml) · `Hello::Greeting`.
-
-[SVG](notation/sender-receiver-interface.svg) · [PNG](notation/sender-receiver-interface.png) · [Vector scene](notation/sender-receiver-interface.scene.json)
-
-## Notation: port-requires
-
-**Service consumer port**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Service consumer port (node) | ![Service consumer port](notation/port-requires.svg) | `port setting: TemperatureSetting requires;` |
-
-Service consumer port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.
-
-**Context:** Port declaration on the displayed unit/component boundary. **Views:** IV.
-
-- Draw a small square centered on the owning boundary and label its name: Interface and exact role.
-- RPC requests leave; results and provider events enter. Do not infer direction only from left/right placement; role text remains mandatory.
-
-[Complete model](../examples/08-service-field.swaml) · `Settings::Panel.setting`.
-
-[SVG](notation/port-requires.svg) · [PNG](notation/port-requires.png) · [Vector scene](notation/port-requires.scene.json)
-
-## Notation: service-interface
-
-**Service interface**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Service interface (node) | ![Service interface](notation/service-interface.svg) | `interface service TemperatureSetting version "1.0.0"` |
-
-Service interface. Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.
-
-**Context:** Interface declaration header; member rows occupy the contract body. **Views:** IV.
-
-- Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.
-- Keep member categories visible; a contract box is a reusable type and MUST NOT be mistaken for a runtime broker or unit.
-
-[Complete model](../examples/08-service-field.swaml) · `Settings::TemperatureSetting`.
-
-[SVG](notation/service-interface.svg) · [PNG](notation/service-interface.png) · [Vector scene](notation/service-interface.scene.json)
-
-## Notation: port-provides
-
-**Service provider port**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Service provider port (node) | ![Service provider port](notation/port-provides.svg) | `port api: TemperatureSetting provides;` |
-
-Service provider port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.
-
-**Context:** Port declaration on the displayed unit/component boundary. **Views:** IV.
-
-- Draw a small square centered on the owning boundary and label its name: Interface and exact role.
-- RPC requests enter; results and provider events leave. Do not infer direction only from left/right placement; role text remains mandatory.
-
-[Complete model](../examples/08-service-field.swaml) · `Settings::SettingStore.api`.
-
-[SVG](notation/port-provides.svg) · [PNG](notation/port-provides.png) · [Vector scene](notation/port-provides.scene.json)
-
-## Notation: latency-bound
-
-**Transport latency bound**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Transport latency bound (label) | ![Transport latency bound](notation/latency-bound.svg) | `maxLatency 1 ms;` |
-
-Transport latency bound. Write maxLatency and an explicitly unit-bearing duration beside the corresponding connector.
-
-**Context:** QoS bound on Control::Controller.measured. **Views:** IV.
-
-- Write maxLatency and an explicitly unit-bearing duration beside the corresponding connector.
-- This bound ends at transport readiness; it MUST NOT be labeled as total execution or dispatch deadline.
-
-[Complete model](../examples/02-realtime-controller.swaml) · `Control::Controller.measured`.
-
-[SVG](notation/latency-bound.svg) · [PNG](notation/latency-bound.png) · [Vector scene](notation/latency-bound.scene.json)
-
-
-## Operation flow
+## Function flow
 
 ## Notation: assert
 
@@ -747,7 +410,7 @@ Transport latency bound. Write maxLatency and an explicitly unit-bearing duratio
 
 Assertion. Draw an owned statement box with the exact statement label and directed control-flow succession.
 
-**Context:** Statement inside the displayed owning operation; the FV node is a projection. **Views:** FV.
+**Context:** Statement inside the displayed owning function; the fv node is a projection. **Views:** fv.
 
 - Draw an owned statement box with the exact statement label and directed control-flow succession.
 - False fails the activation; this step is an execution check, not proof of a requirement.
@@ -766,10 +429,10 @@ Assertion. Draw an owned statement box with the exact statement label and direct
 
 Assignment. Draw an owned statement box with the exact statement label and directed control-flow succession.
 
-**Context:** Statement inside the displayed owning operation; the FV node is a projection. **Views:** FV.
+**Context:** Statement inside the displayed owning function; the fv node is a projection. **Views:** fv.
 
 - Draw an owned statement box with the exact statement label and directed control-flow succession.
-- Replaces an existing permitted whole value; a field path or another unit is not an assignment target.
+- Replaces an existing permitted whole value; a field path or another component is not an assignment target.
 
 [Complete model](../examples/05-values-and-flow.swaml) · `Values::Producer.prepare`.
 
@@ -785,7 +448,7 @@ Assignment. Draw an owned statement box with the exact statement label and direc
 
 Bounded loop. Draw a loop frame with explicit while condition and positive bound label, and a return control edge for iteration.
 
-**Context:** Loop header in Values::Producer.prepare; the body is rendered as the loop compartment. **Views:** FV.
+**Context:** Loop header in Values::Producer.prepare; the body is rendered as the loop compartment. **Views:** fv.
 
 - Draw a loop frame with explicit while condition and positive bound label, and a return control edge for iteration.
 - The bound is semantic, not decoration; a still-true condition after the limit leads to failure rather than silent completion.
@@ -802,11 +465,11 @@ Bounded loop. Draw a loop frame with explicit while condition and positive bound
 | --- | --- | --- |
 | Conditional branch (node) | ![Conditional branch](notation/conditional.svg) | `if (duty > 0.8) { send output.duty(0.8); } else { send output.duty(duty); }` |
 
-Conditional branch. Draw a decision diamond with the Bool condition and distinct true/false control exits, followed by a merge when control continues.
+Conditional branch. Draw a decision diamond with the bool condition and distinct true/false control exits, followed by a merge when control continues.
 
-**Context:** If/else statement in Control::Regulator.regulate. **Views:** FV.
+**Context:** If/else statement in Control::Regulator.regulate. **Views:** fv.
 
-- Draw a decision diamond with the Bool condition and distinct true/false control exits, followed by a merge when control continues.
+- Draw a decision diamond with the bool condition and distinct true/false control exits, followed by a merge when control continues.
 - Exactly one branch executes; the diamond is an if-statement projection, not an independent behavior definition.
 
 [Complete model](../examples/02-realtime-controller.swaml) · `Control::Regulator.regulate`.
@@ -823,10 +486,10 @@ Conditional branch. Draw a decision diamond with the Bool condition and distinct
 
 Data send. Draw an owned statement box with the exact statement label and directed control-flow succession.
 
-**Context:** Statement inside the displayed owning operation; the FV node is a projection. **Views:** FV.
+**Context:** Statement inside the displayed owning function; the fv node is a projection. **Views:** fv.
 
 - Draw an owned statement box with the exact statement label and directed control-flow succession.
-- The text identifies the emitting operation’s owned sender port and data member.
+- The text identifies the emitting function’s owned sender port and data member.
 
 [Complete model](../examples/01-hello.swaml) · `Hello::Speaker.greet`.
 
@@ -842,33 +505,33 @@ Data send. Draw an owned statement box with the exact statement label and direct
 
 Event publication. Draw an owned statement box with the exact statement label and directed control-flow succession.
 
-**Context:** Statement inside the displayed owning operation; the FV node is a projection. **Views:** FV.
+**Context:** Statement inside the displayed owning function; the fv node is a projection. **Views:** fv.
 
 - Draw an owned statement box with the exact statement label and directed control-flow succession.
-- The text identifies the emitting operation’s owned publisher/provider port and event member.
+- The text identifies the emitting function’s owned publisher/provider port and event member.
 
 [Complete model](../examples/08-service-field.swaml) · `Settings::SettingStore.update`.
 
 [SVG](notation/publish.svg) · [PNG](notation/publish.png) · [Vector scene](notation/publish.scene.json)
 
-## Notation: operation
+## Notation: function
 
-**Executable operation**
+**Executable function**
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Executable operation (node) | ![Executable operation](notation/operation.svg) | `operation greet() on start` |
+| Executable function (node) | ![Executable function](notation/function.svg) | `function greet() on start` |
 
-Executable operation. Draw an operation frame or compartment with its name, ordered parameters, result and activation label.
+Executable function. Draw an function frame or compartment with its name, ordered parameters, result and activation label.
 
-**Context:** Header of Hello::Speaker.greet; its statement body is projected inside the operation frame. **Views:** FV.
+**Context:** Header of Hello::Speaker.greet; its statement body is projected inside the function frame. **Views:** fv.
 
-- Draw an operation frame or compartment with its name, ordered parameters, result and activation label.
-- Every FV step is an owned statement projection within this frame; it MUST NOT create an independently allocated action or performer.
+- Draw an function frame or compartment with its name, ordered parameters, result and activation label.
+- Every fv step is an owned statement projection within this frame; it MUST NOT create an independently allocated action or performer.
 
 [Complete model](../examples/01-hello.swaml) · `Hello::Speaker.greet`.
 
-[SVG](notation/operation.svg) · [PNG](notation/operation.png) · [Vector scene](notation/operation.scene.json)
+[SVG](notation/function.svg) · [PNG](notation/function.png) · [Vector scene](notation/function.scene.json)
 
 ## Notation: fail
 
@@ -880,7 +543,7 @@ Executable operation. Draw an operation frame or compartment with its name, orde
 
 Failure. Draw an owned statement box with the exact statement label and directed control-flow succession.
 
-**Context:** Statement inside the displayed owning operation; the FV node is a projection. **Views:** FV.
+**Context:** Statement inside the displayed owning function; the fv node is a projection. **Views:** fv.
 
 - Draw an owned statement box with the exact statement label and directed control-flow succession.
 - Failure unwinds the activation without rollback; it does not imply an unmodeled broadcast.
@@ -889,17 +552,36 @@ Failure. Draw an owned statement box with the exact statement label and directed
 
 [SVG](notation/fail.svg) · [PNG](notation/fail.png) · [Vector scene](notation/fail.scene.json)
 
+## Notation: return
+
+**Function return**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Function return (node) | ![Function return](notation/return.svg) | `return true;` |
+
+Function return. Show a labeled return terminal in the owning function flow; retain the returned expression when present.
+
+**Context:** Return statement in Rpc::Server.checkHealth. **Views:** fv.
+
+- Show a labeled return terminal in the owning function flow; retain the returned expression when present.
+- Return from a helper resumes its local caller; return from a state body terminates the owning stateful function.
+
+[Complete model](../examples/07-client-server.swaml) · `Rpc::Server.checkHealth`.
+
+[SVG](notation/return.svg) · [PNG](notation/return.png) · [Vector scene](notation/return.scene.json)
+
 ## Notation: local-declaration
 
 **Local declaration**
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Local declaration (node) | ![Local declaration](notation/local-declaration.svg) | `let i: Int = 0;` |
+| Local declaration (node) | ![Local declaration](notation/local-declaration.svg) | `var i: int = 0;` |
 
 Local declaration. Draw an owned statement box with the exact statement label and directed control-flow succession.
 
-**Context:** Statement inside the displayed owning operation; the FV node is a projection. **Views:** FV.
+**Context:** Statement inside the displayed owning function; the fv node is a projection. **Views:** fv.
 
 - Draw an owned statement box with the exact statement label and directed control-flow succession.
 - Creates a copied typed local value in the enclosing lexical block.
@@ -908,24 +590,24 @@ Local declaration. Draw an owned statement box with the exact statement label an
 
 [SVG](notation/local-declaration.svg) · [PNG](notation/local-declaration.png) · [Vector scene](notation/local-declaration.scene.json)
 
-## Notation: invoke
+## Notation: local-call
 
-**Local operation invocation**
+**Local function call**
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Local operation invocation (node) | ![Local operation invocation](notation/invoke.svg) | `invoke prepare();` |
+| Local function call (node) | ![Local function call](notation/local-call.svg) | `call prepare();` |
 
-Local operation invocation. Draw an owned statement box with the exact statement label and directed control-flow succession.
+Local function invocation. Draw an owned statement box with the exact statement label and directed control-flow succession.
 
-**Context:** Statement inside the displayed owning operation; the FV node is a projection. **Views:** FV.
+**Context:** Statement inside the displayed owning function; the fv node is a projection. **Views:** fv.
 
 - Draw an owned statement box with the exact statement label and directed control-flow succession.
-- Calls an untriggered Void operation in the same unit, borrowing the activation lock/snapshot.
+- Calls an untriggered flow function in the same component, borrowing its activation lock/snapshot. Bind a non-void result with as name; omit the binding for void.
 
 [Complete model](../examples/05-values-and-flow.swaml) · `Values::Producer.boot`.
 
-[SVG](notation/invoke.svg) · [PNG](notation/invoke.png) · [Vector scene](notation/invoke.scene.json)
+[SVG](notation/local-call.svg) · [PNG](notation/local-call.png) · [Vector scene](notation/local-call.scene.json)
 
 ## Notation: trigger-manual
 
@@ -933,37 +615,18 @@ Local operation invocation. Draw an owned statement box with the exact statement
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Manual activation (label) | ![Manual activation](notation/trigger-manual.svg) | `operation adjust() on manual` |
+| Manual activation (label) | ![Manual activation](notation/trigger-manual.svg) | `function adjust() on manual` |
 
-Manual activation. Attach the activation text to its operation header; use no free event symbol or standalone trigger object.
+Manual activation. Attach the activation text to its function header; use no free event symbol or standalone trigger object.
 
-**Context:** Activation annotation on the displayed operation. **Views:** FV.
+**Context:** Activation annotation on the displayed function. **Views:** fv.
 
-- Attach the activation text to its operation header; use no free event symbol or standalone trigger object.
+- Attach the activation text to its function header; use no free event symbol or standalone trigger object.
 - Harness activation carries no modeled data; external commands still use ports.
 
 [Complete model](../examples/08-service-field.swaml) · `Settings::Panel.adjust`.
 
 [SVG](notation/trigger-manual.svg) · [PNG](notation/trigger-manual.png) · [Vector scene](notation/trigger-manual.scene.json)
-
-## Notation: return
-
-**Operation return**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Operation return (node) | ![Operation return](notation/return.svg) | `return true;` |
-
-Operation return. Show a labeled return terminal in the owning operation flow; retain the returned expression when present.
-
-**Context:** Return statement in Rpc::Server.checkHealth. **Views:** FV.
-
-- Show a labeled return terminal in the owning operation flow; retain the returned expression when present.
-- Return from a helper resumes its local caller; return from a state body terminates the owning stateful operation.
-
-[Complete model](../examples/07-client-server.swaml) · `Rpc::Server.checkHealth`.
-
-[SVG](notation/return.svg) · [PNG](notation/return.png) · [Vector scene](notation/return.scene.json)
 
 ## Notation: trigger-periodic
 
@@ -973,11 +636,11 @@ Operation return. Show a labeled return terminal in the owning operation flow; r
 | --- | --- | --- |
 | Periodic activation (label) | ![Periodic activation](notation/trigger-periodic.svg) | `on every 10 ms` |
 
-Periodic activation. Attach the activation text to its operation header; use no free event symbol or standalone trigger object.
+Periodic activation. Attach the activation text to its function header; use no free event symbol or standalone trigger object.
 
-**Context:** Activation annotation on the displayed operation. **Views:** FV.
+**Context:** Activation annotation on the displayed function. **Views:** fv.
 
-- Attach the activation text to its operation header; use no free event symbol or standalone trigger object.
+- Attach the activation text to its function header; use no free event symbol or standalone trigger object.
 - Release occurs at positive multiples of the declared period.
 
 [Complete model](../examples/02-realtime-controller.swaml) · `Control::Sensor.sample`.
@@ -992,16 +655,55 @@ Periodic activation. Attach the activation text to its operation header; use no 
 | --- | --- | --- |
 | Port receive activation (label) | ![Port receive activation](notation/trigger-receive.svg) | `on receive input.text` |
 
-Port receive activation. Attach the activation text to its operation header; use no free event symbol or standalone trigger object.
+Port receive activation. Attach the activation text to its function header; use no free event symbol or standalone trigger object.
 
-**Context:** Activation annotation on the displayed operation. **Views:** FV.
+**Context:** Activation annotation on the displayed function. **Views:** fv.
 
-- Attach the activation text to its operation header; use no free event symbol or standalone trigger object.
+- Attach the activation text to its function header; use no free event symbol or standalone trigger object.
 - The port/member label identifies the one incoming handler owner.
 
 [Complete model](../examples/01-hello.swaml) · `Hello::Listener.hear`.
 
 [SVG](notation/trigger-receive.svg) · [PNG](notation/trigger-receive.png) · [Vector scene](notation/trigger-receive.scene.json)
+
+## Notation: calculation
+
+**Pure calculation**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Pure calculation (compartment) | ![Pure calculation](notation/calculation.svg) | `calc twice { in x: real; return result: real = x * 2.0; }` |
+
+A calculation maps named inputs to one named, typed output expression without mutable state or communication.
+
+**Context:** Calculation declared at the start of Values::Producer.prepare. **Views:** fv.
+
+- Draw a flat calculation compartment inside its owning function, headed calc and its name.
+- List each input with in and its type; show return, the output name/type and expression in a separate row.
+- A calculation call is local expression text such as twice(samples[i]); it is not a message or independent executable function.
+
+[Complete model](../examples/05-values-and-flow.swaml) · `Values::Producer.prepare.twice`.
+
+[SVG](notation/calculation.svg) · [PNG](notation/calculation.png) · [Vector scene](notation/calculation.scene.json)
+
+## Notation: routed-call
+
+**Routed function call**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Routed function call (node) | ![Routed function call](notation/routed-call.svg) | `call setting.get() as observed within 100 ms otherwise { return; };` |
+
+RPC request and failure continuation. Draw one request step labeled port.member, result binding and timeout, with distinct success and otherwise continuations.
+
+**Context:** Statement in Settings::Panel.refresh; successful completion binds observed. **Views:** fv.
+
+- Draw one request step labeled port.member, result binding and timeout, with distinct success and otherwise continuations.
+- The failure continuation remains explicit and terminating; request arrows outside this function must use the corresponding interface route.
+
+[Complete model](../examples/08-service-field.swaml) · `Settings::Panel.refresh`.
+
+[SVG](notation/routed-call.svg) · [PNG](notation/routed-call.png) · [Vector scene](notation/routed-call.scene.json)
 
 ## Notation: trigger-call
 
@@ -1011,35 +713,16 @@ Port receive activation. Attach the activation text to its operation header; use
 | --- | --- | --- |
 | RPC handler activation (label) | ![RPC handler activation](notation/trigger-call.svg) | `on call health.check` |
 
-RPC handler activation. Attach the activation text to its operation header; use no free event symbol or standalone trigger object.
+RPC handler activation. Attach the activation text to its function header; use no free event symbol or standalone trigger object.
 
-**Context:** Activation annotation on the displayed operation. **Views:** FV.
+**Context:** Activation annotation on the displayed function. **Views:** fv.
 
-- Attach the activation text to its operation header; use no free event symbol or standalone trigger object.
+- Attach the activation text to its function header; use no free event symbol or standalone trigger object.
 - Requests and correlated results remain on the originating interface route.
 
 [Complete model](../examples/07-client-server.swaml) · `Rpc::Server.checkHealth`.
 
 [SVG](notation/trigger-call.svg) · [PNG](notation/trigger-call.png) · [Vector scene](notation/trigger-call.scene.json)
-
-## Notation: request
-
-**RPC request and failure continuation**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| RPC request and failure continuation (node) | ![RPC request and failure continuation](notation/request.svg) | `request setting.get() as observed within 100 ms otherwise { return; };` |
-
-RPC request and failure continuation. Draw one request step labeled port.member, result binding and timeout, with distinct success and otherwise continuations.
-
-**Context:** Statement in Settings::Panel.refresh; successful completion binds observed. **Views:** FV.
-
-- Draw one request step labeled port.member, result binding and timeout, with distinct success and otherwise continuations.
-- The failure continuation remains explicit and terminating; request arrows outside this operation must use the corresponding interface route.
-
-[Complete model](../examples/08-service-field.swaml) · `Settings::Panel.refresh`.
-
-[SVG](notation/request.svg) · [PNG](notation/request.png) · [Vector scene](notation/request.scene.json)
 
 ## Notation: trigger-start
 
@@ -1047,21 +730,21 @@ RPC request and failure continuation. Draw one request step labeled port.member,
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Startup activation (label) | ![Startup activation](notation/trigger-start.svg) | `operation greet() on start` |
+| Startup activation (label) | ![Startup activation](notation/trigger-start.svg) | `function greet() on start` |
 
-Startup activation. Attach the activation text to its operation header; use no free event symbol or standalone trigger object.
+Startup activation. Attach the activation text to its function header; use no free event symbol or standalone trigger object.
 
-**Context:** Activation annotation on the displayed operation. **Views:** FV.
+**Context:** Activation annotation on the displayed function. **Views:** fv.
 
-- Attach the activation text to its operation header; use no free event symbol or standalone trigger object.
-- Once after unit initialization and route readiness.
+- Attach the activation text to its function header; use no free event symbol or standalone trigger object.
+- Once after component initialization and route readiness.
 
 [Complete model](../examples/01-hello.swaml) · `Hello::Speaker.greet`.
 
 [SVG](notation/trigger-start.svg) · [PNG](notation/trigger-start.png) · [Vector scene](notation/trigger-start.scene.json)
 
 
-## Operation states
+## Function states
 
 ## Notation: completion-transition
 
@@ -1073,10 +756,10 @@ Startup activation. Attach the activation text to its operation header; use no f
 
 Completion transition. Label the state edge on completion explicitly, with its guard if present.
 
-**Context:** Completion transition in Notation::Controller.lifecycle. **Views:** FV.
+**Context:** Completion transition in Notation::Controller.lifecycle. **Views:** fv.
 
 - Label the state edge on completion explicitly, with its guard if present.
-- Completion is local to the owning operation and MUST NOT be drawn as an emitted global event.
+- Completion is local to the owning function and MUST NOT be drawn as an emitted global event.
 
 [Complete model](../examples/notation/catalog.swaml) · `Notation::Controller.lifecycle.finish`.
 
@@ -1092,7 +775,7 @@ Completion transition. Label the state edge on completion explicitly, with its g
 
 Final state. Draw a named final-state symbol with a bullseye marker; preserve the declared name and any entry behavior.
 
-**Context:** Named final state inside Notation::Controller.lifecycle. **Views:** FV.
+**Context:** Named final state inside Notation::Controller.lifecycle. **Views:** fv.
 
 - Draw a named final-state symbol with a bullseye marker; preserve the declared name and any entry behavior.
 - No outgoing transition is permitted; finality occurs after entry finishes, so the marker MUST NOT hide an entry block.
@@ -1100,6 +783,25 @@ Final state. Draw a named final-state symbol with a bullseye marker; preserve th
 [Complete model](../examples/notation/catalog.swaml) · `Notation::Controller.lifecycle.Done`.
 
 [SVG](notation/final-state.svg) · [PNG](notation/final-state.png) · [Vector scene](notation/final-state.scene.json)
+
+## Notation: stateful-function
+
+**Function with states**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Function with states (node) | ![Function with states](notation/stateful-function.svg) | `function lifecycle() on start` |
+
+Function with states. Draw the state graph inside the owning function frame, keeping the function name and on start label visible.
+
+**Context:** Function header in Lifecycle::Device; its direct body begins with initial. **Views:** fv.
+
+- Draw the state graph inside the owning function frame, keeping the function name and on start label visible.
+- There is no machine box, performer, or separate authored state allocation; StateBody contributes only the function’s contents.
+
+[Complete model](../examples/04-stateful-function.swaml) · `Lifecycle::Device.lifecycle`.
+
+[SVG](notation/stateful-function.svg) · [PNG](notation/stateful-function.png) · [Vector scene](notation/stateful-function.scene.json)
 
 ## Notation: initial-state
 
@@ -1111,33 +813,14 @@ Final state. Draw a named final-state symbol with a bullseye marker; preserve th
 
 Initial state reference. Draw a solid initial pseudonode with one outgoing unlabeled initialization edge to the named initial state.
 
-**Context:** First clause of Lifecycle::Device.lifecycle. **Views:** FV.
+**Context:** First clause of Lifecycle::Device.lifecycle. **Views:** fv.
 
 - Draw a solid initial pseudonode with one outgoing unlabeled initialization edge to the named initial state.
-- This projects the operation’s unique initial reference; it is not a transmitted event or a second start operation.
+- This projects the function’s unique initial reference; it is not a transmitted event or a second start function.
 
-[Complete model](../examples/04-stateful-operation.swaml) · `Lifecycle::Device.lifecycle`.
+[Complete model](../examples/04-stateful-function.swaml) · `Lifecycle::Device.lifecycle`.
 
 [SVG](notation/initial-state.svg) · [PNG](notation/initial-state.png) · [Vector scene](notation/initial-state.scene.json)
-
-## Notation: stateful-operation
-
-**Operation with states**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Operation with states (node) | ![Operation with states](notation/stateful-operation.svg) | `operation lifecycle() on start` |
-
-Operation with states. Draw the state graph inside the owning operation frame, keeping the operation name and on start label visible.
-
-**Context:** Operation header in Lifecycle::Device; its direct body begins with initial. **Views:** FV.
-
-- Draw the state graph inside the owning operation frame, keeping the operation name and on start label visible.
-- There is no machine box, performer, or separate authored state allocation; StateBody contributes only the operation’s contents.
-
-[Complete model](../examples/04-stateful-operation.swaml) · `Lifecycle::Device.lifecycle`.
-
-[SVG](notation/stateful-operation.svg) · [PNG](notation/stateful-operation.png) · [Vector scene](notation/stateful-operation.scene.json)
 
 ## Notation: timer-transition
 
@@ -1147,11 +830,11 @@ Operation with states. Draw the state graph inside the owning operation frame, k
 | --- | --- | --- |
 | Residence timer transition (edge) | ![Residence timer transition](notation/timer-transition.svg) | `transition elapsed: Active -> Done on after 1 s {}` |
 
-Residence timer transition. Label the transition on after with an explicit duration and unit.
+Residence timer transition. Label the transition on after with an explicit duration and component.
 
-**Context:** Timer transition in Notation::Controller.lifecycle. **Views:** FV.
+**Context:** Timer transition in Notation::Controller.lifecycle. **Views:** fv.
 
-- Label the transition on after with an explicit duration and unit.
+- Label the transition on after with an explicit duration and component.
 - The duration starts after state entry completes; leaving the state cancels that entry generation’s timers.
 
 [Complete model](../examples/notation/catalog.swaml) · `Notation::Controller.lifecycle.elapsed`.
@@ -1166,12 +849,12 @@ Residence timer transition. Label the transition on after with an explicit durat
 | --- | --- | --- |
 | State (node) | ![State](notation/state.svg) | `state Active {}` |
 
-State. Draw a rounded state rectangle bearing the operation-local state name, with optional entry/exit compartments.
+State. Draw a rounded state rectangle bearing the function-local state name, with optional entry/exit compartments.
 
-**Context:** State declaration in Notation::Controller.lifecycle. **Views:** FV.
+**Context:** State declaration in Notation::Controller.lifecycle. **Views:** fv.
 
-- Draw a rounded state rectangle bearing the operation-local state name, with optional entry/exit compartments.
-- State rectangles live inside one owning operation; position does not allocate them to components or performers.
+- Draw a rounded state rectangle bearing the function-local state name, with optional entry/exit compartments.
+- State rectangles live inside one owning function; position does not allocate them to components or performers.
 
 [Complete model](../examples/notation/catalog.swaml) · `Notation::Controller.lifecycle.Active`.
 
@@ -1187,7 +870,7 @@ State. Draw a rounded state rectangle bearing the operation-local state name, wi
 
 State entry behavior. Show entry and its statements in a compartment inside the owning state.
 
-**Context:** Entry block on Notation::Controller.lifecycle.Idle. **Views:** FV.
+**Context:** Entry block on Notation::Controller.lifecycle.Idle. **Views:** fv.
 
 - Show entry and its statements in a compartment inside the owning state.
 - Entry has no incoming payload bindings; its completion starts residence timers.
@@ -1206,7 +889,7 @@ State entry behavior. Show entry and its statements in a compartment inside the 
 
 State exit behavior. Show exit and its statements in a compartment inside the owning state.
 
-**Context:** Exit block on Notation::Controller.lifecycle.Idle. **Views:** FV.
+**Context:** Exit block on Notation::Controller.lifecycle.Idle. **Views:** fv.
 
 - Show exit and its statements in a compartment inside the owning state.
 - Exit precedes transition effect and state update, and does not inherit the incoming payload environment.
@@ -1223,11 +906,11 @@ State exit behavior. Show exit and its statements in a compartment inside the ow
 | --- | --- | --- |
 | State transition (edge) | ![State transition](notation/transition.svg) | `transition begin: Idle -> Active on receive signal.pulse when (value > 0) priority 1 { count = value; }` |
 
-State transition. Draw a directed edge between states in the same operation; label its identity, stimulus, optional guard/priority and effect.
+State transition. Draw a directed edge between states in the same function; label its identity, stimulus, optional guard/priority and effect.
 
-**Context:** Transition in Notation::Controller.lifecycle. **Views:** FV.
+**Context:** Transition in Notation::Controller.lifecycle. **Views:** fv.
 
-- Draw a directed edge between states in the same operation; label its identity, stimulus, optional guard/priority and effect.
+- Draw a directed edge between states in the same function; label its identity, stimulus, optional guard/priority and effect.
 - Receive labels MUST include port.member; the transition edge is local control, not the interface connector carrying the message.
 
 [Complete model](../examples/notation/catalog.swaml) · `Notation::Controller.lifecycle.begin`.
@@ -1242,11 +925,11 @@ State transition. Draw a directed edge between states in the same operation; lab
 | --- | --- | --- |
 | Transition guard (label) | ![Transition guard](notation/transition-guard.svg) | `when (value > 0)` |
 
-Transition guard. Show the Bool guard in brackets or with its explicit when keyword on the transition label.
+Transition guard. Show the bool guard in brackets or with its explicit when keyword on the transition label.
 
-**Context:** Guard on Notation::Controller.lifecycle.begin. **Views:** FV.
+**Context:** Guard on Notation::Controller.lifecycle.begin. **Views:** fv.
 
-- Show the Bool guard in brackets or with its explicit when keyword on the transition label.
+- Show the bool guard in brackets or with its explicit when keyword on the transition label.
 - A false guard disables that transition for the current stimulus; guard text is not a separate executable action.
 
 [Complete model](../examples/notation/catalog.swaml) · `Notation::Controller.lifecycle.begin`.
@@ -1263,14 +946,511 @@ Transition guard. Show the Bool guard in brackets or with its explicit when keyw
 
 Transition priority. Display priority as an explicit nonnegative integer on a transition label; omitted means zero.
 
-**Context:** Priority on Notation::Controller.lifecycle.begin. **Views:** FV.
+**Context:** Priority on Notation::Controller.lifecycle.begin. **Views:** fv.
 
 - Display priority as an explicit nonnegative integer on a transition label; omitted means zero.
-- Larger wins only among enabled transitions for the same state and stimulus; it is not an operation scheduler priority.
+- Larger wins only among enabled transitions for the same state and stimulus; it is not an function scheduler priority.
 
 [Complete model](../examples/notation/catalog.swaml) · `Notation::Controller.lifecycle.begin`.
 
 [SVG](notation/transition-priority.svg) · [PNG](notation/transition-priority.png) · [Vector scene](notation/transition-priority.scene.json)
+
+
+## Interfaces and connections
+
+## Notation: delegation
+
+**Boundary delegation**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Boundary delegation (edge) | ![Boundary delegation](notation/delegation.svg) | `delegate api -> store.api;` |
+
+Boundary delegation. Draw a solid unarrowed line labeled delegate from a boundary port to one immediate child port inside its owner.
+
+**Context:** Boundary-to-immediate-child alias inside Settings::Service. **Views:** iv.
+
+- Draw a solid unarrowed line labeled delegate from a boundary port to one immediate child port inside its owner.
+- Both endpoints keep identical interface identity and role; this alias creates no queue, service call, adapter or extra message.
+
+[Complete model](../examples/08-service-field.swaml) · `Settings::Service`.
+
+[SVG](notation/delegation.svg) · [PNG](notation/delegation.png) · [Vector scene](notation/delegation.scene.json)
+
+## Notation: client-server-interface
+
+**Client–server interface**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Client–server interface (node) | ![Client–server interface](notation/client-server-interface.svg) | `interface clientServer Health version "1.0.0"` |
+
+Client–server interface. Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.
+
+**Context:** Interface declaration header; member rows occupy the contract body. **Views:** iv.
+
+- Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.
+- Keep member categories visible; a contract box is a reusable type and MUST NOT be mistaken for a runtime broker or component.
+
+[Complete model](../examples/07-client-server.swaml) · `Rpc::Health`.
+
+[SVG](notation/client-server-interface.svg) · [PNG](notation/client-server-interface.png) · [Vector scene](notation/client-server-interface.scene.json)
+
+## Notation: data-member
+
+**Data member**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Data member (compartment) | ![Data member](notation/data-member.svg) | `data temperature: real sampled;` |
+
+Data member. Show data name: Type and sampled or queued on one interface-compartment row.
+
+**Context:** Member of Control::Samples; queued is the alternative retention mode. **Views:** iv.
+
+- Show data name: Type and sampled or queued on one interface-compartment row.
+- Retention mode is explicit text, not color; sampled uses latest-value buffering while queued retains individual values under QoS.
+
+[Complete model](../examples/02-realtime-controller.swaml) · `Control::Samples`.
+
+[SVG](notation/data-member.svg) · [PNG](notation/data-member.png) · [Vector scene](notation/data-member.scene.json)
+
+## Notation: port-receiver
+
+**Data receiver port**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Data receiver port (node) | ![Data receiver port](notation/port-receiver.svg) | `port input: Greeting receiver;` |
+
+Data receiver port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.
+
+**Context:** Port declaration on the displayed component boundary. **Views:** iv.
+
+- Draw a small square centered on the owning boundary and label its name: Interface and exact role.
+- Data flows inward to the owned receiving function. Do not infer direction only from left/right placement; role text remains mandatory.
+
+[Complete model](../examples/01-hello.swaml) · `Hello::Listener.input`.
+
+[SVG](notation/port-receiver.svg) · [PNG](notation/port-receiver.png) · [Vector scene](notation/port-receiver.scene.json)
+
+## Notation: port-sender
+
+**Data sender port**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Data sender port (node) | ![Data sender port](notation/port-sender.svg) | `port output: Greeting sender;` |
+
+Data sender port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.
+
+**Context:** Port declaration on the displayed component boundary. **Views:** iv.
+
+- Draw a small square centered on the owning boundary and label its name: Interface and exact role.
+- Data flows outward from the owned port. Do not infer direction only from left/right placement; role text remains mandatory.
+
+[Complete model](../examples/01-hello.swaml) · `Hello::Speaker.output`.
+
+[SVG](notation/port-sender.svg) · [PNG](notation/port-sender.png) · [Vector scene](notation/port-sender.scene.json)
+
+## Notation: delivery-policy
+
+**Delivery policy**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Delivery policy (label) | ![Delivery policy](notation/delivery-policy.svg) | `delivery atLeastOnce;` |
+
+Delivery policy. Attach a QoS property compartment to its connector; write the exact delivery value.
+
+**Context:** QoS property on Rpc::HealthCheck.healthCheck; the signature is idempotent. **Views:** iv.
+
+- Attach a QoS property compartment to its connector; write the exact delivery value.
+- atLeastOnce, atMostOnce and bestEffort are textual alternatives, not three different edge shapes; atLeastOnce RPC requires idempotent signatures.
+
+[Complete model](../examples/07-client-server.swaml) · `Rpc::HealthCheck.healthCheck`.
+
+[SVG](notation/delivery-policy.svg) · [PNG](notation/delivery-policy.png) · [Vector scene](notation/delivery-policy.scene.json)
+
+## Notation: event-member
+
+**Event member**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Event member (compartment) | ![Event member](notation/event-member.svg) | `event changed(value: string);` |
+
+Event member. Show event name(parameters) in its interface compartment; draw no free-floating event definition.
+
+**Context:** Member of Lifecycle::Status. **Views:** iv.
+
+- Show event name(parameters) in its interface compartment; draw no free-floating event definition.
+- Every graphical emission or receive label identifies this member through an owned port and function.
+
+[Complete model](../examples/04-stateful-function.swaml) · `Lifecycle::Status`.
+
+[SVG](notation/event-member.svg) · [PNG](notation/event-member.png) · [Vector scene](notation/event-member.scene.json)
+
+## Notation: port-publisher
+
+**Event publisher port**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Event publisher port (node) | ![Event publisher port](notation/port-publisher.svg) | `port status: Status publisher;` |
+
+Event publisher port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.
+
+**Context:** Port declaration on the displayed component boundary. **Views:** iv.
+
+- Draw a small square centered on the owning boundary and label its name: Interface and exact role.
+- Events leave this port through explicit subscription connectors. Do not infer direction only from left/right placement; role text remains mandatory.
+
+[Complete model](../examples/04-stateful-function.swaml) · `Lifecycle::Device.status`.
+
+[SVG](notation/port-publisher.svg) · [PNG](notation/port-publisher.png) · [Vector scene](notation/port-publisher.scene.json)
+
+## Notation: port-subscriber
+
+**Event subscriber port**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Event subscriber port (node) | ![Event subscriber port](notation/port-subscriber.svg) | `port status: Status subscriber;` |
+
+Event subscriber port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.
+
+**Context:** Port declaration on the displayed component boundary. **Views:** iv.
+
+- Draw a small square centered on the owning boundary and label its name: Interface and exact role.
+- Events enter the declared handling function through this port. Do not infer direction only from left/right placement; role text remains mandatory.
+
+[Complete model](../examples/04-stateful-function.swaml) · `Lifecycle::Monitor.status`.
+
+[SVG](notation/port-subscriber.svg) · [PNG](notation/port-subscriber.png) · [Vector scene](notation/port-subscriber.scene.json)
+
+## Notation: connector
+
+**Interface connector**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Interface connector (edge) | ![Interface connector](notation/connector.svg) | `connect greeting: speaker.output -> listener.input qos { delivery atMostOnce; ordering fifo; capacity 4; overflow reject; };` |
+
+Interface connector. Draw a solid directed connector between port squares, with connector identity and interface name visible.
+
+**Context:** Connection between immediate child ports of Hello::Conversation. **Views:** iv.
+
+- Draw a solid directed connector between port squares, with connector identity and interface name visible.
+- The arrow follows declared source-to-target roles; replies/service events reverse that route rather than creating a second hidden channel.
+
+[Complete model](../examples/01-hello.swaml) · `Hello::Conversation.greeting`.
+
+[SVG](notation/connector.svg) · [PNG](notation/connector.png) · [Vector scene](notation/connector.scene.json)
+
+## Notation: function-signature
+
+**Interface function signature**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Interface function signature (compartment) | ![Interface function signature](notation/function-signature.svg) | `function check(): bool idempotent;` |
+
+Interface function signature. Show function name(parameters): Result and idempotent when declared, inside the interface contract.
+
+**Context:** RPC contract member of Rpc::Health. **Views:** iv.
+
+- Show function name(parameters): Result and idempotent when declared, inside the interface contract.
+- The signature is distinct from its component implementation; a contract row has no executable body.
+
+[Complete model](../examples/07-client-server.swaml) · `Rpc::Health`.
+
+[SVG](notation/function-signature.svg) · [PNG](notation/function-signature.png) · [Vector scene](notation/function-signature.scene.json)
+
+## Notation: freshness-bound
+
+**Message freshness bound**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Message freshness bound (label) | ![Message freshness bound](notation/freshness-bound.svg) | `maxAge 20 ms;` |
+
+Message freshness bound. Write maxAge and its explicit component in the connector QoS compartment.
+
+**Context:** QoS freshness bound on Control::Controller.measured. **Views:** iv.
+
+- Write maxAge and its explicit component in the connector QoS compartment.
+- Age is measured from original emission, including retries; show expiry as a trace observation only when supported by a run.
+
+[Complete model](../examples/02-realtime-controller.swaml) · `Control::Controller.measured`.
+
+[SVG](notation/freshness-bound.svg) · [PNG](notation/freshness-bound.png) · [Vector scene](notation/freshness-bound.scene.json)
+
+## Notation: qos-policy-reference
+
+**Named connector policy**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Named connector policy (label) | ![Named connector policy](notation/qos-policy-reference.svg) | `qos LocalLink` |
+
+A connector explicitly selects a package-visible QoS declaration while keeping its own route and queue identity.
+
+**Context:** Explicit policy selection on Settings::Cabin.frontLink. **Views:** iv, grv.
+
+- Attach qos PolicyName to the existing typed connector; the name is a reference, not another communication edge.
+- Inspection exposes the qualified policy identity, effective base fields and bounds. Do not merge connector queues or hide invalid policy uses.
+
+[Complete model](../examples/08-service-field.swaml) · `Settings::Cabin.frontLink`.
+
+[SVG](notation/qos-policy-reference.svg) · [PNG](notation/qos-policy-reference.png) · [Vector scene](notation/qos-policy-reference.scene.json)
+
+## Notation: optional-port
+
+**Optional port**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Optional port (label) | ![Optional port](notation/optional-port.svg) | `port notices: Notices publisher optional;` |
+
+Optional port. Use the same square port symbol and append optional to its role label.
+
+**Context:** Reusable component NotationOptions::Emitter; its outgoing member is tied to an function. **Views:** iv.
+
+- Use the same square port symbol and append optional to its role label.
+- Optionality only permits an unconnected route; it does not remove contract, provenance or receiving-handler obligations.
+
+[Complete model](../examples/notation/catalog.swaml) · `NotationOptions::Emitter.notices`.
+
+[SVG](notation/optional-port.svg) · [PNG](notation/optional-port.png) · [Vector scene](notation/optional-port.scene.json)
+
+## Notation: overflow-policy
+
+**Overflow behavior**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Overflow behavior (label) | ![Overflow behavior](notation/overflow-policy.svg) | `overflow dropNewest;` |
+
+Overflow behavior. Write overflow plus dropNewest, dropOldest or reject in the connector QoS compartment.
+
+**Context:** QoS property on Notation::Demo.events. **Views:** iv.
+
+- Write overflow plus dropNewest, dropOldest or reject in the connector QoS compartment.
+- The label determines retention/rejection semantics; no style variation may silently substitute another policy.
+
+[Complete model](../examples/notation/catalog.swaml) · `Notation::Demo.events`.
+
+[SVG](notation/overflow-policy.svg) · [PNG](notation/overflow-policy.png) · [Vector scene](notation/overflow-policy.scene.json)
+
+## Notation: publish-subscribe-interface
+
+**Publish–subscribe interface**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Publish–subscribe interface (node) | ![Publish–subscribe interface](notation/publish-subscribe-interface.svg) | `interface publishSubscribe Status version "1.0.0"` |
+
+Publish–subscribe interface. Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.
+
+**Context:** Interface declaration header; member rows occupy the contract body. **Views:** iv.
+
+- Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.
+- Keep member categories visible; a contract box is a reusable type and MUST NOT be mistaken for a runtime broker or component.
+
+[Complete model](../examples/04-stateful-function.swaml) · `Lifecycle::Status`.
+
+[SVG](notation/publish-subscribe-interface.svg) · [PNG](notation/publish-subscribe-interface.png) · [Vector scene](notation/publish-subscribe-interface.scene.json)
+
+## Notation: capacity-policy
+
+**Queue capacity**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Queue capacity (label) | ![Queue capacity](notation/capacity-policy.svg) | `capacity 4;` |
+
+Queue capacity. Write the positive capacity value in the connector QoS compartment.
+
+**Context:** QoS property on Hello::Conversation.greeting. **Views:** iv.
+
+- Write the positive capacity value in the connector QoS compartment.
+- Capacity counts pending logical messages for the route/direction/member; do not encode capacity as line thickness.
+
+[Complete model](../examples/01-hello.swaml) · `Hello::Conversation.greeting`.
+
+[SVG](notation/capacity-policy.svg) · [PNG](notation/capacity-policy.png) · [Vector scene](notation/capacity-policy.scene.json)
+
+## Notation: ordering-policy
+
+**Queue ordering**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Queue ordering (label) | ![Queue ordering](notation/ordering-policy.svg) | `ordering unordered;` |
+
+Queue ordering. Write ordering fifo or ordering unordered in the connector QoS compartment.
+
+**Context:** QoS property on Notation::Demo.events. **Views:** iv.
+
+- Write ordering fifo or ordering unordered in the connector QoS compartment.
+- Ordering applies per route, direction and member; line position or crossing MUST NOT imply a global order.
+
+[Complete model](../examples/notation/catalog.swaml) · `Notation::Demo.events`.
+
+[SVG](notation/ordering-policy.svg) · [PNG](notation/ordering-policy.png) · [Vector scene](notation/ordering-policy.scene.json)
+
+## Notation: qos-policy-definition
+
+**Reusable QoS policy**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Reusable QoS policy (node) | ![Reusable QoS policy](notation/qos-policy-definition.svg) | `qos def LocalLink { delivery atMostOnce; ordering fifo; capacity 8; overflow reject; }` |
+
+Named complete connector policy, shown as a flat declaration card. It has no port, behavior, deployment or runtime queue of its own.
+
+**Context:** Package-owned policy in Settings; selected independently by both Cabin connector occurrences. **Views:** gv, grv.
+
+- Draw a flat contract rectangle labeled «qos def» and its name, with all four base fields in a property compartment.
+- Expose optional latency/age bounds and declaration identity. Reuse shares values only; queues remain per connector occurrence, direction and member.
+
+[Complete model](../examples/08-service-field.swaml) · `Settings::LocalLink`.
+
+[SVG](notation/qos-policy-definition.svg) · [PNG](notation/qos-policy-definition.png) · [Vector scene](notation/qos-policy-definition.scene.json)
+
+## Notation: port-client
+
+**RPC client port**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| RPC client port (node) | ![RPC client port](notation/port-client.svg) | `port health: Health client;` |
+
+RPC client port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.
+
+**Context:** Port declaration on the displayed component boundary. **Views:** iv.
+
+- Draw a small square centered on the owning boundary and label its name: Interface and exact role.
+- Requests leave and correlated results return through this same port. Do not infer direction only from left/right placement; role text remains mandatory.
+
+[Complete model](../examples/07-client-server.swaml) · `Rpc::Client.health`.
+
+[SVG](notation/port-client.svg) · [PNG](notation/port-client.png) · [Vector scene](notation/port-client.scene.json)
+
+## Notation: port-server
+
+**RPC server port**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| RPC server port (node) | ![RPC server port](notation/port-server.svg) | `port health: Health server;` |
+
+RPC server port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.
+
+**Context:** Port declaration on the displayed component boundary. **Views:** iv.
+
+- Draw a small square centered on the owning boundary and label its name: Interface and exact role.
+- Requests enter and correlated results leave through this same port. Do not infer direction only from left/right placement; role text remains mandatory.
+
+[Complete model](../examples/07-client-server.swaml) · `Rpc::Server.health`.
+
+[SVG](notation/port-server.svg) · [PNG](notation/port-server.png) · [Vector scene](notation/port-server.scene.json)
+
+## Notation: sender-receiver-interface
+
+**Sender–receiver interface**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Sender–receiver interface (node) | ![Sender–receiver interface](notation/sender-receiver-interface.svg) | `interface senderReceiver Greeting version "1.0.0"` |
+
+Sender–receiver interface. Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.
+
+**Context:** Interface declaration header; member rows occupy the contract body. **Views:** iv.
+
+- Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.
+- Keep member categories visible; a contract box is a reusable type and MUST NOT be mistaken for a runtime broker or component.
+
+[Complete model](../examples/01-hello.swaml) · `Hello::Greeting`.
+
+[SVG](notation/sender-receiver-interface.svg) · [PNG](notation/sender-receiver-interface.png) · [Vector scene](notation/sender-receiver-interface.scene.json)
+
+## Notation: port-requires
+
+**Service consumer port**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Service consumer port (node) | ![Service consumer port](notation/port-requires.svg) | `port setting: TemperatureSetting requires;` |
+
+Service consumer port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.
+
+**Context:** Port declaration on the displayed component boundary. **Views:** iv.
+
+- Draw a small square centered on the owning boundary and label its name: Interface and exact role.
+- RPC requests leave; results and provider events enter. Do not infer direction only from left/right placement; role text remains mandatory.
+
+[Complete model](../examples/08-service-field.swaml) · `Settings::Panel.setting`.
+
+[SVG](notation/port-requires.svg) · [PNG](notation/port-requires.png) · [Vector scene](notation/port-requires.scene.json)
+
+## Notation: service-interface
+
+**Service interface**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Service interface (node) | ![Service interface](notation/service-interface.svg) | `interface service TemperatureSetting version "1.0.0"` |
+
+Service interface. Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.
+
+**Context:** Interface declaration header; member rows occupy the contract body. **Views:** iv.
+
+- Draw an interface classifier rectangle with the exact interface kind, nominal name and version in its heading.
+- Keep member categories visible; a contract box is a reusable type and MUST NOT be mistaken for a runtime broker or component.
+
+[Complete model](../examples/08-service-field.swaml) · `Settings::TemperatureSetting`.
+
+[SVG](notation/service-interface.svg) · [PNG](notation/service-interface.png) · [Vector scene](notation/service-interface.scene.json)
+
+## Notation: port-provides
+
+**Service provider port**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Service provider port (node) | ![Service provider port](notation/port-provides.svg) | `port api: TemperatureSetting provides;` |
+
+Service provider port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.
+
+**Context:** Port declaration on the displayed component boundary. **Views:** iv.
+
+- Draw a small square centered on the owning boundary and label its name: Interface and exact role.
+- RPC requests enter; results and provider events leave. Do not infer direction only from left/right placement; role text remains mandatory.
+
+[Complete model](../examples/08-service-field.swaml) · `Settings::SettingStore.api`.
+
+[SVG](notation/port-provides.svg) · [PNG](notation/port-provides.png) · [Vector scene](notation/port-provides.scene.json)
+
+## Notation: latency-bound
+
+**Transport latency bound**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Transport latency bound (label) | ![Transport latency bound](notation/latency-bound.svg) | `maxLatency 1 ms;` |
+
+Transport latency bound. Write maxLatency and an explicitly component-bearing duration beside the corresponding connector.
+
+**Context:** QoS bound on Control::Controller.measured. **Views:** iv.
+
+- Write maxLatency and an explicitly component-bearing duration beside the corresponding connector.
+- This bound ends at transport readiness; it MUST NOT be labeled as total execution or dispatch deadline.
+
+[Complete model](../examples/02-realtime-controller.swaml) · `Control::Controller.measured`.
+
+[SVG](notation/latency-bound.svg) · [PNG](notation/latency-bound.png) · [Vector scene](notation/latency-bound.scene.json)
 
 
 ## Structure and values
@@ -1285,14 +1465,34 @@ Transition priority. Display priority as an explicit nonnegative integer on a tr
 
 Component definition. Draw a sharp-corner classifier rectangle with the component double-tab marker and explicit «component def» heading above its type name.
 
-**Context:** Reusable component type header inside package Hello. **Views:** GV, GRV.
+**Context:** Reusable component type header inside package Hello. **Views:** gv, grv.
 
 - Draw a sharp-corner classifier rectangle with the component double-tab marker and explicit «component def» heading above its type name.
-- Separate the name from structural member compartments; never depict the definition itself as a running singleton.
+- Separate the name from ports, child instances, private data and functions; definitions do not allocate singleton state.
 
 [Complete model](../examples/01-hello.swaml) · `Hello::Conversation`.
 
 [SVG](notation/component-definition.svg) · [PNG](notation/component-definition.png) · [Vector scene](notation/component-definition.scene.json)
+
+## Notation: component-specialization
+
+**Component specialization**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Component specialization (edge) | ![Component specialization](notation/component-specialization.svg) | `component def FastWorker specializes Worker` |
+
+Single inheritance reuses the base component’s effective members while each instance keeps independent state.
+
+**Context:** Reusable definition ComponentReuse::FastWorker specializes Worker. **Views:** gv, grv.
+
+- Draw a solid generalization line from the derived definition to the base, ending in an unfilled triangle at the base and labeled specializes.
+- The link connects definitions, not running instances. It does not create an extra component instance or shared private store.
+- Inherited members may be replaced only through compatible explicit redefines declarations.
+
+[Complete model](../examples/15-component-specialization.swaml) · `ComponentReuse::FastWorker`.
+
+[SVG](notation/component-specialization.svg) · [PNG](notation/component-specialization.png) · [Vector scene](notation/component-specialization.scene.json)
 
 ## Notation: component-usage
 
@@ -1304,7 +1504,7 @@ Component definition. Draw a sharp-corner classifier rectangle with the componen
 
 Component usage. Draw a structural rectangle with the component double-tab marker, labeled conversation: Conversation with «component» visible; preserve occurrence and type names.
 
-**Context:** Contained component occurrence in root Hello::Demo. **Views:** GV, GRV.
+**Context:** Contained component occurrence in root Hello::Demo. **Views:** gv, grv.
 
 - Draw a structural rectangle with the component double-tab marker, labeled conversation: Conversation with «component» visible; preserve occurrence and type names.
 - Each occurrence has its own path context; two rectangles typed by the same definition MUST NOT merge private storage.
@@ -1323,7 +1523,7 @@ Component usage. Draw a structural rectangle with the component double-tab marke
 
 Enumeration. Draw a classifier rectangle headed «enum», with one literal per row in a literals compartment.
 
-**Context:** Nominal enum declaration inside Values. **Views:** GV, GRV.
+**Context:** Nominal enum declaration inside Values. **Views:** gv, grv.
 
 - Draw a classifier rectangle headed «enum», with one literal per row in a literals compartment.
 - The literal order is display order, not an implied integer encoding or state-transition order.
@@ -1342,7 +1542,7 @@ Enumeration. Draw a classifier rectangle headed «enum», with one literal per r
 
 Enumeration value. Render the exact nominal value text Type.Literal, or Package::Type.Literal when qualification is needed.
 
-**Context:** Expression inside Values::Producer.prepare. **Views:** GV, GRV.
+**Context:** Expression inside Values::Producer.prepare. **Views:** gv, grv.
 
 - Render the exact nominal value text Type.Literal, or Package::Type.Literal when qualification is needed.
 - An accessible local first segment denotes a value-field read instead; the graphic MUST preserve the resolved identity rather than guessing from the dot.
@@ -1361,10 +1561,10 @@ Enumeration value. Render the exact nominal value text Type.Literal, or Package:
 
 Expressions and value paths. Keep literals, operators, parentheses and value paths as expression text in the owning label or compartment.
 
-**Context:** Expression inside Notation::Sink.check. **Views:** GV, GRV.
+**Context:** Expression inside Notation::Sink.check. **Views:** gv, grv.
 
 - Keep literals, operators, parentheses and value paths as expression text in the owning label or compartment.
-- Expression layout MUST preserve precedence and short-circuit order; it does not add flow nodes for operators unless the FV is explicitly an explanatory expansion.
+- Expression layout MUST preserve precedence and short-circuit order; it does not add flow nodes for operators unless the fv is explicitly an explanatory expansion.
 
 [Complete model](../examples/notation/catalog.swaml) · `Notation::Sink.check`.
 
@@ -1376,11 +1576,11 @@ Expressions and value paths. Keep literals, operators, parentheses and value pat
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Fixed array type and value (label) | ![Fixed array type and value](notation/array-value.svg) | `let samples: Real[3] = [1.0, 2.0, 3.0];` |
+| Fixed array type and value (label) | ![Fixed array type and value](notation/array-value.svg) | `var samples: real[3] = [1.0, 2.0, 3.0];` |
 
 Fixed array type and value. Display fixed extent in the type label T[n] and ordered elements in brackets within the owning expression.
 
-**Context:** Local declaration in Values::Producer.prepare. **Views:** GV, GRV.
+**Context:** Local declaration in Values::Producer.prepare. **Views:** gv, grv.
 
 - Display fixed extent in the type label T[n] and ordered elements in brackets within the owning expression.
 - Array elements are copied values; no array icon may imply reference-valued payloads or dynamic multiplicity.
@@ -1395,18 +1595,38 @@ Fixed array type and value. Display fixed extent in the type label T[n] and orde
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Inline root composition (node) | ![Inline root composition](notation/inline-root.svg) | `component Minimal { unit counter: Counter; }` |
+| Inline root composition (node) | ![Inline root composition](notation/inline-root.svg) | `component Minimal { component counter: Counter; }` |
 
-Inline root composition. Draw a root-component frame containing direct unit occurrences, with no invented wrapper definition.
+An inline top-level component directly owns its architecture and local behavior.
 
-**Context:** Top-level inline component occurrence in Roots. **Views:** GV, GRV.
+**Context:** Top-level inline component occurrence in Roots. **Views:** gv, grv.
 
-- Draw a root-component frame containing direct unit occurrences, with no invented wrapper definition.
-- Inline roots have no outward port/delegation compartment; all cross-unit exchanges still require child ports and connectors.
+- Draw a root component frame with its owned members: child components, private data, functions and typed routes.
+- The root is a closed instance: owned ports participate only in explicit connections or delegation, with no implicit external peer.
 
 [Complete model](../examples/09-component-roots.swaml) · `Roots::Minimal`.
 
 [SVG](notation/inline-root.svg) · [PNG](notation/inline-root.png) · [Vector scene](notation/inline-root.scene.json)
+
+## Notation: member-redefinition
+
+**Member redefinition**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Member redefinition (label) | ![Member redefinition](notation/member-redefinition.svg) | `redefines function work() { ticks = ticks + 2; }` |
+
+An explicit redefinition replaces an inherited member in the derived component’s effective feature set.
+
+**Context:** Replacement function owned by ComponentReuse::FastWorker. **Views:** gv, grv, fv.
+
+- Prefix the owned member label with redefines and preserve its member kind, name and compatible contract.
+- Port, variable, child, function, connector and delegation replacements use their ordinary glyphs with this explicit label.
+- Display one effective member for the derived instance; an override does not allocate another behavior or store.
+
+[Complete model](../examples/15-component-specialization.swaml) · `ComponentReuse::FastWorker.work`.
+
+[SVG](notation/member-redefinition.svg) · [PNG](notation/member-redefinition.png) · [Vector scene](notation/member-redefinition.scene.json)
 
 ## Notation: type-relationship
 
@@ -1418,7 +1638,7 @@ Inline root composition. Draw a root-component frame containing direct unit occu
 
 Occurrence typing relationship. A dashed type arrow points from the occurrence to its reusable definition.
 
-**Context:** Occurrence typing in Hello::Demo; the same type identity is normally shown by the name: Type label. **Views:** GV, GRV.
+**Context:** Occurrence typing in Hello::Demo; the same type identity is normally shown by the name: Type label. **Views:** gv, grv.
 
 - When typing is shown as a separate relationship, draw a dashed line with a hollow triangular arrowhead pointing from the occurrence to its definition and label it type.
 - This is a typing dependency, never inheritance, delegation or a communication route; the name: Type label remains authoritative.
@@ -1437,7 +1657,7 @@ Occurrence typing relationship. A dashed type arrow points from the occurrence t
 
 Package. Draw a tabbed rectangular namespace frame; the tab contains the package name.
 
-**Context:** Package header; declarations occupy its body. **Views:** GV, GRV.
+**Context:** Package header; declarations occupy its body. **Views:** gv, grv.
 
 - Draw a tabbed rectangular namespace frame; the tab contains the package name.
 - Nested compartments show owned declarations, not runtime instances created by package membership.
@@ -1456,7 +1676,7 @@ Package. Draw a tabbed rectangular namespace frame; the tab contains the package
 
 Package import. Draw a dashed open-arrow dependency from the importing package to the imported package, labeled import Shared::*.
 
-**Context:** Inside package Notation; the target package is loaded in the same workspace. **Views:** GV, GRV.
+**Context:** Inside package Notation; the target package is loaded in the same workspace. **Views:** gv, grv.
 
 - Draw a dashed open-arrow dependency from the importing package to the imported package, labeled import Shared::*.
 - This is namespace visibility only; it MUST NOT resemble or create an interface communication route.
@@ -1471,13 +1691,13 @@ Package import. Draw a dashed open-arrow dependency from the importing package t
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Parameter or record field (compartment) | ![Parameter or record field](notation/parameter.svg) | `hear(message: String)` |
+| Parameter or record field (compartment) | ![Parameter or record field](notation/parameter.svg) | `hear(message: string)` |
 
-Parameter or record field. Show ordered parameters as name: Type within the operation signature; show record fields as name: Type rows in their datatype.
+Parameter or record field. Show ordered parameters as name: Type within the function signature; show record fields as name: Type rows in their datatype.
 
-**Context:** Operation signature fragment inside Hello::Listener. **Views:** GV, GRV.
+**Context:** Function signature fragment inside Hello::Listener. **Views:** gv, grv.
 
-- Show ordered parameters as name: Type within the operation signature; show record fields as name: Type rows in their datatype.
+- Show ordered parameters as name: Type within the function signature; show record fields as name: Type rows in their datatype.
 - Parameter order is semantic; a graphical editor MUST retain it when reordering unrelated compartments.
 
 [Complete model](../examples/01-hello.swaml) · `Hello::Listener.hear`.
@@ -1490,14 +1710,15 @@ Parameter or record field. Show ordered parameters as name: Type within the oper
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Primitive types (label) | ![Primitive types](notation/primitive-types.svg) | `operation acknowledge(): Void;` |
+| Primitive types (label) | ![Primitive types](notation/primitive-types.svg) | `function acknowledge(): void;` |
 
-Primitive types. Display Bool, Int, Real, String or Void as textual type labels after a colon in the owning compartment.
+Basic data types label values and signatures; fixed arrays, nominal records and enums build on them.
 
-**Context:** Void is shown as an interface result; other primitive types label fields/parameters/results. **Views:** GV, GRV.
+**Context:** void is shown as an interface result; other primitive types label fields/parameters/results. **Views:** gv, grv.
 
-- Display Bool, Int, Real, String or Void as textual type labels after a colon in the owning compartment.
-- Void labels results only; omission of an operation result also means Void and requires no separate glyph.
+- Display bool, byte, uint, int, real, string or void as textual type labels in the owning compartment.
+- byte is 0–255 and uint is a nonnegative safe integer. Integral narrowing checks the destination domain; real does not implicitly narrow.
+- void labels function results only; an omitted function result means void.
 
 [Complete model](../examples/notation/catalog.swaml) · `Notation::Completion`.
 
@@ -1505,41 +1726,22 @@ Primitive types. Display Bool, Int, Real, String or Void as textual type labels 
 
 ## Notation: private-variable
 
-**Private unit variable**
+**Private component variable**
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Private unit variable (compartment) | ![Private unit variable](notation/private-variable.svg) | `var last: String = "";` |
+| Private component variable (compartment) | ![Private component variable](notation/private-variable.svg) | `var last: string = "";` |
 
-Private unit variable. Show a var name: Type = initializer row inside its unit boundary.
+Private component variable. Show a var name: Type = initializer row inside its component boundary.
 
-**Context:** Private values compartment of Hello::Listener. **Views:** GV, GRV.
+**Context:** Private values compartment of Hello::Listener. **Views:** gv, grv.
 
-- Show a var name: Type = initializer row inside its unit boundary.
-- Do not draw shared-storage connectors to this row; another unit cannot read or write it directly.
+- Show a var name: Type = initializer row inside its component boundary.
+- Do not draw shared-storage connectors to this row; another component cannot read or write it directly.
 
 [Complete model](../examples/01-hello.swaml) · `Hello::Listener.last`.
 
 [SVG](notation/private-variable.svg) · [PNG](notation/private-variable.png) · [Vector scene](notation/private-variable.scene.json)
-
-## Notation: pure-function
-
-**Pure local function**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Pure local function (compartment) | ![Pure local function](notation/pure-function.svg) | `function twice(x: Real): Real = x * 2.0;` |
-
-Pure local function. Show a function signature and expression row in the owning unit, with an explicit result type.
-
-**Context:** Function member of Values::Producer. **Views:** GV, GRV.
-
-- Show a function signature and expression row in the owning unit, with an explicit result type.
-- A function call is expression text such as twice(samples[i]); it is never a cross-unit message or independent activity allocation.
-
-[Complete model](../examples/05-values-and-flow.swaml) · `Values::Producer.twice`.
-
-[SVG](notation/pure-function.svg) · [PNG](notation/pure-function.png) · [Vector scene](notation/pure-function.scene.json)
 
 ## Notation: record-value
 
@@ -1551,7 +1753,7 @@ Pure local function. Show a function signature and expression row in the owning 
 
 Record construction. Display record construction as expression text attached to its owning statement/field, with the nominal type visible.
 
-**Context:** Initializer fragment inside Values::Producer.prepare; samples and i are local values. **Views:** GV, GRV.
+**Context:** Initializer fragment inside Values::Producer.prepare; samples and i are local values. **Views:** gv, grv.
 
 - Display record construction as expression text attached to its owning statement/field, with the nominal type visible.
 - All declared fields are present exactly once; a record value MUST NOT be drawn as a mutable component occurrence.
@@ -1566,11 +1768,11 @@ Record construction. Display record construction as expression text attached to 
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Record datatype (node) | ![Record datatype](notation/datatype.svg) | `datatype Measurement { value: Real; health: Health; }` |
+| Record datatype (node) | ![Record datatype](notation/datatype.svg) | `datatype Measurement { value: real; health: Health; }` |
 
 Record datatype. Draw a classifier rectangle headed «datatype» and the nominal type name, followed by a field compartment.
 
-**Context:** Nominal datatype declaration inside Values. **Views:** GV, GRV.
+**Context:** Nominal datatype declaration inside Values. **Views:** gv, grv.
 
 - Draw a classifier rectangle headed «datatype» and the nominal type name, followed by a field compartment.
 - Fields retain declared names/types; identical-looking declarations remain distinct nominal types.
@@ -1589,52 +1791,14 @@ Record datatype. Draw a classifier rectangle headed «datatype» and the nominal
 
 Root component. Draw a containing component frame labeled «root component» and the selected occurrence name/type.
 
-**Context:** Top-level named occurrence; its type is Roots::Pair. **Views:** GV, GRV.
+**Context:** Top-level named occurrence; its type is Roots::Pair. **Views:** gv, grv.
 
 - Draw a containing component frame labeled «root component» and the selected occurrence name/type.
-- Root selection is explicit; the frame is composition context and MUST NOT be drawn as an executable operation or another authored system element.
+- Root selection is explicit; the frame is composition context and MUST NOT be drawn as an executable function or another authored system element.
 
 [Complete model](../examples/09-component-roots.swaml) · `Roots::Demo`.
 
 [SVG](notation/root-component.svg) · [PNG](notation/root-component.png) · [Vector scene](notation/root-component.scene.json)
-
-## Notation: unit-definition
-
-**Unit definition**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Unit definition (node) | ![Unit definition](notation/unit-definition.svg) | `unit def Listener` |
-
-Unit definition. Draw a classifier rectangle headed «unit def» with separate private values and operation compartments.
-
-**Context:** Reusable implementation-boundary type header inside Hello. **Views:** GV, GRV.
-
-- Draw a classifier rectangle headed «unit def» with separate private values and operation compartments.
-- Only units own executable operations/functions; do not introduce performer or action-allocation shapes.
-
-[Complete model](../examples/01-hello.swaml) · `Hello::Listener`.
-
-[SVG](notation/unit-definition.svg) · [PNG](notation/unit-definition.png) · [Vector scene](notation/unit-definition.scene.json)
-
-## Notation: unit-usage
-
-**Unit usage**
-
-| Element | Graphical notation | Textual notation |
-| --- | --- | --- |
-| Unit usage (node) | ![Unit usage](notation/unit-usage.svg) | `unit listener: Listener;` |
-
-Unit usage. Draw a structural rectangle labeled listener: Listener and «unit»; show its owned ports on its boundary when needed.
-
-**Context:** Contained occurrence within component definition Hello::Conversation. **Views:** GV, GRV.
-
-- Draw a structural rectangle labeled listener: Listener and «unit»; show its owned ports on its boundary when needed.
-- The label denotes an occurrence; private values displayed inside are contextual to this occurrence.
-
-[Complete model](../examples/01-hello.swaml) · `Hello::Conversation`.
-
-[SVG](notation/unit-usage.svg) · [PNG](notation/unit-usage.png) · [Vector scene](notation/unit-usage.scene.json)
 
 
 ## Timing and deployment
@@ -1647,12 +1811,12 @@ Unit usage. Draw a structural rectangle labeled listener: Listener and «unit»;
 | --- | --- | --- |
 | Concurrency mode (label) | ![Concurrency mode](notation/concurrency-mode.svg) | `concurrency reentrant;` |
 
-Concurrency mode. Write serial or reentrant in the operation timing compartment; no color or parallel-lane icon substitutes for it.
+Concurrency mode. Write serial or reentrant in the function timing compartment; no color or parallel-lane icon substitutes for it.
 
-**Context:** Timing property on Settings::SettingStore.read. **Views:** GV, GRV.
+**Context:** Timing property on Settings::SettingStore.read. **Views:** gv, grv.
 
-- Write serial or reentrant in the operation timing compartment; no color or parallel-lane icon substitutes for it.
-- Reentrant activations read dispatch snapshots and cannot mutate unit data; helper calls inherit the activation’s lock/snapshot context.
+- Write serial or reentrant in the function timing compartment; no color or parallel-lane icon substitutes for it.
+- Reentrant activations read dispatch snapshots and cannot mutate component data; helper calls inherit the activation’s lock/snapshot context.
 
 [Complete model](../examples/08-service-field.swaml) · `Settings::SettingStore.read`.
 
@@ -1664,16 +1828,17 @@ Concurrency mode. Write serial or reentrant in the operation timing compartment;
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Deployment binding (edge) | ![Deployment binding](notation/deployment.svg) | `deploy controller on ecu;` |
+| Deployment binding (edge) | ![Deployment binding](notation/deployment.svg) | `deploy left on "sysml:Vehicle::leftComputer";` |
 
-Deployment binding. Draw a dashed allocation arrow labeled deploy from the occurrence to its named execution node.
+A deployment binds a component instance or root to an external system reference.
 
-**Context:** Binding in Control::Heating. **Views:** GV, GRV.
+**Context:** Deployment of one component instance in ComponentReuse::Demo. **Views:** gv, grv.
 
-- Draw a dashed allocation arrow labeled deploy from the occurrence to its named execution node.
-- Allocation is separate from communication: it MUST NOT be rendered as a data connector, and it targets an occurrence path rather than a definition.
+- Draw a dashed open-arrow allocation link labeled deploy from the component instance to a flat external-system reference.
+- Show the complete URI-like reference; deployment does not imply that a SysML or infrastructure model was loaded.
+- Deployment inherits down the component tree unless a descendant supplies a more specific binding.
 
-[Complete model](../examples/02-realtime-controller.swaml) · `Control::Heating`.
+[Complete model](../examples/15-component-specialization.swaml) · `ComponentReuse::Demo`.
 
 [SVG](notation/deployment.svg) · [PNG](notation/deployment.png) · [Vector scene](notation/deployment.scene.json)
 
@@ -1687,47 +1852,48 @@ Deployment binding. Draw a dashed allocation arrow labeled deploy from the occur
 
 Duration value. Render an integer and its explicit time unit together in timing, period, timeout or state-timer labels.
 
-**Context:** Duration value in Roots::Counter.initialize; ns/us/ms/s are explicit alternatives. **Views:** GV, GRV.
+**Context:** Duration value in Roots::Counter.initialize; ns/us/ms/s are explicit alternatives. **Views:** gv, grv.
 
 - Render an integer and its explicit time unit together in timing, period, timeout or state-timer labels.
-- ns, us, ms and s are label units, not separate symbols; never imply a unit from diagram scale.
+- ns, us, ms and s are label components, not separate symbols; never imply a component from diagram scale.
 
 [Complete model](../examples/09-component-roots.swaml) · `Roots::Counter.initialize`.
 
 [SVG](notation/duration.svg) · [PNG](notation/duration.png) · [Vector scene](notation/duration.scene.json)
 
-## Notation: execution-node
+## Notation: deployment-target
 
-**Execution node**
+**External deployment target**
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Execution node (node) | ![Execution node](notation/execution-node.svg) | `node ecu mcu;` |
+| External deployment target (node) | ![External deployment target](notation/deployment-target.svg) | `deploy left on "sysml:Vehicle::leftComputer";` |
 
-Execution node. Draw a distinct execution-location rectangle with «node», its name and mcu/process/container kind.
+An external reference identifies the deployment system without introducing a hardware or execution-node definition into SWAML.
 
-**Context:** Execution-node declaration in Control::Heating. **Views:** GV, GRV.
+**Context:** An external system reference in ComponentReuse::Demo. **Views:** gv, grv.
 
-- Draw a distinct execution-location rectangle with «node», its name and mcu/process/container kind.
-- A node is deployment metadata, never a component/unit or a permission for bypassing typed interfaces.
+- Draw a flat rectangle headed external system and show the exact reference as text.
+- A sysml: reference may identify a separately modeled SysML part; SWAML does not resolve or validate that external model.
+- This endpoint is placement metadata and never grants access to another component’s state.
 
-[Complete model](../examples/02-realtime-controller.swaml) · `Control::Heating.ecu`.
+[Complete model](../examples/15-component-specialization.swaml) · `ComponentReuse::Demo`.
 
-[SVG](notation/execution-node.svg) · [PNG](notation/execution-node.png) · [Vector scene](notation/execution-node.scene.json)
+[SVG](notation/deployment-target.svg) · [PNG](notation/deployment-target.png) · [Vector scene](notation/deployment-target.scene.json)
 
 ## Notation: timing-contract
 
-**Operation timing contract**
+**Function timing contract**
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Operation timing contract (label) | ![Operation timing contract](notation/timing-contract.svg) | `timing { wcet 1 ms; deadline 3 ms; concurrency serial; }` |
+| Function timing contract (label) | ![Function timing contract](notation/timing-contract.svg) | `timing { wcet 1 ms; deadline 3 ms; concurrency serial; }` |
 
-Operation timing contract. Attach a timing compartment to the operation, listing wcet, deadline and concurrency explicitly.
+Function timing contract. Attach a timing compartment to the function, listing wcet, deadline and concurrency explicitly.
 
-**Context:** Contract on Control::Sensor.sample. **Views:** GV, GRV.
+**Context:** Contract on Control::Sensor.sample. **Views:** gv, grv.
 
-- Attach a timing compartment to the operation, listing wcet, deadline and concurrency explicitly.
+- Attach a timing compartment to the function, listing wcet, deadline and concurrency explicitly.
 - WCET counts active execution, deadline counts elapsed release-to-completion; the graphic alone supplies no schedulability proof.
 
 [Complete model](../examples/02-realtime-controller.swaml) · `Control::Sensor.sample`.
@@ -1744,7 +1910,7 @@ Operation timing contract. Attach a timing compartment to the operation, listing
 
 Root execution profile. Write the selected service, realtime or mixed profile in the root-component header or property compartment.
 
-**Context:** Root header in Gateway; realtime and service are alternative profiles. **Views:** GV, GRV.
+**Context:** Root header in Gateway; realtime and service are alternative profiles. **Views:** gv, grv.
 
 - Write the selected service, realtime or mixed profile in the root-component header or property compartment.
 - An omitted profile means service; suppressing a realtime/mixed label MUST NOT weaken the actual model’s timing obligations.
@@ -1781,14 +1947,14 @@ Browser. Draw a containment/navigation tree of existing packages, definitions, o
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Case View (projection) | ![Case View](notation/view-cv.svg) | `view cases CV of Shop;` |
+| Case View (projection) | ![Case View](notation/view-cv.svg) | `view cases cv of Shop;` |
 
-Case View. Draw a framed projection titled CV with the semantic subject identity visible; use the canonical element symbols within it.
+Case View. Draw a framed projection titled cv with the semantic subject identity visible; use the canonical element symbols within it.
 
-**Context:** View projection context; syntax refers to an existing semantic subject. **Views:** CV.
+**Context:** View projection context; syntax refers to an existing semantic subject. **Views:** cv.
 
-- Draw a framed projection titled CV with the semantic subject identity visible; use the canonical element symbols within it.
-- The view adds presentation only. It MUST NOT introduce new routes, operations, performers or execution semantics.
+- Draw a framed projection titled cv with the semantic subject identity visible; use the canonical element symbols within it.
+- The view adds presentation only. It MUST NOT introduce new routes, functions, performers or execution semantics.
 
 [Complete model](../examples/03-service-pubsub.swaml) · `Commerce::cases`.
 
@@ -1800,16 +1966,16 @@ Case View. Draw a framed projection titled CV with the semantic subject identity
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Flow View (projection) | ![Flow View](notation/view-fv.svg) | `view lifecycle FV of Device.lifecycle;` |
+| Flow View (projection) | ![Flow View](notation/view-fv.svg) | `view lifecycle fv of Device.lifecycle;` |
 
-Flow View. Draw a framed projection titled FV with the semantic subject identity visible; use the canonical element symbols within it.
+Flow View. Draw a framed projection titled fv with the semantic subject identity visible; use the canonical element symbols within it.
 
-**Context:** View projection context; syntax refers to an existing semantic subject. **Views:** FV.
+**Context:** View projection context; syntax refers to an existing semantic subject. **Views:** fv.
 
-- Draw a framed projection titled FV with the semantic subject identity visible; use the canonical element symbols within it.
-- FV supports both statement flow and operation-owned states. Keep the owning operation frame and never reintroduce separate action/state views or a machine element.
+- Draw a framed projection titled fv with the semantic subject identity visible; use the canonical element symbols within it.
+- fv supports both statement flow and function-owned states. Keep the owning function frame and never reintroduce separate action/state views or a machine element.
 
-[Complete model](../examples/04-stateful-operation.swaml) · `Lifecycle::lifecycle`.
+[Complete model](../examples/04-stateful-function.swaml) · `Lifecycle::lifecycle`.
 
 [SVG](notation/view-fv.svg) · [PNG](notation/view-fv.png) · [Vector scene](notation/view-fv.scene.json)
 
@@ -1819,14 +1985,14 @@ Flow View. Draw a framed projection titled FV with the semantic subject identity
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| General View (projection) | ![General View](notation/view-gv.svg) | `view overview GV of Demo;` |
+| General View (projection) | ![General View](notation/view-gv.svg) | `view overview gv of Demo;` |
 
-General View. Draw a framed projection titled GV with the semantic subject identity visible; use the canonical element symbols within it.
+General View. Draw a framed projection titled gv with the semantic subject identity visible; use the canonical element symbols within it.
 
-**Context:** View projection context; syntax refers to an existing semantic subject. **Views:** GV.
+**Context:** View projection context; syntax refers to an existing semantic subject. **Views:** gv.
 
-- Draw a framed projection titled GV with the semantic subject identity visible; use the canonical element symbols within it.
-- The view adds presentation only. It MUST NOT introduce new routes, operations, performers or execution semantics.
+- Draw a framed projection titled gv with the semantic subject identity visible; use the canonical element symbols within it.
+- The view adds presentation only. It MUST NOT introduce new routes, functions, performers or execution semantics.
 
 [Complete model](../examples/01-hello.swaml) · `Hello::overview`.
 
@@ -1838,14 +2004,14 @@ General View. Draw a framed projection titled GV with the semantic subject ident
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Grid View (projection) | ![Grid View](notation/view-grv.svg) | `view inventory GRV of Demo;` |
+| Grid View (projection) | ![Grid View](notation/view-grv.svg) | `view inventory grv of Demo;` |
 
-Grid View. Draw a framed projection titled GRV with the semantic subject identity visible; use the canonical element symbols within it.
+Grid View. Draw a framed projection titled grv with the semantic subject identity visible; use the canonical element symbols within it.
 
-**Context:** View projection context; syntax refers to an existing semantic subject. **Views:** GRV.
+**Context:** View projection context; syntax refers to an existing semantic subject. **Views:** grv.
 
-- Draw a framed projection titled GRV with the semantic subject identity visible; use the canonical element symbols within it.
-- The view adds presentation only. It MUST NOT introduce new routes, operations, performers or execution semantics.
+- Draw a framed projection titled grv with the semantic subject identity visible; use the canonical element symbols within it.
+- The view adds presentation only. It MUST NOT introduce new routes, functions, performers or execution semantics.
 
 [Complete model](../examples/01-hello.swaml) · `Hello::inventory`.
 
@@ -1857,14 +2023,14 @@ Grid View. Draw a framed projection titled GRV with the semantic subject identit
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Interconnect View (projection) | ![Interconnect View](notation/view-iv.svg) | `view wiring IV of Conversation;` |
+| Interconnect View (projection) | ![Interconnect View](notation/view-iv.svg) | `view wiring iv of Conversation;` |
 
-Interconnect View. Draw a framed projection titled IV with the semantic subject identity visible; use the canonical element symbols within it.
+Interconnect View. Draw a framed projection titled iv with the semantic subject identity visible; use the canonical element symbols within it.
 
-**Context:** View projection context; syntax refers to an existing semantic subject. **Views:** IV.
+**Context:** View projection context; syntax refers to an existing semantic subject. **Views:** iv.
 
-- Draw a framed projection titled IV with the semantic subject identity visible; use the canonical element symbols within it.
-- The view adds presentation only. It MUST NOT introduce new routes, operations, performers or execution semantics.
+- Draw a framed projection titled iv with the semantic subject identity visible; use the canonical element symbols within it.
+- The view adds presentation only. It MUST NOT introduce new routes, functions, performers or execution semantics.
 
 [Complete model](../examples/01-hello.swaml) · `Hello::wiring`.
 
@@ -1876,14 +2042,14 @@ Interconnect View. Draw a framed projection titled IV with the semantic subject 
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Sequence View (projection) | ![Sequence View](notation/view-sv.svg) | `view interaction SV of Poll;` |
+| Sequence View (projection) | ![Sequence View](notation/view-sv.svg) | `view interaction sv of Poll;` |
 
-Sequence View. Draw a framed projection titled SV with the semantic subject identity visible; use the canonical element symbols within it.
+Sequence View. Draw a framed projection titled sv with the semantic subject identity visible; use the canonical element symbols within it.
 
-**Context:** View projection context; syntax refers to an existing semantic subject. **Views:** SV.
+**Context:** View projection context; syntax refers to an existing semantic subject. **Views:** sv.
 
-- Draw a framed projection titled SV with the semantic subject identity visible; use the canonical element symbols within it.
-- The view adds presentation only. It MUST NOT introduce new routes, operations, performers or execution semantics.
+- Draw a framed projection titled sv with the semantic subject identity visible; use the canonical element symbols within it.
+- The view adds presentation only. It MUST NOT introduce new routes, functions, performers or execution semantics.
 
 [Complete model](../examples/07-client-server.swaml) · `Rpc::interaction`.
 
@@ -1897,128 +2063,133 @@ The inventory explicitly assigns every current grammar production and keyword to
 
 | Term | Representation | Concept and rationale |
 | --- | --- | --- |
-| `after` | glyph | [Residence timer transition](#notation-timer-transition), [Case causal order](#notation-case-causal-order). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `and` | label | [Expressions and value paths](#notation-expression). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `as` | glyph | [RPC request and failure continuation](#notation-request). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `assert` | glyph | [Assertion](#notation-assert). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `atLeastOnce` | label | [Delivery policy](#notation-delivery-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `atMostOnce` | label | [Delivery policy](#notation-delivery-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `bestEffort` | label | [Delivery policy](#notation-delivery-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `Bool` | label | [Primitive types](#notation-primitive-types). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `bound` | glyph | [Bounded loop](#notation-bounded-loop). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `call` | label | [RPC handler activation](#notation-trigger-call). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `capacity` | label | [Queue capacity](#notation-capacity-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `case` | glyph | [Case](#notation-case). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `client` | glyph | [RPC client port](#notation-port-client). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `clientServer` | glyph | [Client–server interface](#notation-client-server-interface). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `completion` | glyph | [Completion transition](#notation-completion-transition). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `component` | glyph | [Component definition](#notation-component-definition), [Component usage](#notation-component-usage), [Root component](#notation-root-component), [Inline root composition](#notation-inline-root), [Occurrence typing relationship](#notation-type-relationship). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `concurrency` | label | [Concurrency mode](#notation-concurrency-mode). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `connect` | glyph | [Interface connector](#notation-connector). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `container` | glyph | [Execution node](#notation-execution-node). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `CV` | glyph | [Case View](#notation-view-cv). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `data` | label | [Data member](#notation-data-member). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `datatype` | glyph | [Record datatype](#notation-datatype). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `deadline` | label | [Operation timing contract](#notation-timing-contract). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `def` | glyph | [Component definition](#notation-component-definition), [Unit definition](#notation-unit-definition). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `delegate` | glyph | [Boundary delegation](#notation-delegation). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `delivery` | label | [Delivery policy](#notation-delivery-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `deploy` | glyph | [Deployment binding](#notation-deployment). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `dropNewest` | label | [Overflow behavior](#notation-overflow-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `dropOldest` | label | [Overflow behavior](#notation-overflow-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `else` | glyph | [Conditional branch](#notation-conditional). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `entry` | label | [State entry behavior](#notation-state-entry). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `enum` | glyph | [Enumeration](#notation-enumeration). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `event` | label | [Event member](#notation-event-member). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `every` | label | [Periodic activation](#notation-trigger-periodic). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `exit` | label | [State exit behavior](#notation-state-exit). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `fail` | glyph | [Failure](#notation-fail). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `false` | label | [Expressions and value paths](#notation-expression). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `fifo` | label | [Queue ordering](#notation-ordering-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `final` | glyph | [Final state](#notation-final-state). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `for` | glyph | [Case](#notation-case). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `function` | label | [Pure local function](#notation-pure-function). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `FV` | glyph | [Flow View](#notation-view-fv). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `GRV` | glyph | [Grid View](#notation-view-grv). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `GV` | glyph | [General View](#notation-view-gv). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `idempotent` | label | [Interface operation signature](#notation-operation-signature). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `if` | glyph | [Conditional branch](#notation-conditional). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `import` | glyph | [Package import](#notation-import). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `initial` | glyph | [Operation with states](#notation-stateful-operation), [Initial state reference](#notation-initial-state). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `Int` | label | [Primitive types](#notation-primitive-types). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `interface` | glyph | [Sender–receiver interface](#notation-sender-receiver-interface), [Client–server interface](#notation-client-server-interface), [Publish–subscribe interface](#notation-publish-subscribe-interface), [Service interface](#notation-service-interface). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `invoke` | glyph | [Local operation invocation](#notation-invoke). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `IV` | glyph | [Interconnect View](#notation-view-iv). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `label` | glyph | [Case data exchange](#notation-case-data-exchange), [Case event exchange](#notation-case-event-exchange), [Case request](#notation-case-request), [Correlated case reply](#notation-case-reply), [Case causal order](#notation-case-causal-order). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `let` | glyph | [Local declaration](#notation-local-declaration). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `manual` | label | [Manual activation](#notation-trigger-manual). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `maxAge` | label | [Message freshness bound](#notation-freshness-bound). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `maxLatency` | label | [Transport latency bound](#notation-latency-bound). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `mcu` | glyph | [Execution node](#notation-execution-node). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `mixed` | label | [Root execution profile](#notation-execution-profile). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `ms` | label | [Duration value](#notation-duration). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `node` | glyph | [Execution node](#notation-execution-node). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `not` | label | [Expressions and value paths](#notation-expression). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `ns` | label | [Duration value](#notation-duration). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `of` | glyph | [General View](#notation-view-gv), [Interconnect View](#notation-view-iv), [Case View](#notation-view-cv), [Sequence View](#notation-view-sv), [Grid View](#notation-view-grv), [Flow View](#notation-view-fv). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `on` | glyph | [Startup activation](#notation-trigger-start), [Manual activation](#notation-trigger-manual), [Periodic activation](#notation-trigger-periodic), [Port receive activation](#notation-trigger-receive), [RPC handler activation](#notation-trigger-call), [State transition](#notation-transition), [Deployment binding](#notation-deployment). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `operation` | glyph | [Interface operation signature](#notation-operation-signature), [Executable operation](#notation-operation), [Operation with states](#notation-stateful-operation). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `optional` | label | [Optional port](#notation-optional-port). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `or` | label | [Expressions and value paths](#notation-expression). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `ordering` | label | [Queue ordering](#notation-ordering-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `otherwise` | glyph | [RPC request and failure continuation](#notation-request). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `overflow` | label | [Overflow behavior](#notation-overflow-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `package` | glyph | [Package](#notation-package). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `port` | glyph | [Data sender port](#notation-port-sender), [Data receiver port](#notation-port-receiver), [RPC client port](#notation-port-client), [RPC server port](#notation-port-server), [Event publisher port](#notation-port-publisher), [Event subscriber port](#notation-port-subscriber), [Service provider port](#notation-port-provides), [Service consumer port](#notation-port-requires). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `priority` | label | [Transition priority](#notation-transition-priority). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `process` | glyph | [Execution node](#notation-execution-node). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `provides` | glyph | [Service provider port](#notation-port-provides). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `publish` | glyph | [Event publication](#notation-publish), [Case event exchange](#notation-case-event-exchange). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `publisher` | glyph | [Event publisher port](#notation-port-publisher). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `publishSubscribe` | glyph | [Publish–subscribe interface](#notation-publish-subscribe-interface). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `qos` | label | [Delivery policy](#notation-delivery-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `queued` | label | [Data member](#notation-data-member). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `Real` | label | [Primitive types](#notation-primitive-types). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `realtime` | label | [Root execution profile](#notation-execution-profile). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `receive` | glyph | [Port receive activation](#notation-trigger-receive), [State transition](#notation-transition). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `receiver` | glyph | [Data receiver port](#notation-port-receiver). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `record` | label | [Record construction](#notation-record-value). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `reentrant` | label | [Concurrency mode](#notation-concurrency-mode). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `reject` | label | [Overflow behavior](#notation-overflow-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `reply` | glyph | [Correlated case reply](#notation-case-reply). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `request` | glyph | [RPC request and failure continuation](#notation-request), [Case request](#notation-case-request). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `requirement` | glyph | [Requirement](#notation-requirement). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `requires` | glyph | [Service consumer port](#notation-port-requires). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `return` | glyph | [Operation return](#notation-return). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `s` | label | [Duration value](#notation-duration). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `sampled` | label | [Data member](#notation-data-member). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `satisfies` | glyph | [Requirement coverage link](#notation-satisfies-link). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `send` | glyph | [Data send](#notation-send), [Case data exchange](#notation-case-data-exchange). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `sender` | glyph | [Data sender port](#notation-port-sender). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `senderReceiver` | glyph | [Sender–receiver interface](#notation-sender-receiver-interface). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `serial` | label | [Concurrency mode](#notation-concurrency-mode). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `server` | glyph | [RPC server port](#notation-port-server). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `service` | glyph | [Service interface](#notation-service-interface), [Root execution profile](#notation-execution-profile). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `start` | label | [Startup activation](#notation-trigger-start). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `state` | glyph | [State](#notation-state), [Final state](#notation-final-state). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `String` | label | [Primitive types](#notation-primitive-types). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `subscriber` | glyph | [Event subscriber port](#notation-port-subscriber). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `SV` | glyph | [Sequence View](#notation-view-sv). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `timing` | label | [Operation timing contract](#notation-timing-contract). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `transition` | glyph | [State transition](#notation-transition). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `true` | label | [Expressions and value paths](#notation-expression). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `unit` | glyph | [Inline root composition](#notation-inline-root), [Unit definition](#notation-unit-definition), [Unit usage](#notation-unit-usage), [Occurrence typing relationship](#notation-type-relationship). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `unordered` | label | [Queue ordering](#notation-ordering-policy). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `us` | label | [Duration value](#notation-duration). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `var` | label | [Private unit variable](#notation-private-variable). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `version` | glyph | [Sender–receiver interface](#notation-sender-receiver-interface), [Client–server interface](#notation-client-server-interface), [Publish–subscribe interface](#notation-publish-subscribe-interface), [Service interface](#notation-service-interface). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `via` | glyph | [Case data exchange](#notation-case-data-exchange), [Case event exchange](#notation-case-event-exchange), [Case request](#notation-case-request), [Correlated case reply](#notation-case-reply). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `view` | glyph | [General View](#notation-view-gv), [Interconnect View](#notation-view-iv), [Case View](#notation-view-cv), [Sequence View](#notation-view-sv), [Grid View](#notation-view-grv), [Flow View](#notation-view-fv). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `Void` | label | [Primitive types](#notation-primitive-types). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `wcet` | label | [Operation timing contract](#notation-timing-contract). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `when` | label | [Transition guard](#notation-transition-guard). Rendered as text in its owning compartment/property; no independent semantic glyph is introduced. |
-| `while` | glyph | [Bounded loop](#notation-bounded-loop). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
-| `within` | glyph | [RPC request and failure continuation](#notation-request). Represented by the named semantic construct; the keyword remains explicit in its heading/edge label. |
+| `after` | glyph | [Residence timer transition](#notation-timer-transition), [Case causal order](#notation-case-causal-order). Residence timer transition; Case causal order. |
+| `and` | label | [Expressions and value paths](#notation-expression). Expressions and value paths. |
+| `as` | glyph | [Routed function call](#notation-routed-call). Routed function call. |
+| `assert` | glyph | [Assertion](#notation-assert). Assertion. |
+| `atLeastOnce` | label | [Delivery policy](#notation-delivery-policy). Delivery policy. |
+| `atMostOnce` | label | [Delivery policy](#notation-delivery-policy). Delivery policy. |
+| `attribute` | label | [Requirement attribute](#notation-requirement-attribute). Requirement attribute. |
+| `bestEffort` | label | [Delivery policy](#notation-delivery-policy). Delivery policy. |
+| `bool` | label | [Primitive types](#notation-primitive-types). Primitive types. |
+| `bound` | glyph | [Bounded loop](#notation-bounded-loop). Bounded loop. |
+| `by` | glyph | [Satisfaction relation](#notation-satisfies-link). Satisfaction relation. |
+| `byte` | label | [Primitive types](#notation-primitive-types). Primitive types. |
+| `calc` | label | [Pure calculation](#notation-calculation). Pure calculation. |
+| `call` | glyph | [RPC handler activation](#notation-trigger-call), [Local function call](#notation-local-call), [Routed function call](#notation-routed-call), [Case request](#notation-case-request). RPC handler activation; Local function call; Routed function call; Case request. |
+| `capacity` | label | [Queue capacity](#notation-capacity-policy). Queue capacity. |
+| `client` | glyph | [RPC client port](#notation-port-client). RPC client port. |
+| `clientServer` | glyph | [Client–server interface](#notation-client-server-interface). Client–server interface. |
+| `completion` | glyph | [Completion transition](#notation-completion-transition). Completion transition. |
+| `component` | glyph | [Component definition](#notation-component-definition), [Component usage](#notation-component-usage), [Occurrence typing relationship](#notation-type-relationship), [Root component](#notation-root-component), [Inline root composition](#notation-inline-root). Component definition; Component usage; Occurrence typing relationship; Root component; Inline root composition. |
+| `concurrency` | label | [Concurrency mode](#notation-concurrency-mode). Concurrency mode. |
+| `connect` | glyph | [Interface connector](#notation-connector). Interface connector. |
+| `cv` | glyph | [Case View](#notation-view-cv). Case View. |
+| `data` | label | [Data member](#notation-data-member). Data member. |
+| `datatype` | glyph | [Record datatype](#notation-datatype). Record datatype. |
+| `deadline` | label | [Function timing contract](#notation-timing-contract). Function timing contract. |
+| `def` | glyph | [Component definition](#notation-component-definition), [Reusable QoS policy](#notation-qos-policy-definition). Component definition; Reusable QoS policy. |
+| `delegate` | glyph | [Boundary delegation](#notation-delegation). Boundary delegation. |
+| `delivery` | label | [Delivery policy](#notation-delivery-policy). Delivery policy. |
+| `deploy` | glyph | [Deployment binding](#notation-deployment). Deployment binding. |
+| `doc` | label | [Formal documentation](#notation-formal-documentation). Formal documentation. |
+| `dropNewest` | label | [Overflow behavior](#notation-overflow-policy). Overflow behavior. |
+| `dropOldest` | label | [Overflow behavior](#notation-overflow-policy). Overflow behavior. |
+| `else` | glyph | [Conditional branch](#notation-conditional). Conditional branch. |
+| `entry` | label | [State entry behavior](#notation-state-entry). State entry behavior. |
+| `enum` | glyph | [Enumeration](#notation-enumeration). Enumeration. |
+| `event` | label | [Event member](#notation-event-member). Event member. |
+| `every` | label | [Periodic activation](#notation-trigger-periodic). Periodic activation. |
+| `exit` | label | [State exit behavior](#notation-state-exit). State exit behavior. |
+| `fail` | glyph | [Failure](#notation-fail). Failure. |
+| `false` | label | [Expressions and value paths](#notation-expression). Expressions and value paths. |
+| `fifo` | label | [Queue ordering](#notation-ordering-policy). Queue ordering. |
+| `final` | glyph | [Final state](#notation-final-state). Final state. |
+| `for` | glyph | [Use case](#notation-case). Use case. |
+| `function` | glyph | [Interface function signature](#notation-function-signature), [Executable function](#notation-function), [Function with states](#notation-stateful-function). Interface function signature; Executable function; Function with states. |
+| `fv` | glyph | [Flow View](#notation-view-fv). Flow View. |
+| `grv` | glyph | [Grid View](#notation-view-grv). Grid View. |
+| `gv` | glyph | [General View](#notation-view-gv). General View. |
+| `idempotent` | label | [Interface function signature](#notation-function-signature). Interface function signature. |
+| `if` | glyph | [Conditional branch](#notation-conditional). Conditional branch. |
+| `import` | glyph | [Package import](#notation-import). Package import. |
+| `in` | label | [Pure calculation](#notation-calculation). Pure calculation. |
+| `include` | glyph | [Filtered view selection](#notation-view-selection). Filtered view selection. |
+| `initial` | glyph | [Function with states](#notation-stateful-function), [Initial state reference](#notation-initial-state). Function with states; Initial state reference. |
+| `int` | label | [Primitive types](#notation-primitive-types). Primitive types. |
+| `interface` | glyph | [Sender–receiver interface](#notation-sender-receiver-interface), [Client–server interface](#notation-client-server-interface), [Publish–subscribe interface](#notation-publish-subscribe-interface), [Service interface](#notation-service-interface). Sender–receiver interface; Client–server interface; Publish–subscribe interface; Service interface. |
+| `iv` | glyph | [Interconnect View](#notation-view-iv). Interconnect View. |
+| `label` | glyph | [Case data exchange](#notation-case-data-exchange), [Case event exchange](#notation-case-event-exchange), [Case request](#notation-case-request), [Correlated case reply](#notation-case-reply), [Case causal order](#notation-case-causal-order). Case data exchange; Case event exchange; Case request; Correlated case reply; Case causal order. |
+| `manual` | label | [Manual activation](#notation-trigger-manual). Manual activation. |
+| `maxAge` | label | [Message freshness bound](#notation-freshness-bound). Message freshness bound. |
+| `maxLatency` | label | [Transport latency bound](#notation-latency-bound). Transport latency bound. |
+| `mixed` | label | [Root execution profile](#notation-execution-profile). Root execution profile. |
+| `ms` | label | [Duration value](#notation-duration). Duration value. |
+| `not` | label | [Expressions and value paths](#notation-expression). Expressions and value paths. |
+| `ns` | label | [Duration value](#notation-duration). Duration value. |
+| `of` | glyph | [General View](#notation-view-gv), [Interconnect View](#notation-view-iv), [Case View](#notation-view-cv), [Sequence View](#notation-view-sv), [Grid View](#notation-view-grv), [Flow View](#notation-view-fv). General View; Interconnect View; Case View; Sequence View; Grid View; Flow View. |
+| `on` | glyph | [Startup activation](#notation-trigger-start), [Manual activation](#notation-trigger-manual), [Periodic activation](#notation-trigger-periodic), [Port receive activation](#notation-trigger-receive), [RPC handler activation](#notation-trigger-call), [State transition](#notation-transition), [Deployment binding](#notation-deployment). Startup activation; Manual activation; Periodic activation; Port receive activation; RPC handler activation; State transition; Deployment binding. |
+| `optional` | label | [Optional port](#notation-optional-port). Optional port. |
+| `or` | label | [Expressions and value paths](#notation-expression). Expressions and value paths. |
+| `ordering` | label | [Queue ordering](#notation-ordering-policy). Queue ordering. |
+| `otherwise` | glyph | [Routed function call](#notation-routed-call). Routed function call. |
+| `overflow` | label | [Overflow behavior](#notation-overflow-policy). Overflow behavior. |
+| `package` | glyph | [Package](#notation-package). Package. |
+| `port` | glyph | [Data sender port](#notation-port-sender), [Data receiver port](#notation-port-receiver), [RPC client port](#notation-port-client), [RPC server port](#notation-port-server), [Event publisher port](#notation-port-publisher), [Event subscriber port](#notation-port-subscriber), [Service provider port](#notation-port-provides), [Service consumer port](#notation-port-requires). Data sender port; Data receiver port; RPC client port; RPC server port; Event publisher port; Event subscriber port; Service provider port; Service consumer port. |
+| `priority` | label | [Transition priority](#notation-transition-priority). Transition priority. |
+| `provides` | glyph | [Service provider port](#notation-port-provides). Service provider port. |
+| `publish` | glyph | [Event publication](#notation-publish), [Case event exchange](#notation-case-event-exchange). Event publication; Case event exchange. |
+| `publisher` | glyph | [Event publisher port](#notation-port-publisher). Event publisher port. |
+| `publishSubscribe` | glyph | [Publish–subscribe interface](#notation-publish-subscribe-interface). Publish–subscribe interface. |
+| `qos` | glyph | [Delivery policy](#notation-delivery-policy), [Reusable QoS policy](#notation-qos-policy-definition), [Named connector policy](#notation-qos-policy-reference). Delivery policy; Reusable QoS policy; Named connector policy. |
+| `queued` | label | [Data member](#notation-data-member). Data member. |
+| `real` | label | [Primitive types](#notation-primitive-types). Primitive types. |
+| `realtime` | label | [Root execution profile](#notation-execution-profile). Root execution profile. |
+| `receive` | glyph | [Port receive activation](#notation-trigger-receive), [State transition](#notation-transition). Port receive activation; State transition. |
+| `receiver` | glyph | [Data receiver port](#notation-port-receiver). Data receiver port. |
+| `record` | label | [Record construction](#notation-record-value). Record construction. |
+| `recursive` | glyph | [Filtered view selection](#notation-view-selection). Filtered view selection. |
+| `redefines` | label | [Member redefinition](#notation-member-redefinition). Member redefinition. |
+| `reentrant` | label | [Concurrency mode](#notation-concurrency-mode). Concurrency mode. |
+| `reject` | label | [Overflow behavior](#notation-overflow-policy). Overflow behavior. |
+| `reply` | glyph | [Correlated case reply](#notation-case-reply). Correlated case reply. |
+| `requirement` | glyph | [Requirement](#notation-requirement). Requirement. |
+| `requires` | glyph | [Service consumer port](#notation-port-requires). Service consumer port. |
+| `return` | glyph | [Pure calculation](#notation-calculation), [Function return](#notation-return). Pure calculation; Function return. |
+| `s` | label | [Duration value](#notation-duration). Duration value. |
+| `sampled` | label | [Data member](#notation-data-member). Data member. |
+| `satisfy` | glyph | [Satisfaction relation](#notation-satisfies-link). Satisfaction relation. |
+| `send` | glyph | [Data send](#notation-send), [Case data exchange](#notation-case-data-exchange). Data send; Case data exchange. |
+| `sender` | glyph | [Data sender port](#notation-port-sender). Data sender port. |
+| `senderReceiver` | glyph | [Sender–receiver interface](#notation-sender-receiver-interface). Sender–receiver interface. |
+| `serial` | label | [Concurrency mode](#notation-concurrency-mode). Concurrency mode. |
+| `server` | glyph | [RPC server port](#notation-port-server). RPC server port. |
+| `service` | glyph | [Service interface](#notation-service-interface), [Root execution profile](#notation-execution-profile). Service interface; Root execution profile. |
+| `specializes` | glyph | [Component specialization](#notation-component-specialization). Component specialization. |
+| `start` | label | [Startup activation](#notation-trigger-start). Startup activation. |
+| `state` | glyph | [State](#notation-state), [Final state](#notation-final-state). State; Final state. |
+| `string` | label | [Primitive types](#notation-primitive-types). Primitive types. |
+| `subscriber` | glyph | [Event subscriber port](#notation-port-subscriber). Event subscriber port. |
+| `sv` | glyph | [Sequence View](#notation-view-sv). Sequence View. |
+| `timing` | label | [Function timing contract](#notation-timing-contract). Function timing contract. |
+| `transition` | glyph | [State transition](#notation-transition). State transition. |
+| `true` | label | [Expressions and value paths](#notation-expression). Expressions and value paths. |
+| `uint` | label | [Primitive types](#notation-primitive-types). Primitive types. |
+| `unordered` | label | [Queue ordering](#notation-ordering-policy). Queue ordering. |
+| `us` | label | [Duration value](#notation-duration). Duration value. |
+| `useCase` | glyph | [Use case](#notation-case). Use case. |
+| `var` | glyph | [Private component variable](#notation-private-variable), [Local declaration](#notation-local-declaration). Private component variable; Local declaration. |
+| `verificationCase` | glyph | [Verification case](#notation-verification-case). Verification case. |
+| `verify` | glyph | [Verification relation](#notation-verification-link). Verification relation. |
+| `version` | glyph | [Sender–receiver interface](#notation-sender-receiver-interface), [Client–server interface](#notation-client-server-interface), [Publish–subscribe interface](#notation-publish-subscribe-interface), [Service interface](#notation-service-interface). Sender–receiver interface; Client–server interface; Publish–subscribe interface; Service interface. |
+| `via` | glyph | [Case data exchange](#notation-case-data-exchange), [Case event exchange](#notation-case-event-exchange), [Case request](#notation-case-request), [Correlated case reply](#notation-case-reply). Case data exchange; Case event exchange; Case request; Correlated case reply. |
+| `view` | glyph | [General View](#notation-view-gv), [Interconnect View](#notation-view-iv), [Case View](#notation-view-cv), [Sequence View](#notation-view-sv), [Grid View](#notation-view-grv), [Flow View](#notation-view-fv). General View; Interconnect View; Case View; Sequence View; Grid View; Flow View. |
+| `void` | label | [Primitive types](#notation-primitive-types). Primitive types. |
+| `wcet` | label | [Function timing contract](#notation-timing-contract). Function timing contract. |
+| `when` | label | [Transition guard](#notation-transition-guard). Transition guard. |
+| `where` | glyph | [Filtered view selection](#notation-view-selection). Filtered view selection. |
+| `while` | glyph | [Bounded loop](#notation-bounded-loop). Bounded loop. |
+| `within` | glyph | [Routed function call](#notation-routed-call). Routed function call. |
 
 ## Grammar production coverage
 
@@ -2026,81 +2197,87 @@ The inventory explicitly assigns every current grammar production and keyword to
 | --- | --- | --- |
 | `AdditiveExpression` | text-only | Precedence grouping only; arithmetic text belongs to the expression label. |
 | `AndExpression` | text-only | Precedence grouping only; operator text belongs to the expression label. |
-| `Argument` | label | [Parameter or record field](#notation-parameter). Owned textual value, member or property rendered in the referenced concept. |
-| `ArrayLiteral` | label | [Fixed array type and value](#notation-array-value). Owned textual value, member or property rendered in the referenced concept. |
-| `Assert` | glyph | [Assertion](#notation-assert). Concrete semantic concept projected using the referenced canonical notation. |
-| `Assign` | glyph | [Assignment](#notation-assignment). Concrete semantic concept projected using the referenced canonical notation. |
-| `Block` | text-only | A lexical ordered grouping projected as its owning flow/state compartment; no independent executable identity. |
-| `Component` | glyph | [Component definition](#notation-component-definition). Concrete semantic concept projected using the referenced canonical notation. |
-| `ComponentMember` | text-only | Grammar union of component members; represented by the concrete member not by another box. |
-| `Connect` | glyph | [Interface connector](#notation-connector). Concrete semantic concept projected using the referenced canonical notation. |
-| `DataMember` | label | [Data member](#notation-data-member). Owned textual value, member or property rendered in the referenced concept. |
-| `DataType` | glyph | [Record datatype](#notation-datatype). Concrete semantic concept projected using the referenced canonical notation. |
-| `Definition` | text-only | A type union of component/unit definitions; concrete definitions carry the graphical symbols. |
-| `Delegate` | glyph | [Boundary delegation](#notation-delegation). Concrete semantic concept projected using the referenced canonical notation. |
-| `Deployment` | glyph | [Deployment binding](#notation-deployment). Concrete semantic concept projected using the referenced canonical notation. |
-| `Duration` | glyph | [Transport latency bound](#notation-latency-bound), [Message freshness bound](#notation-freshness-bound), [Residence timer transition](#notation-timer-transition), [Duration value](#notation-duration). Concrete semantic concept projected using the referenced canonical notation. |
+| `Argument` | label | [Parameter or record field](#notation-parameter). Parameter or record field. |
+| `ArrayLiteral` | label | [Fixed array type and value](#notation-array-value). Fixed array type and value. |
+| `Assert` | glyph | [Assertion](#notation-assert). Assertion. |
+| `Assign` | glyph | [Assignment](#notation-assignment). Assignment. |
+| `Attribute` | label | [Requirement attribute](#notation-requirement-attribute). Requirement attribute. |
+| `Block` | glyph | [Executable function](#notation-function), [State entry behavior](#notation-state-entry), [State exit behavior](#notation-state-exit). Executable function; State entry behavior; State exit behavior. |
+| `Calculation` | label | [Pure calculation](#notation-calculation). Pure calculation. |
+| `CalculationCall` | label | [Pure calculation](#notation-calculation). Pure calculation. |
+| `Component` | glyph | [Component definition](#notation-component-definition), [Component specialization](#notation-component-specialization). Component definition; Component specialization. |
+| `ComponentMember` | label | [Member redefinition](#notation-member-redefinition). Member redefinition. |
+| `Connect` | glyph | [Interface connector](#notation-connector). Interface connector. |
+| `DataMember` | label | [Data member](#notation-data-member). Data member. |
+| `DataType` | glyph | [Record datatype](#notation-datatype). Record datatype. |
+| `Delegate` | glyph | [Boundary delegation](#notation-delegation). Boundary delegation. |
+| `Deployment` | glyph | [External deployment target](#notation-deployment-target), [Deployment binding](#notation-deployment). External deployment target; Deployment binding. |
+| `DOC_COMMENT` | label | [Formal documentation](#notation-formal-documentation). Formal documentation. |
+| `Documentation` | label | [Formal documentation](#notation-formal-documentation). Formal documentation. |
+| `Duration` | glyph | [Transport latency bound](#notation-latency-bound), [Message freshness bound](#notation-freshness-bound), [Residence timer transition](#notation-timer-transition), [Duration value](#notation-duration). Transport latency bound; Message freshness bound; Residence timer transition; Duration value. |
 | `Element` | text-only | Grammar union selecting a top-level element; each concrete alternative has its own notation. |
-| `EnumType` | glyph | [Enumeration](#notation-enumeration). Concrete semantic concept projected using the referenced canonical notation. |
+| `EnumType` | glyph | [Enumeration](#notation-enumeration). Enumeration. |
 | `EqualityExpression` | text-only | Precedence grouping only; equality text belongs to the expression label. |
-| `EventMember` | label | [Event member](#notation-event-member). Owned textual value, member or property rendered in the referenced concept. |
-| `Expression` | label | [Expressions and value paths](#notation-expression). Owned textual value, member or property rendered in the referenced concept. |
-| `Fail` | glyph | [Failure](#notation-fail). Concrete semantic concept projected using the referenced canonical notation. |
-| `FieldValue` | label | [Record construction](#notation-record-value). Owned textual value, member or property rendered in the referenced concept. |
-| `FunctionCall` | label | [Pure local function](#notation-pure-function). Owned textual value, member or property rendered in the referenced concept. |
-| `FunctionDef` | label | [Pure local function](#notation-pure-function). Owned textual value, member or property rendered in the referenced concept. |
+| `EventMember` | label | [Event member](#notation-event-member). Event member. |
+| `Expression` | label | [Expressions and value paths](#notation-expression). Expressions and value paths. |
+| `Fail` | glyph | [Failure](#notation-fail). Failure. |
+| `FieldValue` | label | [Record construction](#notation-record-value). Record construction. |
+| `FunctionDef` | glyph | [Executable function](#notation-function), [Function with states](#notation-stateful-function). Executable function; Function with states. |
+| `FunctionFlow` | glyph | [Executable function](#notation-function). Executable function. |
 | `ID` | text-only | Identifier token supplies names on shapes and labels; no independent glyph. |
-| `If` | glyph | [Conditional branch](#notation-conditional). Concrete semantic concept projected using the referenced canonical notation. |
-| `Import` | glyph | [Package import](#notation-import). Concrete semantic concept projected using the referenced canonical notation. |
-| `Instance` | glyph | [Component usage](#notation-component-usage), [Unit usage](#notation-unit-usage), [Occurrence lifeline](#notation-sequence-lifeline), [Occurrence typing relationship](#notation-type-relationship). Concrete semantic concept projected using the referenced canonical notation. |
+| `If` | glyph | [Conditional branch](#notation-conditional). Conditional branch. |
+| `Import` | glyph | [Package import](#notation-import). Package import. |
+| `Instance` | glyph | [Component usage](#notation-component-usage), [Occurrence typing relationship](#notation-type-relationship), [Occurrence lifeline](#notation-sequence-lifeline). Component usage; Occurrence typing relationship; Occurrence lifeline. |
 | `INT` | text-only | Integer literal token is rendered as exact expression/property text; no independent glyph. |
-| `Interface` | glyph | [Sender–receiver interface](#notation-sender-receiver-interface), [Client–server interface](#notation-client-server-interface), [Publish–subscribe interface](#notation-publish-subscribe-interface), [Service interface](#notation-service-interface). Concrete semantic concept projected using the referenced canonical notation. |
-| `InterfaceMember` | text-only | A member union; data/event/signature rows are shown in their interface compartment. |
-| `Invoke` | glyph | [Local operation invocation](#notation-invoke). Concrete semantic concept projected using the referenced canonical notation. |
-| `Let` | glyph | [Local declaration](#notation-local-declaration). Concrete semantic concept projected using the referenced canonical notation. |
-| `Literal` | label | [Expressions and value paths](#notation-expression). Owned textual value, member or property rendered in the referenced concept. |
-| `ML_COMMENT` | text-only | Source comments are nonsemantic annotations and are not model elements. |
+| `Interface` | glyph | [Sender–receiver interface](#notation-sender-receiver-interface), [Client–server interface](#notation-client-server-interface), [Publish–subscribe interface](#notation-publish-subscribe-interface), [Service interface](#notation-service-interface). Sender–receiver interface; Client–server interface; Publish–subscribe interface; Service interface. |
+| `InterfaceMember` | label | [Data member](#notation-data-member), [Event member](#notation-event-member), [Interface function signature](#notation-function-signature). Data member; Event member; Interface function signature. |
+| `Literal` | label | [Expressions and value paths](#notation-expression). Expressions and value paths. |
+| `LocalCall` | glyph | [Local function call](#notation-local-call). Local function call. |
+| `LocalVariable` | glyph | [Local declaration](#notation-local-declaration). Local declaration. |
+| `MemberPath` | glyph | [Routed function call](#notation-routed-call). Routed function call. |
+| `ML_COMMENT` | glyph | [Ordinary comment](#notation-ordinary-comment). Ordinary comment. |
 | `Model` | text-only | A source/workspace container, shown by Browser/package context; it has no additional authored glyph. |
 | `MultiplicativeExpression` | text-only | Precedence grouping only; arithmetic text belongs to the expression label. |
-| `Node` | glyph | [Execution node](#notation-execution-node). Concrete semantic concept projected using the referenced canonical notation. |
-| `NUMBER` | text-only | Real literal token is rendered as exact expression text; no independent glyph. |
+| `NUMBER` | text-only | real literal token is rendered as exact expression text; no independent glyph. |
 | `Numeric` | text-only | Number conversion/lexical grouping; render the resulting value text in its owning label. |
-| `Operation` | glyph | [Executable operation](#notation-operation), [Operation with states](#notation-stateful-operation). Concrete semantic concept projected using the referenced canonical notation. |
 | `OrExpression` | text-only | Precedence grouping only; operator text belongs to the expression label. |
-| `Package` | glyph | [Package](#notation-package), [Browser](#notation-view-browser). Concrete semantic concept projected using the referenced canonical notation. |
-| `Parameter` | label | [Parameter or record field](#notation-parameter). Owned textual value, member or property rendered in the referenced concept. |
+| `Package` | glyph | [Package](#notation-package), [Browser](#notation-view-browser). Package; Browser. |
+| `Parameter` | label | [Parameter or record field](#notation-parameter). Parameter or record field. |
 | `Path` | text-only | Containment/member path text identifies diagram subjects or endpoints, not an independent shape. |
-| `Port` | glyph | [Data sender port](#notation-port-sender), [Data receiver port](#notation-port-receiver), [RPC client port](#notation-port-client), [RPC server port](#notation-port-server), [Event publisher port](#notation-port-publisher), [Event subscriber port](#notation-port-subscriber), [Service provider port](#notation-port-provides), [Service consumer port](#notation-port-requires), [Optional port](#notation-optional-port). Concrete semantic concept projected using the referenced canonical notation. |
+| `Port` | glyph | [Data sender port](#notation-port-sender), [Data receiver port](#notation-port-receiver), [RPC client port](#notation-port-client), [RPC server port](#notation-port-server), [Event publisher port](#notation-port-publisher), [Event subscriber port](#notation-port-subscriber), [Service provider port](#notation-port-provides), [Service consumer port](#notation-port-requires), [Optional port](#notation-optional-port). Data sender port; Data receiver port; RPC client port; RPC server port; Event publisher port; Event subscriber port; Service provider port; Service consumer port; Optional port. |
 | `PrimaryExpression` | text-only | Grammar grouping of concrete expression forms; no separate authored semantic element. |
-| `Qos` | label | [Delivery policy](#notation-delivery-policy), [Queue ordering](#notation-ordering-policy), [Queue capacity](#notation-capacity-policy), [Overflow behavior](#notation-overflow-policy), [Transport latency bound](#notation-latency-bound), [Message freshness bound](#notation-freshness-bound). Owned textual value, member or property rendered in the referenced concept. |
+| `Qos` | label | [Delivery policy](#notation-delivery-policy), [Queue ordering](#notation-ordering-policy), [Queue capacity](#notation-capacity-policy), [Overflow behavior](#notation-overflow-policy), [Transport latency bound](#notation-latency-bound), [Message freshness bound](#notation-freshness-bound), [Named connector policy](#notation-qos-policy-reference). Delivery policy; Queue ordering; Queue capacity; Overflow behavior; Transport latency bound; Message freshness bound; Named connector policy. |
+| `QosBody` | glyph | [Delivery policy](#notation-delivery-policy), [Queue ordering](#notation-ordering-policy), [Queue capacity](#notation-capacity-policy), [Overflow behavior](#notation-overflow-policy), [Transport latency bound](#notation-latency-bound), [Message freshness bound](#notation-freshness-bound), [Reusable QoS policy](#notation-qos-policy-definition). Delivery policy; Queue ordering; Queue capacity; Overflow behavior; Transport latency bound; Message freshness bound; Reusable QoS policy. |
+| `QosPolicy` | glyph | [Reusable QoS policy](#notation-qos-policy-definition). Reusable QoS policy. |
 | `QualifiedName` | text-only | Package-qualified declaration identity is text in the owning label. |
-| `RecordLiteral` | label | [Record construction](#notation-record-value). Owned textual value, member or property rendered in the referenced concept. |
-| `ReferenceExpression` | label | [Enumeration value](#notation-enum-value), [Expressions and value paths](#notation-expression). Owned textual value, member or property rendered in the referenced concept. |
+| `RecordLiteral` | label | [Record construction](#notation-record-value). Record construction. |
+| `ReferenceExpression` | label | [Enumeration value](#notation-enum-value), [Expressions and value paths](#notation-expression). Enumeration value; Expressions and value paths. |
 | `RelationalExpression` | text-only | Precedence grouping only; comparison text belongs to the expression label. |
-| `Request` | glyph | [RPC request and failure continuation](#notation-request). Concrete semantic concept projected using the referenced canonical notation. |
-| `Requirement` | glyph | [Requirement](#notation-requirement). Concrete semantic concept projected using the referenced canonical notation. |
-| `Return` | glyph | [Operation return](#notation-return). Concrete semantic concept projected using the referenced canonical notation. |
-| `RootComponent` | glyph | [Root component](#notation-root-component), [Inline root composition](#notation-inline-root), [Root execution profile](#notation-execution-profile), [Occurrence typing relationship](#notation-type-relationship). Concrete semantic concept projected using the referenced canonical notation. |
-| `RootMember` | text-only | A grammar union of root composition/binding members; it adds no separate graphical node. |
-| `Scenario` | glyph | [Case](#notation-case), [Requirement coverage link](#notation-satisfies-link). Concrete semantic concept projected using the referenced canonical notation. |
-| `ScenarioStep` | glyph | [Case data exchange](#notation-case-data-exchange), [Case event exchange](#notation-case-event-exchange), [Case request](#notation-case-request), [Correlated case reply](#notation-case-reply), [Case causal order](#notation-case-causal-order). Concrete semantic concept projected using the referenced canonical notation. |
-| `Send` | glyph | [Data send](#notation-send), [Event publication](#notation-publish). Concrete semantic concept projected using the referenced canonical notation. |
-| `Signature` | label | [Interface operation signature](#notation-operation-signature). Owned textual value, member or property rendered in the referenced concept. |
-| `SL_COMMENT` | text-only | Source comments are nonsemantic annotations and are not model elements. |
-| `State` | glyph | [State](#notation-state), [Final state](#notation-final-state), [State entry behavior](#notation-state-entry), [State exit behavior](#notation-state-exit). Concrete semantic concept projected using the referenced canonical notation. |
-| `StateBody` | text-only | Direct state contents grouped by the owning operation; no independent machine element, allocation or glyph. |
-| `Statement` | text-only | A statement union; concrete flow statements have their own owned projections. |
-| `STRING` | text-only | String literal token supplies values/requirement text; preserve escaping in source notation. |
-| `Timing` | label | [Operation timing contract](#notation-timing-contract), [Concurrency mode](#notation-concurrency-mode). Owned textual value, member or property rendered in the referenced concept. |
-| `Transition` | glyph | [State transition](#notation-transition), [Transition guard](#notation-transition-guard), [Transition priority](#notation-transition-priority), [Completion transition](#notation-completion-transition), [Residence timer transition](#notation-timer-transition). Concrete semantic concept projected using the referenced canonical notation. |
-| `Trigger` | label | [Startup activation](#notation-trigger-start), [Manual activation](#notation-trigger-manual), [Periodic activation](#notation-trigger-periodic), [Port receive activation](#notation-trigger-receive), [RPC handler activation](#notation-trigger-call). Owned textual value, member or property rendered in the referenced concept. |
-| `TypeRef` | label | [Primitive types](#notation-primitive-types), [Fixed array type and value](#notation-array-value). Owned textual value, member or property rendered in the referenced concept. |
-| `UnaryExpression` | label | [Expressions and value paths](#notation-expression). Owned textual value, member or property rendered in the referenced concept. |
-| `Unit` | glyph | [Unit definition](#notation-unit-definition). Concrete semantic concept projected using the referenced canonical notation. |
-| `UnitMember` | text-only | Grammar union of unit members; represented by ports, values, functions and operations. |
-| `ValuePath` | label | [Enumeration value](#notation-enum-value). Owned textual value, member or property rendered in the referenced concept. |
-| `ValueType` | text-only | A type union of records/enums; concrete value declarations carry the symbols. |
-| `Variable` | label | [Private unit variable](#notation-private-variable). Owned textual value, member or property rendered in the referenced concept. |
-| `View` | glyph | [General View](#notation-view-gv), [Interconnect View](#notation-view-iv), [Case View](#notation-view-cv), [Sequence View](#notation-view-sv), [Grid View](#notation-view-grv), [Flow View](#notation-view-fv). Concrete semantic concept projected using the referenced canonical notation. |
-| `While` | glyph | [Bounded loop](#notation-bounded-loop). Concrete semantic concept projected using the referenced canonical notation. |
+| `RemoteCall` | glyph | [Routed function call](#notation-routed-call). Routed function call. |
+| `Requirement` | glyph | [Requirement](#notation-requirement). Requirement. |
+| `Return` | glyph | [Function return](#notation-return). Function return. |
+| `RootComponent` | glyph | [Occurrence typing relationship](#notation-type-relationship), [Root component](#notation-root-component), [Inline root composition](#notation-inline-root), [Root execution profile](#notation-execution-profile). Occurrence typing relationship; Root component; Inline root composition; Root execution profile. |
+| `RootMember` | glyph | [Root component](#notation-root-component), [Inline root composition](#notation-inline-root). Root component; Inline root composition. |
+| `Satisfaction` | glyph | [Satisfaction relation](#notation-satisfies-link). Satisfaction relation. |
+| `Scenario` | glyph | [Use case](#notation-case), [Verification case](#notation-verification-case). Use case; Verification case. |
+| `ScenarioStep` | glyph | [Case data exchange](#notation-case-data-exchange), [Case event exchange](#notation-case-event-exchange), [Case request](#notation-case-request), [Correlated case reply](#notation-case-reply), [Case causal order](#notation-case-causal-order). Case data exchange; Case event exchange; Case request; Correlated case reply; Case causal order. |
+| `Send` | glyph | [Data send](#notation-send), [Event publication](#notation-publish). Data send; Event publication. |
+| `Signature` | label | [Interface function signature](#notation-function-signature). Interface function signature. |
+| `SL_COMMENT` | glyph | [Ordinary comment](#notation-ordinary-comment). Ordinary comment. |
+| `State` | glyph | [State](#notation-state), [Final state](#notation-final-state), [State entry behavior](#notation-state-entry), [State exit behavior](#notation-state-exit). State; Final state; State entry behavior; State exit behavior. |
+| `StateBody` | glyph | [Function with states](#notation-stateful-function), [Initial state reference](#notation-initial-state). Function with states; Initial state reference. |
+| `Statement` | glyph | [Executable function](#notation-function). Executable function. |
+| `STRING` | text-only | string literal token supplies values/requirement text; preserve escaping in source notation. |
+| `Timing` | label | [Function timing contract](#notation-timing-contract), [Concurrency mode](#notation-concurrency-mode). Function timing contract; Concurrency mode. |
+| `Transition` | glyph | [State transition](#notation-transition), [Transition guard](#notation-transition-guard), [Transition priority](#notation-transition-priority), [Completion transition](#notation-completion-transition), [Residence timer transition](#notation-timer-transition). State transition; Transition guard; Transition priority; Completion transition; Residence timer transition. |
+| `Trigger` | label | [Startup activation](#notation-trigger-start), [Manual activation](#notation-trigger-manual), [Periodic activation](#notation-trigger-periodic), [Port receive activation](#notation-trigger-receive), [RPC handler activation](#notation-trigger-call). Startup activation; Manual activation; Periodic activation; Port receive activation; RPC handler activation. |
+| `TypeRef` | label | [Primitive types](#notation-primitive-types), [Fixed array type and value](#notation-array-value). Primitive types; Fixed array type and value. |
+| `UnaryExpression` | label | [Expressions and value paths](#notation-expression). Expressions and value paths. |
+| `ValuePath` | label | [Enumeration value](#notation-enum-value). Enumeration value. |
+| `ValueType` | glyph | [Record datatype](#notation-datatype), [Enumeration](#notation-enumeration). Record datatype; Enumeration. |
+| `Variable` | label | [Private component variable](#notation-private-variable). Private component variable. |
+| `Verification` | glyph | [Verification relation](#notation-verification-link). Verification relation. |
+| `View` | glyph | [General View](#notation-view-gv), [Interconnect View](#notation-view-iv), [Case View](#notation-view-cv), [Sequence View](#notation-view-sv), [Grid View](#notation-view-grv), [Flow View](#notation-view-fv). General View; Interconnect View; Case View; Sequence View; Grid View; Flow View. |
+| `ViewSelection` | glyph | [Filtered view selection](#notation-view-selection). Filtered view selection. |
+| `While` | glyph | [Bounded loop](#notation-bounded-loop). Bounded loop. |
 | `WS` | text-only | Whitespace affects textual layout only; no semantic graphical representation. |

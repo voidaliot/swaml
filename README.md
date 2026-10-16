@@ -1,24 +1,108 @@
-# SWAML — Software Architecture Modeling Language
+![SWAML — Architecture, made explicit.](docs/assets/swaml-banner.svg)
 
-SWAML is a software-focused modeling language designed on the KerML semantic foundation. It combines architectural structure, executable-operation contracts, state behavior, and interface-controlled communication for embedded realtime software and services.
+[Graphical overview](docs/MODELING_OVERVIEW.md) · [Quick start](docs/QUICK_START.md) · [Architecture examples](docs/ARCHITECTURE_PATTERNS.md) · [Interactive showcase](showcase/README.md)
 
-**Version 1.1.1 defines the language and includes a working Langium parser, validator and reference simulator.** It is an independent project, informally motivated by an “unofficial UML 3.0”; it is not an OMG UML release, an AUTOSAR implementation, or a certified KerML tool.
+# Software Architecture Modeling Language
+
+**SWAML** describes software structure, typed communication and function behavior in one model. Compose components, keep state private, and follow every exchange through an explicit contract. Use the same language for AUTOSAR Classic and Adaptive architecture, service-based applications and cloud software.
+
+[Ontology & flat views](docs/ONTOLOGY_AND_VIEWS.md) · [Full user guide](docs/USER_GUIDE.md) · [Specification](docs/LANGUAGE_SPECIFICATION.md) · [1.2.0 preparation](docs/RELEASE_1_2_0.md)
+
+**1.2.0 unifies software structure around components, executable functions and pure calculations.** It adds single specialization, explicit redefinition, uint/byte values and external system deployment references alongside reusable QoS policies, flat notation and the React Flow showcase. The parser and host explicitly select language **1.2**. A working parser, validator and bounded reference simulator support the documented language rules. This is an independent language with a proposed KerML semantic mapping; production runtime, KerML export and graphical source editing remain separate milestones.
+
+## Start modeling
+
+1. **Define a contract.** Choose sender–receiver data, client–server calls, publish–subscribe events, or a combined service.
+2. **Own the behavior.** A `component def` owns typed ports, private values and functions. Incoming members bind to their handling function.
+3. **Compose and connect.** Instantiate child components inside a root, or give the root local behavior. Connect complementary ports and select explicit QoS values.
+4. **Validate and review.** Check the model with the CLI, then inspect its composition, routes, cases and function behavior.
+
+The [five-minute guide](docs/QUICK_START.md) gives you a complete model to copy, the validation command and a map of the views. The website includes the same quick guide with selectable steps and a complete source example.
+
+## From a use case to software
+
+The [graphical modeling overview](docs/MODELING_OVERVIEW.md) shows what SWAML can describe and how its concepts relate. Follow one checkout example through **use case → interaction flow → function flow → function ownership → software structure**. The landing page presents the same diagrams as a selectable walkthrough with source-linked details.
+
+![Graphical ontology of SWAML: composition, owned behavior, typed communication, scenarios and deployment](docs/assets/modeling-ontology.svg)
+
+## Explore the architecture examples
+
+| Architecture | Complete example | Main concepts |
+| --- | --- | --- |
+| AUTOSAR Classic | [Climate software component](examples/11-autosar-classic.swaml) | Sampled data, calibration call, timing and MCU allocation |
+| AUTOSAR Adaptive | [Diagnostic application](examples/12-autosar-adaptive.swaml) | ARA-style service methods/events, audit subscription and processes |
+| Service-based web application | [Web shop](examples/13-web-application.swaml) | Checkout, inventory reservation and asynchronous receipt handling |
+| Cloud service | [Telemetry pipeline](examples/14-cloud-service.swaml) | Ingestion, explicit broker, independent consumers and duplicate handling |
+
+The [architecture patterns guide](docs/ARCHITECTURE_PATTERNS.md) explains each mapping and the implementation bindings needed for RTE, ara::com, HTTP and message middleware. All four models have interactive diagrams with selectable occurrences and connectors, exact interface and policy source, and model downloads.
+
+![Cloud telemetry architecture with explicit service and broker routes, separate consumers and an occurrence inspector](docs/assets/architecture-examples.png)
+
+## Explore the language views
+
+The static React showcase also projects the real [Settings/Cabin model](examples/08-service-field.swaml): two independent client instances, one setting service, typed routes and a shared policy. Switch views, select elements, inspect contracts, move cards and read or download the source.
+
+The [interface reference preview](docs/assets/interface-reference.png) adds five selectable patterns: queued data, sampled measurements, request/response, event publication and combined services. Each shows its actual source contract, port roles, traffic direction, connection cardinality and connector policy. Start with the [UML transition guide](docs/UML_GUIDE.md) for familiar concepts and their precise SWAML meaning.
+
+![The flat React Flow showcase with distinct typed service routes and an identity-aware properties inspector](docs/assets/showcase.png)
+
+| Surface | What you see |
+| --- | --- |
+| Browser | Ownership tree, definitions and distinct occurrence paths |
+| gv · General | Software structure, types and deployment in flat frames |
+| iv · Interconnect | Square boundary ports, typed connectors and delegations |
+| cv · Case | Cases, requirements and claimed coverage |
+| sv · Sequence | Contract messages, dependencies and reply correlation |
+| grv · Grid | Searchable model identities, properties and policies |
+| fv · Flow | Function-local control flow or directly owned states |
+
+Run the showcase locally:
+
+```sh
+npm --prefix showcase ci
+npm --prefix showcase run dev
+```
+
+The [showcase](showcase/README.md) is ready for GitHub Pages: build with `npm --prefix showcase run build` to produce a static `showcase/dist/` site. The [Pages workflow](.github/workflows/pages.yml) verifies pull requests and deploys on manual dispatch from the default branch once Pages uses GitHub Actions. Its project URL will be [voidaliot.github.io/swaml](https://voidaliot.github.io/swaml/). Publication is a separate step.
+
+## Reuse components and calculations
+
+A `component def` may specialize one base. Use `redefines` for compatible inherited replacements; every instance still owns independent state. The [component reuse example](examples/15-component-specialization.swaml) demonstrates inherited behavior, a specialized child, root-owned functions and external system/part deployment.
+
+At the start of a function body, a pure calculation declares its inputs and output: `calc twice { in value: real; return result: real = value * 2.0; }`. Use `twice(3.0)` within that function’s expressions. Use `call helper(...) as value;` to reuse a value-returning function. Functions carry decisions, loops, local calls or states; calculations supply effect-free values.
+
+## Reuse complete communication policies
+
+Declare a complete policy once, then name it on every route:
+
+```text
+qos def LocalLink {
+    delivery atMostOnce; ordering fifo; capacity 8; overflow reject;
+}
+// Inside your component:
+connect frontLink: front.setting -> settings.api qos LocalLink;
+connect rearLink: rear.setting -> settings.api qos LocalLink;
+```
+
+Both connectors keep independent queues. Inline QoS blocks still work, and the same interface, sampled-data, idempotency and timing checks apply. See the complete [demo model](examples/08-service-field.swaml), [policy example](examples/10-reusable-qos.swaml) and [1.2 migration guide](docs/MIGRATION_1_2.md).
 
 ## Read the complete specification
 
-[Full Markdown reference](docs/SWAML-1.1.1-Reference.md) · [Full PDF](output/pdf/SWAML-1.1.1-Specification.pdf) · [By concern](docs/CONCERN_GUIDE.md) · [Alphabetical keywords](docs/KEYWORD_REFERENCE.md)
+[Full Markdown reference](docs/SWAML-1.2.0-Reference.md) · [Full PDF](output/pdf/SWAML-1.2.0-Specification.pdf) · [By concern](docs/CONCERN_GUIDE.md) · [Alphabetical keywords](docs/KEYWORD_REFERENCE.md)
 
-The specification covers every reserved word, formal syntax/typing/execution rules, static and dynamic architecture, communication policies, timing, deployment, cases and graphical notation. The PDF includes clickable navigation, all model examples, exact grammar, vector diagrams and embedded source files. [Publication and verification](docs/PDF_PUBLICATION.md) · [1.1.1 evidence](docs/RELEASE_1_1_1.md) · [Historical v0.1.0](https://github.com/voidaliot/swaml/releases/tag/v0.1.0).
+The specification covers every reserved word, formal syntax/typing/execution rules, static and dynamic architecture, communication policies, timing, deployment, cases and graphical notation. The PDF includes clickable navigation, all model examples, exact grammar, vector diagrams and embedded source files. [Publication and verification](docs/PDF_PUBLICATION.md) · [1.2.0 preparation and evidence](docs/RELEASE_1_2_0.md) · [Historical v0.1.0](https://github.com/voidaliot/swaml/releases/tag/v0.1.0).
 
 ## Start here
 
 - [User guide](docs/USER_GUIDE.md): learn the language through complete models.
+- [Quick start](docs/QUICK_START.md): author and validate your first model.
+- [Domain architecture patterns](docs/ARCHITECTURE_PATTERNS.md): Classic, Adaptive, web and cloud models with platform mappings.
 - [Normative document set](docs/LANGUAGE_SPECIFICATION.md): the rules and conformance obligations.
 - [Reference simulation](docs/SIMULATION.md): execute models and inspect reproducible traces.
-- [Graphical examples](docs/GRAPHICAL_EXAMPLES.md): Browser, GV, IV, CV, SV, GRV and both FV forms.
+- [Graphical examples](docs/GRAPHICAL_EXAMPLES.md): Browser, gv, iv, cv, sv, grv and both fv forms.
 - [Architecture comparison](docs/ARCHITECTURE_COMPARISON.md): AUTOSAR Classic/Adaptive, UML, SysML and AADL.
-- [Grammar](src/language/swaml.langium) and [tool integration](docs/TOOLING.md): reusable Langium core for a separately implemented VS Code extension.
-- [Implementation status](docs/IMPLEMENTATION_STATUS.md) and [migration](docs/MIGRATION_1_1.md): precise scope and version changes.
+- [Grammar](src/language/swaml.langium) and [tool integration](docs/TOOLING.md): reusable language services and command-line tools.
+- [Implementation status](docs/IMPLEMENTATION_STATUS.md) and [migration](docs/MIGRATION_1_2.md): precise scope and version changes.
 
 ## Canonical graphical notation
 
@@ -28,37 +112,37 @@ The presentation follows the concept/graphical/textual organization reviewed in 
 
 ## Compact syntax, explicit meaning
 
-Reusable types retain `def`. A top-level component usage is the runnable root, and operations own their states directly. Files begin with packages; select the pinned SWAML 1.1 parser through your tool or the CLI's `--language-version 1.1` option. The grammar removes the `swaml`, `system`, `machine`, `set`, `compute`, `array` and `enumValue` markers. See the [1.1 migration](docs/MIGRATION_1_1.md) before loading older models.
+Reusable types use `def`. A top-level component usage is the root, and functions own their states directly. Files begin with packages; select the pinned SWAML 1.2 parser through your tool or the CLI's `--language-version 1.2` option. See the [1.2 migration guide](docs/MIGRATION_1_2.md) when upgrading a host.
 
 ```swaml
 package CounterExample {
-    unit def Counter {
-        var value: Int = 0;
-        operation increment() on start { value = value + 1; }
+    component def Counter {
+        var value: int = 0;
+        function increment() on start { value = value + 1; }
     }
-    component demo { unit counter: Counter; }
+    component demo { component counter: Counter; }
 }
 ```
 
-`component def Assembly { ... }` defines a reusable composition. `component demo: Assembly;` creates a named root from it. All exchange between distinct unit/component occurrences still requires typed ports and explicit connections.
+`component def Assembly { ... }` defines a reusable composition. `component demo: Assembly;` creates a named root from it. All exchange between distinct component occurrences still requires typed ports and explicit connections.
 
 ## The model
 
 ```mermaid
 flowchart TB
     C[Root component usage] --> N[Nested component usage]
-    N --> U[Unit instance]
-    C --> U[Unit instance]
-    U --> O[Operation]
+    N --> U[Component instance]
+    C --> U[Component instance]
+    U --> O[Function]
     O --> F[Control flow or owned states]
     U --> P[Typed port]
     P --> I[Interface contract]
-    U --> FN[Pure function]
+    O --> FN[Calculation]
 ```
 
-Components compose units and components. Units own data, operations and pure functions. Operations own their control flow or states directly. There are no performers or separate action allocations.
+Components own data, nested components and functions. Functions own calculations and either control flow or states.
 
-Every exchange between units or components crosses typed ports and an explicit connector. Interfaces support sender–receiver data, client–server operations, publish–subscribe events, and combined services. An event has an interface declaration, an emitting operation and a receiving operation or state transition. There is no global event bus hidden in the syntax.
+Every exchange between distinct components crosses typed ports and an explicit connector. Interfaces support sender–receiver data, client–server functions, publish–subscribe events, and combined services. An event has an interface declaration, an emitting function and a receiving function or state transition.
 
 ## Parse, validate and simulate
 
@@ -80,12 +164,17 @@ node out/src/cli/simulate.js Commerce::Shop examples/simulation/03-service-pubsu
 | [Hello](examples/01-hello.swaml) | Smallest complete exchange and composition |
 | [Realtime controller](examples/02-realtime-controller.swaml) | Sampled data, periodic execution, WCET/deadline contracts, MCU deployment |
 | [Services and pub/sub](examples/03-service-pubsub.swaml) | Client/server, service events, separate audit subscription, delegation, sequence case |
-| [Stateful operation](examples/04-stateful-operation.swaml) | States inside an operation, port-bound triggers, timeouts, lifecycle |
-| [Values and flow](examples/05-values-and-flow.swaml) | Records, enums, fixed arrays, functions, local calls, bounded loops |
+| [Stateful function](examples/04-stateful-function.swaml) | States inside a function, port-bound triggers, timeouts, lifecycle |
+| [Values and flow](examples/05-values-and-flow.swaml) | Records, enums, fixed arrays, calculations, local calls, bounded loops |
 | [Mixed gateway](examples/06-mixed-gateway.swaml) | Explicit conversion between sampled embedded data and service events |
 | [Client–server](examples/07-client-server.swaml) | Standalone RPC, idempotent query, timeout and correlated reply |
 | [Service field](examples/08-service-field.swaml) | Explicit getter/setter/event, multiple consumers, reentrant snapshot query |
-| [Component roots](examples/09-component-roots.swaml) | Reusable definitions, typed roots, realtime deployment bindings and inline roots with direct unit children |
+| [Component roots](examples/09-component-roots.swaml) | Reusable definitions, typed roots, realtime deployment bindings and inline roots with direct component children |
+| [Reusable QoS](examples/10-reusable-qos.swaml) | Shared complete policies, explicit references and independent routes |
+| [AUTOSAR Classic](examples/11-autosar-classic.swaml) | Climate software component, sampled data, calibration calls and MCU allocation |
+| [AUTOSAR Adaptive](examples/12-autosar-adaptive.swaml) | Diagnostic application, health service, audit and process boundaries |
+| [Web application](examples/13-web-application.swaml) | Checkout service, inventory reservation and receipt worker |
+| [Cloud service](examples/14-cloud-service.swaml) | Ingestion service, explicit broker, analytics and archive fan-out |
 | [Invalid models](examples/invalid/README.md) | Rejected attempts to bypass an interface |
 
 ## Repository layout
@@ -99,11 +188,20 @@ src/simulation/       Portable logical-time reference interpreter
 src/server/           Language Server Protocol entry point
 examples/             Valid/invalid models, simulation options and trace evidence
 spec/                 Mapping, keyword and graphical-source inventories
+showcase/             Static React Flow website and GitHub Pages build
 scripts/              Reference/figure/PDF builders and consistency checks
 syntax/               Generated TextMate grammar (build output)
 test/                 Static, behavioral, CLI and LSP integration tests
 ```
 
-The simulator implements a documented deterministic logical-time profile. Passing a bounded run does not prove physical realtime schedulability or safety across every possible schedule. KerML serialization, platform export and graphical editing have defined language-side contracts and need their own backends. The actual VS Code extension is implemented elsewhere; this repository owns the language.
+The simulator implements a documented deterministic logical-time profile. Passing a bounded run does not prove physical realtime schedulability or safety across every possible schedule. KerML serialization, platform export and graphical editing have defined language-side contracts and need their own backends. This repository contains the independent language specification, reference implementation and public examples.
 
 Contributions follow [CONTRIBUTING.md](CONTRIBUTING.md). Coding agents follow [AGENTS.md](AGENTS.md). Original code and documentation use the existing [MIT license](LICENSE); referenced standards retain their own terms.
+
+### Requirements, documentation and traceability
+
+Use `requirement` with typed attributes and one formal `doc /* ... */` block. Connect design with `satisfy` and verification cases with `verify`; use cases describe intended use. Ordinary comments stay informal notes. Compose views with multiple `include` selections and Boolean filters.
+
+Read the [quick guide](docs/REQUIREMENTS_AND_DOCUMENTATION.md) or open the [interactive traceability example](https://voidaliot.github.io/swaml/#traceability).
+
+![Requirements, formal documentation, comments and explicit satisfaction/verification links in the interactive showcase](docs/assets/traceability-showcase.png)

@@ -1,74 +1,72 @@
 package Settings {
+    // Reuse policy values while each connector retains independent queues.
+    qos def LocalLink {
+        delivery atMostOnce; ordering fifo; capacity 8; overflow reject;
+    }
     // A remotely visible property is an explicit getter, setter and event contract.
     interface service TemperatureSetting version "1.0.0" {
-        operation get(): Int idempotent;
-        operation setPoint(desired: Int): Bool;
-        event changed(current: Int);
+        function get(): int idempotent;
+        function setPoint(desired: int): bool;
+        event changed(current: int);
     }
-    unit def SettingStore {
+    component def SettingStore {
         port api: TemperatureSetting provides;
-        var currentValue: Int = 20;
+        var currentValue: int = 20;
         // Each reentrant query sees its dispatch-time snapshot.
-        operation read(): Int on call api.get timing {
+        function read(): int on call api.get timing {
             wcet 1 ms; deadline 5 ms; concurrency reentrant;
         } { return currentValue; }
-        operation update(desired: Int): Bool on call api.setPoint {
+        function update(desired: int): bool on call api.setPoint {
             if (desired < 10 or desired > 30) { return false; }
             currentValue = desired;
             publish api.changed(currentValue);
             return true;
         }
     }
-    unit def Panel {
+    component def Panel {
         port setting: TemperatureSetting requires;
-        var displayed: Int = 20;
-        operation adjust() on manual {
-            request setting.setPoint(22) as accepted within 100 ms otherwise { fail "setting unavailable"; };
+        var displayed: int = 20;
+        function adjust() on manual {
+            call setting.setPoint(22) as accepted within 100 ms otherwise { fail "setting unavailable"; };
             assert accepted;
         }
-        operation refresh() on manual {
-            request setting.get() as observed within 100 ms otherwise { return; };
+        function refresh() on manual {
+            call setting.get() as observed within 100 ms otherwise { return; };
             displayed = observed;
         }
-        operation display(current: Int) on receive setting.changed { displayed = current; }
+        function display(current: int) on receive setting.changed { displayed = current; }
     }
     component def Service {
         port api: TemperatureSetting provides;
-        unit store: SettingStore;
+        component store: SettingStore;
         delegate api -> store.api;
     }
     component def Client {
         port setting: TemperatureSetting requires;
-        unit panel: Panel;
+        component panel: Panel;
         delegate setting -> panel.setting;
     }
     component Cabin {
         component settings: Service;
         component front: Client;
         component rear: Client;
-        connect frontLink: front.setting -> settings.api qos {
-            delivery atMostOnce; ordering fifo; capacity 8; overflow reject;
-        };
-        connect rearLink: rear.setting -> settings.api qos {
-            delivery atMostOnce; ordering fifo; capacity 8; overflow reject;
-        };
-        node controller process;
-        node displays container;
-        deploy settings on controller;
-        deploy front on displays;
-        deploy rear on displays;
+        connect frontLink: front.setting -> settings.api qos LocalLink;
+        connect rearLink: rear.setting -> settings.api qos LocalLink;
+        deploy settings on "system:controller";
+        deploy front on "system:displays";
+        deploy rear on "system:displays";
     }
-    requirement VisibleSetting "Both panels can observe accepted temperature setting updates.";
-    case Change for Cabin satisfies VisibleSetting {
-        request front.setting.setPoint -> settings.api.setPoint via frontLink label adjust;
+    requirement VisibleSetting { doc /* Both panels can observe accepted temperature setting updates. */ }
+    satisfy VisibleSetting by Cabin; useCase Change for Cabin {
+        call front.setting.setPoint -> settings.api.setPoint via frontLink label adjust;
         publish settings.api.changed -> front.setting.changed via frontLink after adjust label frontNotice;
         publish settings.api.changed -> rear.setting.changed via rearLink after adjust label rearNotice;
         reply settings.api.setPoint -> front.setting.setPoint via frontLink after frontNotice label accepted;
     }
-    view catalog GRV of Settings;
-    view overview GV of Cabin;
-    view wiring IV of Cabin;
-    view coverage CV of Cabin;
-    view exchanges SV of Change;
-    view updateFlow FV of Cabin.settings.store.update;
+    view catalog grv of Settings;
+    view overview gv of Cabin;
+    view wiring iv of Cabin;
+    view coverage cv of Cabin;
+    view exchanges sv of Change;
+    view updateFlow fv of Cabin.settings.store.update;
 }

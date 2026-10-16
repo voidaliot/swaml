@@ -1,49 +1,49 @@
 package Commerce {
     interface service Orders version "1.0.0" {
         // Submitting publishes effects, so this contract does not claim idempotency.
-        operation submit(orderId: String): Bool;
-        event accepted(orderId: String);
+        function submit(orderId: string): bool;
+        event accepted(orderId: string);
     }
-    interface publishSubscribe Audit version "1.0.0" { event recorded(orderId: String); }
-    unit def OrderService {
+    interface publishSubscribe Audit version "1.0.0" { event recorded(orderId: string); }
+    component def OrderService {
         port api: Orders provides;
         port audit: Audit publisher;
-        operation submit(orderId: String): Bool on call api.submit {
+        function submit(orderId: string): bool on call api.submit {
             publish api.accepted(orderId);
             publish audit.recorded(orderId);
             return true;
         }
     }
-    unit def Frontend {
+    component def Frontend {
         port orders: Orders requires;
-        var lastAccepted: String = "";
-        operation checkout() on manual {
-            request orders.submit("order-42") as accepted within 2 s otherwise { fail "checkout unavailable"; };
+        var lastAccepted: string = "";
+        function checkout() on manual {
+            call orders.submit("order-42") as accepted within 2 s otherwise { fail "checkout unavailable"; };
             assert accepted;
             return;
         }
-        operation confirmation(orderId: String) on receive orders.accepted { lastAccepted = orderId; return; }
+        function confirmation(orderId: string) on receive orders.accepted { lastAccepted = orderId; return; }
     }
-    unit def AuditStore {
+    component def AuditStore {
         port input: Audit subscriber;
-        var last: String = "";
-        operation storeRecord(orderId: String) on receive input.recorded { last = orderId; return; }
+        var last: string = "";
+        function storeRecord(orderId: string) on receive input.recorded { last = orderId; return; }
     }
     component def Backend {
         port api: Orders provides;
         port audit: Audit publisher;
-        unit serviceUnit: OrderService;
+        component serviceUnit: OrderService;
         delegate api -> serviceUnit.api;
         delegate audit -> serviceUnit.audit;
     }
     component def Web {
         port orders: Orders requires;
-        unit frontend: Frontend;
+        component frontend: Frontend;
         delegate orders -> frontend.orders;
     }
     component def Archive {
         port input: Audit subscriber;
-        unit store: AuditStore;
+        component store: AuditStore;
         delegate input -> store.input;
     }
     component Shop {
@@ -52,24 +52,21 @@ package Commerce {
         component archive: Archive;
         connect orderLink: web.orders -> backend.api qos { delivery atMostOnce; ordering fifo; capacity 32; overflow reject; };
         connect auditing: backend.audit -> archive.input qos { delivery atLeastOnce; ordering fifo; capacity 128; overflow dropOldest; };
-        node edge container;
-        node application container;
-        node storage container;
-        deploy web on edge;
-        deploy backend on application;
-        deploy archive on storage;
+        deploy web on "system:edge";
+        deploy backend on "system:application";
+        deploy archive on "system:storage";
     }
-    requirement AcceptedOrder "Accepted orders shall be published to audit subscribers.";
-    case Checkout for Shop satisfies AcceptedOrder {
-        request web.orders.submit -> backend.api.submit via orderLink label submitOrder;
+    requirement AcceptedOrder { doc /* Accepted orders shall be published to audit subscribers. */ }
+    satisfy AcceptedOrder by Shop; useCase Checkout for Shop {
+        call web.orders.submit -> backend.api.submit via orderLink label submitOrder;
         publish backend.api.accepted -> web.orders.accepted via orderLink after submitOrder label notification;
         publish backend.audit.recorded -> archive.input.recorded via auditing after submitOrder label auditRecord;
         reply backend.api.submit -> web.orders.submit via orderLink after notification label response;
     }
-    view overview GV of Shop;
-    view wiring IV of Shop;
-    view cases CV of Shop;
-    view checkout SV of Checkout;
-    view services GRV of Shop;
-    view submitFlow FV of OrderService.submit;
+    view overview gv of Shop;
+    view wiring iv of Shop;
+    view cases cv of Shop;
+    view checkout sv of Checkout;
+    view services grv of Shop;
+    view submitFlow fv of OrderService.submit;
 }

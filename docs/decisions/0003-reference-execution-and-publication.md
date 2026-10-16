@@ -2,7 +2,7 @@
 
 **Status:** accepted for SWAML 1.0.0, 2026-10-14.
 
-The repository is the public language authority, not the VS Code extension implementation. Version 1.0 retains the bounded 0.1 construct set and promotes its clarified rules into explicit typing and operational judgments. The header changes to 1.0 so consumers cannot silently treat this edition as an old draft. Specification and package versions are aligned at 1.0.0; interface versions remain independent.
+The repository is the public language authority. Version 1.0 retains the bounded 0.1 construct set and promotes its clarified rules into explicit typing and operational judgments. The header changes to 1.0 so consumers cannot silently treat this edition as an old draft. Specification and package versions are aligned at 1.0.0; interface versions remain independent.
 
 A small deterministic interpreter makes the language testable through observed behavior. It interprets all supported values, statements and state machines; it resolves the same interface routes checked statically. The execution binding deliberately uses zero local CPU cost and explicit transport delay, resource limits, timeout ties and fault schedules. These assumptions produce useful reproducible traces without claiming hardware scheduling proof or covering every possible schedule.
 

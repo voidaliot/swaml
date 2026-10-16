@@ -3,7 +3,7 @@
   "manual": [
     {
       "atNs": 0,
-      "operation": "front.panel.adjust"
+      "function": "front.panel.adjust"
     }
   ]
 }

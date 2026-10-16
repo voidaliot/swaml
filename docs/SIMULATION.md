@@ -1,6 +1,6 @@
-# Reference simulation profile 1.1
+# Reference simulation profile 1.2
 
-This document specifies the **swaml-reference/1.1** execution binding. The portable TypeScript [interpreter](../src/simulation/simulator.ts) and [value evaluator](../src/simulation/values.ts) execute valid SWAML 1.1 root components. The profile implements logical behavior with explicit resource bounds. It does not model instruction duration, operating-system scheduling, hardware or network deployment.
+This document specifies the **swaml-reference/1.2** execution binding. This profile executes unified components, inherited effective members, executable functions and pure calculations; each connector retains its independent effective policy and queues. The portable TypeScript [interpreter](../src/simulation/simulator.ts) and [value evaluator](../src/simulation/values.ts) execute valid SWAML 1.2 root components. The profile implements logical behavior with explicit resource bounds. It does not model instruction duration, operating-system scheduling, hardware or network deployment.
 
 ## Run a model
 
@@ -8,13 +8,13 @@ Build with `npm ci` and `npm run build`. Then run:
 
 ```sh
 npm run simulate -- Commerce::Shop examples/simulation/03-service-pubsub.json examples/03-service-pubsub.swaml
-npm run simulate -- Lifecycle::Product examples/simulation/04-stateful-operation.json examples/04-stateful-operation.swaml
+npm run simulate -- Lifecycle::Product examples/simulation/04-stateful-function.json examples/04-stateful-function.swaml
 node scripts/check-simulations.mjs
 ```
 
 The command takes a qualified root component name, a JSON options file and all workspace model files. It validates the entire input before executing. JSON output contains the trace, final stores, machine states, effective deployments, exact source text and per-source SHA-256 digests. Redirect stdout to a file when collecting evidence. The direct `node out/src/cli/simulate.js ...` command emits only JSON to stdout on a valid invocation; `npm run` additionally prints its script banner.
 
-The selected root may compose units/components inline or instantiate a component definition. A typed root's deployment body does not extend its topology. Instance paths, stores, manual release paths and deployment keys remain relative to the selected root without a root-name prefix. The output names this selection `root`, and identifies the binding as `swaml-reference/1.1`.
+The selected root may compose components inline or instantiate a component definition. A typed root's deployment body does not extend its topology. Instance paths, stores, manual release paths and deployment keys remain relative to the selected root without a root-name prefix. Root-owned functions use their local name, such as `initialize`, without a root prefix. Store/deployment output includes every expanded component, with the root represented by the empty-string path. Source deployment may explicitly name the root to establish its default location. The output names the selected architecture `root`, and identifies the binding as `swaml-reference/1.2`.
 
 Exit status is 0 when no failure was observed, 1 for invalid models, a failed activation, a contract violation or a resource limit, and 2 for an invocation/configuration error. A bounded horizon with no observed failure is not proof of eventual success. Descriptive `case` declarations are not a second executable script and are not automatically proven by this command.
 
@@ -29,9 +29,9 @@ All times and counts are safe integers. Times are nanoseconds. Unknown options a
 | `untilNs` | required; ≥ 0 | Process events at times ≤ this horizon. Start epoch is zero. |
 | `maxSteps` | 100000; ≥ 1 | Fuel for expansion, events, statements, expressions and transition work. Stops explicitly on exhaustion; it is a resource count, not elapsed CPU time. |
 | `maxPending` | 1024; ≥ 1 | Global bound on pending lifecycle/manual/periodic/timer work, excluding active frames and connector queues. |
-| `maxReentrant` | 64; ≥ 1 | Maximum simultaneous reentrant activation roots per unit. Serial activation roots have their separate one-lock rule. |
+| `maxReentrant` | 64; ≥ 1 | Maximum simultaneous reentrant activation roots per component. Serial activation roots have their separate one-lock rule. |
 | `latencyNs` | 0; ≥ 0 | Constant one-way transport delay for accepted request, response, data and event offers. |
-| `manual` | empty list | Parameterless harness releases: `{ "atNs": 0, "operation": "web.frontend.checkout" }`. Path is relative to selected root component. Only `on manual` operations may be selected. |
+| `manual` | empty list | Parameterless harness releases: `{ "atNs": 0, "function": "web.frontend.checkout" }`. Path is relative to selected root component. Only `on manual` functions may be selected. |
 | `faults` | empty list | Fault schedule keyed by the one-based `offer` ordinal shown in the trace. Each offer has at most one entry. |
 
 Example options:
@@ -43,20 +43,20 @@ Example options:
   "maxSteps": 100000,
   "maxPending": 1024,
   "maxReentrant": 64,
-  "manual": [{ "atNs": 0, "operation": "web.frontend.checkout" }],
+  "manual": [{ "atNs": 0, "function": "web.frontend.checkout" }],
   "faults": [{ "offer": 1, "kind": "drop" }]
 }
 ```
 
-Manual releases at the same time retain their list order. A release carries no model payload. Use modeled adapter operations and their typed ports to represent external commands or data. The simulator never allows a harness to call a remote handler directly.
+Manual releases at the same time retain their list order. A release carries no model payload. Use modeled adapter functions and their typed ports to represent external commands or data. The simulator never allows a harness to call a remote handler directly.
 
 ## Deterministic scheduling and time
 
 The event ordering key is `(timeNs, phase, insertionOrdinal)`. At one timestamp, phase 0 processes request expiries; phase 1 processes lifecycle/timer releases and transport readiness; phase 2 advances execution; phase 3 checks deadlines/latency. Thus timeout wins an exactly simultaneous response, while an activation completing exactly at its deadline satisfies the bound. Each event is followed by a dispatch pass: pending lifecycle work in release order, then connector queues in first-offer order. Enabled work may acquire a lock during that pass; newly released work does not preempt an already held serial lock.
 
-Execution advances between completed statements, local operation steps, loop iterations and state transitions. Pure expressions and individual assignments are atomic. Root activations interleave through the stable event ordinal. FIFO delivery is maintained per connector/direction/member. `unordered` permits this FIFO choice too; the simulator does not randomize it. Independent queues have a deterministic tie-break for reproducibility, not a source-language happens-before relation.
+Execution advances between completed statements, local function steps, loop iterations and state transitions. Pure expressions and individual assignments are atomic. Root activations interleave through the stable event ordinal. FIFO delivery is maintained per connector/direction/member. `unordered` permits this FIFO choice too; the simulator does not randomize it. Independent queues have a deterministic tie-break for reproducibility, not a source-language happens-before relation.
 
-All local CPU costs are abstracted to zero. Transport delay, timeout, period, timer residence, suspension and queue delay advance logical time. Deadline observation begins at lifecycle/timer release or input readiness, including a message awaiting a busy unit. Helpers receive their own elapsed deadline watchdog at invocation. A detected deadline or latency violation stops this run and remains in the trace. Zero-cost execution cannot establish a physical WCET bound; deployment nodes retain their declared identities and do not become simulated processors.
+All local CPU costs are abstracted to zero. Transport delay, timeout, period, timer residence, suspension and queue delay advance logical time. Deadline observation begins at lifecycle/timer release or input readiness, including a message awaiting a busy component. Helpers receive their own elapsed deadline watchdog at invocation. A detected deadline or latency violation stops this run and remains in the trace. Zero-cost execution cannot establish a physical WCET bound; external deployment destinations retain their identities and do not become simulated processors.
 
 Serial activation roots retain their lock while awaiting RPC. Reentrant activation roots read a deep dispatch-time snapshot; their helpers share that snapshot and mode. Reentrant activation roots may coexist with the serial activation root, subject to the reentrant limit. A machine allows one reaction at a time. Input stays in its connector queue until the relevant dispatch limit/lock permits execution. Pending lifecycle capacity is checked before adding another release; overflow stops with `ActivationOverflow`.
 
@@ -64,7 +64,7 @@ The finite-fuel policy also bounds non-progressing or Zeno model executions. No 
 
 ## Transport and fault interpretation
 
-Each connector occurrence, direction and member owns a separate queue. Delegation resolves boundary aliases to leaf unit ports without adding queues. Capacity includes messages waiting for transport readiness; dispatched handlers are excluded. A send/publish attempts every matching route before reporting rejection. Offers that succeeded remain committed.
+Each connector occurrence, direction and member owns a separate queue. Delegation resolves boundary aliases to locally handled component ports without adding queues. Capacity includes messages waiting for transport readiness; dispatched handlers are excluded. A send/publish attempts every matching route before reporting rejection. Offers that succeeded remain committed.
 
 | Fault `kind` | Meaning |
 | --- | --- |
@@ -78,7 +78,7 @@ Queue reject fails a data/event producer after fanout. RPC admission rejection e
 
 ## Values, flow and state coverage
 
-Every expression and statement in the grammar is interpreted: primitives, enums, nominal records, fixed arrays, field/index reads, pure functions, local operations, copied parameters, lexical scopes, assignment, branches, bounded loops, assertions, returns, explicit failure, send, publish and awaited request. Int arithmetic uses exact intermediate integer operations before range checks. Real uses binary64. Scalar Int-to-Real widening preserves the declared Real type. Payloads, parameters and results are copied values.
+Every expression and statement in the grammar is interpreted: primitives, enums, nominal records, fixed arrays, field/index reads, calculations, local functions, copied parameters, lexical scopes, assignment, branches, bounded loops, assertions, returns, explicit failure, send, publish and awaited request. int arithmetic uses exact intermediate integer operations before range checks. real uses binary64. Scalar byte/uint/int/real widening preserves values. Checked assignment into uint or byte rejects values outside the destination domain. Payloads, parameters and results are copied values.
 
 State initialization, entry/exit, event payloads, guards, priority, timer generations, self transitions, completion reactions and finality are interpreted. Entry/exit lack event payload scope. Stale timers and inputs to a terminated machine are observable discards. A return or failure terminates the machine without completing later transition phases. A guarded completion cycle fails before taking edge 1,025.
 
@@ -86,10 +86,10 @@ These rules have regression tests for both success and failure, including callba
 
 ## Evidence and limitations
 
-`status` reports why scheduling stopped: `quiescent` (no scheduled events), `horizon` (future events remain), `violation` (root contract/resource failure), or `limit` (fuel exhausted). `outcome` is `failed` when a failure/violation occurred and `no-failure-observed` otherwise. A failed ordinary activation need not stop unrelated units, so a quiescent run may still have a failed outcome. `timeNs` is the last processed event time, including inert expiry/deadline bookkeeping; it is not necessarily the horizon or last visible effect.
+`status` reports why scheduling stopped: `quiescent` (no scheduled events), `horizon` (future events remain), `violation` (root contract/resource failure), or `limit` (fuel exhausted). `outcome` is `failed` when a failure/violation occurred and `no-failure-observed` otherwise. A failed ordinary activation need not stop unrelated components, so a quiescent run may still have a failed outcome. `timeNs` is the last processed event time, including inert expiry/deadline bookkeeping; it is not necessarily the horizon or last visible effect.
 
 Trace records have monotonically increasing `ordinal`, nondecreasing `timeNs`, `kind`, and `subject`. Activation (`a`), correlation (`r`) and logical message (`m`) IDs are unique within a run; pair them with the evidence artifact's run identity when combining runs. Emissions carry producing activation, leaf endpoints, member, route, offer number and copied payload; source text preserves the boundary delegation provenance. Deliveries carry attempts and correlation where relevant. Statement records include source lines. Final stores and machine states remain available after limits and violations.
 
 The CLI supplies SHA-256 per source; the portable library returns exact sources and leaves hashing/storage to its host. Keep those sources, digests, selected root, complete options, profile version and output together. Absolute source URIs may identify the local workspace; the published hello artifact uses stable repository-relative file URIs.
 
-The implementation provides **reference simulation evidence with an explicit logical-time abstraction**. It is not a blanket E certification, model checker, production runtime, KerML exporter, AUTOSAR generator or graphical editor. Physical WCET/schedulability, distributed clock error, real serialization, middleware outages and independent conformance assessment still require separate evidence. An extension can invoke the portable API after building and validating the entire referenced workspace; that host implementation belongs in its own repository.
+The implementation provides **reference simulation evidence with an explicit logical-time abstraction**. It is not a blanket E certification, model checker, production runtime, KerML exporter, AUTOSAR generator or graphical editor. Physical WCET/schedulability, distributed clock error, real serialization, middleware outages and independent conformance assessment still require separate evidence. A host can call the portable API after building and validating the entire referenced workspace.

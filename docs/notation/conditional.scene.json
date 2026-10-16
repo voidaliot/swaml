@@ -2,7 +2,7 @@
   "width": 560,
   "height": 370,
   "title": "Conditional branch",
-  "description": "Conditional branch. Draw a decision diamond with the Bool condition and distinct true/false control exits, followed by a merge when control continues.",
+  "description": "Conditional branch. Draw a decision diamond with the bool condition and distinct true/false control exits, followed by a merge when control continues.",
   "shapes": [
     {
       "kind": "rect",
