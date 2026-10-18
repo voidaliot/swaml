@@ -47,6 +47,8 @@ Link to primary sources for external standards. Write original explanations; do 
 
 Executable `swaml` code fences must be complete, valid models: the documentation checker parses and validates them. Use inline snippets or `text` fences for deliberate fragments, and put intentionally invalid models under `examples/invalid/` with their expected diagnostic.
 
+The repository's `.swamlignore` uses gitignore syntax to exclude `examples/invalid/` from shared model discovery. Open or validate each negative fixture as a standalone model so its expected errors remain inspectable without adding its declarations to the positive examples' workspace. Generated publication/history files under `tmp/` are already excluded by `.gitignore`.
+
 ## Resolve specification issues
 
 Track a concrete contradiction, missing semantic choice or validator defect as a GitHub issue with acceptance criteria. Resolve it with matching normative text, implementation where in scope, examples and regression evidence. Close the issue only when its stated criteria are met; do not close runtime/editor implementation work because a specification paragraph exists. Link the resolution commit or merged pull request and record any remaining conformance limitation.
