@@ -1339,12 +1339,12 @@
     {
       "path": "docs/notation/port-client.scene.json",
       "attachmentName": "docs__notation__port-client.scene.json",
-      "sha256": "54859caa3c5920bee9b645767c454de625e3a05ff5fea55acc457e363dff2a2c"
+      "sha256": "bda9575855f5b020200c836b8957ff68ddea1fd4b309e39b85185007e6262f55"
     },
     {
       "path": "docs/notation/port-client.svg",
       "attachmentName": "docs__notation__port-client.svg",
-      "sha256": "f3c08bfd18ccfdde8356f12daefdaabae52baa3ba40d75feaf2c63d3b49e129c"
+      "sha256": "539069c0293e97f823976ad86d6186eaf138087e9514ed33fb5cd2559c878ce4"
     },
     {
       "path": "docs/notation/port-provides.png",
@@ -1399,12 +1399,12 @@
     {
       "path": "docs/notation/port-requires.scene.json",
       "attachmentName": "docs__notation__port-requires.scene.json",
-      "sha256": "58189fd997be7a898a04725517f78cd3882b891e4f02efe6c582e76a43ea71de"
+      "sha256": "601c01b1a8f3fb886c592520de69838c4d5915d4f32c02a8876058d7d1f23b24"
     },
     {
       "path": "docs/notation/port-requires.svg",
       "attachmentName": "docs__notation__port-requires.svg",
-      "sha256": "4fbf354875c90fa2b1bd3c449914649c835e470f059cb1dc72c7cba3f9726b62"
+      "sha256": "352e7a38ae4b722c5d522f90b41cd36b48716331cf0967331a8c535d809e3417"
     },
     {
       "path": "docs/notation/port-sender.png",
@@ -2209,12 +2209,12 @@
     {
       "path": "docs/figures/iv.scene.json",
       "attachmentName": "docs__figures__iv.scene.json",
-      "sha256": "3b72a1eb1d26f964f92b9e125a8fa39d170b3ed89d1908782e391a5908208887"
+      "sha256": "d96b2d9543504d63a1033285b49d334da19c0875c94fc87280803b9ae93cd317"
     },
     {
       "path": "docs/figures/iv.svg",
       "attachmentName": "docs__figures__iv.svg",
-      "sha256": "e38a071fdce233b65b126c68fc820ef60c995acc7949a7b8369891e87384d799"
+      "sha256": "8f34bafc640af9ae06cdfabcf76b90add04fbaffed9e5ef99151dc95e44e1343"
     },
     {
       "path": "docs/figures/sv.png",
@@ -2432,5 +2432,5 @@
       "sha256": "20a5a6a08f85b2f7e446477583bd698c78b012013f3144bde2cccac6c4683c84"
     }
   ],
-  "pdfSha256": "16b86356ad8e5cb3f90899d45f304ebbb9ed58eddd6751d405412e7b8294e95f"
+  "pdfSha256": "f56bcfda53d31dcf20548a96f8dd101d83f37a1827a3517981c77e6d2dfeceaa"
 }

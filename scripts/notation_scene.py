@@ -66,7 +66,7 @@ class Scene:
         cx=x+outward*35
         if role in ['server','provides']: self.circle(cx,y,9)
         else:
-            self.line([(cx-outward*11*math.cos(a),y+11*math.sin(a)) for a in [-math.pi/2+i*math.pi/16 for i in range(17)]])
+            self.line([(round(cx-outward*11*math.cos(a),6),round(y+11*math.sin(a),6)) for a in [-math.pi/2+i*math.pi/16 for i in range(17)]])
     def polygon(self, points, fill=WHITE, stroke=BLACK):
         self.add('polygon', points=points, fill=fill, stroke=stroke)
     def line(self, points, dash=False):

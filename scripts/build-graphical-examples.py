@@ -31,7 +31,7 @@ class Scene:
             self.line([(x+outward*7,y),(x+outward*16,y)])
             cx=x+outward*24
             if role in ['server','provides']: self.circle(cx,y,7,fill='white')
-            else:self.line([(cx-outward*9*math.cos(a),y+9*math.sin(a)) for a in [-math.pi/2+i*math.pi/16 for i in range(17)]])
+            else:self.line([(round(cx-outward*9*math.cos(a),6),round(y+9*math.sin(a),6)) for a in [-math.pi/2+i*math.pi/16 for i in range(17)]])
         if label: self.text(tx if tx is not None else x+13, ty if ty is not None else y-12,label,17,True,color=TEAL)
     def component(self,x,y,w,h,title):
         self.rect(x,y,w,h,fill='#ffffff'); self.text(x+16,y+31,title,21,True)
@@ -49,8 +49,8 @@ class Scene:
         svg=f'<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="{self.doc["height"]}" viewBox="0 0 1000 {self.doc["height"]}" role="img" aria-labelledby="title desc">\n<title id="title">{html.escape(self.doc["title"])}</title><desc id="desc">{html.escape(self.doc["description"])}</desc>\n<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="{NAVY}"/></marker></defs>\n<g font-family="DejaVu Sans, sans-serif">\n'+ '\n'.join(shapes)+'\n</g></svg>\n'
         for ext,data in [('svg',svg),('scene.json',json.dumps(self.doc,ensure_ascii=False,indent=2)+'\n')]:
             p=OUT/f'{self.name}.{ext}'
-            if CHECK: assert p.read_text(encoding='utf-8')==data, f'Stale graphical example: {p}'
-            elif not p.exists() or p.read_text(encoding='utf-8')!=data: p.write_text(data,encoding='utf-8',newline='\n')
+            if CHECK: assert p.read_bytes()==data.encode('utf-8'), f'Stale graphical example: {p}'
+            elif not p.exists() or p.read_bytes()!=data.encode('utf-8'): p.write_text(data,encoding='utf-8',newline='\n')
 
 s=Scene('browser','Model Browser · ownership and instance context','Settings example: declarations and usages have distinct badges.',700)
 s.rect(32,123,560,532,fill='#f7fafc');s.rect(615,123,352,532,fill='white')
@@ -194,6 +194,6 @@ concept=next(c for c in json.loads((ROOT/'spec/notation.json').read_text(encodin
 timing=render(concept)
 for suffix,data in [('svg',timing.svg()),('scene.json',json.dumps(timing.doc,ensure_ascii=False,indent=2)+'\n')]:
  path=OUT/f'tv.{suffix}'
- if CHECK: assert path.read_text(encoding='utf-8')==data,f'Stale figure: {path}'
- else: path.write_text(data,encoding='utf-8')
+ if CHECK: assert path.read_bytes()==data.encode('utf-8'),f'Stale figure: {path}'
+ else: path.write_text(data,encoding='utf-8',newline='\n')
 print(('Verified' if CHECK else 'Built')+' 10 SVG and vector-scene examples.')
