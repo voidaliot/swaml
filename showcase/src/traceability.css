@@ -3,3 +3,13 @@
 .trace-card>.eyebrow{text-transform:none}.trace-card .react-flow__handle{width:4px;height:4px}
 
 .trace-table tbody th,.trace-table tbody small{text-transform:none;letter-spacing:normal}
+
+.trace-embedded{padding:0;background:transparent;scroll-margin-top:0}
+.trace-options{margin:0 0 14px}
+.trace-options>summary,.trace-source-panel>summary{font-size:12px;font-weight:600;cursor:pointer;padding:10px 0;color:#49645b}
+.trace-options .trace-toolbar{margin:8px 0 12px;padding:14px;background:#edf2eb;border:1px solid #d5e0d6;font-size:12px;gap:16px}
+.trace-meaning{font-size:12px;line-height:1.7;color:#52695e;margin:14px 0}
+.trace-source-controls button{border:1px solid #b8c9c1;background:white;padding:7px 11px;border-radius:3px;color:#243d39;font:inherit;font-size:12px;cursor:pointer}
+.trace-source-panel .trace-source{margin-top:12px}
+.trace-embedded .trace-canvas{height:560px}
+@media(max-width:700px){.trace-embedded{padding:0}.trace-embedded .trace-canvas{height:470px}}

@@ -111,8 +111,8 @@ function excerpt(subject?: string): string {
   return declaration(ownerSource, new RegExp(`\\b(?:function|calc|var|port|connect|delegate|component) ${escaped(member)}\\b`));
 }
 
-export function ModelingOverview() {
-  const [mode, setMode] = useState<'ontology' | 'journey'>('ontology');
+export function ModelingOverview({ journeyOnly = false }: { journeyOnly?: boolean }) {
+  const [mode, setMode] = useState<'ontology' | 'journey'>(journeyOnly ? 'journey' : 'ontology');
   const [stage, setStage] = useState(0);
   const [selected, setSelected] = useState(ontology.nodes[0].id);
   const [showSource, setShowSource] = useState(false);
@@ -123,9 +123,9 @@ export function ModelingOverview() {
   const owner = node?.subject?.includes('.') ? node.subject.slice(0, node.subject.lastIndexOf('.')) : node?.subject?.split('::')[0];
   const select = useCallback((id: string) => { setSelected(id); setShowSource(false); }, []);
   const changeGraph = (nextMode: 'ontology' | 'journey', nextStage = stage) => { setMode(nextMode); setStage(nextStage); select((nextMode === 'ontology' ? ontology : stages[nextStage]).nodes[0].id); };
-  return <section id="modeling-overview" className="modeling-overview-section" aria-labelledby="modeling-overview-title">
+  return <section id={journeyOnly ? 'modeling-walkthrough' : 'modeling-overview'} className="modeling-overview-section" aria-labelledby="modeling-overview-title">
     <div className="section-intro"><div><span className="eyebrow">THE LANGUAGE AT A GLANCE</span><h2 id="modeling-overview-title">From a use case to software structure</h2></div><p>Explore what SWAML can describe.<br />Then follow one order through the same model.</p></div>
-    <div className="overview-modes" role="group" aria-label="Modeling overview mode"><button aria-pressed={mode === 'ontology'} onClick={() => changeGraph('ontology')}><span>01</span><strong>What can I model?</strong><small>Graphical ontology</small></button><button aria-pressed={mode === 'journey'} onClick={() => changeGraph('journey')}><span>02</span><strong>Use case to structure</strong><small>One end-to-end example</small></button></div>
+    {!journeyOnly && <div className="overview-modes" role="group" aria-label="Modeling overview mode"><button aria-pressed={mode === 'ontology'} onClick={() => changeGraph('ontology')}><span>01</span><strong>What can I model?</strong><small>Graphical ontology</small></button><button aria-pressed={mode === 'journey'} onClick={() => changeGraph('journey')}><span>02</span><strong>Use case to structure</strong><small>One end-to-end example</small></button></div>}
     {mode === 'journey' && <div className="overview-steps" role="group" aria-label="End-to-end modeling stages">{stages.map((item, index) => <button key={item.id} aria-pressed={stage === index} onClick={() => changeGraph('journey', index)}><span>{String(index + 1).padStart(2, '0')}</span><strong>{stageNames[index]}</strong></button>)}</div>}
     <div className="overview-workspace">
       <div className="overview-heading"><div><span className="eyebrow">{mode === 'ontology' ? 'CONCEPTS AND RELATIONSHIPS' : `WEBSHOP · ${String(stage + 1).padStart(2, '0')} / 05`}</span><h3>{graph.title}</h3><p>{graph.summary}</p></div><span className="overview-view-label">{graph.view || 'Concept map'}</span></div>

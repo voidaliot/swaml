@@ -1,9 +1,11 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Background, BackgroundVariant, Controls, Handle, Position, ReactFlow, ReactFlowProvider, useNodesState, useReactFlow } from '@xyflow/react';
 import type { Edge, NodeProps } from '@xyflow/react';
-import { QuickStart } from './QuickStart';
+import { DiagramGallery, diagramChoices } from './DiagramGallery';
+import type { DiagramId } from './DiagramGallery';
+import { Ontology } from './Ontology';
 
-import { byId, diagram, entities, lifecycleSource, repository, source, viewDescriptions, views } from './model';
+import { byId, diagram, entities, lifecycleSource, repository, source, views } from './model';
 import type { CardData, DiagramNode, Entity, ViewId } from './model';
 
 
@@ -13,7 +15,7 @@ const Architectures = lazy(() => import('./Architectures').then(module => ({ def
 const FunctionTiming = lazy(() => import('./FunctionTiming').then(module => ({ default: module.FunctionTiming })));
 const InterruptFlow = lazy(() => import('./InterruptFlow').then(module => ({ default: module.InterruptFlow })));
 const ModelingOverview = lazy(() => import('./ModelingOverview').then(module => ({ default: module.ModelingOverview })));
-type FlowMode = 'flow' | 'states' | 'timing' | 'interrupts';
+const QuickStart = lazy(() => import('./QuickStart').then(module => ({ default: module.QuickStart })));
 
 function Icon({ name, size = 18 }: { name: string; size?: number }) {
   const paths: Record<string, string> = {
@@ -34,8 +36,6 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name] || paths.grid} /></svg>;
 }
-
-const viewIcons: Record<ViewId, string> = { Browser: 'tree', gv: 'layers', iv: 'connect', cv: 'case', sv: 'sequence', grv: 'grid', fv: 'flow' };
 
 function FlatNode({ data, selected }: NodeProps<DiagramNode>) {
   const vertical = data.vertical;
@@ -130,80 +130,182 @@ function SequencePanel({ onSelect }: { onSelect: (id: string) => void }) {
   </div>;
 }
 
-function Inspector({ item, onSource }: { item: Entity; onSource: () => void }) {
-  return <aside className="inspector" aria-label="Selected element properties" aria-live="polite">
-    <div className="inspector-caption">PROPERTIES <span>↗</span></div>
+function Inspector({ item, onSource, onClose }: { item: Entity; onSource: () => void; onClose: () => void }) {
+  return <aside id="diagram-properties" className="inspector" aria-label="Selected element properties" aria-live="polite">
+    <div className="inspector-caption">ELEMENT DETAILS <button type="button" className="icon-button" onClick={onClose} aria-label="Close element details"><Icon name="close" size={16}/></button></div>
     <div className="inspector-symbol"><Icon name={item.kind.includes('Connector') ? 'connect' : item.kind.includes('Function') || item.kind === 'State' ? 'flow' : 'layers'} size={23} /></div>
     <span className="eyebrow">{item.kind}</span><h3>{item.name}</h3><p className="inspector-description">{item.description}</p>
     <div className="identity"><span>IDENTITY</span><code>{item.path}</code></div>
     {item.definition && <div className="identity"><span>DEFINITION</span><code>{item.definition}</code></div>}
     <dl className="properties"><div><dt>Owner</dt><dd>{item.owner}</dd></div>{item.properties.map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl>
     <button className="source-link" onClick={onSource}><Icon name="code" size={15} />Inspect source<Icon name="arrow" size={15} /></button>
-    <div className="inspector-note"><span className="small-square" />Layout changes stay in this browser session. The model source is unchanged.</div>
   </aside>;
 }
 
-function SourceDialog({ mode, close }: { mode: FlowMode; close: () => void }) {
+const modelSources: Record<string, () => Promise<string>> = {
+  '../../examples/08-service-field.swaml': () => Promise.resolve(source),
+  '../../examples/04-stateful-function.swaml': () => Promise.resolve(lifecycleSource),
+  '../../examples/16-requirements-and-views.swaml': () => import('../../examples/16-requirements-and-views.swaml?raw').then(module => module.default),
+  '../../examples/17-function-timing.swaml': () => import('../../examples/17-function-timing.swaml?raw').then(module => module.default),
+  '../../examples/19-interruptible-function.swaml': () => import('../../examples/19-interruptible-function.swaml?raw').then(module => module.default),
+};
+
+function SourceDialog({ filename, close }: { filename: string; close: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [copied, setCopied] = useState(false);
-  const [timingSource, setTimingSource] = useState(''), [interruptSource, setInterruptSource] = useState('');
-  useEffect(() => {
-    if (mode === 'timing') void import('../../examples/17-function-timing.swaml?raw').then(module => setTimingSource(module.default));
-    if (mode === 'interrupts') void import('../../examples/19-interruptible-function.swaml?raw').then(module => setInterruptSource(module.default));
-  }, [mode]);
-  const text = mode === 'interrupts' ? interruptSource : mode === 'timing' ? timingSource : mode === 'states' ? lifecycleSource : source;
-  const filename = mode === 'interrupts' ? '19-interruptible-function.swaml' : mode === 'timing' ? '17-function-timing.swaml' : mode === 'states' ? '04-stateful-function.swaml' : '08-service-field.swaml';
+  const [text, setText] = useState('');
+  const [error, setError] = useState(false);
   const [download, setDownload] = useState('');
   useEffect(() => {
+    dialogRef.current?.showModal();
+    let active = true;
+    const load = modelSources[`../../examples/${filename}`];
+    if (load) void load().then(value => { if (active) setText(value); }).catch(() => { if (active) setError(true); });
+    else setError(true);
+    return () => { active = false; };
+  }, [filename]);
+  useEffect(() => {
+    if (!text) return;
     const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
     setDownload(url);
-    dialogRef.current?.showModal();
     return () => URL.revokeObjectURL(url);
   }, [text]);
-  return <dialog ref={dialogRef} className="source-dialog" onCancel={close} onClick={(e) => { if (e.target === e.currentTarget) close(); }} aria-labelledby="source-title">
-    <div className="source-dialog-head"><div><span className="eyebrow">CHECKED-IN MODEL / PARSER 1.3</span><h3 id="source-title">{filename}</h3></div><button className="icon-button" onClick={close} aria-label="Close source"><Icon name="close" /></button></div>
-    <p className="source-dialog-description">The exact repository fixture, bundled at build time. This showcase projects selected elements; it does not parse or execute edits.</p>
-    <pre tabIndex={0} aria-label="Model source">{text.split('\n').map((line, i) => <span className="source-line" key={i}><span className="line-number" aria-hidden="true">{i + 1}</span><code>{line || ' '}</code></span>)}</pre>
-    <div className="source-dialog-actions"><a className="button button-ink" href={download} download={filename}><Icon name="download" size={16} />Download model</a><button className="button button-quiet" onClick={() => { void navigator.clipboard.writeText(text).then(() => setCopied(true)).catch(() => setCopied(false)); }}>{copied ? 'Copied' : 'Copy source'}</button><a href={`${repository}/blob/main/examples/${filename}`} target="_blank" rel="noreferrer">Open on GitHub ↗</a></div>
+  return <dialog ref={dialogRef} className="source-dialog" onCancel={close} onClick={event => { if (event.target === event.currentTarget) close(); }} aria-labelledby="source-title">
+    <div className="source-dialog-head"><div><span className="eyebrow">EXAMPLE MODEL</span><h3 id="source-title">{filename}</h3></div><button className="icon-button" onClick={close} aria-label="Close source"><Icon name="close"/></button></div>
+    {text ? <pre tabIndex={0} aria-label="Model source">{text.split('\n').map((line, i) => <span className="source-line" key={i}><span className="line-number" aria-hidden="true">{i + 1}</span><code>{line || ' '}</code></span>)}</pre> : <p className="source-dialog-description" role="status">{error ? 'Source could not be loaded. You can open it on GitHub below.' : 'Loading model source…'}</p>}
+    <div className="source-dialog-actions">{download && <a className="button button-ink" href={download} download={filename}><Icon name="download" size={16}/>Download model</a>}<button className="button button-quiet" disabled={!text} onClick={() => { void navigator.clipboard.writeText(text).then(() => setCopied(true)).catch(() => setCopied(false)); }}>{copied ? 'Copied' : 'Copy source'}</button><a href={`${repository}/blob/main/examples/${filename}`} target="_blank" rel="noreferrer">Open on GitHub ↗</a></div>
   </dialog>;
 }
 
+type ExplorerId = DiagramId | 'Browser';
+type ResourceId = 'start' | 'walkthrough' | 'examples' | 'interfaces' | 'coverage';
+
+function initialSelection(id: ExplorerId): Entity {
+  if (id === 'states') return { id: 'lifecycle', kind: 'Function', name: 'lifecycle()', path: 'Lifecycle::Device.lifecycle', owner: 'Lifecycle::Device', description: 'The function owns its Idle, Running and final Stopped states and their transitions.', properties: [['Model source', '04-stateful-function.swaml'], ['Trigger', 'on start']], snippet: 'function lifecycle() on start {' };
+  if (id === 'timing') return { id: 'timing-root', kind: 'Execution root', name: 'Demo', path: 'FunctionTiming::Demo', owner: 'FunctionTiming', description: 'Two independent clients and servers provide the function activations shown in this timing example.', properties: [['Model source', '17-function-timing.swaml']], snippet: 'component Demo {' };
+  if (id === 'interrupts') return { id: 'interrupt-function', kind: 'Function', name: 'run()', path: 'Interrupts::App.worker.run', owner: 'Interrupts::App.worker', description: 'A typed stop event interrupts protected work inside this function.', properties: [['Model source', '19-interruptible-function.swaml']], snippet: 'function run() on start {' };
+  return byId[id === 'cv' || id === 'sv' ? 'case' : id === 'flow' ? 'update' : id === 'Browser' || id === 'grv' ? 'package' : id === 'iv' ? 'settings' : 'root'];
+}
+
+function diagramFromHash(): ExplorerId | undefined {
+  if (typeof window === 'undefined') return;
+  const hash = window.location.hash;
+  const id = hash.replace(/^#diagrams\//, '');
+  if (id === 'Browser' || diagramChoices.some(item => item.id === id)) return id as ExplorerId;
+}
+
+function Resource({ id, title, description, open, onToggle, children }: {
+  id: string; title: string; description: string; open: boolean;
+  onToggle: (open: boolean) => void; children: React.ReactNode;
+}) {
+  return <details id={id} className="learn-resource" open={open} onToggle={event => onToggle(event.currentTarget.open)}>
+    <summary><span><strong>{title}</strong><span>{description}</span></span><span className="resource-expand" aria-hidden="true">+</span></summary>
+    {open && <Suspense fallback={<p className="resource-loading" role="status">Loading example…</p>}><div className="resource-content">{children}</div></Suspense>}
+  </details>;
+}
+
 function App() {
-  const [view, setView] = useState<ViewId>('iv');
-  const [flowMode, setFlowMode] = useState<FlowMode>('flow');
-  const stateMode = flowMode === 'states', timingMode = view === 'fv' && flowMode === 'timing', interruptMode = view === 'fv' && flowMode === 'interrupts';
-  const [selected, setSelected] = useState<Entity>(byId.settings);
+  const [active, setActive] = useState<ExplorerId>(() => diagramFromHash() ?? 'iv');
+  const choice = diagramChoices.find(item => item.id === active);
+  const view: ViewId = choice?.view ?? 'Browser';
+  const flowMode = choice?.mode ?? 'flow';
+  const stateMode = view === 'fv' && flowMode === 'states';
+  const [selected, setSelected] = useState<Entity>(() => initialSelection(diagramFromHash() ?? 'iv'));
+  const [showDetails, setShowDetails] = useState(false);
+  const openDetails = useCallback(() => setShowDetails(true), []);
   const [showSource, setShowSource] = useState(false);
-  const activeView = views.find((v) => v.id === view)!;
+  const detailsButton = useRef<HTMLButtonElement>(null);
+  const [resources, setResources] = useState<Partial<Record<ResourceId, boolean>>>({});
+  const setResource = useCallback((id: ResourceId, open: boolean) => {
+    setResources(previous => previous[id] === open ? previous : { ...previous, [id]: open });
+  }, []);
+
+  const changeDiagram = useCallback((id: ExplorerId) => {
+    setActive(id);
+    setShowDetails(false);
+    setShowSource(false);
+    setSelected(initialSelection(id));
+  }, []);
+  const chooseDiagram = (id: ExplorerId) => {
+    changeDiagram(id);
+    window.history.replaceState(null, '', `#diagrams/${id}`);
+  };
+  useEffect(() => {
+    const followHash = () => {
+      const id = diagramFromHash();
+      if (id) changeDiagram(id);
+      const hash = window.location.hash;
+      const resource: ResourceId | undefined = hash === '#traceability' ? 'coverage' : hash === '#quick-start' || hash === '#resource-start' ? 'start' : hash === '#architectures' || hash === '#resource-examples' ? 'examples' : hash === '#interfaces' || hash === '#resource-interfaces' ? 'interfaces' : hash === '#modeling-walkthrough' || hash === '#resource-walkthrough' ? 'walkthrough' : hash === '#resource-coverage' ? 'coverage' : undefined;
+      if (resource) setResource(resource, true);
+      const target = resource ? `resource-${resource}` : id || hash === '#explorer' ? 'diagrams' : hash === '#modeling-overview' ? 'ontology' : undefined;
+      if (target) requestAnimationFrame(() => document.getElementById(target)?.scrollIntoView({ block: 'start' }));
+    };
+    followHash();
+    window.addEventListener('hashchange', followHash);
+    return () => window.removeEventListener('hashchange', followHash);
+  }, [changeDiagram, setResource]);
+
   const select = useCallback((id: string, data?: CardData) => {
-    if (byId[id] && !stateMode) { setSelected(byId[id]); return; }
-    if (stateMode && view === 'fv') setSelected({ id, kind: data?.variant === 'state' ? 'State' : 'Function-owned element', name: data?.title || id, path: `Lifecycle::Device.lifecycle.${id}`, owner: 'Lifecycle::Device.lifecycle', description: 'Part of the separate Lifecycle example. States and transitions belong directly to the lifecycle function.', properties: [['Model source', '04-stateful-function.swaml'], ['Function', 'Device.lifecycle'], ['Projection', 'state body · no simulation']], snippet: data?.detail || id });
+    if (stateMode) {
+      setSelected({ id, kind: data?.variant === 'state' ? 'State' : 'Function-owned element', name: data?.title || id,
+        path: `Lifecycle::Device.lifecycle.${id}`, owner: 'Lifecycle::Device.lifecycle',
+        description: 'States and transitions belong directly to the lifecycle function.',
+        properties: [['Model source', '04-stateful-function.swaml'], ['Function', 'Device.lifecycle']], snippet: data?.detail || id });
+    } else if (byId[id]) setSelected(byId[id]);
     else if (id === 'coverage') setSelected(byId.requirement);
-    else if (data?.entityId) setSelected(byId[data.entityId]);
-  }, [stateMode, view]);
-  const changeView = (id: ViewId) => { setView(id); setFlowMode('flow'); setSelected(byId[id === 'cv' || id === 'sv' ? 'case' : id === 'fv' ? 'update' : id === 'Browser' || id === 'grv' ? 'package' : id === 'iv' ? 'settings' : 'root']); };
-  const changeFlowMode = (states: boolean) => { setFlowMode(states ? 'states' : 'flow'); setSelected(states ? { id: 'lifecycle', kind: 'Function', name: 'lifecycle()', path: 'Lifecycle::Device.lifecycle', owner: 'Lifecycle::Device', description: 'A separate checked-in example of directly owned states. The initial reference selects Idle, and Stopped is a final state.', properties: [['Model source', '04-stateful-function.swaml'], ['Trigger', 'on start'], ['States', 'Idle, Running, Stopped (final)'], ['Transitions', 'beginRun, stopRun, expire']], snippet: 'function lifecycle() on start {' } : byId.update); };
-  return <>
-    <a className="skip-link" href="#modeling-overview">Skip to graphical overview</a>
-    <header className="site-header"><a href="#" className="brand" aria-label="SWAML home"><span className="brand-symbol"><Icon name="connect" size={25} /></span>swaml<span className="brand-dot">.</span></a><nav aria-label="Main navigation"><a href="#modeling-overview">Overview</a><a href="#traceability">Traceability</a><a href="#quick-start">Quick start</a><a href="#architectures">Examples</a><a href="#explorer">Views</a><a href="#interfaces">Interfaces</a><a className="github-nav" href={repository} target="_blank" rel="noreferrer"><Icon name="github" size={18} />GitHub<Icon name="external" size={14} /></a></nav></header>
+    else if (data?.entityId && byId[data.entityId]) setSelected(byId[data.entityId]);
+    else return;
+    setShowDetails(true);
+  }, [stateMode]);
+
+  return <div className="showcase-page">
+    <a className="skip-link" href="#diagrams">Skip to diagrams</a>
+    <header className="site-header">
+      <a href="#" className="brand" aria-label="SWAML home">swaml<span className="brand-dot">.</span></a>
+      <nav aria-label="Main navigation"><a href="#ontology">Ontology</a><a href="#diagrams">Diagrams</a><a href="#guide">Learn</a><a className="github-nav" href={repository} target="_blank" rel="noreferrer"><Icon name="github" size={18}/>GitHub<Icon name="external" size={13}/></a></nav>
+    </header>
     <main>
-      <section className="hero" aria-labelledby="hero-title"><div className="hero-main"><div className="release-label"><span />SWAML 1.3.0<span className="release-divider">/</span>ARCHITECTURE REFERENCE WORKBENCH</div><h1 id="hero-title">Software architecture<br /><span>with explicit contracts.</span></h1><p>Specify components, typed interfaces and owned behavior.<br className="desktop-break" /> Model AUTOSAR software, service applications and cloud systems.</p><div className="hero-actions"><a href="#modeling-overview" className="button button-ink">See what you can model<Icon name="arrow" size={17} /></a><a href="#quick-start" className="button button-quiet">Start modeling</a></div></div><div className="hero-aside"><span className="eyebrow">LANGUAGE EDITION 1.3</span><p>Structure. Contracts.<br /><strong>Behavior.</strong></p><div className="hero-model-line"><span>component</span><Icon name="arrow" size={15} /><span>function</span><Icon name="arrow" size={15} /><span>calc</span></div><div className="hero-aside-note">Definitions and instances remain distinct.<br />Every inter-component exchange follows a typed route.</div></div></section>
-      <Suspense fallback={<p role="status">Loading graphical overview…</p>}><ModelingOverview /></Suspense><Suspense fallback={<p role="status">Loading traceability example…</p>}><Traceability /></Suspense>
-      <QuickStart />
-      <Suspense fallback={<p className="surface-footnote" role="status">Loading architecture examples…</p>}><Architectures /></Suspense>
-      <section id="explorer" className="explorer-section" aria-labelledby="explorer-title"><div className="section-intro"><div><span className="eyebrow">ARCHITECTURE EXAMPLE / SETTINGS</span><h2 id="explorer-title">Cabin temperature service</h2></div><p>A provider and two client instances.<br />Select a view and inspect its model elements.</p></div>
-        <div className="workbench"><aside className="view-sidebar"><div className="sidebar-title"><span className="tiny-model-mark" />DEMO WORKSPACE</div><div className="model-title">Cabin setting service<span>examples / 08-service-field</span></div><div className="view-label">PERSPECTIVES <span>07</span></div><nav aria-label="Model perspectives">{views.map((v) => <button key={v.id} className={`view-button ${view === v.id ? 'active' : ''}`} onClick={() => changeView(v.id)} aria-pressed={view === v.id}><Icon name={viewIcons[v.id]} size={18} /><span>{v.name}</span><code>{v.id === 'Browser' ? '⌘' : v.id}</code></button>)}</nav><div className="sidebar-footer"><span className="model-status-dot" />Source-backed demo<span>Layout interaction · React Flow</span></div></aside>
-          <div className="workbench-main"><div className="workbench-toolbar"><div className="toolbar-breadcrumb">Settings <span>/</span> {interruptMode ? 'Interrupt example' : timingMode ? 'Timing example' : stateMode ? 'Lifecycle example' : view === 'Browser' || view === 'grv' ? 'Model' : 'Cabin'} <span>/</span> <strong>{activeView.name}</strong></div><button className="icon-button" onClick={() => setShowSource(true)} aria-label="Open complete model source"><Icon name="code" size={18} /><span>Source</span></button></div><div className="view-intro"><div><h3>{activeView.name} <span>{view === 'Browser' ? 'NAVIGATION' : `${view} VIEW`}</span></h3><p>{interruptMode ? 'Follow a typed event into its protected region, handler and local continuation.' : timingMode ? 'Observe distinct function activations and their logical waits against declared timing contracts.' : viewDescriptions[view]}</p></div>{view === 'fv' && <div className="flow-toggle" aria-label="Flow example"><button aria-pressed={flowMode === 'flow'} className={flowMode === 'flow' ? 'active' : ''} onClick={() => changeFlowMode(false)}>Statement flow</button><button aria-pressed={stateMode} className={stateMode ? 'active' : ''} onClick={() => changeFlowMode(true)}>States · Lifecycle example</button><button aria-pressed={timingMode} className={timingMode ? 'active' : ''} onClick={() => setFlowMode('timing')}>Timing</button><button aria-pressed={interruptMode} className={interruptMode ? 'active' : ''} onClick={() => setFlowMode('interrupts')}>Interrupts</button></div>}</div>
-            {interruptMode ? <Suspense fallback={<p role="status">Loading interrupt flow…</p>}><InterruptFlow onSelect={setSelected} /></Suspense> : timingMode ? <Suspense fallback={<p role="status">Loading function timing…</p>}><FunctionTiming onSelect={setSelected} /></Suspense> : view === 'Browser' ? <BrowserPanel selected={selected.id} onSelect={select} /> : view === 'grv' ? <GridPanel selected={selected.id} onSelect={select} /> : view === 'sv' ? <SequencePanel onSelect={select} /> : <ReactFlowProvider><Canvas view={view} stateMode={stateMode} onSelect={select} /></ReactFlowProvider>}
-            <div className="workbench-status"><span><span className="small-square" />{interruptMode ? 'Interruptible function flow' : timingMode ? 'Timing reference trace' : stateMode ? 'Lifecycle model' : 'Settings model'} · 2D projection</span><span>{view === 'iv' ? '2 routes / 1 contract' : view === 'fv' && stateMode ? '3 states / 1 function' : 'Definition ≠ instance'}<span className="status-separator">|</span>parser 1.3</span></div>
-          </div><Inspector item={selected} onSource={() => setShowSource(true)} /></div>
-        <div className="demo-caption"><span>MODEL PROJECTION / INTERACTIVE LAYOUT</span><p>Browse a curated projection of a repository example. Dragging changes layout; source editing and execution remain in the language tools.</p></div>
+      <section className="showcase-hero" aria-labelledby="hero-title">
+        <div className="hero-edition">SOFTWARE ARCHITECTURE MODELING LANGUAGE <span>1.3.0</span></div>
+        <h1 id="hero-title">See the architecture.<br/><span>Follow the behavior.</span></h1>
+        <p>A small language for components, contracts and functions.<br className="desktop-break"/> Explore the concepts, then see them in working model examples.</p>
+        <div className="hero-actions"><a href="#diagrams" className="button button-ink">Explore the diagrams<Icon name="arrow" size={16}/></a><a href={`${repository}/blob/main/docs/QUICK_START.md`} className="hero-guide-link" target="_blank" rel="noreferrer">Read the quick guide ↗</a></div>
       </section>
-      <Suspense fallback={<p className="surface-footnote" role="status">Loading interface reference…</p>}><Interfaces /></Suspense>
-      <section id="language" className="language-section" aria-labelledby="language-title"><div className="language-title"><span className="eyebrow">FOR ARCHITECTS FAMILIAR WITH UML</span><h2 id="language-title">Familiar concepts.<br />Defined boundaries.</h2><a href={`${repository}/blob/main/docs/UML_GUIDE.md`} target="_blank" rel="noreferrer">Read the UML transition guide<Icon name="arrow" size={17} /></a></div><div className="principles"><article><span className="principle-number">01 / OWNERSHIP</span><h3>Components and owned behavior</h3><p>A component definition describes private data, functions and optional child components. Named instances keep separate stores. Functions own local calculations and their flow or states.</p></article><article><span className="principle-number">02 / CONNECTIONS</span><h3>Provided and required contracts</h3><p>Ports expose one nominal interface each. A service uses provides / requires roles; the other kinds name their direction explicitly. Assembly connectors and delegation remain distinct.</p></article><article><span className="principle-number">03 / PERSPECTIVES</span><h3>Structure, interactions and behavior</h3><p>gv and iv cover structure and wiring; sv covers case exchanges; fv covers flow or owned states. cv connects use cases, verification cases and requirements through explicit design and verification links.</p></article></div></section>
-      <section className="repo-section"><div><span className="eyebrow">OPEN SOURCE / MIT LICENSE</span><h2>Specify, validate<br />and review in source.</h2><p>A textual language, a reference validator and simulator,<br />and a reproducible flat notation catalog.</p><div className="repo-actions"><a className="button button-ink" href={repository} target="_blank" rel="noreferrer"><Icon name="github" size={18} />Explore on GitHub<Icon name="external" size={15} /></a><a href={`${repository}/blob/main/docs/USER_GUIDE.md`} target="_blank" rel="noreferrer">Read the guide ↗</a></div></div><div className="code-preview"><div className="code-preview-bar"><span>cabin.swaml</span><span>SWAML / 1.3</span></div><pre><code><span className="code-key">component</span>{' Cabin {\n  '}<span className="code-key">component</span>{' settings: Service;\n  '}<span className="code-key">component</span>{' front: Client;\n  '}<span className="code-key">component</span>{' rear: Client;\n\n  '}<span className="code-key">connect</span>{' frontLink:\n    front.setting -> settings.api\n    '}<span className="code-key">qos</span>{' LocalLink;\n}'}</code></pre><span className="code-preview-caption">Architecture excerpt · complete fixture in the explorer</span></div></section>
-    </main><footer className="site-footer"><a href="#" className="brand">swaml<span className="brand-dot">.</span></a><span>Software Architecture Modeling Language</span><div><a href={`${repository}/blob/main/docs/IMPLEMENTATION_STATUS.md`} target="_blank" rel="noreferrer">Implementation status</a><a href={`${repository}/blob/main/LICENSE`} target="_blank" rel="noreferrer">MIT license</a></div></footer>
-    {showSource && <SourceDialog mode={view === 'fv' ? flowMode : 'flow'} close={() => setShowSource(false)} />}
-  </>;
+
+      <section id="ontology" className="ontology-section" aria-labelledby="ontology-title"><div id="modeling-overview" className="showcase-section-heading"><div><span className="eyebrow">THE ONTOLOGY</span><h2 id="ontology-title">How the language fits together.</h2></div><p>See what each concept owns, uses and connects to. Select one to learn more.</p></div><Ontology/></section>
+
+      <section id="diagrams" className="diagram-section" aria-labelledby="diagrams-title">
+        <div className="showcase-section-heading"><div><span className="eyebrow">THE DIAGRAMS</span><h2 id="diagrams-title">Different views. One language.</h2></div><p>Choose a view to explore. Select an element for its details.</p></div>
+        <DiagramGallery selected={active} onSelect={chooseDiagram}/>
+        <div id="diagram-example" className="gallery-workbench" aria-label={`${choice?.title ?? 'Model browser'} example`}>
+          <div className="gallery-example-heading">
+            <div><span className="eyebrow">{choice?.example ?? 'Explore model ownership'}</span><h3>{choice?.title ?? 'Model browser'} <code>{view}</code></h3><code className="example-subject">{choice?.subject ?? 'Settings'}</code></div>
+            <div className="gallery-actions"><button type="button" className="icon-button" onClick={() => chooseDiagram('Browser')} aria-pressed={active === 'Browser'}><Icon name="tree" size={16}/><span>Browse model</span></button><button ref={detailsButton} type="button" className="icon-button" aria-expanded={showDetails} aria-controls="diagram-properties" onClick={() => setShowDetails(!showDetails)}><Icon name="layers" size={16}/><span>Details</span></button><button type="button" className="icon-button" onClick={() => setShowSource(true)}><Icon name="code" size={16}/><span>Source</span></button></div>
+          </div>
+          <div className={`gallery-example-body ${showDetails ? 'has-details' : ''}`}>
+            <div className="gallery-example-canvas">
+              <Suspense fallback={<p className="resource-loading" role="status">Loading diagram…</p>}>
+                {active === 'interrupts' ? <InterruptFlow onSelect={setSelected}/> : active === 'timing' ? <FunctionTiming onSelect={setSelected} onInspect={openDetails}/> : view === 'Browser' ? <BrowserPanel selected={selected.id} onSelect={select}/> : view === 'grv' ? <GridPanel selected={selected.id} onSelect={select}/> : view === 'sv' ? <SequencePanel onSelect={select}/> : <ReactFlowProvider key={active}><Canvas view={view} stateMode={stateMode} onSelect={select}/></ReactFlowProvider>}
+              </Suspense>
+            </div>
+            {showDetails && <Inspector item={selected} onSource={() => setShowSource(true)} onClose={() => { setShowDetails(false); detailsButton.current?.focus(); }}/>}
+          </div>
+          <div className="gallery-example-footer"><span>Interactive example · pan, zoom and inspect</span><a href={`${repository}/blob/main/docs/GRAPHICAL_CATALOG.md`} target="_blank" rel="noreferrer">Full notation reference ↗</a></div>
+        </div>
+        <p className="gallery-reading-note">Structure and interactions use gv, iv, cv, sv and grv. Function flow, states, interrupts and timing are presentations of fv. The model browser shows ownership.</p>
+      </section>
+
+      <section id="guide" className="learn-section" aria-labelledby="learn-title">
+        <div className="showcase-section-heading"><div><span className="eyebrow">GO A LITTLE FURTHER</span><h2 id="learn-title">Start small. Explore when you need to.</h2></div><a href={`${repository}/blob/main/docs/USER_GUIDE.md`} target="_blank" rel="noreferrer">Full user guide ↗</a></div>
+        <Resource id="resource-start" title="Write your first model" description="A short guide from contract to components." open={!!resources.start} onToggle={open => setResource('start', open)}><QuickStart/></Resource>
+        <Resource id="resource-walkthrough" title="Follow one end-to-end example" description="Use case → interactions → function → software structure." open={!!resources.walkthrough} onToggle={open => setResource('walkthrough', open)}><ModelingOverview journeyOnly/></Resource>
+        <Resource id="resource-examples" title="Explore an architecture" description="AUTOSAR Classic, Adaptive, a web application and a cloud service." open={!!resources.examples} onToggle={open => setResource('examples', open)}><Architectures/></Resource>
+        <Resource id="resource-coverage" title="Link requirements and verification" description="Explore satisfaction, verification intent and formal documentation." open={!!resources.coverage} onToggle={open => setResource('coverage', open)}><Traceability embedded/></Resource>
+        <Resource id="resource-interfaces" title="Choose a communication pattern" description="Data, requests, events and service interfaces." open={!!resources.interfaces} onToggle={open => setResource('interfaces', open)}><Interfaces/></Resource>
+      </section>
+    </main>
+    <footer className="site-footer"><a href="#" className="brand">swaml<span className="brand-dot">.</span></a><span>A language for software architecture · MIT license</span><div><a href={`${repository}/releases/tag/v1.3.0`} target="_blank" rel="noreferrer">Release 1.3.0 ↗</a><a href={`${repository}/blob/main/docs/LANGUAGE_SPECIFICATION.md`} target="_blank" rel="noreferrer">Specification ↗</a></div></footer>
+    {showSource && <SourceDialog filename={choice?.sourceFile ?? '08-service-field.swaml'} close={() => setShowSource(false)}/>}
+  </div>;
 }
 export default App;

@@ -142,3 +142,46 @@ const stop = controlPort.interface.ref.members.find(e => a.isEventMember(e) && e
 assert.deepEqual(stop.parameters.map(p => [p.name, p.type.primitive]), [['reason', 'string']]);
 assert.ok(interruptSource.includes('assert status == 2;'));
 console.log('Verified FV interruptible region, typed payload, owned continuation and both authored connector routes.');
+
+// Gallery labels and source downloads must identify the model actually being shown.
+const galleryText = await readFile(new URL('../showcase/src/DiagramGallery.tsx', import.meta.url), 'utf8');
+const galleryAst = ts.createSourceFile('DiagramGallery.tsx', galleryText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+let galleryDeclaration;
+function findGallery(node) {
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === 'diagramChoices') galleryDeclaration = node;
+    ts.forEachChild(node, findGallery);
+}
+findGallery(galleryAst);
+assert.ok(galleryDeclaration?.initializer && ts.isArrayLiteralExpression(galleryDeclaration.initializer));
+const gallery = galleryDeclaration.initializer.elements.map(node => {
+    assert.ok(ts.isObjectLiteralExpression(node));
+    return Object.fromEntries(node.properties.map(property => {
+        assert.ok(ts.isPropertyAssignment(property) && ts.isIdentifier(property.name) && ts.isStringLiteralLike(property.initializer));
+        return [property.name.text, property.initializer.text];
+    }));
+});
+assert.deepEqual(gallery.map(item => item.id), ['gv', 'iv', 'sv', 'cv', 'grv', 'flow', 'states', 'interrupts', 'timing']);
+assert.deepEqual([...new Set(gallery.map(item => item.view))].sort(), ['cv', 'fv', 'grv', 'gv', 'iv', 'sv']);
+const galleryModels = new Map();
+for (const item of gallery) {
+    if (!galleryModels.has(item.sourceFile)) {
+        const text = await readFile(new URL(`../examples/${item.sourceFile}`, import.meta.url), 'utf8');
+        const { Swaml } = createSwamlServices(EmptyFileSystem);
+        const document = await parseHelper(Swaml)(text, { validation: true });
+        assert.deepEqual(document.diagnostics, [], item.sourceFile);
+        galleryModels.set(item.sourceFile, document.parseResult.value);
+    }
+    const [packageName, path] = item.subject.split('::');
+    const pkg = galleryModels.get(item.sourceFile).packages.find(pkg => pkg.name === packageName);
+    assert.ok(pkg, `${item.id}: package context`);
+    const parts = path?.split('.') ?? [];
+    const root = parts.length ? pkg.elements.find(element => element.name === parts[0]) : pkg;
+    const subject = parts.length > 1 ? resolvePath(root, parts.slice(1).join('.')) : root;
+    assert.ok(subject, `${item.id}: unresolved displayed subject ${item.subject}`);
+    assert.ok(pkg.elements.some(element => a.isView(element) && element.kind === item.view), `${item.id}: no authored ${item.view} example`);
+    if (['flow', 'states', 'interrupts'].includes(item.id)) assert.ok(a.isFunctionDef(subject), `${item.id}: expected function subject`);
+    if (item.id === 'states') assert.ok(subject.stateBody, 'States example must contain owned states');
+    if (item.id === 'interrupts') assert.ok(subject.body.statements.some(a.isInterruptible), 'Interrupt example must contain a protected region');
+    if (item.id === 'timing') assert.ok(a.isRootComponent(subject), 'Timing example must select an execution root');
+}
+console.log('Verified all 6 view kinds and 4 FV presentations against their displayed example identities and downloadable sources.');

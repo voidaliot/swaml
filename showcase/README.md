@@ -1,6 +1,10 @@
 # SWAML interactive showcase
 
-A static React + TypeScript site with React Flow diagrams, ready to build for GitHub Pages. It includes a graphical ontology, an end-to-end modeling walkthrough, a quick user guide, four domain architectures, all seven language surfaces and an interface reference. Every graphic is flat. No server, account or environment secret is required.
+A static React + TypeScript site with React Flow diagrams, ready to build for GitHub Pages. The main page has two explorers: the language ontology and a gallery of diagram kinds. Source, properties and advanced display controls appear on demand. Every graphic is flat. No server, account or environment secret is required.
+
+The gallery presents structure, connections, sequence, cases and requirements, grid, function flow, states, interrupts and timing. The last four are FV presentations. The model browser remains available from the diagram toolbar. Example headings and source downloads follow the selected model.
+
+The Learn section opens the quick guide, end-to-end walkthrough, four domain architectures, requirements and verification example, and communication reference when requested. These longer examples are not stacked into the initial page. Existing `#explorer`, `#traceability`, `#modeling-overview`, `#architectures`, `#interfaces` and `#quick-start` links remain supported; individual diagrams can be linked with `#diagrams/timing` or another gallery ID.
 
 ## Run locally
 
