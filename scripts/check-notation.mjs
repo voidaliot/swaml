@@ -22,7 +22,7 @@ assert([...keywords].every(k => /^[a-z][A-Za-z0-9]*$/.test(k)), 'Keywords must u
 const productions = new Set([...grammar.matchAll(/^(?:(?:entry|hidden|terminal|type)\s+)*([A-Za-z]\w*)(?:\s+(?:returns|infers)\s+\w+)?\s*[:=]/gm)].map(m => m[1]));
 const kinds = new Set(['node', 'edge', 'compartment', 'label', 'projection']);
 const views = new Set(['Browser', 'gv', 'iv', 'cv', 'sv', 'grv', 'fv']);
-const templates = new Set(['package', 'classifier', 'component', 'usage', 'interface', 'member', 'port', 'connection', 'delegation', 'edge', 'function', 'calculation', 'flow', 'decision', 'loop', 'request', 'return', 'state', 'initial', 'final', 'transition', 'trigger', 'constraint', 'deployment-target', 'deployment', 'case', 'lifeline', 'message', 'note', 'browser', 'gv', 'iv', 'cv', 'sv', 'grv', 'fv']);
+const templates = new Set(['package', 'classifier', 'component', 'usage', 'interface', 'member', 'port', 'connection', 'delegation', 'edge', 'function', 'calculation', 'flow', 'decision', 'loop', 'for-loop', 'for-each', 'do-while', 'interruptible', 'function-timing', 'request', 'return', 'state', 'initial', 'final', 'transition', 'trigger', 'constraint', 'deployment-target', 'deployment', 'case', 'lifeline', 'message', 'note', 'browser', 'gv', 'iv', 'cv', 'sv', 'grv', 'fv']);
 const roles = new Set(['sender', 'receiver', 'client', 'server', 'publisher', 'subscriber', 'provides', 'requires']);
 const nonempty = value => typeof value === 'string' && value.trim().length > 0;
 const exactSet = (actual, expected, label) => assert.deepEqual([...actual].sort(), [...expected].sort(), label);
@@ -131,6 +131,25 @@ async function checkContext(c) {
 }
 for (const c of inventory.concepts) await checkContext(c);
 
+// A timing specimen must retain real observed occurrence identity and times;
+// its declared limits are not synthetic measured execution durations.
+for (const c of inventory.concepts.filter(c => c.drawing.template === 'function-timing')) {
+    const evidence = c.drawing.evidence;
+    const projection = JSON.parse(await read(evidence.artifact)).runs.find(run => run.id === evidence.run)?.timing;
+    assert(projection, `${c.id}: missing source-backed timing run`);
+    assert.deepEqual(c.drawing.observations.map(o => o.id), evidence.activationIds);
+    for (const observation of c.drawing.observations) {
+        const activation = projection.activations.find(a => a.id === observation.id && a.functionPath === evidence.functionPath);
+        assert(activation?.dispatched && activation?.terminal, `${c.id}: timing activation has no completed observed span`);
+        assert.equal(observation.releasedMs, activation.released.timeNs / 1e6);
+        assert.equal(observation.dispatchedMs, activation.dispatched.timeNs / 1e6);
+        assert.equal(observation.terminalMs, activation.terminal.timeNs / 1e6);
+        assert.equal(activation.contract?.wcetNs, 1e6);
+        assert.equal(activation.contract?.deadlineNs, 30e6);
+    }
+    assert.equal(projection.endNs, 31e6, `${c.id}: update the labeled quiescent observation boundary`);
+}
+
 // Small fault-injection regressions prove that removing coverage or breaking a
 // semantic anchor cannot accidentally turn a catalogue omission into success.
 const mutations = [
@@ -173,6 +192,18 @@ if (!sourceOnly) {
         }
         if (['deployment-target', 'deployment'].includes(c.drawing.template)) {
             assert(!scene.shapes.some(s => s.kind === 'polygon'), `${c.id}: deployment targets must be flat rectangles without cuboid faces`);
+        }
+        if (c.drawing.template === 'interruptible') {
+            const texts = scene.shapes.filter(s => s.kind === 'text').map(s => s.text);
+            for (const label of ['normal exit', 'on receive', 'interrupt', 'continue after region', 'cooperative cancellation; no rollback']) assert(texts.includes(label), `${c.id}: missing explicit control label ${label}`);
+            assert(texts.some(text => text.includes('control.stop')), `${c.id}: interruption route lost its typed member`);
+            assert(scene.shapes.some(s => s.kind === 'rect' && s.width >= 480 && s.height >= 250), `${c.id}: protected region frame missing`);
+        }
+        if (c.drawing.template === 'function-timing') {
+            const texts = scene.shapes.filter(s => s.kind === 'text').map(s => s.text);
+            assert(texts.some(text => text.startsWith('declared:')), `${c.id}: declared contract is not distinguished`);
+            assert(texts.some(text => text.startsWith('observed:')), `${c.id}: observed trace is not distinguished`);
+            assert(texts.includes('ready') && texts.includes('request wait'), `${c.id}: timing phases lost explicit labels`);
         }
         for (const s of scene.shapes) {
             assert(['rect', 'circle', 'polygon', 'line', 'text'].includes(s.kind), `${c.id}: unsupported shape`);

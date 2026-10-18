@@ -11,7 +11,7 @@ import { languageArguments } from './options.js';
 
 try {
     const [root, optionsFile, ...files] = languageArguments(process.argv.slice(2));
-    if (!root || !optionsFile || !files.length) throw new Error('Usage: swaml-simulate [--language-version 1.2] Package::Root options.json file.swaml [more files...]');
+    if (!root || !optionsFile || !files.length) throw new Error('Usage: swaml-simulate [--language-version 1.3] Package::Root options.json file.swaml [more files...]');
     const options = JSON.parse(await readFile(optionsFile, 'utf8')) as SimulationOptions;
     const { shared } = createSwamlServices(NodeFileSystem);
     const docs = await Promise.all(files.map(f => shared.workspace.LangiumDocuments.getOrCreateDocument(URI.file(resolve(f)))));

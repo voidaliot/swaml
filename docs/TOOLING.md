@@ -4,7 +4,7 @@
 
 The package supplies a reusable language core, command-line tools and a language-server adapter. It is marked `private` to prevent accidental npm publication. Consumers can build it locally and use the documented APIs with an explicitly selected language version.
 
-This edition parses headerless **SWAML 1.2** only. A host must pin its language-core dependency and identify 1.2 in project/workspace settings before source loading; these settings belong to the host, not to an undocumented model grammar. The repository CLI is itself pinned to 1.2. Unsupported requested editions must be rejected explicitly; a host must never silently upgrade models to the latest parser. Read the [migration guide](MIGRATION_1_2.md) before consuming the named-policy AST and host-pin update.
+This edition parses headerless **SWAML 1.3** only. A host must pin its language-core dependency and identify 1.2 in project/workspace settings before source loading; these settings belong to the host, not to an undocumented model grammar. The repository CLI is itself pinned to 1.2. Unsupported requested editions must be rejected explicitly; a host must never silently upgrade models to the latest parser. Read the [migration guide](MIGRATION_1_2.md) before consuming the named-policy AST and host-pin update.
 
 The source of concrete syntax is [swaml.langium](../src/language/swaml.langium). Langium generates AST types, grammar metadata, reflection and TextMate syntax. Generated files and `out/` are ignored; rebuild them after checkout.
 

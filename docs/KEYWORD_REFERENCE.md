@@ -1,8 +1,8 @@
 # Alphabetical keyword reference
 
-This user-facing reference covers every reserved word in the SWAML 1.2 grammar. Entries are sorted alphabetically, ignoring case for sorting only; source keywords remain case-sensitive. Example fragments illustrate a use and are not standalone models. Read the linked normative concern for full constraints. Punctuation and operator precedence follow the final section.
+This user-facing reference covers every reserved word in the SWAML 1.3 grammar. Entries are sorted alphabetically, ignoring case for sorting only; source keywords remain case-sensitive. Example fragments illustrate a use and are not standalone models. Read the linked normative concern for full constraints. Punctuation and operator precedence follow the final section.
 
-[`after`](#keyword-after) · [`and`](#keyword-and) · [`as`](#keyword-as) · [`assert`](#keyword-assert) · [`atLeastOnce`](#keyword-atleastonce) · [`atMostOnce`](#keyword-atmostonce) · [`attribute`](#keyword-attribute) · [`bestEffort`](#keyword-besteffort) · [`bool`](#keyword-bool) · [`bound`](#keyword-bound) · [`byte`](#keyword-byte) · [`calc`](#keyword-calc) · [`call`](#keyword-call) · [`capacity`](#keyword-capacity) · [`client`](#keyword-client) · [`clientServer`](#keyword-clientserver) · [`completion`](#keyword-completion) · [`component`](#keyword-component) · [`concurrency`](#keyword-concurrency) · [`connect`](#keyword-connect) · [`cv`](#keyword-cv) · [`data`](#keyword-data) · [`datatype`](#keyword-datatype) · [`deadline`](#keyword-deadline) · [`def`](#keyword-def) · [`delegate`](#keyword-delegate) · [`delivery`](#keyword-delivery) · [`deploy`](#keyword-deploy) · [`doc`](#keyword-doc) · [`dropNewest`](#keyword-dropnewest) · [`dropOldest`](#keyword-dropoldest) · [`else`](#keyword-else) · [`entry`](#keyword-entry) · [`enum`](#keyword-enum) · [`event`](#keyword-event) · [`every`](#keyword-every) · [`exit`](#keyword-exit) · [`fail`](#keyword-fail) · [`false`](#keyword-false) · [`fifo`](#keyword-fifo) · [`final`](#keyword-final) · [`function`](#keyword-function) · [`fv`](#keyword-fv) · [`grv`](#keyword-grv) · [`gv`](#keyword-gv) · [`idempotent`](#keyword-idempotent) · [`if`](#keyword-if) · [`import`](#keyword-import) · [`in`](#keyword-in) · [`include`](#keyword-include) · [`initial`](#keyword-initial) · [`int`](#keyword-int) · [`interface`](#keyword-interface) · [`iv`](#keyword-iv) · [`label`](#keyword-label) · [`manual`](#keyword-manual) · [`maxAge`](#keyword-maxage) · [`maxLatency`](#keyword-maxlatency) · [`mixed`](#keyword-mixed) · [`ms`](#keyword-ms) · [`not`](#keyword-not) · [`ns`](#keyword-ns) · [`of`](#keyword-of) · [`on`](#keyword-on) · [`optional`](#keyword-optional) · [`or`](#keyword-or) · [`ordering`](#keyword-ordering) · [`otherwise`](#keyword-otherwise) · [`overflow`](#keyword-overflow) · [`package`](#keyword-package) · [`port`](#keyword-port) · [`priority`](#keyword-priority) · [`provides`](#keyword-provides) · [`publish`](#keyword-publish) · [`publisher`](#keyword-publisher) · [`publishSubscribe`](#keyword-publishsubscribe) · [`qos`](#keyword-qos) · [`queued`](#keyword-queued) · [`real`](#keyword-real) · [`realtime`](#keyword-realtime) · [`receive`](#keyword-receive) · [`receiver`](#keyword-receiver) · [`record`](#keyword-record) · [`recursive`](#keyword-recursive) · [`redefines`](#keyword-redefines) · [`reentrant`](#keyword-reentrant) · [`reject`](#keyword-reject) · [`reply`](#keyword-reply) · [`requirement`](#keyword-requirement) · [`requires`](#keyword-requires) · [`return`](#keyword-return) · [`s`](#keyword-s) · [`sampled`](#keyword-sampled) · [`satisfy`](#keyword-satisfy) · [`send`](#keyword-send) · [`sender`](#keyword-sender) · [`senderReceiver`](#keyword-senderreceiver) · [`serial`](#keyword-serial) · [`server`](#keyword-server) · [`service`](#keyword-service) · [`specializes`](#keyword-specializes) · [`start`](#keyword-start) · [`state`](#keyword-state) · [`string`](#keyword-string) · [`subscriber`](#keyword-subscriber) · [`sv`](#keyword-sv) · [`timing`](#keyword-timing) · [`transition`](#keyword-transition) · [`true`](#keyword-true) · [`uint`](#keyword-uint) · [`unordered`](#keyword-unordered) · [`us`](#keyword-us) · [`useCase`](#keyword-usecase) · [`var`](#keyword-var) · [`verificationCase`](#keyword-verificationcase) · [`verify`](#keyword-verify) · [`version`](#keyword-version) · [`via`](#keyword-via) · [`view`](#keyword-view) · [`void`](#keyword-void) · [`wcet`](#keyword-wcet) · [`when`](#keyword-when) · [`where`](#keyword-where) · [`while`](#keyword-while) · [`within`](#keyword-within)
+[`after`](#keyword-after) · [`and`](#keyword-and) · [`as`](#keyword-as) · [`assert`](#keyword-assert) · [`atLeastOnce`](#keyword-atleastonce) · [`atMostOnce`](#keyword-atmostonce) · [`attribute`](#keyword-attribute) · [`bestEffort`](#keyword-besteffort) · [`bool`](#keyword-bool) · [`bound`](#keyword-bound) · [`byte`](#keyword-byte) · [`calc`](#keyword-calc) · [`call`](#keyword-call) · [`capacity`](#keyword-capacity) · [`client`](#keyword-client) · [`clientServer`](#keyword-clientserver) · [`completion`](#keyword-completion) · [`component`](#keyword-component) · [`concurrency`](#keyword-concurrency) · [`connect`](#keyword-connect) · [`cv`](#keyword-cv) · [`data`](#keyword-data) · [`datatype`](#keyword-datatype) · [`deadline`](#keyword-deadline) · [`def`](#keyword-def) · [`delegate`](#keyword-delegate) · [`delivery`](#keyword-delivery) · [`deploy`](#keyword-deploy) · [`do`](#keyword-do) · [`doc`](#keyword-doc) · [`dropNewest`](#keyword-dropnewest) · [`dropOldest`](#keyword-dropoldest) · [`else`](#keyword-else) · [`entry`](#keyword-entry) · [`enum`](#keyword-enum) · [`event`](#keyword-event) · [`every`](#keyword-every) · [`exit`](#keyword-exit) · [`fail`](#keyword-fail) · [`false`](#keyword-false) · [`fifo`](#keyword-fifo) · [`final`](#keyword-final) · [`for`](#keyword-for) · [`forEach`](#keyword-foreach) · [`function`](#keyword-function) · [`fv`](#keyword-fv) · [`grv`](#keyword-grv) · [`gv`](#keyword-gv) · [`idempotent`](#keyword-idempotent) · [`if`](#keyword-if) · [`import`](#keyword-import) · [`in`](#keyword-in) · [`include`](#keyword-include) · [`initial`](#keyword-initial) · [`int`](#keyword-int) · [`interface`](#keyword-interface) · [`interruptible`](#keyword-interruptible) · [`iv`](#keyword-iv) · [`label`](#keyword-label) · [`manual`](#keyword-manual) · [`maxAge`](#keyword-maxage) · [`maxLatency`](#keyword-maxlatency) · [`mixed`](#keyword-mixed) · [`ms`](#keyword-ms) · [`not`](#keyword-not) · [`ns`](#keyword-ns) · [`of`](#keyword-of) · [`on`](#keyword-on) · [`optional`](#keyword-optional) · [`or`](#keyword-or) · [`ordering`](#keyword-ordering) · [`otherwise`](#keyword-otherwise) · [`overflow`](#keyword-overflow) · [`package`](#keyword-package) · [`port`](#keyword-port) · [`priority`](#keyword-priority) · [`provides`](#keyword-provides) · [`publish`](#keyword-publish) · [`publisher`](#keyword-publisher) · [`publishSubscribe`](#keyword-publishsubscribe) · [`qos`](#keyword-qos) · [`queued`](#keyword-queued) · [`real`](#keyword-real) · [`realtime`](#keyword-realtime) · [`receive`](#keyword-receive) · [`receiver`](#keyword-receiver) · [`record`](#keyword-record) · [`recursive`](#keyword-recursive) · [`redefines`](#keyword-redefines) · [`reentrant`](#keyword-reentrant) · [`reject`](#keyword-reject) · [`reply`](#keyword-reply) · [`requirement`](#keyword-requirement) · [`requires`](#keyword-requires) · [`return`](#keyword-return) · [`s`](#keyword-s) · [`sampled`](#keyword-sampled) · [`satisfy`](#keyword-satisfy) · [`send`](#keyword-send) · [`sender`](#keyword-sender) · [`senderReceiver`](#keyword-senderreceiver) · [`serial`](#keyword-serial) · [`server`](#keyword-server) · [`service`](#keyword-service) · [`specializes`](#keyword-specializes) · [`start`](#keyword-start) · [`state`](#keyword-state) · [`string`](#keyword-string) · [`subscriber`](#keyword-subscriber) · [`sv`](#keyword-sv) · [`timing`](#keyword-timing) · [`transition`](#keyword-transition) · [`true`](#keyword-true) · [`uint`](#keyword-uint) · [`unordered`](#keyword-unordered) · [`us`](#keyword-us) · [`useCase`](#keyword-usecase) · [`var`](#keyword-var) · [`verificationCase`](#keyword-verificationcase) · [`verify`](#keyword-verify) · [`version`](#keyword-version) · [`via`](#keyword-via) · [`view`](#keyword-view) · [`void`](#keyword-void) · [`wcet`](#keyword-wcet) · [`when`](#keyword-when) · [`where`](#keyword-where) · [`while`](#keyword-while) · [`within`](#keyword-within)
 
 ## Keyword: after
 
@@ -96,13 +96,13 @@ Primitive two-valued Boolean type. Conditions and logical operators require bool
 
 ## Keyword: bound
 
-**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `While`.
+**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `While`, `For`, `DoWhile`.
 
-Sets the positive safe-integer maximum number of loop-body executions. After that many iterations the condition is reevaluated; a still-true condition fails execution.
+Sets the positive safe-integer maximum number of body executions for while, for and do-while loops. A still-true condition after the final permitted body fails before another body. forEach instead uses its copied array cardinality as the bound.
 
 **Example fragment:** `while (i < 3) bound 3 { i = i + 1; }`
 
-**Graphical notation:** [Bounded loop](GRAPHICAL_CATALOG.md#notation-bounded-loop). Bounded loop.
+**Graphical notation:** [Bounded loop](GRAPHICAL_CATALOG.md#notation-bounded-loop), [Counted for loop](GRAPHICAL_CATALOG.md#notation-for-loop), [Post-test do-while loop](GRAPHICAL_CATALOG.md#notation-do-while-loop). Bounded loop; Counted for loop; Post-test do-while loop.
 
 ## Keyword: byte
 
@@ -242,7 +242,7 @@ Positive elapsed-time bound from activation release to completion, including que
 
 **Example fragment:** `deadline 5 ms;`
 
-**Graphical notation:** [Function timing contract](GRAPHICAL_CATALOG.md#notation-timing-contract). Function timing contract.
+**Graphical notation:** [Function timing contract](GRAPHICAL_CATALOG.md#notation-timing-contract), [Function timing diagram](GRAPHICAL_CATALOG.md#notation-function-timing-diagram). Function timing contract; Function timing diagram.
 
 ## Keyword: def
 
@@ -283,6 +283,16 @@ Associates a component instance path, or the root name itself, with an external 
 **Example fragment:** `deploy controller on "sysml:Vehicle::ecu";`
 
 **Graphical notation:** [Deployment binding](GRAPHICAL_CATALOG.md#notation-deployment). Deployment binding.
+
+## Keyword: do
+
+**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `DoWhile`.
+
+Starts a post-test loop. Its body runs at least once, then its Boolean while condition is evaluated. A mandatory positive safe-integer bound limits body executions; another requested body fails with LoopBound. Body-local declarations do not escape to the condition.
+
+**Example fragment:** `do { count = count + 1; } while (count < 3) bound 3;`
+
+**Graphical notation:** [Post-test do-while loop](GRAPHICAL_CATALOG.md#notation-do-while-loop). Post-test do-while loop.
 
 ## Keyword: doc
 
@@ -414,6 +424,26 @@ Marks a state that completes its owning function after entry. It has no outgoing
 
 **Graphical notation:** [Final state](GRAPHICAL_CATALOG.md#notation-final-state). Final state.
 
+## Keyword: for
+
+**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `For`.
+
+Counted pretest loop with one typed local initializer, Boolean condition, assignment update and mandatory positive safe-integer bound. The header variable belongs to the loop; body locals are fresh each iteration. The update follows each completed body. A true condition after the bound fails before another body.
+
+**Example fragment:** `for (var i: int = 0; i < 3; i = i + 1) bound 3 { count = count + 1; }`
+
+**Graphical notation:** [Counted for loop](GRAPHICAL_CATALOG.md#notation-for-loop). Counted for loop.
+
+## Keyword: forEach
+
+**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `ForEach`.
+
+Iterates in array order over one copied fixed-array value evaluated once on entry. Every iteration binds a fresh typed copy of its item. Array cardinality is the finite bound; changing the source or item cannot change the iteration snapshot.
+
+**Example fragment:** `forEach (item: int in values) { total = total + item; }`
+
+**Graphical notation:** [Fixed-array forEach loop](GRAPHICAL_CATALOG.md#notation-for-each-loop). Fixed-array forEach loop.
+
 ## Keyword: function
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Signature`, `FunctionDef`.
@@ -428,11 +458,11 @@ Declares an executable component-owned behavior or an interface contract signatu
 
 **Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `View`.
 
-Flow View of a function. Projects either its statement body or its owned states/transitions in the same view family.
+Function view of existing executable functions. It projects statement flow, directly owned states or an observed function-timing diagram using the same view kind. Timing contracts remain distinct from observed trace intervals.
 
 **Example fragment:** `view control fv of Controller.regulate;`
 
-**Graphical notation:** [Flow View](GRAPHICAL_CATALOG.md#notation-view-fv). Flow View.
+**Graphical notation:** [Flow View](GRAPHICAL_CATALOG.md#notation-view-fv), [Function timing diagram](GRAPHICAL_CATALOG.md#notation-function-timing-diagram). Flow View; Function timing diagram.
 
 ## Keyword: grv
 
@@ -486,13 +516,13 @@ Imports top-level names from one package using namespace::*; imports are not tra
 
 ## Keyword: in
 
-**Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `Calculation`.
+**Concern:** [Values and calculation](spec/01-structure-and-types.md). **Grammar:** `Calculation`, `ForEach`.
 
-Declares one ordered typed input of a calculation. Arguments are copied values and must match the declared input types.
+Declares a typed input of a pure calculation, or separates the typed item binding from the fixed-array expression of forEach. Calculation inputs are copied; array iteration snapshots its collection once and binds copied items.
 
 **Example fragment:** `in measured: real;`
 
-**Graphical notation:** [Pure calculation](GRAPHICAL_CATALOG.md#notation-calculation). Pure calculation.
+**Graphical notation:** [Pure calculation](GRAPHICAL_CATALOG.md#notation-calculation), [Fixed-array forEach loop](GRAPHICAL_CATALOG.md#notation-for-each-loop). Pure calculation; Fixed-array forEach loop.
 
 ## Keyword: include
 
@@ -533,6 +563,16 @@ Declares a nominal, versioned contract of one of four kinds. Port endpoints must
 **Example fragment:** `interface service Orders version "1.0.0" { ... }`
 
 **Graphical notation:** [Sender–receiver interface](GRAPHICAL_CATALOG.md#notation-sender-receiver-interface), [Client–server interface](GRAPHICAL_CATALOG.md#notation-client-server-interface), [Publish–subscribe interface](GRAPHICAL_CATALOG.md#notation-publish-subscribe-interface), [Service interface](GRAPHICAL_CATALOG.md#notation-service-interface). Sender–receiver interface; Client–server interface; Publish–subscribe interface; Service interface.
+
+## Keyword: interruptible
+
+**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Interruptible`.
+
+Names a cooperatively cancellable region in a triggered serial flow function. An explicitly routed data/event input cancels protected work at a statement boundary or suspended request and runs the typed handler in the same activation. Pending requests are abandoned locally without rolling back prior or remote effects. The region supplies no hardware preemption or pause/resume.
+
+**Example fragment:** `interruptible work { call job.perform() as answer within 1 s otherwise { return; }; } on receive control.stop { cancelled = true; }`
+
+**Graphical notation:** [Interruptible flow region](GRAPHICAL_CATALOG.md#notation-interruptible-region). Interruptible flow region.
 
 ## Keyword: iv
 
@@ -632,17 +672,17 @@ Selects the root context of a useCase/verificationCase, the design source of a s
 
 **Example fragment:** `view flow fv of Product.controller.worker.run;`
 
-**Graphical notation:** [General View](GRAPHICAL_CATALOG.md#notation-view-gv), [Interconnect View](GRAPHICAL_CATALOG.md#notation-view-iv), [Case View](GRAPHICAL_CATALOG.md#notation-view-cv), [Sequence View](GRAPHICAL_CATALOG.md#notation-view-sv), [Grid View](GRAPHICAL_CATALOG.md#notation-view-grv), [Flow View](GRAPHICAL_CATALOG.md#notation-view-fv), [Satisfaction relation](GRAPHICAL_CATALOG.md#notation-satisfies-link), [Use case](GRAPHICAL_CATALOG.md#notation-case), [Verification case](GRAPHICAL_CATALOG.md#notation-verification-case). Case root context, satisfaction design source or compact view subject; references preserve semantic ownership and link direction.
+**Graphical notation:** [Use case](GRAPHICAL_CATALOG.md#notation-case), [Satisfaction relation](GRAPHICAL_CATALOG.md#notation-satisfies-link), [General View](GRAPHICAL_CATALOG.md#notation-view-gv), [Interconnect View](GRAPHICAL_CATALOG.md#notation-view-iv), [Case View](GRAPHICAL_CATALOG.md#notation-view-cv), [Sequence View](GRAPHICAL_CATALOG.md#notation-view-sv), [Grid View](GRAPHICAL_CATALOG.md#notation-view-grv), [Flow View](GRAPHICAL_CATALOG.md#notation-view-fv), [Verification case](GRAPHICAL_CATALOG.md#notation-verification-case). Use case; Satisfaction relation; General View; Interconnect View; Case View; Sequence View; Grid View; Flow View; Verification case.
 
 ## Keyword: on
 
-**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Deployment`, `Trigger`, `Transition`.
+**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Deployment`, `Trigger`, `Interruptible`, `Transition`.
 
-Introduces a function activation trigger, state transition trigger, or deployment destination. Deployment destinations are quoted external identities; behavior triggers retain their local semantics.
+Introduces a function activation trigger, state transition trigger, interruptible-region input or deployment destination. Deployment is a location association; activation and interruption are incoming control bindings.
 
 **Example fragment:** `function tick() on every 10 ms { return; } / deploy app on "system:production";`
 
-**Graphical notation:** [Startup activation](GRAPHICAL_CATALOG.md#notation-trigger-start), [Manual activation](GRAPHICAL_CATALOG.md#notation-trigger-manual), [Periodic activation](GRAPHICAL_CATALOG.md#notation-trigger-periodic), [Port receive activation](GRAPHICAL_CATALOG.md#notation-trigger-receive), [RPC handler activation](GRAPHICAL_CATALOG.md#notation-trigger-call), [State transition](GRAPHICAL_CATALOG.md#notation-transition), [Deployment binding](GRAPHICAL_CATALOG.md#notation-deployment). Startup activation; Manual activation; Periodic activation; Port receive activation; RPC handler activation; State transition; Deployment binding.
+**Graphical notation:** [Startup activation](GRAPHICAL_CATALOG.md#notation-trigger-start), [Manual activation](GRAPHICAL_CATALOG.md#notation-trigger-manual), [Periodic activation](GRAPHICAL_CATALOG.md#notation-trigger-periodic), [Port receive activation](GRAPHICAL_CATALOG.md#notation-trigger-receive), [RPC handler activation](GRAPHICAL_CATALOG.md#notation-trigger-call), [State transition](GRAPHICAL_CATALOG.md#notation-transition), [Deployment binding](GRAPHICAL_CATALOG.md#notation-deployment), [Interruptible flow region](GRAPHICAL_CATALOG.md#notation-interruptible-region). Startup activation; Manual activation; Periodic activation; Port receive activation; RPC handler activation; State transition; Deployment binding; Interruptible flow region.
 
 ## Keyword: optional
 
@@ -758,7 +798,7 @@ Outgoing role for a publishSubscribe contract. One port may fan out through seve
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Interface`.
 
-Event-only contract kind with publisher/subscriber ports. Subscriptions are explicit static connectors. Runtime subscribe/unsubscribe and wildcard topics are outside 1.2.
+Event-only contract kind with publisher/subscriber ports. Subscriptions are explicit static connectors. Runtime subscribe/unsubscribe and wildcard topics are outside 1.3.
 
 **Example fragment:** `interface publishSubscribe Notices version "1.0.0" { event changed(); }`
 
@@ -806,13 +846,13 @@ Root component profile requiring function timing, connector latency and sampled 
 
 ## Keyword: receive
 
-**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Trigger`, `Transition`.
+**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Trigger`, `Interruptible`, `Transition`.
 
-Consumes an incoming data/event member through a receiver/subscriber/requires port. An ordinary function receives copied parameters; a transition exposes event parameters or data payload in guard/effect.
+Consumes an incoming data/event member through a receiver/subscriber/requires port. An ordinary function receives copied parameters; a transition or interruptible handler receives a copied data payload or event parameters. Boundaries remain explicit.
 
 **Example fragment:** `on receive commands.begin`
 
-**Graphical notation:** [Port receive activation](GRAPHICAL_CATALOG.md#notation-trigger-receive), [State transition](GRAPHICAL_CATALOG.md#notation-transition). Port receive activation; State transition.
+**Graphical notation:** [Port receive activation](GRAPHICAL_CATALOG.md#notation-trigger-receive), [State transition](GRAPHICAL_CATALOG.md#notation-transition), [Interruptible flow region](GRAPHICAL_CATALOG.md#notation-interruptible-region). Port receive activation; State transition; Interruptible flow region.
 
 ## Keyword: receiver
 
@@ -1072,7 +1112,7 @@ Function contract containing wcet, deadline and concurrency in that order. Requi
 
 **Example fragment:** `timing { wcet 1 ms; deadline 5 ms; concurrency serial; }`
 
-**Graphical notation:** [Function timing contract](GRAPHICAL_CATALOG.md#notation-timing-contract). Function timing contract.
+**Graphical notation:** [Function timing contract](GRAPHICAL_CATALOG.md#notation-timing-contract), [Function timing diagram](GRAPHICAL_CATALOG.md#notation-function-timing-diagram). Function timing contract; Function timing diagram.
 
 ## Keyword: transition
 
@@ -1212,7 +1252,7 @@ Positive active-execution-time bound including local helpers and state reaction 
 
 **Example fragment:** `wcet 1 ms;`
 
-**Graphical notation:** [Function timing contract](GRAPHICAL_CATALOG.md#notation-timing-contract). Function timing contract.
+**Graphical notation:** [Function timing contract](GRAPHICAL_CATALOG.md#notation-timing-contract), [Function timing diagram](GRAPHICAL_CATALOG.md#notation-function-timing-diagram). Function timing contract; Function timing diagram.
 
 ## Keyword: when
 
@@ -1236,13 +1276,13 @@ Filters selected candidates with a Boolean predicate.
 
 ## Keyword: while
 
-**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `While`.
+**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `While`, `DoWhile`.
 
-Pretest bool loop with mandatory positive bound. Each iteration has a lexical body scope. A still-true condition after the bound fails instead of silently exiting.
+Checks the Boolean condition before each while iteration or after each do-loop body. Both forms require a positive safe-integer bound and a fresh lexical body scope. A true condition after the bound fails instead of silently exiting.
 
 **Example fragment:** `while (i < 3) bound 3 { i = i + 1; }`
 
-**Graphical notation:** [Bounded loop](GRAPHICAL_CATALOG.md#notation-bounded-loop). Bounded loop.
+**Graphical notation:** [Bounded loop](GRAPHICAL_CATALOG.md#notation-bounded-loop), [Post-test do-while loop](GRAPHICAL_CATALOG.md#notation-do-while-loop). Bounded loop; Post-test do-while loop.
 
 ## Keyword: within
 

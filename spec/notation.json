@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
-  "languageVersion": "1.2",
-  "edition": "1.2.1",
+  "languageVersion": "1.3",
+  "edition": "1.3.0",
   "title": "SWAML canonical graphical notation",
   "style": {
     "background": "white",
@@ -2668,7 +2668,8 @@
       "kind": "label",
       "views": [
         "gv",
-        "grv"
+        "grv",
+        "fv"
       ],
       "keywords": [
         "timing",
@@ -3812,40 +3813,296 @@
           "where kind == \"component\""
         ]
       }
+    },
+    {
+      "id": "for-loop",
+      "title": "Counted for loop",
+      "concern": "Function flow",
+      "kind": "node",
+      "views": [
+        "fv"
+      ],
+      "keywords": [
+        "for",
+        "bound"
+      ],
+      "productions": [
+        "For",
+        "ForUpdate"
+      ],
+      "syntax": "for (var i: int = 0; i < 3; i = i + 1) bound 3",
+      "context": "Header of the loop in ControlFlowNotation::Counter.countedLoop. The initializer, test, body and update are ordered inside one owned loop.",
+      "rules": [
+        "Draw an owned loop frame with an initializer before the condition, a true edge to the body, an update after the body and an explicit edge back to the test. Label the false normal exit and the positive bound.",
+        "Show a LoopBound failure on an excess requested body. The initializer runs once even if the body runs zero times; the header variable remains inside the loop scope."
+      ],
+      "description": "Counted for loop. A single initializer precedes a Boolean pretest; each completed body is followed by its assignment update and another test.",
+      "source": {
+        "model": "examples/notation/control-flow.swaml",
+        "path": "ControlFlowNotation::Counter.countedLoop"
+      },
+      "drawing": {
+        "template": "for-loop",
+        "header": [
+          "for"
+        ],
+        "lines": [
+          "counted = counted + 1"
+        ],
+        "initializer": "var i: int = 0",
+        "condition": "i < 3",
+        "update": "i = i + 1",
+        "bound": "3"
+      }
+    },
+    {
+      "id": "for-each-loop",
+      "title": "Fixed-array forEach loop",
+      "concern": "Function flow",
+      "kind": "node",
+      "views": [
+        "fv"
+      ],
+      "keywords": [
+        "forEach",
+        "in"
+      ],
+      "productions": [
+        "ForEach"
+      ],
+      "syntax": "forEach (item: int in values)",
+      "context": "Array loop in ControlFlowNotation::Counter.arrayLoop; values is a fixed int[3] array.",
+      "rules": [
+        "Draw an array-snapshot step before the loop, an ordered next-item test, a fresh typed item binding and a body edge returning for the next item. Label completion when no item remains.",
+        "Label the copied collection and finite cardinality. The graphic must not imply a live subscription, an extra explicit bound, a shared item alias or dynamic collection growth."
+      ],
+      "description": "Fixed-array forEach loop. Evaluate and copy the array once, then execute the body for each fresh typed item in array order.",
+      "source": {
+        "model": "examples/notation/control-flow.swaml",
+        "path": "ControlFlowNotation::Counter.arrayLoop"
+      },
+      "drawing": {
+        "template": "for-each",
+        "header": [
+          "forEach (item: int in values)"
+        ],
+        "lines": [
+          "total = total + item"
+        ],
+        "collection": "values: int[3]",
+        "item": "item: int",
+        "cardinality": "3"
+      }
+    },
+    {
+      "id": "do-while-loop",
+      "title": "Post-test do-while loop",
+      "concern": "Function flow",
+      "kind": "node",
+      "views": [
+        "fv"
+      ],
+      "keywords": [
+        "do",
+        "while",
+        "bound"
+      ],
+      "productions": [
+        "DoWhile"
+      ],
+      "syntax": "do { postTested = postTested + 1; } while (postTested < 2) bound 2;",
+      "context": "Complete post-test statement in ControlFlowNotation::Counter.postTestLoop.",
+      "rules": [
+        "Draw the body before the Boolean test. A true edge returns to the body and the false edge leaves normally. Show the positive bound and its excess-body failure explicitly.",
+        "The first body is mandatory. Condition lookup uses the enclosing scope after the body; body-local declarations are not visible to the test."
+      ],
+      "description": "Post-test do-while loop. Execute the body at least once, then test the condition before requesting another bounded iteration.",
+      "source": {
+        "model": "examples/notation/control-flow.swaml",
+        "path": "ControlFlowNotation::Counter.postTestLoop"
+      },
+      "drawing": {
+        "template": "do-while",
+        "header": [
+          "do ... while"
+        ],
+        "lines": [
+          "postTested = postTested + 1"
+        ],
+        "condition": "postTested < 2",
+        "bound": "2"
+      }
+    },
+    {
+      "id": "interruptible-region",
+      "title": "Interruptible flow region",
+      "concern": "Function flow",
+      "kind": "node",
+      "views": [
+        "fv"
+      ],
+      "keywords": [
+        "interruptible",
+        "on",
+        "receive"
+      ],
+      "productions": [
+        "Interruptible"
+      ],
+      "syntax": "interruptible work",
+      "context": "Named work region in Interrupts::Worker.run, with a routed Control.stop(reason: string) input and a handler in the same activation.",
+      "rules": [
+        "Draw a named frame around protected statements, a normal exit through the frame boundary and a separate explicitly labeled on receive port.member interruption edge to its handler. Merge continuation after the region unless the handler itself returns or fails.",
+        "Show the incoming typed member and its payload/parameters. An interruption cooperatively abandons protected work and a suspended local RPC correlation, then executes the handler under the existing activation deadline.",
+        "The region belongs only to a triggered serial flow function. It is neither a second handler activation nor hardware preemption, pause/resume, rollback or cancellation of remote effects."
+      ],
+      "description": "Interruptible flow region. A named protected region has a normal exit and one routed typed input that cooperatively transfers control to its handler.",
+      "source": {
+        "model": "examples/19-interruptible-function.swaml",
+        "path": "Interrupts::Worker.run.work"
+      },
+      "drawing": {
+        "template": "interruptible",
+        "header": [
+          "interruptible work"
+        ],
+        "lines": [
+          "protected statements",
+          "same-activation handler"
+        ],
+        "endpoint": "control.stop(reason: string)"
+      }
+    },
+    {
+      "id": "function-timing-diagram",
+      "title": "Function timing diagram",
+      "concern": "Timing and deployment",
+      "kind": "projection",
+      "views": [
+        "fv"
+      ],
+      "keywords": [
+        "fv",
+        "timing",
+        "wcet",
+        "deadline"
+      ],
+      "productions": [
+        "View",
+        "Timing"
+      ],
+      "syntax": "function poll() on manual timing { wcet 1 ms; deadline 30 ms; concurrency serial; }",
+      "context": "FunctionTiming::Client.poll declares the contract; the success trace of example 17 supplies distinct first.poll activations a1 and a7.",
+      "rules": [
+        "Project existing function occurrences and activation IDs against a labeled time axis. Label ready, running or zero-time markers, request waits, completion/failure and the observation boundary without relying on color. Preserve trace ordinal when timestamps coincide.",
+        "Keep declared WCET/deadline/concurrency in a separate contract compartment. A deadline is measured from each release; a declared bound outside the displayed time range is identified explicitly.",
+        "Observed logical waits and reference-simulator zero CPU cost are evidence of that run only. The diagram does not turn WCET limits into measured durations or establish physical schedulability. This projection uses fv and introduces no new source keyword or view kind."
+      ],
+      "description": "Function timing diagram. An fv projection compares observed activation releases, waits and terminal markers with separately labeled declared timing contracts.",
+      "source": {
+        "model": "examples/17-function-timing.swaml",
+        "path": "FunctionTiming::Client.poll"
+      },
+      "drawing": {
+        "template": "function-timing",
+        "header": [
+          "fv: first.poll"
+        ],
+        "lines": [
+          "declared: wcet 1 ms; deadline 30 ms; serial",
+          "observed: reference logical time, zero CPU cost"
+        ],
+        "evidence": {
+          "artifact": "spec/function-timing-demo.json",
+          "run": "success",
+          "functionPath": "first.poll",
+          "activationIds": [
+            "a1",
+            "a7"
+          ]
+        },
+        "observations": [
+          {
+            "id": "a1",
+            "releasedMs": 0,
+            "dispatchedMs": 0,
+            "terminalMs": 4
+          },
+          {
+            "id": "a7",
+            "releasedMs": 1,
+            "dispatchedMs": 4,
+            "terminalMs": 8
+          }
+        ]
+      }
     }
   ],
   "coverage": {
     "keywords": [
       {
-        "term": "package",
+        "term": "after",
         "mode": "glyph",
-        "rationale": "Package.",
+        "rationale": "Residence timer transition; Case causal order.",
         "concepts": [
-          "package"
+          "timer-transition",
+          "case-causal-order"
         ]
       },
       {
-        "term": "import",
-        "mode": "glyph",
-        "rationale": "Package import.",
+        "term": "and",
+        "mode": "label",
+        "rationale": "Expressions and value paths.",
         "concepts": [
-          "import"
+          "expression"
         ]
       },
       {
-        "term": "datatype",
+        "term": "as",
         "mode": "glyph",
-        "rationale": "Record datatype.",
+        "rationale": "Routed function call.",
         "concepts": [
-          "datatype"
+          "routed-call"
         ]
       },
       {
-        "term": "enum",
+        "term": "assert",
         "mode": "glyph",
-        "rationale": "Enumeration.",
+        "rationale": "Assertion.",
         "concepts": [
-          "enumeration"
+          "assert"
+        ]
+      },
+      {
+        "term": "atLeastOnce",
+        "mode": "label",
+        "rationale": "Delivery policy.",
+        "concepts": [
+          "delivery-policy"
+        ]
+      },
+      {
+        "term": "atMostOnce",
+        "mode": "label",
+        "rationale": "Delivery policy.",
+        "concepts": [
+          "delivery-policy"
+        ]
+      },
+      {
+        "term": "attribute",
+        "mode": "label",
+        "rationale": "Requirement attribute.",
+        "concepts": [
+          "requirement-attribute"
+        ]
+      },
+      {
+        "term": "bestEffort",
+        "mode": "label",
+        "rationale": "Delivery policy.",
+        "concepts": [
+          "delivery-policy"
         ]
       },
       {
@@ -3857,6 +4114,16 @@
         ]
       },
       {
+        "term": "bound",
+        "mode": "glyph",
+        "rationale": "Bounded loop; Counted for loop; Post-test do-while loop.",
+        "concepts": [
+          "bounded-loop",
+          "for-loop",
+          "do-while-loop"
+        ]
+      },
+      {
         "term": "byte",
         "mode": "label",
         "rationale": "Primitive types.",
@@ -3865,39 +4132,365 @@
         ]
       },
       {
-        "term": "uint",
+        "term": "calc",
         "mode": "label",
-        "rationale": "Primitive types.",
+        "rationale": "Pure calculation.",
         "concepts": [
-          "primitive-types"
+          "calculation"
+        ]
+      },
+      {
+        "term": "call",
+        "mode": "glyph",
+        "rationale": "RPC handler activation; Local function call; Routed function call; Case request.",
+        "concepts": [
+          "trigger-call",
+          "local-call",
+          "routed-call",
+          "case-request"
+        ]
+      },
+      {
+        "term": "capacity",
+        "mode": "label",
+        "rationale": "Queue capacity.",
+        "concepts": [
+          "capacity-policy"
+        ]
+      },
+      {
+        "term": "client",
+        "mode": "glyph",
+        "rationale": "RPC client port.",
+        "concepts": [
+          "port-client"
+        ]
+      },
+      {
+        "term": "clientServer",
+        "mode": "glyph",
+        "rationale": "Client–server interface.",
+        "concepts": [
+          "client-server-interface"
+        ]
+      },
+      {
+        "term": "completion",
+        "mode": "glyph",
+        "rationale": "Completion transition.",
+        "concepts": [
+          "completion-transition"
+        ]
+      },
+      {
+        "term": "component",
+        "mode": "glyph",
+        "rationale": "Component definition; Component usage; Occurrence typing relationship; Root component; Inline root composition.",
+        "concepts": [
+          "component-definition",
+          "component-usage",
+          "type-relationship",
+          "root-component",
+          "inline-root"
+        ]
+      },
+      {
+        "term": "concurrency",
+        "mode": "label",
+        "rationale": "Concurrency mode.",
+        "concepts": [
+          "concurrency-mode"
+        ]
+      },
+      {
+        "term": "connect",
+        "mode": "glyph",
+        "rationale": "Interface connector.",
+        "concepts": [
+          "connector"
+        ]
+      },
+      {
+        "term": "cv",
+        "mode": "glyph",
+        "rationale": "Case View.",
+        "concepts": [
+          "view-cv"
+        ]
+      },
+      {
+        "term": "data",
+        "mode": "label",
+        "rationale": "Data member.",
+        "concepts": [
+          "data-member"
+        ]
+      },
+      {
+        "term": "datatype",
+        "mode": "glyph",
+        "rationale": "Record datatype.",
+        "concepts": [
+          "datatype"
+        ]
+      },
+      {
+        "term": "deadline",
+        "mode": "glyph",
+        "rationale": "Function timing contract; Function timing diagram.",
+        "concepts": [
+          "timing-contract",
+          "function-timing-diagram"
+        ]
+      },
+      {
+        "term": "def",
+        "mode": "glyph",
+        "rationale": "Component definition; Reusable QoS policy.",
+        "concepts": [
+          "component-definition",
+          "qos-policy-definition"
+        ]
+      },
+      {
+        "term": "delegate",
+        "mode": "glyph",
+        "rationale": "Boundary delegation.",
+        "concepts": [
+          "delegation"
+        ]
+      },
+      {
+        "term": "delivery",
+        "mode": "label",
+        "rationale": "Delivery policy.",
+        "concepts": [
+          "delivery-policy"
+        ]
+      },
+      {
+        "term": "deploy",
+        "mode": "glyph",
+        "rationale": "Deployment binding.",
+        "concepts": [
+          "deployment"
+        ]
+      },
+      {
+        "term": "do",
+        "mode": "glyph",
+        "rationale": "Post-test do-while loop.",
+        "concepts": [
+          "do-while-loop"
+        ]
+      },
+      {
+        "term": "doc",
+        "mode": "label",
+        "rationale": "Formal documentation.",
+        "concepts": [
+          "formal-documentation"
+        ]
+      },
+      {
+        "term": "dropNewest",
+        "mode": "label",
+        "rationale": "Overflow behavior.",
+        "concepts": [
+          "overflow-policy"
+        ]
+      },
+      {
+        "term": "dropOldest",
+        "mode": "label",
+        "rationale": "Overflow behavior.",
+        "concepts": [
+          "overflow-policy"
+        ]
+      },
+      {
+        "term": "else",
+        "mode": "glyph",
+        "rationale": "Conditional branch.",
+        "concepts": [
+          "conditional"
+        ]
+      },
+      {
+        "term": "entry",
+        "mode": "label",
+        "rationale": "State entry behavior.",
+        "concepts": [
+          "state-entry"
+        ]
+      },
+      {
+        "term": "enum",
+        "mode": "glyph",
+        "rationale": "Enumeration.",
+        "concepts": [
+          "enumeration"
+        ]
+      },
+      {
+        "term": "event",
+        "mode": "label",
+        "rationale": "Event member.",
+        "concepts": [
+          "event-member"
+        ]
+      },
+      {
+        "term": "every",
+        "mode": "label",
+        "rationale": "Periodic activation.",
+        "concepts": [
+          "trigger-periodic"
+        ]
+      },
+      {
+        "term": "exit",
+        "mode": "label",
+        "rationale": "State exit behavior.",
+        "concepts": [
+          "state-exit"
+        ]
+      },
+      {
+        "term": "fail",
+        "mode": "glyph",
+        "rationale": "Failure.",
+        "concepts": [
+          "fail"
+        ]
+      },
+      {
+        "term": "false",
+        "mode": "label",
+        "rationale": "Expressions and value paths.",
+        "concepts": [
+          "expression"
+        ]
+      },
+      {
+        "term": "fifo",
+        "mode": "label",
+        "rationale": "Queue ordering.",
+        "concepts": [
+          "ordering-policy"
+        ]
+      },
+      {
+        "term": "final",
+        "mode": "glyph",
+        "rationale": "Final state.",
+        "concepts": [
+          "final-state"
+        ]
+      },
+      {
+        "term": "for",
+        "mode": "glyph",
+        "rationale": "Counted for loop.",
+        "concepts": [
+          "for-loop"
+        ]
+      },
+      {
+        "term": "forEach",
+        "mode": "glyph",
+        "rationale": "Fixed-array forEach loop.",
+        "concepts": [
+          "for-each-loop"
+        ]
+      },
+      {
+        "term": "function",
+        "mode": "glyph",
+        "rationale": "Interface function signature; Executable function; Function with states.",
+        "concepts": [
+          "function-signature",
+          "function",
+          "stateful-function"
+        ]
+      },
+      {
+        "term": "fv",
+        "mode": "glyph",
+        "rationale": "Flow View; Function timing diagram.",
+        "concepts": [
+          "view-fv",
+          "function-timing-diagram"
+        ]
+      },
+      {
+        "term": "grv",
+        "mode": "glyph",
+        "rationale": "Grid View.",
+        "concepts": [
+          "view-grv"
+        ]
+      },
+      {
+        "term": "gv",
+        "mode": "glyph",
+        "rationale": "General View.",
+        "concepts": [
+          "view-gv"
+        ]
+      },
+      {
+        "term": "idempotent",
+        "mode": "label",
+        "rationale": "Interface function signature.",
+        "concepts": [
+          "function-signature"
+        ]
+      },
+      {
+        "term": "if",
+        "mode": "glyph",
+        "rationale": "Conditional branch.",
+        "concepts": [
+          "conditional"
+        ]
+      },
+      {
+        "term": "import",
+        "mode": "glyph",
+        "rationale": "Package import.",
+        "concepts": [
+          "import"
+        ]
+      },
+      {
+        "term": "in",
+        "mode": "glyph",
+        "rationale": "Pure calculation; Fixed-array forEach loop.",
+        "concepts": [
+          "calculation",
+          "for-each-loop"
+        ]
+      },
+      {
+        "term": "include",
+        "mode": "glyph",
+        "rationale": "Filtered view selection.",
+        "concepts": [
+          "view-selection"
+        ]
+      },
+      {
+        "term": "initial",
+        "mode": "glyph",
+        "rationale": "Function with states; Initial state reference.",
+        "concepts": [
+          "stateful-function",
+          "initial-state"
         ]
       },
       {
         "term": "int",
-        "mode": "label",
-        "rationale": "Primitive types.",
-        "concepts": [
-          "primitive-types"
-        ]
-      },
-      {
-        "term": "real",
-        "mode": "label",
-        "rationale": "Primitive types.",
-        "concepts": [
-          "primitive-types"
-        ]
-      },
-      {
-        "term": "string",
-        "mode": "label",
-        "rationale": "Primitive types.",
-        "concepts": [
-          "primitive-types"
-        ]
-      },
-      {
-        "term": "void",
         "mode": "label",
         "rationale": "Primitive types.",
         "concepts": [
@@ -3916,134 +4509,166 @@
         ]
       },
       {
-        "term": "senderReceiver",
+        "term": "interruptible",
         "mode": "glyph",
-        "rationale": "Sender–receiver interface.",
+        "rationale": "Interruptible flow region.",
         "concepts": [
-          "sender-receiver-interface"
+          "interruptible-region"
         ]
       },
       {
-        "term": "clientServer",
+        "term": "iv",
         "mode": "glyph",
-        "rationale": "Client–server interface.",
+        "rationale": "Interconnect View.",
         "concepts": [
-          "client-server-interface"
+          "view-iv"
         ]
       },
       {
-        "term": "publishSubscribe",
+        "term": "label",
         "mode": "glyph",
-        "rationale": "Publish–subscribe interface.",
+        "rationale": "Case data exchange; Case event exchange; Case request; Correlated case reply; Case causal order.",
         "concepts": [
-          "publish-subscribe-interface"
+          "case-data-exchange",
+          "case-event-exchange",
+          "case-request",
+          "case-reply",
+          "case-causal-order"
         ]
       },
       {
-        "term": "service",
-        "mode": "glyph",
-        "rationale": "Service interface; Root execution profile.",
+        "term": "manual",
+        "mode": "label",
+        "rationale": "Manual activation.",
         "concepts": [
-          "service-interface",
+          "trigger-manual"
+        ]
+      },
+      {
+        "term": "maxAge",
+        "mode": "label",
+        "rationale": "Message freshness bound.",
+        "concepts": [
+          "freshness-bound"
+        ]
+      },
+      {
+        "term": "maxLatency",
+        "mode": "label",
+        "rationale": "Transport latency bound.",
+        "concepts": [
+          "latency-bound"
+        ]
+      },
+      {
+        "term": "mixed",
+        "mode": "label",
+        "rationale": "Root execution profile.",
+        "concepts": [
           "execution-profile"
         ]
       },
       {
-        "term": "version",
+        "term": "ms",
+        "mode": "label",
+        "rationale": "Duration value.",
+        "concepts": [
+          "duration"
+        ]
+      },
+      {
+        "term": "not",
+        "mode": "label",
+        "rationale": "Expressions and value paths.",
+        "concepts": [
+          "expression"
+        ]
+      },
+      {
+        "term": "ns",
+        "mode": "label",
+        "rationale": "Duration value.",
+        "concepts": [
+          "duration"
+        ]
+      },
+      {
+        "term": "of",
         "mode": "glyph",
-        "rationale": "Sender–receiver interface; Client–server interface; Publish–subscribe interface; Service interface.",
+        "rationale": "Use case; Satisfaction relation; General View; Interconnect View; Case View; Sequence View; Grid View; Flow View; Verification case.",
         "concepts": [
-          "sender-receiver-interface",
-          "client-server-interface",
-          "publish-subscribe-interface",
-          "service-interface"
+          "case",
+          "satisfies-link",
+          "view-gv",
+          "view-iv",
+          "view-cv",
+          "view-sv",
+          "view-grv",
+          "view-fv",
+          "verification-case"
         ]
       },
       {
-        "term": "data",
-        "mode": "label",
-        "rationale": "Data member.",
-        "concepts": [
-          "data-member"
-        ]
-      },
-      {
-        "term": "sampled",
-        "mode": "label",
-        "rationale": "Data member.",
-        "concepts": [
-          "data-member"
-        ]
-      },
-      {
-        "term": "queued",
-        "mode": "label",
-        "rationale": "Data member.",
-        "concepts": [
-          "data-member"
-        ]
-      },
-      {
-        "term": "event",
-        "mode": "label",
-        "rationale": "Event member.",
-        "concepts": [
-          "event-member"
-        ]
-      },
-      {
-        "term": "function",
+        "term": "on",
         "mode": "glyph",
-        "rationale": "Interface function signature; Executable function; Function with states.",
+        "rationale": "Startup activation; Manual activation; Periodic activation; Port receive activation; RPC handler activation; State transition; Deployment binding; Interruptible flow region.",
         "concepts": [
-          "function-signature",
-          "function",
-          "stateful-function"
+          "trigger-start",
+          "trigger-manual",
+          "trigger-periodic",
+          "trigger-receive",
+          "trigger-call",
+          "transition",
+          "deployment",
+          "interruptible-region"
         ]
       },
       {
-        "term": "idempotent",
+        "term": "optional",
         "mode": "label",
-        "rationale": "Interface function signature.",
+        "rationale": "Optional port.",
         "concepts": [
-          "function-signature"
+          "optional-port"
         ]
       },
       {
-        "term": "component",
-        "mode": "glyph",
-        "rationale": "Component definition; Component usage; Occurrence typing relationship; Root component; Inline root composition.",
-        "concepts": [
-          "component-definition",
-          "component-usage",
-          "type-relationship",
-          "root-component",
-          "inline-root"
-        ]
-      },
-      {
-        "term": "def",
-        "mode": "glyph",
-        "rationale": "Component definition; Reusable QoS policy.",
-        "concepts": [
-          "component-definition",
-          "qos-policy-definition"
-        ]
-      },
-      {
-        "term": "specializes",
-        "mode": "glyph",
-        "rationale": "Component specialization.",
-        "concepts": [
-          "component-specialization"
-        ]
-      },
-      {
-        "term": "redefines",
+        "term": "or",
         "mode": "label",
-        "rationale": "Member redefinition.",
+        "rationale": "Expressions and value paths.",
         "concepts": [
-          "member-redefinition"
+          "expression"
+        ]
+      },
+      {
+        "term": "ordering",
+        "mode": "label",
+        "rationale": "Queue ordering.",
+        "concepts": [
+          "ordering-policy"
+        ]
+      },
+      {
+        "term": "otherwise",
+        "mode": "glyph",
+        "rationale": "Routed function call.",
+        "concepts": [
+          "routed-call"
+        ]
+      },
+      {
+        "term": "overflow",
+        "mode": "label",
+        "rationale": "Overflow behavior.",
+        "concepts": [
+          "overflow-policy"
+        ]
+      },
+      {
+        "term": "package",
+        "mode": "glyph",
+        "rationale": "Package.",
+        "concepts": [
+          "package"
         ]
       },
       {
@@ -4062,51 +4687,11 @@
         ]
       },
       {
-        "term": "sender",
-        "mode": "glyph",
-        "rationale": "Data sender port.",
+        "term": "priority",
+        "mode": "label",
+        "rationale": "Transition priority.",
         "concepts": [
-          "port-sender"
-        ]
-      },
-      {
-        "term": "receiver",
-        "mode": "glyph",
-        "rationale": "Data receiver port.",
-        "concepts": [
-          "port-receiver"
-        ]
-      },
-      {
-        "term": "client",
-        "mode": "glyph",
-        "rationale": "RPC client port.",
-        "concepts": [
-          "port-client"
-        ]
-      },
-      {
-        "term": "server",
-        "mode": "glyph",
-        "rationale": "RPC server port.",
-        "concepts": [
-          "port-server"
-        ]
-      },
-      {
-        "term": "publisher",
-        "mode": "glyph",
-        "rationale": "Event publisher port.",
-        "concepts": [
-          "port-publisher"
-        ]
-      },
-      {
-        "term": "subscriber",
-        "mode": "glyph",
-        "rationale": "Event subscriber port.",
-        "concepts": [
-          "port-subscriber"
+          "transition-priority"
         ]
       },
       {
@@ -4118,82 +4703,28 @@
         ]
       },
       {
-        "term": "requires",
+        "term": "publish",
         "mode": "glyph",
-        "rationale": "Service consumer port.",
+        "rationale": "Event publication; Case event exchange.",
         "concepts": [
-          "port-requires"
+          "publish",
+          "case-event-exchange"
         ]
       },
       {
-        "term": "optional",
-        "mode": "label",
-        "rationale": "Optional port.",
-        "concepts": [
-          "optional-port"
-        ]
-      },
-      {
-        "term": "var",
+        "term": "publisher",
         "mode": "glyph",
-        "rationale": "Private component variable; Local declaration.",
+        "rationale": "Event publisher port.",
         "concepts": [
-          "private-variable",
-          "local-declaration"
+          "port-publisher"
         ]
       },
       {
-        "term": "realtime",
-        "mode": "label",
-        "rationale": "Root execution profile.",
-        "concepts": [
-          "execution-profile"
-        ]
-      },
-      {
-        "term": "mixed",
-        "mode": "label",
-        "rationale": "Root execution profile.",
-        "concepts": [
-          "execution-profile"
-        ]
-      },
-      {
-        "term": "deploy",
+        "term": "publishSubscribe",
         "mode": "glyph",
-        "rationale": "Deployment binding.",
+        "rationale": "Publish–subscribe interface.",
         "concepts": [
-          "deployment"
-        ]
-      },
-      {
-        "term": "on",
-        "mode": "glyph",
-        "rationale": "Startup activation; Manual activation; Periodic activation; Port receive activation; RPC handler activation; State transition; Deployment binding.",
-        "concepts": [
-          "trigger-start",
-          "trigger-manual",
-          "trigger-periodic",
-          "trigger-receive",
-          "trigger-call",
-          "transition",
-          "deployment"
-        ]
-      },
-      {
-        "term": "connect",
-        "mode": "glyph",
-        "rationale": "Interface connector.",
-        "concepts": [
-          "connector"
-        ]
-      },
-      {
-        "term": "delegate",
-        "mode": "glyph",
-        "rationale": "Boundary delegation.",
-        "concepts": [
-          "delegation"
+          "publish-subscribe-interface"
         ]
       },
       {
@@ -4207,199 +4738,69 @@
         ]
       },
       {
-        "term": "delivery",
+        "term": "queued",
         "mode": "label",
-        "rationale": "Delivery policy.",
+        "rationale": "Data member.",
         "concepts": [
-          "delivery-policy"
+          "data-member"
         ]
       },
       {
-        "term": "bestEffort",
+        "term": "real",
         "mode": "label",
-        "rationale": "Delivery policy.",
+        "rationale": "Primitive types.",
         "concepts": [
-          "delivery-policy"
+          "primitive-types"
         ]
       },
       {
-        "term": "atMostOnce",
+        "term": "realtime",
         "mode": "label",
-        "rationale": "Delivery policy.",
+        "rationale": "Root execution profile.",
         "concepts": [
-          "delivery-policy"
-        ]
-      },
-      {
-        "term": "atLeastOnce",
-        "mode": "label",
-        "rationale": "Delivery policy.",
-        "concepts": [
-          "delivery-policy"
-        ]
-      },
-      {
-        "term": "ordering",
-        "mode": "label",
-        "rationale": "Queue ordering.",
-        "concepts": [
-          "ordering-policy"
-        ]
-      },
-      {
-        "term": "fifo",
-        "mode": "label",
-        "rationale": "Queue ordering.",
-        "concepts": [
-          "ordering-policy"
-        ]
-      },
-      {
-        "term": "unordered",
-        "mode": "label",
-        "rationale": "Queue ordering.",
-        "concepts": [
-          "ordering-policy"
-        ]
-      },
-      {
-        "term": "capacity",
-        "mode": "label",
-        "rationale": "Queue capacity.",
-        "concepts": [
-          "capacity-policy"
-        ]
-      },
-      {
-        "term": "overflow",
-        "mode": "label",
-        "rationale": "Overflow behavior.",
-        "concepts": [
-          "overflow-policy"
-        ]
-      },
-      {
-        "term": "dropOldest",
-        "mode": "label",
-        "rationale": "Overflow behavior.",
-        "concepts": [
-          "overflow-policy"
-        ]
-      },
-      {
-        "term": "dropNewest",
-        "mode": "label",
-        "rationale": "Overflow behavior.",
-        "concepts": [
-          "overflow-policy"
-        ]
-      },
-      {
-        "term": "reject",
-        "mode": "label",
-        "rationale": "Overflow behavior.",
-        "concepts": [
-          "overflow-policy"
-        ]
-      },
-      {
-        "term": "maxLatency",
-        "mode": "label",
-        "rationale": "Transport latency bound.",
-        "concepts": [
-          "latency-bound"
-        ]
-      },
-      {
-        "term": "maxAge",
-        "mode": "label",
-        "rationale": "Message freshness bound.",
-        "concepts": [
-          "freshness-bound"
-        ]
-      },
-      {
-        "term": "start",
-        "mode": "label",
-        "rationale": "Startup activation.",
-        "concepts": [
-          "trigger-start"
-        ]
-      },
-      {
-        "term": "manual",
-        "mode": "label",
-        "rationale": "Manual activation.",
-        "concepts": [
-          "trigger-manual"
-        ]
-      },
-      {
-        "term": "every",
-        "mode": "label",
-        "rationale": "Periodic activation.",
-        "concepts": [
-          "trigger-periodic"
+          "execution-profile"
         ]
       },
       {
         "term": "receive",
         "mode": "glyph",
-        "rationale": "Port receive activation; State transition.",
+        "rationale": "Port receive activation; State transition; Interruptible flow region.",
         "concepts": [
           "trigger-receive",
-          "transition"
+          "transition",
+          "interruptible-region"
         ]
       },
       {
-        "term": "call",
+        "term": "receiver",
         "mode": "glyph",
-        "rationale": "RPC handler activation; Local function call; Routed function call; Case request.",
+        "rationale": "Data receiver port.",
         "concepts": [
-          "trigger-call",
-          "local-call",
-          "routed-call",
-          "case-request"
+          "port-receiver"
         ]
       },
       {
-        "term": "timing",
+        "term": "record",
         "mode": "label",
-        "rationale": "Function timing contract.",
+        "rationale": "Record construction.",
         "concepts": [
-          "timing-contract"
+          "record-value"
         ]
       },
       {
-        "term": "wcet",
-        "mode": "label",
-        "rationale": "Function timing contract.",
+        "term": "recursive",
+        "mode": "glyph",
+        "rationale": "Filtered view selection.",
         "concepts": [
-          "timing-contract"
+          "view-selection"
         ]
       },
       {
-        "term": "deadline",
+        "term": "redefines",
         "mode": "label",
-        "rationale": "Function timing contract.",
+        "rationale": "Member redefinition.",
         "concepts": [
-          "timing-contract"
-        ]
-      },
-      {
-        "term": "concurrency",
-        "mode": "label",
-        "rationale": "Concurrency mode.",
-        "concepts": [
-          "concurrency-mode"
-        ]
-      },
-      {
-        "term": "serial",
-        "mode": "label",
-        "rationale": "Concurrency mode.",
-        "concepts": [
-          "concurrency-mode"
+          "member-redefinition"
         ]
       },
       {
@@ -4411,19 +4812,35 @@
         ]
       },
       {
-        "term": "calc",
+        "term": "reject",
         "mode": "label",
-        "rationale": "Pure calculation.",
+        "rationale": "Overflow behavior.",
         "concepts": [
-          "calculation"
+          "overflow-policy"
         ]
       },
       {
-        "term": "in",
-        "mode": "label",
-        "rationale": "Pure calculation.",
+        "term": "reply",
+        "mode": "glyph",
+        "rationale": "Correlated case reply.",
         "concepts": [
-          "calculation"
+          "case-reply"
+        ]
+      },
+      {
+        "term": "requirement",
+        "mode": "glyph",
+        "rationale": "Requirement.",
+        "concepts": [
+          "requirement"
+        ]
+      },
+      {
+        "term": "requires",
+        "mode": "glyph",
+        "rationale": "Service consumer port.",
+        "concepts": [
+          "port-requires"
         ]
       },
       {
@@ -4436,6 +4853,30 @@
         ]
       },
       {
+        "term": "s",
+        "mode": "label",
+        "rationale": "Duration value.",
+        "concepts": [
+          "duration"
+        ]
+      },
+      {
+        "term": "sampled",
+        "mode": "label",
+        "rationale": "Data member.",
+        "concepts": [
+          "data-member"
+        ]
+      },
+      {
+        "term": "satisfy",
+        "mode": "glyph",
+        "rationale": "Satisfaction relation.",
+        "concepts": [
+          "satisfies-link"
+        ]
+      },
+      {
         "term": "send",
         "mode": "glyph",
         "rationale": "Data send; Case data exchange.",
@@ -4445,93 +4886,60 @@
         ]
       },
       {
-        "term": "publish",
+        "term": "sender",
         "mode": "glyph",
-        "rationale": "Event publication; Case event exchange.",
+        "rationale": "Data sender port.",
         "concepts": [
-          "publish",
-          "case-event-exchange"
+          "port-sender"
         ]
       },
       {
-        "term": "as",
+        "term": "senderReceiver",
         "mode": "glyph",
-        "rationale": "Routed function call.",
+        "rationale": "Sender–receiver interface.",
         "concepts": [
-          "routed-call"
+          "sender-receiver-interface"
         ]
       },
       {
-        "term": "within",
-        "mode": "glyph",
-        "rationale": "Routed function call.",
+        "term": "serial",
+        "mode": "label",
+        "rationale": "Concurrency mode.",
         "concepts": [
-          "routed-call"
+          "concurrency-mode"
         ]
       },
       {
-        "term": "otherwise",
+        "term": "server",
         "mode": "glyph",
-        "rationale": "Routed function call.",
+        "rationale": "RPC server port.",
         "concepts": [
-          "routed-call"
+          "port-server"
         ]
       },
       {
-        "term": "if",
+        "term": "service",
         "mode": "glyph",
-        "rationale": "Conditional branch.",
+        "rationale": "Service interface; Root execution profile.",
         "concepts": [
-          "conditional"
+          "service-interface",
+          "execution-profile"
         ]
       },
       {
-        "term": "else",
+        "term": "specializes",
         "mode": "glyph",
-        "rationale": "Conditional branch.",
+        "rationale": "Component specialization.",
         "concepts": [
-          "conditional"
+          "component-specialization"
         ]
       },
       {
-        "term": "while",
-        "mode": "glyph",
-        "rationale": "Bounded loop.",
+        "term": "start",
+        "mode": "label",
+        "rationale": "Startup activation.",
         "concepts": [
-          "bounded-loop"
-        ]
-      },
-      {
-        "term": "bound",
-        "mode": "glyph",
-        "rationale": "Bounded loop.",
-        "concepts": [
-          "bounded-loop"
-        ]
-      },
-      {
-        "term": "fail",
-        "mode": "glyph",
-        "rationale": "Failure.",
-        "concepts": [
-          "fail"
-        ]
-      },
-      {
-        "term": "assert",
-        "mode": "glyph",
-        "rationale": "Assertion.",
-        "concepts": [
-          "assert"
-        ]
-      },
-      {
-        "term": "initial",
-        "mode": "glyph",
-        "rationale": "Function with states; Initial state reference.",
-        "concepts": [
-          "stateful-function",
-          "initial-state"
+          "trigger-start"
         ]
       },
       {
@@ -4544,27 +4952,36 @@
         ]
       },
       {
-        "term": "final",
+        "term": "string",
+        "mode": "label",
+        "rationale": "Primitive types.",
+        "concepts": [
+          "primitive-types"
+        ]
+      },
+      {
+        "term": "subscriber",
         "mode": "glyph",
-        "rationale": "Final state.",
+        "rationale": "Event subscriber port.",
         "concepts": [
-          "final-state"
+          "port-subscriber"
         ]
       },
       {
-        "term": "entry",
-        "mode": "label",
-        "rationale": "State entry behavior.",
+        "term": "sv",
+        "mode": "glyph",
+        "rationale": "Sequence View.",
         "concepts": [
-          "state-entry"
+          "view-sv"
         ]
       },
       {
-        "term": "exit",
-        "mode": "label",
-        "rationale": "State exit behavior.",
+        "term": "timing",
+        "mode": "glyph",
+        "rationale": "Function timing contract; Function timing diagram.",
         "concepts": [
-          "state-exit"
+          "timing-contract",
+          "function-timing-diagram"
         ]
       },
       {
@@ -4576,68 +4993,35 @@
         ]
       },
       {
-        "term": "completion",
-        "mode": "glyph",
-        "rationale": "Completion transition.",
-        "concepts": [
-          "completion-transition"
-        ]
-      },
-      {
-        "term": "after",
-        "mode": "glyph",
-        "rationale": "Residence timer transition; Case causal order.",
-        "concepts": [
-          "timer-transition",
-          "case-causal-order"
-        ]
-      },
-      {
-        "term": "when",
+        "term": "true",
         "mode": "label",
-        "rationale": "Transition guard.",
+        "rationale": "Expressions and value paths.",
         "concepts": [
-          "transition-guard"
+          "expression"
         ]
       },
       {
-        "term": "priority",
+        "term": "uint",
         "mode": "label",
-        "rationale": "Transition priority.",
+        "rationale": "Primitive types.",
         "concepts": [
-          "transition-priority"
+          "primitive-types"
         ]
       },
       {
-        "term": "requirement",
-        "mode": "glyph",
-        "rationale": "Requirement.",
-        "concepts": [
-          "requirement"
-        ]
-      },
-      {
-        "term": "attribute",
+        "term": "unordered",
         "mode": "label",
-        "rationale": "Requirement attribute.",
+        "rationale": "Queue ordering.",
         "concepts": [
-          "requirement-attribute"
+          "ordering-policy"
         ]
       },
       {
-        "term": "satisfy",
-        "mode": "glyph",
-        "rationale": "Satisfaction relation.",
+        "term": "us",
+        "mode": "label",
+        "rationale": "Duration value.",
         "concepts": [
-          "satisfies-link"
-        ]
-      },
-      {
-        "term": "verify",
-        "mode": "glyph",
-        "rationale": "Verification relation.",
-        "concepts": [
-          "verification-link"
+          "duration"
         ]
       },
       {
@@ -4649,6 +5033,15 @@
         ]
       },
       {
+        "term": "var",
+        "mode": "glyph",
+        "rationale": "Private component variable; Local declaration.",
+        "concepts": [
+          "private-variable",
+          "local-declaration"
+        ]
+      },
+      {
         "term": "verificationCase",
         "mode": "glyph",
         "rationale": "Verification case.",
@@ -4657,11 +5050,22 @@
         ]
       },
       {
-        "term": "reply",
+        "term": "verify",
         "mode": "glyph",
-        "rationale": "Correlated case reply.",
+        "rationale": "Verification relation.",
         "concepts": [
-          "case-reply"
+          "verification-link"
+        ]
+      },
+      {
+        "term": "version",
+        "mode": "glyph",
+        "rationale": "Sender–receiver interface; Client–server interface; Publish–subscribe interface; Service interface.",
+        "concepts": [
+          "sender-receiver-interface",
+          "client-server-interface",
+          "publish-subscribe-interface",
+          "service-interface"
         ]
       },
       {
@@ -4673,18 +5077,6 @@
           "case-event-exchange",
           "case-request",
           "case-reply"
-        ]
-      },
-      {
-        "term": "label",
-        "mode": "glyph",
-        "rationale": "Case data exchange; Case event exchange; Case request; Correlated case reply; Case causal order.",
-        "concepts": [
-          "case-data-exchange",
-          "case-event-exchange",
-          "case-request",
-          "case-reply",
-          "case-causal-order"
         ]
       },
       {
@@ -4701,83 +5093,28 @@
         ]
       },
       {
-        "term": "gv",
-        "mode": "glyph",
-        "rationale": "General View.",
+        "term": "void",
+        "mode": "label",
+        "rationale": "Primitive types.",
         "concepts": [
-          "view-gv"
+          "primitive-types"
         ]
       },
       {
-        "term": "iv",
+        "term": "wcet",
         "mode": "glyph",
-        "rationale": "Interconnect View.",
+        "rationale": "Function timing contract; Function timing diagram.",
         "concepts": [
-          "view-iv"
+          "timing-contract",
+          "function-timing-diagram"
         ]
       },
       {
-        "term": "cv",
-        "mode": "glyph",
-        "rationale": "Case View.",
+        "term": "when",
+        "mode": "label",
+        "rationale": "Transition guard.",
         "concepts": [
-          "view-cv"
-        ]
-      },
-      {
-        "term": "sv",
-        "mode": "glyph",
-        "rationale": "Sequence View.",
-        "concepts": [
-          "view-sv"
-        ]
-      },
-      {
-        "term": "grv",
-        "mode": "glyph",
-        "rationale": "Grid View.",
-        "concepts": [
-          "view-grv"
-        ]
-      },
-      {
-        "term": "fv",
-        "mode": "glyph",
-        "rationale": "Flow View.",
-        "concepts": [
-          "view-fv"
-        ]
-      },
-      {
-        "term": "of",
-        "mode": "glyph",
-        "rationale": "Case root context, satisfaction design source or compact view subject; references preserve semantic ownership and link direction.",
-        "concepts": [
-          "view-gv",
-          "view-iv",
-          "view-cv",
-          "view-sv",
-          "view-grv",
-          "view-fv",
-          "satisfies-link",
-          "case",
-          "verification-case"
-        ]
-      },
-      {
-        "term": "include",
-        "mode": "glyph",
-        "rationale": "Filtered view selection.",
-        "concepts": [
-          "view-selection"
-        ]
-      },
-      {
-        "term": "recursive",
-        "mode": "glyph",
-        "rationale": "Filtered view selection.",
-        "concepts": [
-          "view-selection"
+          "transition-guard"
         ]
       },
       {
@@ -4789,47 +5126,225 @@
         ]
       },
       {
-        "term": "ns",
-        "mode": "label",
-        "rationale": "Duration value.",
+        "term": "while",
+        "mode": "glyph",
+        "rationale": "Bounded loop; Post-test do-while loop.",
         "concepts": [
+          "bounded-loop",
+          "do-while-loop"
+        ]
+      },
+      {
+        "term": "within",
+        "mode": "glyph",
+        "rationale": "Routed function call.",
+        "concepts": [
+          "routed-call"
+        ]
+      }
+    ],
+    "productions": [
+      {
+        "term": "AdditiveExpression",
+        "mode": "text-only",
+        "rationale": "Precedence grouping only; arithmetic text belongs to the expression label.",
+        "concepts": []
+      },
+      {
+        "term": "AndExpression",
+        "mode": "text-only",
+        "rationale": "Precedence grouping only; operator text belongs to the expression label.",
+        "concepts": []
+      },
+      {
+        "term": "Argument",
+        "mode": "label",
+        "rationale": "Parameter or record field.",
+        "concepts": [
+          "parameter"
+        ]
+      },
+      {
+        "term": "ArrayLiteral",
+        "mode": "label",
+        "rationale": "Fixed array type and value.",
+        "concepts": [
+          "array-value"
+        ]
+      },
+      {
+        "term": "Assert",
+        "mode": "glyph",
+        "rationale": "Assertion.",
+        "concepts": [
+          "assert"
+        ]
+      },
+      {
+        "term": "Assign",
+        "mode": "glyph",
+        "rationale": "Assignment.",
+        "concepts": [
+          "assignment"
+        ]
+      },
+      {
+        "term": "Attribute",
+        "mode": "label",
+        "rationale": "Requirement attribute.",
+        "concepts": [
+          "requirement-attribute"
+        ]
+      },
+      {
+        "term": "Block",
+        "mode": "glyph",
+        "rationale": "Executable function; State entry behavior; State exit behavior.",
+        "concepts": [
+          "function",
+          "state-entry",
+          "state-exit"
+        ]
+      },
+      {
+        "term": "Calculation",
+        "mode": "label",
+        "rationale": "Pure calculation.",
+        "concepts": [
+          "calculation"
+        ]
+      },
+      {
+        "term": "CalculationCall",
+        "mode": "label",
+        "rationale": "Pure calculation.",
+        "concepts": [
+          "calculation"
+        ]
+      },
+      {
+        "term": "Component",
+        "mode": "glyph",
+        "rationale": "Component definition; Component specialization.",
+        "concepts": [
+          "component-definition",
+          "component-specialization"
+        ]
+      },
+      {
+        "term": "ComponentMember",
+        "mode": "label",
+        "rationale": "Member redefinition.",
+        "concepts": [
+          "member-redefinition"
+        ]
+      },
+      {
+        "term": "Connect",
+        "mode": "glyph",
+        "rationale": "Interface connector.",
+        "concepts": [
+          "connector"
+        ]
+      },
+      {
+        "term": "DataMember",
+        "mode": "label",
+        "rationale": "Data member.",
+        "concepts": [
+          "data-member"
+        ]
+      },
+      {
+        "term": "DataType",
+        "mode": "glyph",
+        "rationale": "Record datatype.",
+        "concepts": [
+          "datatype"
+        ]
+      },
+      {
+        "term": "Delegate",
+        "mode": "glyph",
+        "rationale": "Boundary delegation.",
+        "concepts": [
+          "delegation"
+        ]
+      },
+      {
+        "term": "Deployment",
+        "mode": "glyph",
+        "rationale": "External deployment target; Deployment binding.",
+        "concepts": [
+          "deployment-target",
+          "deployment"
+        ]
+      },
+      {
+        "term": "DOC_COMMENT",
+        "mode": "label",
+        "rationale": "Formal documentation.",
+        "concepts": [
+          "formal-documentation"
+        ]
+      },
+      {
+        "term": "Documentation",
+        "mode": "label",
+        "rationale": "Formal documentation.",
+        "concepts": [
+          "formal-documentation"
+        ]
+      },
+      {
+        "term": "DoWhile",
+        "mode": "glyph",
+        "rationale": "Post-test do-while loop.",
+        "concepts": [
+          "do-while-loop"
+        ]
+      },
+      {
+        "term": "Duration",
+        "mode": "glyph",
+        "rationale": "Transport latency bound; Message freshness bound; Residence timer transition; Duration value.",
+        "concepts": [
+          "latency-bound",
+          "freshness-bound",
+          "timer-transition",
           "duration"
         ]
       },
       {
-        "term": "us",
-        "mode": "label",
-        "rationale": "Duration value.",
+        "term": "Element",
+        "mode": "text-only",
+        "rationale": "Grammar union selecting a top-level element; each concrete alternative has its own notation.",
+        "concepts": []
+      },
+      {
+        "term": "EnumType",
+        "mode": "glyph",
+        "rationale": "Enumeration.",
         "concepts": [
-          "duration"
+          "enumeration"
         ]
       },
       {
-        "term": "ms",
+        "term": "EqualityExpression",
+        "mode": "text-only",
+        "rationale": "Precedence grouping only; equality text belongs to the expression label.",
+        "concepts": []
+      },
+      {
+        "term": "EventMember",
         "mode": "label",
-        "rationale": "Duration value.",
+        "rationale": "Event member.",
         "concepts": [
-          "duration"
+          "event-member"
         ]
       },
       {
-        "term": "s",
-        "mode": "label",
-        "rationale": "Duration value.",
-        "concepts": [
-          "duration"
-        ]
-      },
-      {
-        "term": "or",
-        "mode": "label",
-        "rationale": "Expressions and value paths.",
-        "concepts": [
-          "expression"
-        ]
-      },
-      {
-        "term": "and",
+        "term": "Expression",
         "mode": "label",
         "rationale": "Expressions and value paths.",
         "concepts": [
@@ -4837,31 +5352,15 @@
         ]
       },
       {
-        "term": "not",
-        "mode": "label",
-        "rationale": "Expressions and value paths.",
+        "term": "Fail",
+        "mode": "glyph",
+        "rationale": "Failure.",
         "concepts": [
-          "expression"
+          "fail"
         ]
       },
       {
-        "term": "true",
-        "mode": "label",
-        "rationale": "Expressions and value paths.",
-        "concepts": [
-          "expression"
-        ]
-      },
-      {
-        "term": "false",
-        "mode": "label",
-        "rationale": "Expressions and value paths.",
-        "concepts": [
-          "expression"
-        ]
-      },
-      {
-        "term": "record",
+        "term": "FieldValue",
         "mode": "label",
         "rationale": "Record construction.",
         "concepts": [
@@ -4869,28 +5368,58 @@
         ]
       },
       {
-        "term": "doc",
-        "mode": "label",
-        "rationale": "Formal documentation.",
+        "term": "For",
+        "mode": "glyph",
+        "rationale": "Counted for loop.",
         "concepts": [
-          "formal-documentation"
+          "for-loop"
         ]
-      }
-    ],
-    "productions": [
+      },
       {
-        "term": "Model",
+        "term": "ForEach",
+        "mode": "glyph",
+        "rationale": "Fixed-array forEach loop.",
+        "concepts": [
+          "for-each-loop"
+        ]
+      },
+      {
+        "term": "ForUpdate",
+        "mode": "glyph",
+        "rationale": "Counted for loop.",
+        "concepts": [
+          "for-loop"
+        ]
+      },
+      {
+        "term": "FunctionDef",
+        "mode": "glyph",
+        "rationale": "Executable function; Function with states.",
+        "concepts": [
+          "function",
+          "stateful-function"
+        ]
+      },
+      {
+        "term": "FunctionFlow",
+        "mode": "glyph",
+        "rationale": "Executable function.",
+        "concepts": [
+          "function"
+        ]
+      },
+      {
+        "term": "ID",
         "mode": "text-only",
-        "rationale": "A source/workspace container, shown by Browser/package context; it has no additional authored glyph.",
+        "rationale": "Identifier token supplies names on shapes and labels; no independent glyph.",
         "concepts": []
       },
       {
-        "term": "Package",
+        "term": "If",
         "mode": "glyph",
-        "rationale": "Package; Browser.",
+        "rationale": "Conditional branch.",
         "concepts": [
-          "package",
-          "view-browser"
+          "conditional"
         ]
       },
       {
@@ -4902,52 +5431,20 @@
         ]
       },
       {
-        "term": "Element",
+        "term": "Instance",
+        "mode": "glyph",
+        "rationale": "Component usage; Occurrence typing relationship; Occurrence lifeline.",
+        "concepts": [
+          "component-usage",
+          "type-relationship",
+          "sequence-lifeline"
+        ]
+      },
+      {
+        "term": "INT",
         "mode": "text-only",
-        "rationale": "Grammar union selecting a top-level element; each concrete alternative has its own notation.",
+        "rationale": "Integer literal token is rendered as exact expression/property text; no independent glyph.",
         "concepts": []
-      },
-      {
-        "term": "DataType",
-        "mode": "glyph",
-        "rationale": "Record datatype.",
-        "concepts": [
-          "datatype"
-        ]
-      },
-      {
-        "term": "EnumType",
-        "mode": "glyph",
-        "rationale": "Enumeration.",
-        "concepts": [
-          "enumeration"
-        ]
-      },
-      {
-        "term": "Parameter",
-        "mode": "label",
-        "rationale": "Parameter or record field.",
-        "concepts": [
-          "parameter"
-        ]
-      },
-      {
-        "term": "TypeRef",
-        "mode": "label",
-        "rationale": "Primitive types; Fixed array type and value.",
-        "concepts": [
-          "primitive-types",
-          "array-value"
-        ]
-      },
-      {
-        "term": "ValueType",
-        "mode": "glyph",
-        "rationale": "Record datatype; Enumeration.",
-        "concepts": [
-          "datatype",
-          "enumeration"
-        ]
       },
       {
         "term": "Interface",
@@ -4971,31 +5468,94 @@
         ]
       },
       {
-        "term": "DataMember",
-        "mode": "label",
-        "rationale": "Data member.",
+        "term": "Interruptible",
+        "mode": "glyph",
+        "rationale": "Interruptible flow region.",
         "concepts": [
-          "data-member"
+          "interruptible-region"
         ]
       },
       {
-        "term": "EventMember",
+        "term": "Literal",
         "mode": "label",
-        "rationale": "Event member.",
+        "rationale": "Expressions and value paths.",
         "concepts": [
-          "event-member"
+          "expression"
         ]
       },
       {
-        "term": "Signature",
-        "mode": "label",
-        "rationale": "Interface function signature.",
+        "term": "LocalCall",
+        "mode": "glyph",
+        "rationale": "Local function call.",
         "concepts": [
-          "function-signature"
+          "local-call"
         ]
       },
       {
-        "term": "Argument",
+        "term": "LocalVariable",
+        "mode": "glyph",
+        "rationale": "Local declaration.",
+        "concepts": [
+          "local-declaration"
+        ]
+      },
+      {
+        "term": "MemberPath",
+        "mode": "glyph",
+        "rationale": "Routed function call.",
+        "concepts": [
+          "routed-call"
+        ]
+      },
+      {
+        "term": "ML_COMMENT",
+        "mode": "glyph",
+        "rationale": "Ordinary comment.",
+        "concepts": [
+          "ordinary-comment"
+        ]
+      },
+      {
+        "term": "Model",
+        "mode": "text-only",
+        "rationale": "A source/workspace container, shown by Browser/package context; it has no additional authored glyph.",
+        "concepts": []
+      },
+      {
+        "term": "MultiplicativeExpression",
+        "mode": "text-only",
+        "rationale": "Precedence grouping only; arithmetic text belongs to the expression label.",
+        "concepts": []
+      },
+      {
+        "term": "NUMBER",
+        "mode": "text-only",
+        "rationale": "real literal token is rendered as exact expression text; no independent glyph.",
+        "concepts": []
+      },
+      {
+        "term": "Numeric",
+        "mode": "text-only",
+        "rationale": "Number conversion/lexical grouping; render the resulting value text in its owning label.",
+        "concepts": []
+      },
+      {
+        "term": "OrExpression",
+        "mode": "text-only",
+        "rationale": "Precedence grouping only; operator text belongs to the expression label.",
+        "concepts": []
+      },
+      {
+        "term": "Package",
+        "mode": "glyph",
+        "rationale": "Package; Browser.",
+        "concepts": [
+          "package",
+          "view-browser"
+        ]
+      },
+      {
+        "term": "Parameter",
         "mode": "label",
         "rationale": "Parameter or record field.",
         "concepts": [
@@ -5003,31 +5563,10 @@
         ]
       },
       {
-        "term": "Component",
-        "mode": "glyph",
-        "rationale": "Component definition; Component specialization.",
-        "concepts": [
-          "component-definition",
-          "component-specialization"
-        ]
-      },
-      {
-        "term": "ComponentMember",
-        "mode": "label",
-        "rationale": "Member redefinition.",
-        "concepts": [
-          "member-redefinition"
-        ]
-      },
-      {
-        "term": "Instance",
-        "mode": "glyph",
-        "rationale": "Component usage; Occurrence typing relationship; Occurrence lifeline.",
-        "concepts": [
-          "component-usage",
-          "type-relationship",
-          "sequence-lifeline"
-        ]
+        "term": "Path",
+        "mode": "text-only",
+        "rationale": "Containment/member path text identifies diagram subjects or endpoints, not an independent shape.",
+        "concepts": []
       },
       {
         "term": "Port",
@@ -5046,65 +5585,10 @@
         ]
       },
       {
-        "term": "Variable",
-        "mode": "label",
-        "rationale": "Private component variable.",
-        "concepts": [
-          "private-variable"
-        ]
-      },
-      {
-        "term": "RootComponent",
-        "mode": "glyph",
-        "rationale": "Occurrence typing relationship; Root component; Inline root composition; Root execution profile.",
-        "concepts": [
-          "type-relationship",
-          "root-component",
-          "inline-root",
-          "execution-profile"
-        ]
-      },
-      {
-        "term": "RootMember",
-        "mode": "glyph",
-        "rationale": "Root component; Inline root composition.",
-        "concepts": [
-          "root-component",
-          "inline-root"
-        ]
-      },
-      {
-        "term": "Deployment",
-        "mode": "glyph",
-        "rationale": "External deployment target; Deployment binding.",
-        "concepts": [
-          "deployment-target",
-          "deployment"
-        ]
-      },
-      {
-        "term": "Connect",
-        "mode": "glyph",
-        "rationale": "Interface connector.",
-        "concepts": [
-          "connector"
-        ]
-      },
-      {
-        "term": "Delegate",
-        "mode": "glyph",
-        "rationale": "Boundary delegation.",
-        "concepts": [
-          "delegation"
-        ]
-      },
-      {
-        "term": "QosPolicy",
-        "mode": "glyph",
-        "rationale": "Reusable QoS policy.",
-        "concepts": [
-          "qos-policy-definition"
-        ]
+        "term": "PrimaryExpression",
+        "mode": "text-only",
+        "rationale": "Grammar grouping of concrete expression forms; no separate authored semantic element.",
+        "concepts": []
       },
       {
         "term": "Qos",
@@ -5135,93 +5619,41 @@
         ]
       },
       {
-        "term": "FunctionDef",
+        "term": "QosPolicy",
         "mode": "glyph",
-        "rationale": "Executable function; Function with states.",
+        "rationale": "Reusable QoS policy.",
         "concepts": [
-          "function",
-          "stateful-function"
+          "qos-policy-definition"
         ]
       },
       {
-        "term": "FunctionFlow",
-        "mode": "glyph",
-        "rationale": "Executable function.",
-        "concepts": [
-          "function"
-        ]
+        "term": "QualifiedName",
+        "mode": "text-only",
+        "rationale": "Package-qualified declaration identity is text in the owning label.",
+        "concepts": []
       },
       {
-        "term": "Trigger",
+        "term": "RecordLiteral",
         "mode": "label",
-        "rationale": "Startup activation; Manual activation; Periodic activation; Port receive activation; RPC handler activation.",
+        "rationale": "Record construction.",
         "concepts": [
-          "trigger-start",
-          "trigger-manual",
-          "trigger-periodic",
-          "trigger-receive",
-          "trigger-call"
+          "record-value"
         ]
       },
       {
-        "term": "Timing",
+        "term": "ReferenceExpression",
         "mode": "label",
-        "rationale": "Function timing contract; Concurrency mode.",
+        "rationale": "Enumeration value; Expressions and value paths.",
         "concepts": [
-          "timing-contract",
-          "concurrency-mode"
+          "enum-value",
+          "expression"
         ]
       },
       {
-        "term": "Calculation",
-        "mode": "label",
-        "rationale": "Pure calculation.",
-        "concepts": [
-          "calculation"
-        ]
-      },
-      {
-        "term": "Block",
-        "mode": "glyph",
-        "rationale": "Executable function; State entry behavior; State exit behavior.",
-        "concepts": [
-          "function",
-          "state-entry",
-          "state-exit"
-        ]
-      },
-      {
-        "term": "Statement",
-        "mode": "glyph",
-        "rationale": "Executable function.",
-        "concepts": [
-          "function"
-        ]
-      },
-      {
-        "term": "LocalVariable",
-        "mode": "glyph",
-        "rationale": "Local declaration.",
-        "concepts": [
-          "local-declaration"
-        ]
-      },
-      {
-        "term": "Assign",
-        "mode": "glyph",
-        "rationale": "Assignment.",
-        "concepts": [
-          "assignment"
-        ]
-      },
-      {
-        "term": "Send",
-        "mode": "glyph",
-        "rationale": "Data send; Event publication.",
-        "concepts": [
-          "send",
-          "publish"
-        ]
+        "term": "RelationalExpression",
+        "mode": "text-only",
+        "rationale": "Precedence grouping only; comparison text belongs to the expression label.",
+        "concepts": []
       },
       {
         "term": "RemoteCall",
@@ -5229,86 +5661,6 @@
         "rationale": "Routed function call.",
         "concepts": [
           "routed-call"
-        ]
-      },
-      {
-        "term": "LocalCall",
-        "mode": "glyph",
-        "rationale": "Local function call.",
-        "concepts": [
-          "local-call"
-        ]
-      },
-      {
-        "term": "Return",
-        "mode": "glyph",
-        "rationale": "Function return.",
-        "concepts": [
-          "return"
-        ]
-      },
-      {
-        "term": "If",
-        "mode": "glyph",
-        "rationale": "Conditional branch.",
-        "concepts": [
-          "conditional"
-        ]
-      },
-      {
-        "term": "While",
-        "mode": "glyph",
-        "rationale": "Bounded loop.",
-        "concepts": [
-          "bounded-loop"
-        ]
-      },
-      {
-        "term": "Fail",
-        "mode": "glyph",
-        "rationale": "Failure.",
-        "concepts": [
-          "fail"
-        ]
-      },
-      {
-        "term": "Assert",
-        "mode": "glyph",
-        "rationale": "Assertion.",
-        "concepts": [
-          "assert"
-        ]
-      },
-      {
-        "term": "StateBody",
-        "mode": "glyph",
-        "rationale": "Function with states; Initial state reference.",
-        "concepts": [
-          "stateful-function",
-          "initial-state"
-        ]
-      },
-      {
-        "term": "State",
-        "mode": "glyph",
-        "rationale": "State; Final state; State entry behavior; State exit behavior.",
-        "concepts": [
-          "state",
-          "final-state",
-          "state-entry",
-          "state-exit"
-        ]
-      },
-      {
-        "term": "Transition",
-        "mode": "glyph",
-        "rationale": "State transition; Transition guard; Transition priority; Completion transition; Residence timer transition.",
-        "concepts": [
-          "transition",
-          "transition-guard",
-          "transition-priority",
-          "completion-transition",
-          "timer-transition"
         ]
       },
       {
@@ -5320,19 +5672,31 @@
         ]
       },
       {
-        "term": "Attribute",
-        "mode": "label",
-        "rationale": "Requirement attribute.",
+        "term": "Return",
+        "mode": "glyph",
+        "rationale": "Function return.",
         "concepts": [
-          "requirement-attribute"
+          "return"
         ]
       },
       {
-        "term": "Documentation",
-        "mode": "label",
-        "rationale": "Formal documentation.",
+        "term": "RootComponent",
+        "mode": "glyph",
+        "rationale": "Occurrence typing relationship; Root component; Inline root composition; Root execution profile.",
         "concepts": [
-          "formal-documentation"
+          "type-relationship",
+          "root-component",
+          "inline-root",
+          "execution-profile"
+        ]
+      },
+      {
+        "term": "RootMember",
+        "mode": "glyph",
+        "rationale": "Root component; Inline root composition.",
+        "concepts": [
+          "root-component",
+          "inline-root"
         ]
       },
       {
@@ -5341,14 +5705,6 @@
         "rationale": "Satisfaction relation.",
         "concepts": [
           "satisfies-link"
-        ]
-      },
-      {
-        "term": "Verification",
-        "mode": "glyph",
-        "rationale": "Verification relation.",
-        "concepts": [
-          "verification-link"
         ]
       },
       {
@@ -5373,16 +5729,160 @@
         ]
       },
       {
+        "term": "Send",
+        "mode": "glyph",
+        "rationale": "Data send; Event publication.",
+        "concepts": [
+          "send",
+          "publish"
+        ]
+      },
+      {
+        "term": "Signature",
+        "mode": "label",
+        "rationale": "Interface function signature.",
+        "concepts": [
+          "function-signature"
+        ]
+      },
+      {
+        "term": "SL_COMMENT",
+        "mode": "glyph",
+        "rationale": "Ordinary comment.",
+        "concepts": [
+          "ordinary-comment"
+        ]
+      },
+      {
+        "term": "State",
+        "mode": "glyph",
+        "rationale": "State; Final state; State entry behavior; State exit behavior.",
+        "concepts": [
+          "state",
+          "final-state",
+          "state-entry",
+          "state-exit"
+        ]
+      },
+      {
+        "term": "StateBody",
+        "mode": "glyph",
+        "rationale": "Function with states; Initial state reference.",
+        "concepts": [
+          "stateful-function",
+          "initial-state"
+        ]
+      },
+      {
+        "term": "Statement",
+        "mode": "glyph",
+        "rationale": "Executable function.",
+        "concepts": [
+          "function"
+        ]
+      },
+      {
+        "term": "STRING",
+        "mode": "text-only",
+        "rationale": "string literal token supplies values/requirement text; preserve escaping in source notation.",
+        "concepts": []
+      },
+      {
+        "term": "Timing",
+        "mode": "glyph",
+        "rationale": "Function timing contract; Concurrency mode; Function timing diagram.",
+        "concepts": [
+          "timing-contract",
+          "concurrency-mode",
+          "function-timing-diagram"
+        ]
+      },
+      {
+        "term": "Transition",
+        "mode": "glyph",
+        "rationale": "State transition; Transition guard; Transition priority; Completion transition; Residence timer transition.",
+        "concepts": [
+          "transition",
+          "transition-guard",
+          "transition-priority",
+          "completion-transition",
+          "timer-transition"
+        ]
+      },
+      {
+        "term": "Trigger",
+        "mode": "label",
+        "rationale": "Startup activation; Manual activation; Periodic activation; Port receive activation; RPC handler activation.",
+        "concepts": [
+          "trigger-start",
+          "trigger-manual",
+          "trigger-periodic",
+          "trigger-receive",
+          "trigger-call"
+        ]
+      },
+      {
+        "term": "TypeRef",
+        "mode": "label",
+        "rationale": "Primitive types; Fixed array type and value.",
+        "concepts": [
+          "primitive-types",
+          "array-value"
+        ]
+      },
+      {
+        "term": "UnaryExpression",
+        "mode": "label",
+        "rationale": "Expressions and value paths.",
+        "concepts": [
+          "expression"
+        ]
+      },
+      {
+        "term": "ValuePath",
+        "mode": "label",
+        "rationale": "Enumeration value.",
+        "concepts": [
+          "enum-value"
+        ]
+      },
+      {
+        "term": "ValueType",
+        "mode": "glyph",
+        "rationale": "Record datatype; Enumeration.",
+        "concepts": [
+          "datatype",
+          "enumeration"
+        ]
+      },
+      {
+        "term": "Variable",
+        "mode": "label",
+        "rationale": "Private component variable.",
+        "concepts": [
+          "private-variable"
+        ]
+      },
+      {
+        "term": "Verification",
+        "mode": "glyph",
+        "rationale": "Verification relation.",
+        "concepts": [
+          "verification-link"
+        ]
+      },
+      {
         "term": "View",
         "mode": "glyph",
-        "rationale": "General View; Interconnect View; Case View; Sequence View; Grid View; Flow View.",
+        "rationale": "General View; Interconnect View; Case View; Sequence View; Grid View; Flow View; Function timing diagram.",
         "concepts": [
           "view-gv",
           "view-iv",
           "view-cv",
           "view-sv",
           "view-grv",
-          "view-fv"
+          "view-fv",
+          "function-timing-diagram"
         ]
       },
       {
@@ -5394,210 +5894,18 @@
         ]
       },
       {
-        "term": "Duration",
+        "term": "While",
         "mode": "glyph",
-        "rationale": "Transport latency bound; Message freshness bound; Residence timer transition; Duration value.",
+        "rationale": "Bounded loop.",
         "concepts": [
-          "latency-bound",
-          "freshness-bound",
-          "timer-transition",
-          "duration"
+          "bounded-loop"
         ]
-      },
-      {
-        "term": "MemberPath",
-        "mode": "glyph",
-        "rationale": "Routed function call.",
-        "concepts": [
-          "routed-call"
-        ]
-      },
-      {
-        "term": "Path",
-        "mode": "text-only",
-        "rationale": "Containment/member path text identifies diagram subjects or endpoints, not an independent shape.",
-        "concepts": []
-      },
-      {
-        "term": "QualifiedName",
-        "mode": "text-only",
-        "rationale": "Package-qualified declaration identity is text in the owning label.",
-        "concepts": []
-      },
-      {
-        "term": "ValuePath",
-        "mode": "label",
-        "rationale": "Enumeration value.",
-        "concepts": [
-          "enum-value"
-        ]
-      },
-      {
-        "term": "Expression",
-        "mode": "label",
-        "rationale": "Expressions and value paths.",
-        "concepts": [
-          "expression"
-        ]
-      },
-      {
-        "term": "OrExpression",
-        "mode": "text-only",
-        "rationale": "Precedence grouping only; operator text belongs to the expression label.",
-        "concepts": []
-      },
-      {
-        "term": "AndExpression",
-        "mode": "text-only",
-        "rationale": "Precedence grouping only; operator text belongs to the expression label.",
-        "concepts": []
-      },
-      {
-        "term": "EqualityExpression",
-        "mode": "text-only",
-        "rationale": "Precedence grouping only; equality text belongs to the expression label.",
-        "concepts": []
-      },
-      {
-        "term": "RelationalExpression",
-        "mode": "text-only",
-        "rationale": "Precedence grouping only; comparison text belongs to the expression label.",
-        "concepts": []
-      },
-      {
-        "term": "AdditiveExpression",
-        "mode": "text-only",
-        "rationale": "Precedence grouping only; arithmetic text belongs to the expression label.",
-        "concepts": []
-      },
-      {
-        "term": "MultiplicativeExpression",
-        "mode": "text-only",
-        "rationale": "Precedence grouping only; arithmetic text belongs to the expression label.",
-        "concepts": []
-      },
-      {
-        "term": "UnaryExpression",
-        "mode": "label",
-        "rationale": "Expressions and value paths.",
-        "concepts": [
-          "expression"
-        ]
-      },
-      {
-        "term": "PrimaryExpression",
-        "mode": "text-only",
-        "rationale": "Grammar grouping of concrete expression forms; no separate authored semantic element.",
-        "concepts": []
-      },
-      {
-        "term": "Literal",
-        "mode": "label",
-        "rationale": "Expressions and value paths.",
-        "concepts": [
-          "expression"
-        ]
-      },
-      {
-        "term": "CalculationCall",
-        "mode": "label",
-        "rationale": "Pure calculation.",
-        "concepts": [
-          "calculation"
-        ]
-      },
-      {
-        "term": "ReferenceExpression",
-        "mode": "label",
-        "rationale": "Enumeration value; Expressions and value paths.",
-        "concepts": [
-          "enum-value",
-          "expression"
-        ]
-      },
-      {
-        "term": "RecordLiteral",
-        "mode": "label",
-        "rationale": "Record construction.",
-        "concepts": [
-          "record-value"
-        ]
-      },
-      {
-        "term": "FieldValue",
-        "mode": "label",
-        "rationale": "Record construction.",
-        "concepts": [
-          "record-value"
-        ]
-      },
-      {
-        "term": "ArrayLiteral",
-        "mode": "label",
-        "rationale": "Fixed array type and value.",
-        "concepts": [
-          "array-value"
-        ]
-      },
-      {
-        "term": "Numeric",
-        "mode": "text-only",
-        "rationale": "Number conversion/lexical grouping; render the resulting value text in its owning label.",
-        "concepts": []
       },
       {
         "term": "WS",
         "mode": "text-only",
         "rationale": "Whitespace affects textual layout only; no semantic graphical representation.",
         "concepts": []
-      },
-      {
-        "term": "DOC_COMMENT",
-        "mode": "label",
-        "rationale": "Formal documentation.",
-        "concepts": [
-          "formal-documentation"
-        ]
-      },
-      {
-        "term": "ID",
-        "mode": "text-only",
-        "rationale": "Identifier token supplies names on shapes and labels; no independent glyph.",
-        "concepts": []
-      },
-      {
-        "term": "NUMBER",
-        "mode": "text-only",
-        "rationale": "real literal token is rendered as exact expression text; no independent glyph.",
-        "concepts": []
-      },
-      {
-        "term": "INT",
-        "mode": "text-only",
-        "rationale": "Integer literal token is rendered as exact expression/property text; no independent glyph.",
-        "concepts": []
-      },
-      {
-        "term": "STRING",
-        "mode": "text-only",
-        "rationale": "string literal token supplies values/requirement text; preserve escaping in source notation.",
-        "concepts": []
-      },
-      {
-        "term": "ML_COMMENT",
-        "mode": "glyph",
-        "rationale": "Ordinary comment.",
-        "concepts": [
-          "ordinary-comment"
-        ]
-      },
-      {
-        "term": "SL_COMMENT",
-        "mode": "glyph",
-        "rationale": "Ordinary comment.",
-        "concepts": [
-          "ordinary-comment"
-        ]
       }
     ]
   }

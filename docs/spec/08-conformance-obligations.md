@@ -1,6 +1,6 @@
 # 8. Conformance obligations and evidence
 
-Normative classification of the [SWAML 1.2 specification](../LANGUAGE_SPECIFICATION.md). This chapter separates static language validity, runtime behavior and proof claims. It prevents acceptance by one tool from being mistaken for evidence supplied by another.
+Normative classification of the [SWAML 1.3 specification](../LANGUAGE_SPECIFICATION.md). This chapter separates static language validity, runtime behavior and proof claims. It prevents acceptance by one tool from being mistaken for evidence supplied by another.
 
 ## 8.1 Static acceptance
 
@@ -24,8 +24,9 @@ Static validity is determined from the complete loaded source workspace without 
 | V14 | Stateful function signature, initial reference, graph reachability, final-state rules, competing priorities and no unconditional completion cycle | SW060–SW064 |
 | V15 | Valid instance deployment paths and external destination syntax; no duplicate exact allocation | SW070 |
 | V16 | View subject kind, case member/route/direction, earlier predecessor and uniquely correlated reply | SW080–SW083 |
+| V17 | Triggered serial interrupt-region owner, local incoming data/event route, unique receiving owner/member/name, payload scope and definite-return branches | SW002/SW033/SW051/SW055/SW065 |
 
-“Every path returns” in V12 is structural definite termination: a sequential block contains return/fail or an if with both branches definitely terminating. A loop is never sufficient by itself, because it may run zero times or hit its bound. A request failure block obeys the same rule. This rule is intentionally conservative and does not require solving guard predicates. A request's success continuation is checked independently from its failure block.
+“Every path returns” in V12 is structural definite termination: a sequential block contains return/fail, an if with both branches definitely terminating, a do/nonempty forEach body that definitely terminates on its first iteration, or an interruptible region whose protected body and handler both definitely terminate. while/for alone are insufficient because they may run zero times or hit their bound. A request failure block obeys the same rule. This rule is intentionally conservative and does not require solving guard predicates. A request's success continuation is checked independently from its failure block.
 
 Literal array indices, including unary sign expressions, are checked statically. General expression-derived bounds and arithmetic overflow are execution checks; a validator may additionally reject a proven inevitable failure with an explained analysis diagnostic. Syntactically present but unreachable emission still satisfies provenance; proving that an interface is useful is a stronger claim.
 
@@ -42,6 +43,7 @@ Imported declarations and string-valued semantic paths MUST be revalidated after
 | E05 | Structured statement order, bounded loops, failure unwinding and numeric/index checks | reference evaluator cases and failure traces |
 | E06 | State reaction order, timer generations, priority, completion bound and termination | competing input/timer and self-transition traces |
 | E07 | Timing observation and explicit deployment/resource assumptions | target binding plus measured/proved scheduling evidence |
+| E08 | Same-activation interrupt transfer, no rollback, pending-continuation cancellation and terminal-correlation immutability | nested/suspended cancellation, inactive/duplicate input, deadline and late-reply traces |
 
 The runtime must detect dynamic out-of-bounds access, non-finite arithmetic, integer overflow, division by zero and loop/microstep-limit violations. V does not have to prove that these failures never occur. A static accepted model can describe a failing execution. Likewise V checks the idempotent declaration where required; a deployment claim that it is true requires implementation evidence.
 
@@ -63,9 +65,9 @@ A tool's conformance report MUST identify language version, implementation versi
 
 ## 8.5 Scope and future evolution
 
-Completeness of this specification means every 1.2 construct has syntax, ownership, reference/type rules, static constraints, operational or descriptive meaning, a normalization contract and a conformance category. It does not mean every future software architecture concern is a built-in keyword or that all backends are implemented.
+Completeness of this specification means every 1.3 construct has syntax, ownership, reference/type rules, static constraints, operational or descriptive meaning, a normalization contract and a conformance category. It does not mean every future software architecture concern is a built-in keyword or that all backends are implemented.
 
-The finite boundary remains explicit: single inheritance with compatible explicit redefinition; no multiple inheritance, generics, reference-valued payloads, dynamic object creation/subscriptions/discovery, unrestricted fork/join, hierarchical/orthogonal state machines or arbitrary host-language code. Model adapters and protocols can express supported interactions; a new construct needs a versioned proposal with the same obligations. Patch clarifications ordinarily preserve valid-model source compatibility. The owner explicitly requested the 1.2.1 relation-spelling correction after 1.2.0 publication: it preserves model meaning but requires migrating case for and satisfaction by to of. ADR 0010 records this exception and the rejected old forms. The current host selects the 1.2 family, and the installed package revision selects its concrete grammar; reproduction must pin both. Other incompatible changes require an explicitly versioned edition and migration notes. The historical 1.1 release intentionally migrates syntax from 1.0 despite using a minor version; it provides no silent legacy aliases.
+The finite boundary remains explicit: single inheritance with compatible explicit redefinition; no multiple inheritance, generics, reference-valued payloads, dynamic object creation/subscriptions/discovery, unrestricted fork/join, hierarchical/orthogonal state machines or arbitrary host-language code. Model adapters and protocols can express supported interactions; a new construct needs a versioned proposal with the same obligations. Patch clarifications ordinarily preserve valid-model source compatibility. The 1.2.1 relation-spelling correction preserves model meaning but requires migrating case for and satisfaction by to of. ADR 0010 records this source compatibility change and the rejected old forms. The 1.2 host selected a language family plus installed package revision. The 1.3 parser explicitly selects the new edition and profile; reproduction must pin the package revision too. Other incompatible changes require an explicitly versioned edition and migration notes. The historical 1.1 release intentionally migrates syntax from 1.0 despite using a minor version; it provides no silent legacy aliases.
 
 ## Requirement and presentation extension
 

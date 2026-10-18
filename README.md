@@ -6,9 +6,9 @@
 
 **SWAML** describes software structure, typed communication and function behavior in one model. Compose components, keep state private, and follow every exchange through an explicit contract. Use the same language for AUTOSAR Classic and Adaptive architecture, service-based applications and cloud software.
 
-[Ontology & flat views](docs/ONTOLOGY_AND_VIEWS.md) · [Full user guide](docs/USER_GUIDE.md) · [Specification](docs/LANGUAGE_SPECIFICATION.md) · [1.2.1 release](docs/RELEASE_1_2_1.md)
+[Ontology & flat views](docs/ONTOLOGY_AND_VIEWS.md) · [Full user guide](docs/USER_GUIDE.md) · [Specification](docs/LANGUAGE_SPECIFICATION.md) · [1.3 release notes](docs/RELEASE_1_3_0.md)
 
-**1.2.1 uses `of` consistently for case contexts, satisfaction sources and compact view subjects.** Follow the [migration notes](docs/MIGRATION_1_2.md) when updating a 1.2.0 model. Software structure uses nested components, executable functions and pure calculations, with explicit specialization, typed ports and external deployment references. The host selects language **1.2**; pin the package revision too for reproducibility. A working parser, validator and bounded reference simulator support the documented rules. This is an independent language with a proposed KerML semantic mapping; production runtime, KerML export and graphical source editing remain separate milestones.
+**SWAML 1.3.0 adds `for`, `forEach`, `do … while`, interruptible regions and function timing diagrams.** Follow the [migration notes](docs/MIGRATION_1_3.md) and [control-flow guide](docs/CONTROL_FLOW_AND_TIMING.md). Software structure uses nested components, executable functions and pure calculations, with explicit specialization, typed ports and external deployment references. The host selects language **1.3**; pin the package revision too for reproducibility. A working parser, validator and bounded reference simulator support the documented rules. This is an independent language with a proposed KerML semantic mapping; production runtime, KerML export and graphical source editing remain separate milestones.
 
 ## Start modeling
 
@@ -84,13 +84,13 @@ connect frontLink: front.setting -> settings.api qos LocalLink;
 connect rearLink: rear.setting -> settings.api qos LocalLink;
 ```
 
-Both connectors keep independent queues. Inline QoS blocks still work, and the same interface, sampled-data, idempotency and timing checks apply. See the complete [demo model](examples/08-service-field.swaml), [policy example](examples/10-reusable-qos.swaml) and [1.2 migration guide](docs/MIGRATION_1_2.md).
+Both connectors keep independent queues. Inline QoS blocks still work, and the same interface, sampled-data, idempotency and timing checks apply. See the complete [demo model](examples/08-service-field.swaml), [policy example](examples/10-reusable-qos.swaml) and [1.3 migration guide](docs/MIGRATION_1_3.md).
 
 ## Read the complete specification
 
-[Full Markdown reference](docs/SWAML-1.2.1-Reference.md) · [Full PDF](output/pdf/SWAML-1.2.1-Specification.pdf) · [By concern](docs/CONCERN_GUIDE.md) · [Alphabetical keywords](docs/KEYWORD_REFERENCE.md)
+[Full Markdown reference](docs/SWAML-1.3.0-Reference.md) · [Full PDF](output/pdf/SWAML-1.3.0-Specification.pdf) · [By concern](docs/CONCERN_GUIDE.md) · [Alphabetical keywords](docs/KEYWORD_REFERENCE.md)
 
-The specification covers every reserved word, formal syntax/typing/execution rules, static and dynamic architecture, communication policies, timing, deployment, cases and graphical notation. The PDF includes clickable navigation, all model examples, exact grammar, vector diagrams and embedded source files. [Publication and verification](docs/PDF_PUBLICATION.md) · [1.2.1 release and evidence](docs/RELEASE_1_2_1.md) · [Historical v0.1.0](https://github.com/voidaliot/swaml/releases/tag/v0.1.0).
+The specification covers every reserved word, formal syntax/typing/execution rules, static and dynamic architecture, communication policies, timing, deployment, cases and graphical notation. The PDF includes clickable navigation, all model examples, exact grammar, vector diagrams and embedded source files. [Publication and verification](docs/PDF_PUBLICATION.md) · [1.3 release notes](docs/RELEASE_1_3_0.md) · [Historical v0.1.0](https://github.com/voidaliot/swaml/releases/tag/v0.1.0).
 
 ## Start here
 
@@ -112,7 +112,7 @@ The presentation follows the concept/graphical/textual organization reviewed in 
 
 ## Compact syntax, explicit meaning
 
-Reusable types use `def`. A top-level component usage is the root, and functions own their states directly. Files begin with packages; select the pinned SWAML 1.2 parser through your tool or the CLI's `--language-version 1.2` option. See the [1.2 migration guide](docs/MIGRATION_1_2.md) when upgrading a host.
+Reusable types use `def`. A top-level component usage is the root, and functions own their states directly. Files begin with packages; select the pinned SWAML 1.3 parser through your tool or the CLI's `--language-version 1.3` option. See the [1.3 migration guide](docs/MIGRATION_1_3.md) when upgrading a host.
 
 ```swaml
 package CounterExample {

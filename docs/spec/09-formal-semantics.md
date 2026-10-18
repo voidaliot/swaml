@@ -1,6 +1,6 @@
 # 9. Formal core and simulation relation
 
-Normative chapter of the [SWAML 1.2 specification](../LANGUAGE_SPECIFICATION.md). These judgments constrain implementations alongside chapters 1–8. They make explicit the distinction between static validity, allowed executions, and a particular target's choice among them. They do not assert a mechanically proved metatheory.
+Normative chapter of the [SWAML 1.3 specification](../LANGUAGE_SPECIFICATION.md). These judgments constrain implementations alongside chapters 1–8. They make explicit the distinction between static validity, allowed executions, and a particular target's choice among them. They do not assert a mechanically proved metatheory.
 
 ## 9.1 Domains and judgments
 
@@ -44,6 +44,10 @@ The schemas below apply recursively, together with the name, ownership, route an
 | call p.m as x | p owned by component; outward RPC; compatible args; positive timeout; fresh x and failure name; failure block cannot fall through | Γ ⇒ Γ[x:result] on success; void x is reserved but uninhabited |
 | return e | e assignable to owning function result | current function terminates |
 | if / while / assert | condition:bool; loop bound positive safe integer | each nested block checked in a fresh child scope |
+| for | fresh typed initializer local; condition:bool; typed update in header scope; positive literal bound | header scope encloses fresh body scopes and is discarded after the loop |
+| forEach | copied nonempty fixed array; compatible explicit element type; fresh binding | one fresh copied element/body scope per array position |
+| do | positive literal bound; body checked first; enclosing condition:bool | at least one body; body locals absent from the condition |
+| interruptible | triggered serial flow owner; unique local incoming member; typed payload bindings | normal and interrupt branches share outer scope, activation and deadline; protected locals cannot escape |
 | transition | states in same function; legal stimulus; bool guard; effect typed with payload; distinct competing priorities | transition belongs directly to its function |
 
 For root validity, an inline root expands its authored component children, connections and local behavior; a typed root expands exactly its referenced component definition. Both require an acyclic expansion, distinct occurrence stores and port closure. A typed root binding contains only deployments and introduces no topology. An omitted profile normalizes to service. An omitted function/signature result normalizes to void; parameter/data/calculation result types cannot be omitted. These are defined elaborations, not inference from body behavior.
@@ -63,6 +67,10 @@ The integral domains are `byte = {0,…,255}`, `uint = {0,…,2^53−1}` and `in
 Expressions evaluate operands left to right, except short-circuit `and`/`or`. A checked arithmetic operation either produces a value in its result domain or raises a local Arithmetic failure. Integer arithmetic is mathematically exact before checking the bounded result; implementations MUST NOT let floating-point rounding turn an out-of-range integer into a valid one. Remainder uses truncation toward zero. real arithmetic uses binary64. Equality recursively compares typed values; integral/real numerics compare after scalar promotion.
 
 A local var creates a new local cell initialized by a copied, widened value. An assignment evaluates first, then atomically replaces the target cell. A call pushes a copied parameter frame on the existing activation root, preserving its lock and snapshot. A helper return copies and typechecks its result, pops only that frame, and binds the successful non-void result in the caller’s lexical environment. Returning from the outermost activation frame completes the activation. A failure unwinds all frames of that activation root without rollback. A loop tracks completed body iterations: after n executions, it evaluates the condition once more and fails if still true.
+
+A counted loop evaluates its initializer once in a new header scope. Each true test permits one body while the count is below the bound, followed by its assignment update. A do loop starts with its body and then tests; a true test after the nth body fails before any extra execution. forEach evaluates/copies its array once and processes its ordered elements in fresh scopes; collection and element mutations do not change the saved sequence. Return/failure propagates without later update or condition effects.
+
+An armed region adds a typed receive watch to its current serial activation. Delivery disarms the selected watch and transfers control by unwinding to that region's handler boundary. Outer-scope cells and committed effects remain; protected locals and abandoned local-call frames disappear. A Pending caller correlation becomes terminal Interrupted; terminal correlations are unchanged. The new handler continuation retains the activation lock/snapshot/deadline, while all queued resumes of the abandoned continuation are invalid. The server has no cancellation transition implied by this local transfer. Region exit, return and failure remove the associated watch; unavailable watches produce explicit input discard observations.
 
 A reentrant dispatch snapshots σ for its component. All component reads by that activation, including helpers after suspension, use that snapshot. A serial dispatch reads the live store and holds its lock through requests. Local statements may interleave with other enabled activation roots at statement boundaries, but no competing serial activation root can acquire the same lock.
 

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0",
   "language": "SWAML",
-  "languageVersion": "1.2",
+  "languageVersion": "1.3",
   "foundation": {
     "name": "KerML",
     "version": "1.0",
@@ -17,7 +17,7 @@
         "Package"
       ],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Workspace source container under a host-pinned 1.2 language edition; no file version header."
+      "semantic": "Workspace source container under a host-pinned 1.3 language edition; no file version header."
     },
     {
       "source": "Package",
@@ -751,6 +751,55 @@
       "kernel": [],
       "normative": "docs/spec/04-systems-and-conformance.md",
       "semantic": "Visible lexical token containing doc and its non-nested raw block; distinct from hidden comments."
+    },
+    {
+      "source": "For",
+      "kind": "element",
+      "kernel": [
+        "Step",
+        "Succession"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Structured counted loop with one header-local initializer, typed Boolean test, assignment update, fresh body scopes and a positive finite execution bound. Failure is taken before an excess body; the header binding does not escape."
+    },
+    {
+      "source": "ForUpdate",
+      "kind": "grouping",
+      "kernel": [],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Header spelling of Assign without a terminating semicolon. Normalize to the same typed assignment step and preserve its source location and effects; it sees the header scope, never body-local declarations."
+    },
+    {
+      "source": "ForEach",
+      "kind": "element",
+      "kernel": [
+        "Step",
+        "Succession",
+        "Feature"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Ordered finite iteration over one copied fixed-array snapshot. Each item is a fresh typed copied local feature; cardinality bounds iterations and source/item mutation cannot alter the snapshot."
+    },
+    {
+      "source": "DoWhile",
+      "kind": "element",
+      "kernel": [
+        "Step",
+        "Succession"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Post-test loop with at least one body, a Boolean condition in the enclosing scope, fresh body scopes and positive finite bound. A true condition after the final permitted body takes a bound-failure exit."
+    },
+    {
+      "source": "Interruptible",
+      "kind": "element",
+      "kernel": [
+        "Step",
+        "Succession",
+        "Feature"
+      ],
+      "normative": "docs/spec/07-normalized-model.md",
+      "semantic": "Named protected region and explicit typed data/event handler within one triggered serial flow activation. Cooperative interruption abandons protected work and pending local RPC correlation, retains prior/remote effects and runs the handler under the same deadline; it does not create a second activation or hardware interrupt."
     }
   ],
   "invariants": [

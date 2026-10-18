@@ -1,0 +1,31 @@
+.function-timing { color: #294b50; background: #fbfcfa; }
+.timing-toolbar { display: flex; flex-wrap: wrap; gap: 14px; padding: 18px 22px; border-block: 1px solid #dce6e2; background: #f0f4f0; }
+.timing-toolbar label, .timing-selection > label { display: flex; flex-direction: column; gap: 7px; font-size: 11px; letter-spacing: .05em; }
+.timing-toolbar select, .timing-selection select { min-height: 36px; max-width: 100%; border: 1px solid #c8d8d3; border-radius: 3px; padding: 6px 28px 6px 9px; background: #fff; color: #294b50; font: 12px var(--font-mono, monospace); }
+.timing-description, .timing-boundary-note { margin: 0; padding: 14px 22px; font-size: 12px; line-height: 1.7; }
+.timing-boundary-note { background: #edf3f1; border-block: 1px solid #d7e3de; }
+.timing-legend { display: flex; flex-wrap: wrap; gap: 9px 17px; padding: 0 22px 17px; font-size: 10px; color: #567071; }
+.timing-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.timing-legend i { width: 17px; height: 7px; display: inline-block; }
+.timing-canvas { height: 520px; background: #fff; border-block: 1px solid #dae5e1; }
+.timing-svg { display: block; font-family: var(--font-sans, sans-serif); background: #fff; }
+.timing-svg .timing-axis-title { font-size: 11px; fill: #58717b; letter-spacing: .6px; }
+.timing-svg .timing-axis-tick { font-size: 12px; fill: #58717b; }
+.timing-svg .timing-function-name { font-size: 14px; fill: #224a50; font-weight: 600; }
+.timing-svg .timing-activation-id { font-size: 12px; fill: #617a7c; }
+.timing-svg .timing-open-label { font-size: 11px; fill: #4c6571; }
+.timing-svg .timing-deadline-label { font-size: 10px; fill: #a6574d; }
+.timing-lane { cursor: pointer; outline: none; }
+.timing-lane:focus > rect { stroke: #087f8c; stroke-width: 2px; }
+.timing-stop { margin: 15px 22px; border-left: 3px solid #b96a56; background: #f9f1ec; padding: 10px 14px; font-size: 12px; line-height: 1.7; }
+.timing-stop p { margin: 0; }
+.timing-contracts, .timing-selection, .timing-source { margin: 18px 22px; }
+.function-timing summary { padding-block: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.timing-table-scroll { overflow: auto; margin-top: 9px; }
+.function-timing table { min-width: 100%; border-collapse: collapse; font: 11px var(--font-mono, monospace); text-align: left; }
+.function-timing th, .function-timing td { padding: 9px 10px; white-space: nowrap; vertical-align: top; border-bottom: 1px solid #dce6e2; }
+.function-timing thead { background: #eaf0ed; }
+.function-timing th { font-weight: 600; }
+.function-timing pre { overflow: auto; padding: 16px; margin: 7px 0; background: #eef3ef; font-size: 11px; line-height: 1.7; }
+.timing-selection > label { max-width: 340px; }
+@media (max-width: 640px) { .timing-toolbar { padding-inline: 14px; } .timing-toolbar label { flex: 1 1 100%; } .timing-canvas { height: 410px; } .timing-description, .timing-boundary-note { padding-inline: 14px; } .timing-contracts, .timing-selection, .timing-source { margin-inline: 14px; } }

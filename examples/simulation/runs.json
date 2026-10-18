@@ -274,5 +274,50 @@
         "result": 2
       }
     }
+  },
+  {
+    "model": "examples/17-function-timing.swaml",
+    "root": "FunctionTiming::Demo",
+    "options": "examples/simulation/17-function-timing.json",
+    "expectedStores": {
+      "first": {
+        "healthy": true
+      },
+      "second": {
+        "healthy": true
+      }
+    }
+  },
+  {
+    "model": "examples/18-control-loops.swaml",
+    "root": "ControlLoops::Demo",
+    "options": "examples/simulation/18-control-loops.json",
+    "expectedStores": {
+      "": {
+        "counted": 3,
+        "total": 6,
+        "postTested": 2,
+        "nested": 12,
+        "values": [
+          9,
+          9,
+          9
+        ]
+      }
+    }
+  },
+  {
+    "model": "examples/19-interruptible-function.swaml",
+    "root": "Interrupts::App",
+    "options": "examples/simulation/19-interruptible-function.json",
+    "expectedStores": {
+      "worker": {
+        "status": 2,
+        "why": "operator stop"
+      },
+      "backend": {
+        "committed": 1
+      }
+    }
   }
 ]

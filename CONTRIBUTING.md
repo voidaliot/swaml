@@ -1,6 +1,6 @@
 # Contributing to SWAML
 
-SWAML is developed as a language: specification, grammar, semantics, diagnostics and examples must evolve together. The 1.2 syntax keeps explicit `def` declarations and distinguishes them from concrete component usages; named QoS policies reuse complete values while connector queues stay independent. Source files are headerless; a host must pin language 1.2. Read the [1.2 migration](docs/MIGRATION_1_2.md) when updating hosts and the [historical 1.1 migration](docs/MIGRATION_1_1.md) when converting 1.0 models.
+SWAML is developed as a language: specification, grammar, semantics, diagnostics and examples must evolve together. The 1.3 syntax keeps explicit `def` declarations and distinguishes them from concrete component usages; named QoS policies reuse complete values while connector queues stay independent. Source files are headerless; a host must pin language 1.3. Read the [1.3 migration](docs/MIGRATION_1_3.md) when updating hosts and the [historical 1.1 migration](docs/MIGRATION_1_1.md) when converting 1.0 models.
 
 Start with the [language specification](docs/LANGUAGE_SPECIFICATION.md), [ownership and reuse decision](docs/decisions/0007-component-functions-and-calculations.md) and [implementation status](docs/IMPLEMENTATION_STATUS.md).
 
@@ -21,7 +21,7 @@ Describe the actual modeling problem and a small before/after model. Identify th
 
 A proposal that adds cross-component communication must identify the port/interface/member route. A proposal for an event must identify its declaration, emitting function, receiving owner, delivery policy and failure behavior. A proposal for state or control flow must define ordering, concurrency and termination. Avoid accepting syntax before its semantics exists.
 
-Published syntax changes require an explicit release revision and migration notes. The owner-requested 1.2.1 correction replaces case for and satisfaction by with of; it deliberately rejects the old spellings, as recorded in ADR 0010 and the migration guide. Hosts currently select the 1.2 family, so reproducibility also requires pinning the package revision. The published 1.2.0 edition remains archived. Additive keywords can still break existing identifiers; document that impact. Record substantial decisions under `docs/decisions/`.
+Published syntax changes require an explicit release revision and migration notes. The 1.2.1 correction replaces case for and satisfaction by with of; it deliberately rejects the old spellings, as recorded in ADR 0010 and the migration guide. The current host selects language 1.3; pin its package revision and follow the 1.3 migration guide. Published editions remain archived. Additive keywords can still break existing identifiers; document that impact. Record substantial decisions under `docs/decisions/`.
 
 ## Implement and test
 
@@ -40,6 +40,8 @@ Use a focused branch and describe the user-visible modeling behavior. Include a 
 Reviewers should check that definitions and instances remain distinct, private data cannot escape through paths, all exchanges remain typed, and diagrams do not invent semantics. Compatibility or migration decisions should be explicit before merging.
 
 ## Documentation and standards
+
+State behavior, changes and technical rationale directly. Cite relevant tracked tickets by number; omit personal attribution for decisions.
 
 Link to primary sources for external standards. Write original explanations; do not copy standard PDFs or proprietary specification text into the repository. Preserve the existing MIT license for original code and documentation and retain any applicable third-party notices.
 

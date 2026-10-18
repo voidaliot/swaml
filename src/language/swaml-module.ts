@@ -9,7 +9,7 @@ export { effectiveQos } from './semantic.js';
 export { documentationText, modelComments, selectView, viewCandidates } from './presentation.js';
 
 /** Headerless models are interpreted only under this explicitly pinned language edition. */
-export const SWAML_LANGUAGE_VERSION = '1.2' as const;
+export const SWAML_LANGUAGE_VERSION = '1.3' as const;
 
 export type SwamlServices = LangiumServices & { validation: { SwamlValidator: SwamlValidator } };
 export const SwamlModule: Module<SwamlServices, PartialLangiumServices & { validation: { SwamlValidator: SwamlValidator } }> = {

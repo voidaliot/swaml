@@ -1,0 +1,5 @@
+{
+  "untilNs": 60000000,
+  "latencyNs": 5000000,
+  "manual": [{ "atNs": 2000000, "function": "controller.stop" }]
+}

@@ -2,7 +2,7 @@
 
 Status: accepted for SWAML 1.2.0.
 
-The owner requested calculations only inside functions and approved further reductions in authoring vocabulary. This refines [ADR 0007](0007-component-functions-and-calculations.md).
+Calculations are local to functions. Local and routed calls share `call`, while private and local mutable values share `var`. This refines [ADR 0007](0007-component-functions-and-calculations.md).
 
 Components own private data, ports, children and executable functions. Each function declares its calculations first, followed by flow or states. A calculation resolves only in its enclosing function, including state guards and action blocks. Its expression sees only explicit copied inputs, constants and sibling calculations. It cannot capture mutable data or call executable behavior. Redefining a function replaces the complete body and calculation scope; calculations have no independent specialization or redefinition.
 

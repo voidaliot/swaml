@@ -1,6 +1,6 @@
 # 6. Operational contract and target bindings
 
-Normative chapter of the [SWAML 1.2 specification](../LANGUAGE_SPECIFICATION.md). This chapter makes the allowed traces precise; it does not prescribe an implementation thread model. The [reference simulation binding](../SIMULATION.md) makes a deterministic logical-time choice within this contract; production backends require their own binding and evidence.
+Normative chapter of the [SWAML 1.3 specification](../LANGUAGE_SPECIFICATION.md). This chapter makes the allowed traces precise; it does not prescribe an implementation thread model. The [reference simulation binding](../SIMULATION.md) makes a deterministic logical-time choice within this contract; production backends require their own binding and evidence.
 
 ## 6.1 Configuration and observable occurrences
 
@@ -65,6 +65,16 @@ AtLeastOnce may dispatch multiple handler activations with the same logical requ
 The mandatory `as name` on a void RPC labels successful completion without introducing an inhabitable value. It reserves that name in the enclosing lexical scope but it MUST NOT be read or assigned as data. A void handler uses bare `return;`. The failure block has an implicit copied `failure: string`; an existing live value with that name is a static error. Failure blocks cannot fall through to the successful continuation.
 
 A timeout does not retract messages already sent or cancel a server frame. Pending requests cannot be used as detached futures; each statement awaits its own outcome. Synchronous dependency cycles remain expressible but may time out. A static validator is not required to prove their absence; an execution/timing claim must account for them.
+
+### Interruption of pending continuations
+
+An accepted region interrupt resumes its existing activation at a statement boundary, retaining the serial lock and activation deadline. Its input is admitted, delayed, ordered, expired or dropped through the same per-route queue rules as other data/events. It is delivered only while its selected region is armed; available input outside that interval is discarded with an undeliverable-interrupt observation. It does not release an independent activation or create an unbounded handler queue.
+
+Cancellation unwinds the protected stack to that region, disarms it, and enters its handler with copied payload bindings and the enclosing lexical environment. If a caller-side request is Pending, cancellation makes it terminal Failed with an Interrupted reason and records requestCancelled. Its success and otherwise continuations are both abandoned. Scheduled resume work for the unwound stack is invalidated. Server execution and committed effects remain unchanged. A later reply observes the terminal correlation and is discarded.
+
+A response or timeout already terminal keeps its original outcome. In particular, expiry still wins the response/timeout tie. A subsequent interrupt may transfer control before the already queued terminal continuation runs; this does not change the recorded correlation outcome. A normally completed interrupt handler continues after the region. An outer interrupt can unwind an inner region or its handler, including a second suspended request. Return/failure still disarms all regions unwound with the frame. The original activation deadline applies through cancellation and handler completion.
+
+A conforming trace identifies region entry/exit, interrupt delivery and cancelled correlations with their source region, activation, member and route identities. Reference simulation uses one-shot region watches and continuation generations to prevent stale scheduling from resuming cancelled frames. Physical cancellation latency remains a target-binding obligation.
 
 ## 6.6 State reaction ordering
 

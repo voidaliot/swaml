@@ -72,6 +72,10 @@ A statement body normalizes to an entry, ordered steps, exit/failure terminals a
 | return / fail | terminate the current frame; unwind callers on failure; correlated result/failure for RPC activations |
 | if | evaluate bool once, mutually exclusive selected branch and merge of control only |
 | while | repeated condition, body, iteration counter and bound-failure edge; no implicit unbounded loop |
+| for | loop-owned initializer scope, initial test, ordered body/update/test, counter and bound-failure edge; update is an assignment grouping |
+| forEach | one copied fixed-array snapshot, finite element order, fresh typed element/body scope for each iteration |
+| do | initial body execution followed by condition, counter and bound-failure edge; condition excludes body locals |
+| interruptible | named armed region, typed input reference, normal/interrupt exits, handler payload scope and explicit stack/correlation cancellation |
 | assert | bool evaluation and failure edge when false |
 | calc | function-owned typed inputs, named output and expression tree with parameter-only environment and explicit acyclic calculation call edges |
 
@@ -99,11 +103,13 @@ A case realization claim records a witness execution and assumptions, including 
 
 Normalize views to `(kind, selectedOccurrences[])`, retaining the authored selection/filter clauses for round trips. Compact of syntax contributes one selection. Resolve include subjects in the owning package, expand recursive descendants, then evaluate typed Boolean predicates and deduplicate occurrence paths in first-selection order. gv/grv may select any named semantic element or package except a view; iv selects components; cv/sv select cases or roots; fv selects executable functions. Paths traverse effective component members, owned named behavior elements and interface members exposed through ports. A package/declaration name collision is ambiguous.
 
+An FV timing presentation additionally references an identified run/trace and its selected function occurrences. Preserve activation identities, event ordinals, correlations and observed phase boundaries separately from declared timing contracts. Horizon/stopped intervals remain open; zero-cost execution cannot be normalized as measured physical CPU time. Timing geometry and interactive filters remain presentation data. No new executable view kind or scheduling participant is introduced.
+
 ## 7.7 Equivalence and completeness
 
 Two normalized artifacts are equivalent when an identity-respecting graph correspondence preserves ownership, types, value shapes, interface versions, instance contexts, routes, evaluation order, triggers, state selection, policies, deployments, case dependencies/correlations and ordered view selections. Requirement attributes, formal docs and satisfy/verify identities must be preserved. Whitespace, ordinary comments, source offsets and diagram geometry are excluded from execution equivalence but remain required authoring data. Failure reasons remain observable diagnostic values.
 
-A round trip may rename anonymous lowering IDs while retaining their owner/role trace. It may not remove guarded branches, reorder effects, merge queues, weaken timing contracts, convert copied payloads into remote references, or drop SWAML metadata because a receiver lacks support. Unsupported meaning requires an explicit partial-import result. This information-preservation contract is complete for the closed 1.2 syntax; implementing and validating a KerML backend is a separate milestone.
+A round trip may rename anonymous lowering IDs while retaining their owner/role trace. It may not remove guarded branches, reorder effects, merge queues, weaken timing contracts, convert copied payloads into remote references, or drop SWAML metadata because a receiver lacks support. Unsupported meaning requires an explicit partial-import result. This information-preservation contract is complete for the closed 1.3 syntax; implementing and validating a KerML backend is a separate milestone.
 
 ## Requirement and presentation extension
 

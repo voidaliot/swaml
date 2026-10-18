@@ -116,3 +116,29 @@ function checkSourceCard(node) {
 checkSourceCard(explorerAst);
 assert.ok(checkedExcerpts >= 15, 'The model explorer needs source-backed entity cards');
 console.log(`Verified ${checkedExcerpts} model explorer source excerpts against the Settings model.`);
+
+// The FV interruption diagram is a projection of the protected body and its real routes.
+const interruptSource = await readFile(new URL('../examples/19-interruptible-function.swaml', import.meta.url), 'utf8');
+const { Swaml: interruptServices } = createSwamlServices(EmptyFileSystem);
+const interruptDocument = await parseHelper(interruptServices)(interruptSource, { validation: true });
+assert.deepEqual(interruptDocument.diagnostics, [], 'Interrupt flow example');
+const interruptPackage = interruptDocument.parseResult.value.packages.find(p => p.name === 'Interrupts');
+const interruptRoot = interruptPackage.elements.find(e => a.isRootComponent(e) && e.name === 'App');
+const worker = interruptPackage.elements.find(e => a.isComponent(e) && e.name === 'Worker');
+const interruptedFunction = members(worker).find(e => a.isFunctionDef(e) && e.name === 'run');
+const region = interruptedFunction.body.statements.find(a.isInterruptible);
+assert.equal(region?.name, 'work');
+assert.equal(region?.endpoint, 'control.stop');
+assert.deepEqual(region.body.statements.filter(a.isAssign).map(e => e.target), ['status', 'status']);
+assert.equal(region.body.statements.find(a.isRemoteCall)?.endpoint, 'job.perform');
+assert.deepEqual(region.handler.statements.filter(a.isAssign).map(e => e.target), ['status', 'why']);
+const interruptionRoutes = members(interruptRoot).filter(a.isConnect);
+assert.ok(interruptionRoutes.some(r => r.name === 'workRoute' && r.source === 'worker.job' && r.target === 'backend.api'));
+assert.ok(interruptionRoutes.some(r => r.name === 'stopRoute' && r.source === 'controller.control' && r.target === 'worker.control'));
+const controlPort = members(worker).find(e => a.isPort(e) && e.name === 'control');
+assert.equal(controlPort.role, 'subscriber');
+assert.equal(controlPort.interface.ref.name, 'Control');
+const stop = controlPort.interface.ref.members.find(e => a.isEventMember(e) && e.name === 'stop');
+assert.deepEqual(stop.parameters.map(p => [p.name, p.type.primitive]), [['reason', 'string']]);
+assert.ok(interruptSource.includes('assert status == 2;'));
+console.log('Verified FV interruptible region, typed payload, owned continuation and both authored connector routes.');

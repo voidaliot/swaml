@@ -36,25 +36,25 @@ LINE = colors.HexColor('#CBD5DF')
 PAGE_W, PAGE_H = A4
 MARGIN = 44
 WIDTH = PAGE_W - 2 * MARGIN
-RELEASE = '1.2.1'
-REVISION = '1.2.1'
-LANGUAGE = '1.2'
-SIMULATION_PROFILE = '1.2'
+RELEASE = '1.3.0'
+REVISION = '1.3.0'
+LANGUAGE = '1.3'
+SIMULATION_PROFILE = '1.3'
 REPO = f'https://github.com/voidaliot/swaml/blob/v{RELEASE}/'
 NORMATIVE = ['docs/LANGUAGE_SPECIFICATION.md'] + [f'docs/spec/{name}' for name in [
     '01-structure-and-types.md', '02-communication.md', '03-behavior.md',
     '04-systems-and-conformance.md', '05-kerml-mapping.md', '06-execution-contract.md',
     '07-normalized-model.md', '08-conformance-obligations.md', '09-formal-semantics.md',
 ]] + ['docs/GRAPHICAL_NOTATION.md', 'docs/GRAPHICAL_CATALOG.md']
-GUIDANCE = ['docs/MODELING_OVERVIEW.md', 'docs/QUICK_START.md', 'docs/ARCHITECTURE_PATTERNS.md', 'docs/UML_GUIDE.md', 'docs/REVIEW_1_2.md', 'docs/CONCERN_GUIDE.md', 'docs/KEYWORD_REFERENCE.md', 'docs/ONTOLOGY_AND_VIEWS.md', 'docs/GRAPHICAL_EXAMPLES.md', 'docs/SIMULATION.md', 'docs/MIGRATION_1_1.md', 'docs/MIGRATION_1_2.md', 'docs/USER_GUIDE.md', 'docs/ARCHITECTURE_COMPARISON.md', 'docs/TOOLING.md',
-            'docs/IMPLEMENTATION_STATUS.md', 'docs/RELEASE_1_2_1.md', 'docs/SYSML_STYLE_REVIEW.md',
+GUIDANCE = ['docs/MODELING_OVERVIEW.md', 'docs/QUICK_START.md', 'docs/ARCHITECTURE_PATTERNS.md', 'docs/UML_GUIDE.md', 'docs/REVIEW_1_2.md', 'docs/CONCERN_GUIDE.md', 'docs/KEYWORD_REFERENCE.md', 'docs/ONTOLOGY_AND_VIEWS.md', 'docs/GRAPHICAL_EXAMPLES.md', 'docs/SIMULATION.md', 'docs/MIGRATION_1_1.md', 'docs/MIGRATION_1_2.md', 'docs/MIGRATION_1_3.md', 'docs/CONTROL_FLOW_AND_TIMING.md', 'docs/decisions/0011-loops-interrupts-and-function-timing.md', 'docs/USER_GUIDE.md', 'docs/ARCHITECTURE_COMPARISON.md', 'docs/TOOLING.md',
+            'docs/IMPLEMENTATION_STATUS.md', 'docs/RELEASE_1_3_0.md', 'docs/SYSML_STYLE_REVIEW.md',
             'docs/decisions/0001-language-boundaries.md', 'docs/decisions/0002-auditable-semantics.md', 'docs/decisions/0003-reference-execution-and-publication.md', 'docs/decisions/0004-compact-component-language.md', 'docs/decisions/0005-canonical-graphical-notation.md', 'docs/decisions/0006-reusable-qos-and-flat-showcase.md', 'docs/decisions/0007-component-functions-and-calculations.md', 'docs/decisions/0008-function-local-calculations-and-calls.md',
     'docs/decisions/0010-consistent-subject-relations.md', 'docs/REQUIREMENTS_AND_DOCUMENTATION.md', 'docs/decisions/0009-requirements-documentation-and-views.md',
             'docs/PDF_PUBLICATION.md', 'CONTRIBUTING.md', 'AGENTS.md']
 EXAMPLES = sorted(p.relative_to(ROOT).as_posix() for p in (ROOT / 'examples').glob('*.swaml')) + sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/'examples/notation').glob('*.swaml'))
 ATTACHMENTS = [f'docs/SWAML-{RELEASE}-Reference.md', 'spec/keywords.json', 'spec/graphical-examples.json', 'spec/notation.json', 'resources/fonts/README.md', 'resources/fonts/LICENSE-DejaVu.txt'] + sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/'docs/notation').glob('*') if p.is_file()) + sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/'docs/figures').glob('*')) + sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/'examples/simulation').glob('*.json'))
 OVERVIEW = json.loads((ROOT/'spec/modeling-overview.json').read_text(encoding='utf-8'))
-ATTACHMENTS += ['spec/modeling-overview.json', 'spec/traceability-demo.json'] + [f'docs/assets/modeling-{graph["id"]}.{suffix}' for graph in [OVERVIEW['ontology'], *OVERVIEW['stages']] for suffix in ['svg', 'scene.json']]
+ATTACHMENTS += ['spec/modeling-overview.json', 'spec/traceability-demo.json', 'spec/function-timing-demo.json'] + [f'docs/assets/modeling-{graph["id"]}.{suffix}' for graph in [OVERVIEW['ontology'], *OVERVIEW['stages']] for suffix in ['svg', 'scene.json']]
 SOURCES = NORMATIVE + GUIDANCE + ['src/language/swaml.langium', 'spec/kerml-mapping.json'] + EXAMPLES + ['LICENSE'] + ATTACHMENTS
 ANCHORS = {p: 'file_' + hashlib.sha256(p.encode()).hexdigest()[:16] for p in SOURCES}
 STYLES: dict[str, ParagraphStyle] = {}
@@ -394,7 +394,7 @@ def main():
     parser.add_argument('--font-dir',type=Path,default=os.environ.get('SWAML_PDF_FONT_DIR','/usr/share/fonts/truetype/dejavu'))
     args=parser.parse_args();fonts(args.font_dir);args.output.parent.mkdir(parents=True,exist_ok=True)
     story=[Cover(),PageBreak(),heading('About this edition',1,'edition')]
-    story.extend([Paragraph(f'VERSION {REVISION} / COMPLETE LANGUAGE REFERENCE',STYLES['label']),
+    story.extend([Paragraph(f'VERSION {REVISION} / RELEASE EDITION',STYLES['label']),
         Paragraph(f'This book contains the complete SWAML {LANGUAGE} language specification, a concern guide and every keyword in alphabetical order, formal execution rules, flat notation examples, an ontology and view guide, a reference simulation binding, the complete grammar and runnable model examples. The specification and package revision is {REVISION}. Source files begin with packages; hosts select and pin the {LANGUAGE} grammar. Explicit type definitions retain <font name="Mono">def</font>; component usages form execution roots and functions own their states directly. Reusable QoS definitions reduce repeated connector policy without weakening explicit routes.',STYLES['body']),
         Paragraph('Normative chapters define syntax, validity, interface isolation, function/state behavior and mapping obligations. Tutorials and figures illustrate these rules. This independently authored language is not an OMG UML release or an AUTOSAR implementation. KerML export remains a proposed semantic mapping contract.',STYLES['body']),
         Paragraph('The reference parser, validator and deterministic logical-time simulator provide executable evidence. Production timing, runtime and platform mappings require the target binding and evidence defined in the normative chapters.',STYLES['body']),

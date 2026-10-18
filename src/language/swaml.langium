@@ -34,7 +34,7 @@ Trigger: 'on' (kind=('start'|'manual') | kind='every' period=Duration | kind=('r
 Timing: 'timing' '{' 'wcet' wcet=Duration ';' 'deadline' deadline=Duration ';' 'concurrency' concurrency=('serial'|'reentrant') ';' '}';
 Calculation: 'calc' name=ID '{' documentation=Documentation? ('in' parameters+=Parameter)* 'return' outputName=ID ':' result=TypeRef '=' value=Expression ';' '}';
 Block: '{' statements+=Statement* '}';
-Statement: LocalVariable | Assign | Send | RemoteCall | LocalCall | Return | If | While | Fail | Assert;
+Statement: LocalVariable | Assign | Send | RemoteCall | LocalCall | Return | If | While | For | ForEach | DoWhile | Interruptible | Fail | Assert;
 LocalVariable: 'var' name=ID ':' type=TypeRef '=' value=Expression ';';
 Assign: target=ID '=' value=Expression ';';
 Send: kind=('send'|'publish') endpoint=Path '(' (args+=Expression (',' args+=Expression)*)? ')' ';';
@@ -43,6 +43,11 @@ LocalCall: 'call' function=[FunctionDef:ID] '(' (args+=Expression (',' args+=Exp
 Return: 'return' value=Expression? ';';
 If: 'if' '(' condition=Expression ')' then=Block ('else' otherwise=Block)?;
 While: 'while' '(' condition=Expression ')' 'bound' bound=INT body=Block;
+For: 'for' '(' initializer=LocalVariable condition=Expression ';' update=ForUpdate ')' 'bound' bound=INT body=Block;
+ForUpdate infers Assign: target=ID '=' value=Expression;
+ForEach: 'forEach' '(' variable=Argument 'in' collection=Expression ')' body=Block;
+DoWhile: 'do' body=Block 'while' '(' condition=Expression ')' 'bound' bound=INT ';';
+Interruptible: 'interruptible' name=ID documentation=Documentation? body=Block 'on' 'receive' endpoint=Path handler=Block;
 Fail: 'fail' reason=STRING ';';
 Assert: 'assert' condition=Expression ';';
 StateBody: 'initial' initial=[State:ID] ';' states+=State+ transitions+=Transition*;

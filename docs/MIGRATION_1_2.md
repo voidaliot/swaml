@@ -4,7 +4,7 @@ The 1.2 language uses **components → functions → statements or states**, wit
 
 ## Migrate 1.2.0 to 1.2.1
 
-Version 1.2.1 intentionally corrects subject-assignment syntax at the owner's request. Replace case `for` and satisfaction `by` with `of`. Compact views already use `of`. These contextual edits preserve root selection, satisfaction direction, case traces and execution behavior. Do not replace ordinary prose, string contents, `on` triggers/deployment destinations or `as` result bindings.
+Version 1.2.1 makes subject-assignment syntax consistent. Replace case `for` and satisfaction `by` with `of`. Compact views already use `of`. These contextual edits preserve root selection, satisfaction direction, case traces and execution behavior. Do not replace ordinary prose, string contents, `on` triggers/deployment destinations or `as` result bindings.
 
 | 1.2.0 fragment | 1.2.1 fragment |
 | --- | --- |

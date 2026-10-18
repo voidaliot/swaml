@@ -1,4 +1,4 @@
-# SWAML 1.2 user guide
+# SWAML 1.3 user guide
 
 Architects familiar with UML: start with the [concept correspondence and modeling workflow](UML_GUIDE.md).
 
@@ -16,7 +16,7 @@ node out/src/cli/main.js examples/01-hello.swaml
 
 A successful result is `Checked 1 model(s): 0 error(s)`. This checks the implemented rules; it does not execute the software or prove schedulability. `npm run check` also runs the repository tests. Open the [implementation matrix](IMPLEMENTATION_STATUS.md) before interpreting a passed check as a stronger assurance claim.
 
-A file begins directly with named packages. Use the 1.2 language core or pin SWAML 1.2 in the editor host; there is no per-file version header. The 1.2 parser rejects historical headers rather than guessing a version. Names are case sensitive. Keywords cannot be identifiers. Use `orderLink`, for example, rather than the reserved word `ordering`.
+A file begins directly with named packages. Use the 1.2 language core or pin SWAML 1.3 in the editor host; there is no per-file version header. The 1.2 parser rejects historical headers rather than guessing a version. Names are case sensitive. Keywords cannot be identifiers. Use `orderLink`, for example, rather than the reserved word `ordering`.
 
 ## 2. Write the contract first
 
@@ -233,8 +233,12 @@ The [operational contract](spec/06-execution-contract.md) defines execution edge
 
 ## Find a construct or run an example
 
-Use the [alphabetical keyword reference](KEYWORD_REFERENCE.md) for exact words and context, the [concern guide](CONCERN_GUIDE.md) for architectural questions, or the [complete Markdown book](SWAML-1.2.1-Reference.md) for a single user-facing document. The maintained examples have executable [simulation configurations](../examples/simulation/runs.json); follow the [reference simulation guide](SIMULATION.md) to run them and inspect their traces.
+Use the [alphabetical keyword reference](KEYWORD_REFERENCE.md) for exact words and context, the [concern guide](CONCERN_GUIDE.md) for architectural questions, or the [complete Markdown book](SWAML-1.3.0-Reference.md) for a single user-facing document. The maintained examples have executable [simulation configurations](../examples/simulation/runs.json); follow the [reference simulation guide](SIMULATION.md) to run them and inspect their traces.
 
 ## Requirements and formal documentation
 
 Requirements own typed attributes and one optional `doc /* ... */` specification. Design elements link through `satisfy`; verification cases link through `verify`. Use cases describe intent. Ordinary comments remain independent notes. View kinds use lower camel case, and view blocks combine multiple selections and Boolean filters. See the [guide](REQUIREMENTS_AND_DOCUMENTATION.md) and [complete model](../examples/16-requirements-and-views.swaml).
+
+## Extended loops, interrupts and timing
+
+Use counted `for`, copied-array `forEach` or post-test `do` when their scope and test order fit the behavior. Conditional loops retain explicit bounds. `interruptible` regions bind cancellation to an owned typed input route and preserve the activation deadline and committed effects. FV offers trace-backed timing and interrupt examples alongside flow and states. See the [complete guide](CONTROL_FLOW_AND_TIMING.md) and [1.3 migration](MIGRATION_1_3.md).

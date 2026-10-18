@@ -1,3 +1,4 @@
+export { projectFunctionTiming } from './timing.js';
 import { AstUtils, DocumentState } from 'langium';
 import * as a from '../language/generated/ast.js';
 import { owner } from '../language/swaml-scope.js';
@@ -15,7 +16,7 @@ export interface SimulationOptions {
 }
 export interface TraceEvent { timeNs: number; ordinal: number; kind: string; subject: string; [key: string]: unknown }
 export interface SimulationResult {
-    profile: 'swaml-reference/1.2'; root: string; options: SimulationOptions;
+    profile: 'swaml-reference/1.3'; root: string; options: SimulationOptions;
     outcome: 'failed' | 'no-failure-observed';
     status: 'quiescent' | 'horizon' | 'violation' | 'limit'; timeNs: number; steps: number;
     sources: { uri: string; text: string }[];
@@ -32,9 +33,11 @@ type Queue = { key: string; items: Message[] };
 type Correlation = { id: string; expiry: number; state: 'Pending' | 'Succeeded' | 'Failed'; frame: Frame; response?: Response };
 type Machine = { component: ComponentInstance; fn: a.FunctionDef; state: a.State; generation: number; ready: boolean; live: boolean; reacting: boolean };
 type Work = { component: ComponentInstance; fn: a.FunctionDef; released: number; args: Value[]; machine?: Machine; stimulus?: { kind: 'initialize' | 'receive' | 'after'; endpoint?: string; delay?: number; generation?: number }; message?: Message; done: boolean; frame?: Frame; id: string };
-type Frame = { id: string; work: Work; snapshot: Environment; iterator: Generator<Yield, Value | undefined, Response | undefined>; waiting: boolean; done: boolean; serial: boolean };
+type Frame = { id: string; work: Work; snapshot: Environment; iterator: Generator<Yield, Value | undefined, Response | undefined>; waiting: boolean; done: boolean; serial: boolean; epoch: number; correlation?: Correlation; watches: InterruptWatch[]; interruption?: InterruptSignal };
+type InterruptWatch = { region: a.Interruptible; frame: Frame; active: boolean };
 type Yield = { kind: 'step' } | { kind: 'request'; endpoint: string; args: Value[]; timeout: number };
 class ReturnValue { constructor(public value?: Value) {} }
+class InterruptSignal { constructor(public watch: InterruptWatch, public message: Message) {} }
 const joined = (prefix: string, name: string): string => prefix ? `${prefix}.${name}` : name;
 
 /** A deterministic, zero CPU-cost reference interpreter. Requires a fully built, valid workspace. */
@@ -75,6 +78,7 @@ class Interpreter {
     private queues = new Map<string, Queue>();
     private machines: Machine[] = [];
     private pending: Work[] = [];
+    private frames = new Set<Frame>();
     private events: Event[] = [];
     private trace: TraceEvent[] = [];
     private deployments: Record<string, string | null> = Object.create(null);
@@ -156,7 +160,7 @@ class Interpreter {
             this.stopped = error.code === 'StepLimit' ? 'limit' : 'violation';
             this.log('violation', this.id, { code: error.code, message: error.message });
         }
-        return { profile: 'swaml-reference/1.2', outcome: this.stopped || this.trace.some(t => t.kind === 'failure') ? 'failed' : 'no-failure-observed', root: this.id, options: copy(this.options), status: this.stopped ?? (this.events.length ? 'horizon' : 'quiescent'), timeNs: this.time, steps: this.steps,
+        return { profile: 'swaml-reference/1.3', outcome: this.stopped || this.trace.some(t => t.kind === 'failure') ? 'failed' : 'no-failure-observed', root: this.id, options: copy(this.options), status: this.stopped ?? (this.events.length ? 'horizon' : 'quiescent'), timeNs: this.time, steps: this.steps,
             sources: this.models.map(m => ({ uri: AstUtils.getDocument(m).uri.toString(), text: AstUtils.getDocument(m).textDocument.getText() })).sort((x, y) => x.uri.localeCompare(y.uri)),
             trace: this.trace, stores: Object.fromEntries([...this.components].map(([p, u]) => [p, Object.fromEntries([...u.store].map(([n, v]) => [n, plain(v.value)]))])),
             machines: Object.fromEntries(this.machines.map(m => [joined(m.component.path, m.fn.name), { state: m.state.name, live: m.live }])), deployments: this.deployments };
@@ -176,6 +180,7 @@ class Interpreter {
     private prepare(m: Message): void {
         if (m.response) return;
         const handler = this.handler(m);
+        if (handler.interrupt) return;
         if (handler.machine && !handler.machine.live) return;
         m.work = { ...handler, id: this.uid('a'), released: m.ready, args: copy(m.args), message: m, done: false, stimulus: handler.machine ? { kind: 'receive', endpoint: `${this.ports.get(m.target)!.port.name}.${m.member}` } : undefined };
         this.released(m.work);
@@ -184,14 +189,16 @@ class Interpreter {
     private canDispatch(w: Pick<Work, 'component' | 'fn' | 'machine'>): boolean {
         return !(w.machine?.reacting) && (w.fn.timing?.concurrency === 'reentrant' ? w.component.active < this.options.maxReentrant : !w.component.serial);
     }
-    private handler(m: Message): { component: ComponentInstance; fn: a.FunctionDef; machine?: Machine } {
+    private handler(m: Message): { component: ComponentInstance; fn: a.FunctionDef; machine?: Machine; interrupt?: boolean } {
         const p = this.ports.get(m.target);
         if (!p) throw new RuntimeFault('Route', `Unresolved target port ${m.target}`);
         const endpoint = `${p.port.name}.${m.member}`;
         const machine = this.machines.find(x => x.component === p.component && x.fn.stateBody!.transitions.some(t => t.kind === 'receive' && t.endpoint === endpoint));
-        const fn = machine?.fn ?? members(p.component.definition).filter(a.isFunctionDef).find(x => ['receive', 'call'].includes(x.trigger?.kind ?? '') && x.trigger?.endpoint === endpoint)!;
+        const functions = members(p.component.definition).filter(a.isFunctionDef);
+        const regionOwner = functions.find(fn => [...AstUtils.streamAllContents(fn)].some(node => a.isInterruptible(node) && node.endpoint === endpoint));
+        const fn = machine?.fn ?? regionOwner ?? functions.find(x => ['receive', 'call'].includes(x.trigger?.kind ?? '') && x.trigger?.endpoint === endpoint)!;
         if (!fn) throw new RuntimeFault('Handler', `No handler for ${m.target}.${m.member}`);
-        return { component: p.component, fn, machine };
+        return { component: p.component, fn, machine, interrupt: !!regionOwner };
     }
     private pump(): void {
         for (let i = 0; i < this.pending.length;) {
@@ -213,6 +220,17 @@ class Interpreter {
                 if (m.route.qos.maxAge && this.time - m.emitted > nanos(m.route.qos.maxAge)) { q.items.shift(); this.discard(m, 'Expired'); continue; }
                 if (m.response) { if (--m.copies === 0) q.items.shift(); this.log('delivery', m.id, { correlation: m.correlation!.id, route: m.route.path }); this.complete(m.correlation!, m.response); continue; }
                 const handler = this.handler(m);
+                if (handler.interrupt) {
+                    const endpoint = `${this.ports.get(m.target)!.port.name}.${m.member}`;
+                    const frame = [...this.frames].find(frame => frame.work.component === handler.component && frame.work.fn === handler.fn && frame.watches.some(watch => watch.active && watch.region.endpoint === endpoint));
+                    const watch = frame && [...frame.watches].reverse().find(watch => watch.active && watch.region.endpoint === endpoint);
+                    if (!frame || !watch) { q.items.shift(); this.discard(m, 'UndeliverableInterrupt'); continue; }
+                    if (frame.interruption) break;
+                    if (--m.copies === 0) q.items.shift();
+                    this.log('delivery', m.id, { attempt: ++m.attempt, route: m.route.path, source: `${m.source}.${m.member}`, target: `${m.target}.${m.member}` });
+                    this.interrupt(frame, watch, m);
+                    continue;
+                }
                 if (handler.machine && !handler.machine.ready) break;
                 if (!this.canDispatch(handler)) break;
                 if (--m.copies === 0) q.items.shift();
@@ -228,22 +246,42 @@ class Interpreter {
         if (serial) work.component.serial = true;
         else work.component.active++;
         if (work.machine) work.machine.reacting = true;
-        const frame = { id: work.id, work, snapshot: serial ? work.component.store : new Map([...work.component.store].map(([k, v]) => [k, copy(v)])), waiting: false, done: false, serial } as Frame;
+        const frame: Frame = { id: work.id, work, snapshot: serial ? work.component.store : new Map([...work.component.store].map(([k, v]) => [k, copy(v)])), iterator: undefined!, waiting: false, done: false, serial, epoch: 0, watches: [] };
         frame.iterator = work.machine ? this.reaction(frame) : this.fn(frame, work.fn, work.args);
         work.frame = frame;
+        this.frames.add(frame);
         this.log('dispatch', frame.id, { function: joined(work.component.path, work.fn.name), mode: serial ? 'serial' : 'reentrant' });
-        this.schedule(this.time, 2, () => this.advance(frame));
+        this.resume(frame);
+    }
+    private resume(frame: Frame, response?: Response): void {
+        const epoch = frame.epoch;
+        this.schedule(this.time, 2, () => { if (epoch === frame.epoch) this.advance(frame, response); });
+    }
+    private interrupt(frame: Frame, watch: InterruptWatch, message: Message): void {
+        watch.active = false;
+        frame.interruption = new InterruptSignal(watch, message);
+        frame.epoch++;
+        const correlation = frame.correlation;
+        if (correlation?.state === 'Pending') {
+            correlation.state = 'Failed'; correlation.response = { failure: 'Interrupted' };
+            this.log('requestCancelled', correlation.id, { activation: frame.id, reason: 'Interrupted', region: watch.region.name });
+        }
+        frame.correlation = undefined; frame.waiting = false;
+        this.log('interrupt', frame.id, { region: watch.region.name, endpoint: watch.region.endpoint, message: message.id });
+        this.resume(frame);
     }
     private advance(frame: Frame, response?: Response): void {
         if (frame.done) return;
         try {
-            const step = frame.iterator.next(response);
+            const interruption = frame.interruption;
+            frame.interruption = undefined;
+            const step = interruption ? frame.iterator.throw(interruption) : frame.iterator.next(response);
             if (step.done) { this.finish(frame, { value: step.value }); return; }
-            if (step.value.kind === 'step') this.schedule(this.time, 2, () => this.advance(frame));
+            if (step.value.kind === 'step') this.resume(frame);
             else {
                 const request = step.value;
                 const c: Correlation = { id: this.uid('r'), expiry: this.addTime(this.time, request.timeout), state: 'Pending', frame };
-                frame.waiting = true;
+                frame.waiting = true; frame.correlation = c;
                 this.log('request', c.id, { activation: frame.id, endpoint: request.endpoint, expiryNs: c.expiry });
                 this.schedule(c.expiry, 0, () => { if (c.state === 'Pending') { this.log('timeout', c.id); this.complete(c, { failure: 'Timeout' }); } });
                 const failure = this.emit(frame, request.endpoint, request.args, c);
@@ -257,6 +295,7 @@ class Interpreter {
     }
     private finish(frame: Frame, response: Response, message?: string): void {
         frame.done = true; frame.work.done = true;
+        this.frames.delete(frame);
         if (frame.serial) frame.work.component.serial = false; else frame.work.component.active--;
         const machine = frame.work.machine;
         if (machine) { machine.reacting = false; if (response.failure) { machine.live = false; machine.generation++; } }
@@ -272,8 +311,9 @@ class Interpreter {
         if (c.state !== 'Pending') { this.log('discardResponse', c.id, { reason: 'TerminalCorrelation' }); return; }
         if (!response.failure && this.time >= c.expiry) response = { failure: 'Timeout' };
         c.state = response.failure ? 'Failed' : 'Succeeded'; c.response = copy(response); c.frame.waiting = false;
+        if (c.frame.correlation === c) c.frame.correlation = undefined;
         this.log('requestComplete', c.id, { state: c.state, failure: response.failure, value: response.value ? plain(response.value) : undefined });
-        this.schedule(this.time, 2, () => this.advance(c.frame, response));
+        this.resume(c.frame, response);
     }
     private emit(frame: Frame, endpoint: string, args: Value[], correlation?: Correlation): string | undefined {
         const [portName, member] = endpoint.split('.'), source = joined(frame.work.component.path, portName);
@@ -340,6 +380,60 @@ class Interpreter {
             else if (a.isAssert(s)) { if (ev(s.condition).data !== true) throw new RuntimeFault('Assertion'); }
             else if (a.isIf(s)) { const b = ev(s.condition).data ? s.then : s.otherwise; if (b) yield* this.block(frame, b, env); }
             else if (a.isWhile(s)) { let count = 0; while (ev(s.condition).data) { if (count++ >= s.bound) throw new RuntimeFault('LoopBound'); yield* this.block(frame, s.body, env); yield { kind: 'step' }; } }
+            else if (a.isFor(s)) {
+                const local = new Map(env), initial = s.initializer;
+                const evaluateLocal = (e: a.Expression) => evaluate(e, local, this.fuel, this.models, frame.work.component.definition);
+                this.fuel(); bind(local, initial.name, typeKey(initial.type), ev(initial.value));
+                this.log('statement', frame.id, { kindOfStatement: initial.$type, line: (initial.$cstNode?.range.start.line ?? 0) + 1 });
+                yield { kind: 'step' };
+                let count = 0;
+                while (evaluateLocal(s.condition).data) {
+                    if (count++ >= s.bound) throw new RuntimeFault('LoopBound');
+                    yield* this.block(frame, s.body, local);
+                    this.fuel();
+                    const cell = local.get(s.update.target)!; cell.value = widen(evaluateLocal(s.update.value), cell.type);
+                    this.log('statement', frame.id, { kindOfStatement: s.update.$type, line: (s.update.$cstNode?.range.start.line ?? 0) + 1 });
+                    yield { kind: 'step' };
+                }
+            }
+            else if (a.isForEach(s)) {
+                const collection = copy(ev(s.collection));
+                if (!Array.isArray(collection.data)) throw new RuntimeFault('Type', 'forEach requires a fixed-size array.');
+                for (const item of collection.data) {
+                    this.fuel();
+                    const local = new Map(env); bind(local, s.variable.name, typeKey(s.variable.type), item);
+                    yield* this.block(frame, s.body, local);
+                    yield { kind: 'step' };
+                }
+            }
+            else if (a.isDoWhile(s)) {
+                let count = 0;
+                do {
+                    if (count++ >= s.bound) throw new RuntimeFault('LoopBound');
+                    yield* this.block(frame, s.body, env); yield { kind: 'step' };
+                } while (ev(s.condition).data);
+            }
+            else if (a.isInterruptible(s)) {
+                const watch: InterruptWatch = { region: s, frame, active: true };
+                frame.watches.push(watch);
+                this.log('regionEnter', frame.id, { region: s.name, endpoint: s.endpoint });
+                let outcome = 'unwound';
+                try {
+                    yield* this.block(frame, s.body, env);
+                    outcome = 'completed';
+                } catch (error) {
+                    if (!(error instanceof InterruptSignal) || error.watch !== watch) throw error;
+                    watch.active = false; outcome = 'interrupted';
+                    const local = new Map(env), message = error.message;
+                    const member = this.ports.get(message.target)!.port.interface.ref!.members.find(member => member.name === message.member)!;
+                    if (a.isDataMember(member)) bind(local, 'payload', typeKey(member.type), message.args[0]);
+                    else if (a.isEventMember(member)) member.parameters.forEach((input, i) => bind(local, input.name, typeKey(input.type), message.args[i]));
+                    yield* this.block(frame, s.handler, local);
+                } finally {
+                    watch.active = false; frame.watches.splice(frame.watches.indexOf(watch), 1);
+                    this.log('regionExit', frame.id, { region: s.name, outcome });
+                }
+            }
             else if (a.isLocalCall(s)) {
                 const target = effectiveFunction(s.function.ref!, frame.work.component.definition);
                 const value = yield* this.fn(frame, target, s.args.map(ev));

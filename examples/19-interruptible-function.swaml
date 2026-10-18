@@ -1,0 +1,53 @@
+package Interrupts {
+    interface clientServer Job version "1.0.0" {
+        function perform(): int;
+    }
+    interface publishSubscribe Control version "1.0.0" {
+        event stop(reason: string);
+    }
+    component def Worker {
+        port job: Job client;
+        port control: Control subscriber;
+        var status: int = 0;
+        var why: string = "";
+        function run() on start {
+            interruptible work doc /* Stop waiting and handle cancellation on this typed route. */ {
+                status = 1;
+                call job.perform() as value within 50 ms otherwise { fail "Job failed"; };
+                status = value;
+            } on receive control.stop {
+                status = 2;
+                why = reason;
+            }
+            assert status == 2;
+        }
+    }
+    component def Service {
+        port api: Job server;
+        var committed: int = 0;
+        function perform(): int on call api.perform {
+            committed = committed + 1;
+            return 10;
+        }
+    }
+    component def Controller {
+        port control: Control publisher;
+        function stop() on manual { publish control.stop("operator stop"); }
+    }
+    component App {
+        component worker: Worker;
+        component backend: Service;
+        component controller: Controller;
+        connect workRoute: worker.job -> backend.api qos {
+            delivery atMostOnce; ordering fifo; capacity 4; overflow reject;
+        };
+        connect stopRoute: controller.control -> worker.control qos {
+            delivery atMostOnce; ordering fifo; capacity 4; overflow reject;
+        };
+    }
+    useCase StopWork of App {
+        call worker.job.perform -> backend.api.perform via workRoute label started;
+        publish controller.control.stop -> worker.control.stop via stopRoute after started label cancelled;
+    }
+    view interrupted fv of App.worker.run;
+}

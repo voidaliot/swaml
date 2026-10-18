@@ -1,0 +1,15 @@
+.interrupt-flow { background: #fbfcfa; color: #294b50; }
+.interrupt-intro, .interrupt-boundary { font-size: 12px; line-height: 1.8; padding: 17px 22px; margin: 0; }
+.interrupt-boundary { border-block: 1px solid #dce6e2; background: #f1f5f0; }
+.interrupt-canvas { height: 620px; border-block: 1px solid #dce6e2; background: #fff; }
+.interrupt-svg { display: block; font: 17px var(--font-sans, sans-serif); fill: #295257; }
+.interrupt-heading { font-size: 17px; font-weight: 600; }
+.interrupt-muted { font-size: 14px; fill: #637c7d; }
+.interrupt-cancel-label { font-size: 11px; fill: #637c7d; }
+.interrupt-route { font-size: 14px; fill: #087f8c; }
+.interrupt-edge { stroke: #547474; stroke-width: 1.8; fill: none; }
+.interrupt-cancel { stroke-dasharray: 5 4; }
+.interrupt-flow details { margin: 18px 22px; font-size: 12px; }
+.interrupt-flow summary { cursor: pointer; padding-block: 8px; font-weight: 600; }
+.interrupt-flow pre { background: #eef3ef; font-size: 11px; line-height: 1.7; overflow: auto; padding: 16px; }
+@media(max-width: 640px) { .interrupt-canvas { height: 450px; } }

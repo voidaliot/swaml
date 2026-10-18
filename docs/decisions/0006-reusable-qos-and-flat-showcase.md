@@ -2,7 +2,7 @@
 
 Status: accepted for SWAML 1.2. Date: 2026-10-16.
 
-Repeated connector policies obscure small software architectures. The owner requested simpler language authoring, flat graphics, an interactive React Flow demonstration and a GitHub Pages showcase in the language repository.
+Repeated connector policies obscure small software architectures. Reusable policies simplify authoring; flat graphics and an interactive React Flow showcase make the architecture easier to inspect. The showcase supports GitHub Pages deployment from the language repository.
 
 ## Decision
 

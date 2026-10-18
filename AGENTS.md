@@ -5,7 +5,7 @@
 - `docs/LANGUAGE_SPECIFICATION.md` and the normative chapter affected by the task.
 - `docs/IMPLEMENTATION_STATUS.md` to distinguish specified and implemented behavior.
 - `docs/spec/06-execution-contract.md`, `07-normalized-model.md`, `08-conformance-obligations.md` and `09-formal-semantics.md` for execution, mapping and evidence boundaries.
-- `docs/decisions/0007-component-functions-and-calculations.md` for the owner's accepted architecture choices.
+- `docs/decisions/0007-component-functions-and-calculations.md` for the architecture choices.
 - `CONTRIBUTING.md` for contribution and validation expectations.
 
 ## Preserve the language invariants
@@ -19,11 +19,11 @@
 - Keep Browser, gv, iv, cv, sv, grv and fv. fv covers statement flow and function-owned states.
 - Distinguish definition identity from instance paths. Never make same-type instances share private state.
 
-## SWAML 1.2 authoring contract
+## SWAML 1.3 authoring contract
 
 Keep `component def` for reusable types, `specializes` for acyclic single inheritance and `redefines` for compatible explicit inherited-member replacement. A top-level component usage is an execution root; it may contain inline topology or instantiate a component definition with optional deployment bindings. Typed roots cannot extend topology. Every concrete root is checked for closure, independently of reusable library definitions. Omitted root profile means service; omitted function/signature result means void. Calculations use `calc` with typed `in` inputs and exactly one named, explicitly typed non-void `return` expression. They are never component members and cannot read mutable data or call executable functions. Deployment targets are external system/part identity strings resolved by the host; keep system modeling outside the software core.
 
-Files are headerless and interpreted by the explicitly selected 1.2 parser/host. Do not restore `swaml`, `system`, `machine`, `set`, `compute`, `array` or `enumValue` as required markers. States are directly authored inside a function's body; the StateBody AST grouping has no separate executable identity. Preserve the documented ambiguity rules for enum values and local records. Historical tagged syntax requires migration, not silent fallback.
+Files are headerless and interpreted by the explicitly selected 1.3 parser/host. Do not restore `swaml`, `system`, `machine`, `set`, `compute`, `array` or `enumValue` as required markers. States are directly authored inside a function's body; the StateBody AST grouping has no separate executable identity. Preserve the documented ambiguity rules for enum values and local records. Historical tagged syntax requires migration, not silent fallback.
 
 ## Source and architecture
 
@@ -49,7 +49,7 @@ Preserve the existing license, unrelated user edits and repository history. Neve
 
 Keep the reference simulator portable: file access and source hashing belong to CLI/host adapters. Preserve the documented scheduler, timeout ties, queue identity, copied values, snapshot scope, direct function/state ownership and explicit resource failures. Test observable traces and final stores, including adverse cases. A simulator run is not production scheduling proof or universal verification.
 
-Maintain every current keyword entry in `spec/keywords.json` as the grammar evolves. Regenerate the consolidated Markdown with `npm run docs:build`; do not hand-edit generated `KEYWORD_REFERENCE.md` or `SWAML-1.2.1-Reference.md`. Regenerate vector examples with `python3 scripts/build-graphical-examples.py`. Their scene/SVG sources and model-subject manifest must stay synchronized.
+Maintain every current keyword entry in `spec/keywords.json` as the grammar evolves. Regenerate the consolidated Markdown with `npm run docs:build`; do not hand-edit generated `KEYWORD_REFERENCE.md` or `SWAML-1.3.0-Reference.md`. Regenerate vector examples with `python3 scripts/build-graphical-examples.py`. Their scene/SVG sources and model-subject manifest must stay synchronized.
 
 Keep `spec/notation.json` exhaustive over the grammar and keyword inventory. Every graphical concept needs a context, syntax, canonical drawing and constraints; text-only terms need an explicit rationale. Regenerate the catalog and SVG/PNG assets with `scripts/build-notation.py` and run its `--check` mode. Keep all images original and do not import unsupported SysML constructs through notation.
 
@@ -60,3 +60,5 @@ Before publishing an edition, run the complete language gate, figure reproducibi
 Use lower camel case keywords, including primitive types and view kinds. Requirements own only immutable typed attributes and optional doc. A declaration owns at most one formal doc; ordinary comments remain separate lexical annotations. satisfy links design to requirements; only verificationCase owns verify. Neither is proof. Views select a stable union of occurrence paths through include/recursive/where; filters never execute behavior. Read ADR 0009 before changing these rules.
 
 Use `of` for case root contexts, satisfaction design sources and compact view subjects. The former `for` and `by` relation spellings require migration; `on` retains activation/location meaning and `as` retains result binding. Read ADR 0010 before changing relation syntax.
+
+Control flow includes bounded while/for/do and copied fixed-array forEach. Interruptible regions require triggered serial flow functions and an owned typed input route; preserve same-activation cancellation, terminal correlation identity, late-reply suppression and committed effects. FV timing is a trace-backed projection with declared contracts shown separately. Read ADR 0011 and the 1.3 migration guide before changing these rules. State changes directly; cite relevant ticket numbers rather than personal attribution.

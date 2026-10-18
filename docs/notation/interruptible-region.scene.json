@@ -1,0 +1,388 @@
+{
+  "width": 560,
+  "height": 555,
+  "title": "Interruptible flow region",
+  "description": "Interruptible flow region. A named protected region has a normal exit and one routed typed input that cooperatively transfers control to its handler.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 555,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 36,
+      "y": 24,
+      "width": 488,
+      "height": 271,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 58,
+      "text": "interruptible work",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "circle",
+      "x": 73,
+      "y": 151,
+      "r": 8,
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          82,
+          151
+        ],
+        [
+          111,
+          151
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          111,
+          151
+        ],
+        [
+          99.0,
+          156.0
+        ],
+        [
+          99.0,
+          146.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 114,
+      "y": 105,
+      "width": 315,
+      "height": 92,
+      "rx": 12,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 175.0,
+      "y": 157.0,
+      "text": "protected statements",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          272,
+          198
+        ],
+        [
+          272,
+          310
+        ],
+        [
+          155,
+          310
+        ],
+        [
+          155,
+          470
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          155,
+          470
+        ],
+        [
+          150.0,
+          458.0
+        ],
+        [
+          160.0,
+          458.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 175,
+      "y": 345,
+      "text": "normal exit",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          430,
+          151
+        ],
+        [
+          494,
+          151
+        ],
+        [
+          494,
+          327
+        ],
+        [
+          407,
+          327
+        ],
+        [
+          407,
+          358
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          407,
+          358
+        ],
+        [
+          402.0,
+          346.0
+        ],
+        [
+          412.0,
+          346.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 337.5,
+      "y": 222,
+      "text": "on receive",
+      "size": 18,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 337.0,
+      "y": 249,
+      "text": "control.stop",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 329.0,
+      "y": 276,
+      "text": "reason: string",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 287,
+      "y": 361,
+      "width": 242,
+      "height": 78,
+      "rx": 12,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 299.0,
+      "y": 406.0,
+      "text": "same-activation handler",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 300,
+      "y": 345,
+      "text": "interrupt",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          407,
+          440
+        ],
+        [
+          407,
+          470
+        ],
+        [
+          220,
+          470
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          220,
+          470
+        ],
+        [
+          232.0,
+          465.0
+        ],
+        [
+          232.0,
+          475.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          155,
+          470
+        ],
+        [
+          190,
+          470
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          190,
+          470
+        ],
+        [
+          178.0,
+          475.0
+        ],
+        [
+          178.0,
+          465.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "circle",
+      "x": 205,
+      "y": 470,
+      "r": 10,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          205,
+          481
+        ],
+        [
+          205,
+          512
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          205,
+          512
+        ],
+        [
+          200.0,
+          500.0
+        ],
+        [
+          210.0,
+          500.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 226,
+      "y": 505,
+      "text": "continue after region",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 115.0,
+      "y": 544,
+      "text": "cooperative cancellation; no rollback",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

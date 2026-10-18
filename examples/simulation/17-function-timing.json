@@ -1,0 +1,9 @@
+{
+  "untilNs": 50000000,
+  "latencyNs": 2000000,
+  "manual": [
+    { "atNs": 0, "function": "first.poll" },
+    { "atNs": 0, "function": "second.poll" },
+    { "atNs": 1000000, "function": "first.poll" }
+  ]
+}

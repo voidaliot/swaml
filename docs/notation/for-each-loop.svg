@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="490" viewBox="0 0 560 490" role="img" aria-labelledby="title desc">
+<title id="title">Fixed-array forEach loop</title><desc id="desc">Fixed-array forEach loop. Evaluate and copy the array once, then execute the body for each fresh typed item in array order.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="490" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="35" y="22" width="490" height="402" rx="14" fill="#ffffff" stroke="#111111"/>
+<text x="53" y="57" font-size="20" font-weight="700" fill="#111111">forEach (item: int in values)</text>
+<rect x="100" y="86" width="360" height="63" rx="12" fill="#ffffff" stroke="#111111"/>
+<text x="172.0" y="123.5" font-size="18" font-weight="400" fill="#111111">copy values: int[3] once</text>
+<polyline points="280,150 280,185" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="280,185 275.0,173.0 285.0,173.0" fill="#111111" stroke="#111111"/>
+<polygon points="280,188 365,240 280,292 195,240" fill="#ffffff" stroke="#111111"/>
+<text x="260.0" y="234" font-size="18" font-weight="400" fill="#111111">next</text>
+<text x="254.5" y="260" font-size="18" font-weight="400" fill="#111111">item?</text>
+<polyline points="280,293 280,325" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="280,325 275.0,313.0 285.0,313.0" fill="#111111" stroke="#111111"/>
+<text x="296" y="317" font-size="18" font-weight="400" fill="#111111">yes</text>
+<rect x="135" y="328" width="290" height="78" rx="12" fill="#ffffff" stroke="#111111"/>
+<text x="207.0" y="356" font-size="18" font-weight="700" fill="#111111">fresh item: int</text>
+<text x="191.5" y="384" font-size="18" font-weight="400" fill="#111111">total = total + item</text>
+<polyline points="426,367 487,367 487,240 366,240" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="366,240 378.0,235.0 378.0,245.0" fill="#111111" stroke="#111111"/>
+<polyline points="194,240 72,240 72,447" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="72,447 67.0,435.0 77.0,435.0" fill="#111111" stroke="#111111"/>
+<text x="86" y="267" font-size="18" font-weight="400" fill="#111111">no</text>
+<text x="86" y="447" font-size="18" font-weight="400" fill="#111111">normal exit</text>
+<text x="135.508" y="478" font-size="18" font-weight="400" fill="#111111">finite cardinality: 3 copied items</text>
+</g></svg>

@@ -4,7 +4,7 @@ Status: accepted for SWAML 1.1. Date: 2026-10-14.
 
 The ownership/authoring decisions in this historical record are superseded for the published 1.2 language by [ADR 0007](0007-component-functions-and-calculations.md).
 
-The owner requested a smaller authoring language, retaining `def` to make reusable types clear in the SysML style, removing redundant `system`/`machine` layers, and preserving the original architecture and simulation requirements. The selected release is 1.1.0. This is an intentional incompatible syntax migration, despite using a minor version; no backward-compatible parser claim is made.
+Version 1.1.0 simplifies authoring by retaining `def` for reusable types, removing redundant `system`/`machine` layers, and preserving architecture and simulation requirements. This is an intentional incompatible syntax migration, despite using a minor version; no backward-compatible parser claim is made.
 
 ## Decision
 

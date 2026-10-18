@@ -1,0 +1,246 @@
+{
+  "width": 560,
+  "height": 450,
+  "title": "Post-test do-while loop",
+  "description": "Post-test do-while loop. Execute the body at least once, then test the condition before requesting another bounded iteration.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 450,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 35,
+      "y": 22,
+      "width": 490,
+      "height": 348,
+      "rx": 14,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 53,
+      "y": 55,
+      "text": "do ... while",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 118,
+      "y": 82,
+      "width": 324,
+      "height": 69,
+      "rx": 12,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 149.531,
+      "y": 122.5,
+      "text": "postTested = postTested + 1",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          280,
+          152
+        ],
+        [
+          280,
+          214
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          280,
+          214
+        ],
+        [
+          275.0,
+          202.0
+        ],
+        [
+          285.0,
+          202.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 55,
+      "y": 183,
+      "text": "first body is",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 55,
+      "y": 208,
+      "text": "mandatory",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          280,
+          217
+        ],
+        [
+          405,
+          270
+        ],
+        [
+          280,
+          323
+        ],
+        [
+          155,
+          270
+        ]
+      ],
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 212.016,
+      "y": 276,
+      "text": "postTested < 2",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          406,
+          270
+        ],
+        [
+          491,
+          270
+        ],
+        [
+          491,
+          116
+        ],
+        [
+          443,
+          116
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          443,
+          116
+        ],
+        [
+          455.0,
+          111.0
+        ],
+        [
+          455.0,
+          121.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 443,
+      "y": 296,
+      "text": "true",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          280,
+          324
+        ],
+        [
+          280,
+          394
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          280,
+          394
+        ],
+        [
+          275.0,
+          382.0
+        ],
+        [
+          285.0,
+          382.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 296,
+      "y": 354,
+      "text": "false",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 84.5,
+      "y": 416,
+      "text": "bound 2; LoopBound before an excess body",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

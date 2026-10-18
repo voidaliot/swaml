@@ -1,6 +1,6 @@
 {
   "name": "@swaml/language",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "private": true,
   "description": "Software Architecture Modeling Language: specification and Langium reference workbench",
   "license": "MIT",
@@ -12,7 +12,8 @@
   "exports": {
     ".": "./out/src/language/swaml-module.js",
     "./ast": "./out/src/language/generated/ast.js",
-    "./simulation": "./out/src/simulation/simulator.js"
+    "./simulation": "./out/src/simulation/simulator.js",
+    "./timing": "./out/src/simulation/timing.js"
   },
   "bin": {
     "swaml": "./out/src/cli/main.js",
@@ -23,7 +24,7 @@
     "build": "npm run langium:generate && tsc -p tsconfig.json",
     "test": "node --test out/test/*.test.js",
     "validate:examples": "node scripts/validate-examples.mjs",
-    "check": "npm run build && npm test && npm run validate:examples && node scripts/check-docs.mjs && node scripts/check-simulations.mjs && node scripts/build-reference.mjs --check && node scripts/check-graphical-examples.mjs && node scripts/check-notation.mjs && node scripts/check-showcase.mjs && node scripts/check-modeling-overview.mjs && node scripts/check-public-content.mjs && node scripts/build-traceability-demo.mjs --check",
+    "check": "npm run build && npm test && npm run validate:examples && node scripts/check-docs.mjs && node scripts/check-simulations.mjs && node scripts/build-reference.mjs --check && node scripts/check-graphical-examples.mjs && node scripts/check-notation.mjs && node scripts/check-showcase.mjs && node scripts/check-modeling-overview.mjs && node scripts/check-public-content.mjs && node scripts/build-traceability-demo.mjs --check && node scripts/build-timing-demo.mjs --check",
     "simulate": "node out/src/cli/simulate.js",
     "docs:build": "node scripts/build-reference.mjs"
   },

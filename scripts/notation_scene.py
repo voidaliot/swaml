@@ -235,6 +235,86 @@ def render(concept):
         s.arrow([(200,132),(90,132),(90,289)]);s.text(101,156,'false',18)
         bound=d.get('bound','positive limit')
         s.text(273,294,f'bound {bound}; LoopBound on excess',18,width=480,center=True)
+    elif t=='for-loop':
+        s.doc['height']=555;s.doc['shapes'][0]['height']=555
+        s.rect(40,22,480,458,rx=14);s.labels(head,59,54,440,20,True)
+        s.box(155,83,250,54,d['initializer'],True);s.arrow([(280,138),(280,172)])
+        s.polygon([(280,174),(355,219),(280,264),(205,219)])
+        s.text(280,225,d['condition'],18,width=120,center=True)
+        s.arrow([(280,265),(280,300)]);s.text(295,289,'true',18)
+        s.box(145,303,270,67,lines[0],True)
+        s.arrow([(280,371),(280,399)]);s.box(155,402,250,54,d['update'],True)
+        s.arrow([(406,429),(478,429),(478,219),(356,219)])
+        s.arrow([(204,219),(82,219),(82,500)]);s.text(94,243,'false',18)
+        s.text(94,499,'normal exit',18)
+        s.text(280,535,f'bound {d["bound"]}; LoopBound before an excess body',18,width=520,center=True)
+    elif t=='for-each':
+        s.doc['height']=490;s.doc['shapes'][0]['height']=490
+        s.rect(35,22,490,402,rx=14);s.labels(head,53,57,454,20,True)
+        s.box(100,86,360,63,'copy '+d['collection']+' once',True)
+        s.arrow([(280,150),(280,185)])
+        s.polygon([(280,188),(365,240),(280,292),(195,240)])
+        s.text(280,234,'next',18,center=True);s.text(280,260,'item?',18,center=True)
+        s.arrow([(280,293),(280,325)]);s.text(296,317,'yes',18)
+        s.rect(135,328,290,78,rx=12);s.text(280,356,'fresh '+d['item'],18,True,center=True)
+        s.text(280,384,lines[0],18,width=270,center=True)
+        s.arrow([(426,367),(487,367),(487,240),(366,240)])
+        s.arrow([(194,240),(72,240),(72,447)]);s.text(86,267,'no',18)
+        s.text(86,447,'normal exit',18)
+        s.text(280,478,'finite cardinality: '+d['cardinality']+' copied items',18,width=510,center=True)
+    elif t=='do-while':
+        s.doc['height']=450;s.doc['shapes'][0]['height']=450
+        s.rect(35,22,490,348,rx=14);s.labels(head,53,55,454,20,True)
+        s.box(118,82,324,69,lines[0],True);s.arrow([(280,152),(280,214)])
+        s.text(55,183,'first body is mandatory',18,width=200)
+        s.polygon([(280,217),(405,270),(280,323),(155,270)])
+        s.text(280,276,d['condition'],18,width=218,center=True)
+        s.arrow([(406,270),(491,270),(491,116),(443,116)]);s.text(443,296,'true',18)
+        s.arrow([(280,324),(280,394)]);s.text(296,354,'false',18)
+        s.text(280,416,f'bound {d["bound"]}; LoopBound before an excess body',18,width=520,center=True)
+    elif t=='interruptible':
+        s.doc['height']=555;s.doc['shapes'][0]['height']=555
+        s.rect(36,24,488,271);s.labels(head,54,58,452,20,True)
+        s.circle(73,151,8,BLACK);s.arrow([(82,151),(111,151)])
+        s.box(114,105,315,92,lines[0],True)
+        s.arrow([(272,198),(272,310),(155,310),(155,470)])
+        s.text(175,345,'normal exit',18)
+        s.arrow([(430,151),(494,151),(494,327),(407,327),(407,358)])
+        member,payload=d['endpoint'].split('(',1)
+        s.text(390,222,'on receive',18,True,width=190,center=True)
+        s.text(390,249,member,18,width=190,center=True)
+        s.text(390,276,payload.removesuffix(')'),18,width=190,center=True)
+        s.box(287,361,242,78,lines[1],True)
+        s.text(300,345,'interrupt',18)
+        s.arrow([(407,440),(407,470),(220,470)])
+        s.arrow([(155,470),(190,470)]);s.circle(205,470,10)
+        s.arrow([(205,481),(205,512)]);s.text(226,505,'continue after region',18,width=300)
+        s.text(280,544,'cooperative cancellation; no rollback',18,width=520,center=True)
+    elif t=='function-timing':
+        s.doc['height']=560;s.doc['shapes'][0]['height']=560
+        s.rect(35,22,490,107);s.labels(head,54,55,452,20,True)
+        s.text(54,88,lines[0],18,width=452)
+        s.text(35,165,lines[1],18,width=490)
+        # Exact values are checked against the source-backed trace projection.
+        for n,activation in enumerate(d['observations']):
+            y=238+n*99;x=lambda ms:120+50*ms
+            released=x(activation['releasedMs']);dispatched=x(activation['dispatchedMs']);ended=x(activation['terminalMs'])
+            s.text(43,y+6,activation['id'],18,True)
+            if dispatched>released:
+                s.rect(released,y-15,dispatched-released,30)
+                s.text((released+dispatched)/2,y+6,'ready',18,center=True)
+            s.rect(dispatched,y-15,ended-dispatched,30)
+            s.text((dispatched+ended)/2,y+6,'request wait',18,center=True)
+            s.polygon([(released,y-24),(released-7,y-35),(released+7,y-35)],fill=BLACK)
+            s.line([(dispatched,y-22),(dispatched,y+22)])
+            s.line([(ended,y-22),(ended,y+22)]);s.circle(ended,y,7)
+        s.line([(120,394),(520,394)])
+        for ms in [0,2,4,6,8]:
+            x=120+50*ms;s.line([(x,394),(x,402)]);s.text(x,428,str(ms),18,center=True)
+        s.text(320,461,'logical time (ms)',18,center=True)
+        s.text(35,496,'▼ release; | zero-time running; ○ complete',18,width=500)
+        s.text(35,523,'display 0–8 ms; quiescent boundary 31 ms',18,width=500)
+        s.text(35,550,'declared deadlines 30 / 31 ms lie outside this window',18,width=510)
     elif t=='request':
         s.rect(25,23,510,106,rx=12);bottom=s.labels(head,43,54,472,20,True);s.labels(lines[:1],43,max(89,bottom+3),472)
         s.arrow([(170,130),(170,197)]);s.arrow([(390,130),(390,197)])

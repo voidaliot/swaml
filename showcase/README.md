@@ -75,3 +75,7 @@ The [UML transition guide](../docs/UML_GUIDE.md) explains conceptual corresponde
 ## Traceability explorer
 
 The Traceability section offers diagram/table switching, formal doc compartments, ordinary comment notes and three authored views. Its metadata in [spec/traceability-demo.json](../spec/traceability-demo.json) is generated from [the complete model](../examples/16-requirements-and-views.swaml) by `node scripts/build-traceability-demo.mjs` after the language build. The normal gate checks it byte-for-byte against the parser and selection evaluator. The requirement table preserves attribute types and formal documentation. Filtering preserves separate instance paths.
+
+## Extended function views
+
+FV offers Flow, States, Timing and Interrupts. Timing presents the generated `spec/function-timing-demo.json` projection of four reproducible runs of example17, with occurrence/activation identity, source inspection, declared limits, observed phases and open horizon/stop intervals. Regenerate with `node scripts/build-timing-demo.mjs` after the language build. Interrupts presents the protected region, typed control.stop route, handler and continuation from example19; source checks verify the actual region and contracts. These modes inspect source and evidence; they do not edit the language or establish physical scheduling results.

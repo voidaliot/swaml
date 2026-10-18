@@ -8,7 +8,7 @@ const steps = [
   { title: 'Declare a contract', description: 'Choose data, request/response, events or a combined service. Version the interface and name its members.', code: 'interface senderReceiver Greeting version "1.0.0" {\n    data text: string queued;\n}' },
   { title: 'Own the behavior', description: 'Components own private data and functions. Each exchange uses a port; receive and call triggers bind incoming members.', code: 'port input: Greeting receiver;\nvar last: string = "";\nfunction hear(message: string) on receive input.text {\n    last = message;\n}' },
   { title: 'Compose and connect', description: 'Instantiate definitions inside a root, then connect their ports. Select explicit QoS values for each route.', code: 'component Demo {\n    component speaker: Speaker;\n    component listener: Listener;\n    connect greeting: speaker.output -> listener.input qos LocalQueue;\n}' },
-  { title: 'Validate and review', description: 'Build the language tools once, validate your model, then review its structure, interfaces and function behavior.', code: 'npm ci\nnpm run build\nnode out/src/cli/main.js --language-version 1.2 hello.swaml' },
+  { title: 'Validate and review', description: 'Build the language tools once, validate your model, then review its structure, interfaces and function behavior.', code: 'npm ci\nnpm run build\nnode out/src/cli/main.js --language-version 1.3 hello.swaml' },
 ];
 
 export function QuickStart() {

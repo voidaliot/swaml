@@ -178,6 +178,12 @@ export class SwamlValidator {
         for (const v of vars) this.expect(v.value, typeKey(v.type), new Map(), error);
         const functions = members(component).filter(a.isFunctionDef);
         for (const op of functions) {
+            const regions = [...AstUtils.streamAllContents(op)].filter(a.isInterruptible);
+            for (const region of regions) {
+                if (!op.trigger || op.stateBody || op.timing?.concurrency === 'reentrant') error(region, 'SW065', 'Interruptible regions require a triggered serial flow function.');
+                if (regions.some(other => other !== region && other.name === region.name)) error(region, 'SW002', 'Interruptible region names must be unique within a function.');
+                if (regions.some(other => other !== region && other.endpoint === region.endpoint) || op.trigger?.endpoint === region.endpoint) error(region, 'SW065', 'An interrupt member must have one region and cannot also activate its function.');
+            }
             for (const fn of op.calculations) {
                 if (typeKey(fn.result) === 'void') error(fn, 'SW020', 'Calculations must return a value.');
                 if (fn.parameters.some(p => p.name === fn.outputName)) error(fn, 'SW002', 'A calculation output must have a distinct name from its inputs.');
@@ -244,7 +250,7 @@ export class SwamlValidator {
             const delegation = members(component).filter(a.isDelegate).filter(d => d.outer.$refText === port.name);
             if (delegation.length > 1) error(port, 'SW033', 'A component port can delegate to at most one immediate child.');
             if (delegation.length) {
-                if (functions.some(op => [...AstUtils.streamAllContents(op)].some(n => ((a.isSend(n) || a.isRemoteCall(n) || a.isTransition(n) || a.isTrigger(n)) && n.endpoint?.startsWith(`${port.name}.`))))) error(port, 'SW033', 'A delegated port cannot also be handled or used by local functions.');
+                if (functions.some(op => [...AstUtils.streamAllContents(op)].some(n => ((a.isSend(n) || a.isRemoteCall(n) || a.isTransition(n) || a.isTrigger(n) || a.isInterruptible(n)) && n.endpoint?.startsWith(`${port.name}.`))))) error(port, 'SW033', 'A delegated port cannot also be handled or used by local functions.');
                 continue;
             }
             if (['sender', 'publisher', 'provides'].includes(port.role)) {
@@ -261,12 +267,13 @@ export class SwamlValidator {
                 const path = `${port.name}.${member.name}`;
                 const handlers = functions.filter(op => op.trigger?.endpoint === path).length;
                 const machines = functions.filter(op => op.stateBody?.transitions.some(t => t.endpoint === path)).length;
-                if (handlers + machines !== 1) error(port, 'SW055', `Member '${path}' requires exactly one receiving function (or one stateful function).`);
+                const interrupts = functions.filter(op => [...AstUtils.streamAllContents(op)].some(n => a.isInterruptible(n) && n.endpoint === path)).length;
+                if (handlers + machines + interrupts !== 1) error(port, 'SW055', `Member '${path}' requires exactly one receiving function, stateful function or interruptible-region owner.`);
             }
         }
         const visiting = new Set<AstNode>(), visited = new Set<AstNode>();
         const walk = (node: a.FunctionDef | a.Calculation): void => {
-            if (visiting.has(node)) { error(node, 'SW056', 'Recursive local call cycles are not supported in 1.2.'); return; }
+            if (visiting.has(node)) { error(node, 'SW056', 'Recursive local call cycles are not supported in 1.3.'); return; }
             if (visited.has(node)) return;
             visiting.add(node);
             for (const n of AstUtils.streamAllContents(node)) {
@@ -326,11 +333,45 @@ export class SwamlValidator {
             } else if (a.isWhile(s)) {
                 if (!Number.isSafeInteger(s.bound) || s.bound <= 0) error(s, 'SW059', 'Loop bound must be positive.');
                 this.expect(s.condition, 'bool', env, error); this.block(s.body, env, result, error);
+            } else if (a.isFor(s)) {
+                if (!Number.isSafeInteger(s.bound) || s.bound <= 0) error(s, 'SW059', 'Loop bound must be positive.');
+                const local = new Map(env), initial = s.initializer;
+                if (local.has(initial.name)) error(initial, 'SW002', 'Loop variables may not shadow an existing value.');
+                this.expect(initial.value, typeKey(initial.type), env, error); local.set(initial.name, typeKey(initial.type));
+                this.expect(s.condition, 'bool', local, error);
+                const target = local.get(s.update.target);
+                if (!target) error(s.update, 'SW022', 'Assignment target is not local data.');
+                else this.expect(s.update.value, target, local, error);
+                this.block(s.body, local, result, error);
+            } else if (a.isForEach(s)) {
+                const collection = this.expression(s.collection, env, error), array = /^(.*)\[(\d+)\]$/.exec(collection);
+                const itemType = typeKey(s.variable.type);
+                if (array) {
+                    if (a.isArrayLiteral(s.collection)) for (const value of s.collection.values) this.expect(value, itemType, env, error);
+                    else if (array[1] !== itemType && !numericAssignable(array[1], itemType)) error(s.collection, 'SW023', `Expected array elements assignable to ${itemType}, found ${array[1]}.`);
+                } else if (collection !== '?') error(s.collection, 'SW023', 'forEach requires a fixed-size array.');
+                if (env.has(s.variable.name)) error(s.variable, 'SW002', 'Loop variables may not shadow an existing value.');
+                this.block(s.body, new Map(env).set(s.variable.name, itemType), result, error);
+            } else if (a.isDoWhile(s)) {
+                if (!Number.isSafeInteger(s.bound) || s.bound <= 0) error(s, 'SW059', 'Loop bound must be positive.');
+                this.block(s.body, env, result, error); this.expect(s.condition, 'bool', env, error);
+            } else if (a.isInterruptible(s)) {
+                this.block(s.body, env, result, error);
+                const ep = endpoint(s, s.endpoint, this.context), local = new Map(env);
+                if (!ep || a.isSignature(ep.member) || !['receiver', 'subscriber', 'requires'].includes(ep.port.role)) error(s, 'SW051', 'An interrupt receives data or events through a port owned by its component.');
+                else {
+                    const inputs = a.isDataMember(ep.member) ? [{ name: 'payload', type: ep.member.type }] : ep.member.parameters;
+                    for (const input of inputs) {
+                        if (local.has(input.name)) error(s, 'SW002', 'Interrupt payload bindings cannot shadow values in the enclosing scope.');
+                        local.set(input.name, typeKey(input.type));
+                    }
+                }
+                this.block(s.handler, local, result, error);
             } else if (a.isAssert(s)) this.expect(s.condition, 'bool', env, error);
         }
     }
     private terminates(b: a.Block): boolean {
-        return b.statements.some(s => a.isReturn(s) || a.isFail(s) || (a.isIf(s) && !!s.otherwise && this.terminates(s.then) && this.terminates(s.otherwise)));
+        return b.statements.some(s => a.isReturn(s) || a.isFail(s) || ((a.isDoWhile(s) || a.isForEach(s)) && this.terminates(s.body)) || (a.isInterruptible(s) && this.terminates(s.body) && this.terminates(s.handler)) || (a.isIf(s) && !!s.otherwise && this.terminates(s.then) && this.terminates(s.otherwise)));
     }
     private args(n: AstNode, args: a.Expression[], types: string[], env: Env, error: Reporter): void {
         if (args.length !== types.length) error(n, 'SW024', 'Argument count does not match the contract.');

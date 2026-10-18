@@ -1,6 +1,6 @@
-# Reference simulation profile 1.2
+# Reference simulation profile 1.3
 
-This document specifies the **swaml-reference/1.2** execution binding. This profile executes unified components, inherited effective members, executable functions and pure calculations; each connector retains its independent effective policy and queues. The portable TypeScript [interpreter](../src/simulation/simulator.ts) and [value evaluator](../src/simulation/values.ts) execute valid SWAML 1.2 root components. The profile implements logical behavior with explicit resource bounds. It does not model instruction duration, operating-system scheduling, hardware or network deployment.
+This document specifies the **swaml-reference/1.3** execution binding. This profile executes unified components, inherited effective members, executable functions and pure calculations; each connector retains its independent effective policy and queues. The portable TypeScript [interpreter](../src/simulation/simulator.ts) and [value evaluator](../src/simulation/values.ts) execute valid SWAML 1.3 root components. The profile implements logical behavior with explicit resource bounds. It does not model instruction duration, operating-system scheduling, hardware or network deployment.
 
 ## Run a model
 
@@ -14,7 +14,7 @@ node scripts/check-simulations.mjs
 
 The command takes a qualified root component name, a JSON options file and all workspace model files. It validates the entire input before executing. JSON output contains the trace, final stores, machine states, effective deployments, exact source text and per-source SHA-256 digests. Redirect stdout to a file when collecting evidence. The direct `node out/src/cli/simulate.js ...` command emits only JSON to stdout on a valid invocation; `npm run` additionally prints its script banner.
 
-The selected root may compose components inline or instantiate a component definition. A typed root's deployment body does not extend its topology. Instance paths, stores, manual release paths and deployment keys remain relative to the selected root without a root-name prefix. Root-owned functions use their local name, such as `initialize`, without a root prefix. Store/deployment output includes every expanded component, with the root represented by the empty-string path. Source deployment may explicitly name the root to establish its default location. The output names the selected architecture `root`, and identifies the binding as `swaml-reference/1.2`.
+The selected root may compose components inline or instantiate a component definition. A typed root's deployment body does not extend its topology. Instance paths, stores, manual release paths and deployment keys remain relative to the selected root without a root-name prefix. Root-owned functions use their local name, such as `initialize`, without a root prefix. Store/deployment output includes every expanded component, with the root represented by the empty-string path. Source deployment may explicitly name the root to establish its default location. The output names the selected architecture `root`, and identifies the binding as `swaml-reference/1.3`.
 
 Exit status is 0 when no failure was observed, 1 for invalid models, a failed activation, a contract violation or a resource limit, and 2 for an invocation/configuration error. A bounded horizon with no observed failure is not proof of eventual success. Descriptive `case` declarations are not a second executable script and are not automatically proven by this command.
 
@@ -93,3 +93,9 @@ Trace records have monotonically increasing `ordinal`, nondecreasing `timeNs`, `
 The CLI supplies SHA-256 per source; the portable library returns exact sources and leaves hashing/storage to its host. Keep those sources, digests, selected root, complete options, profile version and output together. Absolute source URIs may identify the local workspace; the published hello artifact uses stable repository-relative file URIs.
 
 The implementation provides **reference simulation evidence with an explicit logical-time abstraction**. It is not a blanket E certification, model checker, production runtime, KerML exporter, AUTOSAR generator or graphical editor. Physical WCET/schedulability, distributed clock error, real serialization, middleware outages and independent conformance assessment still require separate evidence. A host can call the portable API after building and validating the entire referenced workspace.
+
+## Extended control flow and interruption
+
+The 1.3 profile executes while, counted for, copied-array forEach and post-test do loops with their documented scopes and bounds. An armed interruptible region receives typed data/events through its connector queue, transfers control in its current serial activation, cancels a pending caller continuation and preserves earlier effects. Available input outside the armed interval is discarded explicitly. Region and cancellation events retain activation/correlation identities. See the [control-flow guide](CONTROL_FLOW_AND_TIMING.md) for examples and the [operational contract](spec/06-execution-contract.md) for ties and late responses.
+
+`projectFunctionTiming` derives observed ready/running/request-wait phases and markers from these traces. Declared timing values remain separate. Open horizon/stop intervals are retained, and zero-cost execution is never reported as physical CPU duration. Reproduce the four showcase traces with `node scripts/build-timing-demo.mjs`; the normal gate checks their exact generated projection.

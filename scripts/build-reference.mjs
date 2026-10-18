@@ -24,9 +24,9 @@ const graphicalKeywords = new Map(notation.coverage.keywords.map(e => [e.term, e
 const grammar = await read('src/language/swaml.langium');
 const keys = new Set([...grammar.matchAll(/'([a-zA-Z][a-zA-Z0-9]*)'/g)].map(m => m[1]));
 keys.add('doc');
-if (inventory.languageVersion !== '1.2' || inventory.entries.length !== keys.size) throw new Error('Keyword inventory/version mismatch');
+if (inventory.languageVersion !== '1.3' || inventory.entries.length !== keys.size) throw new Error('Keyword inventory/version mismatch');
 const productions = [...grammar.matchAll(/^(?:(?:entry|hidden|terminal|type)\s+)*([A-Za-z]\w*)(?:\s+(?:returns|infers)\s+\w+)?\s*[:=]([\s\S]*?)(?=^(?:(?:entry|hidden|terminal|type)\s+)*[A-Za-z]\w*(?:\s+(?:returns|infers)\s+\w+)?\s*[:=]|$(?![\s\S]))/gm)];
-let keywordText = '# Alphabetical keyword reference\n\nThis user-facing reference covers every reserved word in the SWAML 1.2 grammar. Entries are sorted alphabetically, ignoring case for sorting only; source keywords remain case-sensitive. Example fragments illustrate a use and are not standalone models. Read the linked normative concern for full constraints. Punctuation and operator precedence follow the final section.\n\n';
+let keywordText = '# Alphabetical keyword reference\n\nThis user-facing reference covers every reserved word in the SWAML 1.3 grammar. Entries are sorted alphabetically, ignoring case for sorting only; source keywords remain case-sensitive. Example fragments illustrate a use and are not standalone models. Read the linked normative concern for full constraints. Punctuation and operator precedence follow the final section.\n\n';
 keywordText += inventory.entries.map(e => `[\`${e.keyword}\`](#keyword-${e.keyword.toLowerCase()})`).join(' · ') + '\n\n';
 const ordered = inventory.entries.map(e => e.keyword.toLowerCase());
 if (ordered.join() !== [...ordered].sort().join()) throw new Error('Keyword inventory must be alphabetical');
@@ -65,7 +65,9 @@ const chapters = [
     ['Simulation', 'docs/SIMULATION.md'],
     ['Structure, names and values', 'docs/spec/01-structure-and-types.md'],
     ['Root components, timing, deployment and cases', 'docs/spec/04-systems-and-conformance.md'],
-    ['Version migration', 'docs/MIGRATION_1_2.md'],
+    ['Version migration', 'docs/MIGRATION_1_3.md'],
+    ['Loops, interrupts and timing diagrams', 'docs/CONTROL_FLOW_AND_TIMING.md'],
+    ['Control-flow and timing design', 'docs/decisions/0011-loops-interrupts-and-function-timing.md'],
     ['Component and behavior design', 'docs/decisions/0007-component-functions-and-calculations.md'],
     ['Function-local calculations and calls', 'docs/decisions/0008-function-local-calculations-and-calls.md'],
     ['Requirements and documentation', 'docs/REQUIREMENTS_AND_DOCUMENTATION.md'],
@@ -80,7 +82,7 @@ const chapters = [
 try { await read('docs/GRAPHICAL_EXAMPLES.md'); chapters.splice(chapters.findIndex(x => x[0] === 'Graphical notation') + 1, 0, ['Graphical examples', 'docs/GRAPHICAL_EXAMPLES.md']); } catch {}
 const anchor = p => 'source-' + createHash('sha256').update(p).digest('hex').slice(0, 12);
 const included = new Set(chapters.map(x => x[1]));
-let book = '# SWAML 1.2.1 — Complete language reference\n\n**Software Architecture Modeling Language** · Headerless language 1.2; explicit definitions and component usages · Independently authored, KerML-based semantic design.\n\nThis is the complete user-facing Markdown edition, generated from the maintained source chapters. Navigate by the alphabetical concern map or the exhaustive alphabetical keyword reference. Normative chapters define meaning; tutorials, comparisons and examples illustrate it. The portable reference parser and logical simulator provide executable evidence with the limitations stated below.\n\n## Contents\n\n';
+let book = '# SWAML 1.3.0 — Complete language reference\n\n**Software Architecture Modeling Language** · Headerless language 1.3; explicit definitions and component usages · Independently authored, KerML-based semantic design.\n\nThis is the complete user-facing Markdown edition, generated from the maintained source chapters. Navigate by the alphabetical concern map or the exhaustive alphabetical keyword reference. Normative chapters define meaning; tutorials, comparisons and examples illustrate it. The portable reference parser and logical simulator provide executable evidence with the limitations stated below.\n\n## Contents\n\n';
 book += chapters.map(([title, p]) => `- [${title}](#${anchor(p)})`).join('\n') + '\n- [Complete concrete grammar](#complete-concrete-grammar)\n- [Model examples](#model-examples)\n\n';
 for (const [title, path] of chapters) {
     let text = path === 'docs/KEYWORD_REFERENCE.md' ? keywordText : await read(path);
@@ -120,5 +122,5 @@ localAnchors.add('model-examples');
 for (const match of book.matchAll(/\[[^\]]*\]\(#([^)]+)\)/g)) {
     if (!localAnchors.has(match[1])) throw new Error(`Broken combined-reference anchor: ${match[1]}`);
 }
-await output('docs/SWAML-1.2.1-Reference.md', book.trimEnd() + '\n');
+await output('docs/SWAML-1.3.0-Reference.md', book.trimEnd() + '\n');
 console.log(`${check ? 'Verified' : 'Built'} complete reference and ${seen.size} alphabetical keyword entries.`);

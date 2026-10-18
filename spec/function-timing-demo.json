@@ -1,0 +1,3524 @@
+{
+  "version": 1,
+  "model": "examples/17-function-timing.swaml",
+  "root": "FunctionTiming::Demo",
+  "sourceSha256": "814f279dcce8ed9d8013caaeb996f29a651d4c27750715337e7ef077d2d12cdf",
+  "contracts": [
+    {
+      "functionPath": "first.poll",
+      "definitionPath": "FunctionTiming::Client.poll",
+      "concurrency": "serial",
+      "wcetNs": 1000000,
+      "deadlineNs": 30000000
+    },
+    {
+      "functionPath": "second.poll",
+      "definitionPath": "FunctionTiming::Client.poll",
+      "concurrency": "serial",
+      "wcetNs": 1000000,
+      "deadlineNs": 30000000
+    },
+    {
+      "functionPath": "firstServer.checkHealth",
+      "definitionPath": "FunctionTiming::Server.checkHealth",
+      "concurrency": "serial",
+      "wcetNs": 1000000,
+      "deadlineNs": 10000000
+    },
+    {
+      "functionPath": "secondServer.checkHealth",
+      "definitionPath": "FunctionTiming::Server.checkHealth",
+      "concurrency": "serial",
+      "wcetNs": 1000000,
+      "deadlineNs": 10000000
+    }
+  ],
+  "declarations": [
+    {
+      "functionPath": "first.poll",
+      "definitionPath": "FunctionTiming::Client.poll",
+      "source": "function poll() on manual timing {\n            wcet 1 ms; deadline 30 ms; concurrency serial;\n        } {\n            call health.check() as answer within 20 ms otherwise { fail \"request failed\"; };\n            healthy = answer;\n        }"
+    },
+    {
+      "functionPath": "second.poll",
+      "definitionPath": "FunctionTiming::Client.poll",
+      "source": "function poll() on manual timing {\n            wcet 1 ms; deadline 30 ms; concurrency serial;\n        } {\n            call health.check() as answer within 20 ms otherwise { fail \"request failed\"; };\n            healthy = answer;\n        }"
+    },
+    {
+      "functionPath": "firstServer.checkHealth",
+      "definitionPath": "FunctionTiming::Server.checkHealth",
+      "source": "function checkHealth(): bool on call health.check timing {\n            wcet 1 ms; deadline 10 ms; concurrency serial;\n        } { return true; }"
+    },
+    {
+      "functionPath": "secondServer.checkHealth",
+      "definitionPath": "FunctionTiming::Server.checkHealth",
+      "source": "function checkHealth(): bool on call health.check timing {\n            wcet 1 ms; deadline 10 ms; concurrency serial;\n        } { return true; }"
+    }
+  ],
+  "runs": [
+    {
+      "id": "success",
+      "title": "Reply before timeout",
+      "description": "Two client occurrences run independently. A second release of first.poll waits for its serial lock.",
+      "options": {
+        "untilNs": 50000000,
+        "latencyNs": 2000000,
+        "manual": [
+          {
+            "atNs": 0,
+            "function": "first.poll"
+          },
+          {
+            "atNs": 0,
+            "function": "second.poll"
+          },
+          {
+            "atNs": 1000000,
+            "function": "first.poll"
+          }
+        ]
+      },
+      "trace": [
+        {
+          "timeNs": 0,
+          "ordinal": 1,
+          "kind": "initialize",
+          "subject": "",
+          "definition": "FunctionTiming::Demo",
+          "system": null
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 2,
+          "kind": "initialize",
+          "subject": "first",
+          "definition": "FunctionTiming::Client",
+          "system": null
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 3,
+          "kind": "initialize",
+          "subject": "second",
+          "definition": "FunctionTiming::Client",
+          "system": null
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 4,
+          "kind": "initialize",
+          "subject": "firstServer",
+          "definition": "FunctionTiming::Server",
+          "system": null
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 5,
+          "kind": "initialize",
+          "subject": "secondServer",
+          "definition": "FunctionTiming::Server",
+          "system": null
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 6,
+          "kind": "release",
+          "subject": "a1",
+          "function": "first.poll"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 7,
+          "kind": "dispatch",
+          "subject": "a1",
+          "function": "first.poll",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 8,
+          "kind": "release",
+          "subject": "a2",
+          "function": "second.poll"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 9,
+          "kind": "dispatch",
+          "subject": "a2",
+          "function": "second.poll",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 10,
+          "kind": "request",
+          "subject": "r3",
+          "activation": "a1",
+          "endpoint": "health.check",
+          "expiryNs": 20000000
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 11,
+          "kind": "emission",
+          "subject": "m4",
+          "offer": 1,
+          "activation": "a1",
+          "route": "firstLink",
+          "source": "first.health.check",
+          "target": "firstServer.health.check",
+          "payload": [],
+          "correlation": "r3",
+          "response": false
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 12,
+          "kind": "admission",
+          "subject": "m4",
+          "queue": "firstLink/forward/check"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 13,
+          "kind": "request",
+          "subject": "r5",
+          "activation": "a2",
+          "endpoint": "health.check",
+          "expiryNs": 20000000
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 14,
+          "kind": "emission",
+          "subject": "m6",
+          "offer": 2,
+          "activation": "a2",
+          "route": "secondLink",
+          "source": "second.health.check",
+          "target": "secondServer.health.check",
+          "payload": [],
+          "correlation": "r5",
+          "response": false
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 15,
+          "kind": "admission",
+          "subject": "m6",
+          "queue": "secondLink/forward/check"
+        },
+        {
+          "timeNs": 1000000,
+          "ordinal": 16,
+          "kind": "release",
+          "subject": "a7",
+          "function": "first.poll"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 17,
+          "kind": "ready",
+          "subject": "m4",
+          "queue": "firstLink/forward/check"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 18,
+          "kind": "release",
+          "subject": "a8",
+          "function": "firstServer.checkHealth"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 19,
+          "kind": "delivery",
+          "subject": "m4",
+          "attempt": 1,
+          "route": "firstLink",
+          "source": "first.health.check",
+          "target": "firstServer.health.check",
+          "correlation": "r3"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 20,
+          "kind": "dispatch",
+          "subject": "a8",
+          "function": "firstServer.checkHealth",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 21,
+          "kind": "ready",
+          "subject": "m6",
+          "queue": "secondLink/forward/check"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 22,
+          "kind": "release",
+          "subject": "a9",
+          "function": "secondServer.checkHealth"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 23,
+          "kind": "delivery",
+          "subject": "m6",
+          "attempt": 1,
+          "route": "secondLink",
+          "source": "second.health.check",
+          "target": "secondServer.health.check",
+          "correlation": "r5"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 24,
+          "kind": "dispatch",
+          "subject": "a9",
+          "function": "secondServer.checkHealth",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 25,
+          "kind": "complete",
+          "subject": "a8",
+          "function": "firstServer.checkHealth",
+          "result": true
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 26,
+          "kind": "emission",
+          "subject": "m10",
+          "offer": 3,
+          "activation": "a8",
+          "route": "firstLink",
+          "source": "firstServer.health.check",
+          "target": "first.health.check",
+          "payload": [],
+          "correlation": "r3",
+          "response": true
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 27,
+          "kind": "admission",
+          "subject": "m10",
+          "queue": "firstLink/reverse/check"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 28,
+          "kind": "complete",
+          "subject": "a9",
+          "function": "secondServer.checkHealth",
+          "result": true
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 29,
+          "kind": "emission",
+          "subject": "m11",
+          "offer": 4,
+          "activation": "a9",
+          "route": "secondLink",
+          "source": "secondServer.health.check",
+          "target": "second.health.check",
+          "payload": [],
+          "correlation": "r5",
+          "response": true
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 30,
+          "kind": "admission",
+          "subject": "m11",
+          "queue": "secondLink/reverse/check"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 31,
+          "kind": "ready",
+          "subject": "m10",
+          "queue": "firstLink/reverse/check"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 32,
+          "kind": "delivery",
+          "subject": "m10",
+          "correlation": "r3",
+          "route": "firstLink"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 33,
+          "kind": "requestComplete",
+          "subject": "r3",
+          "state": "Succeeded",
+          "value": true
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 34,
+          "kind": "ready",
+          "subject": "m11",
+          "queue": "secondLink/reverse/check"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 35,
+          "kind": "delivery",
+          "subject": "m11",
+          "correlation": "r5",
+          "route": "secondLink"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 36,
+          "kind": "requestComplete",
+          "subject": "r5",
+          "state": "Succeeded",
+          "value": true
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 37,
+          "kind": "statement",
+          "subject": "a1",
+          "kindOfStatement": "RemoteCall",
+          "line": 11
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 38,
+          "kind": "statement",
+          "subject": "a2",
+          "kindOfStatement": "RemoteCall",
+          "line": 11
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 39,
+          "kind": "statement",
+          "subject": "a1",
+          "kindOfStatement": "Assign",
+          "line": 12
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 40,
+          "kind": "statement",
+          "subject": "a2",
+          "kindOfStatement": "Assign",
+          "line": 12
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 41,
+          "kind": "complete",
+          "subject": "a1",
+          "function": "first.poll"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 42,
+          "kind": "dispatch",
+          "subject": "a7",
+          "function": "first.poll",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 43,
+          "kind": "complete",
+          "subject": "a2",
+          "function": "second.poll"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 44,
+          "kind": "request",
+          "subject": "r12",
+          "activation": "a7",
+          "endpoint": "health.check",
+          "expiryNs": 24000000
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 45,
+          "kind": "emission",
+          "subject": "m13",
+          "offer": 5,
+          "activation": "a7",
+          "route": "firstLink",
+          "source": "first.health.check",
+          "target": "firstServer.health.check",
+          "payload": [],
+          "correlation": "r12",
+          "response": false
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 46,
+          "kind": "admission",
+          "subject": "m13",
+          "queue": "firstLink/forward/check"
+        },
+        {
+          "timeNs": 6000000,
+          "ordinal": 47,
+          "kind": "ready",
+          "subject": "m13",
+          "queue": "firstLink/forward/check"
+        },
+        {
+          "timeNs": 6000000,
+          "ordinal": 48,
+          "kind": "release",
+          "subject": "a14",
+          "function": "firstServer.checkHealth"
+        },
+        {
+          "timeNs": 6000000,
+          "ordinal": 49,
+          "kind": "delivery",
+          "subject": "m13",
+          "attempt": 1,
+          "route": "firstLink",
+          "source": "first.health.check",
+          "target": "firstServer.health.check",
+          "correlation": "r12"
+        },
+        {
+          "timeNs": 6000000,
+          "ordinal": 50,
+          "kind": "dispatch",
+          "subject": "a14",
+          "function": "firstServer.checkHealth",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 6000000,
+          "ordinal": 51,
+          "kind": "complete",
+          "subject": "a14",
+          "function": "firstServer.checkHealth",
+          "result": true
+        },
+        {
+          "timeNs": 6000000,
+          "ordinal": 52,
+          "kind": "emission",
+          "subject": "m15",
+          "offer": 6,
+          "activation": "a14",
+          "route": "firstLink",
+          "source": "firstServer.health.check",
+          "target": "first.health.check",
+          "payload": [],
+          "correlation": "r12",
+          "response": true
+        },
+        {
+          "timeNs": 6000000,
+          "ordinal": 53,
+          "kind": "admission",
+          "subject": "m15",
+          "queue": "firstLink/reverse/check"
+        },
+        {
+          "timeNs": 8000000,
+          "ordinal": 54,
+          "kind": "ready",
+          "subject": "m15",
+          "queue": "firstLink/reverse/check"
+        },
+        {
+          "timeNs": 8000000,
+          "ordinal": 55,
+          "kind": "delivery",
+          "subject": "m15",
+          "correlation": "r12",
+          "route": "firstLink"
+        },
+        {
+          "timeNs": 8000000,
+          "ordinal": 56,
+          "kind": "requestComplete",
+          "subject": "r12",
+          "state": "Succeeded",
+          "value": true
+        },
+        {
+          "timeNs": 8000000,
+          "ordinal": 57,
+          "kind": "statement",
+          "subject": "a7",
+          "kindOfStatement": "RemoteCall",
+          "line": 11
+        },
+        {
+          "timeNs": 8000000,
+          "ordinal": 58,
+          "kind": "statement",
+          "subject": "a7",
+          "kindOfStatement": "Assign",
+          "line": 12
+        },
+        {
+          "timeNs": 8000000,
+          "ordinal": 59,
+          "kind": "complete",
+          "subject": "a7",
+          "function": "first.poll"
+        }
+      ],
+      "timing": {
+        "root": "FunctionTiming::Demo",
+        "profile": "swaml-reference/1.3",
+        "status": "quiescent",
+        "endNs": 31000000,
+        "activations": [
+          {
+            "id": "a1",
+            "functionPath": "first.poll",
+            "contract": {
+              "functionPath": "first.poll",
+              "definitionPath": "FunctionTiming::Client.poll",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 30000000
+            },
+            "released": {
+              "timeNs": 0,
+              "ordinal": 6
+            },
+            "outcome": "complete",
+            "deadlineAtNs": 30000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 6
+                },
+                "end": {
+                  "timeNs": 0,
+                  "ordinal": 7
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 7
+                },
+                "end": {
+                  "timeNs": 0,
+                  "ordinal": 10
+                },
+                "open": false
+              },
+              {
+                "state": "requestWait",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 10
+                },
+                "correlation": "r3",
+                "end": {
+                  "timeNs": 4000000,
+                  "ordinal": 33
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 4000000,
+                  "ordinal": 33
+                },
+                "end": {
+                  "timeNs": 4000000,
+                  "ordinal": 41
+                },
+                "open": false
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 6
+                }
+              },
+              {
+                "kind": "dispatch",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 7
+                }
+              },
+              {
+                "kind": "request",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 10
+                },
+                "correlation": "r3"
+              },
+              {
+                "kind": "requestComplete",
+                "point": {
+                  "timeNs": 4000000,
+                  "ordinal": 33
+                },
+                "correlation": "r3"
+              },
+              {
+                "kind": "statement",
+                "point": {
+                  "timeNs": 4000000,
+                  "ordinal": 37
+                },
+                "line": 11
+              },
+              {
+                "kind": "statement",
+                "point": {
+                  "timeNs": 4000000,
+                  "ordinal": 39
+                },
+                "line": 12
+              },
+              {
+                "kind": "complete",
+                "point": {
+                  "timeNs": 4000000,
+                  "ordinal": 41
+                }
+              }
+            ],
+            "dispatched": {
+              "timeNs": 0,
+              "ordinal": 7
+            },
+            "terminal": {
+              "timeNs": 4000000,
+              "ordinal": 41
+            }
+          },
+          {
+            "id": "a2",
+            "functionPath": "second.poll",
+            "contract": {
+              "functionPath": "second.poll",
+              "definitionPath": "FunctionTiming::Client.poll",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 30000000
+            },
+            "released": {
+              "timeNs": 0,
+              "ordinal": 8
+            },
+            "outcome": "complete",
+            "deadlineAtNs": 30000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 8
+                },
+                "end": {
+                  "timeNs": 0,
+                  "ordinal": 9
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 9
+                },
+                "end": {
+                  "timeNs": 0,
+                  "ordinal": 13
+                },
+                "open": false
+              },
+              {
+                "state": "requestWait",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 13
+                },
+                "correlation": "r5",
+                "end": {
+                  "timeNs": 4000000,
+                  "ordinal": 36
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 4000000,
+                  "ordinal": 36
+                },
+                "end": {
+                  "timeNs": 4000000,
+                  "ordinal": 43
+                },
+                "open": false
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 8
+                }
+              },
+              {
+                "kind": "dispatch",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 9
+                }
+              },
+              {
+                "kind": "request",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 13
+                },
+                "correlation": "r5"
+              },
+              {
+                "kind": "requestComplete",
+                "point": {
+                  "timeNs": 4000000,
+                  "ordinal": 36
+                },
+                "correlation": "r5"
+              },
+              {
+                "kind": "statement",
+                "point": {
+                  "timeNs": 4000000,
+                  "ordinal": 38
+                },
+                "line": 11
+              },
+              {
+                "kind": "statement",
+                "point": {
+                  "timeNs": 4000000,
+                  "ordinal": 40
+                },
+                "line": 12
+              },
+              {
+                "kind": "complete",
+                "point": {
+                  "timeNs": 4000000,
+                  "ordinal": 43
+                }
+              }
+            ],
+            "dispatched": {
+              "timeNs": 0,
+              "ordinal": 9
+            },
+            "terminal": {
+              "timeNs": 4000000,
+              "ordinal": 43
+            }
+          },
+          {
+            "id": "a7",
+            "functionPath": "first.poll",
+            "contract": {
+              "functionPath": "first.poll",
+              "definitionPath": "FunctionTiming::Client.poll",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 30000000
+            },
+            "released": {
+              "timeNs": 1000000,
+              "ordinal": 16
+            },
+            "outcome": "complete",
+            "deadlineAtNs": 31000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 1000000,
+                  "ordinal": 16
+                },
+                "end": {
+                  "timeNs": 4000000,
+                  "ordinal": 42
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 4000000,
+                  "ordinal": 42
+                },
+                "end": {
+                  "timeNs": 4000000,
+                  "ordinal": 44
+                },
+                "open": false
+              },
+              {
+                "state": "requestWait",
+                "start": {
+                  "timeNs": 4000000,
+                  "ordinal": 44
+                },
+                "correlation": "r12",
+                "end": {
+                  "timeNs": 8000000,
+                  "ordinal": 56
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 8000000,
+                  "ordinal": 56
+                },
+                "end": {
+                  "timeNs": 8000000,
+                  "ordinal": 59
+                },
+                "open": false
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 1000000,
+                  "ordinal": 16
+                }
+              },
+              {
+                "kind": "dispatch",
+                "point": {
+                  "timeNs": 4000000,
+                  "ordinal": 42
+                }
+              },
+              {
+                "kind": "request",
+                "point": {
+                  "timeNs": 4000000,
+                  "ordinal": 44
+                },
+                "correlation": "r12"
+              },
+              {
+                "kind": "requestComplete",
+                "point": {
+                  "timeNs": 8000000,
+                  "ordinal": 56
+                },
+                "correlation": "r12"
+              },
+              {
+                "kind": "statement",
+                "point": {
+                  "timeNs": 8000000,
+                  "ordinal": 57
+                },
+                "line": 11
+              },
+              {
+                "kind": "statement",
+                "point": {
+                  "timeNs": 8000000,
+                  "ordinal": 58
+                },
+                "line": 12
+              },
+              {
+                "kind": "complete",
+                "point": {
+                  "timeNs": 8000000,
+                  "ordinal": 59
+                }
+              }
+            ],
+            "dispatched": {
+              "timeNs": 4000000,
+              "ordinal": 42
+            },
+            "terminal": {
+              "timeNs": 8000000,
+              "ordinal": 59
+            }
+          },
+          {
+            "id": "a8",
+            "functionPath": "firstServer.checkHealth",
+            "contract": {
+              "functionPath": "firstServer.checkHealth",
+              "definitionPath": "FunctionTiming::Server.checkHealth",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 10000000
+            },
+            "released": {
+              "timeNs": 2000000,
+              "ordinal": 18
+            },
+            "outcome": "complete",
+            "deadlineAtNs": 12000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 2000000,
+                  "ordinal": 18
+                },
+                "end": {
+                  "timeNs": 2000000,
+                  "ordinal": 20
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 2000000,
+                  "ordinal": 20
+                },
+                "end": {
+                  "timeNs": 2000000,
+                  "ordinal": 25
+                },
+                "open": false
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 2000000,
+                  "ordinal": 18
+                }
+              },
+              {
+                "kind": "dispatch",
+                "point": {
+                  "timeNs": 2000000,
+                  "ordinal": 20
+                }
+              },
+              {
+                "kind": "complete",
+                "point": {
+                  "timeNs": 2000000,
+                  "ordinal": 25
+                }
+              }
+            ],
+            "dispatched": {
+              "timeNs": 2000000,
+              "ordinal": 20
+            },
+            "terminal": {
+              "timeNs": 2000000,
+              "ordinal": 25
+            }
+          },
+          {
+            "id": "a9",
+            "functionPath": "secondServer.checkHealth",
+            "contract": {
+              "functionPath": "secondServer.checkHealth",
+              "definitionPath": "FunctionTiming::Server.checkHealth",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 10000000
+            },
+            "released": {
+              "timeNs": 2000000,
+              "ordinal": 22
+            },
+            "outcome": "complete",
+            "deadlineAtNs": 12000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 2000000,
+                  "ordinal": 22
+                },
+                "end": {
+                  "timeNs": 2000000,
+                  "ordinal": 24
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 2000000,
+                  "ordinal": 24
+                },
+                "end": {
+                  "timeNs": 2000000,
+                  "ordinal": 28
+                },
+                "open": false
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 2000000,
+                  "ordinal": 22
+                }
+              },
+              {
+                "kind": "dispatch",
+                "point": {
+                  "timeNs": 2000000,
+                  "ordinal": 24
+                }
+              },
+              {
+                "kind": "complete",
+                "point": {
+                  "timeNs": 2000000,
+                  "ordinal": 28
+                }
+              }
+            ],
+            "dispatched": {
+              "timeNs": 2000000,
+              "ordinal": 24
+            },
+            "terminal": {
+              "timeNs": 2000000,
+              "ordinal": 28
+            }
+          },
+          {
+            "id": "a14",
+            "functionPath": "firstServer.checkHealth",
+            "contract": {
+              "functionPath": "firstServer.checkHealth",
+              "definitionPath": "FunctionTiming::Server.checkHealth",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 10000000
+            },
+            "released": {
+              "timeNs": 6000000,
+              "ordinal": 48
+            },
+            "outcome": "complete",
+            "deadlineAtNs": 16000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 6000000,
+                  "ordinal": 48
+                },
+                "end": {
+                  "timeNs": 6000000,
+                  "ordinal": 50
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 6000000,
+                  "ordinal": 50
+                },
+                "end": {
+                  "timeNs": 6000000,
+                  "ordinal": 51
+                },
+                "open": false
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 6000000,
+                  "ordinal": 48
+                }
+              },
+              {
+                "kind": "dispatch",
+                "point": {
+                  "timeNs": 6000000,
+                  "ordinal": 50
+                }
+              },
+              {
+                "kind": "complete",
+                "point": {
+                  "timeNs": 6000000,
+                  "ordinal": 51
+                }
+              }
+            ],
+            "dispatched": {
+              "timeNs": 6000000,
+              "ordinal": 50
+            },
+            "terminal": {
+              "timeNs": 6000000,
+              "ordinal": 51
+            }
+          }
+        ],
+        "stops": []
+      }
+    },
+    {
+      "id": "timeout",
+      "title": "Timeout and late reply",
+      "description": "The request expires at 20 ms. Later replies are discarded and cannot resume the caller.",
+      "options": {
+        "untilNs": 60000000,
+        "latencyNs": 12000000,
+        "manual": [
+          {
+            "atNs": 0,
+            "function": "first.poll"
+          },
+          {
+            "atNs": 0,
+            "function": "second.poll"
+          }
+        ]
+      },
+      "trace": [
+        {
+          "timeNs": 0,
+          "ordinal": 1,
+          "kind": "initialize",
+          "subject": "",
+          "definition": "FunctionTiming::Demo",
+          "system": null
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 2,
+          "kind": "initialize",
+          "subject": "first",
+          "definition": "FunctionTiming::Client",
+          "system": null
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 3,
+          "kind": "initialize",
+          "subject": "second",
+          "definition": "FunctionTiming::Client",
+          "system": null
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 4,
+          "kind": "initialize",
+          "subject": "firstServer",
+          "definition": "FunctionTiming::Server",
+          "system": null
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 5,
+          "kind": "initialize",
+          "subject": "secondServer",
+          "definition": "FunctionTiming::Server",
+          "system": null
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 6,
+          "kind": "release",
+          "subject": "a1",
+          "function": "first.poll"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 7,
+          "kind": "dispatch",
+          "subject": "a1",
+          "function": "first.poll",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 8,
+          "kind": "release",
+          "subject": "a2",
+          "function": "second.poll"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 9,
+          "kind": "dispatch",
+          "subject": "a2",
+          "function": "second.poll",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 10,
+          "kind": "request",
+          "subject": "r3",
+          "activation": "a1",
+          "endpoint": "health.check",
+          "expiryNs": 20000000
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 11,
+          "kind": "emission",
+          "subject": "m4",
+          "offer": 1,
+          "activation": "a1",
+          "route": "firstLink",
+          "source": "first.health.check",
+          "target": "firstServer.health.check",
+          "payload": [],
+          "correlation": "r3",
+          "response": false
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 12,
+          "kind": "admission",
+          "subject": "m4",
+          "queue": "firstLink/forward/check"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 13,
+          "kind": "request",
+          "subject": "r5",
+          "activation": "a2",
+          "endpoint": "health.check",
+          "expiryNs": 20000000
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 14,
+          "kind": "emission",
+          "subject": "m6",
+          "offer": 2,
+          "activation": "a2",
+          "route": "secondLink",
+          "source": "second.health.check",
+          "target": "secondServer.health.check",
+          "payload": [],
+          "correlation": "r5",
+          "response": false
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 15,
+          "kind": "admission",
+          "subject": "m6",
+          "queue": "secondLink/forward/check"
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 16,
+          "kind": "ready",
+          "subject": "m4",
+          "queue": "firstLink/forward/check"
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 17,
+          "kind": "release",
+          "subject": "a7",
+          "function": "firstServer.checkHealth"
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 18,
+          "kind": "delivery",
+          "subject": "m4",
+          "attempt": 1,
+          "route": "firstLink",
+          "source": "first.health.check",
+          "target": "firstServer.health.check",
+          "correlation": "r3"
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 19,
+          "kind": "dispatch",
+          "subject": "a7",
+          "function": "firstServer.checkHealth",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 20,
+          "kind": "ready",
+          "subject": "m6",
+          "queue": "secondLink/forward/check"
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 21,
+          "kind": "release",
+          "subject": "a8",
+          "function": "secondServer.checkHealth"
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 22,
+          "kind": "delivery",
+          "subject": "m6",
+          "attempt": 1,
+          "route": "secondLink",
+          "source": "second.health.check",
+          "target": "secondServer.health.check",
+          "correlation": "r5"
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 23,
+          "kind": "dispatch",
+          "subject": "a8",
+          "function": "secondServer.checkHealth",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 24,
+          "kind": "complete",
+          "subject": "a7",
+          "function": "firstServer.checkHealth",
+          "result": true
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 25,
+          "kind": "emission",
+          "subject": "m9",
+          "offer": 3,
+          "activation": "a7",
+          "route": "firstLink",
+          "source": "firstServer.health.check",
+          "target": "first.health.check",
+          "payload": [],
+          "correlation": "r3",
+          "response": true
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 26,
+          "kind": "admission",
+          "subject": "m9",
+          "queue": "firstLink/reverse/check"
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 27,
+          "kind": "complete",
+          "subject": "a8",
+          "function": "secondServer.checkHealth",
+          "result": true
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 28,
+          "kind": "emission",
+          "subject": "m10",
+          "offer": 4,
+          "activation": "a8",
+          "route": "secondLink",
+          "source": "secondServer.health.check",
+          "target": "second.health.check",
+          "payload": [],
+          "correlation": "r5",
+          "response": true
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 29,
+          "kind": "admission",
+          "subject": "m10",
+          "queue": "secondLink/reverse/check"
+        },
+        {
+          "timeNs": 20000000,
+          "ordinal": 30,
+          "kind": "timeout",
+          "subject": "r3"
+        },
+        {
+          "timeNs": 20000000,
+          "ordinal": 31,
+          "kind": "requestComplete",
+          "subject": "r3",
+          "state": "Failed",
+          "failure": "Timeout"
+        },
+        {
+          "timeNs": 20000000,
+          "ordinal": 32,
+          "kind": "timeout",
+          "subject": "r5"
+        },
+        {
+          "timeNs": 20000000,
+          "ordinal": 33,
+          "kind": "requestComplete",
+          "subject": "r5",
+          "state": "Failed",
+          "failure": "Timeout"
+        },
+        {
+          "timeNs": 20000000,
+          "ordinal": 34,
+          "kind": "failure",
+          "subject": "a1",
+          "function": "first.poll",
+          "code": "Fail",
+          "message": "request failed"
+        },
+        {
+          "timeNs": 20000000,
+          "ordinal": 35,
+          "kind": "failure",
+          "subject": "a2",
+          "function": "second.poll",
+          "code": "Fail",
+          "message": "request failed"
+        },
+        {
+          "timeNs": 24000000,
+          "ordinal": 36,
+          "kind": "ready",
+          "subject": "m9",
+          "queue": "firstLink/reverse/check"
+        },
+        {
+          "timeNs": 24000000,
+          "ordinal": 37,
+          "kind": "delivery",
+          "subject": "m9",
+          "correlation": "r3",
+          "route": "firstLink"
+        },
+        {
+          "timeNs": 24000000,
+          "ordinal": 38,
+          "kind": "discardResponse",
+          "subject": "r3",
+          "reason": "TerminalCorrelation"
+        },
+        {
+          "timeNs": 24000000,
+          "ordinal": 39,
+          "kind": "ready",
+          "subject": "m10",
+          "queue": "secondLink/reverse/check"
+        },
+        {
+          "timeNs": 24000000,
+          "ordinal": 40,
+          "kind": "delivery",
+          "subject": "m10",
+          "correlation": "r5",
+          "route": "secondLink"
+        },
+        {
+          "timeNs": 24000000,
+          "ordinal": 41,
+          "kind": "discardResponse",
+          "subject": "r5",
+          "reason": "TerminalCorrelation"
+        }
+      ],
+      "timing": {
+        "root": "FunctionTiming::Demo",
+        "profile": "swaml-reference/1.3",
+        "status": "quiescent",
+        "endNs": 30000000,
+        "activations": [
+          {
+            "id": "a1",
+            "functionPath": "first.poll",
+            "contract": {
+              "functionPath": "first.poll",
+              "definitionPath": "FunctionTiming::Client.poll",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 30000000
+            },
+            "released": {
+              "timeNs": 0,
+              "ordinal": 6
+            },
+            "outcome": "failure",
+            "deadlineAtNs": 30000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 6
+                },
+                "end": {
+                  "timeNs": 0,
+                  "ordinal": 7
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 7
+                },
+                "end": {
+                  "timeNs": 0,
+                  "ordinal": 10
+                },
+                "open": false
+              },
+              {
+                "state": "requestWait",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 10
+                },
+                "correlation": "r3",
+                "end": {
+                  "timeNs": 20000000,
+                  "ordinal": 31
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 20000000,
+                  "ordinal": 31
+                },
+                "end": {
+                  "timeNs": 20000000,
+                  "ordinal": 34
+                },
+                "open": false
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 6
+                }
+              },
+              {
+                "kind": "dispatch",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 7
+                }
+              },
+              {
+                "kind": "request",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 10
+                },
+                "correlation": "r3"
+              },
+              {
+                "kind": "timeout",
+                "point": {
+                  "timeNs": 20000000,
+                  "ordinal": 30
+                },
+                "correlation": "r3"
+              },
+              {
+                "kind": "requestComplete",
+                "point": {
+                  "timeNs": 20000000,
+                  "ordinal": 31
+                },
+                "correlation": "r3",
+                "detail": "Timeout"
+              },
+              {
+                "kind": "failure",
+                "point": {
+                  "timeNs": 20000000,
+                  "ordinal": 34
+                },
+                "detail": "Fail"
+              },
+              {
+                "kind": "discardResponse",
+                "point": {
+                  "timeNs": 24000000,
+                  "ordinal": 38
+                },
+                "correlation": "r3",
+                "detail": "TerminalCorrelation"
+              }
+            ],
+            "dispatched": {
+              "timeNs": 0,
+              "ordinal": 7
+            },
+            "terminal": {
+              "timeNs": 20000000,
+              "ordinal": 34
+            }
+          },
+          {
+            "id": "a2",
+            "functionPath": "second.poll",
+            "contract": {
+              "functionPath": "second.poll",
+              "definitionPath": "FunctionTiming::Client.poll",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 30000000
+            },
+            "released": {
+              "timeNs": 0,
+              "ordinal": 8
+            },
+            "outcome": "failure",
+            "deadlineAtNs": 30000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 8
+                },
+                "end": {
+                  "timeNs": 0,
+                  "ordinal": 9
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 9
+                },
+                "end": {
+                  "timeNs": 0,
+                  "ordinal": 13
+                },
+                "open": false
+              },
+              {
+                "state": "requestWait",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 13
+                },
+                "correlation": "r5",
+                "end": {
+                  "timeNs": 20000000,
+                  "ordinal": 33
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 20000000,
+                  "ordinal": 33
+                },
+                "end": {
+                  "timeNs": 20000000,
+                  "ordinal": 35
+                },
+                "open": false
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 8
+                }
+              },
+              {
+                "kind": "dispatch",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 9
+                }
+              },
+              {
+                "kind": "request",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 13
+                },
+                "correlation": "r5"
+              },
+              {
+                "kind": "timeout",
+                "point": {
+                  "timeNs": 20000000,
+                  "ordinal": 32
+                },
+                "correlation": "r5"
+              },
+              {
+                "kind": "requestComplete",
+                "point": {
+                  "timeNs": 20000000,
+                  "ordinal": 33
+                },
+                "correlation": "r5",
+                "detail": "Timeout"
+              },
+              {
+                "kind": "failure",
+                "point": {
+                  "timeNs": 20000000,
+                  "ordinal": 35
+                },
+                "detail": "Fail"
+              },
+              {
+                "kind": "discardResponse",
+                "point": {
+                  "timeNs": 24000000,
+                  "ordinal": 41
+                },
+                "correlation": "r5",
+                "detail": "TerminalCorrelation"
+              }
+            ],
+            "dispatched": {
+              "timeNs": 0,
+              "ordinal": 9
+            },
+            "terminal": {
+              "timeNs": 20000000,
+              "ordinal": 35
+            }
+          },
+          {
+            "id": "a7",
+            "functionPath": "firstServer.checkHealth",
+            "contract": {
+              "functionPath": "firstServer.checkHealth",
+              "definitionPath": "FunctionTiming::Server.checkHealth",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 10000000
+            },
+            "released": {
+              "timeNs": 12000000,
+              "ordinal": 17
+            },
+            "outcome": "complete",
+            "deadlineAtNs": 22000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 12000000,
+                  "ordinal": 17
+                },
+                "end": {
+                  "timeNs": 12000000,
+                  "ordinal": 19
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 12000000,
+                  "ordinal": 19
+                },
+                "end": {
+                  "timeNs": 12000000,
+                  "ordinal": 24
+                },
+                "open": false
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 12000000,
+                  "ordinal": 17
+                }
+              },
+              {
+                "kind": "dispatch",
+                "point": {
+                  "timeNs": 12000000,
+                  "ordinal": 19
+                }
+              },
+              {
+                "kind": "complete",
+                "point": {
+                  "timeNs": 12000000,
+                  "ordinal": 24
+                }
+              }
+            ],
+            "dispatched": {
+              "timeNs": 12000000,
+              "ordinal": 19
+            },
+            "terminal": {
+              "timeNs": 12000000,
+              "ordinal": 24
+            }
+          },
+          {
+            "id": "a8",
+            "functionPath": "secondServer.checkHealth",
+            "contract": {
+              "functionPath": "secondServer.checkHealth",
+              "definitionPath": "FunctionTiming::Server.checkHealth",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 10000000
+            },
+            "released": {
+              "timeNs": 12000000,
+              "ordinal": 21
+            },
+            "outcome": "complete",
+            "deadlineAtNs": 22000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 12000000,
+                  "ordinal": 21
+                },
+                "end": {
+                  "timeNs": 12000000,
+                  "ordinal": 23
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 12000000,
+                  "ordinal": 23
+                },
+                "end": {
+                  "timeNs": 12000000,
+                  "ordinal": 27
+                },
+                "open": false
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 12000000,
+                  "ordinal": 21
+                }
+              },
+              {
+                "kind": "dispatch",
+                "point": {
+                  "timeNs": 12000000,
+                  "ordinal": 23
+                }
+              },
+              {
+                "kind": "complete",
+                "point": {
+                  "timeNs": 12000000,
+                  "ordinal": 27
+                }
+              }
+            ],
+            "dispatched": {
+              "timeNs": 12000000,
+              "ordinal": 23
+            },
+            "terminal": {
+              "timeNs": 12000000,
+              "ordinal": 27
+            }
+          }
+        ],
+        "stops": []
+      }
+    },
+    {
+      "id": "horizon",
+      "title": "Open at the horizon",
+      "description": "The observation ends at 3 ms while callers await responses and one release awaits dispatch.",
+      "options": {
+        "untilNs": 3000000,
+        "latencyNs": 2000000,
+        "manual": [
+          {
+            "atNs": 0,
+            "function": "first.poll"
+          },
+          {
+            "atNs": 0,
+            "function": "second.poll"
+          },
+          {
+            "atNs": 1000000,
+            "function": "first.poll"
+          }
+        ]
+      },
+      "trace": [
+        {
+          "timeNs": 0,
+          "ordinal": 1,
+          "kind": "initialize",
+          "subject": "",
+          "definition": "FunctionTiming::Demo",
+          "system": null
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 2,
+          "kind": "initialize",
+          "subject": "first",
+          "definition": "FunctionTiming::Client",
+          "system": null
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 3,
+          "kind": "initialize",
+          "subject": "second",
+          "definition": "FunctionTiming::Client",
+          "system": null
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 4,
+          "kind": "initialize",
+          "subject": "firstServer",
+          "definition": "FunctionTiming::Server",
+          "system": null
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 5,
+          "kind": "initialize",
+          "subject": "secondServer",
+          "definition": "FunctionTiming::Server",
+          "system": null
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 6,
+          "kind": "release",
+          "subject": "a1",
+          "function": "first.poll"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 7,
+          "kind": "dispatch",
+          "subject": "a1",
+          "function": "first.poll",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 8,
+          "kind": "release",
+          "subject": "a2",
+          "function": "second.poll"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 9,
+          "kind": "dispatch",
+          "subject": "a2",
+          "function": "second.poll",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 10,
+          "kind": "request",
+          "subject": "r3",
+          "activation": "a1",
+          "endpoint": "health.check",
+          "expiryNs": 20000000
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 11,
+          "kind": "emission",
+          "subject": "m4",
+          "offer": 1,
+          "activation": "a1",
+          "route": "firstLink",
+          "source": "first.health.check",
+          "target": "firstServer.health.check",
+          "payload": [],
+          "correlation": "r3",
+          "response": false
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 12,
+          "kind": "admission",
+          "subject": "m4",
+          "queue": "firstLink/forward/check"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 13,
+          "kind": "request",
+          "subject": "r5",
+          "activation": "a2",
+          "endpoint": "health.check",
+          "expiryNs": 20000000
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 14,
+          "kind": "emission",
+          "subject": "m6",
+          "offer": 2,
+          "activation": "a2",
+          "route": "secondLink",
+          "source": "second.health.check",
+          "target": "secondServer.health.check",
+          "payload": [],
+          "correlation": "r5",
+          "response": false
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 15,
+          "kind": "admission",
+          "subject": "m6",
+          "queue": "secondLink/forward/check"
+        },
+        {
+          "timeNs": 1000000,
+          "ordinal": 16,
+          "kind": "release",
+          "subject": "a7",
+          "function": "first.poll"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 17,
+          "kind": "ready",
+          "subject": "m4",
+          "queue": "firstLink/forward/check"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 18,
+          "kind": "release",
+          "subject": "a8",
+          "function": "firstServer.checkHealth"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 19,
+          "kind": "delivery",
+          "subject": "m4",
+          "attempt": 1,
+          "route": "firstLink",
+          "source": "first.health.check",
+          "target": "firstServer.health.check",
+          "correlation": "r3"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 20,
+          "kind": "dispatch",
+          "subject": "a8",
+          "function": "firstServer.checkHealth",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 21,
+          "kind": "ready",
+          "subject": "m6",
+          "queue": "secondLink/forward/check"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 22,
+          "kind": "release",
+          "subject": "a9",
+          "function": "secondServer.checkHealth"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 23,
+          "kind": "delivery",
+          "subject": "m6",
+          "attempt": 1,
+          "route": "secondLink",
+          "source": "second.health.check",
+          "target": "secondServer.health.check",
+          "correlation": "r5"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 24,
+          "kind": "dispatch",
+          "subject": "a9",
+          "function": "secondServer.checkHealth",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 25,
+          "kind": "complete",
+          "subject": "a8",
+          "function": "firstServer.checkHealth",
+          "result": true
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 26,
+          "kind": "emission",
+          "subject": "m10",
+          "offer": 3,
+          "activation": "a8",
+          "route": "firstLink",
+          "source": "firstServer.health.check",
+          "target": "first.health.check",
+          "payload": [],
+          "correlation": "r3",
+          "response": true
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 27,
+          "kind": "admission",
+          "subject": "m10",
+          "queue": "firstLink/reverse/check"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 28,
+          "kind": "complete",
+          "subject": "a9",
+          "function": "secondServer.checkHealth",
+          "result": true
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 29,
+          "kind": "emission",
+          "subject": "m11",
+          "offer": 4,
+          "activation": "a9",
+          "route": "secondLink",
+          "source": "secondServer.health.check",
+          "target": "second.health.check",
+          "payload": [],
+          "correlation": "r5",
+          "response": true
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 30,
+          "kind": "admission",
+          "subject": "m11",
+          "queue": "secondLink/reverse/check"
+        }
+      ],
+      "timing": {
+        "root": "FunctionTiming::Demo",
+        "profile": "swaml-reference/1.3",
+        "status": "horizon",
+        "endNs": 3000000,
+        "activations": [
+          {
+            "id": "a1",
+            "functionPath": "first.poll",
+            "contract": {
+              "functionPath": "first.poll",
+              "definitionPath": "FunctionTiming::Client.poll",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 30000000
+            },
+            "released": {
+              "timeNs": 0,
+              "ordinal": 6
+            },
+            "outcome": "open",
+            "deadlineAtNs": 30000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 6
+                },
+                "end": {
+                  "timeNs": 0,
+                  "ordinal": 7
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 7
+                },
+                "end": {
+                  "timeNs": 0,
+                  "ordinal": 10
+                },
+                "open": false
+              },
+              {
+                "state": "requestWait",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 10
+                },
+                "correlation": "r3",
+                "end": {
+                  "timeNs": 3000000
+                },
+                "open": true
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 6
+                }
+              },
+              {
+                "kind": "dispatch",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 7
+                }
+              },
+              {
+                "kind": "request",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 10
+                },
+                "correlation": "r3"
+              }
+            ],
+            "dispatched": {
+              "timeNs": 0,
+              "ordinal": 7
+            }
+          },
+          {
+            "id": "a2",
+            "functionPath": "second.poll",
+            "contract": {
+              "functionPath": "second.poll",
+              "definitionPath": "FunctionTiming::Client.poll",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 30000000
+            },
+            "released": {
+              "timeNs": 0,
+              "ordinal": 8
+            },
+            "outcome": "open",
+            "deadlineAtNs": 30000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 8
+                },
+                "end": {
+                  "timeNs": 0,
+                  "ordinal": 9
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 9
+                },
+                "end": {
+                  "timeNs": 0,
+                  "ordinal": 13
+                },
+                "open": false
+              },
+              {
+                "state": "requestWait",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 13
+                },
+                "correlation": "r5",
+                "end": {
+                  "timeNs": 3000000
+                },
+                "open": true
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 8
+                }
+              },
+              {
+                "kind": "dispatch",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 9
+                }
+              },
+              {
+                "kind": "request",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 13
+                },
+                "correlation": "r5"
+              }
+            ],
+            "dispatched": {
+              "timeNs": 0,
+              "ordinal": 9
+            }
+          },
+          {
+            "id": "a7",
+            "functionPath": "first.poll",
+            "contract": {
+              "functionPath": "first.poll",
+              "definitionPath": "FunctionTiming::Client.poll",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 30000000
+            },
+            "released": {
+              "timeNs": 1000000,
+              "ordinal": 16
+            },
+            "outcome": "open",
+            "deadlineAtNs": 31000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 1000000,
+                  "ordinal": 16
+                },
+                "end": {
+                  "timeNs": 3000000
+                },
+                "open": true
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 1000000,
+                  "ordinal": 16
+                }
+              }
+            ]
+          },
+          {
+            "id": "a8",
+            "functionPath": "firstServer.checkHealth",
+            "contract": {
+              "functionPath": "firstServer.checkHealth",
+              "definitionPath": "FunctionTiming::Server.checkHealth",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 10000000
+            },
+            "released": {
+              "timeNs": 2000000,
+              "ordinal": 18
+            },
+            "outcome": "complete",
+            "deadlineAtNs": 12000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 2000000,
+                  "ordinal": 18
+                },
+                "end": {
+                  "timeNs": 2000000,
+                  "ordinal": 20
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 2000000,
+                  "ordinal": 20
+                },
+                "end": {
+                  "timeNs": 2000000,
+                  "ordinal": 25
+                },
+                "open": false
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 2000000,
+                  "ordinal": 18
+                }
+              },
+              {
+                "kind": "dispatch",
+                "point": {
+                  "timeNs": 2000000,
+                  "ordinal": 20
+                }
+              },
+              {
+                "kind": "complete",
+                "point": {
+                  "timeNs": 2000000,
+                  "ordinal": 25
+                }
+              }
+            ],
+            "dispatched": {
+              "timeNs": 2000000,
+              "ordinal": 20
+            },
+            "terminal": {
+              "timeNs": 2000000,
+              "ordinal": 25
+            }
+          },
+          {
+            "id": "a9",
+            "functionPath": "secondServer.checkHealth",
+            "contract": {
+              "functionPath": "secondServer.checkHealth",
+              "definitionPath": "FunctionTiming::Server.checkHealth",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 10000000
+            },
+            "released": {
+              "timeNs": 2000000,
+              "ordinal": 22
+            },
+            "outcome": "complete",
+            "deadlineAtNs": 12000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 2000000,
+                  "ordinal": 22
+                },
+                "end": {
+                  "timeNs": 2000000,
+                  "ordinal": 24
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 2000000,
+                  "ordinal": 24
+                },
+                "end": {
+                  "timeNs": 2000000,
+                  "ordinal": 28
+                },
+                "open": false
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 2000000,
+                  "ordinal": 22
+                }
+              },
+              {
+                "kind": "dispatch",
+                "point": {
+                  "timeNs": 2000000,
+                  "ordinal": 24
+                }
+              },
+              {
+                "kind": "complete",
+                "point": {
+                  "timeNs": 2000000,
+                  "ordinal": 28
+                }
+              }
+            ],
+            "dispatched": {
+              "timeNs": 2000000,
+              "ordinal": 24
+            },
+            "terminal": {
+              "timeNs": 2000000,
+              "ordinal": 28
+            }
+          }
+        ],
+        "stops": []
+      }
+    },
+    {
+      "id": "deadline",
+      "title": "Declared deadline missed",
+      "description": "The queued second activation cannot finish by its 31 ms deadline. The run stops with the pending intervals still open.",
+      "options": {
+        "untilNs": 50000000,
+        "latencyNs": 18000000,
+        "manual": [
+          {
+            "atNs": 0,
+            "function": "first.poll"
+          },
+          {
+            "atNs": 0,
+            "function": "second.poll"
+          },
+          {
+            "atNs": 1000000,
+            "function": "first.poll"
+          }
+        ]
+      },
+      "trace": [
+        {
+          "timeNs": 0,
+          "ordinal": 1,
+          "kind": "initialize",
+          "subject": "",
+          "definition": "FunctionTiming::Demo",
+          "system": null
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 2,
+          "kind": "initialize",
+          "subject": "first",
+          "definition": "FunctionTiming::Client",
+          "system": null
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 3,
+          "kind": "initialize",
+          "subject": "second",
+          "definition": "FunctionTiming::Client",
+          "system": null
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 4,
+          "kind": "initialize",
+          "subject": "firstServer",
+          "definition": "FunctionTiming::Server",
+          "system": null
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 5,
+          "kind": "initialize",
+          "subject": "secondServer",
+          "definition": "FunctionTiming::Server",
+          "system": null
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 6,
+          "kind": "release",
+          "subject": "a1",
+          "function": "first.poll"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 7,
+          "kind": "dispatch",
+          "subject": "a1",
+          "function": "first.poll",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 8,
+          "kind": "release",
+          "subject": "a2",
+          "function": "second.poll"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 9,
+          "kind": "dispatch",
+          "subject": "a2",
+          "function": "second.poll",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 10,
+          "kind": "request",
+          "subject": "r3",
+          "activation": "a1",
+          "endpoint": "health.check",
+          "expiryNs": 20000000
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 11,
+          "kind": "emission",
+          "subject": "m4",
+          "offer": 1,
+          "activation": "a1",
+          "route": "firstLink",
+          "source": "first.health.check",
+          "target": "firstServer.health.check",
+          "payload": [],
+          "correlation": "r3",
+          "response": false
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 12,
+          "kind": "admission",
+          "subject": "m4",
+          "queue": "firstLink/forward/check"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 13,
+          "kind": "request",
+          "subject": "r5",
+          "activation": "a2",
+          "endpoint": "health.check",
+          "expiryNs": 20000000
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 14,
+          "kind": "emission",
+          "subject": "m6",
+          "offer": 2,
+          "activation": "a2",
+          "route": "secondLink",
+          "source": "second.health.check",
+          "target": "secondServer.health.check",
+          "payload": [],
+          "correlation": "r5",
+          "response": false
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 15,
+          "kind": "admission",
+          "subject": "m6",
+          "queue": "secondLink/forward/check"
+        },
+        {
+          "timeNs": 1000000,
+          "ordinal": 16,
+          "kind": "release",
+          "subject": "a7",
+          "function": "first.poll"
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 17,
+          "kind": "ready",
+          "subject": "m4",
+          "queue": "firstLink/forward/check"
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 18,
+          "kind": "release",
+          "subject": "a8",
+          "function": "firstServer.checkHealth"
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 19,
+          "kind": "delivery",
+          "subject": "m4",
+          "attempt": 1,
+          "route": "firstLink",
+          "source": "first.health.check",
+          "target": "firstServer.health.check",
+          "correlation": "r3"
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 20,
+          "kind": "dispatch",
+          "subject": "a8",
+          "function": "firstServer.checkHealth",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 21,
+          "kind": "ready",
+          "subject": "m6",
+          "queue": "secondLink/forward/check"
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 22,
+          "kind": "release",
+          "subject": "a9",
+          "function": "secondServer.checkHealth"
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 23,
+          "kind": "delivery",
+          "subject": "m6",
+          "attempt": 1,
+          "route": "secondLink",
+          "source": "second.health.check",
+          "target": "secondServer.health.check",
+          "correlation": "r5"
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 24,
+          "kind": "dispatch",
+          "subject": "a9",
+          "function": "secondServer.checkHealth",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 25,
+          "kind": "complete",
+          "subject": "a8",
+          "function": "firstServer.checkHealth",
+          "result": true
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 26,
+          "kind": "emission",
+          "subject": "m10",
+          "offer": 3,
+          "activation": "a8",
+          "route": "firstLink",
+          "source": "firstServer.health.check",
+          "target": "first.health.check",
+          "payload": [],
+          "correlation": "r3",
+          "response": true
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 27,
+          "kind": "admission",
+          "subject": "m10",
+          "queue": "firstLink/reverse/check"
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 28,
+          "kind": "complete",
+          "subject": "a9",
+          "function": "secondServer.checkHealth",
+          "result": true
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 29,
+          "kind": "emission",
+          "subject": "m11",
+          "offer": 4,
+          "activation": "a9",
+          "route": "secondLink",
+          "source": "secondServer.health.check",
+          "target": "second.health.check",
+          "payload": [],
+          "correlation": "r5",
+          "response": true
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 30,
+          "kind": "admission",
+          "subject": "m11",
+          "queue": "secondLink/reverse/check"
+        },
+        {
+          "timeNs": 20000000,
+          "ordinal": 31,
+          "kind": "timeout",
+          "subject": "r3"
+        },
+        {
+          "timeNs": 20000000,
+          "ordinal": 32,
+          "kind": "requestComplete",
+          "subject": "r3",
+          "state": "Failed",
+          "failure": "Timeout"
+        },
+        {
+          "timeNs": 20000000,
+          "ordinal": 33,
+          "kind": "timeout",
+          "subject": "r5"
+        },
+        {
+          "timeNs": 20000000,
+          "ordinal": 34,
+          "kind": "requestComplete",
+          "subject": "r5",
+          "state": "Failed",
+          "failure": "Timeout"
+        },
+        {
+          "timeNs": 20000000,
+          "ordinal": 35,
+          "kind": "failure",
+          "subject": "a1",
+          "function": "first.poll",
+          "code": "Fail",
+          "message": "request failed"
+        },
+        {
+          "timeNs": 20000000,
+          "ordinal": 36,
+          "kind": "dispatch",
+          "subject": "a7",
+          "function": "first.poll",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 20000000,
+          "ordinal": 37,
+          "kind": "failure",
+          "subject": "a2",
+          "function": "second.poll",
+          "code": "Fail",
+          "message": "request failed"
+        },
+        {
+          "timeNs": 20000000,
+          "ordinal": 38,
+          "kind": "request",
+          "subject": "r12",
+          "activation": "a7",
+          "endpoint": "health.check",
+          "expiryNs": 40000000
+        },
+        {
+          "timeNs": 20000000,
+          "ordinal": 39,
+          "kind": "emission",
+          "subject": "m13",
+          "offer": 5,
+          "activation": "a7",
+          "route": "firstLink",
+          "source": "first.health.check",
+          "target": "firstServer.health.check",
+          "payload": [],
+          "correlation": "r12",
+          "response": false
+        },
+        {
+          "timeNs": 20000000,
+          "ordinal": 40,
+          "kind": "admission",
+          "subject": "m13",
+          "queue": "firstLink/forward/check"
+        },
+        {
+          "timeNs": 31000000,
+          "ordinal": 41,
+          "kind": "violation",
+          "subject": "FunctionTiming::Demo",
+          "code": "Deadline",
+          "message": "Deadline missed: first.poll"
+        }
+      ],
+      "timing": {
+        "root": "FunctionTiming::Demo",
+        "profile": "swaml-reference/1.3",
+        "status": "violation",
+        "endNs": 31000000,
+        "activations": [
+          {
+            "id": "a1",
+            "functionPath": "first.poll",
+            "contract": {
+              "functionPath": "first.poll",
+              "definitionPath": "FunctionTiming::Client.poll",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 30000000
+            },
+            "released": {
+              "timeNs": 0,
+              "ordinal": 6
+            },
+            "outcome": "failure",
+            "deadlineAtNs": 30000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 6
+                },
+                "end": {
+                  "timeNs": 0,
+                  "ordinal": 7
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 7
+                },
+                "end": {
+                  "timeNs": 0,
+                  "ordinal": 10
+                },
+                "open": false
+              },
+              {
+                "state": "requestWait",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 10
+                },
+                "correlation": "r3",
+                "end": {
+                  "timeNs": 20000000,
+                  "ordinal": 32
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 20000000,
+                  "ordinal": 32
+                },
+                "end": {
+                  "timeNs": 20000000,
+                  "ordinal": 35
+                },
+                "open": false
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 6
+                }
+              },
+              {
+                "kind": "dispatch",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 7
+                }
+              },
+              {
+                "kind": "request",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 10
+                },
+                "correlation": "r3"
+              },
+              {
+                "kind": "timeout",
+                "point": {
+                  "timeNs": 20000000,
+                  "ordinal": 31
+                },
+                "correlation": "r3"
+              },
+              {
+                "kind": "requestComplete",
+                "point": {
+                  "timeNs": 20000000,
+                  "ordinal": 32
+                },
+                "correlation": "r3",
+                "detail": "Timeout"
+              },
+              {
+                "kind": "failure",
+                "point": {
+                  "timeNs": 20000000,
+                  "ordinal": 35
+                },
+                "detail": "Fail"
+              }
+            ],
+            "dispatched": {
+              "timeNs": 0,
+              "ordinal": 7
+            },
+            "terminal": {
+              "timeNs": 20000000,
+              "ordinal": 35
+            }
+          },
+          {
+            "id": "a2",
+            "functionPath": "second.poll",
+            "contract": {
+              "functionPath": "second.poll",
+              "definitionPath": "FunctionTiming::Client.poll",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 30000000
+            },
+            "released": {
+              "timeNs": 0,
+              "ordinal": 8
+            },
+            "outcome": "failure",
+            "deadlineAtNs": 30000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 8
+                },
+                "end": {
+                  "timeNs": 0,
+                  "ordinal": 9
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 9
+                },
+                "end": {
+                  "timeNs": 0,
+                  "ordinal": 13
+                },
+                "open": false
+              },
+              {
+                "state": "requestWait",
+                "start": {
+                  "timeNs": 0,
+                  "ordinal": 13
+                },
+                "correlation": "r5",
+                "end": {
+                  "timeNs": 20000000,
+                  "ordinal": 34
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 20000000,
+                  "ordinal": 34
+                },
+                "end": {
+                  "timeNs": 20000000,
+                  "ordinal": 37
+                },
+                "open": false
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 8
+                }
+              },
+              {
+                "kind": "dispatch",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 9
+                }
+              },
+              {
+                "kind": "request",
+                "point": {
+                  "timeNs": 0,
+                  "ordinal": 13
+                },
+                "correlation": "r5"
+              },
+              {
+                "kind": "timeout",
+                "point": {
+                  "timeNs": 20000000,
+                  "ordinal": 33
+                },
+                "correlation": "r5"
+              },
+              {
+                "kind": "requestComplete",
+                "point": {
+                  "timeNs": 20000000,
+                  "ordinal": 34
+                },
+                "correlation": "r5",
+                "detail": "Timeout"
+              },
+              {
+                "kind": "failure",
+                "point": {
+                  "timeNs": 20000000,
+                  "ordinal": 37
+                },
+                "detail": "Fail"
+              }
+            ],
+            "dispatched": {
+              "timeNs": 0,
+              "ordinal": 9
+            },
+            "terminal": {
+              "timeNs": 20000000,
+              "ordinal": 37
+            }
+          },
+          {
+            "id": "a7",
+            "functionPath": "first.poll",
+            "contract": {
+              "functionPath": "first.poll",
+              "definitionPath": "FunctionTiming::Client.poll",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 30000000
+            },
+            "released": {
+              "timeNs": 1000000,
+              "ordinal": 16
+            },
+            "outcome": "open",
+            "deadlineAtNs": 31000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 1000000,
+                  "ordinal": 16
+                },
+                "end": {
+                  "timeNs": 20000000,
+                  "ordinal": 36
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 20000000,
+                  "ordinal": 36
+                },
+                "end": {
+                  "timeNs": 20000000,
+                  "ordinal": 38
+                },
+                "open": false
+              },
+              {
+                "state": "requestWait",
+                "start": {
+                  "timeNs": 20000000,
+                  "ordinal": 38
+                },
+                "correlation": "r12",
+                "end": {
+                  "timeNs": 31000000
+                },
+                "open": true
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 1000000,
+                  "ordinal": 16
+                }
+              },
+              {
+                "kind": "dispatch",
+                "point": {
+                  "timeNs": 20000000,
+                  "ordinal": 36
+                }
+              },
+              {
+                "kind": "request",
+                "point": {
+                  "timeNs": 20000000,
+                  "ordinal": 38
+                },
+                "correlation": "r12"
+              }
+            ],
+            "dispatched": {
+              "timeNs": 20000000,
+              "ordinal": 36
+            }
+          },
+          {
+            "id": "a8",
+            "functionPath": "firstServer.checkHealth",
+            "contract": {
+              "functionPath": "firstServer.checkHealth",
+              "definitionPath": "FunctionTiming::Server.checkHealth",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 10000000
+            },
+            "released": {
+              "timeNs": 18000000,
+              "ordinal": 18
+            },
+            "outcome": "complete",
+            "deadlineAtNs": 28000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 18000000,
+                  "ordinal": 18
+                },
+                "end": {
+                  "timeNs": 18000000,
+                  "ordinal": 20
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 18000000,
+                  "ordinal": 20
+                },
+                "end": {
+                  "timeNs": 18000000,
+                  "ordinal": 25
+                },
+                "open": false
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 18000000,
+                  "ordinal": 18
+                }
+              },
+              {
+                "kind": "dispatch",
+                "point": {
+                  "timeNs": 18000000,
+                  "ordinal": 20
+                }
+              },
+              {
+                "kind": "complete",
+                "point": {
+                  "timeNs": 18000000,
+                  "ordinal": 25
+                }
+              }
+            ],
+            "dispatched": {
+              "timeNs": 18000000,
+              "ordinal": 20
+            },
+            "terminal": {
+              "timeNs": 18000000,
+              "ordinal": 25
+            }
+          },
+          {
+            "id": "a9",
+            "functionPath": "secondServer.checkHealth",
+            "contract": {
+              "functionPath": "secondServer.checkHealth",
+              "definitionPath": "FunctionTiming::Server.checkHealth",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 10000000
+            },
+            "released": {
+              "timeNs": 18000000,
+              "ordinal": 22
+            },
+            "outcome": "complete",
+            "deadlineAtNs": 28000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 18000000,
+                  "ordinal": 22
+                },
+                "end": {
+                  "timeNs": 18000000,
+                  "ordinal": 24
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 18000000,
+                  "ordinal": 24
+                },
+                "end": {
+                  "timeNs": 18000000,
+                  "ordinal": 28
+                },
+                "open": false
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 18000000,
+                  "ordinal": 22
+                }
+              },
+              {
+                "kind": "dispatch",
+                "point": {
+                  "timeNs": 18000000,
+                  "ordinal": 24
+                }
+              },
+              {
+                "kind": "complete",
+                "point": {
+                  "timeNs": 18000000,
+                  "ordinal": 28
+                }
+              }
+            ],
+            "dispatched": {
+              "timeNs": 18000000,
+              "ordinal": 24
+            },
+            "terminal": {
+              "timeNs": 18000000,
+              "ordinal": 28
+            }
+          }
+        ],
+        "stops": [
+          {
+            "point": {
+              "timeNs": 31000000,
+              "ordinal": 41
+            },
+            "kind": "violation",
+            "code": "Deadline",
+            "detail": "Deadline missed: first.poll"
+          }
+        ]
+      }
+    }
+  ]
+}

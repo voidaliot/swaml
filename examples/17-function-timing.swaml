@@ -1,0 +1,36 @@
+package FunctionTiming {
+    interface clientServer Health version "1.0.0" {
+        function check(): bool idempotent;
+    }
+    component def Client {
+        port health: Health client;
+        var healthy: bool = false;
+        function poll() on manual timing {
+            wcet 1 ms; deadline 30 ms; concurrency serial;
+        } {
+            call health.check() as answer within 20 ms otherwise { fail "request failed"; };
+            healthy = answer;
+        }
+    }
+    component def Server {
+        port health: Health server;
+        function checkHealth(): bool on call health.check timing {
+            wcet 1 ms; deadline 10 ms; concurrency serial;
+        } { return true; }
+    }
+    component Demo {
+        component first: Client;
+        component second: Client;
+        component firstServer: Server;
+        component secondServer: Server;
+        connect firstLink: first.health -> firstServer.health qos {
+            delivery atMostOnce; ordering fifo; capacity 4; overflow reject;
+        };
+        connect secondLink: second.health -> secondServer.health qos {
+            delivery atMostOnce; ordering fifo; capacity 4; overflow reject;
+        };
+    }
+    view functionTiming fv {
+        include Demo recursive where kind == "function";
+    }
+}

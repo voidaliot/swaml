@@ -57,7 +57,7 @@ From a clone of this repository, with Node.js 22+ and npm 10.2.3+ installed:
 ```sh
 npm ci
 npm run build
-node out/src/cli/main.js --language-version 1.2 hello.swaml
+node out/src/cli/main.js --language-version 1.3 hello.swaml
 ```
 
 The validator checks syntax, contracts, ownership, routing, closure and applicable timing rules. Supply related files together when packages import declarations from other files. A successful validation establishes static acceptance; use the [reference simulator](SIMULATION.md) for bounded execution evidence.

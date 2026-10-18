@@ -1,6 +1,6 @@
 # Canonical graphical notation catalog
 
-SWAML 1.2 · publication 1.2.1. This generated catalog defines the original monochrome notation for each authored concept and meaningful label group. All specimens derive from [the semantic inventory](../spec/notation.json); complete examples supply their validation context.
+SWAML 1.3 · publication 1.3.0. This generated catalog defines the original monochrome notation for each authored concept and meaningful label group. All specimens derive from [the semantic inventory](../spec/notation.json); complete examples supply their validation context.
 
 Each SVG, PNG and vector scene shares the same flat two-dimensional geometry, without perspective, extrusion, gradients or shadows. A graphical specimen is a projection of its textual model; it does not create additional ports, events, state owners or execution semantics. Labels such as QoS values and expression operators appear within their owning element rather than introducing independent nodes.
 
@@ -26,6 +26,7 @@ The following fragments are contextual notation samples, not standalone SWAML fi
 - [Concurrency mode](#notation-concurrency-mode) — Timing and deployment.
 - [Conditional branch](#notation-conditional) — Function flow.
 - [Correlated case reply](#notation-case-reply) — Cases and evidence.
+- [Counted for loop](#notation-for-loop) — Function flow.
 - [Data member](#notation-data-member) — Interfaces and connections.
 - [Data receiver port](#notation-port-receiver) — Interfaces and connections.
 - [Data send](#notation-send) — Function flow.
@@ -46,10 +47,12 @@ The following fragments are contextual notation samples, not standalone SWAML fi
 - [Filtered view selection](#notation-view-selection) — Cases and evidence.
 - [Final state](#notation-final-state) — Function states.
 - [Fixed array type and value](#notation-array-value) — Structure and values.
+- [Fixed-array forEach loop](#notation-for-each-loop) — Function flow.
 - [Flow View](#notation-view-fv) — View projections.
 - [Formal documentation](#notation-formal-documentation) — Cases and evidence.
 - [Function return](#notation-return) — Function flow.
 - [Function timing contract](#notation-timing-contract) — Timing and deployment.
+- [Function timing diagram](#notation-function-timing-diagram) — Timing and deployment.
 - [Function with states](#notation-stateful-function) — Function states.
 - [General View](#notation-view-gv) — View projections.
 - [Grid View](#notation-view-grv) — View projections.
@@ -58,6 +61,7 @@ The following fragments are contextual notation samples, not standalone SWAML fi
 - [Interconnect View](#notation-view-iv) — View projections.
 - [Interface connector](#notation-connector) — Interfaces and connections.
 - [Interface function signature](#notation-function-signature) — Interfaces and connections.
+- [Interruptible flow region](#notation-interruptible-region) — Function flow.
 - [Local declaration](#notation-local-declaration) — Function flow.
 - [Local function call](#notation-local-call) — Function flow.
 - [Manual activation](#notation-trigger-manual) — Function flow.
@@ -74,6 +78,7 @@ The following fragments are contextual notation samples, not standalone SWAML fi
 - [Parameter or record field](#notation-parameter) — Structure and values.
 - [Periodic activation](#notation-trigger-periodic) — Function flow.
 - [Port receive activation](#notation-trigger-receive) — Function flow.
+- [Post-test do-while loop](#notation-do-while-loop) — Function flow.
 - [Primitive types](#notation-primitive-types) — Structure and values.
 - [Private component variable](#notation-private-variable) — Structure and values.
 - [Publish–subscribe interface](#notation-publish-subscribe-interface) — Interfaces and connections.
@@ -476,6 +481,25 @@ Conditional branch. Draw a decision diamond with the bool condition and distinct
 
 [SVG](notation/conditional.svg) · [PNG](notation/conditional.png) · [Vector scene](notation/conditional.scene.json)
 
+## Notation: for-loop
+
+**Counted for loop**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Counted for loop (node) | ![Counted for loop](notation/for-loop.svg) | `for (var i: int = 0; i < 3; i = i + 1) bound 3` |
+
+Counted for loop. A single initializer precedes a Boolean pretest; each completed body is followed by its assignment update and another test.
+
+**Context:** Header of the loop in ControlFlowNotation::Counter.countedLoop. The initializer, test, body and update are ordered inside one owned loop. **Views:** fv.
+
+- Draw an owned loop frame with an initializer before the condition, a true edge to the body, an update after the body and an explicit edge back to the test. Label the false normal exit and the positive bound.
+- Show a LoopBound failure on an excess requested body. The initializer runs once even if the body runs zero times; the header variable remains inside the loop scope.
+
+[Complete model](../examples/notation/control-flow.swaml) · `ControlFlowNotation::Counter.countedLoop`.
+
+[SVG](notation/for-loop.svg) · [PNG](notation/for-loop.png) · [Vector scene](notation/for-loop.scene.json)
+
 ## Notation: send
 
 **Data send**
@@ -552,6 +576,25 @@ Failure. Draw an owned statement box with the exact statement label and directed
 
 [SVG](notation/fail.svg) · [PNG](notation/fail.png) · [Vector scene](notation/fail.scene.json)
 
+## Notation: for-each-loop
+
+**Fixed-array forEach loop**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Fixed-array forEach loop (node) | ![Fixed-array forEach loop](notation/for-each-loop.svg) | `forEach (item: int in values)` |
+
+Fixed-array forEach loop. Evaluate and copy the array once, then execute the body for each fresh typed item in array order.
+
+**Context:** Array loop in ControlFlowNotation::Counter.arrayLoop; values is a fixed int[3] array. **Views:** fv.
+
+- Draw an array-snapshot step before the loop, an ordered next-item test, a fresh typed item binding and a body edge returning for the next item. Label completion when no item remains.
+- Label the copied collection and finite cardinality. The graphic must not imply a live subscription, an extra explicit bound, a shared item alias or dynamic collection growth.
+
+[Complete model](../examples/notation/control-flow.swaml) · `ControlFlowNotation::Counter.arrayLoop`.
+
+[SVG](notation/for-each-loop.svg) · [PNG](notation/for-each-loop.png) · [Vector scene](notation/for-each-loop.scene.json)
+
 ## Notation: return
 
 **Function return**
@@ -570,6 +613,26 @@ Function return. Show a labeled return terminal in the owning function flow; ret
 [Complete model](../examples/07-client-server.swaml) · `Rpc::Server.checkHealth`.
 
 [SVG](notation/return.svg) · [PNG](notation/return.png) · [Vector scene](notation/return.scene.json)
+
+## Notation: interruptible-region
+
+**Interruptible flow region**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Interruptible flow region (node) | ![Interruptible flow region](notation/interruptible-region.svg) | `interruptible work` |
+
+Interruptible flow region. A named protected region has a normal exit and one routed typed input that cooperatively transfers control to its handler.
+
+**Context:** Named work region in Interrupts::Worker.run, with a routed Control.stop(reason: string) input and a handler in the same activation. **Views:** fv.
+
+- Draw a named frame around protected statements, a normal exit through the frame boundary and a separate explicitly labeled on receive port.member interruption edge to its handler. Merge continuation after the region unless the handler itself returns or fails.
+- Show the incoming typed member and its payload/parameters. An interruption cooperatively abandons protected work and a suspended local RPC correlation, then executes the handler under the existing activation deadline.
+- The region belongs only to a triggered serial flow function. It is neither a second handler activation nor hardware preemption, pause/resume, rollback or cancellation of remote effects.
+
+[Complete model](../examples/19-interruptible-function.swaml) · `Interrupts::Worker.run.work`.
+
+[SVG](notation/interruptible-region.svg) · [PNG](notation/interruptible-region.png) · [Vector scene](notation/interruptible-region.scene.json)
 
 ## Notation: local-declaration
 
@@ -665,6 +728,25 @@ Port receive activation. Attach the activation text to its function header; use 
 [Complete model](../examples/01-hello.swaml) · `Hello::Listener.hear`.
 
 [SVG](notation/trigger-receive.svg) · [PNG](notation/trigger-receive.png) · [Vector scene](notation/trigger-receive.scene.json)
+
+## Notation: do-while-loop
+
+**Post-test do-while loop**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Post-test do-while loop (node) | ![Post-test do-while loop](notation/do-while-loop.svg) | `do { postTested = postTested + 1; } while (postTested < 2) bound 2;` |
+
+Post-test do-while loop. Execute the body at least once, then test the condition before requesting another bounded iteration.
+
+**Context:** Complete post-test statement in ControlFlowNotation::Counter.postTestLoop. **Views:** fv.
+
+- Draw the body before the Boolean test. A true edge returns to the body and the false edge leaves normally. Show the positive bound and its excess-body failure explicitly.
+- The first body is mandatory. Condition lookup uses the enclosing scope after the body; body-local declarations are not visible to the test.
+
+[Complete model](../examples/notation/control-flow.swaml) · `ControlFlowNotation::Counter.postTestLoop`.
+
+[SVG](notation/do-while-loop.svg) · [PNG](notation/do-while-loop.png) · [Vector scene](notation/do-while-loop.scene.json)
 
 ## Notation: calculation
 
@@ -1891,7 +1973,7 @@ An external reference identifies the deployment system without introducing a har
 
 Function timing contract. Attach a timing compartment to the function, listing wcet, deadline and concurrency explicitly.
 
-**Context:** Contract on Control::Sensor.sample. **Views:** gv, grv.
+**Context:** Contract on Control::Sensor.sample. **Views:** gv, grv, fv.
 
 - Attach a timing compartment to the function, listing wcet, deadline and concurrency explicitly.
 - WCET counts active execution, deadline counts elapsed release-to-completion; the graphic alone supplies no schedulability proof.
@@ -1899,6 +1981,26 @@ Function timing contract. Attach a timing compartment to the function, listing w
 [Complete model](../examples/02-realtime-controller.swaml) · `Control::Sensor.sample`.
 
 [SVG](notation/timing-contract.svg) · [PNG](notation/timing-contract.png) · [Vector scene](notation/timing-contract.scene.json)
+
+## Notation: function-timing-diagram
+
+**Function timing diagram**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Function timing diagram (projection) | ![Function timing diagram](notation/function-timing-diagram.svg) | `function poll() on manual timing { wcet 1 ms; deadline 30 ms; concurrency serial; }` |
+
+Function timing diagram. An fv projection compares observed activation releases, waits and terminal markers with separately labeled declared timing contracts.
+
+**Context:** FunctionTiming::Client.poll declares the contract; the success trace of example 17 supplies distinct first.poll activations a1 and a7. **Views:** fv.
+
+- Project existing function occurrences and activation IDs against a labeled time axis. Label ready, running or zero-time markers, request waits, completion/failure and the observation boundary without relying on color. Preserve trace ordinal when timestamps coincide.
+- Keep declared WCET/deadline/concurrency in a separate contract compartment. A deadline is measured from each release; a declared bound outside the displayed time range is identified explicitly.
+- Observed logical waits and reference-simulator zero CPU cost are evidence of that run only. The diagram does not turn WCET limits into measured durations or establish physical schedulability. This projection uses fv and introduces no new source keyword or view kind.
+
+[Complete model](../examples/17-function-timing.swaml) · `FunctionTiming::Client.poll`.
+
+[SVG](notation/function-timing-diagram.svg) · [PNG](notation/function-timing-diagram.png) · [Vector scene](notation/function-timing-diagram.scene.json)
 
 ## Notation: execution-profile
 
@@ -2072,7 +2174,7 @@ The inventory explicitly assigns every current grammar production and keyword to
 | `attribute` | label | [Requirement attribute](#notation-requirement-attribute). Requirement attribute. |
 | `bestEffort` | label | [Delivery policy](#notation-delivery-policy). Delivery policy. |
 | `bool` | label | [Primitive types](#notation-primitive-types). Primitive types. |
-| `bound` | glyph | [Bounded loop](#notation-bounded-loop). Bounded loop. |
+| `bound` | glyph | [Bounded loop](#notation-bounded-loop), [Counted for loop](#notation-for-loop), [Post-test do-while loop](#notation-do-while-loop). Bounded loop; Counted for loop; Post-test do-while loop. |
 | `byte` | label | [Primitive types](#notation-primitive-types). Primitive types. |
 | `calc` | label | [Pure calculation](#notation-calculation). Pure calculation. |
 | `call` | glyph | [RPC handler activation](#notation-trigger-call), [Local function call](#notation-local-call), [Routed function call](#notation-routed-call), [Case request](#notation-case-request). RPC handler activation; Local function call; Routed function call; Case request. |
@@ -2086,11 +2188,12 @@ The inventory explicitly assigns every current grammar production and keyword to
 | `cv` | glyph | [Case View](#notation-view-cv). Case View. |
 | `data` | label | [Data member](#notation-data-member). Data member. |
 | `datatype` | glyph | [Record datatype](#notation-datatype). Record datatype. |
-| `deadline` | label | [Function timing contract](#notation-timing-contract). Function timing contract. |
+| `deadline` | glyph | [Function timing contract](#notation-timing-contract), [Function timing diagram](#notation-function-timing-diagram). Function timing contract; Function timing diagram. |
 | `def` | glyph | [Component definition](#notation-component-definition), [Reusable QoS policy](#notation-qos-policy-definition). Component definition; Reusable QoS policy. |
 | `delegate` | glyph | [Boundary delegation](#notation-delegation). Boundary delegation. |
 | `delivery` | label | [Delivery policy](#notation-delivery-policy). Delivery policy. |
 | `deploy` | glyph | [Deployment binding](#notation-deployment). Deployment binding. |
+| `do` | glyph | [Post-test do-while loop](#notation-do-while-loop). Post-test do-while loop. |
 | `doc` | label | [Formal documentation](#notation-formal-documentation). Formal documentation. |
 | `dropNewest` | label | [Overflow behavior](#notation-overflow-policy). Overflow behavior. |
 | `dropOldest` | label | [Overflow behavior](#notation-overflow-policy). Overflow behavior. |
@@ -2104,18 +2207,21 @@ The inventory explicitly assigns every current grammar production and keyword to
 | `false` | label | [Expressions and value paths](#notation-expression). Expressions and value paths. |
 | `fifo` | label | [Queue ordering](#notation-ordering-policy). Queue ordering. |
 | `final` | glyph | [Final state](#notation-final-state). Final state. |
+| `for` | glyph | [Counted for loop](#notation-for-loop). Counted for loop. |
+| `forEach` | glyph | [Fixed-array forEach loop](#notation-for-each-loop). Fixed-array forEach loop. |
 | `function` | glyph | [Interface function signature](#notation-function-signature), [Executable function](#notation-function), [Function with states](#notation-stateful-function). Interface function signature; Executable function; Function with states. |
-| `fv` | glyph | [Flow View](#notation-view-fv). Flow View. |
+| `fv` | glyph | [Flow View](#notation-view-fv), [Function timing diagram](#notation-function-timing-diagram). Flow View; Function timing diagram. |
 | `grv` | glyph | [Grid View](#notation-view-grv). Grid View. |
 | `gv` | glyph | [General View](#notation-view-gv). General View. |
 | `idempotent` | label | [Interface function signature](#notation-function-signature). Interface function signature. |
 | `if` | glyph | [Conditional branch](#notation-conditional). Conditional branch. |
 | `import` | glyph | [Package import](#notation-import). Package import. |
-| `in` | label | [Pure calculation](#notation-calculation). Pure calculation. |
+| `in` | glyph | [Pure calculation](#notation-calculation), [Fixed-array forEach loop](#notation-for-each-loop). Pure calculation; Fixed-array forEach loop. |
 | `include` | glyph | [Filtered view selection](#notation-view-selection). Filtered view selection. |
 | `initial` | glyph | [Function with states](#notation-stateful-function), [Initial state reference](#notation-initial-state). Function with states; Initial state reference. |
 | `int` | label | [Primitive types](#notation-primitive-types). Primitive types. |
 | `interface` | glyph | [Sender–receiver interface](#notation-sender-receiver-interface), [Client–server interface](#notation-client-server-interface), [Publish–subscribe interface](#notation-publish-subscribe-interface), [Service interface](#notation-service-interface). Sender–receiver interface; Client–server interface; Publish–subscribe interface; Service interface. |
+| `interruptible` | glyph | [Interruptible flow region](#notation-interruptible-region). Interruptible flow region. |
 | `iv` | glyph | [Interconnect View](#notation-view-iv). Interconnect View. |
 | `label` | glyph | [Case data exchange](#notation-case-data-exchange), [Case event exchange](#notation-case-event-exchange), [Case request](#notation-case-request), [Correlated case reply](#notation-case-reply), [Case causal order](#notation-case-causal-order). Case data exchange; Case event exchange; Case request; Correlated case reply; Case causal order. |
 | `manual` | label | [Manual activation](#notation-trigger-manual). Manual activation. |
@@ -2125,8 +2231,8 @@ The inventory explicitly assigns every current grammar production and keyword to
 | `ms` | label | [Duration value](#notation-duration). Duration value. |
 | `not` | label | [Expressions and value paths](#notation-expression). Expressions and value paths. |
 | `ns` | label | [Duration value](#notation-duration). Duration value. |
-| `of` | glyph | [General View](#notation-view-gv), [Interconnect View](#notation-view-iv), [Case View](#notation-view-cv), [Sequence View](#notation-view-sv), [Grid View](#notation-view-grv), [Flow View](#notation-view-fv), [Satisfaction relation](#notation-satisfies-link), [Use case](#notation-case), [Verification case](#notation-verification-case). Case root context, satisfaction design source or compact view subject; references preserve semantic ownership and link direction. |
-| `on` | glyph | [Startup activation](#notation-trigger-start), [Manual activation](#notation-trigger-manual), [Periodic activation](#notation-trigger-periodic), [Port receive activation](#notation-trigger-receive), [RPC handler activation](#notation-trigger-call), [State transition](#notation-transition), [Deployment binding](#notation-deployment). Startup activation; Manual activation; Periodic activation; Port receive activation; RPC handler activation; State transition; Deployment binding. |
+| `of` | glyph | [Use case](#notation-case), [Satisfaction relation](#notation-satisfies-link), [General View](#notation-view-gv), [Interconnect View](#notation-view-iv), [Case View](#notation-view-cv), [Sequence View](#notation-view-sv), [Grid View](#notation-view-grv), [Flow View](#notation-view-fv), [Verification case](#notation-verification-case). Use case; Satisfaction relation; General View; Interconnect View; Case View; Sequence View; Grid View; Flow View; Verification case. |
+| `on` | glyph | [Startup activation](#notation-trigger-start), [Manual activation](#notation-trigger-manual), [Periodic activation](#notation-trigger-periodic), [Port receive activation](#notation-trigger-receive), [RPC handler activation](#notation-trigger-call), [State transition](#notation-transition), [Deployment binding](#notation-deployment), [Interruptible flow region](#notation-interruptible-region). Startup activation; Manual activation; Periodic activation; Port receive activation; RPC handler activation; State transition; Deployment binding; Interruptible flow region. |
 | `optional` | label | [Optional port](#notation-optional-port). Optional port. |
 | `or` | label | [Expressions and value paths](#notation-expression). Expressions and value paths. |
 | `ordering` | label | [Queue ordering](#notation-ordering-policy). Queue ordering. |
@@ -2143,7 +2249,7 @@ The inventory explicitly assigns every current grammar production and keyword to
 | `queued` | label | [Data member](#notation-data-member). Data member. |
 | `real` | label | [Primitive types](#notation-primitive-types). Primitive types. |
 | `realtime` | label | [Root execution profile](#notation-execution-profile). Root execution profile. |
-| `receive` | glyph | [Port receive activation](#notation-trigger-receive), [State transition](#notation-transition). Port receive activation; State transition. |
+| `receive` | glyph | [Port receive activation](#notation-trigger-receive), [State transition](#notation-transition), [Interruptible flow region](#notation-interruptible-region). Port receive activation; State transition; Interruptible flow region. |
 | `receiver` | glyph | [Data receiver port](#notation-port-receiver). Data receiver port. |
 | `record` | label | [Record construction](#notation-record-value). Record construction. |
 | `recursive` | glyph | [Filtered view selection](#notation-view-selection). Filtered view selection. |
@@ -2169,7 +2275,7 @@ The inventory explicitly assigns every current grammar production and keyword to
 | `string` | label | [Primitive types](#notation-primitive-types). Primitive types. |
 | `subscriber` | glyph | [Event subscriber port](#notation-port-subscriber). Event subscriber port. |
 | `sv` | glyph | [Sequence View](#notation-view-sv). Sequence View. |
-| `timing` | label | [Function timing contract](#notation-timing-contract). Function timing contract. |
+| `timing` | glyph | [Function timing contract](#notation-timing-contract), [Function timing diagram](#notation-function-timing-diagram). Function timing contract; Function timing diagram. |
 | `transition` | glyph | [State transition](#notation-transition). State transition. |
 | `true` | label | [Expressions and value paths](#notation-expression). Expressions and value paths. |
 | `uint` | label | [Primitive types](#notation-primitive-types). Primitive types. |
@@ -2183,10 +2289,10 @@ The inventory explicitly assigns every current grammar production and keyword to
 | `via` | glyph | [Case data exchange](#notation-case-data-exchange), [Case event exchange](#notation-case-event-exchange), [Case request](#notation-case-request), [Correlated case reply](#notation-case-reply). Case data exchange; Case event exchange; Case request; Correlated case reply. |
 | `view` | glyph | [General View](#notation-view-gv), [Interconnect View](#notation-view-iv), [Case View](#notation-view-cv), [Sequence View](#notation-view-sv), [Grid View](#notation-view-grv), [Flow View](#notation-view-fv). General View; Interconnect View; Case View; Sequence View; Grid View; Flow View. |
 | `void` | label | [Primitive types](#notation-primitive-types). Primitive types. |
-| `wcet` | label | [Function timing contract](#notation-timing-contract). Function timing contract. |
+| `wcet` | glyph | [Function timing contract](#notation-timing-contract), [Function timing diagram](#notation-function-timing-diagram). Function timing contract; Function timing diagram. |
 | `when` | label | [Transition guard](#notation-transition-guard). Transition guard. |
 | `where` | glyph | [Filtered view selection](#notation-view-selection). Filtered view selection. |
-| `while` | glyph | [Bounded loop](#notation-bounded-loop). Bounded loop. |
+| `while` | glyph | [Bounded loop](#notation-bounded-loop), [Post-test do-while loop](#notation-do-while-loop). Bounded loop; Post-test do-while loop. |
 | `within` | glyph | [Routed function call](#notation-routed-call). Routed function call. |
 
 ## Grammar production coverage
@@ -2212,6 +2318,7 @@ The inventory explicitly assigns every current grammar production and keyword to
 | `Deployment` | glyph | [External deployment target](#notation-deployment-target), [Deployment binding](#notation-deployment). External deployment target; Deployment binding. |
 | `DOC_COMMENT` | label | [Formal documentation](#notation-formal-documentation). Formal documentation. |
 | `Documentation` | label | [Formal documentation](#notation-formal-documentation). Formal documentation. |
+| `DoWhile` | glyph | [Post-test do-while loop](#notation-do-while-loop). Post-test do-while loop. |
 | `Duration` | glyph | [Transport latency bound](#notation-latency-bound), [Message freshness bound](#notation-freshness-bound), [Residence timer transition](#notation-timer-transition), [Duration value](#notation-duration). Transport latency bound; Message freshness bound; Residence timer transition; Duration value. |
 | `Element` | text-only | Grammar union selecting a top-level element; each concrete alternative has its own notation. |
 | `EnumType` | glyph | [Enumeration](#notation-enumeration). Enumeration. |
@@ -2220,6 +2327,9 @@ The inventory explicitly assigns every current grammar production and keyword to
 | `Expression` | label | [Expressions and value paths](#notation-expression). Expressions and value paths. |
 | `Fail` | glyph | [Failure](#notation-fail). Failure. |
 | `FieldValue` | label | [Record construction](#notation-record-value). Record construction. |
+| `For` | glyph | [Counted for loop](#notation-for-loop). Counted for loop. |
+| `ForEach` | glyph | [Fixed-array forEach loop](#notation-for-each-loop). Fixed-array forEach loop. |
+| `ForUpdate` | glyph | [Counted for loop](#notation-for-loop). Counted for loop. |
 | `FunctionDef` | glyph | [Executable function](#notation-function), [Function with states](#notation-stateful-function). Executable function; Function with states. |
 | `FunctionFlow` | glyph | [Executable function](#notation-function). Executable function. |
 | `ID` | text-only | Identifier token supplies names on shapes and labels; no independent glyph. |
@@ -2229,6 +2339,7 @@ The inventory explicitly assigns every current grammar production and keyword to
 | `INT` | text-only | Integer literal token is rendered as exact expression/property text; no independent glyph. |
 | `Interface` | glyph | [Sender–receiver interface](#notation-sender-receiver-interface), [Client–server interface](#notation-client-server-interface), [Publish–subscribe interface](#notation-publish-subscribe-interface), [Service interface](#notation-service-interface). Sender–receiver interface; Client–server interface; Publish–subscribe interface; Service interface. |
 | `InterfaceMember` | label | [Data member](#notation-data-member), [Event member](#notation-event-member), [Interface function signature](#notation-function-signature). Data member; Event member; Interface function signature. |
+| `Interruptible` | glyph | [Interruptible flow region](#notation-interruptible-region). Interruptible flow region. |
 | `Literal` | label | [Expressions and value paths](#notation-expression). Expressions and value paths. |
 | `LocalCall` | glyph | [Local function call](#notation-local-call). Local function call. |
 | `LocalVariable` | glyph | [Local declaration](#notation-local-declaration). Local declaration. |
@@ -2266,7 +2377,7 @@ The inventory explicitly assigns every current grammar production and keyword to
 | `StateBody` | glyph | [Function with states](#notation-stateful-function), [Initial state reference](#notation-initial-state). Function with states; Initial state reference. |
 | `Statement` | glyph | [Executable function](#notation-function). Executable function. |
 | `STRING` | text-only | string literal token supplies values/requirement text; preserve escaping in source notation. |
-| `Timing` | label | [Function timing contract](#notation-timing-contract), [Concurrency mode](#notation-concurrency-mode). Function timing contract; Concurrency mode. |
+| `Timing` | glyph | [Function timing contract](#notation-timing-contract), [Concurrency mode](#notation-concurrency-mode), [Function timing diagram](#notation-function-timing-diagram). Function timing contract; Concurrency mode; Function timing diagram. |
 | `Transition` | glyph | [State transition](#notation-transition), [Transition guard](#notation-transition-guard), [Transition priority](#notation-transition-priority), [Completion transition](#notation-completion-transition), [Residence timer transition](#notation-timer-transition). State transition; Transition guard; Transition priority; Completion transition; Residence timer transition. |
 | `Trigger` | label | [Startup activation](#notation-trigger-start), [Manual activation](#notation-trigger-manual), [Periodic activation](#notation-trigger-periodic), [Port receive activation](#notation-trigger-receive), [RPC handler activation](#notation-trigger-call). Startup activation; Manual activation; Periodic activation; Port receive activation; RPC handler activation. |
 | `TypeRef` | label | [Primitive types](#notation-primitive-types), [Fixed array type and value](#notation-array-value). Primitive types; Fixed array type and value. |
@@ -2275,7 +2386,7 @@ The inventory explicitly assigns every current grammar production and keyword to
 | `ValueType` | glyph | [Record datatype](#notation-datatype), [Enumeration](#notation-enumeration). Record datatype; Enumeration. |
 | `Variable` | label | [Private component variable](#notation-private-variable). Private component variable. |
 | `Verification` | glyph | [Verification relation](#notation-verification-link). Verification relation. |
-| `View` | glyph | [General View](#notation-view-gv), [Interconnect View](#notation-view-iv), [Case View](#notation-view-cv), [Sequence View](#notation-view-sv), [Grid View](#notation-view-grv), [Flow View](#notation-view-fv). General View; Interconnect View; Case View; Sequence View; Grid View; Flow View. |
+| `View` | glyph | [General View](#notation-view-gv), [Interconnect View](#notation-view-iv), [Case View](#notation-view-cv), [Sequence View](#notation-view-sv), [Grid View](#notation-view-grv), [Flow View](#notation-view-fv), [Function timing diagram](#notation-function-timing-diagram). General View; Interconnect View; Case View; Sequence View; Grid View; Flow View; Function timing diagram. |
 | `ViewSelection` | glyph | [Filtered view selection](#notation-view-selection). Filtered view selection. |
 | `While` | glyph | [Bounded loop](#notation-bounded-loop). Bounded loop. |
 | `WS` | text-only | Whitespace affects textual layout only; no semantic graphical representation. |

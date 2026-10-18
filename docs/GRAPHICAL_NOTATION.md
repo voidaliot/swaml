@@ -1,6 +1,6 @@
 # SWAML graphical notation
 
-**Language:** 1.2 · **Notation edition:** 1.2.1 · **Status:** normative
+**Language:** 1.3 · **Notation edition:** 1.3.0 · **Status:** normative
 
 This chapter defines how every SWAML language concern is represented and inspected graphically. The [canonical notation catalog](GRAPHICAL_CATALOG.md) pairs each element or property with original graphical and textual notation, contextual constraints, and downloadable SVG/PNG examples. The [worked view examples](GRAPHICAL_EXAMPLES.md) show those ideas in complete architectures. The [notation inventory](../spec/notation.json) records coverage of the concrete grammar and reserved vocabulary.
 
@@ -125,6 +125,10 @@ fv statement nodes are owned by the displayed function/block. Text-only statemen
 | expression / calculation call | exact expression or inspectable ordered expression subtree |
 | if / else | Boolean decision with true/false branches and a merge of control |
 | bounded while | condition decision, body/back edge and explicit positive bound |
+| counted for | initializer, decision, body, update and back edge; explicit bound and loop scope |
+| forEach | copied-array snapshot, next-element decision and fresh typed element binding; finite array-length bound |
+| do … while | body precedes the first decision; back edge and explicit positive bound |
+| interruptible region | named protected frame, normal exit and labeled typed interrupt edge to its handler |
 | assert | condition and failure outcome, distinct from a prose requirement |
 | local call | function reference, optional typed result binding and continuation |
 | send / publish | verb, local port.member and payload expressions |
@@ -132,7 +136,7 @@ fv statement nodes are owned by the displayed function/block. Text-only statemen
 | return | completion node with bare or typed-result text |
 | fail | failure terminal with its reason; no implicit event |
 
-The first flow marker is a filled circle identifying local activation entry. Ordered flow edges are solid with filled triangular arrowheads; a Boolean decision is a diamond. Return/failure nodes retain explicit terminal labels so neither is mistaken for an interface message. Flow edges sequence local execution and cannot cross an owning component boundary. Decisions MUST show which branch is true/false; an absent else still has a false continuation. Loop depictions MUST show the bound and the bound-violation outcome, even if detailed failure edges are collapsed with an inspectable marker. A back edge is not permission for unbounded execution. Fork/join, parallel regions and arbitrary activity allocations have no notation because they have no SWAML 1.2 syntax.
+The first flow marker is a filled circle identifying local activation entry. Ordered flow edges are solid with filled triangular arrowheads; a Boolean decision is a diamond. Return/failure nodes retain explicit terminal labels so neither is mistaken for an interface message. Flow edges sequence local execution and cannot cross an owning component boundary. Decisions MUST show which branch is true/false; an absent else still has a false continuation. Loop depictions MUST show the bound and the bound-violation outcome, even if detailed failure edges are collapsed with an inspectable marker. A back edge is not permission for unbounded execution. Fork/join, parallel regions and arbitrary activity allocations have no notation because they have no SWAML 1.3 syntax.
 
 A request has a success continuation and a terminating otherwise branch. The latter exposes Timeout, Unavailable, Rejected, Transport and RemoteFailure as possible interface outcomes and its local failure binding. The diagram MUST NOT suggest that timeout cancels committed server effects, that the result exists on failure, or that a void completion name is data. A remote request node is still a local function step; the architectural route is inspected through its port reference and iv.
 
@@ -184,7 +188,13 @@ Case diagrams never introduce free actor messages, topic names, hidden connector
 | grv — Grid View | package or named semantic declaration except another view | sortable identity-aware properties, contracts and allocation |
 | fv — Flow View | function | statement/control-flow or directly owned states |
 
-These are the complete view families. fv projects both statement flow and function-owned states. Browser is navigation, not a new declaration keyword. A package subject is its own name; nested view subjects retain occurrence context while resolving shared members through definitions.
+These are the complete view families. fv projects statement flow, function-owned states and trace-backed function timing. Interruptible regions are part of flow. Browser is navigation, not a new declaration keyword. A package subject is its own name; nested view subjects retain occurrence context while resolving shared members through definitions.
+
+### Interrupt and timing presentation in FV
+
+An interrupt edge leaves a named protected region and targets its handler. Label the edge with the owned input port/member; inspect its interface and existing route through iv. The handler and the normal exit converge on the following statement, unless either branch returns or fails. Enclosure denotes the protected scope, not a second component, performer or activation. The interrupt edge must not imply rollback, server cancellation, pause/resume or physical processor preemption. The plain region frame remains flat and uses explicit labels.
+
+Timing diagrams use a common logical-time axis and distinct lanes for function occurrence and activation identity. Show release, dispatch, ready/running/request-wait phases, completion/failure, interrupts and correlated late responses. Label phases and event kinds independently of color. Show declared WCET, deadline and concurrency separately; never draw WCET as an observed execution duration. Zero-duration execution stays a marker. Incomplete intervals remain visibly open at a horizon or stopped-run boundary. Identify the source model, root, profile and run; layout must not fabricate trace events, completion or scheduling proof.
 
 The Browser follows packages → definitions/root occurrences → child occurrences → ports, variables and functions → calculations, statements or states. Opening a usage keeps its occurrence context. Open declaration selects the shared definition; Up selects the owner; Diagram chooses an applicable view. Selection updates Properties. These are host requirements, not commands already implemented by this repository.
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.0 — 2026-10-18
+
+- Add bounded counted for and post-test do loops, plus finite copied-array forEach with explicit lexical scopes.
+- Add named interruptible regions in triggered serial flow functions, using existing typed input routes and same-activation cancellation/handlers.
+- Cancel pending caller continuations without rollback or server cancellation; preserve timeout ties and late-response correlation.
+- Add portable function timing projection and FV Timing/Interrupts showcase modes, separating declared contracts from observed logical phases.
+- Add complete models, simulation evidence, positive/negative regressions and flat canonical notation for the new constructs.
+- Remove personal attribution from maintained technical documents; state behavior and changes directly.
+
 ## 1.2.1 — 2026-10-18
 
 - Use `of` for case root contexts and satisfaction design sources, matching compact view subjects; reject the former `for` and `by` relation spellings.

@@ -1,6 +1,6 @@
 # Language reference by concern
 
-Use this alphabetical map to navigate SWAML 1.2 by architectural question. The [alphabetical keyword reference](KEYWORD_REFERENCE.md) provides the other reading order; the [complete Markdown edition](SWAML-1.2.1-Reference.md) contains both maps, all normative chapters, user guidance, grammar and model examples in one document. Rules are normative where their source chapter says so; a tutorial or illustration never overrides those rules.
+Use this alphabetical map to navigate SWAML 1.3 by architectural question. The [alphabetical keyword reference](KEYWORD_REFERENCE.md) provides the other reading order; the [complete Markdown edition](SWAML-1.3.0-Reference.md) contains both maps, all normative chapters, user guidance, grammar and model examples in one document. Rules are normative where their source chapter says so; a tutorial or illustration never overrides those rules.
 
 ## Architecture selection and platform correspondence
 
@@ -72,6 +72,6 @@ Use whole-value assignment. Record field and final array-index reads are local v
 
 ## Versioning and language evolution
 
-The source is headerless; its parser/host is explicitly pinned to SWAML 1.2. This specification/package revision is 1.2.1. Interface versions remain independent nominal contract labels. Version 1.2 replaces separate units and operations with component-owned functions, adds calculations and explicit specialization, and uses external deployment references. Follow the [migration guide](MIGRATION_1_2.md) and preserve historical release artifacts.
+The source is headerless; its parser/host is explicitly pinned to SWAML 1.3. This specification/package revision is 1.3.0. Interface versions remain independent nominal contract labels. Version 1.2 replaces separate units and operations with component-owned functions, adds calculations and explicit specialization, and uses external deployment references. Follow the [migration guide](MIGRATION_1_2.md) and preserve historical release artifacts.
 
 Multiple inheritance, generics, dynamic instance/subscription/discovery lifecycle, unbounded arrays, reference payloads, hierarchical/orthogonal states, unrestricted fork/join and host-language code are outside this closed version. A proposal adding them must define syntax, ownership, typing, operational meaning, graphical projection, mapping, migration and tests before it is accepted. These concerns must not appear as undocumented backend shortcuts.

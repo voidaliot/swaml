@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="555" viewBox="0 0 560 555" role="img" aria-labelledby="title desc">
+<title id="title">Counted for loop</title><desc id="desc">Counted for loop. A single initializer precedes a Boolean pretest; each completed body is followed by its assignment update and another test.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="555" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="40" y="22" width="480" height="458" rx="14" fill="#ffffff" stroke="#111111"/>
+<text x="59" y="54" font-size="20" font-weight="700" fill="#111111">for</text>
+<rect x="155" y="83" width="250" height="54" rx="12" fill="#ffffff" stroke="#111111"/>
+<text x="223.5" y="116.0" font-size="18" font-weight="400" fill="#111111">var i: int = 0</text>
+<polyline points="280,138 280,172" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="280,172 275.0,160.0 285.0,160.0" fill="#111111" stroke="#111111"/>
+<polygon points="280,174 355,219 280,264 205,219" fill="#ffffff" stroke="#111111"/>
+<text x="258.5" y="225" font-size="18" font-weight="400" fill="#111111">i &lt; 3</text>
+<polyline points="280,265 280,300" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="280,300 275.0,288.0 285.0,288.0" fill="#111111" stroke="#111111"/>
+<text x="295" y="289" font-size="18" font-weight="400" fill="#111111">true</text>
+<rect x="145" y="303" width="270" height="67" rx="12" fill="#ffffff" stroke="#111111"/>
+<text x="175.5" y="342.5" font-size="18" font-weight="400" fill="#111111">counted = counted + 1</text>
+<polyline points="280,371 280,399" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="280,399 275.0,387.0 285.0,387.0" fill="#111111" stroke="#111111"/>
+<rect x="155" y="402" width="250" height="54" rx="12" fill="#ffffff" stroke="#111111"/>
+<text x="242.5" y="435.0" font-size="18" font-weight="400" fill="#111111">i = i + 1</text>
+<polyline points="406,429 478,429 478,219 356,219" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="356,219 368.0,214.0 368.0,224.0" fill="#111111" stroke="#111111"/>
+<polyline points="204,219 82,219 82,500" fill="none" stroke="#111111" stroke-width="2"/>
+<polygon points="82,500 77.0,488.0 87.0,488.0" fill="#111111" stroke="#111111"/>
+<text x="94" y="243" font-size="18" font-weight="400" fill="#111111">false</text>
+<text x="94" y="499" font-size="18" font-weight="400" fill="#111111">normal exit</text>
+<text x="84.5" y="535" font-size="18" font-weight="400" fill="#111111">bound 3; LoopBound before an excess body</text>
+</g></svg>

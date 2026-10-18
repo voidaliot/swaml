@@ -6,7 +6,7 @@ import { createSwamlServices } from '../out/src/language/swaml-module.js';
 import { resolvePath } from '../out/src/language/semantic.js';
 import * as a from '../out/src/language/generated/ast.js';
 const manifest = JSON.parse(await readFile(new URL('../spec/graphical-examples.json', import.meta.url), 'utf8'));
-assert.equal(manifest.languageVersion, '1.2');
+assert.equal(manifest.languageVersion, '1.3');
 const kinds = new Set(), bodies = new Set();
 for (const item of manifest.examples) {
     const { Swaml } = createSwamlServices(EmptyFileSystem);

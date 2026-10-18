@@ -1,6 +1,6 @@
 # SWAML ontology and flat views
 
-SWAML 1.2 models software with **components, functions and calculations**. A component may contain other components and own private data and executable functions. Functions expose statement flow or states; calculations produce pure values from explicit inputs. Start with the [graphical overview](MODELING_OVERVIEW.md), then use this inventory alongside the [normative specification](LANGUAGE_SPECIFICATION.md).
+SWAML 1.3 models software with **components, functions and calculations**. A component may contain other components and own private data and executable functions. Functions expose statement flow or states; calculations produce pure values from explicit inputs. Start with the [graphical overview](MODELING_OVERVIEW.md), then use this inventory alongside the [normative specification](LANGUAGE_SPECIFICATION.md).
 
 ## Ownership and reuse
 

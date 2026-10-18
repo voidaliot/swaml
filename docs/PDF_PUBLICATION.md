@@ -1,16 +1,16 @@
 # PDF specification and release publication
 
-The [complete PDF](../output/pdf/SWAML-1.2.1-Specification.pdf) contains the normative chapters, flat notation, grammar, mapping inventory, complete example models, the notation fixture and project guidance. It includes clickable contents, bookmarks, links, vector figures, selectable numbered code, repeated table headings and embedded sources. The 1.2 edition also includes the [ontology and view guide](ONTOLOGY_AND_VIEWS.md), [migration notes](MIGRATION_1_2.md), [release notes](RELEASE_1_2_1.md) and [1.2 design decision](decisions/0006-reusable-qos-and-flat-showcase.md).
+The [complete PDF](../output/pdf/SWAML-1.3.0-Specification.pdf) contains the normative chapters, flat notation, grammar, mapping inventory, complete example models, the notation fixture and project guidance. It includes clickable contents, bookmarks, links, vector figures, selectable numbered code, repeated table headings and embedded sources. This edition also includes the [ontology and view guide](ONTOLOGY_AND_VIEWS.md), [migration notes](MIGRATION_1_3.md), [release notes](RELEASE_1_3_0.md) and [control-flow and timing decision](decisions/0011-loops-interrupts-and-function-timing.md).
 
 ## Version identifiers
 
-This edition is specification/package **1.2.1**, with a pinned **1.2** parser and headerless source. The full [Markdown reference](SWAML-1.2.1-Reference.md) and PDF are generated from maintained chapters. The PDF additionally includes project guidance, a complete mapping inventory and embedded source/figure files. Keyword navigation covers every current reserved word; the concern guide is alphabetical.
+This edition is specification/package **1.3.0**, with a pinned **1.3** parser and headerless source. The full [Markdown reference](SWAML-1.3.0-Reference.md) and PDF are generated from maintained chapters. The PDF additionally includes project guidance, a complete mapping inventory and embedded source/figure files. Keyword navigation covers every current reserved word; the concern guide is alphabetical.
 
-The v1.0.0, v1.1.0 and v1.1.1 Markdown/PDF editions retain their historical syntax, semantics and inventories. The copies distributed in this repository received an editorial correction on 2026-10-16 to make tooling guidance platform-neutral and describe views directly. Their regenerated manifests identify that correction and the previous PDF digest; source attachments match each corrected historical edition. Existing Git tags and remotely published release assets are unchanged. Current publication checks target 1.2 sources and write new artifacts under a versioned filename.
+The v1.0.0, v1.1.0 and v1.1.1 Markdown/PDF editions retain their historical syntax, semantics and inventories. The copies distributed in this repository received an editorial correction on 2026-10-16 to make tooling guidance platform-neutral and describe views directly. Their regenerated manifests identify that correction and the previous PDF digest; source attachments match each corrected historical edition. Existing Git tags and remotely published release assets are unchanged. Current publication checks target 1.3 sources and write new artifacts under a versioned filename.
 
-Historical v0.1.0 packages draft/core revision 0.1.1 with header 0.1 and has the same editorial correction to its guidance. The current reference simulation profile is **1.2**: unified components, executable functions, pure calculations and effective inherited members are interpreted with separate instance stores. Historical embedded traces retain their original profile identity. Physical timing proof, KerML export and a source-editing graphical workbench remain separate implementations.
+Historical v0.1.0 packages draft/core revision 0.1.1 with header 0.1 and has the same editorial correction to its guidance. The current reference simulation profile is **1.3**: unified components, executable functions, pure calculations and effective inherited members are interpreted with separate instance stores. Historical embedded traces retain their original profile identity. Physical timing proof, KerML export and a source-editing graphical workbench remain separate implementations.
 
-The published v1.2.0 consolidated Markdown, PDF, manifest, checksum and release assets retain their original case and satisfaction spellings. Current generators write the separate 1.2.1 edition.
+The published v1.2.0 and v1.2.1 consolidated Markdown, PDF, manifest, checksum and release assets retain their original case and satisfaction spellings. Current generators write the separate 1.3.0 edition.
 
 ## Rebuild the book
 
@@ -46,6 +46,6 @@ Outputs are the PDF, a JSON source/hash manifest and a SHA-256 checksum under `o
 
 Run `npm run check`, build the PDF, and run the PDF checker. Render all pages with Poppler and inspect them for clipped text, overlapping elements, unreadable tables, broken figures, orphan headings and excessive blank pages. Check dense tables and code at full resolution as well as page contact sheets. Automated extraction cannot replace that visual review.
 
-Create the downloadable SVG/PNG bundle with `python3 scripts/package-notation.py --output /tmp/SWAML-1.2.1-Graphical-Assets.zip`. It contains all canonical and worked assets, the notation inventory, license and per-file checksums.
+Create the downloadable SVG/PNG bundle with `python3 scripts/package-notation.py --output /tmp/SWAML-1.3.0-Graphical-Assets.zip`. It contains all canonical and worked assets, the notation inventory, license and per-file checksums.
 
 Commit the reviewed source, builder and final artifacts together. The release must target the reviewed commit, with the PDF, source manifest and checksum attached. Use `--notes-file` for release notes and verify the published tag and assets after upload. Preserve release assets once published; issue a new documented edition for corrections.

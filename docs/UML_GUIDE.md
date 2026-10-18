@@ -1,6 +1,6 @@
 # SWAML for UML architects
 
-SWAML 1.2 supports familiar structural and behavioral modeling with explicit software boundaries. Start with components and their contracts, compose named parts, then inspect interaction and behavior. The reference for UML terminology is [OMG UML 2.5.1](https://www.omg.org/spec/UML/2.5.1). The correspondences below are modeling guidance, not a UML import format or conformance claim.
+SWAML 1.3 supports familiar structural and behavioral modeling with explicit software boundaries. Start with components and their contracts, compose named parts, then inspect interaction and behavior. The reference for UML terminology is [OMG UML 2.5.1](https://www.omg.org/spec/UML/2.5.1). The correspondences below are modeling guidance, not a UML import format or conformance claim.
 
 ## Translate the modeling concepts
 
@@ -62,8 +62,8 @@ Begin with [the complete greeting model](../examples/01-hello.swaml), then compa
 | grv | What are the exact properties and bindings? | Model table and property inspection. |
 | fv | How does this function execute? | Structured flow or a flat state machine owned by the function. |
 
-## Deliberate 1.2 limits
+## Deliberate language limits
 
-SWAML 1.2 supports single component specialization and compatible explicit member redefinition. It has no separate class construct, association classes, arbitrary multiplicities, dynamic creation, generics or cross-component attribute access. A part declaration denotes one occurrence; multiple instances are explicit declarations. These omissions keep ownership, closure and queue identity checkable. Do not emulate missing constructs by drawing untyped association lines or treating the same definition as shared state.
+SWAML 1.3 supports single component specialization and compatible explicit member redefinition. It has no separate class construct, association classes, arbitrary multiplicities, dynamic creation, generics or cross-component attribute access. A part declaration denotes one occurrence; multiple instances are explicit declarations. These omissions keep ownership, closure and queue identity checkable. Do not emulate missing constructs by drawing untyped association lines or treating the same definition as shared state.
 
-The 1.2 core uses components for both composition and local behavior, functions for executable flow/states, and calculations for pure expressions. Complete-value `qos def` reuse, default service profiles and omitted void results reduce repetition. Additional aliases such as class, signal or machine would need semantics and migration rules; they are not introduced merely for familiar spelling. The [implementation matrix](IMPLEMENTATION_STATUS.md) separates implemented validation and simulation from future graphical authoring, KerML mapping and production execution.
+The core uses components for both composition and local behavior, functions for executable flow/states, and calculations for pure expressions. Complete-value `qos def` reuse, default service profiles and omitted void results reduce repetition. Additional aliases such as class, signal or machine would need semantics and migration rules; they are not introduced merely for familiar spelling. The [implementation matrix](IMPLEMENTATION_STATUS.md) separates implemented validation and simulation from future graphical authoring, KerML mapping and production execution.

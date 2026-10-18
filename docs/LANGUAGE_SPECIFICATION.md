@@ -1,6 +1,6 @@
 # SWAML language specification
 
-**Version:** 1.2.1 · **Source:** headerless packages; parser/host pinned to 1.2 · **Status:** 1.2.1 release · **Date:** 2026-10-18
+**Version:** 1.3.0 · **Source:** headerless packages; parser/host pinned to 1.3 · **Status:** released · **Date:** 2026-10-18
 
 SWAML means Software Architecture Modeling Language. This document and its normative chapters define a software architecture language with a proposed KerML semantic mapping. SWAML is independently authored and does not denote an OMG standard or UML compatibility level. Architects familiar with UML can begin with the informative [UML transition guide](UML_GUIDE.md); implemented capabilities are identified separately from mapping and execution contracts.
 
@@ -27,15 +27,15 @@ The [user guide](USER_GUIDE.md), [architecture comparison](ARCHITECTURE_COMPARIS
 
 MUST and MUST NOT state conformance requirements. SHOULD states a recommendation with an explicitly documented justification needed for deviation. MAY grants permission. “Error” means a model is not valid under this version. An implementation may retain an invalid model for editing but MUST NOT report it as fully valid.
 
-The grammar determines tokens and parse structure. Prose determines validity and meaning. If grammar accepts text that violates a semantic rule, that text is invalid. If a discovered conflict makes the two impossible to satisfy, record a specification defect; do not silently choose a runtime meaning. Unknown syntax and unsupported requested language versions MUST be rejected. The host selects a pinned 1.2 parser before loading source; a file does not guess its own edition. See the [1.2 migration guide](MIGRATION_1_2.md) and [historical 1.1 migration guide](MIGRATION_1_1.md) for the intentional syntax migration from 1.0.
+The grammar determines tokens and parse structure. Prose determines validity and meaning. If grammar accepts text that violates a semantic rule, that text is invalid. If a discovered conflict makes the two impossible to satisfy, record a specification defect; do not silently choose a runtime meaning. Unknown syntax and unsupported requested language versions MUST be rejected. The host selects a pinned 1.3 parser before loading source; a file does not guess its own edition. See the [1.3 migration guide](MIGRATION_1_3.md) and [historical 1.1 migration guide](MIGRATION_1_1.md) for the intentional syntax migration from 1.0.
 
-The language is closed at version 1.2: constructs not listed in the grammar are not implicitly inherited from UML, SysML or KerML. Component definitions support instantiation, single specialization and compatible explicit member redefinition. Generics, unrestricted KerML embedding and dynamic creation remain outside this version. External system identities support deployment integration without importing another modeling language.
+The language is closed at version 1.3: constructs not listed in the grammar are not implicitly inherited from UML, SysML or KerML. Component definitions support instantiation, single specialization and compatible explicit member redefinition. Generics, unrestricted KerML embedding and dynamic creation remain outside this version. External system identities support deployment integration without importing another modeling language.
 
 ## 3. Design invariants
 
 - **I1 — Boundary:** every exchange between distinct component instances crosses port instances typed by the same interface contract and a permitted connector/delegation path.
 - **I2 — Ownership:** components own child components, ports, private data and functions; functions own calculations and statement flow or states. No performer element, behavior allocation, free action, free signal, or global variable exists.
-- **I3 — Event provenance:** after resolving any delegation, every outgoing data/event member has at least one syntactically associated emitting function in the resolved owning component. Every incoming member has exactly one handling function in that context, including a stateful function where applicable. A delegated boundary has no additional local handler or emitter.
+- **I3 — Event provenance:** after resolving any delegation, every outgoing data/event member has at least one syntactically associated emitting function in the resolved owning component. Every incoming member has exactly one handling function in that context, including a stateful function or interruptible-region owner where applicable. A delegated boundary has no additional local handler or emitter.
 - **I4 — Type safety:** payloads and results conform to nominal contracts. Messages transfer values, never aliases to another component's private state.
 - **I5 — Explicit communication policy:** every connector declares delivery, ordering, capacity and overflow. Time-sensitive connections add latency/freshness bounds.
 - **I6 — Views preserve meaning:** views reference existing semantic elements. Drawing a message cannot create a hidden communication channel.
@@ -75,3 +75,7 @@ This repository supplies a parser, LSP foundation, documented static validation 
 ## Requirements and formal documentation
 
 Requirements own typed attributes and one optional `doc /* ... */` specification. Design elements link through `satisfy`; verification cases link through `verify`. Use cases describe intent. Ordinary comments remain independent notes. View kinds use lower camel case, and view blocks combine multiple selections and Boolean filters. See the [guide](REQUIREMENTS_AND_DOCUMENTATION.md) and [complete model](../examples/16-requirements-and-views.swaml).
+
+## Extended function flow and timing
+
+The 1.3 edition adds counted for, copied-array forEach, bounded do loops and typed interruptible regions. FV includes trace-backed function timing. See the [control-flow guide](CONTROL_FLOW_AND_TIMING.md), [1.3 migration](MIGRATION_1_3.md) and [design decision](decisions/0011-loops-interrupts-and-function-timing.md).

@@ -2,9 +2,9 @@
 
 Status: accepted for SWAML 1.2.0. Date: 2026-10-16.
 
-The candidate-era migration rationale below records the decision at adoption; 1.2.0 was subsequently published. [ADR 0010](0010-consistent-subject-relations.md) records the later 1.2.1 relation-syntax correction and its explicit migration.
+[ADR 0010](0010-consistent-subject-relations.md) records the 1.2.1 relation-syntax correction and its migration.
 
-The repository owner requested a smaller software vocabulary: components nest components; functions own executable behavior; calculations express pure values; deployment refers to a system model outside SWAML. This decision supersedes the component/unit split and operation terminology in ADR 0001 and the corresponding restrictions in ADR 0004. Historical editions retain their original syntax and semantics.
+The software vocabulary uses nested components, functions for executable behavior, calculations for pure values and deployment references to an external system model. This decision supersedes the component/unit split and operation terminology in ADR 0001 and the corresponding restrictions in ADR 0004. Historical editions retain their original syntax and semantics.
 
 ## Ownership
 

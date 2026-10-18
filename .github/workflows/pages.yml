@@ -2,7 +2,7 @@ name: Showcase · GitHub Pages
 
 on:
   pull_request:
-    paths: ['showcase/**', 'examples/**', 'docs/QUICK_START.md', 'docs/MODELING_OVERVIEW.md', 'spec/modeling-overview.json', 'src/language/**', 'scripts/check-showcase.mjs', 'scripts/check-modeling-overview.mjs', '.github/workflows/pages.yml']
+    paths: ['showcase/**', 'examples/**', 'docs/QUICK_START.md', 'docs/MODELING_OVERVIEW.md', 'spec/modeling-overview.json', 'spec/traceability-demo.json', 'spec/function-timing-demo.json', 'src/language/**', 'src/simulation/**', 'scripts/check-showcase.mjs', 'scripts/check-modeling-overview.mjs', 'scripts/build-traceability-demo.mjs', 'scripts/build-timing-demo.mjs', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -28,6 +28,8 @@ jobs:
       - run: npm run build
       - run: node scripts/check-showcase.mjs
       - run: node scripts/check-modeling-overview.mjs
+      - run: node scripts/build-traceability-demo.mjs --check
+      - run: node scripts/build-timing-demo.mjs --check
       - run: npm ci
         working-directory: showcase
       - run: npm run build

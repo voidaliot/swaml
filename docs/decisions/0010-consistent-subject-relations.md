@@ -2,7 +2,7 @@
 
 Status: accepted for SWAML 1.2.1. Date: 2026-10-18.
 
-The owner requested that subject-assignment relations use `of`, and that `for` be limited to loop vocabulary. The 1.2.0 grammar used case `for`, satisfaction `by` and compact-view `of` for analogous references. This patch corrects those spellings without changing their semantic targets, ownership or execution.
+Subject-assignment relations consistently use `of`. The 1.2.0 grammar used case `for`, satisfaction `by` and compact-view `of` for analogous references. This patch corrects those spellings without changing their semantic targets, ownership or execution. Any future use of `for` is limited to loop syntax.
 
 ## Decision
 
@@ -14,7 +14,7 @@ The only current loop is bounded `while (...) bound n`. There is no `for` loop p
 
 ## Migration and version selection
 
-This is an explicit owner-requested exception to ordinary patch source compatibility after the 1.2.0 publication. The model meaning is preserved, but the parser rejects old case `for` and satisfaction `by` forms. Migration is contextual: change those delimiters to `of`, while preserving strings, ordinary prose, triggers, deployment locations and result bindings.
+Version 1.2.1 intentionally changes source compatibility after the 1.2.0 publication. The model meaning is preserved, but the parser rejects old case `for` and satisfaction `by` forms. Migration is contextual: change those delimiters to `of`, while preserving strings, ordinary prose, triggers, deployment locations and result bindings.
 
 Hosts currently select the 1.2 language family. The package/release revision determines its concrete parser, so reproducible consumers must pin both. Use the archived 1.2.0 release to reproduce its earlier grammar. Published 1.2.0 Markdown, PDF, manifest, checksum, tag and release assets remain preserved. New artifacts have 1.2.1 filenames.
 

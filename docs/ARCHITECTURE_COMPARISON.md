@@ -2,7 +2,7 @@
 
 This is an original comparison of modeling choices, not a compatibility claim. AUTOSAR sources below provide a conceptual baseline; target generation requires a separate mapping and evidence.
 
-| Concern | SWAML 1.2 choice | Reason |
+| Concern | SWAML 1.3 choice | Reason |
 | --- | --- | --- |
 | Software ownership | Components containing components and owning private values/functions | One concept covers atomic and composite software boundaries. |
 | Executable behavior | Functions with statements or directly owned states | Decisions, loops, local calls and stateful reactions retain one behavior owner. |

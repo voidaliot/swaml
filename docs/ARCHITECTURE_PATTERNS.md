@@ -1,6 +1,6 @@
 # Architecture patterns
 
-SWAML 1.2 uses the same architecture model for embedded control, Adaptive applications, service-oriented systems and cloud services: reusable definitions, owned ports, typed contracts, explicit connectors, local behavior and deployment occurrences. Start from the example closest to your system, then replace its contracts and behavior with your own.
+SWAML 1.3 uses the same architecture model for embedded control, Adaptive applications, service-oriented systems and cloud services: reusable definitions, owned ports, typed contracts, explicit connectors, local behavior and deployment occurrences. Start from the example closest to your system, then replace its contracts and behavior with your own.
 
 These models are executable logical examples. Their platform names describe the intended architecture context. A target binding supplies middleware, operating-system and infrastructure configuration; SWAML does not generate those artifacts. See [execution bindings](spec/06-execution-contract.md) for the contract and [implementation status](IMPLEMENTATION_STATUS.md) for delivered capabilities.
 

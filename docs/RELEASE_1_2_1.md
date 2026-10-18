@@ -11,7 +11,7 @@ SWAML **1.2.1** makes subject-assignment relations consistent. Cases and satisfa
 | Satisfaction source | `satisfy Ready of App;` |
 | Compact view | `view wiring iv of App;` |
 
-The parser rejects the former case `for` and satisfaction `by` spellings. This is an intentional source migration requested after 1.2.0 publication; [ADR 0010](decisions/0010-consistent-subject-relations.md) records the patch compatibility exception. Apply the contextual edits in the [migration guide](MIGRATION_1_2.md). Hosts select the 1.2 family; pin the package revision as well when reproducing models.
+The parser rejects the former case `for` and satisfaction `by` spellings. This is an intentional source migration from 1.2.0; [ADR 0010](decisions/0010-consistent-subject-relations.md) records the compatibility change. Apply the contextual edits in the [migration guide](MIGRATION_1_2.md). Hosts select the 1.2 family; pin the package revision as well when reproducing models.
 
 `for` has no relation meaning. Current loops remain bounded `while`; this release adds no new loop construct. `on` retains activation/location meaning, `as` retains result binding, and value assignments retain `=`. Case root selection, design-to-requirement direction, ownership, route checks, queues and runtime behavior are unchanged.
 
