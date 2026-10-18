@@ -2244,7 +2244,7 @@
     {
       "path": "docs/figures/tv.svg",
       "attachmentName": "docs__figures__tv.svg",
-      "sha256": "a443e6cabadd42dd16123d71b56b6ac80d0f4a7896ca65c36c79ee1d37bb370e"
+      "sha256": "c87e02869318953e2db45e95fae99b06768a84fd92cc4760f4ac199212a5420e"
     },
     {
       "path": "examples/simulation/01-hello.json",
@@ -2432,5 +2432,5 @@
       "sha256": "20a5a6a08f85b2f7e446477583bd698c78b012013f3144bde2cccac6c4683c84"
     }
   ],
-  "pdfSha256": "c06cd7ad5f8a18240526e2114daba266313bc72bba19ecbaf4e604b03b4fd9c6"
+  "pdfSha256": "16b86356ad8e5cb3f90899d45f304ebbb9ed58eddd6751d405412e7b8294e95f"
 }
