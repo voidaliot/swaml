@@ -93,7 +93,7 @@ s.save()
 
 s=Scene('cv','cv · Case View','Claimed coverage is explicit; no verification checkmark appears without evidence.',570)
 s.rect(35,134,443,318,fill='#f7fafc');s.text(55,170,'«component» Cabin',24,True)
-s.rect(93,248,327,116,fill='#e3f2f3',rx=35);s.text(123,286,'«useCase» Change',24,True);s.text(123,323,'for Cabin',20)
+s.rect(93,248,327,116,fill='#e3f2f3',rx=35);s.text(123,286,'«useCase» Change',24,True);s.text(123,323,'of Cabin',20)
 s.rect(623,225,337,162,fill='white',rx=0);s.text(641,257,'«requirement»',19,color=TEAL);s.text(641,291,'VisibleSetting',23,True);s.text(641,326,'Both panels can observe',18);s.text(641,354,'accepted setting updates.',18)
 s.line([(478,301),(616,301)],dash=True,arrow=True,open=True);s.text(498,261,'satisfy',18);s.text(493,282,'(claimed)',18)
 s.text(55,510,'Evidence status: design claim. Simulation results are separate artifacts.',19,color=GRAY)

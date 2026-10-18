@@ -10,7 +10,7 @@
 <text x="55" y="170" font-size="24" font-weight="700" fill="#17324d">«component» Cabin</text>
 <rect x="93" y="248" width="327" height="116" rx="35" fill="#e3f2f3" stroke="#17324d"/>
 <text x="123" y="286" font-size="24" font-weight="700" fill="#17324d">«useCase» Change</text>
-<text x="123" y="323" font-size="20" font-weight="400" fill="#17324d">for Cabin</text>
+<text x="123" y="323" font-size="20" font-weight="400" fill="#17324d">of Cabin</text>
 <rect x="623" y="225" width="337" height="162" rx="0" fill="white" stroke="#17324d"/>
 <text x="641" y="257" font-size="19" font-weight="400" fill="#087f8c">«requirement»</text>
 <text x="641" y="291" font-size="23" font-weight="700" fill="#17324d">VisibleSetting</text>

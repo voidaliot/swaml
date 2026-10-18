@@ -32,7 +32,7 @@ package Rpc {
             delivery atLeastOnce; ordering fifo; capacity 4; overflow reject;
         };
     }
-    useCase Poll for HealthCheck {
+    useCase Poll of HealthCheck {
         call caller.health.check -> serviceUnit.health.check via healthCheck label sent;
         reply serviceUnit.health.check -> caller.health.check via healthCheck after sent label answered;
     }

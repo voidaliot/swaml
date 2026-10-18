@@ -165,6 +165,12 @@ if (!sourceOnly) {
         assert(finite(scene.width) && finite(scene.height) && scene.width > 0 && scene.height > 0);
         const point = (x, y) => assert(finite(x) && finite(y) && x >= 0 && y >= 0 && x <= scene.width && y <= scene.height, `${c.id}: shape lies outside scene (${x}, ${y})`);
         assert(Array.isArray(scene.shapes) && scene.shapes.length > 1);
+        if (c.drawing.template === 'case') {
+            const subject = c.drawing.lines.find(line => line.startsWith('of '))?.slice(3);
+            assert(subject, `${c.id}: case notation must name its root with of`);
+            assert(scene.shapes.some(s => s.kind === 'text' && s.text === `case context: ${subject}`), `${c.id}: drawing lost the selected case root`);
+            assert(!scene.shapes.some(s => s.kind === 'text' && /^(?:for|of) /.test(s.text)), `${c.id}: root context must stay outside the case oval`);
+        }
         if (['deployment-target', 'deployment'].includes(c.drawing.template)) {
             assert(!scene.shapes.some(s => s.kind === 'polygon'), `${c.id}: deployment targets must be flat rectangles without cuboid faces`);
         }

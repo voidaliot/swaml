@@ -1,6 +1,6 @@
-# Implementation status — 1.2.0
+# Implementation status — 1.2.1
 
-The normative specification defines the bounded 1.2.0 language. The repository implements the Langium parser, CLI, language-server foundation and broad static checking. It also implements a bounded logical-time reference simulator; it does not implement a production runtime, KerML exporter or graphical editor. See the [1.2 migration](MIGRATION_1_2.md), [historical 1.1 migration](MIGRATION_1_1.md), historical [1.0 evidence](RELEASE_1_0.md) and historical [0.1 audit](SPECIFICATION_AUDIT.md) and [conformance obligations](spec/08-conformance-obligations.md).
+The normative specification defines the bounded 1.2.1 language. The repository implements the Langium parser, CLI, language-server foundation and broad static checking. It also implements a bounded logical-time reference simulator; it does not implement a production runtime, KerML exporter or graphical editor. See the [1.2 migration](MIGRATION_1_2.md), [historical 1.1 migration](MIGRATION_1_1.md), historical [1.0 evidence](RELEASE_1_0.md) and historical [0.1 audit](SPECIFICATION_AUDIT.md) and [conformance obligations](spec/08-conformance-obligations.md).
 
 ## Implemented and tested
 
@@ -61,6 +61,10 @@ No blanket K, E or G certification is claimed. The [reference simulation profile
 
 Multiple inheritance, generics, dynamic object creation, unbounded arrays, reference-valued payloads, hierarchical/orthogonal state regions, fork/join syntax, host-language code blocks, dynamic service discovery, runtime subscribe/unsubscribe, topic wildcards, exactly-once delivery, full requirements algebra and geometry require a versioned language proposal. They cannot be introduced as undocumented backend behavior.
 
-## Requirements and selected views in 1.2.0
+## Requirements and selected views in 1.2.1
 
 Implemented: typed requirement attributes; one raw formal documentation block per grammar owner; lexical-comment projection with owner/source extents; separate useCase and verificationCase; satisfy/verify target and duplicate checks; lower camel case primitive/view keywords; occurrence-preserving multi-subject views and typed Boolean predicates. The exported documentationText, modelComments, viewCandidates and selectView helpers are portable. Requirement links are claims; verification cases are not an automatic test runner. The showcase includes source-checked diagram/table projections.
+
+## Relation syntax in 1.2.1
+
+Cases and satisfaction claims use `of`, matching compact view subjects. Parsing rejects the former case `for` and satisfaction `by` spellings; qualified/imported targets and unchanged link orientation have regression coverage. The current loop construct remains bounded `while`. The host selects the 1.2 family supplied by this package revision; use the archived 1.2.0 release for its earlier syntax.

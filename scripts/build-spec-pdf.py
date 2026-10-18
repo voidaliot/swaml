@@ -36,8 +36,8 @@ LINE = colors.HexColor('#CBD5DF')
 PAGE_W, PAGE_H = A4
 MARGIN = 44
 WIDTH = PAGE_W - 2 * MARGIN
-RELEASE = '1.2.0'
-REVISION = '1.2.0'
+RELEASE = '1.2.1'
+REVISION = '1.2.1'
 LANGUAGE = '1.2'
 SIMULATION_PROFILE = '1.2'
 REPO = f'https://github.com/voidaliot/swaml/blob/v{RELEASE}/'
@@ -47,9 +47,9 @@ NORMATIVE = ['docs/LANGUAGE_SPECIFICATION.md'] + [f'docs/spec/{name}' for name i
     '07-normalized-model.md', '08-conformance-obligations.md', '09-formal-semantics.md',
 ]] + ['docs/GRAPHICAL_NOTATION.md', 'docs/GRAPHICAL_CATALOG.md']
 GUIDANCE = ['docs/MODELING_OVERVIEW.md', 'docs/QUICK_START.md', 'docs/ARCHITECTURE_PATTERNS.md', 'docs/UML_GUIDE.md', 'docs/REVIEW_1_2.md', 'docs/CONCERN_GUIDE.md', 'docs/KEYWORD_REFERENCE.md', 'docs/ONTOLOGY_AND_VIEWS.md', 'docs/GRAPHICAL_EXAMPLES.md', 'docs/SIMULATION.md', 'docs/MIGRATION_1_1.md', 'docs/MIGRATION_1_2.md', 'docs/USER_GUIDE.md', 'docs/ARCHITECTURE_COMPARISON.md', 'docs/TOOLING.md',
-            'docs/IMPLEMENTATION_STATUS.md', 'docs/RELEASE_1_2_0.md', 'docs/SYSML_STYLE_REVIEW.md',
+            'docs/IMPLEMENTATION_STATUS.md', 'docs/RELEASE_1_2_1.md', 'docs/SYSML_STYLE_REVIEW.md',
             'docs/decisions/0001-language-boundaries.md', 'docs/decisions/0002-auditable-semantics.md', 'docs/decisions/0003-reference-execution-and-publication.md', 'docs/decisions/0004-compact-component-language.md', 'docs/decisions/0005-canonical-graphical-notation.md', 'docs/decisions/0006-reusable-qos-and-flat-showcase.md', 'docs/decisions/0007-component-functions-and-calculations.md', 'docs/decisions/0008-function-local-calculations-and-calls.md',
-    'docs/REQUIREMENTS_AND_DOCUMENTATION.md', 'docs/decisions/0009-requirements-documentation-and-views.md',
+    'docs/decisions/0010-consistent-subject-relations.md', 'docs/REQUIREMENTS_AND_DOCUMENTATION.md', 'docs/decisions/0009-requirements-documentation-and-views.md',
             'docs/PDF_PUBLICATION.md', 'CONTRIBUTING.md', 'AGENTS.md']
 EXAMPLES = sorted(p.relative_to(ROOT).as_posix() for p in (ROOT / 'examples').glob('*.swaml')) + sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/'examples/notation').glob('*.swaml'))
 ATTACHMENTS = [f'docs/SWAML-{RELEASE}-Reference.md', 'spec/keywords.json', 'spec/graphical-examples.json', 'spec/notation.json', 'resources/fonts/README.md', 'resources/fonts/LICENSE-DejaVu.txt'] + sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/'docs/notation').glob('*') if p.is_file()) + sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/'docs/figures').glob('*')) + sorted(p.relative_to(ROOT).as_posix() for p in (ROOT/'examples/simulation').glob('*.json'))

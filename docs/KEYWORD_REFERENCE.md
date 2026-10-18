@@ -2,7 +2,7 @@
 
 This user-facing reference covers every reserved word in the SWAML 1.2 grammar. Entries are sorted alphabetically, ignoring case for sorting only; source keywords remain case-sensitive. Example fragments illustrate a use and are not standalone models. Read the linked normative concern for full constraints. Punctuation and operator precedence follow the final section.
 
-[`after`](#keyword-after) · [`and`](#keyword-and) · [`as`](#keyword-as) · [`assert`](#keyword-assert) · [`atLeastOnce`](#keyword-atleastonce) · [`atMostOnce`](#keyword-atmostonce) · [`attribute`](#keyword-attribute) · [`bestEffort`](#keyword-besteffort) · [`bool`](#keyword-bool) · [`bound`](#keyword-bound) · [`by`](#keyword-by) · [`byte`](#keyword-byte) · [`calc`](#keyword-calc) · [`call`](#keyword-call) · [`capacity`](#keyword-capacity) · [`client`](#keyword-client) · [`clientServer`](#keyword-clientserver) · [`completion`](#keyword-completion) · [`component`](#keyword-component) · [`concurrency`](#keyword-concurrency) · [`connect`](#keyword-connect) · [`cv`](#keyword-cv) · [`data`](#keyword-data) · [`datatype`](#keyword-datatype) · [`deadline`](#keyword-deadline) · [`def`](#keyword-def) · [`delegate`](#keyword-delegate) · [`delivery`](#keyword-delivery) · [`deploy`](#keyword-deploy) · [`doc`](#keyword-doc) · [`dropNewest`](#keyword-dropnewest) · [`dropOldest`](#keyword-dropoldest) · [`else`](#keyword-else) · [`entry`](#keyword-entry) · [`enum`](#keyword-enum) · [`event`](#keyword-event) · [`every`](#keyword-every) · [`exit`](#keyword-exit) · [`fail`](#keyword-fail) · [`false`](#keyword-false) · [`fifo`](#keyword-fifo) · [`final`](#keyword-final) · [`for`](#keyword-for) · [`function`](#keyword-function) · [`fv`](#keyword-fv) · [`grv`](#keyword-grv) · [`gv`](#keyword-gv) · [`idempotent`](#keyword-idempotent) · [`if`](#keyword-if) · [`import`](#keyword-import) · [`in`](#keyword-in) · [`include`](#keyword-include) · [`initial`](#keyword-initial) · [`int`](#keyword-int) · [`interface`](#keyword-interface) · [`iv`](#keyword-iv) · [`label`](#keyword-label) · [`manual`](#keyword-manual) · [`maxAge`](#keyword-maxage) · [`maxLatency`](#keyword-maxlatency) · [`mixed`](#keyword-mixed) · [`ms`](#keyword-ms) · [`not`](#keyword-not) · [`ns`](#keyword-ns) · [`of`](#keyword-of) · [`on`](#keyword-on) · [`optional`](#keyword-optional) · [`or`](#keyword-or) · [`ordering`](#keyword-ordering) · [`otherwise`](#keyword-otherwise) · [`overflow`](#keyword-overflow) · [`package`](#keyword-package) · [`port`](#keyword-port) · [`priority`](#keyword-priority) · [`provides`](#keyword-provides) · [`publish`](#keyword-publish) · [`publisher`](#keyword-publisher) · [`publishSubscribe`](#keyword-publishsubscribe) · [`qos`](#keyword-qos) · [`queued`](#keyword-queued) · [`real`](#keyword-real) · [`realtime`](#keyword-realtime) · [`receive`](#keyword-receive) · [`receiver`](#keyword-receiver) · [`record`](#keyword-record) · [`recursive`](#keyword-recursive) · [`redefines`](#keyword-redefines) · [`reentrant`](#keyword-reentrant) · [`reject`](#keyword-reject) · [`reply`](#keyword-reply) · [`requirement`](#keyword-requirement) · [`requires`](#keyword-requires) · [`return`](#keyword-return) · [`s`](#keyword-s) · [`sampled`](#keyword-sampled) · [`satisfy`](#keyword-satisfy) · [`send`](#keyword-send) · [`sender`](#keyword-sender) · [`senderReceiver`](#keyword-senderreceiver) · [`serial`](#keyword-serial) · [`server`](#keyword-server) · [`service`](#keyword-service) · [`specializes`](#keyword-specializes) · [`start`](#keyword-start) · [`state`](#keyword-state) · [`string`](#keyword-string) · [`subscriber`](#keyword-subscriber) · [`sv`](#keyword-sv) · [`timing`](#keyword-timing) · [`transition`](#keyword-transition) · [`true`](#keyword-true) · [`uint`](#keyword-uint) · [`unordered`](#keyword-unordered) · [`us`](#keyword-us) · [`useCase`](#keyword-usecase) · [`var`](#keyword-var) · [`verificationCase`](#keyword-verificationcase) · [`verify`](#keyword-verify) · [`version`](#keyword-version) · [`via`](#keyword-via) · [`view`](#keyword-view) · [`void`](#keyword-void) · [`wcet`](#keyword-wcet) · [`when`](#keyword-when) · [`where`](#keyword-where) · [`while`](#keyword-while) · [`within`](#keyword-within)
+[`after`](#keyword-after) · [`and`](#keyword-and) · [`as`](#keyword-as) · [`assert`](#keyword-assert) · [`atLeastOnce`](#keyword-atleastonce) · [`atMostOnce`](#keyword-atmostonce) · [`attribute`](#keyword-attribute) · [`bestEffort`](#keyword-besteffort) · [`bool`](#keyword-bool) · [`bound`](#keyword-bound) · [`byte`](#keyword-byte) · [`calc`](#keyword-calc) · [`call`](#keyword-call) · [`capacity`](#keyword-capacity) · [`client`](#keyword-client) · [`clientServer`](#keyword-clientserver) · [`completion`](#keyword-completion) · [`component`](#keyword-component) · [`concurrency`](#keyword-concurrency) · [`connect`](#keyword-connect) · [`cv`](#keyword-cv) · [`data`](#keyword-data) · [`datatype`](#keyword-datatype) · [`deadline`](#keyword-deadline) · [`def`](#keyword-def) · [`delegate`](#keyword-delegate) · [`delivery`](#keyword-delivery) · [`deploy`](#keyword-deploy) · [`doc`](#keyword-doc) · [`dropNewest`](#keyword-dropnewest) · [`dropOldest`](#keyword-dropoldest) · [`else`](#keyword-else) · [`entry`](#keyword-entry) · [`enum`](#keyword-enum) · [`event`](#keyword-event) · [`every`](#keyword-every) · [`exit`](#keyword-exit) · [`fail`](#keyword-fail) · [`false`](#keyword-false) · [`fifo`](#keyword-fifo) · [`final`](#keyword-final) · [`function`](#keyword-function) · [`fv`](#keyword-fv) · [`grv`](#keyword-grv) · [`gv`](#keyword-gv) · [`idempotent`](#keyword-idempotent) · [`if`](#keyword-if) · [`import`](#keyword-import) · [`in`](#keyword-in) · [`include`](#keyword-include) · [`initial`](#keyword-initial) · [`int`](#keyword-int) · [`interface`](#keyword-interface) · [`iv`](#keyword-iv) · [`label`](#keyword-label) · [`manual`](#keyword-manual) · [`maxAge`](#keyword-maxage) · [`maxLatency`](#keyword-maxlatency) · [`mixed`](#keyword-mixed) · [`ms`](#keyword-ms) · [`not`](#keyword-not) · [`ns`](#keyword-ns) · [`of`](#keyword-of) · [`on`](#keyword-on) · [`optional`](#keyword-optional) · [`or`](#keyword-or) · [`ordering`](#keyword-ordering) · [`otherwise`](#keyword-otherwise) · [`overflow`](#keyword-overflow) · [`package`](#keyword-package) · [`port`](#keyword-port) · [`priority`](#keyword-priority) · [`provides`](#keyword-provides) · [`publish`](#keyword-publish) · [`publisher`](#keyword-publisher) · [`publishSubscribe`](#keyword-publishsubscribe) · [`qos`](#keyword-qos) · [`queued`](#keyword-queued) · [`real`](#keyword-real) · [`realtime`](#keyword-realtime) · [`receive`](#keyword-receive) · [`receiver`](#keyword-receiver) · [`record`](#keyword-record) · [`recursive`](#keyword-recursive) · [`redefines`](#keyword-redefines) · [`reentrant`](#keyword-reentrant) · [`reject`](#keyword-reject) · [`reply`](#keyword-reply) · [`requirement`](#keyword-requirement) · [`requires`](#keyword-requires) · [`return`](#keyword-return) · [`s`](#keyword-s) · [`sampled`](#keyword-sampled) · [`satisfy`](#keyword-satisfy) · [`send`](#keyword-send) · [`sender`](#keyword-sender) · [`senderReceiver`](#keyword-senderreceiver) · [`serial`](#keyword-serial) · [`server`](#keyword-server) · [`service`](#keyword-service) · [`specializes`](#keyword-specializes) · [`start`](#keyword-start) · [`state`](#keyword-state) · [`string`](#keyword-string) · [`subscriber`](#keyword-subscriber) · [`sv`](#keyword-sv) · [`timing`](#keyword-timing) · [`transition`](#keyword-transition) · [`true`](#keyword-true) · [`uint`](#keyword-uint) · [`unordered`](#keyword-unordered) · [`us`](#keyword-us) · [`useCase`](#keyword-usecase) · [`var`](#keyword-var) · [`verificationCase`](#keyword-verificationcase) · [`verify`](#keyword-verify) · [`version`](#keyword-version) · [`via`](#keyword-via) · [`view`](#keyword-view) · [`void`](#keyword-void) · [`wcet`](#keyword-wcet) · [`when`](#keyword-when) · [`where`](#keyword-where) · [`while`](#keyword-while) · [`within`](#keyword-within)
 
 ## Keyword: after
 
@@ -103,16 +103,6 @@ Sets the positive safe-integer maximum number of loop-body executions. After tha
 **Example fragment:** `while (i < 3) bound 3 { i = i + 1; }`
 
 **Graphical notation:** [Bounded loop](GRAPHICAL_CATALOG.md#notation-bounded-loop). Bounded loop.
-
-## Keyword: by
-
-**Concern:** [Cases and evidence](spec/04-systems-and-conformance.md). **Grammar:** `Satisfaction`.
-
-Identifies the design source of satisfaction.
-
-**Example fragment:** `satisfy Reliable by Demo;`
-
-**Graphical notation:** [Satisfaction relation](GRAPHICAL_CATALOG.md#notation-satisfies-link). Satisfaction relation.
 
 ## Keyword: byte
 
@@ -424,16 +414,6 @@ Marks a state that completes its owning function after entry. It has no outgoing
 
 **Graphical notation:** [Final state](GRAPHICAL_CATALOG.md#notation-final-state). Final state.
 
-## Keyword: for
-
-**Concern:** [Cases and evidence](spec/04-systems-and-conformance.md). **Grammar:** `Scenario`.
-
-Selects the root component described by a case. Steps use root-level connectors and owned or immediate-child port-member paths. Typed roots resolve topology through their component definition.
-
-**Example fragment:** `useCase Startup for Product { ... }`
-
-**Graphical notation:** [Use case](GRAPHICAL_CATALOG.md#notation-case). Use case.
-
 ## Keyword: function
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Signature`, `FunctionDef`.
@@ -646,13 +626,13 @@ Nanosecond duration unit and the reference simulation clock's integral base. All
 
 ## Keyword: of
 
-**Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `View`.
+**Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `Satisfaction`, `Scenario`, `View`.
 
-Introduces a view subject path rooted in the owning package or its top-level declaration. Allowed subject kinds depend on the view kind.
+Selects the root context of a useCase/verificationCase, the design source of a satisfy claim, or the subject of a compact view. These are references, not changes of containment. Satisfaction remains directed from design to requirement.
 
 **Example fragment:** `view flow fv of Product.controller.worker.run;`
 
-**Graphical notation:** [General View](GRAPHICAL_CATALOG.md#notation-view-gv), [Interconnect View](GRAPHICAL_CATALOG.md#notation-view-iv), [Case View](GRAPHICAL_CATALOG.md#notation-view-cv), [Sequence View](GRAPHICAL_CATALOG.md#notation-view-sv), [Grid View](GRAPHICAL_CATALOG.md#notation-view-grv), [Flow View](GRAPHICAL_CATALOG.md#notation-view-fv). General View; Interconnect View; Case View; Sequence View; Grid View; Flow View.
+**Graphical notation:** [General View](GRAPHICAL_CATALOG.md#notation-view-gv), [Interconnect View](GRAPHICAL_CATALOG.md#notation-view-iv), [Case View](GRAPHICAL_CATALOG.md#notation-view-cv), [Sequence View](GRAPHICAL_CATALOG.md#notation-view-sv), [Grid View](GRAPHICAL_CATALOG.md#notation-view-grv), [Flow View](GRAPHICAL_CATALOG.md#notation-view-fv), [Satisfaction relation](GRAPHICAL_CATALOG.md#notation-satisfies-link), [Use case](GRAPHICAL_CATALOG.md#notation-case), [Verification case](GRAPHICAL_CATALOG.md#notation-verification-case). Case root context, satisfaction design source or compact view subject; references preserve semantic ownership and link direction.
 
 ## Keyword: on
 
@@ -908,7 +888,7 @@ Describes a response step in a case, reversing an existing connector/member requ
 
 **Concern:** [Cases and evidence](spec/04-systems-and-conformance.md). **Grammar:** `Requirement`.
 
-Named natural-language obligation. It has descriptive text and can be referenced by cases; the core supplies no implicit requirements solver or verified checkmark.
+Declares a named obligation with immutable typed attributes and at most one optional formal doc. satisfy links design to the requirement; only verificationCase owns verify links. These relations do not establish a passed result.
 
 **Example fragment:** `requirement Safe { doc /* Duty shall remain within the allowed range. */ }`
 
@@ -960,7 +940,7 @@ SenderReceiver data mode retaining the latest pending sample: capacity 1 and dro
 
 Design-to-requirement satisfaction claim.
 
-**Example fragment:** `satisfy Reliable by Demo;`
+**Example fragment:** `satisfy Reliable of Demo;`
 
 **Graphical notation:** [Satisfaction relation](GRAPHICAL_CATALOG.md#notation-satisfies-link). Satisfaction relation.
 
@@ -1150,7 +1130,7 @@ Microsecond duration unit; one us equals 1,000 ns. The source spelling is ASCII 
 
 Intended use with optional routed exchanges.
 
-**Example fragment:** `useCase Start for Demo {}`
+**Example fragment:** `useCase Start of Demo {}`
 
 **Graphical notation:** [Use case](GRAPHICAL_CATALOG.md#notation-case). Use case.
 
@@ -1170,7 +1150,7 @@ Declares mutable private component data or a block-local copied value. Ownership
 
 Verification intent with explicit verify links.
 
-**Example fragment:** `verificationCase Check for Demo { verify Reliable; }`
+**Example fragment:** `verificationCase Check of Demo { verify Reliable; }`
 
 **Graphical notation:** [Verification case](GRAPHICAL_CATALOG.md#notation-verification-case). Verification case.
 
@@ -1198,7 +1178,7 @@ Required interface semantic-version string major.minor.patch. Compatibility is n
 
 **Concern:** [Cases and evidence](spec/04-systems-and-conformance.md). **Grammar:** `ScenarioStep`.
 
-Names the root-level connector used by a case exchange. Endpoint-member paths must resolve on its immediate child component ports with a legal orientation.
+Names the root-level connector used by a case exchange. Endpoint-member paths must resolve on root-owned or immediate-child component ports with a legal orientation.
 
 **Example fragment:** `via orderLink label submitted;`
 
@@ -1208,7 +1188,7 @@ Names the root-level connector used by a case exchange. Endpoint-member paths mu
 
 **Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `View`.
 
-Declares a named projection of an existing semantic subject with gv/iv/cv/sv/grv/fv kind. It carries no executable behavior or diagram geometry.
+Declares a named gv/iv/cv/sv/grv/fv projection. Compact of syntax selects one subject; a block combines include selections, optional recursive traversal and pure where filters into a stable union of occurrence paths. It carries no executable behavior or diagram geometry.
 
 **Example fragment:** `view wiring iv of Product;`
 

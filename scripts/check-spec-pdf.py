@@ -10,12 +10,12 @@ import pdfplumber
 
 ROOT=Path(__file__).resolve().parents[1]
 parser=argparse.ArgumentParser()
-parser.add_argument('--pdf',type=Path,default=ROOT/'output/pdf/SWAML-1.2.0-Specification.pdf')
+parser.add_argument('--pdf',type=Path,default=ROOT/'output/pdf/SWAML-1.2.1-Specification.pdf')
 PDF=parser.parse_args().pdf
 manifest=json.loads(PDF.with_suffix('.manifest.json').read_text(encoding='utf-8'))
 reader=PdfReader(PDF)
-assert manifest['release']=='1.2.0' and manifest['languageVersion']=='1.2'
-assert manifest['specificationRevision']=='1.2.0' and manifest['simulationProfile']=='1.2'
+assert manifest['release']=='1.2.1' and manifest['languageVersion']=='1.2'
+assert manifest['specificationRevision']=='1.2.1' and manifest['simulationProfile']=='1.2'
 assert len(reader.pages)==manifest['pages'] and len(reader.pages)>100
 assert hashlib.sha256(PDF.read_bytes()).hexdigest()==manifest['pdfSha256']
 assert PDF.with_suffix('.sha256').read_text(encoding='utf-8').split()[0]==manifest['pdfSha256']
@@ -38,8 +38,9 @@ notation=json.loads((ROOT/'spec/notation.json').read_text(encoding='utf-8'))
 concept_titles={'Notation: '+concept['id'] for concept in notation['concepts']}
 assert concept_titles.issubset({str(o.title) for o in outlines}), 'Missing concept navigation'
 attached_paths={source['path'] for source in manifest['sources']}
-assert {'docs/QUICK_START.md','docs/ARCHITECTURE_PATTERNS.md','docs/ONTOLOGY_AND_VIEWS.md','docs/RELEASE_1_2_0.md','docs/MIGRATION_1_2.md','docs/decisions/0006-reusable-qos-and-flat-showcase.md','docs/decisions/0007-component-functions-and-calculations.md','docs/SWAML-1.2.0-Reference.md'}.issubset(attached_paths), 'Missing 1.2 edition guidance'
+assert {'docs/QUICK_START.md','docs/ARCHITECTURE_PATTERNS.md','docs/ONTOLOGY_AND_VIEWS.md','docs/RELEASE_1_2_1.md','docs/MIGRATION_1_2.md','docs/decisions/0006-reusable-qos-and-flat-showcase.md','docs/decisions/0007-component-functions-and-calculations.md','docs/SWAML-1.2.1-Reference.md'}.issubset(attached_paths), 'Missing 1.2 edition guidance'
 assert {'docs/MODELING_OVERVIEW.md', 'spec/modeling-overview.json'}.issubset(attached_paths), 'Missing visual modeling guide'
+assert 'docs/decisions/0010-consistent-subject-relations.md' in attached_paths, 'Missing 1.2.1 relation decision'
 for graph in ['ontology', 'intent', 'interactions', 'flow', 'functions', 'structure']:
     for suffix in ['svg', 'scene.json']:
         assert f'docs/assets/modeling-{graph}.{suffix}' in attached_paths, (graph, suffix)

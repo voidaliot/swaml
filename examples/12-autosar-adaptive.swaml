@@ -85,7 +85,7 @@ package AdaptiveDiagnostics {
         deploy audit on "system:auditProcess";
     }
     requirement ObservableHealth { doc /* A completed health check exposes its result to the application and audit log. */ }
-    satisfy ObservableHealth by Vehicle; useCase InspectVehicle for Vehicle {
+    satisfy ObservableHealth of Vehicle; useCase InspectVehicle of Vehicle {
         call application.health.runCheck -> health.api.runCheck via healthLink label inspect;
         publish health.api.changed -> application.health.changed via healthLink after inspect label changed;
         publish health.audit.checked -> audit.input.checked via auditLink after changed label audited;

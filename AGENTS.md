@@ -49,7 +49,7 @@ Preserve the existing license, unrelated user edits and repository history. Neve
 
 Keep the reference simulator portable: file access and source hashing belong to CLI/host adapters. Preserve the documented scheduler, timeout ties, queue identity, copied values, snapshot scope, direct function/state ownership and explicit resource failures. Test observable traces and final stores, including adverse cases. A simulator run is not production scheduling proof or universal verification.
 
-Maintain every current keyword entry in `spec/keywords.json` as the grammar evolves. Regenerate the consolidated Markdown with `npm run docs:build`; do not hand-edit generated `KEYWORD_REFERENCE.md` or `SWAML-1.2.0-Reference.md`. Regenerate vector examples with `python3 scripts/build-graphical-examples.py`. Their scene/SVG sources and model-subject manifest must stay synchronized.
+Maintain every current keyword entry in `spec/keywords.json` as the grammar evolves. Regenerate the consolidated Markdown with `npm run docs:build`; do not hand-edit generated `KEYWORD_REFERENCE.md` or `SWAML-1.2.1-Reference.md`. Regenerate vector examples with `python3 scripts/build-graphical-examples.py`. Their scene/SVG sources and model-subject manifest must stay synchronized.
 
 Keep `spec/notation.json` exhaustive over the grammar and keyword inventory. Every graphical concept needs a context, syntax, canonical drawing and constraints; text-only terms need an explicit rationale. Regenerate the catalog and SVG/PNG assets with `scripts/build-notation.py` and run its `--check` mode. Keep all images original and do not import unsupported SysML constructs through notation.
 
@@ -58,3 +58,5 @@ Before publishing an edition, run the complete language gate, figure reproducibi
 ## Requirements and presentation
 
 Use lower camel case keywords, including primitive types and view kinds. Requirements own only immutable typed attributes and optional doc. A declaration owns at most one formal doc; ordinary comments remain separate lexical annotations. satisfy links design to requirements; only verificationCase owns verify. Neither is proof. Views select a stable union of occurrence paths through include/recursive/where; filters never execute behavior. Read ADR 0009 before changing these rules.
+
+Use `of` for case root contexts, satisfaction design sources and compact view subjects. The former `for` and `by` relation spellings require migration; `on` retains activation/location meaning and `as` retains result binding. Read ADR 0010 before changing relation syntax.

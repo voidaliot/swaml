@@ -1,8 +1,13 @@
 # Changelog
 
-The 1.2 preparation also includes a formal interface reference covering all four kinds, a UML transition guide, source-to-showcase consistency checks and actionable role/direction/policy diagnostics.
+## 1.2.1 — 2026-10-18
 
-## 1.2.0 — 2026-10-16 (local release preparation)
+- Use `of` for case root contexts and satisfaction design sources, matching compact view subjects; reject the former `for` and `by` relation spellings.
+- Document the intentional patch migration and current 1.2 family/package revision selection. Preserve the published 1.2.0 artifacts.
+- Correct requirement, case endpoint and multi-selection view descriptions; remove obsolete release-candidate wording.
+- Synchronize grammar, examples, keyword/notation coverage, source-backed diagrams, showcase and publication artifacts; add imported/qualified, legacy-rejection and malformed-input regressions.
+
+## 1.2.0 — 2026-10-16
 
 - Add typed requirements, formal doc blocks, ordinary comment ownership, satisfy/verify relations and separate useCase/verificationCase declarations.
 - Use lower camel case keywords throughout, including primitive types and view kinds; support multi-subject filtered view blocks.

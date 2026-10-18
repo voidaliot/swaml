@@ -18,11 +18,11 @@ package Example {
             assert result == 2;
         }
     }
-    satisfy Ready by App;
-    useCase Start for App {
+    satisfy Ready of App;
+    useCase Start of App {
         doc /* A user starts the application. */
     }
-    verificationCase CheckStartup for App {
+    verificationCase CheckStartup of App {
         doc /* Run startup and inspect the final result: it must equal 2. */
         verify Ready;
     }

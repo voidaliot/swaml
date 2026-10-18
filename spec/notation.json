@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "languageVersion": "1.2",
-  "edition": "1.2.0",
+  "edition": "1.2.1",
   "title": "SWAML canonical graphical notation",
   "style": {
     "background": "white",
@@ -2942,16 +2942,16 @@
       ],
       "keywords": [
         "useCase",
-        "for"
+        "of"
       ],
       "productions": [
         "Scenario"
       ],
-      "syntax": "useCase Change for Cabin",
+      "syntax": "useCase Change of Cabin",
       "context": "Scenario header in Settings; steps reference Cabin’s root-level connectors.",
       "rules": [
         "Draw a case frame labeled useCase with its name and selected root.",
-        "The for relation references a root; enclosure never changes package ownership."
+        "The of relation references a root; enclosure never changes package ownership."
       ],
       "description": "A use case describes intended use and routed exchanges.",
       "source": {
@@ -2964,7 +2964,7 @@
           "«useCase» Change"
         ],
         "lines": [
-          "for Cabin"
+          "of Cabin"
         ]
       }
     },
@@ -2979,12 +2979,12 @@
       ],
       "keywords": [
         "satisfy",
-        "by"
+        "of"
       ],
       "productions": [
         "Satisfaction"
       ],
-      "syntax": "satisfy VisibleSetting by Cabin;",
+      "syntax": "satisfy VisibleSetting of Cabin;",
       "context": "Package-owned design-to-requirement relation.",
       "rules": [
         "Draw a dashed open arrow from the design element to the requirement, labeled satisfy.",
@@ -3707,12 +3707,13 @@
         "cv"
       ],
       "keywords": [
-        "verificationCase"
+        "verificationCase",
+        "of"
       ],
       "productions": [
         "Scenario"
       ],
-      "syntax": "verificationCase CheckResults for Demo",
+      "syntax": "verificationCase CheckResults of Demo",
       "context": "Owned source element in the Assurance example.",
       "rules": [
         "Draw a case frame labeled verificationCase with its name and root context.",
@@ -3729,7 +3730,7 @@
           "«verificationCase» CheckResults"
         ],
         "lines": [
-          "for Demo"
+          "of Demo"
         ]
       }
     },
@@ -4632,14 +4633,6 @@
         ]
       },
       {
-        "term": "by",
-        "mode": "glyph",
-        "rationale": "Satisfaction relation.",
-        "concepts": [
-          "satisfies-link"
-        ]
-      },
-      {
         "term": "verify",
         "mode": "glyph",
         "rationale": "Verification relation.",
@@ -4661,14 +4654,6 @@
         "rationale": "Verification case.",
         "concepts": [
           "verification-case"
-        ]
-      },
-      {
-        "term": "for",
-        "mode": "glyph",
-        "rationale": "Use case.",
-        "concepts": [
-          "case"
         ]
       },
       {
@@ -4766,14 +4751,17 @@
       {
         "term": "of",
         "mode": "glyph",
-        "rationale": "General View; Interconnect View; Case View; Sequence View; Grid View; Flow View.",
+        "rationale": "Case root context, satisfaction design source or compact view subject; references preserve semantic ownership and link direction.",
         "concepts": [
           "view-gv",
           "view-iv",
           "view-cv",
           "view-sv",
           "view-grv",
-          "view-fv"
+          "view-fv",
+          "satisfies-link",
+          "case",
+          "verification-case"
         ]
       },
       {

@@ -17,7 +17,7 @@ const result = {
         const n = a.isInstance(c.node) ? c.node.definition.ref : c.node;
         return {path:c.path,name:c.name,kind:c.kind,doc:documentationText(c.node)??documentationText(n)??'',comments:comments.filter(c=>c.owner===n).map(c=>c.text),attributes:a.isRequirement(n)?n.attributes.map(v=>({name:v.name,type:v.type.$cstNode.text,value:v.value.$cstNode.text})):[],source:c.node.$cstNode.text};
     })})),
-    relations:[...pkg.satisfactions.map(r=>({source:r.source,target:r.requirement.ref.name,kind:'satisfy'})),...pkg.elements.filter(a.isScenario).flatMap(c=>[{source:c.name,target:c.root.ref.name,kind:'for'},...c.verifications.map(r=>({source:c.name,target:r.requirement.ref.name,kind:'verify'}))])]
+    relations:[...pkg.satisfactions.map(r=>({source:r.source,target:r.requirement.ref.name,kind:'satisfy'})),...pkg.elements.filter(a.isScenario).flatMap(c=>[{source:c.name,target:c.root.ref.name,kind:'of'},...c.verifications.map(r=>({source:c.name,target:r.requirement.ref.name,kind:'verify'}))])]
 };
 const text=JSON.stringify(result,null,2)+'\n';
 if(process.argv.includes('--check'))assert.equal(await readFile(path,'utf8'),text,'Traceability demo is stale; run node scripts/build-traceability-demo.mjs');

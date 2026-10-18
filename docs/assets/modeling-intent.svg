@@ -13,8 +13,8 @@
 <text x="480" y="260" font-size="20" font-weight="400" fill="#17324d">satisfy</text>
 <polyline points="560,415 520,415" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
 <polygon points="520.000,415.000 534.000,409.000 534.000,421.000" fill="#17324d"/>
-<rect x="522" y="369" width="44.7" height="27" rx="0" fill="white" stroke="none"/>
-<text x="528" y="390" font-size="20" font-weight="400" fill="#17324d">for</text>
+<rect x="522" y="369" width="33.8" height="27" rx="0" fill="white" stroke="none"/>
+<text x="528" y="390" font-size="20" font-weight="400" fill="#17324d">of</text>
 <polyline points="1060,650 1073,650 1073,125 1060,125" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
 <polygon points="1060.000,125.000 1074.000,119.000 1074.000,131.000" fill="#17324d"/>
 <rect x="934" y="534" width="77.4" height="27" rx="0" fill="white" stroke="none"/>
@@ -32,7 +32,7 @@
 <rect x="560" y="340" width="500" height="150" rx="0" fill="#f8f2e9" stroke="#17324d"/>
 <text x="576" y="372" font-size="20" font-weight="700" fill="#17324d">Purchase</text>
 <polyline points="560,386 1060,386" fill="none" stroke="#cad6df" stroke-width="2"/>
-<text x="576" y="415" font-size="20" font-weight="400" fill="#17324d">useCase for Production</text>
+<text x="576" y="415" font-size="20" font-weight="400" fill="#17324d">useCase of Production</text>
 <text x="576" y="443" font-size="20" font-weight="400" fill="#17324d">Six routed exchanges</text>
 <rect x="20" y="340" width="500" height="150" rx="0" fill="#eef5fa" stroke="#17324d"/>
 <text x="36" y="372" font-size="20" font-weight="700" fill="#17324d">Production</text>

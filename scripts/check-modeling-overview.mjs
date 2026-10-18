@@ -65,6 +65,15 @@ for (const graph of [manifest.ontology, ...manifest.stages]) {
     for (const edge of graph.edges) {
         assert.ok(ids.has(edge.source) && ids.has(edge.target), `${graph.id}: ${edge.id} endpoints`);
         assert.ok(['owns', 'references', 'flow', 'route'].includes(edge.kind), `${graph.id}: ${edge.id} relation`);
+        const source = graph.nodes.find(node => node.id === edge.source);
+        const target = graph.nodes.find(node => node.id === edge.target);
+        if (source.subject && target.subject) {
+            const from = resolveSubject(source.subject), to = resolveSubject(target.subject);
+            if (a.isScenario(from) && a.isRootComponent(to)) {
+                assert.equal(from.root.ref, to, `${graph.id}: case context must reference its authored root`);
+                assert.equal(edge.label, 'of', `${graph.id}: case context uses the of keyword`);
+            }
+        }
     }
     const svg = await read(`docs/assets/modeling-${graph.id}.svg`);
     const scene = JSON.parse(await read(`docs/assets/modeling-${graph.id}.scene.json`));

@@ -119,7 +119,7 @@ package CloudTelemetry {
         deploy archive on "system:archiveContainer";
     }
     requirement ValidatedTelemetry { doc /* Accepted samples from the ordered device stream reach analytics and archive without duplicate local processing. */ }
-    satisfy ValidatedTelemetry by Production; useCase IngestSample for Production {
+    satisfy ValidatedTelemetry of Production; useCase IngestSample of Production {
         call device.ingest.submit -> ingestion.api.submit via ingestionLink label upload;
         publish ingestion.accepted.accepted -> broker.input.accepted via brokerLink after upload label admitted;
         publish broker.output.recorded -> analytics.input.recorded via analyticsLink after admitted label analytics;

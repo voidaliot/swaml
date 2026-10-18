@@ -62,12 +62,6 @@
       "example": "while (i < 3) bound 3 { i = i + 1; }"
     },
     {
-      "keyword": "by",
-      "concern": "Cases and evidence",
-      "meaning": "Identifies the design source of satisfaction.",
-      "example": "satisfy Reliable by Demo;"
-    },
-    {
       "keyword": "byte",
       "concern": "Values and calculation",
       "meaning": "Exact unsigned eight-bit values from 0 through 255. Integral assignment checks the destination range statically for known constants and at runtime for computed values.",
@@ -254,12 +248,6 @@
       "example": "state Stopped final {}"
     },
     {
-      "keyword": "for",
-      "concern": "Cases and evidence",
-      "meaning": "Selects the root component described by a case. Steps use root-level connectors and owned or immediate-child port-member paths. Typed roots resolve topology through their component definition.",
-      "example": "useCase Startup for Product { ... }"
-    },
-    {
       "keyword": "function",
       "concern": "Behavior and states",
       "meaning": "Declares an executable component-owned behavior or an interface contract signature. A body contains optional local calculations followed by statements or directly owned states. An omitted result means void; triggers select activation.",
@@ -388,7 +376,7 @@
     {
       "keyword": "of",
       "concern": "Graphical views",
-      "meaning": "Introduces a view subject path rooted in the owning package or its top-level declaration. Allowed subject kinds depend on the view kind.",
+      "meaning": "Selects the root context of a useCase/verificationCase, the design source of a satisfy claim, or the subject of a compact view. These are references, not changes of containment. Satisfaction remains directed from design to requirement.",
       "example": "view flow fv of Product.controller.worker.run;"
     },
     {
@@ -544,7 +532,7 @@
     {
       "keyword": "requirement",
       "concern": "Cases and evidence",
-      "meaning": "Named natural-language obligation. It has descriptive text and can be referenced by cases; the core supplies no implicit requirements solver or verified checkmark.",
+      "meaning": "Declares a named obligation with immutable typed attributes and at most one optional formal doc. satisfy links design to the requirement; only verificationCase owns verify links. These relations do not establish a passed result.",
       "example": "requirement Safe { doc /* Duty shall remain within the allowed range. */ }"
     },
     {
@@ -575,7 +563,7 @@
       "keyword": "satisfy",
       "concern": "Cases and evidence",
       "meaning": "Design-to-requirement satisfaction claim.",
-      "example": "satisfy Reliable by Demo;"
+      "example": "satisfy Reliable of Demo;"
     },
     {
       "keyword": "send",
@@ -689,7 +677,7 @@
       "keyword": "useCase",
       "concern": "Cases and evidence",
       "meaning": "Intended use with optional routed exchanges.",
-      "example": "useCase Start for Demo {}"
+      "example": "useCase Start of Demo {}"
     },
     {
       "keyword": "var",
@@ -701,7 +689,7 @@
       "keyword": "verificationCase",
       "concern": "Cases and evidence",
       "meaning": "Verification intent with explicit verify links.",
-      "example": "verificationCase Check for Demo { verify Reliable; }"
+      "example": "verificationCase Check of Demo { verify Reliable; }"
     },
     {
       "keyword": "verify",
@@ -718,13 +706,13 @@
     {
       "keyword": "via",
       "concern": "Cases and evidence",
-      "meaning": "Names the root-level connector used by a case exchange. Endpoint-member paths must resolve on its immediate child component ports with a legal orientation.",
+      "meaning": "Names the root-level connector used by a case exchange. Endpoint-member paths must resolve on root-owned or immediate-child component ports with a legal orientation.",
       "example": "via orderLink label submitted;"
     },
     {
       "keyword": "view",
       "concern": "Graphical views",
-      "meaning": "Declares a named projection of an existing semantic subject with gv/iv/cv/sv/grv/fv kind. It carries no executable behavior or diagram geometry.",
+      "meaning": "Declares a named gv/iv/cv/sv/grv/fv projection. Compact of syntax selects one subject; a block combines include selections, optional recursive traversal and pure where filters into a stable union of occurrence paths. It carries no executable behavior or diagram geometry.",
       "example": "view wiring iv of Product;"
     },
     {

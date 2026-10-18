@@ -13,7 +13,7 @@ async function parse(body: string) {
 }
 const structure = `component def Worker { function run() { doc /* Perform work. */ } } component Demo { component first: Worker; component second: Worker; }`;
 test('requirements have immutable typed attributes, formal raw text and explicit trace links', async () => {
-    const doc = await parse(`requirement Reliable { doc /* First line.\nSecond line: \\n is literal. */ attribute id: string = "REQ-1"; attribute priority: uint = 2; } ${structure} satisfy Reliable by Demo.first; useCase Work for Demo {} verificationCase Check for Demo { verify Reliable; }`);
+    const doc = await parse(`requirement Reliable { doc /* First line.\nSecond line: \\n is literal. */ attribute id: string = "REQ-1"; attribute priority: uint = 2; } ${structure} satisfy Reliable of Demo.first; useCase Work of Demo {} verificationCase Check of Demo { verify Reliable; }`);
     assert.deepEqual(doc.diagnostics, []);
     assert.equal(documentationText(doc.parseResult.value.packages[0].elements[0]), 'First line.\nSecond line: \\n is literal.');
     assert.equal(doc.parseResult.value.packages[0].satisfactions[0].requirement.ref?.name,'Reliable');
@@ -57,20 +57,20 @@ for(const [title, body, code] of [
     ['reserved doc identifier','requirement doc {}','SW003'],
     ['reserved doc enum literal','enum Flags { doc }','SW003'],
     ['comment keyword','requirement R { comment /* note */ }',undefined],
-    ['requirement subject','requirement R for Demo {}',undefined],
+    ['requirement subject','requirement R of Demo {}',undefined],
     ['mutable requirement','requirement R { var count: int = 1; }',undefined],
     ['duplicate attribute','requirement R { attribute id: string = "a"; attribute id: string = "b"; }','SW002'],
     ['wrong attribute type','requirement R { attribute priority: int = "high"; }','SW023'],
     ['attribute private capture','requirement R { attribute value: int = Demo.secret; } component Demo { var secret: int = 1; }','SW022'],
     ['void attribute','requirement R { attribute value: void = 1; }','SW020'],
-    ['unknown satisfaction source','requirement R {} satisfy R by Missing;','SW090'],
-    ['case as satisfaction source','requirement R {} component Demo {} useCase Story for Demo {} satisfy R by Story;','SW090'],
-    ['duplicate satisfaction','requirement R {} component Demo {} satisfy R by Demo; satisfy R by Demo;','SW090'],
-    ['aliased duplicate satisfaction','requirement R {} component Demo {} satisfy R by Demo; satisfy R by P.Demo;','SW090'],
-    ['useCase verification','requirement R {} component Demo {} useCase Story for Demo { verify R; }','SW091'],
-    ['duplicate verification','requirement R {} component Demo {} verificationCase Check for Demo { verify R; verify R; }','SW091'],
-    ['unknown requirement','component Demo {} verificationCase Check for Demo { verify Missing; }',undefined],
-    ['old case keyword','component Demo {} case Story for Demo {}',undefined],
+    ['unknown satisfaction source','requirement R {} satisfy R of Missing;','SW090'],
+    ['case as satisfaction source','requirement R {} component Demo {} useCase Story of Demo {} satisfy R of Story;','SW090'],
+    ['duplicate satisfaction','requirement R {} component Demo {} satisfy R of Demo; satisfy R of Demo;','SW090'],
+    ['aliased duplicate satisfaction','requirement R {} component Demo {} satisfy R of Demo; satisfy R of P.Demo;','SW090'],
+    ['useCase verification','requirement R {} component Demo {} useCase Story of Demo { verify R; }','SW091'],
+    ['duplicate verification','requirement R {} component Demo {} verificationCase Check of Demo { verify R; verify R; }','SW091'],
+    ['unknown requirement','component Demo {} verificationCase Check of Demo { verify Missing; }',undefined],
+    ['old case keyword','component Demo {} case Story of Demo {}',undefined],
     ['uppercase view kind','component Demo {} view layout IV of Demo;',undefined],
     ['uppercase primitive','component Demo { var value: Int = 1; }',undefined],
     ['empty view block','view empty gv {}',undefined],

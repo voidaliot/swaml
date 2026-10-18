@@ -21,7 +21,7 @@ Describe the actual modeling problem and a small before/after model. Identify th
 
 A proposal that adds cross-component communication must identify the port/interface/member route. A proposal for an event must identify its declaration, emitting function, receiving owner, delivery policy and failure behavior. A proposal for state or control flow must define ordering, concurrency and termination. Avoid accepting syntax before its semantics exists.
 
-Published breaking changes require a new language version and migration notes. The unpublished 1.2 release candidate includes the owner-approved component/function/calculation revision; its migration guide records the changes from earlier 1.2 drafts and 1.1. Additive keywords can still break existing identifiers; document that impact. Record substantial decisions under `docs/decisions/`.
+Published syntax changes require an explicit release revision and migration notes. The owner-requested 1.2.1 correction replaces case for and satisfaction by with of; it deliberately rejects the old spellings, as recorded in ADR 0010 and the migration guide. Hosts currently select the 1.2 family, so reproducibility also requires pinning the package revision. The published 1.2.0 edition remains archived. Additive keywords can still break existing identifiers; document that impact. Record substantial decisions under `docs/decisions/`.
 
 ## Implement and test
 

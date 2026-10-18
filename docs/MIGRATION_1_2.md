@@ -1,6 +1,18 @@
 # Migrating to SWAML 1.2
 
-The 1.2 release candidate uses **components → functions → statements or states**, with **calculations** for pure expressions. This is a deliberate syntax change from 1.1 and earlier unpublished 1.2 drafts. Historical publications remain unchanged. [ADR 0007](decisions/0007-component-functions-and-calculations.md) records the ownership, reuse and integration decisions.
+The 1.2 language uses **components → functions → statements or states**, with **calculations** for pure expressions. This is a deliberate syntax change from 1.1 and earlier unpublished 1.2 drafts. Historical publications remain unchanged. [ADR 0007](decisions/0007-component-functions-and-calculations.md) records the ownership, reuse and integration decisions.
+
+## Migrate 1.2.0 to 1.2.1
+
+Version 1.2.1 intentionally corrects subject-assignment syntax at the owner's request. Replace case `for` and satisfaction `by` with `of`. Compact views already use `of`. These contextual edits preserve root selection, satisfaction direction, case traces and execution behavior. Do not replace ordinary prose, string contents, `on` triggers/deployment destinations or `as` result bindings.
+
+| 1.2.0 fragment | 1.2.1 fragment |
+| --- | --- |
+| `useCase Start for App {}` | `useCase Start of App {}` |
+| `verificationCase Check for App { verify Ready; }` | `verificationCase Check of App { verify Ready; }` |
+| `satisfy Ready by App;` | `satisfy Ready of App;` |
+
+The current parser rejects the old relation spellings. Hosts select the 1.2 family; the installed package revision determines this concrete grammar. Pin the package/release as well as the family when reproducing an older model. `for` has no relation meaning in 1.2.1; bounded `while (...) bound n` remains the supported loop syntax. See [ADR 0010](decisions/0010-consistent-subject-relations.md).
 
 ## Convert the model
 
@@ -59,4 +71,4 @@ Update simulation input keys and collected evidence to `swaml-reference/1.2`; re
 
 ## Final 1.2 authoring vocabulary
 
-Change uppercase primitive/view keywords to lower camel case: `int`, `string`, `void`, `iv`, `fv` and their peers. Replace generic case declarations with `useCase` or `verificationCase`. Replace string-only requirements with bodies containing `doc /* ... */` and optional typed attributes. Replace case satisfies clauses with package-level `satisfy Requirement by Design.path;`; add `verify Requirement;` only to a verificationCase. A use case is not a satisfaction source. View blocks can now combine include clauses and filters. See [the requirements guide](REQUIREMENTS_AND_DOCUMENTATION.md).
+Change uppercase primitive/view keywords to lower camel case: `int`, `string`, `void`, `iv`, `fv` and their peers. Replace generic case declarations with `useCase` or `verificationCase`. Replace string-only requirements with bodies containing `doc /* ... */` and optional typed attributes. Replace case satisfies clauses with package-level `satisfy Requirement of Design.path;`; add `verify Requirement;` only to a verificationCase. A use case is not a satisfaction source. View blocks can now combine include clauses and filters. See [the requirements guide](REQUIREMENTS_AND_DOCUMENTATION.md).

@@ -1,6 +1,6 @@
 # SWAML graphical notation
 
-**Language:** 1.2 · **Notation edition:** 1.2.0 · **Status:** normative
+**Language:** 1.2 · **Notation edition:** 1.2.1 · **Status:** normative
 
 This chapter defines how every SWAML language concern is represented and inspected graphically. The [canonical notation catalog](GRAPHICAL_CATALOG.md) pairs each element or property with original graphical and textual notation, contextual constraints, and downloadable SVG/PNG examples. The [worked view examples](GRAPHICAL_EXAMPLES.md) show those ideas in complete architectures. The [notation inventory](../spec/notation.json) records coverage of the concrete grammar and reserved vocabulary.
 
@@ -58,7 +58,7 @@ Empty compartments may be omitted. A nonempty collapsed compartment MUST have an
 
 Names on diagrams resolve through the same package, import and local-scope rules as source. A short name may be displayed only when its fully qualified identity is available and the shortening cannot mislead the reader. An instance view retains both its occurrence path and shared declaration identity. A selected component occurrence never denotes all same-type components' storage at once.
 
-Semantic containment depicts real ownership. A view frame or explicitly labeled context frame identifies the projection’s subject; enclosure in that frame does not reparent elements. In particular, a case’s `for Root` context is a reference to the selected root, while the case remains owned by its package. Component frames may contain child component instances, ports, connections, private variables and functions. A function frame contains its local calculation compartments and statement flow or directly owned states. No performer lane or action-allocation edge is introduced. External software-facing devices must be modeled as components with ports.
+Semantic containment depicts real ownership. A view frame or explicitly labeled context frame identifies the projection’s subject; enclosure in that frame does not reparent elements. In particular, a case’s `of Root` context is a reference to the selected root, while the case remains owned by its package. Component frames may contain child component instances, ports, connections, private variables and functions. A function frame contains its local calculation compartments and statement flow or directly owned states. No performer lane or action-allocation edge is introduced. External software-facing devices must be modeled as components with ports.
 
 A typing reference is explicitly labeled `type` and joins an occurrence to its definition. It is descriptive, does not transport data and does not denote inheritance. A separate `specializes` edge denotes a component definition's single base. A replacement member is marked `redefines` and links to the inherited member. Neither relation is a communication route. The `name : Type` header alone is sufficient when an additional typing edge would clutter the view.
 

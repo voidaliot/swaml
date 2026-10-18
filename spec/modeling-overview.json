@@ -539,7 +539,7 @@
           "title": "Purchase",
           "kind": "intent",
           "lines": [
-            "useCase for Production",
+            "useCase of Production",
             "Six routed exchanges"
           ],
           "x": 560,
@@ -641,7 +641,7 @@
           "id": "case-context",
           "source": "case",
           "target": "root",
-          "label": "for",
+          "label": "of",
           "kind": "references",
           "points": [
             {

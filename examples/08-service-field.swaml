@@ -57,7 +57,7 @@ package Settings {
         deploy rear on "system:displays";
     }
     requirement VisibleSetting { doc /* Both panels can observe accepted temperature setting updates. */ }
-    satisfy VisibleSetting by Cabin; useCase Change for Cabin {
+    satisfy VisibleSetting of Cabin; useCase Change of Cabin {
         call front.setting.setPoint -> settings.api.setPoint via frontLink label adjust;
         publish settings.api.changed -> front.setting.changed via frontLink after adjust label frontNotice;
         publish settings.api.changed -> rear.setting.changed via rearLink after adjust label rearNotice;

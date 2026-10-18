@@ -278,10 +278,10 @@ def render(concept):
         s.text(280,188,label or '«deploy»',18,center=True)
         s.labels(head+lines,29,222,501)
     elif t=='case':
-        context=next((value.removeprefix('for ') for value in lines if value.startswith('for ')),'root context')
+        context=next((value.removeprefix('of ') for value in lines if value.startswith('of ')),'root context')
         s.rect(25,26,510,229);s.text(44,59,'case context: '+context,20,True,width=472)
         s.rect(95,106,370,102,rx=50);s.text(280,164,label or head[0],20,True,width=332,center=True)
-        s.labels([value for value in lines if not value.startswith('for ')],115,190,325)
+        s.labels([value for value in lines if not value.startswith('of ')],115,190,325)
     elif t=='lifeline':
         s.box(128,24,304,73,head[-1]);s.line([(280,98),(280,255)],dash=True)
         s.labels(lines,312,151,220)

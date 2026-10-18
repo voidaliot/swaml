@@ -178,7 +178,7 @@ test('typed root resolves definition topology, cases and view paths', async () =
         connect rpc: caller.p -> serviceUnit.p qos { delivery atMostOnce; ordering fifo; capacity 1; overflow reject; };
     }
     component Example: Assembly;
-    useCase Ping for Example {
+    useCase Ping of Example {
         call caller.p.ping -> serviceUnit.p.ping via rpc label sent;
         reply serviceUnit.p.ping -> caller.p.ping via rpc after sent label received;
     }

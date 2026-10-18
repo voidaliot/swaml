@@ -55,7 +55,7 @@ package Notation {
         };
     }
     requirement CountObserved { doc /* A sent count can reach the receiving function. */ }
-    satisfy CountObserved by Demo; useCase Observe for Demo {
+    satisfy CountObserved of Demo; useCase Observe of Demo {
         send source.output.value -> sink.input.value via counts label sent;
         publish source.signal.pulse -> controller.signal.pulse via events after sent label notified;
     }

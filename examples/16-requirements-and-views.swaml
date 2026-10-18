@@ -25,12 +25,12 @@ package Assurance {
         component first: Worker;
         component second: Worker;
     }
-    satisfy BoundedResult by Demo.first;
-    satisfy BoundedResult by Demo.second;
-    useCase StartWorkers for Demo {
+    satisfy BoundedResult of Demo.first;
+    satisfy BoundedResult of Demo.second;
+    useCase StartWorkers of Demo {
         doc /* A user starts the application and both workers initialize. */
     }
-    verificationCase CheckResults for Demo {
+    verificationCase CheckResults of Demo {
         doc /* Run the reference simulation and inspect both final result values.
         Expected: first.result = 2 and second.result = 2. */
         verify BoundedResult;

@@ -99,7 +99,7 @@ package WebShop {
         deploy mailer on "system:workerContainer";
     }
     requirement ReserveBeforeAccept { doc /* An accepted order reserves stock before its confirmation and receipt are published. */ }
-    satisfy ReserveBeforeAccept by Production; useCase Purchase for Production {
+    satisfy ReserveBeforeAccept of Production; useCase Purchase of Production {
         call browser.checkout.submit -> application.api.submit via checkoutLink label checkout;
         call application.inventory.reserve -> inventory.api.reserve via inventoryLink after checkout label reserve;
         reply inventory.api.reserve -> application.inventory.reserve via inventoryLink after reserve label stock;
@@ -113,7 +113,7 @@ package WebShop {
     view purchase sv of Purchase;
     view allocation grv of Production;
     view checkoutFlow fv of Production.application.checkout.submit;
-    verificationCase CheckPurchase for Production {
+    verificationCase CheckPurchase of Production {
         doc /* Run the purchase simulation; inspect reserved stock, confirmation and receipt. */
         verify ReserveBeforeAccept;
     }

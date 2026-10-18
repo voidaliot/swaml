@@ -12,7 +12,7 @@
     <text x="54" y="341" fill="#b6c3bf" font-size="19">Compose boundaries. Connect contracts.</text>
     <text x="54" y="370" fill="#b6c3bf" font-size="19">Follow behavior through one model.</text>
     <rect x="54" y="408" width="66" height="28" rx="4" fill="#ed7956"/>
-    <text x="87" y="428" text-anchor="middle" fill="#18272b" font-size="14" font-weight="700">1.2.0</text>
+    <text x="87" y="428" text-anchor="middle" fill="#18272b" font-size="14" font-weight="700">1.2.1</text>
     <text x="135" y="428" fill="#b6c3bf" font-size="14">FLAT VIEWS · TYPED ROUTES · REUSABLE POLICIES</text>
     <rect x="665" y="84" width="557" height="316" rx="8" fill="none" stroke="#526463"/>
     <text x="685" y="112" fill="#b6c3bf" font-size="13">«root component» Cabin</text>

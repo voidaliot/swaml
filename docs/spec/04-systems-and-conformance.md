@@ -60,9 +60,9 @@ The [architecture patterns](../ARCHITECTURE_PATTERNS.md) provide complete exampl
 
 `requirement Name { doc /* obligation */ attribute id: string = "REQ-001"; }` declares a named obligation with optional formal documentation and immutable typed attributes. Requirements have no subject. Attribute names are unique; values use the ordinary nominal type rules and cannot read private state, functions or other attributes. `priority` is also accepted as an attribute name.
 
-`satisfy Requirement by Design.path;` is a package-owned relation from a resolvable design element to a requirement. Sources may be software declarations or occurrences in the same package, but not requirements, cases, views or the package itself. Requirement references use the ordinary import/qualification rules. Duplicate source/requirement pairs are invalid.
+`satisfy Requirement of Design.path;` is a package-owned relation from a resolvable design element to a requirement. Sources may be software declarations or occurrences in the same package, but not requirements, cases, views or the package itself. Requirement references use the ordinary import/qualification rules. Duplicate source/requirement pairs are invalid.
 
-`useCase Name for Root { ... }` describes intended use. `verificationCase Name for Root { verify Requirement; ... }` describes verification intent. Only verification cases own verify relations, before their exchanges; duplicate targets are invalid. Both kinds may own one doc and zero or more exchanges. Neither satisfaction nor verification links establish fulfilled status or execute a test. Evidence belongs to a versioned external simulation, test, analysis or review result.
+`useCase Name of Root { ... }` describes intended use. `verificationCase Name of Root { verify Requirement; ... }` describes verification intent. Only verification cases own verify relations, before their exchanges; duplicate targets are invalid. Both kinds may own one doc and zero or more exchanges. Neither satisfaction nor verification links establish fulfilled status or execute a test. Evidence belongs to a versioned external simulation, test, analysis or review result.
 
 A case step has a kind (`send`, `publish`, `call`, `reply`), two endpoint-member paths, a named connector at the selected root composition level, an optional earlier-step predecessor and a unique label. Case endpoints must be visible ports of the root itself or its immediate child components. A typed root resolves those children and connectors through its definition. Internal interactions at a deeper level require a separate root component assembled at that abstraction level. This limitation keeps case paths subject to the same hierarchy rule as structural connectors.
 
@@ -71,6 +71,22 @@ Both endpoints MUST identify the same member of the connector's interface. Sende
 `after label` imposes a happens-before dependency on an earlier declared step. No predecessor means no ordering is imposed relative to other steps. Source order is only a stable display tie-break, not an implicit total order. Thus unrelated notifications can remain concurrent in sv. A reply MUST have exactly one unanswered matching request among its transitive `after` ancestors, with reversed endpoints and the same connector/member. Zero or multiple candidates is an error (SW083); each request has at most one reply. A request may remain unanswered in a partial trace. A prior reply closes a candidate only when that reply is itself an ancestor of the current step. A reply on an independent causal branch cannot resolve ambiguity merely by appearing earlier in the file. Source order never chooses between ambiguous correlations. Realization by function bodies is a separate analysis claim requiring a witness; route-valid cases remain unverified until that evidence exists.
 
 Cases describe representative traces, not exhaustive behavior. They do not execute a second program, introduce independent event definitions, or loosen function guards. A complete behavioral verification must check traces against function semantics and environmental assumptions.
+
+### Relation vocabulary
+
+Subject-assignment relations consistently use `of`: a case of a root, a satisfaction claim of a design element, or a compact view of a subject. The relation does not change containment: cases, views and satisfaction relations remain package-owned, and satisfaction still points from design to requirement. Case `for` and satisfaction `by` are rejected in 1.2.1; see the [migration guide](../MIGRATION_1_2.md).
+
+| Syntax | Meaning |
+| --- | --- |
+| `useCase C of Root` / `verificationCase C of Root` | Root context for routed case exchanges. |
+| `satisfy R of Design.path;` | Design.path claims satisfaction of requirement R. |
+| `view V iv of Subject;` / `include Subject;` | Select existing subjects for a projection. |
+| `on` | Activation stimulus or external deployment location. |
+| `as` | Local/routed call result or completion binding. |
+| `:` / `=` | Type/header separator / value initialization or assignment. |
+| `via` / `after` / `->` | Existing route / causal predecessor or timer / directed edge. |
+
+`for` is unavailable for relations; any future use is limited to a separately specified loop construct. Current loops use bounded `while`; 1.2.1 introduces no for-loop syntax.
 
 ## 4.4 View declarations
 

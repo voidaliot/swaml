@@ -21,7 +21,7 @@ for (const file of (await walk(root)).filter(f => f.endsWith('.md'))) {
         links++;
     }
     // Historical consolidated editions retain the grammar of their immutable release.
-    if (['SWAML-1.0.0-Reference.md', 'SWAML-1.1.0-Reference.md', 'SWAML-1.1.1-Reference.md'].some(name => file.replaceAll('\\', '/').endsWith('/docs/' + name))) continue;
+    if (['SWAML-1.0.0-Reference.md', 'SWAML-1.1.0-Reference.md', 'SWAML-1.1.1-Reference.md', 'SWAML-1.2.0-Reference.md'].some(name => file.replaceAll('\\', '/').endsWith('/docs/' + name))) continue;
     for (const match of text.matchAll(/```swaml\n([\s\S]*?)```/g)) {
         const { Swaml } = createSwamlServices(EmptyFileSystem);
         const doc = await parseHelper(Swaml)(match[1], { validation: true });

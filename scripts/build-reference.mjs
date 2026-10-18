@@ -70,6 +70,7 @@ const chapters = [
     ['Function-local calculations and calls', 'docs/decisions/0008-function-local-calculations-and-calls.md'],
     ['Requirements and documentation', 'docs/REQUIREMENTS_AND_DOCUMENTATION.md'],
     ['Requirements design decision', 'docs/decisions/0009-requirements-documentation-and-views.md'],
+    ['Consistent subject relations', 'docs/decisions/0010-consistent-subject-relations.md'],
     ['Ontology and flat views', 'docs/ONTOLOGY_AND_VIEWS.md'],
     ['Guide for UML architects', 'docs/UML_GUIDE.md'],
     ['Alphabetical keyword reference', 'docs/KEYWORD_REFERENCE.md'],
@@ -79,7 +80,7 @@ const chapters = [
 try { await read('docs/GRAPHICAL_EXAMPLES.md'); chapters.splice(chapters.findIndex(x => x[0] === 'Graphical notation') + 1, 0, ['Graphical examples', 'docs/GRAPHICAL_EXAMPLES.md']); } catch {}
 const anchor = p => 'source-' + createHash('sha256').update(p).digest('hex').slice(0, 12);
 const included = new Set(chapters.map(x => x[1]));
-let book = '# SWAML 1.2.0 — Complete language reference\n\n**Software Architecture Modeling Language** · Headerless language 1.2; explicit definitions and component usages · Independently authored, KerML-based semantic design.\n\nThis is the complete user-facing Markdown edition, generated from the maintained source chapters. Navigate by the alphabetical concern map or the exhaustive alphabetical keyword reference. Normative chapters define meaning; tutorials, comparisons and examples illustrate it. The portable reference parser and logical simulator provide executable evidence with the limitations stated below.\n\n## Contents\n\n';
+let book = '# SWAML 1.2.1 — Complete language reference\n\n**Software Architecture Modeling Language** · Headerless language 1.2; explicit definitions and component usages · Independently authored, KerML-based semantic design.\n\nThis is the complete user-facing Markdown edition, generated from the maintained source chapters. Navigate by the alphabetical concern map or the exhaustive alphabetical keyword reference. Normative chapters define meaning; tutorials, comparisons and examples illustrate it. The portable reference parser and logical simulator provide executable evidence with the limitations stated below.\n\n## Contents\n\n';
 book += chapters.map(([title, p]) => `- [${title}](#${anchor(p)})`).join('\n') + '\n- [Complete concrete grammar](#complete-concrete-grammar)\n- [Model examples](#model-examples)\n\n';
 for (const [title, path] of chapters) {
     let text = path === 'docs/KEYWORD_REFERENCE.md' ? keywordText : await read(path);
@@ -119,5 +120,5 @@ localAnchors.add('model-examples');
 for (const match of book.matchAll(/\[[^\]]*\]\(#([^)]+)\)/g)) {
     if (!localAnchors.has(match[1])) throw new Error(`Broken combined-reference anchor: ${match[1]}`);
 }
-await output('docs/SWAML-1.2.0-Reference.md', book.trimEnd() + '\n');
+await output('docs/SWAML-1.2.1-Reference.md', book.trimEnd() + '\n');
 console.log(`${check ? 'Verified' : 'Built'} complete reference and ${seen.size} alphabetical keyword entries.`);

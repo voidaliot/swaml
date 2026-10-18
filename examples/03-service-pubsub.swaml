@@ -57,7 +57,7 @@ package Commerce {
         deploy archive on "system:storage";
     }
     requirement AcceptedOrder { doc /* Accepted orders shall be published to audit subscribers. */ }
-    satisfy AcceptedOrder by Shop; useCase Checkout for Shop {
+    satisfy AcceptedOrder of Shop; useCase Checkout of Shop {
         call web.orders.submit -> backend.api.submit via orderLink label submitOrder;
         publish backend.api.accepted -> web.orders.accepted via orderLink after submitOrder label notification;
         publish backend.audit.recorded -> archive.input.recorded via auditing after submitOrder label auditRecord;

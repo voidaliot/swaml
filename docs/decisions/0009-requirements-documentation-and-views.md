@@ -2,6 +2,8 @@
 
 Status: accepted for SWAML 1.2.0. Date: 2026-10-16.
 
+The relation spellings in this historical decision are superseded in 1.2.1 by [ADR 0010](0010-consistent-subject-relations.md): current satisfaction and case contexts use `of`.
+
 The language owner requested simple requirements without a subject, one formal documentation block per owner, ordinary lexical comments, two case kinds and composable view selections. This decision replaces the earlier string-only requirement, generic case and case-to-requirement satisfies clause.
 
 `requirement` owns immutable typed `attribute` values and optional `doc /* ... */` text. It has no subject, behavior or private runtime store. `satisfy Requirement by Design.path;` records a design claim. `verificationCase` owns `verify Requirement;` links; `useCase` describes intended use. Neither relation establishes evidence by itself. Both case kinds share the existing routed, partially ordered exchange semantics.

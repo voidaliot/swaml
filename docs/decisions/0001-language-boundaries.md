@@ -2,7 +2,7 @@
 
 Status: accepted for SWAML 0.1. Date: 2026-10-14.
 
-The ownership/authoring decisions in this historical record are superseded for the unpublished 1.2 candidate by [ADR 0007](0007-component-functions-and-calculations.md).
+The ownership/authoring decisions in this historical record are superseded for the published 1.2 language by [ADR 0007](0007-component-functions-and-calculations.md).
 
 The repository owner confirmed that units and components communicate only through interfaces, while local calls and variables can remain internal to a unit. The authoring hierarchy is component → unit → operation, with states directly inside stateful operations. Components may compose other components. Pure functions support local value computation.
 

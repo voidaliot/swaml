@@ -69,7 +69,7 @@
           "doc": "A user starts the application and both workers initialize.",
           "comments": [],
           "attributes": [],
-          "source": "useCase StartWorkers for Demo {\n        doc /* A user starts the application and both workers initialize. */\n    }"
+          "source": "useCase StartWorkers of Demo {\n        doc /* A user starts the application and both workers initialize. */\n    }"
         },
         {
           "path": "CheckResults",
@@ -78,7 +78,7 @@
           "doc": "Run the reference simulation and inspect both final result values.\n        Expected: first.result = 2 and second.result = 2.",
           "comments": [],
           "attributes": [],
-          "source": "verificationCase CheckResults for Demo {\n        doc /* Run the reference simulation and inspect both final result values.\n        Expected: first.result = 2 and second.result = 2. */\n        verify BoundedResult;\n    }"
+          "source": "verificationCase CheckResults of Demo {\n        doc /* Run the reference simulation and inspect both final result values.\n        Expected: first.result = 2 and second.result = 2. */\n        verify BoundedResult;\n    }"
         }
       ]
     },
@@ -154,12 +154,12 @@
     {
       "source": "StartWorkers",
       "target": "Demo",
-      "kind": "for"
+      "kind": "of"
     },
     {
       "source": "CheckResults",
       "target": "Demo",
-      "kind": "for"
+      "kind": "of"
     },
     {
       "source": "CheckResults",

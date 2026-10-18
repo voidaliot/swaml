@@ -1,6 +1,6 @@
 # Canonical graphical notation catalog
 
-SWAML 1.2 · publication 1.2.0. This generated catalog defines the original monochrome notation for each authored concept and meaningful label group. All specimens derive from [the semantic inventory](../spec/notation.json); complete examples supply their validation context.
+SWAML 1.2 · publication 1.2.1. This generated catalog defines the original monochrome notation for each authored concept and meaningful label group. All specimens derive from [the semantic inventory](../spec/notation.json); complete examples supply their validation context.
 
 Each SVG, PNG and vector scene shares the same flat two-dimensional geometry, without perspective, extrusion, gradients or shadows. A graphical specimen is a projection of its textual model; it does not create additional ports, events, state owners or execution semantics. Labels such as QoS values and expression operators appear within their owning element rather than introducing independent nodes.
 
@@ -327,7 +327,7 @@ Display immutable typed metadata in an attribute compartment or table cell. Name
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Satisfaction relation (edge) | ![Satisfaction relation](notation/satisfies-link.svg) | `satisfy VisibleSetting by Cabin;` |
+| Satisfaction relation (edge) | ![Satisfaction relation](notation/satisfies-link.svg) | `satisfy VisibleSetting of Cabin;` |
 
 Design claims satisfaction of a requirement.
 
@@ -346,14 +346,14 @@ Design claims satisfaction of a requirement.
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Use case (node) | ![Use case](notation/case.svg) | `useCase Change for Cabin` |
+| Use case (node) | ![Use case](notation/case.svg) | `useCase Change of Cabin` |
 
 A use case describes intended use and routed exchanges.
 
 **Context:** Scenario header in Settings; steps reference Cabin’s root-level connectors. **Views:** cv, sv.
 
 - Draw a case frame labeled useCase with its name and selected root.
-- The for relation references a root; enclosure never changes package ownership.
+- The of relation references a root; enclosure never changes package ownership.
 
 [Complete model](../examples/08-service-field.swaml) · `Settings::Change`.
 
@@ -365,7 +365,7 @@ A use case describes intended use and routed exchanges.
 
 | Element | Graphical notation | Textual notation |
 | --- | --- | --- |
-| Verification case (node) | ![Verification case](notation/verification-case.svg) | `verificationCase CheckResults for Demo` |
+| Verification case (node) | ![Verification case](notation/verification-case.svg) | `verificationCase CheckResults of Demo` |
 
 Draw a case frame labeled verificationCase with its name and root context. Documentation describes the procedure; verify links identify requirements without asserting a passed result.
 
@@ -2073,7 +2073,6 @@ The inventory explicitly assigns every current grammar production and keyword to
 | `bestEffort` | label | [Delivery policy](#notation-delivery-policy). Delivery policy. |
 | `bool` | label | [Primitive types](#notation-primitive-types). Primitive types. |
 | `bound` | glyph | [Bounded loop](#notation-bounded-loop). Bounded loop. |
-| `by` | glyph | [Satisfaction relation](#notation-satisfies-link). Satisfaction relation. |
 | `byte` | label | [Primitive types](#notation-primitive-types). Primitive types. |
 | `calc` | label | [Pure calculation](#notation-calculation). Pure calculation. |
 | `call` | glyph | [RPC handler activation](#notation-trigger-call), [Local function call](#notation-local-call), [Routed function call](#notation-routed-call), [Case request](#notation-case-request). RPC handler activation; Local function call; Routed function call; Case request. |
@@ -2105,7 +2104,6 @@ The inventory explicitly assigns every current grammar production and keyword to
 | `false` | label | [Expressions and value paths](#notation-expression). Expressions and value paths. |
 | `fifo` | label | [Queue ordering](#notation-ordering-policy). Queue ordering. |
 | `final` | glyph | [Final state](#notation-final-state). Final state. |
-| `for` | glyph | [Use case](#notation-case). Use case. |
 | `function` | glyph | [Interface function signature](#notation-function-signature), [Executable function](#notation-function), [Function with states](#notation-stateful-function). Interface function signature; Executable function; Function with states. |
 | `fv` | glyph | [Flow View](#notation-view-fv). Flow View. |
 | `grv` | glyph | [Grid View](#notation-view-grv). Grid View. |
@@ -2127,7 +2125,7 @@ The inventory explicitly assigns every current grammar production and keyword to
 | `ms` | label | [Duration value](#notation-duration). Duration value. |
 | `not` | label | [Expressions and value paths](#notation-expression). Expressions and value paths. |
 | `ns` | label | [Duration value](#notation-duration). Duration value. |
-| `of` | glyph | [General View](#notation-view-gv), [Interconnect View](#notation-view-iv), [Case View](#notation-view-cv), [Sequence View](#notation-view-sv), [Grid View](#notation-view-grv), [Flow View](#notation-view-fv). General View; Interconnect View; Case View; Sequence View; Grid View; Flow View. |
+| `of` | glyph | [General View](#notation-view-gv), [Interconnect View](#notation-view-iv), [Case View](#notation-view-cv), [Sequence View](#notation-view-sv), [Grid View](#notation-view-grv), [Flow View](#notation-view-fv), [Satisfaction relation](#notation-satisfies-link), [Use case](#notation-case), [Verification case](#notation-verification-case). Case root context, satisfaction design source or compact view subject; references preserve semantic ownership and link direction. |
 | `on` | glyph | [Startup activation](#notation-trigger-start), [Manual activation](#notation-trigger-manual), [Periodic activation](#notation-trigger-periodic), [Port receive activation](#notation-trigger-receive), [RPC handler activation](#notation-trigger-call), [State transition](#notation-transition), [Deployment binding](#notation-deployment). Startup activation; Manual activation; Periodic activation; Port receive activation; RPC handler activation; State transition; Deployment binding. |
 | `optional` | label | [Optional port](#notation-optional-port). Optional port. |
 | `or` | label | [Expressions and value paths](#notation-expression). Expressions and value paths. |

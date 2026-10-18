@@ -1,14 +1,14 @@
 ![SWAML — Architecture, made explicit.](docs/assets/swaml-banner.svg)
 
-[Graphical overview](docs/MODELING_OVERVIEW.md) · [Quick start](docs/QUICK_START.md) · [Architecture examples](docs/ARCHITECTURE_PATTERNS.md) · [Interactive showcase](showcase/README.md)
+[Graphical overview](docs/MODELING_OVERVIEW.md) · [Quick start](docs/QUICK_START.md) · [Architecture examples](docs/ARCHITECTURE_PATTERNS.md) · [Live showcase](https://voidaliot.github.io/swaml/)
 
 # Software Architecture Modeling Language
 
 **SWAML** describes software structure, typed communication and function behavior in one model. Compose components, keep state private, and follow every exchange through an explicit contract. Use the same language for AUTOSAR Classic and Adaptive architecture, service-based applications and cloud software.
 
-[Ontology & flat views](docs/ONTOLOGY_AND_VIEWS.md) · [Full user guide](docs/USER_GUIDE.md) · [Specification](docs/LANGUAGE_SPECIFICATION.md) · [1.2.0 preparation](docs/RELEASE_1_2_0.md)
+[Ontology & flat views](docs/ONTOLOGY_AND_VIEWS.md) · [Full user guide](docs/USER_GUIDE.md) · [Specification](docs/LANGUAGE_SPECIFICATION.md) · [1.2.1 release](docs/RELEASE_1_2_1.md)
 
-**1.2.0 unifies software structure around components, executable functions and pure calculations.** It adds single specialization, explicit redefinition, uint/byte values and external system deployment references alongside reusable QoS policies, flat notation and the React Flow showcase. The parser and host explicitly select language **1.2**. A working parser, validator and bounded reference simulator support the documented language rules. This is an independent language with a proposed KerML semantic mapping; production runtime, KerML export and graphical source editing remain separate milestones.
+**1.2.1 uses `of` consistently for case contexts, satisfaction sources and compact view subjects.** Follow the [migration notes](docs/MIGRATION_1_2.md) when updating a 1.2.0 model. Software structure uses nested components, executable functions and pure calculations, with explicit specialization, typed ports and external deployment references. The host selects language **1.2**; pin the package revision too for reproducibility. A working parser, validator and bounded reference simulator support the documented rules. This is an independent language with a proposed KerML semantic mapping; production runtime, KerML export and graphical source editing remain separate milestones.
 
 ## Start modeling
 
@@ -88,9 +88,9 @@ Both connectors keep independent queues. Inline QoS blocks still work, and the s
 
 ## Read the complete specification
 
-[Full Markdown reference](docs/SWAML-1.2.0-Reference.md) · [Full PDF](output/pdf/SWAML-1.2.0-Specification.pdf) · [By concern](docs/CONCERN_GUIDE.md) · [Alphabetical keywords](docs/KEYWORD_REFERENCE.md)
+[Full Markdown reference](docs/SWAML-1.2.1-Reference.md) · [Full PDF](output/pdf/SWAML-1.2.1-Specification.pdf) · [By concern](docs/CONCERN_GUIDE.md) · [Alphabetical keywords](docs/KEYWORD_REFERENCE.md)
 
-The specification covers every reserved word, formal syntax/typing/execution rules, static and dynamic architecture, communication policies, timing, deployment, cases and graphical notation. The PDF includes clickable navigation, all model examples, exact grammar, vector diagrams and embedded source files. [Publication and verification](docs/PDF_PUBLICATION.md) · [1.2.0 preparation and evidence](docs/RELEASE_1_2_0.md) · [Historical v0.1.0](https://github.com/voidaliot/swaml/releases/tag/v0.1.0).
+The specification covers every reserved word, formal syntax/typing/execution rules, static and dynamic architecture, communication policies, timing, deployment, cases and graphical notation. The PDF includes clickable navigation, all model examples, exact grammar, vector diagrams and embedded source files. [Publication and verification](docs/PDF_PUBLICATION.md) · [1.2.1 release and evidence](docs/RELEASE_1_2_1.md) · [Historical v0.1.0](https://github.com/voidaliot/swaml/releases/tag/v0.1.0).
 
 ## Start here
 
@@ -204,4 +204,4 @@ Use `requirement` with typed attributes and one formal `doc /* ... */` block. Co
 
 Read the [quick guide](docs/REQUIREMENTS_AND_DOCUMENTATION.md) or open the [interactive traceability example](https://voidaliot.github.io/swaml/#traceability).
 
-![Requirements, formal documentation, comments and explicit satisfaction/verification links in the interactive showcase](docs/assets/traceability-showcase.png)
+![A use case of Production, a design satisfaction claim and explicit verification intent](docs/assets/modeling-intent.svg)

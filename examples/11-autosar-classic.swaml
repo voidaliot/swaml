@@ -86,7 +86,7 @@ package ClassicClimate {
         deploy actuator on "system:bodyEcu";
     }
     requirement BoundedFan { doc /* The climate SW-C commands a duty in [0, 1] using the current setpoint. */ }
-    satisfy BoundedFan by Vehicle; useCase RegulateCabin for Vehicle {
+    satisfy BoundedFan of Vehicle; useCase RegulateCabin of Vehicle {
         send sensor.output.measured -> controller.temperature.measured via measured label measurement;
         call controller.calibration.read -> calibration.api.read via calibrated after measurement label readTarget;
         reply calibration.api.read -> controller.calibration.read via calibrated after readTarget label target;

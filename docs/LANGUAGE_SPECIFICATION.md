@@ -1,6 +1,6 @@
 # SWAML language specification
 
-**Version:** 1.2.0 · **Source:** headerless packages; parser/host pinned to 1.2 · **Status:** 1.2.0 release · **Date:** 2026-10-16
+**Version:** 1.2.1 · **Source:** headerless packages; parser/host pinned to 1.2 · **Status:** 1.2.1 release · **Date:** 2026-10-18
 
 SWAML means Software Architecture Modeling Language. This document and its normative chapters define a software architecture language with a proposed KerML semantic mapping. SWAML is independently authored and does not denote an OMG standard or UML compatibility level. Architects familiar with UML can begin with the informative [UML transition guide](UML_GUIDE.md); implemented capabilities are identified separately from mapping and execution contracts.
 
@@ -60,8 +60,9 @@ Local calls, calculation values, timer expiration, initial activation and state 
 | Calculation | typed inputs, named non-void output and expression | pure value computation owned by one function |
 | State / transition | entry/exit blocks / trigger, guard, priority and effect | behavior directly owned by one function |
 | Deployment | no system definition | component-instance path and external system/part identity |
-| Requirement / case | obligation text / exchange steps and trace links | intended behavior and claimed coverage |
-| View | kind and subject reference | projection with no added runtime semantics |
+| Requirement | immutable typed attributes and one optional formal doc | named obligation; incoming satisfy/verify links |
+| Use / verification case | optional doc, verification links where permitted, and exchange steps | one root context selected with of; intended use / verification intent |
+| View | kind, optional doc and one or more subject selections | stable union of occurrence paths; pure optional filters; no runtime effects |
 
 Definitions and instances retain different identities. Specialization and redefinition reference source declarations; neither shares private state across instances. Tools SHOULD persist a separate identity map for editing. A rename preserves identity only when the tool updates that map and all references atomically.
 

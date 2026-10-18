@@ -51,9 +51,9 @@ Transition: documentation=Documentation? 'transition' name=ID ':' from=[State:ID
 Requirement: 'requirement' name=ID '{' documentation=Documentation? attributes+=Attribute* '}';
 Attribute: 'attribute' name=(ID|'priority') ':' type=TypeRef '=' value=Expression documentation=Documentation? ';';
 Documentation: text=DOC_COMMENT;
-Satisfaction: 'satisfy' requirement=[Requirement:QualifiedName] 'by' source=Path ';';
+Satisfaction: 'satisfy' requirement=[Requirement:QualifiedName] 'of' source=Path ';';
 Verification: 'verify' requirement=[Requirement:QualifiedName] ';';
-Scenario: kind=('useCase'|'verificationCase') name=ID 'for' root=[RootComponent:QualifiedName] '{' documentation=Documentation? verifications+=Verification* steps+=ScenarioStep* '}';
+Scenario: kind=('useCase'|'verificationCase') name=ID 'of' root=[RootComponent:QualifiedName] '{' documentation=Documentation? verifications+=Verification* steps+=ScenarioStep* '}';
 ScenarioStep: kind=('send'|'publish'|'call'|'reply') source=Path '->' target=Path 'via' connector=ID ('after' predecessor=ID)? 'label' name=ID ';';
 View: 'view' name=ID kind=('gv'|'iv'|'cv'|'sv'|'grv'|'fv') ('of' subject=Path documentation=Documentation? ';' | '{' documentation=Documentation? selections+=ViewSelection+ '}');
 ViewSelection: 'include' subject=Path (recursive?='recursive')? ('where' filter=Expression)? ';';
