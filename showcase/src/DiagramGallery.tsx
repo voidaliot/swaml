@@ -1,9 +1,10 @@
 import type { ViewId } from './model';
+import { ClassifierGlyph, PortGlyph } from './DiagramGlyphs';
 
 export type DiagramId = 'gv' | 'iv' | 'sv' | 'cv' | 'grv' | 'flow' | 'states' | 'interrupts' | 'timing';
-export type FlowMode = 'flow' | 'states' | 'timing' | 'interrupts';
-export const diagramChoices: { id: DiagramId; title: string; view: ViewId; mode?: FlowMode; description: string; subject: string; example: string; sourceFile: string }[] = [
-  { id: 'gv', sourceFile: '08-service-field.swaml', title: 'Structure', view: 'gv', description: 'Components, ownership and deployment.', subject: 'Settings::Cabin', example: 'Cabin temperature service' },
+export type FlowMode = 'flow' | 'states' | 'interrupts';
+export const diagramChoices: { id: DiagramId; title: string; view: ViewId; mode?: FlowMode; description: string; subject: string; subjectLabel?: string; subjectNote?: string; example: string; sourceFile: string }[] = [
+  { id: 'gv', sourceFile: '08-service-field.swaml', title: 'Structure', view: 'gv', description: 'Nested components or an ownership tree.', subject: 'Settings::Cabin', example: 'Cabin temperature service' },
   { id: 'iv', sourceFile: '08-service-field.swaml', title: 'Connections', view: 'iv', description: 'Ports, interfaces and explicit routes.', subject: 'Settings::Cabin', example: 'Cabin temperature service' },
   { id: 'sv', sourceFile: '08-service-field.swaml', title: 'Sequence', view: 'sv', description: 'Messages, dependencies and replies.', subject: 'Settings::Change', example: 'Change a temperature setting' },
   { id: 'cv', sourceFile: '08-service-field.swaml', title: 'Cases & requirements', view: 'cv', description: 'Intent and design coverage.', subject: 'Settings::Cabin', example: 'A requirement and its coverage' },
@@ -11,14 +12,14 @@ export const diagramChoices: { id: DiagramId; title: string; view: ViewId; mode?
   { id: 'flow', sourceFile: '08-service-field.swaml', title: 'Function flow', view: 'fv', mode: 'flow', description: 'Decisions, calls and local behavior.', subject: 'Settings::Cabin.settings.store.update', example: 'Update a temperature setting' },
   { id: 'states', sourceFile: '04-stateful-function.swaml', title: 'States', view: 'fv', mode: 'states', description: 'States and transitions inside a function.', subject: 'Lifecycle::Device.lifecycle', example: 'Device lifecycle' },
   { id: 'interrupts', sourceFile: '19-interruptible-function.swaml', title: 'Interrupts', view: 'fv', mode: 'interrupts', description: 'Cancel a region and handle an event.', subject: 'Interrupts::App.worker.run', example: 'Interrupt a running function' },
-  { id: 'timing', sourceFile: '17-function-timing.swaml', title: 'Timing', view: 'fv', mode: 'timing', description: 'Function activations on a timeline.', subject: 'FunctionTiming::Demo', example: 'Observe requests and responses' },
+  { id: 'timing', sourceFile: '17-function-timing.swaml', title: 'Timing', view: 'tv', description: 'Function activations on a timeline.', subject: 'FunctionTiming::Demo', subjectLabel: 'Execution root', subjectNote: 'selected function occurrences', example: 'Observe requests and responses' },
 ];
 
 /** Decorative previews identify diagram families; the live example carries model meaning. */
 export function DiagramPreview({ kind }: { kind: DiagramId }) {
   return <svg className="diagram-preview" viewBox="0 0 100 64" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true">
-    {kind === 'gv' ? <><rect x="7" y="5" width="86" height="54" rx="2"/><path d="M7 17H93"/><rect x="17" y="27" width="27" height="22"/><rect x="56" y="27" width="27" height="22"/><path d="M22 34H39M61 34H78"/></> :
-      kind === 'iv' ? <><rect x="5" y="17" width="30" height="31" rx="2"/><rect x="65" y="17" width="30" height="31" rx="2"/><path d="M35 33H65m-6-4 6 4-6 4"/><rect x="31" y="29" width="7" height="7" fill="var(--surface)"/><rect x="62" y="29" width="7" height="7" fill="var(--surface)"/></> :
+    {kind === 'gv' ? <><rect x="7" y="5" width="86" height="54" rx="2"/><ClassifierGlyph decorative x="77" y="7" width="12" height="12"/><path d="M7 21H93"/><rect x="17" y="29" width="27" height="22"/><rect x="56" y="29" width="27" height="22"/><path d="M22 36H39M61 36H78"/></> :
+      kind === 'iv' ? <><rect x="4" y="17" width="27" height="31" rx="2"/><rect x="69" y="17" width="27" height="31" rx="2"/><path d="M46 33H55"/><PortGlyph role="client" x="28" y="27" width="24" height="12"/><PortGlyph role="server" side="left" x="48" y="27" width="24" height="12"/></> :
       kind === 'sv' ? <><rect x="9" y="6" width="24" height="13"/><rect x="67" y="6" width="24" height="13"/><path d="M21 19V59M79 19V59" strokeDasharray="3 3"/><path d="M21 31H79m-5-4 5 4-5 4M79 48H21m5-4-5 4 5 4"/></> :
       kind === 'cv' ? <><rect x="4" y="10" width="29" height="18" rx="6"/><rect x="66" y="23" width="30" height="27"/><rect x="4" y="41" width="29" height="18" rx="6"/><path d="M33 19H48V31H66M33 50H48V43H66M72 31H88M72 38H88" strokeDasharray="3 2"/></> :
       kind === 'grv' ? <><rect x="9" y="7" width="82" height="50" rx="2"/><path d="M9 20H91M9 32H91M9 44H91M35 7V57M65 7V57"/><path d="M15 13H28M41 13H58M71 13H84"/></> :

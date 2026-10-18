@@ -70,6 +70,12 @@ for path in worked:
     write_png(path.with_name(path.name.replace('.scene.json','.png')),scene.png())
 
 expected={f'{c["id"]}.{ext}' for c in concepts for ext in ['svg','png','scene.json']}
+for artifact in inventory.get('retainedArtifacts',[]):
+    path=ROOT/artifact['path']
+    assert path.parent==out and artifact['edition']=='1.3.0'
+    assert path.name not in expected, 'Historical artifacts must not shadow current concepts.'
+    assert hashlib.sha256(path.read_bytes()).hexdigest()==artifact['sha256'],f'Changed historical artifact: {path}'
+    expected.add(path.name)
 assert {p.name for p in out.iterdir() if p.is_file()}==expected, 'Unlisted/missing notation artifacts; remove stale concept files deliberately.'
 
 lines=['# Canonical graphical notation catalog','',f'SWAML {inventory["languageVersion"]} · publication {inventory["edition"]}. This generated catalog defines the original monochrome notation for each authored concept and meaningful label group. All specimens derive from [the semantic inventory](../spec/notation.json); complete examples supply their validation context.','',

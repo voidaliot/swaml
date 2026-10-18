@@ -43,7 +43,7 @@ test('void request completion cannot be used as a value', () => invalid(rpc.repl
 test('void request completion may be discarded', async () => assert.deepEqual(await diagnostics(rpc.replace('check(): bool', 'check(): void').replace('checkHealth(): bool', 'checkHealth(): void').replace('return true;', 'return;').replace('healthy = statusValue;', '')), []));
 test('void cannot be returned as an expression', () => invalid(component('function run(): void { return true; }'), 'SW023'));
 test('calculation inputs do not shadow private state', () => invalid(component('var x: int = 0; function run() { calc f { in x: int; return result: int = x; } }'), 'SW002'));
-const reentrant = 'function run(): void on manual timing { wcet 1 ms; deadline 5 ms; concurrency reentrant; } { call helper(); }';
+const reentrant = 'function run(): void on start timing { wcet 1 ms; deadline 5 ms; concurrency reentrant; } { call helper(); }';
 test('reentrant transitive writes rejected', () => invalid(component(`var x: int = 0; ${reentrant} function helper(): void { call mutate(); } function mutate(): void { x = 1; }`), 'SW054'));
 test('reentrant read-only helper chains allowed', async () => assert.deepEqual(await diagnostics(component(`var x: int = 0; ${reentrant} function helper(): void { call read(); } function read(): void { assert x == 0; }`)), []));
 test('recursive reentrant helper does not crash analysis', () => invalid(component(`${reentrant} function helper(): void { call helper(); }`), 'SW056'));

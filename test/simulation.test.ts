@@ -6,6 +6,7 @@ import { parseHelper } from 'langium/test';
 import { createSwamlServices } from '../src/language/swaml-module.js';
 import type { Model } from '../src/language/generated/ast.js';
 import { simulate, type SimulationOptions } from '../src/simulation/simulator.js';
+import { withEventSchedule } from './event-driver.js';
 const fixture = (name: string) => readFileSync(new URL(`../../examples/${name}.swaml`, import.meta.url), 'utf8');
 async function run(text: string, root: string = 'P::S', options: SimulationOptions = { untilNs: 1000000000 }) {
     const { Swaml } = createSwamlServices(EmptyFileSystem);
@@ -34,14 +35,14 @@ test('periodic realtime model and effective allocation', async () => {
     assert.equal(r.status, 'horizon');
 });
 test('service RPC completion unblocks serial callback and independent pubsub', async () => {
-    const r = await run(fixture('03-service-pubsub'), 'Commerce::Shop', { untilNs: 3000000000, manual: [{ atNs: 0, function: 'web.frontend.checkout' }] });
+    const r = await run(fixture('03-service-pubsub'), 'Commerce::Shop', { untilNs: 3000000000 });
     assert.equal(r.stores['web.frontend'].lastAccepted, 'order-42');
     assert.equal(r.stores['archive.store'].last, 'order-42');
     assert.ok(r.trace.some(t => t.kind === 'requestComplete' && t.state === 'Succeeded'));
     assert.ok(!r.trace.some(t => t.kind === 'failure'));
 });
 test('stateful function receives events and expires timer', async () => {
-    const r = await run(fixture('04-stateful-function'), 'Lifecycle::Product', { untilNs: 31000000000, manual: [{ atNs: 1, function: 'assembly.operatorUnit.startDevice' }] });
+    const r = await run(fixture('04-stateful-function'), 'Lifecycle::Product', { untilNs: 31000000000 });
     assert.deepEqual(r.machines['assembly.device.lifecycle'], { state: 'Stopped', live: false });
     assert.equal(r.stores['assembly.device'].cycles, 1);
     assert.equal(r.stores['assembly.monitor'].current, 'stopped');
@@ -70,25 +71,25 @@ test('record equality ignores literal field order; record/array payloads are cop
     assert.ok(!(await run(source)).trace.some(t => t.kind === 'failure'));
 });
 test('two occurrences never share mutable stores', async () => {
-    const r = await run(fixture('08-service-field'), 'Settings::Cabin', { untilNs: 1000000000, manual: [{ atNs: 0, function: 'front.panel.adjust' }] });
+    const r = await run(fixture('08-service-field'), 'Settings::Cabin', { untilNs: 1000000000 });
     assert.equal(r.stores['settings.store'].currentValue, 22);
     assert.equal(r.stores['front.panel'].displayed, 22);
     assert.equal(r.stores['rear.panel'].displayed, 22);
 });
 test('timeout wins equal-time reply and late response has no second completion', async () => {
     const text = fixture('03-service-pubsub').replace('within 2 s', 'within 2 ns');
-    const r = await run(text, 'Commerce::Shop', { untilNs: 10, latencyNs: 1, manual: [{ atNs: 0, function: 'web.frontend.checkout' }] });
+    const r = await run(text, 'Commerce::Shop', { untilNs: 10, latencyNs: 1 });
     const completions = r.trace.filter(t => t.kind === 'requestComplete');
     assert.equal(completions.length, 1); assert.equal(completions[0].failure, 'Timeout');
     assert.ok(r.trace.some(t => t.kind === 'discardResponse'));
     assert.equal(r.stores['archive.store'].last, 'order-42');
 });
 test('response strictly before timeout succeeds', async () => {
-    const r = await run(fixture('03-service-pubsub').replace('within 2 s', 'within 3 ns'), 'Commerce::Shop', { untilNs: 10, latencyNs: 1, manual: [{ atNs: 0, function: 'web.frontend.checkout' }] });
+    const r = await run(fixture('03-service-pubsub').replace('within 2 s', 'within 3 ns'), 'Commerce::Shop', { untilNs: 10, latencyNs: 1 });
     assert.ok(r.trace.some(t => t.kind === 'requestComplete' && t.state === 'Succeeded'));
 });
 test('remote failures follow the originating correlation', async () => {
-    const r = await run(fixture('03-service-pubsub').replace('return true;', 'fail "server rejected";'), 'Commerce::Shop', { untilNs: 3000000000, manual: [{ atNs: 0, function: 'web.frontend.checkout' }] });
+    const r = await run(fixture('03-service-pubsub').replace('return true;', 'fail "server rejected";'), 'Commerce::Shop', { untilNs: 3000000000 });
     assert.ok(r.trace.some(t => t.kind === 'requestComplete' && t.failure === 'RemoteFailure'));
 });
 test('best effort loss is observable', async () => {
@@ -106,20 +107,22 @@ test('atLeastOnce retry keeps identity and duplicate delivery is observable', as
     assert.ok(retry.trace.some(t => t.kind === 'retry'));
     assert.equal(retry.stores['conversation.listener'].last, 'Hello, SWAML');
 });
-test('manual harness cannot call a non-manual function', async () => {
-    await assert.rejects(() => run(fixture('01-hello'), 'Hello::Demo', { untilNs: 0, manual: [{ atNs: 0, function: 'conversation.speaker.greet' }] }), /on manual/);
-});
 test('unbound optional RPC runs explicit Unavailable failure block', async () => {
     const source = `package P { interface clientServer API version "1.0.0" { function ping(); } component def U { port api: API client optional; var result: string = ""; function run() on start { call api.ping() as completionValue within 1 ns otherwise { result = failure; return; }; } } component def C { component u: U; } component S service { component c: C; } }`;
     assert.equal((await run(source)).stores['c.u'].result, 'Unavailable');
 });
 test('machine priority, payload effects and entry scopes', async () => {
-    const text = fixture('04-stateful-function').replace('event begin();', 'event begin(value: int);').replace('commands.begin();', 'commands.begin(7);').replace('on receive commands.begin {}', 'on receive commands.begin when (value == 7) priority 2 { cycles = value; } transition other: Idle -> Stopped on receive commands.begin priority 1 {}');
-    const r = await run(text, 'Lifecycle::Product', { untilNs: 10, manual: [{ atNs: 0, function: 'assembly.operatorUnit.startDevice' }] });
+    const text = fixture('04-stateful-function').replace('event begin();', 'event begin(value: int);').replaceAll('commands.begin();', 'commands.begin(7);').replace('on receive commands.begin {}', 'on receive commands.begin when (value == 7) priority 2 { cycles = value; } transition other: Idle -> Stopped on receive commands.begin priority 1 {}');
+    const r = await run(text, 'Lifecycle::Product', { untilNs: 10 });
     assert.equal(r.stores['assembly.device'].cycles, 8); assert.equal(r.machines['assembly.device.lifecycle'].state, 'Running');
 });
 test('machine timer cancellation and post-final input are observable', async () => {
-    const r = await run(fixture('04-stateful-function'), 'Lifecycle::Product', { untilNs: 31000000000, manual: [{ atNs: 1, function: 'assembly.operatorUnit.startDevice' }, { atNs: 2, function: 'assembly.operatorUnit.stopDevice' }, { atNs: 3, function: 'assembly.operatorUnit.startDevice' }] });
+    const source = withEventSchedule(fixture('04-stateful-function'), [
+        { atNs: 1, statement: 'publish commands.begin();' },
+        { atNs: 2, statement: 'publish commands.stop();' },
+        { atNs: 3, statement: 'publish commands.begin();' }
+    ]);
+    const r = await run(source, 'Lifecycle::Product', { untilNs: 31000000000 });
     assert.ok(r.trace.some(t => t.kind === 'discardTimer'));
     assert.ok(r.trace.some(t => t.kind === 'drop' && t.reason === 'Undeliverable'));
     assert.ok(!r.trace.some(t => t.kind === 'transition' && t.transition === 'expire'));
@@ -198,15 +201,16 @@ test('reentrant root and local helper keep their dispatch snapshot across suspen
 });
 test('input deadline begins at readiness even while serial handler is blocked', async () => {
     const text = fixture('03-service-pubsub').replace('on receive orders.accepted {', 'on receive orders.accepted timing { wcet 1 ns; deadline 1 ns; concurrency serial; } {');
-    const r = await run(text, 'Commerce::Shop', { untilNs: 100, manual: [{ atNs: 0, function: 'web.frontend.checkout' }], faults: [{ offer: 4, kind: 'drop', delayNs: 10 }] });
+    // The authored checkout event is offer 1; the service response is offer 5.
+    const r = await run(text, 'Commerce::Shop', { untilNs: 100, faults: [{ offer: 5, kind: 'drop', delayNs: 10 }] });
     assert.ok(failed(r, 'Deadline')); assert.equal(r.timeNs, 1);
 });
 test('string escape decoding retains actual newline and tab values', async () => {
     const r = await run(program('textValue = "a\\n\\tβ";', 'var textValue: string = "";'));
     assert.equal(r.stores['c.u'].textValue, 'a\n\tβ');
 });
-test('manual input and deterministic simulation produce repeatable traces', async () => {
-    const text = fixture('08-service-field'), options = { untilNs: 100, manual: [{ atNs: 1, function: 'front.panel.adjust' }] };
+test('authored event input and deterministic simulation produce repeatable traces', async () => {
+    const text = fixture('08-service-field'), options = { untilNs: 100 };
     const a = await run(text, 'Settings::Cabin', options), b = await run(text, 'Settings::Cabin', options);
     assert.deepEqual(a.trace, b.trace); assert.deepEqual(a.stores, b.stores);
 });
@@ -300,8 +304,20 @@ test('inline roots directly contain child components and preserve typed interfac
 
 test('typed roots expand definitions with independent stores on each selected run', async () => {
     const source = `package P {
-        component def Counter { var count: int = 0; function increment() on manual { count = count + 1; } }
-        component def Assembly { component left: Counter; component right: Counter; }
+        interface publishSubscribe Commands version "1.0.0" { event increment(); }
+        component def Counter {
+            port commands: Commands subscriber optional;
+            var count: int = 0;
+            function increment() on receive commands.increment { count = count + 1; }
+        }
+        component def Assembly {
+            port commands: Commands publisher;
+            component left: Counter; component right: Counter;
+            function driveInputs() on start { publish commands.increment(); }
+            connect incrementLeft: commands -> left.commands qos {
+                delivery atMostOnce; ordering fifo; capacity 1; overflow reject;
+            };
+        }
         component first: Assembly;
         component second: Assembly service;
     }`;
@@ -309,12 +325,14 @@ test('typed roots expand definitions with independent stores on each selected ru
     const doc = await parseHelper<Model>(Swaml)(source, { validation: true });
     assert.deepEqual(doc.diagnostics, []);
     const models = [doc.parseResult.value];
-    const first = simulate(models, 'P::first', { untilNs: 1, manual: [{ atNs: 0, function: 'left.increment' }] });
+    const first = simulate(models, 'P::first', { untilNs: 1 });
     const second = simulate(models, 'P::second', { untilNs: 1 });
     assert.equal(first.stores.left.count, 1); assert.equal(first.stores.right.count, 0);
-    assert.equal(second.stores.left.count, 0); assert.equal(second.stores.right.count, 0);
+    assert.equal(second.stores.left.count, 1); assert.equal(second.stores.right.count, 0);
     assert.equal(first.root, 'P::first'); assert.equal(second.root, 'P::second');
-    assert.equal(simulate(models, 'P::first', { untilNs: 1 }).stores.left.count, 0);
+    first.stores.left.count = 99;
+    assert.equal(second.stores.left.count, 1);
+    assert.equal(simulate(models, 'P::first', { untilNs: 1 }).stores.left.count, 1);
     assert.throws(() => simulate(models, 'P::Assembly', { untilNs: 1 }), /Unknown root/);
 });
 

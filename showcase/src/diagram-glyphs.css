@@ -1,0 +1,12 @@
+.semantic-port-marker{position:absolute;top:50%;width:48px;height:24px;transform:translateY(-50%);pointer-events:none;overflow:visible;z-index:2;color:#456b85}
+.semantic-port-marker.is-right{right:-42px}
+.semantic-port-marker.is-left{left:-42px}
+.port-label.semantic-port-row{position:relative;margin-top:0;padding-top:5px;line-height:1.45}
+.semantic-port-row>strong,.semantic-port-row>span:not(.semantic-port-marker){display:block;font-size:10px;font-weight:400;overflow-wrap:anywhere}
+.semantic-classifier-mark{flex-shrink:0;vertical-align:middle;color:#5e7c8e}
+.semantic-port-legend{display:flex;align-items:center;flex-wrap:wrap;gap:8px 22px;margin:0;padding:12px 20px;border-top:1px solid #dbe3e5;background:#fbfcfc;color:#5e737c;font-size:10px;line-height:1.6}
+.semantic-port-legend>span{display:flex;align-items:center;gap:7px}
+.semantic-port-legend>span:last-child{flex:1 1 350px}
+.semantic-port-legend svg{width:36px;height:18px;flex-shrink:0}
+.contract-endpoint{position:relative}
+.contract-endpoint>.semantic-port-marker{padding:0;border:0}

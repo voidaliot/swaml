@@ -73,7 +73,7 @@ for (const replacement of [
     'redefines function work(x: real) {}',
     'redefines function work(y: int) {}',
     'redefines function work(x: int): int { return x; }',
-    'redefines function work(x: int) on manual {}'
+    'redefines function work(x: int) on start {}'
 ]) test(`function redefinition preserves contract ${replacement}`, () => invalid(`component def Base { function work(x: int) {} } component def Derived specializes Base { ${replacement} }`, 'SW014'));
 test('inheritance cycles yield a stable diagnostic', () => invalid('component def A specializes B {} component def B specializes A {}', 'SW015'));
 test('self specialization terminates diagnostics', () => invalid('component def A specializes A {}', 'SW015'));
@@ -81,7 +81,7 @@ test('inherited containment cycles are rejected', () => invalid('component def B
 test('override effects are checked through inherited reentrant entry points', () => invalid(`
     component def Base {
         var count: int = 0;
-        function run() on manual timing { wcet 1 ms; deadline 2 ms; concurrency reentrant; } { call helper(); }
+        function run() on start timing { wcet 1 ms; deadline 2 ms; concurrency reentrant; } { call helper(); }
         function helper() {}
     }
     component def Derived specializes Base { redefines function helper() { count = 1; } }
@@ -156,7 +156,7 @@ test('fixed arrays do not silently convert their element domains', () => invalid
 test('typed root only binds existing deployment', () => invalid('component def C {} component Demo: C { function extra() {} }', 'SW012'));
 test('deployment requires an external reference', () => invalid('component Demo { deploy Demo on ""; }', 'SW070'));
 test('deployment rejects a bare local platform name', () => invalid('component Demo { deploy Demo on "ecu"; }', 'SW070'));
-for (const source of ['unit def Old {}', 'component def C { operation run() {} }', 'component Demo { node host process; }', 'component def C { function f(x: int): int = x; }']) test(`old authoring form is rejected ${source}`, () => invalid(source));
+for (const source of ['unit def Old {}', 'component Demo { node host process; }', 'component def C { function f(x: int): int = x; }']) test(`old authoring form is rejected ${source}`, () => invalid(source));
 test('unsigned and byte domains support checked integral assignments', () => valid('component Demo { var b: byte = 255; var u: uint = 9007199254740991; var bytes: byte[2] = [0, 255]; function run() { var small: byte = b; var count: uint = b + 1; var signed: int = u; var decimal: real = b; assert bytes[b - 255] == 0; } }'));
 for (const declaration of ['var x: byte = 256;', 'var x: byte = -1;', 'var x: uint = -1;', 'var x: uint = 9007199254740992;', 'var x: byte = 250 + 6;', 'var x: byte[2] = [0, 256];']) test(`numeric domain rejects ${declaration}`, () => invalid(`component Demo { ${declaration} }`, 'SW025'));
 test('real cannot narrow to integral through assignment', () => invalid('component Demo { var x: uint = 1.0; }', 'SW023'));

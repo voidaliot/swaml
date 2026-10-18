@@ -9,6 +9,7 @@ package CloudTelemetry {
     interface publishSubscribe Measurements version "1.0.0" {
         event recorded(sample: Sample);
     }
+    interface publishSubscribe DeviceCommands version "1.0.0" { event retry(); event sendInvalid(); }
     qos def IngressQueue {
         delivery atMostOnce; ordering fifo; capacity 8; overflow reject;
     }
@@ -17,6 +18,7 @@ package CloudTelemetry {
     }
     component def DeviceClient {
         port ingest: TelemetryIngest requires;
+        port control: DeviceCommands subscriber optional;
         var uploaded: int = 0;
         var retryAccepted: bool = false;
         var invalidRejected: bool = false;
@@ -30,13 +32,13 @@ package CloudTelemetry {
             assert second;
             uploaded = uploaded + 1;
         }
-        function retry() on manual {
+        function retry() on receive control.retry {
             call ingest.submit(record Sample { deviceId = "sensor-01"; sequence = 2; temperature = 28.5; })
                 as result within 1 s otherwise { fail "retry unavailable"; };
             retryAccepted = result;
             assert retryAccepted;
         }
-        function sendInvalid() on manual {
+        function sendInvalid() on receive control.sendInvalid {
             call ingest.submit(record Sample { deviceId = "sensor-01"; sequence = 3; temperature = 200.0; })
                 as result within 1 s otherwise { fail "ingestion unavailable"; };
             invalidRejected = not result;
@@ -103,11 +105,21 @@ package CloudTelemetry {
         delegate accepted -> gateway.accepted;
     }
     component Production {
+        port deviceCommands: DeviceCommands publisher;
         component device: DeviceClient;
         component ingestion: IngestionService;
         component broker: MessageBroker;
         component analytics: AnalyticsWorker;
         component archive: ArchiveWriter;
+        function driveInputs() on start {
+            initial Waiting;
+            state Waiting {}
+            state Retrying { entry { publish deviceCommands.retry(); } }
+            state Invalid final { entry { publish deviceCommands.sendInvalid(); } }
+            transition retryUpload: Waiting -> Retrying on after 100 ms {}
+            transition invalidUpload: Retrying -> Invalid on after 100 ms {}
+        }
+        connect deviceCommand: deviceCommands -> device.control qos IngressQueue;
         connect ingestionLink: device.ingest -> ingestion.api qos IngressQueue;
         connect brokerLink: ingestion.accepted -> broker.input qos EventQueue;
         connect analyticsLink: broker.output -> analytics.input qos EventQueue;

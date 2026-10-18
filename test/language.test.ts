@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { EmptyFileSystem } from 'langium';
 import { parseHelper } from 'langium/test';
 import { createSwamlServices } from '../src/language/swaml-module.js';
-import type { Model } from '../src/language/generated/ast.js';
+import { isFunctionDef, isRootComponent, type Model } from '../src/language/generated/ast.js';
 
 async function diagnostics(text: string) {
     const { Swaml } = createSwamlServices(EmptyFileSystem);
@@ -23,7 +23,7 @@ const failures: [string, string, string | undefined][] = [
     ['sender used as receiver', hello.replace('Greeting receiver', 'Greeting sender'), 'SW032'],
     ['payload type mismatch', hello.replace('"Hello, SWAML"', '42'), 'SW023'],
     ['handler mismatch', hello.replace('message: string', 'message: int'), 'SW052'],
-    ['missing handler', hello.replace('on receive input.text', 'on manual').replace('hear(message: string)', 'hear()').replace('last = message;', ''), 'SW055'],
+    ['missing handler', hello.replace('on receive input.text', 'on start').replace('hear(message: string)', 'hear()').replace('last = message;', ''), 'SW055'],
     ['unconnected port', hello.replace(/connect greeting:[\s\S]*?};/, ''), 'SW034'],
     ['duplicate declarations', hello.replace('var last:', 'var extra: string = ""; var extra:'), 'SW002'],
     ['wrong interface identity', hello.replace('component def Listener', 'interface senderReceiver Other version "1.0.0" { data text: string queued; } component def Listener').replace('port input: Greeting', 'port input: Other'), 'SW031'],
@@ -31,6 +31,9 @@ const failures: [string, string, string | undefined][] = [
     ['zero capacity', hello.replace('capacity 4', 'capacity 0'), 'SW041'],
     ['legacy language header rejected', 'swaml "1.0"; ' + hello, undefined],
     ['no free events', 'package P { event E(); }', undefined],
+    ['retired manual activation', 'package P { component Demo { function run() on manual {} } }', undefined],
+    ['unrouted event activation', 'package P { component Demo { function run() on event requested {} } }', undefined],
+    ['receive requires an owned port member', 'package P { component Demo { function run() on receive requested {} } }', 'SW050'],
     ['no performer syntax', 'package P { performer X; }', undefined],
     ['unknown view kind', hello.replace('overview gv', 'overview UNKNOWN_VIEW'), undefined],
     ['incomplete document is safe', 'package P { component def C { connect', undefined],
@@ -41,6 +44,21 @@ for (const [name, text, code] of failures) test(name, async () => {
     const d = await diagnostics(text);
     assert.ok(d.some(x => x.severity === 1 && (code === undefined || x.code === code)), JSON.stringify(d));
     assert.ok(!d.some(x => String(x.message).includes('error occurred during validation')), 'Validator must not crash on incomplete input');
+});
+
+test('manual is an ordinary identifier after retiring the activation keyword', async () => {
+    assert.deepEqual(await diagnostics('package P { enum Mode { manual } component manual { var selected: Mode = Mode.manual; function run() on start { assert selected == Mode.manual; } } }'), []);
+});
+
+test('retired manual activation retains a syntax error and recovers to a later function', async () => {
+    const { Swaml } = createSwamlServices(EmptyFileSystem);
+    const document = await parseHelper<Model>(Swaml)('package P { component Demo { function retired() on manual {} function recovered() on start { assert true; } } }', { validation: true });
+    assert.ok(document.parseResult.parserErrors.length > 0);
+    assert.ok(!document.diagnostics?.some(d => /error occurred during validation/.test(String(d.message))));
+    const root = document.parseResult.value.packages[0].elements.find(isRootComponent)!;
+    const recovered = root.members.filter(isFunctionDef).find(fn => fn.name === 'recovered');
+    assert.ok(recovered);
+    assert.equal(recovered.trigger?.kind, 'start');
 });
 test('realtime WCET constraint', async () => {
     const d = await diagnostics(load('02-realtime-controller.swaml').replace('wcet 1 ms', 'wcet 30 ms'));

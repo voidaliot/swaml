@@ -1,6 +1,3 @@
 {
-  "untilNs": 10,
-  "manual": [
-    { "atNs": 1, "function": "left.advance" }
-  ]
+  "untilNs": 10
 }

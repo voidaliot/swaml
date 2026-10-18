@@ -2,7 +2,7 @@
 
 This user-facing reference covers every reserved word in the SWAML 1.3 grammar. Entries are sorted alphabetically, ignoring case for sorting only; source keywords remain case-sensitive. Example fragments illustrate a use and are not standalone models. Read the linked normative concern for full constraints. Punctuation and operator precedence follow the final section.
 
-[`after`](#keyword-after) · [`and`](#keyword-and) · [`as`](#keyword-as) · [`assert`](#keyword-assert) · [`atLeastOnce`](#keyword-atleastonce) · [`atMostOnce`](#keyword-atmostonce) · [`attribute`](#keyword-attribute) · [`bestEffort`](#keyword-besteffort) · [`bool`](#keyword-bool) · [`bound`](#keyword-bound) · [`byte`](#keyword-byte) · [`calc`](#keyword-calc) · [`call`](#keyword-call) · [`capacity`](#keyword-capacity) · [`client`](#keyword-client) · [`clientServer`](#keyword-clientserver) · [`completion`](#keyword-completion) · [`component`](#keyword-component) · [`concurrency`](#keyword-concurrency) · [`connect`](#keyword-connect) · [`cv`](#keyword-cv) · [`data`](#keyword-data) · [`datatype`](#keyword-datatype) · [`deadline`](#keyword-deadline) · [`def`](#keyword-def) · [`delegate`](#keyword-delegate) · [`delivery`](#keyword-delivery) · [`deploy`](#keyword-deploy) · [`do`](#keyword-do) · [`doc`](#keyword-doc) · [`dropNewest`](#keyword-dropnewest) · [`dropOldest`](#keyword-dropoldest) · [`else`](#keyword-else) · [`entry`](#keyword-entry) · [`enum`](#keyword-enum) · [`event`](#keyword-event) · [`every`](#keyword-every) · [`exit`](#keyword-exit) · [`fail`](#keyword-fail) · [`false`](#keyword-false) · [`fifo`](#keyword-fifo) · [`final`](#keyword-final) · [`for`](#keyword-for) · [`forEach`](#keyword-foreach) · [`function`](#keyword-function) · [`fv`](#keyword-fv) · [`grv`](#keyword-grv) · [`gv`](#keyword-gv) · [`idempotent`](#keyword-idempotent) · [`if`](#keyword-if) · [`import`](#keyword-import) · [`in`](#keyword-in) · [`include`](#keyword-include) · [`initial`](#keyword-initial) · [`int`](#keyword-int) · [`interface`](#keyword-interface) · [`interruptible`](#keyword-interruptible) · [`iv`](#keyword-iv) · [`label`](#keyword-label) · [`manual`](#keyword-manual) · [`maxAge`](#keyword-maxage) · [`maxLatency`](#keyword-maxlatency) · [`mixed`](#keyword-mixed) · [`ms`](#keyword-ms) · [`not`](#keyword-not) · [`ns`](#keyword-ns) · [`of`](#keyword-of) · [`on`](#keyword-on) · [`optional`](#keyword-optional) · [`or`](#keyword-or) · [`ordering`](#keyword-ordering) · [`otherwise`](#keyword-otherwise) · [`overflow`](#keyword-overflow) · [`package`](#keyword-package) · [`port`](#keyword-port) · [`priority`](#keyword-priority) · [`provides`](#keyword-provides) · [`publish`](#keyword-publish) · [`publisher`](#keyword-publisher) · [`publishSubscribe`](#keyword-publishsubscribe) · [`qos`](#keyword-qos) · [`queued`](#keyword-queued) · [`real`](#keyword-real) · [`realtime`](#keyword-realtime) · [`receive`](#keyword-receive) · [`receiver`](#keyword-receiver) · [`record`](#keyword-record) · [`recursive`](#keyword-recursive) · [`redefines`](#keyword-redefines) · [`reentrant`](#keyword-reentrant) · [`reject`](#keyword-reject) · [`reply`](#keyword-reply) · [`requirement`](#keyword-requirement) · [`requires`](#keyword-requires) · [`return`](#keyword-return) · [`s`](#keyword-s) · [`sampled`](#keyword-sampled) · [`satisfy`](#keyword-satisfy) · [`send`](#keyword-send) · [`sender`](#keyword-sender) · [`senderReceiver`](#keyword-senderreceiver) · [`serial`](#keyword-serial) · [`server`](#keyword-server) · [`service`](#keyword-service) · [`specializes`](#keyword-specializes) · [`start`](#keyword-start) · [`state`](#keyword-state) · [`string`](#keyword-string) · [`subscriber`](#keyword-subscriber) · [`sv`](#keyword-sv) · [`timing`](#keyword-timing) · [`transition`](#keyword-transition) · [`true`](#keyword-true) · [`uint`](#keyword-uint) · [`unordered`](#keyword-unordered) · [`us`](#keyword-us) · [`useCase`](#keyword-usecase) · [`var`](#keyword-var) · [`verificationCase`](#keyword-verificationcase) · [`verify`](#keyword-verify) · [`version`](#keyword-version) · [`via`](#keyword-via) · [`view`](#keyword-view) · [`void`](#keyword-void) · [`wcet`](#keyword-wcet) · [`when`](#keyword-when) · [`where`](#keyword-where) · [`while`](#keyword-while) · [`within`](#keyword-within)
+[`after`](#keyword-after) · [`and`](#keyword-and) · [`as`](#keyword-as) · [`assert`](#keyword-assert) · [`atLeastOnce`](#keyword-atleastonce) · [`atMostOnce`](#keyword-atmostonce) · [`attribute`](#keyword-attribute) · [`bestEffort`](#keyword-besteffort) · [`bool`](#keyword-bool) · [`bound`](#keyword-bound) · [`byte`](#keyword-byte) · [`calc`](#keyword-calc) · [`call`](#keyword-call) · [`capacity`](#keyword-capacity) · [`class`](#keyword-class) · [`client`](#keyword-client) · [`clientServer`](#keyword-clientserver) · [`completion`](#keyword-completion) · [`component`](#keyword-component) · [`concurrency`](#keyword-concurrency) · [`connect`](#keyword-connect) · [`cv`](#keyword-cv) · [`data`](#keyword-data) · [`datatype`](#keyword-datatype) · [`deadline`](#keyword-deadline) · [`def`](#keyword-def) · [`delegate`](#keyword-delegate) · [`delivery`](#keyword-delivery) · [`deploy`](#keyword-deploy) · [`do`](#keyword-do) · [`doc`](#keyword-doc) · [`dropNewest`](#keyword-dropnewest) · [`dropOldest`](#keyword-dropoldest) · [`else`](#keyword-else) · [`entry`](#keyword-entry) · [`enum`](#keyword-enum) · [`event`](#keyword-event) · [`every`](#keyword-every) · [`exit`](#keyword-exit) · [`fail`](#keyword-fail) · [`false`](#keyword-false) · [`fifo`](#keyword-fifo) · [`final`](#keyword-final) · [`for`](#keyword-for) · [`forEach`](#keyword-foreach) · [`function`](#keyword-function) · [`fv`](#keyword-fv) · [`grv`](#keyword-grv) · [`gv`](#keyword-gv) · [`idempotent`](#keyword-idempotent) · [`if`](#keyword-if) · [`import`](#keyword-import) · [`in`](#keyword-in) · [`include`](#keyword-include) · [`initial`](#keyword-initial) · [`int`](#keyword-int) · [`interface`](#keyword-interface) · [`interruptible`](#keyword-interruptible) · [`iv`](#keyword-iv) · [`label`](#keyword-label) · [`maxAge`](#keyword-maxage) · [`maxLatency`](#keyword-maxlatency) · [`mixed`](#keyword-mixed) · [`ms`](#keyword-ms) · [`not`](#keyword-not) · [`ns`](#keyword-ns) · [`of`](#keyword-of) · [`on`](#keyword-on) · [`operation`](#keyword-operation) · [`optional`](#keyword-optional) · [`or`](#keyword-or) · [`ordering`](#keyword-ordering) · [`otherwise`](#keyword-otherwise) · [`overflow`](#keyword-overflow) · [`package`](#keyword-package) · [`port`](#keyword-port) · [`priority`](#keyword-priority) · [`provides`](#keyword-provides) · [`publish`](#keyword-publish) · [`publisher`](#keyword-publisher) · [`publishSubscribe`](#keyword-publishsubscribe) · [`qos`](#keyword-qos) · [`queued`](#keyword-queued) · [`real`](#keyword-real) · [`realtime`](#keyword-realtime) · [`receive`](#keyword-receive) · [`receiver`](#keyword-receiver) · [`record`](#keyword-record) · [`recursive`](#keyword-recursive) · [`redefines`](#keyword-redefines) · [`reentrant`](#keyword-reentrant) · [`reject`](#keyword-reject) · [`reply`](#keyword-reply) · [`requirement`](#keyword-requirement) · [`requires`](#keyword-requires) · [`return`](#keyword-return) · [`s`](#keyword-s) · [`sampled`](#keyword-sampled) · [`satisfy`](#keyword-satisfy) · [`send`](#keyword-send) · [`sender`](#keyword-sender) · [`senderReceiver`](#keyword-senderreceiver) · [`serial`](#keyword-serial) · [`server`](#keyword-server) · [`service`](#keyword-service) · [`specializes`](#keyword-specializes) · [`start`](#keyword-start) · [`state`](#keyword-state) · [`string`](#keyword-string) · [`subscriber`](#keyword-subscriber) · [`sv`](#keyword-sv) · [`timing`](#keyword-timing) · [`transition`](#keyword-transition) · [`true`](#keyword-true) · [`tv`](#keyword-tv) · [`uint`](#keyword-uint) · [`unordered`](#keyword-unordered) · [`us`](#keyword-us) · [`useCase`](#keyword-usecase) · [`var`](#keyword-var) · [`verificationCase`](#keyword-verificationcase) · [`verify`](#keyword-verify) · [`version`](#keyword-version) · [`via`](#keyword-via) · [`view`](#keyword-view) · [`void`](#keyword-void) · [`wcet`](#keyword-wcet) · [`when`](#keyword-when) · [`where`](#keyword-where) · [`while`](#keyword-while) · [`within`](#keyword-within)
 
 ## Keyword: after
 
@@ -144,6 +144,16 @@ Positive safe-integer retained-message limit per connector occurrence, direction
 
 **Graphical notation:** [Queue capacity](GRAPHICAL_CATALOG.md#notation-capacity-policy). Queue capacity.
 
+## Keyword: class
+
+**Concern:** [Structure and names](spec/01-structure-and-types.md). **Grammar:** `Component`, `Instance`, `RootComponent`.
+
+General software classifier: owns private copied values, typed ports, child class/component usages and executable operations/functions. A component specializes this category. Definitions use def; top-level usages are closed execution roots. No dynamic object creation or cross-owner access is introduced.
+
+**Example fragment:** `class def CounterBase { var value: int = 21; }`
+
+**Graphical notation:** [Class definition](GRAPHICAL_CATALOG.md#notation-class-definition), [Class usage and root](GRAPHICAL_CATALOG.md#notation-class-usage). Class definition; Class usage and root.
+
 ## Keyword: client
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Port`.
@@ -158,7 +168,7 @@ Port role for the requesting side of a clientServer interface. A closed client p
 
 **Concern:** [Communication](spec/02-communication.md). **Grammar:** `Interface`.
 
-Interface kind containing function signatures only. A client issues request; a server implements on call handlers. Events belong in service or publishSubscribe contracts.
+Interface kind containing operation/function signatures only. A client issues requests; a server implements compatible on call handlers. Events belong in service or publishSubscribe contracts.
 
 **Example fragment:** `interface clientServer Health version "1.0.0" { function check(): bool; }`
 
@@ -178,7 +188,7 @@ Local state stimulus reconsidered after entry and each reaction until quiescent.
 
 **Concern:** [Structure and names](spec/01-structure-and-types.md). **Grammar:** `Component`, `Instance`, `RootComponent`.
 
-Defines a reusable software boundary with def, or a concrete instance. Components own child components, ports, private data and executable functions. Functions own calculations. Each instance receives distinct state and activation locks.
+Specialized class category for a software component. Definitions use def; usages have separate private stores. Components may specialize class or component definitions. Component usages require component definitions; class usages may instantiate either category.
 
 **Example fragment:** `component def Controller { } / component controller: Controller;`
 
@@ -242,17 +252,17 @@ Positive elapsed-time bound from activation release to completion, including que
 
 **Example fragment:** `deadline 5 ms;`
 
-**Graphical notation:** [Function timing contract](GRAPHICAL_CATALOG.md#notation-timing-contract), [Function timing diagram](GRAPHICAL_CATALOG.md#notation-function-timing-diagram). Function timing contract; Function timing diagram.
+**Graphical notation:** [Function timing contract](GRAPHICAL_CATALOG.md#notation-timing-contract), [Timing View](GRAPHICAL_CATALOG.md#notation-function-timing-diagram). Function timing contract; Timing View.
 
 ## Keyword: def
 
 **Concern:** [Structure and names](spec/01-structure-and-types.md). **Grammar:** `Component`, `QosPolicy`.
 
-Declares a reusable component type or complete package-owned QoS policy. Component definitions may specialize one base; definitions create no runtime singleton.
+Declares a reusable class/component type or complete named QoS policy. A definition is not an execution occurrence and does not allocate shared state.
 
 **Example fragment:** `component def Controller { } / qos def LocalLink { ... }`
 
-**Graphical notation:** [Component definition](GRAPHICAL_CATALOG.md#notation-component-definition), [Reusable QoS policy](GRAPHICAL_CATALOG.md#notation-qos-policy-definition). Component definition; Reusable QoS policy.
+**Graphical notation:** [Component definition](GRAPHICAL_CATALOG.md#notation-component-definition), [Reusable QoS policy](GRAPHICAL_CATALOG.md#notation-qos-policy-definition), [Class definition](GRAPHICAL_CATALOG.md#notation-class-definition). Component definition; Reusable QoS policy; Class definition.
 
 ## Keyword: delegate
 
@@ -448,7 +458,7 @@ Iterates in array order over one copied fixed-array value evaluated once on entr
 
 **Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Signature`, `FunctionDef`.
 
-Declares an executable component-owned behavior or an interface contract signature. A body contains optional local calculations followed by statements or directly owned states. An omitted result means void; triggers select activation.
+Specialized operation category, used for executable members and interface signatures. It retains ordinary ownership, copied values, triggers, timing, function-local calculations and flow/state semantics; it does not imply purity. A function contract requires a function implementation.
 
 **Example fragment:** `function startUp() on start { return; }`
 
@@ -458,11 +468,11 @@ Declares an executable component-owned behavior or an interface contract signatu
 
 **Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `View`.
 
-Function view of existing executable functions. It projects statement flow, directly owned states or an observed function-timing diagram using the same view kind. Timing contracts remain distinct from observed trace intervals.
+Selects a Flow View presenting operation/function statement flow, states or interruptible regions. Every selected occurrence must be executable behavior; interface signatures and calculations are invalid subjects. Use tv for timing.
 
 **Example fragment:** `view control fv of Controller.regulate;`
 
-**Graphical notation:** [Flow View](GRAPHICAL_CATALOG.md#notation-view-fv), [Function timing diagram](GRAPHICAL_CATALOG.md#notation-function-timing-diagram). Flow View; Function timing diagram.
+**Graphical notation:** [Flow View](GRAPHICAL_CATALOG.md#notation-view-fv). Flow View.
 
 ## Keyword: grv
 
@@ -478,11 +488,11 @@ Grid View of a package or named semantic declaration other than a view. Presents
 
 **Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `View`.
 
-General View of a package or resolvable named semantic declaration other than a view. Shows ownership, types, attributes and relations, retaining definition/occurrence distinction.
+Selects a General View of software structure. Box in box and Tree are alternative presentation layouts preserving the same ownership and occurrence identities.
 
 **Example fragment:** `view overview gv of Product;`
 
-**Graphical notation:** [General View](GRAPHICAL_CATALOG.md#notation-view-gv). General View.
+**Graphical notation:** [General View](GRAPHICAL_CATALOG.md#notation-view-gv), [General View: Tree](GRAPHICAL_CATALOG.md#notation-view-gv-tree). General View; General View: Tree.
 
 ## Keyword: idempotent
 
@@ -578,7 +588,7 @@ Names a cooperatively cancellable region in a triggered serial flow function. An
 
 **Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `View`.
 
-Interconnect View of a root component, component definition or component instance. Shows owned and immediate-child ports, connectors and delegation with exact interface paths.
+Interconnect View of a class/component root, definition or occurrence. Shows owned and immediate-child ports, explicit connectors and delegation with exact interface paths; client/server and requires/provides use socket/ball symbols.
 
 **Example fragment:** `view wiring iv of Product;`
 
@@ -593,16 +603,6 @@ Assigns a unique name to a scenario step. Later after clauses use that label as 
 **Example fragment:** `via orderLink label submitted;`
 
 **Graphical notation:** [Case data exchange](GRAPHICAL_CATALOG.md#notation-case-data-exchange), [Case event exchange](GRAPHICAL_CATALOG.md#notation-case-event-exchange), [Case request](GRAPHICAL_CATALOG.md#notation-case-request), [Correlated case reply](GRAPHICAL_CATALOG.md#notation-case-reply), [Case causal order](GRAPHICAL_CATALOG.md#notation-case-causal-order). Case data exchange; Case event exchange; Case request; Correlated case reply; Case causal order.
-
-## Keyword: manual
-
-**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Trigger`.
-
-Parameterless void function trigger released by a harness. It is control of execution, not a route for injecting external model payloads or bypassing interfaces.
-
-**Example fragment:** `function refresh(): void on manual { ... }`
-
-**Graphical notation:** [Manual activation](GRAPHICAL_CATALOG.md#notation-trigger-manual). Manual activation.
 
 ## Keyword: maxAge
 
@@ -672,7 +672,7 @@ Selects the root context of a useCase/verificationCase, the design source of a s
 
 **Example fragment:** `view flow fv of Product.controller.worker.run;`
 
-**Graphical notation:** [Use case](GRAPHICAL_CATALOG.md#notation-case), [Satisfaction relation](GRAPHICAL_CATALOG.md#notation-satisfies-link), [General View](GRAPHICAL_CATALOG.md#notation-view-gv), [Interconnect View](GRAPHICAL_CATALOG.md#notation-view-iv), [Case View](GRAPHICAL_CATALOG.md#notation-view-cv), [Sequence View](GRAPHICAL_CATALOG.md#notation-view-sv), [Grid View](GRAPHICAL_CATALOG.md#notation-view-grv), [Flow View](GRAPHICAL_CATALOG.md#notation-view-fv), [Verification case](GRAPHICAL_CATALOG.md#notation-verification-case). Use case; Satisfaction relation; General View; Interconnect View; Case View; Sequence View; Grid View; Flow View; Verification case.
+**Graphical notation:** [Use case](GRAPHICAL_CATALOG.md#notation-case), [Satisfaction relation](GRAPHICAL_CATALOG.md#notation-satisfies-link), [General View](GRAPHICAL_CATALOG.md#notation-view-gv), [General View: Tree](GRAPHICAL_CATALOG.md#notation-view-gv-tree), [Interconnect View](GRAPHICAL_CATALOG.md#notation-view-iv), [Case View](GRAPHICAL_CATALOG.md#notation-view-cv), [Sequence View](GRAPHICAL_CATALOG.md#notation-view-sv), [Grid View](GRAPHICAL_CATALOG.md#notation-view-grv), [Flow View](GRAPHICAL_CATALOG.md#notation-view-fv), [Verification case](GRAPHICAL_CATALOG.md#notation-verification-case). Use case; Satisfaction relation; General View; General View: Tree; Interconnect View; Case View; Sequence View; Grid View; Flow View; Verification case.
 
 ## Keyword: on
 
@@ -682,7 +682,17 @@ Introduces a function activation trigger, state transition trigger, interruptibl
 
 **Example fragment:** `function tick() on every 10 ms { return; } / deploy app on "system:production";`
 
-**Graphical notation:** [Startup activation](GRAPHICAL_CATALOG.md#notation-trigger-start), [Manual activation](GRAPHICAL_CATALOG.md#notation-trigger-manual), [Periodic activation](GRAPHICAL_CATALOG.md#notation-trigger-periodic), [Port receive activation](GRAPHICAL_CATALOG.md#notation-trigger-receive), [RPC handler activation](GRAPHICAL_CATALOG.md#notation-trigger-call), [State transition](GRAPHICAL_CATALOG.md#notation-transition), [Deployment binding](GRAPHICAL_CATALOG.md#notation-deployment), [Interruptible flow region](GRAPHICAL_CATALOG.md#notation-interruptible-region). Startup activation; Manual activation; Periodic activation; Port receive activation; RPC handler activation; State transition; Deployment binding; Interruptible flow region.
+**Graphical notation:** [Startup activation](GRAPHICAL_CATALOG.md#notation-trigger-start), [Periodic activation](GRAPHICAL_CATALOG.md#notation-trigger-periodic), [Port receive activation](GRAPHICAL_CATALOG.md#notation-trigger-receive), [RPC handler activation](GRAPHICAL_CATALOG.md#notation-trigger-call), [State transition](GRAPHICAL_CATALOG.md#notation-transition), [Deployment binding](GRAPHICAL_CATALOG.md#notation-deployment), [Interruptible flow region](GRAPHICAL_CATALOG.md#notation-interruptible-region). Startup activation; Periodic activation; Port receive activation; RPC handler activation; State transition; Deployment binding; Interruptible flow region.
+
+## Keyword: operation
+
+**Concern:** [Behavior and states](spec/03-behavior.md). **Grammar:** `Signature`, `FunctionDef`.
+
+General executable member or interface signature, with the same copied inputs/result, activation, timing and body rules as its function specialization. Operations own local calculations and statement flow or states. An operation signature accepts an operation or function handler; a function signature requires a function handler.
+
+**Example fragment:** `operation twice(input: int): int { return input * 2; }`
+
+**Graphical notation:** [Executable operation](GRAPHICAL_CATALOG.md#notation-operation), [Interface operation signature](GRAPHICAL_CATALOG.md#notation-operation-signature). Executable operation; Interface operation signature.
 
 ## Keyword: optional
 
@@ -1048,7 +1058,7 @@ As an interface kind, combines RPC functions and events with requires/provides r
 
 **Concern:** [Structure and names](spec/01-structure-and-types.md). **Grammar:** `Component`.
 
-Names one visible base component definition. Effective inherited members are reused; specialization and effective containment must be acyclic.
+Declares one acyclic compatible base. A component definition may specialize a class or component; a class definition may specialize a class. Effective members retain explicit compatible redefinition rules.
 
 **Example fragment:** `component def Tuned specializes Controller { }`
 
@@ -1112,7 +1122,7 @@ Function contract containing wcet, deadline and concurrency in that order. Requi
 
 **Example fragment:** `timing { wcet 1 ms; deadline 5 ms; concurrency serial; }`
 
-**Graphical notation:** [Function timing contract](GRAPHICAL_CATALOG.md#notation-timing-contract), [Function timing diagram](GRAPHICAL_CATALOG.md#notation-function-timing-diagram). Function timing contract; Function timing diagram.
+**Graphical notation:** [Function timing contract](GRAPHICAL_CATALOG.md#notation-timing-contract), [Timing View](GRAPHICAL_CATALOG.md#notation-function-timing-diagram). Function timing contract; Timing View.
 
 ## Keyword: transition
 
@@ -1133,6 +1143,16 @@ The true bool literal, with no implicit equivalence to numeric one or other none
 **Example fragment:** `assert true;`
 
 **Graphical notation:** [Expressions and value paths](GRAPHICAL_CATALOG.md#notation-expression). Expressions and value paths.
+
+## Keyword: tv
+
+**Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `View`.
+
+Selects a Timing View of executable operation/function declarations or occurrences. Explicit selection and filters preserve identity; the host associates an identified trace and concrete occurrence identities separately from declared timing contracts.
+
+**Example fragment:** `view polling tv of Demo.first.poll;`
+
+**Graphical notation:** [Timing View](GRAPHICAL_CATALOG.md#notation-function-timing-diagram). Timing View.
 
 ## Keyword: uint
 
@@ -1228,11 +1248,11 @@ Names the root-level connector used by a case exchange. Endpoint-member paths mu
 
 **Concern:** [Graphical views](GRAPHICAL_NOTATION.md). **Grammar:** `View`.
 
-Declares a named gv/iv/cv/sv/grv/fv projection. Compact of syntax selects one subject; a block combines include selections, optional recursive traversal and pure where filters into a stable union of occurrence paths. It carries no executable behavior or diagram geometry.
+Declares a named gv/iv/cv/sv/grv/fv/tv projection. Compact of syntax selects one subject; a block combines include selections, optional recursive traversal and pure where filters into a stable union of occurrence paths. It carries no executable behavior or diagram geometry.
 
 **Example fragment:** `view wiring iv of Product;`
 
-**Graphical notation:** [General View](GRAPHICAL_CATALOG.md#notation-view-gv), [Interconnect View](GRAPHICAL_CATALOG.md#notation-view-iv), [Case View](GRAPHICAL_CATALOG.md#notation-view-cv), [Sequence View](GRAPHICAL_CATALOG.md#notation-view-sv), [Grid View](GRAPHICAL_CATALOG.md#notation-view-grv), [Flow View](GRAPHICAL_CATALOG.md#notation-view-fv). General View; Interconnect View; Case View; Sequence View; Grid View; Flow View.
+**Graphical notation:** [General View](GRAPHICAL_CATALOG.md#notation-view-gv), [General View: Tree](GRAPHICAL_CATALOG.md#notation-view-gv-tree), [Interconnect View](GRAPHICAL_CATALOG.md#notation-view-iv), [Case View](GRAPHICAL_CATALOG.md#notation-view-cv), [Sequence View](GRAPHICAL_CATALOG.md#notation-view-sv), [Grid View](GRAPHICAL_CATALOG.md#notation-view-grv), [Flow View](GRAPHICAL_CATALOG.md#notation-view-fv). General View; General View: Tree; Interconnect View; Case View; Sequence View; Grid View; Flow View.
 
 ## Keyword: void
 
@@ -1252,7 +1272,7 @@ Positive active-execution-time bound including local helpers and state reaction 
 
 **Example fragment:** `wcet 1 ms;`
 
-**Graphical notation:** [Function timing contract](GRAPHICAL_CATALOG.md#notation-timing-contract), [Function timing diagram](GRAPHICAL_CATALOG.md#notation-function-timing-diagram). Function timing contract; Function timing diagram.
+**Graphical notation:** [Function timing contract](GRAPHICAL_CATALOG.md#notation-timing-contract), [Timing View](GRAPHICAL_CATALOG.md#notation-function-timing-diagram). Function timing contract; Timing View.
 
 ## Keyword: when
 

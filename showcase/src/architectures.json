@@ -144,6 +144,12 @@
     "root": "Production",
     "description": "A browser calls a checkout service, which requests inventory and publishes receipt work. Each dependency is a typed boundary, and a dedicated worker owns receipt handling.",
     "focus": "Service composition · request failure paths · asynchronous work",
+    "inputDriver": {
+      "function": "driveInputs",
+      "schedule": "Publish browserCommands.overOrder() at 100 ms",
+      "x": 0,
+      "y": 330
+    },
     "nodes": [
       {
         "id": "browser",
@@ -184,6 +190,15 @@
     ],
     "routes": [
       {
+        "id": "browserCommand",
+        "source": "browserCommands",
+        "target": "browser.control",
+        "contract": "BrowserCommands",
+        "kind": "publishSubscribe",
+        "sourceRole": "publisher",
+        "targetRole": "subscriber"
+      },
+      {
         "id": "checkoutLink",
         "source": "browser.checkout",
         "target": "application.api",
@@ -221,6 +236,12 @@
     "root": "Production",
     "description": "A device calls an ingestion service. Accepted samples pass through an explicit broker and fan out to analytics and archive consumers. Separate routes preserve independent buffering for each consumer.",
     "focus": "Ingestion API · explicit broker · independent event subscriptions",
+    "inputDriver": {
+      "function": "driveInputs",
+      "schedule": "Publish deviceCommands.retry() at 100 ms and sendInvalid() at 200 ms",
+      "x": 0,
+      "y": 420
+    },
     "nodes": [
       {
         "id": "device",
@@ -269,6 +290,15 @@
       }
     ],
     "routes": [
+      {
+        "id": "deviceCommand",
+        "source": "deviceCommands",
+        "target": "device.control",
+        "contract": "DeviceCommands",
+        "kind": "publishSubscribe",
+        "sourceRole": "publisher",
+        "targetRole": "subscriber"
+      },
       {
         "id": "ingestionLink",
         "source": "device.ingest",

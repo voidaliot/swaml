@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="560" viewBox="0 0 560 560" role="img" aria-labelledby="title desc">
+<title id="title">Timing View</title><desc id="desc">Timing View. A tv projection compares observed activation releases, waits and terminal markers with separately labeled declared timing contracts.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="560" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="35" y="22" width="490" height="107" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="54" y="55" font-size="20" font-weight="700" fill="#111111">tv: first.poll</text>
+<text x="54" y="88" font-size="18" font-weight="400" fill="#111111">declared: wcet 1 ms; deadline 30 ms; serial</text>
+<text x="35" y="165" font-size="18" font-weight="400" fill="#111111">observed: reference logical time, zero CPU cost</text>
+<text x="43" y="244" font-size="18" font-weight="700" fill="#111111">a6</text>
+<rect x="186.66666666666669" y="223" width="133.33333333333331" height="30" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="197.833" y="244" font-size="18" font-weight="400" fill="#111111">request wait</text>
+<polygon points="186.66666666666669,214 179.66666666666669,203 193.66666666666669,203" fill="#111111" stroke="#111111"/>
+<polyline points="186.66666666666669,216 186.66666666666669,260" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="320.0,216 320.0,260" fill="none" stroke="#111111" stroke-width="2"/>
+<circle cx="320.0" cy="238" r="7" fill="#ffffff" stroke="#111111"/>
+<text x="43" y="343" font-size="18" font-weight="700" fill="#111111">a12</text>
+<rect x="220.0" y="322" width="100.0" height="30" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="244.5" y="343" font-size="18" font-weight="400" fill="#111111">ready</text>
+<rect x="320.0" y="322" width="133.33333333333337" height="30" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="331.167" y="343" font-size="18" font-weight="400" fill="#111111">request wait</text>
+<polygon points="220.0,313 213.0,302 227.0,302" fill="#111111" stroke="#111111"/>
+<polyline points="320.0,315 320.0,359" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="453.33333333333337,315 453.33333333333337,359" fill="none" stroke="#111111" stroke-width="2"/>
+<circle cx="453.33333333333337" cy="337" r="7" fill="#ffffff" stroke="#111111"/>
+<polyline points="120,394 520,394" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="120.0,394 120.0,402" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="114.5" y="428" font-size="18" font-weight="400" fill="#111111">0</text>
+<polyline points="186.66666666666669,394 186.66666666666669,402" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="181.167" y="428" font-size="18" font-weight="400" fill="#111111">2</text>
+<polyline points="253.33333333333334,394 253.33333333333334,402" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="247.833" y="428" font-size="18" font-weight="400" fill="#111111">4</text>
+<polyline points="320.0,394 320.0,402" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="314.5" y="428" font-size="18" font-weight="400" fill="#111111">6</text>
+<polyline points="386.6666666666667,394 386.6666666666667,402" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="381.167" y="428" font-size="18" font-weight="400" fill="#111111">8</text>
+<polyline points="453.33333333333337,394 453.33333333333337,402" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="442.333" y="428" font-size="18" font-weight="400" fill="#111111">10</text>
+<polyline points="520.0,394 520.0,402" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="509.0" y="428" font-size="18" font-weight="400" fill="#111111">12</text>
+<text x="244.0" y="461" font-size="18" font-weight="400" fill="#111111">logical time (ms)</text>
+<text x="35" y="496" font-size="18" font-weight="400" fill="#111111">▼ release; | zero-time running; ○ complete</text>
+<text x="35" y="523" font-size="18" font-weight="400" fill="#111111">display 0–12 ms; quiescent boundary 33 ms</text>
+<text x="35" y="550" font-size="18" font-weight="400" fill="#111111">declared deadlines 32 / 33 ms lie outside this window</text>
+</g></svg>

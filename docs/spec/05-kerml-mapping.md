@@ -15,15 +15,17 @@ The [mapping inventory](../../spec/kerml-mapping.json) is a machine-readable des
 | SWAML element | Proposed KerML base/representation | SWAML restriction or additional meaning |
 | --- | --- | --- |
 | Package | Package | flat authoring namespace |
-| Component definition | Structure | composition, encapsulated state and local executable features; optional single specialization |
+| Class definition | Structure | composition, encapsulated state and local executable features; optional single class specialization |
+| Component definition | SWAML Class specialization over Structure | preserves Component as the specialized class kind; may specialize a class or component definition |
 | Specialization / redefinition | Specialization / Redefinition | explicit source reuse with SWAML compatibility checks and provenance |
-| Root component | composite Feature typed by a referenced or synthetic Structure | selected named occurrence, closed topology and effective execution profile; typed binding cannot extend topology |
-| Component instance | composite Feature typed by its Structure | exactly-one multiplicity and acyclic composition |
+| Class/component execution root | composite Feature typed by a referenced or synthetic Structure | selected named occurrence, closed topology and effective execution profile; typed binding cannot extend topology |
+| Class/component usage | composite Feature typed by its Structure | declared usage kind, compatible definition kind, exactly-one multiplicity and acyclic composition |
 | Value datatype / enum | DataType | finite value semantics; enum domain restriction |
 | Interface contract | Classifier | nominal version, legal members and communication mode |
 | Port | Feature typed by contract Classifier | direction/role projection and boundary ownership |
-| Function signature | Behavior plus typed parameter Features | no implementation; copied request/result contract |
-| Function implementation | Behavior and an owning-component executable Step typed by it | direct ownership, activation, serialization and timing |
+| Operation/function signature | Behavior plus typed parameter Features and preserved callable kind | no implementation; Function specializes Operation; copied request/result contract |
+| Operation implementation | Behavior and an owned executable Step typed by it | direct class/component ownership, activation, serialization and timing |
+| Function implementation | SWAML Operation specialization over Behavior | preserves specialized Function kind with the same execution rules |
 | Calculation | Function | parameter-only environment and no side effects |
 | QoS policy definition | named MetadataFeature with typed policy fields | reusable values and reference provenance; never shared queue state |
 | Connector | Connector between port Features | permitted interface exchange and QoS obligations |
@@ -33,6 +35,8 @@ The [mapping inventory](../../spec/kerml-mapping.json) is a machine-readable des
 | State / transition | contained behavior steps, state predicate and succession relations | SWAML state-selection and reaction semantics |
 | Requirement / case / view | immutable attributes, formal docs, directed satisfy/verify memberships and selected occurrence identities | SWAML-specific interpretation |
 
+These SWAML subtype relations MUST be retained even when the authoring AST shares a representation between the two structural kinds or between the two executable kinds. A SWAML executable function is not mapped to KerML Function solely because of its spelling: the pure calculation row uses KerML Function, while operations/functions use the constrained executable Behavior mapping.
+
 The table establishes a mapping target, not a claim that names such as “SWAML state” already exist as native KerML metaclasses. A full exporter needs a versioned SWAML semantic library for the additional predicates, activation and communication constraints. [Chapter 7](07-normalized-model.md) completes the information model, reference edges and lowering rules for every syntax family; the inventory covers every current grammar rule/type name.
 
 ## 5.3 Normalization algorithm
@@ -41,9 +45,9 @@ A mapper MUST perform the following in dependency order:
 
 1. Validate the complete workspace and resolve every textual reference. Allocate stable IDs for package declarations and each named semantic element. Retain file URI and source range as provenance, not as identity.
 2. Create value types and interface classifiers. Materialize every data/event/function parameter and result as a typed feature with copied-value semantics. Preserve interface version and member order.
-3. Create component structures and owned instance features, plus synthetic structures for inline root composition and behavior, with membership and typing links. Each root is a named occurrence of its referenced or synthetic structure; a typed root has no extra wrapper child. Preserve source profile omission in provenance and effective service in semantics. Keep definition identity separate from every instance-path identity. A reused definition must not merge the states of its occurrences.
+3. Create class/component structures and owned usage features, preserving the declared structural kind and Component-to-Class subtype relation, plus synthetic structures for inline root composition and behavior, with membership and typing links. Each root is a named occurrence of its referenced or synthetic structure; a typed root has no extra wrapper child. Preserve source profile omission in provenance and effective service in semantics. Keep definition identity separate from every instance-path identity. A reused definition must not merge the states of its occurrences.
 4. Create each port feature in its owning structure. Apply role-specific direction to each member projection: RPC inputs/results have opposite directions; service events run provider-to-consumer. Do not assign a single simplistic “out” bit to an entire bidirectional service contract.
-5. Create function behaviors within their component's ownership. Add a synthetic owned executable step typed by that behavior and a component-instance context binding. This lowering artifact gives execution a structural context; it is not a user-visible performer or a second editable allocation model.
+5. Create operation/function behaviors within their class/component ownership, preserving the declared executable kind and Function-to-Operation subtype relation. Add a synthetic owned executable step typed by that behavior and a component-instance context binding. This lowering artifact gives execution a structural context; it is not a user-visible performer or a second editable allocation model.
 6. Lower statement blocks to structured steps with explicit sequencing. A branch has a Boolean selection predicate and branch result control; a bounded loop has condition, body, count and failure edge. Lower expressions as typed expressions/calculations. A mapper must preserve source order and short-circuit evaluation.
 7. Lower each stateful function to one state identity feature per activation, nested state-entry/exit/effect behaviors, trigger predicates, priority selection and succession relationships. Preserve finality, timer start/cancel and the run-to-completion relation. A bare succession graph without these constraints is not an equivalent mapping.
 8. Lower communication statements to message occurrences linked to the emitting activation, sending port, interface member, connector/delegation route and destination port. Requests additionally carry correlation, timeout and response/error continuation. An event cannot become an unowned signal merely because a kernel target permits it.
@@ -54,7 +58,7 @@ A mapper MUST perform the following in dependency order:
 
 The semantic library MUST define, or a mapper MUST carry as explicit constrained metadata, at least:
 
-- `ownsExecutable(component, function)` and instance-local `contextOf(activation)`;
+- `ownsExecutable(classOrComponent, operationOrFunction)` and instance-local `contextOf(activation)`;
 - `contractOf(port)`, `roleOf(port)`, `memberOf(contract, member)`;
 - `route(sourcePort, destinationPort, connectorPath)`;
 - `emits(activation, port, member, copiedPayload)` and `handles(function, port, member)`;

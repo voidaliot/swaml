@@ -4,7 +4,7 @@ These rendered figures illustrate the normative [view contract](GRAPHICAL_NOTATI
 
 For individual language concepts, use the [canonical notation catalog](GRAPHICAL_CATALOG.md), with paired SVG/PNG downloads and textual counterparts. The [notation inventory](../spec/notation.json) covers every grammar production and keyword, distinguishing standalone glyphs from compartments, labels and text-only syntax. The figures below are worked compositions of those rules, not the exhaustive symbol index.
 
-The first seven figures use the [service setting model](../examples/08-service-field.swaml). A provider owns the setting, two client components use its RPC/events, and private storage remains behind component ports. The state figure uses the [lifecycle model](../examples/04-stateful-function.swaml). The [figure manifest](../spec/graphical-examples.json) links each illustration to its model and semantic subject.
+The structure, interconnection, case, sequence, grid and flow figures use the [service setting model](../examples/08-service-field.swaml). A provider owns the setting, two client components use its RPC/events, and private storage remains behind component ports. The state figure uses the [lifecycle model](../examples/04-stateful-function.swaml); the timing figure uses [example 17](../examples/17-function-timing.swaml). The [figure manifest](../spec/graphical-examples.json) links each illustration to its model and semantic subject.
 
 ## Model Browser: actual ownership
 
@@ -20,7 +20,15 @@ The tree distinguishes `SettingStore` as a component definition from `Cabin.sett
 
 [SVG](figures/gv.svg) · [PNG](figures/gv.png)
 
-`Cabin` is the root component occurrence and its profile is service. `settings`, `front` and `rear` are component occurrences. Each owns a child component instance. Dashed `deploy` edges assign settings to controller and the panels to displays; descendant components inherit those locations. These are allocation edges, not communication lines. The two Panel occurrences have distinct private stores despite sharing one definition.
+`Cabin` is the root component occurrence and its profile is service. Its owned `driveInputs` function publishes the named `panelInput.adjust(22)` command. `settings`, `front` and `rear` are component occurrences. Each owns a child component instance. Dashed `deploy` edges assign settings to controller and the panels to displays; descendant components inherit those locations. These are allocation edges, not communication lines. The two Panel occurrences have distinct private stores despite sharing one definition.
+
+## gv: the same structure as a tree
+
+![General View as an ownership tree of the same Cabin, settings, store, front, rear and distinct panel occurrences](figures/gv-tree.svg)
+
+[SVG](figures/gv-tree.svg) · [PNG](figures/gv-tree.png)
+
+Tree edges labeled `owns` replace geometric containment. Both gv layouts show seven component occurrences and six ownership relationships. Shared `Client` and `Panel` definitions retain separate `front` and `rear` occurrence paths and stores. External deployment references stay outside the ownership tree. Choose the layout in presentation metadata; the `gv` source declaration is identical.
 
 ## iv: explicit interconnection and delegation
 
@@ -28,7 +36,7 @@ The tree distinguishes `SettingStore` as a component definition from `Cabin.sett
 
 [SVG](figures/iv.svg) · [PNG](figures/iv.png)
 
-Both connectors are oriented from `requires` to `provides`. Each visible boundary port is a square and delegates to a child port with the same contract/role. The shared provided port can serve both clients. The arrows indicate connector orientation; member inspection exposes reverse provider-event and response directions. Every route has its own capacity-8 FIFO queue policy per member/direction. There is no line directly coupling panel data to store data.
+The two service connectors are oriented from `requires` to `provides`. The root driver publishes a typed adjustment event through its `panelInput` port and the separate `adjustCommand` connector into `front.control`, delegated to `front.panel.control`. The rear's optional control input remains unbound. Each visible boundary port is a square and delegates to a child port with the same contract/role. The shared provided port can serve both clients. The arrows indicate connector orientation; member inspection exposes reverse provider-event and response directions. Every route has its own capacity-8 FIFO queue policy per member/direction. There is no line directly coupling panel data to store data.
 
 ## cv: cases and claimed requirement coverage
 
@@ -70,6 +78,14 @@ The frame belongs directly to `SettingStore.update`. The decision tests the actu
 
 `Idle`, `Running` and `Stopped` belong directly to `Device.lifecycle`. Initial entry publishes idle status. The interface event `commands.begin` enters Running; entry increments cycles and publishes running. Either `commands.stop` or the local 30-second timer enters the final state. The timer edge first publishes timeout in its effect. Final entry publishes stopped and terminates its owning function. Leaving Running cancels the old timer generation. fv projects both state behavior and statement flow from their owning functions.
 
+## tv: observed function timing and declared contracts
+
+![Timing View of first.poll activations a6 and a12 with observed release, request waits and terminal times, and separately labeled contracts](figures/tv.svg)
+
+[SVG](figures/tv.svg) · [PNG](figures/tv.png)
+
+The timing view explicitly selects four client/server function occurrences. This specimen focuses on `Demo.first.poll` in the identified `success` run from [the timing artifact](../spec/function-timing-demo.json). Activations `a6` and `a12` retain separate release and terminal identities; the named polling inputs traverse their own typed routes before releasing the handlers. The root driver's activations remain in the complete trace. Declared WCET and deadline limits occupy a separate compartment; zero CPU cost in the reference simulator is not a physical execution measurement. The host binds the trace; selecting `tv` does not run the model.
+
 ## Reproduction and semantic checks
 
-Run `python3 scripts/build-graphical-examples.py` to regenerate the eight SVG/scene pairs, and use `--check` to detect stale figures. Run `python3 scripts/build-notation.py` to regenerate their PNG copies together with the canonical catalog; its `--check` mode verifies decoded pixels. `node scripts/check-graphical-examples.mjs` resolves every manifest subject against its validated source model and verifies that all view families have an illustration. The semantic test establishes subject/reference validity; it is not a graphical editor conformance certification. Publication QA additionally renders and visually inspects the figures in the PDF.
+Run `python3 scripts/build-graphical-examples.py` to regenerate the ten SVG/scene pairs, and use `--check` to detect stale figures. Run `python3 scripts/build-notation.py` to regenerate their PNG copies together with the canonical catalog; its `--check` mode verifies decoded pixels. `node scripts/check-graphical-examples.mjs` resolves every manifest subject against its validated source model and verifies that all view families have an illustration. The semantic test establishes subject/reference validity; it is not a graphical editor conformance certification. Publication QA additionally renders and visually inspects the figures in the PDF.

@@ -1,8 +1,8 @@
 {
   "width": 1100,
   "height": 1040,
-  "title": "One component concept, from architecture to behavior",
-  "description": "Components own child components, private data, functions and ports. Functions own calculations and flow or states. Solid arrows show ownership; dashed arrows show references. Requirements and cases describe intent; all views project the same model.",
+  "title": "Software classifiers and behavior, from architecture to execution",
+  "description": "Class is the general structural category; component specializes class. Operation is the general executable category; function specializes operation. Both alternatives retain private state, owned children, typed ports and direct behavior. Solid arrows show ownership; dashed arrows show references.",
   "source": "spec/modeling-overview.json",
   "graph": "ontology",
   "shapes": [
@@ -524,7 +524,7 @@
       "kind": "text",
       "x": 366,
       "y": 52,
-      "text": "Component definition",
+      "text": "Class / Component",
       "size": 20,
       "bold": true,
       "color": "#17324d"
@@ -549,7 +549,7 @@
       "kind": "text",
       "x": 366,
       "y": 95,
-      "text": "Private variables + ports",
+      "text": "Component specializes Class",
       "size": 20,
       "bold": false,
       "color": "#17324d"
@@ -558,7 +558,7 @@
       "kind": "text",
       "x": 366,
       "y": 123,
-      "text": "Behavior + children",
+      "text": "Private state + ports",
       "size": 20,
       "bold": false,
       "color": "#17324d"
@@ -602,7 +602,7 @@
       "kind": "text",
       "x": 846,
       "y": 95,
-      "text": "One base component",
+      "text": "One compatible base",
       "size": 20,
       "bold": false,
       "color": "#17324d"
@@ -630,7 +630,7 @@
       "kind": "text",
       "x": 36,
       "y": 332,
-      "text": "Child components",
+      "text": "Child usages",
       "size": 20,
       "bold": true,
       "color": "#17324d"
@@ -655,7 +655,7 @@
       "kind": "text",
       "x": 36,
       "y": 375,
-      "text": "Named instances",
+      "text": "Class or Component",
       "size": 20,
       "bold": false,
       "color": "#17324d"
@@ -664,7 +664,7 @@
       "kind": "text",
       "x": 36,
       "y": 403,
-      "text": "Separate stores",
+      "text": "Separate private stores",
       "size": 20,
       "bold": false,
       "color": "#17324d"
@@ -683,7 +683,7 @@
       "kind": "text",
       "x": 306,
       "y": 332,
-      "text": "Functions",
+      "text": "Operation / Function",
       "size": 20,
       "bold": true,
       "color": "#17324d"
@@ -708,7 +708,7 @@
       "kind": "text",
       "x": 306,
       "y": 375,
-      "text": "Triggers + inputs",
+      "text": "General → specialized",
       "size": 20,
       "bold": false,
       "color": "#17324d"
@@ -717,7 +717,7 @@
       "kind": "text",
       "x": 306,
       "y": 403,
-      "text": "Optional result",
+      "text": "Triggers + inputs/result",
       "size": 20,
       "bold": false,
       "color": "#17324d"

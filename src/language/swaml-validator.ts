@@ -50,6 +50,7 @@ export class SwamlValidator {
                     if ('name' in member && node.definition.ref.members.some(m => 'name' in m && m.name === member.name)) error(member, 'SW002', `Root binding name '${member.name}' duplicates a member of its definition.`);
                 }
             }
+            if ((a.isInstance(node) || a.isRootComponent(node)) && node.definition?.ref && node.kind === 'component' && node.definition.ref.kind !== 'component') error(node, 'SW016', 'A component usage requires a component definition; a class usage may instantiate a class or component definition.');
             if (a.isInstance(node) && node.definition.ref) {
                 const visit = (d: a.Component, seen: Set<a.Component>): boolean => {
                     if (seen.has(d)) return true;
@@ -107,8 +108,8 @@ export class SwamlValidator {
                 }
                 for (const selection of selectView(node)) {
                     const subject = selection.node;
-                    if (node.kind === 'iv' && !a.isComponent(subject) && !a.isRootComponent(subject) && !a.isInstance(subject)) error(node, 'SW080', 'iv selects components.');
-                    if (node.kind === 'fv' && !a.isFunctionDef(subject)) error(node, 'SW080', 'fv selects executable functions.');
+                    if (node.kind === 'iv' && !a.isComponent(subject) && !a.isRootComponent(subject) && !a.isInstance(subject)) error(node, 'SW080', 'iv selects classes or components.');
+                    if ((node.kind === 'fv' || node.kind === 'tv') && !a.isFunctionDef(subject)) error(node, 'SW080', `${node.kind} selects executable operations or functions.`);
                     if (['sv','cv'].includes(node.kind) && !a.isScenario(subject) && !a.isRootComponent(subject)) error(node, 'SW080', 'sv/cv select cases or roots.');
                 }
             }
@@ -122,6 +123,7 @@ export class SwamlValidator {
         }
     }
     private checkInheritance(component: a.Component, error: Reporter): void {
+        if (component.kind === 'class' && component.specializes?.ref?.kind === 'component') error(component, 'SW016', 'A class may specialize only a class; a component may specialize a class or component.');
         const seen = new Set<a.Component>([component]);
         let ancestor = component.specializes?.ref;
         while (ancestor) {
@@ -138,8 +140,9 @@ export class SwamlValidator {
             let compatible = member.$type === base.$type;
             if (a.isPort(member) && a.isPort(base)) compatible &&= member.interface.ref === base.interface.ref && member.role === base.role && member.optional === base.optional;
             if (a.isVariable(member) && a.isVariable(base)) compatible &&= typeKey(member.type) === typeKey(base.type);
-            if (a.isInstance(member) && a.isInstance(base)) compatible &&= !!member.definition.ref && !!base.definition.ref && specializes(member.definition.ref, base.definition.ref);
+            if (a.isInstance(member) && a.isInstance(base)) compatible &&= (base.kind === 'class' || member.kind === 'component') && !!member.definition.ref && !!base.definition.ref && specializes(member.definition.ref, base.definition.ref);
             if (a.isFunctionDef(member) && a.isFunctionDef(base)) {
+                compatible &&= base.kind === 'operation' || member.kind === 'function';
                 compatible &&= signature(member) === signature(base) && trigger(member) === trigger(base) && !!member.stateBody === !!base.stateBody;
                 if (base.timing) compatible &&= !!member.timing && member.timing.concurrency === base.timing.concurrency && nanos(member.timing.wcet) <= nanos(base.timing.wcet) && nanos(member.timing.deadline) <= nanos(base.timing.deadline);
                 else compatible &&= !member.timing || member.timing.concurrency === 'serial';
@@ -208,8 +211,9 @@ export class SwamlValidator {
                     if (types.join('|') !== op.parameters.map(p => typeKey(p.type)).join('|')) error(op, 'SW052', 'Handler parameters must match the interface member in order and type.');
                     const result = a.isSignature(ep.member) ? typeKey(ep.member.result) : 'void';
                     if (typeKey(op.result) !== result) error(op, 'SW052', 'Handler result must match the interface member.');
+                    if (a.isSignature(ep.member) && ep.member.kind === 'function' && op.kind !== 'function') error(op, 'SW052', 'A function signature requires a function handler; an operation signature permits an operation or function handler.');
                 }
-            } else if (op.trigger && op.parameters.length) error(op, 'SW052', 'Start, manual and periodic functions have no parameters.');
+            } else if (op.trigger && op.parameters.length) error(op, 'SW052', 'Start and periodic functions have no parameters.');
             if (op.trigger && op.trigger.kind !== 'call' && typeKey(op.result) !== 'void') error(op, 'SW052', 'Non-call activations return void.');
             if (op.trigger?.period && op.timing && nanos(op.timing.deadline) > nanos(op.trigger.period)) error(op, 'SW042', 'Periodic deadline must not exceed period.');
             if (op.body) this.block(op.body, env, typeKey(op.result), error);

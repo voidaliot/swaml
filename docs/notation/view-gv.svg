@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="560" height="320" viewBox="0 0 560 320" role="img" aria-labelledby="title desc">
-<title id="title">General View</title><desc id="desc">General View. Draw a framed projection titled gv with the semantic subject identity visible; use the canonical element symbols within it.</desc>
+<title id="title">General View</title><desc id="desc">General View of component ownership, shown as Box in box or Tree. Layout changes presentation only.</desc>
 <g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
 <rect x="0" y="0" width="560" height="320" rx="0" fill="#ffffff" stroke="none"/>
 <rect x="14" y="14" width="532" height="292" rx="0" fill="#ffffff" stroke="#111111"/>

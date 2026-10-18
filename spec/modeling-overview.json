@@ -10,10 +10,10 @@
   },
   "ontology": {
     "id": "ontology",
-    "title": "One component concept, from architecture to behavior",
-    "summary": "Components own child components, private data, functions and ports. Functions own calculations and flow or states. Solid arrows show ownership; dashed arrows show references. Requirements and cases describe intent; all views project the same model.",
+    "title": "Software classifiers and behavior, from architecture to execution",
+    "summary": "Class is the general structural category; component specializes class. Operation is the general executable category; function specializes operation. Both alternatives retain private state, owned children, typed ports and direct behavior. Solid arrows show ownership; dashed arrows show references.",
     "view": "Concept map",
-    "takeaway": "Function means behavior with flow or states. Calculation means a pure expression. Component means one reusable software boundary with its own state.",
+    "takeaway": "Component specializes Class; Function specializes Operation. Calculations are pure and local to either executable category. Every occurrence has separate state.",
     "width": 1100,
     "height": 1040,
     "nodes": [
@@ -29,21 +29,21 @@
           "Inline or typed",
           "Closed architecture"
         ],
-        "detail": "A top-level component usage selects a concrete architecture. It can declare local behavior and child components inline, or instantiate a reusable definition with deployment bindings. Every instance, including the root, has its own store."
+        "detail": "A top-level class or component usage selects a closed execution architecture, inline or typed. Typed bodies contain deployment bindings only. Each occurrence owns separate stores."
       },
       {
         "id": "component",
-        "title": "Component definition",
+        "title": "Class / Component",
         "kind": "definition",
         "x": 350,
         "y": 20,
         "width": 360,
         "height": 140,
         "lines": [
-          "Private variables + ports",
-          "Behavior + children"
+          "Component specializes Class",
+          "Private state + ports"
         ],
-        "detail": "One software boundary owns private variables, functions, typed ports, child instances, connectors and delegations. The same rules apply to atomic and composite components."
+        "detail": "Class is the general classifier; Component is its specialized category. Both own child usages, private values, typed ports and operations/functions. Definitions and occurrences retain different identities; no heap or cross-owner access is added."
       },
       {
         "id": "specialization",
@@ -54,38 +54,38 @@
         "width": 240,
         "height": 140,
         "lines": [
-          "One base component",
+          "One compatible base",
           "Explicit redefines"
         ],
         "detail": "A definition can specialize one base definition. It inherits effective members and may explicitly redefine compatible members. Child replacement must preserve its contract; cycles and silent overrides are rejected."
       },
       {
         "id": "children",
-        "title": "Child components",
+        "title": "Child usages",
         "kind": "instance",
         "x": 20,
         "y": 300,
         "width": 240,
         "height": 140,
         "lines": [
-          "Named instances",
-          "Separate stores"
+          "Class or Component",
+          "Separate private stores"
         ],
-        "detail": "A component owns zero or more component usages. Each usage instantiates a component definition, recursively. Reusing a definition never shares mutable state. Instances are created statically with the root."
+        "detail": "A classifier owns statically named class/component usages. Each expands its compatible definition with independent state; component usages require component definitions, while class usages accept either category."
       },
       {
         "id": "functions",
-        "title": "Functions",
+        "title": "Operation / Function",
         "kind": "behavior",
         "x": 290,
         "y": 300,
         "width": 240,
         "height": 140,
         "lines": [
-          "Triggers + inputs",
-          "Optional result"
+          "General → specialized",
+          "Triggers + inputs/result"
         ],
-        "detail": "Functions own local calculations and flow or states. They may activate through a trigger or be called locally with call name(args), returning a copied value with as name. Inter-component calls use call port.member(args) with a timeout and failure path."
+        "detail": "Operation is general executable behavior; Function specializes it. Both own local calculations and flow or states, use copied values and ordinary triggers, and preserve local/routed call isolation. Neither means pure calculation."
       },
       {
         "id": "calculations",
@@ -99,7 +99,7 @@
           "Typed inputs",
           "Expression + result"
         ],
-        "detail": "A calc belongs only to its enclosing function and is available in that function’s expressions, states and guards. It accepts explicit copied inputs and returns a pure expression value. It cannot capture mutable state or call executable functions."
+        "detail": "A calc belongs only to its enclosing operation/function. It accepts explicit copied inputs and returns a pure expression value; it cannot capture mutable state or call executable behavior."
       },
       {
         "id": "ports",
@@ -493,6 +493,16 @@
         ],
         "labelX": 390,
         "labelY": 790
+      }
+    ],
+    "taxonomy": [
+      {
+        "general": "Class",
+        "specialized": "Component"
+      },
+      {
+        "general": "Operation",
+        "specialized": "Function"
       }
     ]
   },
@@ -1104,7 +1114,7 @@
           "kind": "instance",
           "lines": [
             "buy() · on start",
-            "overOrder() · on manual",
+            "overOrder() · on receive control.overOrder",
             "confirmation(orderId)",
             "on receive checkout.accepted"
           ],

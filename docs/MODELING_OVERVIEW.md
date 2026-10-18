@@ -4,7 +4,7 @@ SWAML models software composition, typed communication, function behavior, timin
 
 ## The graphical ontology
 
-Definitions describe reusable types; occurrences identify their use in a concrete assembly. Components own child components, private state and functions. Functions own calculations and their flow or states; calculations turn typed inputs into a named pure result. Every cross-component exchange follows a typed port and explicit route.
+Definitions describe reusable types; occurrences identify their use in a concrete assembly. **Component specializes Class; Function specializes Operation.** Both classifier categories own child usages, private state, ports and executable members. Operations/functions own calculations and their flow or states; calculations turn typed inputs into a named pure result. Every exchange across owners follows a typed port and explicit route. The walkthrough uses the specialized component/function vocabulary; the [class/operation example](../examples/20-classes-and-operations.swaml) demonstrates both alternatives.
 
 ![SWAML graphical ontology: definitions, occurrences, owned behavior, values, contracts, routes and traceable views](assets/modeling-ontology.svg)
 

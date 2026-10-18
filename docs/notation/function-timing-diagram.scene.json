@@ -1,8 +1,8 @@
 {
   "width": 560,
   "height": 560,
-  "title": "Function timing diagram",
-  "description": "Function timing diagram. An fv projection compares observed activation releases, waits and terminal markers with separately labeled declared timing contracts.",
+  "title": "Timing View",
+  "description": "Timing View. A tv projection compares observed activation releases, waits and terminal markers with separately labeled declared timing contracts.",
   "shapes": [
     {
       "kind": "rect",
@@ -28,7 +28,7 @@
       "kind": "text",
       "x": 54,
       "y": 55,
-      "text": "fv: first.poll",
+      "text": "tv: first.poll",
       "size": 20,
       "bold": true,
       "color": "#111111"
@@ -55,16 +55,16 @@
       "kind": "text",
       "x": 43,
       "y": 244,
-      "text": "a1",
+      "text": "a6",
       "size": 18,
       "bold": true,
       "color": "#111111"
     },
     {
       "kind": "rect",
-      "x": 120,
+      "x": 186.66666666666669,
       "y": 223,
-      "width": 200,
+      "width": 133.33333333333331,
       "height": 30,
       "rx": 0,
       "fill": "#ffffff",
@@ -72,7 +72,7 @@
     },
     {
       "kind": "text",
-      "x": 164.5,
+      "x": 197.833,
       "y": 244,
       "text": "request wait",
       "size": 18,
@@ -83,15 +83,15 @@
       "kind": "polygon",
       "points": [
         [
-          120,
+          186.66666666666669,
           214
         ],
         [
-          113,
+          179.66666666666669,
           203
         ],
         [
-          127,
+          193.66666666666669,
           203
         ]
       ],
@@ -102,11 +102,11 @@
       "kind": "line",
       "points": [
         [
-          120,
+          186.66666666666669,
           216
         ],
         [
-          120,
+          186.66666666666669,
           260
         ]
       ],
@@ -118,11 +118,11 @@
       "kind": "line",
       "points": [
         [
-          320,
+          320.0,
           216
         ],
         [
-          320,
+          320.0,
           260
         ]
       ],
@@ -132,7 +132,7 @@
     },
     {
       "kind": "circle",
-      "x": 320,
+      "x": 320.0,
       "y": 238,
       "r": 7,
       "fill": "#ffffff",
@@ -142,16 +142,16 @@
       "kind": "text",
       "x": 43,
       "y": 343,
-      "text": "a7",
+      "text": "a12",
       "size": 18,
       "bold": true,
       "color": "#111111"
     },
     {
       "kind": "rect",
-      "x": 170,
+      "x": 220.0,
       "y": 322,
-      "width": 150,
+      "width": 100.0,
       "height": 30,
       "rx": 0,
       "fill": "#ffffff",
@@ -159,7 +159,7 @@
     },
     {
       "kind": "text",
-      "x": 219.5,
+      "x": 244.5,
       "y": 343,
       "text": "ready",
       "size": 18,
@@ -168,9 +168,9 @@
     },
     {
       "kind": "rect",
-      "x": 320,
+      "x": 320.0,
       "y": 322,
-      "width": 200,
+      "width": 133.33333333333337,
       "height": 30,
       "rx": 0,
       "fill": "#ffffff",
@@ -178,7 +178,7 @@
     },
     {
       "kind": "text",
-      "x": 364.5,
+      "x": 331.167,
       "y": 343,
       "text": "request wait",
       "size": 18,
@@ -189,15 +189,15 @@
       "kind": "polygon",
       "points": [
         [
-          170,
+          220.0,
           313
         ],
         [
-          163,
+          213.0,
           302
         ],
         [
-          177,
+          227.0,
           302
         ]
       ],
@@ -208,11 +208,11 @@
       "kind": "line",
       "points": [
         [
-          320,
+          320.0,
           315
         ],
         [
-          320,
+          320.0,
           359
         ]
       ],
@@ -224,11 +224,11 @@
       "kind": "line",
       "points": [
         [
-          520,
+          453.33333333333337,
           315
         ],
         [
-          520,
+          453.33333333333337,
           359
         ]
       ],
@@ -238,7 +238,7 @@
     },
     {
       "kind": "circle",
-      "x": 520,
+      "x": 453.33333333333337,
       "y": 337,
       "r": 7,
       "fill": "#ffffff",
@@ -264,11 +264,11 @@
       "kind": "line",
       "points": [
         [
-          120,
+          120.0,
           394
         ],
         [
-          120,
+          120.0,
           402
         ]
       ],
@@ -289,11 +289,11 @@
       "kind": "line",
       "points": [
         [
-          220,
+          186.66666666666669,
           394
         ],
         [
-          220,
+          186.66666666666669,
           402
         ]
       ],
@@ -303,7 +303,7 @@
     },
     {
       "kind": "text",
-      "x": 214.5,
+      "x": 181.167,
       "y": 428,
       "text": "2",
       "size": 18,
@@ -314,11 +314,36 @@
       "kind": "line",
       "points": [
         [
-          320,
+          253.33333333333334,
           394
         ],
         [
-          320,
+          253.33333333333334,
+          402
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 247.833,
+      "y": 428,
+      "text": "4",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          320.0,
+          394
+        ],
+        [
+          320.0,
           402
         ]
       ],
@@ -330,31 +355,6 @@
       "kind": "text",
       "x": 314.5,
       "y": 428,
-      "text": "4",
-      "size": 18,
-      "bold": false,
-      "color": "#111111"
-    },
-    {
-      "kind": "line",
-      "points": [
-        [
-          420,
-          394
-        ],
-        [
-          420,
-          402
-        ]
-      ],
-      "color": "#111111",
-      "dash": false,
-      "arrow": false
-    },
-    {
-      "kind": "text",
-      "x": 414.5,
-      "y": 428,
       "text": "6",
       "size": 18,
       "bold": false,
@@ -364,11 +364,11 @@
       "kind": "line",
       "points": [
         [
-          520,
+          386.6666666666667,
           394
         ],
         [
-          520,
+          386.6666666666667,
           402
         ]
       ],
@@ -378,9 +378,59 @@
     },
     {
       "kind": "text",
-      "x": 514.5,
+      "x": 381.167,
       "y": 428,
       "text": "8",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          453.33333333333337,
+          394
+        ],
+        [
+          453.33333333333337,
+          402
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 442.333,
+      "y": 428,
+      "text": "10",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          520.0,
+          394
+        ],
+        [
+          520.0,
+          402
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 509.0,
+      "y": 428,
+      "text": "12",
       "size": 18,
       "bold": false,
       "color": "#111111"
@@ -407,7 +457,7 @@
       "kind": "text",
       "x": 35,
       "y": 523,
-      "text": "display 0–8 ms; quiescent boundary 31 ms",
+      "text": "display 0–12 ms; quiescent boundary 33 ms",
       "size": 18,
       "bold": false,
       "color": "#111111"
@@ -416,7 +466,7 @@
       "kind": "text",
       "x": 35,
       "y": 550,
-      "text": "declared deadlines 30 / 31 ms lie outside this window",
+      "text": "declared deadlines 32 / 33 ms lie outside this window",
       "size": 18,
       "bold": false,
       "color": "#111111"

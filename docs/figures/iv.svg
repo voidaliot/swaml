@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="750" viewBox="0 0 1000 750" role="img" aria-labelledby="title desc">
-<title id="title">iv · Interconnect View</title><desc id="desc">Cabin: two required service ports connect to one provided port; delegation reaches components.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="880" viewBox="0 0 1000 880" role="img" aria-labelledby="title desc">
+<title id="title">iv · Interconnect View</title><desc id="desc">Cabin: service routes and a named operator event use explicit ports and delegation.</desc>
 <defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#17324d"/></marker></defs>
 <g font-family="DejaVu Sans, sans-serif">
-<rect x="0" y="0" width="1000" height="750" rx="8" fill="#ffffff" stroke="none"/>
+<rect x="0" y="0" width="1000" height="880" rx="8" fill="#ffffff" stroke="none"/>
 <text x="32" y="47" font-size="30" font-weight="700" fill="#17324d">iv · Interconnect View</text>
-<text x="32" y="80" font-size="17" font-weight="400" fill="#516579">Cabin: two required service ports connect to one provided port; delegation reaches components.</text>
+<text x="32" y="80" font-size="17" font-weight="400" fill="#516579">Cabin: service routes and a named operator event use explicit ports and delegation.</text>
 <polyline points="32,99 968,99" fill="none" stroke="#ccd9e2" stroke-width="2"/>
 <rect x="32" y="125" width="282" height="205" rx="8" fill="#ffffff" stroke="#17324d"/>
 <text x="48" y="156" font-size="21" font-weight="700" fill="#17324d">front : Client</text>
@@ -22,35 +22,65 @@
 <rect x="928" y="189" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
 <rect x="928" y="200" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
 <text x="49" y="191" font-size="18" font-weight="400" fill="#087f8c">setting [Req]</text>
-<rect x="57" y="237" width="225" height="66" rx="8" fill="#eef4f8" stroke="#17324d"/>
+<rect x="57" y="237" width="185" height="66" rx="8" fill="#eef4f8" stroke="#17324d"/>
 <text x="68" y="263" font-size="17" font-weight="700" fill="#17324d">panel : Panel</text>
 <text x="68" y="287" font-size="16" font-weight="400" fill="#17324d">setting [Req]</text>
-<polyline points="314,205 303,205 303,270 282,270" fill="none" stroke="#087f8c" stroke-width="2"/>
+<polyline points="314,205 303,205 303,270 266,270" fill="none" stroke="#087f8c" stroke-width="2"/>
 <text x="66" y="324" font-size="15" font-weight="400" fill="#087f8c">delegate setting → panel.setting</text>
 <rect x="308" y="199" width="12" height="12" rx="0" fill="white" stroke="#17324d"/>
-<rect x="276" y="264" width="12" height="12" rx="0" fill="white" stroke="#17324d"/>
+<polyline points="321,205 330,205" fill="none" stroke="#17324d" stroke-width="2"/>
+<polyline points="338.0,196.0 336.24418710185483,196.17293247637093 334.5558491087142,196.68508420739843 332.99986790282355,197.51677348927709 331.6360389693211,198.63603896932108 330.5167734892771,199.99986790282358 329.6850842073984,201.5558491087142 329.17293247637093,203.24418710185483 329.0,205.0 329.17293247637093,206.75581289814517 329.6850842073984,208.4441508912858 330.5167734892771,210.00013209717642 331.6360389693211,211.36396103067892 332.99986790282355,212.48322651072291 334.5558491087142,213.31491579260157 336.24418710185483,213.82706752362907 338.0,214.0" fill="none" stroke="#17324d" stroke-width="2"/>
+<rect x="236" y="264" width="12" height="12" rx="0" fill="white" stroke="#17324d"/>
+<polyline points="249,270 258,270" fill="none" stroke="#17324d" stroke-width="2"/>
+<polyline points="266.0,261.0 264.24418710185483,261.17293247637093 262.5558491087142,261.6850842073984 260.99986790282355,262.5167734892771 259.6360389693211,263.6360389693211 258.5167734892771,264.99986790282355 257.6850842073984,266.5558491087142 257.17293247637093,268.24418710185483 257.0,270.0 257.17293247637093,271.75581289814517 257.6850842073984,273.4441508912858 258.5167734892771,275.0001320971764 259.6360389693211,276.3639610306789 260.99986790282355,277.4832265107229 262.5558491087142,278.3149157926016 264.24418710185483,278.82706752362907 266.0,279.0" fill="none" stroke="#17324d" stroke-width="2"/>
+<rect x="26" y="205" width="12" height="12" rx="0" fill="white" stroke="#17324d"/>
+<text x="49" y="214" font-size="16" font-weight="400" fill="#087f8c">control [Sub]</text>
+<polyline points="32,211 44,211 44,274 57,274" fill="none" stroke="#087f8c" stroke-width="2"/>
+<rect x="51" y="268" width="12" height="12" rx="0" fill="white" stroke="#17324d"/>
 <text x="49" y="451" font-size="18" font-weight="400" fill="#087f8c">setting [Req]</text>
-<rect x="57" y="497" width="225" height="66" rx="8" fill="#eef4f8" stroke="#17324d"/>
+<rect x="57" y="497" width="185" height="66" rx="8" fill="#eef4f8" stroke="#17324d"/>
 <text x="68" y="523" font-size="17" font-weight="700" fill="#17324d">panel : Panel</text>
 <text x="68" y="547" font-size="16" font-weight="400" fill="#17324d">setting [Req]</text>
-<polyline points="314,465 303,465 303,530 282,530" fill="none" stroke="#087f8c" stroke-width="2"/>
+<polyline points="314,465 303,465 303,530 266,530" fill="none" stroke="#087f8c" stroke-width="2"/>
 <text x="66" y="584" font-size="15" font-weight="400" fill="#087f8c">delegate setting → panel.setting</text>
 <rect x="308" y="459" width="12" height="12" rx="0" fill="white" stroke="#17324d"/>
-<rect x="276" y="524" width="12" height="12" rx="0" fill="white" stroke="#17324d"/>
+<polyline points="321,465 330,465" fill="none" stroke="#17324d" stroke-width="2"/>
+<polyline points="338.0,456.0 336.24418710185483,456.17293247637093 334.5558491087142,456.6850842073984 332.99986790282355,457.5167734892771 331.6360389693211,458.6360389693211 330.5167734892771,459.99986790282355 329.6850842073984,461.5558491087142 329.17293247637093,463.24418710185483 329.0,465.0 329.17293247637093,466.75581289814517 329.6850842073984,468.4441508912858 330.5167734892771,470.0001320971764 331.6360389693211,471.3639610306789 332.99986790282355,472.4832265107229 334.5558491087142,473.3149157926016 336.24418710185483,473.82706752362907 338.0,474.0" fill="none" stroke="#17324d" stroke-width="2"/>
+<rect x="236" y="524" width="12" height="12" rx="0" fill="white" stroke="#17324d"/>
+<polyline points="249,530 258,530" fill="none" stroke="#17324d" stroke-width="2"/>
+<polyline points="266.0,521.0 264.24418710185483,521.1729324763709 262.5558491087142,521.6850842073984 260.99986790282355,522.516773489277 259.6360389693211,523.636038969321 258.5167734892771,524.9998679028236 257.6850842073984,526.5558491087141 257.17293247637093,528.2441871018549 257.0,530.0 257.17293247637093,531.7558128981451 257.6850842073984,533.4441508912859 258.5167734892771,535.0001320971764 259.6360389693211,536.363961030679 260.99986790282355,537.483226510723 262.5558491087142,538.3149157926016 264.24418710185483,538.8270675236291 266.0,539.0" fill="none" stroke="#17324d" stroke-width="2"/>
+<rect x="26" y="465" width="12" height="12" rx="0" fill="white" stroke="#17324d"/>
+<text x="49" y="474" font-size="16" font-weight="400" fill="#087f8c">control [Sub] optional</text>
+<polyline points="32,471 44,471 44,534 57,534" fill="none" stroke="#087f8c" stroke-width="2"/>
+<rect x="51" y="528" width="12" height="12" rx="0" fill="white" stroke="#17324d"/>
 <rect x="717" y="328" width="224" height="119" rx="8" fill="#eef4f8" stroke="#17324d"/>
 <text x="730" y="360" font-size="21" font-weight="700" fill="#17324d">store</text>
 <text x="730" y="388" font-size="19" font-weight="400" fill="#17324d">: SettingStore</text>
 <text x="739" y="423" font-size="17" font-weight="400" fill="#087f8c">api [Prov]</text>
 <polyline points="680,293 699,293 699,411 717,411" fill="none" stroke="#087f8c" stroke-width="2"/>
 <rect x="674" y="287" width="12" height="12" rx="0" fill="white" stroke="#17324d"/>
+<polyline points="673,293 664,293" fill="none" stroke="#17324d" stroke-width="2"/>
+<circle cx="656" cy="293" r="7" fill="white" stroke="#17324d"/>
 <text x="702" y="274" font-size="17" font-weight="700" fill="#087f8c">api [Prov]</text>
 <rect x="711" y="405" width="12" height="12" rx="0" fill="white" stroke="#17324d"/>
+<polyline points="710,411 701,411" fill="none" stroke="#17324d" stroke-width="2"/>
+<circle cx="693" cy="411" r="7" fill="white" stroke="#17324d"/>
 <text x="704" y="483" font-size="17" font-weight="400" fill="#087f8c">delegate api → store.api</text>
-<polyline points="320,205 450,205 450,293 674,293" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="338,205 450,205 450,293 649,293" fill="none" stroke="#17324d" stroke-width="2"/>
 <text x="346" y="181" font-size="18" font-weight="700" fill="#17324d">frontLink «service»</text>
-<polyline points="320,465 526,465 526,307 674,307 674,293" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
+<polyline points="338,465 526,465 526,309 641,309 649,293" fill="none" stroke="#17324d" stroke-width="2"/>
 <text x="338" y="500" font-size="18" font-weight="700" fill="#17324d">rearLink «service»</text>
 <rect x="32" y="624" width="935" height="92" rx="8" fill="#eef4f8" stroke="none"/>
 <text x="50" y="655" font-size="21" font-weight="700" fill="#17324d">Contract: TemperatureSetting @ 1.0.0</text>
 <text x="50" y="684" font-size="17" font-weight="400" fill="#17324d">Both links: atMostOnce · fifo · capacity 8 · reject. Requests → provider; events/replies reverse.</text>
+<rect x="32" y="747" width="935" height="99" rx="8" fill="#ffffff" stroke="#17324d"/>
+<text x="48" y="778" font-size="21" font-weight="700" fill="#17324d">Cabin · root input driver</text>
+<rect x="934" y="760" width="17" height="24" rx="0" fill="#eef4f8" stroke="#17324d"/>
+<rect x="928" y="763" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<rect x="928" y="774" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<text x="51" y="804" font-size="19" font-weight="400" fill="#17324d">driveInputs() on start · publish panelInput.adjust(22)</text>
+<text x="51" y="830" font-size="17" font-weight="400" fill="#087f8c">adjustCommand: panelInput → front.control; control delegates to panel.control.</text>
+<rect x="54" y="741" width="12" height="12" rx="0" fill="white" stroke="#17324d"/>
+<text x="83" y="736" font-size="17" font-weight="700" fill="#087f8c">panelInput [Pub]</text>
+<polyline points="60,741 16,741 16,211 26,211" fill="none" stroke="#087f8c" stroke-width="2" marker-end="url(#arrow)"/>
 </g></svg>

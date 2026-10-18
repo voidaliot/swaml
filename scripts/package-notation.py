@@ -12,16 +12,17 @@ parser.add_argument('--output', type=Path, required=True)
 args = parser.parse_args()
 inventory = json.loads((ROOT/'spec/notation.json').read_text())
 edition = inventory['edition']
+retained={artifact['path'] for artifact in inventory.get('retainedArtifacts',[])}
 paths = ['LICENSE', 'spec/notation.json'] + sorted(
     path.relative_to(ROOT).as_posix()
     for directory in ['docs/notation', 'docs/figures']
-    for path in (ROOT/directory).iterdir() if path.is_file()
+    for path in (ROOT/directory).iterdir() if path.is_file() and path.relative_to(ROOT).as_posix() not in retained
 )
 files = {path: (ROOT/path).read_bytes() for path in paths}
 files['README.txt'] = (
     f'SWAML {edition} canonical graphical assets\n\n'
     'docs/notation contains SVG, PNG and vector scene JSON for every catalog concept.\n'
-    'docs/figures contains the eight composed view examples in the same formats.\n'
+    'docs/figures contains the worked view examples in the same formats.\n'
     'spec/notation.json records semantic context, constraints and grammar coverage.\n'
     'SVG and scene files are vectors; PNGs are matching raster exports.\n'
     'All assets are original SWAML material under the included MIT license.\n\n'

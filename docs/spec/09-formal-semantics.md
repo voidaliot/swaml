@@ -2,6 +2,8 @@
 
 Normative chapter of the [SWAML 1.3 specification](../LANGUAGE_SPECIFICATION.md). These judgments constrain implementations alongside chapters 1–8. They make explicit the distinction between static validity, allowed executions, and a particular target's choice among them. They do not assert a mechanically proved metatheory.
 
+These judgments apply to class/component usages and operation/function executables alike. Component <: Class and Function <: Operation are software-kind relations, not permission to introduce reference values, runtime casts or arbitrary object calls. The kind information remains explicit in D and its occurrence typing.
+
 ## 9.1 Domains and judgments
 
 Let D be the resolved declaration graph; O the finite expanded occurrence tree; Γ a lexical environment mapping names to types; σ an occurrence-indexed store of copied values; ρ an activation's parameter/local store; Q the connector queues; A the live activations; M the machine states and timer generations; R the correlation table; L the component serial locks; B the released lifecycle/timer work; and t an integer nanosecond time. A runtime configuration is:
@@ -50,7 +52,9 @@ The schemas below apply recursively, together with the name, ownership, route an
 | interruptible | triggered serial flow owner; unique local incoming member; typed payload bindings | normal and interrupt branches share outer scope, activation and deadline; protected locals cannot escape |
 | transition | states in same function; legal stimulus; bool guard; effect typed with payload; distinct competing priorities | transition belongs directly to its function |
 
-For root validity, an inline root expands its authored component children, connections and local behavior; a typed root expands exactly its referenced component definition. Both require an acyclic expansion, distinct occurrence stores and port closure. A typed root binding contains only deployments and introduces no topology. An omitted profile normalizes to service. An omitted function/signature result normalizes to void; parameter/data/calculation result types cannot be omitted. These are defined elaborations, not inference from body behavior.
+Let structuralKind(d) be class or component and executableKind(f) be operation or function. A component usage requires a component definition; a class usage accepts either structural kind. A class definition may specialize only class, while component may specialize class or component. A replacement may narrow class usage to component usage or operation to function, preserving the remaining contract; it cannot widen either specialized kind. An operation RPC signature accepts either executable kind, while a function RPC signature requires function.
+
+For root validity, an inline class/component root expands its authored component children, connections and local behavior; a typed root expands exactly its compatible referenced class/component definition. Both require an acyclic expansion, distinct occurrence stores and port closure. A typed root binding contains only deployments and introduces no topology. An omitted profile normalizes to service. An omitted function/signature result normalizes to void; parameter/data/calculation result types cannot be omitted. These are defined elaborations, not inference from body behavior.
 
 A connector selecting `qos P` requires one unambiguous package-visible QoS policy declaration P. Its effective policy equals P.body; an inline selection uses its own body. The base-field, sampled, idempotency and realtime premises are checked on that effective body for every use. Queue identity is still the connector occurrence, direction and member, independent of policy identity.
 
@@ -61,6 +65,8 @@ Let F(op) be the set of component-variable assignments in op and recursively in 
 For every normalized connector (p,q), contracts(p) = contracts(q) by declaration identity and roles(p,q) are complementary in the orientation defined in chapter 2. Delegation preserves both identity and role and introduces no queue. Every cross-component effect is an offer to a member projection of such a connector. Thus a successful path lookup into a remote private store is never an execution rule.
 
 The integral domains are `byte = {0,…,255}`, `uint = {0,…,2^53−1}` and `int = {−(2^53−1),…,2^53−1}`. Scalar widening preserves value along byte → uint → int → real. A checked integral assignment into byte or uint either yields an in-range value or raises a range failure; it never wraps. Integral arithmetic produces int unless division or a real operand determines real. A calculation evaluates its one expression in a copied input-only environment and returns its named output value; it creates no component activation or shared store.
+
+Operator and test publications are ordinary steps of source functions in O. Their message offers obey the communication transition rules below. The core has no separate external rule that directly releases a receiving function or inserts a destination message without a producing function and route. Initial, periodic and state-timer releases retain their existing local lifecycle semantics.
 
 ## 9.3 Local execution rules
 
@@ -109,7 +115,7 @@ Logical time never decreases. A target may advance to the next release, transpor
 
 An implementation binding refines this specification when every trace it produces can be matched by the core relation, with any internal bookkeeping steps hidden, and it satisfies its declared progress/fairness assumptions. A deterministic simulator chooses one such trace. Passing that run does not establish universal safety or liveness across all allowed schedules, nor realize every descriptive case automatically.
 
-The [reference simulation profile](../SIMULATION.md) specifies a concrete, bounded choice of these rules. Reproducible inputs include all model source digests, selected root component, profile version, time horizon, harness releases, transport parameters and resource limits. No theorem of type preservation, kernel compatibility or trace equivalence is claimed without a separately checked proof artifact.
+The [reference simulation profile](../SIMULATION.md) specifies a concrete, bounded choice of these rules. Reproducible inputs include all model source digests, selected root component, profile version, time horizon, input schedules expressed by authored driver sources, transport parameters and resource limits. Generated drivers are ordinary validated model sources included in those digests. No theorem of type preservation, kernel compatibility or trace equivalence is claimed without a separately checked proof artifact.
 
 ## Requirement and presentation extension
 

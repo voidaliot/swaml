@@ -1,6 +1,6 @@
 # Loops, interrupts and function timing
 
-SWAML 1.3 adds three loop forms and interruptible regions. FV presents flow, states, timing and an interrupt example through the same component-owned behavior model.
+SWAML 1.3 adds three loop forms and interruptible regions. FV presents flow, states and interruptible regions. The dedicated TV presents function timing from the same component-owned behavior model. The 1.3.1 development correction retains parser family and simulation profile 1.3; see the [migration guide](MIGRATION_1_3_1.md) and [ADR 0012](decisions/0012-timing-view-and-structure-layouts.md).
 
 ## Choose a loop
 
@@ -59,9 +59,13 @@ The reference example starts a request at 0 ms, commits the server effect at 5 m
 
 Interruptible regions require a triggered serial flow function. Receive transitions remain the stateful-function mechanism. Nested regions are supported with distinct interrupt members; an outer interrupt unwinds the active inner region. A protected region can call helpers, but helpers cannot declare their own interrupt endpoint. Handler payload bindings cannot shadow enclosing values.
 
-## Read an FV timing diagram
+## Read a TV timing diagram
 
-Select **Timing** in the showcase's function view. The [timing model](../examples/17-function-timing.swaml) provides two independent clients and servers, including repeated activations. Four trace scenarios show delayed success, timeout with a late reply, an observation horizon and a deadline stop. Select a function occurrence or activation to inspect its events and source.
+Select **Timing View (tv)** in the showcase. The [timing model](../examples/17-function-timing.swaml) provides two independent clients and servers, including repeated activations. Four trace scenarios show delayed success, timeout with a late reply, an observation horizon and a deadline stop. Select a function occurrence or activation to inspect its events and source.
+
+Select one function with `view observed tv of Demo.first.poll;`. The timing model's block explicitly selects both client and server function occurrences; its root-owned input driver remains in the complete trace. To include every descendant function, including a driver, use `view allTiming tv { include Demo recursive where kind == "function"; }`. Compact component-root/definition subjects are invalid. Timing contracts and triggers are not required merely to select a function. A view declaration does not run it.
+
+In the success run, driver publications occur at 0, 0 and 1 ms. Input transport releases the client activations at 2, 2 and 3 ms. Repeated `first.poll` activations complete at 6 and 10 ms; the second waits for its serial owner between 3 and 6 ms. The timeout run shows the first timeout at 32 ms and late reply at 36 ms, with a queued activation still open at the explicit 40 ms observation horizon. The separate deadline scenario stops at 49 ms.
 
 | Drawing | Meaning |
 | --- | --- |

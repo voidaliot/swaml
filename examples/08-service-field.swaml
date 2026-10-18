@@ -9,6 +9,7 @@ package Settings {
         function setPoint(desired: int): bool;
         event changed(current: int);
     }
+    interface publishSubscribe PanelCommands version "1.0.0" { event adjust(desired: int); }
     component def SettingStore {
         port api: TemperatureSetting provides;
         var currentValue: int = 20;
@@ -25,12 +26,13 @@ package Settings {
     }
     component def Panel {
         port setting: TemperatureSetting requires;
+        port control: PanelCommands subscriber optional;
         var displayed: int = 20;
-        function adjust() on manual {
-            call setting.setPoint(22) as accepted within 100 ms otherwise { fail "setting unavailable"; };
+        function adjust(desired: int) on receive control.adjust {
+            call setting.setPoint(desired) as accepted within 100 ms otherwise { fail "setting unavailable"; };
             assert accepted;
         }
-        function refresh() on manual {
+        function refresh() {
             call setting.get() as observed within 100 ms otherwise { return; };
             displayed = observed;
         }
@@ -43,13 +45,18 @@ package Settings {
     }
     component def Client {
         port setting: TemperatureSetting requires;
+        port control: PanelCommands subscriber optional;
         component panel: Panel;
         delegate setting -> panel.setting;
+        delegate control -> panel.control;
     }
     component Cabin {
+        port panelInput: PanelCommands publisher;
         component settings: Service;
         component front: Client;
         component rear: Client;
+        function driveInputs() on start { publish panelInput.adjust(22); }
+        connect adjustCommand: panelInput -> front.control qos LocalLink;
         connect frontLink: front.setting -> settings.api qos LocalLink;
         connect rearLink: rear.setting -> settings.api qos LocalLink;
         deploy settings on "system:controller";

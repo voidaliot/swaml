@@ -5,6 +5,7 @@ package Commerce {
         event accepted(orderId: string);
     }
     interface publishSubscribe Audit version "1.0.0" { event recorded(orderId: string); }
+    interface publishSubscribe CheckoutCommands version "1.0.0" { event checkout(orderId: string); }
     component def OrderService {
         port api: Orders provides;
         port audit: Audit publisher;
@@ -16,9 +17,10 @@ package Commerce {
     }
     component def Frontend {
         port orders: Orders requires;
+        port commands: CheckoutCommands subscriber optional;
         var lastAccepted: string = "";
-        function checkout() on manual {
-            call orders.submit("order-42") as accepted within 2 s otherwise { fail "checkout unavailable"; };
+        function checkout(orderId: string) on receive commands.checkout {
+            call orders.submit(orderId) as accepted within 2 s otherwise { fail "checkout unavailable"; };
             assert accepted;
             return;
         }
@@ -38,8 +40,10 @@ package Commerce {
     }
     component def Web {
         port orders: Orders requires;
+        port commands: CheckoutCommands subscriber optional;
         component frontend: Frontend;
         delegate orders -> frontend.orders;
+        delegate commands -> frontend.commands;
     }
     component def Archive {
         port input: Audit subscriber;
@@ -47,9 +51,12 @@ package Commerce {
         delegate input -> store.input;
     }
     component Shop {
+        port checkoutInput: CheckoutCommands publisher;
         component web: Web;
         component backend: Backend;
         component archive: Archive;
+        function driveInputs() on start { publish checkoutInput.checkout("order-42"); }
+        connect checkoutCommand: checkoutInput -> web.commands qos { delivery atMostOnce; ordering fifo; capacity 4; overflow reject; };
         connect orderLink: web.orders -> backend.api qos { delivery atMostOnce; ordering fifo; capacity 32; overflow reject; };
         connect auditing: backend.audit -> archive.input qos { delivery atLeastOnce; ordering fifo; capacity 128; overflow dropOldest; };
         deploy web on "system:edge";

@@ -2,7 +2,7 @@ import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { posix } from 'node:path';
 import { createHash } from 'node:crypto';
 const root = new URL('../', import.meta.url);
-const read = p => readFile(new URL(p, root), 'utf8');
+const read = async p => (await readFile(new URL(p, root), 'utf8')).replaceAll('\r\n', '\n');
 const check = process.argv.includes('--check');
 const concerns = {
     'Structure and names': 'docs/spec/01-structure-and-types.md',
@@ -66,6 +66,11 @@ const chapters = [
     ['Structure, names and values', 'docs/spec/01-structure-and-types.md'],
     ['Root components, timing, deployment and cases', 'docs/spec/04-systems-and-conformance.md'],
     ['Version migration', 'docs/MIGRATION_1_3.md'],
+    ['Revision migration', 'docs/MIGRATION_1_3_1.md'],
+    ['Events and external inputs', 'docs/EVENTS_AND_INPUTS.md'],
+    ['Event-driven input design', 'docs/decisions/0013-event-driven-external-inputs.md'],
+    ['Timing and structure view design', 'docs/decisions/0012-timing-view-and-structure-layouts.md'],
+    ['Release notes', 'docs/RELEASE_1_3_1.md'],
     ['Loops, interrupts and timing diagrams', 'docs/CONTROL_FLOW_AND_TIMING.md'],
     ['Control-flow and timing design', 'docs/decisions/0011-loops-interrupts-and-function-timing.md'],
     ['Component and behavior design', 'docs/decisions/0007-component-functions-and-calculations.md'],
@@ -75,6 +80,8 @@ const chapters = [
     ['Consistent subject relations', 'docs/decisions/0010-consistent-subject-relations.md'],
     ['Ontology and flat views', 'docs/ONTOLOGY_AND_VIEWS.md'],
     ['Guide for UML architects', 'docs/UML_GUIDE.md'],
+    ['UML transformation assessment', 'docs/UML_COMPATIBILITY.md'],
+    ['Class, operation and notation design', 'docs/decisions/0014-classes-operations-and-uml-notation.md'],
     ['Alphabetical keyword reference', 'docs/KEYWORD_REFERENCE.md'],
     ['Implementation evidence', 'docs/IMPLEMENTATION_STATUS.md'],
     ['Tool integration', 'docs/TOOLING.md']
@@ -82,7 +89,7 @@ const chapters = [
 try { await read('docs/GRAPHICAL_EXAMPLES.md'); chapters.splice(chapters.findIndex(x => x[0] === 'Graphical notation') + 1, 0, ['Graphical examples', 'docs/GRAPHICAL_EXAMPLES.md']); } catch {}
 const anchor = p => 'source-' + createHash('sha256').update(p).digest('hex').slice(0, 12);
 const included = new Set(chapters.map(x => x[1]));
-let book = '# SWAML 1.3.0 — Complete language reference\n\n**Software Architecture Modeling Language** · Headerless language 1.3; explicit definitions and component usages · Independently authored, KerML-based semantic design.\n\nThis is the complete user-facing Markdown edition, generated from the maintained source chapters. Navigate by the alphabetical concern map or the exhaustive alphabetical keyword reference. Normative chapters define meaning; tutorials, comparisons and examples illustrate it. The portable reference parser and logical simulator provide executable evidence with the limitations stated below.\n\n## Contents\n\n';
+let book = '# SWAML 1.3.1 — Complete language reference\n\n**Software Architecture Modeling Language** · Headerless language 1.3; explicit definitions and component usages · Independently authored, KerML-based semantic design.\n\nThis is the complete user-facing Markdown edition, generated from the maintained source chapters. Navigate by the alphabetical concern map or the exhaustive alphabetical keyword reference. Normative chapters define meaning; tutorials, comparisons and examples illustrate it. The portable reference parser and logical simulator provide executable evidence with the limitations stated below.\n\n## Contents\n\n';
 book += chapters.map(([title, p]) => `- [${title}](#${anchor(p)})`).join('\n') + '\n- [Complete concrete grammar](#complete-concrete-grammar)\n- [Model examples](#model-examples)\n\n';
 for (const [title, path] of chapters) {
     let text = path === 'docs/KEYWORD_REFERENCE.md' ? keywordText : await read(path);
@@ -122,5 +129,5 @@ localAnchors.add('model-examples');
 for (const match of book.matchAll(/\[[^\]]*\]\(#([^)]+)\)/g)) {
     if (!localAnchors.has(match[1])) throw new Error(`Broken combined-reference anchor: ${match[1]}`);
 }
-await output('docs/SWAML-1.3.0-Reference.md', book.trimEnd() + '\n');
+await output('docs/SWAML-1.3.1-Reference.md', book.trimEnd() + '\n');
 console.log(`${check ? 'Verified' : 'Built'} complete reference and ${seen.size} alphabetical keyword entries.`);

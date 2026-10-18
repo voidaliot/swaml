@@ -1,11 +1,12 @@
 import { MarkerType, Position } from '@xyflow/react';
 import type { Edge, Node } from '@xyflow/react';
+import type { ClassifierKind, PortDescription } from './DiagramGlyphs';
 import source from '../../examples/08-service-field.swaml?raw';
 import lifecycleSource from '../../examples/04-stateful-function.swaml?raw';
 
 export { source, lifecycleSource };
 export const repository = 'https://github.com/voidaliot/swaml';
-export type ViewId = 'Browser' | 'gv' | 'iv' | 'cv' | 'sv' | 'grv' | 'fv';
+export type ViewId = 'Browser' | 'gv' | 'iv' | 'cv' | 'sv' | 'grv' | 'fv' | 'tv';
 export const views: { id: ViewId; name: string; caption: string; subject: string }[] = [
   { id: 'Browser', name: 'Model browser', caption: 'Follow the ownership', subject: 'Settings' },
   { id: 'gv', name: 'General', caption: 'See the big picture', subject: 'Settings::Cabin' },
@@ -14,6 +15,7 @@ export const views: { id: ViewId; name: string; caption: string; subject: string
   { id: 'sv', name: 'Sequence', caption: 'Follow the exchanges', subject: 'Settings::Change' },
   { id: 'grv', name: 'Grid', caption: 'Compare exact properties', subject: 'Settings' },
   { id: 'fv', name: 'Flow', caption: 'Look inside a function', subject: 'Settings::Cabin.settings.store.update' },
+  { id: 'tv', name: 'Timing', caption: 'Compare function activation timing', subject: 'FunctionTiming::Demo.first.poll' },
 ];
 
 export type Entity = {
@@ -26,16 +28,19 @@ const entity = (id: string, kind: string, name: string, path: string, owner: str
 
 export const entities: Entity[] = [
   entity('package', 'Package', 'Settings', 'Settings', 'Model', 'One namespace for the contracts, architecture, behavior and scenario in this example.', [['Source', '08-service-field.swaml']], 'package Settings {'),
-  entity('policy', 'QoS policy definition', 'LocalLink', 'Settings::LocalLink', 'Settings', 'One reusable set of communication policy values. Each connector still has independent queues and route identity.', [['Delivery', 'atMostOnce'], ['Ordering', 'fifo'], ['Capacity', '8'], ['Overflow', 'reject'], ['Referenced by', 'frontLink, rearLink']], 'qos def LocalLink {\n    delivery atMostOnce; ordering fifo; capacity 8; overflow reject;\n}'),
+  entity('policy', 'QoS policy definition', 'LocalLink', 'Settings::LocalLink', 'Settings', 'One reusable set of communication policy values. Each connector still has independent queues and route identity.', [['Delivery', 'atMostOnce'], ['Ordering', 'fifo'], ['Capacity', '8'], ['Overflow', 'reject'], ['Referenced by', 'adjustCommand, frontLink, rearLink']], 'qos def LocalLink {\n    delivery atMostOnce; ordering fifo; capacity 8; overflow reject;\n}'),
   entity('contract', 'Interface', 'TemperatureSetting', 'Settings::TemperatureSetting', 'Settings', 'A versioned service contract. Requests and results share their route; changed events travel from provides to requires.', [['Kind', 'service'], ['Version', '1.0.0'], ['get()', 'int · idempotent'], ['setPoint(desired: int)', 'bool'], ['changed(current: int)', 'event']], 'interface service TemperatureSetting version "1.0.0" {\n    function get(): int idempotent;\n    function setPoint(desired: int): bool;\n    event changed(current: int);\n}'),
+  entity('input-contract', 'Interface', 'PanelCommands', 'Settings::PanelCommands', 'Settings', 'A typed adjustment input. The root publishes a desired setting; the front panel receives the copied integer through its delegated control port.', [['Kind', 'publishSubscribe'], ['Version', '1.0.0'], ['adjust(desired: int)', 'event']], 'interface publishSubscribe PanelCommands version "1.0.0" { event adjust(desired: int); }'),
   entity('service-def', 'Component definition', 'Service', 'Settings::Service', 'Settings', 'A reusable composition boundary. Its api port delegates to the owned store component.', [['Port', 'api · provides'], ['Child', 'store : SettingStore'], ['Delegation', 'api → store.api']], 'component def Service {\n    port api: TemperatureSetting provides;\n    component store: SettingStore;\n    delegate api -> store.api;\n}'),
-  entity('client-def', 'Component definition', 'Client', 'Settings::Client', 'Settings', 'A reusable client component. The front and rear usages share this definition, while retaining distinct instance identities.', [['Port', 'setting · requires'], ['Child', 'panel : Panel'], ['Delegation', 'setting → panel.setting']], 'component def Client {\n    port setting: TemperatureSetting requires;\n    component panel: Panel;\n    delegate setting -> panel.setting;\n}'),
+  entity('client-def', 'Component definition', 'Client', 'Settings::Client', 'Settings', 'A reusable client component. The front and rear usages share this definition, while retaining distinct instance identities.', [['Port', 'setting · requires'], ['Control port', 'control · subscriber · optional'], ['Child', 'panel : Panel'], ['Delegation', 'setting → panel.setting; control → panel.control']], 'component def Client {\n    port setting: TemperatureSetting requires;\n    port control: PanelCommands subscriber optional;\n    component panel: Panel;\n    delegate setting -> panel.setting;\n    delegate control -> panel.control;\n}'),
   entity('store-def', 'Component definition', 'SettingStore', 'Settings::SettingStore', 'Settings', 'The behavior and private data boundary for the setting service.', [['Port', 'api · provides'], ['Private data', 'currentValue: int = 20'], ['Functions', 'read, update']], 'component def SettingStore {\n    port api: TemperatureSetting provides;\n    var currentValue: int = 20;', undefined),
-  entity('panel-def', 'Component definition', 'Panel', 'Settings::Panel', 'Settings', 'Owns a private displayed value and three functions. Distinct panel instances do not share storage.', [['Port', 'setting · requires'], ['Private data', 'displayed: int = 20'], ['Functions', 'adjust, refresh, display']], 'component def Panel {\n    port setting: TemperatureSetting requires;\n    var displayed: int = 20;'),
-  entity('root', 'Root component', 'Cabin', 'Settings::Cabin', 'Settings', 'The closed architecture in this model: one service and two client instances with explicit service connections.', [['Profile', 'service (default)'], ['Immediate children', 'settings, front, rear'], ['Connectors', 'frontLink, rearLink'], ['Deployment targets', 'system:controller, system:displays']], 'component Cabin {', undefined),
-  entity('front', 'Component instance', 'front', 'Settings::Cabin.front', 'Settings::Cabin', 'The front client instance. Its nested panel has its own displayed value, independent from the rear panel.', [['Port', 'setting: TemperatureSetting'], ['Role', 'requires'], ['Delegation', 'setting → panel.setting'], ['Deployment', 'system:displays · explicit'], ['Owned component', 'panel : Panel']], 'component front: Client;', 'Settings::Client'),
+  entity('panel-def', 'Component definition', 'Panel', 'Settings::Panel', 'Settings', 'Owns a private displayed value, a typed adjustment handler, a local refresh helper and a service-event handler. Distinct panel instances do not share storage.', [['Port', 'setting · requires'], ['Control port', 'control · subscriber · optional'], ['Private data', 'displayed: int = 20'], ['Functions', 'adjust, refresh, display']], 'component def Panel {\n    port setting: TemperatureSetting requires;\n    port control: PanelCommands subscriber optional;\n    var displayed: int = 20;'),
+  entity('root', 'Root component', 'Cabin', 'Settings::Cabin', 'Settings', 'The root owns its startup input driver, one service and two independent clients. The driver publishes a typed adjustment event to the front panel.', [['Profile', 'service (default)'], ['Immediate children', 'settings, front, rear'], ['Port', 'panelInput: PanelCommands publisher'], ['Functions', 'driveInputs() on start'], ['Connectors', 'adjustCommand, frontLink, rearLink'], ['Deployment targets', 'system:controller, system:displays']], 'component Cabin {', undefined),
+  entity('input-driver', 'Function instance', 'driveInputs()', 'Settings::Cabin.driveInputs', 'Settings::Cabin', 'An ordinary root-owned startup function publishes the demo input through its typed port.', [['Trigger', 'on start'], ['Emission', 'panelInput.adjust(22)'], ['Route', 'adjustCommand → front.control → panel.control']], 'function driveInputs() on start { publish panelInput.adjust(22); }'),
+  entity('adjustCommand', 'Connector', 'adjustCommand', 'Settings::Cabin.adjustCommand', 'Settings::Cabin', 'The explicit typed input route from the root publisher to the front client boundary, delegated to its panel.', [['Source', 'panelInput'], ['Target', 'front.control'], ['Interface', 'PanelCommands · 1.0.0'], ['Policy definition', 'Settings::LocalLink']], 'connect adjustCommand: panelInput -> front.control qos LocalLink;'),
+  entity('front', 'Component instance', 'front', 'Settings::Cabin.front', 'Settings::Cabin', 'The front client receives typed adjustment commands from the root and delegates them to its nested panel. That panel has its own displayed value.', [['Port', 'setting: TemperatureSetting'], ['Role', 'requires'], ['Control input', 'control: PanelCommands subscriber → panel.control'], ['Delegation', 'setting → panel.setting'], ['Deployment', 'system:displays · explicit'], ['Owned component', 'panel : Panel']], 'component front: Client;', 'Settings::Client'),
   entity('settings', 'Component instance', 'settings', 'Settings::Cabin.settings', 'Settings::Cabin', 'The service instance. Both clients connect through its visible api boundary; delegation resolves to store.api.', [['Port', 'api: TemperatureSetting'], ['Role', 'provides'], ['Delegation', 'api → store.api'], ['Deployment', 'system:controller · explicit'], ['Owned component', 'store : SettingStore']], 'component settings: Service;', 'Settings::Service'),
-  entity('rear', 'Component instance', 'rear', 'Settings::Cabin.rear', 'Settings::Cabin', 'A second use of Client. Reusing the type shares the definition, never its panel storage.', [['Port', 'setting: TemperatureSetting'], ['Role', 'requires'], ['Delegation', 'setting → panel.setting'], ['Deployment', 'system:displays · explicit'], ['Owned component', 'panel : Panel']], 'component rear: Client;', 'Settings::Client'),
+  entity('rear', 'Component instance', 'rear', 'Settings::Cabin.rear', 'Settings::Cabin', 'A second use of Client. Reusing the type shares the definition, never its panel storage. Its optional control input is unconnected in this root.', [['Port', 'setting: TemperatureSetting'], ['Role', 'requires'], ['Control input', 'control: PanelCommands subscriber · optional · unconnected'], ['Delegation', 'setting → panel.setting'], ['Deployment', 'system:displays · explicit'], ['Owned component', 'panel : Panel']], 'component rear: Client;', 'Settings::Client'),
   entity('front-panel', 'Component instance', 'front.panel', 'Settings::Cabin.front.panel', 'Settings::Cabin.front', 'A component instance expanded from Client. Owns a separate displayed store.', [['Private data', 'displayed: int = 20'], ['Effective target', 'system:displays · inherited'], ['Functions', 'adjust, refresh, display']], 'component panel: Panel;', 'Settings::Panel'),
   entity('rear-panel', 'Component instance', 'rear.panel', 'Settings::Cabin.rear.panel', 'Settings::Cabin.rear', 'This instance has the same Panel definition as front.panel and a different private store.', [['Private data', 'displayed: int = 20'], ['Effective target', 'system:displays · inherited'], ['Functions', 'adjust, refresh, display']], 'component panel: Panel;', 'Settings::Panel'),
   entity('store', 'Component instance', 'settings.store', 'Settings::Cabin.settings.store', 'Settings::Cabin.settings', 'The service component instance. Only its own functions access currentValue.', [['Private data', 'currentValue: int = 20'], ['Effective target', 'system:controller · inherited'], ['Functions', 'read, update']], 'component store: SettingStore;', 'Settings::SettingStore'),
@@ -48,9 +53,29 @@ export const entities: Entity[] = [
 ];
 export const byId = Object.fromEntries(entities.map((item) => [item.id, item]));
 
+export interface StructureOccurrence {
+  id: string; title: string; path: string; variables: string[]; functions: string[];
+  classifierKind?: ClassifierKind;
+  children: StructureOccurrence[];
+}
+const occurrence = (id: string, title: string, children: StructureOccurrence[] = [], variables: string[] = [], functions: string[] = []): StructureOccurrence => ({
+  id, title, path: byId[id].path, children, variables, functions,
+});
+/** The same occurrence identities drive nested boxes and the ownership tree. */
+export const cabinStructure: StructureOccurrence = occurrence('root', 'Cabin', [
+  occurrence('settings', 'settings : Service', [occurrence('store', 'store : SettingStore', [], ['currentValue: int = 20'], ['read(): int', 'update(desired: int): bool'])]),
+  occurrence('front', 'front : Client', [occurrence('front-panel', 'panel : Panel', [], ['displayed: int = 20'], ['adjust(desired: int)', 'refresh()', 'display(current: int)'])]),
+  occurrence('rear', 'rear : Client', [occurrence('rear-panel', 'panel : Panel', [], ['displayed: int = 20'], ['adjust(desired: int)', 'refresh()', 'display(current: int)'])]),
+], [], ['driveInputs()']);
+export const cabinDeployments = [
+  { id: 'controller', target: 'system:controller', sources: ['settings'], note: 'settings.store inherits this target' },
+  { id: 'displays', target: 'system:displays', sources: ['front', 'rear'], note: 'front.panel and rear.panel inherit this target' },
+];
+
 export type CardData = {
   title: string; eyebrow: string; detail?: string; footer?: string;
-  entityId?: string; port?: string; portSide?: 'left' | 'right';
+  entityId?: string; port?: string; portSide?: 'left' | 'right'; inputPort?: string;
+  boundaryPorts?: PortDescription[]; classifierKind?: ClassifierKind;
   variant?: 'component' | 'definition' | 'root' | 'function' | 'decision' | 'terminal' | 'requirement' | 'state' | 'entry';
   vertical?: boolean;
 } & Record<string, unknown>;
@@ -59,21 +84,14 @@ const card = (id: string, x: number, y: number, data: CardData): DiagramNode => 
 const edge = (id: string, from: string, to: string, label?: string, dashed = false): Edge => ({ id, source: from, target: to, label, type: 'smoothstep', markerEnd: { type: dashed ? MarkerType.Arrow : MarkerType.ArrowClosed, width: 16, height: 16, color: '#5d7066' }, style: { stroke: '#718278', strokeWidth: 1.5, ...(dashed ? { strokeDasharray: '5 5' } : {}) }, labelStyle: { fill: '#3e5147', fontSize: 11, fontWeight: 500 }, labelBgStyle: { fill: '#f7f8f3', fillOpacity: 1 }, labelBgPadding: [7, 5] });
 
 export function diagram(view: ViewId, stateMode = false): { nodes: DiagramNode[]; edges: Edge[] } {
+  if (view === 'gv' || view === 'tv') return { nodes: [], edges: [] }; // Dedicated structure/timing renderers retain their own geometry and evidence.
   if (view === 'iv') return {
     nodes: [
-      card('front', 25, 25, { title: 'front : Client', eyebrow: 'component instance', detail: 'panel : Panel', footer: 'system:displays', port: 'setting · requires', portSide: 'right', entityId: 'front', variant: 'component' }),
-      card('settings', 470, 170, { title: 'settings : Service', eyebrow: 'component instance', detail: 'store : SettingStore', footer: 'system:controller', port: 'api · provides', portSide: 'left', entityId: 'settings', variant: 'component' }),
-      card('rear', 25, 325, { title: 'rear : Client', eyebrow: 'component instance', detail: 'panel : Panel', footer: 'system:displays', port: 'setting · requires', portSide: 'right', entityId: 'rear', variant: 'component' }),
-    ], edges: [{ ...edge('frontLink', 'front', 'settings', 'frontLink · QoS'), type: 'default' }, { ...edge('rearLink', 'rear', 'settings', 'rearLink · QoS'), type: 'default' }],
-  };
-  if (view === 'gv') return {
-    nodes: [
-      card('root', 295, 0, { title: 'Cabin', eyebrow: 'root component', detail: 'service (default)', entityId: 'root', variant: 'root', vertical: true }),
-      ...[['front', 0, 'front : Client', 'front-panel'], ['settings', 300, 'settings : Service', 'store'], ['rear', 600, 'rear : Client', 'rear-panel']].flatMap(([id, x, title, childId]) => [
-        card(String(id), Number(x), 190, { title: String(title), eyebrow: 'component instance', footer: id === 'settings' ? 'type: Service' : 'type: Client', entityId: String(id), variant: 'component', vertical: true }),
-        card(String(childId), Number(x), 380, { title: id === 'settings' ? 'store : SettingStore' : 'panel : Panel', eyebrow: 'component instance', detail: id === 'settings' ? 'currentValue: int = 20' : 'displayed: int = 20', footer: 'private data · separate store', entityId: String(childId), variant: 'definition', vertical: true }),
-      ]),
-    ], edges: [edge('owns-front', 'root', 'front', 'owns'), edge('owns-settings', 'root', 'settings', 'owns'), edge('owns-rear', 'root', 'rear', 'owns'), edge('owns-panel-f', 'front', 'front-panel', 'owns'), edge('owns-store', 'settings', 'store', 'owns'), edge('owns-panel-r', 'rear', 'rear-panel', 'owns')],
+      card('input-driver', 0, 25, { title: 'Cabin', eyebrow: 'root component', detail: 'driveInputs() on start', footer: 'publish panelInput.adjust(22)', boundaryPorts: [{ name: 'panelInput', role: 'publisher', contract: 'PanelCommands', version: '1.0.0', side: 'right' }], entityId: 'root', variant: 'root' }),
+      card('front', 420, 25, { title: 'front : Client', eyebrow: 'component instance', detail: 'control → panel.control', footer: 'system:displays', boundaryPorts: [{ name: 'control', role: 'subscriber', contract: 'PanelCommands', version: '1.0.0', side: 'left', optional: true }, { name: 'setting', role: 'requires', contract: 'TemperatureSetting', version: '1.0.0', side: 'right' }], entityId: 'front', variant: 'component' }),
+      card('settings', 850, 170, { title: 'settings : Service', eyebrow: 'component instance', detail: 'store : SettingStore', footer: 'system:controller', boundaryPorts: [{ name: 'api', role: 'provides', contract: 'TemperatureSetting', version: '1.0.0', side: 'left' }], entityId: 'settings', variant: 'component' }),
+      card('rear', 420, 325, { title: 'rear : Client', eyebrow: 'component instance', detail: 'panel : Panel', footer: 'system:displays', boundaryPorts: [{ name: 'setting', role: 'requires', contract: 'TemperatureSetting', version: '1.0.0', side: 'right' }], entityId: 'rear', variant: 'component' }),
+    ], edges: [{ ...edge('adjustCommand', 'input-driver', 'front', 'adjustCommand · adjust(desired)'), sourceHandle: 'panelInput', targetHandle: 'control', type: 'default' }, { ...edge('frontLink', 'front', 'settings', 'frontLink · QoS'), sourceHandle: 'setting', targetHandle: 'api', type: 'default' }, { ...edge('rearLink', 'rear', 'settings', 'rearLink · QoS'), sourceHandle: 'setting', targetHandle: 'api', type: 'default' }],
   };
   if (view === 'cv') return { nodes: [
     card('root', 45, 330, { title: 'Cabin', eyebrow: 'component', detail: 'Design claims satisfaction', entityId: 'root' }),
@@ -99,9 +117,10 @@ export function diagram(view: ViewId, stateMode = false): { nodes: DiagramNode[]
 export const viewDescriptions: Record<ViewId, string> = {
   Browser: 'Navigate declarations and distinct instances. Selection reveals identity, owner and source.',
   gv: 'real ownership, from the root to its private component stores. Shared types keep distinct instance paths.',
-  iv: 'Two explicit service routes. Requests follow the arrows; events and replies return on those same routes.',
+  iv: 'A typed adjustment input and two service routes. Requests follow service arrows; events and replies return on those routes.',
   cv: 'Use cases describe intent. Components claim requirement satisfaction; verification needs separate evidence.',
   sv: 'Case exchanges preserve the authored dependencies. Two notifications are independent after adjust.',
   grv: 'An identity-aware inventory of this example. Filter and sort without changing the model.',
   fv: 'The local control flow of one function. Statements never become free architecture elements.',
+  tv: 'Declared function timing contracts and observed activation timing, with independent occurrence identities.',
 };

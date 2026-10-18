@@ -11,7 +11,6 @@ export interface SimulationOptions {
     maxPending?: number;
     maxReentrant?: number;
     latencyNs?: number;
-    manual?: { atNs: number; function: string }[];
     faults?: { offer: number; kind: 'drop' | 'duplicate' | 'transport'; delayNs?: number }[];
 }
 export interface TraceEvent { timeNs: number; ordinal: number; kind: string; subject: string; [key: string]: unknown }
@@ -89,15 +88,11 @@ class Interpreter {
     private offers = 0;
     private stopped?: 'violation' | 'limit';
     constructor(private models: a.Model[], private root: a.RootComponent, private id: string, options: SimulationOptions) {
-        this.options = { untilNs: options.untilNs, maxSteps: options.maxSteps ?? 100000, maxPending: options.maxPending ?? 1024, maxReentrant: options.maxReentrant ?? 64, latencyNs: options.latencyNs ?? 0, manual: copy(options.manual ?? []), faults: copy(options.faults ?? []) };
+        this.options = { untilNs: options.untilNs, maxSteps: options.maxSteps ?? 100000, maxPending: options.maxPending ?? 1024, maxReentrant: options.maxReentrant ?? 64, latencyNs: options.latencyNs ?? 0, faults: copy(options.faults ?? []) };
         if (!Number.isSafeInteger(this.options.untilNs) || this.options.untilNs < 0) throw new Error('untilNs must be a nonnegative safe integer');
         for (const key of ['untilNs', 'maxSteps', 'maxPending', 'maxReentrant', 'latencyNs'] as const) { const value = this.options[key]; if (!Number.isSafeInteger(value) || value < (['maxSteps', 'maxPending', 'maxReentrant'].includes(key) ? 1 : 0)) throw new Error(`Invalid ${key}`); }
-        if (!Array.isArray(this.options.manual) || !Array.isArray(this.options.faults)) throw new Error('manual and faults must be arrays');
+        if (!Array.isArray(this.options.faults)) throw new Error('faults must be an array');
         for (const key of Object.keys(options)) if (!(key in this.options)) throw new Error(`Unknown simulation option ${key}`);
-        for (const release of this.options.manual) {
-            if (!Number.isSafeInteger(release.atNs) || release.atNs < 0 || release.atNs > this.options.untilNs) throw new Error('Invalid manual release time');
-            if (typeof release.function !== 'string' || !release.function || Object.keys(release).some(k => !['atNs', 'function'].includes(k))) throw new Error('Manual release requires atNs and a function path');
-        }
         const offerNumbers = new Set<number>();
         for (const fault of this.options.faults) {
             if (!Number.isSafeInteger(fault.offer) || fault.offer < 1 || offerNumbers.has(fault.offer) || !['drop', 'duplicate', 'transport'].includes(fault.kind) || (fault.delayNs !== undefined && (!Number.isSafeInteger(fault.delayNs) || fault.delayNs < 0))) throw new Error('Invalid or duplicate fault offer');
@@ -142,12 +137,6 @@ class Interpreter {
                     const recur = () => { this.release(component, op); this.schedule(this.addTime(this.time, period), 1, recur); };
                     this.schedule(period, 1, recur);
                 }
-            }
-            for (const manual of this.options.manual) {
-                const parts = manual.function.split('.'), name = parts.pop()!, component = this.components.get(parts.join('.'));
-                const op = (component ? members(component.definition).filter(a.isFunctionDef) : []).find(x => x.name === name && x.trigger?.kind === 'manual');
-                if (!component || !op) throw new Error(`Manual release requires a parameterless on manual function: ${manual.function}`);
-                this.schedule(manual.atNs, 1, () => this.release(component, op));
             }
             while (this.events.length && !this.stopped) {
                 this.events.sort((x, y) => x.time - y.time || x.phase - y.phase || x.order - y.order);

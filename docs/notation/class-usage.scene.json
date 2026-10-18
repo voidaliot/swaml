@@ -1,0 +1,71 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Class usage and root",
+  "description": "A static single-owned class occurrence with distinct private state.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 36,
+      "y": 24,
+      "width": 488,
+      "height": 190,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 54,
+      "text": "«class» frontend : Client",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          36,
+          67
+        ],
+        [
+          524,
+          67
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 95,
+      "text": "owner: Demo",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 120,
+      "text": "distinct private store",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

@@ -319,5 +319,31 @@
         "committed": 1
       }
     }
+  },
+  {
+    "model": "examples/20-classes-and-operations.swaml",
+    "root": "ClassOperations::Demo",
+    "options": "examples/simulation/20-classes-and-operations.json",
+    "expectedStores": {
+      "frontend": {
+        "observed": 42
+      },
+      "backend": {
+        "value": 21
+      }
+    }
+  },
+  {
+    "model": "examples/20-classes-and-operations.swaml",
+    "root": "ClassOperations::Product",
+    "options": "examples/simulation/20-classes-and-operations.json",
+    "expectedStores": {
+      "frontend": {
+        "observed": 42
+      },
+      "backend": {
+        "value": 21
+      }
+    }
   }
 ]

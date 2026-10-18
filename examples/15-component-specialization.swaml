@@ -1,4 +1,5 @@
 package ComponentReuse {
+    interface publishSubscribe DeviceCommands version "1.0.0" { event advance(); }
     component def Worker {
         var ticks: uint = 0;
         function boot() on start { call work(); }
@@ -9,6 +10,7 @@ package ComponentReuse {
     }
 
     component def Device {
+        port control: DeviceCommands subscriber optional;
         var count: uint = 0;
         var sample: byte = 0;
         component worker: Worker;
@@ -18,7 +20,7 @@ package ComponentReuse {
         }
         function step() { count = count + 1; call encode(count) as encoded; sample = encoded; }
         function boot() on start { call step(); }
-        function advance() on manual { call step(); }
+        function advance() on receive control.advance { call step(); }
     }
     component def SpecializedDevice specializes Device {
         redefines var sample: byte = 10;
@@ -31,11 +33,21 @@ package ComponentReuse {
     }
 
     component Demo {
+        port leftCommands: DeviceCommands publisher;
         var running: bool = false;
         function initialize() on start { running = true; }
         component base: Device;
         component left: SpecializedDevice;
         component right: SpecializedDevice;
+        function driveInputs() on start {
+            initial Waiting;
+            state Waiting {}
+            state Advanced final { entry { publish leftCommands.advance(); } }
+            transition advanceLeft: Waiting -> Advanced on after 1 ns {}
+        }
+        connect advanceCommand: leftCommands -> left.control qos {
+            delivery atMostOnce; ordering fifo; capacity 4; overflow reject;
+        };
         deploy Demo on "system:ReferenceHost";
         deploy left on "sysml:Vehicle::leftComputer";
         deploy right on "sysml:Vehicle::rightComputer";

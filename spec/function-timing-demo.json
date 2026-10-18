@@ -2,7 +2,7 @@
   "version": 1,
   "model": "examples/17-function-timing.swaml",
   "root": "FunctionTiming::Demo",
-  "sourceSha256": "814f279dcce8ed9d8013caaeb996f29a651d4c27750715337e7ef077d2d12cdf",
+  "sourceSha256": "1e842ed17142118daceca0bbb7c8eab55a405501a114931114aa4d017919a17b",
   "contracts": [
     {
       "functionPath": "first.poll",
@@ -37,12 +37,12 @@
     {
       "functionPath": "first.poll",
       "definitionPath": "FunctionTiming::Client.poll",
-      "source": "function poll() on manual timing {\n            wcet 1 ms; deadline 30 ms; concurrency serial;\n        } {\n            call health.check() as answer within 20 ms otherwise { fail \"request failed\"; };\n            healthy = answer;\n        }"
+      "source": "function poll() on receive control.poll timing {\n            wcet 1 ms; deadline 30 ms; concurrency serial;\n        } {\n            call health.check() as answer within 20 ms otherwise { fail \"request failed\"; };\n            healthy = answer;\n        }"
     },
     {
       "functionPath": "second.poll",
       "definitionPath": "FunctionTiming::Client.poll",
-      "source": "function poll() on manual timing {\n            wcet 1 ms; deadline 30 ms; concurrency serial;\n        } {\n            call health.check() as answer within 20 ms otherwise { fail \"request failed\"; };\n            healthy = answer;\n        }"
+      "source": "function poll() on receive control.poll timing {\n            wcet 1 ms; deadline 30 ms; concurrency serial;\n        } {\n            call health.check() as answer within 20 ms otherwise { fail \"request failed\"; };\n            healthy = answer;\n        }"
     },
     {
       "functionPath": "firstServer.checkHealth",
@@ -62,21 +62,7 @@
       "description": "Two client occurrences run independently. A second release of first.poll waits for its serial lock.",
       "options": {
         "untilNs": 50000000,
-        "latencyNs": 2000000,
-        "manual": [
-          {
-            "atNs": 0,
-            "function": "first.poll"
-          },
-          {
-            "atNs": 0,
-            "function": "second.poll"
-          },
-          {
-            "atNs": 1000000,
-            "function": "first.poll"
-          }
-        ]
+        "latencyNs": 2000000
       },
       "trace": [
         {
@@ -124,458 +110,669 @@
           "ordinal": 6,
           "kind": "release",
           "subject": "a1",
-          "function": "first.poll"
+          "function": "driveInputs"
         },
         {
           "timeNs": 0,
           "ordinal": 7,
           "kind": "dispatch",
           "subject": "a1",
-          "function": "first.poll",
+          "function": "driveInputs",
           "mode": "serial"
         },
         {
           "timeNs": 0,
           "ordinal": 8,
-          "kind": "release",
-          "subject": "a2",
-          "function": "second.poll"
+          "kind": "stateEntry",
+          "subject": "driveInputs",
+          "state": "First",
+          "generation": 0
         },
         {
           "timeNs": 0,
           "ordinal": 9,
-          "kind": "dispatch",
-          "subject": "a2",
-          "function": "second.poll",
-          "mode": "serial"
+          "kind": "emission",
+          "subject": "m2",
+          "offer": 1,
+          "activation": "a1",
+          "route": "firstCommand",
+          "source": "firstPoll.poll",
+          "target": "first.control.poll",
+          "payload": [],
+          "response": false
         },
         {
           "timeNs": 0,
           "ordinal": 10,
-          "kind": "request",
-          "subject": "r3",
-          "activation": "a1",
-          "endpoint": "health.check",
-          "expiryNs": 20000000
+          "kind": "admission",
+          "subject": "m2",
+          "queue": "firstCommand/forward/poll"
         },
         {
           "timeNs": 0,
           "ordinal": 11,
-          "kind": "emission",
-          "subject": "m4",
-          "offer": 1,
-          "activation": "a1",
-          "route": "firstLink",
-          "source": "first.health.check",
-          "target": "firstServer.health.check",
-          "payload": [],
-          "correlation": "r3",
-          "response": false
+          "kind": "statement",
+          "subject": "a1",
+          "kindOfStatement": "Send",
+          "line": 32
         },
         {
           "timeNs": 0,
           "ordinal": 12,
-          "kind": "admission",
-          "subject": "m4",
-          "queue": "firstLink/forward/check"
-        },
-        {
-          "timeNs": 0,
-          "ordinal": 13,
-          "kind": "request",
-          "subject": "r5",
-          "activation": "a2",
-          "endpoint": "health.check",
-          "expiryNs": 20000000
-        },
-        {
-          "timeNs": 0,
-          "ordinal": 14,
           "kind": "emission",
-          "subject": "m6",
+          "subject": "m3",
           "offer": 2,
-          "activation": "a2",
-          "route": "secondLink",
-          "source": "second.health.check",
-          "target": "secondServer.health.check",
+          "activation": "a1",
+          "route": "secondCommand",
+          "source": "secondPoll.poll",
+          "target": "second.control.poll",
           "payload": [],
-          "correlation": "r5",
           "response": false
         },
         {
           "timeNs": 0,
-          "ordinal": 15,
+          "ordinal": 13,
           "kind": "admission",
-          "subject": "m6",
-          "queue": "secondLink/forward/check"
+          "subject": "m3",
+          "queue": "secondCommand/forward/poll"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 14,
+          "kind": "statement",
+          "subject": "a1",
+          "kindOfStatement": "Send",
+          "line": 32
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 15,
+          "kind": "complete",
+          "subject": "a1",
+          "function": "driveInputs"
         },
         {
           "timeNs": 1000000,
           "ordinal": 16,
           "kind": "release",
-          "subject": "a7",
-          "function": "first.poll"
+          "subject": "a4",
+          "function": "driveInputs"
         },
         {
-          "timeNs": 2000000,
+          "timeNs": 1000000,
           "ordinal": 17,
-          "kind": "ready",
-          "subject": "m4",
-          "queue": "firstLink/forward/check"
+          "kind": "dispatch",
+          "subject": "a4",
+          "function": "driveInputs",
+          "mode": "serial"
         },
         {
-          "timeNs": 2000000,
+          "timeNs": 1000000,
           "ordinal": 18,
-          "kind": "release",
-          "subject": "a8",
-          "function": "firstServer.checkHealth"
+          "kind": "transition",
+          "subject": "driveInputs",
+          "transition": "repeatPoll",
+          "from": "First",
+          "to": "Again"
         },
         {
-          "timeNs": 2000000,
+          "timeNs": 1000000,
           "ordinal": 19,
-          "kind": "delivery",
-          "subject": "m4",
-          "attempt": 1,
-          "route": "firstLink",
-          "source": "first.health.check",
-          "target": "firstServer.health.check",
-          "correlation": "r3"
+          "kind": "stateExit",
+          "subject": "driveInputs",
+          "state": "First"
         },
         {
-          "timeNs": 2000000,
+          "timeNs": 1000000,
           "ordinal": 20,
-          "kind": "dispatch",
-          "subject": "a8",
-          "function": "firstServer.checkHealth",
-          "mode": "serial"
+          "kind": "stateEntry",
+          "subject": "driveInputs",
+          "state": "Again",
+          "generation": 1
         },
         {
-          "timeNs": 2000000,
+          "timeNs": 1000000,
           "ordinal": 21,
-          "kind": "ready",
-          "subject": "m6",
-          "queue": "secondLink/forward/check"
+          "kind": "emission",
+          "subject": "m5",
+          "offer": 3,
+          "activation": "a4",
+          "route": "firstCommand",
+          "source": "firstPoll.poll",
+          "target": "first.control.poll",
+          "payload": [],
+          "response": false
         },
         {
-          "timeNs": 2000000,
+          "timeNs": 1000000,
           "ordinal": 22,
-          "kind": "release",
-          "subject": "a9",
-          "function": "secondServer.checkHealth"
+          "kind": "admission",
+          "subject": "m5",
+          "queue": "firstCommand/forward/poll"
         },
         {
-          "timeNs": 2000000,
+          "timeNs": 1000000,
           "ordinal": 23,
-          "kind": "delivery",
-          "subject": "m6",
-          "attempt": 1,
-          "route": "secondLink",
-          "source": "second.health.check",
-          "target": "secondServer.health.check",
-          "correlation": "r5"
+          "kind": "statement",
+          "subject": "a4",
+          "kindOfStatement": "Send",
+          "line": 33
         },
         {
-          "timeNs": 2000000,
+          "timeNs": 1000000,
           "ordinal": 24,
-          "kind": "dispatch",
-          "subject": "a9",
-          "function": "secondServer.checkHealth",
-          "mode": "serial"
+          "kind": "complete",
+          "subject": "a4",
+          "function": "driveInputs"
         },
         {
           "timeNs": 2000000,
           "ordinal": 25,
-          "kind": "complete",
-          "subject": "a8",
-          "function": "firstServer.checkHealth",
-          "result": true
+          "kind": "ready",
+          "subject": "m2",
+          "queue": "firstCommand/forward/poll"
         },
         {
           "timeNs": 2000000,
           "ordinal": 26,
-          "kind": "emission",
-          "subject": "m10",
-          "offer": 3,
-          "activation": "a8",
-          "route": "firstLink",
-          "source": "firstServer.health.check",
-          "target": "first.health.check",
-          "payload": [],
-          "correlation": "r3",
-          "response": true
+          "kind": "release",
+          "subject": "a6",
+          "function": "first.poll"
         },
         {
           "timeNs": 2000000,
           "ordinal": 27,
-          "kind": "admission",
-          "subject": "m10",
-          "queue": "firstLink/reverse/check"
+          "kind": "delivery",
+          "subject": "m2",
+          "attempt": 1,
+          "route": "firstCommand",
+          "source": "firstPoll.poll",
+          "target": "first.control.poll"
         },
         {
           "timeNs": 2000000,
           "ordinal": 28,
-          "kind": "complete",
-          "subject": "a9",
-          "function": "secondServer.checkHealth",
-          "result": true
-        },
-        {
-          "timeNs": 2000000,
-          "ordinal": 29,
-          "kind": "emission",
-          "subject": "m11",
-          "offer": 4,
-          "activation": "a9",
-          "route": "secondLink",
-          "source": "secondServer.health.check",
-          "target": "second.health.check",
-          "payload": [],
-          "correlation": "r5",
-          "response": true
-        },
-        {
-          "timeNs": 2000000,
-          "ordinal": 30,
-          "kind": "admission",
-          "subject": "m11",
-          "queue": "secondLink/reverse/check"
-        },
-        {
-          "timeNs": 4000000,
-          "ordinal": 31,
-          "kind": "ready",
-          "subject": "m10",
-          "queue": "firstLink/reverse/check"
-        },
-        {
-          "timeNs": 4000000,
-          "ordinal": 32,
-          "kind": "delivery",
-          "subject": "m10",
-          "correlation": "r3",
-          "route": "firstLink"
-        },
-        {
-          "timeNs": 4000000,
-          "ordinal": 33,
-          "kind": "requestComplete",
-          "subject": "r3",
-          "state": "Succeeded",
-          "value": true
-        },
-        {
-          "timeNs": 4000000,
-          "ordinal": 34,
-          "kind": "ready",
-          "subject": "m11",
-          "queue": "secondLink/reverse/check"
-        },
-        {
-          "timeNs": 4000000,
-          "ordinal": 35,
-          "kind": "delivery",
-          "subject": "m11",
-          "correlation": "r5",
-          "route": "secondLink"
-        },
-        {
-          "timeNs": 4000000,
-          "ordinal": 36,
-          "kind": "requestComplete",
-          "subject": "r5",
-          "state": "Succeeded",
-          "value": true
-        },
-        {
-          "timeNs": 4000000,
-          "ordinal": 37,
-          "kind": "statement",
-          "subject": "a1",
-          "kindOfStatement": "RemoteCall",
-          "line": 11
-        },
-        {
-          "timeNs": 4000000,
-          "ordinal": 38,
-          "kind": "statement",
-          "subject": "a2",
-          "kindOfStatement": "RemoteCall",
-          "line": 11
-        },
-        {
-          "timeNs": 4000000,
-          "ordinal": 39,
-          "kind": "statement",
-          "subject": "a1",
-          "kindOfStatement": "Assign",
-          "line": 12
-        },
-        {
-          "timeNs": 4000000,
-          "ordinal": 40,
-          "kind": "statement",
-          "subject": "a2",
-          "kindOfStatement": "Assign",
-          "line": 12
-        },
-        {
-          "timeNs": 4000000,
-          "ordinal": 41,
-          "kind": "complete",
-          "subject": "a1",
-          "function": "first.poll"
-        },
-        {
-          "timeNs": 4000000,
-          "ordinal": 42,
           "kind": "dispatch",
-          "subject": "a7",
+          "subject": "a6",
           "function": "first.poll",
           "mode": "serial"
         },
         {
-          "timeNs": 4000000,
-          "ordinal": 43,
-          "kind": "complete",
-          "subject": "a2",
+          "timeNs": 2000000,
+          "ordinal": 29,
+          "kind": "ready",
+          "subject": "m3",
+          "queue": "secondCommand/forward/poll"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 30,
+          "kind": "release",
+          "subject": "a7",
           "function": "second.poll"
         },
         {
-          "timeNs": 4000000,
-          "ordinal": 44,
-          "kind": "request",
-          "subject": "r12",
-          "activation": "a7",
-          "endpoint": "health.check",
-          "expiryNs": 24000000
+          "timeNs": 2000000,
+          "ordinal": 31,
+          "kind": "delivery",
+          "subject": "m3",
+          "attempt": 1,
+          "route": "secondCommand",
+          "source": "secondPoll.poll",
+          "target": "second.control.poll"
         },
         {
-          "timeNs": 4000000,
-          "ordinal": 45,
+          "timeNs": 2000000,
+          "ordinal": 32,
+          "kind": "dispatch",
+          "subject": "a7",
+          "function": "second.poll",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 33,
+          "kind": "request",
+          "subject": "r8",
+          "activation": "a6",
+          "endpoint": "health.check",
+          "expiryNs": 22000000
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 34,
           "kind": "emission",
-          "subject": "m13",
-          "offer": 5,
-          "activation": "a7",
+          "subject": "m9",
+          "offer": 4,
+          "activation": "a6",
           "route": "firstLink",
           "source": "first.health.check",
           "target": "firstServer.health.check",
           "payload": [],
-          "correlation": "r12",
+          "correlation": "r8",
           "response": false
         },
         {
-          "timeNs": 4000000,
-          "ordinal": 46,
+          "timeNs": 2000000,
+          "ordinal": 35,
           "kind": "admission",
-          "subject": "m13",
+          "subject": "m9",
           "queue": "firstLink/forward/check"
         },
         {
-          "timeNs": 6000000,
-          "ordinal": 47,
+          "timeNs": 2000000,
+          "ordinal": 36,
+          "kind": "request",
+          "subject": "r10",
+          "activation": "a7",
+          "endpoint": "health.check",
+          "expiryNs": 22000000
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 37,
+          "kind": "emission",
+          "subject": "m11",
+          "offer": 5,
+          "activation": "a7",
+          "route": "secondLink",
+          "source": "second.health.check",
+          "target": "secondServer.health.check",
+          "payload": [],
+          "correlation": "r10",
+          "response": false
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 38,
+          "kind": "admission",
+          "subject": "m11",
+          "queue": "secondLink/forward/check"
+        },
+        {
+          "timeNs": 3000000,
+          "ordinal": 39,
           "kind": "ready",
-          "subject": "m13",
+          "subject": "m5",
+          "queue": "firstCommand/forward/poll"
+        },
+        {
+          "timeNs": 3000000,
+          "ordinal": 40,
+          "kind": "release",
+          "subject": "a12",
+          "function": "first.poll"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 41,
+          "kind": "ready",
+          "subject": "m9",
           "queue": "firstLink/forward/check"
         },
         {
-          "timeNs": 6000000,
-          "ordinal": 48,
+          "timeNs": 4000000,
+          "ordinal": 42,
           "kind": "release",
-          "subject": "a14",
+          "subject": "a13",
           "function": "firstServer.checkHealth"
         },
         {
-          "timeNs": 6000000,
-          "ordinal": 49,
+          "timeNs": 4000000,
+          "ordinal": 43,
           "kind": "delivery",
-          "subject": "m13",
+          "subject": "m9",
           "attempt": 1,
           "route": "firstLink",
           "source": "first.health.check",
           "target": "firstServer.health.check",
-          "correlation": "r12"
+          "correlation": "r8"
         },
         {
-          "timeNs": 6000000,
-          "ordinal": 50,
+          "timeNs": 4000000,
+          "ordinal": 44,
           "kind": "dispatch",
-          "subject": "a14",
+          "subject": "a13",
           "function": "firstServer.checkHealth",
           "mode": "serial"
         },
         {
-          "timeNs": 6000000,
-          "ordinal": 51,
-          "kind": "complete",
+          "timeNs": 4000000,
+          "ordinal": 45,
+          "kind": "ready",
+          "subject": "m11",
+          "queue": "secondLink/forward/check"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 46,
+          "kind": "release",
           "subject": "a14",
+          "function": "secondServer.checkHealth"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 47,
+          "kind": "delivery",
+          "subject": "m11",
+          "attempt": 1,
+          "route": "secondLink",
+          "source": "second.health.check",
+          "target": "secondServer.health.check",
+          "correlation": "r10"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 48,
+          "kind": "dispatch",
+          "subject": "a14",
+          "function": "secondServer.checkHealth",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 49,
+          "kind": "complete",
+          "subject": "a13",
           "function": "firstServer.checkHealth",
           "result": true
         },
         {
-          "timeNs": 6000000,
-          "ordinal": 52,
+          "timeNs": 4000000,
+          "ordinal": 50,
           "kind": "emission",
           "subject": "m15",
           "offer": 6,
-          "activation": "a14",
+          "activation": "a13",
           "route": "firstLink",
           "source": "firstServer.health.check",
           "target": "first.health.check",
           "payload": [],
-          "correlation": "r12",
+          "correlation": "r8",
           "response": true
         },
         {
-          "timeNs": 6000000,
-          "ordinal": 53,
+          "timeNs": 4000000,
+          "ordinal": 51,
           "kind": "admission",
           "subject": "m15",
           "queue": "firstLink/reverse/check"
         },
         {
-          "timeNs": 8000000,
+          "timeNs": 4000000,
+          "ordinal": 52,
+          "kind": "complete",
+          "subject": "a14",
+          "function": "secondServer.checkHealth",
+          "result": true
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 53,
+          "kind": "emission",
+          "subject": "m16",
+          "offer": 7,
+          "activation": "a14",
+          "route": "secondLink",
+          "source": "secondServer.health.check",
+          "target": "second.health.check",
+          "payload": [],
+          "correlation": "r10",
+          "response": true
+        },
+        {
+          "timeNs": 4000000,
           "ordinal": 54,
+          "kind": "admission",
+          "subject": "m16",
+          "queue": "secondLink/reverse/check"
+        },
+        {
+          "timeNs": 6000000,
+          "ordinal": 55,
           "kind": "ready",
           "subject": "m15",
           "queue": "firstLink/reverse/check"
         },
         {
-          "timeNs": 8000000,
-          "ordinal": 55,
+          "timeNs": 6000000,
+          "ordinal": 56,
           "kind": "delivery",
           "subject": "m15",
-          "correlation": "r12",
+          "correlation": "r8",
           "route": "firstLink"
         },
         {
-          "timeNs": 8000000,
-          "ordinal": 56,
+          "timeNs": 6000000,
+          "ordinal": 57,
           "kind": "requestComplete",
-          "subject": "r12",
+          "subject": "r8",
           "state": "Succeeded",
           "value": true
         },
         {
-          "timeNs": 8000000,
-          "ordinal": 57,
+          "timeNs": 6000000,
+          "ordinal": 58,
+          "kind": "ready",
+          "subject": "m16",
+          "queue": "secondLink/reverse/check"
+        },
+        {
+          "timeNs": 6000000,
+          "ordinal": 59,
+          "kind": "delivery",
+          "subject": "m16",
+          "correlation": "r10",
+          "route": "secondLink"
+        },
+        {
+          "timeNs": 6000000,
+          "ordinal": 60,
+          "kind": "requestComplete",
+          "subject": "r10",
+          "state": "Succeeded",
+          "value": true
+        },
+        {
+          "timeNs": 6000000,
+          "ordinal": 61,
+          "kind": "statement",
+          "subject": "a6",
+          "kindOfStatement": "RemoteCall",
+          "line": 13
+        },
+        {
+          "timeNs": 6000000,
+          "ordinal": 62,
           "kind": "statement",
           "subject": "a7",
           "kindOfStatement": "RemoteCall",
-          "line": 11
+          "line": 13
         },
         {
-          "timeNs": 8000000,
-          "ordinal": 58,
+          "timeNs": 6000000,
+          "ordinal": 63,
+          "kind": "statement",
+          "subject": "a6",
+          "kindOfStatement": "Assign",
+          "line": 14
+        },
+        {
+          "timeNs": 6000000,
+          "ordinal": 64,
           "kind": "statement",
           "subject": "a7",
           "kindOfStatement": "Assign",
-          "line": 12
+          "line": 14
+        },
+        {
+          "timeNs": 6000000,
+          "ordinal": 65,
+          "kind": "complete",
+          "subject": "a6",
+          "function": "first.poll"
+        },
+        {
+          "timeNs": 6000000,
+          "ordinal": 66,
+          "kind": "delivery",
+          "subject": "m5",
+          "attempt": 1,
+          "route": "firstCommand",
+          "source": "firstPoll.poll",
+          "target": "first.control.poll"
+        },
+        {
+          "timeNs": 6000000,
+          "ordinal": 67,
+          "kind": "dispatch",
+          "subject": "a12",
+          "function": "first.poll",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 6000000,
+          "ordinal": 68,
+          "kind": "complete",
+          "subject": "a7",
+          "function": "second.poll"
+        },
+        {
+          "timeNs": 6000000,
+          "ordinal": 69,
+          "kind": "request",
+          "subject": "r17",
+          "activation": "a12",
+          "endpoint": "health.check",
+          "expiryNs": 26000000
+        },
+        {
+          "timeNs": 6000000,
+          "ordinal": 70,
+          "kind": "emission",
+          "subject": "m18",
+          "offer": 8,
+          "activation": "a12",
+          "route": "firstLink",
+          "source": "first.health.check",
+          "target": "firstServer.health.check",
+          "payload": [],
+          "correlation": "r17",
+          "response": false
+        },
+        {
+          "timeNs": 6000000,
+          "ordinal": 71,
+          "kind": "admission",
+          "subject": "m18",
+          "queue": "firstLink/forward/check"
         },
         {
           "timeNs": 8000000,
-          "ordinal": 59,
+          "ordinal": 72,
+          "kind": "ready",
+          "subject": "m18",
+          "queue": "firstLink/forward/check"
+        },
+        {
+          "timeNs": 8000000,
+          "ordinal": 73,
+          "kind": "release",
+          "subject": "a19",
+          "function": "firstServer.checkHealth"
+        },
+        {
+          "timeNs": 8000000,
+          "ordinal": 74,
+          "kind": "delivery",
+          "subject": "m18",
+          "attempt": 1,
+          "route": "firstLink",
+          "source": "first.health.check",
+          "target": "firstServer.health.check",
+          "correlation": "r17"
+        },
+        {
+          "timeNs": 8000000,
+          "ordinal": 75,
+          "kind": "dispatch",
+          "subject": "a19",
+          "function": "firstServer.checkHealth",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 8000000,
+          "ordinal": 76,
           "kind": "complete",
-          "subject": "a7",
+          "subject": "a19",
+          "function": "firstServer.checkHealth",
+          "result": true
+        },
+        {
+          "timeNs": 8000000,
+          "ordinal": 77,
+          "kind": "emission",
+          "subject": "m20",
+          "offer": 9,
+          "activation": "a19",
+          "route": "firstLink",
+          "source": "firstServer.health.check",
+          "target": "first.health.check",
+          "payload": [],
+          "correlation": "r17",
+          "response": true
+        },
+        {
+          "timeNs": 8000000,
+          "ordinal": 78,
+          "kind": "admission",
+          "subject": "m20",
+          "queue": "firstLink/reverse/check"
+        },
+        {
+          "timeNs": 10000000,
+          "ordinal": 79,
+          "kind": "ready",
+          "subject": "m20",
+          "queue": "firstLink/reverse/check"
+        },
+        {
+          "timeNs": 10000000,
+          "ordinal": 80,
+          "kind": "delivery",
+          "subject": "m20",
+          "correlation": "r17",
+          "route": "firstLink"
+        },
+        {
+          "timeNs": 10000000,
+          "ordinal": 81,
+          "kind": "requestComplete",
+          "subject": "r17",
+          "state": "Succeeded",
+          "value": true
+        },
+        {
+          "timeNs": 10000000,
+          "ordinal": 82,
+          "kind": "statement",
+          "subject": "a12",
+          "kindOfStatement": "RemoteCall",
+          "line": 13
+        },
+        {
+          "timeNs": 10000000,
+          "ordinal": 83,
+          "kind": "statement",
+          "subject": "a12",
+          "kindOfStatement": "Assign",
+          "line": 14
+        },
+        {
+          "timeNs": 10000000,
+          "ordinal": 84,
+          "kind": "complete",
+          "subject": "a12",
           "function": "first.poll"
         }
       ],
@@ -583,10 +780,10 @@
         "root": "FunctionTiming::Demo",
         "profile": "swaml-reference/1.3",
         "status": "quiescent",
-        "endNs": 31000000,
+        "endNs": 33000000,
         "activations": [
           {
-            "id": "a1",
+            "id": "a6",
             "functionPath": "first.poll",
             "contract": {
               "functionPath": "first.poll",
@@ -596,58 +793,58 @@
               "deadlineNs": 30000000
             },
             "released": {
-              "timeNs": 0,
-              "ordinal": 6
+              "timeNs": 2000000,
+              "ordinal": 26
             },
             "outcome": "complete",
-            "deadlineAtNs": 30000000,
+            "deadlineAtNs": 32000000,
             "intervals": [
               {
                 "state": "ready",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 6
+                  "timeNs": 2000000,
+                  "ordinal": 26
                 },
                 "end": {
-                  "timeNs": 0,
-                  "ordinal": 7
+                  "timeNs": 2000000,
+                  "ordinal": 28
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 7
+                  "timeNs": 2000000,
+                  "ordinal": 28
                 },
                 "end": {
-                  "timeNs": 0,
-                  "ordinal": 10
+                  "timeNs": 2000000,
+                  "ordinal": 33
                 },
                 "open": false
               },
               {
                 "state": "requestWait",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 10
-                },
-                "correlation": "r3",
-                "end": {
-                  "timeNs": 4000000,
+                  "timeNs": 2000000,
                   "ordinal": 33
+                },
+                "correlation": "r8",
+                "end": {
+                  "timeNs": 6000000,
+                  "ordinal": 57
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 4000000,
-                  "ordinal": 33
+                  "timeNs": 6000000,
+                  "ordinal": 57
                 },
                 "end": {
-                  "timeNs": 4000000,
-                  "ordinal": 41
+                  "timeNs": 6000000,
+                  "ordinal": 65
                 },
                 "open": false
               }
@@ -656,68 +853,68 @@
               {
                 "kind": "release",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 6
+                  "timeNs": 2000000,
+                  "ordinal": 26
                 }
               },
               {
                 "kind": "dispatch",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 7
+                  "timeNs": 2000000,
+                  "ordinal": 28
                 }
               },
               {
                 "kind": "request",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 10
+                  "timeNs": 2000000,
+                  "ordinal": 33
                 },
-                "correlation": "r3"
+                "correlation": "r8"
               },
               {
                 "kind": "requestComplete",
                 "point": {
-                  "timeNs": 4000000,
-                  "ordinal": 33
+                  "timeNs": 6000000,
+                  "ordinal": 57
                 },
-                "correlation": "r3"
+                "correlation": "r8"
               },
               {
                 "kind": "statement",
                 "point": {
-                  "timeNs": 4000000,
-                  "ordinal": 37
+                  "timeNs": 6000000,
+                  "ordinal": 61
                 },
-                "line": 11
+                "line": 13
               },
               {
                 "kind": "statement",
                 "point": {
-                  "timeNs": 4000000,
-                  "ordinal": 39
+                  "timeNs": 6000000,
+                  "ordinal": 63
                 },
-                "line": 12
+                "line": 14
               },
               {
                 "kind": "complete",
                 "point": {
-                  "timeNs": 4000000,
-                  "ordinal": 41
+                  "timeNs": 6000000,
+                  "ordinal": 65
                 }
               }
             ],
             "dispatched": {
-              "timeNs": 0,
-              "ordinal": 7
+              "timeNs": 2000000,
+              "ordinal": 28
             },
             "terminal": {
-              "timeNs": 4000000,
-              "ordinal": 41
+              "timeNs": 6000000,
+              "ordinal": 65
             }
           },
           {
-            "id": "a2",
+            "id": "a7",
             "functionPath": "second.poll",
             "contract": {
               "functionPath": "second.poll",
@@ -727,58 +924,58 @@
               "deadlineNs": 30000000
             },
             "released": {
-              "timeNs": 0,
-              "ordinal": 8
+              "timeNs": 2000000,
+              "ordinal": 30
             },
             "outcome": "complete",
-            "deadlineAtNs": 30000000,
+            "deadlineAtNs": 32000000,
             "intervals": [
               {
                 "state": "ready",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 8
+                  "timeNs": 2000000,
+                  "ordinal": 30
                 },
                 "end": {
-                  "timeNs": 0,
-                  "ordinal": 9
+                  "timeNs": 2000000,
+                  "ordinal": 32
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 9
+                  "timeNs": 2000000,
+                  "ordinal": 32
                 },
                 "end": {
-                  "timeNs": 0,
-                  "ordinal": 13
+                  "timeNs": 2000000,
+                  "ordinal": 36
                 },
                 "open": false
               },
               {
                 "state": "requestWait",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 13
-                },
-                "correlation": "r5",
-                "end": {
-                  "timeNs": 4000000,
+                  "timeNs": 2000000,
                   "ordinal": 36
+                },
+                "correlation": "r10",
+                "end": {
+                  "timeNs": 6000000,
+                  "ordinal": 60
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 4000000,
-                  "ordinal": 36
+                  "timeNs": 6000000,
+                  "ordinal": 60
                 },
                 "end": {
-                  "timeNs": 4000000,
-                  "ordinal": 43
+                  "timeNs": 6000000,
+                  "ordinal": 68
                 },
                 "open": false
               }
@@ -787,68 +984,68 @@
               {
                 "kind": "release",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 8
+                  "timeNs": 2000000,
+                  "ordinal": 30
                 }
               },
               {
                 "kind": "dispatch",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 9
+                  "timeNs": 2000000,
+                  "ordinal": 32
                 }
               },
               {
                 "kind": "request",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 13
+                  "timeNs": 2000000,
+                  "ordinal": 36
                 },
-                "correlation": "r5"
+                "correlation": "r10"
               },
               {
                 "kind": "requestComplete",
                 "point": {
-                  "timeNs": 4000000,
-                  "ordinal": 36
+                  "timeNs": 6000000,
+                  "ordinal": 60
                 },
-                "correlation": "r5"
+                "correlation": "r10"
               },
               {
                 "kind": "statement",
                 "point": {
-                  "timeNs": 4000000,
-                  "ordinal": 38
+                  "timeNs": 6000000,
+                  "ordinal": 62
                 },
-                "line": 11
+                "line": 13
               },
               {
                 "kind": "statement",
                 "point": {
-                  "timeNs": 4000000,
-                  "ordinal": 40
+                  "timeNs": 6000000,
+                  "ordinal": 64
                 },
-                "line": 12
+                "line": 14
               },
               {
                 "kind": "complete",
                 "point": {
-                  "timeNs": 4000000,
-                  "ordinal": 43
+                  "timeNs": 6000000,
+                  "ordinal": 68
                 }
               }
             ],
             "dispatched": {
-              "timeNs": 0,
-              "ordinal": 9
+              "timeNs": 2000000,
+              "ordinal": 32
             },
             "terminal": {
-              "timeNs": 4000000,
-              "ordinal": 43
+              "timeNs": 6000000,
+              "ordinal": 68
             }
           },
           {
-            "id": "a7",
+            "id": "a12",
             "functionPath": "first.poll",
             "contract": {
               "functionPath": "first.poll",
@@ -858,58 +1055,58 @@
               "deadlineNs": 30000000
             },
             "released": {
-              "timeNs": 1000000,
-              "ordinal": 16
+              "timeNs": 3000000,
+              "ordinal": 40
             },
             "outcome": "complete",
-            "deadlineAtNs": 31000000,
+            "deadlineAtNs": 33000000,
             "intervals": [
               {
                 "state": "ready",
                 "start": {
-                  "timeNs": 1000000,
-                  "ordinal": 16
+                  "timeNs": 3000000,
+                  "ordinal": 40
                 },
                 "end": {
-                  "timeNs": 4000000,
-                  "ordinal": 42
+                  "timeNs": 6000000,
+                  "ordinal": 67
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 4000000,
-                  "ordinal": 42
+                  "timeNs": 6000000,
+                  "ordinal": 67
                 },
                 "end": {
-                  "timeNs": 4000000,
-                  "ordinal": 44
+                  "timeNs": 6000000,
+                  "ordinal": 69
                 },
                 "open": false
               },
               {
                 "state": "requestWait",
                 "start": {
-                  "timeNs": 4000000,
-                  "ordinal": 44
+                  "timeNs": 6000000,
+                  "ordinal": 69
                 },
-                "correlation": "r12",
+                "correlation": "r17",
                 "end": {
-                  "timeNs": 8000000,
-                  "ordinal": 56
+                  "timeNs": 10000000,
+                  "ordinal": 81
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 8000000,
-                  "ordinal": 56
+                  "timeNs": 10000000,
+                  "ordinal": 81
                 },
                 "end": {
-                  "timeNs": 8000000,
-                  "ordinal": 59
+                  "timeNs": 10000000,
+                  "ordinal": 84
                 },
                 "open": false
               }
@@ -918,68 +1115,68 @@
               {
                 "kind": "release",
                 "point": {
-                  "timeNs": 1000000,
-                  "ordinal": 16
+                  "timeNs": 3000000,
+                  "ordinal": 40
                 }
               },
               {
                 "kind": "dispatch",
                 "point": {
-                  "timeNs": 4000000,
-                  "ordinal": 42
+                  "timeNs": 6000000,
+                  "ordinal": 67
                 }
               },
               {
                 "kind": "request",
                 "point": {
-                  "timeNs": 4000000,
-                  "ordinal": 44
+                  "timeNs": 6000000,
+                  "ordinal": 69
                 },
-                "correlation": "r12"
+                "correlation": "r17"
               },
               {
                 "kind": "requestComplete",
                 "point": {
-                  "timeNs": 8000000,
-                  "ordinal": 56
+                  "timeNs": 10000000,
+                  "ordinal": 81
                 },
-                "correlation": "r12"
+                "correlation": "r17"
               },
               {
                 "kind": "statement",
                 "point": {
-                  "timeNs": 8000000,
-                  "ordinal": 57
+                  "timeNs": 10000000,
+                  "ordinal": 82
                 },
-                "line": 11
+                "line": 13
               },
               {
                 "kind": "statement",
                 "point": {
-                  "timeNs": 8000000,
-                  "ordinal": 58
+                  "timeNs": 10000000,
+                  "ordinal": 83
                 },
-                "line": 12
+                "line": 14
               },
               {
                 "kind": "complete",
                 "point": {
-                  "timeNs": 8000000,
-                  "ordinal": 59
+                  "timeNs": 10000000,
+                  "ordinal": 84
                 }
               }
             ],
             "dispatched": {
-              "timeNs": 4000000,
-              "ordinal": 42
+              "timeNs": 6000000,
+              "ordinal": 67
             },
             "terminal": {
-              "timeNs": 8000000,
-              "ordinal": 59
+              "timeNs": 10000000,
+              "ordinal": 84
             }
           },
           {
-            "id": "a8",
+            "id": "a13",
             "functionPath": "firstServer.checkHealth",
             "contract": {
               "functionPath": "firstServer.checkHealth",
@@ -989,33 +1186,33 @@
               "deadlineNs": 10000000
             },
             "released": {
-              "timeNs": 2000000,
-              "ordinal": 18
+              "timeNs": 4000000,
+              "ordinal": 42
             },
             "outcome": "complete",
-            "deadlineAtNs": 12000000,
+            "deadlineAtNs": 14000000,
             "intervals": [
               {
                 "state": "ready",
                 "start": {
-                  "timeNs": 2000000,
-                  "ordinal": 18
+                  "timeNs": 4000000,
+                  "ordinal": 42
                 },
                 "end": {
-                  "timeNs": 2000000,
-                  "ordinal": 20
+                  "timeNs": 4000000,
+                  "ordinal": 44
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 2000000,
-                  "ordinal": 20
+                  "timeNs": 4000000,
+                  "ordinal": 44
                 },
                 "end": {
-                  "timeNs": 2000000,
-                  "ordinal": 25
+                  "timeNs": 4000000,
+                  "ordinal": 49
                 },
                 "open": false
               }
@@ -1024,36 +1221,36 @@
               {
                 "kind": "release",
                 "point": {
-                  "timeNs": 2000000,
-                  "ordinal": 18
+                  "timeNs": 4000000,
+                  "ordinal": 42
                 }
               },
               {
                 "kind": "dispatch",
                 "point": {
-                  "timeNs": 2000000,
-                  "ordinal": 20
+                  "timeNs": 4000000,
+                  "ordinal": 44
                 }
               },
               {
                 "kind": "complete",
                 "point": {
-                  "timeNs": 2000000,
-                  "ordinal": 25
+                  "timeNs": 4000000,
+                  "ordinal": 49
                 }
               }
             ],
             "dispatched": {
-              "timeNs": 2000000,
-              "ordinal": 20
+              "timeNs": 4000000,
+              "ordinal": 44
             },
             "terminal": {
-              "timeNs": 2000000,
-              "ordinal": 25
+              "timeNs": 4000000,
+              "ordinal": 49
             }
           },
           {
-            "id": "a9",
+            "id": "a14",
             "functionPath": "secondServer.checkHealth",
             "contract": {
               "functionPath": "secondServer.checkHealth",
@@ -1063,33 +1260,33 @@
               "deadlineNs": 10000000
             },
             "released": {
-              "timeNs": 2000000,
-              "ordinal": 22
+              "timeNs": 4000000,
+              "ordinal": 46
             },
             "outcome": "complete",
-            "deadlineAtNs": 12000000,
+            "deadlineAtNs": 14000000,
             "intervals": [
               {
                 "state": "ready",
                 "start": {
-                  "timeNs": 2000000,
-                  "ordinal": 22
+                  "timeNs": 4000000,
+                  "ordinal": 46
                 },
                 "end": {
-                  "timeNs": 2000000,
-                  "ordinal": 24
+                  "timeNs": 4000000,
+                  "ordinal": 48
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 2000000,
-                  "ordinal": 24
+                  "timeNs": 4000000,
+                  "ordinal": 48
                 },
                 "end": {
-                  "timeNs": 2000000,
-                  "ordinal": 28
+                  "timeNs": 4000000,
+                  "ordinal": 52
                 },
                 "open": false
               }
@@ -1098,36 +1295,36 @@
               {
                 "kind": "release",
                 "point": {
-                  "timeNs": 2000000,
-                  "ordinal": 22
+                  "timeNs": 4000000,
+                  "ordinal": 46
                 }
               },
               {
                 "kind": "dispatch",
                 "point": {
-                  "timeNs": 2000000,
-                  "ordinal": 24
+                  "timeNs": 4000000,
+                  "ordinal": 48
                 }
               },
               {
                 "kind": "complete",
                 "point": {
-                  "timeNs": 2000000,
-                  "ordinal": 28
+                  "timeNs": 4000000,
+                  "ordinal": 52
                 }
               }
             ],
             "dispatched": {
-              "timeNs": 2000000,
-              "ordinal": 24
+              "timeNs": 4000000,
+              "ordinal": 48
             },
             "terminal": {
-              "timeNs": 2000000,
-              "ordinal": 28
+              "timeNs": 4000000,
+              "ordinal": 52
             }
           },
           {
-            "id": "a14",
+            "id": "a19",
             "functionPath": "firstServer.checkHealth",
             "contract": {
               "functionPath": "firstServer.checkHealth",
@@ -1137,33 +1334,33 @@
               "deadlineNs": 10000000
             },
             "released": {
-              "timeNs": 6000000,
-              "ordinal": 48
+              "timeNs": 8000000,
+              "ordinal": 73
             },
             "outcome": "complete",
-            "deadlineAtNs": 16000000,
+            "deadlineAtNs": 18000000,
             "intervals": [
               {
                 "state": "ready",
                 "start": {
-                  "timeNs": 6000000,
-                  "ordinal": 48
+                  "timeNs": 8000000,
+                  "ordinal": 73
                 },
                 "end": {
-                  "timeNs": 6000000,
-                  "ordinal": 50
+                  "timeNs": 8000000,
+                  "ordinal": 75
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 6000000,
-                  "ordinal": 50
+                  "timeNs": 8000000,
+                  "ordinal": 75
                 },
                 "end": {
-                  "timeNs": 6000000,
-                  "ordinal": 51
+                  "timeNs": 8000000,
+                  "ordinal": 76
                 },
                 "open": false
               }
@@ -1172,32 +1369,32 @@
               {
                 "kind": "release",
                 "point": {
-                  "timeNs": 6000000,
-                  "ordinal": 48
+                  "timeNs": 8000000,
+                  "ordinal": 73
                 }
               },
               {
                 "kind": "dispatch",
                 "point": {
-                  "timeNs": 6000000,
-                  "ordinal": 50
+                  "timeNs": 8000000,
+                  "ordinal": 75
                 }
               },
               {
                 "kind": "complete",
                 "point": {
-                  "timeNs": 6000000,
-                  "ordinal": 51
+                  "timeNs": 8000000,
+                  "ordinal": 76
                 }
               }
             ],
             "dispatched": {
-              "timeNs": 6000000,
-              "ordinal": 50
+              "timeNs": 8000000,
+              "ordinal": 75
             },
             "terminal": {
-              "timeNs": 6000000,
-              "ordinal": 51
+              "timeNs": 8000000,
+              "ordinal": 76
             }
           }
         ],
@@ -1207,20 +1404,10 @@
     {
       "id": "timeout",
       "title": "Timeout and late reply",
-      "description": "The request expires at 20 ms. Later replies are discarded and cannot resume the caller.",
+      "description": "The first request times out at 32 ms and its late reply is discarded at 36 ms. The queued activation remains open at the 40 ms observation boundary, before its 43 ms deadline.",
       "options": {
-        "untilNs": 60000000,
-        "latencyNs": 12000000,
-        "manual": [
-          {
-            "atNs": 0,
-            "function": "first.poll"
-          },
-          {
-            "atNs": 0,
-            "function": "second.poll"
-          }
-        ]
+        "untilNs": 40000000,
+        "latencyNs": 12000000
       },
       "trace": [
         {
@@ -1268,314 +1455,570 @@
           "ordinal": 6,
           "kind": "release",
           "subject": "a1",
-          "function": "first.poll"
+          "function": "driveInputs"
         },
         {
           "timeNs": 0,
           "ordinal": 7,
           "kind": "dispatch",
           "subject": "a1",
-          "function": "first.poll",
+          "function": "driveInputs",
           "mode": "serial"
         },
         {
           "timeNs": 0,
           "ordinal": 8,
-          "kind": "release",
-          "subject": "a2",
-          "function": "second.poll"
+          "kind": "stateEntry",
+          "subject": "driveInputs",
+          "state": "First",
+          "generation": 0
         },
         {
           "timeNs": 0,
           "ordinal": 9,
-          "kind": "dispatch",
-          "subject": "a2",
-          "function": "second.poll",
-          "mode": "serial"
+          "kind": "emission",
+          "subject": "m2",
+          "offer": 1,
+          "activation": "a1",
+          "route": "firstCommand",
+          "source": "firstPoll.poll",
+          "target": "first.control.poll",
+          "payload": [],
+          "response": false
         },
         {
           "timeNs": 0,
           "ordinal": 10,
-          "kind": "request",
-          "subject": "r3",
-          "activation": "a1",
-          "endpoint": "health.check",
-          "expiryNs": 20000000
+          "kind": "admission",
+          "subject": "m2",
+          "queue": "firstCommand/forward/poll"
         },
         {
           "timeNs": 0,
           "ordinal": 11,
-          "kind": "emission",
-          "subject": "m4",
-          "offer": 1,
-          "activation": "a1",
-          "route": "firstLink",
-          "source": "first.health.check",
-          "target": "firstServer.health.check",
-          "payload": [],
-          "correlation": "r3",
-          "response": false
+          "kind": "statement",
+          "subject": "a1",
+          "kindOfStatement": "Send",
+          "line": 32
         },
         {
           "timeNs": 0,
           "ordinal": 12,
-          "kind": "admission",
-          "subject": "m4",
-          "queue": "firstLink/forward/check"
-        },
-        {
-          "timeNs": 0,
-          "ordinal": 13,
-          "kind": "request",
-          "subject": "r5",
-          "activation": "a2",
-          "endpoint": "health.check",
-          "expiryNs": 20000000
-        },
-        {
-          "timeNs": 0,
-          "ordinal": 14,
           "kind": "emission",
-          "subject": "m6",
+          "subject": "m3",
           "offer": 2,
-          "activation": "a2",
-          "route": "secondLink",
-          "source": "second.health.check",
-          "target": "secondServer.health.check",
+          "activation": "a1",
+          "route": "secondCommand",
+          "source": "secondPoll.poll",
+          "target": "second.control.poll",
           "payload": [],
-          "correlation": "r5",
           "response": false
         },
         {
           "timeNs": 0,
-          "ordinal": 15,
+          "ordinal": 13,
           "kind": "admission",
-          "subject": "m6",
-          "queue": "secondLink/forward/check"
+          "subject": "m3",
+          "queue": "secondCommand/forward/poll"
         },
         {
-          "timeNs": 12000000,
+          "timeNs": 0,
+          "ordinal": 14,
+          "kind": "statement",
+          "subject": "a1",
+          "kindOfStatement": "Send",
+          "line": 32
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 15,
+          "kind": "complete",
+          "subject": "a1",
+          "function": "driveInputs"
+        },
+        {
+          "timeNs": 1000000,
           "ordinal": 16,
-          "kind": "ready",
-          "subject": "m4",
-          "queue": "firstLink/forward/check"
+          "kind": "release",
+          "subject": "a4",
+          "function": "driveInputs"
         },
         {
-          "timeNs": 12000000,
+          "timeNs": 1000000,
           "ordinal": 17,
-          "kind": "release",
-          "subject": "a7",
-          "function": "firstServer.checkHealth"
+          "kind": "dispatch",
+          "subject": "a4",
+          "function": "driveInputs",
+          "mode": "serial"
         },
         {
-          "timeNs": 12000000,
+          "timeNs": 1000000,
           "ordinal": 18,
-          "kind": "delivery",
-          "subject": "m4",
-          "attempt": 1,
-          "route": "firstLink",
-          "source": "first.health.check",
-          "target": "firstServer.health.check",
-          "correlation": "r3"
+          "kind": "transition",
+          "subject": "driveInputs",
+          "transition": "repeatPoll",
+          "from": "First",
+          "to": "Again"
         },
         {
-          "timeNs": 12000000,
+          "timeNs": 1000000,
           "ordinal": 19,
-          "kind": "dispatch",
-          "subject": "a7",
-          "function": "firstServer.checkHealth",
-          "mode": "serial"
+          "kind": "stateExit",
+          "subject": "driveInputs",
+          "state": "First"
         },
         {
-          "timeNs": 12000000,
+          "timeNs": 1000000,
           "ordinal": 20,
-          "kind": "ready",
-          "subject": "m6",
-          "queue": "secondLink/forward/check"
+          "kind": "stateEntry",
+          "subject": "driveInputs",
+          "state": "Again",
+          "generation": 1
         },
         {
-          "timeNs": 12000000,
+          "timeNs": 1000000,
           "ordinal": 21,
-          "kind": "release",
-          "subject": "a8",
-          "function": "secondServer.checkHealth"
+          "kind": "emission",
+          "subject": "m5",
+          "offer": 3,
+          "activation": "a4",
+          "route": "firstCommand",
+          "source": "firstPoll.poll",
+          "target": "first.control.poll",
+          "payload": [],
+          "response": false
         },
         {
-          "timeNs": 12000000,
+          "timeNs": 1000000,
           "ordinal": 22,
-          "kind": "delivery",
-          "subject": "m6",
-          "attempt": 1,
-          "route": "secondLink",
-          "source": "second.health.check",
-          "target": "secondServer.health.check",
-          "correlation": "r5"
+          "kind": "admission",
+          "subject": "m5",
+          "queue": "firstCommand/forward/poll"
         },
         {
-          "timeNs": 12000000,
+          "timeNs": 1000000,
           "ordinal": 23,
-          "kind": "dispatch",
-          "subject": "a8",
-          "function": "secondServer.checkHealth",
-          "mode": "serial"
+          "kind": "statement",
+          "subject": "a4",
+          "kindOfStatement": "Send",
+          "line": 33
         },
         {
-          "timeNs": 12000000,
+          "timeNs": 1000000,
           "ordinal": 24,
           "kind": "complete",
-          "subject": "a7",
-          "function": "firstServer.checkHealth",
-          "result": true
+          "subject": "a4",
+          "function": "driveInputs"
         },
         {
           "timeNs": 12000000,
           "ordinal": 25,
-          "kind": "emission",
-          "subject": "m9",
-          "offer": 3,
-          "activation": "a7",
-          "route": "firstLink",
-          "source": "firstServer.health.check",
-          "target": "first.health.check",
-          "payload": [],
-          "correlation": "r3",
-          "response": true
+          "kind": "ready",
+          "subject": "m2",
+          "queue": "firstCommand/forward/poll"
         },
         {
           "timeNs": 12000000,
           "ordinal": 26,
-          "kind": "admission",
-          "subject": "m9",
-          "queue": "firstLink/reverse/check"
+          "kind": "release",
+          "subject": "a6",
+          "function": "first.poll"
         },
         {
           "timeNs": 12000000,
           "ordinal": 27,
-          "kind": "complete",
-          "subject": "a8",
-          "function": "secondServer.checkHealth",
-          "result": true
+          "kind": "delivery",
+          "subject": "m2",
+          "attempt": 1,
+          "route": "firstCommand",
+          "source": "firstPoll.poll",
+          "target": "first.control.poll"
         },
         {
           "timeNs": 12000000,
           "ordinal": 28,
-          "kind": "emission",
-          "subject": "m10",
-          "offer": 4,
-          "activation": "a8",
-          "route": "secondLink",
-          "source": "secondServer.health.check",
-          "target": "second.health.check",
-          "payload": [],
-          "correlation": "r5",
-          "response": true
+          "kind": "dispatch",
+          "subject": "a6",
+          "function": "first.poll",
+          "mode": "serial"
         },
         {
           "timeNs": 12000000,
           "ordinal": 29,
+          "kind": "ready",
+          "subject": "m3",
+          "queue": "secondCommand/forward/poll"
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 30,
+          "kind": "release",
+          "subject": "a7",
+          "function": "second.poll"
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 31,
+          "kind": "delivery",
+          "subject": "m3",
+          "attempt": 1,
+          "route": "secondCommand",
+          "source": "secondPoll.poll",
+          "target": "second.control.poll"
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 32,
+          "kind": "dispatch",
+          "subject": "a7",
+          "function": "second.poll",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 33,
+          "kind": "request",
+          "subject": "r8",
+          "activation": "a6",
+          "endpoint": "health.check",
+          "expiryNs": 32000000
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 34,
+          "kind": "emission",
+          "subject": "m9",
+          "offer": 4,
+          "activation": "a6",
+          "route": "firstLink",
+          "source": "first.health.check",
+          "target": "firstServer.health.check",
+          "payload": [],
+          "correlation": "r8",
+          "response": false
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 35,
           "kind": "admission",
-          "subject": "m10",
+          "subject": "m9",
+          "queue": "firstLink/forward/check"
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 36,
+          "kind": "request",
+          "subject": "r10",
+          "activation": "a7",
+          "endpoint": "health.check",
+          "expiryNs": 32000000
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 37,
+          "kind": "emission",
+          "subject": "m11",
+          "offer": 5,
+          "activation": "a7",
+          "route": "secondLink",
+          "source": "second.health.check",
+          "target": "secondServer.health.check",
+          "payload": [],
+          "correlation": "r10",
+          "response": false
+        },
+        {
+          "timeNs": 12000000,
+          "ordinal": 38,
+          "kind": "admission",
+          "subject": "m11",
+          "queue": "secondLink/forward/check"
+        },
+        {
+          "timeNs": 13000000,
+          "ordinal": 39,
+          "kind": "ready",
+          "subject": "m5",
+          "queue": "firstCommand/forward/poll"
+        },
+        {
+          "timeNs": 13000000,
+          "ordinal": 40,
+          "kind": "release",
+          "subject": "a12",
+          "function": "first.poll"
+        },
+        {
+          "timeNs": 24000000,
+          "ordinal": 41,
+          "kind": "ready",
+          "subject": "m9",
+          "queue": "firstLink/forward/check"
+        },
+        {
+          "timeNs": 24000000,
+          "ordinal": 42,
+          "kind": "release",
+          "subject": "a13",
+          "function": "firstServer.checkHealth"
+        },
+        {
+          "timeNs": 24000000,
+          "ordinal": 43,
+          "kind": "delivery",
+          "subject": "m9",
+          "attempt": 1,
+          "route": "firstLink",
+          "source": "first.health.check",
+          "target": "firstServer.health.check",
+          "correlation": "r8"
+        },
+        {
+          "timeNs": 24000000,
+          "ordinal": 44,
+          "kind": "dispatch",
+          "subject": "a13",
+          "function": "firstServer.checkHealth",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 24000000,
+          "ordinal": 45,
+          "kind": "ready",
+          "subject": "m11",
+          "queue": "secondLink/forward/check"
+        },
+        {
+          "timeNs": 24000000,
+          "ordinal": 46,
+          "kind": "release",
+          "subject": "a14",
+          "function": "secondServer.checkHealth"
+        },
+        {
+          "timeNs": 24000000,
+          "ordinal": 47,
+          "kind": "delivery",
+          "subject": "m11",
+          "attempt": 1,
+          "route": "secondLink",
+          "source": "second.health.check",
+          "target": "secondServer.health.check",
+          "correlation": "r10"
+        },
+        {
+          "timeNs": 24000000,
+          "ordinal": 48,
+          "kind": "dispatch",
+          "subject": "a14",
+          "function": "secondServer.checkHealth",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 24000000,
+          "ordinal": 49,
+          "kind": "complete",
+          "subject": "a13",
+          "function": "firstServer.checkHealth",
+          "result": true
+        },
+        {
+          "timeNs": 24000000,
+          "ordinal": 50,
+          "kind": "emission",
+          "subject": "m15",
+          "offer": 6,
+          "activation": "a13",
+          "route": "firstLink",
+          "source": "firstServer.health.check",
+          "target": "first.health.check",
+          "payload": [],
+          "correlation": "r8",
+          "response": true
+        },
+        {
+          "timeNs": 24000000,
+          "ordinal": 51,
+          "kind": "admission",
+          "subject": "m15",
+          "queue": "firstLink/reverse/check"
+        },
+        {
+          "timeNs": 24000000,
+          "ordinal": 52,
+          "kind": "complete",
+          "subject": "a14",
+          "function": "secondServer.checkHealth",
+          "result": true
+        },
+        {
+          "timeNs": 24000000,
+          "ordinal": 53,
+          "kind": "emission",
+          "subject": "m16",
+          "offer": 7,
+          "activation": "a14",
+          "route": "secondLink",
+          "source": "secondServer.health.check",
+          "target": "second.health.check",
+          "payload": [],
+          "correlation": "r10",
+          "response": true
+        },
+        {
+          "timeNs": 24000000,
+          "ordinal": 54,
+          "kind": "admission",
+          "subject": "m16",
           "queue": "secondLink/reverse/check"
         },
         {
-          "timeNs": 20000000,
-          "ordinal": 30,
+          "timeNs": 32000000,
+          "ordinal": 55,
           "kind": "timeout",
-          "subject": "r3"
+          "subject": "r8"
         },
         {
-          "timeNs": 20000000,
-          "ordinal": 31,
+          "timeNs": 32000000,
+          "ordinal": 56,
           "kind": "requestComplete",
-          "subject": "r3",
+          "subject": "r8",
           "state": "Failed",
           "failure": "Timeout"
         },
         {
-          "timeNs": 20000000,
-          "ordinal": 32,
+          "timeNs": 32000000,
+          "ordinal": 57,
           "kind": "timeout",
-          "subject": "r5"
+          "subject": "r10"
         },
         {
-          "timeNs": 20000000,
-          "ordinal": 33,
+          "timeNs": 32000000,
+          "ordinal": 58,
           "kind": "requestComplete",
-          "subject": "r5",
+          "subject": "r10",
           "state": "Failed",
           "failure": "Timeout"
         },
         {
-          "timeNs": 20000000,
-          "ordinal": 34,
+          "timeNs": 32000000,
+          "ordinal": 59,
           "kind": "failure",
-          "subject": "a1",
+          "subject": "a6",
           "function": "first.poll",
           "code": "Fail",
           "message": "request failed"
         },
         {
-          "timeNs": 20000000,
-          "ordinal": 35,
+          "timeNs": 32000000,
+          "ordinal": 60,
+          "kind": "delivery",
+          "subject": "m5",
+          "attempt": 1,
+          "route": "firstCommand",
+          "source": "firstPoll.poll",
+          "target": "first.control.poll"
+        },
+        {
+          "timeNs": 32000000,
+          "ordinal": 61,
+          "kind": "dispatch",
+          "subject": "a12",
+          "function": "first.poll",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 32000000,
+          "ordinal": 62,
           "kind": "failure",
-          "subject": "a2",
+          "subject": "a7",
           "function": "second.poll",
           "code": "Fail",
           "message": "request failed"
         },
         {
-          "timeNs": 24000000,
-          "ordinal": 36,
+          "timeNs": 32000000,
+          "ordinal": 63,
+          "kind": "request",
+          "subject": "r17",
+          "activation": "a12",
+          "endpoint": "health.check",
+          "expiryNs": 52000000
+        },
+        {
+          "timeNs": 32000000,
+          "ordinal": 64,
+          "kind": "emission",
+          "subject": "m18",
+          "offer": 8,
+          "activation": "a12",
+          "route": "firstLink",
+          "source": "first.health.check",
+          "target": "firstServer.health.check",
+          "payload": [],
+          "correlation": "r17",
+          "response": false
+        },
+        {
+          "timeNs": 32000000,
+          "ordinal": 65,
+          "kind": "admission",
+          "subject": "m18",
+          "queue": "firstLink/forward/check"
+        },
+        {
+          "timeNs": 36000000,
+          "ordinal": 66,
           "kind": "ready",
-          "subject": "m9",
+          "subject": "m15",
           "queue": "firstLink/reverse/check"
         },
         {
-          "timeNs": 24000000,
-          "ordinal": 37,
+          "timeNs": 36000000,
+          "ordinal": 67,
           "kind": "delivery",
-          "subject": "m9",
-          "correlation": "r3",
+          "subject": "m15",
+          "correlation": "r8",
           "route": "firstLink"
         },
         {
-          "timeNs": 24000000,
-          "ordinal": 38,
+          "timeNs": 36000000,
+          "ordinal": 68,
           "kind": "discardResponse",
-          "subject": "r3",
+          "subject": "r8",
           "reason": "TerminalCorrelation"
         },
         {
-          "timeNs": 24000000,
-          "ordinal": 39,
+          "timeNs": 36000000,
+          "ordinal": 69,
           "kind": "ready",
-          "subject": "m10",
+          "subject": "m16",
           "queue": "secondLink/reverse/check"
         },
         {
-          "timeNs": 24000000,
-          "ordinal": 40,
+          "timeNs": 36000000,
+          "ordinal": 70,
           "kind": "delivery",
-          "subject": "m10",
-          "correlation": "r5",
+          "subject": "m16",
+          "correlation": "r10",
           "route": "secondLink"
         },
         {
-          "timeNs": 24000000,
-          "ordinal": 41,
+          "timeNs": 36000000,
+          "ordinal": 71,
           "kind": "discardResponse",
-          "subject": "r5",
+          "subject": "r10",
           "reason": "TerminalCorrelation"
         }
       ],
       "timing": {
         "root": "FunctionTiming::Demo",
         "profile": "swaml-reference/1.3",
-        "status": "quiescent",
-        "endNs": 30000000,
+        "status": "horizon",
+        "endNs": 40000000,
         "activations": [
           {
-            "id": "a1",
+            "id": "a6",
             "functionPath": "first.poll",
             "contract": {
               "functionPath": "first.poll",
@@ -1585,58 +2028,58 @@
               "deadlineNs": 30000000
             },
             "released": {
-              "timeNs": 0,
-              "ordinal": 6
+              "timeNs": 12000000,
+              "ordinal": 26
             },
             "outcome": "failure",
-            "deadlineAtNs": 30000000,
+            "deadlineAtNs": 42000000,
             "intervals": [
               {
                 "state": "ready",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 6
+                  "timeNs": 12000000,
+                  "ordinal": 26
                 },
                 "end": {
-                  "timeNs": 0,
-                  "ordinal": 7
+                  "timeNs": 12000000,
+                  "ordinal": 28
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 7
+                  "timeNs": 12000000,
+                  "ordinal": 28
                 },
                 "end": {
-                  "timeNs": 0,
-                  "ordinal": 10
+                  "timeNs": 12000000,
+                  "ordinal": 33
                 },
                 "open": false
               },
               {
                 "state": "requestWait",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 10
+                  "timeNs": 12000000,
+                  "ordinal": 33
                 },
-                "correlation": "r3",
+                "correlation": "r8",
                 "end": {
-                  "timeNs": 20000000,
-                  "ordinal": 31
+                  "timeNs": 32000000,
+                  "ordinal": 56
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 20000000,
-                  "ordinal": 31
+                  "timeNs": 32000000,
+                  "ordinal": 56
                 },
                 "end": {
-                  "timeNs": 20000000,
-                  "ordinal": 34
+                  "timeNs": 32000000,
+                  "ordinal": 59
                 },
                 "open": false
               }
@@ -1645,71 +2088,71 @@
               {
                 "kind": "release",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 6
+                  "timeNs": 12000000,
+                  "ordinal": 26
                 }
               },
               {
                 "kind": "dispatch",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 7
+                  "timeNs": 12000000,
+                  "ordinal": 28
                 }
               },
               {
                 "kind": "request",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 10
+                  "timeNs": 12000000,
+                  "ordinal": 33
                 },
-                "correlation": "r3"
+                "correlation": "r8"
               },
               {
                 "kind": "timeout",
                 "point": {
-                  "timeNs": 20000000,
-                  "ordinal": 30
+                  "timeNs": 32000000,
+                  "ordinal": 55
                 },
-                "correlation": "r3"
+                "correlation": "r8"
               },
               {
                 "kind": "requestComplete",
                 "point": {
-                  "timeNs": 20000000,
-                  "ordinal": 31
+                  "timeNs": 32000000,
+                  "ordinal": 56
                 },
-                "correlation": "r3",
+                "correlation": "r8",
                 "detail": "Timeout"
               },
               {
                 "kind": "failure",
                 "point": {
-                  "timeNs": 20000000,
-                  "ordinal": 34
+                  "timeNs": 32000000,
+                  "ordinal": 59
                 },
                 "detail": "Fail"
               },
               {
                 "kind": "discardResponse",
                 "point": {
-                  "timeNs": 24000000,
-                  "ordinal": 38
+                  "timeNs": 36000000,
+                  "ordinal": 68
                 },
-                "correlation": "r3",
+                "correlation": "r8",
                 "detail": "TerminalCorrelation"
               }
             ],
             "dispatched": {
-              "timeNs": 0,
-              "ordinal": 7
+              "timeNs": 12000000,
+              "ordinal": 28
             },
             "terminal": {
-              "timeNs": 20000000,
-              "ordinal": 34
+              "timeNs": 32000000,
+              "ordinal": 59
             }
           },
           {
-            "id": "a2",
+            "id": "a7",
             "functionPath": "second.poll",
             "contract": {
               "functionPath": "second.poll",
@@ -1719,58 +2162,58 @@
               "deadlineNs": 30000000
             },
             "released": {
-              "timeNs": 0,
-              "ordinal": 8
+              "timeNs": 12000000,
+              "ordinal": 30
             },
             "outcome": "failure",
-            "deadlineAtNs": 30000000,
+            "deadlineAtNs": 42000000,
             "intervals": [
               {
                 "state": "ready",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 8
+                  "timeNs": 12000000,
+                  "ordinal": 30
                 },
                 "end": {
-                  "timeNs": 0,
-                  "ordinal": 9
+                  "timeNs": 12000000,
+                  "ordinal": 32
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 9
+                  "timeNs": 12000000,
+                  "ordinal": 32
                 },
                 "end": {
-                  "timeNs": 0,
-                  "ordinal": 13
+                  "timeNs": 12000000,
+                  "ordinal": 36
                 },
                 "open": false
               },
               {
                 "state": "requestWait",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 13
+                  "timeNs": 12000000,
+                  "ordinal": 36
                 },
-                "correlation": "r5",
+                "correlation": "r10",
                 "end": {
-                  "timeNs": 20000000,
-                  "ordinal": 33
+                  "timeNs": 32000000,
+                  "ordinal": 58
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 20000000,
-                  "ordinal": 33
+                  "timeNs": 32000000,
+                  "ordinal": 58
                 },
                 "end": {
-                  "timeNs": 20000000,
-                  "ordinal": 35
+                  "timeNs": 32000000,
+                  "ordinal": 62
                 },
                 "open": false
               }
@@ -1779,71 +2222,154 @@
               {
                 "kind": "release",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 8
+                  "timeNs": 12000000,
+                  "ordinal": 30
                 }
               },
               {
                 "kind": "dispatch",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 9
+                  "timeNs": 12000000,
+                  "ordinal": 32
                 }
               },
               {
                 "kind": "request",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 13
+                  "timeNs": 12000000,
+                  "ordinal": 36
                 },
-                "correlation": "r5"
+                "correlation": "r10"
               },
               {
                 "kind": "timeout",
                 "point": {
-                  "timeNs": 20000000,
-                  "ordinal": 32
+                  "timeNs": 32000000,
+                  "ordinal": 57
                 },
-                "correlation": "r5"
+                "correlation": "r10"
               },
               {
                 "kind": "requestComplete",
                 "point": {
-                  "timeNs": 20000000,
-                  "ordinal": 33
+                  "timeNs": 32000000,
+                  "ordinal": 58
                 },
-                "correlation": "r5",
+                "correlation": "r10",
                 "detail": "Timeout"
               },
               {
                 "kind": "failure",
                 "point": {
-                  "timeNs": 20000000,
-                  "ordinal": 35
+                  "timeNs": 32000000,
+                  "ordinal": 62
                 },
                 "detail": "Fail"
               },
               {
                 "kind": "discardResponse",
                 "point": {
-                  "timeNs": 24000000,
-                  "ordinal": 41
+                  "timeNs": 36000000,
+                  "ordinal": 71
                 },
-                "correlation": "r5",
+                "correlation": "r10",
                 "detail": "TerminalCorrelation"
               }
             ],
             "dispatched": {
-              "timeNs": 0,
-              "ordinal": 9
+              "timeNs": 12000000,
+              "ordinal": 32
             },
             "terminal": {
-              "timeNs": 20000000,
-              "ordinal": 35
+              "timeNs": 32000000,
+              "ordinal": 62
             }
           },
           {
-            "id": "a7",
+            "id": "a12",
+            "functionPath": "first.poll",
+            "contract": {
+              "functionPath": "first.poll",
+              "definitionPath": "FunctionTiming::Client.poll",
+              "concurrency": "serial",
+              "wcetNs": 1000000,
+              "deadlineNs": 30000000
+            },
+            "released": {
+              "timeNs": 13000000,
+              "ordinal": 40
+            },
+            "outcome": "open",
+            "deadlineAtNs": 43000000,
+            "intervals": [
+              {
+                "state": "ready",
+                "start": {
+                  "timeNs": 13000000,
+                  "ordinal": 40
+                },
+                "end": {
+                  "timeNs": 32000000,
+                  "ordinal": 61
+                },
+                "open": false
+              },
+              {
+                "state": "running",
+                "start": {
+                  "timeNs": 32000000,
+                  "ordinal": 61
+                },
+                "end": {
+                  "timeNs": 32000000,
+                  "ordinal": 63
+                },
+                "open": false
+              },
+              {
+                "state": "requestWait",
+                "start": {
+                  "timeNs": 32000000,
+                  "ordinal": 63
+                },
+                "correlation": "r17",
+                "end": {
+                  "timeNs": 40000000
+                },
+                "open": true
+              }
+            ],
+            "markers": [
+              {
+                "kind": "release",
+                "point": {
+                  "timeNs": 13000000,
+                  "ordinal": 40
+                }
+              },
+              {
+                "kind": "dispatch",
+                "point": {
+                  "timeNs": 32000000,
+                  "ordinal": 61
+                }
+              },
+              {
+                "kind": "request",
+                "point": {
+                  "timeNs": 32000000,
+                  "ordinal": 63
+                },
+                "correlation": "r17"
+              }
+            ],
+            "dispatched": {
+              "timeNs": 32000000,
+              "ordinal": 61
+            }
+          },
+          {
+            "id": "a13",
             "functionPath": "firstServer.checkHealth",
             "contract": {
               "functionPath": "firstServer.checkHealth",
@@ -1853,33 +2379,33 @@
               "deadlineNs": 10000000
             },
             "released": {
-              "timeNs": 12000000,
-              "ordinal": 17
+              "timeNs": 24000000,
+              "ordinal": 42
             },
             "outcome": "complete",
-            "deadlineAtNs": 22000000,
+            "deadlineAtNs": 34000000,
             "intervals": [
               {
                 "state": "ready",
                 "start": {
-                  "timeNs": 12000000,
-                  "ordinal": 17
+                  "timeNs": 24000000,
+                  "ordinal": 42
                 },
                 "end": {
-                  "timeNs": 12000000,
-                  "ordinal": 19
+                  "timeNs": 24000000,
+                  "ordinal": 44
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 12000000,
-                  "ordinal": 19
+                  "timeNs": 24000000,
+                  "ordinal": 44
                 },
                 "end": {
-                  "timeNs": 12000000,
-                  "ordinal": 24
+                  "timeNs": 24000000,
+                  "ordinal": 49
                 },
                 "open": false
               }
@@ -1888,36 +2414,36 @@
               {
                 "kind": "release",
                 "point": {
-                  "timeNs": 12000000,
-                  "ordinal": 17
+                  "timeNs": 24000000,
+                  "ordinal": 42
                 }
               },
               {
                 "kind": "dispatch",
                 "point": {
-                  "timeNs": 12000000,
-                  "ordinal": 19
+                  "timeNs": 24000000,
+                  "ordinal": 44
                 }
               },
               {
                 "kind": "complete",
                 "point": {
-                  "timeNs": 12000000,
-                  "ordinal": 24
+                  "timeNs": 24000000,
+                  "ordinal": 49
                 }
               }
             ],
             "dispatched": {
-              "timeNs": 12000000,
-              "ordinal": 19
+              "timeNs": 24000000,
+              "ordinal": 44
             },
             "terminal": {
-              "timeNs": 12000000,
-              "ordinal": 24
+              "timeNs": 24000000,
+              "ordinal": 49
             }
           },
           {
-            "id": "a8",
+            "id": "a14",
             "functionPath": "secondServer.checkHealth",
             "contract": {
               "functionPath": "secondServer.checkHealth",
@@ -1927,33 +2453,33 @@
               "deadlineNs": 10000000
             },
             "released": {
-              "timeNs": 12000000,
-              "ordinal": 21
+              "timeNs": 24000000,
+              "ordinal": 46
             },
             "outcome": "complete",
-            "deadlineAtNs": 22000000,
+            "deadlineAtNs": 34000000,
             "intervals": [
               {
                 "state": "ready",
                 "start": {
-                  "timeNs": 12000000,
-                  "ordinal": 21
+                  "timeNs": 24000000,
+                  "ordinal": 46
                 },
                 "end": {
-                  "timeNs": 12000000,
-                  "ordinal": 23
+                  "timeNs": 24000000,
+                  "ordinal": 48
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 12000000,
-                  "ordinal": 23
+                  "timeNs": 24000000,
+                  "ordinal": 48
                 },
                 "end": {
-                  "timeNs": 12000000,
-                  "ordinal": 27
+                  "timeNs": 24000000,
+                  "ordinal": 52
                 },
                 "open": false
               }
@@ -1962,32 +2488,32 @@
               {
                 "kind": "release",
                 "point": {
-                  "timeNs": 12000000,
-                  "ordinal": 21
+                  "timeNs": 24000000,
+                  "ordinal": 46
                 }
               },
               {
                 "kind": "dispatch",
                 "point": {
-                  "timeNs": 12000000,
-                  "ordinal": 23
+                  "timeNs": 24000000,
+                  "ordinal": 48
                 }
               },
               {
                 "kind": "complete",
                 "point": {
-                  "timeNs": 12000000,
-                  "ordinal": 27
+                  "timeNs": 24000000,
+                  "ordinal": 52
                 }
               }
             ],
             "dispatched": {
-              "timeNs": 12000000,
-              "ordinal": 23
+              "timeNs": 24000000,
+              "ordinal": 48
             },
             "terminal": {
-              "timeNs": 12000000,
-              "ordinal": 27
+              "timeNs": 24000000,
+              "ordinal": 52
             }
           }
         ],
@@ -1997,24 +2523,10 @@
     {
       "id": "horizon",
       "title": "Open at the horizon",
-      "description": "The observation ends at 3 ms while callers await responses and one release awaits dispatch.",
+      "description": "The observation ends while callers await responses and one routed input awaits serial dispatch.",
       "options": {
-        "untilNs": 3000000,
-        "latencyNs": 2000000,
-        "manual": [
-          {
-            "atNs": 0,
-            "function": "first.poll"
-          },
-          {
-            "atNs": 0,
-            "function": "second.poll"
-          },
-          {
-            "atNs": 1000000,
-            "function": "first.poll"
-          }
-        ]
+        "untilNs": 5000000,
+        "latencyNs": 2000000
       },
       "trace": [
         {
@@ -2062,220 +2574,421 @@
           "ordinal": 6,
           "kind": "release",
           "subject": "a1",
-          "function": "first.poll"
+          "function": "driveInputs"
         },
         {
           "timeNs": 0,
           "ordinal": 7,
           "kind": "dispatch",
           "subject": "a1",
-          "function": "first.poll",
+          "function": "driveInputs",
           "mode": "serial"
         },
         {
           "timeNs": 0,
           "ordinal": 8,
-          "kind": "release",
-          "subject": "a2",
-          "function": "second.poll"
+          "kind": "stateEntry",
+          "subject": "driveInputs",
+          "state": "First",
+          "generation": 0
         },
         {
           "timeNs": 0,
           "ordinal": 9,
-          "kind": "dispatch",
-          "subject": "a2",
-          "function": "second.poll",
-          "mode": "serial"
+          "kind": "emission",
+          "subject": "m2",
+          "offer": 1,
+          "activation": "a1",
+          "route": "firstCommand",
+          "source": "firstPoll.poll",
+          "target": "first.control.poll",
+          "payload": [],
+          "response": false
         },
         {
           "timeNs": 0,
           "ordinal": 10,
-          "kind": "request",
-          "subject": "r3",
-          "activation": "a1",
-          "endpoint": "health.check",
-          "expiryNs": 20000000
+          "kind": "admission",
+          "subject": "m2",
+          "queue": "firstCommand/forward/poll"
         },
         {
           "timeNs": 0,
           "ordinal": 11,
-          "kind": "emission",
-          "subject": "m4",
-          "offer": 1,
-          "activation": "a1",
-          "route": "firstLink",
-          "source": "first.health.check",
-          "target": "firstServer.health.check",
-          "payload": [],
-          "correlation": "r3",
-          "response": false
+          "kind": "statement",
+          "subject": "a1",
+          "kindOfStatement": "Send",
+          "line": 32
         },
         {
           "timeNs": 0,
           "ordinal": 12,
-          "kind": "admission",
-          "subject": "m4",
-          "queue": "firstLink/forward/check"
-        },
-        {
-          "timeNs": 0,
-          "ordinal": 13,
-          "kind": "request",
-          "subject": "r5",
-          "activation": "a2",
-          "endpoint": "health.check",
-          "expiryNs": 20000000
-        },
-        {
-          "timeNs": 0,
-          "ordinal": 14,
           "kind": "emission",
-          "subject": "m6",
+          "subject": "m3",
           "offer": 2,
-          "activation": "a2",
-          "route": "secondLink",
-          "source": "second.health.check",
-          "target": "secondServer.health.check",
+          "activation": "a1",
+          "route": "secondCommand",
+          "source": "secondPoll.poll",
+          "target": "second.control.poll",
           "payload": [],
-          "correlation": "r5",
           "response": false
         },
         {
           "timeNs": 0,
-          "ordinal": 15,
+          "ordinal": 13,
           "kind": "admission",
-          "subject": "m6",
-          "queue": "secondLink/forward/check"
+          "subject": "m3",
+          "queue": "secondCommand/forward/poll"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 14,
+          "kind": "statement",
+          "subject": "a1",
+          "kindOfStatement": "Send",
+          "line": 32
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 15,
+          "kind": "complete",
+          "subject": "a1",
+          "function": "driveInputs"
         },
         {
           "timeNs": 1000000,
           "ordinal": 16,
           "kind": "release",
-          "subject": "a7",
-          "function": "first.poll"
+          "subject": "a4",
+          "function": "driveInputs"
         },
         {
-          "timeNs": 2000000,
+          "timeNs": 1000000,
           "ordinal": 17,
-          "kind": "ready",
-          "subject": "m4",
-          "queue": "firstLink/forward/check"
+          "kind": "dispatch",
+          "subject": "a4",
+          "function": "driveInputs",
+          "mode": "serial"
         },
         {
-          "timeNs": 2000000,
+          "timeNs": 1000000,
           "ordinal": 18,
-          "kind": "release",
-          "subject": "a8",
-          "function": "firstServer.checkHealth"
+          "kind": "transition",
+          "subject": "driveInputs",
+          "transition": "repeatPoll",
+          "from": "First",
+          "to": "Again"
         },
         {
-          "timeNs": 2000000,
+          "timeNs": 1000000,
           "ordinal": 19,
-          "kind": "delivery",
-          "subject": "m4",
-          "attempt": 1,
-          "route": "firstLink",
-          "source": "first.health.check",
-          "target": "firstServer.health.check",
-          "correlation": "r3"
+          "kind": "stateExit",
+          "subject": "driveInputs",
+          "state": "First"
         },
         {
-          "timeNs": 2000000,
+          "timeNs": 1000000,
           "ordinal": 20,
-          "kind": "dispatch",
-          "subject": "a8",
-          "function": "firstServer.checkHealth",
-          "mode": "serial"
+          "kind": "stateEntry",
+          "subject": "driveInputs",
+          "state": "Again",
+          "generation": 1
         },
         {
-          "timeNs": 2000000,
+          "timeNs": 1000000,
           "ordinal": 21,
-          "kind": "ready",
-          "subject": "m6",
-          "queue": "secondLink/forward/check"
+          "kind": "emission",
+          "subject": "m5",
+          "offer": 3,
+          "activation": "a4",
+          "route": "firstCommand",
+          "source": "firstPoll.poll",
+          "target": "first.control.poll",
+          "payload": [],
+          "response": false
         },
         {
-          "timeNs": 2000000,
+          "timeNs": 1000000,
           "ordinal": 22,
-          "kind": "release",
-          "subject": "a9",
-          "function": "secondServer.checkHealth"
+          "kind": "admission",
+          "subject": "m5",
+          "queue": "firstCommand/forward/poll"
         },
         {
-          "timeNs": 2000000,
+          "timeNs": 1000000,
           "ordinal": 23,
-          "kind": "delivery",
-          "subject": "m6",
-          "attempt": 1,
-          "route": "secondLink",
-          "source": "second.health.check",
-          "target": "secondServer.health.check",
-          "correlation": "r5"
+          "kind": "statement",
+          "subject": "a4",
+          "kindOfStatement": "Send",
+          "line": 33
         },
         {
-          "timeNs": 2000000,
+          "timeNs": 1000000,
           "ordinal": 24,
-          "kind": "dispatch",
-          "subject": "a9",
-          "function": "secondServer.checkHealth",
-          "mode": "serial"
+          "kind": "complete",
+          "subject": "a4",
+          "function": "driveInputs"
         },
         {
           "timeNs": 2000000,
           "ordinal": 25,
-          "kind": "complete",
-          "subject": "a8",
-          "function": "firstServer.checkHealth",
-          "result": true
+          "kind": "ready",
+          "subject": "m2",
+          "queue": "firstCommand/forward/poll"
         },
         {
           "timeNs": 2000000,
           "ordinal": 26,
-          "kind": "emission",
-          "subject": "m10",
-          "offer": 3,
-          "activation": "a8",
-          "route": "firstLink",
-          "source": "firstServer.health.check",
-          "target": "first.health.check",
-          "payload": [],
-          "correlation": "r3",
-          "response": true
+          "kind": "release",
+          "subject": "a6",
+          "function": "first.poll"
         },
         {
           "timeNs": 2000000,
           "ordinal": 27,
-          "kind": "admission",
-          "subject": "m10",
-          "queue": "firstLink/reverse/check"
+          "kind": "delivery",
+          "subject": "m2",
+          "attempt": 1,
+          "route": "firstCommand",
+          "source": "firstPoll.poll",
+          "target": "first.control.poll"
         },
         {
           "timeNs": 2000000,
           "ordinal": 28,
-          "kind": "complete",
-          "subject": "a9",
-          "function": "secondServer.checkHealth",
-          "result": true
+          "kind": "dispatch",
+          "subject": "a6",
+          "function": "first.poll",
+          "mode": "serial"
         },
         {
           "timeNs": 2000000,
           "ordinal": 29,
-          "kind": "emission",
-          "subject": "m11",
-          "offer": 4,
-          "activation": "a9",
-          "route": "secondLink",
-          "source": "secondServer.health.check",
-          "target": "second.health.check",
-          "payload": [],
-          "correlation": "r5",
-          "response": true
+          "kind": "ready",
+          "subject": "m3",
+          "queue": "secondCommand/forward/poll"
         },
         {
           "timeNs": 2000000,
           "ordinal": 30,
+          "kind": "release",
+          "subject": "a7",
+          "function": "second.poll"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 31,
+          "kind": "delivery",
+          "subject": "m3",
+          "attempt": 1,
+          "route": "secondCommand",
+          "source": "secondPoll.poll",
+          "target": "second.control.poll"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 32,
+          "kind": "dispatch",
+          "subject": "a7",
+          "function": "second.poll",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 33,
+          "kind": "request",
+          "subject": "r8",
+          "activation": "a6",
+          "endpoint": "health.check",
+          "expiryNs": 22000000
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 34,
+          "kind": "emission",
+          "subject": "m9",
+          "offer": 4,
+          "activation": "a6",
+          "route": "firstLink",
+          "source": "first.health.check",
+          "target": "firstServer.health.check",
+          "payload": [],
+          "correlation": "r8",
+          "response": false
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 35,
+          "kind": "admission",
+          "subject": "m9",
+          "queue": "firstLink/forward/check"
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 36,
+          "kind": "request",
+          "subject": "r10",
+          "activation": "a7",
+          "endpoint": "health.check",
+          "expiryNs": 22000000
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 37,
+          "kind": "emission",
+          "subject": "m11",
+          "offer": 5,
+          "activation": "a7",
+          "route": "secondLink",
+          "source": "second.health.check",
+          "target": "secondServer.health.check",
+          "payload": [],
+          "correlation": "r10",
+          "response": false
+        },
+        {
+          "timeNs": 2000000,
+          "ordinal": 38,
           "kind": "admission",
           "subject": "m11",
+          "queue": "secondLink/forward/check"
+        },
+        {
+          "timeNs": 3000000,
+          "ordinal": 39,
+          "kind": "ready",
+          "subject": "m5",
+          "queue": "firstCommand/forward/poll"
+        },
+        {
+          "timeNs": 3000000,
+          "ordinal": 40,
+          "kind": "release",
+          "subject": "a12",
+          "function": "first.poll"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 41,
+          "kind": "ready",
+          "subject": "m9",
+          "queue": "firstLink/forward/check"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 42,
+          "kind": "release",
+          "subject": "a13",
+          "function": "firstServer.checkHealth"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 43,
+          "kind": "delivery",
+          "subject": "m9",
+          "attempt": 1,
+          "route": "firstLink",
+          "source": "first.health.check",
+          "target": "firstServer.health.check",
+          "correlation": "r8"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 44,
+          "kind": "dispatch",
+          "subject": "a13",
+          "function": "firstServer.checkHealth",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 45,
+          "kind": "ready",
+          "subject": "m11",
+          "queue": "secondLink/forward/check"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 46,
+          "kind": "release",
+          "subject": "a14",
+          "function": "secondServer.checkHealth"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 47,
+          "kind": "delivery",
+          "subject": "m11",
+          "attempt": 1,
+          "route": "secondLink",
+          "source": "second.health.check",
+          "target": "secondServer.health.check",
+          "correlation": "r10"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 48,
+          "kind": "dispatch",
+          "subject": "a14",
+          "function": "secondServer.checkHealth",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 49,
+          "kind": "complete",
+          "subject": "a13",
+          "function": "firstServer.checkHealth",
+          "result": true
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 50,
+          "kind": "emission",
+          "subject": "m15",
+          "offer": 6,
+          "activation": "a13",
+          "route": "firstLink",
+          "source": "firstServer.health.check",
+          "target": "first.health.check",
+          "payload": [],
+          "correlation": "r8",
+          "response": true
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 51,
+          "kind": "admission",
+          "subject": "m15",
+          "queue": "firstLink/reverse/check"
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 52,
+          "kind": "complete",
+          "subject": "a14",
+          "function": "secondServer.checkHealth",
+          "result": true
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 53,
+          "kind": "emission",
+          "subject": "m16",
+          "offer": 7,
+          "activation": "a14",
+          "route": "secondLink",
+          "source": "secondServer.health.check",
+          "target": "second.health.check",
+          "payload": [],
+          "correlation": "r10",
+          "response": true
+        },
+        {
+          "timeNs": 4000000,
+          "ordinal": 54,
+          "kind": "admission",
+          "subject": "m16",
           "queue": "secondLink/reverse/check"
         }
       ],
@@ -2283,10 +2996,10 @@
         "root": "FunctionTiming::Demo",
         "profile": "swaml-reference/1.3",
         "status": "horizon",
-        "endNs": 3000000,
+        "endNs": 5000000,
         "activations": [
           {
-            "id": "a1",
+            "id": "a6",
             "functionPath": "first.poll",
             "contract": {
               "functionPath": "first.poll",
@@ -2296,45 +3009,45 @@
               "deadlineNs": 30000000
             },
             "released": {
-              "timeNs": 0,
-              "ordinal": 6
+              "timeNs": 2000000,
+              "ordinal": 26
             },
             "outcome": "open",
-            "deadlineAtNs": 30000000,
+            "deadlineAtNs": 32000000,
             "intervals": [
               {
                 "state": "ready",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 6
+                  "timeNs": 2000000,
+                  "ordinal": 26
                 },
                 "end": {
-                  "timeNs": 0,
-                  "ordinal": 7
+                  "timeNs": 2000000,
+                  "ordinal": 28
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 7
+                  "timeNs": 2000000,
+                  "ordinal": 28
                 },
                 "end": {
-                  "timeNs": 0,
-                  "ordinal": 10
+                  "timeNs": 2000000,
+                  "ordinal": 33
                 },
                 "open": false
               },
               {
                 "state": "requestWait",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 10
+                  "timeNs": 2000000,
+                  "ordinal": 33
                 },
-                "correlation": "r3",
+                "correlation": "r8",
                 "end": {
-                  "timeNs": 3000000
+                  "timeNs": 5000000
                 },
                 "open": true
               }
@@ -2343,33 +3056,33 @@
               {
                 "kind": "release",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 6
+                  "timeNs": 2000000,
+                  "ordinal": 26
                 }
               },
               {
                 "kind": "dispatch",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 7
+                  "timeNs": 2000000,
+                  "ordinal": 28
                 }
               },
               {
                 "kind": "request",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 10
+                  "timeNs": 2000000,
+                  "ordinal": 33
                 },
-                "correlation": "r3"
+                "correlation": "r8"
               }
             ],
             "dispatched": {
-              "timeNs": 0,
-              "ordinal": 7
+              "timeNs": 2000000,
+              "ordinal": 28
             }
           },
           {
-            "id": "a2",
+            "id": "a7",
             "functionPath": "second.poll",
             "contract": {
               "functionPath": "second.poll",
@@ -2379,45 +3092,45 @@
               "deadlineNs": 30000000
             },
             "released": {
-              "timeNs": 0,
-              "ordinal": 8
+              "timeNs": 2000000,
+              "ordinal": 30
             },
             "outcome": "open",
-            "deadlineAtNs": 30000000,
+            "deadlineAtNs": 32000000,
             "intervals": [
               {
                 "state": "ready",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 8
+                  "timeNs": 2000000,
+                  "ordinal": 30
                 },
                 "end": {
-                  "timeNs": 0,
-                  "ordinal": 9
+                  "timeNs": 2000000,
+                  "ordinal": 32
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 9
+                  "timeNs": 2000000,
+                  "ordinal": 32
                 },
                 "end": {
-                  "timeNs": 0,
-                  "ordinal": 13
+                  "timeNs": 2000000,
+                  "ordinal": 36
                 },
                 "open": false
               },
               {
                 "state": "requestWait",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 13
+                  "timeNs": 2000000,
+                  "ordinal": 36
                 },
-                "correlation": "r5",
+                "correlation": "r10",
                 "end": {
-                  "timeNs": 3000000
+                  "timeNs": 5000000
                 },
                 "open": true
               }
@@ -2426,33 +3139,33 @@
               {
                 "kind": "release",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 8
+                  "timeNs": 2000000,
+                  "ordinal": 30
                 }
               },
               {
                 "kind": "dispatch",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 9
+                  "timeNs": 2000000,
+                  "ordinal": 32
                 }
               },
               {
                 "kind": "request",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 13
+                  "timeNs": 2000000,
+                  "ordinal": 36
                 },
-                "correlation": "r5"
+                "correlation": "r10"
               }
             ],
             "dispatched": {
-              "timeNs": 0,
-              "ordinal": 9
+              "timeNs": 2000000,
+              "ordinal": 32
             }
           },
           {
-            "id": "a7",
+            "id": "a12",
             "functionPath": "first.poll",
             "contract": {
               "functionPath": "first.poll",
@@ -2462,20 +3175,20 @@
               "deadlineNs": 30000000
             },
             "released": {
-              "timeNs": 1000000,
-              "ordinal": 16
+              "timeNs": 3000000,
+              "ordinal": 40
             },
             "outcome": "open",
-            "deadlineAtNs": 31000000,
+            "deadlineAtNs": 33000000,
             "intervals": [
               {
                 "state": "ready",
                 "start": {
-                  "timeNs": 1000000,
-                  "ordinal": 16
+                  "timeNs": 3000000,
+                  "ordinal": 40
                 },
                 "end": {
-                  "timeNs": 3000000
+                  "timeNs": 5000000
                 },
                 "open": true
               }
@@ -2484,14 +3197,14 @@
               {
                 "kind": "release",
                 "point": {
-                  "timeNs": 1000000,
-                  "ordinal": 16
+                  "timeNs": 3000000,
+                  "ordinal": 40
                 }
               }
             ]
           },
           {
-            "id": "a8",
+            "id": "a13",
             "functionPath": "firstServer.checkHealth",
             "contract": {
               "functionPath": "firstServer.checkHealth",
@@ -2501,33 +3214,33 @@
               "deadlineNs": 10000000
             },
             "released": {
-              "timeNs": 2000000,
-              "ordinal": 18
+              "timeNs": 4000000,
+              "ordinal": 42
             },
             "outcome": "complete",
-            "deadlineAtNs": 12000000,
+            "deadlineAtNs": 14000000,
             "intervals": [
               {
                 "state": "ready",
                 "start": {
-                  "timeNs": 2000000,
-                  "ordinal": 18
+                  "timeNs": 4000000,
+                  "ordinal": 42
                 },
                 "end": {
-                  "timeNs": 2000000,
-                  "ordinal": 20
+                  "timeNs": 4000000,
+                  "ordinal": 44
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 2000000,
-                  "ordinal": 20
+                  "timeNs": 4000000,
+                  "ordinal": 44
                 },
                 "end": {
-                  "timeNs": 2000000,
-                  "ordinal": 25
+                  "timeNs": 4000000,
+                  "ordinal": 49
                 },
                 "open": false
               }
@@ -2536,36 +3249,36 @@
               {
                 "kind": "release",
                 "point": {
-                  "timeNs": 2000000,
-                  "ordinal": 18
+                  "timeNs": 4000000,
+                  "ordinal": 42
                 }
               },
               {
                 "kind": "dispatch",
                 "point": {
-                  "timeNs": 2000000,
-                  "ordinal": 20
+                  "timeNs": 4000000,
+                  "ordinal": 44
                 }
               },
               {
                 "kind": "complete",
                 "point": {
-                  "timeNs": 2000000,
-                  "ordinal": 25
+                  "timeNs": 4000000,
+                  "ordinal": 49
                 }
               }
             ],
             "dispatched": {
-              "timeNs": 2000000,
-              "ordinal": 20
+              "timeNs": 4000000,
+              "ordinal": 44
             },
             "terminal": {
-              "timeNs": 2000000,
-              "ordinal": 25
+              "timeNs": 4000000,
+              "ordinal": 49
             }
           },
           {
-            "id": "a9",
+            "id": "a14",
             "functionPath": "secondServer.checkHealth",
             "contract": {
               "functionPath": "secondServer.checkHealth",
@@ -2575,33 +3288,33 @@
               "deadlineNs": 10000000
             },
             "released": {
-              "timeNs": 2000000,
-              "ordinal": 22
+              "timeNs": 4000000,
+              "ordinal": 46
             },
             "outcome": "complete",
-            "deadlineAtNs": 12000000,
+            "deadlineAtNs": 14000000,
             "intervals": [
               {
                 "state": "ready",
                 "start": {
-                  "timeNs": 2000000,
-                  "ordinal": 22
+                  "timeNs": 4000000,
+                  "ordinal": 46
                 },
                 "end": {
-                  "timeNs": 2000000,
-                  "ordinal": 24
+                  "timeNs": 4000000,
+                  "ordinal": 48
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 2000000,
-                  "ordinal": 24
+                  "timeNs": 4000000,
+                  "ordinal": 48
                 },
                 "end": {
-                  "timeNs": 2000000,
-                  "ordinal": 28
+                  "timeNs": 4000000,
+                  "ordinal": 52
                 },
                 "open": false
               }
@@ -2610,32 +3323,32 @@
               {
                 "kind": "release",
                 "point": {
-                  "timeNs": 2000000,
-                  "ordinal": 22
+                  "timeNs": 4000000,
+                  "ordinal": 46
                 }
               },
               {
                 "kind": "dispatch",
                 "point": {
-                  "timeNs": 2000000,
-                  "ordinal": 24
+                  "timeNs": 4000000,
+                  "ordinal": 48
                 }
               },
               {
                 "kind": "complete",
                 "point": {
-                  "timeNs": 2000000,
-                  "ordinal": 28
+                  "timeNs": 4000000,
+                  "ordinal": 52
                 }
               }
             ],
             "dispatched": {
-              "timeNs": 2000000,
-              "ordinal": 24
+              "timeNs": 4000000,
+              "ordinal": 48
             },
             "terminal": {
-              "timeNs": 2000000,
-              "ordinal": 28
+              "timeNs": 4000000,
+              "ordinal": 52
             }
           }
         ],
@@ -2645,24 +3358,10 @@
     {
       "id": "deadline",
       "title": "Declared deadline missed",
-      "description": "The queued second activation cannot finish by its 31 ms deadline. The run stops with the pending intervals still open.",
+      "description": "The queued second activation misses its deadline. The run stops with pending intervals still open.",
       "options": {
-        "untilNs": 50000000,
-        "latencyNs": 18000000,
-        "manual": [
-          {
-            "atNs": 0,
-            "function": "first.poll"
-          },
-          {
-            "atNs": 0,
-            "function": "second.poll"
-          },
-          {
-            "atNs": 1000000,
-            "function": "first.poll"
-          }
-        ]
+        "untilNs": 80000000,
+        "latencyNs": 18000000
       },
       "trace": [
         {
@@ -2710,309 +3409,520 @@
           "ordinal": 6,
           "kind": "release",
           "subject": "a1",
-          "function": "first.poll"
+          "function": "driveInputs"
         },
         {
           "timeNs": 0,
           "ordinal": 7,
           "kind": "dispatch",
           "subject": "a1",
-          "function": "first.poll",
+          "function": "driveInputs",
           "mode": "serial"
         },
         {
           "timeNs": 0,
           "ordinal": 8,
-          "kind": "release",
-          "subject": "a2",
-          "function": "second.poll"
+          "kind": "stateEntry",
+          "subject": "driveInputs",
+          "state": "First",
+          "generation": 0
         },
         {
           "timeNs": 0,
           "ordinal": 9,
-          "kind": "dispatch",
-          "subject": "a2",
-          "function": "second.poll",
-          "mode": "serial"
+          "kind": "emission",
+          "subject": "m2",
+          "offer": 1,
+          "activation": "a1",
+          "route": "firstCommand",
+          "source": "firstPoll.poll",
+          "target": "first.control.poll",
+          "payload": [],
+          "response": false
         },
         {
           "timeNs": 0,
           "ordinal": 10,
-          "kind": "request",
-          "subject": "r3",
-          "activation": "a1",
-          "endpoint": "health.check",
-          "expiryNs": 20000000
+          "kind": "admission",
+          "subject": "m2",
+          "queue": "firstCommand/forward/poll"
         },
         {
           "timeNs": 0,
           "ordinal": 11,
-          "kind": "emission",
-          "subject": "m4",
-          "offer": 1,
-          "activation": "a1",
-          "route": "firstLink",
-          "source": "first.health.check",
-          "target": "firstServer.health.check",
-          "payload": [],
-          "correlation": "r3",
-          "response": false
+          "kind": "statement",
+          "subject": "a1",
+          "kindOfStatement": "Send",
+          "line": 32
         },
         {
           "timeNs": 0,
           "ordinal": 12,
-          "kind": "admission",
-          "subject": "m4",
-          "queue": "firstLink/forward/check"
-        },
-        {
-          "timeNs": 0,
-          "ordinal": 13,
-          "kind": "request",
-          "subject": "r5",
-          "activation": "a2",
-          "endpoint": "health.check",
-          "expiryNs": 20000000
-        },
-        {
-          "timeNs": 0,
-          "ordinal": 14,
           "kind": "emission",
-          "subject": "m6",
+          "subject": "m3",
           "offer": 2,
-          "activation": "a2",
-          "route": "secondLink",
-          "source": "second.health.check",
-          "target": "secondServer.health.check",
+          "activation": "a1",
+          "route": "secondCommand",
+          "source": "secondPoll.poll",
+          "target": "second.control.poll",
           "payload": [],
-          "correlation": "r5",
           "response": false
         },
         {
           "timeNs": 0,
-          "ordinal": 15,
+          "ordinal": 13,
           "kind": "admission",
-          "subject": "m6",
-          "queue": "secondLink/forward/check"
+          "subject": "m3",
+          "queue": "secondCommand/forward/poll"
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 14,
+          "kind": "statement",
+          "subject": "a1",
+          "kindOfStatement": "Send",
+          "line": 32
+        },
+        {
+          "timeNs": 0,
+          "ordinal": 15,
+          "kind": "complete",
+          "subject": "a1",
+          "function": "driveInputs"
         },
         {
           "timeNs": 1000000,
           "ordinal": 16,
           "kind": "release",
-          "subject": "a7",
-          "function": "first.poll"
+          "subject": "a4",
+          "function": "driveInputs"
         },
         {
-          "timeNs": 18000000,
+          "timeNs": 1000000,
           "ordinal": 17,
-          "kind": "ready",
-          "subject": "m4",
-          "queue": "firstLink/forward/check"
+          "kind": "dispatch",
+          "subject": "a4",
+          "function": "driveInputs",
+          "mode": "serial"
         },
         {
-          "timeNs": 18000000,
+          "timeNs": 1000000,
           "ordinal": 18,
-          "kind": "release",
-          "subject": "a8",
-          "function": "firstServer.checkHealth"
+          "kind": "transition",
+          "subject": "driveInputs",
+          "transition": "repeatPoll",
+          "from": "First",
+          "to": "Again"
         },
         {
-          "timeNs": 18000000,
+          "timeNs": 1000000,
           "ordinal": 19,
-          "kind": "delivery",
-          "subject": "m4",
-          "attempt": 1,
-          "route": "firstLink",
-          "source": "first.health.check",
-          "target": "firstServer.health.check",
-          "correlation": "r3"
+          "kind": "stateExit",
+          "subject": "driveInputs",
+          "state": "First"
         },
         {
-          "timeNs": 18000000,
+          "timeNs": 1000000,
           "ordinal": 20,
-          "kind": "dispatch",
-          "subject": "a8",
-          "function": "firstServer.checkHealth",
-          "mode": "serial"
+          "kind": "stateEntry",
+          "subject": "driveInputs",
+          "state": "Again",
+          "generation": 1
         },
         {
-          "timeNs": 18000000,
+          "timeNs": 1000000,
           "ordinal": 21,
-          "kind": "ready",
-          "subject": "m6",
-          "queue": "secondLink/forward/check"
+          "kind": "emission",
+          "subject": "m5",
+          "offer": 3,
+          "activation": "a4",
+          "route": "firstCommand",
+          "source": "firstPoll.poll",
+          "target": "first.control.poll",
+          "payload": [],
+          "response": false
         },
         {
-          "timeNs": 18000000,
+          "timeNs": 1000000,
           "ordinal": 22,
-          "kind": "release",
-          "subject": "a9",
-          "function": "secondServer.checkHealth"
+          "kind": "admission",
+          "subject": "m5",
+          "queue": "firstCommand/forward/poll"
         },
         {
-          "timeNs": 18000000,
+          "timeNs": 1000000,
           "ordinal": 23,
-          "kind": "delivery",
-          "subject": "m6",
-          "attempt": 1,
-          "route": "secondLink",
-          "source": "second.health.check",
-          "target": "secondServer.health.check",
-          "correlation": "r5"
+          "kind": "statement",
+          "subject": "a4",
+          "kindOfStatement": "Send",
+          "line": 33
         },
         {
-          "timeNs": 18000000,
+          "timeNs": 1000000,
           "ordinal": 24,
-          "kind": "dispatch",
-          "subject": "a9",
-          "function": "secondServer.checkHealth",
-          "mode": "serial"
+          "kind": "complete",
+          "subject": "a4",
+          "function": "driveInputs"
         },
         {
           "timeNs": 18000000,
           "ordinal": 25,
-          "kind": "complete",
-          "subject": "a8",
-          "function": "firstServer.checkHealth",
-          "result": true
+          "kind": "ready",
+          "subject": "m2",
+          "queue": "firstCommand/forward/poll"
         },
         {
           "timeNs": 18000000,
           "ordinal": 26,
-          "kind": "emission",
-          "subject": "m10",
-          "offer": 3,
-          "activation": "a8",
-          "route": "firstLink",
-          "source": "firstServer.health.check",
-          "target": "first.health.check",
-          "payload": [],
-          "correlation": "r3",
-          "response": true
+          "kind": "release",
+          "subject": "a6",
+          "function": "first.poll"
         },
         {
           "timeNs": 18000000,
           "ordinal": 27,
-          "kind": "admission",
-          "subject": "m10",
-          "queue": "firstLink/reverse/check"
+          "kind": "delivery",
+          "subject": "m2",
+          "attempt": 1,
+          "route": "firstCommand",
+          "source": "firstPoll.poll",
+          "target": "first.control.poll"
         },
         {
           "timeNs": 18000000,
           "ordinal": 28,
-          "kind": "complete",
-          "subject": "a9",
-          "function": "secondServer.checkHealth",
-          "result": true
+          "kind": "dispatch",
+          "subject": "a6",
+          "function": "first.poll",
+          "mode": "serial"
         },
         {
           "timeNs": 18000000,
           "ordinal": 29,
-          "kind": "emission",
-          "subject": "m11",
-          "offer": 4,
-          "activation": "a9",
-          "route": "secondLink",
-          "source": "secondServer.health.check",
-          "target": "second.health.check",
-          "payload": [],
-          "correlation": "r5",
-          "response": true
+          "kind": "ready",
+          "subject": "m3",
+          "queue": "secondCommand/forward/poll"
         },
         {
           "timeNs": 18000000,
           "ordinal": 30,
+          "kind": "release",
+          "subject": "a7",
+          "function": "second.poll"
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 31,
+          "kind": "delivery",
+          "subject": "m3",
+          "attempt": 1,
+          "route": "secondCommand",
+          "source": "secondPoll.poll",
+          "target": "second.control.poll"
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 32,
+          "kind": "dispatch",
+          "subject": "a7",
+          "function": "second.poll",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 33,
+          "kind": "request",
+          "subject": "r8",
+          "activation": "a6",
+          "endpoint": "health.check",
+          "expiryNs": 38000000
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 34,
+          "kind": "emission",
+          "subject": "m9",
+          "offer": 4,
+          "activation": "a6",
+          "route": "firstLink",
+          "source": "first.health.check",
+          "target": "firstServer.health.check",
+          "payload": [],
+          "correlation": "r8",
+          "response": false
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 35,
+          "kind": "admission",
+          "subject": "m9",
+          "queue": "firstLink/forward/check"
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 36,
+          "kind": "request",
+          "subject": "r10",
+          "activation": "a7",
+          "endpoint": "health.check",
+          "expiryNs": 38000000
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 37,
+          "kind": "emission",
+          "subject": "m11",
+          "offer": 5,
+          "activation": "a7",
+          "route": "secondLink",
+          "source": "second.health.check",
+          "target": "secondServer.health.check",
+          "payload": [],
+          "correlation": "r10",
+          "response": false
+        },
+        {
+          "timeNs": 18000000,
+          "ordinal": 38,
           "kind": "admission",
           "subject": "m11",
+          "queue": "secondLink/forward/check"
+        },
+        {
+          "timeNs": 19000000,
+          "ordinal": 39,
+          "kind": "ready",
+          "subject": "m5",
+          "queue": "firstCommand/forward/poll"
+        },
+        {
+          "timeNs": 19000000,
+          "ordinal": 40,
+          "kind": "release",
+          "subject": "a12",
+          "function": "first.poll"
+        },
+        {
+          "timeNs": 36000000,
+          "ordinal": 41,
+          "kind": "ready",
+          "subject": "m9",
+          "queue": "firstLink/forward/check"
+        },
+        {
+          "timeNs": 36000000,
+          "ordinal": 42,
+          "kind": "release",
+          "subject": "a13",
+          "function": "firstServer.checkHealth"
+        },
+        {
+          "timeNs": 36000000,
+          "ordinal": 43,
+          "kind": "delivery",
+          "subject": "m9",
+          "attempt": 1,
+          "route": "firstLink",
+          "source": "first.health.check",
+          "target": "firstServer.health.check",
+          "correlation": "r8"
+        },
+        {
+          "timeNs": 36000000,
+          "ordinal": 44,
+          "kind": "dispatch",
+          "subject": "a13",
+          "function": "firstServer.checkHealth",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 36000000,
+          "ordinal": 45,
+          "kind": "ready",
+          "subject": "m11",
+          "queue": "secondLink/forward/check"
+        },
+        {
+          "timeNs": 36000000,
+          "ordinal": 46,
+          "kind": "release",
+          "subject": "a14",
+          "function": "secondServer.checkHealth"
+        },
+        {
+          "timeNs": 36000000,
+          "ordinal": 47,
+          "kind": "delivery",
+          "subject": "m11",
+          "attempt": 1,
+          "route": "secondLink",
+          "source": "second.health.check",
+          "target": "secondServer.health.check",
+          "correlation": "r10"
+        },
+        {
+          "timeNs": 36000000,
+          "ordinal": 48,
+          "kind": "dispatch",
+          "subject": "a14",
+          "function": "secondServer.checkHealth",
+          "mode": "serial"
+        },
+        {
+          "timeNs": 36000000,
+          "ordinal": 49,
+          "kind": "complete",
+          "subject": "a13",
+          "function": "firstServer.checkHealth",
+          "result": true
+        },
+        {
+          "timeNs": 36000000,
+          "ordinal": 50,
+          "kind": "emission",
+          "subject": "m15",
+          "offer": 6,
+          "activation": "a13",
+          "route": "firstLink",
+          "source": "firstServer.health.check",
+          "target": "first.health.check",
+          "payload": [],
+          "correlation": "r8",
+          "response": true
+        },
+        {
+          "timeNs": 36000000,
+          "ordinal": 51,
+          "kind": "admission",
+          "subject": "m15",
+          "queue": "firstLink/reverse/check"
+        },
+        {
+          "timeNs": 36000000,
+          "ordinal": 52,
+          "kind": "complete",
+          "subject": "a14",
+          "function": "secondServer.checkHealth",
+          "result": true
+        },
+        {
+          "timeNs": 36000000,
+          "ordinal": 53,
+          "kind": "emission",
+          "subject": "m16",
+          "offer": 7,
+          "activation": "a14",
+          "route": "secondLink",
+          "source": "secondServer.health.check",
+          "target": "second.health.check",
+          "payload": [],
+          "correlation": "r10",
+          "response": true
+        },
+        {
+          "timeNs": 36000000,
+          "ordinal": 54,
+          "kind": "admission",
+          "subject": "m16",
           "queue": "secondLink/reverse/check"
         },
         {
-          "timeNs": 20000000,
-          "ordinal": 31,
+          "timeNs": 38000000,
+          "ordinal": 55,
           "kind": "timeout",
-          "subject": "r3"
+          "subject": "r8"
         },
         {
-          "timeNs": 20000000,
-          "ordinal": 32,
+          "timeNs": 38000000,
+          "ordinal": 56,
           "kind": "requestComplete",
-          "subject": "r3",
+          "subject": "r8",
           "state": "Failed",
           "failure": "Timeout"
         },
         {
-          "timeNs": 20000000,
-          "ordinal": 33,
+          "timeNs": 38000000,
+          "ordinal": 57,
           "kind": "timeout",
-          "subject": "r5"
+          "subject": "r10"
         },
         {
-          "timeNs": 20000000,
-          "ordinal": 34,
+          "timeNs": 38000000,
+          "ordinal": 58,
           "kind": "requestComplete",
-          "subject": "r5",
+          "subject": "r10",
           "state": "Failed",
           "failure": "Timeout"
         },
         {
-          "timeNs": 20000000,
-          "ordinal": 35,
+          "timeNs": 38000000,
+          "ordinal": 59,
           "kind": "failure",
-          "subject": "a1",
+          "subject": "a6",
           "function": "first.poll",
           "code": "Fail",
           "message": "request failed"
         },
         {
-          "timeNs": 20000000,
-          "ordinal": 36,
+          "timeNs": 38000000,
+          "ordinal": 60,
+          "kind": "delivery",
+          "subject": "m5",
+          "attempt": 1,
+          "route": "firstCommand",
+          "source": "firstPoll.poll",
+          "target": "first.control.poll"
+        },
+        {
+          "timeNs": 38000000,
+          "ordinal": 61,
           "kind": "dispatch",
-          "subject": "a7",
+          "subject": "a12",
           "function": "first.poll",
           "mode": "serial"
         },
         {
-          "timeNs": 20000000,
-          "ordinal": 37,
+          "timeNs": 38000000,
+          "ordinal": 62,
           "kind": "failure",
-          "subject": "a2",
+          "subject": "a7",
           "function": "second.poll",
           "code": "Fail",
           "message": "request failed"
         },
         {
-          "timeNs": 20000000,
-          "ordinal": 38,
+          "timeNs": 38000000,
+          "ordinal": 63,
           "kind": "request",
-          "subject": "r12",
-          "activation": "a7",
+          "subject": "r17",
+          "activation": "a12",
           "endpoint": "health.check",
-          "expiryNs": 40000000
+          "expiryNs": 58000000
         },
         {
-          "timeNs": 20000000,
-          "ordinal": 39,
+          "timeNs": 38000000,
+          "ordinal": 64,
           "kind": "emission",
-          "subject": "m13",
-          "offer": 5,
-          "activation": "a7",
+          "subject": "m18",
+          "offer": 8,
+          "activation": "a12",
           "route": "firstLink",
           "source": "first.health.check",
           "target": "firstServer.health.check",
           "payload": [],
-          "correlation": "r12",
+          "correlation": "r17",
           "response": false
         },
         {
-          "timeNs": 20000000,
-          "ordinal": 40,
+          "timeNs": 38000000,
+          "ordinal": 65,
           "kind": "admission",
-          "subject": "m13",
+          "subject": "m18",
           "queue": "firstLink/forward/check"
         },
         {
-          "timeNs": 31000000,
-          "ordinal": 41,
+          "timeNs": 49000000,
+          "ordinal": 66,
           "kind": "violation",
           "subject": "FunctionTiming::Demo",
           "code": "Deadline",
@@ -3023,10 +3933,10 @@
         "root": "FunctionTiming::Demo",
         "profile": "swaml-reference/1.3",
         "status": "violation",
-        "endNs": 31000000,
+        "endNs": 49000000,
         "activations": [
           {
-            "id": "a1",
+            "id": "a6",
             "functionPath": "first.poll",
             "contract": {
               "functionPath": "first.poll",
@@ -3036,58 +3946,58 @@
               "deadlineNs": 30000000
             },
             "released": {
-              "timeNs": 0,
-              "ordinal": 6
+              "timeNs": 18000000,
+              "ordinal": 26
             },
             "outcome": "failure",
-            "deadlineAtNs": 30000000,
+            "deadlineAtNs": 48000000,
             "intervals": [
               {
                 "state": "ready",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 6
+                  "timeNs": 18000000,
+                  "ordinal": 26
                 },
                 "end": {
-                  "timeNs": 0,
-                  "ordinal": 7
+                  "timeNs": 18000000,
+                  "ordinal": 28
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 7
+                  "timeNs": 18000000,
+                  "ordinal": 28
                 },
                 "end": {
-                  "timeNs": 0,
-                  "ordinal": 10
+                  "timeNs": 18000000,
+                  "ordinal": 33
                 },
                 "open": false
               },
               {
                 "state": "requestWait",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 10
+                  "timeNs": 18000000,
+                  "ordinal": 33
                 },
-                "correlation": "r3",
+                "correlation": "r8",
                 "end": {
-                  "timeNs": 20000000,
-                  "ordinal": 32
+                  "timeNs": 38000000,
+                  "ordinal": 56
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 20000000,
-                  "ordinal": 32
+                  "timeNs": 38000000,
+                  "ordinal": 56
                 },
                 "end": {
-                  "timeNs": 20000000,
-                  "ordinal": 35
+                  "timeNs": 38000000,
+                  "ordinal": 59
                 },
                 "open": false
               }
@@ -3096,62 +4006,62 @@
               {
                 "kind": "release",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 6
+                  "timeNs": 18000000,
+                  "ordinal": 26
                 }
               },
               {
                 "kind": "dispatch",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 7
+                  "timeNs": 18000000,
+                  "ordinal": 28
                 }
               },
               {
                 "kind": "request",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 10
+                  "timeNs": 18000000,
+                  "ordinal": 33
                 },
-                "correlation": "r3"
+                "correlation": "r8"
               },
               {
                 "kind": "timeout",
                 "point": {
-                  "timeNs": 20000000,
-                  "ordinal": 31
+                  "timeNs": 38000000,
+                  "ordinal": 55
                 },
-                "correlation": "r3"
+                "correlation": "r8"
               },
               {
                 "kind": "requestComplete",
                 "point": {
-                  "timeNs": 20000000,
-                  "ordinal": 32
+                  "timeNs": 38000000,
+                  "ordinal": 56
                 },
-                "correlation": "r3",
+                "correlation": "r8",
                 "detail": "Timeout"
               },
               {
                 "kind": "failure",
                 "point": {
-                  "timeNs": 20000000,
-                  "ordinal": 35
+                  "timeNs": 38000000,
+                  "ordinal": 59
                 },
                 "detail": "Fail"
               }
             ],
             "dispatched": {
-              "timeNs": 0,
-              "ordinal": 7
+              "timeNs": 18000000,
+              "ordinal": 28
             },
             "terminal": {
-              "timeNs": 20000000,
-              "ordinal": 35
+              "timeNs": 38000000,
+              "ordinal": 59
             }
           },
           {
-            "id": "a2",
+            "id": "a7",
             "functionPath": "second.poll",
             "contract": {
               "functionPath": "second.poll",
@@ -3161,58 +4071,58 @@
               "deadlineNs": 30000000
             },
             "released": {
-              "timeNs": 0,
-              "ordinal": 8
+              "timeNs": 18000000,
+              "ordinal": 30
             },
             "outcome": "failure",
-            "deadlineAtNs": 30000000,
+            "deadlineAtNs": 48000000,
             "intervals": [
               {
                 "state": "ready",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 8
+                  "timeNs": 18000000,
+                  "ordinal": 30
                 },
                 "end": {
-                  "timeNs": 0,
-                  "ordinal": 9
+                  "timeNs": 18000000,
+                  "ordinal": 32
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 9
+                  "timeNs": 18000000,
+                  "ordinal": 32
                 },
                 "end": {
-                  "timeNs": 0,
-                  "ordinal": 13
+                  "timeNs": 18000000,
+                  "ordinal": 36
                 },
                 "open": false
               },
               {
                 "state": "requestWait",
                 "start": {
-                  "timeNs": 0,
-                  "ordinal": 13
+                  "timeNs": 18000000,
+                  "ordinal": 36
                 },
-                "correlation": "r5",
+                "correlation": "r10",
                 "end": {
-                  "timeNs": 20000000,
-                  "ordinal": 34
+                  "timeNs": 38000000,
+                  "ordinal": 58
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 20000000,
-                  "ordinal": 34
+                  "timeNs": 38000000,
+                  "ordinal": 58
                 },
                 "end": {
-                  "timeNs": 20000000,
-                  "ordinal": 37
+                  "timeNs": 38000000,
+                  "ordinal": 62
                 },
                 "open": false
               }
@@ -3221,62 +4131,62 @@
               {
                 "kind": "release",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 8
+                  "timeNs": 18000000,
+                  "ordinal": 30
                 }
               },
               {
                 "kind": "dispatch",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 9
+                  "timeNs": 18000000,
+                  "ordinal": 32
                 }
               },
               {
                 "kind": "request",
                 "point": {
-                  "timeNs": 0,
-                  "ordinal": 13
+                  "timeNs": 18000000,
+                  "ordinal": 36
                 },
-                "correlation": "r5"
+                "correlation": "r10"
               },
               {
                 "kind": "timeout",
                 "point": {
-                  "timeNs": 20000000,
-                  "ordinal": 33
+                  "timeNs": 38000000,
+                  "ordinal": 57
                 },
-                "correlation": "r5"
+                "correlation": "r10"
               },
               {
                 "kind": "requestComplete",
                 "point": {
-                  "timeNs": 20000000,
-                  "ordinal": 34
+                  "timeNs": 38000000,
+                  "ordinal": 58
                 },
-                "correlation": "r5",
+                "correlation": "r10",
                 "detail": "Timeout"
               },
               {
                 "kind": "failure",
                 "point": {
-                  "timeNs": 20000000,
-                  "ordinal": 37
+                  "timeNs": 38000000,
+                  "ordinal": 62
                 },
                 "detail": "Fail"
               }
             ],
             "dispatched": {
-              "timeNs": 0,
-              "ordinal": 9
+              "timeNs": 18000000,
+              "ordinal": 32
             },
             "terminal": {
-              "timeNs": 20000000,
-              "ordinal": 37
+              "timeNs": 38000000,
+              "ordinal": 62
             }
           },
           {
-            "id": "a7",
+            "id": "a12",
             "functionPath": "first.poll",
             "contract": {
               "functionPath": "first.poll",
@@ -3286,45 +4196,45 @@
               "deadlineNs": 30000000
             },
             "released": {
-              "timeNs": 1000000,
-              "ordinal": 16
+              "timeNs": 19000000,
+              "ordinal": 40
             },
             "outcome": "open",
-            "deadlineAtNs": 31000000,
+            "deadlineAtNs": 49000000,
             "intervals": [
               {
                 "state": "ready",
                 "start": {
-                  "timeNs": 1000000,
-                  "ordinal": 16
+                  "timeNs": 19000000,
+                  "ordinal": 40
                 },
                 "end": {
-                  "timeNs": 20000000,
-                  "ordinal": 36
+                  "timeNs": 38000000,
+                  "ordinal": 61
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 20000000,
-                  "ordinal": 36
+                  "timeNs": 38000000,
+                  "ordinal": 61
                 },
                 "end": {
-                  "timeNs": 20000000,
-                  "ordinal": 38
+                  "timeNs": 38000000,
+                  "ordinal": 63
                 },
                 "open": false
               },
               {
                 "state": "requestWait",
                 "start": {
-                  "timeNs": 20000000,
-                  "ordinal": 38
+                  "timeNs": 38000000,
+                  "ordinal": 63
                 },
-                "correlation": "r12",
+                "correlation": "r17",
                 "end": {
-                  "timeNs": 31000000
+                  "timeNs": 49000000
                 },
                 "open": true
               }
@@ -3333,33 +4243,33 @@
               {
                 "kind": "release",
                 "point": {
-                  "timeNs": 1000000,
-                  "ordinal": 16
+                  "timeNs": 19000000,
+                  "ordinal": 40
                 }
               },
               {
                 "kind": "dispatch",
                 "point": {
-                  "timeNs": 20000000,
-                  "ordinal": 36
+                  "timeNs": 38000000,
+                  "ordinal": 61
                 }
               },
               {
                 "kind": "request",
                 "point": {
-                  "timeNs": 20000000,
-                  "ordinal": 38
+                  "timeNs": 38000000,
+                  "ordinal": 63
                 },
-                "correlation": "r12"
+                "correlation": "r17"
               }
             ],
             "dispatched": {
-              "timeNs": 20000000,
-              "ordinal": 36
+              "timeNs": 38000000,
+              "ordinal": 61
             }
           },
           {
-            "id": "a8",
+            "id": "a13",
             "functionPath": "firstServer.checkHealth",
             "contract": {
               "functionPath": "firstServer.checkHealth",
@@ -3369,33 +4279,33 @@
               "deadlineNs": 10000000
             },
             "released": {
-              "timeNs": 18000000,
-              "ordinal": 18
+              "timeNs": 36000000,
+              "ordinal": 42
             },
             "outcome": "complete",
-            "deadlineAtNs": 28000000,
+            "deadlineAtNs": 46000000,
             "intervals": [
               {
                 "state": "ready",
                 "start": {
-                  "timeNs": 18000000,
-                  "ordinal": 18
+                  "timeNs": 36000000,
+                  "ordinal": 42
                 },
                 "end": {
-                  "timeNs": 18000000,
-                  "ordinal": 20
+                  "timeNs": 36000000,
+                  "ordinal": 44
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 18000000,
-                  "ordinal": 20
+                  "timeNs": 36000000,
+                  "ordinal": 44
                 },
                 "end": {
-                  "timeNs": 18000000,
-                  "ordinal": 25
+                  "timeNs": 36000000,
+                  "ordinal": 49
                 },
                 "open": false
               }
@@ -3404,36 +4314,36 @@
               {
                 "kind": "release",
                 "point": {
-                  "timeNs": 18000000,
-                  "ordinal": 18
+                  "timeNs": 36000000,
+                  "ordinal": 42
                 }
               },
               {
                 "kind": "dispatch",
                 "point": {
-                  "timeNs": 18000000,
-                  "ordinal": 20
+                  "timeNs": 36000000,
+                  "ordinal": 44
                 }
               },
               {
                 "kind": "complete",
                 "point": {
-                  "timeNs": 18000000,
-                  "ordinal": 25
+                  "timeNs": 36000000,
+                  "ordinal": 49
                 }
               }
             ],
             "dispatched": {
-              "timeNs": 18000000,
-              "ordinal": 20
+              "timeNs": 36000000,
+              "ordinal": 44
             },
             "terminal": {
-              "timeNs": 18000000,
-              "ordinal": 25
+              "timeNs": 36000000,
+              "ordinal": 49
             }
           },
           {
-            "id": "a9",
+            "id": "a14",
             "functionPath": "secondServer.checkHealth",
             "contract": {
               "functionPath": "secondServer.checkHealth",
@@ -3443,33 +4353,33 @@
               "deadlineNs": 10000000
             },
             "released": {
-              "timeNs": 18000000,
-              "ordinal": 22
+              "timeNs": 36000000,
+              "ordinal": 46
             },
             "outcome": "complete",
-            "deadlineAtNs": 28000000,
+            "deadlineAtNs": 46000000,
             "intervals": [
               {
                 "state": "ready",
                 "start": {
-                  "timeNs": 18000000,
-                  "ordinal": 22
+                  "timeNs": 36000000,
+                  "ordinal": 46
                 },
                 "end": {
-                  "timeNs": 18000000,
-                  "ordinal": 24
+                  "timeNs": 36000000,
+                  "ordinal": 48
                 },
                 "open": false
               },
               {
                 "state": "running",
                 "start": {
-                  "timeNs": 18000000,
-                  "ordinal": 24
+                  "timeNs": 36000000,
+                  "ordinal": 48
                 },
                 "end": {
-                  "timeNs": 18000000,
-                  "ordinal": 28
+                  "timeNs": 36000000,
+                  "ordinal": 52
                 },
                 "open": false
               }
@@ -3478,40 +4388,40 @@
               {
                 "kind": "release",
                 "point": {
-                  "timeNs": 18000000,
-                  "ordinal": 22
+                  "timeNs": 36000000,
+                  "ordinal": 46
                 }
               },
               {
                 "kind": "dispatch",
                 "point": {
-                  "timeNs": 18000000,
-                  "ordinal": 24
+                  "timeNs": 36000000,
+                  "ordinal": 48
                 }
               },
               {
                 "kind": "complete",
                 "point": {
-                  "timeNs": 18000000,
-                  "ordinal": 28
+                  "timeNs": 36000000,
+                  "ordinal": 52
                 }
               }
             ],
             "dispatched": {
-              "timeNs": 18000000,
-              "ordinal": 24
+              "timeNs": 36000000,
+              "ordinal": 48
             },
             "terminal": {
-              "timeNs": 18000000,
-              "ordinal": 28
+              "timeNs": 36000000,
+              "ordinal": 52
             }
           }
         ],
         "stops": [
           {
             "point": {
-              "timeNs": 31000000,
-              "ordinal": 41
+              "timeNs": 49000000,
+              "ordinal": 66
             },
             "kind": "violation",
             "code": "Deadline",

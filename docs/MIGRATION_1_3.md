@@ -1,10 +1,10 @@
 # Migrating to SWAML 1.3
 
-Version 1.3 adds loops, interruptible flow and function timing diagrams. Pin the host/parser to **1.3** and use the `swaml-reference/1.3` simulation profile. The current parser rejects requests for older or inferred editions; use an archived 1.2 release to reproduce its exact grammar.
+The published 1.3.0 edition added loops, interruptible flow and function timing diagrams. This page records that migration; the [1.3.1 revision](MIGRATION_1_3_1.md) moves timing to the dedicated tv kind and introduces GV layout choices. Pin the host/parser to **1.3** and use the `swaml-reference/1.3` simulation profile. The current parser rejects requests for older or inferred editions; use an archived 1.2 release to reproduce its exact grammar.
 
 ## Source changes
 
-Existing 1.2.1 constructs retain their meaning, including `of` relations, component ownership, copied values and explicit communication routes. New reserved words are `for`, `forEach`, `do` and `interruptible`; rename earlier identifiers with those spellings. Files remain headerless. The new loops are optional; bounded while loops continue to work.
+Existing 1.2.1 constructs retain their meaning, including `of` relations, component ownership, copied values and explicit communication routes. The new reserved words in 1.3.0 were `for`, `forEach`, `do` and `interruptible`; rename earlier identifiers with those spellings. Files remain headerless. The new loops are optional; bounded while loops continue to work.
 
 Use `forEach`, not two separate words. Counted for headers require one var declaration, Boolean condition and assignment update. while, for and do loops require an explicit bound. forEach uses its array length and does not accept an additional bound. The complete syntax and scope rules are in the [control-flow guide](CONTROL_FLOW_AND_TIMING.md).
 
@@ -16,6 +16,6 @@ Interrupted pending requests gain a terminal caller-side cancellation observatio
 
 ## Timing presentation
 
-Timing diagrams are an FV mode; there is no new view-kind keyword. Compact and block FV selections still target executable function occurrences. Trace-backed timing diagrams must keep declared contracts separate from observed phases and preserve unfinished activations at a horizon or stop. Existing flow/state views remain available.
+In the published 1.3.0 edition, timing diagrams were an FV mode with no separate view-kind keyword. The 1.3.1 correction uses tv for timing and keeps fv for flow, interruptible regions and states. Both select executable functions; a root/definition context requires an explicit recursive include filtered to functions. Migrate timing declarations and identifiers that conflict with the newly reserved tv word using the [1.3.1 guide](MIGRATION_1_3_1.md). Trace-backed diagrams continue to keep declared contracts separate from observations and preserve unfinished intervals. Parser family 1.3 and `swaml-reference/1.3` remain unchanged.
 
-The published 1.2.0 and 1.2.1 consolidated references, PDFs, manifests, checksums and release assets retain their versioned filenames. Current generation writes the separate 1.3.0 edition.
+Published 1.2.0, 1.2.1 and 1.3.0 consolidated references, PDFs, manifests, checksums and release assets retain their versioned filenames. Development generation targets the separate 1.3.1 revision; it does not replace the published 1.3.0 evidence.

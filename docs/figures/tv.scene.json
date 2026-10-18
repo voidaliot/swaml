@@ -1,0 +1,475 @@
+{
+  "width": 560,
+  "height": 560,
+  "title": "Timing View",
+  "description": "Timing View. A tv projection compares observed activation releases, waits and terminal markers with separately labeled declared timing contracts.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 560,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 35,
+      "y": 22,
+      "width": 490,
+      "height": 107,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 55,
+      "text": "tv: first.poll",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 54,
+      "y": 88,
+      "text": "declared: wcet 1 ms; deadline 30 ms; serial",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 35,
+      "y": 165,
+      "text": "observed: reference logical time, zero CPU cost",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 43,
+      "y": 244,
+      "text": "a6",
+      "size": 18,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 186.66666666666669,
+      "y": 223,
+      "width": 133.33333333333331,
+      "height": 30,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 197.833,
+      "y": 244,
+      "text": "request wait",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          186.66666666666669,
+          214
+        ],
+        [
+          179.66666666666669,
+          203
+        ],
+        [
+          193.66666666666669,
+          203
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          186.66666666666669,
+          216
+        ],
+        [
+          186.66666666666669,
+          260
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          320.0,
+          216
+        ],
+        [
+          320.0,
+          260
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "circle",
+      "x": 320.0,
+      "y": 238,
+      "r": 7,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 43,
+      "y": 343,
+      "text": "a12",
+      "size": 18,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 220.0,
+      "y": 322,
+      "width": 100.0,
+      "height": 30,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 244.5,
+      "y": 343,
+      "text": "ready",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 320.0,
+      "y": 322,
+      "width": 133.33333333333337,
+      "height": 30,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 331.167,
+      "y": 343,
+      "text": "request wait",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          220.0,
+          313
+        ],
+        [
+          213.0,
+          302
+        ],
+        [
+          227.0,
+          302
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          320.0,
+          315
+        ],
+        [
+          320.0,
+          359
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          453.33333333333337,
+          315
+        ],
+        [
+          453.33333333333337,
+          359
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "circle",
+      "x": 453.33333333333337,
+      "y": 337,
+      "r": 7,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          120,
+          394
+        ],
+        [
+          520,
+          394
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          120.0,
+          394
+        ],
+        [
+          120.0,
+          402
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 114.5,
+      "y": 428,
+      "text": "0",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          186.66666666666669,
+          394
+        ],
+        [
+          186.66666666666669,
+          402
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 181.167,
+      "y": 428,
+      "text": "2",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          253.33333333333334,
+          394
+        ],
+        [
+          253.33333333333334,
+          402
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 247.833,
+      "y": 428,
+      "text": "4",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          320.0,
+          394
+        ],
+        [
+          320.0,
+          402
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 314.5,
+      "y": 428,
+      "text": "6",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          386.6666666666667,
+          394
+        ],
+        [
+          386.6666666666667,
+          402
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 381.167,
+      "y": 428,
+      "text": "8",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          453.33333333333337,
+          394
+        ],
+        [
+          453.33333333333337,
+          402
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 442.333,
+      "y": 428,
+      "text": "10",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          520.0,
+          394
+        ],
+        [
+          520.0,
+          402
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 509.0,
+      "y": 428,
+      "text": "12",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 244.0,
+      "y": 461,
+      "text": "logical time (ms)",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 35,
+      "y": 496,
+      "text": "▼ release; | zero-time running; ○ complete",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 35,
+      "y": 523,
+      "text": "display 0–12 ms; quiescent boundary 33 ms",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 35,
+      "y": 550,
+      "text": "declared deadlines 32 / 33 ms lie outside this window",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

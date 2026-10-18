@@ -4,7 +4,8 @@ import { EmptyFileSystem } from 'langium';
 import { parseHelper } from 'langium/test';
 import ts from 'typescript';
 import { createSwamlServices } from '../out/src/language/swaml-module.js';
-import { resolvePath, effectiveQos, members } from '../out/src/language/semantic.js';
+import { resolvePath, effectiveQos, members, nanos } from '../out/src/language/semantic.js';
+import { selectView, resolvePresentationPath } from '../out/src/language/presentation.js';
 import * as a from '../out/src/language/generated/ast.js';
 
 const catalog = JSON.parse(await readFile(new URL('../showcase/src/contracts.json', import.meta.url), 'utf8'));
@@ -59,6 +60,37 @@ for (const item of architectures) {
     const children = members(root);
     const instances = children.filter(a.isInstance);
     const routes = children.filter(a.isConnect);
+    if (item.inputDriver) {
+        const driver = children.find(fn => a.isFunctionDef(fn) && fn.name === item.inputDriver.function);
+        assert.ok(driver && driver.trigger?.kind === 'start', `${item.id}: root-owned input driver`);
+        const emissions = [];
+        const record = (block, timeNs) => {
+            for (const statement of block?.statements ?? []) if (a.isSend(statement)) emissions.push({ endpoint: statement.endpoint, timeNs });
+        };
+        if (driver.body) record(driver.body, 0);
+        else {
+            let state = driver.stateBody.initial.ref, timeNs = 0;
+            const visited = new Set();
+            while (state) {
+                assert.ok(!visited.has(state), `${item.id}: example input schedule must be finite`);
+                visited.add(state); record(state.entry, timeNs);
+                if (state.final) break;
+                const transitions = driver.stateBody.transitions.filter(t => t.from.ref === state);
+                assert.equal(transitions.length, 1, `${item.id}: deterministic authored input schedule`);
+                const transition = transitions[0];
+                assert.equal(transition.kind, 'after'); assert.ok(!transition.guard);
+                timeNs += nanos(transition.delay); record(transition.effect, timeNs); state = transition.to.ref;
+            }
+        }
+        assert.ok(emissions.length, `${item.id}: input driver must publish actual events`);
+        for (const emission of emissions) {
+            const [portName, eventName] = emission.endpoint.split('.');
+            const port = children.find(p => a.isPort(p) && p.name === portName);
+            assert.ok(port?.role === 'publisher' && port.interface.ref.members.some(member => a.isEventMember(member) && member.name === eventName));
+            assert.ok(routes.some(route => route.source === portName), `${item.id}: root emission needs a displayed route`);
+            assert.ok(item.inputDriver.schedule.includes(`${eventName}() at ${emission.timeNs / 1e6} ms`), `${item.id}: schedule caption differs from source`);
+        }
+    }
     assert.deepEqual(item.nodes.map(n => n.id).sort(), instances.map(n => n.name).sort(), `${item.id}: displayed instances`);
     assert.deepEqual(item.routes.map(r => r.id).sort(), routes.map(r => r.name).sort(), `${item.id}: displayed routes`);
     for (const part of item.nodes) {
@@ -102,9 +134,11 @@ const explorerModule = await readFile(new URL('../showcase/src/model.ts', import
 const explorerAst = ts.createSourceFile('model.ts', explorerModule, ts.ScriptTarget.Latest, true);
 const normalize = value => value.replace(/\s+/g, ' ').trim();
 let checkedExcerpts = 0;
+const explorerEntities = new Map();
 function checkSourceCard(node) {
     if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'entity') {
         const excerpt = node.arguments[7];
+        if (ts.isStringLiteralLike(node.arguments[0]) && ts.isStringLiteralLike(node.arguments[3])) explorerEntities.set(node.arguments[0].text, node.arguments[3].text);
         if (excerpt && ts.isStringLiteralLike(excerpt)) {
             const id = ts.isStringLiteralLike(node.arguments[0]) ? node.arguments[0].text : 'dynamic entity';
             assert.ok(normalize(explorerSource).includes(normalize(excerpt.text)), `Explorer source excerpt is stale: ${id}`);
@@ -161,7 +195,7 @@ const gallery = galleryDeclaration.initializer.elements.map(node => {
     }));
 });
 assert.deepEqual(gallery.map(item => item.id), ['gv', 'iv', 'sv', 'cv', 'grv', 'flow', 'states', 'interrupts', 'timing']);
-assert.deepEqual([...new Set(gallery.map(item => item.view))].sort(), ['cv', 'fv', 'grv', 'gv', 'iv', 'sv']);
+assert.deepEqual([...new Set(gallery.map(item => item.view))].sort(), ['cv', 'fv', 'grv', 'gv', 'iv', 'sv', 'tv']);
 const galleryModels = new Map();
 for (const item of gallery) {
     if (!galleryModels.has(item.sourceFile)) {
@@ -182,6 +216,50 @@ for (const item of gallery) {
     if (['flow', 'states', 'interrupts'].includes(item.id)) assert.ok(a.isFunctionDef(subject), `${item.id}: expected function subject`);
     if (item.id === 'states') assert.ok(subject.stateBody, 'States example must contain owned states');
     if (item.id === 'interrupts') assert.ok(subject.body.statements.some(a.isInterruptible), 'Interrupt example must contain a protected region');
-    if (item.id === 'timing') assert.ok(a.isRootComponent(subject), 'Timing example must select an execution root');
+    if (item.id === 'timing') {
+        assert.ok(a.isRootComponent(subject), 'Timing gallery must identify its execution root context');
+        assert.equal(item.subjectLabel, 'Execution root');
+        assert.equal(item.subjectNote, 'selected function occurrences');
+        const timingView = pkg.elements.find(element => a.isView(element) && element.kind === 'tv');
+        const selected = selectView(timingView);
+        assert.ok(selected.every(element => a.isFunctionDef(element.node)), 'TV subjects are functions, not the execution root');
+        const timing = JSON.parse(await readFile(new URL('../spec/function-timing-demo.json', import.meta.url), 'utf8'));
+        assert.equal(timing.root, item.subject);
+        assert.deepEqual(selected.map(element => element.path), timing.contracts.map(contract => `${subject.name}.${contract.functionPath}`));
+    }
 }
-console.log('Verified all 6 view kinds and 4 FV presentations against their displayed example identities and downloadable sources.');
+console.log('Verified all 7 view kinds and 3 FV presentations against their displayed example identities and downloadable sources.');
+
+// Both GV layouts consume one source-backed recursive ownership tree.
+const settingsPackage = galleryModels.get('08-service-field.swaml').packages.find(pkg => pkg.name === 'Settings');
+let structureDeclaration;
+function findStructure(node) {
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === 'cabinStructure') structureDeclaration = node;
+    ts.forEachChild(node, findStructure);
+}
+findStructure(explorerAst);
+assert.ok(structureDeclaration?.initializer);
+const shownPaths = [], shownOwnership = [];
+function checkStructure(node, parent) {
+    assert.ok(ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'occurrence');
+    assert.ok(ts.isStringLiteralLike(node.arguments[0]));
+    const id = node.arguments[0].text, path = explorerEntities.get(id)?.replace('Settings::', '');
+    const selected = resolvePresentationPath(settingsPackage, path);
+    assert.ok(selected && (a.isRootComponent(selected.node) || a.isInstance(selected.node)), `Structure occurrence ${id}`);
+    shownPaths.push(path);
+    if (parent) { assert.equal(path.slice(0, path.lastIndexOf('.')), parent); shownOwnership.push([parent, path]); }
+    const children = node.arguments[2];
+    if (children) { assert.ok(ts.isArrayLiteralExpression(children)); for (const child of children.elements) checkStructure(child, path); }
+}
+checkStructure(structureDeclaration.initializer);
+const expectedPaths = [], expectedOwnership = [];
+function expectedStructure(node, path) {
+    expectedPaths.push(path);
+    for (const child of members(a.isInstance(node) ? node.definition.ref : node).filter(a.isInstance)) {
+        expectedOwnership.push([path, `${path}.${child.name}`]); expectedStructure(child, `${path}.${child.name}`);
+    }
+}
+expectedStructure(settingsPackage.elements.find(element => a.isRootComponent(element) && element.name === 'Cabin'), 'Cabin');
+assert.deepEqual(shownPaths, expectedPaths, 'GV must include every actual component occurrence exactly once');
+assert.deepEqual(shownOwnership, expectedOwnership, 'GV ownership must match source expansion');
+console.log('Verified 7 GV component occurrences and all 6 source ownership relationships used by both structure layouts.');

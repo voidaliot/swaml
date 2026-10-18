@@ -2,6 +2,8 @@
 
 Normative chapter of the [SWAML 1.3 specification](../LANGUAGE_SPECIFICATION.md). This chapter makes the allowed traces precise; it does not prescribe an implementation thread model. The [reference simulation binding](../SIMULATION.md) makes a deterministic logical-time choice within this contract; production backends require their own binding and evidence.
 
+Class and component usages share this operational contract; operation and function activations likewise share it. The kind discriminators remain part of source and normalized identities, but neither class spelling nor operation spelling adds heap references, unrestricted object dispatch, a new scheduler or a new runtime profile. Component is a specialized Class, and Function a specialized Operation. The structural compatibility and handler-kind restrictions in chapters 1–3 are checked before execution.
+
 ## 6.1 Configuration and observable occurrences
 
 A running configuration consists of: the selected root component instance tree; private variable stores per component instance; live activation frames and their local call stacks; one serial lock per component; the state and timer generation of each live stateful function; message queues keyed by connector occurrence, direction and member; pending request correlations; released lifecycle activations; and a monotonic logical time.
@@ -24,7 +26,7 @@ The scheduler may interleave startup activations across components and within a 
 
 Each startup activation is released exactly once per root run. The core defines no automatic component restart. A deployment implementation restarting a failed component starts a new run epoch for the affected binding and MUST report its reset, queue-retention and correlation policy; it cannot imply uninterrupted E conformance for a reset it has not modeled.
 
-Periodic releases are independent of earlier completions. Serial dispatch does not merge or silently skip them. Manual activations are parameterless local harness releases. Input-triggered work remains in the input queue until dispatch is possible; it is not copied into an unbounded second activation queue. Admission of an RPC response resumes its suspended frame without acquiring another component lock.
+Periodic releases are independent of earlier completions. Serial dispatch does not merge or silently skip them. Input-triggered work remains in the input queue until dispatch is possible; it is not copied into an unbounded second activation queue. Admission of an RPC response resumes its suspended frame without acquiring another component lock.
 
 ## 6.3 Dispatch, backlog and snapshots
 
@@ -34,7 +36,9 @@ A reentrant activation root captures an atomic value snapshot of all component v
 
 Between independent ready queues and lifecycle releases, the scheduler chooses any enabled activation root. For a FIFO queue, dispatch preserves queue order; completion order of reentrant handlers need not match dispatch order. A target backend MUST specify fairness and scheduling policy, and MUST NOT introduce starvation while claiming eventual at-least-once delivery under continuously enabled receivers.
 
-An executable target binding MUST bound pending start/manual/periodic activations separately from connector queues. On exceeding that bound it MUST record `ActivationOverflow` and stop the affected root execution; silently dropping or coalescing releases is not an implementation of this core. A simulator may expose an explicitly unbounded mathematical backlog, but cannot use it as evidence for a bounded production deployment. The binding also bounds simultaneous reentrant activation roots; when full, subsequent work remains pending rather than exceeding the limit.
+An executable target binding MUST bound pending start/periodic/timer activations separately from connector queues. On exceeding that bound it MUST record `ActivationOverflow` and stop the affected root execution; silently dropping or coalescing releases is not an implementation of this core. A simulator may expose an explicitly unbounded mathematical backlog, but cannot use it as evidence for a bounded production deployment. The binding also bounds simultaneous reentrant activation roots; when full, subsequent work remains pending rather than exceeding the limit.
+
+Operator and test inputs follow ordinary typed routes from their emitting functions. A reference host MUST NOT introduce an unmodeled activation or message-injection channel. A generated test driver is part of the validated source and run evidence; its event emissions participate in the same queue admission, delivery, transport timing and handler ownership rules as application emissions.
 
 WCET includes local helpers and active reaction microsteps; request wait consumes deadline budget but no active CPU budget. The activation root's deadline is measured from release. For input reactions release occurs when the message is ready in its destination queue. A timer reaction is released at its due time even if dispatch is later. Local helpers have no independent release; a backend checks their declared execution bounds over the invocation and also includes them in the activation root's bounds.
 

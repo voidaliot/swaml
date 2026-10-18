@@ -1,6 +1,6 @@
 # SWAML language specification
 
-**Version:** 1.3.0 · **Source:** headerless packages; parser/host pinned to 1.3 · **Status:** released · **Date:** 2026-10-18
+**Version:** 1.3.1 · **Source:** headerless packages; parser/host pinned to 1.3 · **Status:** specification · **Date:** 2026-10-18
 
 SWAML means Software Architecture Modeling Language. This document and its normative chapters define a software architecture language with a proposed KerML semantic mapping. SWAML is independently authored and does not denote an OMG standard or UML compatibility level. Architects familiar with UML can begin with the informative [UML transition guide](UML_GUIDE.md); implemented capabilities are identified separately from mapping and execution contracts.
 
@@ -10,7 +10,7 @@ Read these chapters together. Their requirements have equal standing:
 
 1. [Structure, names and types](spec/01-structure-and-types.md).
 2. [Interfaces and communication](spec/02-communication.md).
-3. [Function and state semantics](spec/03-behavior.md).
+3. [Operation/function and state semantics](spec/03-behavior.md).
 4. [Timing, deployment, cases and conformance](spec/04-systems-and-conformance.md).
 5. [KerML semantic mapping](spec/05-kerml-mapping.md).
 6. [Graphical notation](GRAPHICAL_NOTATION.md) and [canonical concept catalog](GRAPHICAL_CATALOG.md).
@@ -27,20 +27,22 @@ The [user guide](USER_GUIDE.md), [architecture comparison](ARCHITECTURE_COMPARIS
 
 MUST and MUST NOT state conformance requirements. SHOULD states a recommendation with an explicitly documented justification needed for deviation. MAY grants permission. “Error” means a model is not valid under this version. An implementation may retain an invalid model for editing but MUST NOT report it as fully valid.
 
-The grammar determines tokens and parse structure. Prose determines validity and meaning. If grammar accepts text that violates a semantic rule, that text is invalid. If a discovered conflict makes the two impossible to satisfy, record a specification defect; do not silently choose a runtime meaning. Unknown syntax and unsupported requested language versions MUST be rejected. The host selects a pinned 1.3 parser before loading source; a file does not guess its own edition. See the [1.3 migration guide](MIGRATION_1_3.md) and [historical 1.1 migration guide](MIGRATION_1_1.md) for the intentional syntax migration from 1.0.
+The grammar determines tokens and parse structure. Prose determines validity and meaning. If grammar accepts text that violates a semantic rule, that text is invalid. If a discovered conflict makes the two impossible to satisfy, record a specification defect; do not silently choose a runtime meaning. Unknown syntax and unsupported requested language versions MUST be rejected. The host selects a pinned 1.3 parser before loading source; a file does not guess its own edition. See the [1.3.1 migration guide](MIGRATION_1_3_1.md), [1.3 migration guide](MIGRATION_1_3.md) and [historical 1.1 migration guide](MIGRATION_1_1.md) for the intentional syntax migration from 1.0.
 
-The language is closed at version 1.3: constructs not listed in the grammar are not implicitly inherited from UML, SysML or KerML. Component definitions support instantiation, single specialization and compatible explicit member redefinition. Generics, unrestricted KerML embedding and dynamic creation remain outside this version. External system identities support deployment integration without importing another modeling language.
+The language is closed at version 1.3: constructs not listed in the grammar are not implicitly inherited from UML, SysML or KerML. Class and component definitions support instantiation, single specialization and compatible explicit member redefinition. The software metamodel specializes Component from Class and Function from Operation; the corresponding lower camel case source keywords preserve those kinds. Generics, unrestricted KerML embedding and dynamic creation remain outside this version. External system identities support deployment integration without importing another modeling language.
+
+The structural rules apply to both classes and components, and the executable rules apply to both operations and functions. A component is a specialized class; a function is a specialized operation. These are declared software kinds, not unrestricted UML object semantics. See [ADR 0014](decisions/0014-classes-operations-and-uml-notation.md).
 
 ## 3. Design invariants
 
-- **I1 — Boundary:** every exchange between distinct component instances crosses port instances typed by the same interface contract and a permitted connector/delegation path.
-- **I2 — Ownership:** components own child components, ports, private data and functions; functions own calculations and statement flow or states. No performer element, behavior allocation, free action, free signal, or global variable exists.
+- **I1 — Boundary:** every exchange between distinct class/component instances crosses port instances typed by the same interface contract and a permitted connector/delegation path.
+- **I2 — Ownership:** classes and components own child class/component usages, ports, private data and operations/functions; operations and functions own calculations and statement flow or states. No performer element, behavior allocation, free action, free signal, or global variable exists.
 - **I3 — Event provenance:** after resolving any delegation, every outgoing data/event member has at least one syntactically associated emitting function in the resolved owning component. Every incoming member has exactly one handling function in that context, including a stateful function or interruptible-region owner where applicable. A delegated boundary has no additional local handler or emitter.
 - **I4 — Type safety:** payloads and results conform to nominal contracts. Messages transfer values, never aliases to another component's private state.
 - **I5 — Explicit communication policy:** every connector declares delivery, ordering, capacity and overflow. Time-sensitive connections add latency/freshness bounds.
 - **I6 — Views preserve meaning:** views reference existing semantic elements. Drawing a message cannot create a hidden communication channel.
 
-Local calls, calculation values, timer expiration, initial activation and state completion do not constitute exchanges between components. They are the only exceptions needed for local computation and lifecycle. An external actor or device that exchanges model data MUST be represented through a component port; a case actor label cannot bypass I1.
+Local calls, calculation values, timer expiration, initial activation and state completion do not constitute exchanges between components. They are the only exceptions needed for local computation and lifecycle. An external actor or device that exchanges model data MUST be represented through a component port; a case actor label cannot bypass I1. Operator and test inputs are named interface events emitted by component-owned functions; there is no separate harness activation trigger. See [events and inputs](EVENTS_AND_INPUTS.md).
 
 ## 4. Abstract model inventory
 
@@ -49,16 +51,18 @@ Local calls, calculation values, timer expiration, initial activation and state 
 | Model | packages | language edition selected by the parser/host |
 | Package | imports and named declarations | namespace |
 | DataType / EnumType | typed fields / literals | immutable nominal value shape |
-| Interface | data, event or function signatures | nominal versioned communication contract |
-| Component definition | child component instances, ports, variables, functions, connectors and delegation | reusable software boundary; optional base definition |
-| Component instance | distinct private stores and expanded effective members | one component definition; multiplicity one |
-| Root component | inline members or a component-definition instance; deployment bindings | closed architecture selected for execution; default service profile |
+| Interface | data, event or operation/function signatures | nominal versioned communication contract |
+| Class definition | child class/component usages, ports, variables, operations/functions, connectors and delegation | reusable software type; optional single class base |
+| Component definition | the same owned members as Class | specialized software boundary; optional class or component base |
+| Class/component usage | distinct private stores and expanded effective members | one compatible definition; multiplicity one; component usage requires component type |
+| Execution root | inline class/component members or a compatible definition usage; deployment bindings | closed architecture selected for execution; default service profile |
 | Port | role and optionality | one interface |
 | QoS policy definition | complete policy values | package-owned reuse without queue sharing |
 | Connector / delegation | policy selection / boundary alias | explicit typed route / same-contract forwarding |
-| Function | typed parameters/result, trigger, timing, calculations; statements **or** states | executable behavior owned by one component |
-| Calculation | typed inputs, named non-void output and expression | pure value computation owned by one function |
-| State / transition | entry/exit blocks / trigger, guard, priority and effect | behavior directly owned by one function |
+| Operation | typed parameters/result, trigger, timing, calculations; statements **or** states | executable behavior owned by one class/component |
+| Function | the same owned executable content as Operation | specialization of Operation; retains its function kind |
+| Calculation | typed inputs, named non-void output and expression | pure value computation owned by one operation/function |
+| State / transition | entry/exit blocks / trigger, guard, priority and effect | behavior directly owned by one operation/function |
 | Deployment | no system definition | component-instance path and external system/part identity |
 | Requirement | immutable typed attributes and one optional formal doc | named obligation; incoming satisfy/verify links |
 | Use / verification case | optional doc, verification links where permitted, and exchange steps | one root context selected with of; intended use / verification intent |
@@ -78,4 +82,4 @@ Requirements own typed attributes and one optional `doc /* ... */` specification
 
 ## Extended function flow and timing
 
-The 1.3 edition adds counted for, copied-array forEach, bounded do loops and typed interruptible regions. FV includes trace-backed function timing. See the [control-flow guide](CONTROL_FLOW_AND_TIMING.md), [1.3 migration](MIGRATION_1_3.md) and [design decision](decisions/0011-loops-interrupts-and-function-timing.md).
+The 1.3 edition adds counted for, copied-array forEach, bounded do loops and typed interruptible regions. The 1.3.1 revision separates trace-backed function timing into `tv`; `fv` presents statement flow, states and interrupts. `gv` supports Box in box and Tree layouts of the same ownership hierarchy. See the [control-flow guide](CONTROL_FLOW_AND_TIMING.md), [1.3.1 migration](MIGRATION_1_3_1.md) and [view design decision](decisions/0012-timing-view-and-structure-layouts.md).

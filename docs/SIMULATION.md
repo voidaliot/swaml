@@ -14,11 +14,13 @@ node scripts/check-simulations.mjs
 
 The command takes a qualified root component name, a JSON options file and all workspace model files. It validates the entire input before executing. JSON output contains the trace, final stores, machine states, effective deployments, exact source text and per-source SHA-256 digests. Redirect stdout to a file when collecting evidence. The direct `node out/src/cli/simulate.js ...` command emits only JSON to stdout on a valid invocation; `npm run` additionally prints its script banner.
 
-The selected root may compose components inline or instantiate a component definition. A typed root's deployment body does not extend its topology. Instance paths, stores, manual release paths and deployment keys remain relative to the selected root without a root-name prefix. Root-owned functions use their local name, such as `initialize`, without a root prefix. Store/deployment output includes every expanded component, with the root represented by the empty-string path. Source deployment may explicitly name the root to establish its default location. The output names the selected architecture `root`, and identifies the binding as `swaml-reference/1.3`.
+The selected root may compose components inline or instantiate a component definition. A typed root's deployment body does not extend its topology. Instance paths, stores and deployment keys remain relative to the selected root without a root-name prefix. Root-owned functions use their local name, such as `initialize`, without a root prefix. Store/deployment output includes every expanded component, with the root represented by the empty-string path. Source deployment may explicitly name the root to establish its default location. The output names the selected architecture `root`, and identifies the binding as `swaml-reference/1.3`.
 
 Exit status is 0 when no failure was observed, 1 for invalid models, a failed activation, a contract violation or a resource limit, and 2 for an invocation/configuration error. A bounded horizon with no observed failure is not proof of eventual success. Descriptive `case` declarations are not a second executable script and are not automatically proven by this command.
 
 The [run catalog](../examples/simulation/runs.json) names the published roots, options and expected final values. The [hello trace](../examples/simulation/hello-trace.json) is a complete reproducible observation artifact, including its exact model source. CI reruns every catalog entry, compares final values, checks repeatability and detects a stale published trace.
+
+Operator and test stimuli are named interface events published by ordinary functions in the model. Start behavior and finite state/timer sequences schedule those emissions. Their explicit routes use the same queues, QoS and latency as application messages. The simulator has no direct function-release or destination-event injection option; a generated driver must be validated and preserved as source. See [events and external inputs](EVENTS_AND_INPUTS.md).
 
 ## Binding parameters
 
@@ -28,10 +30,9 @@ All times and counts are safe integers. Times are nanoseconds. Unknown options a
 | --- | --- | --- |
 | `untilNs` | required; ≥ 0 | Process events at times ≤ this horizon. Start epoch is zero. |
 | `maxSteps` | 100000; ≥ 1 | Fuel for expansion, events, statements, expressions and transition work. Stops explicitly on exhaustion; it is a resource count, not elapsed CPU time. |
-| `maxPending` | 1024; ≥ 1 | Global bound on pending lifecycle/manual/periodic/timer work, excluding active frames and connector queues. |
+| `maxPending` | 1024; ≥ 1 | Global bound on pending lifecycle/periodic/timer work, excluding active frames and connector queues. |
 | `maxReentrant` | 64; ≥ 1 | Maximum simultaneous reentrant activation roots per component. Serial activation roots have their separate one-lock rule. |
 | `latencyNs` | 0; ≥ 0 | Constant one-way transport delay for accepted request, response, data and event offers. |
-| `manual` | empty list | Parameterless harness releases: `{ "atNs": 0, "function": "web.frontend.checkout" }`. Path is relative to selected root component. Only `on manual` functions may be selected. |
 | `faults` | empty list | Fault schedule keyed by the one-based `offer` ordinal shown in the trace. Each offer has at most one entry. |
 
 Example options:
@@ -43,12 +44,11 @@ Example options:
   "maxSteps": 100000,
   "maxPending": 1024,
   "maxReentrant": 64,
-  "manual": [{ "atNs": 0, "function": "web.frontend.checkout" }],
   "faults": [{ "offer": 1, "kind": "drop" }]
 }
 ```
 
-Manual releases at the same time retain their list order. A release carries no model payload. Use modeled adapter functions and their typed ports to represent external commands or data. The simulator never allows a harness to call a remote handler directly.
+Driver publications follow ordinary source statement order and scheduler rules. Named events carry copied, typed payloads through their declared routes. Independent source activations retain the deterministic scheduling order described below; the simulator has no separate input-release list.
 
 ## Deterministic scheduling and time
 

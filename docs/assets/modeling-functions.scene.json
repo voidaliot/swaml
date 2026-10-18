@@ -64,7 +64,7 @@
       "kind": "text",
       "x": 36,
       "y": 143,
-      "text": "overOrder() · on manual",
+      "text": "overOrder() · on receive control.overOrder",
       "size": 20,
       "bold": false,
       "color": "#17324d"

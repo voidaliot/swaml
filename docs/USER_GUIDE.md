@@ -2,6 +2,8 @@
 
 Architects familiar with UML: start with the [concept correspondence and modeling workflow](UML_GUIDE.md).
 
+Version 1.3.1 also supports `class` as the general structural category and `operation` as the general executable/signature category. `component` specializes `class`; `function` specializes `operation`. The component/function examples below retain their meaning. Both alternatives use the same private values, owned children, typed ports, local calculations, flow/states and execution rules. See the [complete mixed example](../examples/20-classes-and-operations.swaml) and [category compatibility rules](decisions/0014-classes-operations-and-uml-notation.md). clientServer/service ports use balls for server/provides and sockets for client/requires, while preserving contract labels and reverse traffic.
+
 SWAML describes what software contains, how it communicates, and how functions and state evolve. The model remains independent of C++, Rust, an RTOS, a cloud runtime, or a particular network protocol.
 
 ## 1. Install and check a model
@@ -194,14 +196,17 @@ The editor host should load the whole model workspace. The CLI deliberately load
 | Surface | Purpose |
 | --- | --- |
 | Browser | Navigate packages → definitions → instances → ports/functions → states |
-| gv — General View | Inspect structure, declarations and their relationships |
+| gv — General View | Inspect the same structure in Box in box or Tree layout |
 | iv — Interconnect View | Inspect connected ports and component delegation |
 | cv — Case View | Inspect cases and linked requirements |
 | sv — Sequence View | Inspect the partial ordering of interface exchanges in a case |
 | grv — Grid View | Inspect sortable model, interface, timing and deployment tables |
-| fv — Flow View | Inspect a function's control flow or owned state transitions |
+| fv — Flow View | Inspect a function's control flow, interruptible regions or owned state transitions |
+| tv — Timing View | Inspect observed function activation timing beside separate declared contracts |
 
-These are specified editor behaviors. The current package supplies the model syntax and language server, not a diagram renderer. View declarations can already be parsed and checked. See [graphical notation](GRAPHICAL_NOTATION.md) for the drawing and editing contract.
+These are the seven source view kinds plus Browser navigation. In gv, **Box in box** shows nested ownership frames and **Tree** shows the same hierarchy with ownership edges. Switching layouts preserves occurrence paths, selection, ownership and typed routes; it does not edit the model.
+
+The current package parses and validates view declarations. The [showcase](../showcase/README.md) renders curated source-checked models with selection and layout controls; it does not implement arbitrary graphical source editing. See [graphical notation](GRAPHICAL_NOTATION.md) for the drawing and editing contract.
 
 ## 12. Resolve diagnostics
 
@@ -225,7 +230,7 @@ The getter is reentrant and reads the private-state snapshot taken when it is di
 
 A case reply must follow a unique unanswered matching request through its `after` ancestry. Two outstanding requests on the same route/member cannot be disambiguated by drawing one reply lower on the page. Order the pairs or use separate cases. Requests may remain unanswered in a partial trace. A route-valid case still needs a function-level witness before it counts as verified behavior.
 
-Use the owning package's name as a gv/grv subject for an inventory. iv takes a component definition/root component; fv takes a function, including an occurrence path such as `Cabin.settings.store.update`. cv/sv take a case or root component. A view cannot use another view as its semantic subject.
+Use the owning package's name as a gv/grv subject for an inventory. iv takes a component definition/root component or child occurrence; fv/tv take executable functions, including an occurrence path such as `Cabin.settings.store.update`. cv/sv take a case or root component. A view cannot use another view as its semantic subject. Select a single timing function with `view updateTiming tv of Cabin.settings.store.update;`. To select every function under a root, write `view allTiming tv { include Cabin recursive where kind == "function"; }`; compact tv of a component is invalid. A function need not have a timing contract or trigger to be selected. The view itself supplies no execution evidence.
 
 If a routed call returns void, its required `as` name marks completion but cannot be read as a value. Reserve `failure` for the implicit error-path binding. Write string line breaks with `\n`; raw line breaks, tabs and unsupported escapes inside strings are rejected.
 
@@ -233,7 +238,11 @@ The [operational contract](spec/06-execution-contract.md) defines execution edge
 
 ## Find a construct or run an example
 
-Use the [alphabetical keyword reference](KEYWORD_REFERENCE.md) for exact words and context, the [concern guide](CONCERN_GUIDE.md) for architectural questions, or the [complete Markdown book](SWAML-1.3.0-Reference.md) for a single user-facing document. The maintained examples have executable [simulation configurations](../examples/simulation/runs.json); follow the [reference simulation guide](SIMULATION.md) to run them and inspect their traces.
+Use the [alphabetical keyword reference](KEYWORD_REFERENCE.md) for exact words and context, the [concern guide](CONCERN_GUIDE.md) for architectural questions, or the [complete Markdown book](SWAML-1.3.1-Reference.md) for a single user-facing document. The maintained examples have executable [simulation configurations](../examples/simulation/runs.json); follow the [reference simulation guide](SIMULATION.md) to run them and inspect their traces.
+
+## Operator and test inputs
+
+Declare named, typed events and receive them through an owned port with `on receive port.member`. Model the operator, adapter or test driver as component-owned functions that publish those events through explicit routes. Finite simulations use start and state-timer behavior to schedule driver publications. See [events and external inputs](EVENTS_AND_INPUTS.md). There is no direct simulator function-release or destination-event injection input.
 
 ## Requirements and formal documentation
 
@@ -241,4 +250,4 @@ Requirements own typed attributes and one optional `doc /* ... */` specification
 
 ## Extended loops, interrupts and timing
 
-Use counted `for`, copied-array `forEach` or post-test `do` when their scope and test order fit the behavior. Conditional loops retain explicit bounds. `interruptible` regions bind cancellation to an owned typed input route and preserve the activation deadline and committed effects. FV offers trace-backed timing and interrupt examples alongside flow and states. See the [complete guide](CONTROL_FLOW_AND_TIMING.md) and [1.3 migration](MIGRATION_1_3.md).
+Use counted `for`, copied-array `forEach` or post-test `do` when their scope and test order fit the behavior. Conditional loops retain explicit bounds. `interruptible` regions bind cancellation to an owned typed input route and preserve the activation deadline and committed effects. FV covers flow, states and interruptible regions. TV provides trace-backed function timing with declared WCET, deadline and concurrency shown separately. A timing diagram adds no execution semantics or scheduling proof. See the [complete guide](CONTROL_FLOW_AND_TIMING.md), [1.3 migration](MIGRATION_1_3.md) and [1.3.1 correction](MIGRATION_1_3_1.md).

@@ -1,0 +1,758 @@
+{
+  "width": 1000,
+  "height": 790,
+  "title": "gv · Tree layout",
+  "description": "Cabin ownership: the same seven component occurrences as the Box in box layout.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 1000,
+      "height": 790,
+      "fill": "#ffffff",
+      "stroke": "none",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 32,
+      "y": 47,
+      "text": "gv · Tree layout",
+      "size": 30,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 32,
+      "y": 80,
+      "text": "Cabin ownership: the same seven component occurrences as the Box in box layout.",
+      "size": 17,
+      "bold": false,
+      "color": "#516579"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          32,
+          99
+        ],
+        [
+          968,
+          99
+        ]
+      ],
+      "color": "#ccd9e2",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "rect",
+      "x": 260,
+      "y": 126,
+      "width": 480,
+      "height": 108,
+      "fill": "#ffffff",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 276,
+      "y": 157,
+      "text": "Cabin · root",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 707,
+      "y": 139,
+      "width": 17,
+      "height": 24,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 701,
+      "y": 142,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 701,
+      "y": 153,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 276,
+      "y": 195,
+      "text": "function driveInputs() · on start",
+      "size": 18,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 276,
+      "y": 219,
+      "text": "publish panelInput.adjust(22)",
+      "size": 17,
+      "bold": false,
+      "color": "#087f8c"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          500,
+          234
+        ],
+        [
+          500,
+          249
+        ],
+        [
+          180,
+          249
+        ],
+        [
+          180,
+          275
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "text",
+      "x": 195,
+      "y": 263,
+      "text": "owns",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 40,
+      "y": 281,
+      "width": 280,
+      "height": 84,
+      "fill": "#ffffff",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 56,
+      "y": 312,
+      "text": "settings : Service",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 287,
+      "y": 294,
+      "width": 17,
+      "height": 24,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 281,
+      "y": 297,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 281,
+      "y": 308,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 56,
+      "y": 347,
+      "text": "Cabin.settings",
+      "size": 16,
+      "bold": false,
+      "color": "#516579"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          180,
+          365
+        ],
+        [
+          180,
+          431
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "text",
+      "x": 195,
+      "y": 405,
+      "text": "owns",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 40,
+      "y": 437,
+      "width": 280,
+      "height": 110,
+      "fill": "#ffffff",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 56,
+      "y": 468,
+      "text": "store",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 287,
+      "y": 450,
+      "width": 17,
+      "height": 24,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 281,
+      "y": 453,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 281,
+      "y": 464,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 56,
+      "y": 493,
+      "text": ": SettingStore",
+      "size": 19,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 56,
+      "y": 523,
+      "text": "Cabin.settings.store",
+      "size": 16,
+      "bold": false,
+      "color": "#516579"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          500,
+          234
+        ],
+        [
+          500,
+          249
+        ],
+        [
+          500,
+          249
+        ],
+        [
+          500,
+          275
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "text",
+      "x": 515,
+      "y": 263,
+      "text": "owns",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 360,
+      "y": 281,
+      "width": 280,
+      "height": 84,
+      "fill": "#ffffff",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 376,
+      "y": 312,
+      "text": "front : Client",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 607,
+      "y": 294,
+      "width": 17,
+      "height": 24,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 601,
+      "y": 297,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 601,
+      "y": 308,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 376,
+      "y": 347,
+      "text": "Cabin.front",
+      "size": 16,
+      "bold": false,
+      "color": "#516579"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          500,
+          365
+        ],
+        [
+          500,
+          431
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "text",
+      "x": 515,
+      "y": 405,
+      "text": "owns",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 360,
+      "y": 437,
+      "width": 280,
+      "height": 110,
+      "fill": "#ffffff",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 376,
+      "y": 468,
+      "text": "panel",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 607,
+      "y": 450,
+      "width": 17,
+      "height": 24,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 601,
+      "y": 453,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 601,
+      "y": 464,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 376,
+      "y": 493,
+      "text": ": Panel",
+      "size": 19,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 376,
+      "y": 523,
+      "text": "Cabin.front.panel",
+      "size": 16,
+      "bold": false,
+      "color": "#516579"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          500,
+          234
+        ],
+        [
+          500,
+          249
+        ],
+        [
+          820,
+          249
+        ],
+        [
+          820,
+          275
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "text",
+      "x": 835,
+      "y": 263,
+      "text": "owns",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 680,
+      "y": 281,
+      "width": 280,
+      "height": 84,
+      "fill": "#ffffff",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 696,
+      "y": 312,
+      "text": "rear : Client",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 927,
+      "y": 294,
+      "width": 17,
+      "height": 24,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 921,
+      "y": 297,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 921,
+      "y": 308,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 696,
+      "y": 347,
+      "text": "Cabin.rear",
+      "size": 16,
+      "bold": false,
+      "color": "#516579"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          820,
+          365
+        ],
+        [
+          820,
+          431
+        ]
+      ],
+      "color": "#17324d",
+      "dash": false,
+      "arrow": true
+    },
+    {
+      "kind": "text",
+      "x": 835,
+      "y": 405,
+      "text": "owns",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 680,
+      "y": 437,
+      "width": 280,
+      "height": 110,
+      "fill": "#ffffff",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 696,
+      "y": 468,
+      "text": "panel",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 927,
+      "y": 450,
+      "width": 17,
+      "height": 24,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 921,
+      "y": 453,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "rect",
+      "x": 921,
+      "y": 464,
+      "width": 11,
+      "height": 6,
+      "fill": "white",
+      "stroke": "#17324d",
+      "rx": 0
+    },
+    {
+      "kind": "text",
+      "x": 696,
+      "y": 493,
+      "text": ": Panel",
+      "size": 19,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 696,
+      "y": 523,
+      "text": "Cabin.rear.panel",
+      "size": 16,
+      "bold": false,
+      "color": "#516579"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          32,
+          563
+        ],
+        [
+          968,
+          563
+        ]
+      ],
+      "color": "#ccd9e2",
+      "dash": true,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 40,
+      "y": 599,
+      "text": "External deployment references",
+      "size": 21,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 40,
+      "y": 623,
+      "width": 410,
+      "height": 87,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 55,
+      "y": 655,
+      "text": "settings → system:controller",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 55,
+      "y": 685,
+      "text": "store inherits this location",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "rect",
+      "x": 510,
+      "y": 623,
+      "width": 450,
+      "height": 87,
+      "fill": "#eef4f8",
+      "stroke": "#17324d",
+      "rx": 8
+    },
+    {
+      "kind": "text",
+      "x": 525,
+      "y": 655,
+      "text": "front, rear → system:displays",
+      "size": 20,
+      "bold": true,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 525,
+      "y": 685,
+      "text": "each panel inherits its parent location",
+      "size": 17,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 40,
+      "y": 752,
+      "text": "Ownership arrows do not imply communication, activation order or shared private state.",
+      "size": 17,
+      "bold": false,
+      "color": "#516579"
+    }
+  ]
+}

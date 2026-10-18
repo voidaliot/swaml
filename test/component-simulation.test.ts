@@ -13,30 +13,56 @@ async function run(text: string, options: SimulationOptions = { untilNs: 100 }) 
     return simulate([document.parseResult.value], 'P::System', options);
 }
 
+/** Test stimuli remain ordinary source: a timed publishing function and an explicit route. */
+const eventDriver = (event: string) => `
+    interface publishSubscribe Commands version "1.0.0" { event ${event}(); }
+    component def InputDriver {
+        port output: Commands publisher;
+        function sequence() on start {
+            initial Waiting;
+            state Waiting {}
+            state Done final {}
+            transition emit: Waiting -> Done on after 1 ns { publish output.${event}(); }
+        }
+    }
+`;
+
 test('every component instance owns independent data, helpers and inherited dispatch', async () => {
     const result = await run(`package P {
+        ${eventDriver('increment')}
         component def Base {
+            port control: Commands subscriber optional;
             var count: int = 0;
         function helper() {
             calc amount { in value: int; return result: int = value + 1; }
             count = amount(count); }
             function boot() on start { call helper(); }
-            function increment() on manual { call helper(); }
+            function increment() on receive control.increment { call helper(); }
         }
         component def Specialized specializes Base {
             redefines function helper() { calc amount { in value: int; return result: int = value + 5; } count = amount(count) * 2; }
         }
-        component System { component first: Specialized; component second: Specialized; component base: Base; }
-    }`, { untilNs: 100, manual: [{ atNs: 1, function: 'first.increment' }] });
+        component System {
+            component first: Specialized; component second: Specialized; component base: Base;
+            component driver: InputDriver;
+            connect inputRoute: driver.output -> first.control qos { delivery atMostOnce; ordering fifo; capacity 1; overflow reject; };
+        }
+    }`, { untilNs: 100 });
     assert.equal(result.outcome, 'no-failure-observed');
     assert.equal(result.stores.first.count, 30);
     assert.equal(result.stores.second.count, 10);
     assert.equal(result.stores.base.count, 1);
     assert.ok(result.trace.some(event => event.kind === 'dispatch' && event.function === 'first.boot'));
+    const emission = result.trace.find(event => event.kind === 'emission');
+    assert.equal(emission?.source, 'driver.output.increment');
+    assert.equal(emission?.route, 'inputRoute');
+    assert.equal(typeof emission?.activation, 'string');
+    assert.ok(result.trace.some(event => event.kind === 'admission' && event.queue === 'inputRoute/forward/increment'));
 });
 
 test('components and roots execute local behavior while composing child components', async () => {
     const result = await run(`package P {
+        ${eventDriver('reset')}
         interface senderReceiver Signal version "1.0.0" { data value: int queued; }
         component def Receiver {
             port input: Signal receiver;
@@ -51,13 +77,16 @@ test('components and roots execute local behavior while composing child componen
             connect local: output -> child.input qos { delivery atMostOnce; ordering fifo; capacity 2; overflow reject; };
         }
         component System {
+            port control: Commands subscriber;
+            component driver: InputDriver;
             var started: bool = false;
             function boot() on start { started = true; }
-            function reset() on manual { started = false; }
+            function reset() on receive control.reset { started = false; }
             component parent: Parent;
+            connect inputRoute: driver.output -> control qos { delivery atMostOnce; ordering fifo; capacity 1; overflow reject; };
             deploy System on "sysml:Vehicle::computer";
         }
-    }`, { untilNs: 10, manual: [{ atNs: 1, function: 'reset' }] });
+    }`, { untilNs: 10 });
     assert.equal(result.outcome, 'no-failure-observed');
     assert.equal(result.stores[''].started, false);
     assert.equal(result.stores.parent.sent, 7);
@@ -100,8 +129,14 @@ for (const [name, declarations, body] of [
     assert.ok(result.trace.some(event => event.kind === 'failure' && event.code === 'Bounds'), JSON.stringify(result.trace));
 });
 
-test('manual harness rejects retired operation key instead of guessing a function', async () => {
-    await assert.rejects(() => run('package P { component System { function boot() on manual {} } }', { untilNs: 1, manual: [{ atNs: 0, operation: 'boot' }] } as unknown as SimulationOptions), /function path/);
+for (const [name, input] of [
+    ['retired manual function release', { manual: [{ atNs: 0, function: 'boot' }] }],
+    ['retired manual operation release', { manual: [{ atNs: 0, operation: 'boot' }] }],
+    ['retired empty manual option', { manual: [] }],
+    ['direct event injection', { events: [{ atNs: 0, event: 'input.requested', args: [] }] }],
+    ['direct stimuli injection', { stimuli: [{ atNs: 0, event: 'input.requested', args: [] }] }],
+] as const) test(`simulation rejects ${name} instead of bypassing source behavior`, async () => {
+    await assert.rejects(() => run('package P { component System { function boot() on start {} } }', { untilNs: 1, ...input } as unknown as SimulationOptions), /Unknown simulation option/);
 });
 
 test('numeric literal arrays and nominal record fields retain constrained element types', async () => {
@@ -140,20 +175,26 @@ test('out-of-range payloads fail at the emitting function without creating a mes
 
 test('a failing inherited calculation preserves earlier local effects and isolates sibling stores', async () => {
     const result = await run(`package P {
+        ${eventDriver('advance')}
         component def Base {
+            port control: Commands subscriber optional;
             var count: uint = 0;
             var sample: byte = 0;
         function step() {
             calc encode { in value: uint; return result: byte = value; }
             count = count + 1; sample = encode(count); }
             function boot() on start { call step(); }
-            function advance() on manual { call step(); }
+            function advance() on receive control.advance { call step(); }
         }
         component def Derived specializes Base {
             redefines function step() { calc encode { in value: uint; return result: byte = value * 200; } count = count + 1; sample = encode(count); }
         }
-        component System { component left: Derived; component right: Derived; }
-    }`, { untilNs: 10, manual: [{ atNs: 1, function: 'left.advance' }] });
+        component System {
+            component left: Derived; component right: Derived;
+            component driver: InputDriver;
+            connect inputRoute: driver.output -> left.control qos { delivery atMostOnce; ordering fifo; capacity 1; overflow reject; };
+        }
+    }`, { untilNs: 10 });
     assert.equal(result.outcome, 'failed');
     assert.deepEqual(result.stores.left, { count: 2, sample: 200 });
     assert.deepEqual(result.stores.right, { count: 1, sample: 200 });
@@ -162,6 +203,7 @@ test('a failing inherited calculation preserves earlier local effects and isolat
 
 test('specialized service handlers preserve correlations and reject invalid function results', async () => {
     const result = await run(`package P {
+        ${eventDriver('tryOverflow')}
         interface clientServer Convert version "1.0.0" { function convert(value: byte): byte; }
         component def Server {
             port api: Convert server;
@@ -172,6 +214,8 @@ test('specialized service handlers preserve correlations and reject invalid func
             redefines function convert(value: byte): byte on call api.convert { handled = handled + 1; return value + 1; }
         }
         component System {
+            port control: Commands subscriber;
+            component driver: InputDriver;
             port api: Convert client;
             component backend: Incrementer;
             var sample: byte = 0;
@@ -180,13 +224,14 @@ test('specialized service handlers preserve correlations and reject invalid func
                 call api.convert(254) as converted within 1 s otherwise { fail "unexpected conversion failure"; };
                 sample = converted;
             }
-            function tryOverflow() on manual {
+            function tryOverflow() on receive control.tryOverflow {
                 call api.convert(255) as converted within 1 s otherwise { rejected = failure == "RemoteFailure"; return; };
                 fail "out-of-range result was accepted";
             }
             connect rpc: api -> backend.api qos { delivery atMostOnce; ordering fifo; capacity 2; overflow reject; };
+            connect inputRoute: driver.output -> control qos { delivery atMostOnce; ordering fifo; capacity 1; overflow reject; };
         }
-    }`, { untilNs: 10, manual: [{ atNs: 1, function: 'tryOverflow' }] });
+    }`, { untilNs: 10 });
     assert.equal(result.stores[''].sample, 255);
     assert.equal(result.stores[''].rejected, true);
     assert.equal(result.stores.backend.handled, 2);

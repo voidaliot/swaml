@@ -1,25 +1,26 @@
-# 3. Functions, flow and states
+# 3. Operations, functions, flow and states
 
 Normative chapter of the [SWAML 1.3 specification](../LANGUAGE_SPECIFICATION.md).
 
-## 3.1 Function identity and activation
+## 3.1 Operation/function identity and activation
 
-A function belongs directly to a component definition or an inline root and executes in its owning component instance. It has a name, ordered parameters, optional result annotation, optional trigger, optional timing contract, zero or more function-local calculations, and exactly one executable body form: a statement block or directly owned states. Omitting `: Type` means void; an explicit `: void` has identical meaning. Both leaf and composite components may execute their own functions. Each function executes against its owning component instance, independently of that component's children.
+An executable `operation` belongs directly to a class/component definition or an inline root and executes in its owning usage. `function` declares the specialized Function kind of Operation. Both keywords accept the same body forms, local calculations, triggers, timing and copied-value execution rules. The remaining function rules in this chapter apply to both executable kinds unless a contract-kind rule explicitly distinguishes them. Neither spelling creates a pure expression call; `calc` remains the separate pure expression construct.
+
+An operation/function has a name, ordered parameters, optional result annotation, optional trigger, optional timing contract, zero or more function-local calculations, and exactly one executable body form: a statement block or directly owned states. Omitting `: Type` means void; an explicit `: void` has identical meaning. Both leaf and composite classes/components may execute their own operations/functions. Each function executes against its owning component instance, independently of that component's children.
 
 An **activation root** is one dispatched function activation or state reaction and its synchronous local-call stack. It owns the execution lock/snapshot context inherited by helpers. This runtime term is distinct from a **root component**, which selects architecture and may also own local functions.
 
 | Trigger | Activation and permitted signature |
 | --- | --- |
 | omitted | local `call`; untriggered flow functions may return void or a typed value |
-| `on manual` | parameterless void activation activated by a test/administrative harness, carrying no model data |
 | `on start` | parameterless void function, once after component initialization and connector readiness |
 | `on every D` | parameterless void function released at component start + kD, for positive integer k |
 | `on receive p.m` | copied data/event arguments, void result |
 | `on call p.m` | copied RPC arguments and exact contract result |
 
-Manual activation is a control of the modeling environment, not a way to inject an external data exchange without a port. A modeled UI command, interrupt payload, device sample, network event or external client MUST use an interface. Timers and initial activation are local lifecycle mechanisms.
+Operator commands, test stimuli, interrupt payloads, device samples and network events MUST use named interface members and explicit routes. Their source is an ordinary component-owned function that publishes or sends through an owned typed port. There is no special harness trigger or direct function-release input. Reproducible test drivers use existing start, periodic or state-timer behavior to schedule publications. A host-generated driver MUST remain ordinary validated source recorded with the run. Timers and initial activation are local lifecycle mechanisms.
 
-Several ordinary functions may exist in one component. An interface signature declares an RPC contract; the component function triggered by that member implements it. A stateful function directly contains its states. Reuse of algorithms is through calculations or local functions, and reuse of architecture is through definitions and instances.
+Several ordinary operations/functions may exist in one class/component. An interface operation/function signature declares an RPC contract; the owned implementation triggered by that member implements it. An operation contract accepts either compatible executable kind; a function contract requires a function implementation. A stateful function directly contains its states. Reuse of algorithms is through calculations or local functions, and reuse of architecture is through definitions and instances.
 
 ## 3.2 Flow execution
 
@@ -41,9 +42,9 @@ An activation holds its copied parameters, locals, a program position, its compo
 | `fail "reason";` | terminate the activation with a local failure reason |
 | `send` / `publish` / `call port.member(args) as result within D otherwise { … };` | execute chapter 2's typed interface exchanges |
 
-Reaching the end of a void function completes it. A value-returning function MUST return a value or fail on every path. If the loop condition remains true after n iterations, execution fails with a bound violation; the nth iteration is allowed. Local recursion is forbidden for both functions. Functions own calculations. `call name(args)` can only target an untriggered flow function in the same component. A non-void result MUST bind a fresh local with `as name`; void MUST omit that binding. Arguments and results are copied, with declared type and range checks. The result is available only after successful return and cannot shadow an existing live value. The helper borrows its caller’s lock and snapshot; failure unwinds the caller without rollback. Functions are never expression calls. `call port.member(args)` selects a routed exchange with mandatory timeout and failure clauses. This two-segment form cannot bypass a component boundary.
+Reaching the end of a void function completes it. A value-returning function MUST return a value or fail on every path. If the loop condition remains true after n iterations, execution fails with a bound violation; the nth iteration is allowed. Local recursion is forbidden across operations and functions alike. Functions own calculations. `call name(args)` can only target an untriggered flow function in the same component. A non-void result MUST bind a fresh local with `as name`; void MUST omit that binding. Arguments and results are copied, with declared type and range checks. The result is available only after successful return and cannot shadow an existing live value. The helper borrows its caller’s lock and snapshot; failure unwinds the caller without rollback. Functions are never expression calls. `call port.member(args)` selects a routed exchange with mandatory timeout and failure clauses. This two-segment form cannot bypass a component boundary.
 
-Failure unwinds the current activation and its synchronous local callers. It does not undo earlier variable assignments, published messages, responses, or external effects. For an RPC handler, failure produces a RemoteFailure response through the originating interface. For a periodic/start/manual/receive activation it produces a local diagnostic occurrence, not an implicit broadcast. To notify another component, model a fault event and publish it explicitly on a declared interface in an explicit branch before failing.
+Failure unwinds the current activation and its synchronous local callers. It does not undo earlier variable assignments, published messages, responses, or external effects. For an RPC handler, failure produces a RemoteFailure response through the originating interface. For a periodic/start/receive activation it produces a local diagnostic occurrence, not an implicit broadcast. To notify another component, model a fault event and publish it explicitly on a declared interface in an explicit branch before failing.
 
 Conditionals, bounded loops, interruptible regions, expression evaluation and sequential local calls are the full flow language in 1.3. There is no generic fork/join statement, exception hierarchy, arbitrary host-language body or independent action node. Concurrent architectural behavior is expressed by separately activated functions and connected components. A later fork/join extension must define data-race and cancellation semantics before entering the grammar.
 
@@ -77,9 +78,9 @@ Input queues are per connector/member. FIFO constrains order within one queue. A
 
 The core semantics is therefore a set of allowed execution traces. An execution backend may add a deterministic scheduling policy that narrows this set but must document it. A model requiring determinism across sources must explicitly order exchanges or provide a coordinating function.
 
-## 3.4 Stateful functions
+## 3.4 Stateful operations/functions
 
-A stateful function MUST have no parameters, result void (explicit or omitted), and `on start`. Its body begins with zero or more calculation declarations, then `initial StateName;`, followed by one or more states and zero or more transitions. There is no `machine` declaration or keyword. The grammar's `StateBody` only groups the owned syntax; it has no separate authored name, definition, allocation or runtime identity. `initial` MUST precede states and transitions after the optional calculations, so the executable body is unambiguously distinguished from statement flow. Calculations remain visible in all state guards, entries, exits and effects. The behavior is mathematically a flat state machine with exactly one initial reference. State and transition names are unique within that function's state body. Hierarchical/orthogonal states, history pseudostates, entry/exit points and state inheritance are absent in 1.3.
+A stateful operation/function MUST have no parameters, result void (explicit or omitted), and `on start`. Its body begins with zero or more calculation declarations, then `initial StateName;`, followed by one or more states and zero or more transitions. There is no `machine` declaration or keyword. The grammar's `StateBody` only groups the owned syntax; it has no separate authored name, definition, allocation or runtime identity. `initial` MUST precede states and transitions after the optional calculations, so the executable body is unambiguously distinguished from statement flow. Calculations remain visible in all state guards, entries, exits and effects. The behavior is mathematically a flat state machine with exactly one initial reference. State and transition names are unique within that function's state body. Hierarchical/orthogonal states, history pseudostates, entry/exit points and state inheritance are absent in 1.3.
 
 Starting the function enters its initial state and executes that state's entry block once. The function remains alive between reactions without holding the serial component lock. Each entry/exit/transition reaction is scheduled as a serial activation unless its timing contract explicitly says reentrant; a stateful function nevertheless MUST have at most one reaction in progress and cannot reenter its own state machine.
 

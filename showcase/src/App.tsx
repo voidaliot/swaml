@@ -4,6 +4,7 @@ import type { Edge, NodeProps } from '@xyflow/react';
 import { DiagramGallery, diagramChoices } from './DiagramGallery';
 import type { DiagramId } from './DiagramGallery';
 import { Ontology } from './Ontology';
+import { BoundaryPort, ClassifierGlyph, PortLegend } from './DiagramGlyphs';
 
 import { byId, diagram, entities, lifecycleSource, repository, source, views } from './model';
 import type { CardData, DiagramNode, Entity, ViewId } from './model';
@@ -16,6 +17,7 @@ const FunctionTiming = lazy(() => import('./FunctionTiming').then(module => ({ d
 const InterruptFlow = lazy(() => import('./InterruptFlow').then(module => ({ default: module.InterruptFlow })));
 const ModelingOverview = lazy(() => import('./ModelingOverview').then(module => ({ default: module.ModelingOverview })));
 const QuickStart = lazy(() => import('./QuickStart').then(module => ({ default: module.QuickStart })));
+const StructureView = lazy(() => import('./Structure').then(module => ({ default: module.StructureView })));
 
 function Icon({ name, size = 18 }: { name: string; size?: number }) {
   const paths: Record<string, string> = {
@@ -37,16 +39,18 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name] || paths.grid} /></svg>;
 }
 
-function FlatNode({ data, selected }: NodeProps<DiagramNode>) {
+export function FlatNode({ data, selected }: NodeProps<DiagramNode>) {
   const vertical = data.vertical;
   return <div className={`model-node node-${data.variant || 'component'} ${selected ? 'is-selected' : ''}`}>
-    <Handle type="target" position={vertical ? Position.Top : Position.Left} className={data.portSide === 'left' ? 'port-handle visible-port' : 'port-handle'} />
-    <div className="node-eyebrow"><span className="kind-mark" />{data.eyebrow}</div>
+    {!data.boundaryPorts && <Handle type="target" position={vertical ? Position.Top : Position.Left} className={data.portSide === 'left' || data.inputPort ? 'port-handle visible-port' : 'port-handle'} />}
+    <div className="node-eyebrow">{!data.variant || ['component', 'definition', 'root'].includes(data.variant) ? <ClassifierGlyph kind={data.classifierKind} decorative className="semantic-classifier-mark"/> : <span className="kind-mark"/>}{data.eyebrow}</div>
     <div className="node-title">{data.title}</div>
+    {data.inputPort && <div className="port-label port-left">{data.inputPort}</div>}
     {data.port && <div className={`port-label port-${data.portSide}`}>{data.port}</div>}
+    {data.boundaryPorts?.map(port => <div key={port.name} className={`port-label port-${port.side} semantic-port-row`}><BoundaryPort {...port}/><strong>{port.name} : {port.contract}</strong><span>@ {port.version} · {port.role}{port.optional ? ' · optional' : ''}</span></div>)}
     {data.detail && <div className="node-detail">{data.detail}</div>}
     {data.footer && <div className="node-footer">{data.footer}</div>}
-    <Handle type="source" position={vertical ? Position.Bottom : Position.Right} className={data.portSide === 'right' ? 'port-handle visible-port' : 'port-handle'} />
+    {!data.boundaryPorts && <Handle type="source" position={vertical ? Position.Bottom : Position.Right} className={data.portSide === 'right' ? 'port-handle visible-port' : 'port-handle'} />}
     {data.variant === 'state' && <><Handle id="bottom" type="source" position={Position.Bottom} className="port-handle" /><Handle id="bottom" type="target" position={Position.Bottom} className="port-handle" /></>}
   </div>;
 }
@@ -63,7 +67,7 @@ function Canvas({ view, stateMode, onSelect }: { view: ViewId; stateMode: boolea
   }, [onSelect]);
   const reset = () => { setNodes(initial.nodes); requestAnimationFrame(() => { void fitView({ padding: 0.2, duration: 250 }); }); };
   const selectEdge = (_: React.MouseEvent, edge: Edge) => onSelect(edge.id);
-  return <div className="diagram-canvas">
+  return <><div className="diagram-canvas">
     <ReactFlow<DiagramNode>
       key={`${view}-${stateMode}`} nodes={nodes} edges={initial.edges} onNodesChange={onNodesChange} nodeTypes={nodeTypes}
       onNodeClick={(_, node) => onSelect(node.data.entityId || node.id, node.data)} onEdgeClick={selectEdge}
@@ -78,13 +82,13 @@ function Canvas({ view, stateMode, onSelect }: { view: ViewId; stateMode: boolea
     <div className="canvas-subject"><span className="subject-dot" />{stateMode ? 'Lifecycle::Device.lifecycle' : views.find((v) => v.id === view)?.subject}<span className="canvas-subject-tag">{stateMode ? 'state body' : view === 'iv' ? 'root instance' : 'projection'}</span></div>
     <button className="reset-layout" onClick={reset}><Icon name="reset" size={14} />Reset layout</button>
     <div className="canvas-hint">Drag nodes to arrange · select to inspect</div>
-  </div>;
+  </div>{view === 'iv' && <PortLegend/>}</>;
 }
 
 const treeEntries: [string, number, string?][] = [
-  ['package', 0], ['contract', 1], ['policy', 1], ['store-def', 1], ['panel-def', 1], ['service-def', 1], ['client-def', 1],
-  ['root', 1], ['settings', 2], ['store', 3], ['update', 4], ['front', 2], ['front-panel', 3], ['rear', 2], ['rear-panel', 3],
-  ['frontLink', 2], ['rearLink', 2], ['controller', 2], ['displays', 2], ['requirement', 1], ['case', 1],
+  ['package', 0], ['contract', 1], ['input-contract', 1], ['policy', 1], ['store-def', 1], ['panel-def', 1], ['service-def', 1], ['client-def', 1],
+  ['root', 1], ['input-driver', 2], ['settings', 2], ['store', 3], ['update', 4], ['front', 2], ['front-panel', 3], ['rear', 2], ['rear-panel', 3],
+  ['adjustCommand', 2], ['frontLink', 2], ['rearLink', 2], ['controller', 2], ['displays', 2], ['requirement', 1], ['case', 1],
 ];
 
 function BrowserPanel({ selected, onSelect }: { selected: string; onSelect: (id: string) => void }) {
@@ -266,9 +270,9 @@ function App() {
     </header>
     <main>
       <section className="showcase-hero" aria-labelledby="hero-title">
-        <div className="hero-edition">SOFTWARE ARCHITECTURE MODELING LANGUAGE <span>1.3.0</span></div>
+        <div className="hero-edition">SOFTWARE ARCHITECTURE MODELING LANGUAGE <span>1.3.1</span></div>
         <h1 id="hero-title">See the architecture.<br/><span>Follow the behavior.</span></h1>
-        <p>A small language for components, contracts and functions.<br className="desktop-break"/> Explore the concepts, then see them in working model examples.</p>
+        <p>A small language for software structure, contracts and behavior.<br className="desktop-break"/> Explore the concepts, then see them in working model examples.</p>
         <div className="hero-actions"><a href="#diagrams" className="button button-ink">Explore the diagrams<Icon name="arrow" size={16}/></a><a href={`${repository}/blob/main/docs/QUICK_START.md`} className="hero-guide-link" target="_blank" rel="noreferrer">Read the quick guide ↗</a></div>
       </section>
 
@@ -279,20 +283,20 @@ function App() {
         <DiagramGallery selected={active} onSelect={chooseDiagram}/>
         <div id="diagram-example" className="gallery-workbench" aria-label={`${choice?.title ?? 'Model browser'} example`}>
           <div className="gallery-example-heading">
-            <div><span className="eyebrow">{choice?.example ?? 'Explore model ownership'}</span><h3>{choice?.title ?? 'Model browser'} <code>{view}</code></h3><code className="example-subject">{choice?.subject ?? 'Settings'}</code></div>
+            <div><span className="eyebrow">{choice?.example ?? 'Explore model ownership'}</span><h3>{choice?.title ?? 'Model browser'} <code>{view}</code></h3><code className="example-subject">{choice?.subjectLabel ? `${choice.subjectLabel}: ` : ''}{choice?.subject ?? 'Settings'}{choice?.subjectNote ? ` · ${choice.subjectNote}` : ''}</code></div>
             <div className="gallery-actions"><button type="button" className="icon-button" onClick={() => chooseDiagram('Browser')} aria-pressed={active === 'Browser'}><Icon name="tree" size={16}/><span>Browse model</span></button><button ref={detailsButton} type="button" className="icon-button" aria-expanded={showDetails} aria-controls="diagram-properties" onClick={() => setShowDetails(!showDetails)}><Icon name="layers" size={16}/><span>Details</span></button><button type="button" className="icon-button" onClick={() => setShowSource(true)}><Icon name="code" size={16}/><span>Source</span></button></div>
           </div>
           <div className={`gallery-example-body ${showDetails ? 'has-details' : ''}`}>
             <div className="gallery-example-canvas">
               <Suspense fallback={<p className="resource-loading" role="status">Loading diagram…</p>}>
-                {active === 'interrupts' ? <InterruptFlow onSelect={setSelected}/> : active === 'timing' ? <FunctionTiming onSelect={setSelected} onInspect={openDetails}/> : view === 'Browser' ? <BrowserPanel selected={selected.id} onSelect={select}/> : view === 'grv' ? <GridPanel selected={selected.id} onSelect={select}/> : view === 'sv' ? <SequencePanel onSelect={select}/> : <ReactFlowProvider key={active}><Canvas view={view} stateMode={stateMode} onSelect={select}/></ReactFlowProvider>}
+                {active === 'interrupts' ? <InterruptFlow onSelect={setSelected}/> : view === 'tv' ? <FunctionTiming onSelect={setSelected} onInspect={openDetails}/> : view === 'gv' ? <StructureView selected={selected.id} onSelect={select}/> : view === 'Browser' ? <BrowserPanel selected={selected.id} onSelect={select}/> : view === 'grv' ? <GridPanel selected={selected.id} onSelect={select}/> : view === 'sv' ? <SequencePanel onSelect={select}/> : <ReactFlowProvider key={active}><Canvas view={view} stateMode={stateMode} onSelect={select}/></ReactFlowProvider>}
               </Suspense>
             </div>
             {showDetails && <Inspector item={selected} onSource={() => setShowSource(true)} onClose={() => { setShowDetails(false); detailsButton.current?.focus(); }}/>}
           </div>
           <div className="gallery-example-footer"><span>Interactive example · pan, zoom and inspect</span><a href={`${repository}/blob/main/docs/GRAPHICAL_CATALOG.md`} target="_blank" rel="noreferrer">Full notation reference ↗</a></div>
         </div>
-        <p className="gallery-reading-note">Structure and interactions use gv, iv, cv, sv and grv. Function flow, states, interrupts and timing are presentations of fv. The model browser shows ownership.</p>
+        <p className="gallery-reading-note">Structure and interactions use gv, iv, cv, sv and grv. Function flow, states and interrupts use fv; timing uses tv. Box in box and Tree are two layouts of the same gv ownership. The model browser shows ownership.</p>
       </section>
 
       <section id="guide" className="learn-section" aria-labelledby="learn-title">
@@ -304,7 +308,7 @@ function App() {
         <Resource id="resource-interfaces" title="Choose a communication pattern" description="Data, requests, events and service interfaces." open={!!resources.interfaces} onToggle={open => setResource('interfaces', open)}><Interfaces/></Resource>
       </section>
     </main>
-    <footer className="site-footer"><a href="#" className="brand">swaml<span className="brand-dot">.</span></a><span>A language for software architecture · MIT license</span><div><a href={`${repository}/releases/tag/v1.3.0`} target="_blank" rel="noreferrer">Release 1.3.0 ↗</a><a href={`${repository}/blob/main/docs/LANGUAGE_SPECIFICATION.md`} target="_blank" rel="noreferrer">Specification ↗</a></div></footer>
+    <footer className="site-footer"><a href="#" className="brand">swaml<span className="brand-dot">.</span></a><span>A language for software architecture · MIT license</span><div><a href={`${repository}/releases/tag/v1.3.1`} target="_blank" rel="noreferrer">Released 1.3.1 ↗</a><a href={`${repository}/blob/main/docs/LANGUAGE_SPECIFICATION.md`} target="_blank" rel="noreferrer">Specification ↗</a></div></footer>
     {showSource && <SourceDialog filename={choice?.sourceFile ?? '08-service-field.swaml'} close={() => setShowSource(false)}/>}
   </div>;
 }

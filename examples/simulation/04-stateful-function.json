@@ -1,9 +1,3 @@
 {
-  "untilNs": 31000000000,
-  "manual": [
-    {
-      "atNs": 1,
-      "function": "assembly.operatorUnit.startDevice"
-    }
-  ]
+  "untilNs": 31000000000
 }

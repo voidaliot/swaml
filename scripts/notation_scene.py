@@ -61,6 +61,12 @@ class Scene:
         self.add('rect', x=x, y=y, width=width, height=height, rx=rx, fill=fill, stroke=stroke)
     def circle(self, x, y, r, fill=WHITE):
         self.add('circle', x=x, y=y, r=r, fill=fill, stroke=BLACK)
+    def rpc_symbol(self, x, y, role, outward=1):
+        self.line([(x+outward*7,y),(x+outward*25,y)])
+        cx=x+outward*35
+        if role in ['server','provides']: self.circle(cx,y,9)
+        else:
+            self.line([(cx-outward*11*math.cos(a),y+11*math.sin(a)) for a in [-math.pi/2+i*math.pi/16 for i in range(17)]])
     def polygon(self, points, fill=WHITE, stroke=BLACK):
         self.add('polygon', points=points, fill=fill, stroke=stroke)
     def line(self, points, dash=False):
@@ -140,7 +146,7 @@ class Scene:
 def render(concept):
     d=concept['drawing'];t=d['template'];head=d.get('header',[concept['title']]);head=[head] if isinstance(head,str) else head
     lines=d.get('lines',[]); label=d.get('label','');left=d.get('from','source');right=d.get('to','target')
-    s=Scene(concept,320 if t in ['browser','gv','iv','cv','sv','grv','fv','deployment','delegation','loop','request','transition'] else 280)
+    s=Scene(concept,320 if t in ['browser','gv','gv-tree','iv','cv','sv','grv','fv','deployment','delegation','loop','request','transition'] else 280)
     if t=='function' and d.get('variant')=='state-body':
         s.doc['height']=320;s.doc['shapes'][0]['height']=320
         s.rect(25,25,510,270,rx=12);s.labels(head,43,61,470,20,True);s.line([(25,91),(535,91)]);s.text(43,118,'on start',18)
@@ -176,13 +182,14 @@ def render(concept):
         role=d.get('role','sender'); outgoing=role in ['sender','publisher','client','requires']
         s.rect(28,32,290,210);s.labels(head,44,62,254,19,True)
         bidirectional=role in ['client','server','provides','requires'];s.port(318,174 if bidirectional else 158)
+        if bidirectional:s.rpc_symbol(318,174,role)
         s.text(350,88,'«'+role+'»',18,width=188)
         s.labels(lines,350,116,188)
-        pts=[(326,174),(345,158),(520,158)] if bidirectional else [(326,158),(520,158)]
+        pts=[(370,174),(392,158),(520,158)] if bidirectional else [(326,158),(520,158)]
         if not outgoing:pts.reverse()
         s.arrow(pts)
         if bidirectional:
-            response=[(326,174),(345,193),(520,193)]
+            response=[(370,174),(392,193),(520,193)]
             if outgoing:response.reverse()
             s.arrow(response,dash=True,open=True)
     elif t in ['connection','edge']:
@@ -296,8 +303,9 @@ def render(concept):
         s.text(54,88,lines[0],18,width=452)
         s.text(35,165,lines[1],18,width=490)
         # Exact values are checked against the source-backed trace projection.
+        axis=d['axis'];scale=400/axis['endMs']
         for n,activation in enumerate(d['observations']):
-            y=238+n*99;x=lambda ms:120+50*ms
+            y=238+n*99;x=lambda ms:120+scale*ms
             released=x(activation['releasedMs']);dispatched=x(activation['dispatchedMs']);ended=x(activation['terminalMs'])
             s.text(43,y+6,activation['id'],18,True)
             if dispatched>released:
@@ -309,12 +317,13 @@ def render(concept):
             s.line([(dispatched,y-22),(dispatched,y+22)])
             s.line([(ended,y-22),(ended,y+22)]);s.circle(ended,y,7)
         s.line([(120,394),(520,394)])
-        for ms in [0,2,4,6,8]:
-            x=120+50*ms;s.line([(x,394),(x,402)]);s.text(x,428,str(ms),18,center=True)
+        for ms in range(0,axis['endMs']+1,axis['tickMs']):
+            x=120+scale*ms;s.line([(x,394),(x,402)]);s.text(x,428,str(ms),18,center=True)
         s.text(320,461,'logical time (ms)',18,center=True)
         s.text(35,496,'▼ release; | zero-time running; ○ complete',18,width=500)
-        s.text(35,523,'display 0–8 ms; quiescent boundary 31 ms',18,width=500)
-        s.text(35,550,'declared deadlines 30 / 31 ms lie outside this window',18,width=510)
+        s.text(35,523,f'display 0–{axis["endMs"]} ms; quiescent boundary {axis["observationEndMs"]} ms',18,width=500)
+        deadlines=' / '.join(str(ms) for ms in axis['deadlinesMs'])
+        s.text(35,550,f'declared deadlines {deadlines} ms lie outside this window',18,width=510)
     elif t=='request':
         s.rect(25,23,510,106,rx=12);bottom=s.labels(head,43,54,472,20,True);s.labels(lines[:1],43,max(89,bottom+3),472)
         s.arrow([(170,130),(170,197)]);s.arrow([(390,130),(390,197)])
@@ -393,6 +402,11 @@ def render(concept):
         if len(lines)==1:s.box(95,158,370,91,lines[0]);s.component_icon(429,167)
         elif len(lines)==2:s.box(66,147,185,91,lines[0]);s.box(306,147,185,91,lines[1])
         else:s.box(66,147,185,91,left);s.box(306,147,185,91,right)
+    elif t=='gv-tree':
+        s.frame('gv',head[-1]);s.box(157,77,246,63,'Demo')
+        s.component_icon(363,91)
+        s.arrow([(280,140),(280,204)]);s.text(294,180,'owns',18)
+        s.box(75,207,410,66,lines[0]);s.component_icon(445,223)
     elif t=='iv':
         if len(lines)>1 and '→' in lines[1]:left,right=[part.strip() for part in lines[1].split('→',1)]
         s.frame('iv',head[-1]);s.box(39,122,173,118,left);s.box(348,122,173,118,right)

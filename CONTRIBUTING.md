@@ -2,7 +2,7 @@
 
 SWAML is developed as a language: specification, grammar, semantics, diagnostics and examples must evolve together. The 1.3 syntax keeps explicit `def` declarations and distinguishes them from concrete component usages; named QoS policies reuse complete values while connector queues stay independent. Source files are headerless; a host must pin language 1.3. Read the [1.3 migration](docs/MIGRATION_1_3.md) when updating hosts and the [historical 1.1 migration](docs/MIGRATION_1_1.md) when converting 1.0 models.
 
-Start with the [language specification](docs/LANGUAGE_SPECIFICATION.md), [ownership and reuse decision](docs/decisions/0007-component-functions-and-calculations.md) and [implementation status](docs/IMPLEMENTATION_STATUS.md).
+Start with the [language specification](docs/LANGUAGE_SPECIFICATION.md), [ownership and reuse decision](docs/decisions/0007-component-functions-and-calculations.md), [event-input decision](docs/decisions/0013-event-driven-external-inputs.md), [1.3.1 migration](docs/MIGRATION_1_3_1.md) and [implementation status](docs/IMPLEMENTATION_STATUS.md).
 
 ## Development setup
 

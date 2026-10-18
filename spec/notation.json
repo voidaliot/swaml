@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "languageVersion": "1.3",
-  "edition": "1.3.0",
+  "edition": "1.3.1",
   "title": "SWAML canonical graphical notation",
   "style": {
     "background": "white",
@@ -1113,10 +1113,11 @@
       "syntax": "port health: Health client;",
       "context": "Port declaration on the displayed component boundary.",
       "rules": [
-        "Draw a small square centered on the owning boundary and label its name: Interface and exact role.",
-        "Requests leave and correlated results return through this same port. Do not infer direction only from left/right placement; role text remains mandatory."
+        "Draw a boundary square with an outward stem and socket; label name: Interface, exact role and inspectable version. The ball identifies server/provides; the socket identifies client/requires.",
+        "Requests leave and correlated results return through this same port. Do not infer direction only from left/right placement; role text remains mandatory.",
+        "The glyph represents the RPC-facing interface role; correlated replies and service events retain their reverse traffic direction on the explicit route. It is not used for senderReceiver or publishSubscribe roles."
       ],
-      "description": "RPC client port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.",
+      "description": "RPC client port. Draw a boundary square with an outward stem and socket; label name: Interface, exact role and inspectable version. The ball identifies server/provides; the socket identifies client/requires.",
       "source": {
         "model": "examples/07-client-server.swaml",
         "path": "Rpc::Client.health"
@@ -1128,7 +1129,8 @@
           "client"
         ],
         "lines": [],
-        "role": "client"
+        "role": "client",
+        "glyph": "socket"
       }
     },
     {
@@ -1149,10 +1151,11 @@
       "syntax": "port health: Health server;",
       "context": "Port declaration on the displayed component boundary.",
       "rules": [
-        "Draw a small square centered on the owning boundary and label its name: Interface and exact role.",
-        "Requests enter and correlated results leave through this same port. Do not infer direction only from left/right placement; role text remains mandatory."
+        "Draw a boundary square with an outward stem and ball; label name: Interface, exact role and inspectable version. The ball identifies server/provides; the socket identifies client/requires.",
+        "Requests enter and correlated results leave through this same port. Do not infer direction only from left/right placement; role text remains mandatory.",
+        "The glyph represents the RPC-facing interface role; correlated replies and service events retain their reverse traffic direction on the explicit route. It is not used for senderReceiver or publishSubscribe roles."
       ],
-      "description": "RPC server port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.",
+      "description": "RPC server port. Draw a boundary square with an outward stem and ball; label name: Interface, exact role and inspectable version. The ball identifies server/provides; the socket identifies client/requires.",
       "source": {
         "model": "examples/07-client-server.swaml",
         "path": "Rpc::Server.health"
@@ -1164,7 +1167,8 @@
           "server"
         ],
         "lines": [],
-        "role": "server"
+        "role": "server",
+        "glyph": "ball"
       }
     },
     {
@@ -1257,10 +1261,11 @@
       "syntax": "port api: TemperatureSetting provides;",
       "context": "Port declaration on the displayed component boundary.",
       "rules": [
-        "Draw a small square centered on the owning boundary and label its name: Interface and exact role.",
-        "RPC requests enter; results and provider events leave. Do not infer direction only from left/right placement; role text remains mandatory."
+        "Draw a boundary square with an outward stem and ball; label name: Interface, exact role and inspectable version. The ball identifies server/provides; the socket identifies client/requires.",
+        "RPC requests enter; results and provider events leave. Do not infer direction only from left/right placement; role text remains mandatory.",
+        "The glyph represents the RPC-facing interface role; correlated replies and service events retain their reverse traffic direction on the explicit route. It is not used for senderReceiver or publishSubscribe roles."
       ],
-      "description": "Service provider port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.",
+      "description": "Service provider port. Draw a boundary square with an outward stem and ball; label name: Interface, exact role and inspectable version. The ball identifies server/provides; the socket identifies client/requires.",
       "source": {
         "model": "examples/08-service-field.swaml",
         "path": "Settings::SettingStore.api"
@@ -1272,7 +1277,8 @@
           "provides"
         ],
         "lines": [],
-        "role": "provides"
+        "role": "provides",
+        "glyph": "ball"
       }
     },
     {
@@ -1293,10 +1299,11 @@
       "syntax": "port setting: TemperatureSetting requires;",
       "context": "Port declaration on the displayed component boundary.",
       "rules": [
-        "Draw a small square centered on the owning boundary and label its name: Interface and exact role.",
-        "RPC requests leave; results and provider events enter. Do not infer direction only from left/right placement; role text remains mandatory."
+        "Draw a boundary square with an outward stem and socket; label name: Interface, exact role and inspectable version. The ball identifies server/provides; the socket identifies client/requires.",
+        "RPC requests leave; results and provider events enter. Do not infer direction only from left/right placement; role text remains mandatory.",
+        "The glyph represents the RPC-facing interface role; correlated replies and service events retain their reverse traffic direction on the explicit route. It is not used for senderReceiver or publishSubscribe roles."
       ],
-      "description": "Service consumer port. Draw a small square centered on the owning boundary and label its name: Interface and exact role.",
+      "description": "Service consumer port. Draw a boundary square with an outward stem and socket; label name: Interface, exact role and inspectable version. The ball identifies server/provides; the socket identifies client/requires.",
       "source": {
         "model": "examples/08-service-field.swaml",
         "path": "Settings::Panel.setting"
@@ -1308,7 +1315,8 @@
           "requires"
         ],
         "lines": [],
-        "role": "requires"
+        "role": "requires",
+        "glyph": "socket"
       }
     },
     {
@@ -1724,43 +1732,6 @@
           "on start"
         ],
         "label": "on start"
-      }
-    },
-    {
-      "id": "trigger-manual",
-      "title": "Manual activation",
-      "concern": "Function flow",
-      "kind": "label",
-      "views": [
-        "fv"
-      ],
-      "keywords": [
-        "on",
-        "manual"
-      ],
-      "productions": [
-        "Trigger"
-      ],
-      "syntax": "function adjust() on manual",
-      "context": "Activation annotation on the displayed function.",
-      "rules": [
-        "Attach the activation text to its function header; use no free event symbol or standalone trigger object.",
-        "Harness activation carries no modeled data; external commands still use ports."
-      ],
-      "description": "Manual activation. Attach the activation text to its function header; use no free event symbol or standalone trigger object.",
-      "source": {
-        "model": "examples/08-service-field.swaml",
-        "path": "Settings::Panel.adjust"
-      },
-      "drawing": {
-        "template": "trigger",
-        "header": [
-          "adjust()"
-        ],
-        "lines": [
-          "on manual"
-        ],
-        "label": "on manual"
       }
     },
     {
@@ -3296,9 +3267,10 @@
       "context": "View projection context; syntax refers to an existing semantic subject.",
       "rules": [
         "Draw a framed projection titled gv with the semantic subject identity visible; use the canonical element symbols within it.",
-        "The view adds presentation only. It MUST NOT introduce new routes, functions, performers or execution semantics."
+        "The view adds presentation only. It MUST NOT introduce new routes, functions, performers or execution semantics.",
+        "Box in box uses nested component rectangles; Tree uses explicit ownership edges. Both layouts retain the same semantic selections, occurrence paths and definition identities. Deployment references remain outside the software hierarchy."
       ],
-      "description": "General View. Draw a framed projection titled gv with the semantic subject identity visible; use the canonical element symbols within it.",
+      "description": "General View of component ownership, shown as Box in box or Tree. Layout changes presentation only.",
       "source": {
         "model": "examples/01-hello.swaml",
         "path": "Hello::overview"
@@ -3307,6 +3279,44 @@
         "template": "gv",
         "header": [
           "General View: Demo"
+        ],
+        "lines": [
+          "conversation: Conversation"
+        ]
+      }
+    },
+    {
+      "id": "view-gv-tree",
+      "title": "General View: Tree",
+      "concern": "View projections",
+      "kind": "projection",
+      "views": [
+        "gv"
+      ],
+      "keywords": [
+        "view",
+        "gv",
+        "of"
+      ],
+      "productions": [
+        "View"
+      ],
+      "syntax": "view overview gv of Demo;",
+      "context": "View projection context; syntax refers to an existing semantic subject.",
+      "rules": [
+        "Draw each selected component occurrence once with its occurrence identity. Use parent-to-child edges labeled owns instead of nested boxes.",
+        "Preserve the same semantic hierarchy as Box in box; repeated definitions retain distinct occurrence identities.",
+        "Keep external deployment targets outside the ownership tree with separately labeled dashed deployment edges. Layout is sidecar metadata and introduces no language keyword."
+      ],
+      "description": "Tree presentation of the General View. Ownership edges connect existing parent and child component occurrences; they do not imply communication or execution order.",
+      "source": {
+        "model": "examples/01-hello.swaml",
+        "path": "Hello::overview"
+      },
+      "drawing": {
+        "template": "gv-tree",
+        "header": [
+          "Tree: Demo"
         ],
         "lines": [
           "conversation: Conversation"
@@ -3975,14 +3985,14 @@
     },
     {
       "id": "function-timing-diagram",
-      "title": "Function timing diagram",
+      "title": "Timing View",
       "concern": "Timing and deployment",
       "kind": "projection",
       "views": [
-        "fv"
+        "tv"
       ],
       "keywords": [
-        "fv",
+        "tv",
         "timing",
         "wcet",
         "deadline"
@@ -3991,22 +4001,23 @@
         "View",
         "Timing"
       ],
-      "syntax": "function poll() on manual timing { wcet 1 ms; deadline 30 ms; concurrency serial; }",
-      "context": "FunctionTiming::Client.poll declares the contract; the success trace of example 17 supplies distinct first.poll activations a1 and a7.",
+      "syntax": "view functionTiming tv { include Demo.first.poll; include Demo.second.poll; include Demo.firstServer.checkHealth; include Demo.secondServer.checkHealth; }",
+      "context": "The authored Timing View explicitly selects four client/server function occurrences. The drawing focuses on first.poll activations a6 and a12 in the success trace; input transport contributes to their release times. The root driver remains in the complete evidence.",
       "rules": [
         "Project existing function occurrences and activation IDs against a labeled time axis. Label ready, running or zero-time markers, request waits, completion/failure and the observation boundary without relying on color. Preserve trace ordinal when timestamps coincide.",
         "Keep declared WCET/deadline/concurrency in a separate contract compartment. A deadline is measured from each release; a declared bound outside the displayed time range is identified explicitly.",
-        "Observed logical waits and reference-simulator zero CPU cost are evidence of that run only. The diagram does not turn WCET limits into measured durations or establish physical schedulability. This projection uses fv and introduces no new source keyword or view kind."
+        "Observed logical waits and reference-simulator zero CPU cost are evidence of the identified run only. The tv view adds no execution semantics and does not turn WCET limits into measured durations or establish physical schedulability.",
+        "Every selected subject must be an executable operation/function declaration or occurrence. Selecting descendant functions under a component context requires explicit recursive expansion and filtering; a compact root subject is invalid. Empty filtered selections remain valid."
       ],
-      "description": "Function timing diagram. An fv projection compares observed activation releases, waits and terminal markers with separately labeled declared timing contracts.",
+      "description": "Timing View. A tv projection compares observed activation releases, waits and terminal markers with separately labeled declared timing contracts.",
       "source": {
         "model": "examples/17-function-timing.swaml",
-        "path": "FunctionTiming::Client.poll"
+        "path": "FunctionTiming::functionTiming"
       },
       "drawing": {
         "template": "function-timing",
         "header": [
-          "fv: first.poll"
+          "tv: first.poll"
         ],
         "lines": [
           "declared: wcet 1 ms; deadline 30 ms; serial",
@@ -4017,23 +4028,183 @@
           "run": "success",
           "functionPath": "first.poll",
           "activationIds": [
-            "a1",
-            "a7"
+            "a6",
+            "a12"
           ]
         },
         "observations": [
           {
-            "id": "a1",
-            "releasedMs": 0,
-            "dispatchedMs": 0,
-            "terminalMs": 4
+            "id": "a6",
+            "releasedMs": 2,
+            "dispatchedMs": 2,
+            "terminalMs": 6
           },
           {
-            "id": "a7",
-            "releasedMs": 1,
-            "dispatchedMs": 4,
-            "terminalMs": 8
+            "id": "a12",
+            "releasedMs": 3,
+            "dispatchedMs": 6,
+            "terminalMs": 10
           }
+        ],
+        "axis": {
+          "endMs": 12,
+          "tickMs": 2,
+          "observationEndMs": 33,
+          "deadlinesMs": [
+            32,
+            33
+          ]
+        }
+      }
+    },
+    {
+      "id": "class-definition",
+      "title": "Class definition",
+      "concern": "Structure and values",
+      "kind": "node",
+      "views": [
+        "gv",
+        "grv"
+      ],
+      "keywords": [
+        "class",
+        "def"
+      ],
+      "productions": [
+        "Component"
+      ],
+      "syntax": "class def CounterBase",
+      "context": "General reusable software classifier inside package ClassOperations.",
+      "rules": [
+        "Draw a flat classifier rectangle with explicit «class def» and name, without the component marker.",
+        "Class is the general category; component specializes class. Both preserve owned private state, typed routes and executable members."
+      ],
+      "description": "Class definition with explicit general-category identity and member compartments.",
+      "source": {
+        "model": "examples/20-classes-and-operations.swaml",
+        "path": "ClassOperations::CounterBase"
+      },
+      "drawing": {
+        "template": "classifier",
+        "header": [
+          "«class def» CounterBase"
+        ],
+        "lines": [
+          "value: int = 21",
+          "operation twice(input: int): int"
+        ]
+      }
+    },
+    {
+      "id": "class-usage",
+      "title": "Class usage and root",
+      "concern": "Structure and values",
+      "kind": "node",
+      "views": [
+        "gv",
+        "grv"
+      ],
+      "keywords": [
+        "class"
+      ],
+      "productions": [
+        "Instance",
+        "RootComponent"
+      ],
+      "syntax": "class frontend: Client;",
+      "context": "Single frontend declaration in ClassOperations::Assembly, shown as occurrence Demo.frontend.",
+      "rules": [
+        "Draw a flat occurrence rectangle with «class» and name : Type, with occurrence context available.",
+        "A class usage may instantiate a class or component definition. Static separate stores, root closure and deployment-only typed root bodies remain unchanged."
+      ],
+      "description": "A static single-owned class occurrence with distinct private state.",
+      "source": {
+        "model": "examples/20-classes-and-operations.swaml",
+        "path": "ClassOperations::Assembly.frontend"
+      },
+      "drawing": {
+        "template": "usage",
+        "header": [
+          "«class» frontend : Client"
+        ],
+        "lines": [
+          "owner: Demo",
+          "distinct private store"
+        ]
+      }
+    },
+    {
+      "id": "operation",
+      "title": "Executable operation",
+      "concern": "Function flow",
+      "kind": "node",
+      "views": [
+        "fv",
+        "tv",
+        "grv"
+      ],
+      "keywords": [
+        "operation"
+      ],
+      "productions": [
+        "FunctionDef"
+      ],
+      "syntax": "operation twice(input: int): int",
+      "context": "General executable member of ClassOperations::CounterBase.",
+      "rules": [
+        "Draw an owning operation frame with signature, activation source if present and explicit «operation» label.",
+        "Functions specialize operations. Both own their calculations and flow or states; neither implies input-only purity."
+      ],
+      "description": "Executable operation retaining the general callable category.",
+      "source": {
+        "model": "examples/20-classes-and-operations.swaml",
+        "path": "ClassOperations::CounterBase.twice"
+      },
+      "drawing": {
+        "template": "function",
+        "header": [
+          "«operation» twice(input: int): int"
+        ],
+        "lines": [
+          "owner: CounterBase",
+          "calc doubleValue is local"
+        ]
+      }
+    },
+    {
+      "id": "operation-signature",
+      "title": "Interface operation signature",
+      "concern": "Interfaces and connections",
+      "kind": "compartment",
+      "views": [
+        "iv",
+        "grv"
+      ],
+      "keywords": [
+        "operation"
+      ],
+      "productions": [
+        "Signature"
+      ],
+      "syntax": "operation read(): int;",
+      "context": "General callable contract in ClassOperations::Counter.",
+      "rules": [
+        "Show the ordered input signature, result and «operation» category inside the interface member compartment.",
+        "An operation signature may bind an operation or function implementation. A function signature requires a function implementation; routes and correlation are unchanged."
+      ],
+      "description": "General interface callable signature with explicit implementation-category compatibility.",
+      "source": {
+        "model": "examples/20-classes-and-operations.swaml",
+        "path": "ClassOperations::Counter.read"
+      },
+      "drawing": {
+        "template": "member",
+        "header": [
+          "«operation» read(): int"
+        ],
+        "lines": [
+          "Counter @ 1.0.0",
+          "implemented by operation or function"
         ]
       }
     }
@@ -4159,6 +4330,15 @@
         ]
       },
       {
+        "term": "class",
+        "mode": "glyph",
+        "rationale": "Class definition; Class usage and root.",
+        "concepts": [
+          "class-definition",
+          "class-usage"
+        ]
+      },
+      {
         "term": "client",
         "mode": "glyph",
         "rationale": "RPC client port.",
@@ -4237,7 +4417,7 @@
       {
         "term": "deadline",
         "mode": "glyph",
-        "rationale": "Function timing contract; Function timing diagram.",
+        "rationale": "Function timing contract; Timing View.",
         "concepts": [
           "timing-contract",
           "function-timing-diagram"
@@ -4246,10 +4426,11 @@
       {
         "term": "def",
         "mode": "glyph",
-        "rationale": "Component definition; Reusable QoS policy.",
+        "rationale": "Component definition; Reusable QoS policy; Class definition.",
         "concepts": [
           "component-definition",
-          "qos-policy-definition"
+          "qos-policy-definition",
+          "class-definition"
         ]
       },
       {
@@ -4417,10 +4598,9 @@
       {
         "term": "fv",
         "mode": "glyph",
-        "rationale": "Flow View; Function timing diagram.",
+        "rationale": "Flow View.",
         "concepts": [
-          "view-fv",
-          "function-timing-diagram"
+          "view-fv"
         ]
       },
       {
@@ -4434,9 +4614,10 @@
       {
         "term": "gv",
         "mode": "glyph",
-        "rationale": "General View.",
+        "rationale": "General View; General View: Tree.",
         "concepts": [
-          "view-gv"
+          "view-gv",
+          "view-gv-tree"
         ]
       },
       {
@@ -4537,14 +4718,6 @@
         ]
       },
       {
-        "term": "manual",
-        "mode": "label",
-        "rationale": "Manual activation.",
-        "concepts": [
-          "trigger-manual"
-        ]
-      },
-      {
         "term": "maxAge",
         "mode": "label",
         "rationale": "Message freshness bound.",
@@ -4595,11 +4768,12 @@
       {
         "term": "of",
         "mode": "glyph",
-        "rationale": "Use case; Satisfaction relation; General View; Interconnect View; Case View; Sequence View; Grid View; Flow View; Verification case.",
+        "rationale": "Use case; Satisfaction relation; General View; General View: Tree; Interconnect View; Case View; Sequence View; Grid View; Flow View; Verification case.",
         "concepts": [
           "case",
           "satisfies-link",
           "view-gv",
+          "view-gv-tree",
           "view-iv",
           "view-cv",
           "view-sv",
@@ -4611,16 +4785,24 @@
       {
         "term": "on",
         "mode": "glyph",
-        "rationale": "Startup activation; Manual activation; Periodic activation; Port receive activation; RPC handler activation; State transition; Deployment binding; Interruptible flow region.",
+        "rationale": "Startup activation; Periodic activation; Port receive activation; RPC handler activation; State transition; Deployment binding; Interruptible flow region.",
         "concepts": [
           "trigger-start",
-          "trigger-manual",
           "trigger-periodic",
           "trigger-receive",
           "trigger-call",
           "transition",
           "deployment",
           "interruptible-region"
+        ]
+      },
+      {
+        "term": "operation",
+        "mode": "glyph",
+        "rationale": "Executable operation; Interface operation signature.",
+        "concepts": [
+          "operation",
+          "operation-signature"
         ]
       },
       {
@@ -4978,7 +5160,7 @@
       {
         "term": "timing",
         "mode": "glyph",
-        "rationale": "Function timing contract; Function timing diagram.",
+        "rationale": "Function timing contract; Timing View.",
         "concepts": [
           "timing-contract",
           "function-timing-diagram"
@@ -4998,6 +5180,14 @@
         "rationale": "Expressions and value paths.",
         "concepts": [
           "expression"
+        ]
+      },
+      {
+        "term": "tv",
+        "mode": "glyph",
+        "rationale": "Timing View.",
+        "concepts": [
+          "function-timing-diagram"
         ]
       },
       {
@@ -5082,9 +5272,10 @@
       {
         "term": "view",
         "mode": "glyph",
-        "rationale": "General View; Interconnect View; Case View; Sequence View; Grid View; Flow View.",
+        "rationale": "General View; General View: Tree; Interconnect View; Case View; Sequence View; Grid View; Flow View.",
         "concepts": [
           "view-gv",
+          "view-gv-tree",
           "view-iv",
           "view-cv",
           "view-sv",
@@ -5103,7 +5294,7 @@
       {
         "term": "wcet",
         "mode": "glyph",
-        "rationale": "Function timing contract; Function timing diagram.",
+        "rationale": "Function timing contract; Timing View.",
         "concepts": [
           "timing-contract",
           "function-timing-diagram"
@@ -5225,10 +5416,11 @@
       {
         "term": "Component",
         "mode": "glyph",
-        "rationale": "Component definition; Component specialization.",
+        "rationale": "Component definition; Component specialization; Class definition.",
         "concepts": [
           "component-definition",
-          "component-specialization"
+          "component-specialization",
+          "class-definition"
         ]
       },
       {
@@ -5394,10 +5586,11 @@
       {
         "term": "FunctionDef",
         "mode": "glyph",
-        "rationale": "Executable function; Function with states.",
+        "rationale": "Executable function; Function with states; Executable operation.",
         "concepts": [
           "function",
-          "stateful-function"
+          "stateful-function",
+          "operation"
         ]
       },
       {
@@ -5433,11 +5626,12 @@
       {
         "term": "Instance",
         "mode": "glyph",
-        "rationale": "Component usage; Occurrence typing relationship; Occurrence lifeline.",
+        "rationale": "Component usage; Occurrence typing relationship; Occurrence lifeline; Class usage and root.",
         "concepts": [
           "component-usage",
           "type-relationship",
-          "sequence-lifeline"
+          "sequence-lifeline",
+          "class-usage"
         ]
       },
       {
@@ -5682,12 +5876,13 @@
       {
         "term": "RootComponent",
         "mode": "glyph",
-        "rationale": "Occurrence typing relationship; Root component; Inline root composition; Root execution profile.",
+        "rationale": "Occurrence typing relationship; Root component; Inline root composition; Root execution profile; Class usage and root.",
         "concepts": [
           "type-relationship",
           "root-component",
           "inline-root",
-          "execution-profile"
+          "execution-profile",
+          "class-usage"
         ]
       },
       {
@@ -5740,9 +5935,10 @@
       {
         "term": "Signature",
         "mode": "label",
-        "rationale": "Interface function signature.",
+        "rationale": "Interface function signature; Interface operation signature.",
         "concepts": [
-          "function-signature"
+          "function-signature",
+          "operation-signature"
         ]
       },
       {
@@ -5790,7 +5986,7 @@
       {
         "term": "Timing",
         "mode": "glyph",
-        "rationale": "Function timing contract; Concurrency mode; Function timing diagram.",
+        "rationale": "Function timing contract; Concurrency mode; Timing View.",
         "concepts": [
           "timing-contract",
           "concurrency-mode",
@@ -5812,10 +6008,9 @@
       {
         "term": "Trigger",
         "mode": "label",
-        "rationale": "Startup activation; Manual activation; Periodic activation; Port receive activation; RPC handler activation.",
+        "rationale": "Startup activation; Periodic activation; Port receive activation; RPC handler activation.",
         "concepts": [
           "trigger-start",
-          "trigger-manual",
           "trigger-periodic",
           "trigger-receive",
           "trigger-call"
@@ -5874,9 +6069,10 @@
       {
         "term": "View",
         "mode": "glyph",
-        "rationale": "General View; Interconnect View; Case View; Sequence View; Grid View; Flow View; Function timing diagram.",
+        "rationale": "General View; General View: Tree; Interconnect View; Case View; Sequence View; Grid View; Flow View; Timing View.",
         "concepts": [
           "view-gv",
+          "view-gv-tree",
           "view-iv",
           "view-cv",
           "view-sv",
@@ -5908,5 +6104,25 @@
         "concepts": []
       }
     ]
-  }
+  },
+  "retainedArtifacts": [
+    {
+      "path": "docs/notation/trigger-manual.svg",
+      "edition": "1.3.0",
+      "sha256": "4be496419de9d46922b84f00bb057c61a53c9f51b62a63d699649a09b8aefa6c",
+      "reason": "Preserved for immutable published reference links; excluded from current notation and grammar coverage."
+    },
+    {
+      "path": "docs/notation/trigger-manual.png",
+      "edition": "1.3.0",
+      "sha256": "1db203dd068897c4f3a1f6bdc1546a4f6dadd415c65a40d4d4d9d2d28caae05e",
+      "reason": "Preserved for immutable published reference links; excluded from current notation and grammar coverage."
+    },
+    {
+      "path": "docs/notation/trigger-manual.scene.json",
+      "edition": "1.3.0",
+      "sha256": "0db1c449a22b9d321fca393000e4a3c427634186f4204b8f3935a17857a381c7",
+      "reason": "Preserved for immutable published reference links; excluded from current notation and grammar coverage."
+    }
+  ]
 }

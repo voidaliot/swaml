@@ -83,7 +83,7 @@ Tests cover valid fixtures, illegal interface access, scoping, type errors, QoS,
 
 ## Simulation API for a separate host
 
-After linking and validating every referenced document, call `simulate(models, "Package::Root", options)` from the package's `./simulation` export. It has no Node filesystem dependency. The host supplies a finite horizon and may supply manual releases, transport fault schedule and resource limits. The [profile contract](SIMULATION.md) defines the exact scheduler, observability and limits. The CLI adapter adds file loading and SHA-256 source digests.
+After linking and validating every referenced document, call `simulate(models, "Package::Root", options)` from the package's `./simulation` export. It has no Node filesystem dependency. The host supplies a finite horizon and may supply a transport fault schedule and resource limits. Operator and test inputs are ordinary event-emitting driver functions in the validated source workspace; hosts can generate such source and retain it with the run. The [profile contract](SIMULATION.md) defines the exact scheduler, observability and limits. The CLI adapter adds file loading and SHA-256 source digests.
 
 Present `outcome` and `status` together: a run can quiesce after a failed activation, and a bounded horizon is not a proof of liveness. Hosts can connect trace source lines and occurrence paths to fv/iv/grv selections. They must preserve the simulation contract and validate every semantic edit.
 

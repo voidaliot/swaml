@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.1 — 2026-10-18
+
+- Add class/component and operation/function category specialization with compatible inheritance, instantiation, implementation and redefinition; preserve authored kinds and exact view filtering.
+- Add ball/socket notation for clientServer and service ports across the canonical catalog and showcase.
+- Reassess UML notation and semantic transformation without an XMI adapter; correct the UML guide's parser pin, case terminology and view coverage.
+- Remove `on manual` and direct simulator function releases. Model operator/test inputs as named, typed events published by ordinary driver functions through explicit routes; preserve generated driver source as evidence.
+
+- Add dedicated `tv` timing views of executable function occurrences; reserve `tv` and migrate timing selections from `fv`.
+- Support Box in box and Tree layouts of `gv` with identical ownership and occurrence identities.
+- Align the interactive showcase, specification, examples and canonical graphical inventory. Parser family and reference simulation profile remain 1.3.
+
 ## 1.3.0 — 2026-10-18
 
 - Add bounded counted for and post-test do loops, plus finite copied-array forEach with explicit lexical scopes.

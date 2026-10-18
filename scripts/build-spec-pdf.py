@@ -36,18 +36,18 @@ LINE = colors.HexColor('#CBD5DF')
 PAGE_W, PAGE_H = A4
 MARGIN = 44
 WIDTH = PAGE_W - 2 * MARGIN
-RELEASE = '1.3.0'
-REVISION = '1.3.0'
+RELEASE = '1.3.1'
+REVISION = '1.3.1'
 LANGUAGE = '1.3'
 SIMULATION_PROFILE = '1.3'
-REPO = f'https://github.com/voidaliot/swaml/blob/v{RELEASE}/'
+REPO = 'https://github.com/voidaliot/swaml/blob/main/'
 NORMATIVE = ['docs/LANGUAGE_SPECIFICATION.md'] + [f'docs/spec/{name}' for name in [
     '01-structure-and-types.md', '02-communication.md', '03-behavior.md',
     '04-systems-and-conformance.md', '05-kerml-mapping.md', '06-execution-contract.md',
     '07-normalized-model.md', '08-conformance-obligations.md', '09-formal-semantics.md',
 ]] + ['docs/GRAPHICAL_NOTATION.md', 'docs/GRAPHICAL_CATALOG.md']
-GUIDANCE = ['docs/MODELING_OVERVIEW.md', 'docs/QUICK_START.md', 'docs/ARCHITECTURE_PATTERNS.md', 'docs/UML_GUIDE.md', 'docs/REVIEW_1_2.md', 'docs/CONCERN_GUIDE.md', 'docs/KEYWORD_REFERENCE.md', 'docs/ONTOLOGY_AND_VIEWS.md', 'docs/GRAPHICAL_EXAMPLES.md', 'docs/SIMULATION.md', 'docs/MIGRATION_1_1.md', 'docs/MIGRATION_1_2.md', 'docs/MIGRATION_1_3.md', 'docs/CONTROL_FLOW_AND_TIMING.md', 'docs/decisions/0011-loops-interrupts-and-function-timing.md', 'docs/USER_GUIDE.md', 'docs/ARCHITECTURE_COMPARISON.md', 'docs/TOOLING.md',
-            'docs/IMPLEMENTATION_STATUS.md', 'docs/RELEASE_1_3_0.md', 'docs/SYSML_STYLE_REVIEW.md',
+GUIDANCE = ['docs/MODELING_OVERVIEW.md', 'docs/QUICK_START.md', 'docs/ARCHITECTURE_PATTERNS.md', 'docs/UML_GUIDE.md', 'docs/UML_COMPATIBILITY.md', 'docs/decisions/0014-classes-operations-and-uml-notation.md', 'docs/REVIEW_1_2.md', 'docs/CONCERN_GUIDE.md', 'docs/KEYWORD_REFERENCE.md', 'docs/ONTOLOGY_AND_VIEWS.md', 'docs/GRAPHICAL_EXAMPLES.md', 'docs/SIMULATION.md', 'docs/MIGRATION_1_1.md', 'docs/MIGRATION_1_2.md', 'docs/MIGRATION_1_3.md', 'docs/CONTROL_FLOW_AND_TIMING.md', 'docs/decisions/0011-loops-interrupts-and-function-timing.md', 'docs/USER_GUIDE.md', 'docs/ARCHITECTURE_COMPARISON.md', 'docs/TOOLING.md',
+            'docs/IMPLEMENTATION_STATUS.md', 'docs/RELEASE_1_3_0.md', 'docs/RELEASE_1_3_1.md', 'docs/MIGRATION_1_3_1.md', 'docs/EVENTS_AND_INPUTS.md', 'docs/decisions/0013-event-driven-external-inputs.md', 'docs/decisions/0012-timing-view-and-structure-layouts.md', 'docs/SYSML_STYLE_REVIEW.md',
             'docs/decisions/0001-language-boundaries.md', 'docs/decisions/0002-auditable-semantics.md', 'docs/decisions/0003-reference-execution-and-publication.md', 'docs/decisions/0004-compact-component-language.md', 'docs/decisions/0005-canonical-graphical-notation.md', 'docs/decisions/0006-reusable-qos-and-flat-showcase.md', 'docs/decisions/0007-component-functions-and-calculations.md', 'docs/decisions/0008-function-local-calculations-and-calls.md',
     'docs/decisions/0010-consistent-subject-relations.md', 'docs/REQUIREMENTS_AND_DOCUMENTATION.md', 'docs/decisions/0009-requirements-documentation-and-views.md',
             'docs/PDF_PUBLICATION.md', 'CONTRIBUTING.md', 'AGENTS.md']
@@ -242,7 +242,7 @@ class Cover(Flowable):
         c.drawString(0,130,'Typed interfaces at every software boundary.')
         c.drawString(0,111,'Embedded realtime systems, services and event-driven architectures.')
         c.setFont('Body',9);c.setFillColor(MUTED)
-        c.drawString(0,59,'16 October 2026  /  Catalin Ilie and SWAML contributors')
+        c.drawString(0,59,'18 October 2026  /  Version 1.3.1  /  SWAML contributors')
         c.drawString(0,39,'Independent language design on a proposed KerML semantic foundation.')
         c.linkURL('https://github.com/voidaliot/swaml',(0,12,300,27),relative=1)
         c.setFillColor(TEAL);c.drawString(0,17,'github.com/voidaliot/swaml')
@@ -394,11 +394,11 @@ def main():
     parser.add_argument('--font-dir',type=Path,default=os.environ.get('SWAML_PDF_FONT_DIR','/usr/share/fonts/truetype/dejavu'))
     args=parser.parse_args();fonts(args.font_dir);args.output.parent.mkdir(parents=True,exist_ok=True)
     story=[Cover(),PageBreak(),heading('About this edition',1,'edition')]
-    story.extend([Paragraph(f'VERSION {REVISION} / RELEASE EDITION',STYLES['label']),
+    story.extend([Paragraph(f'VERSION {REVISION} / DEVELOPMENT DRAFT',STYLES['label']),
         Paragraph(f'This book contains the complete SWAML {LANGUAGE} language specification, a concern guide and every keyword in alphabetical order, formal execution rules, flat notation examples, an ontology and view guide, a reference simulation binding, the complete grammar and runnable model examples. The specification and package revision is {REVISION}. Source files begin with packages; hosts select and pin the {LANGUAGE} grammar. Explicit type definitions retain <font name="Mono">def</font>; component usages form execution roots and functions own their states directly. Reusable QoS definitions reduce repeated connector policy without weakening explicit routes.',STYLES['body']),
         Paragraph('Normative chapters define syntax, validity, interface isolation, function/state behavior and mapping obligations. Tutorials and figures illustrate these rules. This independently authored language is not an OMG UML release or an AUTOSAR implementation. KerML export remains a proposed semantic mapping contract.',STYLES['body']),
         Paragraph('The reference parser, validator and deterministic logical-time simulator provide executable evidence. Production timing, runtime and platform mappings require the target binding and evidence defined in the normative chapters.',STYLES['body']),
-        table([['Navigation','How to use this PDF'],['Contents and bookmarks','Select a contents entry or use the PDF outline to open a chapter or section.'],['Cross-references',f'Links to included documents jump inside this book. Other repository links target version v{RELEASE}.'],['Code and tables','Code is selectable, numbered and wrapped without omitting source text. Tables repeat their headers across pages.'],['Source record','The build manifest lists every included source and its SHA-256 digest. Original source files are embedded as PDF attachments. The release includes a PDF checksum.']]),
+        table([['Navigation','How to use this PDF'],['Contents and bookmarks','Select a contents entry or use the PDF outline to open a chapter or section.'],['Cross-references',f'Links to included documents jump inside this book. Other repository links target the development branch main.'],['Code and tables','Code is selectable, numbered and wrapped without omitting source text. Tables repeat their headers across pages.'],['Source record','The build manifest lists every included source and its SHA-256 digest. Original source files are embedded as PDF attachments. The release includes a PDF checksum.']]),
         Paragraph('Original text and code: MIT license, copyright 2026 Catalin Ilie. Referenced standards retain their own terms; no standards PDFs are redistributed. Full license text appears at the end.',STYLES['small']),
         PageBreak()])
     toc_title=Paragraph('Contents',STYLES['h1']);toc_title.running_title='Contents';story.append(toc_title)

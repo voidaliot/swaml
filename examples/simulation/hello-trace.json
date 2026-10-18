@@ -8,7 +8,6 @@
     "maxPending": 1024,
     "maxReentrant": 64,
     "latencyNs": 0,
-    "manual": [],
     "faults": []
   },
   "status": "quiescent",

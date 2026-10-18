@@ -7,7 +7,7 @@
 <text x="36" y="72" font-size="20" font-weight="700" fill="#17324d">browser : BrowserClient</text>
 <polyline points="20,86 520,86" fill="none" stroke="#cad6df" stroke-width="2"/>
 <text x="36" y="115" font-size="20" font-weight="400" fill="#17324d">buy() · on start</text>
-<text x="36" y="143" font-size="20" font-weight="400" fill="#17324d">overOrder() · on manual</text>
+<text x="36" y="143" font-size="20" font-weight="400" fill="#17324d">overOrder() · on receive control.overOrder</text>
 <text x="36" y="171" font-size="20" font-weight="400" fill="#17324d">confirmation(orderId)</text>
 <text x="36" y="199" font-size="20" font-weight="400" fill="#17324d">on receive checkout.accepted</text>
 <rect x="560" y="40" width="500" height="220" rx="0" fill="#eef5fa" stroke="#17324d"/>

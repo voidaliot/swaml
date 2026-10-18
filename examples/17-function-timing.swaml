@@ -2,10 +2,12 @@ package FunctionTiming {
     interface clientServer Health version "1.0.0" {
         function check(): bool idempotent;
     }
+    interface publishSubscribe PollRequests version "1.0.0" { event poll(); }
     component def Client {
         port health: Health client;
+        port control: PollRequests subscriber;
         var healthy: bool = false;
-        function poll() on manual timing {
+        function poll() on receive control.poll timing {
             wcet 1 ms; deadline 30 ms; concurrency serial;
         } {
             call health.check() as answer within 20 ms otherwise { fail "request failed"; };
@@ -19,10 +21,24 @@ package FunctionTiming {
         } { return true; }
     }
     component Demo {
+        port firstPoll: PollRequests publisher;
+        port secondPoll: PollRequests publisher;
         component first: Client;
         component second: Client;
         component firstServer: Server;
         component secondServer: Server;
+        function driveInputs() on start {
+            initial First;
+            state First { entry { publish firstPoll.poll(); publish secondPoll.poll(); } }
+            state Again final { entry { publish firstPoll.poll(); } }
+            transition repeatPoll: First -> Again on after 1 ms {}
+        }
+        connect firstCommand: firstPoll -> first.control qos {
+            delivery atMostOnce; ordering fifo; capacity 4; overflow reject;
+        };
+        connect secondCommand: secondPoll -> second.control qos {
+            delivery atMostOnce; ordering fifo; capacity 4; overflow reject;
+        };
         connect firstLink: first.health -> firstServer.health qos {
             delivery atMostOnce; ordering fifo; capacity 4; overflow reject;
         };
@@ -30,7 +46,10 @@ package FunctionTiming {
             delivery atMostOnce; ordering fifo; capacity 4; overflow reject;
         };
     }
-    view functionTiming fv {
-        include Demo recursive where kind == "function";
+    view functionTiming tv {
+        include Demo.first.poll;
+        include Demo.second.poll;
+        include Demo.firstServer.checkHealth;
+        include Demo.secondServer.checkHealth;
     }
 }

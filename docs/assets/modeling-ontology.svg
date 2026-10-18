@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1100" height="1040" viewBox="0 0 1100 1040" role="img" aria-labelledby="title desc">
-<title id="title">One component concept, from architecture to behavior</title>
-<desc id="desc">Components own child components, private data, functions and ports. Functions own calculations and flow or states. Solid arrows show ownership; dashed arrows show references. Requirements and cases describe intent; all views project the same model.</desc>
+<title id="title">Software classifiers and behavior, from architecture to execution</title>
+<desc id="desc">Class is the general structural category; component specializes class. Operation is the general executable category; function specializes operation. Both alternatives retain private state, owned children, typed ports and direct behavior. Solid arrows show ownership; dashed arrows show references.</desc>
 <g font-family="DejaVu Sans, sans-serif">
 <rect x="0" y="0" width="1100" height="1040" rx="0" fill="white" stroke="none"/>
 <polyline points="260,90 350,90" fill="none" stroke="#17324d" stroke-width="2" stroke-dasharray="7 5"/>
@@ -53,25 +53,25 @@
 <text x="36" y="95" font-size="20" font-weight="400" fill="#17324d">Inline or typed</text>
 <text x="36" y="123" font-size="20" font-weight="400" fill="#17324d">Closed architecture</text>
 <rect x="350" y="20" width="360" height="140" rx="0" fill="#eaf1f8" stroke="#17324d"/>
-<text x="366" y="52" font-size="20" font-weight="700" fill="#17324d">Component definition</text>
+<text x="366" y="52" font-size="20" font-weight="700" fill="#17324d">Class / Component</text>
 <polyline points="350,66 710,66" fill="none" stroke="#cad6df" stroke-width="2"/>
-<text x="366" y="95" font-size="20" font-weight="400" fill="#17324d">Private variables + ports</text>
-<text x="366" y="123" font-size="20" font-weight="400" fill="#17324d">Behavior + children</text>
+<text x="366" y="95" font-size="20" font-weight="400" fill="#17324d">Component specializes Class</text>
+<text x="366" y="123" font-size="20" font-weight="400" fill="#17324d">Private state + ports</text>
 <rect x="830" y="20" width="240" height="140" rx="0" fill="#eaf1f8" stroke="#17324d"/>
 <text x="846" y="52" font-size="20" font-weight="700" fill="#17324d">Specialization</text>
 <polyline points="830,66 1070,66" fill="none" stroke="#cad6df" stroke-width="2"/>
-<text x="846" y="95" font-size="20" font-weight="400" fill="#17324d">One base component</text>
+<text x="846" y="95" font-size="20" font-weight="400" fill="#17324d">One compatible base</text>
 <text x="846" y="123" font-size="20" font-weight="400" fill="#17324d">Explicit redefines</text>
 <rect x="20" y="300" width="240" height="140" rx="0" fill="#eef5fa" stroke="#17324d"/>
-<text x="36" y="332" font-size="20" font-weight="700" fill="#17324d">Child components</text>
+<text x="36" y="332" font-size="20" font-weight="700" fill="#17324d">Child usages</text>
 <polyline points="20,346 260,346" fill="none" stroke="#cad6df" stroke-width="2"/>
-<text x="36" y="375" font-size="20" font-weight="400" fill="#17324d">Named instances</text>
-<text x="36" y="403" font-size="20" font-weight="400" fill="#17324d">Separate stores</text>
+<text x="36" y="375" font-size="20" font-weight="400" fill="#17324d">Class or Component</text>
+<text x="36" y="403" font-size="20" font-weight="400" fill="#17324d">Separate private stores</text>
 <rect x="290" y="300" width="240" height="140" rx="4" fill="#e7f3f2" stroke="#17324d"/>
-<text x="306" y="332" font-size="20" font-weight="700" fill="#17324d">Functions</text>
+<text x="306" y="332" font-size="20" font-weight="700" fill="#17324d">Operation / Function</text>
 <polyline points="290,346 530,346" fill="none" stroke="#cad6df" stroke-width="2"/>
-<text x="306" y="375" font-size="20" font-weight="400" fill="#17324d">Triggers + inputs</text>
-<text x="306" y="403" font-size="20" font-weight="400" fill="#17324d">Optional result</text>
+<text x="306" y="375" font-size="20" font-weight="400" fill="#17324d">General → specialized</text>
+<text x="306" y="403" font-size="20" font-weight="400" fill="#17324d">Triggers + inputs/result</text>
 <rect x="560" y="300" width="240" height="140" rx="4" fill="#e7f3f2" stroke="#17324d"/>
 <text x="576" y="332" font-size="20" font-weight="700" fill="#17324d">Calculations</text>
 <polyline points="560,346 800,346" fill="none" stroke="#cad6df" stroke-width="2"/>

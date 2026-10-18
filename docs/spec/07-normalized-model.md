@@ -2,6 +2,8 @@
 
 Normative SWAML contract extending [chapter 5](05-kerml-mapping.md). This chapter defines the complete information a mapper must preserve. It specifies SWAML normalization, not a new OMG metamodel or an implemented serializer.
 
+The semantic hierarchy includes **Component specializes Class** and **Function specializes Operation**. Shared AST productions do not erase these kinds. The normalization rules below apply to both structural and executable alternatives; an interface signature remains a contract signature rather than an executable declaration.
+
 ## 7.1 Identity, ownership and source trace
 
 Normalization consumes a resolved workspace and emits a finite declaration graph plus instance expansions for selected root components. Each semantic node has an immutable identity within that normalized artifact, a semantic kind, at most one owning node, ordered owned children where order matters, typed reference edges, and source provenance. Except for model roots, every semantic node has exactly one owner. Reference edges never imply containment.
@@ -12,6 +14,8 @@ An occurrence identity consists of the root component declaration ID and the chi
 
 A reverse trace relation maps every generated element to one or more authoring node identities and their URI/ranges. Synthetic nodes retain their source owner and generation role. No generated constraint may be untraceable. An import can have an import-declaration source location while referencing a package located in another document.
 
+An authored or generated test driver retains the same component/function ownership and source provenance as application behavior. Its event declarations, publisher ports, connectors, schedules and receiving member bindings are normalized explicitly; no hidden harness activation is added.
+
 ## 7.2 Declaration graph and links
 
 | Normalized family | Required information and constraints |
@@ -19,20 +23,22 @@ A reverse trace relation maps every generated element to one or more authoring n
 | Workspace/package | language version, packages, direct import edges, unique declaration namespaces |
 | Record/enum | nominal identity, ordered fields or ordered unique literal names, finite domain/containment |
 | Type use | primitive or nominal target, optional array extent; never encode a type solely by a display label |
-| Interface | kind, version, ordered data/event/RPC members, signatures, data mode and idempotency claims |
-| Structure definition | component kind, owned ports, contained instance features, private variables, owned executable declarations as applicable |
-| Instance feature | component kind, exactly one definition target, composite ownership, multiplicity one |
+| Interface | kind, version, ordered data/event/RPC members, operation/function signature kind, data mode and idempotency claims |
+| Structure definition | explicit class/component kind, single base reference with legal kind direction, owned ports, contained instance features, private variables, owned executable declarations as applicable |
+| Instance feature | explicit class/component usage kind, exactly one kind-compatible definition target, composite ownership, multiplicity one |
 | Port feature | interface target, role, optionality and derived member directions |
 | QoS policy | package-owned declaration identity, complete ordered body, source provenance; no runtime queues |
 | Connection/delegation | owner, endpoint feature references, explicit path provenance, interface identity, queue policy for a connection; no queue for delegation |
 | Variable/local/parameter | declared type, ownership/scope, initializer where present, mutable copied-value semantics |
-| Executable | signature, trigger, concurrency/timing, function-local calculations and one statement or state body, context bound to the owning component |
-| Root component/binding | named occurrence with inline composition or component-definition reference, external destination identities, explicit/effective deployment and effective service/realtime/mixed profile |
+| Executable | explicit operation/function kind, signature, trigger, concurrency/timing, locally owned calculations and one statement or state body, context bound to the owning class/component |
+| Class/component root/binding | explicit root kind, named occurrence with inline composition or compatible class/component-definition reference, external destination identities, explicit/effective deployment and effective service/realtime/mixed profile |
 | Requirement/case/view | immutable attributes and doc, satisfy/verify edges, case kind and step graph, view kind and ordered selected occurrence paths |
 
 All textual references MUST resolve before normalization. A `TypeRef` is a use, not a new nominal declaration. Array extents are carried as shape constraints and do not create element aliasing. Empty records have one value. void results create no output-value feature. Parameters preserve order, independent of parameter names at a handler implementation.
 
-A typed root expands its component definition, and an inline root expands its authored children; no extra wrapper occurrence is inserted. Its normalized profile records service even when the source omits that default, while provenance preserves the omission. A typed binding body contributes only deployments, never topology. Every component child expands its definition's child features recursively. Expansion preserves each connector's owner path, so two uses of the same component produce distinct connector occurrences and queues. Effective deployment is computed by the nearest explicitly deployed ancestor, including the occurrence itself. An absent ancestor yields an explicit Unallocated value, not an invented external system.
+A typed root expands its compatible class/component definition, and an inline root expands its authored children; no extra wrapper occurrence is inserted. Its normalized profile records service even when the source omits that default, while provenance preserves the omission. A typed binding body contributes only deployments, never topology. Every component child expands its definition's child features recursively. Expansion preserves each connector's owner path, so two uses of the same component produce distinct connector occurrences and queues. Effective deployment is computed by the nearest explicitly deployed ancestor, including the occurrence itself. An absent ancestor yields an explicit Unallocated value, not an invented external system.
+
+Specialization preserves structural kinds: component may specialize class or component; class may specialize class only. Class usages may reference either definition kind; component usages require component definitions. Operation-to-function and class-usage-to-component-usage redefinition may narrow kinds while preserving every other compatibility obligation; reverse widening is invalid.
 
 Specialization normalizes to an explicit base-definition reference and an ordered effective member set. Each inherited member retains declaration provenance; each replacement additionally references the inherited member it redefines. Expansion instantiates the effective set separately for every component instance, including root-owned functions and variables. Local references in inherited bodies resolve in that effective instance context. A mapper MUST preserve redefinition compatibility checks and MUST NOT merge stores merely because they share an inherited declaration.
 
@@ -59,7 +65,7 @@ A queue key is `(connectorOccurrence, direction, memberIdentity)` with direction
 
 ## 7.4 Executable normalization
 
-Every function has a behavior declaration and one synthetic executable feature owned by its component structure. The feature is typed by that behavior and binds an activation to a component occurrence. It MUST NOT create a user-visible performer, an independently editable implementation allocation, or permission to call it across a component boundary.
+Every operation/function has a behavior declaration and one synthetic executable feature owned by its component structure. The feature is typed by that behavior and binds an activation to a component occurrence. It MUST NOT create a user-visible performer, an independently editable implementation allocation, or permission to call it across a component boundary.
 
 A statement body normalizes to an entry, ordered steps, exit/failure terminals and lexical scopes. Every step records its source construct and ordered operands. The following lowerings are required:
 
@@ -101,9 +107,11 @@ Normalize each case label to a distinct step identity, resolve its route/member 
 
 A case realization claim records a witness execution and assumptions, including payload values absent from the diagram, dispatch choices and function paths. Mere route validity does not supply that witness. A graphical renderer can display an unverified case but must not show it as proven.
 
-Normalize views to `(kind, selectedOccurrences[])`, retaining the authored selection/filter clauses for round trips. Compact of syntax contributes one selection. Resolve include subjects in the owning package, expand recursive descendants, then evaluate typed Boolean predicates and deduplicate occurrence paths in first-selection order. gv/grv may select any named semantic element or package except a view; iv selects components; cv/sv select cases or roots; fv selects executable functions. Paths traverse effective component members, owned named behavior elements and interface members exposed through ports. A package/declaration name collision is ambiguous.
+Normalize views to `(kind, selectedOccurrences[])`, retaining the authored selection/filter clauses for round trips. Compact of syntax contributes one selection. Resolve include subjects in the owning package, expand recursive descendants, then evaluate typed Boolean predicates and deduplicate occurrence paths in first-selection order. gv/grv may select any named semantic element or package except a view; iv selects classes/components; cv/sv select cases or roots; fv/tv select executable operations/functions. Compact tv subjects are operations/functions; selecting descendants requires an explicit recursive include and a filter that leaves only executable subjects. A kind predicate matches the exact authored kind: class differs from component and operation differs from function. Use explicit or predicates to include both; signature remains a contract-member kind, not executable behavior. Paths traverse effective component members, owned named behavior elements and interface members exposed through ports. A package/declaration name collision is ambiguous.
 
-An FV timing presentation additionally references an identified run/trace and its selected function occurrences. Preserve activation identities, event ordinals, correlations and observed phase boundaries separately from declared timing contracts. Horizon/stopped intervals remain open; zero-cost execution cannot be normalized as measured physical CPU time. Timing geometry and interactive filters remain presentation data. No new executable view kind or scheduling participant is introduced.
+A trace-backed tv presentation additionally references an identified run/trace and its selected function occurrences. A view without trace evidence may show declared contracts but MUST NOT invent observed phases. Preserve activation identities, event ordinals, correlations and observed phase boundaries separately from declared timing contracts. Horizon/stopped intervals remain open; zero-cost execution cannot be normalized as measured physical CPU time. Timing geometry and interactive filters remain presentation data. The tv kind is retained as presentation metadata; it introduces no activation, execution step or scheduling participant.
+
+GV Box in box and Tree layouts normalize to the same ordered selected occurrences and semantic graph. The layout choice, geometry, bends and collapsed regions belong to a presentation sidecar. A layout round trip MUST preserve definition identity, occurrence paths, ownership and all typed references/routes. An ownership tree edge cannot replace a connector or turn a reference into containment.
 
 ## 7.7 Equivalence and completeness
 

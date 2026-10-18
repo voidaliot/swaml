@@ -36,8 +36,8 @@ package Notation {
     component def Sink {
         port input: Counts receiver;
         var latest: int = 0;
-        function accept(value: int) on receive input.value { latest = value; }
-        function check() on manual {
+        function accept(value: int) on receive input.value { call check(); latest = value; }
+        function check() {
             assert not false and (1 + 2 * 3 >= 7) or true;
             assert (5 % 2 == 1) and (4 - 2 != 0) and (8 / 2 <= 4.0);
         }
@@ -70,6 +70,6 @@ package NotationOptions {
     interface publishSubscribe Notices version "1.0.0" { event changed(); }
     component def Emitter {
         port notices: Notices publisher optional;
-        function emit() on manual { publish notices.changed(); }
+        function emit() { publish notices.changed(); }
     }
 }

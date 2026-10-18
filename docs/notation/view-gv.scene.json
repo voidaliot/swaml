@@ -2,7 +2,7 @@
   "width": 560,
   "height": 320,
   "title": "General View",
-  "description": "General View. Draw a framed projection titled gv with the semantic subject identity visible; use the canonical element symbols within it.",
+  "description": "General View of component ownership, shown as Box in box or Tree. Layout changes presentation only.",
   "shapes": [
     {
       "kind": "rect",

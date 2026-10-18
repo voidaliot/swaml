@@ -3,8 +3,14 @@ package Lifecycle {
     interface publishSubscribe Status version "1.0.0" { event changed(value: string); }
     component def Operator {
         port commands: Commands publisher;
-        function startDevice() on manual { publish commands.begin(); return; }
-        function stopDevice() on manual { publish commands.stop(); return; }
+        function startDevice() { publish commands.begin(); return; }
+        function stopDevice() { publish commands.stop(); return; }
+        function driveInputs() on start {
+            initial Waiting;
+            state Waiting {}
+            state Started final { entry { call startDevice(); } }
+            transition beginDevice: Waiting -> Started on after 1 ns {}
+        }
     }
     component def Device {
         port commands: Commands subscriber;

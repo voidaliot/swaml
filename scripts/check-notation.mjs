@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
 import { resolve, relative, sep } from 'node:path';
 import { AstUtils, EmptyFileSystem } from 'langium';
@@ -21,8 +22,8 @@ keywords.add('doc');
 assert([...keywords].every(k => /^[a-z][A-Za-z0-9]*$/.test(k)), 'Keywords must use lower camel case.');
 const productions = new Set([...grammar.matchAll(/^(?:(?:entry|hidden|terminal|type)\s+)*([A-Za-z]\w*)(?:\s+(?:returns|infers)\s+\w+)?\s*[:=]/gm)].map(m => m[1]));
 const kinds = new Set(['node', 'edge', 'compartment', 'label', 'projection']);
-const views = new Set(['Browser', 'gv', 'iv', 'cv', 'sv', 'grv', 'fv']);
-const templates = new Set(['package', 'classifier', 'component', 'usage', 'interface', 'member', 'port', 'connection', 'delegation', 'edge', 'function', 'calculation', 'flow', 'decision', 'loop', 'for-loop', 'for-each', 'do-while', 'interruptible', 'function-timing', 'request', 'return', 'state', 'initial', 'final', 'transition', 'trigger', 'constraint', 'deployment-target', 'deployment', 'case', 'lifeline', 'message', 'note', 'browser', 'gv', 'iv', 'cv', 'sv', 'grv', 'fv']);
+const views = new Set(['Browser', 'gv', 'iv', 'cv', 'sv', 'grv', 'fv', 'tv']);
+const templates = new Set(['package', 'classifier', 'component', 'usage', 'interface', 'member', 'port', 'connection', 'delegation', 'edge', 'function', 'calculation', 'flow', 'decision', 'loop', 'for-loop', 'for-each', 'do-while', 'interruptible', 'function-timing', 'request', 'return', 'state', 'initial', 'final', 'transition', 'trigger', 'constraint', 'deployment-target', 'deployment', 'case', 'lifeline', 'message', 'note', 'browser', 'gv', 'gv-tree', 'iv', 'cv', 'sv', 'grv', 'fv']);
 const roles = new Set(['sender', 'receiver', 'client', 'server', 'publisher', 'subscriber', 'provides', 'requires']);
 const nonempty = value => typeof value === 'string' && value.trim().length > 0;
 const exactSet = (actual, expected, label) => assert.deepEqual([...actual].sort(), [...expected].sort(), label);
@@ -59,7 +60,7 @@ function checkInventory(doc) {
         if (c.drawing.role) assert(roles.has(c.drawing.role), `${c.id}: invalid port role`);
         if (c.drawing.direction) assert(['forward', 'reverse'].includes(c.drawing.direction));
     }
-    exactSet(new Set(doc.concepts.flatMap(c => c.views)), views, 'All seven view families must have notation.');
+    exactSet(new Set(doc.concepts.flatMap(c => c.views)), views, 'Browser and all seven source view kinds must have notation.');
     exactSet(new Set(doc.concepts.filter(c => c.drawing.template === 'port').map(c => c.drawing.role)), roles, 'All eight port roles require explicit notation.');
     for (const [key, universe] of [['keywords', keywords], ['productions', productions]]) {
         const entries = doc.coverage[key];
@@ -138,6 +139,7 @@ for (const c of inventory.concepts.filter(c => c.drawing.template === 'function-
     const projection = JSON.parse(await read(evidence.artifact)).runs.find(run => run.id === evidence.run)?.timing;
     assert(projection, `${c.id}: missing source-backed timing run`);
     assert.deepEqual(c.drawing.observations.map(o => o.id), evidence.activationIds);
+    const deadlines = [];
     for (const observation of c.drawing.observations) {
         const activation = projection.activations.find(a => a.id === observation.id && a.functionPath === evidence.functionPath);
         assert(activation?.dispatched && activation?.terminal, `${c.id}: timing activation has no completed observed span`);
@@ -146,8 +148,13 @@ for (const c of inventory.concepts.filter(c => c.drawing.template === 'function-
         assert.equal(observation.terminalMs, activation.terminal.timeNs / 1e6);
         assert.equal(activation.contract?.wcetNs, 1e6);
         assert.equal(activation.contract?.deadlineNs, 30e6);
+        deadlines.push(activation.deadlineAtNs / 1e6);
     }
-    assert.equal(projection.endNs, 31e6, `${c.id}: update the labeled quiescent observation boundary`);
+    const axis = c.drawing.axis;
+    assert.equal(projection.endNs / 1e6, axis.observationEndMs, `${c.id}: update the labeled quiescent observation boundary`);
+    assert.deepEqual(axis.deadlinesMs, deadlines);
+    assert(Number.isInteger(axis.endMs) && axis.endMs > 0 && Number.isInteger(axis.tickMs) && axis.tickMs > 0 && axis.endMs % axis.tickMs === 0);
+    assert(c.drawing.observations.every(o => 0 <= o.releasedMs && o.releasedMs <= o.dispatchedMs && o.dispatchedMs <= o.terminalMs && o.terminalMs <= axis.endMs));
 }
 
 // Small fault-injection regressions prove that removing coverage or breaking a
@@ -171,7 +178,16 @@ await assert.rejects(() => checkContext({ ...inventory.concepts[0], syntax: 'pac
 
 if (!sourceOnly) {
     const expectedAssets = inventory.concepts.flatMap(c => ['svg', 'png', 'scene.json'].map(ext => `${c.id}.${ext}`));
-    exactSet(new Set(await readdir(resolve(root, 'docs/notation'))), new Set(expectedAssets), 'Canonical asset directory must contain exactly one SVG/PNG/scene triple per concept.');
+    for (const artifact of inventory.retainedArtifacts ?? []) {
+        assert(/^docs\/notation\/[a-z0-9-]+\.(?:svg|png|scene\.json)$/.test(artifact.path), 'Historical assets stay inside the notation directory.');
+        assert.equal(artifact.edition, '1.3.0');
+        assert(nonempty(artifact.reason));
+        const name = artifact.path.slice('docs/notation/'.length);
+        assert(!expectedAssets.includes(name), 'Historical assets must not shadow current notation.');
+        assert.equal(createHash('sha256').update(await readFile(resolve(root, artifact.path))).digest('hex'), artifact.sha256, `${artifact.path}: preserve published bytes`);
+        expectedAssets.push(name);
+    }
+    exactSet(new Set(await readdir(resolve(root, 'docs/notation'))), new Set(expectedAssets), 'Asset directory must contain current concept triples and explicitly preserved historical assets.');
     const catalog = await read('docs/GRAPHICAL_CATALOG.md');
     const finite = n => typeof n === 'number' && Number.isFinite(n);
     const monochrome = color => color === 'none' || color === 'white' || color === 'black' || /^#([0-9a-f]{2})\1\1$/i.test(color ?? '');

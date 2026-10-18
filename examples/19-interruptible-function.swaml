@@ -32,7 +32,12 @@ package Interrupts {
     }
     component def Controller {
         port control: Control publisher;
-        function stop() on manual { publish control.stop("operator stop"); }
+        function driveInputs() on start {
+            initial Waiting;
+            state Waiting {}
+            state Sent final { entry { publish control.stop("operator stop"); } }
+            transition stopWork: Waiting -> Sent on after 2 ms {}
+        }
     }
     component App {
         component worker: Worker;

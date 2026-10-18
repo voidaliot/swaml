@@ -2,6 +2,8 @@
 
 Normative classification of the [SWAML 1.3 specification](../LANGUAGE_SPECIFICATION.md). This chapter separates static language validity, runtime behavior and proof claims. It prevents acceptance by one tool from being mistaken for evidence supplied by another.
 
+Operator and test inputs require the same typed event, emitting-function provenance, explicit route and handler ownership evidence as application inputs. A generated stimulus driver must be included in the validated source workspace and run record; direct harness function releases or destination-event injection are not part of the reference contract.
+
 ## 8.1 Static acceptance
 
 Static validity is determined from the complete loaded source workspace without executing a model. The grammar plus the following obligations define the static core. The reference core implements these groups, but remains advertised as partial V pending an independent clause-by-clause conformance suite.
@@ -12,8 +14,8 @@ Static validity is determined from the complete loaded source workspace without 
 | V02 | Unique package/scoped names; imports exist; references resolve uniquely before kind filtering | SW002/SW004, owner-aware linker; multi-file tests |
 | V03 | Finite nominal records/enums/arrays; no void data; complete typed constructions | SW020–SW028; values/flow and audit fixtures |
 | V04 | Pure initializer/calculation environments, no cross-component value lookup, compatible operands/arguments/results | SW022–SW024; isolation and type tests |
-| V05 | Legal interface members/port roles, exact nominal matching and signature implementations | SW010/SW011/SW031/SW032/SW052 |
-| V06 | Acyclic specialization and effective composition, compatible explicit redefinition, immediate-child routes, one delegation per boundary, no duplicate aliases/routes | SW012/SW013/SW014/SW015/SW030/SW033/SW035 |
+| V05 | Legal interface members/port roles, exact nominal matching and operation/function signature-kind-compatible implementations | SW010/SW011/SW031/SW032/SW052 |
+| V06 | Class/component subtype direction, kind-compatible usages, operation/function narrowing, acyclic specialization and effective composition, compatible explicit redefinition, immediate-child routes, one delegation per boundary, no duplicate aliases/routes | SW012/SW013/SW014/SW015/SW016/SW030/SW033/SW035 |
 | V07 | Required-port closure through every alias; single source/provider where required | SW034/SW035; closure fixtures |
 | V08 | Every outgoing member has syntactic emission provenance; every incoming member has one handler owner | SW050/SW051/SW055 |
 | V09 | Positive safe durations, capacities, array extents and loop bounds; nonnegative safe priorities; complete inline/named QoS including unused declarations; sampled buffering and idempotent RPC declaration | SW020/SW040/SW041/SW043/SW059/SW062 |
@@ -23,7 +25,7 @@ Static validity is determined from the complete loaded source workspace without 
 | V13 | Reentrant activation roots do not write component data directly or through any reachable helper | SW054; transitive-effect audit tests |
 | V14 | Stateful function signature, initial reference, graph reachability, final-state rules, competing priorities and no unconditional completion cycle | SW060–SW064 |
 | V15 | Valid instance deployment paths and external destination syntax; no duplicate exact allocation | SW070 |
-| V16 | View subject kind, case member/route/direction, earlier predecessor and uniquely correlated reply | SW080–SW083 |
+| V16 | All seven view kinds and subject rules, including operation/function-only fv/tv selections and exact authored-kind filters; case member/route/direction, earlier predecessor and uniquely correlated reply | SW080–SW083 |
 | V17 | Triggered serial interrupt-region owner, local incoming data/event route, unique receiving owner/member/name, payload scope and definite-return branches | SW002/SW033/SW051/SW055/SW065 |
 
 “Every path returns” in V12 is structural definite termination: a sequential block contains return/fail, an if with both branches definitely terminating, a do/nonempty forEach body that definitely terminates on its first iteration, or an interruptible region whose protected body and handler both definitely terminate. while/for alone are insufficient because they may run zero times or hit their bound. A request failure block obeys the same rule. This rule is intentionally conservative and does not require solving guard predicates. A request's success continuation is checked independently from its failure block.
@@ -31,6 +33,8 @@ Static validity is determined from the complete loaded source workspace without 
 Literal array indices, including unary sign expressions, are checked statically. General expression-derived bounds and arithmetic overflow are execution checks; a validator may additionally reject a proven inevitable failure with an explained analysis diagnostic. Syntactically present but unreachable emission still satisfies provenance; proving that an interface is useful is a stronger claim.
 
 Imported declarations and string-valued semantic paths MUST be revalidated after a dependency change, addition or deletion. Correctness includes negative lookups: a newly added declaration can make an existing short reference ambiguous. A conservative implementation may rebuild all loaded language documents. Source recovery may suspend semantic checks on a syntactically invalid document, but syntax errors and unresolved references remain visible and the document cannot pass validation.
+
+Class/component and operation/function kind checks apply independently of their shared authoring AST representation. Runtime E01–E08 apply to both alternatives: classes do not waive port boundaries and operations do not waive calculation purity, event provenance, serial locks, snapshots, cancellation or timing obligations.
 
 ## 8.2 Runtime obligations
 
@@ -59,7 +63,7 @@ These analyses may be conservative, bounded or incomplete, but MUST state assump
 
 K requires the complete [normalized model](07-normalized-model.md), an implemented versioned semantic library/exporter, kernel validation and round-trip evidence. The production inventory checks coverage of the mapping design; it does not validate generated KerML because no such exporter exists yet.
 
-G requires Browser and all six view projections, instance-aware identity, accessible notation, validated source edits, layout separation and atomic undo/redo. An LSP with generated TextMate tokens is an editor foundation, not G. Full IDE refactoring additionally requires path-aware rename/reference/navigation and persistent identity handling.
+G requires Browser and all seven source view projections, instance-aware identity, accessible notation, validated source edits, layout separation and atomic undo/redo. TV timing preserves identified trace observations separately from declared contracts; an absent trace is not fabricated. GV Box in box and Tree layouts preserve the same selected paths, ownership, typed references and topology. An LSP with generated TextMate tokens is an editor foundation, not G. Full IDE refactoring additionally requires path-aware rename/reference/navigation and persistent identity handling.
 
 A tool's conformance report MUST identify language version, implementation version, levels claimed, rule groups checked, unsupported capabilities and evidence references. It MUST NOT promote S or partial V to K/E/G by implication. [Implementation status](../IMPLEMENTATION_STATUS.md) is this repository's report.
 
@@ -67,7 +71,7 @@ A tool's conformance report MUST identify language version, implementation versi
 
 Completeness of this specification means every 1.3 construct has syntax, ownership, reference/type rules, static constraints, operational or descriptive meaning, a normalization contract and a conformance category. It does not mean every future software architecture concern is a built-in keyword or that all backends are implemented.
 
-The finite boundary remains explicit: single inheritance with compatible explicit redefinition; no multiple inheritance, generics, reference-valued payloads, dynamic object creation/subscriptions/discovery, unrestricted fork/join, hierarchical/orthogonal state machines or arbitrary host-language code. Model adapters and protocols can express supported interactions; a new construct needs a versioned proposal with the same obligations. Patch clarifications ordinarily preserve valid-model source compatibility. The 1.2.1 relation-spelling correction preserves model meaning but requires migrating case for and satisfaction by to of. ADR 0010 records this source compatibility change and the rejected old forms. The 1.2 host selected a language family plus installed package revision. The 1.3 parser explicitly selects the new edition and profile; reproduction must pin the package revision too. Other incompatible changes require an explicitly versioned edition and migration notes. The historical 1.1 release intentionally migrates syntax from 1.0 despite using a minor version; it provides no silent legacy aliases.
+The finite boundary remains explicit: single inheritance with compatible explicit redefinition; no multiple inheritance, generics, reference-valued payloads, dynamic object creation/subscriptions/discovery, unrestricted fork/join, hierarchical/orthogonal state machines or arbitrary host-language code. Model adapters and protocols can express supported interactions; a new construct needs a versioned proposal with the same obligations. Patch clarifications ordinarily preserve valid-model source compatibility. The 1.2.1 relation-spelling correction preserves model meaning but requires migrating case for and satisfaction by to of. ADR 0010 records this source compatibility change and the rejected old forms. The 1.2 host selected a language family plus installed package revision. The 1.3 parser explicitly selects the language family and profile; reproduction must pin the package revision too. The 1.3.1 revision adds the reserved tv kind and migrates timing selections from fv without changing execution semantics or profile. [ADR 0012](../decisions/0012-timing-view-and-structure-layouts.md) and the [1.3.1 migration guide](../MIGRATION_1_3_1.md) record that source correction and the presentation-only GV layouts. The 1.3.1 class/operation addition preserves the Component-to-Class and Function-to-Operation subtype relations, exact authored kinds, the shared execution profile and kind-compatible reuse/handler binding. [ADR 0014](../decisions/0014-classes-operations-and-uml-notation.md) records its notation and transformation boundary. Other incompatible changes require an explicitly versioned edition and migration notes. The historical 1.1 release intentionally migrates syntax from 1.0 despite using a minor version; it provides no silent legacy aliases.
 
 ## Requirement and presentation extension
 

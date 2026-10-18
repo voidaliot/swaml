@@ -6,9 +6,10 @@ import { parseHelper } from 'langium/test';
 import type { Model } from '../src/language/generated/ast.js';
 import { createSwamlServices } from '../src/language/swaml-module.js';
 import { simulate, type SimulationOptions } from '../src/simulation/simulator.js';
+import { withEventSchedule } from './event-driver.js';
 
 const example = readFileSync(new URL('../../examples/19-interruptible-function.swaml', import.meta.url), 'utf8');
-const options: SimulationOptions = { untilNs: 60000000, latencyNs: 5000000, manual: [{ atNs: 2000000, function: 'controller.stop' }] };
+const options: SimulationOptions = { untilNs: 60000000, latencyNs: 5000000 };
 async function parse(source: string) {
     const { Swaml } = createSwamlServices(EmptyFileSystem);
     const doc = await parseHelper<Model>(Swaml)(source, { validation: true });
@@ -38,7 +39,8 @@ test('interrupt cancels a suspended region, retains server effects and discards 
 });
 
 test('normal completion disarms the region and a later interrupt cannot activate the function', async () => {
-    const result = await run(example.replace('assert status == 2;', 'assert status == 10;'), { ...options, manual: [{ atNs: 20000000, function: 'controller.stop' }] });
+    const source = withEventSchedule(example.replace('assert status == 2;', 'assert status == 10;'), [{ atNs: 20000000, statement: 'publish control.stop("operator stop");' }]);
+    const result = await run(source);
     assert.equal(result.outcome, 'no-failure-observed');
     assert.equal(result.stores.worker.status, 10);
     assert.equal(result.stores.worker.why, '');
@@ -65,8 +67,8 @@ test('interrupt unwinds a local helper and skips the cancelled request otherwise
 });
 
 test('same-time input can interrupt a counted loop at a statement boundary', async () => {
-    const source = body(example, 'interruptible work { status = 1; for (var i: int = 0; i < 100; i = i + 1) bound 100 { status = status + 1; } } on receive control.stop { status = status + 20; } assert status == 21;');
-    const result = await run(source, { untilNs: 1, manual: [{ atNs: 0, function: 'controller.stop' }] });
+    const source = withEventSchedule(body(example, 'interruptible work { status = 1; for (var i: int = 0; i < 100; i = i + 1) bound 100 { status = status + 1; } } on receive control.stop { status = status + 20; } assert status == 21;'), [{ atNs: 0, statement: 'publish control.stop("operator stop");' }]);
+    const result = await run(source, { untilNs: 1 });
     assert.equal(result.outcome, 'no-failure-observed');
     assert.equal(result.stores.worker.status, 21);
     assert.equal(result.trace.find(event => event.kind === 'interrupt')?.timeNs, 0);
@@ -74,7 +76,7 @@ test('same-time input can interrupt a counted loop at a statement boundary', asy
 
 test('nested outer interruption unwinds the inner region without executing its handler', async () => {
     let source = example.replace('event stop(reason: string);', 'event stop(reason: string); event stopAll(cause: string);');
-    source = source.replace('function stop() on manual', 'function unused() on manual { publish control.stop("unused"); } function stop() on manual').replace('publish control.stop("operator stop")', 'publish control.stopAll("all work")');
+    source = source.replace('function driveInputs() on start', 'function unused() { publish control.stop("unused"); } function driveInputs() on start').replace('publish control.stop("operator stop")', 'publish control.stopAll("all work")');
     source = body(source, `interruptible outer { interruptible inner { ${request} status = 10; } on receive control.stop { status = 2; } } on receive control.stopAll { status = 3; why = cause; } assert status == 3;`);
     const result = await run(source);
     assert.equal(result.outcome, 'no-failure-observed');
@@ -85,10 +87,10 @@ test('nested outer interruption unwinds the inner region without executing its h
 
 test('outer interruption cancels a nested handler RPC and completes at the activation deadline', async () => {
     let source = example.replace('event stop(reason: string);', 'event stop(reason: string); event stopAll(cause: string);');
-    source = source.replace('function stop() on manual { publish control.stop("operator stop"); }', 'function stop() on manual { publish control.stop("inner"); } function stopAll() on manual { publish control.stopAll("outer"); }');
+    source = withEventSchedule(source, [{ atNs: 2000000, statement: 'publish control.stop("inner");' }, { atNs: 5000000, statement: 'publish control.stopAll("outer");' }]);
     source = body(source, `interruptible outer { interruptible inner { ${request} status = 10; } on receive control.stop { call job.perform() as again within 50 ms otherwise { fail "nested request failed"; }; status = again; } } on receive control.stopAll { status = 3; why = cause; } assert status == 3;`);
     source = source.replace('function run() on start', 'function run() on start timing { wcet 1 ms; deadline 10 ms; concurrency serial; }');
-    const result = await run(source, { ...options, manual: [{ atNs: 2000000, function: 'controller.stop' }, { atNs: 5000000, function: 'controller.stopAll' }] });
+    const result = await run(source);
     assert.equal(result.outcome, 'no-failure-observed');
     assert.deepEqual(result.stores.worker, { status: 3, why: 'outer' });
     assert.equal(result.stores.backend.committed, 2);
@@ -102,8 +104,8 @@ test('outer interruption cancels a nested handler RPC and completes at the activ
 });
 
 test('timeout remains the terminal correlation outcome when an interrupt arrives at expiry', async () => {
-    const source = example.replace('within 50 ms', 'within 10 ms');
-    const result = await run(source, { ...options, manual: [{ atNs: 5000000, function: 'controller.stop' }] });
+    const source = withEventSchedule(example.replace('within 50 ms', 'within 10 ms'), [{ atNs: 5000000, statement: 'publish control.stop("operator stop");' }]);
+    const result = await run(source);
     assert.equal(result.outcome, 'no-failure-observed');
     assert.ok(result.trace.some(event => event.kind === 'requestComplete' && event.failure === 'Timeout' && event.timeNs === 10000000));
     assert.ok(!result.trace.some(event => event.kind === 'requestCancelled'));

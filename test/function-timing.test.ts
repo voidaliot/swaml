@@ -26,40 +26,45 @@ test('timing retains independent occurrences and distinct activations of a reuse
     assert.notEqual(first[0].id, first[1].id);
     assert.equal(first[0].contract?.definitionPath, first[1].contract?.definitionPath);
     assert.equal(timing.activations.filter(a => a.functionPath === 'second.poll').length, 1);
-    assert.deepEqual(first.map(a => [a.released.timeNs, a.dispatched?.timeNs, a.terminal?.timeNs]), [[0, 0, 4000000], [1000000, 4000000, 8000000]]);
-    assert.equal(first[1].intervals.find(i => i.state === 'ready')?.end.timeNs, 4000000);
+    assert.deepEqual(first.map(a => [a.released.timeNs, a.dispatched?.timeNs, a.terminal?.timeNs]), [[2000000, 2000000, 6000000], [3000000, 6000000, 10000000]]);
+    assert.equal(first[1].intervals.find(i => i.state === 'ready')?.end.timeNs, 6000000);
 });
 test('timing separates declared CPU bounds from logical wait and zero-cost execution', async () => {
     const { timing } = await run();
     const activation = timing.activations.find(a => a.functionPath === 'first.poll')!;
     assert.equal(activation.contract?.wcetNs, 1000000);
-    assert.equal(activation.deadlineAtNs, 30000000);
+    assert.equal(activation.deadlineAtNs, 32000000);
     assert.ok(activation.intervals.filter(i => i.state === 'running').every(i => i.start.timeNs === i.end.timeNs));
-    assert.deepEqual(activation.intervals.filter(i => i.state === 'requestWait').map(i => [i.start.timeNs, i.end.timeNs]), [[0, 4000000]]);
+    assert.deepEqual(activation.intervals.filter(i => i.state === 'requestWait').map(i => [i.start.timeNs, i.end.timeNs]), [[2000000, 6000000]]);
     assert.deepEqual(activation.markers.map(m => m.point.ordinal), [...activation.markers.map(m => m.point.ordinal)].sort((a, b) => a! - b!));
 });
 test('a timeout and later response retain the original terminal caller and correlation', async () => {
-    const { timing } = await run({ latencyNs: 12000000, untilNs: 60000000, manual: options.manual!.slice(0, 2) });
+    const { timing } = await run({ latencyNs: 12000000, untilNs: 40000000 });
     const activation = timing.activations.find(a => a.functionPath === 'first.poll')!;
-    assert.equal(activation.outcome, 'failure'); assert.equal(activation.terminal?.timeNs, 20000000);
+    assert.equal(activation.outcome, 'failure'); assert.equal(activation.terminal?.timeNs, 32000000);
     const timeout = activation.markers.find(m => m.kind === 'timeout')!;
     const late = activation.markers.find(m => m.kind === 'discardResponse')!;
-    assert.equal(late.correlation, timeout.correlation); assert.equal(late.point.timeNs, 24000000);
+    assert.equal(late.correlation, timeout.correlation); assert.equal(late.point.timeNs, 36000000);
     assert.equal(activation.markers.filter(m => m.kind === 'requestComplete').length, 1);
     assert.equal(activation.markers.filter(m => m.kind === 'failure').length, 1);
     assert.equal(timing.stops.length, 0);
+    const queued = timing.activations.filter(a => a.functionPath === 'first.poll')[1];
+    assert.equal(timing.endNs, 40000000);
+    assert.equal(queued.outcome, 'open'); assert.equal(queued.terminal, undefined);
+    assert.equal(queued.deadlineAtNs, 43000000);
+    assert.ok(queued.intervals.some(i => i.state === 'requestWait' && i.open && i.end.timeNs === 40000000));
 });
 test('horizon uses the requested boundary and leaves waiting and queued intervals open', async () => {
-    const { evidence, timing } = await run({ untilNs: 3000000 });
-    assert.equal(evidence.status, 'horizon'); assert.equal(evidence.timeNs, 2000000); assert.equal(timing.endNs, 3000000);
+    const { evidence, timing } = await run({ untilNs: 5000000 });
+    assert.equal(evidence.status, 'horizon'); assert.equal(evidence.timeNs, 4000000); assert.equal(timing.endNs, 5000000);
     const open = timing.activations.flatMap(a => a.intervals.filter(i => i.open));
     assert.ok(open.some(i => i.state === 'requestWait')); assert.ok(open.some(i => i.state === 'ready'));
-    assert.ok(open.every(i => i.end.timeNs === 3000000 && i.end.ordinal === undefined));
+    assert.ok(open.every(i => i.end.timeNs === 5000000 && i.end.ordinal === undefined));
     assert.ok(timing.activations.filter(a => a.outcome === 'open').every(a => a.terminal === undefined));
 });
 test('deadline stop is distinct from a fabricated activation failure or completion', async () => {
-    const { evidence, timing } = await run({ latencyNs: 18000000 });
-    assert.equal(evidence.status, 'violation'); assert.equal(timing.endNs, 31000000);
+    const { evidence, timing } = await run({ latencyNs: 18000000, untilNs: 80000000 });
+    assert.equal(evidence.status, 'violation'); assert.equal(timing.endNs, 49000000);
     assert.equal(timing.stops[0].code, 'Deadline');
     const last = timing.activations.filter(a => a.functionPath === 'first.poll')[1];
     assert.equal(last.outcome, 'open'); assert.equal(last.terminal, undefined);

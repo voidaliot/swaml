@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="790" viewBox="0 0 1000 790" role="img" aria-labelledby="title desc">
+<title id="title">gv · Tree layout</title><desc id="desc">Cabin ownership: the same seven component occurrences as the Box in box layout.</desc>
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#17324d"/></marker></defs>
+<g font-family="DejaVu Sans, sans-serif">
+<rect x="0" y="0" width="1000" height="790" rx="8" fill="#ffffff" stroke="none"/>
+<text x="32" y="47" font-size="30" font-weight="700" fill="#17324d">gv · Tree layout</text>
+<text x="32" y="80" font-size="17" font-weight="400" fill="#516579">Cabin ownership: the same seven component occurrences as the Box in box layout.</text>
+<polyline points="32,99 968,99" fill="none" stroke="#ccd9e2" stroke-width="2"/>
+<rect x="260" y="126" width="480" height="108" rx="8" fill="#ffffff" stroke="#17324d"/>
+<text x="276" y="157" font-size="21" font-weight="700" fill="#17324d">Cabin · root</text>
+<rect x="707" y="139" width="17" height="24" rx="0" fill="#eef4f8" stroke="#17324d"/>
+<rect x="701" y="142" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<rect x="701" y="153" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<text x="276" y="195" font-size="18" font-weight="400" fill="#17324d">function driveInputs() · on start</text>
+<text x="276" y="219" font-size="17" font-weight="400" fill="#087f8c">publish panelInput.adjust(22)</text>
+<polyline points="500,234 500,249 180,249 180,275" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="195" y="263" font-size="17" font-weight="400" fill="#17324d">owns</text>
+<rect x="40" y="281" width="280" height="84" rx="8" fill="#ffffff" stroke="#17324d"/>
+<text x="56" y="312" font-size="21" font-weight="700" fill="#17324d">settings : Service</text>
+<rect x="287" y="294" width="17" height="24" rx="0" fill="#eef4f8" stroke="#17324d"/>
+<rect x="281" y="297" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<rect x="281" y="308" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<text x="56" y="347" font-size="16" font-weight="400" fill="#516579">Cabin.settings</text>
+<polyline points="180,365 180,431" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="195" y="405" font-size="17" font-weight="400" fill="#17324d">owns</text>
+<rect x="40" y="437" width="280" height="110" rx="8" fill="#ffffff" stroke="#17324d"/>
+<text x="56" y="468" font-size="21" font-weight="700" fill="#17324d">store</text>
+<rect x="287" y="450" width="17" height="24" rx="0" fill="#eef4f8" stroke="#17324d"/>
+<rect x="281" y="453" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<rect x="281" y="464" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<text x="56" y="493" font-size="19" font-weight="400" fill="#17324d">: SettingStore</text>
+<text x="56" y="523" font-size="16" font-weight="400" fill="#516579">Cabin.settings.store</text>
+<polyline points="500,234 500,249 500,249 500,275" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="515" y="263" font-size="17" font-weight="400" fill="#17324d">owns</text>
+<rect x="360" y="281" width="280" height="84" rx="8" fill="#ffffff" stroke="#17324d"/>
+<text x="376" y="312" font-size="21" font-weight="700" fill="#17324d">front : Client</text>
+<rect x="607" y="294" width="17" height="24" rx="0" fill="#eef4f8" stroke="#17324d"/>
+<rect x="601" y="297" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<rect x="601" y="308" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<text x="376" y="347" font-size="16" font-weight="400" fill="#516579">Cabin.front</text>
+<polyline points="500,365 500,431" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="515" y="405" font-size="17" font-weight="400" fill="#17324d">owns</text>
+<rect x="360" y="437" width="280" height="110" rx="8" fill="#ffffff" stroke="#17324d"/>
+<text x="376" y="468" font-size="21" font-weight="700" fill="#17324d">panel</text>
+<rect x="607" y="450" width="17" height="24" rx="0" fill="#eef4f8" stroke="#17324d"/>
+<rect x="601" y="453" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<rect x="601" y="464" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<text x="376" y="493" font-size="19" font-weight="400" fill="#17324d">: Panel</text>
+<text x="376" y="523" font-size="16" font-weight="400" fill="#516579">Cabin.front.panel</text>
+<polyline points="500,234 500,249 820,249 820,275" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="835" y="263" font-size="17" font-weight="400" fill="#17324d">owns</text>
+<rect x="680" y="281" width="280" height="84" rx="8" fill="#ffffff" stroke="#17324d"/>
+<text x="696" y="312" font-size="21" font-weight="700" fill="#17324d">rear : Client</text>
+<rect x="927" y="294" width="17" height="24" rx="0" fill="#eef4f8" stroke="#17324d"/>
+<rect x="921" y="297" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<rect x="921" y="308" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<text x="696" y="347" font-size="16" font-weight="400" fill="#516579">Cabin.rear</text>
+<polyline points="820,365 820,431" fill="none" stroke="#17324d" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="835" y="405" font-size="17" font-weight="400" fill="#17324d">owns</text>
+<rect x="680" y="437" width="280" height="110" rx="8" fill="#ffffff" stroke="#17324d"/>
+<text x="696" y="468" font-size="21" font-weight="700" fill="#17324d">panel</text>
+<rect x="927" y="450" width="17" height="24" rx="0" fill="#eef4f8" stroke="#17324d"/>
+<rect x="921" y="453" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<rect x="921" y="464" width="11" height="6" rx="0" fill="white" stroke="#17324d"/>
+<text x="696" y="493" font-size="19" font-weight="400" fill="#17324d">: Panel</text>
+<text x="696" y="523" font-size="16" font-weight="400" fill="#516579">Cabin.rear.panel</text>
+<polyline points="32,563 968,563" fill="none" stroke="#ccd9e2" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="40" y="599" font-size="21" font-weight="700" fill="#17324d">External deployment references</text>
+<rect x="40" y="623" width="410" height="87" rx="8" fill="#eef4f8" stroke="#17324d"/>
+<text x="55" y="655" font-size="20" font-weight="700" fill="#17324d">settings → system:controller</text>
+<text x="55" y="685" font-size="17" font-weight="400" fill="#17324d">store inherits this location</text>
+<rect x="510" y="623" width="450" height="87" rx="8" fill="#eef4f8" stroke="#17324d"/>
+<text x="525" y="655" font-size="20" font-weight="700" fill="#17324d">front, rear → system:displays</text>
+<text x="525" y="685" font-size="17" font-weight="400" fill="#17324d">each panel inherits its parent location</text>
+<text x="40" y="752" font-size="17" font-weight="400" fill="#516579">Ownership arrows do not imply communication, activation order or shared private state.</text>
+</g></svg>

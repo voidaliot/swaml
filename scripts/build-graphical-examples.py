@@ -25,8 +25,13 @@ class Scene:
             self.add('line',points=[sides[0],(x,y),sides[1]],color=color,dash=False,arrow=False)
     def circle(self,x,y,r,fill=NAVY): self.add('circle',x=x,y=y,r=r,fill=fill,stroke=NAVY)
     def diamond(self,x,y,w,h): self.add('polygon',points=[(x+w/2,y),(x+w,y+h/2),(x+w/2,y+h),(x,y+h/2)],fill=PALE,stroke=NAVY)
-    def port(self,x,y,label,tx=None,ty=None):
+    def port(self,x,y,label,tx=None,ty=None,role=None,outward=1):
         self.rect(x-6,y-6,12,12,fill='white',rx=0)
+        if role in ['client','server','requires','provides']:
+            self.line([(x+outward*7,y),(x+outward*16,y)])
+            cx=x+outward*24
+            if role in ['server','provides']: self.circle(cx,y,7,fill='white')
+            else:self.line([(cx-outward*9*math.cos(a),y+9*math.sin(a)) for a in [-math.pi/2+i*math.pi/16 for i in range(17)]])
         if label: self.text(tx if tx is not None else x+13, ty if ty is not None else y-12,label,17,True,color=TEAL)
     def component(self,x,y,w,h,title):
         self.rect(x,y,w,h,fill='#ffffff'); self.text(x+16,y+31,title,21,True)
@@ -49,46 +54,55 @@ class Scene:
 
 s=Scene('browser','Model Browser · ownership and instance context','Settings example: declarations and usages have distinct badges.',700)
 s.rect(32,123,560,532,fill='#f7fafc');s.rect(615,123,352,532,fill='white')
-rows=[(0,'Settings  [package]'),(1,'TemperatureSetting  [interface]'),(1,'SettingStore  [component def]'),(2,'api  [port: provides]'),(2,'currentValue  [var: int]'),(2,'read / update  [functions]'),(1,'Cabin  [component root]'),(2,'settings : Service  [instance]'),(3,'store : SettingStore  [instance]'),(4,'api  [port: provides]'),(4,'update  [function instance]'),(2,'front : Client  [instance]'),(2,'rear : Client  [instance]')]
+rows=[(0,'Settings  [package]'),(1,'TemperatureSetting  [interface]'),(1,'SettingStore  [component def]'),(2,'api  [port: provides]'),(2,'currentValue  [var: int]'),(2,'read / update  [functions]'),(1,'Cabin  [component root]'),(2,'panelInput / driveInputs  [port / function]'),(2,'settings : Service  [instance]'),(3,'store : SettingStore  [instance]'),(4,'api  [port: provides]'),(4,'update  [function instance]'),(2,'front : Client  [instance]'),(2,'rear : Client  [instance]')]
 for i,(depth,label) in enumerate(rows):
  y=156+i*36
- if i==10:s.rect(40,y-24,544,33,fill='#d5edf0',stroke='none',rx=3)
- s.text(52+depth*22,y,('▸ ' if i in (1,5,11,12) else '  ')+label,18,bold=i in (0,6,10))
+ if i==11:s.rect(40,y-24,544,33,fill='#d5edf0',stroke='none',rx=3)
+ s.text(52+depth*22,y,('▸ ' if i in (1,5,12,13) else '  ')+label,18,bold=i in (0,6,11))
 s.text(637,158,'Selected function',22,True)
 for i,t in enumerate(['Instance context:','Cabin.settings.store.update','','Shared declaration:','SettingStore.update','','Trigger: on call api.setPoint','Parameters: desired: int','Result: bool','','Open declaration → gv','Open behavior → fv','Up → store instance']):s.text(637,202+i*30,t,17,color=TEAL if i in (1,4) else NAVY)
 s.save()
 
-s=Scene('gv','gv · General View','Cabin shows instance ownership and explicit deployment; types are shared declarations.',650)
-s.rect(32,122,935,330,fill='#f7fafc');s.text(50,156,'«component» Cabin · root',24,True)
+s=Scene('gv','gv · General View','Cabin shows instance ownership and explicit deployment; types are shared declarations.',720)
+s.rect(32,122,935,390,fill='#f7fafc');s.text(50,156,'«component» Cabin · root',24,True)
+s.text(50,183,'function driveInputs() · on start',18,True)
+s.text(50,207,'publish panelInput.adjust(22)',17,color=TEAL)
 for x,name,typ in [(55,'settings','Service'),(360,'front','Client'),(665,'rear','Client')]:
- s.component(x,188,280,205,f'{name} : {typ}')
- s.text(x+16,251,'«component instance»',17,color=GRAY)
- s.rect(x+18,275,244,82,fill=PALE)
- s.text(x+32,298,'«component» '+('store' if name=='settings' else 'panel'),17,True)
- s.text(x+32,323,': '+('SettingStore' if name=='settings' else 'Panel'),17)
- s.text(x+32,346,'Private store per instance',13)
-s.rect(60,516,285,80);s.text(80,548,'system:controller',22,True);s.text(80,575,'«external target»',18)
-s.rect(565,516,300,80);s.text(585,548,'system:displays',22,True);s.text(585,575,'«external target»',18)
-s.line([(194,394),(194,510)],dash=True,arrow=True,open=True);s.text(207,485,'deploy',17)
-s.line([(500,394),(620,510)],dash=True,arrow=True,open=True);s.text(518,480,'deploy',17)
-s.line([(803,394),(803,510)],dash=True,arrow=True,open=True);s.text(817,485,'deploy',17)
+ s.component(x,238,280,205,f'{name} : {typ}')
+ s.text(x+16,301,'«component instance»',17,color=GRAY)
+ s.rect(x+18,325,244,82,fill=PALE)
+ s.text(x+32,348,'«component» '+('store' if name=='settings' else 'panel'),17,True)
+ s.text(x+32,373,': '+('SettingStore' if name=='settings' else 'Panel'),17)
+ s.text(x+32,396,'Private store per instance',13)
+s.rect(60,576,285,80);s.text(80,608,'system:controller',22,True);s.text(80,635,'«external target»',18)
+s.rect(565,576,300,80);s.text(585,608,'system:displays',22,True);s.text(585,635,'«external target»',18)
+s.line([(194,444),(194,570)],dash=True,arrow=True,open=True);s.text(207,545,'deploy',17)
+s.line([(500,444),(620,570)],dash=True,arrow=True,open=True);s.text(518,540,'deploy',17)
+s.line([(803,444),(803,570)],dash=True,arrow=True,open=True);s.text(817,545,'deploy',17)
 s.save()
 
-s=Scene('iv','iv · Interconnect View','Cabin: two required service ports connect to one provided port; delegation reaches components.',750)
+s=Scene('iv','iv · Interconnect View','Cabin: service routes and a named operator event use explicit ports and delegation.',880)
 s.component(32,125,282,205,'front : Client');s.component(32,385,282,205,'rear : Client');s.component(680,173,287,380,'settings : Service')
 for y in (125,385):
  s.text(49,y+66,'setting [Req]',18,color=TEAL)
- s.rect(57,y+112,225,66);s.text(68,y+138,'panel : Panel',17,True);s.text(68,y+162,'setting [Req]',16)
- s.line([(314,y+80),(303,y+80),(303,y+145),(282,y+145)],color=TEAL)
+ s.rect(57,y+112,185,66);s.text(68,y+138,'panel : Panel',17,True);s.text(68,y+162,'setting [Req]',16)
+ s.line([(314,y+80),(303,y+80),(303,y+145),(266,y+145)],color=TEAL)
  s.text(66,y+199,'delegate setting → panel.setting',15,color=TEAL)
- s.port(314,y+80,'');s.port(282,y+145,'')
+ s.port(314,y+80,'',role='requires');s.port(242,y+145,'',role='requires')
+ s.port(32,y+86,'');s.text(49,y+89,'control [Sub]'+(' optional' if y==385 else ''),16,color=TEAL)
+ s.line([(32,y+86),(44,y+86),(44,y+149),(57,y+149)],color=TEAL);s.port(57,y+149,'')
 s.rect(717,328,224,119);s.text(730,360,'store',21,True);s.text(730,388,': SettingStore',19);s.text(739,423,'api [Prov]',17,color=TEAL)
-s.line([(680,293),(699,293),(699,411),(717,411)],color=TEAL);s.port(680,293,'api [Prov]',702,274);s.port(717,411,'')
+s.line([(680,293),(699,293),(699,411),(717,411)],color=TEAL);s.port(680,293,'api [Prov]',702,274,role='provides',outward=-1);s.port(717,411,'',role='provides',outward=-1)
 s.text(704,483,'delegate api → store.api',17,color=TEAL)
-s.line([(320,205),(450,205),(450,293),(674,293)],arrow=True);s.text(346,181,'frontLink «service»',18,True)
-s.line([(320,465),(526,465),(526,307),(674,307),(674,293)],arrow=True);s.text(338,500,'rearLink «service»',18,True)
+s.line([(338,205),(450,205),(450,293),(649,293)]);s.text(346,181,'frontLink «service»',18,True)
+s.line([(338,465),(526,465),(526,309),(641,309),(649,293)]);s.text(338,500,'rearLink «service»',18,True)
 s.rect(32,624,935,92,fill=PALE,stroke='none');s.text(50,655,'Contract: TemperatureSetting @ 1.0.0',21,True)
 s.text(50,684,'Both links: atMostOnce · fifo · capacity 8 · reject. Requests → provider; events/replies reverse.',17)
+s.component(32,747,935,99,'Cabin · root input driver')
+s.text(51,804,'driveInputs() on start · publish panelInput.adjust(22)',19)
+s.text(51,830,'adjustCommand: panelInput → front.control; control delegates to panel.control.',17,color=TEAL)
+s.port(60,747,'panelInput [Pub]',83,736)
+s.line([(60,741),(16,741),(16,211),(26,211)],arrow=True,color=TEAL)
 s.save()
 
 s=Scene('cv','cv · Case View','Claimed coverage is explicit; no verification checkmark appears without evidence.',570)
@@ -115,14 +129,14 @@ s.text(36,662,'The rearNotice row is positioned for readability: it may occur be
 s.text(36,694,'Causal chains: adjust → frontNotice → accepted; adjust → rearNotice.',18,True)
 s.save()
 
-s=Scene('grv','grv · Grid View','Function inventory from Cabin; blank timing means no declared contract in service profile.',540)
+s=Scene('grv','grv · Grid View','Function inventory from Cabin; blank timing means no declared contract in service profile.',580)
 columns=[32,254,426,683,798,866,968];headers=['Instance','Function','Trigger','Result','WCET','Deadline']
 for i in range(6):s.rect(columns[i],131,columns[i+1]-columns[i],48,fill=NAVY,stroke='white',rx=0);s.text(columns[i]+10,162,headers[i],16,True,color='white')
-rows=[['settings.store','read()','call api.get','int','1 ms','5 ms'],['settings.store','update(desired)','call api.setPoint','bool','-','-'],['front.panel','adjust()','manual','void','-','-'],['front.panel','refresh()','manual','void','-','-'],['front.panel','display(current)','receive setting.changed','void','-','-'],['rear.panel','(same functions)','distinct instance','void','-','-']]
+rows=[['Cabin (root)','driveInputs()','start; publish adjust(22)','void','-','-'],['settings.store','read()','call api.get','int','1 ms','5 ms'],['settings.store','update(desired)','call api.setPoint','bool','-','-'],['front.panel','adjust(desired)','receive control.adjust','void','-','-'],['front.panel','refresh()','local call','void','-','-'],['front.panel','display(current)','receive setting.changed','void','-','-'],['rear.panel','(same functions)','distinct instance','void','-','-']]
 for row,data in enumerate(rows):
  y=179+row*43
  for i,value in enumerate(data):s.rect(columns[i],y,columns[i+1]-columns[i],43,fill=PALE if row%2==0 else 'white',stroke='#ccd9e2',rx=0);s.text(columns[i]+9,y+28,value,15)
-s.text(35,477,'read is reentrant; other functions default to serial. Sorting this grid changes no execution order.',17,color=GRAY)
+s.text(35,530,'read is reentrant; other functions default to serial. Sorting this grid changes no execution order.',17,color=GRAY)
 s.save()
 
 s=Scene('fv-flow','fv · Function flow','SettingStore.update(desired: int): bool · on call api.setPoint · directly owned by the component.',780)
@@ -153,4 +167,33 @@ s.text(67,403,'Alternative: on after 30 s',20,True);s.text(67,435,'effect: publi
 s.text(67,481,'Leaving Running cancels its timer.',17,color=GRAY)
 s.text(67,627,'Initial/final markers are local control,',16,color=GRAY);s.text(67,649,'not interface messages.',16,color=GRAY)
 s.save()
-print(('Verified' if CHECK else 'Built')+' 8 SVG and vector-scene examples.')
+s=Scene('gv-tree','gv · Tree layout','Cabin ownership: the same seven component occurrences as the Box in box layout.',790)
+s.component(260,126,480,108,'Cabin · root')
+s.text(276,195,'function driveInputs() · on start',18)
+s.text(276,219,'publish panelInput.adjust(22)',17,color=TEAL)
+for x,name,typ,child,child_type in [(40,'settings','Service','store','SettingStore'),(360,'front','Client','panel','Panel'),(680,'rear','Client','panel','Panel')]:
+ s.line([(500,234),(500,249),(x+140,249),(x+140,275)],arrow=True)
+ s.text(x+155,263,'owns',17)
+ s.component(x,281,280,84,f'{name} : {typ}')
+ s.text(x+16,347,'Cabin.'+name,16,color=GRAY)
+ s.line([(x+140,365),(x+140,431)],arrow=True);s.text(x+155,405,'owns',17)
+ s.component(x,437,280,110,child)
+ s.text(x+16,493,': '+child_type,19)
+ s.text(x+16,523,f'Cabin.{name}.{child}',16,color=GRAY)
+s.line([(32,563),(968,563)],color='#ccd9e2',dash=True)
+s.text(40,599,'External deployment references',21,True)
+s.rect(40,623,410,87);s.text(55,655,'settings → system:controller',20,True);s.text(55,685,'store inherits this location',17)
+s.rect(510,623,450,87);s.text(525,655,'front, rear → system:displays',20,True);s.text(525,685,'each panel inherits its parent location',17)
+s.text(40,752,'Ownership arrows do not imply communication, activation order or shared private state.',17,color=GRAY)
+s.save()
+
+# Reuse the canonical timing scene and its checked trace-backed observations.
+# This keeps the worked TV specimen and canonical drawing pixel-identical.
+from notation_scene import render
+concept=next(c for c in json.loads((ROOT/'spec/notation.json').read_text(encoding='utf-8'))['concepts'] if c['id']=='function-timing-diagram')
+timing=render(concept)
+for suffix,data in [('svg',timing.svg()),('scene.json',json.dumps(timing.doc,ensure_ascii=False,indent=2)+'\n')]:
+ path=OUT/f'tv.{suffix}'
+ if CHECK: assert path.read_text(encoding='utf-8')==data,f'Stale figure: {path}'
+ else: path.write_text(data,encoding='utf-8')
+print(('Verified' if CHECK else 'Built')+' 10 SVG and vector-scene examples.')

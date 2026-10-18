@@ -1,0 +1,215 @@
+{
+  "width": 560,
+  "height": 320,
+  "title": "General View: Tree",
+  "description": "Tree presentation of the General View. Ownership edges connect existing parent and child component occurrences; they do not imply communication or execution order.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 320,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 14,
+      "y": 14,
+      "width": 532,
+      "height": 292,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          14,
+          14
+        ],
+        [
+          174,
+          14
+        ],
+        [
+          174,
+          40
+        ],
+        [
+          158,
+          54
+        ],
+        [
+          14,
+          54
+        ]
+      ],
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 27,
+      "y": 40,
+      "text": "gv",
+      "size": 19,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 194,
+      "y": 40,
+      "text": "Demo",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 157,
+      "y": 77,
+      "width": 246,
+      "height": 63,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 253.0,
+      "y": 114.5,
+      "text": "Demo",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 363,
+      "y": 91,
+      "width": 22,
+      "height": 31,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 356,
+      "y": 95,
+      "width": 13,
+      "height": 7,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 356,
+      "y": 110,
+      "width": 13,
+      "height": 7,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          280,
+          140
+        ],
+        [
+          280,
+          204
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "polygon",
+      "points": [
+        [
+          280,
+          204
+        ],
+        [
+          275.0,
+          192.0
+        ],
+        [
+          285.0,
+          192.0
+        ]
+      ],
+      "fill": "#111111",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 294,
+      "y": 180,
+      "text": "owns",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 75,
+      "y": 207,
+      "width": 410,
+      "height": 66,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 157.5,
+      "y": 246.0,
+      "text": "conversation: Conversation",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 445,
+      "y": 223,
+      "width": 22,
+      "height": 31,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 438,
+      "y": 227,
+      "width": 13,
+      "height": 7,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 438,
+      "y": 242,
+      "width": 13,
+      "height": 7,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    }
+  ]
+}

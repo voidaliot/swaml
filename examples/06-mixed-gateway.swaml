@@ -1,5 +1,6 @@
 package Gateway {
     interface senderReceiver Samples version "1.0.0" { data value: real sampled; }
+    interface publishSubscribe DashboardCommands version "1.0.0" { event refresh(); }
     interface service Telemetry version "1.0.0" {
         function read(): real idempotent;
         event observed(value: real);
@@ -23,8 +24,9 @@ package Gateway {
     }
     component def Dashboard {
         port telemetry: Telemetry requires;
+        port control: DashboardCommands subscriber optional;
         var displayed: real = 0.0;
-        function refresh() on manual timing { wcet 1 ms; deadline 30 ms; concurrency serial; } {
+        function refresh() on receive control.refresh timing { wcet 1 ms; deadline 30 ms; concurrency serial; } {
             call telemetry.read() as measured within 25 ms otherwise { return; };
             displayed = measured; return;
         }
@@ -46,13 +48,25 @@ package Gateway {
     }
     component def Display {
         port telemetry: Telemetry requires;
+        port control: DashboardCommands subscriber optional;
         component dashboard: Dashboard;
         delegate telemetry -> dashboard.telemetry;
+        delegate control -> dashboard.control;
     }
     component Product mixed {
+        port dashboardInput: DashboardCommands publisher;
         component acquisition: Acquisition;
         component bridge: Bridge;
         component display: Display;
+        function driveInputs() on start timing { wcet 1 ms; deadline 5 ms; concurrency serial; } {
+            initial Waiting;
+            state Waiting {}
+            state Requested final { entry { publish dashboardInput.refresh(); } }
+            transition refreshDashboard: Waiting -> Requested on after 15 ms {}
+        }
+        connect refreshCommand: dashboardInput -> display.control qos {
+            delivery atMostOnce; ordering fifo; capacity 4; overflow reject; maxLatency 1 ms;
+        };
         connect sensing: acquisition.output -> bridge.input qos {
             delivery atMostOnce; ordering fifo; capacity 1; overflow dropOldest; maxLatency 1 ms; maxAge 20 ms;
         };
@@ -62,6 +76,7 @@ package Gateway {
         deploy acquisition on "system:controller";
         deploy bridge on "system:edge";
         deploy display on "system:edge";
+        deploy Product on "system:edge";
     }
     view overview gv of Product;
     view connections iv of Product;

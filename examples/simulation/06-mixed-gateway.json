@@ -1,9 +1,3 @@
 {
-  "untilNs": 30000000,
-  "manual": [
-    {
-      "atNs": 15000000,
-      "function": "display.dashboard.refresh"
-    }
-  ]
+  "untilNs": 30000000
 }

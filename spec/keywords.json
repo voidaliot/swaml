@@ -86,6 +86,12 @@
       "example": "capacity 8;"
     },
     {
+      "keyword": "class",
+      "concern": "Structure and names",
+      "meaning": "General software classifier: owns private copied values, typed ports, child class/component usages and executable operations/functions. A component specializes this category. Definitions use def; top-level usages are closed execution roots. No dynamic object creation or cross-owner access is introduced.",
+      "example": "class def CounterBase { var value: int = 21; }"
+    },
+    {
       "keyword": "client",
       "concern": "Communication",
       "meaning": "Port role for the requesting side of a clientServer interface. A closed client port has at most one route; replies return through the same route and correlation.",
@@ -94,7 +100,7 @@
     {
       "keyword": "clientServer",
       "concern": "Communication",
-      "meaning": "Interface kind containing function signatures only. A client issues request; a server implements on call handlers. Events belong in service or publishSubscribe contracts.",
+      "meaning": "Interface kind containing operation/function signatures only. A client issues requests; a server implements compatible on call handlers. Events belong in service or publishSubscribe contracts.",
       "example": "interface clientServer Health version \"1.0.0\" { function check(): bool; }"
     },
     {
@@ -106,7 +112,7 @@
     {
       "keyword": "component",
       "concern": "Structure and names",
-      "meaning": "Defines a reusable software boundary with def, or a concrete instance. Components own child components, ports, private data and executable functions. Functions own calculations. Each instance receives distinct state and activation locks.",
+      "meaning": "Specialized class category for a software component. Definitions use def; usages have separate private stores. Components may specialize class or component definitions. Component usages require component definitions; class usages may instantiate either category.",
       "example": "component def Controller { } / component controller: Controller;"
     },
     {
@@ -148,7 +154,7 @@
     {
       "keyword": "def",
       "concern": "Structure and names",
-      "meaning": "Declares a reusable component type or complete package-owned QoS policy. Component definitions may specialize one base; definitions create no runtime singleton.",
+      "meaning": "Declares a reusable class/component type or complete named QoS policy. A definition is not an execution occurrence and does not allocate shared state.",
       "example": "component def Controller { } / qos def LocalLink { ... }"
     },
     {
@@ -268,13 +274,13 @@
     {
       "keyword": "function",
       "concern": "Behavior and states",
-      "meaning": "Declares an executable component-owned behavior or an interface contract signature. A body contains optional local calculations followed by statements or directly owned states. An omitted result means void; triggers select activation.",
+      "meaning": "Specialized operation category, used for executable members and interface signatures. It retains ordinary ownership, copied values, triggers, timing, function-local calculations and flow/state semantics; it does not imply purity. A function contract requires a function implementation.",
       "example": "function startUp() on start { return; }"
     },
     {
       "keyword": "fv",
       "concern": "Graphical views",
-      "meaning": "Function view of existing executable functions. It projects statement flow, directly owned states or an observed function-timing diagram using the same view kind. Timing contracts remain distinct from observed trace intervals.",
+      "meaning": "Selects a Flow View presenting operation/function statement flow, states or interruptible regions. Every selected occurrence must be executable behavior; interface signatures and calculations are invalid subjects. Use tv for timing.",
       "example": "view control fv of Controller.regulate;"
     },
     {
@@ -286,7 +292,7 @@
     {
       "keyword": "gv",
       "concern": "Graphical views",
-      "meaning": "General View of a package or resolvable named semantic declaration other than a view. Shows ownership, types, attributes and relations, retaining definition/occurrence distinction.",
+      "meaning": "Selects a General View of software structure. Box in box and Tree are alternative presentation layouts preserving the same ownership and occurrence identities.",
       "example": "view overview gv of Product;"
     },
     {
@@ -346,7 +352,7 @@
     {
       "keyword": "iv",
       "concern": "Graphical views",
-      "meaning": "Interconnect View of a root component, component definition or component instance. Shows owned and immediate-child ports, connectors and delegation with exact interface paths.",
+      "meaning": "Interconnect View of a class/component root, definition or occurrence. Shows owned and immediate-child ports, explicit connectors and delegation with exact interface paths; client/server and requires/provides use socket/ball symbols.",
       "example": "view wiring iv of Product;"
     },
     {
@@ -354,12 +360,6 @@
       "concern": "Cases and evidence",
       "meaning": "Assigns a unique name to a scenario step. Later after clauses use that label as a causal predecessor; source position alone imposes no ordering.",
       "example": "via orderLink label submitted;"
-    },
-    {
-      "keyword": "manual",
-      "concern": "Behavior and states",
-      "meaning": "Parameterless void function trigger released by a harness. It is control of execution, not a route for injecting external model payloads or bypassing interfaces.",
-      "example": "function refresh(): void on manual { ... }"
     },
     {
       "keyword": "maxAge",
@@ -408,6 +408,12 @@
       "concern": "Behavior and states",
       "meaning": "Introduces a function activation trigger, state transition trigger, interruptible-region input or deployment destination. Deployment is a location association; activation and interruption are incoming control bindings.",
       "example": "function tick() on every 10 ms { return; } / deploy app on \"system:production\";"
+    },
+    {
+      "keyword": "operation",
+      "concern": "Behavior and states",
+      "meaning": "General executable member or interface signature, with the same copied inputs/result, activation, timing and body rules as its function specialization. Operations own local calculations and statement flow or states. An operation signature accepts an operation or function handler; a function signature requires a function handler.",
+      "example": "operation twice(input: int): int { return input * 2; }"
     },
     {
       "keyword": "optional",
@@ -628,7 +634,7 @@
     {
       "keyword": "specializes",
       "concern": "Structure and names",
-      "meaning": "Names one visible base component definition. Effective inherited members are reused; specialization and effective containment must be acyclic.",
+      "meaning": "Declares one acyclic compatible base. A component definition may specialize a class or component; a class definition may specialize a class. Effective members retain explicit compatible redefinition rules.",
       "example": "component def Tuned specializes Controller { }"
     },
     {
@@ -678,6 +684,12 @@
       "concern": "Values and calculation",
       "meaning": "The true bool literal, with no implicit equivalence to numeric one or other nonempty values.",
       "example": "assert true;"
+    },
+    {
+      "keyword": "tv",
+      "concern": "Graphical views",
+      "meaning": "Selects a Timing View of executable operation/function declarations or occurrences. Explicit selection and filters preserve identity; the host associates an identified trace and concrete occurrence identities separately from declared timing contracts.",
+      "example": "view polling tv of Demo.first.poll;"
     },
     {
       "keyword": "uint",
@@ -736,7 +748,7 @@
     {
       "keyword": "view",
       "concern": "Graphical views",
-      "meaning": "Declares a named gv/iv/cv/sv/grv/fv projection. Compact of syntax selects one subject; a block combines include selections, optional recursive traversal and pure where filters into a stable union of occurrence paths. It carries no executable behavior or diagram geometry.",
+      "meaning": "Declares a named gv/iv/cv/sv/grv/fv/tv projection. Compact of syntax selects one subject; a block combines include selections, optional recursive traversal and pure where filters into a stable union of occurrence paths. It carries no executable behavior or diagram geometry.",
       "example": "view wiring iv of Product;"
     },
     {

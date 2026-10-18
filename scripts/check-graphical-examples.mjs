@@ -19,6 +19,7 @@ for (const item of manifest.examples) {
     if (tail.length) subject = resolvePath(subject, tail.join('.'));
     assert.ok(subject, `${item.figure} subject`);
     if (item.view === 'fv') { assert.ok(a.isFunctionDef(subject)); bodies.add(subject.stateBody ? 'state' : 'flow'); }
+    if (item.view === 'tv') assert.ok(a.isFunctionDef(subject));
     if (item.view === 'iv') assert.ok(a.isRootComponent(subject) || a.isComponent(subject));
     if (['cv', 'sv'].includes(item.view)) assert.ok(a.isRootComponent(subject) || a.isScenario(subject));
     kinds.add(item.view);
@@ -26,6 +27,6 @@ for (const item of manifest.examples) {
     assert.ok(svg.includes('role="img"') && svg.includes('<title') && svg.includes('<desc'));
     await access(new URL(`../docs/figures/${item.figure}.scene.json`, import.meta.url));
 }
-assert.deepEqual([...kinds].sort(), ['Browser', 'cv', 'fv', 'grv', 'gv', 'iv', 'sv']);
+assert.deepEqual([...kinds].sort(), ['Browser', 'cv', 'fv', 'grv', 'gv', 'iv', 'sv', 'tv']);
 assert.deepEqual([...bodies].sort(), ['flow', 'state']);
-console.log('Verified 8 graphical subjects, all 7 view families, and both fv forms.');
+console.log('Verified 10 graphical subjects, Browser and all 7 source view kinds, both gv layouts, and both fv forms.');

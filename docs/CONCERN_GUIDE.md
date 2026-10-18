@@ -1,6 +1,6 @@
 # Language reference by concern
 
-Use this alphabetical map to navigate SWAML 1.3 by architectural question. The [alphabetical keyword reference](KEYWORD_REFERENCE.md) provides the other reading order; the [complete Markdown edition](SWAML-1.3.0-Reference.md) contains both maps, all normative chapters, user guidance, grammar and model examples in one document. Rules are normative where their source chapter says so; a tutorial or illustration never overrides those rules.
+Use this alphabetical map to navigate SWAML 1.3 by architectural question. The [alphabetical keyword reference](KEYWORD_REFERENCE.md) provides the other reading order; the [complete Markdown edition](SWAML-1.3.1-Reference.md) contains both maps, all normative chapters, user guidance, grammar and model examples in one document. Rules are normative where their source chapter says so; a tutorial or illustration never overrides those rules.
 
 ## Architecture selection and platform correspondence
 
@@ -24,7 +24,7 @@ A reply needs one unanswered matching request in its causal ancestry. Route vali
 
 See [interfaces and communication](spec/02-communication.md). Choose senderReceiver for data, clientServer for RPC, publishSubscribe for events, or service for RPC plus provider events. Contracts are nominal and versioned. Component ports bind contracts to local functions or delegate them through the hierarchy. Connect owned or immediate-child ports at each composition level. An explicit route may also connect two complementary ports of the same instance.
 
-A sender/publisher can fan out. A subscriber can receive multiple publisher routes, each with its own queue. A receiver/client/requires port has at most one route. Required ports must be connected in a selected closed root component; optional unbound RPC reports Unavailable. Reading another component's fields, invoking its function directly, sending a free event, or adding a topic string outside a contract is invalid.
+Operator and test inputs use named typed events published by ordinary driver functions through explicit routes; see [events and external inputs](EVENTS_AND_INPUTS.md). A sender/publisher can fan out. A subscriber can receive multiple publisher routes, each with its own queue. A receiver/client/requires port has at most one route. Required ports must be connected in a selected closed root component; optional unbound RPC reports Unavailable. Reading another component's fields, invoking its function directly, sending a free event, or adding a topic string outside a contract is invalid.
 
 Queue delivery, order, capacity and overflow are mandatory. Data/event admission can partially succeed across fanout, so atomic broadcast needs an explicit protocol. Requests wait for one correlated result and require a failure branch. Timeout does not cancel server effects. A field-like service property is modeled as getter, setter and changed event, with private storage; see [the setting example](../examples/08-service-field.swaml).
 
@@ -36,7 +36,7 @@ A parsed but invalid model is not executable. A valid model may deliberately fai
 
 ## Graphical views and navigation
 
-See [graphical notation](GRAPHICAL_NOTATION.md) and the [canonical concept catalog](GRAPHICAL_CATALOG.md), with original SVG/PNG drawings and graphical/textual notation tables. The Model Browser exposes ownership and definition/occurrence identity. gv shows general structure, iv connections, cv cases/coverage, sv exchanges, grv tabular properties, and fv function flow or states. A selected occurrence retains its instance path when its shared declaration is displayed.
+See [graphical notation](GRAPHICAL_NOTATION.md) and the [canonical concept catalog](GRAPHICAL_CATALOG.md), with original SVG/PNG drawings and graphical/textual notation tables. The Model Browser exposes ownership and definition/occurrence identity. gv shows general structure as Box in box or Tree, iv connections, cv cases/coverage, sv exchanges, grv tabular properties, fv function flow or states, and tv function timing. A selected occurrence retains its instance path when its shared declaration is displayed.
 
 A diagram is a projection of the same semantic model as the text. Layout belongs in a sidecar. Port/member paths and connector identities must remain discoverable; a drawing cannot create a hidden channel. Source edits require parse/link/validation and undo.
 
@@ -72,6 +72,6 @@ Use whole-value assignment. Record field and final array-index reads are local v
 
 ## Versioning and language evolution
 
-The source is headerless; its parser/host is explicitly pinned to SWAML 1.3. This specification/package revision is 1.3.0. Interface versions remain independent nominal contract labels. Version 1.2 replaces separate units and operations with component-owned functions, adds calculations and explicit specialization, and uses external deployment references. Follow the [migration guide](MIGRATION_1_2.md) and preserve historical release artifacts.
+The source is headerless; its parser/host is explicitly pinned to SWAML 1.3. This specification/package revision is 1.3.1. Interface versions remain independent nominal contract labels. Version 1.2 replaces separate units and operations with component-owned functions, adds calculations and explicit specialization, and uses external deployment references. Follow the [1.3.1 migration guide](MIGRATION_1_3_1.md) for dedicated timing views and preserve historical release artifacts.
 
 Multiple inheritance, generics, dynamic instance/subscription/discovery lifecycle, unbounded arrays, reference payloads, hierarchical/orthogonal states, unrestricted fork/join and host-language code are outside this closed version. A proposal adding them must define syntax, ownership, typing, operational meaning, graphical projection, mapping, migration and tests before it is accepted. These concerns must not appear as undocumented backend shortcuts.

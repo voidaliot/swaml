@@ -16,6 +16,14 @@
       "subject": "Cabin"
     },
     {
+      "figure": "gv-tree",
+      "view": "gv",
+      "layout": "tree",
+      "model": "examples/08-service-field.swaml",
+      "package": "Settings",
+      "subject": "Cabin"
+    },
+    {
       "figure": "iv",
       "view": "iv",
       "model": "examples/08-service-field.swaml",
@@ -56,6 +64,13 @@
       "model": "examples/04-stateful-function.swaml",
       "package": "Lifecycle",
       "subject": "Device.lifecycle"
+    },
+    {
+      "figure": "tv",
+      "view": "tv",
+      "model": "examples/17-function-timing.swaml",
+      "package": "FunctionTiming",
+      "subject": "Demo.first.poll"
     }
   ]
 }

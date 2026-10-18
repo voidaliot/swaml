@@ -11,11 +11,11 @@ An interface declaration has a kind, package-qualified name, explicit `major.min
 | Kind | Permitted members | Port roles |
 | --- | --- | --- |
 | `senderReceiver` | `data name: T sampled;` or `queued;` | `sender`, `receiver` |
-| `clientServer` | function signatures | `client`, `server` |
+| `clientServer` | operation/function signatures | `client`, `server` |
 | `publishSubscribe` | event signatures | `publisher`, `subscriber` |
-| `service` | function and event signatures | `provides`, `requires` |
+| `service` | operation/function and event signatures | `provides`, `requires` |
 
-A function signature declares ordered input parameters, an optional result annotation, and optionally `idempotent`. Omitting `: Type` means void, exactly as an explicit `: void`. An event signature declares zero or more ordered payload parameters and no result. Data is one typed value. A notification without payload uses a zero-parameter event. No event may be declared directly in a package, component or state.
+An `operation` or `function` signature declares ordered input parameters, an optional result annotation, and optionally `idempotent`. Function specializes Operation. An operation signature may be implemented by a compatible operation or function; a function signature MUST be implemented by a function. Parameter/result, trigger and route checks apply equally to both. The callable signature kind is preserved separately from an executable implementation. Omitting `: Type` means void, exactly as an explicit `: void`. An event signature declares zero or more ordered payload parameters and no result. Data is one typed value. A notification without payload uses a zero-parameter event. No event may be declared directly in a package, component or state.
 
 A service field is modeled explicitly as a getter function, optional setter function and changed event. This avoids a second implicit communication mechanism. A setter returns an application result; its implementation owns the decision whether and when to publish the changed event. Property storage never becomes remotely writable data.
 
@@ -23,7 +23,7 @@ Version strings document compatibility intent: a breaking change SHOULD increase
 
 ## 2.2 Ports and boundary exposure
 
-A port belongs to one component and references exactly one interface. Its role must be legal for that interface kind. `optional` permits the port to have zero connections in a closed root component; it does not relax type, direction, handler or emission requirements.
+A port belongs to one class/component usage and references exactly one interface. Its role must be legal for that interface kind. `optional` permits the port to have zero connections in a closed root component; it does not relax type, direction, handler or emission requirements.
 
 A connector joins owned or immediate-child ports: `connect name: child.port -> child.port qos { … };` or `connect name: localPort -> child.port qos { … };`. Its owner is a component definition or inline root; a typed root uses its definition's connectors. Each endpoint has one or two segments and references a port, not a member, function, variable, state or grandchild. The interface declarations MUST be identical. Explicit routes may connect complementary ports of the same component instance. Such exchanges still use the connector queue and handler dispatch; local calls and calculations remain available for synchronous local work.
 
@@ -46,11 +46,15 @@ At root closure, recursively expand instances, resolve each delegation to a leaf
 
 A locally handled port and a delegated alias cannot acquire conflicting handlers. Delegation forwards a boundary; it does not grant private access to the child.
 
+For graphical notation, clientServer and service connections use a ball at the server/provides port and a socket at the client/requires port. The owned port square, nominal contract/version, explicit connector and QoS remain identifiable. The ball/socket pair denotes the request-facing roles; replies and service notifications retain their reverse typed routes. It does not represent senderReceiver or publishSubscribe. See [graphical notation](../GRAPHICAL_NOTATION.md).
+
 ## 2.3 Emission and reception ownership
+
+Operator commands, test stimuli and device notifications use the same interface contracts and routes as application messages. An ordinary source function publishes a named event through its owned port. A test driver may schedule that function's publications using lifecycle or state/timer behavior; it cannot directly invoke a receiving function or inject a message at its destination.
 
 A locally handled component port's outgoing data/event member MUST occur in at least one `send`/`publish` statement inside one of its functions, including a state entry, exit or transition effect. This is a static provenance relationship, not a proof of reachability or a promise that the function always emits.
 
-Each incoming data/event member MUST have exactly one handler owner: an ordinary function triggered by that member, or one stateful function containing one or more receiving transitions for it. A function signature on a server/provides port MUST have exactly one ordinary function with `on call port.member`. Several transitions in one stateful function count as one owner. Two different functions receiving the same member are invalid. To intentionally fan out processing, use a local coordinating handler that invokes helpers, or explicit subscriber components.
+Each incoming data/event member MUST have exactly one handler owner: an ordinary function triggered by that member, or one stateful function containing one or more receiving transitions for it. An operation/function signature on a server/provides port MUST have exactly one kind-compatible operation/function with `on call port.member`. Several transitions in one stateful function count as one owner. Two different functions receiving the same member are invalid. To intentionally fan out processing, use a local coordinating handler that invokes helpers, or explicit subscriber components.
 
 An ordinary handler MUST reproduce the member's ordered parameter types. Names may differ. A data handler has one parameter of the data type; an event handler has the event's parameter list. Both return void. An RPC handler MUST also reproduce the signature's result type.
 
@@ -62,7 +66,7 @@ For each outgoing permitted connector, the communication system independently of
 
 `call p.member(args) as result within duration otherwise { … };` issues one correlated RPC to the single provider selected by its connector. The result name becomes available in the current block only after successful completion. The caller is suspended until a result or failure; this is an awaited request in the model, independent of whether generated code uses a blocking call or a future.
 
-The communication system creates a fresh correlation identity for each request and carries its response back through the same interface/port/connector route. That response is the function's declared result, not an independent event or unmodeled channel. A server return and a service event are distinct occurrences and have no implicit order beyond their function's control flow.
+The communication system creates a fresh correlation identity for each request and carries its response back through the same interface/port/connector route. That response is the operation/function's declared result, not an independent event or unmodeled channel. A server return and a service event are distinct occurrences and have no implicit order beyond their function's control flow.
 
 The `otherwise` block executes on timeout, unavailable optional provider, admission rejection, transport failure or server `fail`. Its local `failure: string` is respectively `Timeout`, `Unavailable`, `Rejected`, `Transport`, or `RemoteFailure`. Remote implementation error strings are not automatically disclosed. Every path of the failure block MUST return from or fail the enclosing function. No result is bound on failure. The implicit failure name must not shadow a live value. A void success name labels completion only and cannot be used as data.
 

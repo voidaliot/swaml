@@ -23,7 +23,7 @@ for (const [name, source, code] of [
     ['missing local result binding', 'component Demo { function value(): int { return 1; } function run() { call value(); } }', 'SW058'],
     ['void local result binding', 'component Demo { function value() {} function run() { call value() as x; } }', 'SW058'],
     ['call binding shadows data', 'component Demo { var x: int = 0; function value(): int { return 1; } function run() { call value() as x; } }', 'SW002'],
-    ['triggered local call', 'component Demo { function value(): int on manual { return 1; } function run() { call value() as x; } }', 'SW058'],
+    ['triggered local call', 'component Demo { function value(): int on start { return 1; } function run() { call value() as x; } }', 'SW058'],
     ['non-returning empty body', 'component Demo { function value(): int {} }', 'SW053'],
     ['wrong result use', 'component Demo { function value(): int { return 1; } function run() { call value() as x; var y: string = x; } }', 'SW023'],
     ['non-terminating result path', 'component Demo { function value(x: bool): int { if (x) { return 1; } } }', 'SW053'],

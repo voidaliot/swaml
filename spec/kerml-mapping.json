@@ -128,7 +128,7 @@
         "Behavior"
       ],
       "normative": "docs/spec/02-communication.md",
-      "semantic": "Interface-owned function signature with copied input/result types, optional void result and idempotency declaration; distinct from implementing component behavior."
+      "semantic": "General operation or specialized function interface contract; preserve category and permit implementation narrowing only."
     },
     {
       "source": "Argument",
@@ -146,7 +146,7 @@
         "Structure"
       ],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Reusable software structure owning child instances, ports, private values and functions; single specialization with compatible member redefinition."
+      "semantic": "General class definition or specialized component definition, preserving authored kind and one compatible base; shared ownership/isolation constraints."
     },
     {
       "source": "ComponentMember",
@@ -162,7 +162,7 @@
         "Feature"
       ],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Exactly-one composite component usage typed by a definition; distinct instance path, private store and activation state; compatible redefinition may select a specialization."
+      "semantic": "Single owned class/component usage with explicit authored kind and compatible definition target; expand independent private state."
     },
     {
       "source": "Port",
@@ -190,7 +190,7 @@
         "Feature"
       ],
       "normative": "docs/spec/04-systems-and-conformance.md",
-      "semantic": "Closed concrete component occurrence with inline structural/behavioral members or a referenced component definition; service default; typed body is deployment-only."
+      "semantic": "Closed class/component execution-root occurrence; preserve kind, definition reference or inline members and external deployment bindings."
     },
     {
       "source": "RootMember",
@@ -258,7 +258,7 @@
         "Behavior"
       ],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Executable function plus synthetic component-owned executable feature; copied parameters, activation/trigger, timing and one statement or state body. Local references use the effective component context."
+      "semantic": "General operation or specialized function, preserving authored category, ordered signature, activation/timing, owned calculations and flow or direct states."
     },
     {
       "source": "Trigger",
@@ -267,7 +267,7 @@
         "MetadataFeature"
       ],
       "normative": "docs/spec/06-execution-contract.md",
-      "semantic": "Local release rule or port-member handler binding; not a free event."
+      "semantic": "Local start/periodic release rule or owned typed port-member receive/call handler binding; not a free event or host-only activation. Operator/test event sources are ordinary component functions with explicit routes."
     },
     {
       "source": "Timing",
@@ -459,7 +459,7 @@
         "MetadataFeature"
       ],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Named projection of the stable union of selected occurrence paths; no executable effects."
+      "semantic": "Named projection of the stable union of selected occurrence paths; no executable effects. Timing View tv selects executable function occurrences and binds identified observations through host presentation metadata. GV Box in box and Tree layouts preserve the same ownership and occurrence identities; neither alters execution."
     },
     {
       "source": "Duration",

@@ -6,9 +6,9 @@
 
 **SWAML** describes software structure, typed communication and function behavior in one model. Compose components, keep state private, and follow every exchange through an explicit contract. Use the same language for AUTOSAR Classic and Adaptive architecture, service-based applications and cloud software.
 
-[Ontology & flat views](docs/ONTOLOGY_AND_VIEWS.md) · [Full user guide](docs/USER_GUIDE.md) · [Specification](docs/LANGUAGE_SPECIFICATION.md) · [1.3 release notes](docs/RELEASE_1_3_0.md)
+[Ontology & flat views](docs/ONTOLOGY_AND_VIEWS.md) · [Full user guide](docs/USER_GUIDE.md) · [Specification](docs/LANGUAGE_SPECIFICATION.md) · [1.3.1 release notes](docs/RELEASE_1_3_1.md)
 
-**SWAML 1.3.0 adds `for`, `forEach`, `do … while`, interruptible regions and function timing diagrams.** Follow the [migration notes](docs/MIGRATION_1_3.md) and [control-flow guide](docs/CONTROL_FLOW_AND_TIMING.md). Software structure uses nested components, executable functions and pure calculations, with explicit specialization, typed ports and external deployment references. The host selects language **1.3**; pin the package revision too for reproducibility. A working parser, validator and bounded reference simulator support the documented rules. This is an independent language with a proposed KerML semantic mapping; production runtime, KerML export and graphical source editing remain separate milestones.
+**Version 1.3.1 adds class/component and operation/function specialization, ball/socket service notation, dedicated `tv` timing views, Box in box / Tree structure layouts, and named event inputs for operators and test drivers.** See the [1.3.1 migration guide](docs/MIGRATION_1_3_1.md). Published [1.3.0](https://github.com/voidaliot/swaml/releases/tag/v1.3.0) adds `for`, `forEach`, `do … while`, interruptible regions and function timing diagrams. Follow the [migration notes](docs/MIGRATION_1_3.md) and [control-flow guide](docs/CONTROL_FLOW_AND_TIMING.md). Software structure uses classes/components, operations/functions and pure calculations, with explicit specialization, typed ports and external deployment references. The host selects language **1.3**; pin the package revision too for reproducibility. A working parser, validator and bounded reference simulator support the documented rules. This is an independent language with a proposed KerML semantic mapping; production runtime, KerML export and graphical source editing remain separate milestones.
 
 ## Start modeling
 
@@ -88,9 +88,9 @@ Both connectors keep independent queues. Inline QoS blocks still work, and the s
 
 ## Read the complete specification
 
-[Full Markdown reference](docs/SWAML-1.3.0-Reference.md) · [Full PDF](output/pdf/SWAML-1.3.0-Specification.pdf) · [By concern](docs/CONCERN_GUIDE.md) · [Alphabetical keywords](docs/KEYWORD_REFERENCE.md)
+[Full Markdown reference](docs/SWAML-1.3.1-Reference.md) · [Full PDF](output/pdf/SWAML-1.3.1-Specification.pdf) · [By concern](docs/CONCERN_GUIDE.md) · [Alphabetical keywords](docs/KEYWORD_REFERENCE.md)
 
-The specification covers every reserved word, formal syntax/typing/execution rules, static and dynamic architecture, communication policies, timing, deployment, cases and graphical notation. The PDF includes clickable navigation, all model examples, exact grammar, vector diagrams and embedded source files. [Publication and verification](docs/PDF_PUBLICATION.md) · [1.3 release notes](docs/RELEASE_1_3_0.md) · [Historical v0.1.0](https://github.com/voidaliot/swaml/releases/tag/v0.1.0).
+The specification covers every reserved word, formal syntax/typing/execution rules, static and dynamic architecture, communication policies, timing, deployment, cases and graphical notation. The PDF includes clickable navigation, all model examples, exact grammar, vector diagrams and embedded source files. [Publication and verification](docs/PDF_PUBLICATION.md) · [1.3.1 release notes](docs/RELEASE_1_3_1.md) · [Historical v0.1.0](https://github.com/voidaliot/swaml/releases/tag/v0.1.0).
 
 ## Start here
 
@@ -99,8 +99,9 @@ The specification covers every reserved word, formal syntax/typing/execution rul
 - [Domain architecture patterns](docs/ARCHITECTURE_PATTERNS.md): Classic, Adaptive, web and cloud models with platform mappings.
 - [Normative document set](docs/LANGUAGE_SPECIFICATION.md): the rules and conformance obligations.
 - [Reference simulation](docs/SIMULATION.md): execute models and inspect reproducible traces.
-- [Graphical examples](docs/GRAPHICAL_EXAMPLES.md): Browser, gv, iv, cv, sv, grv and both fv forms.
+- [Graphical examples](docs/GRAPHICAL_EXAMPLES.md): Browser, both gv layouts, iv, cv, sv, grv, function flow/states in fv, and timing in tv.
 - [Architecture comparison](docs/ARCHITECTURE_COMPARISON.md): AUTOSAR Classic/Adaptive, UML, SysML and AADL.
+- [UML transformation assessment](docs/UML_COMPATIBILITY.md): compatible notation and semantic mapping boundaries.
 - [Grammar](src/language/swaml.langium) and [tool integration](docs/TOOLING.md): reusable language services and command-line tools.
 - [Implementation status](docs/IMPLEMENTATION_STATUS.md) and [migration](docs/MIGRATION_1_2.md): precise scope and version changes.
 
@@ -197,6 +198,8 @@ test/                 Static, behavioral, CLI and LSP integration tests
 The simulator implements a documented deterministic logical-time profile. Passing a bounded run does not prove physical realtime schedulability or safety across every possible schedule. KerML serialization, platform export and graphical editing have defined language-side contracts and need their own backends. This repository contains the independent language specification, reference implementation and public examples.
 
 Contributions follow [CONTRIBUTING.md](CONTRIBUTING.md). Coding agents follow [AGENTS.md](AGENTS.md). Original code and documentation use the existing [MIT license](LICENSE); referenced standards retain their own terms.
+
+Read [events and external inputs](docs/EVENTS_AND_INPUTS.md) for typed operator commands, explicit event routes and reproducible test-driver schedules.
 
 ### Requirements, documentation and traceability
 

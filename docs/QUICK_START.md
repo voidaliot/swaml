@@ -86,9 +86,9 @@ Use `var` for both private component data and mutable block locals. Local void c
 
 The [graphical modeling overview](MODELING_OVERVIEW.md) connects a use case to its interaction flow, function logic, function owners and final software structure. Its ontology diagram shows the relationships between the concepts used below.
 
-Use gv for composition and deployment, iv for ports and connections, cv for cases and requirement claims, sv for exchange dependencies, grv for properties, and fv for function flow or states. Browser navigation follows declarations and occurrence paths.
+Use gv for composition and deployment, iv for ports and connections, cv for cases and requirement claims, sv for exchange dependencies, grv for properties, fv for function flow or states, and tv for function timing. gv offers Box in box and Tree layouts of the same structure. Browser navigation follows declarations and occurrence paths.
 
-Run the [interactive showcase](../showcase/README.md) with `npm --prefix showcase ci` and `npm --prefix showcase run dev`. It contains a seven-view walkthrough, an interface reference and four domain architectures. Read the full model source alongside its diagram.
+Run the [interactive showcase](../showcase/README.md) with `npm --prefix showcase ci` and `npm --prefix showcase run dev`. It contains an ontology explorer, all seven source view kinds, an interface reference and four domain architectures. Read the full model source alongside its diagram.
 
 | Your architecture | Start with |
 | --- | --- |
@@ -99,6 +99,10 @@ Run the [interactive showcase](../showcase/README.md) with `npm --prefix showcas
 
 These examples model logical software architecture. Read their [architecture patterns and platform mappings](ARCHITECTURE_PATTERNS.md). Continue with the [user guide](USER_GUIDE.md), [UML transition guide](UML_GUIDE.md), or [complete specification](LANGUAGE_SPECIFICATION.md).
 
+
+## Operator and test inputs
+
+Use named interface events with typed payloads, `publish port.member(...)`, and `on receive port.member` handlers. Operator and test-driver functions use the same owned ports and explicit connectors as the application. Use start/state-timer behavior to schedule a reproducible driver; see [events and external inputs](EVENTS_AND_INPUTS.md).
 
 ## Requirements and formal documentation
 

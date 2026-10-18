@@ -2,6 +2,8 @@
 
 Status: accepted for SWAML 1.3.0. Date: 2026-10-18.
 
+The FV timing presentation below records the 1.3.0 decision. [ADR 0012](0012-timing-view-and-structure-layouts.md) supersedes that presentation with dedicated `tv` timing views in 1.3.1. The control-flow, interrupt and timing execution rules remain in effect.
+
 ## Control flow
 
 Add counted `for`, copied-array `forEach` and post-test `do … while` alongside `while`. Conditional loops require an explicit positive safe-integer literal bound. `forEach` is bounded by its fixed array length and accepts no second bound. These forms preserve copied values, lexical scope, range checks and statement-boundary scheduling.

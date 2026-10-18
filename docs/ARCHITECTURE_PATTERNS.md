@@ -11,7 +11,7 @@ These models are executable logical examples. Their platform names describe the 
 | Service-based web application | [13-web-application.swaml](../examples/13-web-application.swaml) | `WebShop::Production` | Checkout request, inventory reservation, receipt publication |
 | Cloud telemetry service | [14-cloud-service.swaml](../examples/14-cloud-service.swaml) | `CloudTelemetry::Production` | Ingestion, explicit broker, independent analytics/archive subscriptions |
 
-Each model declares gv for composition, iv for contracts and wiring, cv for intended requirement coverage, sv for a representative interaction, grv for deployment and fv for a function. Browser navigation follows the same definition and occurrence ownership. The [interactive showcase](../showcase/README.md) presents these four architectures alongside the interface reference.
+Each model declares gv for composition, iv for contracts and wiring, cv for intended requirement coverage, sv for a representative interaction, grv for deployment and fv for a function. gv supports Box in box and Tree layouts. The separate [function timing model](../examples/17-function-timing.swaml) demonstrates tv with identified simulation observations and separately labeled declared contracts. Browser navigation follows the same definition and occurrence ownership. The [interactive showcase](../showcase/README.md) presents these four architectures alongside the interface reference.
 
 ## AUTOSAR Classic: a climate software component
 

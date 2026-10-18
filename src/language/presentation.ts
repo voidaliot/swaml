@@ -21,7 +21,7 @@ export function modelComments(model: a.Model): ModelComment[] {
     });
 }
 export interface ViewElement { node: AstNode; path: string; name: string; kind: string }
-const semanticKind = (n: AstNode) => a.isComponent(n) || a.isRootComponent(n) || a.isInstance(n) ? 'component' : a.isFunctionDef(n) ? 'function' : a.isScenario(n) ? n.kind : n.$type[0].toLowerCase() + n.$type.slice(1);
+const semanticKind = (n: AstNode) => a.isComponent(n) || a.isRootComponent(n) || a.isInstance(n) || a.isFunctionDef(n) || a.isScenario(n) ? n.kind : n.$type[0].toLowerCase() + n.$type.slice(1);
 function namedChildren(n: AstNode): AstNode[] {
     if (a.isComponent(n) || a.isRootComponent(n)) return members(n).filter(x => 'name' in x);
     if (a.isPort(n)) return n.interface.ref?.members ?? [];

@@ -135,6 +135,15 @@
       "kind": "text",
       "x": 96,
       "y": 408,
+      "text": "  panelInput / driveInputs  [port / function]",
+      "size": 18,
+      "bold": false,
+      "color": "#17324d"
+    },
+    {
+      "kind": "text",
+      "x": 96,
+      "y": 444,
       "text": "  settings : Service  [instance]",
       "size": 18,
       "bold": false,
@@ -143,7 +152,7 @@
     {
       "kind": "text",
       "x": 118,
-      "y": 444,
+      "y": 480,
       "text": "  store : SettingStore  [instance]",
       "size": 18,
       "bold": false,
@@ -152,7 +161,7 @@
     {
       "kind": "text",
       "x": 140,
-      "y": 480,
+      "y": 516,
       "text": "  api  [port: provides]",
       "size": 18,
       "bold": false,
@@ -161,7 +170,7 @@
     {
       "kind": "rect",
       "x": 40,
-      "y": 492,
+      "y": 528,
       "width": 544,
       "height": 33,
       "fill": "#d5edf0",
@@ -171,7 +180,7 @@
     {
       "kind": "text",
       "x": 140,
-      "y": 516,
+      "y": 552,
       "text": "  update  [function instance]",
       "size": 18,
       "bold": true,
@@ -180,7 +189,7 @@
     {
       "kind": "text",
       "x": 96,
-      "y": 552,
+      "y": 588,
       "text": "▸ front : Client  [instance]",
       "size": 18,
       "bold": false,
@@ -189,7 +198,7 @@
     {
       "kind": "text",
       "x": 96,
-      "y": 588,
+      "y": 624,
       "text": "▸ rear : Client  [instance]",
       "size": 18,
       "bold": false,

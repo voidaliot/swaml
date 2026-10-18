@@ -9,6 +9,7 @@ package WebShop {
     interface publishSubscribe Receipts version "1.0.0" {
         event created(orderId: string);
     }
+    interface publishSubscribe BrowserCommands version "1.0.0" { event overOrder(); }
     qos def RequestQueue {
         delivery atMostOnce; ordering fifo; capacity 16; overflow reject;
     }
@@ -17,6 +18,7 @@ package WebShop {
     }
     component def BrowserClient {
         port checkout: Checkout requires;
+        port control: BrowserCommands subscriber optional;
         var lastOrder: string = "";
         var accepted: bool = false;
         var rejectedOversize: bool = false;
@@ -26,7 +28,7 @@ package WebShop {
             };
             accepted = result;
         }
-        function overOrder() on manual {
+        function overOrder() on receive control.overOrder {
             call checkout.submit("order-1043", 99) as result within 1 s otherwise {
                 fail "checkout unavailable";
             };
@@ -86,10 +88,18 @@ package WebShop {
         delegate api -> stock.api;
     }
     component Production {
+        port browserCommands: BrowserCommands publisher;
         component browser: BrowserClient;
         component application: WebApplication;
         component inventory: InventoryService;
         component mailer: ReceiptWorker;
+        function driveInputs() on start {
+            initial Waiting;
+            state Waiting {}
+            state Requested final { entry { publish browserCommands.overOrder(); } }
+            transition oversizeOrder: Waiting -> Requested on after 100 ms {}
+        }
+        connect browserCommand: browserCommands -> browser.control qos RequestQueue;
         connect checkoutLink: browser.checkout -> application.api qos RequestQueue;
         connect inventoryLink: application.inventory -> inventory.api qos RequestQueue;
         connect receiptLink: application.receipts -> mailer.input qos ReceiptQueue;
