@@ -161,6 +161,41 @@ test('fanout releases separate roots and atomically rejects a bounded-backlog ov
     assert.ok(!limited.trace.some(t => t.kind === 'release' && t.cause === 'completion'));
 });
 
+test('a machine return retires obsolete queued timers before bounded completion fanout admission', async () => {
+    const r = await run(`package P {
+        interface clientServer Api version "1.0.0" { function wait(); }
+        component def Worker {
+            port api: Api client;
+            function machine() on start {
+                initial Waiting;
+                state Waiting {}
+                state Done final { entry { return; } }
+                transition first: Waiting -> Done on after 1 ns {}
+                transition second: Waiting -> Done on after 2 ns {}
+            }
+            function busy() on start { call api.wait() as finished within 100 ns otherwise { fail "timeout"; }; }
+            function one() on completion machine {}
+            function two() on completion machine {}
+        }
+        component def Responder { port api: Api server; function wait() on call api.wait {} }
+        component Demo { component worker: Worker; component responder: Responder;
+            connect route: worker.api -> responder.api qos { delivery atMostOnce; ordering fifo; capacity 4; overflow reject; };
+        } }`, 'P::Demo', { untilNs: 30, latencyNs: 5, maxPending: 2 });
+    assert.equal(r.outcome, 'no-failure-observed');
+    const machineReleases = r.trace.filter(t => t.kind === 'release' && t.function === 'worker.machine');
+    assert.equal(machineReleases.length, 3, 'Both timers are released while the busy RPC holds the serial lock.');
+    const cancelledTimer = r.trace.find(t => t.kind === 'discardTimer' && t.subject === machineReleases[2].subject);
+    assert.ok(cancelledTimer, 'The obsolete second timer remains explicitly cancelled in the trace.');
+    const dependents = r.trace.filter(t => t.kind === 'release' && t.cause === 'completion');
+    assert.equal(dependents.length, 2, 'Both real dependents fit the unchanged two-slot backlog.');
+    assert.deepEqual(new Set(dependents.map(t => t.function)), new Set(['worker.one', 'worker.two']));
+    for (const release of dependents) {
+        assert.equal(release.predecessorActivation, machineReleases[1].subject);
+        assert.ok(cancelledTimer.ordinal < release.ordinal);
+    }
+    assert.equal(r.trace.filter(t => t.kind === 'complete' && ['worker.one', 'worker.two'].includes(String(t.function))).length, 2);
+});
+
 test('successful RPC handler completion releases its local dependent even when the remote caller times out', async () => {
     const r = await run(`package P {
         interface clientServer Api version "1.0.0" { function compute(input: int): int; }

@@ -308,6 +308,15 @@ class Interpreter {
         }
         if (functionComplete) {
             const targets = frame.work.component.completionTargets.get(frame.work.fn) ?? [];
+            // A bare return can terminate a machine without yielding through
+            // pump first. Cancel its obsolete released timers before counting
+            // the new activation batch against the bounded live backlog.
+            for (let i = 0; i < this.pending.length;) {
+                const work = this.pending[i];
+                if (work.machine && (!work.machine.live || (work.stimulus?.generation !== undefined && work.stimulus.generation !== work.machine.generation))) {
+                    work.done = true; this.pending.splice(i, 1); this.log('discardTimer', work.id);
+                } else i++;
+            }
             // Fanout is one bounded release batch. An overflow stops this run
             // without silently dropping/coalescing or partially admitting it.
             if (this.pending.length + targets.length > this.options.maxPending) throw new RuntimeFault('ActivationOverflow');
