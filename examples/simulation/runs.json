@@ -345,5 +345,15 @@
         "value": 21
       }
     }
+  },
+  {
+    "model": "examples/25-function-completion.swaml",
+    "root": "Completion::Demo",
+    "options": "examples/simulation/25-function-completion.json",
+    "expectedStores": {
+      "": {
+        "stage": 3
+      }
+    }
   }
 ]

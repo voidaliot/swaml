@@ -29,7 +29,7 @@ test('tv accepts a compact function occurrence and a definition function without
     assert.deepEqual(document.diagnostics, []);
     const views = document.parseResult.value.packages[0].elements.filter(a.isView);
     assert.deepEqual(views.map(view => [view.kind, selectView(view).map(selection => selection.path)]), [['tv', ['Demo.first.run']], ['tv', ['Worker.helper']]]);
-    assert.equal(SWAML_LANGUAGE_VERSION, '1.3', 'The dedicated view changes no execution edition.');
+    assert.equal(SWAML_LANGUAGE_VERSION, '1.4', 'The view uses the explicitly selected host edition without adding execution semantics.');
 });
 
 test('tv preserves repeated-definition occurrence identities and deduplicates qualified aliases in a stable union', async () => {

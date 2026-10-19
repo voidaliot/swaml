@@ -30,7 +30,7 @@ Qos: 'qos' (body=QosBody | policy=[QosPolicy:QualifiedName]);
 QosBody: '{' 'delivery' delivery=('bestEffort'|'atMostOnce'|'atLeastOnce') ';' 'ordering' ordering=('fifo'|'unordered') ';' 'capacity' capacity=INT ';' 'overflow' overflow=('dropOldest'|'dropNewest'|'reject') ';' ('maxLatency' maxLatency=Duration ';')? ('maxAge' maxAge=Duration ';')? '}';
 FunctionDef: (redefines?='redefines')? kind=('operation'|'function') name=ID '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' (':' result=TypeRef)? trigger=Trigger? timing=Timing? '{' documentation=Documentation? calculations+=Calculation* (body=FunctionFlow | stateBody=StateBody)? '}';
 FunctionFlow infers Block: statements+=Statement+;
-Trigger: 'on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=Path);
+Trigger: 'on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=Path | kind='completion' predecessor=[FunctionDef:ID]);
 Timing: 'timing' '{' 'wcet' wcet=Duration ';' 'deadline' deadline=Duration ';' 'concurrency' concurrency=('serial'|'reentrant') ';' '}';
 Calculation: 'calc' name=ID '{' documentation=Documentation? ('in' parameters+=Parameter)* 'return' outputName=ID ':' result=TypeRef '=' value=Expression ';' '}';
 Block: '{' statements+=Statement* '}';

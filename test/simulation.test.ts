@@ -296,7 +296,7 @@ test('inline roots directly contain child components and preserve typed interfac
         }
     }`;
     const r = await run(source);
-    assert.equal(r.profile, 'swaml-reference/1.3'); assert.equal(r.root, 'P::S');
+    assert.equal(r.profile, 'swaml-reference/1.4'); assert.equal(r.root, 'P::S');
     assert.deepEqual(Object.keys(r.stores), ['', 'senderUnit', 'receiverUnit']);
     assert.equal(r.stores.receiverUnit.current, 42);
     assert.equal(r.trace.filter(t => t.kind === 'delivery').length, 1);
