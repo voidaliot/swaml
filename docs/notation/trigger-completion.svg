@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" role="img" aria-labelledby="title desc">
+<title id="title">Local executable completion activation</title><desc id="desc">A dotted same-owner executable dependency releases a fresh activation after successful whole completion. It is source intent, not observed timing or a cross-component event route.</desc>
+<g font-family="DejaVu Sans, sans-serif" stroke-width="1.5">
+<rect x="0" y="0" width="560" height="280" rx="0" fill="#ffffff" stroke="none"/>
+<rect x="20" y="128" width="170" height="85" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="81.0" y="176.5" font-size="18" font-weight="400" fill="#111111">first()</text>
+<rect x="370" y="128" width="170" height="85" rx="0" fill="#ffffff" stroke="#111111"/>
+<text x="416.5" y="176.5" font-size="18" font-weight="400" fill="#111111">second()</text>
+<polyline points="190,171 192,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="196,171 198,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="202,171 204,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="208,171 210,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="214,171 216,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="220,171 222,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="226,171 228,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="232,171 234,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="238,171 240,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="244,171 246,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="250,171 252,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="256,171 258,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="262,171 264,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="268,171 270,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="274,171 276,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="280,171 282,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="286,171 288,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="292,171 294,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="298,171 300,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="304,171 306,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="310,171 312,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="316,171 318,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="322,171 324,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="328,171 330,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="334,171 336,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="340,171 342,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="346,171 348,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="352,171 354,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="358,171 360,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="364,171 366,171" fill="none" stroke="#111111" stroke-width="2"/>
+<polyline points="358,165 370,171 358,177" fill="none" stroke="#111111" stroke-width="2"/>
+<text x="26" y="35" font-size="20" font-weight="700" fill="#111111">Local executable completion</text>
+<text x="216.0" y="113" font-size="18" font-weight="400" fill="#111111">on completion</text>
+<text x="26" y="244" font-size="18" font-weight="400" fill="#111111">Successful whole completion; fresh activation</text>
+<text x="26" y="269" font-size="18" font-weight="400" fill="#111111">Same owner; no join or forwarded result</text>
+</g></svg>

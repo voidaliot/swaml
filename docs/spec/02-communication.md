@@ -1,6 +1,6 @@
 # 2. Interfaces and communication
 
-Normative chapter of the [SWAML 1.3 specification](../LANGUAGE_SPECIFICATION.md).
+Normative chapter of the [SWAML 1.4 development specification](../LANGUAGE_SPECIFICATION.md).
 
 Target profiles own security, authorization, integrity, serialization, encryption and transport while preserving the interface boundaries below. [Chapter 6](06-execution-contract.md) specifies admission, timeout races, lifetime and failure.
 
@@ -19,7 +19,7 @@ An `operation` or `function` signature declares ordered input parameters, an opt
 
 A service field is modeled explicitly as a getter function, optional setter function and changed event. This avoids a second implicit communication mechanism. A setter returns an application result; its implementation owns the decision whether and when to publish the changed event. Property storage never becomes remotely writable data.
 
-Version strings document compatibility intent: a breaking change SHOULD increase major; additive changes SHOULD increase minor; a meaning-preserving correction SHOULD increase patch. However, 1.3 performs **exact nominal matching**, not automatic version negotiation. Use a differently named declaration for another version in the same package and an adapter between versions. Adding an event may require a new receiver and is not automatically compatible with an existing complete implementation.
+Version strings document compatibility intent: a breaking change SHOULD increase major; additive changes SHOULD increase minor; a meaning-preserving correction SHOULD increase patch. However, 1.4 performs **exact nominal matching**, not automatic version negotiation. Use a differently named declaration for another version in the same package and an adapter between versions. Adding an event may require a new receiver and is not automatically compatible with an existing complete implementation.
 
 ## 2.2 Ports and boundary exposure
 
@@ -42,7 +42,7 @@ A role identifies interaction direction, not visibility or optionality. In parti
 
 A component port may be handled locally or have exactly one delegation to an immediate child port: `delegate outer -> child.port;`. Delegation MUST preserve role and nominal interface. It is a forwarding boundary, with no implicit queue, payload conversion, delivery retry or additional source. Child components can delegate again. To cross a hierarchy, expose a port at each boundary; no connector may tunnel to a grandchild.
 
-At root closure, recursively expand instances, resolve each delegation to a leaf component port, and inspect actual connector endpoints. Every nonoptional port, including boundary aliases, MUST resolve to a connected leaf. Receiver ports have exactly one source; client/requires ports have exactly one provider. Sender, publisher, server and provides ports can participate in multiple connectors. Subscriber ports may receive from multiple publishers. A duplicate connector resolving to the same directed leaf pair is an error; it must not create an accidental duplicate subscription. A component may not expose the same child port under two aliases in 1.3.
+At root closure, recursively expand instances, resolve each delegation to a leaf component port, and inspect actual connector endpoints. Every nonoptional port, including boundary aliases, MUST resolve to a connected leaf. Receiver ports have exactly one source; client/requires ports have exactly one provider. Sender, publisher, server and provides ports can participate in multiple connectors. Subscriber ports may receive from multiple publishers. A duplicate connector resolving to the same directed leaf pair is an error; it must not create an accidental duplicate subscription. A component may not expose the same child port under two aliases in 1.4.
 
 A locally handled port and a delegated alias cannot acquire conflicting handlers. Delegation forwards a boundary; it does not grant private access to the child.
 

@@ -1,4 +1,6 @@
-# SWAML 1.3 user guide
+# SWAML 1.4 development user guide
+
+This is the unpublished 1.4.0 development guide. Published 1.3.1 editions remain archived. The [1.4 migration guide](MIGRATION_1_4.md) explains the parser/profile change and contains a complete completion-triggered example.
 
 Architects familiar with UML: start with the [concept correspondence and modeling workflow](UML_GUIDE.md).
 
@@ -18,7 +20,7 @@ node out/src/cli/main.js examples/01-hello.swaml
 
 A successful result is `Checked 1 model(s): 0 error(s)`. This checks the implemented rules; it does not execute the software or prove schedulability. `npm run check` also runs the repository tests. Open the [implementation matrix](IMPLEMENTATION_STATUS.md) before interpreting a passed check as a stronger assurance claim.
 
-A file begins directly with named packages. Use the 1.2 language core or pin SWAML 1.3 in the editor host; there is no per-file version header. The 1.2 parser rejects historical headers rather than guessing a version. Names are case sensitive. Keywords cannot be identifiers. Use `orderLink`, for example, rather than the reserved word `ordering`.
+A file begins directly with named packages. Pin the 1.4 development language core and exact package revision in the host; there is no per-file version header. Unsupported requested editions and historical headers are rejected rather than guessed. Names are case sensitive. Keywords cannot be identifiers. Use `orderLink`, for example, rather than the reserved word `ordering`.
 
 ## 2. Write the contract first
 
@@ -108,6 +110,12 @@ Functions and interface signatures may omit `: void`; a missing result annotatio
 A `while` includes a maximum iteration count. Exceeding that count at runtime is a failure, not permission to silently stop the loop. This makes the bound useful to a later analysis or code generator.
 
 Use `assert` for a model-level assumption that must hold at that point. A requirement is a named prose obligation. A case can link to requirements using `satisfies`; that trace link is not proof that the requirement is met.
+
+## Local completion dependencies
+
+Use `function B() on completion A { ... }` or the corresponding `operation` form when one same-owner executable should start a fresh activation after another successfully completes. A must be an effective triggered executable in the same class/component; B must be a parameterless void flow body. Dependencies are acyclic. The new activation gets its own lock/snapshot, release-relative deadline and backlog slot. It receives no arguments/result and may wait behind other enabled work. Failure releases nothing. A stateful A counts only when the whole function finishes, not after individual reactions. This is separate from a state's `on completion` transition and from a synchronous local `call`.
+
+The [complete model](../examples/25-function-completion.swaml) and [ADR 0015](decisions/0015-local-executable-completion.md) show a chain. Cross-component coordination still uses typed ports and explicit routes. Multiple dependents do not imply a join or execution order among them.
 
 ## 5. Model a service call and its failure
 
@@ -238,7 +246,7 @@ The [operational contract](spec/06-execution-contract.md) defines execution edge
 
 ## Find a construct or run an example
 
-Use the [alphabetical keyword reference](KEYWORD_REFERENCE.md) for exact words and context, the [concern guide](CONCERN_GUIDE.md) for architectural questions, or the [complete Markdown book](SWAML-1.3.1-Reference.md) for a single user-facing document. The maintained examples have executable [simulation configurations](../examples/simulation/runs.json); follow the [reference simulation guide](SIMULATION.md) to run them and inspect their traces.
+Use the [alphabetical keyword reference](KEYWORD_REFERENCE.md) for exact words and context, the [concern guide](CONCERN_GUIDE.md) for architectural questions, or the [current development Markdown book](SWAML-1.4.0-Reference.md) for a single user-facing document. The maintained examples have executable [simulation configurations](../examples/simulation/runs.json); follow the [reference simulation guide](SIMULATION.md) to run them and inspect their traces.
 
 ## Operator and test inputs
 

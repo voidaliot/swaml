@@ -65,6 +65,8 @@ A queue key is `(connectorOccurrence, direction, memberIdentity)` with direction
 
 ## 7.4 Executable normalization
 
+A completion trigger normalizes to a distinct same-owner executable dependency with an explicit effective predecessor reference, never a display-name-only edge. Preserve declaration provenance and the source/target occurrence identities separately. Its target is a parameterless void flow executable, its source is a triggered executable, and the effective dependency graph is acyclic. It lowers to successful whole-function completion followed by a fresh lifecycle release after unlock, with new activation/snapshot/lock/timing context. It MUST NOT lower to a synchronous local call, same-stack continuation, state reaction completion, message offer or implicit join. Source arguments/results are not forwarded. Failure has no release edge; stateful success is whole termination only. Every runtime release retains predecessor function and activation identities.
+
 Every operation/function has a behavior declaration and one synthetic executable feature owned by its component structure. The feature is typed by that behavior and binds an activation to a component occurrence. It MUST NOT create a user-visible performer, an independently editable implementation allocation, or permission to call it across a component boundary.
 
 A statement body normalizes to an entry, ordered steps, exit/failure terminals and lexical scopes. Every step records its source construct and ordered operands. The following lowerings are required:
@@ -117,7 +119,7 @@ GV Box in box and Tree layouts normalize to the same ordered selected occurrence
 
 Two normalized artifacts are equivalent when an identity-respecting graph correspondence preserves ownership, types, value shapes, interface versions, instance contexts, routes, evaluation order, triggers, state selection, policies, deployments, case dependencies/correlations and ordered view selections. Requirement attributes, formal docs and satisfy/verify identities must be preserved. Whitespace, ordinary comments, source offsets and diagram geometry are excluded from execution equivalence but remain required authoring data. Failure reasons remain observable diagnostic values.
 
-A round trip may rename anonymous lowering IDs while retaining their owner/role trace. It may not remove guarded branches, reorder effects, merge queues, weaken timing contracts, convert copied payloads into remote references, or drop SWAML metadata because a receiver lacks support. Unsupported meaning requires an explicit partial-import result. This information-preservation contract is complete for the closed 1.3 syntax; implementing and validating a KerML backend is a separate milestone.
+A round trip may rename anonymous lowering IDs while retaining their owner/role trace. It may not remove guarded branches, reorder effects, merge queues, weaken timing contracts, convert copied payloads into remote references, or drop SWAML metadata because a receiver lacks support. Unsupported meaning requires an explicit partial-import result. This information-preservation contract is complete for the closed 1.4 syntax; implementing and validating a KerML backend is a separate milestone.
 
 ## Requirement and presentation extension
 

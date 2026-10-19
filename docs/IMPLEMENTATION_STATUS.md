@@ -1,4 +1,6 @@
-# Implementation status — 1.3.1
+# Implementation status — 1.4.0 development
+
+The unpublished 1.4 development revision selects parser family 1.4 and `swaml-reference/1.4`. It adds same-owner successful executable completion activation, documented in [ADR 0015](decisions/0015-local-executable-completion.md) and [migration](MIGRATION_1_4.md). Published 1.3.1 books/PDFs and their source records remain unchanged; the following 1.3 history does not describe the 1.4 parser/profile.
 
 The 1.3.1 revision retains the bounded 1.3 parser family and `swaml-reference/1.3` simulation profile. Exact reproduction also pins the package revision. See [migration](MIGRATION_1_3_1.md) and [ADR 0012](decisions/0012-timing-view-and-structure-layouts.md). The repository implements the Langium parser, CLI, language-server foundation and broad static checking. It also implements a bounded logical-time reference simulator; it does not implement a production runtime, KerML exporter or graphical editor. See the [1.2 migration](MIGRATION_1_2.md), [historical 1.1 migration](MIGRATION_1_1.md), historical [1.0 evidence](RELEASE_1_0.md) and historical [0.1 audit](SPECIFICATION_AUDIT.md) and [conformance obligations](spec/08-conformance-obligations.md).
 
@@ -8,6 +10,7 @@ Version 1.3.0 added counted for, copied-array forEach and post-test do loops, ty
 
 | Capability | Evidence |
 | --- | --- |
+| Local executable completion activation with fresh context and no implicit join | SW066/SW067 signature/helper/cycle and owner-linking regressions; inherited, repeated, stateful, failure, RPC and backlog simulation tests |
 | Class/component and operation/function specialization, exact authored view kinds and compatible narrowing | category, inheritance, handler and runtime regressions; complete mixed example |
 | Headerless 1.3 grammar, portable string escapes, generated AST/TextMate syntax | generator, all examples, lexical regressions |
 | Unified components, local behavior in composite/root components, explicit definitions/instances, deployment-only typed bindings | component-model parser and simulation regressions |
@@ -67,7 +70,7 @@ No blanket K, E or G certification is claimed. The [reference simulation profile
 
 Class/component and operation/function categories are implemented using shared AST families with explicit authored kinds, compatible subtype direction and unchanged isolation/execution rules. The canonical catalog and showcase use ball/socket symbols for clientServer and service ports. The [UML transformation assessment](UML_COMPATIBILITY.md) documents compatible subsets and remaining semantic differences. No XMI adapter or general UML importer is implemented or planned by this edition.
 
-## Intentionally outside 1.3
+## Intentionally outside 1.4
 
 Multiple inheritance, generics, dynamic object creation, unbounded arrays, reference-valued payloads, hierarchical/orthogonal state regions, fork/join syntax, host-language code blocks, dynamic service discovery, runtime subscribe/unsubscribe, topic wildcards, exactly-once delivery, full requirements algebra and geometry require a versioned language proposal. They cannot be introduced as undocumented backend behavior.
 

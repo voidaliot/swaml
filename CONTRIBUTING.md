@@ -1,8 +1,8 @@
 # Contributing to SWAML
 
-SWAML is developed as a language: specification, grammar, semantics, diagnostics and examples must evolve together. The 1.3 syntax keeps explicit `def` declarations and distinguishes them from concrete component usages; named QoS policies reuse complete values while connector queues stay independent. Source files are headerless; a host must pin language 1.3. Read the [1.3 migration](docs/MIGRATION_1_3.md) when updating hosts and the [historical 1.1 migration](docs/MIGRATION_1_1.md) when converting 1.0 models.
+SWAML is developed as a language: specification, grammar, semantics, diagnostics and examples must evolve together. The 1.3 syntax keeps explicit `def` declarations and distinguishes them from concrete component usages; named QoS policies reuse complete values while connector queues stay independent. Source files are headerless; this unpublished development checkout requires a host pinned to language 1.4 and its exact package revision. The [1.4 migration](docs/MIGRATION_1_4.md) records same-owner executable completion activation. Read the [1.3 migration](docs/MIGRATION_1_3.md) when updating hosts and the [historical 1.1 migration](docs/MIGRATION_1_1.md) when converting 1.0 models.
 
-Start with the [language specification](docs/LANGUAGE_SPECIFICATION.md), [ownership and reuse decision](docs/decisions/0007-component-functions-and-calculations.md), [event-input decision](docs/decisions/0013-event-driven-external-inputs.md), [1.3.1 migration](docs/MIGRATION_1_3_1.md) and [implementation status](docs/IMPLEMENTATION_STATUS.md).
+Start with the [language specification](docs/LANGUAGE_SPECIFICATION.md), [ownership and reuse decision](docs/decisions/0007-component-functions-and-calculations.md), [event-input decision](docs/decisions/0013-event-driven-external-inputs.md), [1.3.1 migration](docs/MIGRATION_1_3_1.md) and [implementation status](docs/IMPLEMENTATION_STATUS.md). Current unpublished development selects parser 1.4 and profile `swaml-reference/1.4`; preserve the completion constraints in [ADR 0015](docs/decisions/0015-local-executable-completion.md), independently of archived published editions.
 
 ## Development setup
 
@@ -21,7 +21,7 @@ Describe the actual modeling problem and a small before/after model. Identify th
 
 A proposal that adds cross-component communication must identify the port/interface/member route. A proposal for an event must identify its declaration, emitting function, receiving owner, delivery policy and failure behavior. A proposal for state or control flow must define ordering, concurrency and termination. Avoid accepting syntax before its semantics exists.
 
-Published syntax changes require an explicit release revision and migration notes. The 1.2.1 correction replaces case for and satisfaction by with of; it deliberately rejects the old spellings, as recorded in ADR 0010 and the migration guide. The current host selects language 1.3; pin its package revision and follow the 1.3 migration guide. Published editions remain archived. Additive keywords can still break existing identifiers; document that impact. Record substantial decisions under `docs/decisions/`.
+Published syntax changes require an explicit release revision and migration notes. The 1.2.1 correction replaces case for and satisfaction by with of; it deliberately rejects the old spellings, as recorded in ADR 0010 and the migration guide. The current development host selects language 1.4; pin its package revision and follow the 1.4 migration guide. Published editions remain archived. Additive keywords can still break existing identifiers; document that impact. Record substantial decisions under `docs/decisions/`.
 
 ## Implement and test
 

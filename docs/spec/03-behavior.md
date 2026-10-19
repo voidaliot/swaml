@@ -1,6 +1,6 @@
 # 3. Operations, functions, flow and states
 
-Normative chapter of the [SWAML 1.3 specification](../LANGUAGE_SPECIFICATION.md).
+Normative chapter of the [SWAML 1.4 development specification](../LANGUAGE_SPECIFICATION.md).
 
 ## 3.1 Operation/function identity and activation
 
@@ -17,6 +17,7 @@ An **activation root** is one dispatched function activation or state reaction a
 | `on every D` | parameterless void function released at component start + kD, for positive integer k |
 | `on receive p.m` | copied data/event arguments, void result |
 | `on call p.m` | copied RPC arguments and exact contract result |
+| `on completion A` | fresh parameterless void flow activation after successful whole completion of the same-owner triggered executable A |
 
 Operator commands, test stimuli, interrupt payloads, device samples and network events MUST use named interface members and explicit routes. Their source is an ordinary component-owned function that publishes or sends through an owned typed port. There is no special harness trigger or direct function-release input. Reproducible test drivers use existing start, periodic or state-timer behavior to schedule publications. A host-generated driver MUST remain ordinary validated source recorded with the run. Timers and initial activation are local lifecycle mechanisms.
 
@@ -46,7 +47,7 @@ Reaching the end of a void function completes it. A value-returning function MUS
 
 Failure unwinds the current activation and its synchronous local callers. It does not undo earlier variable assignments, published messages, responses, or external effects. For an RPC handler, failure produces a RemoteFailure response through the originating interface. For a periodic/start/receive activation it produces a local diagnostic occurrence, not an implicit broadcast. To notify another component, model a fault event and publish it explicitly on a declared interface in an explicit branch before failing.
 
-Conditionals, bounded loops, interruptible regions, expression evaluation and sequential local calls are the full flow language in 1.3. There is no generic fork/join statement, exception hierarchy, arbitrary host-language body or independent action node. Concurrent architectural behavior is expressed by separately activated functions and connected components. A later fork/join extension must define data-race and cancellation semantics before entering the grammar.
+Conditionals, bounded loops, interruptible regions, expression evaluation and sequential local calls are the full flow language in 1.4. There is no generic fork/join statement, exception hierarchy, arbitrary host-language body or independent action node. Concurrent architectural behavior is expressed by separately activated functions and connected components. A later fork/join extension must define data-race and cancellation semantics before entering the grammar.
 
 ### Loop scopes and limits
 
@@ -80,7 +81,7 @@ The core semantics is therefore a set of allowed execution traces. An execution 
 
 ## 3.4 Stateful operations/functions
 
-A stateful operation/function MUST have no parameters, result void (explicit or omitted), and `on start`. Its body begins with zero or more calculation declarations, then `initial StateName;`, followed by one or more states and zero or more transitions. There is no `machine` declaration or keyword. The grammar's `StateBody` only groups the owned syntax; it has no separate authored name, definition, allocation or runtime identity. `initial` MUST precede states and transitions after the optional calculations, so the executable body is unambiguously distinguished from statement flow. Calculations remain visible in all state guards, entries, exits and effects. The behavior is mathematically a flat state machine with exactly one initial reference. State and transition names are unique within that function's state body. Hierarchical/orthogonal states, history pseudostates, entry/exit points and state inheritance are absent in 1.3.
+A stateful operation/function MUST have no parameters, result void (explicit or omitted), and `on start`. Its body begins with zero or more calculation declarations, then `initial StateName;`, followed by one or more states and zero or more transitions. There is no `machine` declaration or keyword. The grammar's `StateBody` only groups the owned syntax; it has no separate authored name, definition, allocation or runtime identity. `initial` MUST precede states and transitions after the optional calculations, so the executable body is unambiguously distinguished from statement flow. Calculations remain visible in all state guards, entries, exits and effects. The behavior is mathematically a flat state machine with exactly one initial reference. State and transition names are unique within that function's state body. Hierarchical/orthogonal states, history pseudostates, entry/exit points and state inheritance are absent in 1.4.
 
 Starting the function enters its initial state and executes that state's entry block once. The function remains alive between reactions without holding the serial component lock. Each entry/exit/transition reaction is scheduled as a serial activation unless its timing contract explicitly says reentrant; a stateful function nevertheless MUST have at most one reaction in progress and cannot reenter its own state machine.
 
@@ -116,3 +117,15 @@ Entry and exit blocks do not inherit event parameters; only the guard/effect doe
 Every state MUST be reachable from the initial state in the transition graph, ignoring guards for this static check. Reachability through satisfiable guards and eventual completion are stronger analysis obligations, not consequences of graph reachability. No state, function or component may use an unbound global event to change another component's behavior.
 
 The [operational contract](06-execution-contract.md) further defines initialization barriers, snapshots, timer generations, stimulus ties, failure and resource bounds.
+
+## 3.7 Local completion activation
+
+SWAML 1.4 adds `on completion A` to ordinary executable operation/function triggers. `A` MUST be one local identifier resolving to an effective triggered operation/function in the same owning class/component. Imported/qualified names and component paths MUST NOT bypass that owner boundary. Inherited references resolve against the concrete owner's effective members. An untriggered local helper is not an activation predecessor.
+
+The dependent MUST have no parameters, result void (explicit or omitted) and a statement-flow body. Its one authored trigger is the completion dependency; it is not also released by startup, a period or an interface member. Stateful executables still require `on start` and cannot be completion-triggered dependents. The effective completion-dependency graph MUST be acyclic for each class/component, including specialization and self-dependencies. Invalid signatures/bodies/predecessors use SW066; cycles use SW067; unresolved or cross-owner references remain linking errors.
+
+Every successful whole predecessor activation completion releases one new dependent activation after the predecessor releases its serial lock. Normal flow fallthrough and valid returns count as success; failure does not. Each successful periodic or reentrant predecessor activation releases independently. The predecessor may have copied parameters or a result, but neither is passed to the dependent. This dependency does not create a local call, borrowed stack, hidden interface message or cross-component communication route.
+
+A stateful predecessor completes successfully only when final-state entry finishes or a bare return terminates the whole function. Ordinary state reactions, entry/exit blocks and quiescence do not individually release dependents. State-transition `on completion` remains a different construct. A successful RPC handler releases local dependents regardless of whether its later response reaches the requester. A dependent failure does not retroactively fail the predecessor.
+
+The dependent uses a fresh activation identity, dispatch-time snapshot or serial lock, timing/deadline and bounded lifecycle-backlog slot. It may dispatch later, with other enabled work interleaved under the normal scheduler; no predecessor snapshot or frozen component value is inherited. Multiple dependents are unordered fanout, not a join. A dependency orders release after successful completion and does not promise immediate execution, physical scheduling or eventual success. See [ADR 0015](../decisions/0015-local-executable-completion.md).

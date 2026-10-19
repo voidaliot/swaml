@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0 development — 2026-10-19 (unpublished)
+
+- Add `function B() on completion A` and the corresponding operation form for same-owner successful whole-executable completion dependencies.
+- Require a parameterless void flow dependent, a triggered effective predecessor and an acyclic effective dependency graph; preserve inherited occurrence semantics.
+- Release a fresh activation after unlock with its own context, timing and bounded backlog; suppress releases on failure and state-reaction quiescence, with no forwarded result or implicit join.
+- Record completion cause and predecessor activation/function provenance; retain RPC transport independence and whole-machine completion semantics.
+- Select parser family 1.4 and reference profile `swaml-reference/1.4`; synchronize current development prose/notation/reference generation while preserving published 1.3.1 artifacts. No new PDF edition is published.
+
 ## 1.3.1 — 2026-10-18
 
 - Add class/component and operation/function category specialization with compatible inheritance, instantiation, implementation and redefinition; preserve authored kinds and exact view filtering.

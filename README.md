@@ -4,11 +4,13 @@
 
 # Software Architecture Modeling Language
 
+**Development version 1.4.0** adds local executable completion activation: `function B() on completion A { ... }`. It releases a fresh same-owner activation after each successful whole completion of A, with no forwarded result or cross-component shortcut. Select parser family 1.4 and profile `swaml-reference/1.4`; see the [development migration guide](docs/MIGRATION_1_4.md). This development revision has no published PDF edition. Published 1.3.1 assets and their exact source remain unchanged.
+
 **SWAML** describes software structure, typed communication and function behavior in one model. Compose components, keep state private, and follow every exchange through an explicit contract. Use the same language for AUTOSAR Classic and Adaptive architecture, service-based applications and cloud software.
 
 [Ontology & flat views](docs/ONTOLOGY_AND_VIEWS.md) · [Full user guide](docs/USER_GUIDE.md) · [Specification](docs/LANGUAGE_SPECIFICATION.md) · [1.3.1 release notes](docs/RELEASE_1_3_1.md)
 
-**Version 1.3.1 adds class/component and operation/function specialization, ball/socket service notation, dedicated `tv` timing views, Box in box / Tree structure layouts, and named event inputs for operators and test drivers.** See the [1.3.1 migration guide](docs/MIGRATION_1_3_1.md). Published [1.3.0](https://github.com/voidaliot/swaml/releases/tag/v1.3.0) adds `for`, `forEach`, `do … while`, interruptible regions and function timing diagrams. Follow the [migration notes](docs/MIGRATION_1_3.md) and [control-flow guide](docs/CONTROL_FLOW_AND_TIMING.md). Software structure uses classes/components, operations/functions and pure calculations, with explicit specialization, typed ports and external deployment references. The host selects language **1.3**; pin the package revision too for reproducibility. A working parser, validator and bounded reference simulator support the documented rules. This is an independent language with a proposed KerML semantic mapping; production runtime, KerML export and graphical source editing remain separate milestones.
+**Published version 1.3.1 added class/component and operation/function specialization, ball/socket service notation, dedicated `tv` timing views, Box in box / Tree structure layouts, and named event inputs for operators and test drivers.** See the [1.3.1 migration guide](docs/MIGRATION_1_3_1.md). Published [1.3.0](https://github.com/voidaliot/swaml/releases/tag/v1.3.0) adds `for`, `forEach`, `do … while`, interruptible regions and function timing diagrams. Follow the [migration notes](docs/MIGRATION_1_3.md) and [control-flow guide](docs/CONTROL_FLOW_AND_TIMING.md). Software structure uses classes/components, operations/functions and pure calculations, with explicit specialization, typed ports and external deployment references. Those published assets select language **1.3**; the current development checkout selects **1.4**. Pin the package revision too for reproducibility. A working parser, validator and bounded reference simulator support the documented rules. This is an independent language with a proposed KerML semantic mapping; production runtime, KerML export and graphical source editing remain separate milestones.
 
 ## Start modeling
 
@@ -54,7 +56,8 @@ The [interface reference preview](docs/assets/interface-reference.png) adds five
 | cv · Case | Cases, requirements and claimed coverage |
 | sv · Sequence | Contract messages, dependencies and reply correlation |
 | grv · Grid | Searchable model identities, properties and policies |
-| fv · Flow | Function-local control flow or directly owned states |
+| fv · Flow | Function-local control flow, directly owned states and explicit local completion dependencies |
+| tv · Time | Declared contracts and identified bounded activation observations |
 
 Run the showcase locally:
 
@@ -113,7 +116,7 @@ The presentation follows the concept/graphical/textual organization reviewed in 
 
 ## Compact syntax, explicit meaning
 
-Reusable types use `def`. A top-level component usage is the root, and functions own their states directly. Files begin with packages; select the pinned SWAML 1.3 parser through your tool or the CLI's `--language-version 1.3` option. See the [1.3 migration guide](docs/MIGRATION_1_3.md) when upgrading a host.
+Reusable types use `def`. A top-level component usage is the root, and functions own their states directly. Files begin with packages; select the pinned SWAML 1.4 development parser through your tool or the CLI's `--language-version 1.4` option. See the [1.4 migration guide](docs/MIGRATION_1_4.md) when upgrading a host.
 
 ```swaml
 package CounterExample {

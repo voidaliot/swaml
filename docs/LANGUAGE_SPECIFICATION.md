@@ -1,6 +1,6 @@
 # SWAML language specification
 
-**Version:** 1.3.1 · **Source:** headerless packages; parser/host pinned to 1.3 · **Status:** specification · **Date:** 2026-10-18
+**Version:** 1.4.0 development · **Source:** headerless packages; parser/host pinned to 1.4 · **Status:** unpublished development specification · **Date:** 2026-10-19
 
 SWAML means Software Architecture Modeling Language. This document and its normative chapters define a software architecture language with a proposed KerML semantic mapping. SWAML is independently authored and does not denote an OMG standard or UML compatibility level. Architects familiar with UML can begin with the informative [UML transition guide](UML_GUIDE.md); implemented capabilities are identified separately from mapping and execution contracts.
 
@@ -27,9 +27,9 @@ The [user guide](USER_GUIDE.md), [architecture comparison](ARCHITECTURE_COMPARIS
 
 MUST and MUST NOT state conformance requirements. SHOULD states a recommendation with an explicitly documented justification needed for deviation. MAY grants permission. “Error” means a model is not valid under this version. An implementation may retain an invalid model for editing but MUST NOT report it as fully valid.
 
-The grammar determines tokens and parse structure. Prose determines validity and meaning. If grammar accepts text that violates a semantic rule, that text is invalid. If a discovered conflict makes the two impossible to satisfy, record a specification defect; do not silently choose a runtime meaning. Unknown syntax and unsupported requested language versions MUST be rejected. The host selects a pinned 1.3 parser before loading source; a file does not guess its own edition. See the [1.3.1 migration guide](MIGRATION_1_3_1.md), [1.3 migration guide](MIGRATION_1_3.md) and [historical 1.1 migration guide](MIGRATION_1_1.md) for the intentional syntax migration from 1.0.
+The grammar determines tokens and parse structure. Prose determines validity and meaning. If grammar accepts text that violates a semantic rule, that text is invalid. If a discovered conflict makes the two impossible to satisfy, record a specification defect; do not silently choose a runtime meaning. Unknown syntax and unsupported requested language versions MUST be rejected. The host selects a pinned 1.4 parser before loading source; a file does not guess its own edition. See the [1.3.1 migration guide](MIGRATION_1_3_1.md), [1.3 migration guide](MIGRATION_1_3.md) and [historical 1.1 migration guide](MIGRATION_1_1.md) for the intentional syntax migration from 1.0.
 
-The language is closed at version 1.3: constructs not listed in the grammar are not implicitly inherited from UML, SysML or KerML. Class and component definitions support instantiation, single specialization and compatible explicit member redefinition. The software metamodel specializes Component from Class and Function from Operation; the corresponding lower camel case source keywords preserve those kinds. Generics, unrestricted KerML embedding and dynamic creation remain outside this version. External system identities support deployment integration without importing another modeling language.
+The language is closed at version 1.4: constructs not listed in the grammar are not implicitly inherited from UML, SysML or KerML. Class and component definitions support instantiation, single specialization and compatible explicit member redefinition. The software metamodel specializes Component from Class and Function from Operation; the corresponding lower camel case source keywords preserve those kinds. Generics, unrestricted KerML embedding and dynamic creation remain outside this version. External system identities support deployment integration without importing another modeling language.
 
 The structural rules apply to both classes and components, and the executable rules apply to both operations and functions. A component is a specialized class; a function is a specialized operation. These are declared software kinds, not unrestricted UML object semantics. See [ADR 0014](decisions/0014-classes-operations-and-uml-notation.md).
 
@@ -42,7 +42,7 @@ The structural rules apply to both classes and components, and the executable ru
 - **I5 — Explicit communication policy:** every connector declares delivery, ordering, capacity and overflow. Time-sensitive connections add latency/freshness bounds.
 - **I6 — Views preserve meaning:** views reference existing semantic elements. Drawing a message cannot create a hidden communication channel.
 
-Local calls, calculation values, timer expiration, initial activation and state completion do not constitute exchanges between components. They are the only exceptions needed for local computation and lifecycle. An external actor or device that exchanges model data MUST be represented through a component port; a case actor label cannot bypass I1. Operator and test inputs are named interface events emitted by component-owned functions; there is no separate harness activation trigger. See [events and inputs](EVENTS_AND_INPUTS.md).
+Local calls, calculation values, timer expiration, initial activation, same-owner successful executable completion and state completion do not constitute exchanges between components. They are the only exceptions needed for local computation and lifecycle. An external actor or device that exchanges model data MUST be represented through a component port; a case actor label cannot bypass I1. Operator and test inputs are named interface events emitted by component-owned functions; there is no separate harness activation trigger. See [events and inputs](EVENTS_AND_INPUTS.md).
 
 ## 4. Abstract model inventory
 
@@ -69,6 +69,10 @@ Local calls, calculation values, timer expiration, initial activation and state 
 | View | kind, optional doc and one or more subject selections | stable union of occurrence paths; pure optional filters; no runtime effects |
 
 Definitions and instances retain different identities. Specialization and redefinition reference source declarations; neither shares private state across instances. Tools SHOULD persist a separate identity map for editing. A rename preserves identity only when the tool updates that map and all references atomically.
+
+## Local completion activation in development 1.4
+
+`function B() on completion A` declares a same-owner effective executable dependency. B is parameterless void flow; A is triggered; the graph is acyclic. Only successful whole A completion releases B after unlock, with a new activation context and no forwarded result, implicit join or cross-component channel. See [behavior](spec/03-behavior.md#37-local-completion-activation), [migration](MIGRATION_1_4.md) and [ADR 0015](decisions/0015-local-executable-completion.md). The current development package/profile are 1.4.0 / swaml-reference/1.4. Published 1.3.1 artifacts remain unchanged and no 1.4 PDF is published.
 
 ## 5. Conformance summary
 

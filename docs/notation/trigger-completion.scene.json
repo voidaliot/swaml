@@ -1,0 +1,592 @@
+{
+  "width": 560,
+  "height": 280,
+  "title": "Local executable completion activation",
+  "description": "A dotted same-owner executable dependency releases a fresh activation after successful whole completion. It is source intent, not observed timing or a cross-component event route.",
+  "shapes": [
+    {
+      "kind": "rect",
+      "x": 0,
+      "y": 0,
+      "width": 560,
+      "height": 280,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "none"
+    },
+    {
+      "kind": "rect",
+      "x": 20,
+      "y": 128,
+      "width": 170,
+      "height": 85,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 81.0,
+      "y": 176.5,
+      "text": "first()",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "rect",
+      "x": 370,
+      "y": 128,
+      "width": 170,
+      "height": 85,
+      "rx": 0,
+      "fill": "#ffffff",
+      "stroke": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 416.5,
+      "y": 176.5,
+      "text": "second()",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          190,
+          171
+        ],
+        [
+          192,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          196,
+          171
+        ],
+        [
+          198,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          202,
+          171
+        ],
+        [
+          204,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          208,
+          171
+        ],
+        [
+          210,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          214,
+          171
+        ],
+        [
+          216,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          220,
+          171
+        ],
+        [
+          222,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          226,
+          171
+        ],
+        [
+          228,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          232,
+          171
+        ],
+        [
+          234,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          238,
+          171
+        ],
+        [
+          240,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          244,
+          171
+        ],
+        [
+          246,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          250,
+          171
+        ],
+        [
+          252,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          256,
+          171
+        ],
+        [
+          258,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          262,
+          171
+        ],
+        [
+          264,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          268,
+          171
+        ],
+        [
+          270,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          274,
+          171
+        ],
+        [
+          276,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          280,
+          171
+        ],
+        [
+          282,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          286,
+          171
+        ],
+        [
+          288,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          292,
+          171
+        ],
+        [
+          294,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          298,
+          171
+        ],
+        [
+          300,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          304,
+          171
+        ],
+        [
+          306,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          310,
+          171
+        ],
+        [
+          312,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          316,
+          171
+        ],
+        [
+          318,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          322,
+          171
+        ],
+        [
+          324,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          328,
+          171
+        ],
+        [
+          330,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          334,
+          171
+        ],
+        [
+          336,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          340,
+          171
+        ],
+        [
+          342,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          346,
+          171
+        ],
+        [
+          348,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          352,
+          171
+        ],
+        [
+          354,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          358,
+          171
+        ],
+        [
+          360,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          364,
+          171
+        ],
+        [
+          366,
+          171
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "line",
+      "points": [
+        [
+          358,
+          165
+        ],
+        [
+          370,
+          171
+        ],
+        [
+          358,
+          177
+        ]
+      ],
+      "color": "#111111",
+      "dash": false,
+      "arrow": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 35,
+      "text": "Local executable completion",
+      "size": 20,
+      "bold": true,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 216.0,
+      "y": 113,
+      "text": "on completion",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 244,
+      "text": "Successful whole completion; fresh activation",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 269,
+      "text": "Same owner; no join or forwarded result",
+      "size": 18,
+      "bold": false,
+      "color": "#111111"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # 4. Root components, timing, cases and conformance
 
-Normative chapter of the [SWAML 1.3 specification](../LANGUAGE_SPECIFICATION.md).
+Normative chapter of the [SWAML 1.4 development specification](../LANGUAGE_SPECIFICATION.md).
 
 ## 4.1 Root components and profiles
 
@@ -23,7 +23,7 @@ The root profile is `service`, `realtime` or `mixed`; omission means `service`. 
 | Interface isolation and handler checks | required | required | required |
 | Production scheduling evidence | target dependent | required for hard realtime claims | required for realtime claims |
 
-The mixed profile is intentionally conservative: all used functions and connectors carry timing contracts. It does not infer that a cloud-facing function has no timing requirement. A future subassembly profile can relax this with explicit partitioning; no such implicit relaxation exists in 1.3.
+The mixed profile is intentionally conservative: all used functions and connectors carry timing contracts. It does not infer that a cloud-facing function has no timing requirement. A future subassembly profile can relax this with explicit partitioning; no such implicit relaxation exists in 1.4.
 
 A timing contract declares positive `wcet`, positive `deadline`, and `concurrency serial|reentrant`. WCET MUST be no larger than deadline. For periodic functions, deadline MUST be no larger than the period. A stateful function's timing contract applies separately to each run-to-completion reaction, including entry/exit/effect and any completion microsteps, not to the lifetime of the machine.
 
@@ -54,7 +54,7 @@ The same component and interface constructs describe embedded, service-oriented,
 
 These mappings are target obligations, not additional core syntax. A function is a behavior owner; mapping it to an AUTOSAR runnable or a web request handler requires an explicit activation and concurrency mapping. An external deployment reference alone does not establish that mapping. An interface's nominal version identifies its SWAML contract; it does not imply wire compatibility with a platform interface.
 
-The 1.3 instance tree and connector topology are fixed for a selected root. Multiple replicas are separate authored occurrences with separate private stores. Discovery, replacement or scaling in a target system MUST preserve the modeled endpoint identities, routes and state isolation; changes to the modeled topology require a new root configuration. A deployment binding cannot introduce a new peer, a shared store or an unmodeled exchange.
+The 1.4 instance tree and connector topology are fixed for a selected root. Multiple replicas are separate authored occurrences with separate private stores. Discovery, replacement or scaling in a target system MUST preserve the modeled endpoint identities, routes and state isolation; changes to the modeled topology require a new root configuration. A deployment binding cannot introduce a new peer, a shared store or an unmodeled exchange.
 
 The [architecture patterns](../ARCHITECTURE_PATTERNS.md) provide complete examples and explain the additional platform decisions for each mapping. The execution obligations are defined in [chapter 6](06-execution-contract.md#67-execution-binding-contract).
 
@@ -138,4 +138,4 @@ The following groups collectively define semantic validity. Diagnostic numbers i
 
 The 1.3.1 revision introduces tv while retaining parser family 1.3 and simulation profile `swaml-reference/1.3`; exact reproduction also pins the package revision. See [ADR 0012](../decisions/0012-timing-view-and-structure-layouts.md) and the [1.3.1 migration guide](../MIGRATION_1_3_1.md).
 
-A tool claiming `SWAML 1.3 S, partial V` accurately describes this repository's current core. It must not advertise K, E or G until those implementations and checks exist. A language host must require an explicit supported edition, and incompatible changes require documented migration. Version 1.1 is an intentional syntax revision; it is not backward-compatible with 1.0 despite the minor version number. Migration tooling must not change the meaning of models silently.
+A tool claiming `SWAML 1.4 development S, partial V` accurately describes this repository's current core. It must not advertise K, E or G until those implementations and checks exist. A language host must require an explicit supported edition, and incompatible changes require documented migration. Version 1.1 is an intentional syntax revision; it is not backward-compatible with 1.0 despite the minor version number. Migration tooling must not change the meaning of models silently.

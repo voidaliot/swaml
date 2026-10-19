@@ -263,7 +263,8 @@
           "ordinal": 24,
           "kind": "complete",
           "subject": "a4",
-          "function": "driveInputs"
+          "function": "driveInputs",
+          "functionComplete": true
         },
         {
           "timeNs": 2000000,
@@ -475,7 +476,8 @@
           "kind": "complete",
           "subject": "a13",
           "function": "firstServer.checkHealth",
-          "result": true
+          "result": true,
+          "functionComplete": true
         },
         {
           "timeNs": 4000000,
@@ -504,7 +506,8 @@
           "kind": "complete",
           "subject": "a14",
           "function": "secondServer.checkHealth",
-          "result": true
+          "result": true,
+          "functionComplete": true
         },
         {
           "timeNs": 4000000,
@@ -610,7 +613,8 @@
           "ordinal": 65,
           "kind": "complete",
           "subject": "a6",
-          "function": "first.poll"
+          "function": "first.poll",
+          "functionComplete": true
         },
         {
           "timeNs": 6000000,
@@ -635,7 +639,8 @@
           "ordinal": 68,
           "kind": "complete",
           "subject": "a7",
-          "function": "second.poll"
+          "function": "second.poll",
+          "functionComplete": true
         },
         {
           "timeNs": 6000000,
@@ -706,7 +711,8 @@
           "kind": "complete",
           "subject": "a19",
           "function": "firstServer.checkHealth",
-          "result": true
+          "result": true,
+          "functionComplete": true
         },
         {
           "timeNs": 8000000,
@@ -773,12 +779,13 @@
           "ordinal": 84,
           "kind": "complete",
           "subject": "a12",
-          "function": "first.poll"
+          "function": "first.poll",
+          "functionComplete": true
         }
       ],
       "timing": {
         "root": "FunctionTiming::Demo",
-        "profile": "swaml-reference/1.3",
+        "profile": "swaml-reference/1.4",
         "status": "quiescent",
         "endNs": 33000000,
         "activations": [
@@ -1608,7 +1615,8 @@
           "ordinal": 24,
           "kind": "complete",
           "subject": "a4",
-          "function": "driveInputs"
+          "function": "driveInputs",
+          "functionComplete": true
         },
         {
           "timeNs": 12000000,
@@ -1820,7 +1828,8 @@
           "kind": "complete",
           "subject": "a13",
           "function": "firstServer.checkHealth",
-          "result": true
+          "result": true,
+          "functionComplete": true
         },
         {
           "timeNs": 24000000,
@@ -1849,7 +1858,8 @@
           "kind": "complete",
           "subject": "a14",
           "function": "secondServer.checkHealth",
-          "result": true
+          "result": true,
+          "functionComplete": true
         },
         {
           "timeNs": 24000000,
@@ -2013,7 +2023,7 @@
       ],
       "timing": {
         "root": "FunctionTiming::Demo",
-        "profile": "swaml-reference/1.3",
+        "profile": "swaml-reference/1.4",
         "status": "horizon",
         "endNs": 40000000,
         "activations": [
@@ -2727,7 +2737,8 @@
           "ordinal": 24,
           "kind": "complete",
           "subject": "a4",
-          "function": "driveInputs"
+          "function": "driveInputs",
+          "functionComplete": true
         },
         {
           "timeNs": 2000000,
@@ -2939,7 +2950,8 @@
           "kind": "complete",
           "subject": "a13",
           "function": "firstServer.checkHealth",
-          "result": true
+          "result": true,
+          "functionComplete": true
         },
         {
           "timeNs": 4000000,
@@ -2968,7 +2980,8 @@
           "kind": "complete",
           "subject": "a14",
           "function": "secondServer.checkHealth",
-          "result": true
+          "result": true,
+          "functionComplete": true
         },
         {
           "timeNs": 4000000,
@@ -2994,7 +3007,7 @@
       ],
       "timing": {
         "root": "FunctionTiming::Demo",
-        "profile": "swaml-reference/1.3",
+        "profile": "swaml-reference/1.4",
         "status": "horizon",
         "endNs": 5000000,
         "activations": [
@@ -3562,7 +3575,8 @@
           "ordinal": 24,
           "kind": "complete",
           "subject": "a4",
-          "function": "driveInputs"
+          "function": "driveInputs",
+          "functionComplete": true
         },
         {
           "timeNs": 18000000,
@@ -3774,7 +3788,8 @@
           "kind": "complete",
           "subject": "a13",
           "function": "firstServer.checkHealth",
-          "result": true
+          "result": true,
+          "functionComplete": true
         },
         {
           "timeNs": 36000000,
@@ -3803,7 +3818,8 @@
           "kind": "complete",
           "subject": "a14",
           "function": "secondServer.checkHealth",
-          "result": true
+          "result": true,
+          "functionComplete": true
         },
         {
           "timeNs": 36000000,
@@ -3931,7 +3947,7 @@
       ],
       "timing": {
         "root": "FunctionTiming::Demo",
-        "profile": "swaml-reference/1.3",
+        "profile": "swaml-reference/1.4",
         "status": "violation",
         "endNs": 49000000,
         "activations": [

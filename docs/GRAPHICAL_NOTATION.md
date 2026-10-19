@@ -1,6 +1,6 @@
 # SWAML graphical notation
 
-**Language family:** 1.3 · **Notation edition:** 1.3.1 · **Status:** normative development draft
+**Language family:** 1.4 · **Notation edition:** 1.4.0 development · **Status:** unpublished normative development draft
 
 This chapter defines how every SWAML language concern is represented and inspected graphically. The [canonical notation catalog](GRAPHICAL_CATALOG.md) pairs each element or property with original graphical and textual notation, contextual constraints, and downloadable SVG/PNG examples. The [worked view examples](GRAPHICAL_EXAMPLES.md) show those ideas in complete architectures. The [notation inventory](../spec/notation.json) records coverage of the concrete grammar and reserved vocabulary.
 
@@ -142,7 +142,7 @@ fv statement nodes are owned by the displayed function/block. Text-only statemen
 | return | completion node with bare or typed-result text |
 | fail | failure terminal with its reason; no implicit event |
 
-The first flow marker is a filled circle identifying local activation entry. Ordered flow edges are solid with filled triangular arrowheads; a Boolean decision is a diamond. Return/failure nodes retain explicit terminal labels so neither is mistaken for an interface message. Flow edges sequence local execution and cannot cross an owning component boundary. Decisions MUST show which branch is true/false; an absent else still has a false continuation. Loop depictions MUST show the bound and the bound-violation outcome, even if detailed failure edges are collapsed with an inspectable marker. A back edge is not permission for unbounded execution. Fork/join, parallel regions and arbitrary activity allocations have no notation because they have no SWAML 1.3 syntax.
+The first flow marker is a filled circle identifying local activation entry. Ordered flow edges are solid with filled triangular arrowheads; a Boolean decision is a diamond. Return/failure nodes retain explicit terminal labels so neither is mistaken for an interface message. Flow edges sequence local execution and cannot cross an owning component boundary. Decisions MUST show which branch is true/false; an absent else still has a false continuation. Loop depictions MUST show the bound and the bound-violation outcome, even if detailed failure edges are collapsed with an inspectable marker. A back edge is not permission for unbounded execution. Fork/join, parallel regions and arbitrary activity allocations have no notation because they have no SWAML 1.4 syntax.
 
 A request has a success continuation and a terminating otherwise branch. The latter exposes Timeout, Unavailable, Rejected, Transport and RemoteFailure as possible interface outcomes and its local failure binding. The diagram MUST NOT suggest that timeout cancels committed server effects, that the result exists on failure, or that a void completion name is data. A remote request node is still a local function step; the architectural route is inspected through its port reference and iv.
 
@@ -159,6 +159,10 @@ Receive triggers name the owned `port.member` and contract payload. Delay trigge
 Transition inspection exposes the exit → effect → state update → entry order. Payload bindings are available only to the guard/effect, not entry/exit. A self-transition visibly returns to the same state and still exits/reenters, resetting timers. A return/failure inside any phase terminates the function and cancels timers; a graphic cannot imply later phases still occur.
 
 Unconditional completion cycles remain invalid; guarded cycles retain the bounded completion-reaction rule. No-enabled-transition consumption, stale-timer discard and undeliverable input to a terminated function may appear in trace overlays. These overlays are observations, not new model messages. Hierarchical/orthogonal regions, history, do-activity compartments and state inheritance are absent.
+
+### Local executable completion dependency
+
+For an authored `function B() on completion A`, FV may show a dotted arrow from the selected effective same-owner A occurrence to B, labeled `on completion` or `on completion A`. Retain authored operation/function kinds and both declaration/occurrence identities. The executable endpoints, label and source trigger distinguish this dependency from statement flow, a synchronous local call and a state-transition `on completion`, without prescribing a different line style for those relations. The arrow means a fresh activation release after successful whole completion and unlock. It MUST NOT imply shared activation context, argument/result forwarding, an implicit join or fanout ordering. Unselected endpoints are not silently added. Source Properties retain the exact local predecessor reference. TV may show the corresponding observed release only when trace evidence identifies both the predecessor activation/function and the new activation.
 
 ## 8. Timing, profiles and deployment
 

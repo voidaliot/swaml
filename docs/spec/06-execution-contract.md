@@ -28,6 +28,14 @@ Each startup activation is released exactly once per root run. The core defines 
 
 Periodic releases are independent of earlier completions. Serial dispatch does not merge or silently skip them. Input-triggered work remains in the input queue until dispatch is possible; it is not copied into an unbounded second activation queue. Admission of an RPC response resumes its suspended frame without acquiring another component lock.
 
+### Completion-triggered releases
+
+For `B() on completion A`, successful whole completion of each effective same-owner A activation releases one fresh B activation at that logical completion time, after releasing A's serial lock. No release occurs on failure, assertion/runtime failure or an unfinished horizon. A stateful A emits this event only when its whole function succeeds through final entry or bare return, never for an ordinary completed reaction. Each successful RPC handler completion counts independently of response admission, delivery or caller timeout; later transport failure cannot retract an already released local dependent.
+
+B enters the bounded lifecycle backlog and obtains its own activation identity, lock/dispatch-time snapshot, concurrency contract and release-relative deadline. It inherits neither A's arguments/result nor its activation context. Overflow MUST remain explicit ActivationOverflow, with no silent drop or coalescing. Multiple dependents are independent ready work without a specified fanout order; normal scheduling may interleave other enabled work. B failure cannot fail a completed A retroactively. The complete effective dependency graph is statically acyclic.
+
+Checking traces MUST distinguish successful whole-function completion from a state reaction completion. The reference profile records `functionComplete: true` on the former and records completion releases with `cause: "completion"`, `predecessorActivation` and `predecessorFunction`. Those identities refer to the exact runtime occurrence/activation, not only a shared definition or short display name. Trace records remain observations rather than interface messages.
+
 ## 6.3 Dispatch, backlog and snapshots
 
 A serial activation root acquires its component's lock at dispatch and releases it on completion/failure. Local calls execute on the activation root's stack and inherit its concurrency mode and snapshot, regardless of a helper's own timing declaration. A reentrant activation root may overlap other activation roots, but neither it nor any reachable helper may assign component data. Assigning its own parameters/locals is allowed.
@@ -36,7 +44,7 @@ A reentrant activation root captures an atomic value snapshot of all component v
 
 Between independent ready queues and lifecycle releases, the scheduler chooses any enabled activation root. For a FIFO queue, dispatch preserves queue order; completion order of reentrant handlers need not match dispatch order. A target backend MUST specify fairness and scheduling policy, and MUST NOT introduce starvation while claiming eventual at-least-once delivery under continuously enabled receivers.
 
-An executable target binding MUST bound pending start/periodic/timer activations separately from connector queues. On exceeding that bound it MUST record `ActivationOverflow` and stop the affected root execution; silently dropping or coalescing releases is not an implementation of this core. A simulator may expose an explicitly unbounded mathematical backlog, but cannot use it as evidence for a bounded production deployment. The binding also bounds simultaneous reentrant activation roots; when full, subsequent work remains pending rather than exceeding the limit.
+An executable target binding MUST bound pending start/periodic/completion/timer activations separately from connector queues. On exceeding that bound it MUST record `ActivationOverflow` and stop the affected root execution; silently dropping or coalescing releases is not an implementation of this core. A simulator may expose an explicitly unbounded mathematical backlog, but cannot use it as evidence for a bounded production deployment. The binding also bounds simultaneous reentrant activation roots; when full, subsequent work remains pending rather than exceeding the limit.
 
 Operator and test inputs follow ordinary typed routes from their emitting functions. A reference host MUST NOT introduce an unmodeled activation or message-injection channel. A generated test driver is part of the validated source and run evidence; its event emissions participate in the same queue admission, delivery, transport timing and handler ownership rules as application emissions.
 
