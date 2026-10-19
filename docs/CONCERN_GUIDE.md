@@ -10,7 +10,7 @@ Choose a root component profile (`realtime`, `service` or `mixed`) according to 
 
 ## Behavior and state ownership
 
-See [functions, flow and states](spec/03-behavior.md) and the [operational contract](spec/06-execution-contract.md). Components own executable functions directly. A calculation evaluates a pure expression from typed inputs; an untriggered flow function is a local helper with an optional result; a triggered function is a root activation. The same component may also compose child components; each child retains its own private store and activation lock.
+See [functions, flow and states](spec/03-behavior.md) and the [operational contract](spec/06-execution-contract.md). Components own executable functions directly. A calculation evaluates a pure expression from typed inputs; an untriggered flow function is a local helper with an optional result; a triggered function is a root activation. In 1.4 development, `on completion A` releases a fresh same-owner activation after successful whole A completion, with no result forwarding or implicit join; see [migration](MIGRATION_1_4.md). The same component may also compose child components; each child retains its own private store and activation lock.
 
 Choose a statement body for sequential calculation and requests. Choose a state body when the function remains in named states between inputs. States, guards and transitions remain inside that function. There are no independent actions or performers. The function's flow/state body is the subject of fv. Entry/exit cannot read a transition payload; save a needed value in private component data in the effect.
 

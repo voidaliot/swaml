@@ -132,7 +132,7 @@ export class SwamlValidator {
         }
         const inherited = component.specializes?.ref ? members(component.specializes.ref) : [];
         const signature = (fn: a.FunctionDef) => `${fn.parameters.map(p => `${p.name}:${typeKey(p.type)}`).join(',')}):${typeKey(fn.result)}`;
-        const trigger = (fn: a.FunctionDef) => `${fn.trigger?.kind ?? ''}:${fn.trigger?.endpoint ?? ''}:${fn.trigger?.period ? nanos(fn.trigger.period) : ''}`;
+        const trigger = (fn: a.FunctionDef) => `${fn.trigger?.kind ?? ''}:${fn.trigger?.endpoint ?? ''}:${fn.trigger?.period ? nanos(fn.trigger.period) : ''}:${fn.trigger?.predecessor?.$refText ?? ''}`;
         for (const member of component.members) {
             const base = inherited.find(n => a.isDelegate(member) ? a.isDelegate(n) && n.outer.$refText === member.outer.$refText : 'name' in member && 'name' in n && member.name === n.name);
             if (!base) { if (member.redefines) error(member, 'SW014', 'redefines requires an inherited member with the same name.'); continue; }
@@ -181,6 +181,12 @@ export class SwamlValidator {
         for (const v of vars) this.expect(v.value, typeKey(v.type), new Map(), error);
         const functions = members(component).filter(a.isFunctionDef);
         for (const op of functions) {
+            if (op.trigger?.kind === 'completion') {
+                if (op.parameters.length || typeKey(op.result) !== 'void' || op.stateBody) error(op.trigger, 'SW066', 'A completion-triggered executable must be a parameterless void flow operation or function.');
+                const predecessor = op.trigger.predecessor?.ref;
+                const effective = predecessor && effectiveFunction(predecessor, component);
+                if (effective && (!functions.includes(effective) || !effective.trigger)) error(op.trigger, 'SW066', 'Completion depends on a triggered executable owned by this same class/component, not a local helper.');
+            }
             const regions = [...AstUtils.streamAllContents(op)].filter(a.isInterruptible);
             for (const region of regions) {
                 if (!op.trigger || op.stateBody || op.timing?.concurrency === 'reentrant') error(region, 'SW065', 'Interruptible regions require a triggered serial flow function.');
@@ -277,7 +283,7 @@ export class SwamlValidator {
         }
         const visiting = new Set<AstNode>(), visited = new Set<AstNode>();
         const walk = (node: a.FunctionDef | a.Calculation): void => {
-            if (visiting.has(node)) { error(node, 'SW056', 'Recursive local call cycles are not supported in 1.3.'); return; }
+            if (visiting.has(node)) { error(node, 'SW056', 'Recursive local call cycles are not supported.'); return; }
             if (visited.has(node)) return;
             visiting.add(node);
             for (const n of AstUtils.streamAllContents(node)) {
@@ -287,6 +293,18 @@ export class SwamlValidator {
             visiting.delete(node); visited.add(node);
         };
         for (const node of members(component)) if (a.isFunctionDef(node)) walk(node);
+        // A completion edge releases a new activation root; it is not a local
+        // call. Check the effective dependency graph separately for each owner.
+        const completionVisiting = new Set<a.FunctionDef>(), completionVisited = new Set<a.FunctionDef>();
+        const completion = (fn: a.FunctionDef): void => {
+            if (completionVisiting.has(fn)) { error(fn.trigger!, 'SW067', 'Completion dependencies must be acyclic, including effective inherited redefinitions.'); return; }
+            if (completionVisited.has(fn)) return;
+            completionVisiting.add(fn);
+            const predecessor = fn.trigger?.predecessor?.ref;
+            if (fn.trigger?.kind === 'completion' && predecessor) completion(effectiveFunction(predecessor, component));
+            completionVisiting.delete(fn); completionVisited.add(fn);
+        };
+        for (const fn of functions) completion(fn);
         this.context = previous;
     }
     private block(block: a.Block, inherited: Env, result: string, error: Reporter): void {

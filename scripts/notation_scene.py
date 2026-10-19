@@ -197,7 +197,15 @@ def render(concept):
         if t=='connection':s.port(190,171);s.port(370,171)
         pts=[(198 if t=='connection' else 190,171),(362 if t=='connection' else 370,171)]
         if d.get('direction')=='reverse':pts.reverse()
-        if d.get('variant') in ['typing','specialization']:
+        if d.get('variant')=='completion':
+            # Explicit dotted segments share exactly the same geometry in SVG,
+            # raster and PDF; this is an activation dependency, not solid flow.
+            start,end=pts[0],pts[-1];direction=1 if end[0]>start[0] else -1
+            for offset in range(0,int(abs(end[0]-start[0])),6):
+                x=start[0]+direction*offset
+                s.line([(x,start[1]),(x+direction*min(2,abs(end[0]-x)),start[1])])
+            x,y=end;s.line([(x-direction*12,y-6),(x,y),(x-direction*12,y+6)])
+        elif d.get('variant') in ['typing','specialization']:
             s.line(pts,dash=d.get('variant')=='typing');x,y=pts[-1];direction=1 if pts[-1][0]>pts[-2][0] else -1
             s.polygon([(x,y),(x-direction*16,y-8),(x-direction*16,y+8)])
         else:s.arrow(pts,dash=d.get('dashed',t=='edge'),open=t=='edge')

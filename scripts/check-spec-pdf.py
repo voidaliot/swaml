@@ -7,6 +7,7 @@ import re
 from pathlib import Path
 from pypdf import PdfReader
 import pdfplumber
+from publication_archive import verify_sources
 
 ROOT=Path(__file__).resolve().parents[1]
 parser=argparse.ArgumentParser()
@@ -14,16 +15,13 @@ parser.add_argument('--pdf',type=Path,default=ROOT/'output/pdf/SWAML-1.3.1-Speci
 PDF=parser.parse_args().pdf
 manifest=json.loads(PDF.with_suffix('.manifest.json').read_text(encoding='utf-8'))
 reader=PdfReader(PDF)
-assert manifest['release']=='1.3.1' and manifest['languageVersion']=='1.3'
-assert manifest['specificationRevision']=='1.3.1' and manifest['simulationProfile']=='1.3'
+assert manifest['release']==manifest['specificationRevision']
+assert manifest['languageVersion']==manifest['simulationProfile']
 assert len(reader.pages)==manifest['pages'] and len(reader.pages)>100
 assert hashlib.sha256(PDF.read_bytes()).hexdigest()==manifest['pdfSha256']
 assert PDF.with_suffix('.sha256').read_text(encoding='utf-8').split()[0]==manifest['pdfSha256']
-assert len(reader.attachments)==len(manifest['sources'])
-for source in manifest['sources']:
-    original=(ROOT/source['path']).read_bytes()
-    assert hashlib.sha256(original).hexdigest()==source['sha256'],source['path']
-    assert reader.attachments[source['attachmentName']]==[original],source['path']
+current_version=json.loads((ROOT/'package.json').read_text(encoding='utf-8'))['version']
+verified=verify_sources(manifest,reader.attachments,ROOT,current_version)
 
 def destinations(items):
     for item in items:
@@ -32,9 +30,9 @@ def destinations(items):
 outlines=list(destinations(reader.outline))
 assert len(outlines)>100
 for item in outlines: assert reader.get_destination_page_number(item) is not None,item.title
-keyword_titles={'Keyword: '+e['keyword'] for e in json.loads((ROOT/'spec/keywords.json').read_text(encoding='utf-8'))['entries']}
+keyword_titles={'Keyword: '+e['keyword'] for e in json.loads(verified['spec/keywords.json'])['entries']}
 assert keyword_titles.issubset({str(o.title) for o in outlines}), 'Missing keyword navigation'
-notation=json.loads((ROOT/'spec/notation.json').read_text(encoding='utf-8'))
+notation=json.loads(verified['spec/notation.json'])
 concept_titles={'Notation: '+concept['id'] for concept in notation['concepts']}
 assert concept_titles.issubset({str(o.title) for o in outlines}), 'Missing concept navigation'
 attached_paths={source['path'] for source in manifest['sources']}
@@ -79,4 +77,5 @@ with pdfplumber.open(PDF) as doc:
         for c in page.chars:
             if not c['text'].strip(): continue
             assert c['x0']>=37 and c['x1']<=page.width-37 and c['top']>=8 and c['bottom']<=page.height-8, (i,c['text'],c['x0'],c['x1'])
-print(f'PDF verified: {len(reader.pages)} pages, {len(outlines)} bookmarks, {links} links, {len(notation["concepts"])} illustrated concepts, {len(manifest["sources"])} exact source attachments; page bounds pass.')
+mode='current workspace equality' if current_version==manifest['specificationRevision'] else 'archived embedded-source integrity'
+print(f'PDF verified ({mode}): {len(reader.pages)} pages, {len(outlines)} bookmarks, {links} links, {len(notation["concepts"])} illustrated concepts, {len(manifest["sources"])} exact source attachments; page bounds pass.')

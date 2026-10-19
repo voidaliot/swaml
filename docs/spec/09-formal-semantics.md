@@ -1,6 +1,6 @@
 # 9. Formal core and simulation relation
 
-Normative chapter of the [SWAML 1.3 specification](../LANGUAGE_SPECIFICATION.md). These judgments constrain implementations alongside chapters 1–8. They make explicit the distinction between static validity, allowed executions, and a particular target's choice among them. They do not assert a mechanically proved metatheory.
+Normative chapter of the [SWAML 1.4 development specification](../LANGUAGE_SPECIFICATION.md). These judgments constrain implementations alongside chapters 1–8. They make explicit the distinction between static validity, allowed executions, and a particular target's choice among them. They do not assert a mechanically proved metatheory.
 
 These judgments apply to class/component usages and operation/function executables alike. Component <: Class and Function <: Operation are software-kind relations, not permission to introduce reference values, runtime casts or arbitrary object calls. The kind information remains explicit in D and its occurrence typing.
 
@@ -79,6 +79,12 @@ A counted loop evaluates its initializer once in a new header scope. Each true t
 An armed region adds a typed receive watch to its current serial activation. Delivery disarms the selected watch and transfers control by unwinding to that region's handler boundary. Outer-scope cells and committed effects remain; protected locals and abandoned local-call frames disappear. A Pending caller correlation becomes terminal Interrupted; terminal correlations are unchanged. The new handler continuation retains the activation lock/snapshot/deadline, while all queued resumes of the abandoned continuation are invalid. The server has no cancellation transition implied by this local transfer. Region exit, return and failure remove the associated watch; unavailable watches produce explicit input discard observations.
 
 A reentrant dispatch snapshots σ for its component. All component reads by that activation, including helpers after suspension, use that snapshot. A serial dispatch reads the live store and holds its lock through requests. Local statements may interleave with other enabled activation roots at statement boundaries, but no competing serial activation root can acquire the same lock.
+
+### Successful completion release
+
+Let `dep(o,A)` be the finite set of effective same-owner completion dependents of executable A in occurrence o. The static judgment requires a triggered A, a parameterless void flow body for each dependent and an acyclic effective dependency graph. On successful whole completion of activation a of A, terminate a and release its serial lock before adding one fresh lifecycle item `(o,B,t,cause=completion,predecessorActivation=a,predecessorFunction=A)` to B for each `B ∈ dep(o,A)`. Each release uses the normal bounded backlog, fresh activation identity, dispatch-time context and release-relative timing. Fanout has no specified order and supplies no implicit join.
+
+The failure rule has no dependent-release effect. Returning from a borrowed local helper is not whole activation completion. For a stateful A, only final-entry completion or a bare return terminating the whole machine applies this success rule; ordinary reaction completion/quiescence does not. Successful RPC handler completion applies it independently of later response transport or correlation outcome. No source parameter/result or predecessor snapshot is copied into the new activation. A dependent failure cannot revise A's completed outcome. This lifecycle rule is local to one owner and is not a message offer or an external stimulus bypass.
 
 ## 9.4 Communication transition schemas
 

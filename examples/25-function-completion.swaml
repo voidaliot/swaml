@@ -1,0 +1,22 @@
+package Completion {
+    component Demo {
+        var stage: int = 0;
+        function first() on start {
+            stage = 1;
+        }
+        operation second() on completion first {
+            assert stage == 1;
+            stage = 2;
+        }
+        function third() on completion second {
+            assert stage == 2;
+            stage = 3;
+        }
+    }
+    view flow fv {
+        include Demo recursive where kind == "operation" or kind == "function";
+    }
+    view times tv {
+        include Demo recursive where kind == "operation" or kind == "function";
+    }
+}

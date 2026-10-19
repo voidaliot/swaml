@@ -40,6 +40,9 @@ RELEASE = '1.3.1'
 REVISION = '1.3.1'
 LANGUAGE = '1.3'
 SIMULATION_PROFILE = '1.3'
+WORKSPACE_REVISION = json.loads((ROOT/'package.json').read_text(encoding='utf-8'))['version']
+if WORKSPACE_REVISION != REVISION:
+    raise RuntimeError(f'This builder targets {REVISION}, but the workspace is {WORKSPACE_REVISION}. Use rebuild-archived-pdf.py for an archived edition; a new edition requires an explicitly versioned builder and publication review.')
 REPO = 'https://github.com/voidaliot/swaml/blob/main/'
 NORMATIVE = ['docs/LANGUAGE_SPECIFICATION.md'] + [f'docs/spec/{name}' for name in [
     '01-structure-and-types.md', '02-communication.md', '03-behavior.md',

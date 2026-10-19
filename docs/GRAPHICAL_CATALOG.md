@@ -1,6 +1,6 @@
 # Canonical graphical notation catalog
 
-SWAML 1.3 · publication 1.3.1. This generated catalog defines the original monochrome notation for each authored concept and meaningful label group. All specimens derive from [the semantic inventory](../spec/notation.json); complete examples supply their validation context.
+SWAML 1.4 · publication 1.4.0. This generated catalog defines the original monochrome notation for each authored concept and meaningful label group. All specimens derive from [the semantic inventory](../spec/notation.json); complete examples supply their validation context.
 
 Each SVG, PNG and vector scene shares the same flat two-dimensional geometry, without perspective, extrusion, gradients or shadows. A graphical specimen is a projection of its textual model; it does not create additional ports, events, state owners or execution semantics. Labels such as QoS values and expression operators appear within their owning element rather than introducing independent nodes.
 
@@ -67,6 +67,7 @@ The following fragments are contextual notation samples, not standalone SWAML fi
 - [Interface operation signature](#notation-operation-signature) — Interfaces and connections.
 - [Interruptible flow region](#notation-interruptible-region) — Function flow.
 - [Local declaration](#notation-local-declaration) — Function flow.
+- [Local executable completion activation](#notation-trigger-completion) — Function flow.
 - [Local function call](#notation-local-call) — Function flow.
 - [Member redefinition](#notation-member-redefinition) — Structure and values.
 - [Message freshness bound](#notation-freshness-bound) — Interfaces and connections.
@@ -675,6 +676,27 @@ Local declaration. Draw an owned statement box with the exact statement label an
 [Complete model](../examples/05-values-and-flow.swaml) · `Values::Producer.prepare`.
 
 [SVG](notation/local-declaration.svg) · [PNG](notation/local-declaration.png) · [Vector scene](notation/local-declaration.scene.json)
+
+## Notation: trigger-completion
+
+**Local executable completion activation**
+
+| Element | Graphical notation | Textual notation |
+| --- | --- | --- |
+| Local executable completion activation (edge) | ![Local executable completion activation](notation/trigger-completion.svg) | `on completion first` |
+
+A dotted same-owner executable dependency releases a fresh activation after successful whole completion. It is source intent, not observed timing or a cross-component event route.
+
+**Context:** On Completion::Demo.second, referencing the effective triggered first executable in the same owner. **Views:** fv.
+
+- Draw a dotted arrow from the selected predecessor executable occurrence to the selected dependent, labeled on completion.
+- The target is a parameterless void flow executable. Retain real declaration/occurrence identities; do not add unselected endpoints.
+- The arrow releases a fresh activation after successful whole completion and unlock. Failure and ordinary state reactions release nothing.
+- Distinguish this dependency by its selected executable endpoints, on completion label and source trigger from statement flow, local calls and state completion transitions, without changing their line styles; it carries no result, shared context, implicit join or fanout order.
+
+[Complete model](../examples/25-function-completion.swaml) · `Completion::Demo.second`.
+
+[SVG](notation/trigger-completion.svg) · [PNG](notation/trigger-completion.png) · [Vector scene](notation/trigger-completion.scene.json)
 
 ## Notation: local-call
 
@@ -2269,7 +2291,7 @@ The inventory explicitly assigns every current grammar production and keyword to
 | `class` | glyph | [Class definition](#notation-class-definition), [Class usage and root](#notation-class-usage). Class definition; Class usage and root. |
 | `client` | glyph | [RPC client port](#notation-port-client). RPC client port. |
 | `clientServer` | glyph | [Client–server interface](#notation-client-server-interface). Client–server interface. |
-| `completion` | glyph | [Completion transition](#notation-completion-transition). Completion transition. |
+| `completion` | glyph | [Completion transition](#notation-completion-transition), [Local executable completion activation](#notation-trigger-completion). Completion transition. Local executable completion uses an explicit same-owner activation-dependency arrow, separate from state completion. |
 | `component` | glyph | [Component definition](#notation-component-definition), [Component usage](#notation-component-usage), [Occurrence typing relationship](#notation-type-relationship), [Root component](#notation-root-component), [Inline root composition](#notation-inline-root). Component definition; Component usage; Occurrence typing relationship; Root component; Inline root composition. |
 | `concurrency` | label | [Concurrency mode](#notation-concurrency-mode). Concurrency mode. |
 | `connect` | glyph | [Interface connector](#notation-connector). Interface connector. |
@@ -2319,7 +2341,7 @@ The inventory explicitly assigns every current grammar production and keyword to
 | `not` | label | [Expressions and value paths](#notation-expression). Expressions and value paths. |
 | `ns` | label | [Duration value](#notation-duration). Duration value. |
 | `of` | glyph | [Use case](#notation-case), [Satisfaction relation](#notation-satisfies-link), [General View](#notation-view-gv), [General View: Tree](#notation-view-gv-tree), [Interconnect View](#notation-view-iv), [Case View](#notation-view-cv), [Sequence View](#notation-view-sv), [Grid View](#notation-view-grv), [Flow View](#notation-view-fv), [Verification case](#notation-verification-case). Use case; Satisfaction relation; General View; General View: Tree; Interconnect View; Case View; Sequence View; Grid View; Flow View; Verification case. |
-| `on` | glyph | [Startup activation](#notation-trigger-start), [Periodic activation](#notation-trigger-periodic), [Port receive activation](#notation-trigger-receive), [RPC handler activation](#notation-trigger-call), [State transition](#notation-transition), [Deployment binding](#notation-deployment), [Interruptible flow region](#notation-interruptible-region). Startup activation; Periodic activation; Port receive activation; RPC handler activation; State transition; Deployment binding; Interruptible flow region. |
+| `on` | glyph | [Startup activation](#notation-trigger-start), [Periodic activation](#notation-trigger-periodic), [Port receive activation](#notation-trigger-receive), [RPC handler activation](#notation-trigger-call), [State transition](#notation-transition), [Deployment binding](#notation-deployment), [Interruptible flow region](#notation-interruptible-region), [Local executable completion activation](#notation-trigger-completion). Startup activation; Periodic activation; Port receive activation; RPC handler activation; State transition; Deployment binding; Interruptible flow region. Local executable completion uses an explicit same-owner activation-dependency arrow, separate from state completion. |
 | `operation` | glyph | [Executable operation](#notation-operation), [Interface operation signature](#notation-operation-signature). Executable operation; Interface operation signature. |
 | `optional` | label | [Optional port](#notation-optional-port). Optional port. |
 | `or` | label | [Expressions and value paths](#notation-expression). Expressions and value paths. |
@@ -2468,7 +2490,7 @@ The inventory explicitly assigns every current grammar production and keyword to
 | `STRING` | text-only | string literal token supplies values/requirement text; preserve escaping in source notation. |
 | `Timing` | glyph | [Function timing contract](#notation-timing-contract), [Concurrency mode](#notation-concurrency-mode), [Timing View](#notation-function-timing-diagram). Function timing contract; Concurrency mode; Timing View. |
 | `Transition` | glyph | [State transition](#notation-transition), [Transition guard](#notation-transition-guard), [Transition priority](#notation-transition-priority), [Completion transition](#notation-completion-transition), [Residence timer transition](#notation-timer-transition). State transition; Transition guard; Transition priority; Completion transition; Residence timer transition. |
-| `Trigger` | label | [Startup activation](#notation-trigger-start), [Periodic activation](#notation-trigger-periodic), [Port receive activation](#notation-trigger-receive), [RPC handler activation](#notation-trigger-call). Startup activation; Periodic activation; Port receive activation; RPC handler activation. |
+| `Trigger` | glyph | [Startup activation](#notation-trigger-start), [Periodic activation](#notation-trigger-periodic), [Port receive activation](#notation-trigger-receive), [RPC handler activation](#notation-trigger-call), [Local executable completion activation](#notation-trigger-completion). Startup activation; Periodic activation; Port receive activation; RPC handler activation. Local executable completion uses an explicit same-owner activation-dependency arrow, separate from state completion. |
 | `TypeRef` | label | [Primitive types](#notation-primitive-types), [Fixed array type and value](#notation-array-value). Primitive types; Fixed array type and value. |
 | `UnaryExpression` | label | [Expressions and value paths](#notation-expression). Expressions and value paths. |
 | `ValuePath` | label | [Enumeration value](#notation-enum-value). Enumeration value. |

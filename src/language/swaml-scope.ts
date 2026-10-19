@@ -10,7 +10,7 @@ export class SwamlScopeProvider extends DefaultScopeProvider {
     override getScope(context: ReferenceInfo): Scope {
         const node = context.container;
         let candidates: AstNode[] | undefined;
-        if (a.isLocalCall(node)) candidates = container(node) ? members(container(node)!).filter(a.isFunctionDef) : [];
+        if (a.isLocalCall(node) || a.isTrigger(node) && context.property === 'predecessor') candidates = container(node) ? members(container(node)!).filter(a.isFunctionDef) : [];
         if (a.isCalculationCall(node)) candidates = owner(node, a.isFunctionDef)?.calculations ?? [];
         if (a.isTransition(node) || a.isStateBody(node)) candidates = owner(node, a.isStateBody)?.states;
         if (a.isDelegate(node)) candidates = container(node) ? members(container(node)!).filter(a.isPort) : [];

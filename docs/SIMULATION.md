@@ -1,6 +1,8 @@
-# Reference simulation profile 1.3
+# Reference simulation profile 1.4 development
 
-This document specifies the **swaml-reference/1.3** execution binding. This profile executes unified components, inherited effective members, executable functions and pure calculations; each connector retains its independent effective policy and queues. The portable TypeScript [interpreter](../src/simulation/simulator.ts) and [value evaluator](../src/simulation/values.ts) execute valid SWAML 1.3 root components. The profile implements logical behavior with explicit resource bounds. It does not model instruction duration, operating-system scheduling, hardware or network deployment.
+This profile belongs to unpublished SWAML 1.4.0 development. The published 1.3.1 edition retains profile `swaml-reference/1.3`; existing historical trace artifacts are not relabeled as 1.4 evidence.
+
+This document specifies the **swaml-reference/1.4** execution binding. This profile executes unified components, inherited effective members, executable functions and pure calculations; each connector retains its independent effective policy and queues. The portable TypeScript [interpreter](../src/simulation/simulator.ts) and [value evaluator](../src/simulation/values.ts) execute valid SWAML 1.4 root components. The profile implements logical behavior with explicit resource bounds. It does not model instruction duration, operating-system scheduling, hardware or network deployment.
 
 ## Run a model
 
@@ -14,7 +16,7 @@ node scripts/check-simulations.mjs
 
 The command takes a qualified root component name, a JSON options file and all workspace model files. It validates the entire input before executing. JSON output contains the trace, final stores, machine states, effective deployments, exact source text and per-source SHA-256 digests. Redirect stdout to a file when collecting evidence. The direct `node out/src/cli/simulate.js ...` command emits only JSON to stdout on a valid invocation; `npm run` additionally prints its script banner.
 
-The selected root may compose components inline or instantiate a component definition. A typed root's deployment body does not extend its topology. Instance paths, stores and deployment keys remain relative to the selected root without a root-name prefix. Root-owned functions use their local name, such as `initialize`, without a root prefix. Store/deployment output includes every expanded component, with the root represented by the empty-string path. Source deployment may explicitly name the root to establish its default location. The output names the selected architecture `root`, and identifies the binding as `swaml-reference/1.3`.
+The selected root may compose components inline or instantiate a component definition. A typed root's deployment body does not extend its topology. Instance paths, stores and deployment keys remain relative to the selected root without a root-name prefix. Root-owned functions use their local name, such as `initialize`, without a root prefix. Store/deployment output includes every expanded component, with the root represented by the empty-string path. Source deployment may explicitly name the root to establish its default location. The output names the selected architecture `root`, and identifies the binding as `swaml-reference/1.4`.
 
 Exit status is 0 when no failure was observed, 1 for invalid models, a failed activation, a contract violation or a resource limit, and 2 for an invocation/configuration error. A bounded horizon with no observed failure is not proof of eventual success. Descriptive `case` declarations are not a second executable script and are not automatically proven by this command.
 
@@ -62,6 +64,12 @@ Serial activation roots retain their lock while awaiting RPC. Reentrant activati
 
 The finite-fuel policy also bounds non-progressing or Zeno model executions. No fairness or liveness result beyond the observed finite trace is claimed. There is no randomness, wall-clock dependency or automatic restart.
 
+## Completion activation in profile 1.4
+
+For `B() on completion A`, each successful whole A activation completion releases one fresh B activation after unlocking A. This includes successful RPC handlers even if the later response is lost or the caller already timed out. It excludes failed activations, unfinished runs and ordinary state reactions. A stateful A counts only on successful final-entry completion or bare return terminating the whole machine. B receives no arguments/result and gets its own dispatch context, timing and bounded lifecycle-backlog slot. Multiple dependents are independent releases; the deterministic reference scheduler chooses a reproducible order without making that order a core guarantee.
+
+Successful whole completion records `functionComplete: true`; completion releases carry `cause: "completion"`, `predecessorActivation` and `predecessorFunction`. Keep these occurrence/activation identities in timing projections and evidence. A later dependent failure does not retroactively fail A. See [the complete source](../examples/25-function-completion.swaml), [migration](MIGRATION_1_4.md) and [operational rules](spec/06-execution-contract.md#completion-triggered-releases).
+
 ## Transport and fault interpretation
 
 Each connector occurrence, direction and member owns a separate queue. Delegation resolves boundary aliases to locally handled component ports without adding queues. Capacity includes messages waiting for transport readiness; dispatched handlers are excluded. A send/publish attempts every matching route before reporting rejection. Offers that succeeded remain committed.
@@ -96,6 +104,6 @@ The implementation provides **reference simulation evidence with an explicit log
 
 ## Extended control flow and interruption
 
-The 1.3 profile executes while, counted for, copied-array forEach and post-test do loops with their documented scopes and bounds. An armed interruptible region receives typed data/events through its connector queue, transfers control in its current serial activation, cancels a pending caller continuation and preserves earlier effects. Available input outside the armed interval is discarded explicitly. Region and cancellation events retain activation/correlation identities. See the [control-flow guide](CONTROL_FLOW_AND_TIMING.md) for examples and the [operational contract](spec/06-execution-contract.md) for ties and late responses.
+The 1.4 profile executes while, counted for, copied-array forEach and post-test do loops with their documented scopes and bounds. An armed interruptible region receives typed data/events through its connector queue, transfers control in its current serial activation, cancels a pending caller continuation and preserves earlier effects. Available input outside the armed interval is discarded explicitly. Region and cancellation events retain activation/correlation identities. See the [control-flow guide](CONTROL_FLOW_AND_TIMING.md) for examples and the [operational contract](spec/06-execution-contract.md) for ties and late responses.
 
 `projectFunctionTiming` derives observed ready/running/request-wait phases and markers from these traces. Declared timing values remain separate. Open horizon/stop intervals are retained, and zero-cost execution is never reported as physical CPU duration. Reproduce the four showcase traces with `node scripts/build-timing-demo.mjs`; the normal gate checks their exact generated projection.

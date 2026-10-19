@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
-  "languageVersion": "1.3",
-  "edition": "1.3.1",
+  "languageVersion": "1.4",
+  "edition": "1.4.0",
   "title": "SWAML canonical graphical notation",
   "style": {
     "background": "white",
@@ -1843,6 +1843,49 @@
           "on call health.check"
         ],
         "label": "on call health.check"
+      }
+    },
+    {
+      "id": "trigger-completion",
+      "title": "Local executable completion activation",
+      "concern": "Function flow",
+      "kind": "edge",
+      "views": [
+        "fv"
+      ],
+      "keywords": [
+        "on",
+        "completion"
+      ],
+      "productions": [
+        "Trigger"
+      ],
+      "syntax": "on completion first",
+      "context": "On Completion::Demo.second, referencing the effective triggered first executable in the same owner.",
+      "rules": [
+        "Draw a dotted arrow from the selected predecessor executable occurrence to the selected dependent, labeled on completion.",
+        "The target is a parameterless void flow executable. Retain real declaration/occurrence identities; do not add unselected endpoints.",
+        "The arrow releases a fresh activation after successful whole completion and unlock. Failure and ordinary state reactions release nothing.",
+        "Distinguish this dependency by its selected executable endpoints, on completion label and source trigger from statement flow, local calls and state completion transitions, without changing their line styles; it carries no result, shared context, implicit join or fanout order."
+      ],
+      "description": "A dotted same-owner executable dependency releases a fresh activation after successful whole completion. It is source intent, not observed timing or a cross-component event route.",
+      "source": {
+        "model": "examples/25-function-completion.swaml",
+        "path": "Completion::Demo.second"
+      },
+      "drawing": {
+        "template": "edge",
+        "variant": "completion",
+        "header": [
+          "Local executable completion"
+        ],
+        "label": "on completion",
+        "lines": [
+          "Successful whole completion; fresh activation",
+          "Same owner; no join or forwarded result"
+        ],
+        "from": "first()",
+        "to": "second()"
       }
     },
     {
@@ -4357,9 +4400,10 @@
       {
         "term": "completion",
         "mode": "glyph",
-        "rationale": "Completion transition.",
+        "rationale": "Completion transition. Local executable completion uses an explicit same-owner activation-dependency arrow, separate from state completion.",
         "concepts": [
-          "completion-transition"
+          "completion-transition",
+          "trigger-completion"
         ]
       },
       {
@@ -4785,7 +4829,7 @@
       {
         "term": "on",
         "mode": "glyph",
-        "rationale": "Startup activation; Periodic activation; Port receive activation; RPC handler activation; State transition; Deployment binding; Interruptible flow region.",
+        "rationale": "Startup activation; Periodic activation; Port receive activation; RPC handler activation; State transition; Deployment binding; Interruptible flow region. Local executable completion uses an explicit same-owner activation-dependency arrow, separate from state completion.",
         "concepts": [
           "trigger-start",
           "trigger-periodic",
@@ -4793,7 +4837,8 @@
           "trigger-call",
           "transition",
           "deployment",
-          "interruptible-region"
+          "interruptible-region",
+          "trigger-completion"
         ]
       },
       {
@@ -6007,13 +6052,14 @@
       },
       {
         "term": "Trigger",
-        "mode": "label",
-        "rationale": "Startup activation; Periodic activation; Port receive activation; RPC handler activation.",
+        "mode": "glyph",
+        "rationale": "Startup activation; Periodic activation; Port receive activation; RPC handler activation. Local executable completion uses an explicit same-owner activation-dependency arrow, separate from state completion.",
         "concepts": [
           "trigger-start",
           "trigger-periodic",
           "trigger-receive",
-          "trigger-call"
+          "trigger-call",
+          "trigger-completion"
         ]
       },
       {

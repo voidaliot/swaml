@@ -57,8 +57,12 @@ jobs:
           path: tmp/pdfs/notation-raster
           if-no-files-found: ignore
       - name: Verify committed publication
-        run: python scripts/check-spec-pdf.py
-      - name: Rebuild from source and verify
         run: |
-          python scripts/build-spec-pdf.py --output tmp/pdfs/rebuilt.pdf
+          python scripts/test-publication-archive.py
+          python scripts/check-spec-pdf.py
+      - name: Fetch the separately pinned original publication tooling
+        run: git fetch --no-tags --depth=1 origin 7e3cc2df00292127fdee20aa078100f520a8a16e
+      - name: Rebuild the archived edition from verified source attachments and original tooling
+        run: |
+          python scripts/rebuild-archived-pdf.py --output tmp/pdfs/rebuilt.pdf
           python scripts/check-spec-pdf.py --pdf tmp/pdfs/rebuilt.pdf

@@ -1,5 +1,5 @@
 {
-  "languageVersion": "1.3",
+  "languageVersion": "1.4",
   "entries": [
     {
       "keyword": "after",
@@ -106,8 +106,8 @@
     {
       "keyword": "completion",
       "concern": "Behavior and states",
-      "meaning": "Local state stimulus reconsidered after entry and each reaction until quiescent. It is not an interface event. Unconditional cycles are invalid; guarded cycles have a 1,024-edge runtime limit.",
-      "example": "transition next: A -> B on completion {}"
+      "meaning": "In a state transition, the local stimulus reconsidered after entry/reaction until quiescent. In an executable trigger, on completion A releases a fresh parameterless void flow activation after each successful whole completion of the same-owner triggered effective A. Failure/reaction quiescence releases nothing; dependencies are acyclic and do not forward arguments/results or create an implicit join.",
+      "example": "function next() on completion first { return; } / transition next: A -> B on completion {}"
     },
     {
       "keyword": "component",
@@ -406,7 +406,7 @@
     {
       "keyword": "on",
       "concern": "Behavior and states",
-      "meaning": "Introduces a function activation trigger, state transition trigger, interruptible-region input or deployment destination. Deployment is a location association; activation and interruption are incoming control bindings.",
+      "meaning": "Introduces an executable activation (start, every, owned port receive/call, or same-owner successful whole completion), a state transition trigger, an interrupt handler input, or an external deployment destination. Each context retains its own ownership and validity rules.",
       "example": "function tick() on every 10 ms { return; } / deploy app on \"system:production\";"
     },
     {

@@ -15,7 +15,7 @@ export interface SimulationOptions {
 }
 export interface TraceEvent { timeNs: number; ordinal: number; kind: string; subject: string; [key: string]: unknown }
 export interface SimulationResult {
-    profile: 'swaml-reference/1.3'; root: string; options: SimulationOptions;
+    profile: 'swaml-reference/1.4'; root: string; options: SimulationOptions;
     outcome: 'failed' | 'no-failure-observed';
     status: 'quiescent' | 'horizon' | 'violation' | 'limit'; timeNs: number; steps: number;
     sources: { uri: string; text: string }[];
@@ -24,14 +24,15 @@ export interface SimulationResult {
     deployments: Record<string, string | null>;
 }
 type Event = { time: number; phase: number; order: number; run: () => void };
-type ComponentInstance = { path: string; definition: a.Component | a.RootComponent; store: Environment; serial: boolean; active: number };
+type ComponentInstance = { path: string; definition: a.Component | a.RootComponent; store: Environment; serial: boolean; active: number; completionTargets: Map<a.FunctionDef, a.FunctionDef[]> };
 type Route = { path: string; source: string; target: string; qos: a.QosBody };
 type Response = { value?: Value; failure?: string };
 type Message = { id: string; route: Route; source: string; target: string; member: string; args: Value[]; emitted: number; ready: number; response?: Response; correlation?: Correlation; copies: number; attempt: number; available: boolean; work?: Work };
 type Queue = { key: string; items: Message[] };
 type Correlation = { id: string; expiry: number; state: 'Pending' | 'Succeeded' | 'Failed'; frame: Frame; response?: Response };
-type Machine = { component: ComponentInstance; fn: a.FunctionDef; state: a.State; generation: number; ready: boolean; live: boolean; reacting: boolean };
-type Work = { component: ComponentInstance; fn: a.FunctionDef; released: number; args: Value[]; machine?: Machine; stimulus?: { kind: 'initialize' | 'receive' | 'after'; endpoint?: string; delay?: number; generation?: number }; message?: Message; done: boolean; frame?: Frame; id: string };
+type Machine = { component: ComponentInstance; fn: a.FunctionDef; state: a.State; generation: number; ready: boolean; live: boolean; reacting: boolean; completionNotified: boolean };
+type CompletionCause = { predecessorActivation: string; predecessorFunction: string };
+type Work = { component: ComponentInstance; fn: a.FunctionDef; released: number; args: Value[]; machine?: Machine; stimulus?: { kind: 'initialize' | 'receive' | 'after'; endpoint?: string; delay?: number; generation?: number }; completion?: CompletionCause; message?: Message; done: boolean; frame?: Frame; id: string };
 type Frame = { id: string; work: Work; snapshot: Environment; iterator: Generator<Yield, Value | undefined, Response | undefined>; waiting: boolean; done: boolean; serial: boolean; epoch: number; correlation?: Correlation; watches: InterruptWatch[]; interruption?: InterruptSignal };
 type InterruptWatch = { region: a.Interruptible; frame: Frame; active: boolean };
 type Yield = { kind: 'step' } | { kind: 'request'; endpoint: string; args: Value[]; timeout: number };
@@ -108,12 +109,19 @@ class Interpreter {
     private expand(c: a.RootComponent | a.Component, prefix = '', allocation: string | null = null): void {
         const path = (name: string) => joined(prefix, name);
         const effective = members(c);
-        const component: ComponentInstance = { path: prefix, definition: c, store: new Map(), serial: false, active: 0 };
+        const component: ComponentInstance = { path: prefix, definition: c, store: new Map(), serial: false, active: 0, completionTargets: new Map() };
         this.components.set(prefix, component);
         this.deployments[prefix] = allocation;
         for (const variable of effective.filter(a.isVariable)) bind(component.store, variable.name, typeKey(variable.type), evaluate(variable.value, new Map(), this.fuel, this.models, c));
         for (const port of effective.filter(a.isPort)) this.ports.set(path(port.name), { component, port });
-        for (const fn of effective.filter(a.isFunctionDef)) if (fn.stateBody) this.machines.push({ component, fn, state: fn.stateBody.initial.ref!, generation: 0, ready: false, live: true, reacting: false });
+        for (const fn of effective.filter(a.isFunctionDef)) {
+            if (fn.stateBody) this.machines.push({ component, fn, state: fn.stateBody.initial.ref!, generation: 0, ready: false, live: true, reacting: false, completionNotified: false });
+            if (fn.trigger?.kind === 'completion' && fn.trigger.predecessor?.ref) {
+                const predecessor = effectiveFunction(fn.trigger.predecessor.ref, c);
+                const targets = component.completionTargets.get(predecessor) ?? [];
+                targets.push(fn); component.completionTargets.set(predecessor, targets);
+            }
+        }
         const definition = a.isRootComponent(c) && c.definition?.ref ? c.definition.ref : c;
         this.log('initialize', prefix, { definition: `${owner(definition, a.isPackage)!.name}::${definition.name}`, system: allocation });
         for (const member of effective) {
@@ -149,19 +157,19 @@ class Interpreter {
             this.stopped = error.code === 'StepLimit' ? 'limit' : 'violation';
             this.log('violation', this.id, { code: error.code, message: error.message });
         }
-        return { profile: 'swaml-reference/1.3', outcome: this.stopped || this.trace.some(t => t.kind === 'failure') ? 'failed' : 'no-failure-observed', root: this.id, options: copy(this.options), status: this.stopped ?? (this.events.length ? 'horizon' : 'quiescent'), timeNs: this.time, steps: this.steps,
+        return { profile: 'swaml-reference/1.4', outcome: this.stopped || this.trace.some(t => t.kind === 'failure') ? 'failed' : 'no-failure-observed', root: this.id, options: copy(this.options), status: this.stopped ?? (this.events.length ? 'horizon' : 'quiescent'), timeNs: this.time, steps: this.steps,
             sources: this.models.map(m => ({ uri: AstUtils.getDocument(m).uri.toString(), text: AstUtils.getDocument(m).textDocument.getText() })).sort((x, y) => x.uri.localeCompare(y.uri)),
             trace: this.trace, stores: Object.fromEntries([...this.components].map(([p, u]) => [p, Object.fromEntries([...u.store].map(([n, v]) => [n, plain(v.value)]))])),
             machines: Object.fromEntries(this.machines.map(m => [joined(m.component.path, m.fn.name), { state: m.state.name, live: m.live }])), deployments: this.deployments };
     }
-    private release(component: ComponentInstance, fn: a.FunctionDef, machine?: Machine, stimulus?: Work['stimulus']): void {
+    private release(component: ComponentInstance, fn: a.FunctionDef, machine?: Machine, stimulus?: Work['stimulus'], completion?: CompletionCause): void {
         if (machine && (!machine.live || (stimulus?.generation !== undefined && stimulus.generation !== machine.generation))) { this.log('discardTimer', joined(component.path, fn.name)); return; }
         if (this.pending.length >= this.options.maxPending) throw new RuntimeFault('ActivationOverflow');
-        const work: Work = { id: this.uid('a'), component, fn, released: this.time, args: [], machine, stimulus, done: false };
+        const work: Work = { id: this.uid('a'), component, fn, released: this.time, args: [], machine, stimulus, completion, done: false };
         this.pending.push(work); this.released(work);
     }
     private released(work: Work): void {
-        this.log('release', work.id, { function: joined(work.component.path, work.fn.name) });
+        this.log('release', work.id, { function: joined(work.component.path, work.fn.name), ...(work.completion ? { cause: 'completion', ...work.completion } : {}) });
         if (work.fn.timing) this.schedule(this.addTime(work.released, nanos(work.fn.timing.deadline)), 3, () => {
             if (!work.done) throw new RuntimeFault('Deadline', `Deadline missed: ${work.component.path}.${work.fn.name}`);
         });
@@ -288,12 +296,33 @@ class Interpreter {
         if (frame.serial) frame.work.component.serial = false; else frame.work.component.active--;
         const machine = frame.work.machine;
         if (machine) { machine.reacting = false; if (response.failure) { machine.live = false; machine.generation++; } }
-        this.log(response.failure ? 'failure' : 'complete', frame.id, { function: joined(frame.work.component.path, frame.work.fn.name), code: response.failure, message, result: response.value ? plain(response.value) : undefined });
+        const functionComplete = !response.failure && (!machine || !machine.live && !machine.completionNotified);
+        if (functionComplete && machine) machine.completionNotified = true;
+        this.log(response.failure ? 'failure' : 'complete', frame.id, { function: joined(frame.work.component.path, frame.work.fn.name), code: response.failure, message, result: response.value ? plain(response.value) : undefined,
+            ...(functionComplete ? { functionComplete: true } : {}) });
         const request = frame.work.message;
         if (request?.correlation) {
             const reply: Response = response.failure ? { failure: 'RemoteFailure' } : response;
             const failure = this.offer(request.route, request.target, request.source, request.member, [], request.correlation, reply, frame.id);
             if (failure) this.complete(request.correlation, { failure });
+        }
+        if (functionComplete) {
+            const targets = frame.work.component.completionTargets.get(frame.work.fn) ?? [];
+            // A bare return can terminate a machine without yielding through
+            // pump first. Cancel its obsolete released timers before counting
+            // the new activation batch against the bounded live backlog.
+            for (let i = 0; i < this.pending.length;) {
+                const work = this.pending[i];
+                if (work.machine && (!work.machine.live || (work.stimulus?.generation !== undefined && work.stimulus.generation !== work.machine.generation))) {
+                    work.done = true; this.pending.splice(i, 1); this.log('discardTimer', work.id);
+                } else i++;
+            }
+            // Fanout is one bounded release batch. An overflow stops this run
+            // without silently dropping/coalescing or partially admitting it.
+            if (this.pending.length + targets.length > this.options.maxPending) throw new RuntimeFault('ActivationOverflow');
+            for (const target of targets) this.release(frame.work.component, target, undefined, undefined, {
+                predecessorActivation: frame.id, predecessorFunction: joined(frame.work.component.path, frame.work.fn.name),
+            });
         }
     }
     private complete(c: Correlation, response: Response): void {

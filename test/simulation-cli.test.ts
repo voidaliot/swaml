@@ -10,27 +10,27 @@ test('simulation CLI emits standalone JSON with exact source digests', () => {
     const r = cli('Hello::Demo', 'examples/simulation/01-hello.json', 'examples/01-hello.swaml');
     assert.equal(r.status, 0, r.stderr);
     const result = JSON.parse(r.stdout);
-    assert.equal(result.profile, 'swaml-reference/1.3'); assert.equal(result.root, 'Hello::Demo');
+    assert.equal(result.profile, 'swaml-reference/1.4'); assert.equal(result.root, 'Hello::Demo');
     assert.equal(result.stores['conversation.listener'].last, 'Hello, SWAML');
     assert.equal(result.sourceDigests[0].sha256, createHash('sha256').update(readFileSync('examples/01-hello.swaml')).digest('hex'));
 });
 
-test('simulation CLI explicitly pins language 1.3 and rejects older, future or inferred versions', () => {
+test('simulation CLI explicitly pins language 1.4 and rejects older, future or inferred versions', () => {
     const args = ['Hello::Demo', 'examples/simulation/01-hello.json', 'examples/01-hello.swaml'];
-    const selected = cli('--language-version', '1.3', ...args);
+    const selected = cli('--language-version', '1.4', ...args);
     assert.equal(selected.status, 0, selected.stderr);
-    for (const version of ['1.0', '1.1', '1.2', '1.4', 'latest', '']) {
+    for (const version of ['1.0', '1.1', '1.2', '1.3', '1.5', 'latest', '']) {
         const r = cli(`--language-version=${version}`, ...args);
         assert.equal(r.status, 2); assert.match(r.stderr, /Unsupported language version/);
     }
     assert.equal(cli('--language-version').status, 2);
-    assert.equal(cli('--language-version', '1.3', '--language-version', '1.3', ...args).status, 2);
+    assert.equal(cli('--language-version', '1.4', '--language-version', '1.4', ...args).status, 2);
 });
 
 test('validation CLI uses the same fixed language selection', () => {
     const invoke = (...args: string[]) => spawnSync(process.execPath, ['out/src/cli/main.js', ...args], { encoding: 'utf8' });
-    const accepted = invoke('--language-version=1.3', 'examples/01-hello.swaml');
-    assert.equal(accepted.status, 0, accepted.stderr); assert.match(accepted.stdout, /implemented 1.3 checks/);
+    const accepted = invoke('--language-version=1.4', 'examples/01-hello.swaml');
+    assert.equal(accepted.status, 0, accepted.stderr); assert.match(accepted.stdout, /implemented 1.4 checks/);
     const rejected = invoke('--language-version', '1.0', 'examples/01-hello.swaml');
     assert.equal(rejected.status, 2); assert.match(rejected.stderr, /Unsupported language version/);
 });

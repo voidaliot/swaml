@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0",
   "language": "SWAML",
-  "languageVersion": "1.3",
+  "languageVersion": "1.4",
   "foundation": {
     "name": "KerML",
     "version": "1.0",
@@ -17,7 +17,7 @@
         "Package"
       ],
       "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Workspace source container under a host-pinned 1.3 language edition; no file version header."
+      "semantic": "Workspace source container under a host-pinned 1.4 development language edition; no file version header."
     },
     {
       "source": "Package",
@@ -267,7 +267,7 @@
         "MetadataFeature"
       ],
       "normative": "docs/spec/06-execution-contract.md",
-      "semantic": "Local start/periodic release rule or owned typed port-member receive/call handler binding; not a free event or host-only activation. Operator/test event sources are ordinary component functions with explicit routes."
+      "semantic": "Local start/periodic release, same-owner successful whole-executable-completion dependency, or owned typed port-member receive/call binding. Completion references the effective triggered predecessor; after unlock it releases a fresh parameterless void flow activation with new context and bounded backlog, with no argument/result forwarding, implicit join or cross-component channel. Preserve declaration/occurrence/activation provenance and acyclic dependencies."
     },
     {
       "source": "Timing",
