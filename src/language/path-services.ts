@@ -1,4 +1,4 @@
-import { AstUtils, GrammarUtils, EmptyFileSystem, type AstNode, type CstNode, type LangiumDocument } from 'langium';
+import { AstUtils, CstUtils, GrammarUtils, EmptyFileSystem, type AstNode, type CstNode, type LangiumDocument } from 'langium';
 import type { LangiumServices, RenameProvider, DefinitionProvider, ReferencesProvider } from 'langium/lsp';
 import type { DefinitionParams, Location, LocationLink, Range, ReferenceParams, RenameParams, TextDocumentPositionParams, WorkspaceEdit, TextEdit } from 'vscode-languageserver';
 import * as a from './generated/ast.js';
@@ -44,12 +44,24 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
             if (a.isScheduleEntry(n) || a.isReceiveBranch(n) || a.isInterruptible(n) || a.isTransition(n))
                 n.bindings.forEach((v, i) => { const c = container(n), ep = c && n.endpoint && memberEndpoint(c, n.endpoint); make(n, 'bindings', v, i, ep ? ep.member.kind === 'attribute' ? ep.member.type : ep.member.parameters[i]?.type : undefined); });
         }
-    const add = (n: AstNode, cst: CstNode | undefined, target: SemanticSymbol | undefined, start = 0, length?: number) => { if (!cst || !target)
-        return; const d = AstUtils.getDocument(n), from = cst.offset + start; refs.push({ symbol: target, uri: d.uri.toString(), range: { start: d.textDocument.positionAt(from), end: d.textDocument.positionAt(from + (length ?? cst.length)) }, declaration: false }); };
+    const add = (n: AstNode, cst: CstNode | undefined, target: SemanticSymbol | undefined, start = 0, length?: number, logical?: string) => { if (!cst || !target)
+        return;
+        if (logical !== undefined) {
+            const names = [...logical.matchAll(/[_A-Za-z]\w*/g)], leaves = CstUtils.flattenCst(cst).filter(l => !l.hidden && /^[_A-Za-z]\w*$/.test(l.text)).toArray();
+            if (names.length === leaves.length && names.every((name, i) => name[0] === leaves[i].text)) {
+                const first = names.findIndex(name => name.index! <= start && start < name.index! + name[0].length), end = start + (length ?? logical.length), last = names.findIndex(name => name.index! < end && end <= name.index! + name[0].length);
+                if (first >= 0 && last >= 0) {
+                    const from = leaves[first].offset - cst.offset + start - names[first].index!;
+                    length = leaves[last].offset - cst.offset + end - names[last].index! - from;
+                    start = from;
+                }
+            }
+        }
+        const d = AstUtils.getDocument(n), from = cst.offset + start; refs.push({ symbol: target, uri: d.uri.toString(), range: { start: d.textDocument.positionAt(from), end: d.textDocument.positionAt(from + (length ?? cst.length)) }, declaration: false }); };
     const native = (n: AstNode, cst: CstNode | undefined, target: AstNode | undefined) => { const s = symbol(target); if (!s || !cst)
-        return; const offset = cst.text.lastIndexOf(s.name); add(n, cst, s, Math.max(0, offset), s.name.length); const colon = cst.text.lastIndexOf('::'); if (colon >= 0) {
-        const pkg = models.flatMap(m => m.packages).find(p => p.name === cst.text.slice(0, colon));
-        add(n, cst, symbol(pkg), 0, colon);
+        return; const logical = CstUtils.flattenCst(cst).filter(l => !l.hidden).map(l => l.text).join(''); const offset = logical.lastIndexOf(s.name); add(n, cst, s, Math.max(0, offset), s.name.length, logical); const colon = logical.lastIndexOf('::'); if (colon >= 0) {
+        const pkg = models.flatMap(m => m.packages).find(p => p.name === logical.slice(0, colon));
+        add(n, cst, symbol(pkg), 0, colon, logical);
     } };
     const isWithin = (node: AstNode, ancestor: AstNode) => { for (let x: AstNode | undefined = node; x; x = x.$container)
         if (x === ancestor)
@@ -116,17 +128,17 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
                     const textName = symbol(current)?.name;
                     if (textName) {
                         const index = part.lastIndexOf(textName);
-                        add(n, cst, symbol(current), pos + Math.max(index, 0), textName.length);
+                        add(n, cst, symbol(current), pos + Math.max(index, 0), textName.length, path);
                     }
                     const colon = part.lastIndexOf('::');
                     if (colon >= 0)
-                        add(n, cst, symbol(models.flatMap(m => m.packages).find(p => p.name === part.slice(0, colon))), pos, colon);
+                        add(n, cst, symbol(models.flatMap(m => m.packages).find(p => p.name === part.slice(0, colon))), pos, colon, path);
                 }
             }
             else {
                 current = childNode(current, part);
                 if (current)
-                    add(n, cst, symbol(current), pos, name.length);
+                    add(n, cst, symbol(current), pos, name.length, path);
             }
             pos += part.length + 1;
         }
@@ -166,18 +178,18 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
                     if (a.isEnumType(en)) {
                         native(n, cst, en);
                         const i = en.literals.indexOf(parts[1]);
-                        add(n, cst, symbol(en, 'literals', i), parts[0].length + 1, parts[1]?.length);
+                        add(n, cst, symbol(en, 'literals', i), parts[0].length + 1, parts[1]?.length, n.path);
                     }
                 }
                 else {
-                    add(n, cst, s, 0, parts[0].length);
+                    add(n, cst, s, 0, parts[0].length, n.path);
                     pos = parts[0].length + 1;
                     for (const field of parts.slice(1)) {
                         const type = s?.type?.type?.ref;
                         if (!a.isDataType(type))
                             break;
                         s = symbol(type.fields.find(f => f.name === field));
-                        add(n, cst, s, pos, field.length);
+                        add(n, cst, s, pos, field.length, n.path);
                         pos += field.length + 1;
                     }
                 }

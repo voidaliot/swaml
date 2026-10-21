@@ -31,3 +31,20 @@ test('unique name filter preserves the same selected occurrence', async () => { 
 test('empty common doc comments retain an empty owned doc',async()=>{const r=await valid('package Test { component Demo { /**/ } }');const n=r.model.packages[0].elements[0];const {documentationText}=await import('../../src/language/presentation.js');assert.equal(documentationText(n as {documentation?:import('../../src/language/generated/ast.js').Documentation}), '');});
 
 test('imported closure diagnostics use the root range and retain the foreign declaration',async()=>{const r=await workspace(['package Shared { port def P { provides event ping(); } component def C { port p: P; operation emit() { publish p.ping(); } } }','package Test { import Shared; component Demo: C; }']);const diagnostic=r.docs[1].diagnostics?.find(d=>d.code==='SW2004');assert.ok(diagnostic);const text=r.docs[1].textDocument.getText().slice(r.docs[1].textDocument.offsetAt(diagnostic.range.start),r.docs[1].textDocument.offsetAt(diagnostic.range.end));assert.ok(text.includes('Demo'));assert.equal(diagnostic.data.declaration,'Shared::C.p');assert.equal(diagnostic.relatedInformation?.[0].location.uri,r.docs[0].uri.toString());});
+test('path rename follows concrete tokens across comments, spaces and padded indices', async () => {
+  const source = 'package Test { import Swaml::Views; port def P { provides event ping(); } component def A { port p: P; operation emit() { publish p /* note */ . ping(); } schedule { on start emit(); } } component def B { reversed port p: P; operation take() { } schedule { on receive p . ping() take(); } } component Demo { component sources: A[2]; component sink: B; connect (sources[00] /* route */ . p, sink . p); connect (sources[01] . p, sink . p); } view v: General of Demo . sources[01]; }';
+  const member = await rename(source, 'ping();', 'pulse');
+  assert.ok(member.text.includes('p /* note */ . pulse()'));
+  assert.ok(member.text.includes('p . pulse()'));
+  const child = await rename(source, 'sources:', 'drivers');
+  assert.ok(child.text.includes('drivers[00] /* route */ . p'));
+  assert.ok(child.text.includes('Demo . drivers[01]'));
+});
+test('record access and qualified namespace renames preserve concrete trivia', async () => {
+  const source = 'package Shared :: Types { datatype R { amount: int; } } package Test { import Shared :: Types; component Demo { attribute r: Shared :: Types :: R = record Shared :: Types :: R { amount = 1; }; operation read() returns int { return r /* field */ . amount; } } }';
+  const field = await rename(source, 'amount:', 'count');
+  assert.ok(field.text.includes('r /* field */ . count'));
+  const namespace = await rename(source, 'Shared :: Types', 'Domain::Values');
+  assert.ok(namespace.text.includes('Domain::Values :: R'));
+  assert.ok(namespace.text.includes('import Domain::Values;'));
+});
