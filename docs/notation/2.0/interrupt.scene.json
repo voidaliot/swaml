@@ -1,0 +1,139 @@
+{
+  "width": 920,
+  "height": 390,
+  "elements": [
+    {
+      "kind": "rect",
+      "x": 1,
+      "y": 1,
+      "w": 918,
+      "h": 388,
+      "fill": "#fafafa",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 36,
+      "text": "Armed interrupt and cancellation",
+      "size": 21
+    },
+    {
+      "kind": "line",
+      "x1": 26,
+      "y1": 54,
+      "x2": 894,
+      "y2": 54,
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 45,
+      "y": 105,
+      "w": 510,
+      "h": 220,
+      "fill": "#ffffff",
+      "dash": true
+    },
+    {
+      "kind": "rect",
+      "x": 80,
+      "y": 145,
+      "w": 410,
+      "h": 135,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 80,
+      "y": 145,
+      "w": 410,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 92,
+      "y": 168,
+      "text": "interruptible body",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 92,
+      "y": 203,
+      "text": "suspended continuation",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 92,
+      "y": 225,
+      "text": "serial lock released",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 635,
+      "y": 145,
+      "w": 245,
+      "h": 135,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 635,
+      "y": 145,
+      "w": 245,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 647,
+      "y": 168,
+      "text": "handler / branch",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 647,
+      "y": 203,
+      "text": "explicit bindings",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 647,
+      "y": 225,
+      "text": "same activation",
+      "size": 12
+    },
+    {
+      "kind": "line",
+      "x1": 490,
+      "y1": 210,
+      "x2": 635,
+      "y2": 210,
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 507.5,
+      "y": 198.0,
+      "text": "receive",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 65,
+      "y": 352,
+      "text": "Inactive region input is discarded.",
+      "size": 14
+    }
+  ]
+}

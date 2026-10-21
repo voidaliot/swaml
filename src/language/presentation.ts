@@ -1,77 +1,83 @@
 import { AstUtils, CstUtils, type AstNode } from 'langium';
 import * as a from './generated/ast.js';
-import { members } from './semantic.js';
-import { owner } from './swaml-scope.js';
-
-/** Raw formal text: no string escapes, interpolation or executable meaning. */
-export function documentationText(node: AstNode): string | undefined {
-    const doc = (node as AstNode & { documentation?: a.Documentation }).documentation;
-    return doc?.text.replace(/^doc\s*\/\*/, '').replace(/\*\/$/, '').trim();
-}
-export interface ModelComment { owner: AstNode; text: string; offset: number; end: number; kind: 'line' | 'block' }
-/** Preserve each lexical comment separately; trailing comments attach to the preceding named element. */
-export function modelComments(model: a.Model): ModelComment[] {
-    if (!model.$cstNode) return [];
-    const named = [model, ...AstUtils.streamAllContents(model)].filter(n => n === model || 'name' in n);
-    return [...CstUtils.flattenCst(model.$cstNode)].filter(c => c.tokenType.name === 'SL_COMMENT' || c.tokenType.name === 'ML_COMMENT').map(c => {
-        const containing = named.filter(n => n.$cstNode && n.$cstNode.offset <= c.offset && n.$cstNode.end >= c.end).sort((x,y) => x.$cstNode!.length - y.$cstNode!.length);
-        const enclosing = containing.find(n => n !== model) ?? model;
-        const trailing = named.filter(n => n !== model && n.$cstNode && n.$cstNode.end <= c.offset && n.$cstNode.range.end.line === c.range.start.line && n.$cstNode.offset >= (enclosing.$cstNode?.offset ?? 0)).sort((x,y) => y.$cstNode!.end - x.$cstNode!.end);
-        return { owner: trailing[0] ?? enclosing, text: c.text, offset: c.offset, end: c.end, kind: c.tokenType.name === 'SL_COMMENT' ? 'line' : 'block' };
-    });
-}
-export interface ViewElement { node: AstNode; path: string; name: string; kind: string }
-const semanticKind = (n: AstNode) => a.isComponent(n) || a.isRootComponent(n) || a.isInstance(n) || a.isFunctionDef(n) || a.isScenario(n) ? n.kind : n.$type[0].toLowerCase() + n.$type.slice(1);
-function namedChildren(n: AstNode): AstNode[] {
-    if (a.isComponent(n) || a.isRootComponent(n)) return members(n).filter(x => 'name' in x);
-    if (a.isPort(n)) return n.interface.ref?.members ?? [];
-    return [...AstUtils.streamContents(n)].flatMap(x => 'name' in x ? [x] : namedChildren(x));
-}
-/** Occurrence paths are retained even when several usages share one definition. */
-export function viewCandidates(pkg: a.Package): ViewElement[] {
-    const result: ViewElement[] = [{ node: pkg, path: pkg.name, name: pkg.name, kind: 'package' }];
-    const visit = (n: AstNode, path: string, seen: Set<AstNode>) => {
-        if (a.isView(n)) return;
-        result.push({ node:n, path, name:path.split('.').at(-1)!, kind:semanticKind(n) });
-        const definition = a.isInstance(n) ? n.definition.ref : n;
-        if (!definition || seen.has(definition)) return;
-        for (const child of namedChildren(definition)) visit(child, `${path}.${(child as AstNode & {name:string}).name}`, new Set(seen).add(definition));
+import { OCCURRENCE_LIMIT, occurrenceCount, body, identity, isExecutable, members, occurrences, owner, resolve, type Node } from './semantic.js';
+export function documentationText(n: {
+    documentation?: a.Documentation;
+}): string | undefined { return n.documentation?.text.slice(3,-2).replace(/^\s*\* ?/gm, '').trim(); }
+export function modelComments(model: a.Model): {
+    text: string;
+    offset: number;
+}[] { return model.$cstNode ? CstUtils.flattenCst(model.$cstNode).filter(n => n.hidden && ['ML_COMMENT', 'SL_COMMENT'].includes(n.tokenType.name)).map(n => ({ text: n.text, offset: n.offset })).toArray() : []; }
+export type ViewSubject = {
+    path: string;
+    name: string;
+    kind: string;
+    node: AstNode;
+    definition: string;
+};
+export function viewCandidates(models: readonly a.Model[]): ViewSubject[] {
+    const out: ViewSubject[] = [];
+    const add = (n: Node, path: string) => {
+        out.push({ path, name: n.name, kind: a.isComponentDef(n) || a.isComponentUsage(n) ? 'component' : isExecutable(n) ? 'operation' : a.isPortUsage(n) || a.isPortDef(n) ? 'port' : a.isPortMember(n) ? n.kind === 'operation' ? 'signature' : n.kind : a.isScenario(n) || a.isScenarioStep(n) ? n.kind : a.isDataType(n) ? 'datatype' : a.isEnumType(n) ? 'enum' : n.$type.replace(/^[A-Z]/, c => c.toLowerCase()), node: n, definition: a.isComponentUsage(n) && n.definition?.ref ? identity(n.definition.ref) : a.isOperationUsage(n) && n.definition.ref ? identity(n.definition.ref) : identity(n) });
+        if (a.isPortUsage(n))
+            for (const m of n.definition?.ref?.members ?? n.members)
+                add(m as Node, path + '.' + m.name);
+        if (a.isPortDef(n))
+            for (const m of n.members)
+                add(m as Node, path + '.' + m.name);
+        if (a.isDataType(n))
+            for (const f of n.fields)
+                add(f as Node, path + '.' + f.name);
+        if (a.isRequirement(n))
+            for (const at of n.attributes)
+                add(at as Node, path + '.' + at.name);
+        if (a.isScenario(n))
+            for (const step of n.steps)
+                add(step as Node, path + '.' + step.name);
+        if (isExecutable(n)) {
+            for (const op of body(n)?.operations ?? [])
+                add(op as Node, `${path}.${op.name}`);
+            for (const state of body(n)?.states ?? [])
+                add(state as Node, `${path}.${state.name}`);
+        }
     };
-    for (const e of pkg.elements) visit(e, e.name, new Set());
-    return result;
+    for (const m of models)
+        for (const p of m.packages) {
+            add(p as Node, p.name);
+            for (const e of p.elements) {
+                if (a.isView(e))
+                    continue;
+                if (a.isComponentUsage(e))
+                    for (const o of occurrenceCount(e) <= OCCURRENCE_LIMIT ? occurrences(e) : [{ path: e.name, structure: e, definition: e }]) {
+                        const path = `${p.name}::${o.path}`;
+                        add(o.structure as Node, path);
+                        for (const member of members(o.structure) as Node[])
+                            if (!a.isComponentUsage(member) && member.name)
+                                add(member, `${path}.${member.name}`);
+                    }
+                else {
+                    add(e as Node, `${p.name}::${e.name}`);
+                    if (a.isComponentDef(e))
+                        for (const n of members(e) as Node[])
+                            if (n.name)
+                                add(n, `${p.name}::${e.name}.${n.name}`);
+                }
+            }
+        }
+    return out;
 }
-export function resolvePresentationPath(pkg: a.Package, path: string): ViewElement | undefined {
-    const candidates = viewCandidates(pkg);
-    const matches = candidates.filter(x => x.path === path || (path.startsWith(pkg.name + '.') && x.path === path.slice(pkg.name.length + 1)));
-    return matches.length === 1 ? matches[0] : undefined;
-}
-export function validViewFilter(e: a.Expression): boolean {
-    if (a.isLiteral(e)) return e.text !== undefined || e.boolean !== undefined;
-    if (a.isReferenceExpression(e)) return !e.index && ['name','kind','path'].includes(e.path);
-    if (a.isUnaryExpression(e)) return e.operator === 'not' && validViewFilter(e.operand);
-    if (a.isBinaryExpression(e)) return ['and','or','==','!='].includes(e.operator) && validViewFilter(e.left) && validViewFilter(e.right);
-    return false;
-}
-function filterValue(e: a.Expression, candidate: ViewElement): string | boolean {
-    if (a.isLiteral(e)) return e.text ?? e.boolean === 'true';
-    if (a.isReferenceExpression(e)) return candidate[e.path as 'name'|'kind'|'path'];
-    if (a.isUnaryExpression(e)) return !filterValue(e.operand, candidate);
-    if (a.isBinaryExpression(e)) {
-        const left = filterValue(e.left,candidate), right = filterValue(e.right,candidate);
-        return e.operator === 'and' ? left === true && right === true : e.operator === 'or' ? left === true || right === true : e.operator === '==' ? left === right : left !== right;
+function filter(f: a.FilterExpression, s: ViewSubject): boolean { if (a.isFilterComparison(f))
+    return f.operator === '==' ? s[f.field] === f.value : s[f.field] !== f.value; if (a.isFilterNot(f))
+    return !filter(f.operand, s); return f.operator === 'and' ? filter(f.left, s) && filter(f.right, s) : filter(f.left, s) || filter(f.right, s); }
+export function selectView(v: a.View, models: readonly a.Model[]): ViewSubject[] {
+    const candidates = viewCandidates(models), result = new Map<string, ViewSubject>(), pkg = owner(v, a.isPackage);
+    for (const sel of v.subject ? [{ subject: v.subject, recursive: false, filter: undefined }] : v.selections) {
+        const [head, ...tail] = sel.subject.split('.'), decl = resolve(v, head, models), pack = models.flatMap(m => m.packages).find(p => p.name === sel.subject), path = decl && pack ? undefined : decl ? [identity(decl), ...tail].join('.') : pack?.name;
+        if (!path)
+            continue;
+        for (const s of candidates)
+            if ((s.path === path || sel.recursive && (s.path.startsWith(`${path}.`) || s.path.startsWith(`${path}::`))) && (!sel.filter || filter(sel.filter, s)))
+                result.set(s.path, s);
     }
-    return false;
-}
-/** Deterministic union in declaration order, deduplicated by occurrence path. Validated models only. */
-export function selectView(view: a.View): ViewElement[] {
-    const pkg = owner(view, a.isPackage);
-    if (!pkg) return [];
-    const candidates = viewCandidates(pkg), selected = new Map<string, ViewElement>();
-    const selections = view.subject ? [{ subject:view.subject, recursive:false, filter:undefined }] : view.selections;
-    for (const selection of selections) {
-        const root = resolvePresentationPath(pkg, selection.subject);
-        if (!root) continue;
-        for (const c of candidates) if ((c.path === root.path || selection.recursive && (root.node === pkg || c.path.startsWith(root.path + '.'))) && (!selection.filter || validViewFilter(selection.filter) && filterValue(selection.filter,c) === true)) selected.set(c.path,c);
-    }
-    return [...selected.values()];
+    return [...result.values()];
 }

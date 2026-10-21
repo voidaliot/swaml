@@ -1,0 +1,2126 @@
+{
+  "cases": [
+    {
+      "name": "ControlLoop",
+      "kind": "verificationCase",
+      "steps": [
+        {
+          "name": "measured",
+          "kind": "send",
+          "source": "sensor.reading.temperature",
+          "target": "controller.reading.temperature",
+          "via": "samples"
+        },
+        {
+          "name": "applied",
+          "kind": "publish",
+          "source": "controller.command.set",
+          "target": "heater.command.set",
+          "via": "commands",
+          "after": "measured"
+        }
+      ]
+    }
+  ],
+  "requirements": [
+    {
+      "name": "Responsive",
+      "attributes": [
+        {
+          "name": "limitMs",
+          "type": "uint",
+          "value": "5"
+        }
+      ]
+    }
+  ],
+  "flow": [
+    {
+      "kind": "LocalVariable",
+      "code": "var power: real = (target - measured) * 0.1;"
+    },
+    {
+      "kind": "Send",
+      "code": "publish command.set(power);"
+    }
+  ],
+  "languageVersion": "2.0",
+  "edition": "2.0.0",
+  "status": "unpublished candidate",
+  "model": "examples/02-realtime-controller.swaml",
+  "source": "package Control {\n  import Swaml::Views;\n  port def Temperature {\n    provides attribute temperature: real;\n  }\n  port def Commands {\n    provides event set(value: real);\n  }\n  component def Sensor {\n    port reading: Temperature;\n    operation sample() {\n      wait 1ms;\n      send reading.temperature(18.5);\n    }\n    schedule {\n      on every 10ms sample();\n    }\n  }\n  component def Controller {\n    reversed port reading: Temperature;\n    port command: Commands;\n    attribute target: real = 21.0;\n    operation regulate(measured: real) {\n      var power: real = (target - measured) * 0.1;\n      publish command.set(power);\n    }\n    schedule {\n      on receive reading.temperature(t) regulate(t) deadline 5ms;\n    }\n  }\n  component def Heater {\n    reversed port command: Commands;\n    attribute power: real = 0.0;\n    operation apply(value: real) {\n      power = value;\n    }\n    schedule {\n      on receive command.set(value) apply(value);\n    }\n  }\n  component Demo {\n    component sensor: Sensor;\n    component controller: Controller;\n    component heater: Heater;\n    connect samples (sensor.reading, controller.reading);\n    connect commands (controller.command, heater.command);\n  }\n  requirement Responsive {\n    attribute limitMs: uint = 5;\n  }\n  satisfy Responsive of Demo.controller;\n  verificationCase ControlLoop of Demo {\n    verify Responsive;\n    send measured from sensor.reading.temperature to controller.reading.temperature via samples;\n    publish applied from controller.command.set to heater.command.set via commands after measured;\n  }\n  view overview: General of Demo;\n  view intent: Case of ControlLoop;\n  view sequence: Sequence of ControlLoop;\n  view inventory: Grid of Demo;\n  view architecture: Interconnect of Demo;\n  view logic: Flow of Demo.controller.regulate;\n  view timing: Timing of Demo.sensor.sample;\n}\n",
+  "sha256": "f6a35e6819d8ebba4bd481c35061a0ba92370f711cf28b8373c3f7c0350f9586",
+  "projection": {
+    "languageVersion": "2.0",
+    "nodes": [
+      {
+        "id": "Control",
+        "name": "Control",
+        "kind": "package",
+        "definition": "Control",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 0,
+              "character": 0
+            },
+            "end": {
+              "line": 63,
+              "character": 1
+            }
+          }
+        },
+        "code": "package Control {\n  import Swaml::Views;\n  port def Temperature {\n    provides attribute temperature: real;\n  }\n  port def Commands {\n    provides event set(value: real);\n  }\n  component def Sensor {\n    port reading: Temperature;\n    operation sample() {\n      wait 1ms;\n      send reading.temperature(18.5);\n    }\n    schedule {\n      on every 10ms sample();\n    }\n  }\n  component def Controller {\n    reversed port reading: Temperature;\n    port command: Commands;\n    attribute target: real = 21.0;\n    operation regulate(measured: real) {\n      var power: real = (target - measured) * 0.1;\n      publish command.set(power);\n    }\n    schedule {\n      on receive reading.temperature(t) regulate(t) deadline 5ms;\n    }\n  }\n  component def Heater {\n    reversed port command: Commands;\n    attribute power: real = 0.0;\n    operation apply(value: real) {\n      power = value;\n    }\n    schedule {\n      on receive command.set(value) apply(value);\n    }\n  }\n  component Demo {\n    component sensor: Sensor;\n    component controller: Controller;\n    component heater: Heater;\n    connect samples (sensor.reading, controller.reading);\n    connect commands (controller.command, heater.command);\n  }\n  requirement Responsive {\n    attribute limitMs: uint = 5;\n  }\n  satisfy Responsive of Demo.controller;\n  verificationCase ControlLoop of Demo {\n    verify Responsive;\n    send measured from sensor.reading.temperature to controller.reading.temperature via samples;\n    publish applied from controller.command.set to heater.command.set via commands after measured;\n  }\n  view overview: General of Demo;\n  view intent: Case of ControlLoop;\n  view sequence: Sequence of ControlLoop;\n  view inventory: Grid of Demo;\n  view architecture: Interconnect of Demo;\n  view logic: Flow of Demo.controller.regulate;\n  view timing: Timing of Demo.sensor.sample;\n}"
+      },
+      {
+        "id": "Control::Temperature",
+        "name": "Temperature",
+        "kind": "port",
+        "definition": "Control::Temperature",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 2,
+              "character": 2
+            },
+            "end": {
+              "line": 4,
+              "character": 3
+            }
+          }
+        },
+        "code": "port def Temperature {\n    provides attribute temperature: real;\n  }"
+      },
+      {
+        "id": "Control::Temperature.temperature",
+        "name": "temperature",
+        "kind": "attribute",
+        "definition": "Control::Temperature.temperature",
+        "owner": "Control::Temperature",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 3,
+              "character": 4
+            },
+            "end": {
+              "line": 3,
+              "character": 41
+            }
+          }
+        },
+        "code": "provides attribute temperature: real;"
+      },
+      {
+        "id": "Control::Commands",
+        "name": "Commands",
+        "kind": "port",
+        "definition": "Control::Commands",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 5,
+              "character": 2
+            },
+            "end": {
+              "line": 7,
+              "character": 3
+            }
+          }
+        },
+        "code": "port def Commands {\n    provides event set(value: real);\n  }"
+      },
+      {
+        "id": "Control::Commands.set",
+        "name": "set",
+        "kind": "event",
+        "definition": "Control::Commands.set",
+        "owner": "Control::Commands",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 6,
+              "character": 4
+            },
+            "end": {
+              "line": 6,
+              "character": 36
+            }
+          }
+        },
+        "code": "provides event set(value: real);"
+      },
+      {
+        "id": "Control::Sensor",
+        "name": "Sensor",
+        "kind": "component",
+        "definition": "Control::Sensor",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 8,
+              "character": 2
+            },
+            "end": {
+              "line": 17,
+              "character": 3
+            }
+          }
+        },
+        "code": "component def Sensor {\n    port reading: Temperature;\n    operation sample() {\n      wait 1ms;\n      send reading.temperature(18.5);\n    }\n    schedule {\n      on every 10ms sample();\n    }\n  }",
+        "ports": [
+          {
+            "name": "reading",
+            "optional": false,
+            "reversed": false,
+            "members": [
+              {
+                "name": "temperature",
+                "kind": "attribute",
+                "direction": "provides",
+                "type": "real",
+                "parameters": [],
+                "idempotent": false
+              }
+            ]
+          }
+        ],
+        "schedule": [
+          {
+            "trigger": "every",
+            "target": "sample",
+            "periodNs": 10000000,
+            "deadlineNs": 10000000,
+            "concurrent": false,
+            "code": "on every 10ms sample();"
+          }
+        ]
+      },
+      {
+        "id": "Control::Sensor.reading",
+        "name": "reading",
+        "kind": "port",
+        "definition": "Control::Sensor.reading",
+        "owner": "Control::Sensor",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 4
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          }
+        },
+        "code": "port reading: Temperature;"
+      },
+      {
+        "id": "Control::Sensor.reading.temperature",
+        "name": "temperature",
+        "kind": "attribute",
+        "definition": "Control::Temperature.temperature",
+        "owner": "Control::Sensor.reading",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 3,
+              "character": 4
+            },
+            "end": {
+              "line": 3,
+              "character": 41
+            }
+          }
+        },
+        "code": "provides attribute temperature: real;"
+      },
+      {
+        "id": "Control::Sensor.sample",
+        "name": "sample",
+        "kind": "operation",
+        "definition": "Control::Sensor.sample",
+        "owner": "Control::Sensor",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 4
+            },
+            "end": {
+              "line": 13,
+              "character": 5
+            }
+          }
+        },
+        "code": "operation sample() {\n      wait 1ms;\n      send reading.temperature(18.5);\n    }",
+        "type": "() returns void"
+      },
+      {
+        "id": "Control::Controller",
+        "name": "Controller",
+        "kind": "component",
+        "definition": "Control::Controller",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 18,
+              "character": 2
+            },
+            "end": {
+              "line": 29,
+              "character": 3
+            }
+          }
+        },
+        "code": "component def Controller {\n    reversed port reading: Temperature;\n    port command: Commands;\n    attribute target: real = 21.0;\n    operation regulate(measured: real) {\n      var power: real = (target - measured) * 0.1;\n      publish command.set(power);\n    }\n    schedule {\n      on receive reading.temperature(t) regulate(t) deadline 5ms;\n    }\n  }",
+        "ports": [
+          {
+            "name": "reading",
+            "optional": false,
+            "reversed": true,
+            "members": [
+              {
+                "name": "temperature",
+                "kind": "attribute",
+                "direction": "requires",
+                "type": "real",
+                "parameters": [],
+                "idempotent": false
+              }
+            ]
+          },
+          {
+            "name": "command",
+            "optional": false,
+            "reversed": false,
+            "members": [
+              {
+                "name": "set",
+                "kind": "event",
+                "direction": "provides",
+                "type": "void",
+                "parameters": [
+                  {
+                    "name": "value",
+                    "type": "real",
+                    "direction": "in"
+                  }
+                ],
+                "idempotent": false
+              }
+            ]
+          }
+        ],
+        "schedule": [
+          {
+            "trigger": "receive reading.temperature",
+            "target": "regulate",
+            "deadlineNs": 5000000,
+            "concurrent": false,
+            "code": "on receive reading.temperature(t) regulate(t) deadline 5ms;"
+          }
+        ]
+      },
+      {
+        "id": "Control::Controller.reading",
+        "name": "reading",
+        "kind": "port",
+        "definition": "Control::Controller.reading",
+        "owner": "Control::Controller",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 19,
+              "character": 4
+            },
+            "end": {
+              "line": 19,
+              "character": 39
+            }
+          }
+        },
+        "code": "reversed port reading: Temperature;"
+      },
+      {
+        "id": "Control::Controller.reading.temperature",
+        "name": "temperature",
+        "kind": "attribute",
+        "definition": "Control::Temperature.temperature",
+        "owner": "Control::Controller.reading",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 3,
+              "character": 4
+            },
+            "end": {
+              "line": 3,
+              "character": 41
+            }
+          }
+        },
+        "code": "provides attribute temperature: real;"
+      },
+      {
+        "id": "Control::Controller.command",
+        "name": "command",
+        "kind": "port",
+        "definition": "Control::Controller.command",
+        "owner": "Control::Controller",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 20,
+              "character": 4
+            },
+            "end": {
+              "line": 20,
+              "character": 27
+            }
+          }
+        },
+        "code": "port command: Commands;"
+      },
+      {
+        "id": "Control::Controller.command.set",
+        "name": "set",
+        "kind": "event",
+        "definition": "Control::Commands.set",
+        "owner": "Control::Controller.command",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 6,
+              "character": 4
+            },
+            "end": {
+              "line": 6,
+              "character": 36
+            }
+          }
+        },
+        "code": "provides event set(value: real);"
+      },
+      {
+        "id": "Control::Controller.target",
+        "name": "target",
+        "kind": "attribute",
+        "definition": "Control::Controller.target",
+        "owner": "Control::Controller",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 21,
+              "character": 4
+            },
+            "end": {
+              "line": 21,
+              "character": 34
+            }
+          }
+        },
+        "code": "attribute target: real = 21.0;",
+        "type": "real"
+      },
+      {
+        "id": "Control::Controller.regulate",
+        "name": "regulate",
+        "kind": "operation",
+        "definition": "Control::Controller.regulate",
+        "owner": "Control::Controller",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 22,
+              "character": 4
+            },
+            "end": {
+              "line": 25,
+              "character": 5
+            }
+          }
+        },
+        "code": "operation regulate(measured: real) {\n      var power: real = (target - measured) * 0.1;\n      publish command.set(power);\n    }",
+        "type": "(in measured: real) returns void"
+      },
+      {
+        "id": "Control::Heater",
+        "name": "Heater",
+        "kind": "component",
+        "definition": "Control::Heater",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 30,
+              "character": 2
+            },
+            "end": {
+              "line": 39,
+              "character": 3
+            }
+          }
+        },
+        "code": "component def Heater {\n    reversed port command: Commands;\n    attribute power: real = 0.0;\n    operation apply(value: real) {\n      power = value;\n    }\n    schedule {\n      on receive command.set(value) apply(value);\n    }\n  }",
+        "ports": [
+          {
+            "name": "command",
+            "optional": false,
+            "reversed": true,
+            "members": [
+              {
+                "name": "set",
+                "kind": "event",
+                "direction": "requires",
+                "type": "void",
+                "parameters": [
+                  {
+                    "name": "value",
+                    "type": "real",
+                    "direction": "in"
+                  }
+                ],
+                "idempotent": false
+              }
+            ]
+          }
+        ],
+        "schedule": [
+          {
+            "trigger": "receive command.set",
+            "target": "apply",
+            "concurrent": false,
+            "code": "on receive command.set(value) apply(value);"
+          }
+        ]
+      },
+      {
+        "id": "Control::Heater.command",
+        "name": "command",
+        "kind": "port",
+        "definition": "Control::Heater.command",
+        "owner": "Control::Heater",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 31,
+              "character": 4
+            },
+            "end": {
+              "line": 31,
+              "character": 36
+            }
+          }
+        },
+        "code": "reversed port command: Commands;"
+      },
+      {
+        "id": "Control::Heater.command.set",
+        "name": "set",
+        "kind": "event",
+        "definition": "Control::Commands.set",
+        "owner": "Control::Heater.command",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 6,
+              "character": 4
+            },
+            "end": {
+              "line": 6,
+              "character": 36
+            }
+          }
+        },
+        "code": "provides event set(value: real);"
+      },
+      {
+        "id": "Control::Heater.power",
+        "name": "power",
+        "kind": "attribute",
+        "definition": "Control::Heater.power",
+        "owner": "Control::Heater",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 32,
+              "character": 4
+            },
+            "end": {
+              "line": 32,
+              "character": 32
+            }
+          }
+        },
+        "code": "attribute power: real = 0.0;",
+        "type": "real"
+      },
+      {
+        "id": "Control::Heater.apply",
+        "name": "apply",
+        "kind": "operation",
+        "definition": "Control::Heater.apply",
+        "owner": "Control::Heater",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 33,
+              "character": 4
+            },
+            "end": {
+              "line": 35,
+              "character": 5
+            }
+          }
+        },
+        "code": "operation apply(value: real) {\n      power = value;\n    }",
+        "type": "(in value: real) returns void"
+      },
+      {
+        "id": "Control::Demo",
+        "name": "Demo",
+        "kind": "component",
+        "definition": "Control::Demo",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 40,
+              "character": 2
+            },
+            "end": {
+              "line": 46,
+              "character": 3
+            }
+          }
+        },
+        "code": "component Demo {\n    component sensor: Sensor;\n    component controller: Controller;\n    component heater: Heater;\n    connect samples (sensor.reading, controller.reading);\n    connect commands (controller.command, heater.command);\n  }",
+        "ports": [],
+        "schedule": []
+      },
+      {
+        "id": "Control::Demo.samples",
+        "name": "samples",
+        "kind": "connect",
+        "definition": "Control::Demo.samples",
+        "owner": "Control::Demo",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 44,
+              "character": 4
+            },
+            "end": {
+              "line": 44,
+              "character": 57
+            }
+          }
+        },
+        "code": "connect samples (sensor.reading, controller.reading);"
+      },
+      {
+        "id": "Control::Demo.commands",
+        "name": "commands",
+        "kind": "connect",
+        "definition": "Control::Demo.commands",
+        "owner": "Control::Demo",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 45,
+              "character": 4
+            },
+            "end": {
+              "line": 45,
+              "character": 58
+            }
+          }
+        },
+        "code": "connect commands (controller.command, heater.command);"
+      },
+      {
+        "id": "Control::Demo.sensor",
+        "name": "sensor",
+        "kind": "component",
+        "definition": "Control::Sensor",
+        "owner": "Control::Demo",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 41,
+              "character": 4
+            },
+            "end": {
+              "line": 41,
+              "character": 29
+            }
+          }
+        },
+        "code": "component sensor: Sensor;",
+        "ports": [
+          {
+            "name": "reading",
+            "optional": false,
+            "reversed": false,
+            "members": [
+              {
+                "name": "temperature",
+                "kind": "attribute",
+                "direction": "provides",
+                "type": "real",
+                "parameters": [],
+                "idempotent": false
+              }
+            ]
+          }
+        ],
+        "schedule": [
+          {
+            "trigger": "every",
+            "target": "sample",
+            "periodNs": 10000000,
+            "deadlineNs": 10000000,
+            "concurrent": false,
+            "code": "on every 10ms sample();"
+          }
+        ]
+      },
+      {
+        "id": "Control::Demo.sensor.reading",
+        "name": "reading",
+        "kind": "port",
+        "definition": "Control::Sensor.reading",
+        "owner": "Control::Demo.sensor",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 9,
+              "character": 4
+            },
+            "end": {
+              "line": 9,
+              "character": 30
+            }
+          }
+        },
+        "code": "port reading: Temperature;"
+      },
+      {
+        "id": "Control::Demo.sensor.reading.temperature",
+        "name": "temperature",
+        "kind": "attribute",
+        "definition": "Control::Temperature.temperature",
+        "owner": "Control::Demo.sensor.reading",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 3,
+              "character": 4
+            },
+            "end": {
+              "line": 3,
+              "character": 41
+            }
+          }
+        },
+        "code": "provides attribute temperature: real;"
+      },
+      {
+        "id": "Control::Demo.sensor.sample",
+        "name": "sample",
+        "kind": "operation",
+        "definition": "Control::Sensor.sample",
+        "owner": "Control::Demo.sensor",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 10,
+              "character": 4
+            },
+            "end": {
+              "line": 13,
+              "character": 5
+            }
+          }
+        },
+        "code": "operation sample() {\n      wait 1ms;\n      send reading.temperature(18.5);\n    }",
+        "type": "() returns void"
+      },
+      {
+        "id": "Control::Demo.controller",
+        "name": "controller",
+        "kind": "component",
+        "definition": "Control::Controller",
+        "owner": "Control::Demo",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 42,
+              "character": 4
+            },
+            "end": {
+              "line": 42,
+              "character": 37
+            }
+          }
+        },
+        "code": "component controller: Controller;",
+        "ports": [
+          {
+            "name": "reading",
+            "optional": false,
+            "reversed": true,
+            "members": [
+              {
+                "name": "temperature",
+                "kind": "attribute",
+                "direction": "requires",
+                "type": "real",
+                "parameters": [],
+                "idempotent": false
+              }
+            ]
+          },
+          {
+            "name": "command",
+            "optional": false,
+            "reversed": false,
+            "members": [
+              {
+                "name": "set",
+                "kind": "event",
+                "direction": "provides",
+                "type": "void",
+                "parameters": [
+                  {
+                    "name": "value",
+                    "type": "real",
+                    "direction": "in"
+                  }
+                ],
+                "idempotent": false
+              }
+            ]
+          }
+        ],
+        "schedule": [
+          {
+            "trigger": "receive reading.temperature",
+            "target": "regulate",
+            "deadlineNs": 5000000,
+            "concurrent": false,
+            "code": "on receive reading.temperature(t) regulate(t) deadline 5ms;"
+          }
+        ]
+      },
+      {
+        "id": "Control::Demo.controller.reading",
+        "name": "reading",
+        "kind": "port",
+        "definition": "Control::Controller.reading",
+        "owner": "Control::Demo.controller",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 19,
+              "character": 4
+            },
+            "end": {
+              "line": 19,
+              "character": 39
+            }
+          }
+        },
+        "code": "reversed port reading: Temperature;"
+      },
+      {
+        "id": "Control::Demo.controller.reading.temperature",
+        "name": "temperature",
+        "kind": "attribute",
+        "definition": "Control::Temperature.temperature",
+        "owner": "Control::Demo.controller.reading",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 3,
+              "character": 4
+            },
+            "end": {
+              "line": 3,
+              "character": 41
+            }
+          }
+        },
+        "code": "provides attribute temperature: real;"
+      },
+      {
+        "id": "Control::Demo.controller.command",
+        "name": "command",
+        "kind": "port",
+        "definition": "Control::Controller.command",
+        "owner": "Control::Demo.controller",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 20,
+              "character": 4
+            },
+            "end": {
+              "line": 20,
+              "character": 27
+            }
+          }
+        },
+        "code": "port command: Commands;"
+      },
+      {
+        "id": "Control::Demo.controller.command.set",
+        "name": "set",
+        "kind": "event",
+        "definition": "Control::Commands.set",
+        "owner": "Control::Demo.controller.command",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 6,
+              "character": 4
+            },
+            "end": {
+              "line": 6,
+              "character": 36
+            }
+          }
+        },
+        "code": "provides event set(value: real);"
+      },
+      {
+        "id": "Control::Demo.controller.target",
+        "name": "target",
+        "kind": "attribute",
+        "definition": "Control::Controller.target",
+        "owner": "Control::Demo.controller",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 21,
+              "character": 4
+            },
+            "end": {
+              "line": 21,
+              "character": 34
+            }
+          }
+        },
+        "code": "attribute target: real = 21.0;",
+        "type": "real"
+      },
+      {
+        "id": "Control::Demo.controller.regulate",
+        "name": "regulate",
+        "kind": "operation",
+        "definition": "Control::Controller.regulate",
+        "owner": "Control::Demo.controller",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 22,
+              "character": 4
+            },
+            "end": {
+              "line": 25,
+              "character": 5
+            }
+          }
+        },
+        "code": "operation regulate(measured: real) {\n      var power: real = (target - measured) * 0.1;\n      publish command.set(power);\n    }",
+        "type": "(in measured: real) returns void"
+      },
+      {
+        "id": "Control::Demo.heater",
+        "name": "heater",
+        "kind": "component",
+        "definition": "Control::Heater",
+        "owner": "Control::Demo",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 43,
+              "character": 4
+            },
+            "end": {
+              "line": 43,
+              "character": 29
+            }
+          }
+        },
+        "code": "component heater: Heater;",
+        "ports": [
+          {
+            "name": "command",
+            "optional": false,
+            "reversed": true,
+            "members": [
+              {
+                "name": "set",
+                "kind": "event",
+                "direction": "requires",
+                "type": "void",
+                "parameters": [
+                  {
+                    "name": "value",
+                    "type": "real",
+                    "direction": "in"
+                  }
+                ],
+                "idempotent": false
+              }
+            ]
+          }
+        ],
+        "schedule": [
+          {
+            "trigger": "receive command.set",
+            "target": "apply",
+            "concurrent": false,
+            "code": "on receive command.set(value) apply(value);"
+          }
+        ]
+      },
+      {
+        "id": "Control::Demo.heater.command",
+        "name": "command",
+        "kind": "port",
+        "definition": "Control::Heater.command",
+        "owner": "Control::Demo.heater",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 31,
+              "character": 4
+            },
+            "end": {
+              "line": 31,
+              "character": 36
+            }
+          }
+        },
+        "code": "reversed port command: Commands;"
+      },
+      {
+        "id": "Control::Demo.heater.command.set",
+        "name": "set",
+        "kind": "event",
+        "definition": "Control::Commands.set",
+        "owner": "Control::Demo.heater.command",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 6,
+              "character": 4
+            },
+            "end": {
+              "line": 6,
+              "character": 36
+            }
+          }
+        },
+        "code": "provides event set(value: real);"
+      },
+      {
+        "id": "Control::Demo.heater.power",
+        "name": "power",
+        "kind": "attribute",
+        "definition": "Control::Heater.power",
+        "owner": "Control::Demo.heater",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 32,
+              "character": 4
+            },
+            "end": {
+              "line": 32,
+              "character": 32
+            }
+          }
+        },
+        "code": "attribute power: real = 0.0;",
+        "type": "real"
+      },
+      {
+        "id": "Control::Demo.heater.apply",
+        "name": "apply",
+        "kind": "operation",
+        "definition": "Control::Heater.apply",
+        "owner": "Control::Demo.heater",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 33,
+              "character": 4
+            },
+            "end": {
+              "line": 35,
+              "character": 5
+            }
+          }
+        },
+        "code": "operation apply(value: real) {\n      power = value;\n    }",
+        "type": "(in value: real) returns void"
+      },
+      {
+        "id": "Control::Responsive",
+        "name": "Responsive",
+        "kind": "requirement",
+        "definition": "Control::Responsive",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 47,
+              "character": 2
+            },
+            "end": {
+              "line": 49,
+              "character": 3
+            }
+          }
+        },
+        "code": "requirement Responsive {\n    attribute limitMs: uint = 5;\n  }"
+      },
+      {
+        "id": "Control::Responsive.limitMs",
+        "name": "limitMs",
+        "kind": "attribute",
+        "definition": "Control::Responsive.limitMs",
+        "owner": "Control::Responsive",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 48,
+              "character": 4
+            },
+            "end": {
+              "line": 48,
+              "character": 32
+            }
+          }
+        },
+        "code": "attribute limitMs: uint = 5;",
+        "type": "uint"
+      },
+      {
+        "id": "Control::ControlLoop",
+        "name": "ControlLoop",
+        "kind": "verificationCase",
+        "definition": "Control::ControlLoop",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 51,
+              "character": 2
+            },
+            "end": {
+              "line": 55,
+              "character": 3
+            }
+          }
+        },
+        "code": "verificationCase ControlLoop of Demo {\n    verify Responsive;\n    send measured from sensor.reading.temperature to controller.reading.temperature via samples;\n    publish applied from controller.command.set to heater.command.set via commands after measured;\n  }"
+      },
+      {
+        "id": "Control::ControlLoop.measured",
+        "name": "measured",
+        "kind": "send",
+        "definition": "Control::ControlLoop.measured",
+        "owner": "Control::ControlLoop",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 53,
+              "character": 4
+            },
+            "end": {
+              "line": 53,
+              "character": 96
+            }
+          }
+        },
+        "code": "send measured from sensor.reading.temperature to controller.reading.temperature via samples;"
+      },
+      {
+        "id": "Control::ControlLoop.applied",
+        "name": "applied",
+        "kind": "publish",
+        "definition": "Control::ControlLoop.applied",
+        "owner": "Control::ControlLoop",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 54,
+              "character": 4
+            },
+            "end": {
+              "line": 54,
+              "character": 98
+            }
+          }
+        },
+        "code": "publish applied from controller.command.set to heater.command.set via commands after measured;"
+      }
+    ],
+    "edges": [
+      {
+        "id": "ownership:Control::Temperature:Control::Temperature.temperature:0",
+        "kind": "ownership",
+        "source": "Control::Temperature",
+        "target": "Control::Temperature.temperature",
+        "label": "attribute"
+      },
+      {
+        "id": "ownership:Control::Commands:Control::Commands.set:1",
+        "kind": "ownership",
+        "source": "Control::Commands",
+        "target": "Control::Commands.set",
+        "label": "event"
+      },
+      {
+        "id": "ownership:Control::Sensor:Control::Sensor.reading:2",
+        "kind": "ownership",
+        "source": "Control::Sensor",
+        "target": "Control::Sensor.reading",
+        "label": "port"
+      },
+      {
+        "id": "ownership:Control::Sensor.reading:Control::Sensor.reading.temperature:3",
+        "kind": "ownership",
+        "source": "Control::Sensor.reading",
+        "target": "Control::Sensor.reading.temperature",
+        "label": "attribute"
+      },
+      {
+        "id": "ownership:Control::Sensor:Control::Sensor.sample:4",
+        "kind": "ownership",
+        "source": "Control::Sensor",
+        "target": "Control::Sensor.sample",
+        "label": "operation"
+      },
+      {
+        "id": "ownership:Control::Controller:Control::Controller.reading:5",
+        "kind": "ownership",
+        "source": "Control::Controller",
+        "target": "Control::Controller.reading",
+        "label": "port"
+      },
+      {
+        "id": "ownership:Control::Controller.reading:Control::Controller.reading.temperature:6",
+        "kind": "ownership",
+        "source": "Control::Controller.reading",
+        "target": "Control::Controller.reading.temperature",
+        "label": "attribute"
+      },
+      {
+        "id": "ownership:Control::Controller:Control::Controller.command:7",
+        "kind": "ownership",
+        "source": "Control::Controller",
+        "target": "Control::Controller.command",
+        "label": "port"
+      },
+      {
+        "id": "ownership:Control::Controller.command:Control::Controller.command.set:8",
+        "kind": "ownership",
+        "source": "Control::Controller.command",
+        "target": "Control::Controller.command.set",
+        "label": "event"
+      },
+      {
+        "id": "ownership:Control::Controller:Control::Controller.target:9",
+        "kind": "ownership",
+        "source": "Control::Controller",
+        "target": "Control::Controller.target",
+        "label": "attribute"
+      },
+      {
+        "id": "ownership:Control::Controller:Control::Controller.regulate:10",
+        "kind": "ownership",
+        "source": "Control::Controller",
+        "target": "Control::Controller.regulate",
+        "label": "operation"
+      },
+      {
+        "id": "ownership:Control::Heater:Control::Heater.command:11",
+        "kind": "ownership",
+        "source": "Control::Heater",
+        "target": "Control::Heater.command",
+        "label": "port"
+      },
+      {
+        "id": "ownership:Control::Heater.command:Control::Heater.command.set:12",
+        "kind": "ownership",
+        "source": "Control::Heater.command",
+        "target": "Control::Heater.command.set",
+        "label": "event"
+      },
+      {
+        "id": "ownership:Control::Heater:Control::Heater.power:13",
+        "kind": "ownership",
+        "source": "Control::Heater",
+        "target": "Control::Heater.power",
+        "label": "attribute"
+      },
+      {
+        "id": "ownership:Control::Heater:Control::Heater.apply:14",
+        "kind": "ownership",
+        "source": "Control::Heater",
+        "target": "Control::Heater.apply",
+        "label": "operation"
+      },
+      {
+        "id": "connection:Control::Demo.sensor.reading:Control::Demo.controller.reading:15",
+        "kind": "connection",
+        "source": "Control::Demo.sensor.reading",
+        "target": "Control::Demo.controller.reading",
+        "label": "samples",
+        "policy": {
+          "delivery": "atMostOnce",
+          "ordering": "fifo",
+          "capacity": 16,
+          "overflow": "reject",
+          "requestTimeout": 1000000000
+        }
+      },
+      {
+        "id": "connection:Control::Demo.controller.command:Control::Demo.heater.command:16",
+        "kind": "connection",
+        "source": "Control::Demo.controller.command",
+        "target": "Control::Demo.heater.command",
+        "label": "commands",
+        "policy": {
+          "delivery": "atMostOnce",
+          "ordering": "fifo",
+          "capacity": 16,
+          "overflow": "reject",
+          "requestTimeout": 1000000000
+        }
+      },
+      {
+        "id": "ownership:Control::Demo:Control::Demo.samples:17",
+        "kind": "ownership",
+        "source": "Control::Demo",
+        "target": "Control::Demo.samples",
+        "label": "connect"
+      },
+      {
+        "id": "ownership:Control::Demo:Control::Demo.commands:18",
+        "kind": "ownership",
+        "source": "Control::Demo",
+        "target": "Control::Demo.commands",
+        "label": "connect"
+      },
+      {
+        "id": "ownership:Control::Demo:Control::Demo.sensor:19",
+        "kind": "ownership",
+        "source": "Control::Demo",
+        "target": "Control::Demo.sensor",
+        "label": "component"
+      },
+      {
+        "id": "ownership:Control::Demo.sensor:Control::Demo.sensor.reading:20",
+        "kind": "ownership",
+        "source": "Control::Demo.sensor",
+        "target": "Control::Demo.sensor.reading",
+        "label": "port"
+      },
+      {
+        "id": "ownership:Control::Demo.sensor.reading:Control::Demo.sensor.reading.temperature:21",
+        "kind": "ownership",
+        "source": "Control::Demo.sensor.reading",
+        "target": "Control::Demo.sensor.reading.temperature",
+        "label": "attribute"
+      },
+      {
+        "id": "ownership:Control::Demo.sensor:Control::Demo.sensor.sample:22",
+        "kind": "ownership",
+        "source": "Control::Demo.sensor",
+        "target": "Control::Demo.sensor.sample",
+        "label": "operation"
+      },
+      {
+        "id": "ownership:Control::Demo:Control::Demo.controller:23",
+        "kind": "ownership",
+        "source": "Control::Demo",
+        "target": "Control::Demo.controller",
+        "label": "component"
+      },
+      {
+        "id": "ownership:Control::Demo.controller:Control::Demo.controller.reading:24",
+        "kind": "ownership",
+        "source": "Control::Demo.controller",
+        "target": "Control::Demo.controller.reading",
+        "label": "port"
+      },
+      {
+        "id": "ownership:Control::Demo.controller.reading:Control::Demo.controller.reading.temperature:25",
+        "kind": "ownership",
+        "source": "Control::Demo.controller.reading",
+        "target": "Control::Demo.controller.reading.temperature",
+        "label": "attribute"
+      },
+      {
+        "id": "ownership:Control::Demo.controller:Control::Demo.controller.command:26",
+        "kind": "ownership",
+        "source": "Control::Demo.controller",
+        "target": "Control::Demo.controller.command",
+        "label": "port"
+      },
+      {
+        "id": "ownership:Control::Demo.controller.command:Control::Demo.controller.command.set:27",
+        "kind": "ownership",
+        "source": "Control::Demo.controller.command",
+        "target": "Control::Demo.controller.command.set",
+        "label": "event"
+      },
+      {
+        "id": "ownership:Control::Demo.controller:Control::Demo.controller.target:28",
+        "kind": "ownership",
+        "source": "Control::Demo.controller",
+        "target": "Control::Demo.controller.target",
+        "label": "attribute"
+      },
+      {
+        "id": "ownership:Control::Demo.controller:Control::Demo.controller.regulate:29",
+        "kind": "ownership",
+        "source": "Control::Demo.controller",
+        "target": "Control::Demo.controller.regulate",
+        "label": "operation"
+      },
+      {
+        "id": "ownership:Control::Demo:Control::Demo.heater:30",
+        "kind": "ownership",
+        "source": "Control::Demo",
+        "target": "Control::Demo.heater",
+        "label": "component"
+      },
+      {
+        "id": "ownership:Control::Demo.heater:Control::Demo.heater.command:31",
+        "kind": "ownership",
+        "source": "Control::Demo.heater",
+        "target": "Control::Demo.heater.command",
+        "label": "port"
+      },
+      {
+        "id": "ownership:Control::Demo.heater.command:Control::Demo.heater.command.set:32",
+        "kind": "ownership",
+        "source": "Control::Demo.heater.command",
+        "target": "Control::Demo.heater.command.set",
+        "label": "event"
+      },
+      {
+        "id": "ownership:Control::Demo.heater:Control::Demo.heater.power:33",
+        "kind": "ownership",
+        "source": "Control::Demo.heater",
+        "target": "Control::Demo.heater.power",
+        "label": "attribute"
+      },
+      {
+        "id": "ownership:Control::Demo.heater:Control::Demo.heater.apply:34",
+        "kind": "ownership",
+        "source": "Control::Demo.heater",
+        "target": "Control::Demo.heater.apply",
+        "label": "operation"
+      },
+      {
+        "id": "ownership:Control::Responsive:Control::Responsive.limitMs:35",
+        "kind": "ownership",
+        "source": "Control::Responsive",
+        "target": "Control::Responsive.limitMs",
+        "label": "attribute"
+      },
+      {
+        "id": "ownership:Control::ControlLoop:Control::ControlLoop.measured:36",
+        "kind": "ownership",
+        "source": "Control::ControlLoop",
+        "target": "Control::ControlLoop.measured",
+        "label": "send"
+      },
+      {
+        "id": "ownership:Control::ControlLoop:Control::ControlLoop.applied:37",
+        "kind": "ownership",
+        "source": "Control::ControlLoop",
+        "target": "Control::ControlLoop.applied",
+        "label": "publish"
+      }
+    ]
+  },
+  "timing": {
+    "profile": "swaml-reference/2.0",
+    "intervals": [
+      {
+        "activation": "a1",
+        "subject": "Demo.sensor.sample",
+        "startNs": 10000000,
+        "phase": "release",
+        "endNs": 10000000
+      },
+      {
+        "activation": "a1",
+        "subject": "Demo.sensor.sample",
+        "startNs": 10000000,
+        "phase": "dispatch",
+        "endNs": 10000000
+      },
+      {
+        "activation": "a1",
+        "subject": "Demo.sensor.sample",
+        "startNs": 10000000,
+        "phase": "wait",
+        "endNs": 11000000
+      },
+      {
+        "activation": "a1",
+        "subject": "Demo.sensor.sample",
+        "startNs": 11000000,
+        "phase": "ready",
+        "endNs": 11000000
+      },
+      {
+        "activation": "a3",
+        "subject": "Demo.controller.regulate",
+        "startNs": 11000000,
+        "phase": "release",
+        "endNs": 11000000
+      },
+      {
+        "activation": "a3",
+        "subject": "Demo.controller.regulate",
+        "startNs": 11000000,
+        "phase": "dispatch",
+        "endNs": 11000000
+      },
+      {
+        "activation": "a5",
+        "subject": "Demo.heater.apply",
+        "startNs": 11000000,
+        "phase": "release",
+        "endNs": 11000000
+      },
+      {
+        "activation": "a5",
+        "subject": "Demo.heater.apply",
+        "startNs": 11000000,
+        "phase": "dispatch",
+        "endNs": 11000000
+      },
+      {
+        "activation": "a6",
+        "subject": "Demo.sensor.sample",
+        "startNs": 20000000,
+        "phase": "release",
+        "endNs": 20000000
+      },
+      {
+        "activation": "a6",
+        "subject": "Demo.sensor.sample",
+        "startNs": 20000000,
+        "phase": "dispatch",
+        "endNs": 20000000
+      },
+      {
+        "activation": "a6",
+        "subject": "Demo.sensor.sample",
+        "startNs": 20000000,
+        "phase": "wait",
+        "endNs": 21000000
+      },
+      {
+        "activation": "a6",
+        "subject": "Demo.sensor.sample",
+        "startNs": 21000000,
+        "phase": "ready",
+        "endNs": 21000000
+      },
+      {
+        "activation": "a8",
+        "subject": "Demo.controller.regulate",
+        "startNs": 21000000,
+        "phase": "release",
+        "endNs": 21000000
+      },
+      {
+        "activation": "a8",
+        "subject": "Demo.controller.regulate",
+        "startNs": 21000000,
+        "phase": "dispatch",
+        "endNs": 21000000
+      },
+      {
+        "activation": "a10",
+        "subject": "Demo.heater.apply",
+        "startNs": 21000000,
+        "phase": "release",
+        "endNs": 21000000
+      },
+      {
+        "activation": "a10",
+        "subject": "Demo.heater.apply",
+        "startNs": 21000000,
+        "phase": "dispatch",
+        "endNs": 21000000
+      }
+    ],
+    "markers": [
+      {
+        "timeNs": 11000000,
+        "ordinal": 16,
+        "kind": "complete",
+        "subject": "Demo.sensor.sample",
+        "activation": "a1",
+        "value": null
+      },
+      {
+        "timeNs": 11000000,
+        "ordinal": 23,
+        "kind": "complete",
+        "subject": "Demo.controller.regulate",
+        "activation": "a3",
+        "value": null
+      },
+      {
+        "timeNs": 11000000,
+        "ordinal": 26,
+        "kind": "complete",
+        "subject": "Demo.heater.apply",
+        "activation": "a5",
+        "value": null
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 38,
+        "kind": "complete",
+        "subject": "Demo.sensor.sample",
+        "activation": "a6",
+        "value": null
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 45,
+        "kind": "complete",
+        "subject": "Demo.controller.regulate",
+        "activation": "a8",
+        "value": null
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 48,
+        "kind": "complete",
+        "subject": "Demo.heater.apply",
+        "activation": "a10",
+        "value": null
+      }
+    ]
+  },
+  "run": {
+    "profile": "swaml-reference/2.0",
+    "root": "Control::Demo",
+    "status": "horizon",
+    "untilNs": 29000000,
+    "trace": [
+      {
+        "timeNs": 0,
+        "ordinal": 1,
+        "kind": "initialize",
+        "subject": "Demo",
+        "definition": "Control::Demo"
+      },
+      {
+        "timeNs": 0,
+        "ordinal": 2,
+        "kind": "initialize",
+        "subject": "Demo.sensor",
+        "definition": "Control::Demo.sensor"
+      },
+      {
+        "timeNs": 0,
+        "ordinal": 3,
+        "kind": "initialize",
+        "subject": "Demo.controller",
+        "definition": "Control::Demo.controller"
+      },
+      {
+        "timeNs": 0,
+        "ordinal": 4,
+        "kind": "initialize",
+        "subject": "Demo.heater",
+        "definition": "Control::Demo.heater"
+      },
+      {
+        "timeNs": 10000000,
+        "ordinal": 5,
+        "kind": "release",
+        "subject": "Demo.sensor.sample",
+        "activation": "a1",
+        "cause": "every"
+      },
+      {
+        "timeNs": 10000000,
+        "ordinal": 6,
+        "kind": "dispatch",
+        "subject": "Demo.sensor.sample",
+        "activation": "a1",
+        "concurrent": false
+      },
+      {
+        "timeNs": 10000000,
+        "ordinal": 7,
+        "kind": "unlock",
+        "subject": "Demo.sensor",
+        "activation": "a1"
+      },
+      {
+        "timeNs": 10000000,
+        "ordinal": 8,
+        "kind": "wait",
+        "subject": "Demo.sensor.sample",
+        "activation": "a1"
+      },
+      {
+        "timeNs": 11000000,
+        "ordinal": 9,
+        "kind": "ready",
+        "subject": "Demo.sensor.sample",
+        "activation": "a1"
+      },
+      {
+        "timeNs": 11000000,
+        "ordinal": 10,
+        "kind": "send",
+        "subject": "Demo.sensor.reading.temperature",
+        "activation": "a1",
+        "emitter": {
+          "declaration": "Control::Sensor.sample",
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 6
+            },
+            "end": {
+              "line": 12,
+              "character": 37
+            }
+          }
+        },
+        "args": [
+          18.5
+        ]
+      },
+      {
+        "timeNs": 11000000,
+        "ordinal": 11,
+        "kind": "offer",
+        "subject": "Demo.samples",
+        "message": "m2",
+        "member": "temperature",
+        "source": "Demo.sensor.reading",
+        "target": "Demo.controller.reading"
+      },
+      {
+        "timeNs": 11000000,
+        "ordinal": 12,
+        "kind": "deliver",
+        "subject": "Demo.samples",
+        "message": "m2",
+        "target": "Demo.controller.reading"
+      },
+      {
+        "timeNs": 11000000,
+        "ordinal": 13,
+        "kind": "release",
+        "subject": "Demo.controller.regulate",
+        "activation": "a3",
+        "cause": "receive"
+      },
+      {
+        "timeNs": 11000000,
+        "ordinal": 14,
+        "kind": "dispatch",
+        "subject": "Demo.controller.regulate",
+        "activation": "a3",
+        "concurrent": false
+      },
+      {
+        "timeNs": 11000000,
+        "ordinal": 15,
+        "kind": "unlock",
+        "subject": "Demo.sensor",
+        "activation": "a1"
+      },
+      {
+        "timeNs": 11000000,
+        "ordinal": 16,
+        "kind": "complete",
+        "subject": "Demo.sensor.sample",
+        "activation": "a1",
+        "value": null
+      },
+      {
+        "timeNs": 11000000,
+        "ordinal": 17,
+        "kind": "publish",
+        "subject": "Demo.controller.command.set",
+        "activation": "a3",
+        "emitter": {
+          "declaration": "Control::Controller.regulate",
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 24,
+              "character": 6
+            },
+            "end": {
+              "line": 24,
+              "character": 33
+            }
+          }
+        },
+        "args": [
+          0.25
+        ]
+      },
+      {
+        "timeNs": 11000000,
+        "ordinal": 18,
+        "kind": "offer",
+        "subject": "Demo.commands",
+        "message": "m4",
+        "member": "set",
+        "source": "Demo.controller.command",
+        "target": "Demo.heater.command"
+      },
+      {
+        "timeNs": 11000000,
+        "ordinal": 19,
+        "kind": "deliver",
+        "subject": "Demo.commands",
+        "message": "m4",
+        "target": "Demo.heater.command"
+      },
+      {
+        "timeNs": 11000000,
+        "ordinal": 20,
+        "kind": "release",
+        "subject": "Demo.heater.apply",
+        "activation": "a5",
+        "cause": "receive"
+      },
+      {
+        "timeNs": 11000000,
+        "ordinal": 21,
+        "kind": "dispatch",
+        "subject": "Demo.heater.apply",
+        "activation": "a5",
+        "concurrent": false
+      },
+      {
+        "timeNs": 11000000,
+        "ordinal": 22,
+        "kind": "unlock",
+        "subject": "Demo.controller",
+        "activation": "a3"
+      },
+      {
+        "timeNs": 11000000,
+        "ordinal": 23,
+        "kind": "complete",
+        "subject": "Demo.controller.regulate",
+        "activation": "a3",
+        "value": null
+      },
+      {
+        "timeNs": 11000000,
+        "ordinal": 24,
+        "kind": "write",
+        "subject": "Demo.heater.power",
+        "activation": "a5",
+        "scope": "attribute",
+        "value": 0.25
+      },
+      {
+        "timeNs": 11000000,
+        "ordinal": 25,
+        "kind": "unlock",
+        "subject": "Demo.heater",
+        "activation": "a5"
+      },
+      {
+        "timeNs": 11000000,
+        "ordinal": 26,
+        "kind": "complete",
+        "subject": "Demo.heater.apply",
+        "activation": "a5",
+        "value": null
+      },
+      {
+        "timeNs": 20000000,
+        "ordinal": 27,
+        "kind": "release",
+        "subject": "Demo.sensor.sample",
+        "activation": "a6",
+        "cause": "every"
+      },
+      {
+        "timeNs": 20000000,
+        "ordinal": 28,
+        "kind": "dispatch",
+        "subject": "Demo.sensor.sample",
+        "activation": "a6",
+        "concurrent": false
+      },
+      {
+        "timeNs": 20000000,
+        "ordinal": 29,
+        "kind": "unlock",
+        "subject": "Demo.sensor",
+        "activation": "a6"
+      },
+      {
+        "timeNs": 20000000,
+        "ordinal": 30,
+        "kind": "wait",
+        "subject": "Demo.sensor.sample",
+        "activation": "a6"
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 31,
+        "kind": "ready",
+        "subject": "Demo.sensor.sample",
+        "activation": "a6"
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 32,
+        "kind": "send",
+        "subject": "Demo.sensor.reading.temperature",
+        "activation": "a6",
+        "emitter": {
+          "declaration": "Control::Sensor.sample",
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 12,
+              "character": 6
+            },
+            "end": {
+              "line": 12,
+              "character": 37
+            }
+          }
+        },
+        "args": [
+          18.5
+        ]
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 33,
+        "kind": "offer",
+        "subject": "Demo.samples",
+        "message": "m7",
+        "member": "temperature",
+        "source": "Demo.sensor.reading",
+        "target": "Demo.controller.reading"
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 34,
+        "kind": "deliver",
+        "subject": "Demo.samples",
+        "message": "m7",
+        "target": "Demo.controller.reading"
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 35,
+        "kind": "release",
+        "subject": "Demo.controller.regulate",
+        "activation": "a8",
+        "cause": "receive"
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 36,
+        "kind": "dispatch",
+        "subject": "Demo.controller.regulate",
+        "activation": "a8",
+        "concurrent": false
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 37,
+        "kind": "unlock",
+        "subject": "Demo.sensor",
+        "activation": "a6"
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 38,
+        "kind": "complete",
+        "subject": "Demo.sensor.sample",
+        "activation": "a6",
+        "value": null
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 39,
+        "kind": "publish",
+        "subject": "Demo.controller.command.set",
+        "activation": "a8",
+        "emitter": {
+          "declaration": "Control::Controller.regulate",
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 24,
+              "character": 6
+            },
+            "end": {
+              "line": 24,
+              "character": 33
+            }
+          }
+        },
+        "args": [
+          0.25
+        ]
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 40,
+        "kind": "offer",
+        "subject": "Demo.commands",
+        "message": "m9",
+        "member": "set",
+        "source": "Demo.controller.command",
+        "target": "Demo.heater.command"
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 41,
+        "kind": "deliver",
+        "subject": "Demo.commands",
+        "message": "m9",
+        "target": "Demo.heater.command"
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 42,
+        "kind": "release",
+        "subject": "Demo.heater.apply",
+        "activation": "a10",
+        "cause": "receive"
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 43,
+        "kind": "dispatch",
+        "subject": "Demo.heater.apply",
+        "activation": "a10",
+        "concurrent": false
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 44,
+        "kind": "unlock",
+        "subject": "Demo.controller",
+        "activation": "a8"
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 45,
+        "kind": "complete",
+        "subject": "Demo.controller.regulate",
+        "activation": "a8",
+        "value": null
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 46,
+        "kind": "write",
+        "subject": "Demo.heater.power",
+        "activation": "a10",
+        "scope": "attribute",
+        "value": 0.25
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 47,
+        "kind": "unlock",
+        "subject": "Demo.heater",
+        "activation": "a10"
+      },
+      {
+        "timeNs": 21000000,
+        "ordinal": 48,
+        "kind": "complete",
+        "subject": "Demo.heater.apply",
+        "activation": "a10",
+        "value": null
+      }
+    ],
+    "stores": {
+      "Demo": {},
+      "Demo.sensor": {},
+      "Demo.controller": {
+        "target": 21
+      },
+      "Demo.heater": {
+        "power": 0.25
+      }
+    }
+  }
+}

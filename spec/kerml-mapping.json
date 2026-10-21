@@ -1,14 +1,7 @@
 {
   "schemaVersion": "2.0",
-  "language": "SWAML",
-  "languageVersion": "1.4",
-  "foundation": {
-    "name": "KerML",
-    "version": "1.0",
-    "source": "https://www.omg.org/spec/KerML/1.0"
-  },
-  "status": "proposed-mapping-contract-not-an-exporter",
-  "namespace": null,
+  "languageVersion": "2.0",
+  "status": "proposed contract; no validated kernel exporter",
   "mapping": [
     {
       "source": "Model",
@@ -16,8 +9,8 @@
       "kernel": [
         "Package"
       ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Workspace source container under a host-pinned 1.4 development language edition; no file version header."
+      "semantic": "Model: preserve packages and imports, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
       "source": "Package",
@@ -25,24 +18,24 @@
       "kernel": [
         "Package"
       ],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Flat unique declaration namespace with ordered owned members."
+      "semantic": "Package: preserve packages and imports, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
       "source": "Import",
       "kind": "element",
       "kernel": [
-        "NamespaceImport"
+        "Package"
       ],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Direct wildcard visibility edge; no transitive import or implicit copying."
+      "semantic": "Import: preserve packages and imports, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
       "source": "Element",
       "kind": "grouping",
       "kernel": [],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Grammar union; normalize the selected concrete alternative exactly once."
+      "semantic": "Element: preserve component definitions and usages, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
       "source": "DataType",
@@ -50,8 +43,17 @@
       "kernel": [
         "DataType"
       ],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Finite nominal value domain: ordered record fields or unique enum literals."
+      "semantic": "DataType: preserve typed copied values, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "Field",
+      "kind": "element",
+      "kernel": [
+        "DataType"
+      ],
+      "semantic": "Field: preserve typed copied values, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
       "source": "EnumType",
@@ -59,76 +61,26 @@
       "kernel": [
         "DataType"
       ],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Finite nominal value domain: ordered record fields or unique enum literals."
-    },
-    {
-      "source": "Parameter",
-      "kind": "element",
-      "kernel": [
-        "Feature"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Typed field/input feature; preserve declared position and copied values."
+      "semantic": "EnumType: preserve typed copied values, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
       "source": "TypeRef",
       "kind": "reference",
       "kernel": [
-        "Feature"
+        "DataType"
       ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Primitive bool/byte/uint/int/real/string/void or nominal value type and optional fixed extent; copied value domains and checked integral assignments."
+      "semantic": "TypeRef: preserve typed copied values, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
       "source": "ValueType",
-      "kind": "grouping",
-      "kernel": [],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Grammar union; normalize the selected concrete alternative exactly once."
-    },
-    {
-      "source": "Interface",
       "kind": "element",
       "kernel": [
-        "Classifier"
+        "DataType"
       ],
-      "normative": "docs/spec/02-communication.md",
-      "semantic": "Nominal versioned member contract; legal member set depends on kind."
-    },
-    {
-      "source": "InterfaceMember",
-      "kind": "grouping",
-      "kernel": [],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Grammar union; normalize the selected concrete alternative exactly once."
-    },
-    {
-      "source": "DataMember",
-      "kind": "element",
-      "kernel": [
-        "Feature"
-      ],
-      "normative": "docs/spec/02-communication.md",
-      "semantic": "Typed payload contract with sampled/queued delivery interpretation."
-    },
-    {
-      "source": "EventMember",
-      "kind": "element",
-      "kernel": [
-        "Behavior"
-      ],
-      "normative": "docs/spec/02-communication.md",
-      "semantic": "Contract-only payload signature; only port-projected function emission can instantiate an exchange."
-    },
-    {
-      "source": "Signature",
-      "kind": "element",
-      "kernel": [
-        "Behavior"
-      ],
-      "normative": "docs/spec/02-communication.md",
-      "semantic": "General operation or specialized function interface contract; preserve category and permit implementation narrowing only."
+      "semantic": "ValueType: preserve typed copied values, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
       "source": "Argument",
@@ -136,77 +88,67 @@
       "kernel": [
         "Feature"
       ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Typed field/input feature; preserve declared position and copied values."
+      "semantic": "Argument: preserve attributes and lexical locals, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
-      "source": "Component",
+      "source": "ComponentDef",
       "kind": "element",
       "kernel": [
         "Structure"
       ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "General class definition or specialized component definition, preserving authored kind and one compatible base; shared ownership/isolation constraints."
+      "semantic": "ComponentDef: preserve component definitions and usages, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "ComponentUsage",
+      "kind": "element",
+      "kernel": [
+        "Structure"
+      ],
+      "semantic": "ComponentUsage: preserve component definitions and usages, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
       "source": "ComponentMember",
       "kind": "grouping",
       "kernel": [],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Owned structural or behavioral member of a component; effective members include inherited definitions and compatible explicit replacements."
+      "semantic": "ComponentMember: preserve component definitions and usages, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
-      "source": "Instance",
+      "source": "Attribute",
       "kind": "element",
       "kernel": [
         "Feature"
       ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Single owned class/component usage with explicit authored kind and compatible definition target; expand independent private state."
+      "semantic": "Attribute: preserve attributes and lexical locals, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
-      "source": "Port",
+      "source": "PortDef",
       "kind": "element",
       "kernel": [
         "Feature"
       ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Component-owned nominal interface endpoint with role/optionality; same-contract compatible redefinition. Effective behavior may be local or uniquely delegated."
+      "semantic": "PortDef: preserve directed port members, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/02-communication.md"
     },
     {
-      "source": "Variable",
-      "kind": "element",
-      "kernel": [
-        "Feature",
-        "FeatureValue"
-      ],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Private variable with pure initializer and per-component-occurrence storage."
-    },
-    {
-      "source": "RootComponent",
+      "source": "PortUsage",
       "kind": "element",
       "kernel": [
         "Feature"
       ],
-      "normative": "docs/spec/04-systems-and-conformance.md",
-      "semantic": "Closed class/component execution-root occurrence; preserve kind, definition reference or inline members and external deployment bindings."
+      "semantic": "PortUsage: preserve directed port members, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/02-communication.md"
     },
     {
-      "source": "RootMember",
+      "source": "PortMember",
       "kind": "grouping",
       "kernel": [],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Inline root structural/behavioral member or external deployment binding; typed roots accept deployments only."
-    },
-    {
-      "source": "Deployment",
-      "kind": "element",
-      "kernel": [
-        "MetadataFeature"
-      ],
-      "normative": "docs/spec/04-systems-and-conformance.md",
-      "semantic": "Existing component-instance path and exact external system/part identity string; nearest-ancestor inheritance. A host resolves the external identity without implying SysML import or conformance."
+      "semantic": "PortMember: preserve directed port members, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/02-communication.md"
     },
     {
       "source": "Connect",
@@ -214,482 +156,430 @@
       "kernel": [
         "Connector"
       ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Explicit route between local or immediate-child typed ports; independent occurrence/direction/member queues and complete effective policy. Redefinition preserves endpoints."
-    },
-    {
-      "source": "Delegate",
-      "kind": "element",
-      "kernel": [
-        "Connector"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Port route or queue-free forwarding alias; preserve hierarchy and nominal interface identity."
-    },
-    {
-      "source": "Qos",
-      "kind": "reference",
-      "kernel": [
-        "MetadataFeature"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Explicit inline body or package-visible named policy selection; preserve reference and use provenance and elaborate effective values independently per connector occurrence."
+      "semantic": "Connect: preserve policy-bearing connection, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/02-communication.md"
     },
     {
       "source": "QosPolicy",
       "kind": "element",
       "kernel": [
-        "MetadataFeature"
+        "Connector"
       ],
-      "normative": "docs/spec/02-communication.md",
-      "semantic": "Package-owned named complete queue policy; same namespace/import ambiguity rules as other declarations. No inheritance, overrides, queue identity or runtime storage."
+      "semantic": "QosPolicy: preserve policy-bearing connection, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/02-communication.md"
     },
     {
-      "source": "QosBody",
-      "kind": "grouping",
-      "kernel": [],
-      "normative": "docs/spec/02-communication.md",
-      "semantic": "Complete ordered delivery, ordering, capacity, overflow and optional latency/age fields; checked at declaration and every connector use. No independent executable identity."
+      "source": "PolicySetting",
+      "kind": "element",
+      "kernel": [
+        "Connector"
+      ],
+      "semantic": "PolicySetting: preserve policy-bearing connection, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/02-communication.md"
     },
     {
-      "source": "FunctionDef",
+      "source": "Operation",
       "kind": "element",
       "kernel": [
         "Behavior"
       ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "General operation or specialized function, preserving authored category, ordered signature, activation/timing, owned calculations and flow or direct states."
+      "semantic": "Operation: preserve operations and nested ownership, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
     },
     {
-      "source": "Trigger",
+      "source": "OperationUsage",
       "kind": "element",
       "kernel": [
-        "MetadataFeature"
+        "Behavior"
       ],
-      "normative": "docs/spec/06-execution-contract.md",
-      "semantic": "Local start/periodic release, same-owner successful whole-executable-completion dependency, or owned typed port-member receive/call binding. Completion references the effective triggered predecessor; after unlock it releases a fresh parameterless void flow activation with new context and bounded backlog, with no argument/result forwarding, implicit join or cross-component channel. Preserve declaration/occurrence/activation provenance and acyclic dependencies."
+      "semantic": "OperationUsage: preserve operations and nested ownership, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
     },
     {
-      "source": "Timing",
+      "source": "Executable",
       "kind": "element",
       "kernel": [
-        "MetadataFeature"
+        "Behavior"
       ],
-      "normative": "docs/spec/06-execution-contract.md",
-      "semantic": "WCET, elapsed deadline and concurrency contract; activation root and local helper interpretation."
+      "semantic": "Executable: preserve operations and nested ownership, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
     },
     {
-      "source": "Calculation",
-      "kind": "element",
+      "source": "OperationBody",
+      "kind": "grouping",
+      "kernel": [],
+      "semantic": "OperationBody: preserve operations and nested ownership, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "Schedule",
+      "kind": "lowering",
       "kernel": [
-        "Function"
+        "Feature"
       ],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Function-owned pure calculation with copied explicit inputs and one named non-void output expression. Lexical ownership prevents capture of mutable or function-local values and access from sibling functions."
+      "semantic": "Schedule: preserve schedule entry and successful chaining, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "ScheduleEntry",
+      "kind": "lowering",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "ScheduleEntry: preserve schedule entry and successful chaining, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
     },
     {
       "source": "Block",
-      "kind": "element",
-      "kernel": [
-        "Step",
-        "Succession"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Ordered steps, lexical scope, success/failure exits and source trace."
+      "kind": "grouping",
+      "kernel": [],
+      "semantic": "Block: preserve statements and decisions, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
     },
     {
       "source": "Statement",
       "kind": "grouping",
       "kernel": [],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Grammar union; normalize the selected concrete alternative exactly once."
+      "semantic": "Statement: preserve statements and decisions, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
     },
     {
       "source": "LocalVariable",
       "kind": "element",
       "kernel": [
-        "Step",
         "Feature"
       ],
-      "normative": "docs/spec/03-behavior.md",
-      "semantic": "Evaluate then create/replace one copied value in the proper lexical/private environment."
+      "semantic": "LocalVariable: preserve attributes and lexical locals, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
       "source": "Assign",
       "kind": "element",
       "kernel": [
-        "Step",
         "Feature"
       ],
-      "normative": "docs/spec/03-behavior.md",
-      "semantic": "Evaluate then create/replace one copied value in the proper lexical/private environment."
+      "semantic": "Assign: preserve statements and decisions, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "ExpressionStatement",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "semantic": "ExpressionStatement: preserve expression calls and copied out values, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
     },
     {
       "source": "Send",
       "kind": "element",
       "kernel": [
-        "Step"
+        "Feature"
       ],
-      "normative": "docs/spec/06-execution-contract.md",
-      "semantic": "SWAML library emission behavior with function/port/member provenance and independent route offers."
-    },
-    {
-      "source": "RemoteCall",
-      "kind": "element",
-      "kernel": [
-        "Step"
-      ],
-      "normative": "docs/spec/06-execution-contract.md",
-      "semantic": "SWAML library awaited RPC behavior with correlation, bounded timeout and exclusive success/failure."
-    },
-    {
-      "source": "LocalCall",
-      "kind": "element",
-      "kernel": [
-        "Step"
-      ],
-      "normative": "docs/spec/06-execution-contract.md",
-      "semantic": "Synchronous untriggered flow function call in the same component, resolved against effective inherited functions. Borrows activation lock/snapshot; copied non-void result binds a fresh caller local."
+      "semantic": "Send: preserve directed port members, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/02-communication.md"
     },
     {
       "source": "Return",
-      "kind": "element",
+      "kind": "lowering",
       "kernel": [
-        "Step"
+        "Feature"
       ],
-      "normative": "docs/spec/03-behavior.md",
-      "semantic": "Frame completion or failure unwinding; no rollback or implicit event."
+      "semantic": "Return: preserve expression calls and copied out values, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
     },
     {
       "source": "If",
       "kind": "element",
       "kernel": [
-        "Step",
-        "Succession"
+        "Feature"
       ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Guarded structured control with branch exclusivity, loop count and bound failure."
+      "semantic": "If: preserve statements and decisions, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
     },
     {
       "source": "While",
-      "kind": "element",
+      "kind": "lowering",
       "kernel": [
-        "Step",
-        "Succession"
+        "Feature"
       ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Guarded structured control with branch exclusivity, loop count and bound failure."
+      "semantic": "While: preserve loops and copied iteration, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "Until",
+      "kind": "lowering",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "Until: preserve loops and copied iteration, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "For",
+      "kind": "lowering",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "For: preserve loops and copied iteration, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "ForUpdate",
+      "kind": "lowering",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "ForUpdate: preserve loops and copied iteration, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "ForEach",
+      "kind": "lowering",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "ForEach: preserve loops and copied iteration, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "Wait",
+      "kind": "lowering",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "Wait: preserve suspending wait and receive, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "Receive",
+      "kind": "lowering",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "Receive: preserve suspending wait and receive, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "ReceiveBranch",
+      "kind": "lowering",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "ReceiveBranch: preserve suspending wait and receive, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "Interruptible",
+      "kind": "lowering",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "Interruptible: preserve armed interrupt and cancellation, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
     },
     {
       "source": "Fail",
-      "kind": "element",
+      "kind": "lowering",
       "kernel": [
-        "Step"
+        "Feature"
       ],
-      "normative": "docs/spec/03-behavior.md",
-      "semantic": "Frame completion or failure unwinding; no rollback or implicit event."
+      "semantic": "Fail: preserve runtime failure and lazy fallback, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
     },
     {
       "source": "Assert",
-      "kind": "element",
+      "kind": "lowering",
       "kernel": [
-        "Step"
+        "Feature"
       ],
-      "normative": "docs/spec/03-behavior.md",
-      "semantic": "Pure Boolean check with explicit activation failure continuation."
-    },
-    {
-      "source": "StateBody",
-      "kind": "grouping",
-      "kernel": [],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Initial-first syntax grouping contributing directly to its function: states, transitions, current-state, timer generations and ordered reactions. No independently authored/executable element."
+      "semantic": "Assert: preserve runtime failure and lazy fallback, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
     },
     {
       "source": "State",
-      "kind": "element",
+      "kind": "lowering",
       "kernel": [
-        "Step"
+        "Feature"
       ],
-      "normative": "docs/spec/06-execution-contract.md",
-      "semantic": "State identity, entry/exit groups and finality in one function context."
+      "semantic": "State: preserve ordered state transitions, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "StateAction",
+      "kind": "lowering",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "StateAction: preserve ordered state transitions, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
     },
     {
       "source": "Transition",
+      "kind": "lowering",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "Transition: preserve ordered state transitions, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "Deployment",
       "kind": "element",
       "kernel": [
-        "Step",
-        "Succession"
+        "Feature"
       ],
-      "normative": "docs/spec/06-execution-contract.md",
-      "semantic": "Source/target, stimulus matcher, guard, priority and exit/effect/update/entry sequence."
+      "semantic": "Deployment: preserve platform nodes and placement, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
+    },
+    {
+      "source": "Placement",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "Placement: preserve platform nodes and placement, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
     },
     {
       "source": "Requirement",
       "kind": "element",
       "kernel": [
-        "MetadataFeature"
+        "Feature"
       ],
-      "normative": "docs/spec/04-systems-and-conformance.md",
-      "semantic": "Named obligation owning immutable typed attributes and optional formal doc, without a subject."
+      "semantic": "Requirement: preserve requirements and intent links, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
+    },
+    {
+      "source": "Documentation",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "Documentation: preserve owned documentation and lexical notes, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "Satisfaction",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "Satisfaction: preserve requirements and intent links, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
+    },
+    {
+      "source": "Verification",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "Verification: preserve requirements and intent links, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
     },
     {
       "source": "Scenario",
       "kind": "element",
       "kernel": [
-        "Behavior"
+        "Feature"
       ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Use or verification case with root context and partial-order exchanges; only verification cases own verify links."
+      "semantic": "Scenario: preserve named routed case steps, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
     },
     {
       "source": "ScenarioStep",
       "kind": "element",
       "kernel": [
-        "Step",
-        "Succession"
+        "Feature"
       ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Port-member exchange with connector, explicit causal predecessor and inferred unique reply correlation."
+      "semantic": "ScenarioStep: preserve named routed case steps, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
+    },
+    {
+      "source": "ViewDef",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "ViewDef: preserve seven library view definitions, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
     },
     {
       "source": "View",
       "kind": "element",
       "kernel": [
-        "MetadataFeature"
+        "Feature"
       ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Named projection of the stable union of selected occurrence paths; no executable effects. Timing View tv selects executable function occurrences and binds identified observations through host presentation metadata. GV Box in box and Tree layouts preserve the same ownership and occurrence identities; neither alters execution."
+      "semantic": "View: preserve seven library view definitions, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
+    },
+    {
+      "source": "ViewSelection",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "ViewSelection: preserve seven library view definitions, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
+    },
+    {
+      "source": "FilterExpression",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "semantic": "FilterExpression: preserve seven library view definitions, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
+    },
+    {
+      "source": "FilterOr",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "FilterOr: preserve seven library view definitions, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
+    },
+    {
+      "source": "FilterAnd",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "FilterAnd: preserve seven library view definitions, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
+    },
+    {
+      "source": "FilterPrimary",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "FilterPrimary: preserve seven library view definitions, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
+    },
+    {
+      "source": "FilterComparison",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "FilterComparison: preserve seven library view definitions, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
     },
     {
       "source": "Duration",
-      "kind": "value",
-      "kernel": [
-        "LiteralInteger"
-      ],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Exact positive integer nanoseconds with retained authoring time unit."
-    },
-    {
-      "source": "Path",
-      "kind": "reference",
-      "kernel": [],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Resolve according to reference context; preserve authoring spelling and resolved identities."
-    },
-    {
-      "source": "QualifiedName",
-      "kind": "reference",
-      "kernel": [],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Resolve according to reference context; preserve authoring spelling and resolved identities."
-    },
-    {
-      "source": "ValuePath",
-      "kind": "reference",
-      "kernel": [],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Value-reference syntax permitting local field paths and explicit package-qualified enum literals. An accessible value first segment wins over an unqualified enum with no field-failure fallback; cross-component private lookup remains forbidden."
-    },
-    {
-      "source": "Expression",
-      "kind": "lowering",
-      "kernel": [
-        "Expression"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Typed expression tree; grouping/precedence, operand order and conditional short-circuit evaluation."
-    },
-    {
-      "source": "OrExpression",
-      "kind": "lowering",
-      "kernel": [
-        "Expression"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Typed expression tree; grouping/precedence, operand order and conditional short-circuit evaluation."
-    },
-    {
-      "source": "AndExpression",
-      "kind": "lowering",
-      "kernel": [
-        "Expression"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Typed expression tree; grouping/precedence, operand order and conditional short-circuit evaluation."
-    },
-    {
-      "source": "EqualityExpression",
-      "kind": "lowering",
-      "kernel": [
-        "Expression"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Typed expression tree; grouping/precedence, operand order and conditional short-circuit evaluation."
-    },
-    {
-      "source": "RelationalExpression",
-      "kind": "lowering",
-      "kernel": [
-        "Expression"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Typed expression tree; grouping/precedence, operand order and conditional short-circuit evaluation."
-    },
-    {
-      "source": "AdditiveExpression",
-      "kind": "lowering",
-      "kernel": [
-        "Expression"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Typed expression tree; grouping/precedence, operand order and conditional short-circuit evaluation."
-    },
-    {
-      "source": "MultiplicativeExpression",
-      "kind": "lowering",
-      "kernel": [
-        "Expression"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Typed expression tree; grouping/precedence, operand order and conditional short-circuit evaluation."
-    },
-    {
-      "source": "UnaryExpression",
-      "kind": "lowering",
-      "kernel": [
-        "Expression"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Typed expression tree; grouping/precedence, operand order and conditional short-circuit evaluation."
-    },
-    {
-      "source": "PrimaryExpression",
-      "kind": "lowering",
-      "kernel": [
-        "Expression"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Typed expression tree; grouping/precedence, operand order and conditional short-circuit evaluation."
-    },
-    {
-      "source": "Literal",
-      "kind": "value",
-      "kernel": [
-        "Expression"
-      ],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Concrete typed literal expression: bool, bounded int, finite real or portable string."
-    },
-    {
-      "source": "CalculationCall",
-      "kind": "lowering",
-      "kernel": [
-        "Expression"
-      ],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Copied argument evaluation and acyclic expression evaluation resolved only within the enclosing function calculation namespace."
-    },
-    {
-      "source": "ReferenceExpression",
-      "kind": "lowering",
-      "kernel": [
-        "Expression"
-      ],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Local/copied/private value lookup with record traversal and checked final indexing; alternatively a nominal enum value resolved by lexical-first then package/import rules. Qualified enum identity is retained."
-    },
-    {
-      "source": "RecordLiteral",
-      "kind": "value",
-      "kernel": [
-        "Expression"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Nominal construction, declared field/literal identities, fixed ordered array values."
-    },
-    {
-      "source": "FieldValue",
-      "kind": "value",
-      "kernel": [
-        "Expression"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Nominal construction, declared field/literal identities, fixed ordered array values."
-    },
-    {
-      "source": "ArrayLiteral",
-      "kind": "value",
-      "kernel": [
-        "Expression"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Nominal construction, declared field/literal identities, fixed ordered array values."
-    },
-    {
-      "source": "Numeric",
       "kind": "lexical",
       "kernel": [],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Unsigned decimal value; unary minus is an expression; finite/safe literal range checks."
+      "semantic": "Duration: preserve lexical and path spelling, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
-      "source": "WS",
+      "source": "Name",
       "kind": "lexical",
       "kernel": [],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Insignificant source trivia; retain only for authoring round trips."
-    },
-    {
-      "source": "ID",
-      "kind": "lexical",
-      "kernel": [],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Case-sensitive ASCII identifier; grammar keywords are reserved."
-    },
-    {
-      "source": "NUMBER",
-      "kind": "lexical",
-      "kernel": [],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Unsigned decimal value; unary minus is an expression; finite/safe literal range checks."
-    },
-    {
-      "source": "INT",
-      "kind": "lexical",
-      "kernel": [],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Unsigned decimal value; unary minus is an expression; finite/safe literal range checks."
-    },
-    {
-      "source": "STRING",
-      "kind": "lexical",
-      "kernel": [],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Unicode text with only quote, backslash, n, r and t escapes; no raw controls."
-    },
-    {
-      "source": "ML_COMMENT",
-      "kind": "lexical",
-      "kernel": [],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Insignificant source trivia; retain only for authoring round trips."
-    },
-    {
-      "source": "SL_COMMENT",
-      "kind": "lexical",
-      "kernel": [],
-      "normative": "docs/spec/01-structure-and-types.md",
-      "semantic": "Insignificant source trivia; retain only for authoring round trips."
-    },
-    {
-      "source": "FunctionFlow",
-      "kind": "grouping",
-      "kernel": [
-        "Step"
-      ],
-      "normative": "docs/spec/03-behavior.md",
-      "semantic": "Nonempty statement sequence after function-local calculation declarations; normalizes to Block. An absent sequence is an empty void flow."
+      "semantic": "Name: preserve lexical and path spelling, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
       "source": "MemberPath",
@@ -697,117 +587,242 @@
       "kernel": [
         "Feature"
       ],
-      "normative": "docs/spec/02-communication.md",
-      "semantic": "Exactly port.member for a routed call; distinguishes it from a bare local function identifier."
+      "semantic": "MemberPath: preserve directed port members, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/02-communication.md"
     },
     {
-      "source": "Attribute",
-      "kind": "element",
-      "kernel": [
-        "MetadataFeature"
-      ],
-      "normative": "docs/spec/04-systems-and-conformance.md",
-      "semantic": "Immutable typed requirement metadata with no runtime store."
+      "source": "Path",
+      "kind": "lexical",
+      "kernel": [],
+      "semantic": "Path: preserve lexical and path spelling, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
-      "source": "Documentation",
-      "kind": "element",
-      "kernel": [
-        "MetadataFeature"
-      ],
-      "normative": "docs/spec/04-systems-and-conformance.md",
-      "semantic": "One owned raw formal specification; preserve text and ownership without executable effects."
-    },
-    {
-      "source": "Satisfaction",
-      "kind": "element",
-      "kernel": [
-        "MetadataFeature"
-      ],
-      "normative": "docs/spec/04-systems-and-conformance.md",
-      "semantic": "Directed design-identity to requirement-identity claim; no automatic evidence."
-    },
-    {
-      "source": "Verification",
-      "kind": "element",
-      "kernel": [
-        "MetadataFeature"
-      ],
-      "normative": "docs/spec/04-systems-and-conformance.md",
-      "semantic": "Directed verificationCase to requirement claim; source kind and uniqueness are checked."
-    },
-    {
-      "source": "ViewSelection",
+      "source": "QualifiedName",
       "kind": "reference",
       "kernel": [
-        "MetadataFeature"
+        "Package"
       ],
-      "normative": "docs/spec/04-systems-and-conformance.md",
-      "semantic": "Occurrence-path selection, optional recursive expansion and pure Boolean filtering; stable union."
+      "semantic": "QualifiedName: preserve packages and imports, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "ValuePath",
+      "kind": "reference",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "ValuePath: preserve typed expressions and operators, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "Expression",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "semantic": "Expression: preserve typed expressions and operators, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "OrExpression",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "semantic": "OrExpression: preserve typed expressions and operators, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "AndExpression",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "semantic": "AndExpression: preserve typed expressions and operators, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "EqualityExpression",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "semantic": "EqualityExpression: preserve typed expressions and operators, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "RelationalExpression",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "semantic": "RelationalExpression: preserve typed expressions and operators, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "AdditiveExpression",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "semantic": "AdditiveExpression: preserve typed expressions and operators, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "MultiplicativeExpression",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "semantic": "MultiplicativeExpression: preserve typed expressions and operators, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "UnaryExpression",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "semantic": "UnaryExpression: preserve typed expressions and operators, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "PrimaryExpression",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "semantic": "PrimaryExpression: preserve typed expressions and operators, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "TryExpression",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "semantic": "TryExpression: preserve runtime failure and lazy fallback, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "CallExpression",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "semantic": "CallExpression: preserve expression calls and copied out values, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "ReferenceExpression",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "semantic": "ReferenceExpression: preserve typed expressions and operators, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "Literal",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "semantic": "Literal: preserve typed expressions and operators, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "RecordLiteral",
+      "kind": "value",
+      "kernel": [
+        "DataType"
+      ],
+      "semantic": "RecordLiteral: preserve typed copied values, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "FieldValue",
+      "kind": "element",
+      "kernel": [
+        "DataType"
+      ],
+      "semantic": "FieldValue: preserve typed copied values, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "ArrayLiteral",
+      "kind": "value",
+      "kernel": [
+        "DataType"
+      ],
+      "semantic": "ArrayLiteral: preserve typed copied values, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "Numeric",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "semantic": "Numeric: preserve typed expressions and operators, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "WS",
+      "kind": "lexical",
+      "kernel": [],
+      "semantic": "WS: preserve lexical and path spelling, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
       "source": "DOC_COMMENT",
       "kind": "lexical",
       "kernel": [],
-      "normative": "docs/spec/04-systems-and-conformance.md",
-      "semantic": "Visible lexical token containing doc and its non-nested raw block; distinct from hidden comments."
+      "semantic": "DOC_COMMENT: preserve owned documentation and lexical notes, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
-      "source": "For",
-      "kind": "element",
-      "kernel": [
-        "Step",
-        "Succession"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Structured counted loop with one header-local initializer, typed Boolean test, assignment update, fresh body scopes and a positive finite execution bound. Failure is taken before an excess body; the header binding does not escape."
-    },
-    {
-      "source": "ForUpdate",
-      "kind": "grouping",
+      "source": "ID",
+      "kind": "lexical",
       "kernel": [],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Header spelling of Assign without a terminating semicolon. Normalize to the same typed assignment step and preserve its source location and effects; it sees the header scope, never body-local declarations."
+      "semantic": "ID: preserve lexical and path spelling, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
-      "source": "ForEach",
-      "kind": "element",
-      "kernel": [
-        "Step",
-        "Succession",
-        "Feature"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Ordered finite iteration over one copied fixed-array snapshot. Each item is a fresh typed copied local feature; cardinality bounds iterations and source/item mutation cannot alter the snapshot."
+      "source": "NUMBER",
+      "kind": "lexical",
+      "kernel": [],
+      "semantic": "NUMBER: preserve lexical and path spelling, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
-      "source": "DoWhile",
-      "kind": "element",
-      "kernel": [
-        "Step",
-        "Succession"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Post-test loop with at least one body, a Boolean condition in the enclosing scope, fresh body scopes and positive finite bound. A true condition after the final permitted body takes a bound-failure exit."
+      "source": "INT",
+      "kind": "lexical",
+      "kernel": [],
+      "semantic": "INT: preserve lexical and path spelling, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     },
     {
-      "source": "Interruptible",
-      "kind": "element",
-      "kernel": [
-        "Step",
-        "Succession",
-        "Feature"
-      ],
-      "normative": "docs/spec/07-normalized-model.md",
-      "semantic": "Named protected region and explicit typed data/event handler within one triggered serial flow activation. Cooperative interruption abandons protected work and pending local RPC correlation, retains prior/remote effects and runs the handler under the same deadline; it does not create a second activation or hardware interrupt."
+      "source": "STRING",
+      "kind": "lexical",
+      "kernel": [],
+      "semantic": "STRING: preserve lexical and path spelling, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "ML_COMMENT",
+      "kind": "lexical",
+      "kernel": [],
+      "semantic": "ML_COMMENT: preserve lexical and path spelling, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "SL_COMMENT",
+      "kind": "lexical",
+      "kernel": [],
+      "semantic": "SL_COMMENT: preserve lexical and path spelling, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
     }
-  ],
-  "invariants": [
-    "I1-boundary",
-    "I2-ownership",
-    "I3-event-provenance",
-    "I4-type-safety",
-    "I5-communication-policy",
-    "I6-view-consistency"
   ]
 }

@@ -1,0 +1,261 @@
+{
+  "width": 920,
+  "height": 390,
+  "elements": [
+    {
+      "kind": "rect",
+      "x": 1,
+      "y": 1,
+      "w": 918,
+      "h": 388,
+      "fill": "#fafafa",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 36,
+      "text": "Seven library view definitions",
+      "size": 21
+    },
+    {
+      "kind": "line",
+      "x1": 26,
+      "y1": 54,
+      "x2": 894,
+      "y2": 54,
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 38,
+      "y": 95,
+      "w": 200,
+      "h": 105,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 38,
+      "y": 95,
+      "w": 200,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 50,
+      "y": 118,
+      "text": "General",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 50,
+      "y": 153,
+      "text": "source-backed selection",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 258,
+      "y": 95,
+      "w": 200,
+      "h": 105,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 258,
+      "y": 95,
+      "w": 200,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 270,
+      "y": 118,
+      "text": "Interconnect",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 270,
+      "y": 153,
+      "text": "source-backed selection",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 478,
+      "y": 95,
+      "w": 200,
+      "h": 105,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 478,
+      "y": 95,
+      "w": 200,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 490,
+      "y": 118,
+      "text": "Case",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 490,
+      "y": 153,
+      "text": "source-backed selection",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 698,
+      "y": 95,
+      "w": 200,
+      "h": 105,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 698,
+      "y": 95,
+      "w": 200,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 710,
+      "y": 118,
+      "text": "Sequence",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 710,
+      "y": 153,
+      "text": "source-backed selection",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 38,
+      "y": 225,
+      "w": 200,
+      "h": 105,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 38,
+      "y": 225,
+      "w": 200,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 50,
+      "y": 248,
+      "text": "Grid",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 50,
+      "y": 283,
+      "text": "source-backed selection",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 258,
+      "y": 225,
+      "w": 200,
+      "h": 105,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 258,
+      "y": 225,
+      "w": 200,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 270,
+      "y": 248,
+      "text": "Flow",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 270,
+      "y": 283,
+      "text": "source-backed selection",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 478,
+      "y": 225,
+      "w": 200,
+      "h": 105,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 478,
+      "y": 225,
+      "w": 200,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 490,
+      "y": 248,
+      "text": "Timing",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 490,
+      "y": 283,
+      "text": "source-backed selection",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 40,
+      "y": 370,
+      "text": "Browser navigates ownership. Views never execute behavior.",
+      "size": 13
+    }
+  ]
+}

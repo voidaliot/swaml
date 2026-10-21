@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>SWAML 2.0 original notation</title>
+<rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
+<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Typed copied values</text>
+<line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
+<rect x="60" y="115" width="360" height="185" fill="#ffffff" stroke="#171717"/>
+<rect x="60" y="115" width="360" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="72" y="138" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">component Demo</text>
+<text x="72" y="173" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">attribute sum: int = 0</text>
+<text x="72" y="195" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">attribute mode: Mode = Mode.idle</text>
+<text x="72" y="217" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">var values: int[3] = [1, 2, 3]</text>
+<rect x="500" y="115" width="350" height="185" fill="#ffffff" stroke="#171717"/>
+<rect x="500" y="115" width="350" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="512" y="138" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">copied nominal values</text>
+<text x="512" y="173" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">datatype Reading</text>
+<text x="512" y="195" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">value: real; unit: string;</text>
+<text x="512" y="217" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">enum Mode { idle, active }</text>
+<text x="60" y="345" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">Types are explicit. Copies never alias another component’s state.</text>
+</svg>

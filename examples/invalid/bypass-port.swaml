@@ -1,9 +1,1 @@
-package Invalid {
-    component def Bad {
-        function leak(): void {
-            // SW050: a different component cannot be addressed directly.
-            publish otherUnit.output.updated(42);
-            return;
-        }
-    }
-}
+package InvalidBypass { component def C { attribute n: int = 0; } component Demo { component child: C; operation illegal() { var x: int = child.n; } } }

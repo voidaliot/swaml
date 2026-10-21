@@ -1,4 +1,1 @@
-package Invalid {
-    // Parser error: events belong to interface contracts.
-    event Unowned(value: int);
-}
+package InvalidEvent { event free(); }

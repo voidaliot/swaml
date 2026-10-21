@@ -1,52 +1,41 @@
-package Assurance {
-    doc /* A compact architecture with explicit requirements and verification intent. */
-    requirement BoundedResult {
-        doc /* Every started worker shall store a result of 2. */
-        attribute id: string = "REQ-001";
-        attribute priority: uint = 1;
-        attribute expected: int = 2;
+package Traceability {
+  import Swaml::Views;
+  port def Messages {
+    provides event message(value: string);
+  }
+  component def Sender {
+    port output: Messages;
+    operation emit() {
+      publish output.message("Hello, SWAML");
     }
-    component def Worker {
-        doc /* Keep the result private to each worker instance. */
-        // Each instance has its own result.
-        var result: int = 0;
-        function startWork() on start {
-            doc /* Calculate twice the input and store the copied result. */
-            calc twice {
-                in input: int;
-                return output: int = input * 2;
-            }
-            result = twice(1);
-            assert result == 2;
-        }
+    schedule {
+      on start emit();
     }
-    component Demo {
-        doc /* Start two independent workers. */
-        component first: Worker;
-        component second: Worker;
+  }
+  component def Receiver {
+    reversed port input: Messages;
+    attribute last: string = "";
+    operation accept(value: string) {
+      last = value;
     }
-    satisfy BoundedResult of Demo.first;
-    satisfy BoundedResult of Demo.second;
-    useCase StartWorkers of Demo {
-        doc /* A user starts the application and both workers initialize. */
+    schedule {
+      on receive input.message(value) accept(value);
     }
-    verificationCase CheckResults of Demo {
-        doc /* Run the reference simulation and inspect both final result values.
-        Expected: first.result = 2 and second.result = 2. */
-        verify BoundedResult;
-    }
-    view assurance gv {
-        doc /* Requirements, design and verification intent in one projection. */
-        include BoundedResult;
-        include Demo recursive where kind == "component";
-        include StartWorkers;
-        include CheckResults;
-    }
-    view functions fv {
-        include Demo recursive where kind == "function" and
-            (name == "startWork" or path == "Demo.second.startWork");
-    }
-    view requirements grv {
-        include Assurance recursive where kind == "requirement";
-    }
+  }
+  requirement Delivery {
+    /** One named routed message reaches the receiver. */
+    attribute description: string = "Deliver startup message";
+  }
+  component Demo {
+    component sender: Sender;
+    component receiver: Receiver;
+    connect (sender.output, receiver.input);
+  }
+  satisfy Delivery of Demo.receiver;
+  verificationCase Startup of Demo {
+    verify Delivery;
+    publish greeting from sender.output.message to receiver.input.message;
+  }
+  view overview: General of Demo;
+  view delivery: Sequence of Startup;
 }

@@ -1,25 +1,9 @@
-import { readFile, writeFile } from 'node:fs/promises';
-import assert from 'node:assert/strict';
-import { EmptyFileSystem } from 'langium';
-import { parseHelper } from 'langium/test';
-import { createSwamlServices, documentationText, modelComments, selectView } from '../out/src/language/swaml-module.js';
-import * as a from '../out/src/language/generated/ast.js';
-const path = new URL('../spec/traceability-demo.json', import.meta.url);
-const source = await readFile(new URL('../examples/16-requirements-and-views.swaml', import.meta.url),'utf8');
-const { Swaml } = createSwamlServices(EmptyFileSystem);
-const doc = await parseHelper(Swaml)(source,{validation:true});
-assert.deepEqual(doc.diagnostics,[]);
-const model = doc.parseResult.value, pkg = model.packages[0];
-const comments = modelComments(model);
-const result = {
-    model:'examples/16-requirements-and-views.swaml',
-    views:pkg.elements.filter(a.isView).map(view=>({name:view.name,kind:view.kind,source:view.$cstNode.text,elements:selectView(view).map(c=>{
-        const n = a.isInstance(c.node) ? c.node.definition.ref : c.node;
-        return {path:c.path,name:c.name,kind:c.kind,doc:documentationText(c.node)??documentationText(n)??'',comments:comments.filter(c=>c.owner===n).map(c=>c.text),attributes:a.isRequirement(n)?n.attributes.map(v=>({name:v.name,type:v.type.$cstNode.text,value:v.value.$cstNode.text})):[],source:c.node.$cstNode.text};
-    })})),
-    relations:[...pkg.satisfactions.map(r=>({source:r.source,target:r.requirement.ref.name,kind:'satisfy'})),...pkg.elements.filter(a.isScenario).flatMap(c=>[{source:c.name,target:c.root.ref.name,kind:'of'},...c.verifications.map(r=>({source:c.name,target:r.requirement.ref.name,kind:'verify'}))])]
-};
-const text=JSON.stringify(result,null,2)+'\n';
-if(process.argv.includes('--check'))assert.equal(await readFile(path,'utf8'),text,'Traceability demo is stale; run node scripts/build-traceability-demo.mjs');
-else await writeFile(path,text);
-console.log(`Traceability demo: ${result.views.length} parsed views, docs/comments, attributes and ${result.relations.length} resolved relations.`);
+import {readFile,writeFile} from 'node:fs/promises';
+import {EmptyFileSystem,URI} from 'langium';
+import {parseHelper} from 'langium/test';
+import {createSwamlServices} from '../out/src/language/swaml-module.js';
+import {isRequirement,isScenario} from '../out/src/language/generated/ast.js';
+const root=new URL('../',import.meta.url),check=process.argv.includes('--check'),path='examples/16-requirements-and-views.swaml',source=await readFile(new URL(path,root),'utf8');
+const {Swaml}=createSwamlServices(EmptyFileSystem),doc=await parseHelper(Swaml)(source,{documentUri:URI.parse('memory:///'+path),validation:true});if(doc.diagnostics?.some(d=>d.severity===1))throw Error('Invalid traceability model');
+const pkg=doc.parseResult.value.packages[0],data={languageVersion:'2.0',source:path,requirements:pkg.elements.filter(isRequirement).map(r=>({id:pkg.name+'::'+r.name,attributes:r.attributes.map(a=>({name:a.name,value:a.value.$cstNode.text}))})),satisfactions:pkg.satisfactions.map(s=>({requirement:s.requirement.$refText,source:s.source,status:'intent'})),cases:pkg.elements.filter(isScenario).map(s=>({name:s.name,kind:s.kind,root:s.root.$refText,status:'inconclusive',verify:s.verifications.map(v=>v.requirement.$refText),steps:s.steps.map(x=>({name:x.name,kind:x.kind,source:x.source,target:x.target,via:x.connector,after:x.predecessor}))}))};
+const text=JSON.stringify(data,null,2)+'\n',out=new URL('spec/traceability-demo.json',root);if(check){if(await readFile(out,'utf8')!==text)throw Error('Stale traceability projection');}else await writeFile(out,text);console.log('2.0 traceability intent projection '+(check?'checked.':'generated.'));

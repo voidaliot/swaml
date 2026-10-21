@@ -1,79 +1,42 @@
 package Settings {
-    // Reuse policy values while each connector retains independent queues.
-    qos def LocalLink {
-        delivery atMostOnce; ordering fifo; capacity 8; overflow reject;
+  import Swaml::Qos;
+  port def Catalog {
+    provides idempotent operation get(key: int) returns real;
+    provides event changed(key: int);
+  }
+  component def Store {
+    port api: Catalog;
+    attribute value: real = 4.5;
+    operation get(key: int) returns real {
+      wait 1ms;
+      return value;
     }
-    // A remotely visible property is an explicit getter, setter and event contract.
-    interface service TemperatureSetting version "1.0.0" {
-        function get(): int idempotent;
-        function setPoint(desired: int): bool;
-        event changed(current: int);
+    operation announce() {
+      publish api.changed(1);
     }
-    interface publishSubscribe PanelCommands version "1.0.0" { event adjust(desired: int); }
-    component def SettingStore {
-        port api: TemperatureSetting provides;
-        var currentValue: int = 20;
-        // Each reentrant query sees its dispatch-time snapshot.
-        function read(): int on call api.get timing {
-            wcet 1 ms; deadline 5 ms; concurrency reentrant;
-        } { return currentValue; }
-        function update(desired: int): bool on call api.setPoint {
-            if (desired < 10 or desired > 30) { return false; }
-            currentValue = desired;
-            publish api.changed(currentValue);
-            return true;
-        }
+    schedule {
+      on call api.get(k) get(k);
+      on start announce();
     }
-    component def Panel {
-        port setting: TemperatureSetting requires;
-        port control: PanelCommands subscriber optional;
-        var displayed: int = 20;
-        function adjust(desired: int) on receive control.adjust {
-            call setting.setPoint(desired) as accepted within 100 ms otherwise { fail "setting unavailable"; };
-            assert accepted;
-        }
-        function refresh() {
-            call setting.get() as observed within 100 ms otherwise { return; };
-            displayed = observed;
-        }
-        function display(current: int) on receive setting.changed { displayed = current; }
+  }
+  component def Client {
+    reversed port api: Catalog;
+    attribute last: real = 0.0;
+    attribute changedKey: int = 0;
+    operation read() {
+      last = try(api.get(1), - 1.0);
     }
-    component def Service {
-        port api: TemperatureSetting provides;
-        component store: SettingStore;
-        delegate api -> store.api;
+    operation changed(key: int) {
+      changedKey = key;
     }
-    component def Client {
-        port setting: TemperatureSetting requires;
-        port control: PanelCommands subscriber optional;
-        component panel: Panel;
-        delegate setting -> panel.setting;
-        delegate control -> panel.control;
+    schedule {
+      on start read();
+      on receive api.changed(k) changed(k);
     }
-    component Cabin {
-        port panelInput: PanelCommands publisher;
-        component settings: Service;
-        component front: Client;
-        component rear: Client;
-        function driveInputs() on start { publish panelInput.adjust(22); }
-        connect adjustCommand: panelInput -> front.control qos LocalLink;
-        connect frontLink: front.setting -> settings.api qos LocalLink;
-        connect rearLink: rear.setting -> settings.api qos LocalLink;
-        deploy settings on "system:controller";
-        deploy front on "system:displays";
-        deploy rear on "system:displays";
-    }
-    requirement VisibleSetting { doc /* Both panels can observe accepted temperature setting updates. */ }
-    satisfy VisibleSetting of Cabin; useCase Change of Cabin {
-        call front.setting.setPoint -> settings.api.setPoint via frontLink label adjust;
-        publish settings.api.changed -> front.setting.changed via frontLink after adjust label frontNotice;
-        publish settings.api.changed -> rear.setting.changed via rearLink after adjust label rearNotice;
-        reply settings.api.setPoint -> front.setting.setPoint via frontLink after frontNotice label accepted;
-    }
-    view catalog grv of Settings;
-    view overview gv of Cabin;
-    view wiring iv of Cabin;
-    view coverage cv of Cabin;
-    view exchanges sv of Change;
-    view updateFlow fv of Cabin.settings.store.update;
+  }
+  component Demo {
+    component store: Store;
+    component client: Client;
+    connect catalog: Reliable (store.api, client.api);
+  }
 }

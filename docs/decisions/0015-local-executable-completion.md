@@ -1,5 +1,7 @@
 # ADR 0015 — Local executable completion activation
 
+> Superseded for development 2.0 by [ADR 0016](0016-swaml-2-0.md). Preserved as the historical 1.x decision.
+
 Status: accepted for SWAML 1.4 development. Date: 2026-10-19. This is not a published edition.
 
 ## Decision

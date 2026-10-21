@@ -1,102 +1,42 @@
-package AdaptiveDiagnostics {
-    // A resolved ara::com-style service topology with explicit methods and notification.
-    datatype HealthReport { code: int; healthy: bool; }
-    interface service VehicleHealth version "1.0.0" {
-        function getSummary(): HealthReport idempotent;
-        function runCheck(): bool;
-        event changed(report: HealthReport);
+package Adaptive {
+  import Swaml::Qos;
+  port def Catalog {
+    provides idempotent operation get(key: int) returns real;
+    provides event changed(key: int);
+  }
+  component def Store {
+    port api: Catalog;
+    attribute value: real = 4.5;
+    operation get(key: int) returns real {
+      wait 1ms;
+      return value;
     }
-    interface publishSubscribe DiagnosticAudit version "1.0.0" {
-        event checked(code: int);
+    operation announce() {
+      publish api.changed(1);
     }
-    qos def ServiceCall {
-        delivery atMostOnce; ordering fifo; capacity 8; overflow reject;
+    schedule {
+      on call api.get(k) get(k);
+      on start announce();
     }
-    qos def AuditDelivery {
-        delivery atMostOnce; ordering fifo; capacity 16; overflow reject;
+  }
+  component def Client {
+    reversed port api: Catalog;
+    attribute last: real = 0.0;
+    attribute changedKey: int = 0;
+    operation read() {
+      last = try(api.get(1), - 1.0);
     }
-    component def HealthMonitor {
-        port api: VehicleHealth provides;
-        port audit: DiagnosticAudit publisher;
-        var report: HealthReport = record HealthReport { code = 0; healthy = false; };
-        var completedChecks: int = 0;
-        function summary(): HealthReport on call api.getSummary {
-            return report;
-        }
-        function check(): bool on call api.runCheck {
-            report = record HealthReport { code = 200; healthy = true; };
-            completedChecks = completedChecks + 1;
-            publish api.changed(report);
-            publish audit.checked(report.code);
-            return true;
-        }
+    operation changed(key: int) {
+      changedKey = key;
     }
-    component def DiagnosticClient {
-        port health: VehicleHealth requires;
-        var observedHealthy: bool = false;
-        var lastCode: int = 0;
-        var notifications: int = 0;
-        function inspect() on start {
-            call health.runCheck() as accepted within 100 ms otherwise {
-                fail "health check unavailable";
-            };
-            assert accepted;
-            call health.getSummary() as current within 100 ms otherwise {
-                fail "health summary unavailable";
-            };
-            observedHealthy = current.healthy;
-            lastCode = current.code;
-        }
-        function changed(report: HealthReport) on receive health.changed {
-            observedHealthy = report.healthy;
-            lastCode = report.code;
-            notifications = notifications + 1;
-        }
+    schedule {
+      on start read();
+      on receive api.changed(k) changed(k);
     }
-    component def DiagnosticLog {
-        port input: DiagnosticAudit subscriber;
-        var lastCode: int = 0;
-        var entries: int = 0;
-        function append(code: int) on receive input.checked {
-            lastCode = code;
-            entries = entries + 1;
-        }
-    }
-    component def DiagnosticApplication {
-        port health: VehicleHealth requires;
-        component diagnostic: DiagnosticClient;
-        delegate health -> diagnostic.health;
-    }
-    component def HealthService {
-        port api: VehicleHealth provides;
-        port audit: DiagnosticAudit publisher;
-        component monitor: HealthMonitor;
-        delegate api -> monitor.api;
-        delegate audit -> monitor.audit;
-    }
-    component Vehicle {
-        component application: DiagnosticApplication;
-        component health: HealthService;
-        component audit: DiagnosticLog;
-        connect healthLink: application.health -> health.api qos ServiceCall;
-        connect auditLink: health.audit -> audit.input qos AuditDelivery;
-        deploy application on "system:applicationProcess";
-        deploy health on "system:healthProcess";
-        deploy audit on "system:auditProcess";
-    }
-    requirement ObservableHealth { doc /* A completed health check exposes its result to the application and audit log. */ }
-    satisfy ObservableHealth of Vehicle; useCase InspectVehicle of Vehicle {
-        call application.health.runCheck -> health.api.runCheck via healthLink label inspect;
-        publish health.api.changed -> application.health.changed via healthLink after inspect label changed;
-        publish health.audit.checked -> audit.input.checked via auditLink after changed label audited;
-        reply health.api.runCheck -> application.health.runCheck via healthLink after audited label complete;
-        call application.health.getSummary -> health.api.getSummary via healthLink after complete label readSummary;
-        reply health.api.getSummary -> application.health.getSummary via healthLink after readSummary label summary;
-    }
-    view overview gv of Vehicle;
-    view contracts iv of Vehicle;
-    view requirements cv of Vehicle;
-    view inspection sv of InspectVehicle;
-    view allocation grv of Vehicle;
-    view inspectionFlow fv of Vehicle.application.diagnostic.inspect;
+  }
+  component Demo {
+    component store: Store;
+    component client: Client;
+    connect catalog: Reliable (store.api, client.api);
+  }
 }

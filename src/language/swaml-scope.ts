@@ -1,35 +1,26 @@
-import { AstUtils, DefaultScopeProvider, MapScope, type AstNode, type ReferenceInfo, type Scope, type LangiumCoreServices } from 'langium';
+import { DefaultScopeProvider, MapScope, type ReferenceInfo, type Scope, type LangiumCoreServices } from 'langium';
 import * as a from './generated/ast.js';
-import { container, members } from './semantic.js';
-
-export function owner<T extends AstNode>(node: AstNode, test: (node: AstNode) => node is T): T | undefined {
-    return AstUtils.getContainerOfType(node, test);
-}
+import { owner } from './semantic.js';
+export { owner } from './semantic.js';
 export class SwamlScopeProvider extends DefaultScopeProvider {
     constructor(private services: LangiumCoreServices) { super(services); }
     override getScope(context: ReferenceInfo): Scope {
-        const node = context.container;
-        let candidates: AstNode[] | undefined;
-        if (a.isLocalCall(node) || a.isTrigger(node) && context.property === 'predecessor') candidates = container(node) ? members(container(node)!).filter(a.isFunctionDef) : [];
-        if (a.isCalculationCall(node)) candidates = owner(node, a.isFunctionDef)?.calculations ?? [];
-        if (a.isTransition(node) || a.isStateBody(node)) candidates = owner(node, a.isStateBody)?.states;
-        if (a.isDelegate(node)) candidates = container(node) ? members(container(node)!).filter(a.isPort) : [];
+        const pkg = owner(context.container, a.isPackage);
         const type = this.reflection.getReferenceType(context);
-        if (candidates !== undefined) return this.createScopeForNodes(candidates.filter(n => this.reflection.isSubtype(n.$type, type)));
-        const pkg = owner(node, a.isPackage);
-        const entries: { node: AstNode; name: string }[] = [];
+        const entries = [];
         for (const doc of this.services.shared.workspace.LangiumDocuments.all) {
-            if (!a.isModel(doc.parseResult.value)) continue;
-            for (const p of doc.parseResult.value.packages) {
+            if (!a.isModel(doc.parseResult.value))
+                continue;
+            for (const p of doc.parseResult.value.packages)
                 for (const element of p.elements) {
                     entries.push({ node: element, name: `${p.name}::${element.name}` });
-                    if (p === pkg || pkg?.imports.some(i => i.namespace === p.name)) entries.push({ node: element, name: element.name });
+                    if (p === pkg || pkg?.imports.some(i => i.namespace === p.name))
+                        entries.push({ node: element, name: element.name });
                 }
-            }
         }
-        // Ambiguous imports are errors, never dependent on file iteration order.
         const counts = new Map<string, number>();
-        for (const e of entries) counts.set(e.name, (counts.get(e.name) ?? 0) + 1);
+        for (const e of entries)
+            counts.set(e.name, (counts.get(e.name) ?? 0) + 1);
         return new MapScope(entries.filter(e => counts.get(e.name) === 1 && this.reflection.isSubtype(e.node.$type, type)).map(e => this.descriptions.createDescription(e.node, e.name)));
     }
 }

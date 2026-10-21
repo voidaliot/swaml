@@ -1,5 +1,7 @@
 # ADR 0011 — Loops, interruptible flow and function timing
 
+> Superseded for development 2.0 by [ADR 0016](0016-swaml-2-0.md). Preserved as the historical 1.x decision.
+
 Status: accepted for SWAML 1.3.0. Date: 2026-10-18.
 
 The FV timing presentation below records the 1.3.0 decision. [ADR 0012](0012-timing-view-and-structure-layouts.md) supersedes that presentation with dedicated `tv` timing views in 1.3.1. The control-flow, interrupt and timing execution rules remain in effect.

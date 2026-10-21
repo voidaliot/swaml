@@ -1,32 +1,37 @@
-package ReusablePolicies {
-    // Policy reuse shares values, while each connector keeps independent queues.
-    qos def LocalEvents {
-        delivery atMostOnce;
-        ordering fifo;
-        capacity 2;
-        overflow reject;
+package Policies {
+  import Swaml::Qos;
+  qos def Small: Policy {
+    delivery = Delivery.atMostOnce;
+    ordering = Ordering.fifo;
+    capacity = 2;
+    overflow = Overflow.reject;
+    requestTimeout = 50ms;
+  }
+  port def Messages {
+    provides event message(value: int);
+  }
+  component def Sender {
+    port output: Messages;
+    operation emit() {
+      publish output.message(7);
     }
-    interface publishSubscribe Updates version "1.0.0" {
-        event changed(value: int);
+    schedule {
+      on start emit();
     }
-    component def Producer {
-        port output: Updates publisher;
-        function announce() on start { publish output.changed(7); }
+  }
+  component def Receiver {
+    reversed port input: Messages;
+    attribute last: int = 0;
+    operation accept(value: int) {
+      last = value;
     }
-    component def Consumer {
-        port input: Updates subscriber;
-        var latest: int = 0;
-        function observe(value: int) on receive input.changed { latest = value; }
+    schedule {
+      on receive input.message(value) accept(value);
     }
-    component def Pair {
-        component producer: Producer;
-        component first: Consumer;
-        component second: Consumer;
-        connect firstUpdate: producer.output -> first.input qos LocalEvents;
-        connect secondUpdate: producer.output -> second.input qos LocalEvents;
-    }
-    component Demo: Pair;
-    view overview gv of Demo;
-    view wiring iv of Demo;
-    view policy grv of LocalEvents;
+  }
+  component Demo {
+    component sender: Sender;
+    component receiver: Receiver;
+    connect delivery: Small (sender.output, receiver.input);
+  }
 }

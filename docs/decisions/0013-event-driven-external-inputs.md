@@ -1,5 +1,7 @@
 # 0013 — Event-driven operator and test inputs
 
+> Amended for development 2.0 by [ADR 0016](0016-swaml-2-0.md): named from/to case steps, library view definitions and source-operation schedule activation replace the 1.x forms. Historical evidence remains below.
+
 **Status:** accepted for the 1.3.1 revision · **Date:** 2026-10-18
 
 ## Decision

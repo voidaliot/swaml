@@ -1,5 +1,7 @@
 # ADR 0014 — Classes, operations and UML notation
 
+> Superseded for development 2.0 by [ADR 0016](0016-swaml-2-0.md). Preserved as the historical 1.x decision.
+
 Status: accepted for SWAML 1.3.1. Date: 2026-10-18.
 
 This decision refines the vocabulary in ADR 0007 and ADR 0008. Their ownership, copied-value, calculation-purity and communication boundaries remain applicable. The 1.3 parser family and reference simulation profile remain unchanged; exact reproduction pins revision 1.3.1.

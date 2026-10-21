@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>SWAML 2.0 original notation</title>
+<rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
+<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Packages and imports</text>
+<line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
+<rect x="60" y="98" width="795" height="240" fill="#ffffff" stroke="#171717"/>
+<rect x="85" y="130" width="330" height="150" fill="#ffffff" stroke="#171717"/>
+<rect x="85" y="130" width="330" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="97" y="153" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">package Hello</text>
+<text x="97" y="188" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">port def Messages</text>
+<text x="97" y="210" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">component def Sender / Receiver</text>
+<rect x="490" y="130" width="330" height="150" fill="#ffffff" stroke="#171717"/>
+<rect x="490" y="130" width="330" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="502" y="153" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">component Demo</text>
+<text x="502" y="188" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">component sender: Sender</text>
+<text x="502" y="210" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">component receiver: Receiver</text>
+<text x="502" y="232" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">connect (sender.output, receiver.input);</text>
+</svg>

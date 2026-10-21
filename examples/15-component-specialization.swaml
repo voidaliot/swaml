@@ -1,59 +1,25 @@
-package ComponentReuse {
-    interface publishSubscribe DeviceCommands version "1.0.0" { event advance(); }
-    component def Worker {
-        var ticks: uint = 0;
-        function boot() on start { call work(); }
-        function work() { ticks = ticks + 1; }
+package Reuse {
+  component def Counter {
+    attribute count: int = 0;
+    operation increment() {
+      count = count + 1;
     }
-    component def FastWorker specializes Worker {
-        redefines function work() { ticks = ticks + 2; }
+    operation boot() {
+      increment();
     }
-
-    component def Device {
-        port control: DeviceCommands subscriber optional;
-        var count: uint = 0;
-        var sample: byte = 0;
-        component worker: Worker;
-        function encode(value: uint): byte {
-            calc offset { in inputValue: uint; return octet: byte = inputValue + 1; }
-            return offset(value);
-        }
-        function step() { count = count + 1; call encode(count) as encoded; sample = encoded; }
-        function boot() on start { call step(); }
-        function advance() on receive control.advance { call step(); }
+    schedule {
+      on start boot();
     }
-    component def SpecializedDevice specializes Device {
-        redefines var sample: byte = 10;
-        redefines component worker: FastWorker;
-        redefines function encode(value: uint): byte {
-            calc offset { in inputValue: uint; return octet: byte = inputValue + 10; }
-            return offset(value);
-        }
-        redefines function step() { count = count + 2; call encode(count) as encoded; sample = encoded; }
+  }
+  component def Fast specializes Counter {
+    redefines operation increment() {
+      count = count + 2;
     }
-
-    component Demo {
-        port leftCommands: DeviceCommands publisher;
-        var running: bool = false;
-        function initialize() on start { running = true; }
-        component base: Device;
-        component left: SpecializedDevice;
-        component right: SpecializedDevice;
-        function driveInputs() on start {
-            initial Waiting;
-            state Waiting {}
-            state Advanced final { entry { publish leftCommands.advance(); } }
-            transition advanceLeft: Waiting -> Advanced on after 1 ns {}
-        }
-        connect advanceCommand: leftCommands -> left.control qos {
-            delivery atMostOnce; ordering fifo; capacity 4; overflow reject;
-        };
-        deploy Demo on "system:ReferenceHost";
-        deploy left on "sysml:Vehicle::leftComputer";
-        deploy right on "sysml:Vehicle::rightComputer";
+  }
+  component Demo {
+    component left: Counter {
+      redefines attribute count: int = 10;
     }
-    view overview gv of Demo;
-    view inventory grv of Demo;
-    view inheritedStartup fv of Demo.left.boot;
-    view specializedBehavior fv of Demo.left.step;
+    component right: Fast;
+  }
 }

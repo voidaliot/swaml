@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>SWAML 2.0 original notation</title>
+<rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
+<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">A source model and its explicit software boundaries</text>
+<line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
+<rect x="45" y="120" width="250" height="155" fill="#ffffff" stroke="#171717"/>
+<rect x="45" y="120" width="250" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="57" y="143" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">Sensor</text>
+<text x="57" y="178" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">port reading</text>
+<text x="57" y="200" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">provides attribute temperature: real</text>
+<rect x="290" y="200" width="10" height="10" fill="#ffffff" stroke="#171717"/>
+<line x1="300" y1="205" x2="320" y2="205" stroke="#171717"/>
+<text x="125" y="301" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">owned typed boundary</text>
+<rect x="325" y="120" width="250" height="155" fill="#ffffff" stroke="#171717"/>
+<rect x="325" y="120" width="250" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="337" y="143" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">Controller</text>
+<text x="337" y="178" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">reversed port reading</text>
+<text x="337" y="200" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">requires attribute temperature: real</text>
+<text x="337" y="222" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">port command</text>
+<text x="337" y="244" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">provides event set(value: real)</text>
+<rect x="570" y="200" width="10" height="10" fill="#ffffff" stroke="#171717"/>
+<line x1="580" y1="205" x2="600" y2="205" stroke="#171717"/>
+<text x="405" y="301" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">owned typed boundary</text>
+<rect x="320" y="200" width="10" height="10" fill="#ffffff" stroke="#171717"/>
+<rect x="605" y="120" width="250" height="155" fill="#ffffff" stroke="#171717"/>
+<rect x="605" y="120" width="250" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="617" y="143" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">Heater</text>
+<text x="617" y="178" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">reversed port command</text>
+<text x="617" y="200" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">requires event set(value: real)</text>
+<rect x="600" y="200" width="10" height="10" fill="#ffffff" stroke="#171717"/>
+<text x="45" y="345" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">Direction belongs to each member. A connection owns an independent policy queue.</text>
+</svg>

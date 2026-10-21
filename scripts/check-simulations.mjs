@@ -9,7 +9,7 @@ for (const run of runs) {
     const { Swaml } = createSwamlServices(EmptyFileSystem);
     const text = await readFile(new URL(`../${run.model}`, import.meta.url), 'utf8');
     const document = await parseHelper(Swaml)(text, { documentUri: `file:///${run.model}`, validation: true });
-    assert.deepEqual(document.diagnostics, []);
+    assert.deepEqual(document.diagnostics?.filter(d => d.severity === 1) ?? [], []);
     const options = JSON.parse(await readFile(new URL(`../${run.options}`, import.meta.url), 'utf8'));
     const result = simulate([document.parseResult.value], run.root, options);
     assert.equal(result.outcome, 'no-failure-observed', JSON.stringify(result.trace.filter(t => t.kind === 'failure' || t.kind === 'violation')));

@@ -1,0 +1,27 @@
+package OperationUsage {
+  operation def Clamp(v: real, lo: real, hi: real) returns real {
+    if (v < lo) {
+      return lo;
+    }
+    if (v > hi) {
+      return hi;
+    }
+    return v;
+  }
+  component Demo {
+    attribute result: real = 0.0;
+    operation clamp: Clamp;
+    operation low: Clamp {
+      return lo;
+    }
+    operation boot() {
+      operation double(v: real) returns real {
+        return v * 2.0;
+      }
+      result = clamp(double(4.0), 0.0, 5.0);
+    }
+    schedule {
+      on start boot();
+    }
+  }
+}

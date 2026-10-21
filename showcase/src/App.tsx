@@ -1,315 +1,103 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Background, BackgroundVariant, Controls, Handle, Position, ReactFlow, ReactFlowProvider, useNodesState, useReactFlow } from '@xyflow/react';
-import type { Edge, NodeProps } from '@xyflow/react';
-import { DiagramGallery, diagramChoices } from './DiagramGallery';
-import type { DiagramId } from './DiagramGallery';
-import { Ontology } from './Ontology';
-import { BoundaryPort, ClassifierGlyph, PortLegend } from './DiagramGlyphs';
+import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
+import model from './generated/model.json';
+import './v2.css';
 
-import { byId, diagram, entities, lifecycleSource, repository, source, views } from './model';
-import type { CardData, DiagramNode, Entity, ViewId } from './model';
-
-
-const Traceability = lazy(() => import('./Traceability').then(module => ({ default: module.Traceability })));
-const Interfaces = lazy(() => import('./Interfaces').then(module => ({ default: module.Interfaces })));
-const Architectures = lazy(() => import('./Architectures').then(module => ({ default: module.Architectures })));
-const FunctionTiming = lazy(() => import('./FunctionTiming').then(module => ({ default: module.FunctionTiming })));
-const InterruptFlow = lazy(() => import('./InterruptFlow').then(module => ({ default: module.InterruptFlow })));
-const ModelingOverview = lazy(() => import('./ModelingOverview').then(module => ({ default: module.ModelingOverview })));
-const QuickStart = lazy(() => import('./QuickStart').then(module => ({ default: module.QuickStart })));
-const StructureView = lazy(() => import('./Structure').then(module => ({ default: module.StructureView })));
+const views = ['General', 'Interconnect', 'Case', 'Sequence', 'Grid', 'Flow', 'Timing'] as const;
+type View = typeof views[number];
+type Theme = 'system' | 'light' | 'dark';
+const all = model.projection.nodes;
+const components = all.filter(n => n.kind === 'component' && /^Control::Demo\.[^.]+$/.test(n.id));
+const operations = all.filter(n => n.kind === 'operation' && n.id.startsWith('Control::Demo.'));
+const root = 'Control::Demo';
+const github = 'https://github.com/voidaliot/swaml';
 
 function Icon({ name, size = 18 }: { name: string; size?: number }) {
-  const paths: Record<string, string> = {
-    arrow: 'M4 12h16m-6-6 6 6-6 6', external: 'M14 4h6v6m0-6L10 14M9 4H4v16h16v-5',
-    grid: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z',
-    layers: 'M3 4h18v16H3zM3 9h18M8 13h8m-8 3h5',
-    connect: 'M3 5h6v6H3zm12 8h6v6h-6zM9 8h9v5M6 11v5h9',
-    case: 'M5 4h14v17H5zM8 8h8m-8 4h8m-8 4h5',
-    sequence: 'M5 3v18M19 3v18M5 8h14m-4-4 4 4-4 4m4 5H5m4-4-4 4 4 4',
-    flow: 'M9 3h6v5H9zM3 16h6v5H3zm12 0h6v5h-6zM12 8v4M6 16v-4h12v4',
-    tree: 'M4 4v15h16M4 8h9m-9 6h13M13 5v6M17 11v6',
-    code: 'm8 6-6 6 6 6m8-12 6 6-6 6M14 3l-4 18',
-    search: 'M15 15l6 6M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0',
-    reset: 'M4 10a8 8 0 1 1 2 8M4 4v6h6', close: 'm5 5 14 14M19 5 5 19',
-    download: 'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5',
-    fit: 'M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6',
-    github: 'M9 19c-4 1-4-2-6-2m12 5v-4c0-1-.3-2-1-2 4-.5 6-2 6-6 0-1-.5-3-1.5-4 .4-1 .3-2-.2-3-2 0-3 1-4 1-2-.5-4-.5-6 0-1 0-2-1-4-1-.5 1-.6 2-.2 3C3 7 3 9 3 10c0 4 2 5.5 6 6-.7.5-1 1-1 2v4',
-  };
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name] || paths.grid} /></svg>;
+  const paths: Record<string, string> = { arrow: 'M4 12h15m-5-5 5 5-5 5', external: 'M13 4h7v7m0-7L9 15M9 4H4v16h16v-5', sun: 'M12 2v2m0 16v2M2 12h2m16 0h2M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0', moon: 'M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11Z', system: 'M3 4h18v14H3zM8 22h8m-4-4v4', copy: 'M8 3h13v14H8zM4 7H2v15h13v-3', check: 'm4 12 5 5L20 6', plus: 'M12 4v16M4 12h16', source: 'm8 5-6 7 6 7m8-14 6 7-6 7m-2-15-4 16', grid: 'M3 3h7v7H3zm11 0h7v7h-7zM3 14h7v7H3zm11 0h7v7h-7z' };
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d={paths[name] ?? paths.arrow}/></svg>;
+}
+function Code({ text, numbers = false }: { text: string; numbers?: boolean }) {
+  const keyword = /^(component|def|redefines|attribute|const|operation|returns|port|provides|requires|reversed|schedule|on|start|every|receive|call|after|deadline|concurrent|wait|try|var|return|send|publish|connect|import|package|if|else|view|of|int|real|bool|string|uint)$/;
+  return <pre className={`source-code ${numbers ? 'numbered' : ''}`}><code>{text.trim().split('\n').map((line, i) => <span className="code-line" key={i}>{numbers && <span className="line-number" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>}<span>{line.split(/("(?:[^"\\]|\\.)*"|\b[A-Za-z]\w*\b)/g).map((t, j) => <span key={j} className={keyword.test(t) ? 'token-keyword' : t.startsWith('"') ? 'token-string' : ''}>{t}</span>)}</span>{'\n'}</span>)}</code></pre>;
+}
+function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) {
+  const [state, set] = useState<'idle'|'copied'|'failed'>('idle');
+  async function copy() { try { await navigator.clipboard.writeText(text); set('copied'); } catch { set('failed'); } }
+  useEffect(() => { if (state !== 'idle') { const t = setTimeout(() => set('idle'), 2500); return () => clearTimeout(t); } }, [state]);
+  return <button className="copy-button" onClick={copy} aria-label={label}><Icon name={state === 'copied' ? 'check' : 'copy'} size={15}/><span aria-live="polite">{state === 'copied' ? 'Copied' : state === 'failed' ? 'Select text to copy' : label}</span></button>;
+}
+function Tag({ children }: { children: ReactNode }) { return <span className="tag">{children}</span>; }
+
+function Interconnect({ selected, select }: { selected: string; select: (id: string) => void }) {
+  return <svg className="architecture-svg" viewBox="0 0 960 310" role="img" aria-label="Temperature flows from sensor to controller, which sends an explicit command event to the heater">
+    <path className="connector" d="M285 158H350M610 158H675"/>
+    <text className="edge-label" x="318" y="124" textAnchor="middle">temperature</text><text className="edge-label" x="642" y="124" textAnchor="middle">set</text>
+    {components.map((n, i) => { const x = 25 + i * 325; return <g key={n.id} role="button" tabIndex={0} aria-label={`Inspect ${n.name}`} onClick={() => select(n.id)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(n.id); } }} className={`diagram-component ${selected === n.id ? 'selected' : ''}`}>
+      <rect x={x} y={62} width={260} height={190}/><text className="node-meta" x={x + 18} y={86}>component · {n.definition.split('::').at(-1)}</text><text className="node-name" x={x + 18} y={115}>{n.name}</text><path className="compartment-rule" d={`M${x} 133h260`}/>
+      {(n.ports ?? []).flatMap(p => p.members.map(m => ({ p, m }))).map(({ p, m }, j) => <g key={p.name + m.name}><text className="member-dir" x={x + 18} y={155 + j * 42}>{m.direction} {m.kind}</text><text className="member-name" x={x + 18} y={172 + j * 42}>{p.name}.{m.name}{m.kind === 'attribute' ? ': '+m.type : '('+m.parameters.map(p=>p.type).join(', ')+')'}</text></g>)}
+      {i > 0 && <rect className="boundary-port" x={x - 5} y={153} width={10} height={10}/>} {i < 2 && <rect className="boundary-port" x={x + 255} y={153} width={10} height={10}/>}
+    </g>; })}
+    <text className="diagram-caption" x="25" y="294">Explicit routes. Direction on every member. Independent Default queues.</text>
+  </svg>;
+}
+function General({ selected, select, tree }: { selected: string; select: (id: string) => void; tree: boolean }) {
+  return <div className={`general-diagram ${tree ? 'tree-layout' : ''}`}><div className="root-label"><Icon name="grid" size={16}/> Demo <span>execution root</span></div><div className="component-group">{components.map(n => <button data-model-id={n.id} key={n.id} onClick={() => select(n.id)} className={`general-node ${selected === n.id ? 'selected' : ''}`}><span className="node-kicker">component {n.name}</span><strong>{n.definition.split('::').at(-1)}</strong><span className="member-summary">{n.ports?.length ?? 0} ports · {n.schedule?.length ?? 0} schedule entries</span><span className="node-operations">{operations.filter(o => o.owner === n.id).map(o => <span key={o.id}>{o.name}()</span>)}</span></button>)}</div><p className="diagram-footnote">One occurrence tree. Separate private stores. The same identities in either layout.</p></div>;
+}
+function Sequence() {
+  const names = components.map(n => n.name), steps = model.cases[0].steps;
+  return <svg className="architecture-svg" viewBox="0 0 960 310" role="img" aria-label="ControlLoop case sequence with a measured temperature followed by the applied command">
+    {names.map((name, i) => <g key={name}><rect className="sequence-head" x={80 + i * 320} y={30} width={160} height={38}/><text className="member-name" x={160 + i * 320} y={54} textAnchor="middle">{name}</text><path className="lifeline" d={`M${160 + i * 320} 68V280`}/></g>)}
+    {steps.map((s, i) => { const from = names.indexOf(s.source.split('.')[0]), to = names.indexOf(s.target.split('.')[0]), y = 130 + i * 94; return <g key={s.name}><path className="connector" d={`M${160 + from * 320} ${y}H${160 + to * 320}`}/><path className="connector" d={`m${150 + to * 320} ${y - 5} 10 5-10 5`}/><text className="edge-label" x={(from + to) * 160 + 160} y={y - 15} textAnchor="middle">{s.kind} {s.name} · via {s.via}</text></g>; })}
+  </svg>;
+}
+function CaseView() { return <div className="case-diagram"><div className="case-requirement"><span className="node-kicker">requirement</span><strong>{model.requirements[0].name}</strong><span>{model.requirements[0].attributes[0].name}: {model.requirements[0].attributes[0].type} = {model.requirements[0].attributes[0].value}</span></div><span className="intent-link">verify<br/><span>intent</span></span><div className="case-oval"><span className="node-kicker">verificationCase</span><strong>{model.cases[0].name}</strong><span>of Demo · {model.cases[0].steps.length} routed steps</span></div><p className="diagram-footnote">A routed case describes intent. Verification needs identified execution evidence.</p></div>; }
+function Flow() { return <div className="flow-diagram"><span className="flow-dot"/>{model.flow.map((step,i)=><div className="flow-group" key={i}>{i>0&&<span className="flow-stem"/>}<div className="flow-step"><span className="node-kicker">{step.kind==='LocalVariable'?'typed local value':'provided event · explicit output route'}</span><Code text={step.code}/></div></div>)}<span className="flow-stem"/><span className="flow-end"/><p className="diagram-footnote">{components.find(n=>n.name==='controller')?.schedule?.[0].code}</p></div>; }
+
+function Timing({ observed }: { observed: boolean }) {
+  const subjects = ['sensor.sample', 'controller.regulate', 'heater.apply']; const scale = (t: number) => 180 + t / 1000000 * 25;
+  return <svg className="architecture-svg" viewBox="0 0 960 310" role="img" aria-label={observed ? 'Identified observed reference trace: sampling waits one millisecond while releasing its serial lock' : 'Declared periodic sample release grid and entry deadlines'}>
+    {[0,5,10,15,20,25,30].map(t => <g key={t}><path className="time-grid" d={`M${scale(t * 1000000)} 35V268`}/><text className="node-meta" x={scale(t * 1000000)} y={290} textAnchor="middle">{t}ms</text></g>)}
+    {subjects.map((s, i) => <g key={s}><text className="lane-label" x={10} y={80 + i * 76}>{s}</text><path className="time-lane" d={`M180 ${80 + i * 76}H930`}/></g>)}
+    {[10,20].map(t => <g key={t}><rect className="deadline-window" x={scale(t * 1000000)} y={65} width={250} height={30}/><path className="release-marker" d={`M${scale(t * 1000000)} 50V104`}/><text className="node-meta" x={scale(t * 1000000) + 8} y={43}>every 10ms</text></g>)}
+    {!observed && [10,20].map(t=><rect key={t} className="declared-wait" x={scale(t*1000000)} y={70} width={25} height={20}/>)}
+    {observed && model.timing.intervals.filter(x => ['wait', 'requestWait'].includes(x.phase)).map((x, i) => <g key={i}><rect className="wait-interval" x={scale(x.startNs)} y={70} width={Math.max(2, scale(x.endNs ?? model.run.untilNs) - scale(x.startNs))} height={20}/></g>)}
+    {observed && model.run.trace.filter(e => e.kind === 'complete').map((e, i) => { const lane = subjects.findIndex(s => e.subject.endsWith(s)); return lane < 0 ? null : <circle key={i} className="completion-marker" cx={scale(e.timeNs)} cy={80 + lane * 76} r={4}><title>{e.subject} completed at {e.timeNs / 1000000}ms</title></circle>; })}
+    {!observed && <><text className="member-dir" x={200} y={149}>on receive reading.temperature · deadline 5ms</text><text className="member-dir" x={200} y={225}>on receive command.set</text></>}
+    {observed && <text className="member-dir" x={scale(10000000) + 33} y={122}>wait 1ms · lock released</text>}
+  </svg>;
 }
 
-export function FlatNode({ data, selected }: NodeProps<DiagramNode>) {
-  const vertical = data.vertical;
-  return <div className={`model-node node-${data.variant || 'component'} ${selected ? 'is-selected' : ''}`}>
-    {!data.boundaryPorts && <Handle type="target" position={vertical ? Position.Top : Position.Left} className={data.portSide === 'left' || data.inputPort ? 'port-handle visible-port' : 'port-handle'} />}
-    <div className="node-eyebrow">{!data.variant || ['component', 'definition', 'root'].includes(data.variant) ? <ClassifierGlyph kind={data.classifierKind} decorative className="semantic-classifier-mark"/> : <span className="kind-mark"/>}{data.eyebrow}</div>
-    <div className="node-title">{data.title}</div>
-    {data.inputPort && <div className="port-label port-left">{data.inputPort}</div>}
-    {data.port && <div className={`port-label port-${data.portSide}`}>{data.port}</div>}
-    {data.boundaryPorts?.map(port => <div key={port.name} className={`port-label port-${port.side} semantic-port-row`}><BoundaryPort {...port}/><strong>{port.name} : {port.contract}</strong><span>@ {port.version} · {port.role}{port.optional ? ' · optional' : ''}</span></div>)}
-    {data.detail && <div className="node-detail">{data.detail}</div>}
-    {data.footer && <div className="node-footer">{data.footer}</div>}
-    {!data.boundaryPorts && <Handle type="source" position={vertical ? Position.Bottom : Position.Right} className={data.portSide === 'right' ? 'port-handle visible-port' : 'port-handle'} />}
-    {data.variant === 'state' && <><Handle id="bottom" type="source" position={Position.Bottom} className="port-handle" /><Handle id="bottom" type="target" position={Position.Bottom} className="port-handle" /></>}
-  </div>;
-}
-const nodeTypes = { card: FlatNode };
-
-function Canvas({ view, stateMode, onSelect }: { view: ViewId; stateMode: boolean; onSelect: (id: string, nodeData?: CardData) => void }) {
-  const initial = useMemo(() => diagram(view, stateMode), [view, stateMode]);
-  const [nodes, setNodes, onNodesChange] = useNodesState(initial.nodes);
-  const { fitView } = useReactFlow();
-  useEffect(() => { setNodes(initial.nodes); }, [initial, setNodes]);
-  const selectionChange = useCallback(({ nodes: selectedNodes }: { nodes: DiagramNode[] }) => {
-    const node = selectedNodes[0];
-    if (node) onSelect(node.data.entityId || node.id, node.data);
-  }, [onSelect]);
-  const reset = () => { setNodes(initial.nodes); requestAnimationFrame(() => { void fitView({ padding: 0.2, duration: 250 }); }); };
-  const selectEdge = (_: React.MouseEvent, edge: Edge) => onSelect(edge.id);
-  return <><div className="diagram-canvas">
-    <ReactFlow<DiagramNode>
-      key={`${view}-${stateMode}`} nodes={nodes} edges={initial.edges} onNodesChange={onNodesChange} nodeTypes={nodeTypes}
-      onNodeClick={(_, node) => onSelect(node.data.entityId || node.id, node.data)} onEdgeClick={selectEdge}
-      onSelectionChange={selectionChange}
-      fitView fitViewOptions={{ padding: 0.2, maxZoom: 1 }} minZoom={0.22} maxZoom={1.7}
-      nodesConnectable={false} edgesReconnectable={false} deleteKeyCode={null} selectionKeyCode={null}
-      proOptions={{ hideAttribution: false }} ariaLabelConfig={{ 'controls.zoomIn.ariaLabel': 'Zoom in', 'controls.zoomOut.ariaLabel': 'Zoom out', 'controls.fitView.ariaLabel': 'Fit model to canvas' }}
-    >
-      <Background variant={BackgroundVariant.Dots} color="#c8d0c6" gap={20} size={1} />
-      <Controls showInteractive={false} position="bottom-left" />
-    </ReactFlow>
-    <div className="canvas-subject"><span className="subject-dot" />{stateMode ? 'Lifecycle::Device.lifecycle' : views.find((v) => v.id === view)?.subject}<span className="canvas-subject-tag">{stateMode ? 'state body' : view === 'iv' ? 'root instance' : 'projection'}</span></div>
-    <button className="reset-layout" onClick={reset}><Icon name="reset" size={14} />Reset layout</button>
-    <div className="canvas-hint">Drag nodes to arrange · select to inspect</div>
-  </div>{view === 'iv' && <PortLegend/>}</>;
-}
-
-const treeEntries: [string, number, string?][] = [
-  ['package', 0], ['contract', 1], ['input-contract', 1], ['policy', 1], ['store-def', 1], ['panel-def', 1], ['service-def', 1], ['client-def', 1],
-  ['root', 1], ['input-driver', 2], ['settings', 2], ['store', 3], ['update', 4], ['front', 2], ['front-panel', 3], ['rear', 2], ['rear-panel', 3],
-  ['adjustCommand', 2], ['frontLink', 2], ['rearLink', 2], ['controller', 2], ['displays', 2], ['requirement', 1], ['case', 1],
-];
-
-function BrowserPanel({ selected, onSelect }: { selected: string; onSelect: (id: string) => void }) {
-  const [query, setQuery] = useState('');
-  const filtered = treeEntries.filter(([id]) => `${byId[id].path} ${byId[id].kind}`.toLowerCase().includes(query.toLowerCase()));
-  return <div className="browser-panel">
-    <div className="surface-heading"><span className="eyebrow">MODEL OWNERSHIP</span><h3>Declarations and instances</h3><p>Definitions describe reusable types. Instances retain their own paths and private stores.</p></div>
-    <label className="search-field"><Icon name="search" size={16} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a name, kind or path…" aria-label="Filter model browser" /></label>
-    <div className="browser-list" aria-label="Curated model inventory">
-      {filtered.map(([id, level]) => <button key={id} className={`browser-row ${selected === id ? 'selected' : ''}`} onClick={() => onSelect(id)} style={{ paddingLeft: 20 + (query ? 0 : level * 21) }}><span className="tree-joint">{['package', 'root', 'settings', 'front', 'rear'].includes(id) ? '⌄' : '·'}</span><Icon name={byId[id].kind.includes('Connector') ? 'connect' : byId[id].kind.includes('Function') ? 'flow' : byId[id].kind.includes('Requirement') ? 'case' : 'layers'} size={16} /><span>{byId[id].name}</span><small>{byId[id].kind}</small></button>)}
-      {filtered.length === 0 && <p className="empty-state">No matching elements. Try “panel”, “connector” or “Settings”.</p>}
-    </div>
-    <p className="surface-footnote">Curated navigation for this fixture. The source file contains the complete model.</p>
-  </div>;
-}
-
-function GridPanel({ selected, onSelect }: { selected: string; onSelect: (id: string) => void }) {
-  const [query, setQuery] = useState('');
-  const [ascending, setAscending] = useState(true);
-  const rows = entities.filter((e) => `${e.name} ${e.kind} ${e.path}`.toLowerCase().includes(query.toLowerCase())).sort((a, b) => (ascending ? 1 : -1) * a.path.localeCompare(b.path));
-  return <div className="grid-panel">
-    <div className="grid-toolbar"><span>{rows.length} elements <small>· curated inventory</small></span><label className="search-field"><Icon name="search" size={16} /><input placeholder="Filter inventory…" aria-label="Filter grid" value={query} onChange={(e) => setQuery(e.target.value)} /></label></div>
-    <div className="table-scroll"><table><thead><tr><th>Element</th><th>Kind</th><th><button onClick={() => setAscending(!ascending)}>Identity {ascending ? '↑' : '↓'}</button></th><th>Owner / context</th></tr></thead><tbody>{rows.map((e) => <tr key={e.id} className={selected === e.id ? 'selected-row' : ''}><td><button onClick={() => onSelect(e.id)}>{e.name}</button></td><td><span className="table-kind">{e.kind}</span></td><td><code>{e.path}</code></td><td><code>{e.owner}</code></td></tr>)}</tbody></table>{rows.length === 0 && <p className="empty-state">No matching elements.</p>}</div>
-    <p className="surface-footnote">Select a row for contracts, effective allocation, QoS and source. Sorting changes presentation only.</p>
-  </div>;
-}
-
-function SequencePanel({ onSelect }: { onSelect: (id: string) => void }) {
-  return <div className="sequence-panel">
-    <div className="sequence-callout"><span className="tag">CASE / Change</span><span>Dependency order, with independent notification branches.</span></div>
-    <div className="sequence-scroll"><svg className="sequence-svg" viewBox="0 0 760 455" role="img" aria-label="Change case sequence: adjust request, two independent notifications after adjust, and accepted reply after frontNotice. The reply correlates to adjust.">
-      <defs><marker id="seq-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 8 4 0 8Z" fill="#52695a" /></marker><marker id="reply-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="m1 1 7 3.5-7 3.5" fill="none" stroke="#52695a" /></marker></defs>
-      {[['front : Client', 120, 'front'], ['settings : Service', 380, 'settings'], ['rear : Client', 640, 'rear']].map(([label, x, id]) => <g key={id} role="button" tabIndex={0} aria-label={`Inspect ${label}`} onClick={() => onSelect(String(id))} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(String(id)); } }}><rect x={Number(x) - 96} y="16" width="192" height="64" rx="3" fill="#fff" stroke="#a1b0a2" /><text x={x} y="42" textAnchor="middle" className="seq-kind">component instance</text><text x={x} y="64" textAnchor="middle" className="seq-title">{label}</text><path d={`M${x} 80V425`} stroke="#b8c1b6" strokeDasharray="5 5" /></g>)}
-      <rect x="45" y="195" width="670" height="139" rx="3" fill="#ecf1e8" stroke="#c5d1c0" strokeDasharray="4 4" />
-      <text x="60" y="216" className="seq-note">INDEPENDENT BRANCHES · both after adjust</text>
-      <path d="M120 143H380" stroke="#52695a" strokeWidth="1.6" markerEnd="url(#seq-arrow)" /><text x="250" y="117" textAnchor="middle" className="seq-message">adjust / request setPoint</text><text x="250" y="133" textAnchor="middle" className="seq-route">front.setting → settings.api · frontLink</text>
-      <path d="M380 263H120" stroke="#52695a" strokeWidth="1.6" markerEnd="url(#seq-arrow)" /><text x="250" y="239" textAnchor="middle" className="seq-message">frontNotice / publish changed</text><text x="250" y="254" textAnchor="middle" className="seq-route">settings.api → front.setting · frontLink</text>
-      <path d="M380 312H640" stroke="#52695a" strokeWidth="1.6" markerEnd="url(#seq-arrow)" /><text x="510" y="288" textAnchor="middle" className="seq-message">rearNotice / publish changed</text><text x="510" y="303" textAnchor="middle" className="seq-route">settings.api → rear.setting · rearLink</text>
-      <path d="M380 395H120" stroke="#52695a" strokeWidth="1.6" strokeDasharray="5 4" markerEnd="url(#reply-arrow)" /><text x="250" y="367" textAnchor="middle" className="seq-message">accepted / reply setPoint</text><text x="250" y="384" textAnchor="middle" className="seq-route">after frontNotice · correlation: adjust</text>
-    </svg></div>
-    <div className="sequence-dependencies"><span>adjust → frontNotice → accepted</span><span>adjust → rearNotice</span></div>
-    <p className="surface-footnote">Vertical spacing is layout. There is no declared order between rearNotice and frontNotice or accepted. Payloads and an execution witness are not specified by this case.</p>
-  </div>;
-}
-
-function Inspector({ item, onSource, onClose }: { item: Entity; onSource: () => void; onClose: () => void }) {
-  return <aside id="diagram-properties" className="inspector" aria-label="Selected element properties" aria-live="polite">
-    <div className="inspector-caption">ELEMENT DETAILS <button type="button" className="icon-button" onClick={onClose} aria-label="Close element details"><Icon name="close" size={16}/></button></div>
-    <div className="inspector-symbol"><Icon name={item.kind.includes('Connector') ? 'connect' : item.kind.includes('Function') || item.kind === 'State' ? 'flow' : 'layers'} size={23} /></div>
-    <span className="eyebrow">{item.kind}</span><h3>{item.name}</h3><p className="inspector-description">{item.description}</p>
-    <div className="identity"><span>IDENTITY</span><code>{item.path}</code></div>
-    {item.definition && <div className="identity"><span>DEFINITION</span><code>{item.definition}</code></div>}
-    <dl className="properties"><div><dt>Owner</dt><dd>{item.owner}</dd></div>{item.properties.map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl>
-    <button className="source-link" onClick={onSource}><Icon name="code" size={15} />Inspect source<Icon name="arrow" size={15} /></button>
-  </aside>;
-}
-
-const modelSources: Record<string, () => Promise<string>> = {
-  '../../examples/08-service-field.swaml': () => Promise.resolve(source),
-  '../../examples/04-stateful-function.swaml': () => Promise.resolve(lifecycleSource),
-  '../../examples/16-requirements-and-views.swaml': () => import('../../examples/16-requirements-and-views.swaml?raw').then(module => module.default),
-  '../../examples/17-function-timing.swaml': () => import('../../examples/17-function-timing.swaml?raw').then(module => module.default),
-  '../../examples/19-interruptible-function.swaml': () => import('../../examples/19-interruptible-function.swaml?raw').then(module => module.default),
-};
-
-function SourceDialog({ filename, close }: { filename: string; close: () => void }) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const [copied, setCopied] = useState(false);
-  const [text, setText] = useState('');
-  const [error, setError] = useState(false);
-  const [download, setDownload] = useState('');
-  useEffect(() => {
-    dialogRef.current?.showModal();
-    let active = true;
-    const load = modelSources[`../../examples/${filename}`];
-    if (load) void load().then(value => { if (active) setText(value); }).catch(() => { if (active) setError(true); });
-    else setError(true);
-    return () => { active = false; };
-  }, [filename]);
-  useEffect(() => {
-    if (!text) return;
-    const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
-    setDownload(url);
-    return () => URL.revokeObjectURL(url);
-  }, [text]);
-  return <dialog ref={dialogRef} className="source-dialog" onCancel={close} onClick={event => { if (event.target === event.currentTarget) close(); }} aria-labelledby="source-title">
-    <div className="source-dialog-head"><div><span className="eyebrow">EXAMPLE MODEL</span><h3 id="source-title">{filename}</h3></div><button className="icon-button" onClick={close} aria-label="Close source"><Icon name="close"/></button></div>
-    {text ? <pre tabIndex={0} aria-label="Model source">{text.split('\n').map((line, i) => <span className="source-line" key={i}><span className="line-number" aria-hidden="true">{i + 1}</span><code>{line || ' '}</code></span>)}</pre> : <p className="source-dialog-description" role="status">{error ? 'Source could not be loaded. You can open it on GitHub below.' : 'Loading model source…'}</p>}
-    <div className="source-dialog-actions">{download && <a className="button button-ink" href={download} download={filename}><Icon name="download" size={16}/>Download model</a>}<button className="button button-quiet" disabled={!text} onClick={() => { void navigator.clipboard.writeText(text).then(() => setCopied(true)).catch(() => setCopied(false)); }}>{copied ? 'Copied' : 'Copy source'}</button><a href={`${repository}/blob/main/examples/${filename}`} target="_blank" rel="noreferrer">Open on GitHub ↗</a></div>
-  </dialog>;
-}
-
-type ExplorerId = DiagramId | 'Browser';
-type ResourceId = 'start' | 'walkthrough' | 'examples' | 'interfaces' | 'coverage';
-
-function initialSelection(id: ExplorerId): Entity {
-  if (id === 'states') return { id: 'lifecycle', kind: 'Function', name: 'lifecycle()', path: 'Lifecycle::Device.lifecycle', owner: 'Lifecycle::Device', description: 'The function owns its Idle, Running and final Stopped states and their transitions.', properties: [['Model source', '04-stateful-function.swaml'], ['Trigger', 'on start']], snippet: 'function lifecycle() on start {' };
-  if (id === 'timing') return { id: 'timing-root', kind: 'Execution root', name: 'Demo', path: 'FunctionTiming::Demo', owner: 'FunctionTiming', description: 'Two independent clients and servers provide the function activations shown in this timing example.', properties: [['Model source', '17-function-timing.swaml']], snippet: 'component Demo {' };
-  if (id === 'interrupts') return { id: 'interrupt-function', kind: 'Function', name: 'run()', path: 'Interrupts::App.worker.run', owner: 'Interrupts::App.worker', description: 'A typed stop event interrupts protected work inside this function.', properties: [['Model source', '19-interruptible-function.swaml']], snippet: 'function run() on start {' };
-  return byId[id === 'cv' || id === 'sv' ? 'case' : id === 'flow' ? 'update' : id === 'Browser' || id === 'grv' ? 'package' : id === 'iv' ? 'settings' : 'root'];
-}
-
-function diagramFromHash(): ExplorerId | undefined {
-  if (typeof window === 'undefined') return;
-  const hash = window.location.hash;
-  const id = hash.replace(/^#diagrams\//, '');
-  if (id === 'Browser' || diagramChoices.some(item => item.id === id)) return id as ExplorerId;
-}
-
-function Resource({ id, title, description, open, onToggle, children }: {
-  id: string; title: string; description: string; open: boolean;
-  onToggle: (open: boolean) => void; children: React.ReactNode;
-}) {
-  return <details id={id} className="learn-resource" open={open} onToggle={event => onToggle(event.currentTarget.open)}>
-    <summary><span><strong>{title}</strong><span>{description}</span></span><span className="resource-expand" aria-hidden="true">+</span></summary>
-    {open && <Suspense fallback={<p className="resource-loading" role="status">Loading example…</p>}><div className="resource-content">{children}</div></Suspense>}
-  </details>;
-}
-
-function App() {
-  const [active, setActive] = useState<ExplorerId>(() => diagramFromHash() ?? 'iv');
-  const choice = diagramChoices.find(item => item.id === active);
-  const view: ViewId = choice?.view ?? 'Browser';
-  const flowMode = choice?.mode ?? 'flow';
-  const stateMode = view === 'fv' && flowMode === 'states';
-  const [selected, setSelected] = useState<Entity>(() => initialSelection(diagramFromHash() ?? 'iv'));
-  const [showDetails, setShowDetails] = useState(false);
-  const openDetails = useCallback(() => setShowDetails(true), []);
-  const [showSource, setShowSource] = useState(false);
-  const detailsButton = useRef<HTMLButtonElement>(null);
-  const [resources, setResources] = useState<Partial<Record<ResourceId, boolean>>>({});
-  const setResource = useCallback((id: ResourceId, open: boolean) => {
-    setResources(previous => previous[id] === open ? previous : { ...previous, [id]: open });
-  }, []);
-
-  const changeDiagram = useCallback((id: ExplorerId) => {
-    setActive(id);
-    setShowDetails(false);
-    setShowSource(false);
-    setSelected(initialSelection(id));
-  }, []);
-  const chooseDiagram = (id: ExplorerId) => {
-    changeDiagram(id);
-    window.history.replaceState(null, '', `#diagrams/${id}`);
-  };
-  useEffect(() => {
-    const followHash = () => {
-      const id = diagramFromHash();
-      if (id) changeDiagram(id);
-      const hash = window.location.hash;
-      const resource: ResourceId | undefined = hash === '#traceability' ? 'coverage' : hash === '#quick-start' || hash === '#resource-start' ? 'start' : hash === '#architectures' || hash === '#resource-examples' ? 'examples' : hash === '#interfaces' || hash === '#resource-interfaces' ? 'interfaces' : hash === '#modeling-walkthrough' || hash === '#resource-walkthrough' ? 'walkthrough' : hash === '#resource-coverage' ? 'coverage' : undefined;
-      if (resource) setResource(resource, true);
-      const target = resource ? `resource-${resource}` : id || hash === '#explorer' ? 'diagrams' : hash === '#modeling-overview' ? 'ontology' : undefined;
-      if (target) requestAnimationFrame(() => document.getElementById(target)?.scrollIntoView({ block: 'start' }));
-    };
-    followHash();
-    window.addEventListener('hashchange', followHash);
-    return () => window.removeEventListener('hashchange', followHash);
-  }, [changeDiagram, setResource]);
-
-  const select = useCallback((id: string, data?: CardData) => {
-    if (stateMode) {
-      setSelected({ id, kind: data?.variant === 'state' ? 'State' : 'Function-owned element', name: data?.title || id,
-        path: `Lifecycle::Device.lifecycle.${id}`, owner: 'Lifecycle::Device.lifecycle',
-        description: 'States and transitions belong directly to the lifecycle function.',
-        properties: [['Model source', '04-stateful-function.swaml'], ['Function', 'Device.lifecycle']], snippet: data?.detail || id });
-    } else if (byId[id]) setSelected(byId[id]);
-    else if (id === 'coverage') setSelected(byId.requirement);
-    else if (data?.entityId && byId[data.entityId]) setSelected(byId[data.entityId]);
-    else return;
-    setShowDetails(true);
-  }, [stateMode]);
-
-  return <div className="showcase-page">
-    <a className="skip-link" href="#diagrams">Skip to diagrams</a>
-    <header className="site-header">
-      <a href="#" className="brand" aria-label="SWAML home">swaml<span className="brand-dot">.</span></a>
-      <nav aria-label="Main navigation"><a href="#ontology">Ontology</a><a href="#diagrams">Diagrams</a><a href="#guide">Learn</a><a className="github-nav" href={repository} target="_blank" rel="noreferrer"><Icon name="github" size={18}/>GitHub<Icon name="external" size={13}/></a></nav>
-    </header>
-    <main>
-      <section className="showcase-hero" aria-labelledby="hero-title">
-        <div className="hero-edition">SOFTWARE ARCHITECTURE MODELING LANGUAGE <span>1.3.1</span></div>
-        <h1 id="hero-title">See the architecture.<br/><span>Follow the behavior.</span></h1>
-        <p>A small language for software structure, contracts and behavior.<br className="desktop-break"/> Explore the concepts, then see them in working model examples.</p>
-        <div className="hero-actions"><a href="#diagrams" className="button button-ink">Explore the diagrams<Icon name="arrow" size={16}/></a><a href={`${repository}/blob/main/docs/QUICK_START.md`} className="hero-guide-link" target="_blank" rel="noreferrer">Read the quick guide ↗</a></div>
-      </section>
-
-      <section id="ontology" className="ontology-section" aria-labelledby="ontology-title"><div id="modeling-overview" className="showcase-section-heading"><div><span className="eyebrow">THE ONTOLOGY</span><h2 id="ontology-title">How the language fits together.</h2></div><p>See what each concept owns, uses and connects to. Select one to learn more.</p></div><Ontology/></section>
-
-      <section id="diagrams" className="diagram-section" aria-labelledby="diagrams-title">
-        <div className="showcase-section-heading"><div><span className="eyebrow">THE DIAGRAMS</span><h2 id="diagrams-title">Different views. One language.</h2></div><p>Choose a view to explore. Select an element for its details.</p></div>
-        <DiagramGallery selected={active} onSelect={chooseDiagram}/>
-        <div id="diagram-example" className="gallery-workbench" aria-label={`${choice?.title ?? 'Model browser'} example`}>
-          <div className="gallery-example-heading">
-            <div><span className="eyebrow">{choice?.example ?? 'Explore model ownership'}</span><h3>{choice?.title ?? 'Model browser'} <code>{view}</code></h3><code className="example-subject">{choice?.subjectLabel ? `${choice.subjectLabel}: ` : ''}{choice?.subject ?? 'Settings'}{choice?.subjectNote ? ` · ${choice.subjectNote}` : ''}</code></div>
-            <div className="gallery-actions"><button type="button" className="icon-button" onClick={() => chooseDiagram('Browser')} aria-pressed={active === 'Browser'}><Icon name="tree" size={16}/><span>Browse model</span></button><button ref={detailsButton} type="button" className="icon-button" aria-expanded={showDetails} aria-controls="diagram-properties" onClick={() => setShowDetails(!showDetails)}><Icon name="layers" size={16}/><span>Details</span></button><button type="button" className="icon-button" onClick={() => setShowSource(true)}><Icon name="code" size={16}/><span>Source</span></button></div>
-          </div>
-          <div className={`gallery-example-body ${showDetails ? 'has-details' : ''}`}>
-            <div className="gallery-example-canvas">
-              <Suspense fallback={<p className="resource-loading" role="status">Loading diagram…</p>}>
-                {active === 'interrupts' ? <InterruptFlow onSelect={setSelected}/> : view === 'tv' ? <FunctionTiming onSelect={setSelected} onInspect={openDetails}/> : view === 'gv' ? <StructureView selected={selected.id} onSelect={select}/> : view === 'Browser' ? <BrowserPanel selected={selected.id} onSelect={select}/> : view === 'grv' ? <GridPanel selected={selected.id} onSelect={select}/> : view === 'sv' ? <SequencePanel onSelect={select}/> : <ReactFlowProvider key={active}><Canvas view={view} stateMode={stateMode} onSelect={select}/></ReactFlowProvider>}
-              </Suspense>
-            </div>
-            {showDetails && <Inspector item={selected} onSource={() => setShowSource(true)} onClose={() => { setShowDetails(false); detailsButton.current?.focus(); }}/>}
-          </div>
-          <div className="gallery-example-footer"><span>Interactive example · pan, zoom and inspect</span><a href={`${repository}/blob/main/docs/GRAPHICAL_CATALOG.md`} target="_blank" rel="noreferrer">Full notation reference ↗</a></div>
+function Explorer() {
+  const [view, setView] = useState<View>('Interconnect'), [selected, select] = useState('Control::Demo.controller'), [tree, setTree] = useState(false), [observed, setObserved] = useState(true), [showSource, setShowSource] = useState(false);
+  const current = all.find(n => n.id === selected) ?? components[1];
+  const detailSource = current.kind === 'component' && current.definition !== current.id ? all.find(n=>n.id===current.definition)?.code ?? current.code : current.code;
+  return <section id="explore" className="explorer section-anchor" aria-labelledby="explore-title">
+    <div className="section-heading"><div><span className="eyebrow">01 / ONE MODEL, EVERY PERSPECTIVE</span><h2 id="explore-title">Follow the signal.</h2></div><p>A sensor, a controller, a heater.<br/>Explore the structure. Read the behavior.</p></div>
+    <div className="workbench"><div className="workbench-title"><span><span className="status-square"/> controller.swaml</span><span>SWAML 2.0 <span className="muted">/ validated source</span></span><button className={showSource ? 'source-toggle active' : 'source-toggle'} onClick={() => setShowSource(!showSource)} aria-pressed={showSource}><Icon name="source" size={15}/>{showSource ? 'Show model' : 'View source'}</button></div>
+      <div className="view-tabs" role="tablist" aria-label="Source view">{views.map((v, i) => <button key={v} id={`tab-${v}`} role="tab" aria-selected={view === v} aria-controls="model-view" tabIndex={view === v ? 0 : -1} onKeyDown={e => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const next = views[(i + (e.key === 'ArrowRight' ? 1 : views.length - 1)) % views.length]; setView(next); document.getElementById(`tab-${next}`)?.focus(); e.preventDefault(); } }} onClick={() => { setView(v); setShowSource(false); }}>{v}</button>)}</div>
+      {showSource ? <div className="full-source"><div className="source-actions"><span>Complete validated model</span><CopyButton text={model.source}/><a href="./downloads/controller.swaml" download>Download .swaml <Icon name="arrow" size={14}/></a></div><Code text={model.source} numbers/></div> : <div className="workbench-body">
+        <aside className="model-browser" aria-label="Model Browser"><span className="pane-heading">BROWSER</span><span className="browser-root">▾ Demo</span>{components.map(n => <div key={n.id}><button aria-pressed={selected === n.id} onClick={() => select(n.id)}><span>⌞</span> {n.name}</button>{operations.filter(o => o.owner === n.id).map(o => <button key={o.id} className="browser-operation" aria-pressed={selected === o.id} onClick={() => select(o.id)}>{o.name}()</button>)}</div>)}<span className="browser-footer">3 occurrences<br/>Separate private state</span></aside>
+        <div className="view-pane"><div className="view-toolbar"><span className="view-caption">{view} <span className="muted">/ Demo</span></span>{view === 'General' && <div className="segmented"><button aria-pressed={!tree} onClick={() => setTree(false)}>Box in box</button><button aria-pressed={tree} onClick={() => setTree(true)}>Tree</button></div>}{view === 'Timing' && <div className="segmented"><button aria-pressed={!observed} onClick={() => setObserved(false)}>Declared</button><button aria-pressed={observed} onClick={() => setObserved(true)}>Observed</button></div>}</div>
+          <div id="model-view" role="tabpanel" aria-labelledby={`tab-${view}`} className="model-canvas">{view === 'Interconnect' ? <Interconnect selected={selected} select={select}/> : view === 'General' ? <General selected={selected} select={select} tree={tree}/> : view === 'Sequence' ? <Sequence/> : view === 'Case' ? <CaseView/> : view === 'Flow' ? <Flow/> : view === 'Timing' ? <Timing observed={observed}/> : <div className="inventory-table"><table><caption>Model occurrence inventory</caption><thead><tr><th>Name</th><th>Kind</th><th>Owned by</th></tr></thead><tbody>{all.filter(n => n.id.startsWith(root + '.') && ['component','operation','port','attribute'].includes(n.kind)).map(n => <tr key={n.id}><td><button onClick={() => select(n.id)}>{n.name}{n.kind === 'operation' ? '()' : ''}</button></td><td>{n.kind}</td><td>{n.owner?.replace(root + '.', '') ?? 'Demo'}</td></tr>)}</tbody></table></div>}</div>
+          <div className="canvas-status"><span>● {view === 'Timing' && observed ? `${model.run.profile} · horizon 29ms` : 'Source-backed projection'}</span><span>{view === 'Timing' ? 'Logical time · no physical cost claim' : 'Select a component to inspect its source'}</span></div>
         </div>
-        <p className="gallery-reading-note">Structure and interactions use gv, iv, cv, sv and grv. Function flow, states and interrupts use fv; timing uses tv. Box in box and Tree are two layouts of the same gv ownership. The model browser shows ownership.</p>
-      </section>
-
-      <section id="guide" className="learn-section" aria-labelledby="learn-title">
-        <div className="showcase-section-heading"><div><span className="eyebrow">GO A LITTLE FURTHER</span><h2 id="learn-title">Start small. Explore when you need to.</h2></div><a href={`${repository}/blob/main/docs/USER_GUIDE.md`} target="_blank" rel="noreferrer">Full user guide ↗</a></div>
-        <Resource id="resource-start" title="Write your first model" description="A short guide from contract to components." open={!!resources.start} onToggle={open => setResource('start', open)}><QuickStart/></Resource>
-        <Resource id="resource-walkthrough" title="Follow one end-to-end example" description="Use case → interactions → function → software structure." open={!!resources.walkthrough} onToggle={open => setResource('walkthrough', open)}><ModelingOverview journeyOnly/></Resource>
-        <Resource id="resource-examples" title="Explore an architecture" description="AUTOSAR Classic, Adaptive, a web application and a cloud service." open={!!resources.examples} onToggle={open => setResource('examples', open)}><Architectures/></Resource>
-        <Resource id="resource-coverage" title="Link requirements and verification" description="Explore satisfaction, verification intent and formal documentation." open={!!resources.coverage} onToggle={open => setResource('coverage', open)}><Traceability embedded/></Resource>
-        <Resource id="resource-interfaces" title="Choose a communication pattern" description="Data, requests, events and service interfaces." open={!!resources.interfaces} onToggle={open => setResource('interfaces', open)}><Interfaces/></Resource>
-      </section>
-    </main>
-    <footer className="site-footer"><a href="#" className="brand">swaml<span className="brand-dot">.</span></a><span>A language for software architecture · MIT license</span><div><a href={`${repository}/releases/tag/v1.3.1`} target="_blank" rel="noreferrer">Released 1.3.1 ↗</a><a href={`${repository}/blob/main/docs/LANGUAGE_SPECIFICATION.md`} target="_blank" rel="noreferrer">Specification ↗</a></div></footer>
-    {showSource && <SourceDialog filename={choice?.sourceFile ?? '08-service-field.swaml'} close={() => setShowSource(false)}/>}
-  </div>;
+      </div>}
+      {!showSource && <div className="inspector"><div><span className="pane-heading">SELECTED SOURCE</span><strong>{current.id.replace('Control::', '')}</strong><span className="muted">{current.definition !== current.id ? `definition: ${current.definition}` : current.kind}</span></div><Code text={detailSource}/><CopyButton text={detailSource} label="Copy source"/></div>}
+    </div>
+    <p className="evidence-note">The diagrams and trace are generated from the validated example. Source fingerprint <code>{model.sha256.slice(0,12)}</code>. <a href="./downloads/controller.swaml" download>Get the model <Icon name="arrow" size={14}/></a></p>
+  </section>;
 }
-export default App;
+
+export default function App() {
+  const [theme, setTheme] = useState<Theme>(() => { try { const saved = localStorage.getItem('swaml-theme'); return saved === 'light' || saved === 'dark' ? saved : 'system'; } catch { return 'system'; } });
+  useEffect(() => { const media = matchMedia('(prefers-color-scheme: dark)'); const apply = () => { document.documentElement.dataset.theme = theme === 'system' ? media.matches ? 'dark' : 'light' : theme; }; apply(); media.addEventListener('change', apply); try { localStorage.setItem('swaml-theme', theme); } catch { /* storage is optional */ } return () => media.removeEventListener('change', apply); }, [theme]);
+  const controller = all.find(n => n.id === 'Control::Controller')!;
+  return <><a className="skip-link" href="#main">Skip to content</a><header className="site-header"><a href="#" className="wordmark" aria-label="SWAML home"><span className="brand-mark">s<span>_</span></span>swaml<span className="version-label">2.0</span></a><nav aria-label="Main navigation"><a href="#explore">Explore</a><a href="#language">Language</a><a href="#start">Get started</a><a href={github} target="_blank" rel="noreferrer">GitHub <Icon name="external" size={13}/></a></nav><button className="theme-toggle" onClick={() => setTheme(theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system')} aria-label={`Theme: ${theme}. Switch to ${theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system'}`} title={`Theme: ${theme}`}><Icon name={theme === 'light' ? 'sun' : theme === 'dark' ? 'moon' : 'system'}/><span>{theme}</span></button></header>
+    <main id="main"><section className="hero"><div className="hero-intro"><span className="eyebrow"><span className="status-square"/> SOFTWARE ARCHITECTURE MODELING LANGUAGE</span><h1>Systems,<br/>spelled out<span className="cursor">_</span></h1><p className="hero-description">Make the structure explicit.<br/>Make the behavior readable.<br/>Keep the whole system in plain text.</p><div className="hero-actions"><a className="button primary" href="#explore">Explore a model <Icon name="arrow"/></a><a className="text-link" href="#start">Start writing <Icon name="arrow" size={16}/></a></div><div className="hero-footnote"><span>OPEN SOURCE / MIT</span><span>EDITION 2.0 / CANDIDATE</span></div></div><div className="hero-terminal"><div className="terminal-top"><span className="terminal-dots"><i/><i/><i/></span><span>controller.swaml</span><Tag>2.0</Tag></div><Code text={controller.code} numbers/><div className="terminal-bottom"><span>Readable by humans. Structured for agents.</span><span>UTF-8</span></div></div><div className="hero-index" aria-hidden="true">[ 001 / MODEL THE INTENT ]</div></section>
+      <div className="principle-strip"><span><b>01</b> Components own state.</span><span><b>02</b> Ports make boundaries explicit.</span><span><b>03</b> Operations describe behavior.</span></div>
+      <Explorer/>
+      <section id="language" className="language-section section-anchor"><div className="section-heading"><div><span className="eyebrow">02 / A SMALLER VOCABULARY</span><h2>Less ceremony.<br/>More meaning.</h2></div><p>One component concept. One operation concept.<br/>Types, names and intent stay visible.</p></div><div className="language-examples"><article><span className="example-number">[ 01 ]</span><h3>Define it. Use it.</h3><p>Reuse a definition. Give every occurrence its own private state.</p><Code text={'component def Sensor {\n  attribute value: real = 0.0;\n}\n\ncomponent probe: Sensor;\ncomponent bank: Sensor[4];'}/></article><article><span className="example-number">[ 02 ]</span><h3>Declare the boundary.</h3><p>Name every member. Make its direction and payload clear.</p><Code text={'port def Readings {\n  provides attribute value: real;\n  provides event changed(v: real);\n}\n\nreversed port input: Readings;'}/></article><article><span className="example-number">[ 03 ]</span><h3>Say when it runs.</h3><p>Keep behavior separate from the schedule that activates it.</p><Code text={'operation sample() {\n  wait 1ms;\n  send reading.temperature(18.5);\n}\n\nschedule {\n  on every 10ms sample();\n}'}/></article></div></section>
+      <section className="ai-section"><div><span className="eyebrow">03 / BUILT FOR A VALIDATE–FIX LOOP</span><h2>Human readable.<br/>Agent ready.</h2><p>Explicit types. Canonical source. Stable diagnostics.<br/>Give an AI the model, the rules and a way to check its work.</p><div className="ai-links"><a href="./downloads/ai-guide.md" download>AI authoring guide <Icon name="arrow" size={16}/></a><a href="./downloads/swaml-author-SKILL.md" download>Authoring skill <Icon name="arrow" size={16}/></a><a href="./downloads/swaml-validate-SKILL.md" download>Validation skill <Icon name="arrow" size={16}/></a></div></div><div className="agent-loop"><span>01 / AUTHOR</span><div className="loop-connector"/><span>02 / VALIDATE <small>typed source + stable diagnostics</small></span><div className="loop-connector"/><span>03 / REFINE <small>recheck the complete model</small></span><div className="loop-note"><Icon name="source" size={16}/> Source stays the model.</div></div></section>
+      <section id="start" className="start-section section-anchor"><div className="section-heading"><div><span className="eyebrow">04 / FROM SOURCE TO EVIDENCE</span><h2>Start with a file.</h2></div><a className="button secondary" href="./downloads/usage-guide.md" download>Read the usage guide <Icon name="arrow" size={16}/></a></div><div className="start-grid"><div><span className="start-number">01</span><h3>Build the workbench.</h3><p>Node.js 22+ and npm 10.2.3+.</p><div className="command-block"><code>git clone {github}.git<br/>cd swaml<br/>npm ci<br/>npm run build</code><CopyButton text={`git clone ${github}.git\ncd swaml\nnpm ci\nnpm run build`}/></div></div><div><span className="start-number">02</span><h3>Check the model.</h3><p>Validate the complete source workspace.</p><div className="command-block"><code>node out/src/cli/main.js --json<br/>&nbsp; examples/01-hello.swaml</code><CopyButton text="node out/src/cli/main.js --json examples/01-hello.swaml"/></div><a className="text-link" href="./downloads/controller.swaml" download>Download the controller model <Icon name="arrow" size={16}/></a></div></div><p className="scope-note">SWAML 2.0 is an unpublished implementation candidate. A bounded reference run is evidence for that run; production scheduling, universal verification and KerML export require separate evidence. <a href={`${github}/blob/main/docs/IMPLEMENTATION_STATUS.md`} target="_blank" rel="noreferrer">Implementation status <Icon name="external" size={12}/></a></p></section>
+    </main><footer className="site-footer"><a className="wordmark" href="#">swaml<span className="version-label">2.0</span></a><p>Software architecture, in plain text.</p><div><a href={`${github}/blob/main/LICENSE`} target="_blank" rel="noreferrer">MIT license</a><a href={github} target="_blank" rel="noreferrer">Source <Icon name="external" size={12}/></a><span>© SWAML contributors</span></div></footer></>;
+}

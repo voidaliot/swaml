@@ -1,0 +1,130 @@
+{
+  "width": 920,
+  "height": 390,
+  "elements": [
+    {
+      "kind": "rect",
+      "x": 1,
+      "y": 1,
+      "w": 918,
+      "h": 388,
+      "fill": "#fafafa",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 36,
+      "text": "Named routed case steps",
+      "size": 21
+    },
+    {
+      "kind": "line",
+      "x1": 26,
+      "y1": 54,
+      "x2": 894,
+      "y2": 54,
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 45,
+      "y": 110,
+      "w": 330,
+      "h": 190,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 45,
+      "y": 110,
+      "w": 330,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 57,
+      "y": 133,
+      "text": "requirement Delivery",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 57,
+      "y": 168,
+      "text": "immutable typed attributes",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 57,
+      "y": 190,
+      "text": "one formal doc",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 535,
+      "y": 110,
+      "w": 330,
+      "h": 190,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 535,
+      "y": 110,
+      "w": 330,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 547,
+      "y": 133,
+      "text": "verificationCase Startup",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 547,
+      "y": 168,
+      "text": "verify Delivery",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 547,
+      "y": 190,
+      "text": "named routed publish step",
+      "size": 12
+    },
+    {
+      "kind": "line",
+      "x1": 375,
+      "y1": 205,
+      "x2": 535,
+      "y2": 205,
+      "dash": true
+    },
+    {
+      "kind": "text",
+      "x": 400.0,
+      "y": 193.0,
+      "text": "intent",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 45,
+      "y": 345,
+      "text": "satisfy and verify links are intent; a witness requires separate evidence.",
+      "size": 14
+    }
+  ]
+}

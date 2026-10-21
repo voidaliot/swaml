@@ -1,0 +1,34 @@
+package Receiving {
+  port def Messages {
+    provides event message(value: int);
+  }
+  component def Sender {
+    port output: Messages;
+    operation emit() {
+      publish output.message(8);
+    }
+    schedule {
+      on start emit();
+    }
+  }
+  component def Receiver {
+    reversed port input: Messages;
+    attribute last: int = 0;
+    operation work() {
+      wait 2ms;
+      on receive input.message(value) {
+        last = value;
+      } or after 1ms {
+        last = - 1;
+      }
+    }
+    schedule {
+      on start work();
+    }
+  }
+  component Demo {
+    component sender: Sender;
+    component receiver: Receiver;
+    connect (sender.output, receiver.input);
+  }
+}

@@ -1,5 +1,7 @@
 # ADR 0007 — Components, functions and calculations
 
+> Superseded for development 2.0 by [ADR 0016](0016-swaml-2-0.md). Preserved as the historical 1.x decision.
+
 Status: accepted for SWAML 1.2.0. Date: 2026-10-16.
 
 [ADR 0010](0010-consistent-subject-relations.md) records the 1.2.1 relation-syntax correction and its migration.

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>SWAML 2.0 original notation</title>
+<rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
+<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Operation-owned ordered states</text>
+<line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
+<ellipse cx="55.0" cy="205.0" rx="5.0" ry="5.0" fill="#171717" stroke="#171717"/>
+<rect x="110" y="135" width="220" height="140" fill="#ffffff" stroke="#171717"/>
+<rect x="110" y="135" width="220" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="122" y="158" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">state Off</text>
+<text x="122" y="193" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">after 2ms to On</text>
+<rect x="400" y="135" width="230" height="140" fill="#ffffff" stroke="#171717"/>
+<rect x="400" y="135" width="230" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="412" y="158" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">state On</text>
+<text x="412" y="193" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">on entry: lit = true</text>
+<text x="412" y="215" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">on exit: lit = false</text>
+<ellipse cx="805.0" cy="205.0" rx="14.0" ry="14.0" fill="#171717" stroke="#171717"/>
+<line x1="60" y1="205" x2="110" y2="205" stroke="#171717"/>
+<line x1="330" y1="205" x2="400" y2="205" stroke="#171717"/>
+<line x1="630" y1="205" x2="790" y2="205" stroke="#171717"/>
+<text x="655.0" y="193.0" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">after 3ms</text>
+<text x="670" y="305" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">final state Done</text>
+<text x="80" y="345" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">Nested transitions are tested in source order. Final entry completes the operation.</text>
+</svg>

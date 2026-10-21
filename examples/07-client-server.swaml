@@ -1,41 +1,42 @@
-package Rpc {
-    interface clientServer Health version "1.0.0" {
-        function check(): bool idempotent;
+package ClientServer {
+  import Swaml::Qos;
+  port def Catalog {
+    provides idempotent operation get(key: int) returns real;
+    provides event changed(key: int);
+  }
+  component def Store {
+    port api: Catalog;
+    attribute value: real = 4.5;
+    operation get(key: int) returns real {
+      wait 1ms;
+      return value;
     }
-    component def Server {
-        port health: Health server;
-        function checkHealth(): bool on call health.check { return true; }
+    operation announce() {
+      publish api.changed(1);
     }
-    component def Client {
-        port health: Health client;
-        var healthy: bool = false;
-        function poll() on every 1 s {
-            call health.check() as statusValue within 100 ms otherwise { healthy = false; return; };
-            healthy = statusValue;
-            return;
-        }
+    schedule {
+      on call api.get(k) get(k);
+      on start announce();
     }
-    component def Service {
-        port health: Health server;
-        component serverUnit: Server;
-        delegate health -> serverUnit.health;
+  }
+  component def Client {
+    reversed port api: Catalog;
+    attribute last: real = 0.0;
+    attribute changedKey: int = 0;
+    operation read() {
+      last = try(api.get(1), - 1.0);
     }
-    component def Caller {
-        port health: Health client;
-        component clientUnit: Client;
-        delegate health -> clientUnit.health;
+    operation changed(key: int) {
+      changedKey = key;
     }
-    component HealthCheck {
-        component caller: Caller;
-        component serviceUnit: Service;
-        connect healthCheck: caller.health -> serviceUnit.health qos {
-            delivery atLeastOnce; ordering fifo; capacity 4; overflow reject;
-        };
+    schedule {
+      on start read();
+      on receive api.changed(k) changed(k);
     }
-    useCase Poll of HealthCheck {
-        call caller.health.check -> serviceUnit.health.check via healthCheck label sent;
-        reply serviceUnit.health.check -> caller.health.check via healthCheck after sent label answered;
-    }
-    view interaction sv of Poll;
-    view requestFlow fv of Client.poll;
+  }
+  component Demo {
+    component store: Store;
+    component client: Client;
+    connect catalog: Reliable (store.api, client.api);
+  }
 }

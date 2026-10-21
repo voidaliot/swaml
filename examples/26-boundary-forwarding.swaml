@@ -1,0 +1,34 @@
+package Boundary {
+  port def Temperature {
+    provides attribute temperature: real;
+  }
+  component def Sensor {
+    port reading: Temperature;
+    operation sample() {
+      send reading.temperature(18.5);
+    }
+    schedule {
+      on start sample();
+    }
+  }
+  component def Composite {
+    port boundary: Temperature;
+    component child: Sensor;
+    connect (boundary, child.reading);
+  }
+  component def Display {
+    reversed port reading: Temperature;
+    attribute last: real = 0.0;
+    operation display(value: real) {
+      last = value;
+    }
+    schedule {
+      on receive reading.temperature(value) display(value);
+    }
+  }
+  component Demo {
+    component source: Composite;
+    component display: Display;
+    connect (source.boundary, display.reading);
+  }
+}

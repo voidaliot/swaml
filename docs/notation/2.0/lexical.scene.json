@@ -1,0 +1,69 @@
+{
+  "width": 920,
+  "height": 390,
+  "elements": [
+    {
+      "kind": "rect",
+      "x": 1,
+      "y": 1,
+      "w": 918,
+      "h": 388,
+      "fill": "#fafafa",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 36,
+      "text": "Lexical and path spelling",
+      "size": 21
+    },
+    {
+      "kind": "line",
+      "x1": 26,
+      "y1": 54,
+      "x2": 894,
+      "y2": 54,
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 70,
+      "y": 115,
+      "w": 775,
+      "h": 200,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 70,
+      "y": 115,
+      "w": 775,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 82,
+      "y": 138,
+      "text": "Canonical source spelling",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 82,
+      "y": 173,
+      "text": "Names, paths, punctuation and units stay in source captions.",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 82,
+      "y": 195,
+      "text": "No independent semantic node is invented for a lexical token.",
+      "size": 12
+    }
+  ]
+}

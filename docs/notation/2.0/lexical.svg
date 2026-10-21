@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>SWAML 2.0 original notation</title>
+<rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
+<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Lexical and path spelling</text>
+<line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
+<rect x="70" y="115" width="775" height="200" fill="#ffffff" stroke="#171717"/>
+<rect x="70" y="115" width="775" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="82" y="138" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">Canonical source spelling</text>
+<text x="82" y="173" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">Names, paths, punctuation and units stay in source captions.</text>
+<text x="82" y="195" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">No independent semantic node is invented for a lexical token.</text>
+</svg>

@@ -1,44 +1,28 @@
-package Lifecycle {
-    interface publishSubscribe Commands version "1.0.0" { event begin(); event stop(); }
-    interface publishSubscribe Status version "1.0.0" { event changed(value: string); }
-    component def Operator {
-        port commands: Commands publisher;
-        function startDevice() { publish commands.begin(); return; }
-        function stopDevice() { publish commands.stop(); return; }
-        function driveInputs() on start {
-            initial Waiting;
-            state Waiting {}
-            state Started final { entry { call startDevice(); } }
-            transition beginDevice: Waiting -> Started on after 1 ns {}
+package States {
+  import Swaml::Views;
+  component Demo {
+    attribute lit: bool = false;
+    operation lamp() {
+      initial Off;
+      state Off {
+        after 2ms to On {
         }
-    }
-    component def Device {
-        port commands: Commands subscriber;
-        port status: Status publisher;
-        var cycles: int = 0;
-        function lifecycle() on start {
-            initial Idle;
-            state Idle { entry { publish status.changed("idle"); } }
-            state Running { entry { cycles = cycles + 1; publish status.changed("running"); } }
-            state Stopped final { entry { publish status.changed("stopped"); } }
-            transition beginRun: Idle -> Running on receive commands.begin {}
-            transition stopRun: Running -> Stopped on receive commands.stop {}
-            transition expire: Running -> Stopped on after 30 s { publish status.changed("timeout"); }
+      }
+      state On {
+        on entry {
+          lit = true;
+        } on exit {
+          lit = false;
         }
+        after 3ms to Done {
+        }
+      }
+      final state Done {
+      }
     }
-    component def Monitor {
-        port status: Status subscriber;
-        var current: string = "unknown";
-        function observe(value: string) on receive status.changed { current = value; return; }
+    schedule {
+      on start lamp();
     }
-    component def Assembly {
-        component operatorUnit: Operator;
-        component device: Device;
-        component monitor: Monitor;
-        connect commands: operatorUnit.commands -> device.commands qos { delivery atMostOnce; ordering fifo; capacity 8; overflow reject; };
-        connect status: device.status -> monitor.status qos { delivery atMostOnce; ordering fifo; capacity 8; overflow dropOldest; };
-    }
-    component Product { component assembly: Assembly; }
-    view lifecycle fv of Device.lifecycle;
-    view wiring iv of Assembly;
+  }
+  view states: Flow of Demo.lamp;
 }

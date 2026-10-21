@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.0 — implementation candidate, unpublished
+
+Clean restart with components and operations, private attributes, explicit returns, nested operations, expression calls and try, directed structural ports, derived connection/forwarding, versioned QoS/Math/Views/Platform libraries, schedules and suspension unlock, ordered states, multiplicity and Node deployments. The source, examples, guides, AI skills, inventories and diagrams use only 2.0. Published 1.x artifacts remain unchanged. No compatibility parser or 2.0 migration guide is supplied. The GitHub Pages redesign is prepared for design review before publication. See ADR 0016 and IMPLEMENTATION_STATUS for tested scope and evidence.
+
 ## 1.4.0 development — 2026-10-19 (unpublished)
 
 - Add `function B() on completion A` and the corresponding operation form for same-owner successful whole-executable completion dependencies.

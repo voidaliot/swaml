@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>SWAML 2.0 original notation</title>
+<rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
+<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Forwarding preserves boundary direction</text>
+<line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
+<rect x="45" y="95" width="810" height="230" fill="#ffffff" stroke="#171717"/>
+<text x="65" y="123" font-family="DejaVu Sans, sans-serif" font-size="16" fill="#171717">Composite boundary</text>
+<rect x="40" y="205" width="10" height="10" fill="#ffffff" stroke="#171717"/>
+<rect x="440" y="155" width="300" height="125" fill="#ffffff" stroke="#171717"/>
+<rect x="440" y="155" width="300" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="452" y="178" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">child: Sensor</text>
+<text x="452" y="213" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">port reading: Temperature</text>
+<text x="452" y="235" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">provides attribute temperature: real</text>
+<rect x="435" y="205" width="10" height="10" fill="#ffffff" stroke="#171717"/>
+<line x1="50" y1="210" x2="435" y2="210" stroke="#171717" stroke-dasharray="5 4"/>
+<text x="187.5" y="198.0" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">forwarding</text>
+<text x="95" y="250" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">same member directions; no queue or policy</text>
+</svg>

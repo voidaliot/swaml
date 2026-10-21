@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>SWAML 2.0 original notation</title>
+<rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
+<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Operations and nested ownership</text>
+<line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
+<rect x="50" y="105" width="340" height="200" fill="#ffffff" stroke="#171717"/>
+<rect x="50" y="105" width="340" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="62" y="128" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">operation boot()</text>
+<text x="62" y="163" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">nested operation double(v: real)</text>
+<text x="62" y="185" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">returns real { return v * 2.0; }</text>
+<text x="62" y="207" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">no enclosing-local capture</text>
+<rect x="530" y="105" width="340" height="200" fill="#ffffff" stroke="#171717"/>
+<rect x="530" y="105" width="340" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="542" y="128" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">operation clamp: Clamp</text>
+<text x="542" y="163" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">signature inherited from def</text>
+<text x="542" y="185" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">optional whole-body replacement</text>
+<text x="542" y="207" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">result = clamp(double(4.0), 0.0, 5.0)</text>
+<line x1="390" y1="205" x2="530" y2="205" stroke="#171717"/>
+<text x="405.0" y="193.0" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">local call</text>
+</svg>

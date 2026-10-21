@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>SWAML 2.0 original notation</title>
+<rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
+<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Schedule entry and successful chaining</text>
+<line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
+<rect x="55" y="105" width="370" height="215" fill="#ffffff" stroke="#171717"/>
+<rect x="55" y="105" width="370" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="67" y="128" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">schedule</text>
+<text x="67" y="163" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">on start load();</text>
+<text x="67" y="185" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">after load report();</text>
+<text x="67" y="207" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">deadline belongs to entry</text>
+<rect x="515" y="105" width="350" height="215" fill="#ffffff" stroke="#171717"/>
+<rect x="515" y="105" width="350" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="527" y="128" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">activation lifecycle</text>
+<text x="527" y="163" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">release / dispatch / running</text>
+<text x="527" y="185" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">wait unlocks component</text>
+<text x="527" y="207" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">success / unlock / fresh after</text>
+<line x1="425" y1="215" x2="515" y2="215" stroke="#171717"/>
+</svg>
