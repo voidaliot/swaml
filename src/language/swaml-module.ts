@@ -25,7 +25,7 @@ export const SwamlModule: Module<SwamlServices, PartialLangiumServices & {
     references: { ScopeProvider: services => new SwamlScopeProvider(services) },
     validation: { SwamlValidator: services => new SwamlValidator(services) }
 };
-export function createSwamlServices(context: DefaultSharedModuleContext, ...hostModules: Module<SwamlServices, PartialLangiumServices>[]) {
+export function createSwamlServices(context: DefaultSharedModuleContext, ...hostModules: Module<SwamlServices, PartialLangiumServices & { validation?: { SwamlValidator?: SwamlValidator } }>[]) {
     const shared = inject(createDefaultSharedModule(context), SwamlGeneratedSharedModule, { workspace: { DocumentBuilder: services => new SwamlDocumentBuilder(services) }, lsp: { LanguageServer: services => new SwamlLanguageServer(services) } });
     const Swaml = inject(createDefaultModule({ shared }), SwamlGeneratedModule, SwamlModule, ...hostModules);
     shared.ServiceRegistry.register(Swaml);
