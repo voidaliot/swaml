@@ -1,8 +1,8 @@
-import { AstUtils, type AstNode, type ValidationAcceptor } from 'langium';
+import { AstUtils, DocumentState, WorkspaceCache, type AstNode, type ValidationAcceptor } from 'langium';
 import type { LangiumServices } from 'langium/lsp';
 import * as a from './generated/ast.js';
 import { expressionTypes, OCCURRENCE_LIMIT, occurrenceCount, workspaceModels, assignable, body, compatibility, constantNumber, direction, effectiveQos, effects, endpoint, entryKey, identity, integral, isExecutable, isNode, localOperation, memberEndpoint, members, nanos, nodes, numeric, occurrences, owner, resolve, schedule, signature, typeKey, type Executable, type Node, type Structure, portMembers } from './semantic.js';
-import { selectView } from './presentation.js';
+import { selectView, viewCandidates, type ViewSubject } from './presentation.js';
 type Env = Map<string, {
     type: string;
     mutable: boolean;
@@ -11,7 +11,15 @@ export class SwamlValidator {
     private models: a.Model[] = [];
     private accept!: ValidationAcceptor;
     private currentModel!: a.Model;
-    constructor(private services: LangiumServices) { }
+    private readonly viewSubjects: WorkspaceCache<string, ViewSubject[]>;
+    constructor(private services: LangiumServices) {
+        this.viewSubjects = new WorkspaceCache(services.shared);
+        // Explicit in-memory builds also link new models without onUpdate.
+        services.shared.workspace.DocumentBuilder.onBuildPhase(DocumentState.Linked, () => this.viewSubjects.clear());
+    }
+    private selectView(view: a.View): ViewSubject[] {
+        return selectView(view, this.models, this.viewSubjects.get('subjects', () => viewCandidates(this.models)));
+    }
     private report(n: AstNode, code: string, message: string, warning = false): void { const declarationDoc=AstUtils.getDocument(n),currentDoc=AstUtils.getDocument(this.currentModel),foreign=declarationDoc!==currentDoc;
         const declarationOwner=owner(n,(x):x is Structure=>a.isComponentDef(x)||a.isComponentUsage(x));
         const primary=foreign?this.currentModel.packages.flatMap(p=>p.elements.filter(a.isComponentUsage)).find(root=>occurrenceCount(root)<=OCCURRENCE_LIMIT&&occurrences(root).some(o=>o.structure===declarationOwner||o.definition===declarationOwner))??this.currentModel.packages[0]??this.currentModel:n;
@@ -72,7 +80,7 @@ export class SwamlValidator {
                     this.view(e);
             }
             for (const s of p.satisfactions)
-                if (!selectView({ ...s, $type: 'View', subject: s.source, selections: [] } as unknown as a.View, this.models).length)
+                if (!this.selectView({ ...s, $type: 'View', subject: s.source, selections: [] } as unknown as a.View).length)
                     this.report(s, 'SW2010', `Unknown satisfaction source ${s.source}.`);
         }
         for (const n of nodes(model)) {
@@ -862,9 +870,9 @@ export class SwamlValidator {
         if (!kind)
             return;
         for (const sel of v.subject ? [{ subject: v.subject }] : v.selections)
-            if (!selectView({ ...v, subject: sel.subject, selections: [] }, this.models).length)
+            if (!this.selectView({ ...v, subject: sel.subject, selections: [] }).length)
                 this.report(v, 'SW2010', 'Unknown or ambiguous view subject ' + sel.subject + '.');
-        const selected = selectView(v, this.models);
+        const selected = this.selectView(v);
         if (!selected.length)
             this.report(v, 'SW2010', 'View selects no subjects.');
         for (const item of selected)

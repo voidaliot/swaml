@@ -69,8 +69,8 @@ export function viewCandidates(models: readonly a.Model[]): ViewSubject[] {
 function filter(f: a.FilterExpression, s: ViewSubject): boolean { if (a.isFilterComparison(f))
     return f.operator === '==' ? s[f.field] === f.value : s[f.field] !== f.value; if (a.isFilterNot(f))
     return !filter(f.operand, s); return f.operator === 'and' ? filter(f.left, s) && filter(f.right, s) : filter(f.left, s) || filter(f.right, s); }
-export function selectView(v: a.View, models: readonly a.Model[]): ViewSubject[] {
-    const candidates = viewCandidates(models), result = new Map<string, ViewSubject>(), pkg = owner(v, a.isPackage);
+export function selectView(v: a.View, models: readonly a.Model[], candidates: readonly ViewSubject[] = viewCandidates(models)): ViewSubject[] {
+    const result = new Map<string, ViewSubject>(), pkg = owner(v, a.isPackage);
     for (const sel of v.subject ? [{ subject: v.subject, recursive: false, filter: undefined }] : v.selections) {
         const [head, ...tail] = sel.subject.split('.'), decl = resolve(v, head, models), pack = models.flatMap(m => m.packages).find(p => p.name === sel.subject), path = decl && pack ? undefined : decl ? [identity(decl), ...tail].join('.') : pack?.name;
         if (!path)

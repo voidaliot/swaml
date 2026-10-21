@@ -4,6 +4,32 @@ import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { EmptyFileSystem, URI } from 'langium';
 import { createSwamlServices } from '../../src/language/swaml-module.js';
+test('view inventories refresh after source replacement, addition and deletion', async () => {
+    const services = createSwamlServices(EmptyFileSystem), { LangiumDocuments: documents, LangiumDocumentFactory: factory, DocumentBuilder: builder } = services.shared.workspace;
+    const uri = URI.parse('memory:///views.swaml');
+    const load = (name: string) => {
+        const doc = factory.fromString(`package Test { import Swaml::Views; component ${name} { } view v: General of Demo; }`, uri);
+        documents.addDocument(doc);
+        return doc;
+    };
+    const first = load('Demo');
+    await builder.build([first], { validation: true });
+    assert.ok(!first.diagnostics?.some(d => d.severity === 1));
+    documents.deleteDocument(uri);
+    const next = load('Other');
+    await builder.build([next], { validation: true });
+    assert.ok(next.diagnostics?.some(d => d.code === 'SW2010'));
+    const extraUri = URI.parse('memory:///extra.swaml'), extra = factory.fromString('package Extra { component Demo { } }', extraUri);
+    documents.addDocument(extra);
+    documents.deleteDocument(uri);
+    const consumer = factory.fromString('package Test { import Swaml::Views; import Extra; view v: General of Demo; }', uri);
+    documents.addDocument(consumer);
+    await builder.build([consumer, extra], { validation: true });
+    assert.ok(!consumer.diagnostics?.some(d => d.severity === 1));
+    builder.updateBuildOptions = { validation: true };
+    await builder.update([], [extraUri]);
+    assert.ok(consumer.diagnostics?.some(d => d.code === 'SW2010'));
+});
 const main = fileURLToPath(new URL('../../src/cli/main.js', import.meta.url));
 function rpc() { const p = spawn(process.execPath, [fileURLToPath(new URL('../../src/server/main.js', import.meta.url)), '--stdio'], { stdio: 'pipe' }); let buffer = Buffer.alloc(0), id = 0; const pending = new Map<number, (v: any) => void>(), notifications: any[] = []; p.stdout.on('data', (chunk: Buffer) => { buffer = Buffer.concat([buffer, chunk]); while (true) {
     const at = buffer.indexOf('\r\n\r\n');
