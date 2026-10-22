@@ -1,0 +1,7 @@
+# Maintained validation dependencies. Historical publication manifests retain
+# their original pdf-requirements.txt; do not install those versions in CI.
+reportlab==4.4.9
+mistune==3.4.0
+pypdf==6.21.2
+pdfplumber==0.11.9
+Pillow==13.0.0
