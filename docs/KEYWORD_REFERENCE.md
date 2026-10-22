@@ -1,4 +1,4 @@
-# SWAML 2.0 keyword reference
+# swa.ml 2.0 keyword reference
 
 Generated from spec/keywords.json and the normative grammar. Examples here are grammar fragments; complete runnable models are in the usage guide and examples. Five contextual words remain legal names outside their positions. Call appears only in the on call trigger.
 

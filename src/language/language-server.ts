@@ -11,8 +11,8 @@ export class SwamlLanguageServer extends DefaultLanguageServer {
         } | undefined;
         for (const version of [options?.languageVersion, options?.swaml?.languageVersion])
             if (version !== undefined && version !== '2.0')
-                throw new ResponseError(ErrorCodes.InvalidParams, `Unsupported language version ${version}; this host selects SWAML 2.0.`);
+                throw new ResponseError(ErrorCodes.InvalidParams, `Unsupported language version ${version}; this host selects swa.ml 2.0.`);
         const result = await super.initialize(params);
-        return { ...result, serverInfo: { name: 'SWAML', version: '2.0.0' }, capabilities: { ...result.capabilities, experimental: { swaml: { languageVersion: '2.0', profile: 'swaml-reference/2.0' } } } };
+        return { ...result, serverInfo: { name: 'swa.ml', version: '2.0.0' }, capabilities: { ...result.capabilities, experimental: { swaml: { languageVersion: '2.0', profile: 'swaml-reference/2.0' } } } };
     }
 }

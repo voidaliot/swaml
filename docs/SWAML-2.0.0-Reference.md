@@ -1,4 +1,4 @@
-# SWAML 2.0.0 — Complete language reference
+# swa.ml 2.0.0 — Complete language reference
 
 Release edition, 22 October 2026. Headerless parser 2.0; profile swaml-reference/2.0. Generated from maintained 2.0 chapters. Published 1.x books are unchanged. No compatibility parser or migration guide is included.
 
@@ -33,11 +33,11 @@ Release edition, 22 October 2026. Headerless parser 2.0; profile swaml-reference
 
 <a id="chapter-1"></a>
 
-# SWAML 2.0 language specification
+# swa.ml 2.0 language specification
 
 **Edition:** 2.0.0 · **Parser:** 2.0 · **Reference profile:** swaml-reference/2.0 · **Status:** release edition, 22 October 2026.
 
-SWAML is the Software Architecture Modeling Language: a textual language for explicit software structure, communication and executable behavior. [ADR 0016](decisions/0016-swaml-2-0.md) accepts the clean restart. The language has one component concept and one operation concept. It does not accept 1.x source. Published books and PDFs retain their original bytes.
+swa.ml is the Software Architecture Modeling Language: a textual language for explicit software structure, communication and executable behavior. [ADR 0016](decisions/0016-swaml-2-0.md) accepts the clean restart. The language has one component concept and one operation concept. It does not accept 1.x source. Published books and PDFs retain their original bytes.
 
 ## 1. Normative set
 
@@ -95,7 +95,7 @@ Definitions have qualified declaration identity. Occurrences have root plus inde
 
 <a id="chapter-2"></a>
 
-# Quick start: SWAML 2.0
+# Quick start: swa.ml 2.0
 
 Read a model in this order: components, attributes, ports, operations, schedule, connections. A def defines a reusable type/body; a usage creates a distinct occurrence. Every value has an explicit type. Every cross-component message has an owned port and explicit route.
 
@@ -104,7 +104,7 @@ package HelloGuide {
   port def Greeting { provides event message(text: string); }
   component def Speaker {
     port output: Greeting;
-    operation greet() { publish output.message("Hello, SWAML"); }
+    operation greet() { publish output.message("Hello, swa.ml"); }
     schedule { on start greet(); }
   }
   component def Listener {
@@ -121,7 +121,7 @@ package HelloGuide {
 }
 ```
 
-Install dependencies with npm ci, build with npm run build, then validate the saved file using node out/src/cli/main.js --json hello.swaml. To execute, create options.json with {"untilNs": 1000000} and run node out/src/cli/simulate.js HelloGuide::Demo options.json hello.swaml. Listener.last becomes Hello, SWAML through a real routed event. Bare connect uses the pinned Default policy.
+Install dependencies with npm ci, build with npm run build, then validate the saved file using node out/src/cli/main.js --json hello.swaml. To execute, create options.json with {"untilNs": 1000000} and run node out/src/cli/simulate.js HelloGuide::Demo options.json hello.swaml. Listener.last becomes Hello, swa.ml through a real routed event. Bare connect uses the pinned Default policy.
 
 Continue with the [usage guide](USER_GUIDE.md), [complete examples](../examples), [AI guide](AI_GUIDE.md) and [support matrix](IMPLEMENTATION_STATUS.md). Version 2.0 accepts only the new syntax; published 1.x references remain historical artifacts.
 
@@ -130,7 +130,7 @@ Continue with the [usage guide](USER_GUIDE.md), [complete examples](../examples)
 
 <a id="chapter-3"></a>
 
-# SWAML 2.0 usage guide
+# swa.ml 2.0 usage guide
 
 Start with a component, give each persistent value a typed attribute, and write named operations for behavior. Add a schedule to say when those operations run. Add directed ports and explicit connections when behavior crosses component boundaries.
 
@@ -271,9 +271,9 @@ Load every application dependency together. Fix syntax/names first, then ownersh
 
 <a id="chapter-4"></a>
 
-# AI authoring with SWAML 2.0
+# AI authoring with swa.ml 2.0
 
-Treat SWAML as typed source that must be validated, rather than prose to approximate. Start with [the usage guide](USER_GUIDE.md), inspect a relevant [complete example](../examples), and read the affected normative chapter. Pin parser 2.0 and the exact package revision. Use the portable repository skills [swaml-author](../skills/swaml-author/SKILL.md) and [swaml-validate](../skills/swaml-validate/SKILL.md); they are versioned with the language and may be installed in the user's agent skill directory. They do not authorize publication or external messages.
+Treat swa.ml as typed source that must be validated, rather than prose to approximate. Start with [the usage guide](USER_GUIDE.md), inspect a relevant [complete example](../examples), and read the affected normative chapter. Pin parser 2.0 and the exact package revision. Use the portable repository skills [swaml-author](../skills/swaml-author/SKILL.md) and [swaml-validate](../skills/swaml-validate/SKILL.md); they are versioned with the language and may be installed in the user's agent skill directory. They do not authorize publication or external messages.
 
 ## Build a model from intent
 
@@ -321,7 +321,7 @@ Keep diagnostics/evidence honest. Consult [implementation status](IMPLEMENTATION
 
 # 1. Structure, names and types
 
-Normative chapter of [SWAML 2.0](LANGUAGE_SPECIFICATION.md).
+Normative chapter of [swa.ml 2.0](LANGUAGE_SPECIFICATION.md).
 
 ## 1.1 Names and documentation
 
@@ -364,7 +364,7 @@ The versioned source libraries are Swaml::Math, Swaml::Calls, Swaml::Qos, Swaml:
 
 # 2. Ports and communication
 
-Normative chapter of [SWAML 2.0](LANGUAGE_SPECIFICATION.md).
+Normative chapter of [swa.ml 2.0](LANGUAGE_SPECIFICATION.md).
 
 ## 2.1 Directed port members
 
@@ -411,7 +411,7 @@ A request suspends and releases the caller's serial lock. Timeout and reply at t
 
 # 3. Operations, schedules and states
 
-Normative chapter of [SWAML 2.0](LANGUAGE_SPECIFICATION.md).
+Normative chapter of [swa.ml 2.0](LANGUAGE_SPECIFICATION.md).
 
 ## 3.1 Operations and effects
 
@@ -474,11 +474,11 @@ A reaction runs exit, transition effect, state update and entry in that order. T
 
 # 4. Deployment, cases, views and conformance
 
-Normative chapter of [SWAML 2.0](LANGUAGE_SPECIFICATION.md).
+Normative chapter of [swa.ml 2.0](LANGUAGE_SPECIFICATION.md).
 
 ## 4.1 Deployment
 
-Swaml::Platform supplies Node, Platform, Partition and Process component definitions. Node specialization owns only const attributes and child Nodes, with no operations, ports, connectors or schedule. Optional ref: string retains an external model identity for the host; it is not required for SWAML validity and is never silently resolved as a software path. Buses, hardware timing, core/task allocation and operating-system scheduling are target-translation concerns.
+Swaml::Platform supplies Node, Platform, Partition and Process component definitions. Node specialization owns only const attributes and child Nodes, with no operations, ports, connectors or schedule. Optional ref: string retains an external model identity for the host; it is not required for swa.ml validity and is never silently resolved as a software path. Buses, hardware timing, core/task allocation and operating-system scheduling are target-translation concerns.
 
 A package deployment Name of Root on PlatformRoot owns placements. deploy on nodePath places the software root; deploy childPath on nodePath places that occurrence and descendants. A more specific path overrides an ancestor; an indexed path overrides a multiplicity family path. Exact paths are unique within one deployment. Every software path and literal index resolves in that root; every target resolves to a Node occurrence of that platform root. Only components are deployed. Several deployments may refer to one root and a host selects one explicitly; absence remains unallocated.
 
@@ -531,19 +531,19 @@ S is syntax, V is static validity, E is reference execution behavior, A is an ex
 
 # 5. Proposed KerML semantic mapping
 
-Normative mapping contract of [SWAML 2.0](LANGUAGE_SPECIFICATION.md), conditional on a backend claiming K conformance. No exporter or validated KerML semantic library is supplied by the current reference implementation. Langium AST generation and exhaustive inventory coverage do not establish KerML conformance.
+Normative mapping contract of [swa.ml 2.0](LANGUAGE_SPECIFICATION.md), conditional on a backend claiming K conformance. No exporter or validated KerML semantic library is supplied by the current reference implementation. Langium AST generation and exhaustive inventory coverage do not establish KerML conformance.
 
 ## 5.1 Representation
 
 Packages map to Package/namespace membership and imports. Datatypes/enums preserve nominal identity; arrays preserve copied shape. Components map to software Structure definitions and owned typed features. A usage creates an occurrence, including each multiplicity index; no shared private state is introduced. Specialization/redefinition retains the effective member set and base/replacement provenance.
 
-A result-bearing operation maps to a Function; a void operation maps to a Behavior. This mapping does not make a result-bearing SWAML operation pure. Effects remain explicit SWAML constraints. Operation usages retain their shared signature and effective body. Nested operations are owned executables without lexical captures; states contribute to their owning operation rather than becoming an independent executable.
+A result-bearing operation maps to a Function; a void operation maps to a Behavior. This mapping does not make a result-bearing swa.ml operation pure. Effects remain explicit swa.ml constraints. Operation usages retain their shared signature and effective body. Nested operations are owned executables without lexical captures; states contribute to their owning operation rather than becoming an independent executable.
 
-Ports map to owned typed features with per-member directional projections. Reversal flips each projection. Structural compatibility is retained as per-member typing constraints, not replaced by nominal port identity. Connections map to Connector instances with source occurrence/member route and independent policy queues. Forwarding maps to queue-free boundary aliases with preserved chains, not an extra message hop. Messages, transfer values, correlation and terminal failures require SWAML semantics over suitable KerML Step/transfer structures.
+Ports map to owned typed features with per-member directional projections. Reversal flips each projection. Structural compatibility is retained as per-member typing constraints, not replaced by nominal port identity. Connections map to Connector instances with source occurrence/member route and independent policy queues. Forwarding maps to queue-free boundary aliases with preserved chains, not an extra message hop. Messages, transfer values, correlation and terminal failures require swa.ml semantics over suitable KerML Step/transfer structures.
 
 ## 5.2 Required semantic library
 
-A K-conforming backend MUST implement a pinned SWAML semantic library specializing the selected KerML 1.0 library. It defines Component, Operation, Port, Connector, Message, Queue, Activation, Schedule, state-machine reactions, copied values, failure and interruption. It MUST preserve suspension/unlock/relock, snapshots, deadlines, queue identity, success-only out copy-back, after success releases, state transition ordering and cancellation/late-reply behavior. Merely attaching uninterpreted metadata is preservation rather than proof that a kernel tool understands the execution semantics.
+A K-conforming backend MUST implement a pinned swa.ml semantic library specializing the selected KerML 1.0 library. It defines Component, Operation, Port, Connector, Message, Queue, Activation, Schedule, state-machine reactions, copied values, failure and interruption. It MUST preserve suspension/unlock/relock, snapshots, deadlines, queue identity, success-only out copy-back, after success releases, state transition ordering and cancellation/late-reply behavior. Merely attaching uninterpreted metadata is preservation rather than proof that a kernel tool understands the execution semantics.
 
 No arbitrary metaclass name is invented as a kernel class. Abstract bases require concrete backend choices validated by that kernel. Unsupported meaning yields an explicit partial-export result. The [inventory](../spec/kerml-mapping.json) covers every grammar production/type as element, grouping, reference, value, lowering or lexical, with its normative home. Groupings/lexical nodes contribute to owners and must not create duplicate semantic elements.
 
@@ -560,7 +560,7 @@ A conforming backend identifies the exact source/package/library revisions, sele
 
 # 6. Reference execution contract
 
-Normative contract of [SWAML 2.0](LANGUAGE_SPECIFICATION.md), profile **swaml-reference/2.0**. A run records parser/package identity, source bytes, root, selected deployment, options, limits, fault assumptions and an ordinal logical trace. Host adapters load files and hash sources; the language core performs neither filesystem access nor hashing.
+Normative contract of [swa.ml 2.0](LANGUAGE_SPECIFICATION.md), profile **swaml-reference/2.0**. A run records parser/package identity, source bytes, root, selected deployment, options, limits, fault assumptions and an ordinal logical trace. Host adapters load files and hash sources; the language core performs neither filesystem access nor hashing.
 
 ## 6.1 Lifecycle and time
 
@@ -603,7 +603,7 @@ Trace ordinals distinguish equal-time observations. Record initialize, release, 
 
 # 7. Normalized model contract
 
-Normative information-preservation contract of [SWAML 2.0](LANGUAGE_SPECIFICATION.md). It defines what any exporter/target adapter must retain; it does not claim a kernel exporter exists.
+Normative information-preservation contract of [swa.ml 2.0](LANGUAGE_SPECIFICATION.md). It defines what any exporter/target adapter must retain; it does not claim a kernel exporter exists.
 
 ## 7.1 Identity and provenance
 
@@ -655,7 +655,7 @@ Equivalence requires an identity-respecting correspondence preserving ownership,
 
 # 8. Conformance obligations and evidence
 
-Normative chapter of [SWAML 2.0](LANGUAGE_SPECIFICATION.md). Acceptance levels are separate; implementations report the tested subset and limitations in their support matrix.
+Normative chapter of [swa.ml 2.0](LANGUAGE_SPECIFICATION.md). Acceptance levels are separate; implementations report the tested subset and limitations in their support matrix.
 
 ## 8.1 Static obligations
 
@@ -711,7 +711,7 @@ Conformance reports identify edition, exact implementation revision, groups chec
 
 # 9. Formal semantics
 
-Normative schemas of [SWAML 2.0](LANGUAGE_SPECIFICATION.md). These constrain implementations without claiming a mechanically proved metatheory.
+Normative schemas of [swa.ml 2.0](LANGUAGE_SPECIFICATION.md). These constrain implementations without claiming a mechanically proved metatheory.
 
 ## 9.1 Domains
 
@@ -781,9 +781,9 @@ A conforming reference trace records enough identity and order to reconstruct ob
 
 <a id="chapter-14"></a>
 
-# SWAML 2.0 graphical notation
+# swa.ml 2.0 graphical notation
 
-Original monochrome SWAML notation uses thin rules, explicit labels and owned compartments. It does not claim OMG notation conformance. [The canonical catalog](GRAPHICAL_CATALOG.md) pairs every concept with context, source subject, drawing and constraints. [Worked diagrams](GRAPHICAL_EXAMPLES.md) retain source-backed model subjects. spec/notation.json covers every grammar/type family and every keyword, including a text-only rationale for lexical spelling.
+Original monochrome swa.ml notation uses thin rules, explicit labels and owned compartments. It does not claim OMG notation conformance. [The canonical catalog](GRAPHICAL_CATALOG.md) pairs every concept with context, source subject, drawing and constraints. [Worked diagrams](GRAPHICAL_EXAMPLES.md) retain source-backed model subjects. spec/notation.json covers every grammar/type family and every keyword, including a text-only rationale for lexical spelling.
 
 Components show definition versus occurrence identity and indexed multiplicity. Private attributes stay in their component; operations show parameters/returns and nested ownership without closure captures. Schedule compartments show triggers, deadlines and concurrency separately from signatures. Do not draw performers or action allocations.
 
@@ -802,13 +802,13 @@ Regenerate with python scripts/build-notation.py and python scripts/build-graphi
 
 <a id="chapter-15"></a>
 
-# SWAML 2.0 canonical graphical catalog
+# swa.ml 2.0 canonical graphical catalog
 
 Generated from spec/notation.json. Original monochrome notation; no OMG notation-conformance claim. Every drawing preserves source ownership and identity.
 
 ## Packages and imports
 
-SWAML 2.0; Hello::Demo.
+swa.ml 2.0; Hello::Demo.
 
 ![Packages and imports](notation/2.0/package.svg)
 
@@ -818,7 +818,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Typed copied values
 
-SWAML 2.0; Values::Demo.
+swa.ml 2.0; Values::Demo.
 
 ![Typed copied values](notation/2.0/values.svg)
 
@@ -828,7 +828,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Component definitions and usages
 
-SWAML 2.0; Reuse::Demo.
+swa.ml 2.0; Reuse::Demo.
 
 ![Component definitions and usages](notation/2.0/components.svg)
 
@@ -838,7 +838,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Indexed occurrence identity
 
-SWAML 2.0; Multiplicity::Demo.
+swa.ml 2.0; Multiplicity::Demo.
 
 ![Indexed occurrence identity](notation/2.0/multiplicity.svg)
 
@@ -848,7 +848,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Attributes and lexical locals
 
-SWAML 2.0; Values::Demo.
+swa.ml 2.0; Values::Demo.
 
 ![Attributes and lexical locals](notation/2.0/attributes.svg)
 
@@ -858,7 +858,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Mixed directed port members
 
-SWAML 2.0; Mixed::Boundary.
+swa.ml 2.0; Mixed::Boundary.
 
 ![Mixed directed port members](notation/2.0/ports.svg)
 
@@ -868,7 +868,7 @@ One square boundary can contain attribute, event and operation members together.
 
 ## Policy-bearing connection
 
-SWAML 2.0; Policies::Demo.
+swa.ml 2.0; Policies::Demo.
 
 ![Policy-bearing connection](notation/2.0/connection.svg)
 
@@ -878,7 +878,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Queue-free boundary forwarding
 
-SWAML 2.0; Boundary::Demo.
+swa.ml 2.0; Boundary::Demo.
 
 ![Queue-free boundary forwarding](notation/2.0/forwarding.svg)
 
@@ -888,7 +888,7 @@ Preserve owned source and distinct definition/occurrence identities. Boundary al
 
 ## Operations and nested ownership
 
-SWAML 2.0; OperationUsage::Demo.
+swa.ml 2.0; OperationUsage::Demo.
 
 ![Operations and nested ownership](notation/2.0/operations.svg)
 
@@ -898,7 +898,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Expression calls and copied out values
 
-SWAML 2.0; ClientServer::Client.
+swa.ml 2.0; ClientServer::Client.
 
 ![Expression calls and copied out values](notation/2.0/calls.svg)
 
@@ -908,7 +908,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Runtime failure and lazy fallback
 
-SWAML 2.0; ClientServer::Client.
+swa.ml 2.0; ClientServer::Client.
 
 ![Runtime failure and lazy fallback](notation/2.0/try.svg)
 
@@ -918,7 +918,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Statements and decisions
 
-SWAML 2.0; Values::Demo.
+swa.ml 2.0; Values::Demo.
 
 ![Statements and decisions](notation/2.0/flow.svg)
 
@@ -928,7 +928,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Loops and copied iteration
 
-SWAML 2.0; Loops::Demo.
+swa.ml 2.0; Loops::Demo.
 
 ![Loops and copied iteration](notation/2.0/loops.svg)
 
@@ -938,7 +938,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Schedule entry and successful chaining
 
-SWAML 2.0; Chaining::Demo.
+swa.ml 2.0; Chaining::Demo.
 
 ![Schedule entry and successful chaining](notation/2.0/schedule.svg)
 
@@ -948,7 +948,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Suspending wait and receive
 
-SWAML 2.0; Receiving::Receiver.
+swa.ml 2.0; Receiving::Receiver.
 
 ![Suspending wait and receive](notation/2.0/receive.svg)
 
@@ -958,7 +958,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Armed interrupt and cancellation
 
-SWAML 2.0; Interrupts::Receiver.
+swa.ml 2.0; Interrupts::Receiver.
 
 ![Armed interrupt and cancellation](notation/2.0/interrupt.svg)
 
@@ -968,7 +968,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Ordered state transitions
 
-SWAML 2.0; States::Demo.lamp.
+swa.ml 2.0; States::Demo.lamp.
 
 ![Ordered state transitions](notation/2.0/states.svg)
 
@@ -978,7 +978,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Platform Nodes and placement
 
-SWAML 2.0; Placement::Demo.
+swa.ml 2.0; Placement::Demo.
 
 ![Platform Nodes and placement](notation/2.0/deployment.svg)
 
@@ -988,7 +988,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Requirements and intent links
 
-SWAML 2.0; Traceability::Delivery.
+swa.ml 2.0; Traceability::Delivery.
 
 ![Requirements and intent links](notation/2.0/requirements.svg)
 
@@ -998,7 +998,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Named routed case steps
 
-SWAML 2.0; Traceability::Startup.
+swa.ml 2.0; Traceability::Startup.
 
 ![Named routed case steps](notation/2.0/cases.svg)
 
@@ -1008,7 +1008,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Seven library view definitions
 
-SWAML 2.0; Traceability::Demo.
+swa.ml 2.0; Traceability::Demo.
 
 ![Seven library view definitions](notation/2.0/views.svg)
 
@@ -1018,7 +1018,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Declared and observed timing
 
-SWAML 2.0; Timing::Demo.sample.
+swa.ml 2.0; Timing::Demo.sample.
 
 ![Declared and observed timing](notation/2.0/timing.svg)
 
@@ -1028,7 +1028,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Owned documentation and lexical notes
 
-SWAML 2.0; Traceability::Delivery.
+swa.ml 2.0; Traceability::Delivery.
 
 ![Owned documentation and lexical notes](notation/2.0/documentation.svg)
 
@@ -1038,7 +1038,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Typed expressions and operators
 
-SWAML 2.0; Values::Demo.
+swa.ml 2.0; Values::Demo.
 
 ![Typed expressions and operators](notation/2.0/expressions.svg)
 
@@ -1048,7 +1048,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Lexical and path spelling
 
-SWAML 2.0; Hello::Demo.
+swa.ml 2.0; Hello::Demo.
 
 ![Lexical and path spelling](notation/2.0/lexical.svg)
 
@@ -1061,7 +1061,7 @@ Text-only spelling; show as a source caption without invented semantic nodes. Dr
 
 <a id="chapter-16"></a>
 
-# SWAML 2.0 worked diagrams
+# swa.ml 2.0 worked diagrams
 
 Generated from original scene geometry; source subjects remain authoritative.
 
@@ -1106,7 +1106,7 @@ Source: [Timing::Demo.sample](../examples/17-function-timing.swaml).
 
 <a id="chapter-17"></a>
 
-# SWAML 2.0 reference simulation
+# swa.ml 2.0 reference simulation
 
 The portable interpreter selects **swaml-reference/2.0** and requires linked, validated source. All activation comes from ordinary source schedules/ports/routes, including authored test drivers. [Execution semantics](spec/06-execution-contract.md) is normative; this guide covers the reference host.
 
@@ -1135,7 +1135,7 @@ Outcome failure-observed includes caught expression failures as well as failed a
 
 # Architecture patterns
 
-SWAML 2.0.
+swa.ml 2.0.
 
 Start each pattern from owned component state and explicit typed boundary members. Components may be leaves or composites and both may own operations. A composite forwards a port to an immediate child with same-direction connect; peer connections use opposite-compatible directions and own queues.
 
@@ -1156,7 +1156,7 @@ Classic, Adaptive, web and cloud example filenames illustrate these software pat
 
 # Requirements, documentation and intent
 
-SWAML 2.0.
+swa.ml 2.0.
 
 A requirement owns immutable typed attributes and at most one formal doc. Use /** ... */ first in a body or immediately before the semicolon of a leaf declaration. Ordinary // and /* ... */ comments remain separate lexical annotations. Formal documentation is owned source, not an executable statement or proof.
 
@@ -1173,7 +1173,7 @@ Routes, member kinds/directions and request/reply correlation must resolve to th
 
 # Ontology and views
 
-SWAML 2.0.
+swa.ml 2.0.
 
 The semantic families are package, nominal values/types, component definition/usage, attribute/local/parameter, port/member, operation definition/declaration/usage, schedule/entry, connection/forwarding, state/transition, deployment, requirement, case and view. A nested operation has no closure capture; an operation body has no independent executable identity. An indexed occurrence is distinct from its shared definition.
 
@@ -1186,7 +1186,7 @@ Compact of selects one subject. Include/recursive/where selects a stable union w
 
 <a id="chapter-21"></a>
 
-# SWAML 2.0 keyword reference
+# swa.ml 2.0 keyword reference
 
 Generated from spec/keywords.json and the normative grammar. Examples here are grammar fragments; complete runnable models are in the usage guide and examples. Five contextual words remain legal names outside their positions. Call appears only in the on call trigger.
 
@@ -1921,7 +1921,7 @@ Colon means typed by; returns names results. Dot is containment/member access; :
 
 <a id="chapter-22"></a>
 
-# SWAML 2.0 implementation status
+# swa.ml 2.0 implementation status
 
 **Edition/package:** 2.0.0 release · **Parser:** 2.0 only · **Reference profile:** swaml-reference/2.0 · **Publication:** versioned reference edition.
 
@@ -1964,7 +1964,7 @@ The 2.0.0 release includes the production website and a separately versioned PDF
 
 <a id="chapter-23"></a>
 
-# SWAML 2.0 review resolution
+# swa.ml 2.0 review resolution
 
 The 22 October 2026 source review of revision 46044b5 identified the following defects. Each row records implemented corrections and evidence; pending rows are not acceptance claims. The reference interpreter remains bounded evidence under its recorded assumptions.
 
@@ -1995,7 +1995,7 @@ Timers begin at state entry before entry actions, including suspension. Elapsed 
 
 <a id="chapter-24"></a>
 
-# SWAML 2.0.0 release
+# swa.ml 2.0.0 release
 
 22 October 2026. Parser 2.0, package 2.0.0, reference profile swaml-reference/2.0.
 
@@ -2018,7 +2018,7 @@ The production website publishes the validated model views, current release down
 
 # Tool integration
 
-SWAML 2.0.
+swa.ml 2.0.
 
 The language core is portable TypeScript over Langium 4.4.0 and the normative grammar. Node CLI/server adapters own file access and source hashing. Build with npm run build; validate with node out/src/cli/main.js --json and explicitly load all application dependencies. The host selects parser 2.0; unsupported edition flags are errors.
 
@@ -2033,13 +2033,13 @@ The adjacent editor repository has separate acceptance, diagram, refactoring and
 
 <a id="chapter-26"></a>
 
-# ADR 0016: SWAML 2.0 restart
+# ADR 0016: swa.ml 2.0 restart
 
 Status: accepted for implementation, 2026-10-21.
 
 The accepted design is [the 2.0 proposal](SWAML_2_0_TRANSITION.md), sections 1–11 and 13–15. This is a clean restart: no compatibility parser, aliases, conversion tool or new migration guide. Published 1.x books, PDFs and their provenance remain immutable.
 
-SWAML has one structural kind, component, and one executable kind, operation. Attributes belong to occurrences; locals belong to activations. Nested operations never capture enclosing locals. Operation definitions supply reusable signatures and bodies. Usage bodies replace whole operations or explicitly redefine component members. Inherited calls resolve against effective occurrence members.
+swa.ml has one structural kind, component, and one executable kind, operation. Attributes belong to occurrences; locals belong to activations. Nested operations never capture enclosing locals. Operation definitions supply reusable signatures and bodies. Usage bodies replace whole operations or explicitly redefine component members. Inherited calls resolve against effective occurrence members.
 
 Ports own directed attribute, event and operation members. Compatibility is structural by name, with nominal records/enums. Reversal flips every direction. Connect derives connection or forwarding from boundary ownership and direction. Only connections own queues and policies; omission selects the pinned Default. Attributes retain the latest value independently of buffering.
 

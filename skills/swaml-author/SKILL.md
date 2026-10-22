@@ -1,9 +1,9 @@
 ---
 name: swaml-author
-description: Create or edit SWAML 2.0 architecture source with typed components, operations, directed ports, schedules and source-backed views. Use for .swaml modeling requests, not generic software diagrams or historical SWAML syntax.
+description: Create or edit swa.ml 2.0 architecture source with typed components, operations, directed ports, schedules and source-backed views. Use for .swaml modeling requests, not generic software diagrams or historical swa.ml syntax.
 ---
 
-# Author SWAML 2.0
+# Author swa.ml 2.0
 
 Read [the usage guide](https://github.com/voidaliot/swaml/blob/main/docs/USER_GUIDE.md) and [AI guide](https://github.com/voidaliot/swaml/blob/main/docs/AI_GUIDE.md), then the relevant normative chapter linked from [the specification](https://github.com/voidaliot/swaml/blob/main/docs/LANGUAGE_SPECIFICATION.md). Prefer those documents from the configured 2.0 source checkout when available; resolve their paths from that checkout root. Online main must identify edition 2.0 before using it as guidance. Check [implemented support](https://github.com/voidaliot/swaml/blob/main/docs/IMPLEMENTATION_STATUS.md) before making evidence claims.
 

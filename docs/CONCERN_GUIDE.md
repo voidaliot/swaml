@@ -1,6 +1,6 @@
 # Concern guide
 
-SWAML 2.0.
+swa.ml 2.0.
 
 | Concern | Read or try |
 | --- | --- |

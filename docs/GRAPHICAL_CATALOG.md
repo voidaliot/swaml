@@ -1,10 +1,10 @@
-# SWAML 2.0 canonical graphical catalog
+# swa.ml 2.0 canonical graphical catalog
 
 Generated from spec/notation.json. Original monochrome notation; no OMG notation-conformance claim. Every drawing preserves source ownership and identity.
 
 ## Packages and imports
 
-SWAML 2.0; Hello::Demo.
+swa.ml 2.0; Hello::Demo.
 
 ![Packages and imports](notation/2.0/package.svg)
 
@@ -14,7 +14,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Typed copied values
 
-SWAML 2.0; Values::Demo.
+swa.ml 2.0; Values::Demo.
 
 ![Typed copied values](notation/2.0/values.svg)
 
@@ -24,7 +24,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Component definitions and usages
 
-SWAML 2.0; Reuse::Demo.
+swa.ml 2.0; Reuse::Demo.
 
 ![Component definitions and usages](notation/2.0/components.svg)
 
@@ -34,7 +34,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Indexed occurrence identity
 
-SWAML 2.0; Multiplicity::Demo.
+swa.ml 2.0; Multiplicity::Demo.
 
 ![Indexed occurrence identity](notation/2.0/multiplicity.svg)
 
@@ -44,7 +44,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Attributes and lexical locals
 
-SWAML 2.0; Values::Demo.
+swa.ml 2.0; Values::Demo.
 
 ![Attributes and lexical locals](notation/2.0/attributes.svg)
 
@@ -54,7 +54,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Mixed directed port members
 
-SWAML 2.0; Mixed::Boundary.
+swa.ml 2.0; Mixed::Boundary.
 
 ![Mixed directed port members](notation/2.0/ports.svg)
 
@@ -64,7 +64,7 @@ One square boundary can contain attribute, event and operation members together.
 
 ## Policy-bearing connection
 
-SWAML 2.0; Policies::Demo.
+swa.ml 2.0; Policies::Demo.
 
 ![Policy-bearing connection](notation/2.0/connection.svg)
 
@@ -74,7 +74,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Queue-free boundary forwarding
 
-SWAML 2.0; Boundary::Demo.
+swa.ml 2.0; Boundary::Demo.
 
 ![Queue-free boundary forwarding](notation/2.0/forwarding.svg)
 
@@ -84,7 +84,7 @@ Preserve owned source and distinct definition/occurrence identities. Boundary al
 
 ## Operations and nested ownership
 
-SWAML 2.0; OperationUsage::Demo.
+swa.ml 2.0; OperationUsage::Demo.
 
 ![Operations and nested ownership](notation/2.0/operations.svg)
 
@@ -94,7 +94,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Expression calls and copied out values
 
-SWAML 2.0; ClientServer::Client.
+swa.ml 2.0; ClientServer::Client.
 
 ![Expression calls and copied out values](notation/2.0/calls.svg)
 
@@ -104,7 +104,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Runtime failure and lazy fallback
 
-SWAML 2.0; ClientServer::Client.
+swa.ml 2.0; ClientServer::Client.
 
 ![Runtime failure and lazy fallback](notation/2.0/try.svg)
 
@@ -114,7 +114,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Statements and decisions
 
-SWAML 2.0; Values::Demo.
+swa.ml 2.0; Values::Demo.
 
 ![Statements and decisions](notation/2.0/flow.svg)
 
@@ -124,7 +124,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Loops and copied iteration
 
-SWAML 2.0; Loops::Demo.
+swa.ml 2.0; Loops::Demo.
 
 ![Loops and copied iteration](notation/2.0/loops.svg)
 
@@ -134,7 +134,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Schedule entry and successful chaining
 
-SWAML 2.0; Chaining::Demo.
+swa.ml 2.0; Chaining::Demo.
 
 ![Schedule entry and successful chaining](notation/2.0/schedule.svg)
 
@@ -144,7 +144,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Suspending wait and receive
 
-SWAML 2.0; Receiving::Receiver.
+swa.ml 2.0; Receiving::Receiver.
 
 ![Suspending wait and receive](notation/2.0/receive.svg)
 
@@ -154,7 +154,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Armed interrupt and cancellation
 
-SWAML 2.0; Interrupts::Receiver.
+swa.ml 2.0; Interrupts::Receiver.
 
 ![Armed interrupt and cancellation](notation/2.0/interrupt.svg)
 
@@ -164,7 +164,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Ordered state transitions
 
-SWAML 2.0; States::Demo.lamp.
+swa.ml 2.0; States::Demo.lamp.
 
 ![Ordered state transitions](notation/2.0/states.svg)
 
@@ -174,7 +174,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Platform Nodes and placement
 
-SWAML 2.0; Placement::Demo.
+swa.ml 2.0; Placement::Demo.
 
 ![Platform Nodes and placement](notation/2.0/deployment.svg)
 
@@ -184,7 +184,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Requirements and intent links
 
-SWAML 2.0; Traceability::Delivery.
+swa.ml 2.0; Traceability::Delivery.
 
 ![Requirements and intent links](notation/2.0/requirements.svg)
 
@@ -194,7 +194,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Named routed case steps
 
-SWAML 2.0; Traceability::Startup.
+swa.ml 2.0; Traceability::Startup.
 
 ![Named routed case steps](notation/2.0/cases.svg)
 
@@ -204,7 +204,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Seven library view definitions
 
-SWAML 2.0; Traceability::Demo.
+swa.ml 2.0; Traceability::Demo.
 
 ![Seven library view definitions](notation/2.0/views.svg)
 
@@ -214,7 +214,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Declared and observed timing
 
-SWAML 2.0; Timing::Demo.sample.
+swa.ml 2.0; Timing::Demo.sample.
 
 ![Declared and observed timing](notation/2.0/timing.svg)
 
@@ -224,7 +224,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Owned documentation and lexical notes
 
-SWAML 2.0; Traceability::Delivery.
+swa.ml 2.0; Traceability::Delivery.
 
 ![Owned documentation and lexical notes](notation/2.0/documentation.svg)
 
@@ -234,7 +234,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Typed expressions and operators
 
-SWAML 2.0; Values::Demo.
+swa.ml 2.0; Values::Demo.
 
 ![Typed expressions and operators](notation/2.0/expressions.svg)
 
@@ -244,7 +244,7 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Lexical and path spelling
 
-SWAML 2.0; Hello::Demo.
+swa.ml 2.0; Hello::Demo.
 
 ![Lexical and path spelling](notation/2.0/lexical.svg)
 

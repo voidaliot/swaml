@@ -1,6 +1,6 @@
 # Publication and historical editions
 
-SWAML 2.0.0 is the current reference edition, with parser 2.0 and profile swaml-reference/2.0. Its [reference book](SWAML-2.0.0-Reference.md), PDF, source manifest and checksum use dedicated versioned files. No compatibility parser or migration guide is part of this restart.
+swa.ml 2.0.0 is the current reference edition, with parser 2.0 and profile swaml-reference/2.0. Its [reference book](SWAML-2.0.0-Reference.md), PDF, source manifest and checksum use dedicated versioned files. No compatibility parser or migration guide is part of this restart.
 
 Preserve every published 1.x Markdown/PDF, source manifest, checksum and historical figure file. Their embedded sources retain their own grammar and provenance. The pinned 1.3.1 builder refuses a different workspace edition; do not relabel current development as an archived release. [The tooling pin](../scripts/publication-tooling-1.3.1.json) and archive/rebuild scripts retain the original source/tool hashes. Archive-aware checks compare an older PDF to its own embedded manifest rather than the evolving current chapters.
 

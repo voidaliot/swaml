@@ -1,6 +1,6 @@
 # Modeling overview
 
-SWAML 2.0.
+swa.ml 2.0.
 
 Model from ownership outward. First choose the execution root and reusable components. Allocate persistent state to attributes and temporary copied data to var. Add operations for local behavior, then a schedule for activation. A definition states reusable structure; a usage creates an occurrence with its own store. Usage bodies explicitly replace inherited whole members or add new ones.
 

@@ -1,6 +1,6 @@
 # Ontology and views
 
-SWAML 2.0.
+swa.ml 2.0.
 
 The semantic families are package, nominal values/types, component definition/usage, attribute/local/parameter, port/member, operation definition/declaration/usage, schedule/entry, connection/forwarding, state/transition, deployment, requirement, case and view. A nested operation has no closure capture; an operation body has no independent executable identity. An indexed occurrence is distinct from its shared definition.
 

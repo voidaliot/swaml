@@ -1,6 +1,6 @@
 # Architecture patterns
 
-SWAML 2.0.
+swa.ml 2.0.
 
 Start each pattern from owned component state and explicit typed boundary members. Components may be leaves or composites and both may own operations. A composite forwards a port to an immediate child with same-direction connect; peer connections use opposite-compatible directions and own queues.
 

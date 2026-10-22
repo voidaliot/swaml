@@ -1,6 +1,6 @@
 # Events and inputs
 
-SWAML 2.0.
+swa.ml 2.0.
 
 Inputs use the same source and routing rules as all communication. Define named event members on ports, emit from an ordinary operation and connect an emitting component to a receiving component. Use a schedule to release the source operation. An operator/test driver is validated source with recorded provenance; there is no manual trigger, direct simulator function release or destination-event injection.
 

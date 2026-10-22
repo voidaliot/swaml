@@ -1,6 +1,6 @@
 # Control flow and timing
 
-SWAML 2.0.
+swa.ml 2.0.
 
 Use operation-owned flow for sequential work and states for an explicit lifecycle. A schedule owns startup, periodic, receive, call and after bindings; operation headers carry only signature information. Entry deadlines include backlog and suspension. Every entries default to their period. WCET belongs to a target binding with identified evidence.
 

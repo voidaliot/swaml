@@ -1,4 +1,4 @@
-# SWAML 2.0.0 release validation
+# swa.ml 2.0.0 release validation
 
 Validation performed on 22 October 2026 for the incremental fixes recorded in
 [the review resolution](REVIEW_2_0.md). These checks establish the stated reference
@@ -31,5 +31,5 @@ failed byte comparison; the current gate compares exact decoded pixels
 and dimensions while retaining byte-exact SVG and scene checks. Workflow results
 are recorded on the PR rather than assumed here.
 
-Only the SWAML language repository and its production showcase are included.
+Only the swa.ml language repository and its production showcase are included.
 Uncommitted design mockups and adjacent editor changes are excluded.

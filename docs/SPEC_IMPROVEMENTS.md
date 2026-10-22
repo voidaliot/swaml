@@ -1,4 +1,4 @@
-# SWAML 1.4 specification improvements
+# swa.ml 1.4 specification improvements
 
 **Date:** 2026-10-20, 2.0 direction added 2026-10-21 · **Scope:** review of the 1.4 development specification ([index](LANGUAGE_SPECIFICATION.md), normative chapters 1–9, [grammar](../src/language/swaml.langium)) with spot checks of the validator and reference simulator. Informative; no rule here is normative until adopted through the usual grammar/prose/ADR process.
 
@@ -8,7 +8,7 @@ Priority: **P1** fix before the next edition, **P2** clarify or decide soon, **P
 
 | ID | Priority | Improvement | Location |
 | --- | --- | --- | --- |
-| A1 | P1 | Replace stale version references: chapter 6 title says "SWAML 1.3 specification"; in-place mutation "not part of 1.3"; pub/sub features "outside 1.3". | [06](spec/06-execution-contract.md), [01 §1.4](spec/01-structure-and-types.md), [02 §2.5](spec/02-communication.md) |
+| A1 | P1 | Replace stale version references: chapter 6 title says "swa.ml 1.3 specification"; in-place mutation "not part of 1.3"; pub/sub features "outside 1.3". | [06](spec/06-execution-contract.md), [01 §1.4](spec/01-structure-and-types.md), [02 §2.5](spec/02-communication.md) |
 | A2 | P1 | Complete the §4.5 diagnostic table: add SW016 (class/component specialization direction), SW065 (interruptible regions) and SW066/SW067 (completion dependencies); remove the duplicated specialization/redefinition entry between *Reuse* and *Architecture*. | [04 §4.5](spec/04-systems-and-conformance.md), [08 §8.1](spec/08-conformance-obligations.md) |
 | A3 | P1 | Use `MemberPath` (exactly `localPort.member`) for `send`/`publish`, `on receive`, `on call`, transition `on receive` and `interruptible … on receive`, matching §1.2 and the existing `RemoteCall` rule. | [grammar](../src/language/swaml.langium) |
 | A4 | P2 | Either state the `priority` attribute-name exception in §1.1 ("every quoted word is reserved") or generalize it through contextual keywords (see C6). | [01 §1.1](spec/01-structure-and-types.md), [04 §4.3](spec/04-systems-and-conformance.md) |
@@ -33,7 +33,7 @@ Priority: **P1** fix before the next edition, **P2** clarify or decide soon, **P
 | ID | Priority | Improvement |
 | --- | --- | --- |
 | C1 | P1 *decision* | Give `class`/`component` and `operation`/`function` a semantic difference or collapse each pair. Both pairs own identical members and share all execution rules; the distinction only adds keywords, compatibility rules and doubled view filters (`kind == "operation" or kind == "function"`). Possible differentiators: component as the deployable/allocatable boundary and class as internal structure only. |
-| C2 | P2 *decision* | Address the KerML naming clash: SWAML `class` maps to KerML Structure (KerML has its own Class); SWAML `function` (side-effecting) maps to Behavior while `calc` maps to KerML Function. At minimum add a terminology table to chapter 5. |
+| C2 | P2 *decision* | Address the KerML naming clash: swa.ml `class` maps to KerML Structure (KerML has its own Class); swa.ml `function` (side-effecting) maps to Behavior while `calc` maps to KerML Function. At minimum add a terminology table to chapter 5. |
 | C3 | P2 | Map message emission and RPC onto KerML Interaction/Flow and the Transfers library rather than a custom communication Step type. |
 | C4 | P1 *decision* | Add numeric conversions and basic built-ins: real→int (`floor`, `round`, `trunc` with checked range), `abs`, `min`/`max`; consider string concatenation/length. Note that `byte`/`uint` arithmetic always yields `int`. |
 | C5 | P2 *decision* | Relax RPC failure handling: allow an explicit typed binding (`otherwise (f: CallFailure) { … }`) with a built-in failure enum instead of an implicit `failure: string`, and allow fall-through when a fallback value is established. Replace the implicit transition `payload` name with an explicit binding as well. |
@@ -63,9 +63,9 @@ These follow from how the current implementation handles definitions, usages and
 | E3 | P3 | Move edition history (1.1, 1.2.1, 1.3, 1.3.1 notes in §8.5, §4.6 and the index) into a non-normative history annex. |
 | E4 | P3 | Rename or mark [SPECIFICATION_AUDIT.md](SPECIFICATION_AUDIT.md) as the historical 0.1 audit in its file name. |
 
-## F. Adopted direction for SWAML 2.0
+## F. Adopted direction for swa.ml 2.0
 
-> The finalized design, including later decisions on ports, receive statements, suspension and deployment, is the [SWAML 2.0 transition specification](SWAML_2_0_TRANSITION.md). Where this section differs, the transition specification wins; this section is kept as the decision history.
+> The finalized design, including later decisions on ports, receive statements, suspension and deployment, is the [swa.ml 2.0 transition specification](SWAML_2_0_TRANSITION.md). Where this section differs, the transition specification wins; this section is kept as the decision history.
 
 Decided on 2026-10-21; failure handling, loops, states, chaining, library and multiplicity refined the same day. These decisions replace several 1.4 invariants and therefore define a new breaking edition, 2.0. They are not yet specified, implemented or covered by an ADR. Examples use `text` fences because they are not valid 1.4 source.
 
@@ -240,8 +240,8 @@ Two versioned libraries ship with the language:
 
 | Layer | Written in | Contents |
 | --- | --- | --- |
-| SWAML standard library | SWAML | `Swaml::Math` (`abs`, `min`, `max`, `floor`, `round`, `trunc`, `length`, `concat`); `Swaml::Calls` (`CallFailure` for traces: `timeout`, `unavailable`, `rejected`, `transport`, `remoteFailure`, `interrupted`); `Swaml::Qos` (`Delivery`, `Ordering`, `Overflow`, `Policy` and the predefined `Latest`, `Reliable`, `BestEffort`); `Swaml::Views` (`General`, `Interconnect`, `Case`, `Sequence`, `Grid`, `Flow`, `Timing`) |
-| SWAML semantic library | KerML | Component, Operation, Port, Connector, Message, Queue, Activation, Schedule and state machine semantics as specializations of the KerML 1.0 semantic library, as required by chapters 5 and 7 for any KerML export; base names to be checked against KerML 1.0 |
+| swa.ml standard library | swa.ml | `Swaml::Math` (`abs`, `min`, `max`, `floor`, `round`, `trunc`, `length`, `concat`); `Swaml::Calls` (`CallFailure` for traces: `timeout`, `unavailable`, `rejected`, `transport`, `remoteFailure`, `interrupted`); `Swaml::Qos` (`Delivery`, `Ordering`, `Overflow`, `Policy` and the predefined `Latest`, `Reliable`, `BestEffort`); `Swaml::Views` (`General`, `Interconnect`, `Case`, `Sequence`, `Grid`, `Flow`, `Timing`) |
+| swa.ml semantic library | KerML | Component, Operation, Port, Connector, Message, Queue, Activation, Schedule and state machine semantics as specializations of the KerML 1.0 semantic library, as required by chapters 5 and 7 for any KerML export; base names to be checked against KerML 1.0 |
 
 The standard library is always loaded and imported explicitly, so its short names never collide with user names.
 

@@ -1,9 +1,9 @@
 ---
 name: swaml-validate
-description: Validate, diagnose and exercise SWAML 2.0 source using machine-readable diagnostics and bounded reference traces. Use for .swaml correctness or simulation requests; do not treat finite runs as production scheduling or universal verification.
+description: Validate, diagnose and exercise swa.ml 2.0 source using machine-readable diagnostics and bounded reference traces. Use for .swaml correctness or simulation requests; do not treat finite runs as production scheduling or universal verification.
 ---
 
-# Validate and exercise SWAML 2.0
+# Validate and exercise swa.ml 2.0
 
 Read [AI diagnostics guidance](https://github.com/voidaliot/swaml/blob/main/docs/AI_GUIDE.md), [execution semantics](https://github.com/voidaliot/swaml/blob/main/docs/spec/06-execution-contract.md) and [support status](https://github.com/voidaliot/swaml/blob/main/docs/IMPLEMENTATION_STATUS.md). The repository selects parser 2.0 and swaml-reference/2.0; pin the exact package revision for reproduction. Do not silently accept or convert 1.x source.
 

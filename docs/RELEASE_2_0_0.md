@@ -1,4 +1,4 @@
-# SWAML 2.0.0 release
+# swa.ml 2.0.0 release
 
 22 October 2026. Parser 2.0, package 2.0.0, reference profile swaml-reference/2.0.
 

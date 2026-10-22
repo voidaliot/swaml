@@ -1,6 +1,6 @@
 # Tool integration
 
-SWAML 2.0.
+swa.ml 2.0.
 
 The language core is portable TypeScript over Langium 4.4.0 and the normative grammar. Node CLI/server adapters own file access and source hashing. Build with npm run build; validate with node out/src/cli/main.js --json and explicitly load all application dependencies. The host selects parser 2.0; unsupported edition flags are errors.
 
