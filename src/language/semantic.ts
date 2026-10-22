@@ -201,7 +201,7 @@ export type Effect = {
 export function effects(op: Executable, c?: Structure, seen = new Set<Executable>()): Effect {
     // Package definitions have no caller-owned state, including when a parameter
     // happens to share an attribute's name at a call site.
-    if (a.isOperation(op) && !container(op))
+    if (!container(body(op) ?? op))
         c = undefined;
     const result: Effect = { reads: false, writes: false, communicates: false, suspends: false };
     if (seen.has(op))

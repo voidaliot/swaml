@@ -1,6 +1,6 @@
 import { AstUtils, DocumentState } from 'langium';
 import * as a from '../language/generated/ast.js';
-import { expressionTypes, workspaceModels, body, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, portMembers, resolve, schedule, signature, typeKey, type Executable, type Policy, type Structure } from '../language/semantic.js';
+import { expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, portMembers, resolve, schedule, signature, typeKey, type Executable, type Policy, type Structure } from '../language/semantic.js';
 import { binary, bind, checked, ContractViolation, copy, plain, RuntimeFault, scalar, voidValue, widen, type Environment, type Value } from './values.js';
 export { projectOperationTiming } from './timing.js';
 export interface SimulationOptions {
@@ -231,6 +231,7 @@ class Interpreter {
         throw new RuntimeFault('Type', `Unknown value ${name}`); return c; }
     private assign(f: Frame, local: Environment, name: string, value: Value): void { const c = this.target(f, local, name); c.value = widen(value, c.type); this.log('write', `${f.c.path}.${name}`, { activation: f.id, scope: local.has(name) ? 'local' : 'attribute', value: plain(c.value) }); }
     run(): SimulationResult {
+        let initializing: { c: Component; attribute: a.Attribute } | undefined;
         try {
             for (const o of occurrences(this.root)) {
                 const c: Component = { path: o.path, structure: o.structure, store: new Map() };
@@ -241,8 +242,11 @@ class Interpreter {
             }
             for (const c of this.components.values()) {
                 const fake = { c, entry: {}, snapshot: new Map() } as Frame;
-                for (const v of members(c.structure).filter(a.isAttribute))
+                for (const v of members(c.structure).filter(a.isAttribute)) {
+                    initializing = { c, attribute: v };
                     bind(c.store, v.name, typeKey(v.type), this.sync(this.evaluate(v.value, fake, new Map())));
+                }
+                initializing = undefined;
                 this.log('initialize', c.path, { definition: identity(c.structure) });
                 for (const [connectorIndex,l] of members(c.structure).filter(a.isConnect).entries()) {
                     const left = endpoint(c.structure, l.source)!, right = endpoint(c.structure, l.target)!;
@@ -284,10 +288,16 @@ class Interpreter {
             }
         }
         catch (e) {
-            if (!(e instanceof ContractViolation))
+            if (e instanceof RuntimeFault && initializing) {
+                const { c, attribute } = initializing;
+                this.log('failure', `${c.path}.${attribute.name}`, { phase: 'initialization', reason: e.code, declaration: identity(attribute), uri: AstUtils.getDocument(attribute).uri.toString(), range: attribute.$cstNode!.range });
+            }
+            else if (e instanceof ContractViolation) {
+                this.stop = e.code === 'StepLimit' ? 'limit' : 'violation';
+                this.log('violation', identity(this.root), { code: e.code });
+            }
+            else
                 throw e;
-            this.stop = e.code === 'StepLimit' ? 'limit' : 'violation';
-            this.log('violation', identity(this.root), { code: e.code });
         }
         return { profile: 'swaml-reference/2.0', root: identity(this.root), options: copy(this.options), outcome: this.stop || this.trace.some(t => t.kind === 'failure'||t.kind==='caught') ? 'failure-observed' : 'no-failure-observed', status: this.stop ?? (this.events.length || this.frames.some(f => !f.done) ? 'horizon' : 'quiescent'), timeNs: this.time, steps: this.steps, sources: this.models.map(m => ({ uri: AstUtils.getDocument(m).uri.toString(), text: AstUtils.getDocument(m).textDocument.getText() })), trace: this.trace, stores: Object.fromEntries([...this.components].map(([path, c]) => [path, Object.fromEntries([...c.store].map(([n, v]) => [n, plain(v.value)]))])), machines: this.machines, deployments: this.deployments };
     }
@@ -501,12 +511,12 @@ class Interpreter {
             catch (error) {
                 if (!(error instanceof RuntimeFault))
                     throw error;
-                this.log('caught', `${f.c.path}.${f.op.name}`, { activation: f.id, reason: error.code });
+                this.log('caught', f.op ? `${f.c.path}.${f.op.name}` : f.c.path, { activation: f.id, reason: error.code });
                 return e.fallback ? widen(yield* this.evaluate(e.fallback, f, local),expressionTypes.get(e)!) : voidValue();
             }
         }
         if (a.isCallExpression(e)) {
-            const remote = e.target.includes('.'), op = remote ? undefined : localOperation(e, e.target, f.c.structure) ?? resolve(e, e.target, this.models), sig = op && isExecutable(op) ? signature(op) : memberEndpoint(f.c.structure, e.target)?.member;
+            const remote = e.target.includes('.'), op = remote ? undefined : localOperation(e, e.target, container(e) ? f.c.structure : undefined) ?? resolve(e, e.target, this.models), sig = op && isExecutable(op) ? signature(op) : memberEndpoint(f.c.structure, e.target)?.member;
             const args: Value[] = [], outs: (string | undefined)[] = [];
             for (let i = 0; i < e.args.length; i++) {
                 if (sig?.parameters[i]?.direction === 'out') {
@@ -514,7 +524,7 @@ class Interpreter {
                     outs[i] = (e.args[i] as a.ReferenceExpression).path;
                 }
                 else
-                    args.push(yield* this.evaluate(e.args[i], f, local));
+                    args.push(widen(yield* this.evaluate(e.args[i], f, local), typeKey(sig!.parameters[i].type)));
             }
             if (!remote && op && isExecutable(op))
                 return yield* this.call(op, args, f, local, outs);
@@ -553,7 +563,7 @@ class Interpreter {
                     yield* this.block(s.otherwise, f, local);
             }
             else if (a.isWhile(s) || a.isUntil(s)) {
-                const limit = s.limit ? (yield* this.evaluate(s.limit, f, local)).data as number : Infinity;
+                const limit = s.limit ? widen(yield* this.evaluate(s.limit, f, local), 'uint').data as number : Infinity;
                 for (let i = 0; i < limit; i++) {
                     this.fuel();
                     if (a.isWhile(s) && !(yield* this.evaluate(s.condition, f, local)).data)
@@ -630,18 +640,22 @@ class Interpreter {
         let state = b.states.find(s => s.name === b.initial)!;
         const key = `${f.c.path}.${op.name}`;
         while (true) {
+            const entered = this.time;
             this.machines[key] = { state: state.name, live: !state.final };
             this.log('state', key, { state: state.name, activation: f.id });
             for (const action of state.actions.filter(x => x.kind === 'entry'))
                 yield* this.block(action.body, f, local);
             if (state.final)
                 return voidValue();
-            const entered = this.time;
             let selected: a.Transition | undefined, input: Message | undefined;
             while (!selected) {
                 const timers = state.transitions.filter(t => !!t.delay).sort((x, y) => nanos(x.delay!) - nanos(y.delay!));
-                const delay = timers[0] ? Math.max(0, entered + nanos(timers[0].delay!) - this.time) : undefined;
-                const reply = yield { kind: 'receive', branches: state.transitions, timeout: delay };
+                const expires = timers[0] ? entered + nanos(timers[0].delay!) : undefined;
+                if (expires !== undefined && !Number.isSafeInteger(expires))
+                    throw new ContractViolation('ClockRange');
+                const delay = expires === undefined ? undefined : Math.max(0, expires - this.time);
+                // Entry may suspend past expiry. Select the elapsed timer before queued input.
+                const reply: Reply | undefined = delay === 0 ? undefined : yield { kind: 'receive', branches: state.transitions, timeout: delay };
                 input = reply?.input;
                 const choices = input ? state.transitions.filter(t => t.endpoint === input!.member) : timers.filter(t => nanos(t.delay!) === nanos(timers[0].delay!));
                 for (const t of choices) {
@@ -668,6 +682,9 @@ class Interpreter {
     private bindInputs(env: Environment, bindings: string[], message: Message): void { bindings.forEach((n, i) => { if (message.args[i])
         bind(env, n, message.args[i].type, message.args[i]); }); }
     private emit(f: Frame, endpointName: string, args: Value[], kind: 'event' | 'attribute',site:a.Send): void {
+        const declared = memberEndpoint(f.c.structure, endpointName)!.member;
+        const types = declared.kind === 'attribute' ? [typeKey(declared.type)] : declared.parameters.map(p => typeKey(p.type));
+        args = args.map((v, i) => widen(v, types[i]));
         const [port, member] = endpointName.split('.'), source = this.leaf(`${f.c.path}.${port}`);
         this.log(kind === 'event' ? 'publish' : 'send', `${source}.${member}`, { activation: f.id, emitter:{declaration:identity(owner(site,isExecutable)!),uri:AstUtils.getDocument(site).uri.toString(),range:site.$cstNode!.range}, args: args.map(plain) });
         for (const route of this.routes.filter(r => r.endpoints.includes(source))){const target=route.endpoints.find(p=>p!==source)!,destination=this.ports.get(target),memberTarget=destination&&portMembers(destination.p).find(m=>m.name===member&&m.kind===kind&&direction(destination.p,m)==='requires');if(!memberTarget)continue;this.offer({id:this.id('m'),route,source,target,member,args:copy(args),emitted:this.time,kind});}
@@ -725,19 +742,24 @@ class Interpreter {
             queue = [];
             this.queues.set(key, queue);
         }
-        if (message.kind === 'attribute') {
-            if (queue.length)
-                this.log('replaceAttribute', route.id, { count: queue.length });
-            queue.length = 0;
-        }
-        else if (queue.length >= policy.capacity) {
-            this.log('overflow', route.id, { policy: policy.overflow, member: message.member });
-            if (policy.overflow === 'reject')
-                throw new RuntimeFault('rejected');
-            if (policy.overflow === 'dropNewest')
-                return;
-            queue.shift();
-        }
+        const admit = (): boolean => {
+            if (message.kind === 'attribute') {
+                if (queue.length)
+                    this.log('replaceAttribute', route.id, { count: queue.length });
+                queue.length = 0;
+            }
+            else if (queue.length >= policy.capacity) {
+                this.log('overflow', route.id, { policy: policy.overflow, member: message.member });
+                if (policy.overflow === 'reject')
+                    throw new RuntimeFault('rejected');
+                if (policy.overflow === 'dropNewest')
+                    return false;
+                queue.shift();
+            }
+            return true;
+        };
+        if (!admit())
+            return;
         const offer = ++this.offers;
         const fault = this.options.faults.find(x => x.offer === offer);
         if (fault?.kind === 'transport')
@@ -752,6 +774,8 @@ class Interpreter {
         }
         const copies = fault?.kind === 'duplicate' && policy.delivery !== 'atMostOnce' ? 2 : 1;
         for (let i = 0; i < copies; i++) {
+            if (i && !admit())
+                break;
             const m = i ? { ...message, id: this.id('m'), args: copy(message.args) } : message;
             queue.push(m);
             const latency = this.options.latencyNs + (fault?.delayNs ?? 0);
@@ -802,7 +826,7 @@ class Interpreter {
                 const { c, p } = destination, endpointName = `${p.name}.${m.member}`, ep = memberEndpoint(c.structure, endpointName)!;
                 if (ep) {
                     const types = ep.member.kind === 'attribute' ? [typeKey(ep.member.type)] : ep.member.parameters.map(p => typeKey(p.type));
-                    m.args = m.args.map((v, i) => widen(v, types[i]));
+                    m.args = m.args.map((v, i) => m.kind === 'request' && ep.member.parameters[i]?.direction === 'out' ? this.zero(types[i]) : widen(v, types[i]));
                 }
                 if (m.kind === 'request' && m.correlation) {
                     if (m.correlation.state !== 'pending') {
