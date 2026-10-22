@@ -52,15 +52,15 @@ SWAML 2.0; Values::Demo.
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 
-## Directed port members
+## Mixed directed port members
 
-SWAML 2.0; Control::Controller.
+SWAML 2.0; Mixed::Boundary.
 
-![Directed port members](notation/2.0/ports.svg)
+![Mixed directed port members](notation/2.0/ports.svg)
 
-**Source:** [Control::Controller](../examples/02-realtime-controller.swaml). **Grammar:** PortDef, PortUsage, PortMember, MemberPath, Send.
+**Source:** [Mixed::Boundary](../examples/27-mixed-port.swaml). **Grammar:** PortDef, PortUsage, PortMember, MemberPath, Send.
 
-Preserve owned source and distinct definition/occurrence identities. Show effective provides/requires on each member; reversal flips every direction. A canonical source-backed projection; geometry is separate from semantics.
+One square boundary can contain attribute, event and operation members together. Arrowheads show data/event direction; an outward arrow means provides and inward means requires. A ball marks a provided operation; an open socket marks a required operation. These are member glyphs, not port types. A compact double arrow summarizes opposite data/event directions only; expanded labels retain each member name and type. Reversed flips every direction, arrow and operation glyph; geometry never adds members or routes. A canonical source-backed projection; geometry is separate from semantics.
 
 ## Policy-bearing connection
 

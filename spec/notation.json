@@ -175,11 +175,11 @@
     },
     {
       "id": "ports",
-      "title": "Directed port members",
-      "context": "SWAML 2.0; Control::Controller",
-      "syntax": "component def Controller {\n    reversed port reading: Temperature;\n    port command: Commands;\n    attribute target: real = 21.0;\n    operation regulate(measured: real) {\n      var power: real = (target - measured) * 0.1;\n      publish command.set(power);\n    }\n    schedule {\n      on receive reading.temperature(t) regulate(t) deadline 5ms;\n    }\n  }",
-      "model": "examples/02-realtime-controller.swaml",
-      "subject": "Control::Controller",
+      "title": "Mixed directed port members",
+      "context": "SWAML 2.0; Mixed::Boundary",
+      "syntax": "port def Boundary {\n    provides attribute value: real;\n    requires event reset();\n    provides operation read() returns real;\n    requires operation acknowledge();\n  }",
+      "model": "examples/27-mixed-port.swaml",
+      "subject": "Mixed::Boundary",
       "template": "port",
       "views": [
         "General",
@@ -207,8 +207,11 @@
       "scene": "docs/notation/2.0/ports.scene.json",
       "raster": "docs/notation/2.0/ports.png",
       "constraints": [
-        "Preserve owned source and distinct definition/occurrence identities.",
-        "Show effective provides/requires on each member; reversal flips every direction."
+        "One square boundary can contain attribute, event and operation members together.",
+        "Arrowheads show data/event direction; an outward arrow means provides and inward means requires.",
+        "A ball marks a provided operation; an open socket marks a required operation. These are member glyphs, not port types.",
+        "A compact double arrow summarizes opposite data/event directions only; expanded labels retain each member name and type.",
+        "Reversed flips every direction, arrow and operation glyph; geometry never adds members or routes."
       ],
       "rationale": "A canonical source-backed projection; geometry is separate from semantics."
     },

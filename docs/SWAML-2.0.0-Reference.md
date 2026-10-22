@@ -785,7 +785,7 @@ Original monochrome SWAML notation uses thin rules, explicit labels and owned co
 
 Components show definition versus occurrence identity and indexed multiplicity. Private attributes stay in their component; operations show parameters/returns and nested ownership without closure captures. Schedule compartments show triggers, deadlines and concurrency separately from signatures. Do not draw performers or action allocations.
 
-Port boundary squares expose direction per member: provides/requires attribute, event or operation. Reversal flips every member. Connection lines join opposite-compatible members and identify their effective policy; forwarding connects boundary to immediate child with the same member directions and is visibly labeled as a queue-free alias. Do not restore interface kinds, versions or whole-port roles.
+Port boundary squares expose direction per member: provides/requires attribute, event or operation. The square is a neutral container that may mix all three member kinds. Attribute/event arrows point outward for provides and inward for requires; a compact double arrow summarizes both directions only when both exist. A ball marks each provided operation and an open socket each required operation. Expanded labels preserve member names, kinds and signatures; these glyphs never assign a single kind or role to the whole port. Reversal flips every member arrow and swaps each operation ball/socket. Connection lines join opposite-compatible members and identify their effective policy; forwarding connects boundary to immediate child with the same member directions and is visibly labeled as a queue-free alias. Do not restore interface kinds, versions or whole-port roles.
 
 Flow shows expressions/calls, decisions, loop forms, lazy try fallback, receive/wait suspension and armed interrupt transfer. States are inside an operation; transitions are nested/ordered and labeled by input/guard or after timer and target. State bodies have no separate executable identity. Final completion is distinguishable from idle reactions.
 
@@ -854,15 +854,15 @@ SWAML 2.0; Values::Demo.
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 
-## Directed port members
+## Mixed directed port members
 
-SWAML 2.0; Control::Controller.
+SWAML 2.0; Mixed::Boundary.
 
-![Directed port members](notation/2.0/ports.svg)
+![Mixed directed port members](notation/2.0/ports.svg)
 
-**Source:** [Control::Controller](../examples/02-realtime-controller.swaml). **Grammar:** PortDef, PortUsage, PortMember, MemberPath, Send.
+**Source:** [Mixed::Boundary](../examples/27-mixed-port.swaml). **Grammar:** PortDef, PortUsage, PortMember, MemberPath, Send.
 
-Preserve owned source and distinct definition/occurrence identities. Show effective provides/requires on each member; reversal flips every direction. A canonical source-backed projection; geometry is separate from semantics.
+One square boundary can contain attribute, event and operation members together. Arrowheads show data/event direction; an outward arrow means provides and inward means requires. A ball marks a provided operation; an open socket marks a required operation. These are member glyphs, not port types. A compact double arrow summarizes opposite data/event directions only; expanded labels retain each member name and type. Reversed flips every direction, arrow and operation glyph; geometry never adds members or routes. A canonical source-backed projection; geometry is separate from semantics.
 
 ## Policy-bearing connection
 
@@ -3111,6 +3111,20 @@ package Boundary {
     component source: Composite;
     component display: Display;
     connect (source.boundary, display.reading);
+  }
+}
+```
+
+### 27-mixed-port.swaml
+
+```swaml
+package Mixed {
+  /** One boundary may combine data, event and operation members. */
+  port def Boundary {
+    provides attribute value: real;
+    requires event reset();
+    provides operation read() returns real;
+    requires operation acknowledge();
   }
 }
 ```

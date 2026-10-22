@@ -1,22 +1,52 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>SWAML 2.0 original notation</title>
 <rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
-<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Directed port members</text>
+<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Mixed directed port members</text>
 <line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
-<rect x="45" y="120" width="250" height="155" fill="#ffffff" stroke="#171717"/>
-<rect x="45" y="120" width="250" height="34" fill="#eeeeee" stroke="#171717"/>
-<text x="57" y="143" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">Provider</text>
-<text x="57" y="178" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">port reading</text>
-<text x="57" y="200" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">provides attribute temperature: real</text>
-<rect x="290" y="200" width="10" height="10" fill="#ffffff" stroke="#171717"/>
-<line x1="300" y1="205" x2="530" y2="205" stroke="#171717"/>
-<text x="125" y="301" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">owned typed boundary</text>
-<rect x="535" y="120" width="250" height="155" fill="#ffffff" stroke="#171717"/>
-<rect x="535" y="120" width="250" height="34" fill="#eeeeee" stroke="#171717"/>
-<text x="547" y="143" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">Consumer</text>
-<text x="547" y="178" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">reversed port reading</text>
-<text x="547" y="200" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">requires attribute temperature: real</text>
-<text x="547" y="222" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">port command</text>
-<text x="547" y="244" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">provides event set(value: real)</text>
-<rect x="530" y="200" width="10" height="10" fill="#ffffff" stroke="#171717"/>
-<text x="45" y="345" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">Direction belongs to each member. A connection owns an independent policy queue.</text>
+<rect x="45" y="105" width="230" height="215" fill="#ffffff" stroke="#171717"/>
+<rect x="45" y="105" width="230" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="57" y="128" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">owning component</text>
+<text x="57" y="163" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">boundary: Boundary</text>
+<rect x="245" y="185" width="60" height="60" fill="#ffffff" stroke="#171717"/>
+<line x1="254" y1="215" x2="296" y2="215" stroke="#171717"/>
+<line x1="254" y1="215" x2="261" y2="209" stroke="#171717"/>
+<line x1="254" y1="215" x2="261" y2="221" stroke="#171717"/>
+<line x1="296" y1="215" x2="289" y2="209" stroke="#171717"/>
+<line x1="296" y1="215" x2="289" y2="221" stroke="#171717"/>
+<line x1="305" y1="198" x2="355" y2="120" stroke="#171717"/>
+<line x1="355" y1="120" x2="410" y2="120" stroke="#171717"/>
+<line x1="410" y1="120" x2="402" y2="115" stroke="#171717"/>
+<line x1="410" y1="120" x2="402" y2="125" stroke="#171717"/>
+<text x="430" y="125" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">provides attribute value: real</text>
+<line x1="305" y1="208" x2="355" y2="170" stroke="#171717"/>
+<line x1="355" y1="170" x2="410" y2="170" stroke="#171717"/>
+<line x1="355" y1="170" x2="363" y2="165" stroke="#171717"/>
+<line x1="355" y1="170" x2="363" y2="175" stroke="#171717"/>
+<text x="430" y="175" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">requires event reset()</text>
+<line x1="305" y1="224" x2="370" y2="230" stroke="#171717"/>
+<ellipse cx="382.0" cy="230.0" rx="12.0" ry="12.0" fill="#ffffff" stroke="#171717"/>
+<text x="430" y="235" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">provides operation read() returns real</text>
+<line x1="305" y1="237" x2="370" y2="285" stroke="#171717"/>
+<line x1="388.0" y1="295.392" x2="385.708" y2="296.413" stroke="#171717"/>
+<line x1="385.708" y1="296.413" x2="383.254" y2="296.934" stroke="#171717"/>
+<line x1="383.254" y1="296.934" x2="380.746" y2="296.934" stroke="#171717"/>
+<line x1="380.746" y1="296.934" x2="378.292" y2="296.413" stroke="#171717"/>
+<line x1="378.292" y1="296.413" x2="376.0" y2="295.392" stroke="#171717"/>
+<line x1="376.0" y1="295.392" x2="373.97" y2="293.918" stroke="#171717"/>
+<line x1="373.97" y1="293.918" x2="372.292" y2="292.053" stroke="#171717"/>
+<line x1="372.292" y1="292.053" x2="371.037" y2="289.881" stroke="#171717"/>
+<line x1="371.037" y1="289.881" x2="370.262" y2="287.495" stroke="#171717"/>
+<line x1="370.262" y1="287.495" x2="370.0" y2="285.0" stroke="#171717"/>
+<line x1="370.0" y1="285.0" x2="370.262" y2="282.505" stroke="#171717"/>
+<line x1="370.262" y1="282.505" x2="371.037" y2="280.119" stroke="#171717"/>
+<line x1="371.037" y1="280.119" x2="372.292" y2="277.947" stroke="#171717"/>
+<line x1="372.292" y1="277.947" x2="373.97" y2="276.082" stroke="#171717"/>
+<line x1="373.97" y1="276.082" x2="376.0" y2="274.608" stroke="#171717"/>
+<line x1="376.0" y1="274.608" x2="378.292" y2="273.587" stroke="#171717"/>
+<line x1="378.292" y1="273.587" x2="380.746" y2="273.066" stroke="#171717"/>
+<line x1="380.746" y1="273.066" x2="383.254" y2="273.066" stroke="#171717"/>
+<line x1="383.254" y1="273.066" x2="385.708" y2="273.587" stroke="#171717"/>
+<line x1="385.708" y1="273.587" x2="388.0" y2="274.608" stroke="#171717"/>
+<text x="430" y="290" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">requires operation acknowledge()</text>
+<text x="45" y="355" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">One square boundary; arrows for data/events, ball/socket for operation members.</text>
+<text x="45" y="377" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">Labels retain member identity. Reversed flips each direction and swaps each operation glyph.</text>
 </svg>

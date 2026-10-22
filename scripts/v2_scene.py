@@ -19,7 +19,27 @@ def scene(title, template):
     def port(x,y):rect(x-5,y-5,10,10)
     def dot(x,y,r=5):s['elements'].append({'kind':'ellipse','x':x-r,'y':y-r,'w':2*r,'h':2*r,'fill':'#171717'})
     rect(1,1,918,388,'#fafafa');text(26,36,title,21);line(26,54,894,54)
-    if template in ('connection','port','architecture'):
+    if template=='port':
+        box(45,105,230,215,'owning component',['boundary: Boundary'])
+        rect(245,185,60,60)
+        # Direction applies to members, never a whole-port category.
+        line(254,215,296,215);line(254,215,261,209);line(254,215,261,221)
+        line(296,215,289,209);line(296,215,289,221)
+        line(305,198,355,120);line(355,120,410,120);line(410,120,402,115);line(410,120,402,125)
+        text(430,125,'provides attribute value: real',14)
+        line(305,208,355,170);line(355,170,410,170);line(355,170,363,165);line(355,170,363,175)
+        text(430,175,'requires event reset()',14)
+        line(305,224,370,230)
+        s['elements'].append({'kind':'ellipse','x':370,'y':218,'w':24,'h':24,'fill':'#ffffff'})
+        text(430,235,'provides operation read() returns real',14)
+        line(305,237,370,285)
+        # Open socket faces outward; shared straight segments render everywhere.
+        points=[(382+12*math.cos(math.radians(a)),285+12*math.sin(math.radians(a))) for a in range(60,301,12)]
+        for (x1,y1),(x2,y2) in zip(points,points[1:]):line(round(x1,3),round(y1,3),round(x2,3),round(y2,3))
+        text(430,290,'requires operation acknowledge()',14)
+        text(45,355,'One square boundary; arrows for data/events, ball/socket for operation members.',14)
+        text(45,377,'Labels retain member identity. Reversed flips each direction and swaps each operation glyph.',13)
+    elif template in ('connection','architecture'):
         names=['Sensor','Controller','Heater'] if template=='architecture' else ['Provider','Consumer']
         for i,name in enumerate(names):
             x=45+i*(280 if len(names)==3 else 490);box(x,120,250,155,name,['port reading', 'provides attribute temperature: real'] if i==0 else ['reversed port reading','requires attribute temperature: real','port command','provides event set(value: real)'] if i==1 else ['reversed port command','requires event set(value: real)']);
@@ -83,7 +103,7 @@ def artifacts(s):
     for e in s['elements']:
         k=e['kind']; dash=' stroke-dasharray="5 4"' if e.get('dash') else ''
         if k=='text':
-            x,y,t,z=e['x'],e['y'],e['text'],e['size'];font=ImageFont.truetype(str(FONT),z*2)
+            x,y,t,z=e['x'],e['y'],e['text'],e['size'];font=ImageFont.truetype(str(FONT),z*2,layout_engine=ImageFont.Layout.BASIC)
             if x<0 or y<z or d.textlength(t,font=font)>2*(w-x-10): raise ValueError('Text outside scene: '+t)
             d.text((x*2,y*2),t,font=font,fill='#171717',anchor='ls');svg.append(f'<text x="{x}" y="{y}" font-family="DejaVu Sans, sans-serif" font-size="{z}" fill="#171717">{escape(t)}</text>')
         elif k in ('rect','ellipse'):
