@@ -4,7 +4,7 @@ import { SwamlGeneratedModule, SwamlGeneratedSharedModule } from './generated/mo
 import { SwamlScopeProvider } from './swaml-scope.js';
 import { SwamlValidator } from './swaml-validator.js';
 import { SwamlLanguageServer } from './language-server.js';
-import { SwamlDocumentBuilder } from './swaml-document-builder.js';
+import { SwamlDocumentBuilder, SwamlDocumentValidator } from './swaml-document-builder.js';
 import { SwamlPathServices } from './path-services.js';
 import { SwamlFormatter } from './formatter.js';
 import { STANDARD_LIBRARY } from './standard-library.js';
@@ -23,7 +23,7 @@ export const SwamlModule: Module<SwamlServices, PartialLangiumServices & {
 }> = {
     lsp: { Formatter: () => new SwamlFormatter(), RenameProvider: services => new SwamlPathServices(services), DefinitionProvider: services => new SwamlPathServices(services), ReferencesProvider: services => new SwamlPathServices(services) },
     references: { ScopeProvider: services => new SwamlScopeProvider(services) },
-    validation: { SwamlValidator: services => new SwamlValidator(services) }
+    validation: { SwamlValidator: services => new SwamlValidator(services), DocumentValidator: services => new SwamlDocumentValidator(services) }
 };
 export function createSwamlServices(context: DefaultSharedModuleContext, ...hostModules: Module<SwamlServices, PartialLangiumServices & { validation?: { SwamlValidator?: SwamlValidator } }>[]) {
     const shared = inject(createDefaultSharedModule(context), SwamlGeneratedSharedModule, { workspace: { DocumentBuilder: services => new SwamlDocumentBuilder(services) }, lsp: { LanguageServer: services => new SwamlLanguageServer(services) } });

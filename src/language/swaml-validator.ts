@@ -33,7 +33,8 @@ export class SwamlValidator {
         this.models = this.services.shared.workspace.LangiumDocuments.all.map(d => d.parseResult.value).filter(a.isModel).toArray();
         if (!this.models.includes(model))
             this.models.push(model);
-        workspaceModels.set(model, this.models);
+        for (const item of this.models)
+            workspaceModels.set(item, this.models);
         const packages = this.models.flatMap(m => m.packages);
         for (const p of model.packages) {
             if (packages.filter(x => x.name === p.name).length > 1)
@@ -84,6 +85,8 @@ export class SwamlValidator {
                     this.report(s, 'SW2010', `Unknown satisfaction source ${s.source}.`);
         }
         for (const n of nodes(model)) {
+            if (n.redefines && !a.isComponentDef(n.$container) && !a.isComponentUsage(n.$container) && !a.isAttribute(n))
+                this.report(n, 'SW2003', 'redefines requires an inherited member of the containing component.');
             if (a.isTypeRef(n)) {
                 if (n.size !== undefined && (!Number.isSafeInteger(n.size) || n.size <= 0))
                     this.report(n, 'SW2002', 'Array extent must be a positive safe integer.');
@@ -274,6 +277,8 @@ export class SwamlValidator {
                 this.report(s, 'SW2013', `Unknown setting ${s.name}.`);
             if (['requestTimeout', 'maxLatency', 'maxAge'].includes(s.name) && !s.duration)
                 this.report(s, 'SW2013', `${s.name} needs a duration.`);
+            if (s.name === 'capacity' && (s.duration || !a.isLiteral(s.value) || s.value.number === undefined))
+                this.report(s, 'SW2013', 'capacity needs a positive integer count, not a duration.');
             if (s.value && ['delivery', 'ordering', 'overflow'].includes(s.name))
                 this.value(s.value, 'Swaml::Qos::' + ({ delivery: 'Delivery', ordering: 'Ordering', overflow: 'Overflow' } as Record<string, string>)[s.name], new Map());
         }
