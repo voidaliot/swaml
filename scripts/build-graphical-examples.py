@@ -2,7 +2,7 @@ import argparse,json
 from v2_scene import ROOT,scene,write_scene
 p=argparse.ArgumentParser();p.add_argument('--check',action='store_true');args=p.parse_args()
 figures=[('architecture','Directed ports and explicit connections','architecture','examples/02-realtime-controller.swaml','Control::Demo'),('forwarding','Forwarding preserves boundary direction','forwarding','examples/26-boundary-forwarding.swaml','Boundary::Demo'),('schedule','Schedule and success chaining','schedule','examples/25-function-completion.swaml','Chaining::Demo'),('states','Operation-owned ordered states','state','examples/04-stateful-function.swaml','States::Demo.lamp'),('deployment','Indexed placement on platform Nodes','deployment','examples/22-platform-deployment.swaml','Placement::Demo'),('timing','Declared contracts and observed intervals','timing','examples/17-function-timing.swaml','Timing::Demo.sample')]
-manifest={'languageVersion':'2.0','examples':[]};text='# SWAML 2.0 worked diagrams\n\nGenerated from original scene geometry; source subjects remain authoritative.\n\n'
+manifest={'languageVersion':'2.0','examples':[]};text='# swa.ml 2.0 worked diagrams\n\nGenerated from original scene geometry; source subjects remain authoritative.\n\n'
 for key,title,template,model,subject in figures:
     write_scene(ROOT/'docs/figures/2.0'/key,scene(title,template),args.check)
     manifest['examples'].append({'figure':key,'svg':'docs/figures/2.0/'+key+'.svg','scene':'docs/figures/2.0/'+key+'.scene.json','model':model,'subject':subject})

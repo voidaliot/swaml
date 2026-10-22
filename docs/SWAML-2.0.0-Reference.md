@@ -1,6 +1,6 @@
 # swa.ml 2.0.0 — Complete language reference
 
-Release edition, 22 October 2026. Headerless parser 2.0; profile swaml-reference/2.0. Generated from maintained 2.0 chapters. Published 1.x books are unchanged. No compatibility parser or migration guide is included.
+Maintained reference for the 2.0 language. Headerless parser 2.0; profile swaml-reference/2.0. Generated from maintained 2.0 chapters. Published PDFs and frozen release references are unchanged. No compatibility parser or migration guide is included.
 
 ## Contents
 

@@ -39,3 +39,9 @@ python scripts/check-spec-pdf-2.0.py
 ```
 
 The new builder embeds exact canonical repository LF text and binary assets, records their hashes and a bundle hash, identifies the source base commit and dependency versions, and uses the bundled DejaVu fonts. PNG reproducibility checks compare pixel bytes independently of platform compression, while SVG and scene JSON remain byte-exact.
+
+## Preserving the published 2.0.0 book
+
+The current swa.ml branding updates maintained chapters without replacing the published 2.0.0 PDF, source manifest or checksum. The original complete reference is frozen under history/2.0.0/docs/. CI uses check-spec-pdf-2.0.py --archive to verify every embedded source hash, the complete bundle, the frozen reference, navigation and page bounds. Inventories are read from the verified publication attachments.
+
+Without --archive, the checker still requires every current workspace source to match the PDF. That strict mode remains the gate when preparing a new edition. Branding changes are not a new PDF release and do not claim a synchronized new manuscript.
