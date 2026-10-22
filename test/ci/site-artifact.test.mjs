@@ -18,8 +18,8 @@ async function temporary(t, prefix) {
 async function fixture(t) {
     const root = await temporary(t, 'swaml-publication-');
     for (const directory of ['assets', 'downloads']) await mkdir(join(root, directory));
-    for (const name of ['index.html', 'favicon.svg', 'assets/index-test.js', 'assets/index-test.css',
-        ...['controller.swaml', 'usage-guide.md', 'ai-guide.md', 'swaml-author-SKILL.md', 'swaml-validate-SKILL.md', 'mixed-ports.svg'].map(name => `downloads/${name}`)]) {
+    for (const name of ['index.html', 'swaml.svg', 'swaml-white.svg', 'assets/index-test.js', 'assets/index-test.css',
+        ...['controller.swaml', 'usage-guide.md', 'ai-guide.md', 'swaml-author-SKILL.md', 'swaml-validate-SKILL.md', 'mixed-ports.svg', 'simulation.md', 'implementation-status.md', 'controller-options.json', 'controller-run.json'].map(name => `downloads/${name}`)]) {
         await writeFile(join(root, name), 'public fixture');
     }
     return root;
@@ -27,7 +27,7 @@ async function fixture(t) {
 
 test('a complete production build is accepted; missing resources fail', async t => {
     const root = await fixture(t);
-    assert.equal(await checkSiteArtifact(root), 10);
+    assert.equal(await checkSiteArtifact(root), 15);
     await rm(join(root, 'downloads/controller.swaml'));
     await assert.rejects(checkSiteArtifact(root), /Missing publication file/);
 });

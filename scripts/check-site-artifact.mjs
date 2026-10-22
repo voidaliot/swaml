@@ -5,10 +5,12 @@ import { fileURLToPath } from 'node:url';
 
 // Publication is an explicit allowlist. New public resources need a review here.
 const required = new Set([
-    'index.html', 'favicon.svg',
+    'index.html', 'swaml.svg', 'swaml-white.svg',
     'downloads/controller.swaml', 'downloads/usage-guide.md',
     'downloads/ai-guide.md', 'downloads/swaml-author-SKILL.md',
     'downloads/swaml-validate-SKILL.md', 'downloads/mixed-ports.svg',
+    'downloads/simulation.md', 'downloads/implementation-status.md',
+    'downloads/controller-options.json', 'downloads/controller-run.json',
 ]);
 const bundle = /^assets\/[A-Za-z0-9_-]+\.(?:js|css)$/;
 
