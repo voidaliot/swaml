@@ -1,0 +1,154 @@
+{
+  "width": 920,
+  "height": 390,
+  "elements": [
+    {
+      "kind": "rect",
+      "x": 1,
+      "y": 1,
+      "w": 918,
+      "h": 388,
+      "fill": "#fafafa",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 36,
+      "text": "Indexed occurrence identity",
+      "size": 21
+    },
+    {
+      "kind": "line",
+      "x1": 26,
+      "y1": 54,
+      "x2": 894,
+      "y2": 54,
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 45,
+      "y": 120,
+      "w": 250,
+      "h": 145,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 45,
+      "y": 120,
+      "w": 250,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 57,
+      "y": 143,
+      "text": "counters[0]: Counter",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 57,
+      "y": 178,
+      "text": "attribute count: int = 1",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 57,
+      "y": 200,
+      "text": "separate private store",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 330,
+      "y": 120,
+      "w": 250,
+      "h": 145,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 330,
+      "y": 120,
+      "w": 250,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 342,
+      "y": 143,
+      "text": "counters[1]: Counter",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 342,
+      "y": 178,
+      "text": "attribute count: int = 1",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 342,
+      "y": 200,
+      "text": "separate private store",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 615,
+      "y": 120,
+      "w": 250,
+      "h": 145,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 615,
+      "y": 120,
+      "w": 250,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 627,
+      "y": 143,
+      "text": "counters[2]: Counter",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 627,
+      "y": 178,
+      "text": "attribute count: int = 1",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 627,
+      "y": 200,
+      "text": "separate private store",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 45,
+      "y": 320,
+      "text": "One shared definition; three distinct occurrence identities and stores.",
+      "size": 15
+    }
+  ]
+}

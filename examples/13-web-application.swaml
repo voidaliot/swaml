@@ -1,130 +1,42 @@
-package WebShop {
-    interface service Checkout version "1.0.0" {
-        function submit(orderId: string, quantity: int): bool;
-        event accepted(orderId: string);
+package Web {
+  import Swaml::Qos;
+  port def Catalog {
+    provides idempotent operation get(key: int) returns real;
+    provides event changed(key: int);
+  }
+  component def Store {
+    port api: Catalog;
+    attribute value: real = 4.5;
+    operation get(key: int) returns real {
+      wait 1ms;
+      return value;
     }
-    interface clientServer Inventory version "1.0.0" {
-        function reserve(quantity: int): bool;
+    operation announce() {
+      publish api.changed(1);
     }
-    interface publishSubscribe Receipts version "1.0.0" {
-        event created(orderId: string);
+    schedule {
+      on call api.get(k) get(k);
+      on start announce();
     }
-    interface publishSubscribe BrowserCommands version "1.0.0" { event overOrder(); }
-    qos def RequestQueue {
-        delivery atMostOnce; ordering fifo; capacity 16; overflow reject;
+  }
+  component def Client {
+    reversed port api: Catalog;
+    attribute last: real = 0.0;
+    attribute changedKey: int = 0;
+    operation read() {
+      last = try(api.get(1), - 1.0);
     }
-    qos def ReceiptQueue {
-        delivery atMostOnce; ordering fifo; capacity 32; overflow reject;
+    operation changed(key: int) {
+      changedKey = key;
     }
-    component def BrowserClient {
-        port checkout: Checkout requires;
-        port control: BrowserCommands subscriber optional;
-        var lastOrder: string = "";
-        var accepted: bool = false;
-        var rejectedOversize: bool = false;
-        function buy() on start {
-            call checkout.submit("order-1042", 2) as result within 1 s otherwise {
-                fail "checkout unavailable";
-            };
-            accepted = result;
-        }
-        function overOrder() on receive control.overOrder {
-            call checkout.submit("order-1043", 99) as result within 1 s otherwise {
-                fail "checkout unavailable";
-            };
-            rejectedOversize = not result;
-            assert rejectedOversize;
-        }
-        function confirmation(orderId: string) on receive checkout.accepted {
-            lastOrder = orderId;
-        }
+    schedule {
+      on start read();
+      on receive api.changed(k) changed(k);
     }
-    component def CheckoutService {
-        port api: Checkout provides;
-        port inventory: Inventory client;
-        port receipts: Receipts publisher;
-        var acceptedOrders: int = 0;
-        function submit(orderId: string, quantity: int): bool on call api.submit {
-            call inventory.reserve(quantity) as reserved within 200 ms otherwise {
-                return false;
-            };
-            if (not reserved) { return false; }
-            acceptedOrders = acceptedOrders + 1;
-            publish api.accepted(orderId);
-            publish receipts.created(orderId);
-            return true;
-        }
-    }
-    component def StockStore {
-        port api: Inventory server;
-        var available: int = 10;
-        function reserve(quantity: int): bool on call api.reserve {
-            if (quantity <= 0 or quantity > available) { return false; }
-            available = available - quantity;
-            return true;
-        }
-    }
-    component def ReceiptWorker {
-        port input: Receipts subscriber;
-        var lastOrder: string = "";
-        var sent: int = 0;
-        function prepareReceipt(orderId: string) on receive input.created {
-            lastOrder = orderId;
-            sent = sent + 1;
-        }
-    }
-    component def WebApplication {
-        port api: Checkout provides;
-        port inventory: Inventory client;
-        port receipts: Receipts publisher;
-        component checkout: CheckoutService;
-        delegate api -> checkout.api;
-        delegate inventory -> checkout.inventory;
-        delegate receipts -> checkout.receipts;
-    }
-    component def InventoryService {
-        port api: Inventory server;
-        component stock: StockStore;
-        delegate api -> stock.api;
-    }
-    component Production {
-        port browserCommands: BrowserCommands publisher;
-        component browser: BrowserClient;
-        component application: WebApplication;
-        component inventory: InventoryService;
-        component mailer: ReceiptWorker;
-        function driveInputs() on start {
-            initial Waiting;
-            state Waiting {}
-            state Requested final { entry { publish browserCommands.overOrder(); } }
-            transition oversizeOrder: Waiting -> Requested on after 100 ms {}
-        }
-        connect browserCommand: browserCommands -> browser.control qos RequestQueue;
-        connect checkoutLink: browser.checkout -> application.api qos RequestQueue;
-        connect inventoryLink: application.inventory -> inventory.api qos RequestQueue;
-        connect receiptLink: application.receipts -> mailer.input qos ReceiptQueue;
-        deploy browser on "system:clientProcess";
-        deploy application on "system:applicationContainer";
-        deploy inventory on "system:inventoryContainer";
-        deploy mailer on "system:workerContainer";
-    }
-    requirement ReserveBeforeAccept { doc /* An accepted order reserves stock before its confirmation and receipt are published. */ }
-    satisfy ReserveBeforeAccept of Production; useCase Purchase of Production {
-        call browser.checkout.submit -> application.api.submit via checkoutLink label checkout;
-        call application.inventory.reserve -> inventory.api.reserve via inventoryLink after checkout label reserve;
-        reply inventory.api.reserve -> application.inventory.reserve via inventoryLink after reserve label stock;
-        publish application.api.accepted -> browser.checkout.accepted via checkoutLink after stock label confirmation;
-        publish application.receipts.created -> mailer.input.created via receiptLink after confirmation label receipt;
-        reply application.api.submit -> browser.checkout.submit via checkoutLink after receipt label result;
-    }
-    view overview gv of Production;
-    view contracts iv of Production;
-    view requirements cv of Production;
-    view purchase sv of Purchase;
-    view allocation grv of Production;
-    view checkoutFlow fv of Production.application.checkout.submit;
-    verificationCase CheckPurchase of Production {
-        doc /* Run the purchase simulation; inspect reserved stock, confirmation and receipt. */
-        verify ReserveBeforeAccept;
-    }
+  }
+  component Demo {
+    component store: Store;
+    component client: Client;
+    connect catalog: Reliable (store.api, client.api);
+  }
 }

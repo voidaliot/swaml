@@ -1,79 +1,23 @@
-# 5. KerML semantic mapping
+# 5. Proposed KerML semantic mapping
 
-Normative SWAML mapping contract, with implementation status stated explicitly. Part of the [SWAML 1.4 development specification](../LANGUAGE_SPECIFICATION.md).
+Normative mapping contract of [SWAML 2.0](../LANGUAGE_SPECIFICATION.md), conditional on a backend claiming K conformance. No exporter or validated KerML semantic library is supplied by the current reference implementation. Langium AST generation and exhaustive inventory coverage do not establish KerML conformance.
 
-## 5.1 Foundation and boundary
+## 5.1 Representation
 
-SWAML defines software-specific specializations and constraints over a normalized KerML model. Its concrete syntax is independent: a `.swaml` file is not automatically valid `.kerml` text. The Langium AST is an authoring representation, not itself the KerML abstract syntax.
+Packages map to Package/namespace membership and imports. Datatypes/enums preserve nominal identity; arrays preserve copied shape. Components map to software Structure definitions and owned typed features. A usage creates an occurrence, including each multiplicity index; no shared private state is introduced. Specialization/redefinition retains the effective member set and base/replacement provenance.
 
-The selected foundation is [OMG KerML 1.0](https://www.omg.org/spec/KerML/1.0). KerML supplies structural classifiers/features, behavior classifiers/steps, connectors, successions and expressions. The relevant normative kernel concepts are in clauses 7.3–7.4 and their abstract-syntax/semantic counterparts. SWAML's mapping below is this project's proposed specialization contract, not an OMG-approved extension. [KerML specification](https://www.omg.org/spec/KerML/1.0/PDF).
+A result-bearing operation maps to a Function; a void operation maps to a Behavior. This mapping does not make a result-bearing SWAML operation pure. Effects remain explicit SWAML constraints. Operation usages retain their shared signature and effective body. Nested operations are owned executables without lexical captures; states contribute to their owning operation rather than becoming an independent executable.
 
-The [mapping inventory](../../spec/kerml-mapping.json) is a machine-readable design contract. This release does not implement or validate a KerML exporter, does not bundle a kernel semantic library, and does not claim K conformance. Implementers must test the normalized representation against the selected KerML metamodel and library before making that claim.
+Ports map to owned typed features with per-member directional projections. Reversal flips each projection. Structural compatibility is retained as per-member typing constraints, not replaced by nominal port identity. Connections map to Connector instances with source occurrence/member route and independent policy queues. Forwarding maps to queue-free boundary aliases with preserved chains, not an extra message hop. Messages, transfer values, correlation and terminal failures require SWAML semantics over suitable KerML Step/transfer structures.
 
-## 5.2 Semantic specializations
+## 5.2 Required semantic library
 
-| SWAML element | Proposed KerML base/representation | SWAML restriction or additional meaning |
-| --- | --- | --- |
-| Package | Package | flat authoring namespace |
-| Class definition | Structure | composition, encapsulated state and local executable features; optional single class specialization |
-| Component definition | SWAML Class specialization over Structure | preserves Component as the specialized class kind; may specialize a class or component definition |
-| Specialization / redefinition | Specialization / Redefinition | explicit source reuse with SWAML compatibility checks and provenance |
-| Class/component execution root | composite Feature typed by a referenced or synthetic Structure | selected named occurrence, closed topology and effective execution profile; typed binding cannot extend topology |
-| Class/component usage | composite Feature typed by its Structure | declared usage kind, compatible definition kind, exactly-one multiplicity and acyclic composition |
-| Value datatype / enum | DataType | finite value semantics; enum domain restriction |
-| Interface contract | Classifier | nominal version, legal members and communication mode |
-| Port | Feature typed by contract Classifier | direction/role projection and boundary ownership |
-| Operation/function signature | Behavior plus typed parameter Features and preserved callable kind | no implementation; Function specializes Operation; copied request/result contract |
-| Operation implementation | Behavior and an owned executable Step typed by it | direct class/component ownership, activation, serialization and timing |
-| Function implementation | SWAML Operation specialization over Behavior | preserves specialized Function kind with the same execution rules |
-| Calculation | Function | parameter-only environment and no side effects |
-| QoS policy definition | named MetadataFeature with typed policy fields | reusable values and reference provenance; never shared queue state |
-| Connector | Connector between port Features | permitted interface exchange and QoS obligations |
-| Delegation | Connector plus identity-preserving forwarding constraint | same role and contract; no extra queue |
-| Ordered flow | contained Steps and Successions | structured branches/loops, bounded execution |
-| Message emission | Step typed by a SWAML-library communication Behavior | source activation, route and correlation metadata |
-| State / transition | contained behavior steps, state predicate and succession relations | SWAML state-selection and reaction semantics |
-| Requirement / case / view | immutable attributes, formal docs, directed satisfy/verify memberships and selected occurrence identities | SWAML-specific interpretation |
+A K-conforming backend MUST implement a pinned SWAML semantic library specializing the selected KerML 1.0 library. It defines Component, Operation, Port, Connector, Message, Queue, Activation, Schedule, state-machine reactions, copied values, failure and interruption. It MUST preserve suspension/unlock/relock, snapshots, deadlines, queue identity, success-only out copy-back, after success releases, state transition ordering and cancellation/late-reply behavior. Merely attaching uninterpreted metadata is preservation rather than proof that a kernel tool understands the execution semantics.
 
-These SWAML subtype relations MUST be retained even when the authoring AST shares a representation between the two structural kinds or between the two executable kinds. A SWAML executable function is not mapped to KerML Function solely because of its spelling: the pure calculation row uses KerML Function, while operations/functions use the constrained executable Behavior mapping.
+No arbitrary metaclass name is invented as a kernel class. Abstract bases require concrete backend choices validated by that kernel. Unsupported meaning yields an explicit partial-export result. The [inventory](../../spec/kerml-mapping.json) covers every grammar production/type as element, grouping, reference, value, lowering or lexical, with its normative home. Groupings/lexical nodes contribute to owners and must not create duplicate semantic elements.
 
-The table establishes a mapping target, not a claim that names such as “SWAML state” already exist as native KerML metaclasses. A full exporter needs a versioned SWAML semantic library for the additional predicates, activation and communication constraints. [Chapter 7](07-normalized-model.md) completes the information model, reference edges and lowering rules for every syntax family; the inventory covers every current grammar rule/type name.
+## 5.3 Traceability and claims
 
-## 5.3 Normalization algorithm
+Every lowered node/constraint retains source declaration identity, URI/range, occurrence context and a generation role. Inherited declarations and replacements retain both provenances. Requirements, satisfaction, verification, deployment, cases and views retain typed metadata/references, without proof claims. Timing observations reference their run and binding; layout stays separate.
 
-A mapper MUST perform the following in dependency order:
-
-1. Validate the complete workspace and resolve every textual reference. Allocate stable IDs for package declarations and each named semantic element. Retain file URI and source range as provenance, not as identity.
-2. Create value types and interface classifiers. Materialize every data/event/function parameter and result as a typed feature with copied-value semantics. Preserve interface version and member order.
-3. Create class/component structures and owned usage features, preserving the declared structural kind and Component-to-Class subtype relation, plus synthetic structures for inline root composition and behavior, with membership and typing links. Each root is a named occurrence of its referenced or synthetic structure; a typed root has no extra wrapper child. Preserve source profile omission in provenance and effective service in semantics. Keep definition identity separate from every instance-path identity. A reused definition must not merge the states of its occurrences.
-4. Create each port feature in its owning structure. Apply role-specific direction to each member projection: RPC inputs/results have opposite directions; service events run provider-to-consumer. Do not assign a single simplistic “out” bit to an entire bidirectional service contract.
-5. Create operation/function behaviors within their class/component ownership, preserving the declared executable kind and Function-to-Operation subtype relation. Add a synthetic owned executable step typed by that behavior and a component-instance context binding. This lowering artifact gives execution a structural context; it is not a user-visible performer or a second editable allocation model.
-6. Lower statement blocks to structured steps with explicit sequencing. A branch has a Boolean selection predicate and branch result control; a bounded loop has condition, body, count and failure edge. Lower expressions as typed expressions/calculations. A mapper must preserve source order and short-circuit evaluation.
-7. Lower each stateful function to one state identity feature per activation, nested state-entry/exit/effect behaviors, trigger predicates, priority selection and succession relationships. Preserve finality, timer start/cancel and the run-to-completion relation. A bare succession graph without these constraints is not an equivalent mapping.
-8. Lower communication statements to message occurrences linked to the emitting activation, sending port, interface member, connector/delegation route and destination port. Requests additionally carry correlation, timeout and response/error continuation. An event cannot become an unowned signal merely because a kernel target permits it.
-9. Materialize queues, policy constraints, timing/deployment annotations and case happens-before relations in the SWAML semantic library vocabulary. Keep queue identity per connector/direction/member.
-10. Produce a reverse mapping from every generated element to its authoring element, including synthetic lowering elements. Validate kernel typing/membership constraints and SWAML constraints separately. Report failures at the source element, not only at generated IDs.
-
-## 5.4 Required extension predicates
-
-The semantic library MUST define, or a mapper MUST carry as explicit constrained metadata, at least:
-
-- `ownsExecutable(classOrComponent, operationOrFunction)` and instance-local `contextOf(activation)`;
-- `contractOf(port)`, `roleOf(port)`, `memberOf(contract, member)`;
-- `route(sourcePort, destinationPort, connectorPath)`;
-- `emits(activation, port, member, copiedPayload)` and `handles(function, port, member)`;
-- `correlates(request, response)`, `expiresAt(request)` and `lateResponseDiscarded(response)`;
-- `queueOf(connector, direction, member)`, capacity, overflow, ordering and delivery policy;
-- `currentState(activation)`, `enabled(transition, stimulus)`, priority and final-state completion;
-- `wcet(function)`, `deadline(function)`, `period(function)` and instance allocation;
-- `happensBefore(caseStepA, caseStepB)`, `satisfy(designElement, requirement)` and `verify(verificationCase, requirement)`.
-
-These predicates are part of SWAML meaning even if an exchange format stores them as metadata. A consumer lacking their interpretation MUST report a partial import and MUST NOT execute a “best guess.” A generic KerML consumer can preserve structural content while lacking SWAML runtime semantics.
-
-## 5.5 Interchange and round-trip obligations
-
-A future exporter SHOULD use the standard KerML interchange representation supported by its chosen backend, with a declared SWAML semantic library version. No new unregistered MIME type, XMI metamodel URI, or fake OMG namespace is assigned by this document. SWAML library identifiers must use a project-controlled namespace when published.
-
-Round-trip tests MUST compare semantic identities, typing, owned instances, routes, triggers, guards, flow ordering, queue policies, timing and trace dependencies. byte-for-byte textual equality is not required. Comments, formatting and diagram layouts are separate preservation requirements for an authoring tool.
-
-Dropping a guard, converting a queued event to a sampled value, merging per-subscriber queues, or omitting a request's response path is a semantic loss and must be reported as an error for K conformance. The mapping must not infer a performer allocation that changes the function's direct owning component.
+A conforming backend identifies the exact source/package/library revisions, selected KerML implementation, checked constraints and evidence. Round trips preserve the [normalized model](07-normalized-model.md) and cannot erase effects, merge occurrences/queues, reorder state transitions, invent routes, weaken contracts or convert copied values into references.

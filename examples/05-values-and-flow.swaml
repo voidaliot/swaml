@@ -1,39 +1,31 @@
 package Values {
-    enum Health { Good, Failed }
-    datatype Measurement { value: real; health: Health; }
-    interface senderReceiver Measurements version "1.0.0" { data sample: Measurement queued; }
-    component def Producer {
-        port output: Measurements sender;
-        function prepare() {
-            calc twice { in x: real; return result: real = x * 2.0; }
-
-            var samples: real[3] = [1.0, 2.0, 3.0];
-            var i: int = 0;
-            while (i < 3) bound 3 {
-                var measurement: Measurement = record Measurement {
-                    value = twice(samples[i]);
-                    health = Health.Good;
-                };
-                send output.sample(measurement);
-                i = i + 1;
-            }
-            return;
-        }
-        function boot() on start { call prepare(); return; }
+  import Swaml::Math;
+  datatype Reading {
+    value: real;
+    unit: string;
+  }
+  enum Mode {
+    idle, active
+  }
+  component Demo {
+    attribute sum: int = 0;
+    attribute mode: Mode = Mode.idle;
+    attribute reading: Reading = record Reading {
+      value = 4.5;
+      unit = "C";
+    };
+    operation add(a: int, b: int) returns int {
+      return a + b;
     }
-    component def Consumer {
-        port input: Measurements receiver;
-        var latest: real = 0.0;
-        function update(measurement: Measurement) on receive input.sample {
-            if (measurement.health == Health.Good) { latest = measurement.value; }
-            return;
-        }
+    operation boot() {
+      var values: int[3] =[1, 2, 3];
+      for (value: int in values) {
+        sum = add(sum, value);
+      }
+      mode = Mode.active;
     }
-    component def Pipeline {
-        component producer: Producer;
-        component consumer: Consumer;
-        connect samples: producer.output -> consumer.input qos { delivery atMostOnce; ordering fifo; capacity 3; overflow reject; };
+    schedule {
+      on start boot();
     }
-    component Demo { component pipeline: Pipeline; }
-    view preparation fv of Producer.prepare;
+  }
 }

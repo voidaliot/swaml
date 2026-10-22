@@ -1,0 +1,29 @@
+package Placement {
+  import Swaml::Platform;
+  component def Worker {
+    attribute count: int = 0;
+    operation boot() {
+      count = count + 1;
+    }
+    schedule {
+      on start boot();
+    }
+  }
+  component Demo {
+    component workers: Worker[3];
+  }
+  component def Ecu specializes Node {
+    const attribute cores: uint = 2;
+    const attribute ref: string = "sysml:Vehicle::ecu";
+    component os: Partition;
+  }
+  component Vehicle: Platform {
+    component front: Ecu;
+    component rear: Ecu[2];
+  }
+  deployment OnVehicle of Demo on Vehicle {
+    deploy on front;
+    deploy workers on rear[0];
+    deploy workers[2] on rear[1];
+  }
+}

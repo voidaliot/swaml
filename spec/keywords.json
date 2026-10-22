@@ -1,791 +1,1043 @@
 {
-  "languageVersion": "1.4",
+  "schemaVersion": "2.0",
+  "languageVersion": "2.0",
+  "edition": "2.0.0",
   "entries": [
     {
       "keyword": "after",
-      "concern": "Behavior and states",
-      "meaning": "In a transition, creates a timer measured from source-state entry completion; leaving the state cancels its generation. In a case step, names one earlier causal predecessor, not a delay or source-order convention.",
-      "example": "on after 10 ms / via link after sent label received;"
+      "meaning": "Introduces a state timer, case dependency or success schedule dependency.",
+      "concern": "Ordered state transitions",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "('on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' deadline=Duration)? (concurrent?='concurrent')? ';';",
+      "contextual": false,
+      "productions": [
+        "ScheduleEntry",
+        "Receive",
+        "Transition",
+        "ScenarioStep"
+      ]
     },
     {
       "keyword": "and",
-      "concern": "Values and calculation",
-      "meaning": "Short-circuit Boolean conjunction. Both operands must be bool; the right operand is evaluated only when the left is true.",
-      "example": "ready and enabled"
-    },
-    {
-      "keyword": "as",
-      "concern": "Communication",
-      "meaning": "Names a fresh local-call result or awaited RPC result. Local void calls omit it; routed void calls reserve a completion name without a readable value.",
-      "example": "call api.read() as value within 1 s otherwise { return; };"
+      "meaning": "Used in typed expressions and operators; see its grammar contexts and normative constraints.",
+      "concern": "Typed expressions and operators",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "FilterPrimary ({infer FilterBinary.left=current} operator='and' right=FilterPrimary)*;",
+      "contextual": false,
+      "productions": [
+        "FilterAnd",
+        "AndExpression"
+      ]
     },
     {
       "keyword": "assert",
-      "concern": "Behavior and states",
-      "meaning": "Evaluates a bool; false fails the activation without rollback. A failed RPC handler returns RemoteFailure through its correlation. Assertions are executable checks, not static proofs.",
-      "example": "assert measured <= 100;"
-    },
-    {
-      "keyword": "atLeastOnce",
-      "concern": "Communication",
-      "meaning": "Permits retries and duplicate delivery subject to liveness, overflow and freshness. RPC members on such a connector must declare idempotent behavior. It never implies exactly-once effects.",
-      "example": "delivery atLeastOnce;"
-    },
-    {
-      "keyword": "atMostOnce",
-      "concern": "Communication",
-      "meaning": "Allows loss but no duplicate delivery for a logical message. A lost request or response can still lead to timeout. This policy does not guarantee admission or successful execution.",
-      "example": "delivery atMostOnce;"
+      "meaning": "Used in runtime failure and lazy fallback; see its grammar contexts and normative constraints.",
+      "concern": "Runtime failure and lazy fallback",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "'assert' condition=Expression ';';",
+      "contextual": false,
+      "productions": [
+        "Assert"
+      ]
     },
     {
       "keyword": "attribute",
-      "concern": "Cases and evidence",
-      "meaning": "Immutable typed requirement metadata.",
-      "example": "attribute priority: uint = 1;"
-    },
-    {
-      "keyword": "bestEffort",
-      "concern": "Communication",
-      "meaning": "Permits loss without an eventual-delivery guarantee and without duplicate delivery. Queue capacity, overflow and declared timing bounds still apply.",
-      "example": "delivery bestEffort;"
+      "meaning": "Declares typed occurrence state or an immutable requirement value.",
+      "concern": "Attributes and lexical locals",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "(redefines?='redefines')? (constant?='const')? 'attribute' name=Name ':' type=TypeRef '=' value=Expression documentation=Documentation? ';';",
+      "contextual": false,
+      "productions": [
+        "Attribute",
+        "PortMember"
+      ]
     },
     {
       "keyword": "bool",
-      "concern": "Values and calculation",
-      "meaning": "Primitive two-valued Boolean type. Conditions and logical operators require bool; numbers and strings are not truthy substitutes.",
-      "example": "var ready: bool = true;"
-    },
-    {
-      "keyword": "bound",
-      "concern": "Behavior and states",
-      "meaning": "Sets the positive safe-integer maximum number of body executions for while, for and do-while loops. A still-true condition after the final permitted body fails before another body. forEach instead uses its copied array cardinality as the bound.",
-      "example": "while (i < 3) bound 3 { i = i + 1; }"
+      "meaning": "Used in typed copied values; see its grammar contexts and normative constraints.",
+      "concern": "Typed copied values",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "(primitive=('bool'|'byte'|'uint'|'int'|'real'|'string'|'void') | type=[ValueType:QualifiedName]) ('[' size=INT ']')?;",
+      "contextual": false,
+      "productions": [
+        "TypeRef"
+      ]
     },
     {
       "keyword": "byte",
-      "concern": "Values and calculation",
-      "meaning": "Exact unsigned eight-bit values from 0 through 255. Integral assignment checks the destination range statically for known constants and at runtime for computed values.",
-      "example": "var payload: byte[2] = [0, 255];"
-    },
-    {
-      "keyword": "calc",
-      "concern": "Values and calculation",
-      "meaning": "Declares a pure calculation at the start of a function body. Its typed inputs and named result expression are visible only within that owning function, including its states and guards.",
-      "example": "calc twice { in x: int; return result: int = x * 2; }"
+      "meaning": "Used in typed copied values; see its grammar contexts and normative constraints.",
+      "concern": "Typed copied values",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "(primitive=('bool'|'byte'|'uint'|'int'|'real'|'string'|'void') | type=[ValueType:QualifiedName]) ('[' size=INT ']')?;",
+      "contextual": false,
+      "productions": [
+        "TypeRef"
+      ]
     },
     {
       "keyword": "call",
-      "concern": "Behavior and states",
-      "meaning": "Calls an untriggered local function, awaits a routed port.member function, marks an incoming RPC trigger, or describes a case RPC step. Local non-void calls require as name; routed calls require a result/completion name, timeout and terminating failure path.",
-      "example": "call normalize(input) as value; / call api.read() as reply within 1 s otherwise { return; };"
-    },
-    {
-      "keyword": "capacity",
-      "concern": "Communication",
-      "meaning": "Positive safe-integer retained-message limit per connector occurrence, direction and member. Transport-pending messages count; running handlers do not. Sampled data requires capacity 1.",
-      "example": "capacity 8;"
-    },
-    {
-      "keyword": "class",
-      "concern": "Structure and names",
-      "meaning": "General software classifier: owns private copied values, typed ports, child class/component usages and executable operations/functions. A component specializes this category. Definitions use def; top-level usages are closed execution roots. No dynamic object creation or cross-owner access is introduced.",
-      "example": "class def CounterBase { var value: int = 21; }"
-    },
-    {
-      "keyword": "client",
-      "concern": "Communication",
-      "meaning": "Port role for the requesting side of a clientServer interface. A closed client port has at most one route; replies return through the same route and correlation.",
-      "example": "port api: Health client;"
-    },
-    {
-      "keyword": "clientServer",
-      "concern": "Communication",
-      "meaning": "Interface kind containing operation/function signatures only. A client issues requests; a server implements compatible on call handlers. Events belong in service or publishSubscribe contracts.",
-      "example": "interface clientServer Health version \"1.0.0\" { function check(): bool; }"
-    },
-    {
-      "keyword": "completion",
-      "concern": "Behavior and states",
-      "meaning": "In a state transition, the local stimulus reconsidered after entry/reaction until quiescent. In an executable trigger, on completion A releases a fresh parameterless void flow activation after each successful whole completion of the same-owner triggered effective A. Failure/reaction quiescence releases nothing; dependencies are acyclic and do not forward arguments/results or create an implicit join.",
-      "example": "function next() on completion first { return; } / transition next: A -> B on completion {}"
+      "meaning": "Used only as the on call schedule trigger.",
+      "concern": "Schedule entry and successful chaining",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "('on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' deadline=Duration)? (concurrent?='concurrent')? ';';",
+      "contextual": false,
+      "productions": [
+        "ScheduleEntry"
+      ]
     },
     {
       "keyword": "component",
-      "concern": "Structure and names",
-      "meaning": "Specialized class category for a software component. Definitions use def; usages have separate private stores. Components may specialize class or component definitions. Component usages require component definitions; class usages may instantiate either category.",
-      "example": "component def Controller { } / component controller: Controller;"
+      "meaning": "Declares a reusable definition or a distinct owned occurrence.",
+      "concern": "Component definitions and usages",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "'component' 'def' name=Name ('specializes' specializes=[ComponentDef:QualifiedName])? '{' documentation=Documentation? members+=ComponentMember* '}';",
+      "contextual": false,
+      "productions": [
+        "ComponentDef",
+        "ComponentUsage"
+      ]
     },
     {
-      "keyword": "concurrency",
-      "concern": "Timing and deployment",
-      "meaning": "Selects serial or reentrant function activation policy in a timing contract. Helpers inherit the activation mode. Stateful functions never overlap their own reactions.",
-      "example": "concurrency serial;"
+      "keyword": "concurrent",
+      "meaning": "Permits overlapping non-writing snapshot activations.",
+      "concern": "Schedule entry and successful chaining",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "('on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' deadline=Duration)? (concurrent?='concurrent')? ';';",
+      "contextual": false,
+      "productions": [
+        "ScheduleEntry"
+      ]
     },
     {
       "keyword": "connect",
-      "concern": "Communication",
-      "meaning": "Creates an explicit connector between owned or immediate-child ports. Contracts must be identical and roles complementary. Every connector supplies a complete QoS selection.",
-      "example": "connect samples: sensor.output -> controller.input qos { ... };"
+      "meaning": "Joins compatible ports; boundary-to-child derives forwarding.",
+      "concern": "Policy-bearing connection",
+      "normative": "docs/spec/02-communication.md",
+      "example": "(redefines?='redefines')? 'connect' (name=Name)? (':' policy=[QosPolicy:QualifiedName])? '(' source=Path ',' target=Path ')' documentation=Documentation? ';';",
+      "contextual": false,
+      "productions": [
+        "Connect"
+      ]
     },
     {
-      "keyword": "cv",
-      "concern": "Graphical views",
-      "meaning": "Case View kind: displays cases, requirements and claimed coverage for a case or root component. Verified coverage requires separate linked evidence.",
-      "example": "view coverage cv of Shop;"
-    },
-    {
-      "keyword": "data",
-      "concern": "Communication",
-      "meaning": "Declares one senderReceiver member with a value type and sampled or queued mode. Outgoing use is send; incoming handling is on receive with one typed argument.",
-      "example": "data sample: real sampled;"
+      "keyword": "const",
+      "meaning": "Makes an attribute immutable for its occurrence.",
+      "concern": "Attributes and lexical locals",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "(redefines?='redefines')? (constant?='const')? 'attribute' name=Name ':' type=TypeRef '=' value=Expression documentation=Documentation? ';';",
+      "contextual": false,
+      "productions": [
+        "Attribute"
+      ]
     },
     {
       "keyword": "datatype",
-      "concern": "Values and calculation",
-      "meaning": "Declares a nominal finite record. Field names are unique, every literal supplies all fields once, and recursive value containment is invalid. Empty records have one value.",
-      "example": "datatype Point { x: real; y: real; }"
+      "meaning": "Used in typed copied values; see its grammar contexts and normative constraints.",
+      "concern": "Typed copied values",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "'datatype' name=Name '{' documentation=Documentation? fields+=Field* '}';",
+      "contextual": false,
+      "productions": [
+        "DataType"
+      ]
     },
     {
       "keyword": "deadline",
-      "concern": "Timing and deployment",
-      "meaning": "Positive elapsed-time bound from activation release to completion, including queueing and request suspension. For stateful functions it applies per reaction. WCET must not exceed it.",
-      "example": "deadline 5 ms;"
+      "meaning": "Used in schedule entry and successful chaining; see its grammar contexts and normative constraints.",
+      "concern": "Schedule entry and successful chaining",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "('on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' deadline=Duration)? (concurrent?='concurrent')? ';';",
+      "contextual": false,
+      "productions": [
+        "ScheduleEntry"
+      ]
     },
     {
       "keyword": "def",
-      "concern": "Structure and names",
-      "meaning": "Declares a reusable class/component type or complete named QoS policy. A definition is not an execution occurrence and does not allocate shared state.",
-      "example": "component def Controller { } / qos def LocalLink { ... }"
-    },
-    {
-      "keyword": "delegate",
-      "concern": "Communication",
-      "meaning": "Aliases a component boundary port to one immediate child port of the same role and interface. A port has at most one delegation and cannot also have local behavior owners. Delegation adds neither conversion nor a queue.",
-      "example": "delegate api -> worker.api;"
-    },
-    {
-      "keyword": "delivery",
-      "concern": "Communication",
-      "meaning": "Chooses bestEffort, atMostOnce or atLeastOnce for all member queues of a connector. Delivery is separate from FIFO ordering, admission and application success.",
-      "example": "delivery atMostOnce;"
+      "meaning": "Used in component definitions and usages; see its grammar contexts and normative constraints.",
+      "concern": "Component definitions and usages",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "'component' 'def' name=Name ('specializes' specializes=[ComponentDef:QualifiedName])? '{' documentation=Documentation? members+=ComponentMember* '}';",
+      "contextual": false,
+      "productions": [
+        "ComponentDef",
+        "PortDef",
+        "QosPolicy",
+        "Operation",
+        "ViewDef"
+      ]
     },
     {
       "keyword": "deploy",
-      "concern": "Timing and deployment",
-      "meaning": "Associates a component instance path, or the root name itself, with an external system/part identity string. Descendants inherit the nearest binding. The host resolves the external destination.",
-      "example": "deploy controller on \"sysml:Vehicle::ecu\";"
+      "meaning": "Used in platform nodes and placement; see its grammar contexts and normative constraints.",
+      "concern": "Platform Nodes and placement",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "'deploy' target=Path? 'on' node=Path ';';",
+      "contextual": false,
+      "productions": [
+        "Placement"
+      ]
     },
     {
-      "keyword": "do",
-      "concern": "Behavior and states",
-      "meaning": "Starts a post-test loop. Its body runs at least once, then its Boolean while condition is evaluated. A mandatory positive safe-integer bound limits body executions; another requested body fails with LoopBound. Body-local declarations do not escape to the condition.",
-      "example": "do { count = count + 1; } while (count < 3) bound 3;"
-    },
-    {
-      "keyword": "doc",
-      "concern": "Cases and evidence",
-      "meaning": "One owned formal multiline specification.",
-      "example": "doc /* Formal text. */"
-    },
-    {
-      "keyword": "dropNewest",
-      "concern": "Communication",
-      "meaning": "On a full queue, discards the offered message observably. Admission does not fail the producer; an RPC can later time out. Existing retained messages stay.",
-      "example": "overflow dropNewest;"
-    },
-    {
-      "keyword": "dropOldest",
-      "concern": "Communication",
-      "meaning": "On a full queue, discards the oldest retained message and admits the new one. Required with capacity 1 for sampled data. It does not undo effects of already dispatched handlers.",
-      "example": "overflow dropOldest;"
+      "keyword": "deployment",
+      "meaning": "Places software root occurrences on platform Node occurrences.",
+      "concern": "Platform Nodes and placement",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "'deployment' name=Name 'of' root=[ComponentUsage:QualifiedName] 'on' platform=[ComponentUsage:QualifiedName] '{' documentation=Documentation? placements+=Placement* '}';",
+      "contextual": false,
+      "productions": [
+        "Deployment"
+      ]
     },
     {
       "keyword": "else",
-      "concern": "Behavior and states",
-      "meaning": "Optional alternative block of an if statement. Only the chosen branch executes; branch-local declarations do not escape that branch.",
-      "example": "if (ready) { return; } else { fail \"not ready\"; }"
+      "meaning": "Used in statements and decisions; see its grammar contexts and normative constraints.",
+      "concern": "Statements and decisions",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "'if' '(' condition=Expression ')' then=Block ('else' otherwise=Block)?;",
+      "contextual": false,
+      "productions": [
+        "If"
+      ]
     },
     {
       "keyword": "entry",
-      "concern": "Behavior and states",
-      "meaning": "State-entry block executed after that state becomes current. It has no incoming payload scope. Residence timers begin after entry finishes; return/fail terminates the owning function.",
-      "example": "state Idle { entry { count = 0; } }"
+      "meaning": "Used in ordered state transitions; see its grammar contexts and normative constraints.",
+      "concern": "Ordered state transitions",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "'on' kind=('entry'|'exit') body=Block;",
+      "contextual": false,
+      "productions": [
+        "StateAction"
+      ]
     },
     {
       "keyword": "enum",
-      "concern": "Values and calculation",
-      "meaning": "Declares a nominal set of one or more unique literals. Values use Type.Literal or Package::Type.Literal. A live value first segment in the current expression environment takes precedence over an unqualified enum name, with no fallback after a failed field lookup; qualify to select the enum explicitly.",
-      "example": "enum Status { Ready, Failed } / Status.Ready / Contracts::Status.Ready"
+      "meaning": "Used in typed copied values; see its grammar contexts and normative constraints.",
+      "concern": "Typed copied values",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "'enum' name=Name '{' documentation=Documentation? literals+=Name (',' literals+=Name)* '}';",
+      "contextual": false,
+      "productions": [
+        "EnumType"
+      ]
     },
     {
       "keyword": "event",
-      "concern": "Communication",
-      "meaning": "Declares a typed asynchronous member in publishSubscribe or service. It must be emitted by a function through a port and owned by one receiving function; free global events are absent.",
-      "example": "event changed(value: real);"
+      "meaning": "Used in directed port members; see its grammar contexts and normative constraints.",
+      "concern": "Directed port members",
+      "normative": "docs/spec/02-communication.md",
+      "example": "direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';",
+      "contextual": false,
+      "productions": [
+        "PortMember"
+      ]
     },
     {
       "keyword": "every",
-      "concern": "Behavior and states",
-      "meaning": "Periodic parameterless void activation at epoch plus k periods, k starting at 1. Releases do not merge when earlier activations are busy; pending work is bounded by the binding.",
-      "example": "function sample(): void on every 10 ms { ... }"
+      "meaning": "Used in schedule entry and successful chaining; see its grammar contexts and normative constraints.",
+      "concern": "Schedule entry and successful chaining",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "('on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' deadline=Duration)? (concurrent?='concurrent')? ';';",
+      "contextual": false,
+      "productions": [
+        "ScheduleEntry"
+      ]
     },
     {
       "keyword": "exit",
-      "concern": "Behavior and states",
-      "meaning": "State-exit block runs after timer cancellation and before the transition effect. It lacks payload scope. Return/failure skips remaining transition phases.",
-      "example": "state Running { exit { active = false; } }"
+      "meaning": "Used in ordered state transitions; see its grammar contexts and normative constraints.",
+      "concern": "Ordered state transitions",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "'on' kind=('entry'|'exit') body=Block;",
+      "contextual": false,
+      "productions": [
+        "StateAction"
+      ]
     },
     {
       "keyword": "fail",
-      "concern": "Behavior and states",
-      "meaning": "Raises a local failure with a string literal reason, unwinds synchronous callers, and preserves committed effects. An RPC caller receives the correlated RemoteFailure outcome.",
-      "example": "fail \"invalid operating mode\";"
+      "meaning": "Used in runtime failure and lazy fallback; see its grammar contexts and normative constraints.",
+      "concern": "Runtime failure and lazy fallback",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "'fail' reason=STRING ';';",
+      "contextual": false,
+      "productions": [
+        "Fail"
+      ]
     },
     {
       "keyword": "false",
-      "concern": "Values and calculation",
-      "meaning": "The false bool literal. Distinct from numeric zero, empty strings or absent values; no implicit coercion exists.",
-      "example": "var ready: bool = false;"
-    },
-    {
-      "keyword": "fifo",
-      "concern": "Communication",
-      "meaning": "Dispatches retained messages in queue order for one connector/direction/member. Independent queues and handler completion order are not globally ordered.",
-      "example": "ordering fifo;"
+      "meaning": "Used in typed expressions and operators; see its grammar contexts and normative constraints.",
+      "concern": "Typed expressions and operators",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "{infer Literal} (number=Numeric | text=STRING | boolean=('true'|'false'));",
+      "contextual": false,
+      "productions": [
+        "Literal"
+      ]
     },
     {
       "keyword": "final",
-      "concern": "Behavior and states",
-      "meaning": "Marks a state that completes its owning function after entry. It has no outgoing transition. Future input to that function is undeliverable, not rerouted.",
-      "example": "state Stopped final {}"
+      "meaning": "Used in ordered state transitions; see its grammar contexts and normative constraints.",
+      "concern": "Ordered state transitions",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "(final?='final')? 'state' name=Name '{' documentation=Documentation? (actions+=StateAction | transitions+=Transition)* '}';",
+      "contextual": false,
+      "productions": [
+        "State"
+      ]
     },
     {
       "keyword": "for",
-      "concern": "Behavior and states",
-      "meaning": "Counted pretest loop with one typed local initializer, Boolean condition, assignment update and mandatory positive safe-integer bound. The header variable belongs to the loop; body locals are fresh each iteration. The update follows each completed body. A true condition after the bound fails before another body.",
-      "example": "for (var i: int = 0; i < 3; i = i + 1) bound 3 { count = count + 1; }"
+      "meaning": "Used in loops and copied iteration; see its grammar contexts and normative constraints.",
+      "concern": "Loops and copied iteration",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "'for' '(' initializer=LocalVariable condition=Expression ';' update=ForUpdate ')' body=Block;",
+      "contextual": false,
+      "productions": [
+        "For",
+        "ForEach"
+      ]
     },
     {
-      "keyword": "forEach",
-      "concern": "Behavior and states",
-      "meaning": "Iterates in array order over one copied fixed-array value evaluated once on entry. Every iteration binds a fresh typed copy of its item. Array cardinality is the finite bound; changing the source or item cannot change the iteration snapshot.",
-      "example": "forEach (item: int in values) { total = total + item; }"
-    },
-    {
-      "keyword": "function",
-      "concern": "Behavior and states",
-      "meaning": "Specialized operation category, used for executable members and interface signatures. It retains ordinary ownership, copied values, triggers, timing, function-local calculations and flow/state semantics; it does not imply purity. A function contract requires a function implementation.",
-      "example": "function startUp() on start { return; }"
-    },
-    {
-      "keyword": "fv",
-      "concern": "Graphical views",
-      "meaning": "Selects a Flow View presenting operation/function statement flow, states or interruptible regions. Every selected occurrence must be executable behavior; interface signatures and calculations are invalid subjects. Use tv for timing.",
-      "example": "view control fv of Controller.regulate;"
-    },
-    {
-      "keyword": "grv",
-      "concern": "Graphical views",
-      "meaning": "Grid View of a package or named semantic declaration other than a view. Presents inventory, contracts, timing, allocation or trace tables; sorting does not change model meaning.",
-      "example": "view inventory grv of Architecture;"
-    },
-    {
-      "keyword": "gv",
-      "concern": "Graphical views",
-      "meaning": "Selects a General View of software structure. Box in box and Tree are alternative presentation layouts preserving the same ownership and occurrence identities.",
-      "example": "view overview gv of Product;"
+      "keyword": "from",
+      "meaning": "Introduces the source endpoint of a named case step.",
+      "concern": "Named routed case steps",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "kind=('send'|'publish'|'request'|'reply') name=Name 'from' source=Path 'to' target=Path ('via' connector=Name)? ('after' predecessor=Name)? ';';",
+      "contextual": true,
+      "productions": [
+        "ScenarioStep",
+        "Name"
+      ]
     },
     {
       "keyword": "idempotent",
-      "concern": "Communication",
-      "meaning": "Contract assertion required for RPC under atLeastOnce delivery. Repeated requests must have idempotent effects including published side effects. The keyword alone is not a proof.",
-      "example": "function read(): int idempotent;"
+      "meaning": "Used in directed port members; see its grammar contexts and normative constraints.",
+      "concern": "Directed port members",
+      "normative": "docs/spec/02-communication.md",
+      "example": "direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';",
+      "contextual": false,
+      "productions": [
+        "PortMember"
+      ]
     },
     {
       "keyword": "if",
-      "concern": "Behavior and states",
-      "meaning": "Evaluates one bool and executes the selected lexical block. It supplies no concurrency or implicit variable merging. Value-returning functions must cover both paths or fail.",
-      "example": "if (value > limit) { return false; } else { return true; }"
+      "meaning": "Used in statements and decisions; see its grammar contexts and normative constraints.",
+      "concern": "Statements and decisions",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "'if' '(' condition=Expression ')' then=Block ('else' otherwise=Block)?;",
+      "contextual": false,
+      "productions": [
+        "If"
+      ]
     },
     {
       "keyword": "import",
-      "concern": "Structure and names",
-      "meaning": "Imports top-level names from one package using namespace::*; imports are not transitive. A short name must be unique across local and directly imported declarations.",
-      "example": "import Common::*;"
+      "meaning": "Used in packages and imports; see its grammar contexts and normative constraints.",
+      "concern": "Packages and imports",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "'import' namespace=QualifiedName ';';",
+      "contextual": false,
+      "productions": [
+        "Import"
+      ]
     },
     {
       "keyword": "in",
-      "concern": "Values and calculation",
-      "meaning": "Declares a typed input of a pure calculation, or separates the typed item binding from the fixed-array expression of forEach. Calculation inputs are copied; array iteration snapshots its collection once and binds copied items.",
-      "example": "in measured: real;"
+      "meaning": "Used in attributes and lexical locals; see its grammar contexts and normative constraints.",
+      "concern": "Attributes and lexical locals",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "(direction=('in'|'out'))? name=Name ':' type=TypeRef;",
+      "contextual": false,
+      "productions": [
+        "Argument",
+        "ForEach"
+      ]
     },
     {
       "keyword": "include",
-      "concern": "Graphical views",
-      "meaning": "Adds a subject selection to a view.",
-      "example": "include Demo;"
+      "meaning": "Used in seven library view definitions; see its grammar contexts and normative constraints.",
+      "concern": "Seven library view definitions",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "'include' subject=Path (recursive?='recursive')? ('where' filter=FilterExpression)? ';';",
+      "contextual": false,
+      "productions": [
+        "ViewSelection"
+      ]
     },
     {
       "keyword": "initial",
-      "concern": "Behavior and states",
-      "meaning": "Introduces the state body after optional function-local calculation declarations. References exactly one state owned by that function and distinguishes state behavior from a statement block without a wrapper keyword. Initialization enters it once per run epoch before input consumption.",
-      "example": "initial Idle;"
+      "meaning": "Used in ordered state transitions; see its grammar contexts and normative constraints.",
+      "concern": "Ordered state transitions",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "'{' documentation=Documentation? operations+=Executable* ('initial' initial=Name ';' states+=State+ | statements+=Statement*) '}';",
+      "contextual": false,
+      "productions": [
+        "OperationBody"
+      ]
     },
     {
       "keyword": "int",
-      "concern": "Values and calculation",
-      "meaning": "Exact signed safe integers from âˆ’(2^53âˆ’1) through 2^53âˆ’1. Integral arithmetic produces int, with exact intermediate checks; division returns real.",
-      "example": "var delta: int = -2;"
-    },
-    {
-      "keyword": "interface",
-      "concern": "Communication",
-      "meaning": "Declares a nominal, versioned contract of one of four kinds. Port endpoints must reference the same declaration; matching names or version strings alone are insufficient.",
-      "example": "interface service Orders version \"1.0.0\" { ... }"
+      "meaning": "Used in typed copied values; see its grammar contexts and normative constraints.",
+      "concern": "Typed copied values",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "(primitive=('bool'|'byte'|'uint'|'int'|'real'|'string'|'void') | type=[ValueType:QualifiedName]) ('[' size=INT ']')?;",
+      "contextual": false,
+      "productions": [
+        "TypeRef"
+      ]
     },
     {
       "keyword": "interruptible",
-      "concern": "Behavior and states",
-      "meaning": "Names a cooperatively cancellable region in a triggered serial flow function. An explicitly routed data/event input cancels protected work at a statement boundary or suspended request and runs the typed handler in the same activation. Pending requests are abandoned locally without rolling back prior or remote effects. The region supplies no hardware preemption or pause/resume.",
-      "example": "interruptible work { call job.perform() as answer within 1 s otherwise { return; }; } on receive control.stop { cancelled = true; }"
+      "meaning": "Used in armed interrupt and cancellation; see its grammar contexts and normative constraints.",
+      "concern": "Armed interrupt and cancellation",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "'interruptible' body=Block 'on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' handler=Block;",
+      "contextual": false,
+      "productions": [
+        "Interruptible"
+      ]
     },
     {
-      "keyword": "iv",
-      "concern": "Graphical views",
-      "meaning": "Interconnect View of a class/component root, definition or occurrence. Shows owned and immediate-child ports, explicit connectors and delegation with exact interface paths; client/server and requires/provides use socket/ball symbols.",
-      "example": "view wiring iv of Product;"
-    },
-    {
-      "keyword": "label",
-      "concern": "Cases and evidence",
-      "meaning": "Assigns a unique name to a scenario step. Later after clauses use that label as a causal predecessor; source position alone imposes no ordering.",
-      "example": "via orderLink label submitted;"
-    },
-    {
-      "keyword": "maxAge",
-      "concern": "Communication",
-      "meaning": "Maximum message age measured from original emission through retries. Eligibility is inclusive; greater age discards before dispatch. Required for sampled data in realtime/mixed roots.",
-      "example": "maxAge 20 ms;"
-    },
-    {
-      "keyword": "maxLatency",
-      "concern": "Communication",
-      "meaning": "Positive bound from admitted emission to destination readiness, excluding dispatch wait. Exceeding it is an observable contract violation. Required on realtime/mixed connectors.",
-      "example": "maxLatency 1 ms;"
-    },
-    {
-      "keyword": "mixed",
-      "concern": "Timing and deployment",
-      "meaning": "Root component profile covering embedded/service combinations. All used functions carry timing and all connectors latency; sampled data also carries age. It does not silently exempt cloud-facing paths.",
-      "example": "component Product mixed { ... }"
+      "keyword": "kind",
+      "meaning": "Used in seven library view definitions; see its grammar contexts and normative constraints.",
+      "concern": "Seven library view definitions",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "field=('name'|'kind'|'path') operator=('=='|'!=') value=STRING;",
+      "contextual": false,
+      "productions": [
+        "FilterComparison"
+      ]
     },
     {
       "keyword": "ms",
-      "concern": "Timing and deployment",
-      "meaning": "Millisecond duration unit; one ms equals 1,000,000 ns. Duration magnitude must be a positive integer and normalize exactly within the safe range.",
-      "example": "within 25 ms"
+      "meaning": "Used in lexical and path spelling; see its grammar contexts and normative constraints.",
+      "concern": "Lexical and path spelling",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "value=INT unit=('ns'|'us'|'ms'|'s');",
+      "contextual": false,
+      "productions": [
+        "Duration"
+      ]
+    },
+    {
+      "keyword": "name",
+      "meaning": "Used in seven library view definitions; see its grammar contexts and normative constraints.",
+      "concern": "Seven library view definitions",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "field=('name'|'kind'|'path') operator=('=='|'!=') value=STRING;",
+      "contextual": false,
+      "productions": [
+        "FilterComparison"
+      ]
     },
     {
       "keyword": "not",
-      "concern": "Values and calculation",
-      "meaning": "Unary bool negation with precedence above multiplication. No numeric or string coercion is allowed.",
-      "example": "not ready"
+      "meaning": "Used in typed expressions and operators; see its grammar contexts and normative constraints.",
+      "concern": "Typed expressions and operators",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "{infer FilterNot} 'not' operand=FilterPrimary | FilterComparison | '(' FilterExpression ')';",
+      "contextual": false,
+      "productions": [
+        "FilterPrimary",
+        "UnaryExpression"
+      ]
     },
     {
       "keyword": "ns",
-      "concern": "Timing and deployment",
-      "meaning": "Nanosecond duration unit and the reference simulation clock's integral base. All specified durations are positive, with safe exact conversion.",
-      "example": "after 1 ns"
+      "meaning": "Used in lexical and path spelling; see its grammar contexts and normative constraints.",
+      "concern": "Lexical and path spelling",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "value=INT unit=('ns'|'us'|'ms'|'s');",
+      "contextual": false,
+      "productions": [
+        "Duration"
+      ]
     },
     {
       "keyword": "of",
-      "concern": "Graphical views",
-      "meaning": "Selects the root context of a useCase/verificationCase, the design source of a satisfy claim, or the subject of a compact view. These are references, not changes of containment. Satisfaction remains directed from design to requirement.",
-      "example": "view flow fv of Product.controller.worker.run;"
+      "meaning": "Used in named routed case steps; see its grammar contexts and normative constraints.",
+      "concern": "Named routed case steps",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "'deployment' name=Name 'of' root=[ComponentUsage:QualifiedName] 'on' platform=[ComponentUsage:QualifiedName] '{' documentation=Documentation? placements+=Placement* '}';",
+      "contextual": false,
+      "productions": [
+        "Deployment",
+        "Satisfaction",
+        "Scenario",
+        "View"
+      ]
     },
     {
       "keyword": "on",
-      "concern": "Behavior and states",
-      "meaning": "Introduces an executable activation (start, every, owned port receive/call, or same-owner successful whole completion), a state transition trigger, an interrupt handler input, or an external deployment destination. Each context retains its own ownership and validity rules.",
-      "example": "function tick() on every 10 ms { return; } / deploy app on \"system:production\";"
+      "meaning": "Used in ordered state transitions; see its grammar contexts and normative constraints.",
+      "concern": "Ordered state transitions",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "('on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' deadline=Duration)? (concurrent?='concurrent')? ';';",
+      "contextual": false,
+      "productions": [
+        "ScheduleEntry",
+        "Receive",
+        "Interruptible",
+        "StateAction",
+        "Transition",
+        "Deployment",
+        "Placement"
+      ]
     },
     {
       "keyword": "operation",
-      "concern": "Behavior and states",
-      "meaning": "General executable member or interface signature, with the same copied inputs/result, activation, timing and body rules as its function specialization. Operations own local calculations and statement flow or states. An operation signature accepts an operation or function handler; a function signature requires a function handler.",
-      "example": "operation twice(input: int): int { return input * 2; }"
+      "meaning": "Declares executable behavior; def supplies a reusable signature/body.",
+      "concern": "Operations and nested ownership",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';",
+      "contextual": false,
+      "productions": [
+        "PortMember",
+        "Operation",
+        "OperationUsage"
+      ]
     },
     {
       "keyword": "optional",
-      "concern": "Communication",
-      "meaning": "Allows a port to remain unconnected in a closed root component. It does not change contract, role or handler rules. Unbound data/event sends succeed; unbound RPC reports Unavailable.",
-      "example": "port diagnostics: Notices publisher optional;"
+      "meaning": "Used in directed port members; see its grammar contexts and normative constraints.",
+      "concern": "Directed port members",
+      "normative": "docs/spec/02-communication.md",
+      "example": "(redefines?='redefines')? (optional?='optional')? (reversed?='reversed')? 'port' name=Name (':' definition=[PortDef:QualifiedName] documentation=Documentation? ';' | '{' documentation=Documentation? members+=PortMember* '}');",
+      "contextual": false,
+      "productions": [
+        "PortUsage"
+      ]
     },
     {
       "keyword": "or",
-      "concern": "Values and calculation",
-      "meaning": "Short-circuit Boolean disjunction. The right bool operand is evaluated only when the left is false.",
-      "example": "ready or retryAllowed"
+      "meaning": "Used in suspending wait and receive; see its grammar contexts and normative constraints.",
+      "concern": "Suspending wait and receive",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "'on' branches+=ReceiveBranch ('or' branches+=ReceiveBranch)* ('or' 'after' timeout=Duration timeoutBody=Block)?;",
+      "contextual": false,
+      "productions": [
+        "Receive",
+        "FilterOr",
+        "OrExpression"
+      ]
     },
     {
-      "keyword": "ordering",
-      "concern": "Communication",
-      "meaning": "Selects fifo or unordered independently of delivery reliability. Ordering applies per connector occurrence, direction and member, not across an entire interface or root.",
-      "example": "ordering fifo;"
-    },
-    {
-      "keyword": "otherwise",
-      "concern": "Communication",
-      "meaning": "Mandatory request failure block with implicit copied failure:string. It must return or fail on every path and cannot fall through to successful result use.",
-      "example": "within 1 s otherwise { lastError = failure; return; };"
-    },
-    {
-      "keyword": "overflow",
-      "concern": "Communication",
-      "meaning": "Required admission policy when a member queue is full: dropOldest, dropNewest or reject. Policies apply independently to every route in fanout.",
-      "example": "overflow reject;"
+      "keyword": "out",
+      "meaning": "Used in attributes and lexical locals; see its grammar contexts and normative constraints.",
+      "concern": "Attributes and lexical locals",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "(direction=('in'|'out'))? name=Name ':' type=TypeRef;",
+      "contextual": false,
+      "productions": [
+        "Argument"
+      ]
     },
     {
       "keyword": "package",
-      "concern": "Structure and names",
-      "meaning": "Top-level, non-nested namespace for declarations and direct imports. A package is declared once in the loaded workspace; multiple packages may share a file.",
-      "example": "package Control { ... }"
+      "meaning": "Used in packages and imports; see its grammar contexts and normative constraints.",
+      "concern": "Packages and imports",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "'package' name=QualifiedName '{' documentation=Documentation? (imports+=Import | elements+=Element | satisfactions+=Satisfaction)* '}';",
+      "contextual": false,
+      "productions": [
+        "Package"
+      ]
+    },
+    {
+      "keyword": "path",
+      "meaning": "Used in seven library view definitions; see its grammar contexts and normative constraints.",
+      "concern": "Seven library view definitions",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "field=('name'|'kind'|'path') operator=('=='|'!=') value=STRING;",
+      "contextual": false,
+      "productions": [
+        "FilterComparison"
+      ]
     },
     {
       "keyword": "port",
-      "concern": "Communication",
-      "meaning": "Owned communication boundary typed by one interface with a compatible role and optionality. A port may bind local functions to members or delegate to a child while retaining one resolved handler owner.",
-      "example": "port api: Orders requires;"
-    },
-    {
-      "keyword": "priority",
-      "concern": "Behavior and states",
-      "meaning": "Nonnegative safe-integer tie-break among matching transitions for the same state and stimulus; larger wins, default 0. It is not a function scheduling priority.",
-      "example": "on receive commands.begin priority 2 {}"
+      "meaning": "Used in directed port members; see its grammar contexts and normative constraints.",
+      "concern": "Directed port members",
+      "normative": "docs/spec/02-communication.md",
+      "example": "'port' 'def' name=Name '{' documentation=Documentation? members+=PortMember* '}';",
+      "contextual": false,
+      "productions": [
+        "PortDef",
+        "PortUsage"
+      ]
     },
     {
       "keyword": "provides",
-      "concern": "Communication",
-      "meaning": "Provider role of a service interface. Handles incoming RPC, returns correlated results/failures and publishes its declared events in reverse connector direction.",
-      "example": "port api: Orders provides;"
+      "meaning": "Offers an attribute/event or implements an operation member.",
+      "concern": "Directed port members",
+      "normative": "docs/spec/02-communication.md",
+      "example": "direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';",
+      "contextual": false,
+      "productions": [
+        "PortMember"
+      ]
     },
     {
       "keyword": "publish",
-      "concern": "Communication",
-      "meaning": "Emits an outgoing event through a publisher/provides port. In a case, describes a routed event step. Arguments are evaluated once and copied per route; no free event syntax exists.",
-      "example": "publish api.changed(current);"
-    },
-    {
-      "keyword": "publisher",
-      "concern": "Communication",
-      "meaning": "Outgoing role for a publishSubscribe contract. One port may fan out through several connectors; every outgoing member is tied to an emitting function.",
-      "example": "port events: Notices publisher;"
-    },
-    {
-      "keyword": "publishSubscribe",
-      "concern": "Communication",
-      "meaning": "Event-only contract kind with publisher/subscriber ports. Subscriptions are explicit static connectors. Runtime subscribe/unsubscribe and wildcard topics are outside 1.3.",
-      "example": "interface publishSubscribe Notices version \"1.0.0\" { event changed(); }"
+      "meaning": "Used in directed port members; see its grammar contexts and normative constraints.",
+      "concern": "Directed port members",
+      "normative": "docs/spec/02-communication.md",
+      "example": "kind=('send'|'publish') endpoint=MemberPath '(' (args+=Expression (',' args+=Expression)*)? ')' ';';",
+      "contextual": false,
+      "productions": [
+        "Send",
+        "ScenarioStep"
+      ]
     },
     {
       "keyword": "qos",
-      "concern": "Communication",
-      "meaning": "Introduces a complete inline connector policy, an explicit named-policy reference, or a package-owned qos def declaration. A named policy reuses values without sharing connector queues. Every body declares delivery, ordering, capacity and overflow, then optional latency and age.",
-      "example": "qos def LocalLink { delivery atMostOnce; ordering fifo; capacity 8; overflow reject; } / qos LocalLink"
-    },
-    {
-      "keyword": "queued",
-      "concern": "Communication",
-      "meaning": "SenderReceiver data mode representing a sequence of retained values under queue policy. It does not imply losslessness or unbounded history.",
-      "example": "data text: string queued;"
+      "meaning": "Used in policy-bearing connection; see its grammar contexts and normative constraints.",
+      "concern": "Policy-bearing connection",
+      "normative": "docs/spec/02-communication.md",
+      "example": "'qos' 'def' name=Name (':' base=QualifiedName)? '{' documentation=Documentation? settings+=PolicySetting* '}';",
+      "contextual": false,
+      "productions": [
+        "QosPolicy"
+      ]
     },
     {
       "keyword": "real",
-      "concern": "Values and calculation",
-      "meaning": "Finite IEEE 754 binary64 values. Scalar byte, uint and int may widen to real; real does not implicitly narrow to an integral type.",
-      "example": "var gain: real = 0.5;"
-    },
-    {
-      "keyword": "realtime",
-      "concern": "Timing and deployment",
-      "meaning": "Root component profile requiring function timing, connector latency and sampled freshness contracts. Those declarations require target evidence before any hard realtime claim.",
-      "example": "component Heating realtime { ... }"
+      "meaning": "Used in typed copied values; see its grammar contexts and normative constraints.",
+      "concern": "Typed copied values",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "(primitive=('bool'|'byte'|'uint'|'int'|'real'|'string'|'void') | type=[ValueType:QualifiedName]) ('[' size=INT ']')?;",
+      "contextual": false,
+      "productions": [
+        "TypeRef"
+      ]
     },
     {
       "keyword": "receive",
-      "concern": "Behavior and states",
-      "meaning": "Consumes an incoming data/event member through a receiver/subscriber/requires port. An ordinary function receives copied parameters; a transition or interruptible handler receives a copied data payload or event parameters. Boundaries remain explicit.",
-      "example": "on receive commands.begin"
-    },
-    {
-      "keyword": "receiver",
-      "concern": "Communication",
-      "meaning": "Incoming senderReceiver role. Every data member has one handler owner; at most one route feeds a closed receiver port. Multiple sources require an explicit merge/adaptor component.",
-      "example": "port input: Samples receiver;"
+      "meaning": "Used in suspending wait and receive; see its grammar contexts and normative constraints.",
+      "concern": "Suspending wait and receive",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "('on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' deadline=Duration)? (concurrent?='concurrent')? ';';",
+      "contextual": false,
+      "productions": [
+        "ScheduleEntry",
+        "ReceiveBranch",
+        "Interruptible",
+        "Transition"
+      ]
     },
     {
       "keyword": "record",
-      "concern": "Values and calculation",
-      "meaning": "Constructs a nominal datatype value by assigning each declared field exactly once. Field order in the literal does not change record equality; fields remain copied values.",
-      "example": "record Point { x = 1.0; y = 2.0; }"
+      "meaning": "Used in typed copied values; see its grammar contexts and normative constraints.",
+      "concern": "Typed copied values",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "'record' type=[DataType:QualifiedName] '{' fields+=FieldValue* '}';",
+      "contextual": false,
+      "productions": [
+        "RecordLiteral"
+      ]
     },
     {
       "keyword": "recursive",
-      "concern": "Graphical views",
-      "meaning": "Includes descendants before filtering.",
-      "example": "include Demo recursive;"
+      "meaning": "Used in seven library view definitions; see its grammar contexts and normative constraints.",
+      "concern": "Seven library view definitions",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "'include' subject=Path (recursive?='recursive')? ('where' filter=FilterExpression)? ';';",
+      "contextual": false,
+      "productions": [
+        "ViewSelection"
+      ]
     },
     {
       "keyword": "redefines",
-      "concern": "Structure and names",
-      "meaning": "Explicitly replaces an inherited member while preserving its category and compatible contract. Unmarked inherited-name collisions and missing inherited targets are errors.",
-      "example": "redefines function startUp() on start { return; }"
-    },
-    {
-      "keyword": "reentrant",
-      "concern": "Timing and deployment",
-      "meaning": "Allows overlapping function activations with independent dispatch-time component snapshots. Direct or helper writes to component state are statically invalid. Local variables remain mutable; one state reaction cannot overlap itself.",
-      "example": "concurrency reentrant;"
-    },
-    {
-      "keyword": "reject",
-      "concern": "Communication",
-      "meaning": "On full queue, rejects the offer. Data/event producers fail after all fanout offers; requests take otherwise with Rejected. Previously accepted offers and effects are preserved.",
-      "example": "overflow reject;"
+      "meaning": "Used in component definitions and usages; see its grammar contexts and normative constraints.",
+      "concern": "Component definitions and usages",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "(redefines?='redefines')? 'component' name=Name (':' definition=[ComponentDef:QualifiedName] ('[' size=INT ']')?)? (';' | '{' documentation=Documentation? members+=ComponentMember* '}');",
+      "contextual": false,
+      "productions": [
+        "ComponentUsage",
+        "Attribute",
+        "PortUsage",
+        "Connect",
+        "Operation",
+        "OperationUsage"
+      ]
     },
     {
       "keyword": "reply",
-      "concern": "Cases and evidence",
-      "meaning": "Describes a response step in a case, reversing an existing connector/member request. It must have one unanswered causal request ancestor. Executable handlers reply by returning, not by a reply statement.",
-      "example": "reply backend.api.get -> client.api.get via link after asked label answered;"
+      "meaning": "Used in named routed case steps; see its grammar contexts and normative constraints.",
+      "concern": "Named routed case steps",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "kind=('send'|'publish'|'request'|'reply') name=Name 'from' source=Path 'to' target=Path ('via' connector=Name)? ('after' predecessor=Name)? ';';",
+      "contextual": false,
+      "productions": [
+        "ScenarioStep"
+      ]
+    },
+    {
+      "keyword": "request",
+      "meaning": "Used in named routed case steps; see its grammar contexts and normative constraints.",
+      "concern": "Named routed case steps",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "kind=('send'|'publish'|'request'|'reply') name=Name 'from' source=Path 'to' target=Path ('via' connector=Name)? ('after' predecessor=Name)? ';';",
+      "contextual": true,
+      "productions": [
+        "ScenarioStep",
+        "Name"
+      ]
     },
     {
       "keyword": "requirement",
-      "concern": "Cases and evidence",
-      "meaning": "Declares a named obligation with immutable typed attributes and at most one optional formal doc. satisfy links design to the requirement; only verificationCase owns verify links. These relations do not establish a passed result.",
-      "example": "requirement Safe { doc /* Duty shall remain within the allowed range. */ }"
+      "meaning": "Used in requirements and intent links; see its grammar contexts and normative constraints.",
+      "concern": "Requirements and intent links",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "'requirement' name=Name '{' documentation=Documentation? attributes+=Attribute* '}';",
+      "contextual": false,
+      "productions": [
+        "Requirement"
+      ]
     },
     {
       "keyword": "requires",
-      "concern": "Communication",
-      "meaning": "Consumer role of a service interface. Issues RPC and handles reverse-direction provider events. It has at most one route in a closed root component.",
-      "example": "port orders: Orders requires;"
+      "meaning": "Receives an attribute/event or requests an operation member.",
+      "concern": "Directed port members",
+      "normative": "docs/spec/02-communication.md",
+      "example": "direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';",
+      "contextual": false,
+      "productions": [
+        "PortMember"
+      ]
     },
     {
       "keyword": "return",
-      "concern": "Behavior and states",
-      "meaning": "Completes a function activation or local call with its required result; bare return completes void. In a calc declaration it introduces the one named typed output and pure expression.",
-      "example": "return true; / return result: real = value * gain;"
+      "meaning": "Used in expression calls and copied out values; see its grammar contexts and normative constraints.",
+      "concern": "Expression calls and copied out values",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "'return' value=Expression? ';';",
+      "contextual": false,
+      "productions": [
+        "Return"
+      ]
+    },
+    {
+      "keyword": "returns",
+      "meaning": "Declares the result type; omitted result is void.",
+      "concern": "Operations and nested ownership",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';",
+      "contextual": false,
+      "productions": [
+        "PortMember",
+        "Operation"
+      ]
+    },
+    {
+      "keyword": "reversed",
+      "meaning": "Flips each direction of a port usage.",
+      "concern": "Directed port members",
+      "normative": "docs/spec/02-communication.md",
+      "example": "(redefines?='redefines')? (optional?='optional')? (reversed?='reversed')? 'port' name=Name (':' definition=[PortDef:QualifiedName] documentation=Documentation? ';' | '{' documentation=Documentation? members+=PortMember* '}');",
+      "contextual": true,
+      "productions": [
+        "PortUsage",
+        "Name"
+      ]
     },
     {
       "keyword": "s",
-      "concern": "Timing and deployment",
-      "meaning": "Second duration unit; one s equals 1,000,000,000 ns. A duration must still fit the exact safe nanosecond range.",
-      "example": "within 2 s"
-    },
-    {
-      "keyword": "sampled",
-      "concern": "Communication",
-      "meaning": "SenderReceiver data mode retaining the latest pending sample: capacity 1 and dropOldest are mandatory. Dispatch removes the sample; the core does not define a remote shared-variable read.",
-      "example": "data temperature: real sampled;"
+      "meaning": "Used in lexical and path spelling; see its grammar contexts and normative constraints.",
+      "concern": "Lexical and path spelling",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "value=INT unit=('ns'|'us'|'ms'|'s');",
+      "contextual": false,
+      "productions": [
+        "Duration"
+      ]
     },
     {
       "keyword": "satisfy",
-      "concern": "Cases and evidence",
-      "meaning": "Design-to-requirement satisfaction claim.",
-      "example": "satisfy Reliable of Demo;"
+      "meaning": "Used in requirements and intent links; see its grammar contexts and normative constraints.",
+      "concern": "Requirements and intent links",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "'satisfy' requirement=[Requirement:QualifiedName] 'of' source=Path ';';",
+      "contextual": false,
+      "productions": [
+        "Satisfaction"
+      ]
+    },
+    {
+      "keyword": "schedule",
+      "meaning": "Owns trigger-to-operation bindings.",
+      "concern": "Schedule entry and successful chaining",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "'schedule' '{' entries+=ScheduleEntry* '}';",
+      "contextual": false,
+      "productions": [
+        "Schedule"
+      ]
     },
     {
       "keyword": "send",
-      "concern": "Communication",
-      "meaning": "Emits an outgoing senderReceiver data member through a sender port with exactly one value. In a case it describes a data exchange. It cannot publish events or bypass another component's interface.",
-      "example": "send output.temperature(23.5);"
-    },
-    {
-      "keyword": "sender",
-      "concern": "Communication",
-      "meaning": "Outgoing senderReceiver role. May fan out through multiple explicit connectors; each member has at least one syntactically associated emitting function.",
-      "example": "port output: Samples sender;"
-    },
-    {
-      "keyword": "senderReceiver",
-      "concern": "Communication",
-      "meaning": "Data-only contract kind with sampled/queued members and sender/receiver roles. No RPC functions or event members may be declared inside it.",
-      "example": "interface senderReceiver Samples version \"1.0.0\" { data value: real sampled; }"
-    },
-    {
-      "keyword": "serial",
-      "concern": "Timing and deployment",
-      "meaning": "Default activation mode: acquire the component's one serial lock until completion/failure, including RPC waits. Local invokes share the activation lock. Independent component activations may still interleave.",
-      "example": "concurrency serial;"
-    },
-    {
-      "keyword": "server",
-      "concern": "Communication",
-      "meaning": "Provider role for clientServer contracts. Each function signature has exactly one on call handler; results/failures follow the request correlation.",
-      "example": "port health: Health server;"
-    },
-    {
-      "keyword": "service",
-      "concern": "Communication",
-      "meaning": "As an interface kind, combines RPC functions and events with requires/provides roles. As a root component profile, makes timing contracts optional while retaining interfaces, explicit QoS and static validity; it is the default when no profile is written.",
-      "example": "interface service Orders version \"1.0.0\" { ... } / component Shop service { ... }"
+      "meaning": "Used in directed port members; see its grammar contexts and normative constraints.",
+      "concern": "Directed port members",
+      "normative": "docs/spec/02-communication.md",
+      "example": "kind=('send'|'publish') endpoint=MemberPath '(' (args+=Expression (',' args+=Expression)*)? ')' ';';",
+      "contextual": false,
+      "productions": [
+        "Send",
+        "ScenarioStep"
+      ]
     },
     {
       "keyword": "specializes",
-      "concern": "Structure and names",
-      "meaning": "Declares one acyclic compatible base. A component definition may specialize a class or component; a class definition may specialize a class. Effective members retain explicit compatible redefinition rules.",
-      "example": "component def Tuned specializes Controller { }"
+      "meaning": "Used in component definitions and usages; see its grammar contexts and normative constraints.",
+      "concern": "Component definitions and usages",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "'component' 'def' name=Name ('specializes' specializes=[ComponentDef:QualifiedName])? '{' documentation=Documentation? members+=ComponentMember* '}';",
+      "contextual": false,
+      "productions": [
+        "ComponentDef"
+      ]
     },
     {
       "keyword": "start",
-      "concern": "Behavior and states",
-      "meaning": "Once-per-run startup trigger for a parameterless void function. Stateful functions require it. All stores/routes/handlers exist before startup work runs; readiness protocols still need explicit ports.",
-      "example": "function boot(): void on start { ... }"
+      "meaning": "Used in schedule entry and successful chaining; see its grammar contexts and normative constraints.",
+      "concern": "Schedule entry and successful chaining",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "('on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' deadline=Duration)? (concurrent?='concurrent')? ';';",
+      "contextual": false,
+      "productions": [
+        "ScheduleEntry"
+      ]
     },
     {
       "keyword": "state",
-      "concern": "Behavior and states",
-      "meaning": "Declares a named state directly inside a function after its initial reference. Optional entry/exit blocks contain ordinary function statements. State names are function-local; no separate state allocation or performer exists.",
-      "example": "state Idle { entry { active = false; } }"
+      "meaning": "Used in ordered state transitions; see its grammar contexts and normative constraints.",
+      "concern": "Ordered state transitions",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "(final?='final')? 'state' name=Name '{' documentation=Documentation? (actions+=StateAction | transitions+=Transition)* '}';",
+      "contextual": false,
+      "productions": [
+        "State"
+      ]
     },
     {
       "keyword": "string",
-      "concern": "Values and calculation",
-      "meaning": "Finite Unicode text with exact equality and no normalization. Strings support portable escapes; implicit concatenation, ordering and bounded transport size are absent.",
-      "example": "var lastError: string = \"\";"
+      "meaning": "Used in typed copied values; see its grammar contexts and normative constraints.",
+      "concern": "Typed copied values",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "(primitive=('bool'|'byte'|'uint'|'int'|'real'|'string'|'void') | type=[ValueType:QualifiedName]) ('[' size=INT ']')?;",
+      "contextual": false,
+      "productions": [
+        "TypeRef"
+      ]
     },
     {
-      "keyword": "subscriber",
-      "concern": "Communication",
-      "meaning": "Incoming publishSubscribe role. Multiple publishers may feed one subscriber port through distinct queues. Each event has one handler owner; cross-source ordering is unspecified.",
-      "example": "port input: Notices subscriber;"
+      "keyword": "times",
+      "meaning": "Introduces a once-evaluated uint loop limit.",
+      "concern": "Loops and copied iteration",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "'while' '(' condition=Expression (',' limit=Expression 'times')? ')' body=Block;",
+      "contextual": true,
+      "productions": [
+        "While",
+        "Until",
+        "Name"
+      ]
     },
     {
-      "keyword": "sv",
-      "concern": "Graphical views",
-      "meaning": "Sequence View of a case or a root component's selected case. Lifelines are occurrences; arrows show port/member/connector and request correlation. Independent steps must remain visibly unordered.",
-      "example": "view checkout sv of Checkout;"
-    },
-    {
-      "keyword": "timing",
-      "concern": "Timing and deployment",
-      "meaning": "Function contract containing wcet, deadline and concurrency in that order. Required on used functions in realtime/mixed roots; stateful function timing applies per reaction.",
-      "example": "timing { wcet 1 ms; deadline 5 ms; concurrency serial; }"
-    },
-    {
-      "keyword": "transition",
-      "concern": "Behavior and states",
-      "meaning": "Named state edge owned by one function, with source/target, stimulus, optional guard/priority and effect. Execution orders exit, effect, state update, entry, then completion processing.",
-      "example": "transition beginRun: Idle -> Running on receive commands.begin {}"
+      "keyword": "to",
+      "meaning": "Introduces a case endpoint or state transition target.",
+      "concern": "Ordered state transitions",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' delay=Duration) 'to' target=Name effect=Block;",
+      "contextual": true,
+      "productions": [
+        "Transition",
+        "ScenarioStep",
+        "Name"
+      ]
     },
     {
       "keyword": "true",
-      "concern": "Values and calculation",
-      "meaning": "The true bool literal, with no implicit equivalence to numeric one or other nonempty values.",
-      "example": "assert true;"
+      "meaning": "Used in typed expressions and operators; see its grammar contexts and normative constraints.",
+      "concern": "Typed expressions and operators",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "{infer Literal} (number=Numeric | text=STRING | boolean=('true'|'false'));",
+      "contextual": false,
+      "productions": [
+        "Literal"
+      ]
     },
     {
-      "keyword": "tv",
-      "concern": "Graphical views",
-      "meaning": "Selects a Timing View of executable operation/function declarations or occurrences. Explicit selection and filters preserve identity; the host associates an identified trace and concrete occurrence identities separately from declared timing contracts.",
-      "example": "view polling tv of Demo.first.poll;"
+      "keyword": "try",
+      "meaning": "Catches runtime expression failures with a lazy compatible fallback.",
+      "concern": "Runtime failure and lazy fallback",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "'try' '(' expression=Expression (',' fallback=Expression)? ')';",
+      "contextual": false,
+      "productions": [
+        "TryExpression"
+      ]
     },
     {
       "keyword": "uint",
-      "concern": "Values and calculation",
-      "meaning": "Exact nonnegative integers from 0 through 2^53âˆ’1. Scalar widening is supported; assigning an integral expression to uint checks its range instead of wrapping.",
-      "example": "var count: uint = 0;"
+      "meaning": "Used in typed copied values; see its grammar contexts and normative constraints.",
+      "concern": "Typed copied values",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "(primitive=('bool'|'byte'|'uint'|'int'|'real'|'string'|'void') | type=[ValueType:QualifiedName]) ('[' size=INT ']')?;",
+      "contextual": false,
+      "productions": [
+        "TypeRef"
+      ]
     },
     {
-      "keyword": "unordered",
-      "concern": "Communication",
-      "meaning": "No source-language dispatch ordering guarantee beyond other causal rules. A deterministic backend may still choose FIFO; this choice must not be mistaken for a model guarantee.",
-      "example": "ordering unordered;"
+      "keyword": "until",
+      "meaning": "Runs body then tests the stopping condition.",
+      "concern": "Loops and copied iteration",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "'until' '(' condition=Expression (',' limit=Expression 'times')? ')' body=Block;",
+      "contextual": false,
+      "productions": [
+        "Until"
+      ]
     },
     {
       "keyword": "us",
-      "concern": "Timing and deployment",
-      "meaning": "Microsecond duration unit; one us equals 1,000 ns. The source spelling is ASCII us, not the micro sign.",
-      "example": "wcet 100 us;"
+      "meaning": "Used in lexical and path spelling; see its grammar contexts and normative constraints.",
+      "concern": "Lexical and path spelling",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "value=INT unit=('ns'|'us'|'ms'|'s');",
+      "contextual": false,
+      "productions": [
+        "Duration"
+      ]
     },
     {
       "keyword": "useCase",
-      "concern": "Cases and evidence",
-      "meaning": "Intended use with optional routed exchanges.",
-      "example": "useCase Start of Demo {}"
+      "meaning": "Used in named routed case steps; see its grammar contexts and normative constraints.",
+      "concern": "Named routed case steps",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "kind=('useCase'|'verificationCase') name=Name 'of' root=[ComponentUsage:QualifiedName] '{' documentation=Documentation? verifications+=Verification* steps+=ScenarioStep* '}';",
+      "contextual": false,
+      "productions": [
+        "Scenario"
+      ]
     },
     {
       "keyword": "var",
-      "concern": "Values and calculation",
-      "meaning": "Declares mutable private component data or a block-local copied value. Ownership determines scope; local declarations cannot shadow live values.",
-      "example": "var count: int = 0;"
+      "meaning": "Used in attributes and lexical locals; see its grammar contexts and normative constraints.",
+      "concern": "Attributes and lexical locals",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "'var' name=Name ':' type=TypeRef '=' value=Expression ';';",
+      "contextual": false,
+      "productions": [
+        "LocalVariable"
+      ]
     },
     {
       "keyword": "verificationCase",
-      "concern": "Cases and evidence",
-      "meaning": "Verification intent with explicit verify links.",
-      "example": "verificationCase Check of Demo { verify Reliable; }"
+      "meaning": "Used in named routed case steps; see its grammar contexts and normative constraints.",
+      "concern": "Named routed case steps",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "kind=('useCase'|'verificationCase') name=Name 'of' root=[ComponentUsage:QualifiedName] '{' documentation=Documentation? verifications+=Verification* steps+=ScenarioStep* '}';",
+      "contextual": false,
+      "productions": [
+        "Scenario"
+      ]
     },
     {
       "keyword": "verify",
-      "concern": "Cases and evidence",
-      "meaning": "Links a verification case to a requirement.",
-      "example": "verify Reliable;"
-    },
-    {
-      "keyword": "version",
-      "concern": "Communication",
-      "meaning": "Required interface semantic-version string major.minor.patch. Compatibility is nominal declaration identity, not automatic version-range matching or structural subtyping.",
-      "example": "interface clientServer API version \"1.0.0\" { ... }"
+      "meaning": "Used in requirements and intent links; see its grammar contexts and normative constraints.",
+      "concern": "Requirements and intent links",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "'verify' requirement=[Requirement:QualifiedName] ';';",
+      "contextual": false,
+      "productions": [
+        "Verification"
+      ]
     },
     {
       "keyword": "via",
-      "concern": "Cases and evidence",
-      "meaning": "Names the root-level connector used by a case exchange. Endpoint-member paths must resolve on root-owned or immediate-child component ports with a legal orientation.",
-      "example": "via orderLink label submitted;"
+      "meaning": "Used in named routed case steps; see its grammar contexts and normative constraints.",
+      "concern": "Named routed case steps",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "kind=('send'|'publish'|'request'|'reply') name=Name 'from' source=Path 'to' target=Path ('via' connector=Name)? ('after' predecessor=Name)? ';';",
+      "contextual": false,
+      "productions": [
+        "ScenarioStep"
+      ]
     },
     {
       "keyword": "view",
-      "concern": "Graphical views",
-      "meaning": "Declares a named gv/iv/cv/sv/grv/fv/tv projection. Compact of syntax selects one subject; a block combines include selections, optional recursive traversal and pure where filters into a stable union of occurrence paths. It carries no executable behavior or diagram geometry.",
-      "example": "view wiring iv of Product;"
+      "meaning": "Used in seven library view definitions; see its grammar contexts and normative constraints.",
+      "concern": "Seven library view definitions",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "'view' 'def' name=Name documentation=Documentation? ';';",
+      "contextual": false,
+      "productions": [
+        "ViewDef",
+        "View"
+      ]
     },
     {
       "keyword": "void",
-      "concern": "Values and calculation",
-      "meaning": "No result value. It is the default function/signature result and cannot type data, input parameters, fields, arrays or calculation outputs.",
-      "example": "function reset() { return; }"
+      "meaning": "Used in typed copied values; see its grammar contexts and normative constraints.",
+      "concern": "Typed copied values",
+      "normative": "docs/spec/01-structure-and-types.md",
+      "example": "(primitive=('bool'|'byte'|'uint'|'int'|'real'|'string'|'void') | type=[ValueType:QualifiedName]) ('[' size=INT ']')?;",
+      "contextual": false,
+      "productions": [
+        "TypeRef"
+      ]
     },
     {
-      "keyword": "wcet",
-      "concern": "Timing and deployment",
-      "meaning": "Positive active-execution-time bound including local helpers and state reaction microsteps, excluding request wait. Must not exceed deadline; physical evidence belongs to a target binding.",
-      "example": "wcet 1 ms;"
+      "keyword": "wait",
+      "meaning": "Suspends for a duration and releases the serial lock.",
+      "concern": "Suspending wait and receive",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "'wait' duration=Duration ';';",
+      "contextual": false,
+      "productions": [
+        "Wait"
+      ]
     },
     {
       "keyword": "when",
-      "concern": "Behavior and states",
-      "meaning": "Optional pure bool transition guard evaluated against the component snapshot/live environment and stimulus payload as applicable. False consumes/ignores the stimulus when no other transition matches.",
-      "example": "on receive commands.begin when (enabled) {}"
+      "meaning": "Used in ordered state transitions; see its grammar contexts and normative constraints.",
+      "concern": "Ordered state transitions",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' delay=Duration) 'to' target=Name effect=Block;",
+      "contextual": false,
+      "productions": [
+        "Transition"
+      ]
     },
     {
       "keyword": "where",
-      "concern": "Graphical views",
-      "meaning": "Filters selected candidates with a Boolean predicate.",
-      "example": "include Demo recursive where kind == \"function\";"
+      "meaning": "Used in seven library view definitions; see its grammar contexts and normative constraints.",
+      "concern": "Seven library view definitions",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "'include' subject=Path (recursive?='recursive')? ('where' filter=FilterExpression)? ';';",
+      "contextual": false,
+      "productions": [
+        "ViewSelection"
+      ]
     },
     {
       "keyword": "while",
-      "concern": "Behavior and states",
-      "meaning": "Checks the Boolean condition before each while iteration or after each do-loop body. Both forms require a positive safe-integer bound and a fresh lexical body scope. A true condition after the bound fails instead of silently exiting.",
-      "example": "while (i < 3) bound 3 { i = i + 1; }"
-    },
-    {
-      "keyword": "within",
-      "concern": "Communication",
-      "meaning": "Required positive RPC timeout measured from issuance. Only a response observed strictly before expiry can win; equal-time expiry wins and late server effects are not canceled.",
-      "example": "within 100 ms otherwise { return; };"
+      "meaning": "Used in loops and copied iteration; see its grammar contexts and normative constraints.",
+      "concern": "Loops and copied iteration",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "'while' '(' condition=Expression (',' limit=Expression 'times')? ')' body=Block;",
+      "contextual": false,
+      "productions": [
+        "While"
+      ]
     }
   ]
 }

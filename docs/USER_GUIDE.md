@@ -1,261 +1,135 @@
-# SWAML 1.4 development user guide
+# SWAML 2.0 usage guide
 
-This is the unpublished 1.4.0 development guide. Published 1.3.1 editions remain archived. The [1.4 migration guide](MIGRATION_1_4.md) explains the parser/profile change and contains a complete completion-triggered example.
+Start with a component, give each persistent value a typed attribute, and write named operations for behavior. Add a schedule to say when those operations run. Add directed ports and explicit connections when behavior crosses component boundaries.
 
-Architects familiar with UML: start with the [concept correspondence and modeling workflow](UML_GUIDE.md).
+This guide targets the 2.0 parser only. Install Node.js 22+ and npm 10.2.3+, then run npm ci and npm run build in this repository. Validate with node out/src/cli/main.js --language-version 2.0 model.swaml. Files are headerless; the host and package revision select the edition.
 
-Version 1.3.1 also supports `class` as the general structural category and `operation` as the general executable/signature category. `component` specializes `class`; `function` specializes `operation`. The component/function examples below retain their meaning. Both alternatives use the same private values, owned children, typed ports, local calculations, flow/states and execution rules. See the [complete mixed example](../examples/20-classes-and-operations.swaml) and [category compatibility rules](decisions/0014-classes-operations-and-uml-notation.md). clientServer/service ports use balls for server/provides and sockets for client/requires, while preserving contract labels and reverse traffic.
+## A first model
 
-SWAML describes what software contains, how it communicates, and how functions and state evolve. The model remains independent of C++, Rust, an RTOS, a cloud runtime, or a particular network protocol.
+```swaml
+package Counter {
+  component Demo {
+    /** A small autonomous counter. */
+    attribute count: int = 0;
+    operation increment() {
+      count = count + 1;
+    }
+    schedule {
+      on every 10ms increment();
+    }
+  }
+}
+```
 
-## 1. Install and check a model
+Demo is the execution root. count belongs to its occurrence for the run; a var inside increment would belong to that activation/block. The schedule releases at 10ms, 20ms and so on, with a default 10ms deadline. Operations without a schedule entry are local helpers. Unscheduled behavior is not automatically executed.
 
-From the repository root:
+Create options.json containing {"untilNs": 25000000}, then run:
 
 ```sh
-npm ci
-npm run build
-node out/src/cli/main.js examples/01-hello.swaml
+node out/src/cli/simulate.js Counter::Demo options.json model.swaml
 ```
 
-A successful result is `Checked 1 model(s): 0 error(s)`. This checks the implemented rules; it does not execute the software or prove schedulability. `npm run check` also runs the repository tests. Open the [implementation matrix](IMPLEMENTATION_STATUS.md) before interpreting a passed check as a stronger assurance claim.
+The final Demo.count is 2. The JSON records sources, logical trace, limits and final stores. It is bounded reference evidence with zero physical CPU cost. It does not prove production timing.
 
-A file begins directly with named packages. Pin the 1.4 development language core and exact package revision in the host; there is no per-file version header. Unsupported requested editions and historical headers are rejected rather than guessed. Names are case sensitive. Keywords cannot be identifiers. Use `orderLink`, for example, rather than the reserved word `ordering`.
-
-## 2. Write the contract first
-
-Choose the communication model by the meaning of the exchange:
-
-| Need | Interface | Roles | Function statement |
-| --- | --- | --- | --- |
-| A current sensor value | `senderReceiver`, `sampled` data | sender → receiver | `send p.member(value);` |
-| Every queued reading | `senderReceiver`, `queued` data | sender → receiver | `send p.member(value);` |
-| Request and correlated response | `clientServer` | client → server | `call p.member(...) as result within … otherwise …;` |
-| One event to many subscribers | `publishSubscribe` | publisher → subscriber | `publish p.member(...);` |
-| RPC plus server notifications | `service` | requires → provides | call and publish |
-
-Each connector uses one nominal interface definition. Equal-looking interfaces are not automatically interchangeable. Create an adapter component when their meaning, payload, or version differs.
-
-This is a complete small model; save it as `example.swaml`:
+## Reuse structure without sharing state
 
 ```swaml
-package First {
-    interface senderReceiver Reading version "1.0.0" {
-        data value: real sampled;
+package ReuseGuide {
+  component def Counter {
+    attribute count: int = 0;
+    operation increment() { count = count + 1; }
+    schedule { on start increment(); }
+  }
+  component Demo {
+    component left: Counter {
+      redefines attribute count: int = 10;
     }
-    component def Source {
-        port output: Reading sender;
-        function sample() on start {
-            send output.value(21.5);
-            return;
-        }
-    }
-    component def Sink {
-        port input: Reading receiver;
-        var last: real = 0.0;
-        function update(value: real) on receive input.value {
-            last = value;
-            return;
-        }
-    }
-    component def Pair {
-        component source: Source;
-        component sink: Sink;
-        connect readings: source.output -> sink.input qos {
-            delivery atMostOnce; ordering fifo; capacity 1; overflow dropOldest;
-        };
-    }
-    component Demo: Pair;
-    view overview gv of Demo;
-    view wiring iv of Pair;
-    view updateFlow fv of Sink.update;
+    component right: Counter;
+    component bank: Counter[3];
+  }
 }
 ```
 
-`component def Pair` is a reusable type; `component Demo: Pair;` selects one root occurrence for execution. Its omitted profile means service. `Reading` defines the payload. Both ports use it with complementary roles. `sample` sends through its own port, and `update` declares that same port-member contract as its activation source. The connector allows the transfer. The variable `last` belongs to each `Sink` instance, not to every instance of its definition.
+left starts with its own count at 10, then reaches 11. right and every bank index reach 1 independently. A usage body adds members or explicitly redefines an inherited whole member. Single specializes inheritance follows the same rule. Definition identity is shared; occurrence state is separate. Use bank[0] in connector/deployment/view paths. Port arrays and connector loops are absent.
 
-## Reuse a communication policy
+## Choose the value's lifetime
 
-When several connectors have the same QoS, declare a complete policy once at package scope:
+Use const attribute for a fixed per-occurrence configuration value, attribute for mutable component state, var for lexical activation data and typed parameters/results for copied calls. Requirements own immutable attributes. Never read another component's private state by a dotted path.
+
+Primitive types are bool, byte, uint, int, real and string; arrays have fixed extents. Define nominal records with datatype and enums with enum. Construct records with every field, as in record Reading { value = 2.5; unit = "C"; }. Access an enum with Mode.active, or a qualified package name if a local value shadows Mode. Check [the values example](../examples/05-values-and-flow.swaml) for a complete model. Numeric overflow, division by zero and dynamic invalid indexes fail at runtime; narrowing real to int uses the checked Math conversions.
+
+## Compute with operations
+
+```swaml
+package OperationGuide {
+  operation def Clamp(v: real, lo: real, hi: real) returns real {
+    if (v < lo) { return lo; }
+    if (v > hi) { return hi; }
+    return v;
+  }
+  component Demo {
+    attribute result: real = 0.0;
+    operation clamp: Clamp;
+    operation calculate() {
+      operation double(v: real) returns real { return v * 2.0; }
+      result = clamp(double(4.0), 0.0, 5.0);
+    }
+    schedule { on start calculate(); }
+  }
+}
+```
+
+A declaration has parentheses and optional returns; a usage has a type and inherits its signature. Its optional body replaces the whole definition body. Nested operations come first and never capture the outer operation's parameters/locals. Pass values explicitly. Component operations may read/write their own attributes. Package definitions can use only parameters/nested operations. Calls are expressions; void calls are statements; a value result cannot be discarded. Out arguments name mutable compatible cells and copy back only after success. Recursion and overloading are absent.
+
+Import Swaml::Math explicitly for abs/min/max/floor/round/trunc/length/concat. View, QoS, CallFailure and Platform libraries are also loaded and explicitly imported when using their short names. Do not invent host built-ins or assume an arbitrary library exists.
+
+## Connect components
+
+[The hello model](../examples/01-hello.swaml) is the smallest complete routed example. A port definition declares provides event message(value: string). Sender owns a port of that type and emits with publish. Receiver uses reversed port, making that member requires, and binds it once in on receive. The root connects the two child ports.
+
+Use provides/requires on each member, rather than assigning a role to the whole port. send updates a provided attribute; publish emits a provided event; p.operation(args) calls a required operation. Port definitions may differ if their members match structurally by name and compatible type. Records/enums remain nominal. A boundary-to-child same-direction connection forwards the boundary without queue/latency; it cannot have a policy or local handler.
+
+A bare connect uses Swaml::Qos::Default: atMostOnce, fifo, capacity 16, reject, request timeout 1s. Select a named complete policy with connect link: Reliable (a.p, b.p). Reliable requests need an idempotent provided operation. Attributes retain the latest pending value regardless of event/request buffering. Nonoptional ports of every concrete root must resolve to a connection. optional only waives that port's closure requirement.
+
+## Serve and request a value
+
+See [the service example](../examples/07-client-server.swaml). The provider binds its provided operation through on call api.get(k) get(k). The consumer calls its own required member and usually chooses an explicit fallback:
 
 ```text
-qos def LocalLink {
-    delivery atMostOnce; ordering fifo; capacity 8; overflow reject;
-}
-// Inside a component, explicitly select it on each route:
-connect frontLink: front.setting -> settings.api qos LocalLink;
-connect rearLink: rear.setting -> settings.api qos LocalLink;
+last = try(api.get(1), -1.0);
 ```
 
-The complete [service-setting model](../examples/08-service-field.swaml) uses this form. Inline blocks remain valid. A named policy shares values, while every connector keeps its own queues, directions and member identities. Qualified names and direct imports follow normal namespace rules. The validator checks the actual interface and root at every use, so a generic policy cannot bypass sampled buffering, idempotency or realtime bounds. The [1.2 migration guide](MIGRATION_1_2.md) explains the AST update.
+Timeout comes from the route policy. A bare failing call fails the activation; try catches runtime expression failures and evaluates fallback lazily. Static errors, interruption, deadlines and resource violations cannot be caught. Committed effects remain committed. The reason is trace evidence and is not an implicit model variable. A suspending call must be the whole initializer, assignment value or statement, optionally wrapped in try; avoid api.get(1) + 2.
 
-## 3. Choose component and component boundaries
+## Schedule and suspend deliberately
 
-Use a **component** for a cohesive software boundary: an embedded controller, a service backend, or a subsystem. It may own functions, private data and child components. A component need not be a thread, file, class, or process; deployment is separate.
+on start runs once; on every D runs periodically; on receive binds an incoming event/attribute; on call serves a provided operation; after op runs after successful whole same-owner completion. One operation may have several entries, but the same trigger/operation pair cannot appear twice in one block. After dependencies are acyclic and release fresh parameterless void activations, with no forwarded arguments or result. [The chaining example](../examples/25-function-completion.swaml) shows this distinction.
 
-A component definition owns component instances, ports and connectors. `def` makes this type declaration explicit, following the familiar SysML definition/usage distinction. A root is an occurrence: use `component Demo: Pair;` to instantiate a definition, or `component Demo { component source: Source; … }` to assemble components directly. Statements belong to functions; a root can own functions and private variables. This keeps executable ownership unambiguous.
+wait, requests and receive statements release the component's serial lock. Another activation can change attributes before resumption. Recheck conditions after resuming before writing state. A concurrent entry cannot write state, even through a helper or out argument, and always reads its dispatch snapshot. Entry deadlines include suspension/backlog; an every entry defaults to its period. WCET belongs to target binding/evidence.
 
-A function can call a local helper with `call helper(...);`. The helper is an untriggered flow function in the same component. For a value result, write `call helper(...) as result;`. Pure calculations use expression syntax such as `scaled(...)` only inside their owning function. These local calls do not need ports because they do not cross the agreed component boundary.
+while tests first; until tests after its body. An optional n times limit evaluates once and exits normally. Counted for and copied-array for in have lexical loop scopes. [The loop model](../examples/18-control-loops.swaml) covers every form. Unbounded loops are permitted but a finite run has a step budget/deadline.
 
-Never write `otherComponent.function()` or `otherUnit.privateValue`. The syntax and validator reject that access. To reach another component, declare a port, choose an interface, connect it in their common parent, and use `call`, `send` or `publish`.
+## Receive, interrupt and model state
 
-For a nested component, expose a boundary port and delegate it to one immediate child port. The [service example](../examples/03-service-pubsub.swaml) demonstrates `Backend.api` delegating to `serviceUnit.api`. Delegation preserves the port's role and interface; it does not reverse them or convert data.
+[Receive statements](../examples/21-receive-and-try.swaml) wait for one of several explicitly bound inputs or a timeout, keeping early input queued. An [interruptible region](../examples/19-interruptible-function.swaml) is armed only during its body/callees and transfers within the same activation, preserving committed effects. Inactive region input is discarded observably; heed SW2012.
 
-## 4. Describe function control flow
+For a state machine, write initial and state directly in an operation. Put transitions inside each source state, in the order they should be tested. Use on entry/on exit, on receive with optional when, after D to Target, and final state. A stateful operation has no parameters/result and exactly one on start schedule entry. [The state example](../examples/04-stateful-function.swaml) completes at its final state; idle reactions do not release after dependents.
 
-Functions contain ordered statements: typed local declarations, assignments, assertions, conditionals, bounded loops, local calls, interface exchanges, returns and failures. Read [Values and flow](../examples/05-values-and-flow.swaml) as a worked example.
+## Describe deployment, intent and views
 
-Functions and interface signatures may omit `: void`; a missing result annotation means exactly void. Calculations are expressions with typed parameters and an explicit non-void result. They cannot read mutable component data, issue requests, or emit events. Pass their inputs explicitly. Records, enums and arrays are values, so sending them does not expose a remote reference to local mutable data. Write `count = count + 1;` for whole-value assignment, `clamp(value)` for a pure local calculation, `[1, 2, 3]` for an array, and `Status.Ready` for an enum value. Use `Contracts::Status.Ready` when a local value named `Status` would otherwise hide that enum.
+Use a separate deployment declaration over software and platform roots. Targets are component occurrences specializing Swaml::Platform::Node. Const attributes may retain external ref identities; task/core scheduling stays in target adapters. [The deployment example](../examples/22-platform-deployment.swaml) shows family placement with an indexed override.
 
-A `while` includes a maximum iteration count. Exceeding that count at runtime is a failure, not permission to silently stop the loop. This makes the bound useful to a later analysis or code generator.
+Requirements, satisfy and verificationCase/verify record intent. [The traceability example](../examples/16-requirements-and-views.swaml) includes a routed named case and views. A case does not inject events or prove a witness. Use from/to/via/after to describe exchange dependencies.
 
-Use `assert` for a model-level assumption that must hold at that point. A requirement is a named prose obligation. A case can link to requirements using `satisfies`; that trace link is not proof that the requirement is met.
+Import Swaml::Views and type views by General, Interconnect, Case, Sequence, Grid, Flow or Timing. Compact of selects a subject; include/recursive/where builds a stable union. Filter kinds are component and operation for the structural/executable families. Browser navigates ownership; Flow combines statements/states; Timing separates declared schedule/deadline information from identified observed traces. Presentation layout belongs in sidecars, not language source.
 
-## Local completion dependencies
+## Validate and repair
 
-Use `function B() on completion A { ... }` or the corresponding `operation` form when one same-owner executable should start a fresh activation after another successfully completes. A must be an effective triggered executable in the same class/component; B must be a parameterless void flow body. Dependencies are acyclic. The new activation gets its own lock/snapshot, release-relative deadline and backlog slot. It receives no arguments/result and may wait behind other enabled work. Failure releases nothing. A stateful A counts only when the whole function finishes, not after individual reactions. This is separate from a state's `on completion` transition and from a synchronous local `call`.
-
-The [complete model](../examples/25-function-completion.swaml) and [ADR 0015](decisions/0015-local-executable-completion.md) show a chain. Cross-component coordination still uses typed ports and explicit routes. Multiple dependents do not imply a join or execution order among them.
-
-## 5. Model a service call and its failure
-
-Read [Services and pub/sub](../examples/03-service-pubsub.swaml). The service declares `submit` in its interface; the server component implements it with `on call api.submit`. The client's `call` includes a timeout and an `otherwise` block.
-
-A request binds its result only on success. The failure block has a local `failure: string` value and must return from or fail the current function. This prevents subsequent statements from reading an uninitialized result. A timeout says the caller stopped waiting; it does not prove the server did nothing. Later responses to that timed-out request are ignored.
-
-For application-specific errors, use an enum or result record in the function's declared return type. Transport failures and application results are different concepts. Do not retry a request unless its idempotency and retry budget are established. The core rejects `atLeastOnce` RPC when the function is not declared idempotent; proving that declaration is an implementation obligation.
-
-## 6. Use publish/subscribe without a hidden event bus
-
-An event is a member of a `publishSubscribe` or `service` interface. Only a function can publish it, through one of its own outgoing ports. Subscribers receive it through their own typed ports. The normal handler uses `on receive input.eventName` with the event's parameter types in order.
-
-Fan-out is multiple explicit connectors from a publisher port to subscriber ports. Each subscription has its own queue and QoS. A slow subscriber does not silently change the queue of another subscriber. Multiple publishers may connect to one subscriber; ordering is per connector, not global.
-
-In a combined service, the connector is drawn from `requires` to `provides` for requests. Service events travel back from provider to consumer, and replies return on the originating request's correlation. Both remain members of the same declared interface.
-
-Model a broker as a component with incoming and outgoing interfaces if broker behavior, failure, buffering or deployment matters. A connector alone represents a logical subscription, without selecting MQTT, DDS, Kafka or SOME/IP. Dynamic discovery and unsubscribe functions are reserved for future language versions.
-
-## 7. Put states inside a function
-
-The [stateful function example](../examples/04-stateful-function.swaml) owns `Idle`, `Running`, and `Stopped` inside `Device.lifecycle`. It starts once with its component. No performer or external behavior allocation is required.
-
-A stateful function has no parameters, a void result (usually omitted), and `on start { initial Idle; … }`. The initial reference follows any function-local calculation declarations and precedes all states. There is no extra behavior wrapper. It declares an initial state, states with optional entry/exit blocks, and transitions. Triggers are an incoming port member, a positive delay after entering a state, or completion. A receiving transition makes event parameter names available in its guard and effect; sender–receiver data uses `payload`.
-
-This complete model places the states directly where they execute:
-
-```swaml
-package TimerExample {
-    component def Device {
-        var cycles: int = 0;
-        function lifecycle() on start {
-            initial Waiting;
-            state Waiting {
-                entry { cycles = cycles + 1; }
-            }
-            state Finished final {}
-            transition complete: Waiting -> Finished on after 10 ms {}
-        }
-    }
-    component Demo { component device: Device; }
-    view lifecycle fv of Demo.device.lifecycle;
-}
+```sh
+node out/src/cli/main.js --json model.swaml
+node out/src/cli/main.js --format model.swaml
+node out/src/cli/main.js --check-format model.swaml
+npm run check
 ```
 
-The root contains its component directly. The delay is local to that function; it is not a free event or cross-component channel. The [interface-triggered lifecycle model](../examples/04-stateful-function.swaml) adds commands and status ports.
-
-On a transition: run the source exit block, the transition effect, then the destination entry block. A final state completes the stateful function. A received event with no enabled transition in the current state is consumed and ignored. Add an explicit transition if ignoring it is unacceptable.
-
-Use one stateful function as the receiver for a given member, or one ordinary function. Do not bind the same member to both: that would create ambiguous delivery.
-
-## 8. Model realtime constraints
-
-The [controller example](../examples/02-realtime-controller.swaml) uses `on every 10 ms`, execution-time bounds and deadlines. A root with a realtime or mixed profile requires timing contracts for every used function and maximum connector latency. Sampled realtime data also needs `maxAge`.
-
-The validator checks positivity, `wcet <= deadline`, and `deadline <= period` for a periodic function. These are necessary checks, not a scheduling proof. Document the actual RTOS policy, interrupt load, CPU allocation, priorities, clock assumptions, transport timing and measured/analyzed WCET in the implementation project. A production backend must establish them before claiming hard realtime execution.
-
-`serial` is the default component-local execution policy. `reentrant` requires independent activations and must not mutate shared component state, including through helpers. A function waiting for a service response consumes elapsed deadline time even when it consumes no CPU execution time.
-
-## 9. Separate deployment from architecture
-
-Write `deploy instance.path on "sysml:Vehicle::ecu";` to refer to an external system or part. A general host identity such as `"system:production::checkout"` is also supported. SWAML checks the component path and reference syntax; the integration host must resolve the destination and validate its suitability.
-
-A typed root may have a deployment-only body: `component Product: Controller realtime { deploy sensor on "sysml:Vehicle::ecu"; }`. Its `sensor` must already exist in `Controller`; the binding cannot add children, functions or connections. An inline root may combine composition, local behavior and deployments. Deploying the root name establishes its own location and the default for its children. More specific descendant bindings override that default; each explicit path may occur only once.
-
-The [component roots example](../examples/09-component-roots.swaml) shows reusable assemblies and concrete bindings. The software model retains its typed communication boundaries wherever components are placed. A SysML reference identifies an integration point; it does not import a SysML model or certify cross-language mapping.
-
-## Specialize a reusable component
-
-`component def Tuned specializes Controller { … }` reuses one base definition. Prefix an inherited replacement with `redefines`; an unmarked name collision is invalid. Replacement ports and functions preserve their contracts, while bodies, pure expressions and initial values can vary. Child instances may use the original type or a specialization of it. Instances remain separate stores and connected peers. See the [complete specialization example](../examples/15-component-specialization.swaml) and [ownership decision](decisions/0007-component-functions-and-calculations.md).
-
-## Add a pure calculation
-
-Use `calc scaled { in value: real; in gain: real; return result: real = value * gain; }` at the start of a function body, then write `scaled(measured, 0.5)` in an expression. Inputs are copied values and the named output is a single pure result. Functions carry effects and control flow; calculations can appear in that function’s guards, local initializers and other expressions.
-
-The basic types are `bool`, `int`, `uint`, `byte`, `real`, `string` and result-only `void`. Add nominal records, enums and fixed arrays such as `byte[8]` for structured values. uint and byte assignments check their ranges instead of truncating or wrapping.
-
-## 10. Organize a larger model
-
-Packages are flat namespaces in 1.2. Write `import Contracts::*;` to use another package's declarations unqualified, or name a declaration `Contracts::Reading`. All relevant files must be loaded together. Two imports exposing the same short name make it ambiguous; use the qualified name.
-
-The editor host should load the whole model workspace. The CLI deliberately loads the files you supply and does not search unrelated directories. Do not put secrets in model payloads, examples or deployment notes.
-
-## 11. Navigate through views
-
-| Surface | Purpose |
-| --- | --- |
-| Browser | Navigate packages → definitions → instances → ports/functions → states |
-| gv — General View | Inspect the same structure in Box in box or Tree layout |
-| iv — Interconnect View | Inspect connected ports and component delegation |
-| cv — Case View | Inspect cases and linked requirements |
-| sv — Sequence View | Inspect the partial ordering of interface exchanges in a case |
-| grv — Grid View | Inspect sortable model, interface, timing and deployment tables |
-| fv — Flow View | Inspect a function's control flow, interruptible regions or owned state transitions |
-| tv — Timing View | Inspect observed function activation timing beside separate declared contracts |
-
-These are the seven source view kinds plus Browser navigation. In gv, **Box in box** shows nested ownership frames and **Tree** shows the same hierarchy with ownership edges. Switching layouts preserves occurrence paths, selection, ownership and typed routes; it does not edit the model.
-
-The current package parses and validates view declarations. The [showcase](../showcase/README.md) renders curated source-checked models with selection and layout controls; it does not implement arbitrary graphical source editing. See [graphical notation](GRAPHICAL_NOTATION.md) for the drawing and editing contract.
-
-## 12. Resolve diagnostics
-
-| Diagnostic | Typical fix |
-| --- | --- |
-| `SW030` | Connect immediate child ports; expose/delegate a port across each component boundary |
-| `SW031` / `SW032` | Use the same interface definition and complementary port roles |
-| `SW034` | Connect the port in a closed root component, or mark an intentionally unbound port `optional` |
-| `SW050` / `SW051` | Use a local port member and the correct communication verb/direction |
-| `SW052` / `SW055` | Match handler parameters/results and give each incoming member one owner |
-| `SW057` | Make every failure path return or fail |
-| `SW062` | Give competing transitions distinct priorities |
-
-A parser error usually means a reserved identifier, missing delimiter, or malformed block. Resolve syntax errors first; semantic checks are skipped on syntactically incomplete documents to avoid misleading secondary errors.
-
-## Service fields, repeated consumers and checked traces
-
-[Service field](../examples/08-service-field.swaml) models one temperature setting with explicit `get`, `setPoint` and `changed` interface members. The service stores the value privately. Its serial setter publishes through its provided port, which fans out to two required ports on separate panel instances. Each panel owns a distinct displayed value and its own receiving function.
-
-The getter is reentrant and reads the private-state snapshot taken when it is dispatched. It can safely overlap the serial setter because it does not mutate storage, directly or through a helper. Snapshot implementation is an execution-backend obligation; parsing this example does not simulate it.
-
-A case reply must follow a unique unanswered matching request through its `after` ancestry. Two outstanding requests on the same route/member cannot be disambiguated by drawing one reply lower on the page. Order the pairs or use separate cases. Requests may remain unanswered in a partial trace. A route-valid case still needs a function-level witness before it counts as verified behavior.
-
-Use the owning package's name as a gv/grv subject for an inventory. iv takes a component definition/root component or child occurrence; fv/tv take executable functions, including an occurrence path such as `Cabin.settings.store.update`. cv/sv take a case or root component. A view cannot use another view as its semantic subject. Select a single timing function with `view updateTiming tv of Cabin.settings.store.update;`. To select every function under a root, write `view allTiming tv { include Cabin recursive where kind == "function"; }`; compact tv of a component is invalid. A function need not have a timing contract or trigger to be selected. The view itself supplies no execution evidence.
-
-If a routed call returns void, its required `as` name marks completion but cannot be read as a value. Reserve `failure` for the implicit error-path binding. Write string line breaks with `\n`; raw line breaks, tabs and unsupported escapes inside strings are rejected.
-
-The [operational contract](spec/06-execution-contract.md) defines execution edge cases, and the [conformance obligations](spec/08-conformance-obligations.md) distinguish validator acceptance from runtime and analysis evidence.
-
-## Find a construct or run an example
-
-Use the [alphabetical keyword reference](KEYWORD_REFERENCE.md) for exact words and context, the [concern guide](CONCERN_GUIDE.md) for architectural questions, or the [current development Markdown book](SWAML-1.4.0-Reference.md) for a single user-facing document. The maintained examples have executable [simulation configurations](../examples/simulation/runs.json); follow the [reference simulation guide](SIMULATION.md) to run them and inspect their traces.
-
-## Operator and test inputs
-
-Declare named, typed events and receive them through an owned port with `on receive port.member`. Model the operator, adapter or test driver as component-owned functions that publish those events through explicit routes. Finite simulations use start and state-timer behavior to schedule driver publications. See [events and external inputs](EVENTS_AND_INPUTS.md). There is no direct simulator function-release or destination-event injection input.
-
-## Requirements and formal documentation
-
-Requirements own typed attributes and one optional `doc /* ... */` specification. Design elements link through `satisfy`; verification cases link through `verify`. Use cases describe intent. Ordinary comments remain independent notes. View kinds use lower camel case, and view blocks combine multiple selections and Boolean filters. See the [guide](REQUIREMENTS_AND_DOCUMENTATION.md) and [complete model](../examples/16-requirements-and-views.swaml).
-
-## Extended loops, interrupts and timing
-
-Use counted `for`, copied-array `forEach` or post-test `do` when their scope and test order fit the behavior. Conditional loops retain explicit bounds. `interruptible` regions bind cancellation to an owned typed input route and preserve the activation deadline and committed effects. FV covers flow, states and interruptible regions. TV provides trace-backed function timing with declared WCET, deadline and concurrency shown separately. A timing diagram adds no execution semantics or scheduling proof. See the [complete guide](CONTROL_FLOW_AND_TIMING.md), [1.3 migration](MIGRATION_1_3.md) and [1.3.1 correction](MIGRATION_1_3_1.md).
+Load every application dependency together. Fix syntax/names first, then ownership/routes, types/effects and schedules. JSON diagnostics expose stable codes/ranges and identity metadata. Always revalidate after a repair; formatting is not a semantic repair. Read [AI authoring](AI_GUIDE.md), the [keyword reference](KEYWORD_REFERENCE.md) and the [support matrix](IMPLEMENTATION_STATUS.md) for precise boundaries.

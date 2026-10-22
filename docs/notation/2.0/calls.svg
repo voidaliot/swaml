@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>SWAML 2.0 original notation</title>
+<rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
+<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Expression calls and copied out values</text>
+<line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
+<rect x="40" y="140" width="235" height="130" fill="#ffffff" stroke="#171717"/>
+<rect x="40" y="140" width="235" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="52" y="163" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">entry</text>
+<text x="52" y="198" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">typed arguments</text>
+<rect x="345" y="140" width="235" height="130" fill="#ffffff" stroke="#171717"/>
+<rect x="345" y="140" width="235" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="357" y="163" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">operation</text>
+<text x="357" y="198" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">local expression call</text>
+<text x="357" y="220" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">or owned port request</text>
+<rect x="650" y="140" width="225" height="130" fill="#ffffff" stroke="#171717"/>
+<rect x="650" y="140" width="225" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="662" y="163" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">return</text>
+<text x="662" y="198" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">copied result / out</text>
+<text x="662" y="220" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">copy-back on success</text>
+<line x1="275" y1="205" x2="345" y2="205" stroke="#171717"/>
+<line x1="580" y1="205" x2="650" y2="205" stroke="#171717"/>
+</svg>

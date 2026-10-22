@@ -1,0 +1,154 @@
+{
+  "width": 920,
+  "height": 390,
+  "elements": [
+    {
+      "kind": "rect",
+      "x": 1,
+      "y": 1,
+      "w": 918,
+      "h": 388,
+      "fill": "#fafafa",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 36,
+      "text": "Loops and copied iteration",
+      "size": 21
+    },
+    {
+      "kind": "line",
+      "x1": 26,
+      "y1": 54,
+      "x2": 894,
+      "y2": 54,
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 45,
+      "y": 125,
+      "w": 250,
+      "h": 150,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 45,
+      "y": 125,
+      "w": 250,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 57,
+      "y": 148,
+      "text": "while / until",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 57,
+      "y": 183,
+      "text": "optional n times",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 57,
+      "y": 205,
+      "text": "limit evaluated once",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 335,
+      "y": 125,
+      "w": 250,
+      "h": 150,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 335,
+      "y": 125,
+      "w": 250,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 347,
+      "y": 148,
+      "text": "counted for",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 347,
+      "y": 183,
+      "text": "initializer / test",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 347,
+      "y": 205,
+      "text": "body / update",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 625,
+      "y": 125,
+      "w": 250,
+      "h": 150,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 625,
+      "y": 125,
+      "w": 250,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 637,
+      "y": 148,
+      "text": "for in",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 637,
+      "y": 183,
+      "text": "copied fixed array",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 637,
+      "y": 205,
+      "text": "fresh iteration scope",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 45,
+      "y": 330,
+      "text": "Reaching a loop limit exits normally. Runtime step/deadline limits remain explicit.",
+      "size": 13
+    }
+  ]
+}

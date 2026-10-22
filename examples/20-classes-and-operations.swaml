@@ -1,48 +1,27 @@
-package ClassOperations {
-    interface clientServer Counter version "1.0.0" {
-        operation read(): int;
+package Operations {
+  operation def Clamp(v: real, lo: real, hi: real) returns real {
+    if (v < lo) {
+      return lo;
     }
-    class def CounterBase {
-        var value: int = 21;
-        operation twice(input: int): int {
-            calc doubleValue { in operand: int; return result: int = operand * 2; }
-            return doubleValue(input);
-        }
+    if (v > hi) {
+      return hi;
     }
-    component def CounterService specializes CounterBase {
-        port api: Counter server;
-        function read(): int on call api.read {
-            call twice(value) as doubled;
-            return doubled;
-        }
+    return v;
+  }
+  component Demo {
+    attribute result: real = 0.0;
+    operation clamp: Clamp;
+    operation low: Clamp {
+      return lo;
     }
-    class def Client {
-        port api: Counter client;
-        var observed: int = 0;
-        operation request() on start {
-            call api.read() as received within 1 s otherwise { fail "Unavailable"; };
-            observed = received;
-            return;
-        }
+    operation boot() {
+      operation double(v: real) returns real {
+        return v * 2.0;
+      }
+      result = clamp(double(4.0), 0.0, 5.0);
     }
-    class def Assembly {
-        component backend: CounterService;
-        class frontend: Client;
-        connect query: frontend.api -> backend.api qos {
-            delivery atMostOnce; ordering fifo; capacity 4; overflow reject;
-        };
+    schedule {
+      on start boot();
     }
-    component def Software specializes Assembly {}
-    class Demo: Assembly;
-    component Product: Software;
-    useCase ReadCounter of Demo {
-        call frontend.api.read -> backend.api.read via query label requested;
-        reply backend.api.read -> frontend.api.read via query after requested label answered;
-    }
-    view architecture gv of Demo;
-    view contracts iv of Demo;
-    view requestFlow fv of Demo.frontend.request;
-    view execution tv {
-        include Demo recursive where kind == "operation" or kind == "function";
-    }
+  }
 }

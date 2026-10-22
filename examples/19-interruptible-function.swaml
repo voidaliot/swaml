@@ -1,58 +1,35 @@
 package Interrupts {
-    interface clientServer Job version "1.0.0" {
-        function perform(): int;
+  port def Messages {
+    provides event message(value: int);
+  }
+  component def Sender {
+    port output: Messages;
+    operation emit() {
+      wait 2ms;
+      publish output.message(5);
     }
-    interface publishSubscribe Control version "1.0.0" {
-        event stop(reason: string);
+    schedule {
+      on start emit();
     }
-    component def Worker {
-        port job: Job client;
-        port control: Control subscriber;
-        var status: int = 0;
-        var why: string = "";
-        function run() on start {
-            interruptible work doc /* Stop waiting and handle cancellation on this typed route. */ {
-                status = 1;
-                call job.perform() as value within 50 ms otherwise { fail "Job failed"; };
-                status = value;
-            } on receive control.stop {
-                status = 2;
-                why = reason;
-            }
-            assert status == 2;
-        }
+  }
+  component def Receiver {
+    reversed port input: Messages;
+    attribute last: int = 0;
+    operation work() {
+      interruptible {
+        wait 8ms;
+        last = 99;
+      } on receive input.message(value) {
+        last = value;
+      }
     }
-    component def Service {
-        port api: Job server;
-        var committed: int = 0;
-        function perform(): int on call api.perform {
-            committed = committed + 1;
-            return 10;
-        }
+    schedule {
+      on start work();
     }
-    component def Controller {
-        port control: Control publisher;
-        function driveInputs() on start {
-            initial Waiting;
-            state Waiting {}
-            state Sent final { entry { publish control.stop("operator stop"); } }
-            transition stopWork: Waiting -> Sent on after 2 ms {}
-        }
-    }
-    component App {
-        component worker: Worker;
-        component backend: Service;
-        component controller: Controller;
-        connect workRoute: worker.job -> backend.api qos {
-            delivery atMostOnce; ordering fifo; capacity 4; overflow reject;
-        };
-        connect stopRoute: controller.control -> worker.control qos {
-            delivery atMostOnce; ordering fifo; capacity 4; overflow reject;
-        };
-    }
-    useCase StopWork of App {
-        call worker.job.perform -> backend.api.perform via workRoute label started;
-        publish controller.control.stop -> worker.control.stop via stopRoute after started label cancelled;
-    }
-    view interrupted fv of App.worker.run;
+  }
+  component Demo {
+    component sender: Sender;
+    component receiver: Receiver;
+    connect (sender.output, receiver.input);
+  }
 }

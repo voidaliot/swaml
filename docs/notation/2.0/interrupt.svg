@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>SWAML 2.0 original notation</title>
+<rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
+<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Armed interrupt and cancellation</text>
+<line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
+<rect x="45" y="105" width="510" height="220" fill="#ffffff" stroke="#171717" stroke-dasharray="5 4"/>
+<rect x="80" y="145" width="410" height="135" fill="#ffffff" stroke="#171717"/>
+<rect x="80" y="145" width="410" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="92" y="168" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">interruptible body</text>
+<text x="92" y="203" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">suspended continuation</text>
+<text x="92" y="225" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">serial lock released</text>
+<rect x="635" y="145" width="245" height="135" fill="#ffffff" stroke="#171717"/>
+<rect x="635" y="145" width="245" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="647" y="168" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">handler / branch</text>
+<text x="647" y="203" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">explicit bindings</text>
+<text x="647" y="225" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">same activation</text>
+<line x1="490" y1="210" x2="635" y2="210" stroke="#171717"/>
+<text x="507.5" y="198.0" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">receive</text>
+<text x="65" y="352" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">Inactive region input is discarded.</text>
+</svg>

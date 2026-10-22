@@ -1,76 +1,47 @@
 {
-  "languageVersion": "1.4",
+  "languageVersion": "2.0",
   "examples": [
     {
-      "figure": "browser",
-      "view": "Browser",
-      "model": "examples/08-service-field.swaml",
-      "package": "Settings",
-      "subject": "Cabin"
+      "figure": "architecture",
+      "svg": "docs/figures/2.0/architecture.svg",
+      "scene": "docs/figures/2.0/architecture.scene.json",
+      "model": "examples/02-realtime-controller.swaml",
+      "subject": "Control::Demo"
     },
     {
-      "figure": "gv",
-      "view": "gv",
-      "model": "examples/08-service-field.swaml",
-      "package": "Settings",
-      "subject": "Cabin"
+      "figure": "forwarding",
+      "svg": "docs/figures/2.0/forwarding.svg",
+      "scene": "docs/figures/2.0/forwarding.scene.json",
+      "model": "examples/26-boundary-forwarding.swaml",
+      "subject": "Boundary::Demo"
     },
     {
-      "figure": "gv-tree",
-      "view": "gv",
-      "layout": "tree",
-      "model": "examples/08-service-field.swaml",
-      "package": "Settings",
-      "subject": "Cabin"
+      "figure": "schedule",
+      "svg": "docs/figures/2.0/schedule.svg",
+      "scene": "docs/figures/2.0/schedule.scene.json",
+      "model": "examples/25-function-completion.swaml",
+      "subject": "Chaining::Demo"
     },
     {
-      "figure": "iv",
-      "view": "iv",
-      "model": "examples/08-service-field.swaml",
-      "package": "Settings",
-      "subject": "Cabin"
-    },
-    {
-      "figure": "cv",
-      "view": "cv",
-      "model": "examples/08-service-field.swaml",
-      "package": "Settings",
-      "subject": "Cabin"
-    },
-    {
-      "figure": "sv",
-      "view": "sv",
-      "model": "examples/08-service-field.swaml",
-      "package": "Settings",
-      "subject": "Change"
-    },
-    {
-      "figure": "grv",
-      "view": "grv",
-      "model": "examples/08-service-field.swaml",
-      "package": "Settings",
-      "subject": "Cabin"
-    },
-    {
-      "figure": "fv-flow",
-      "view": "fv",
-      "model": "examples/08-service-field.swaml",
-      "package": "Settings",
-      "subject": "Cabin.settings.store.update"
-    },
-    {
-      "figure": "fv-state",
-      "view": "fv",
+      "figure": "states",
+      "svg": "docs/figures/2.0/states.svg",
+      "scene": "docs/figures/2.0/states.scene.json",
       "model": "examples/04-stateful-function.swaml",
-      "package": "Lifecycle",
-      "subject": "Device.lifecycle"
+      "subject": "States::Demo.lamp"
     },
     {
-      "figure": "tv",
-      "view": "tv",
+      "figure": "deployment",
+      "svg": "docs/figures/2.0/deployment.svg",
+      "scene": "docs/figures/2.0/deployment.scene.json",
+      "model": "examples/22-platform-deployment.swaml",
+      "subject": "Placement::Demo"
+    },
+    {
+      "figure": "timing",
+      "svg": "docs/figures/2.0/timing.svg",
+      "scene": "docs/figures/2.0/timing.scene.json",
       "model": "examples/17-function-timing.swaml",
-      "package": "FunctionTiming",
-      "subject": "Demo.first.poll"
+      "subject": "Timing::Demo.sample"
     }
   ]
 }

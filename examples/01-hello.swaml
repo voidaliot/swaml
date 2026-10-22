@@ -1,32 +1,29 @@
 package Hello {
-    interface senderReceiver Greeting version "1.0.0" {
-        data text: string queued;
+  port def Messages {
+    provides event message(value: string);
+  }
+  component def Sender {
+    port output: Messages;
+    operation emit() {
+      publish output.message("Hello, SWAML");
     }
-    component def Speaker {
-        port output: Greeting sender;
-        function greet() on start {
-            send output.text("Hello, SWAML");
-            return;
-        }
+    schedule {
+      on start emit();
     }
-    component def Listener {
-        port input: Greeting receiver;
-        var last: string = "";
-        function hear(message: string) on receive input.text {
-            last = message;
-            return;
-        }
+  }
+  component def Receiver {
+    reversed port input: Messages;
+    attribute last: string = "";
+    operation accept(value: string) {
+      last = value;
     }
-    component def Conversation {
-        component speaker: Speaker;
-        component listener: Listener;
-        connect greeting: speaker.output -> listener.input qos {
-            delivery atMostOnce; ordering fifo; capacity 4; overflow reject;
-        };
+    schedule {
+      on receive input.message(value) accept(value);
     }
-    component Demo { component conversation: Conversation; }
-    view overview gv of Demo;
-    view wiring iv of Conversation;
-    view greetingFlow fv of Speaker.greet;
-    view inventory grv of Demo;
+  }
+  component Demo {
+    component sender: Sender;
+    component receiver: Receiver;
+    connect (sender.output, receiver.input);
+  }
 }

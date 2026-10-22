@@ -1,67 +1,23 @@
-# Instructions for agents working on SWAML
+# Instructions for agents working on SWAML 2.0
 
-## Read first
+Read docs/LANGUAGE_SPECIFICATION.md, the affected normative chapter, docs/IMPLEMENTATION_STATUS.md, docs/spec/06-execution-contract.md through 09-formal-semantics.md, docs/decisions/0016-swaml-2-0.md and CONTRIBUTING.md before changing meaning.
 
-- `docs/LANGUAGE_SPECIFICATION.md` and the normative chapter affected by the task.
-- `docs/IMPLEMENTATION_STATUS.md` to distinguish specified and implemented behavior.
-- `docs/spec/06-execution-contract.md`, `07-normalized-model.md`, `08-conformance-obligations.md` and `09-formal-semantics.md` for execution, mapping and evidence boundaries.
-- `docs/decisions/0007-component-functions-and-calculations.md` for the architecture choices.
-- `CONTRIBUTING.md` for contribution and validation expectations.
+This is a clean 2.0 restart. Do not implement 1.x compatibility, aliases or a 2.0 migration guide. Preserve published 1.x books, PDFs, manifests, checksums and archived assets. The accepted design input is docs/SWAML_2_0_TRANSITION.md; ADR 0016 records final choices.
 
-## Preserve the language invariants
+Components own child occurrences, typed directed ports, attributes and operations. Operation definitions are reusable; operations may own nested operations without capturing enclosing parameters or locals. Component attributes are private, occurrence-local and guarded by the serial lock; const attributes and in parameters are immutable. No global mutable state, free events, performers or cross-component value/executable lookup.
 
-- Components own child components, private data and executable functions. Functions own calculations and statement flow or states directly. Calculations are declared first and resolve only inside their enclosing function. Both leaf and composite components may own behavior.
-- No performers, separate action allocations, global mutable state or free events.
-- Operator and test stimuli use named, typed interface events emitted by ordinary source functions through explicit ports/routes. Do not restore `on manual`, direct simulator function releases or destination-event injection. Generated drivers are ordinary validated source recorded with run evidence; read ADR 0013 before changing input activation.
-- Named QoS policies reuse complete values only; preserve per-connector occurrence queues and validate every effective use.
-- Every exchange between distinct components uses an owned typed port, interface member and explicit connector/delegation route.
-- Local calls/data may stay inside a component. Never resolve a function from another component or a calculation from another function as a convenience fallback. Use call for local and routed functions, and var for private and local mutable values.
-- Outgoing events/data must be tied to emitting functions; incoming members must have one handler owner. Service responses remain correlated through their interface route.
-- Keep Browser and the seven source view kinds gv, iv, cv, sv, grv, fv and tv. fv covers statement flow, interruptible regions and function-owned states; tv covers function timing. GV Box in box and Tree layouts preserve the same selected identities and topology.
-- Distinguish definition identity from instance paths. Never make same-type instances share private state.
+Every cross-component exchange uses an owned port member and explicit connect route. Structural compatibility matches member names and checks variance; records/enums remain nominal. Reversed flips every member direction. Forwarding is a boundary alias with no policy or queue. Each connection occurrence owns separate queues; omitted policy selects Swaml::Qos::Default. Attributes retain latest values; events and requests use the policy. Every outgoing attribute/event has emission provenance and every input has one owner.
 
-## SWAML 1.4 development authoring contract
+Schedules own triggers, deadlines and concurrent flags. Suspension releases serial locks. Resumed serial operations read live attributes; concurrent activations retain dispatch snapshots and cannot write through callees or out arguments. Try catches runtime expression failures, preserving effects, and cannot catch interruptions, deadlines or resource violations. After chains are same-owner, acyclic fresh activations after successful whole completion and unlock. States belong to operations, with nested ordered transitions. Multiplicity always expands separate stores.
 
-Version 1.3.1 adds general class classifiers and executable operations: Component specializes Class; Function specializes Operation. Preserve authored `kind` on the shared AST families. Class usages may instantiate class/component definitions; component usages require component definitions. Inheritance and explicit member replacement may narrow categories, never widen them. Operation signatures accept operation/function handlers; function signatures require function handlers. Calculations remain local to either executable category. See ADR 0014. clientServer/service ports use a provided ball or required socket over the owned boundary port; other interaction kinds retain directional notation. No XMI adapter is part of this edition.
+Source is headerless, selected by a host pinned to parser 2.0, package revision and swaml-reference/2.0. Lower camel case keywords; library definitions supply QoS, view kinds and deployment Nodes. Browser and General, Interconnect, Case, Sequence, Grid, Flow and Timing remain distinct surfaces. Timing separates declared contracts from observed trace evidence. Geometry stays in sidecars. Do not claim generic rename handles string-valued semantic paths.
 
-Keep `component def` for reusable types, `specializes` for acyclic single inheritance and `redefines` for compatible explicit inherited-member replacement. A top-level component usage is an execution root; it may contain inline topology or instantiate a component definition with optional deployment bindings. Typed roots cannot extend topology. Every concrete root is checked for closure, independently of reusable library definitions. Omitted root profile means service; omitted function/signature result means void. Calculations use `calc` with typed `in` inputs and exactly one named, explicitly typed non-void `return` expression. They are never component members and cannot read mutable data or call executable functions. Deployment targets are external system/part identity strings resolved by the host; keep system modeling outside the software core.
+src/language/swaml.langium is the normative concrete grammar; prose specifies validity and semantics. Change both together. Do not hand-edit or commit generated AST, TextMate output, out/, dependencies or bundles. Keep the language core portable without Node filesystem I/O; hosts own hashing and source loading. Keep every production in spec/kerml-mapping.json, every keyword in spec/keywords.json and every production/keyword in spec/notation.json. KerML mapping remains a proposed contract until a real semantic library/exporter and kernel validation exist.
 
-Files are headerless and interpreted by the explicitly selected 1.4 development parser/host. Local `on completion A` activation uses an effective triggered same-owner executable predecessor; the dependent is parameterless void flow, the dependency graph is acyclic, and only successful whole completion releases a fresh activation after unlock. Preserve failure suppression, new context/timing/backlog and state-reaction distinction. Read ADR 0015 and the 1.4 migration guide. Do not restore `swaml`, `system`, `machine`, `set`, `compute`, `array` or `enumValue` as required markers. States are directly authored inside a function's body; the StateBody AST grouping has no separate executable identity. Preserve the documented ambiguity rules for enum values and local records. Historical tagged syntax requires migration, not silent fallback.
+Run npm run check for grammar, source or semantic changes. Use npm ci after dependency changes or a fresh checkout. Add meaningful positive/negative tests, malformed recovery and observable traces/final stores for changed runtime rules. Archived 1.x tests are historical evidence, never a compatibility gate. Run node scripts/check-docs.mjs after a build for docs edits. Complete swaml fences are executable fixtures; fragments use text fences. Regenerate reference books with npm run docs:build; never edit generated references. Regenerate diagrams with python scripts/build-graphical-examples.py and python scripts/build-notation.py, then run --check.
 
-## Source and architecture
+Keep requirements immutable and satisfy/verify as intent, not proof. Views select a stable union of existing occurrence identities and never execute behavior. Keep stable SW2xxx diagnostics with ranges and identity metadata. Report implemented behavior and limitations honestly. A reference run is bounded evidence, not production scheduling or universal verification.
 
-The normative concrete grammar is `src/language/swaml.langium`. Prose specifies validity and semantics. Update both when meaning changes. Generated files in `src/language/generated/`, TextMate output and `out/` must not be hand-edited or committed.
+Preserve unrelated edits, license and repository history. Local changes do not authorize publishing a release. Preview the GitHub page design for approval before publication. A new edition release additionally requires the PDF gate, render and inspection of every page in docs/PDF_PUBLICATION.md. The adjacent editor repository has its own AGENTS.md and checks.
 
-Keep the language core free of Node filesystem dependencies; CLI/server adapters own platform I/O. Composite paths currently use explicit semantic resolution and need path-aware IDE services. Do not claim generic Langium rename covers them.
-
-KerML mapping is a proposed contract until a real exporter and kernel validation exist. Do not label Langium AST generation as KerML conformance. Likewise do not call an accepted model schedulable, race-free, executable or graphically editable without the corresponding implementation/evidence.
-
-## Required checks
-
-For grammar, semantic or source changes run `npm run check`. Use `npm ci` after dependency changes or on a fresh checkout. Add meaningful positive and negative tests for changed language rules, including malformed input when parser recovery is affected. Report failures honestly and fix regressions within the task scope.
-
-For documentation changes run `node scripts/check-docs.mjs` after a build. Complete `swaml` fences are executable fixtures; deliberate fragments should use inline text or a `text` fence.
-
-## Working practices
-
-Prefer small, reviewable changes with stable diagnostic codes. Keep every grammar rule/type covered in `spec/kerml-mapping.json`; the documentation checker enforces coverage. Add a decision record for substantial language changes and update the changelog and implementation matrix. Do not silently widen access scopes to make a fixture pass.
-
-Preserve the existing license, unrelated user edits and repository history. Never add credentials or downloaded proprietary standards. Use primary-source links and original analysis. Follow the user's authorization for GitHub changes; local edits alone do not imply permission to publish a release or alter another repository.
-
-## Reference execution and publication
-
-Keep the reference simulator portable: file access and source hashing belong to CLI/host adapters. Preserve the documented scheduler, timeout ties, queue identity, copied values, snapshot scope, direct function/state ownership and explicit resource failures. Test observable traces and final stores, including adverse cases. A simulator run is not production scheduling proof or universal verification.
-
-Maintain every current keyword entry in `spec/keywords.json` as the grammar evolves. Regenerate the consolidated Markdown with `npm run docs:build`; do not hand-edit generated `KEYWORD_REFERENCE.md` or versioned `SWAML-*-Reference.md` books. Regenerate vector examples with `python3 scripts/build-graphical-examples.py`. Their scene/SVG sources and model-subject manifest must stay synchronized.
-
-Keep `spec/notation.json` exhaustive over the grammar and keyword inventory. Every graphical concept needs a context, syntax, canonical drawing and constraints; text-only terms need an explicit rationale. Regenerate the catalog and SVG/PNG assets with `scripts/build-notation.py` and run its `--check` mode. Keep all images original and do not import unsupported SysML constructs through notation.
-
-Before publishing an edition, run the complete language gate, figure reproducibility check and PDF build/check described in `docs/PDF_PUBLICATION.md`, then render and inspect every page. Commit synchronized Markdown, PDF, manifest and checksum. Preserve published historical assets. Keep the public specification independent of specific authoring tools.
-
-## Requirements and presentation
-
-Use lower camel case keywords, including primitive types and view kinds. Requirements own only immutable typed attributes and optional doc. A declaration owns at most one formal doc; ordinary comments remain separate lexical annotations. satisfy links design to requirements; only verificationCase owns verify. Neither is proof. Views select a stable union of occurrence paths through include/recursive/where; filters never execute behavior. Read ADR 0009 before changing these rules.
-
-Use `of` for case root contexts, satisfaction design sources and compact view subjects. The former `for` and `by` relation spellings require migration; `on` retains activation/location meaning and `as` retains result binding. Read ADR 0010 before changing relation syntax.
-
-Control flow includes bounded while/for/do and copied fixed-array forEach. Interruptible regions require triggered serial flow functions and an owned typed input route; preserve same-activation cancellation, terminal correlation identity, late-reply suppression and committed effects. TV timing is a trace-backed projection with declared contracts shown separately; it adds no execution semantics. Read ADR 0011 and the 1.3 migration guide before changing control flow. Read [ADR 0012](docs/decisions/0012-timing-view-and-structure-layouts.md) and the [1.3.1 migration guide](docs/MIGRATION_1_3_1.md) before changing view kinds or GV layouts. The historical 1.3.1 correction retained its parser/profile. Current unpublished development selects parser 1.4 and profile swaml-reference/1.4; exact reproduction also pins the package revision. Preserve published 1.3.1 source/book/PDF and use archive-aware publication checks rather than rebuilding it from current development sources. State changes directly; cite relevant ticket numbers rather than personal attribution.
+For AI modeling tasks, read skills/swaml-author/SKILL.md; for diagnosis, tests and bounded runs, read skills/swaml-validate/SKILL.md. These are the repository’s portable 2.0 workflows. Their presence does not authorize publication or external messaging.

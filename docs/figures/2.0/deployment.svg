@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>SWAML 2.0 original notation</title>
+<rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
+<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Indexed placement on platform Nodes</text>
+<line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
+<rect x="40" y="110" width="300" height="195" fill="#ffffff" stroke="#171717"/>
+<rect x="40" y="110" width="300" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="52" y="133" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">software Demo</text>
+<text x="52" y="168" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">workers[0]</text>
+<text x="52" y="190" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">workers[1]</text>
+<text x="52" y="212" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">workers[2]</text>
+<rect x="540" y="110" width="335" height="195" fill="#ffffff" stroke="#171717"/>
+<rect x="540" y="110" width="335" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="552" y="133" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">Vehicle: Platform</text>
+<text x="552" y="168" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">front: Ecu</text>
+<text x="552" y="190" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">rear[0]: Ecu</text>
+<text x="552" y="212" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">rear[1]: Ecu</text>
+<line x1="340" y1="205" x2="540" y2="205" stroke="#171717" stroke-dasharray="5 4"/>
+<text x="385.0" y="193.0" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">deploy on</text>
+<text x="45" y="348" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">Node targets own only const attributes and child Nodes; placement is separate.</text>
+</svg>

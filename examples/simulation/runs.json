@@ -4,44 +4,39 @@
     "root": "Hello::Demo",
     "options": "examples/simulation/01-hello.json",
     "expectedStores": {
-      "conversation.listener": {
+      "Demo.receiver": {
         "last": "Hello, SWAML"
       }
     }
   },
   {
     "model": "examples/02-realtime-controller.swaml",
-    "root": "Control::Heating",
+    "root": "Control::Demo",
     "options": "examples/simulation/02-realtime-controller.json",
     "expectedStores": {
-      "controller.actuator": {
-        "applied": 0.235
+      "Demo.heater": {
+        "power": 0.25
       }
     }
   },
   {
     "model": "examples/03-service-pubsub.swaml",
-    "root": "Commerce::Shop",
+    "root": "Commerce::Demo",
     "options": "examples/simulation/03-service-pubsub.json",
     "expectedStores": {
-      "web.frontend": {
-        "lastAccepted": "order-42"
-      },
-      "archive.store": {
-        "last": "order-42"
+      "Demo.client": {
+        "last": 4.5,
+        "changedKey": 1
       }
     }
   },
   {
     "model": "examples/04-stateful-function.swaml",
-    "root": "Lifecycle::Product",
+    "root": "States::Demo",
     "options": "examples/simulation/04-stateful-function.json",
     "expectedStores": {
-      "assembly.device": {
-        "cycles": 1
-      },
-      "assembly.monitor": {
-        "current": "stopped"
+      "Demo": {
+        "lit": false
       }
     }
   },
@@ -50,47 +45,39 @@
     "root": "Values::Demo",
     "options": "examples/simulation/05-values-and-flow.json",
     "expectedStores": {
-      "pipeline.consumer": {
-        "latest": 6
+      "Demo": {
+        "sum": 6,
+        "mode": "active"
       }
     }
   },
   {
     "model": "examples/06-mixed-gateway.swaml",
-    "root": "Gateway::Product",
+    "root": "Gateway::Demo",
     "options": "examples/simulation/06-mixed-gateway.json",
     "expectedStores": {
-      "display.dashboard": {
-        "displayed": 21
-      },
-      "bridge.adapter": {
-        "latest": 21
+      "Demo.receiver": {
+        "last": 9
       }
     }
   },
   {
     "model": "examples/07-client-server.swaml",
-    "root": "Rpc::HealthCheck",
+    "root": "ClientServer::Demo",
     "options": "examples/simulation/07-client-server.json",
     "expectedStores": {
-      "caller.clientUnit": {
-        "healthy": true
+      "Demo.client": {
+        "last": 4.5
       }
     }
   },
   {
     "model": "examples/08-service-field.swaml",
-    "root": "Settings::Cabin",
+    "root": "Settings::Demo",
     "options": "examples/simulation/08-service-field.json",
     "expectedStores": {
-      "settings.store": {
-        "currentValue": 22
-      },
-      "front.panel": {
-        "displayed": 22
-      },
-      "rear.panel": {
-        "displayed": 22
+      "Demo.client": {
+        "last": 4.5
       }
     }
   },
@@ -99,260 +86,187 @@
     "root": "Roots::Demo",
     "options": "examples/simulation/09-component-roots.json",
     "expectedStores": {
-      "left": {
-        "count": 1
+      "Demo.left": {
+        "count": 11
       },
-      "right": {
-        "count": 1
-      }
-    }
-  },
-  {
-    "model": "examples/09-component-roots.swaml",
-    "root": "Roots::Embedded",
-    "options": "examples/simulation/09-component-roots.json",
-    "expectedStores": {
-      "left": {
-        "count": 1
-      },
-      "right": {
-        "count": 1
-      }
-    }
-  },
-  {
-    "model": "examples/09-component-roots.swaml",
-    "root": "Roots::Minimal",
-    "options": "examples/simulation/09-component-roots.json",
-    "expectedStores": {
-      "counter": {
-        "count": 1
+      "Demo.right": {
+        "count": 2
       }
     }
   },
   {
     "model": "examples/10-reusable-qos.swaml",
-    "root": "ReusablePolicies::Demo",
+    "root": "Policies::Demo",
     "options": "examples/simulation/10-reusable-qos.json",
     "expectedStores": {
-      "first": {
-        "latest": 7
-      },
-      "second": {
-        "latest": 7
+      "Demo.receiver": {
+        "last": 7
       }
     }
   },
   {
     "model": "examples/11-autosar-classic.swaml",
-    "root": "ClassicClimate::Vehicle",
+    "root": "Classic::Demo",
     "options": "examples/simulation/11-autosar-classic.json",
     "expectedStores": {
-      "controller.control": {
-        "lastTemperature": 28,
-        "commandedDuty": 0.6
-      },
-      "calibration": {
-        "desiredTemperature": 22
-      },
-      "actuator": {
-        "appliedDuty": 0.6
+      "Demo.heater": {
+        "power": 0.25
       }
     }
   },
   {
     "model": "examples/12-autosar-adaptive.swaml",
-    "root": "AdaptiveDiagnostics::Vehicle",
+    "root": "Adaptive::Demo",
     "options": "examples/simulation/12-autosar-adaptive.json",
     "expectedStores": {
-      "application.diagnostic": {
-        "observedHealthy": true,
-        "lastCode": 200,
-        "notifications": 1
-      },
-      "health.monitor": {
-        "completedChecks": 1
-      },
-      "audit": {
-        "lastCode": 200,
-        "entries": 1
+      "Demo.client": {
+        "last": 4.5
       }
     }
   },
   {
     "model": "examples/13-web-application.swaml",
-    "root": "WebShop::Production",
+    "root": "Web::Demo",
     "options": "examples/simulation/13-web-application.json",
     "expectedStores": {
-      "browser": {
-        "lastOrder": "order-1042",
-        "accepted": true,
-        "rejectedOversize": true
-      },
-      "application.checkout": {
-        "acceptedOrders": 1
-      },
-      "inventory.stock": {
-        "available": 8
-      },
-      "mailer": {
-        "lastOrder": "order-1042",
-        "sent": 1
+      "Demo.client": {
+        "last": 4.5
       }
     }
   },
   {
     "model": "examples/14-cloud-service.swaml",
-    "root": "CloudTelemetry::Production",
+    "root": "Cloud::Demo",
     "options": "examples/simulation/14-cloud-service.json",
     "expectedStores": {
-      "device": {
-        "uploaded": 2,
-        "retryAccepted": true,
-        "invalidRejected": true
-      },
-      "ingestion.gateway": {
-        "lastSequence": 2,
-        "acceptedCount": 2
-      },
-      "broker": {
-        "lastSequence": 2,
-        "forwarded": 2
-      },
-      "analytics": {
-        "lastSequence": 2,
-        "processed": 2,
-        "latestTemperature": 28.5
-      },
-      "archive": {
-        "lastSequence": 2,
-        "records": 2,
-        "lastDevice": "sensor-01"
+      "Demo.client": {
+        "last": 4.5
       }
     }
   },
   {
     "model": "examples/15-component-specialization.swaml",
-    "root": "ComponentReuse::Demo",
+    "root": "Reuse::Demo",
     "options": "examples/simulation/15-component-specialization.json",
     "expectedStores": {
-      "": {
-        "running": true
+      "Demo.left": {
+        "count": 11
       },
-      "base": {
-        "count": 1,
-        "sample": 2
-      },
-      "base.worker": {
-        "ticks": 1
-      },
-      "left": {
-        "count": 4,
-        "sample": 14
-      },
-      "left.worker": {
-        "ticks": 2
-      },
-      "right": {
-        "count": 2,
-        "sample": 12
-      },
-      "right.worker": {
-        "ticks": 2
+      "Demo.right": {
+        "count": 2
       }
     }
   },
   {
     "model": "examples/16-requirements-and-views.swaml",
-    "root": "Assurance::Demo",
+    "root": "Traceability::Demo",
     "options": "examples/simulation/16-requirements-and-views.json",
     "expectedStores": {
-      "first": {
-        "result": 2
-      },
-      "second": {
-        "result": 2
+      "Demo.receiver": {
+        "last": "Hello, SWAML"
       }
     }
   },
   {
     "model": "examples/17-function-timing.swaml",
-    "root": "FunctionTiming::Demo",
+    "root": "Timing::Demo",
     "options": "examples/simulation/17-function-timing.json",
     "expectedStores": {
-      "first": {
-        "healthy": true
-      },
-      "second": {
-        "healthy": true
+      "Demo": {
+        "count": 3
       }
     }
   },
   {
     "model": "examples/18-control-loops.swaml",
-    "root": "ControlLoops::Demo",
+    "root": "Loops::Demo",
     "options": "examples/simulation/18-control-loops.json",
     "expectedStores": {
-      "": {
-        "counted": 3,
-        "total": 6,
-        "postTested": 2,
-        "nested": 12,
-        "values": [
-          9,
-          9,
-          9
-        ]
+      "Demo": {
+        "count": 8
       }
     }
   },
   {
     "model": "examples/19-interruptible-function.swaml",
-    "root": "Interrupts::App",
+    "root": "Interrupts::Demo",
     "options": "examples/simulation/19-interruptible-function.json",
     "expectedStores": {
-      "worker": {
-        "status": 2,
-        "why": "operator stop"
-      },
-      "backend": {
-        "committed": 1
+      "Demo.receiver": {
+        "last": 5
       }
     }
   },
   {
     "model": "examples/20-classes-and-operations.swaml",
-    "root": "ClassOperations::Demo",
+    "root": "Operations::Demo",
     "options": "examples/simulation/20-classes-and-operations.json",
     "expectedStores": {
-      "frontend": {
-        "observed": 42
-      },
-      "backend": {
-        "value": 21
+      "Demo": {
+        "result": 5
       }
     }
   },
   {
-    "model": "examples/20-classes-and-operations.swaml",
-    "root": "ClassOperations::Product",
-    "options": "examples/simulation/20-classes-and-operations.json",
+    "model": "examples/21-receive-and-try.swaml",
+    "root": "Receiving::Demo",
+    "options": "examples/simulation/21-receive-and-try.json",
     "expectedStores": {
-      "frontend": {
-        "observed": 42
+      "Demo.receiver": {
+        "last": 8
+      }
+    }
+  },
+  {
+    "model": "examples/22-platform-deployment.swaml",
+    "root": "Placement::Demo",
+    "options": "examples/simulation/22-platform-deployment.json",
+    "expectedStores": {
+      "Demo.workers[2]": {
+        "count": 1
+      }
+    }
+  },
+  {
+    "model": "examples/23-multiplicity.swaml",
+    "root": "Multiplicity::Demo",
+    "options": "examples/simulation/23-multiplicity.json",
+    "expectedStores": {
+      "Demo.counters[0]": {
+        "count": 1
       },
-      "backend": {
-        "value": 21
+      "Demo.counters[2]": {
+        "count": 1
+      }
+    }
+  },
+  {
+    "model": "examples/24-operation-usage.swaml",
+    "root": "OperationUsage::Demo",
+    "options": "examples/simulation/24-operation-usage.json",
+    "expectedStores": {
+      "Demo": {
+        "result": 5
       }
     }
   },
   {
     "model": "examples/25-function-completion.swaml",
-    "root": "Completion::Demo",
+    "root": "Chaining::Demo",
     "options": "examples/simulation/25-function-completion.json",
     "expectedStores": {
-      "": {
-        "stage": 3
+      "Demo": {
+        "count": 2
+      }
+    }
+  },
+  {
+    "model": "examples/26-boundary-forwarding.swaml",
+    "root": "Boundary::Demo",
+    "options": "examples/simulation/26-boundary-forwarding.json",
+    "expectedStores": {
+      "Demo.display": {
+        "last": 18.5
       }
     }
   }

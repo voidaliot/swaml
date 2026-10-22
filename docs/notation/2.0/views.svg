@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>SWAML 2.0 original notation</title>
+<rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
+<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Seven library view definitions</text>
+<line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
+<rect x="38" y="95" width="200" height="105" fill="#ffffff" stroke="#171717"/>
+<rect x="38" y="95" width="200" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="50" y="118" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">General</text>
+<text x="50" y="153" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">source-backed selection</text>
+<rect x="258" y="95" width="200" height="105" fill="#ffffff" stroke="#171717"/>
+<rect x="258" y="95" width="200" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="270" y="118" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">Interconnect</text>
+<text x="270" y="153" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">source-backed selection</text>
+<rect x="478" y="95" width="200" height="105" fill="#ffffff" stroke="#171717"/>
+<rect x="478" y="95" width="200" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="490" y="118" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">Case</text>
+<text x="490" y="153" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">source-backed selection</text>
+<rect x="698" y="95" width="200" height="105" fill="#ffffff" stroke="#171717"/>
+<rect x="698" y="95" width="200" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="710" y="118" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">Sequence</text>
+<text x="710" y="153" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">source-backed selection</text>
+<rect x="38" y="225" width="200" height="105" fill="#ffffff" stroke="#171717"/>
+<rect x="38" y="225" width="200" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="50" y="248" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">Grid</text>
+<text x="50" y="283" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">source-backed selection</text>
+<rect x="258" y="225" width="200" height="105" fill="#ffffff" stroke="#171717"/>
+<rect x="258" y="225" width="200" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="270" y="248" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">Flow</text>
+<text x="270" y="283" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">source-backed selection</text>
+<rect x="478" y="225" width="200" height="105" fill="#ffffff" stroke="#171717"/>
+<rect x="478" y="225" width="200" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="490" y="248" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">Timing</text>
+<text x="490" y="283" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">source-backed selection</text>
+<text x="40" y="370" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">Browser navigates ownership. Views never execute behavior.</text>
+</svg>

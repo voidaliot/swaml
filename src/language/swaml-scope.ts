@@ -1,35 +1,28 @@
-import { AstUtils, DefaultScopeProvider, MapScope, type AstNode, type ReferenceInfo, type Scope, type LangiumCoreServices } from 'langium';
+import { AstUtils, DocumentState, DefaultScopeProvider, MapScope, type AstNode, type ReferenceInfo, type Scope, type LangiumCoreServices } from 'langium';
 import * as a from './generated/ast.js';
-import { container, members } from './semantic.js';
-
-export function owner<T extends AstNode>(node: AstNode, test: (node: AstNode) => node is T): T | undefined {
-    return AstUtils.getContainerOfType(node, test);
-}
+import { owner } from './semantic.js';
+export { owner } from './semantic.js';
 export class SwamlScopeProvider extends DefaultScopeProvider {
-    constructor(private services: LangiumCoreServices) { super(services); }
+    constructor(private services: LangiumCoreServices) {
+        super(services);
+        // Also cover explicit in-memory builds, which need not emit onUpdate.
+        services.shared.workspace.DocumentBuilder.onBuildPhase(DocumentState.IndexedContent, () => this.globalScopeCache.clear());
+    }
     override getScope(context: ReferenceInfo): Scope {
-        const node = context.container;
-        let candidates: AstNode[] | undefined;
-        if (a.isLocalCall(node) || a.isTrigger(node) && context.property === 'predecessor') candidates = container(node) ? members(container(node)!).filter(a.isFunctionDef) : [];
-        if (a.isCalculationCall(node)) candidates = owner(node, a.isFunctionDef)?.calculations ?? [];
-        if (a.isTransition(node) || a.isStateBody(node)) candidates = owner(node, a.isStateBody)?.states;
-        if (a.isDelegate(node)) candidates = container(node) ? members(container(node)!).filter(a.isPort) : [];
+        const pkg = owner(context.container, a.isPackage);
         const type = this.reflection.getReferenceType(context);
-        if (candidates !== undefined) return this.createScopeForNodes(candidates.filter(n => this.reflection.isSubtype(n.$type, type)));
-        const pkg = owner(node, a.isPackage);
-        const entries: { node: AstNode; name: string }[] = [];
-        for (const doc of this.services.shared.workspace.LangiumDocuments.all) {
-            if (!a.isModel(doc.parseResult.value)) continue;
-            for (const p of doc.parseResult.value.packages) {
-                for (const element of p.elements) {
-                    entries.push({ node: element, name: `${p.name}::${element.name}` });
-                    if (p === pkg || pkg?.imports.some(i => i.namespace === p.name)) entries.push({ node: element, name: element.name });
-                }
-            }
-        }
-        // Ambiguous imports are errors, never dependent on file iteration order.
-        const counts = new Map<string, number>();
-        for (const e of entries) counts.set(e.name, (counts.get(e.name) ?? 0) + 1);
-        return new MapScope(entries.filter(e => counts.get(e.name) === 1 && this.reflection.isSubtype(e.node.$type, type)).map(e => this.descriptions.createDescription(e.node, e.name)));
+        const packages = () => this.services.shared.workspace.LangiumDocuments.all.flatMap(d => a.isModel(d.parseResult.value) ? d.parseResult.value.packages : []).toArray();
+        const scope = (entries: { node: AstNode; name: string }[], outer?: Scope) => {
+            const counts = new Map<string, number>();
+            for (const e of entries)
+                counts.set(e.name, (counts.get(e.name) ?? 0) + 1);
+            // Ambiguity is decided before category filtering, never as a lookup fallback.
+            return new MapScope(entries.filter(e => counts.get(e.name) === 1 && this.reflection.isSubtype(e.node.$type, type)).map(e => this.descriptions.createDescription(e.node, e.name)), outer);
+        };
+        const global = this.globalScopeCache.get(`qualified:${type}`, () => scope(packages().flatMap(p => p.elements.map(node => ({ node, name: `${p.name}::${node.name}` })))));
+        if (!pkg)
+            return global;
+        const key = `visible:${AstUtils.getDocument(pkg).uri.toString()}:${pkg.$cstNode?.offset}:${type}`;
+        return this.globalScopeCache.get(key, () => scope(packages().filter(p => p === pkg || pkg.imports.some(i => i.namespace === p.name)).flatMap(p => p.elements.map(node => ({ node, name: node.name }))), global));
     }
 }

@@ -2,7 +2,7 @@ name: Showcase · GitHub Pages
 
 on:
   pull_request:
-    paths: ['showcase/**', 'examples/**', 'docs/QUICK_START.md', 'docs/MODELING_OVERVIEW.md', 'spec/modeling-overview.json', 'spec/traceability-demo.json', 'spec/function-timing-demo.json', 'src/language/**', 'src/simulation/**', 'scripts/check-showcase.mjs', 'scripts/check-modeling-overview.mjs', 'scripts/build-traceability-demo.mjs', 'scripts/build-timing-demo.mjs', '.github/workflows/pages.yml']
+    paths: ['showcase/**', 'examples/**', 'docs/**', 'spec/**', 'libraries/**', 'skills/**', 'src/**', 'scripts/**', 'package*.json', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:

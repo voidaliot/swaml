@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>SWAML 2.0 original notation</title>
+<rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
+<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Loops and copied iteration</text>
+<line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
+<rect x="45" y="125" width="250" height="150" fill="#ffffff" stroke="#171717"/>
+<rect x="45" y="125" width="250" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="57" y="148" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">while / until</text>
+<text x="57" y="183" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">optional n times</text>
+<text x="57" y="205" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">limit evaluated once</text>
+<rect x="335" y="125" width="250" height="150" fill="#ffffff" stroke="#171717"/>
+<rect x="335" y="125" width="250" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="347" y="148" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">counted for</text>
+<text x="347" y="183" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">initializer / test</text>
+<text x="347" y="205" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">body / update</text>
+<rect x="625" y="125" width="250" height="150" fill="#ffffff" stroke="#171717"/>
+<rect x="625" y="125" width="250" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="637" y="148" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">for in</text>
+<text x="637" y="183" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">copied fixed array</text>
+<text x="637" y="205" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">fresh iteration scope</text>
+<text x="45" y="330" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">Reaching a loop limit exits normally. Runtime step/deadline limits remain explicit.</text>
+</svg>

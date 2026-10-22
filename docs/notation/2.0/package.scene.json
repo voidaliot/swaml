@@ -1,0 +1,124 @@
+{
+  "width": 920,
+  "height": 390,
+  "elements": [
+    {
+      "kind": "rect",
+      "x": 1,
+      "y": 1,
+      "w": 918,
+      "h": 388,
+      "fill": "#fafafa",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 36,
+      "text": "Packages and imports",
+      "size": 21
+    },
+    {
+      "kind": "line",
+      "x1": 26,
+      "y1": 54,
+      "x2": 894,
+      "y2": 54,
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 60,
+      "y": 98,
+      "w": 795,
+      "h": 240,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 85,
+      "y": 130,
+      "w": 330,
+      "h": 150,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 85,
+      "y": 130,
+      "w": 330,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 97,
+      "y": 153,
+      "text": "package Hello",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 97,
+      "y": 188,
+      "text": "port def Messages",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 97,
+      "y": 210,
+      "text": "component def Sender / Receiver",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 490,
+      "y": 130,
+      "w": 330,
+      "h": 150,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 490,
+      "y": 130,
+      "w": 330,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 502,
+      "y": 153,
+      "text": "component Demo",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 502,
+      "y": 188,
+      "text": "component sender: Sender",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 502,
+      "y": 210,
+      "text": "component receiver: Receiver",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 502,
+      "y": 232,
+      "text": "connect (sender.output, receiver.input);",
+      "size": 12
+    }
+  ]
+}

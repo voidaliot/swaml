@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>SWAML 2.0 original notation</title>
+<rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
+<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Component definitions and usages</text>
+<line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
+<rect x="50" y="120" width="330" height="170" fill="#ffffff" stroke="#171717"/>
+<rect x="50" y="120" width="330" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="62" y="143" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">component def Counter</text>
+<text x="62" y="178" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">attribute count: int = 0</text>
+<text x="62" y="200" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">operation increment()</text>
+<text x="62" y="222" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">schedule { on start increment(); }</text>
+<rect x="535" y="120" width="330" height="170" fill="#ffffff" stroke="#171717"/>
+<rect x="535" y="120" width="330" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="547" y="143" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">component left: Counter</text>
+<text x="547" y="178" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">redefines attribute count: int = 10</text>
+<text x="547" y="200" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">private occurrence store</text>
+<line x1="380" y1="205" x2="535" y2="205" stroke="#171717" stroke-dasharray="5 4"/>
+<text x="402.5" y="193.0" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">typed by</text>
+</svg>

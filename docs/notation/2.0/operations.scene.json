@@ -1,0 +1,137 @@
+{
+  "width": 920,
+  "height": 390,
+  "elements": [
+    {
+      "kind": "rect",
+      "x": 1,
+      "y": 1,
+      "w": 918,
+      "h": 388,
+      "fill": "#fafafa",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 36,
+      "text": "Operations and nested ownership",
+      "size": 21
+    },
+    {
+      "kind": "line",
+      "x1": 26,
+      "y1": 54,
+      "x2": 894,
+      "y2": 54,
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 50,
+      "y": 105,
+      "w": 340,
+      "h": 200,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 50,
+      "y": 105,
+      "w": 340,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 62,
+      "y": 128,
+      "text": "operation boot()",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 62,
+      "y": 163,
+      "text": "nested operation double(v: real)",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 62,
+      "y": 185,
+      "text": "returns real { return v * 2.0; }",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 62,
+      "y": 207,
+      "text": "no enclosing-local capture",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 530,
+      "y": 105,
+      "w": 340,
+      "h": 200,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 530,
+      "y": 105,
+      "w": 340,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 542,
+      "y": 128,
+      "text": "operation clamp: Clamp",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 542,
+      "y": 163,
+      "text": "signature inherited from def",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 542,
+      "y": 185,
+      "text": "optional whole-body replacement",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 542,
+      "y": 207,
+      "text": "result = clamp(double(4.0), 0.0, 5.0)",
+      "size": 12
+    },
+    {
+      "kind": "line",
+      "x1": 390,
+      "y1": 205,
+      "x2": 530,
+      "y2": 205,
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 405.0,
+      "y": 193.0,
+      "text": "local call",
+      "size": 12
+    }
+  ]
+}

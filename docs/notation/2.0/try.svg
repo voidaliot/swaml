@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>SWAML 2.0 original notation</title>
+<rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
+<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Runtime failure and lazy fallback</text>
+<line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
+<rect x="40" y="140" width="235" height="140" fill="#ffffff" stroke="#171717"/>
+<rect x="40" y="140" width="235" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="52" y="163" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">try(api.get(1), -1.0)</text>
+<text x="52" y="198" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">evaluate expression</text>
+<text x="52" y="220" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">retain committed effects</text>
+<rect x="360" y="90" width="230" height="105" fill="#ffffff" stroke="#171717"/>
+<rect x="360" y="90" width="230" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="372" y="113" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">success</text>
+<text x="372" y="148" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">return copied result</text>
+<rect x="360" y="235" width="230" height="105" fill="#ffffff" stroke="#171717"/>
+<rect x="360" y="235" width="230" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="372" y="258" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">runtime failure</text>
+<text x="372" y="293" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">evaluate lazy fallback</text>
+<line x1="275" y1="185" x2="360" y2="145" stroke="#171717"/>
+<line x1="275" y1="230" x2="360" y2="275" stroke="#171717"/>
+<text x="640" y="180" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">Interruption, deadline</text>
+<text x="640" y="205" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">and resources bypass try.</text>
+</svg>

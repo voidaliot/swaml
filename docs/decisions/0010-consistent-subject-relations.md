@@ -1,5 +1,7 @@
 # ADR 0010 — Consistent subject relations
 
+> Amended for development 2.0 by [ADR 0016](0016-swaml-2-0.md): named from/to case steps, library view definitions and source-operation schedule activation replace the 1.x forms. Historical evidence remains below.
+
 Status: accepted for SWAML 1.2.1. Date: 2026-10-18.
 
 Subject-assignment relations consistently use `of`. The 1.2.0 grammar used case `for`, satisfaction `by` and compact-view `of` for analogous references. This patch corrects those spellings without changing their semantic targets, ownership or execution. Any future use of `for` is limited to loop syntax.

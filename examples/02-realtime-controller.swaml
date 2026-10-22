@@ -1,51 +1,64 @@
 package Control {
-    interface senderReceiver Samples version "1.0.0" { data temperature: real sampled; }
-    interface senderReceiver Commands version "1.0.0" { data duty: real sampled; }
-    component def Sensor {
-        port output: Samples sender;
-        function sample() on every 10 ms timing { wcet 1 ms; deadline 3 ms; concurrency serial; } {
-            send output.temperature(23.5);
-            return;
-        }
+  import Swaml::Views;
+  port def Temperature {
+    provides attribute temperature: real;
+  }
+  port def Commands {
+    provides event set(value: real);
+  }
+  component def Sensor {
+    port reading: Temperature;
+    operation sample() {
+      wait 1ms;
+      send reading.temperature(18.5);
     }
-    component def Regulator {
-        port input: Samples receiver;
-        port output: Commands sender;
-        function regulate(temperature: real) on receive input.temperature timing { wcet 1 ms; deadline 3 ms; concurrency serial; } {
-            calc clamp { in x: real; return result: real = x / 100.0; }
-            var duty: real = clamp(temperature);
-            if (duty > 0.8) { send output.duty(0.8); }
-            else { send output.duty(duty); }
-            return;
-        }
+    schedule {
+      on every 10ms sample();
     }
-    component def Actuator {
-        port input: Commands receiver;
-        var applied: real = 0.0;
-        function apply(duty: real) on receive input.duty timing { wcet 1 ms; deadline 2 ms; concurrency serial; } {
-            applied = duty;
-            assert applied <= 0.8;
-            return;
-        }
+  }
+  component def Controller {
+    reversed port reading: Temperature;
+    port command: Commands;
+    attribute target: real = 21.0;
+    operation regulate(measured: real) {
+      var power: real = (target - measured) * 0.1;
+      publish command.set(power);
     }
-    component def Controller {
-        component sensor: Sensor;
-        component regulator: Regulator;
-        component actuator: Actuator;
-        connect measured: sensor.output -> regulator.input qos {
-            delivery atMostOnce; ordering fifo; capacity 1; overflow dropOldest; maxLatency 1 ms; maxAge 20 ms;
-        };
-        connect commanded: regulator.output -> actuator.input qos {
-            delivery atMostOnce; ordering fifo; capacity 1; overflow dropOldest; maxLatency 1 ms; maxAge 20 ms;
-        };
+    schedule {
+      on receive reading.temperature(t) regulate(t) deadline 5ms;
     }
-    component Heating realtime {
-        component controller: Controller;
-        deploy controller on "system:ecu";
+  }
+  component def Heater {
+    reversed port command: Commands;
+    attribute power: real = 0.0;
+    operation apply(value: real) {
+      power = value;
     }
-    requirement LimitedDuty { doc /* Applied duty shall be at most 0.8. */ }
-    view overview gv of Heating;
-    view wiring iv of Controller;
-    view regulating fv of Regulator.regulate;
-    view deployment grv of Heating;
+    schedule {
+      on receive command.set(value) apply(value);
+    }
+  }
+  component Demo {
+    component sensor: Sensor;
+    component controller: Controller;
+    component heater: Heater;
+    connect samples (sensor.reading, controller.reading);
+    connect commands (controller.command, heater.command);
+  }
+  requirement Responsive {
+    attribute limitMs: uint = 5;
+  }
+  satisfy Responsive of Demo.controller;
+  verificationCase ControlLoop of Demo {
+    verify Responsive;
+    send measured from sensor.reading.temperature to controller.reading.temperature via samples;
+    publish applied from controller.command.set to heater.command.set via commands after measured;
+  }
+  view overview: General of Demo;
+  view intent: Case of ControlLoop;
+  view sequence: Sequence of ControlLoop;
+  view inventory: Grid of Demo;
+  view architecture: Interconnect of Demo;
+  view logic: Flow of Demo.controller.regulate;
+  view timing: Timing of Demo.sensor.sample;
 }

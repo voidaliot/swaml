@@ -1,85 +1,29 @@
 package Gateway {
-    interface senderReceiver Samples version "1.0.0" { data value: real sampled; }
-    interface publishSubscribe DashboardCommands version "1.0.0" { event refresh(); }
-    interface service Telemetry version "1.0.0" {
-        function read(): real idempotent;
-        event observed(value: real);
+  port def Messages {
+    provides event message(value: int);
+  }
+  component def Sender {
+    port output: Messages;
+    operation emit() {
+      publish output.message(9);
     }
-    component def Sensor {
-        port output: Samples sender;
-        function sample() on every 10 ms timing { wcet 1 ms; deadline 2 ms; concurrency serial; } {
-            send output.value(21.0); return;
-        }
+    schedule {
+      on start emit();
     }
-    component def Adapter {
-        port input: Samples receiver;
-        port api: Telemetry provides;
-        var latest: real = 0.0;
-        function receiveSample(value: real) on receive input.value timing { wcet 1 ms; deadline 3 ms; concurrency serial; } {
-            latest = value;
-            publish api.observed(value);
-            return;
-        }
-        function readLatest(): real on call api.read timing { wcet 1 ms; deadline 3 ms; concurrency serial; } { return latest; }
+  }
+  component def Receiver {
+    reversed port input: Messages;
+    attribute last: int = 0;
+    operation accept(value: int) {
+      last = value;
     }
-    component def Dashboard {
-        port telemetry: Telemetry requires;
-        port control: DashboardCommands subscriber optional;
-        var displayed: real = 0.0;
-        function refresh() on receive control.refresh timing { wcet 1 ms; deadline 30 ms; concurrency serial; } {
-            call telemetry.read() as measured within 25 ms otherwise { return; };
-            displayed = measured; return;
-        }
-        function update(value: real) on receive telemetry.observed timing { wcet 1 ms; deadline 5 ms; concurrency serial; } {
-            displayed = value; return;
-        }
+    schedule {
+      on receive input.message(value) accept(value);
     }
-    component def Acquisition {
-        port output: Samples sender;
-        component sensor: Sensor;
-        delegate output -> sensor.output;
-    }
-    component def Bridge {
-        port input: Samples receiver;
-        port api: Telemetry provides;
-        component adapter: Adapter;
-        delegate input -> adapter.input;
-        delegate api -> adapter.api;
-    }
-    component def Display {
-        port telemetry: Telemetry requires;
-        port control: DashboardCommands subscriber optional;
-        component dashboard: Dashboard;
-        delegate telemetry -> dashboard.telemetry;
-        delegate control -> dashboard.control;
-    }
-    component Product mixed {
-        port dashboardInput: DashboardCommands publisher;
-        component acquisition: Acquisition;
-        component bridge: Bridge;
-        component display: Display;
-        function driveInputs() on start timing { wcet 1 ms; deadline 5 ms; concurrency serial; } {
-            initial Waiting;
-            state Waiting {}
-            state Requested final { entry { publish dashboardInput.refresh(); } }
-            transition refreshDashboard: Waiting -> Requested on after 15 ms {}
-        }
-        connect refreshCommand: dashboardInput -> display.control qos {
-            delivery atMostOnce; ordering fifo; capacity 4; overflow reject; maxLatency 1 ms;
-        };
-        connect sensing: acquisition.output -> bridge.input qos {
-            delivery atMostOnce; ordering fifo; capacity 1; overflow dropOldest; maxLatency 1 ms; maxAge 20 ms;
-        };
-        connect observing: display.telemetry -> bridge.api qos {
-            delivery atMostOnce; ordering fifo; capacity 8; overflow reject; maxLatency 2 ms;
-        };
-        deploy acquisition on "system:controller";
-        deploy bridge on "system:edge";
-        deploy display on "system:edge";
-        deploy Product on "system:edge";
-    }
-    view overview gv of Product;
-    view connections iv of Product;
-    view conversion fv of Adapter.receiveSample;
-    view allocation grv of Product;
+  }
+  component Demo {
+    component sender: Sender;
+    component receiver: Receiver;
+    connect (sender.output, receiver.input);
+  }
 }

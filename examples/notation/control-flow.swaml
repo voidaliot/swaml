@@ -1,35 +1,22 @@
-package ControlFlowNotation {
-    component Counter {
-        var counted: int = 0;
-        var total: int = 0;
-        var postTested: int = 0;
-        var values: int[3] = [1, 2, 3];
-
-        function countedLoop() {
-            for (var i: int = 0; i < 3; i = i + 1) bound 3 {
-                counted = counted + 1;
-            }
-        }
-
-        function arrayLoop() {
-            forEach (item: int in values) {
-                total = total + item;
-            }
-        }
-
-        function postTestLoop() {
-            do {
-                postTested = postTested + 1;
-            } while (postTested < 2) bound 2;
-        }
-
-        function run() on start {
-            call countedLoop();
-            call arrayLoop();
-            call postTestLoop();
-        }
+package NotationFlow {
+  component Demo {
+    attribute count: int = 0;
+    operation boot() {
+      while (count < 2, 3 times) {
+        count = count + 1;
+      }
+      until (count == 4, 5 times) {
+        count = count + 1;
+      }
+      for (var i: int = 0; i < 2; i = i + 1) {
+        count = count + i;
+      }
+      for (x: int in[1, 2]) {
+        count = count + x;
+      }
     }
-    view counted fv of Counter.countedLoop;
-    view elements fv of Counter.arrayLoop;
-    view postTest fv of Counter.postTestLoop;
+    schedule {
+      on start boot();
+    }
+  }
 }

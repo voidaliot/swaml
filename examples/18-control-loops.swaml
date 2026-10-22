@@ -1,42 +1,22 @@
-package ControlLoops {
-    component Demo {
-        doc /* Bounded control flow with lexical loop variables and copied array iteration. */
-        var counted: int = 0;
-        var total: int = 0;
-        var postTested: int = 0;
-        var nested: int = 0;
-        var values: int[3] = [1, 2, 3];
-
-        function run() on start {
-            for (var i: int = 0; i < 3; i = i + 1) bound 3 {
-                counted = counted + 1;
-            }
-
-            // Replacing the source does not change the copied iteration sequence.
-            forEach (item: int in values) {
-                total = total + item;
-                values = [9, 9, 9];
-            }
-
-            do {
-                postTested = postTested + 1;
-            } while (postTested < 2) bound 2;
-
-            for (var i: int = 0; i < 2; i = i + 1) bound 2 {
-                forEach (item: int in [1, 2]) {
-                    var j: int = 0;
-                    while (j < 2) bound 2 {
-                        nested = nested + item;
-                        j = j + 1;
-                    }
-                }
-            }
-
-            assert counted == 3;
-            assert total == 6;
-            assert postTested == 2;
-            assert nested == 12;
-        }
+package Loops {
+  component Demo {
+    attribute count: int = 0;
+    operation boot() {
+      while (count < 2, 3 times) {
+        count = count + 1;
+      }
+      until (count == 4, 5 times) {
+        count = count + 1;
+      }
+      for (var i: int = 0; i < 2; i = i + 1) {
+        count = count + i;
+      }
+      for (x: int in[1, 2]) {
+        count = count + x;
+      }
     }
-    view execution fv of Demo.run;
+    schedule {
+      on start boot();
+    }
+  }
 }

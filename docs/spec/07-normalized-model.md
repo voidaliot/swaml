@@ -1,126 +1,46 @@
-# 7. Normalized semantic model
+# 7. Normalized model contract
 
-Normative SWAML contract extending [chapter 5](05-kerml-mapping.md). This chapter defines the complete information a mapper must preserve. It specifies SWAML normalization, not a new OMG metamodel or an implemented serializer.
+Normative information-preservation contract of [SWAML 2.0](../LANGUAGE_SPECIFICATION.md). It defines what any exporter/target adapter must retain; it does not claim a kernel exporter exists.
 
-The semantic hierarchy includes **Component specializes Class** and **Function specializes Operation**. Shared AST productions do not erase these kinds. The normalization rules below apply to both structural and executable alternatives; an interface signature remains a contract signature rather than an executable declaration.
+## 7.1 Identity and provenance
 
-## 7.1 Identity, ownership and source trace
+A declaration identity is package plus owned-name path. An occurrence identity is root plus indexed containment path; an operation occurrence additionally identifies its effective declaration. Activations/correlations/messages add unique run identities. Anonymous syntax/lowering nodes use an owner plus structural slot/generation role, not an invented user declaration. Source ranges are provenance rather than persistent identities. Every semantic node except a root has one owner; reference edges never imply containment.
 
-Normalization consumes a resolved workspace and emits a finite declaration graph plus instance expansions for selected root components. Each semantic node has an immutable identity within that normalized artifact, a semantic kind, at most one owning node, ordered owned children where order matters, typed reference edges, and source provenance. Except for model roots, every semantic node has exactly one owner. Reference edges never imply containment.
+Each normalized node/constraint retains source declaration URI/range and any inherited/replacement provenance. A persistent editor identity map is separate, preserving renames/moves atomically with source references and sidecars. Same-type multiplicity occurrences never share stores, queues or activation identity.
 
-The deterministic textual identity of a declaration is its package plus owned-name path, for example `Settings::SettingStore.update`. Anonymous syntax nodes use the owning declaration ID plus a structural slot path such as `/body/statements/2/condition`; these IDs are stable for an unchanged syntax tree, not across arbitrary edits. Synthetic elements append a reserved role segment such as `/@execution` or `/@failure`. No source identifier contains `/` or `@`, so generated roles cannot collide with source names.
+## 7.2 Families
 
-An occurrence identity consists of the root component declaration ID and the child-instance path. A port occurrence adds the owned port name. A function occurrence additionally refers to its shared function declaration and component occurrence. Runtime activations add a run ID and unique activation ordinal. A mapper MUST NOT collapse occurrence paths merely because they share a definition. Persistent editor UUIDs are a separate identity map with explicit rename/move history; source locations and in-memory AST addresses are never persistent IDs.
-
-A reverse trace relation maps every generated element to one or more authoring node identities and their URI/ranges. Synthetic nodes retain their source owner and generation role. No generated constraint may be untraceable. An import can have an import-declaration source location while referencing a package located in another document.
-
-An authored or generated test driver retains the same component/function ownership and source provenance as application behavior. Its event declarations, publisher ports, connectors, schedules and receiving member bindings are normalized explicitly; no hidden harness activation is added.
-
-## 7.2 Declaration graph and links
-
-| Normalized family | Required information and constraints |
+| Family | Required content |
 | --- | --- |
-| Workspace/package | language version, packages, direct import edges, unique declaration namespaces |
-| Record/enum | nominal identity, ordered fields or ordered unique literal names, finite domain/containment |
-| Type use | primitive or nominal target, optional array extent; never encode a type solely by a display label |
-| Interface | kind, version, ordered data/event/RPC members, operation/function signature kind, data mode and idempotency claims |
-| Structure definition | explicit class/component kind, single base reference with legal kind direction, owned ports, contained instance features, private variables, owned executable declarations as applicable |
-| Instance feature | explicit class/component usage kind, exactly one kind-compatible definition target, composite ownership, multiplicity one |
-| Port feature | interface target, role, optionality and derived member directions |
-| QoS policy | package-owned declaration identity, complete ordered body, source provenance; no runtime queues |
-| Connection/delegation | owner, endpoint feature references, explicit path provenance, interface identity, queue policy for a connection; no queue for delegation |
-| Variable/local/parameter | declared type, ownership/scope, initializer where present, mutable copied-value semantics |
-| Executable | explicit operation/function kind, signature, trigger, concurrency/timing, locally owned calculations and one statement or state body, context bound to the owning class/component |
-| Class/component root/binding | explicit root kind, named occurrence with inline composition or compatible class/component-definition reference, external destination identities, explicit/effective deployment and effective service/realtime/mixed profile |
-| Requirement/case/view | immutable attributes and doc, satisfy/verify edges, case kind and step graph, view kind and ordered selected occurrence paths |
+| Workspace/package | Edition, package revision, sources, imports, unique declaration namespaces |
+| Record/enum/type use | Nominal identity, fields/literals, primitive domain, fixed array shape |
+| Component definition/usage | Base, effective members, explicit replacements, anonymous usage specialization, multiplicity |
+| Attribute/local/parameter | Owner/scope, explicit type, const/in/out, initializer, copied-cell lifetime |
+| Operation | Signature, effective whole body, nested ownership without captures, inferred effect flags/class |
+| Port/member | Definition or inline members, direction, reversal, optionality, payload/signature, idempotency |
+| Connection/forwarding | Endpoint occurrence references, alias provenance, structural member checks, effective policy |
+| Policy | Pinned complete values and declaration/use provenance; no shared runtime queue |
+| Schedule/entry | Trigger identity, effective target, dispatch arguments/bindings, period/deadline, concurrent |
+| State/transition | Initial/final, entry/exit/effects, receive bindings/guard or timer, ordered selection |
+| Deployment | Software/platform roots, Node paths, family/index placements, effective specificity |
+| Requirement/case/view | Immutable attributes/docs, intent links, route/dependency/correlation graph, ordered selection union |
 
-All textual references MUST resolve before normalization. A `TypeRef` is a use, not a new nominal declaration. Array extents are carried as shape constraints and do not create element aliasing. Empty records have one value. void results create no output-value feature. Parameters preserve order, independent of parameter names at a handler implementation.
+Expansion creates every literal multiplicity occurrence independently and keeps the definition reference. Inheritance produces an ordered effective set; replacement points to its inherited declaration. Late-bound local calls use that occurrence's effective operation name with the preserved signature. An operation usage retains the definition signature and either inherited or replacement body; no partial merge is inferred.
 
-A typed root expands its compatible class/component definition, and an inline root expands its authored children; no extra wrapper occurrence is inserted. Its normalized profile records service even when the source omits that default, while provenance preserves the omission. A typed binding body contributes only deployments, never topology. Every component child expands its definition's child features recursively. Expansion preserves each connector's owner path, so two uses of the same component produce distinct connector occurrences and queues. Effective deployment is computed by the nearest explicitly deployed ancestor, including the occurrence itself. An absent ancestor yields an explicit Unallocated value, not an invented external system.
+## 7.3 Routes and queues
 
-Specialization preserves structural kinds: component may specialize class or component; class may specialize class only. Class usages may reference either definition kind; component usages require component definitions. Operation-to-function and class-usage-to-component-usage redefinition may narrow kinds while preserving every other compatibility obligation; reverse widening is invalid.
+Each port occurrence has per-member projections with effective provides/requires direction. Resolve forwarding to leaf port identities, retaining the full boundary chain without queue/storage/hop. Every resolved input projection references its unique owner and every provided attribute/event its emission sites. Outgoing operation projection is a request rather than an emission declaration.
 
-Specialization normalizes to an explicit base-definition reference and an ordered effective member set. Each inherited member retains declaration provenance; each replacement additionally references the inherited member it redefines. Expansion instantiates the effective set separately for every component instance, including root-owned functions and variables. Local references in inherited bodies resolve in that effective instance context. A mapper MUST preserve redefinition compatibility checks and MUST NOT merge stores merely because they share an inherited declaration.
+A normalized connection records the two leaf ports, per-member directed routes and complete policy. Queue identity is connection occurrence, source/destination direction and member; requests/replies retain correlation separately. Attribute pending values use latest replacement, not event overflow rules. Extra provides remain contract members without fabricated peer requirements. Structural checks preserve each failed/matched member and nominal payload identity.
 
-External deployment destinations retain their exact source identity string and an optional host-provided resolved external identity. Normalization must distinguish unresolved external references from local path errors; it cannot fabricate an imported SysML part.
+## 7.4 Executable lowering
 
-## 7.3 Contract projection and route normalization
+Statements retain ordered operands, scopes, effects and success/failure continuations. Calls are expression nodes with a resolved local/port target, copied in/out/result types and effect flags. Try is a failure-catching node with a lazy fallback, never a rollback boundary. Wait/request/receive creates a suspended continuation plus unlock/readiness/relock; concurrent reads keep the captured dispatch snapshot. Loop limits evaluate once; for in owns one copied collection. Interrupt regions retain armed extent, input ownership, same-activation unwind, request cancellation and inactive/late-input observations.
 
-For every port occurrence and interface member, derive a member projection with contract/member identity and role-specific directions:
+A schedule entry lowers to a release mechanism and dispatch-time argument evaluation. After edges retain same-owner predecessor operation and completed activation identities, success-only release after unlock, fresh deadline/context and no implicit data forwarding/join. Stateful reactions retain source-order transitions, guards, timer generations and exit/effect/update/entry phases. State bodies do not gain separate executable identities. Final entry completes the operation once.
 
-| Role | Data/event projection | RPC request | RPC result/failure |
-| --- | --- | --- | --- |
-| sender / receiver | out / in data | absent | absent |
-| publisher / subscriber | out / in event | absent | absent |
-| client / server | absent | out / in | in / out |
-| requires / provides | in / out event | out / in | in / out |
+## 7.5 Presentation and equivalence
 
-Contract signatures remain shared; these projections belong to specific port occurrences. One bit on a service port cannot replace this table. After following delegation to its resolved locally handled port, every receiving projection references exactly one handling function in that component context. Each outgoing data/event projection references the nonempty set of syntactic emission sites in its resolved context. Those links do not assert reachability.
+Views normalize to library definition plus ordered selected occurrences, retaining original include/filter clauses. General layouts preserve the same graph. Timing observations retain exact source/run/root/activation/correlation identities and open intervals; declared contracts remain independently identifiable. Geometry, collapse, routing bends and camera stay in sidecars.
 
-Resolve a connection by following each boundary port's unique delegation chain to a locally owned handling/emitting component port. Preserve the ordered original boundary chain as provenance. The normalized route is `(connectorOccurrence, sourceLeafPort, destinationLeafPort, interface)`. Delegation aliases do not add storage, queues, dispatch, retries or observable messages. Distinct connectors resolving to the same directed leaf pair are invalid. Optionality is checked at every port along a boundary chain; one optional declaration cannot erase a required declaration.
-
-A connector policy normalizes to its complete effective body, whether selected inline or by a named `QosPolicy`. For a named selection, preserve the declaration reference and both declaration/use source locations; for an inline selection, preserve its body/use provenance. `Qos` is the authoring selection and `QosBody` is its field grouping, not a runtime object. Policies cannot contain policy references or overrides. Multiple uses of one declaration still produce independent connector occurrences.
-
-A queue key is `(connectorOccurrence, direction, memberIdentity)` with direction relative to the connector's declared orientation. RPC responses and requests use opposite directions. Service events use the response direction but their distinct event member identities prevent queue sharing with results. Correlation state is separate from queue storage.
-
-## 7.4 Executable normalization
-
-A completion trigger normalizes to a distinct same-owner executable dependency with an explicit effective predecessor reference, never a display-name-only edge. Preserve declaration provenance and the source/target occurrence identities separately. Its target is a parameterless void flow executable, its source is a triggered executable, and the effective dependency graph is acyclic. It lowers to successful whole-function completion followed by a fresh lifecycle release after unlock, with new activation/snapshot/lock/timing context. It MUST NOT lower to a synchronous local call, same-stack continuation, state reaction completion, message offer or implicit join. Source arguments/results are not forwarded. Failure has no release edge; stateful success is whole termination only. Every runtime release retains predecessor function and activation identities.
-
-Every operation/function has a behavior declaration and one synthetic executable feature owned by its component structure. The feature is typed by that behavior and binds an activation to a component occurrence. It MUST NOT create a user-visible performer, an independently editable implementation allocation, or permission to call it across a component boundary.
-
-A statement body normalizes to an entry, ordered steps, exit/failure terminals and lexical scopes. Every step records its source construct and ordered operands. The following lowerings are required:
-
-| Source construct | Normalized meaning |
-| --- | --- |
-| var / assignment | evaluate expression, then create/replace copied local or private value |
-| send / publish | operand evaluation followed by per-route message offers, emission provenance and success/rejection continuation |
-| routed call | issuance/correlation creation, suspended frame, timeout, typed success binding or terminating failure branch |
-| local call | synchronous same-component call edge, copied arguments and results, fresh non-void result binding, borrowed activation context/snapshot and caller continuation |
-| return / fail | terminate the current frame; unwind callers on failure; correlated result/failure for RPC activations |
-| if | evaluate bool once, mutually exclusive selected branch and merge of control only |
-| while | repeated condition, body, iteration counter and bound-failure edge; no implicit unbounded loop |
-| for | loop-owned initializer scope, initial test, ordered body/update/test, counter and bound-failure edge; update is an assignment grouping |
-| forEach | one copied fixed-array snapshot, finite element order, fresh typed element/body scope for each iteration |
-| do | initial body execution followed by condition, counter and bound-failure edge; condition excludes body locals |
-| interruptible | named armed region, typed input reference, normal/interrupt exits, handler payload scope and explicit stack/correlation cancellation |
-| assert | bool evaluation and failure edge when false |
-| calc | function-owned typed inputs, named output and expression tree with parameter-only environment and explicit acyclic calculation call edges |
-
-Expressions carry inferred type and evaluation order. Binary short-circuit nodes conditionally skip their right operand. A record value maps fields to declared identities, not input order; an array preserves value order and fixed extent; enum values retain enum and literal identity. Numeric failures and invalid index edges are part of the expression contract. A mapper MUST NOT silently substitute mathematical unbounded integers for SWAML bounded int execution.
-
-The directly owned state body is syntax grouping, not an independent behavior declaration. It contributes to its function's normalization: state identities, initial reference, entry/exit/effect step groups, trigger matchers, pure guards, priorities, finality, current-state feature, timer-generation features and the chapter 6 dispatch/reaction rules. A transition is not merely an unconstrained edge: its priority selection, source-state condition, payload environment and ordered exit/effect/update/entry phases are required semantics.
-
-## 7.5 Kernel representation and SWAML library responsibilities
-
-The `kernel` field of the [mapping inventory](../../spec/kerml-mapping.json) lists proposed KerML bases; the `semantic` field names the SWAML meaning to preserve. Empty kernel lists mean a lexical/grouping node contributes to its owner's representation, not that its meaning may be discarded. The inventory covers every authored grammar rule and type alias; punctuation and reserved keywords are covered by their productions.
-
-Kernel ownership, membership, typing, parameter, feature-value and reference relationships MUST be instantiated according to the selected KerML backend. The inventory is not a recipe to instantiate abstract metaclasses blindly. A backend must choose suitable concrete subclasses for abstract bases such as Expression and validate all resulting relationships. Source grouping rules do not generate duplicate nodes for the same AST element.
-
-The SWAML library supplies typed semantics for activation/context, copied values, versioned port contracts, queue offers, request correlation, failure outcomes, bounded flow and machine reactions. A communication lowering uses a Step typed by the library's send/publish/request behavior, with typed features for its ports, member and payload. It MUST NOT serialize a made-up kernel class called `SWAML-library-message-interaction`. The kernel Step is the base; the library behavior is the additional meaning.
-
-Requirements, timing, QoS, deployment, case and view annotations use project-owned metadata definitions with typed fields and explicit references. Cases additionally carry a scenario behavior/step graph and happens-before edges; they do not become an independently executing program. A view's selections use semantic identities and occurrence contexts; geometry/layout stays in a separate sidecar.
-
-A K-conforming artifact MUST include or resolvably identify its exact SWAML library version and declare which constraints are checked. Carrying uninterpreted metadata is preservation, not proof that a generic kernel tool understands or executes it. The project has not yet selected/published a library namespace or implemented this backend; these obligations define its acceptance criteria.
-
-## 7.6 Case and view normalization
-
-Normalize each case label to a distinct step identity, resolve its route/member and orientation, and translate `after` to an explicit happens-before edge. The transitive closure determines causal ancestry. A reply links to its unique unanswered request ancestor with reversed endpoints and the same connector/member. A request is already answered for candidate selection only if its reply is also a causal ancestor; an independent branch cannot settle the choice. Ambiguous candidates and multiple replies to one request are invalid. Source position contributes display order only. An unanswered request is allowed in a partial trace; no synthetic reply is inserted.
-
-A case realization claim records a witness execution and assumptions, including payload values absent from the diagram, dispatch choices and function paths. Mere route validity does not supply that witness. A graphical renderer can display an unverified case but must not show it as proven.
-
-Normalize views to `(kind, selectedOccurrences[])`, retaining the authored selection/filter clauses for round trips. Compact of syntax contributes one selection. Resolve include subjects in the owning package, expand recursive descendants, then evaluate typed Boolean predicates and deduplicate occurrence paths in first-selection order. gv/grv may select any named semantic element or package except a view; iv selects classes/components; cv/sv select cases or roots; fv/tv select executable operations/functions. Compact tv subjects are operations/functions; selecting descendants requires an explicit recursive include and a filter that leaves only executable subjects. A kind predicate matches the exact authored kind: class differs from component and operation differs from function. Use explicit or predicates to include both; signature remains a contract-member kind, not executable behavior. Paths traverse effective component members, owned named behavior elements and interface members exposed through ports. A package/declaration name collision is ambiguous.
-
-A trace-backed tv presentation additionally references an identified run/trace and its selected function occurrences. A view without trace evidence may show declared contracts but MUST NOT invent observed phases. Preserve activation identities, event ordinals, correlations and observed phase boundaries separately from declared timing contracts. Horizon/stopped intervals remain open; zero-cost execution cannot be normalized as measured physical CPU time. Timing geometry and interactive filters remain presentation data. The tv kind is retained as presentation metadata; it introduces no activation, execution step or scheduling participant.
-
-GV Box in box and Tree layouts normalize to the same ordered selected occurrences and semantic graph. The layout choice, geometry, bends and collapsed regions belong to a presentation sidecar. A layout round trip MUST preserve definition identity, occurrence paths, ownership and all typed references/routes. An ownership tree edge cannot replace a connector or turn a reference into containment.
-
-## 7.7 Equivalence and completeness
-
-Two normalized artifacts are equivalent when an identity-respecting graph correspondence preserves ownership, types, value shapes, interface versions, instance contexts, routes, evaluation order, triggers, state selection, policies, deployments, case dependencies/correlations and ordered view selections. Requirement attributes, formal docs and satisfy/verify identities must be preserved. Whitespace, ordinary comments, source offsets and diagram geometry are excluded from execution equivalence but remain required authoring data. Failure reasons remain observable diagnostic values.
-
-A round trip may rename anonymous lowering IDs while retaining their owner/role trace. It may not remove guarded branches, reorder effects, merge queues, weaken timing contracts, convert copied payloads into remote references, or drop SWAML metadata because a receiver lacks support. Unsupported meaning requires an explicit partial-import result. This information-preservation contract is complete for the closed 1.4 syntax; implementing and validating a KerML backend is a separate milestone.
-
-## Requirement and presentation extension
-
-The rules in [chapter 4](04-systems-and-conformance.md) preserve requirements as named obligations with immutable attributes and at most one owned formal doc. Satisfaction references a design identity and requirement identity; verification references a verificationCase identity and requirement identity. Use cases cannot own verification links. Ordinary comments retain source extents and owner identities separately from formal documentation. Cases and links express intent, with no automatic proof status. View include/filter clauses resolve to a stable union of occurrence paths and have no execution steps or store effects. These constructs remain part of the proposed mapping contract; no kernel exporter is implemented.
+Equivalence requires an identity-respecting correspondence preserving ownership, types/shapes, effective members, routes/policies, evaluation/effect order, schedule releases, suspension, failures, cancellation, states, deployment, intent links and selected occurrence order. Whitespace/ordinary comments are outside execution equivalence but remain required for authoring round trips. Exporters cannot drop unsupported semantics silently or claim that carrying metadata supplies execution/kernel evidence.

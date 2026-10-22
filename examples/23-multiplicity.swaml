@@ -1,0 +1,22 @@
+package Multiplicity {
+  component def Counter {
+    attribute count: int = 0;
+    operation increment() {
+      count = count + 1;
+    }
+    operation boot() {
+      increment();
+    }
+    schedule {
+      on start boot();
+    }
+  }
+  component def Fast specializes Counter {
+    redefines operation increment() {
+      count = count + 2;
+    }
+  }
+  component Demo {
+    component counters: Counter[3];
+  }
+}

@@ -1,5 +1,7 @@
 # ADR 0008 — Function-local calculations and one call syntax
 
+> Superseded for development 2.0 by [ADR 0016](0016-swaml-2-0.md). Preserved as the historical 1.x decision.
+
 Status: accepted for SWAML 1.2.0.
 
 Calculations are local to functions. Local and routed calls share `call`, while private and local mutable values share `var`. This refines [ADR 0007](0007-component-functions-and-calculations.md).

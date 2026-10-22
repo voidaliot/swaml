@@ -1,0 +1,31 @@
+package Swaml::Qos {
+  enum Delivery { bestEffort, atMostOnce, atLeastOnce }
+  enum Ordering { fifo, unordered }
+  enum Overflow { dropOldest, dropNewest, reject }
+  qos def Policy { }
+  qos def Default: Policy { delivery = Delivery.atMostOnce; ordering = Ordering.fifo; capacity = 16; overflow = Overflow.reject; requestTimeout = 1s; }
+  qos def Latest: Policy { delivery = Delivery.atMostOnce; ordering = Ordering.fifo; capacity = 1; overflow = Overflow.dropOldest; requestTimeout = 1s; }
+  qos def Reliable: Policy { delivery = Delivery.atLeastOnce; ordering = Ordering.fifo; capacity = 16; overflow = Overflow.reject; requestTimeout = 1s; }
+  qos def BestEffort: Policy { delivery = Delivery.bestEffort; ordering = Ordering.unordered; capacity = 16; overflow = Overflow.dropNewest; requestTimeout = 1s; }
+}
+package Swaml::Views {
+  view def General; view def Interconnect; view def Case; view def Sequence;
+  view def Grid; view def Flow; view def Timing;
+}
+package Swaml::Platform {
+  component def Node { }
+  component def Platform specializes Node { }
+  component def Partition specializes Node { }
+  component def Process specializes Node { }
+}
+package Swaml::Calls { enum CallFailure { timeout, unavailable, rejected, transport, remoteFailure, interrupted } }
+package Swaml::Math {
+  operation def abs(v: real) returns real { if (v < 0.0) { return -v; } return v; }
+  operation def min(a: real, b: real) returns real { if (a < b) { return a; } return b; }
+  operation def max(a: real, b: real) returns real { if (a > b) { return a; } return b; }
+  operation def floor(v: real) returns int { /** Host intrinsic: checked floor conversion. */ }
+  operation def round(v: real) returns int { /** Host intrinsic: ties toward positive infinity. */ }
+  operation def trunc(v: real) returns int { /** Host intrinsic: truncate toward zero. */ }
+  operation def length(v: string) returns uint { /** Host intrinsic: Unicode scalar count. */ }
+  operation def concat(a: string, b: string) returns string { return a + b; }
+}

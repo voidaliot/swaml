@@ -1,75 +1,41 @@
-// Additional valid contexts for the canonical notation catalog.
-package Shared {
-    enum Mode { Idle, Running }
-}
 package Notation {
-    import Shared::*;
-    interface publishSubscribe Signals version "1.0.0" { event pulse(value: int); }
-    interface senderReceiver Counts version "1.0.0" { data value: int queued; }
-    interface clientServer Completion version "1.0.0" { function acknowledge(): void; }
-    component def Source {
-        port signal: Signals publisher;
-        port output: Counts sender;
-        function emit() on start {
-            publish signal.pulse(1);
-            send output.value(1);
-        }
+  import Swaml::Views;
+  port def Messages {
+    provides event message(value: string);
+  }
+  component def Sender {
+    port output: Messages;
+    operation emit() {
+      publish output.message("Hello, SWAML");
     }
-    component def Controller {
-        port signal: Signals subscriber;
-        var count: int = 0;
-        var mode: Mode = Shared::Mode.Idle;
-        function lifecycle() on start {
-            initial Idle;
-            state Idle {
-                entry { count = 0; }
-                exit { assert count >= 0; }
-            }
-            state Active {}
-            state Done final {}
-            transition begin: Idle -> Active on receive signal.pulse when (value > 0) priority 1 { count = value; }
-            transition skip: Idle -> Done on receive signal.pulse priority 0 {}
-            transition finish: Active -> Done on completion when (count > 0) {}
-            transition elapsed: Active -> Done on after 1 s {}
-        }
+    schedule {
+      on start emit();
     }
-    component def Sink {
-        port input: Counts receiver;
-        var latest: int = 0;
-        function accept(value: int) on receive input.value { call check(); latest = value; }
-        function check() {
-            assert not false and (1 + 2 * 3 >= 7) or true;
-            assert (5 % 2 == 1) and (4 - 2 != 0) and (8 / 2 <= 4.0);
-        }
+  }
+  component def Receiver {
+    reversed port input: Messages;
+    attribute last: string = "";
+    operation accept(value: string) {
+      last = value;
     }
-    component Demo {
-        component source: Source;
-        component controller: Controller;
-        component sink: Sink;
-        connect events: source.signal -> controller.signal qos {
-            delivery bestEffort; ordering unordered; capacity 2; overflow dropNewest;
-            maxLatency 10 us; maxAge 1 ms;
-        };
-        connect counts: source.output -> sink.input qos {
-            delivery atMostOnce; ordering fifo; capacity 4; overflow reject;
-        };
+    schedule {
+      on receive input.message(value) accept(value);
     }
-    requirement CountObserved { doc /* A sent count can reach the receiving function. */ }
-    satisfy CountObserved of Demo; useCase Observe of Demo {
-        send source.output.value -> sink.input.value via counts label sent;
-        publish source.signal.pulse -> controller.signal.pulse via events after sent label notified;
-    }
-    view inventory grv of Notation;
-    view overview gv of Demo;
-    view interconnect iv of Demo;
-    view cases cv of Demo;
-    view sequence sv of Observe;
-    view lifecycle fv of Controller.lifecycle;
-}
-package NotationOptions {
-    interface publishSubscribe Notices version "1.0.0" { event changed(); }
-    component def Emitter {
-        port notices: Notices publisher optional;
-        function emit() { publish notices.changed(); }
-    }
+  }
+  requirement Delivery {
+    /** One named routed message reaches the receiver. */
+    attribute description: string = "Deliver startup message";
+  }
+  component Demo {
+    component sender: Sender;
+    component receiver: Receiver;
+    connect (sender.output, receiver.input);
+  }
+  satisfy Delivery of Demo.receiver;
+  verificationCase Startup of Demo {
+    verify Delivery;
+    publish greeting from sender.output.message to receiver.input.message;
+  }
+  view overview: General of Demo;
+  view delivery: Sequence of Startup;
 }
