@@ -1,0 +1,9 @@
+package Mixed {
+  /** One boundary may combine data, event and operation members. */
+  port def Boundary {
+    provides attribute value: real;
+    requires event reset();
+    provides operation read() returns real;
+    requires operation acknowledge();
+  }
+}
