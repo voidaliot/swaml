@@ -18,7 +18,7 @@ Run npm run check for grammar, source or semantic changes. Use npm ci after depe
 
 Keep requirements immutable and satisfy/verify as intent, not proof. Views select a stable union of existing occurrence identities and never execute behavior. Keep stable SW2xxx diagnostics with ranges and identity metadata. Report implemented behavior and limitations honestly. A reference run is bounded evidence, not production scheduling or universal verification.
 
-Preserve unrelated edits, license and repository history. Local changes do not authorize publishing a release. Preview the GitHub page design for approval before publication. A new edition release additionally requires the PDF gate, render and inspection of every page in docs/PDF_PUBLICATION.md. The adjacent editor repository has its own AGENTS.md and checks.
+Preserve unrelated edits, license and repository history. Proceed with routine implementation, validation, commits, PRs and merges within the requested scope without asking for per-change approval. Honor explicit holds and scope limits. Local changes do not authorize publishing a release. Preview and inspect the GitHub page design before publication. A new edition release additionally requires the PDF gate, render and inspection of every page in docs/PDF_PUBLICATION.md. The adjacent editor repository has its own AGENTS.md and checks.
 
 For AI modeling tasks, read skills/swaml-author/SKILL.md; for diagnosis, tests and bounded runs, read skills/swaml-validate/SKILL.md. These are the repository’s portable 2.0 workflows. Their presence does not authorize publication or external messaging.
 
