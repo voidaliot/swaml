@@ -2,6 +2,7 @@
 
 ## 2.0.0 — implementation candidate, unpublished
 
+- Close authoring findings F03/F09/F10/F11: reject binding-changing renames, index enum tokens precisely, resolve inherited case routes and retain package ownership in projections.
 - Close runtime findings F02/F04/F05/F06/F07/F13 with lexical package calls, checked port values and loop limits, covariant request outputs, initializer failure evidence and capacity-bounded duplicate delivery. Pin state timers to entry before entry actions, including suspension.
 - Close validation review findings F01/F08/F12/F14: include package operation out writes in concurrent effect checks, reject duration-valued capacity and ownerless redefinitions, and supply stable syntax/linking codes in the portable service and CLI.
 

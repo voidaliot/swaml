@@ -78,6 +78,7 @@
         "name": "Temperature",
         "kind": "port",
         "definition": "Control::Temperature",
+        "owner": "Control",
         "source": {
           "uri": "memory:/examples/02-realtime-controller.swaml",
           "range": {
@@ -119,6 +120,7 @@
         "name": "Commands",
         "kind": "port",
         "definition": "Control::Commands",
+        "owner": "Control",
         "source": {
           "uri": "memory:/examples/02-realtime-controller.swaml",
           "range": {
@@ -160,6 +162,7 @@
         "name": "Sensor",
         "kind": "component",
         "definition": "Control::Sensor",
+        "owner": "Control",
         "source": {
           "uri": "memory:/examples/02-realtime-controller.swaml",
           "range": {
@@ -271,6 +274,7 @@
         "name": "Controller",
         "kind": "component",
         "definition": "Control::Controller",
+        "owner": "Control",
         "source": {
           "uri": "memory:/examples/02-realtime-controller.swaml",
           "range": {
@@ -466,6 +470,7 @@
         "name": "Heater",
         "kind": "component",
         "definition": "Control::Heater",
+        "owner": "Control",
         "source": {
           "uri": "memory:/examples/02-realtime-controller.swaml",
           "range": {
@@ -603,6 +608,7 @@
         "name": "Demo",
         "kind": "component",
         "definition": "Control::Demo",
+        "owner": "Control",
         "source": {
           "uri": "memory:/examples/02-realtime-controller.swaml",
           "range": {
@@ -1113,6 +1119,7 @@
         "name": "Responsive",
         "kind": "requirement",
         "definition": "Control::Responsive",
+        "owner": "Control",
         "source": {
           "uri": "memory:/examples/02-realtime-controller.swaml",
           "range": {
@@ -1155,6 +1162,7 @@
         "name": "ControlLoop",
         "kind": "verificationCase",
         "definition": "Control::ControlLoop",
+        "owner": "Control",
         "source": {
           "uri": "memory:/examples/02-realtime-controller.swaml",
           "range": {
@@ -1215,112 +1223,147 @@
     ],
     "edges": [
       {
-        "id": "ownership:Control::Temperature:Control::Temperature.temperature:0",
+        "id": "ownership:Control:Control::Temperature:0",
+        "kind": "ownership",
+        "source": "Control",
+        "target": "Control::Temperature",
+        "label": "port"
+      },
+      {
+        "id": "ownership:Control::Temperature:Control::Temperature.temperature:1",
         "kind": "ownership",
         "source": "Control::Temperature",
         "target": "Control::Temperature.temperature",
         "label": "attribute"
       },
       {
-        "id": "ownership:Control::Commands:Control::Commands.set:1",
+        "id": "ownership:Control:Control::Commands:2",
+        "kind": "ownership",
+        "source": "Control",
+        "target": "Control::Commands",
+        "label": "port"
+      },
+      {
+        "id": "ownership:Control::Commands:Control::Commands.set:3",
         "kind": "ownership",
         "source": "Control::Commands",
         "target": "Control::Commands.set",
         "label": "event"
       },
       {
-        "id": "ownership:Control::Sensor:Control::Sensor.reading:2",
+        "id": "ownership:Control:Control::Sensor:4",
+        "kind": "ownership",
+        "source": "Control",
+        "target": "Control::Sensor",
+        "label": "component"
+      },
+      {
+        "id": "ownership:Control::Sensor:Control::Sensor.reading:5",
         "kind": "ownership",
         "source": "Control::Sensor",
         "target": "Control::Sensor.reading",
         "label": "port"
       },
       {
-        "id": "ownership:Control::Sensor.reading:Control::Sensor.reading.temperature:3",
+        "id": "ownership:Control::Sensor.reading:Control::Sensor.reading.temperature:6",
         "kind": "ownership",
         "source": "Control::Sensor.reading",
         "target": "Control::Sensor.reading.temperature",
         "label": "attribute"
       },
       {
-        "id": "ownership:Control::Sensor:Control::Sensor.sample:4",
+        "id": "ownership:Control::Sensor:Control::Sensor.sample:7",
         "kind": "ownership",
         "source": "Control::Sensor",
         "target": "Control::Sensor.sample",
         "label": "operation"
       },
       {
-        "id": "ownership:Control::Controller:Control::Controller.reading:5",
+        "id": "ownership:Control:Control::Controller:8",
+        "kind": "ownership",
+        "source": "Control",
+        "target": "Control::Controller",
+        "label": "component"
+      },
+      {
+        "id": "ownership:Control::Controller:Control::Controller.reading:9",
         "kind": "ownership",
         "source": "Control::Controller",
         "target": "Control::Controller.reading",
         "label": "port"
       },
       {
-        "id": "ownership:Control::Controller.reading:Control::Controller.reading.temperature:6",
+        "id": "ownership:Control::Controller.reading:Control::Controller.reading.temperature:10",
         "kind": "ownership",
         "source": "Control::Controller.reading",
         "target": "Control::Controller.reading.temperature",
         "label": "attribute"
       },
       {
-        "id": "ownership:Control::Controller:Control::Controller.command:7",
+        "id": "ownership:Control::Controller:Control::Controller.command:11",
         "kind": "ownership",
         "source": "Control::Controller",
         "target": "Control::Controller.command",
         "label": "port"
       },
       {
-        "id": "ownership:Control::Controller.command:Control::Controller.command.set:8",
+        "id": "ownership:Control::Controller.command:Control::Controller.command.set:12",
         "kind": "ownership",
         "source": "Control::Controller.command",
         "target": "Control::Controller.command.set",
         "label": "event"
       },
       {
-        "id": "ownership:Control::Controller:Control::Controller.target:9",
+        "id": "ownership:Control::Controller:Control::Controller.target:13",
         "kind": "ownership",
         "source": "Control::Controller",
         "target": "Control::Controller.target",
         "label": "attribute"
       },
       {
-        "id": "ownership:Control::Controller:Control::Controller.regulate:10",
+        "id": "ownership:Control::Controller:Control::Controller.regulate:14",
         "kind": "ownership",
         "source": "Control::Controller",
         "target": "Control::Controller.regulate",
         "label": "operation"
       },
       {
-        "id": "ownership:Control::Heater:Control::Heater.command:11",
+        "id": "ownership:Control:Control::Heater:15",
+        "kind": "ownership",
+        "source": "Control",
+        "target": "Control::Heater",
+        "label": "component"
+      },
+      {
+        "id": "ownership:Control::Heater:Control::Heater.command:16",
         "kind": "ownership",
         "source": "Control::Heater",
         "target": "Control::Heater.command",
         "label": "port"
       },
       {
-        "id": "ownership:Control::Heater.command:Control::Heater.command.set:12",
+        "id": "ownership:Control::Heater.command:Control::Heater.command.set:17",
         "kind": "ownership",
         "source": "Control::Heater.command",
         "target": "Control::Heater.command.set",
         "label": "event"
       },
       {
-        "id": "ownership:Control::Heater:Control::Heater.power:13",
+        "id": "ownership:Control::Heater:Control::Heater.power:18",
         "kind": "ownership",
         "source": "Control::Heater",
         "target": "Control::Heater.power",
         "label": "attribute"
       },
       {
-        "id": "ownership:Control::Heater:Control::Heater.apply:14",
+        "id": "ownership:Control::Heater:Control::Heater.apply:19",
         "kind": "ownership",
         "source": "Control::Heater",
         "target": "Control::Heater.apply",
         "label": "operation"
       },
       {
-        "id": "connection:Control::Demo.sensor.reading:Control::Demo.controller.reading:15",
+        "id": "connection:Control::Demo.sensor.reading:Control::Demo.controller.reading:20",
         "kind": "connection",
         "source": "Control::Demo.sensor.reading",
         "target": "Control::Demo.controller.reading",
@@ -1334,7 +1377,7 @@
         }
       },
       {
-        "id": "connection:Control::Demo.controller.command:Control::Demo.heater.command:16",
+        "id": "connection:Control::Demo.controller.command:Control::Demo.heater.command:21",
         "kind": "connection",
         "source": "Control::Demo.controller.command",
         "target": "Control::Demo.heater.command",
@@ -1348,147 +1391,168 @@
         }
       },
       {
-        "id": "ownership:Control::Demo:Control::Demo.samples:17",
+        "id": "ownership:Control:Control::Demo:22",
+        "kind": "ownership",
+        "source": "Control",
+        "target": "Control::Demo",
+        "label": "component"
+      },
+      {
+        "id": "ownership:Control::Demo:Control::Demo.samples:23",
         "kind": "ownership",
         "source": "Control::Demo",
         "target": "Control::Demo.samples",
         "label": "connect"
       },
       {
-        "id": "ownership:Control::Demo:Control::Demo.commands:18",
+        "id": "ownership:Control::Demo:Control::Demo.commands:24",
         "kind": "ownership",
         "source": "Control::Demo",
         "target": "Control::Demo.commands",
         "label": "connect"
       },
       {
-        "id": "ownership:Control::Demo:Control::Demo.sensor:19",
+        "id": "ownership:Control::Demo:Control::Demo.sensor:25",
         "kind": "ownership",
         "source": "Control::Demo",
         "target": "Control::Demo.sensor",
         "label": "component"
       },
       {
-        "id": "ownership:Control::Demo.sensor:Control::Demo.sensor.reading:20",
+        "id": "ownership:Control::Demo.sensor:Control::Demo.sensor.reading:26",
         "kind": "ownership",
         "source": "Control::Demo.sensor",
         "target": "Control::Demo.sensor.reading",
         "label": "port"
       },
       {
-        "id": "ownership:Control::Demo.sensor.reading:Control::Demo.sensor.reading.temperature:21",
+        "id": "ownership:Control::Demo.sensor.reading:Control::Demo.sensor.reading.temperature:27",
         "kind": "ownership",
         "source": "Control::Demo.sensor.reading",
         "target": "Control::Demo.sensor.reading.temperature",
         "label": "attribute"
       },
       {
-        "id": "ownership:Control::Demo.sensor:Control::Demo.sensor.sample:22",
+        "id": "ownership:Control::Demo.sensor:Control::Demo.sensor.sample:28",
         "kind": "ownership",
         "source": "Control::Demo.sensor",
         "target": "Control::Demo.sensor.sample",
         "label": "operation"
       },
       {
-        "id": "ownership:Control::Demo:Control::Demo.controller:23",
+        "id": "ownership:Control::Demo:Control::Demo.controller:29",
         "kind": "ownership",
         "source": "Control::Demo",
         "target": "Control::Demo.controller",
         "label": "component"
       },
       {
-        "id": "ownership:Control::Demo.controller:Control::Demo.controller.reading:24",
+        "id": "ownership:Control::Demo.controller:Control::Demo.controller.reading:30",
         "kind": "ownership",
         "source": "Control::Demo.controller",
         "target": "Control::Demo.controller.reading",
         "label": "port"
       },
       {
-        "id": "ownership:Control::Demo.controller.reading:Control::Demo.controller.reading.temperature:25",
+        "id": "ownership:Control::Demo.controller.reading:Control::Demo.controller.reading.temperature:31",
         "kind": "ownership",
         "source": "Control::Demo.controller.reading",
         "target": "Control::Demo.controller.reading.temperature",
         "label": "attribute"
       },
       {
-        "id": "ownership:Control::Demo.controller:Control::Demo.controller.command:26",
+        "id": "ownership:Control::Demo.controller:Control::Demo.controller.command:32",
         "kind": "ownership",
         "source": "Control::Demo.controller",
         "target": "Control::Demo.controller.command",
         "label": "port"
       },
       {
-        "id": "ownership:Control::Demo.controller.command:Control::Demo.controller.command.set:27",
+        "id": "ownership:Control::Demo.controller.command:Control::Demo.controller.command.set:33",
         "kind": "ownership",
         "source": "Control::Demo.controller.command",
         "target": "Control::Demo.controller.command.set",
         "label": "event"
       },
       {
-        "id": "ownership:Control::Demo.controller:Control::Demo.controller.target:28",
+        "id": "ownership:Control::Demo.controller:Control::Demo.controller.target:34",
         "kind": "ownership",
         "source": "Control::Demo.controller",
         "target": "Control::Demo.controller.target",
         "label": "attribute"
       },
       {
-        "id": "ownership:Control::Demo.controller:Control::Demo.controller.regulate:29",
+        "id": "ownership:Control::Demo.controller:Control::Demo.controller.regulate:35",
         "kind": "ownership",
         "source": "Control::Demo.controller",
         "target": "Control::Demo.controller.regulate",
         "label": "operation"
       },
       {
-        "id": "ownership:Control::Demo:Control::Demo.heater:30",
+        "id": "ownership:Control::Demo:Control::Demo.heater:36",
         "kind": "ownership",
         "source": "Control::Demo",
         "target": "Control::Demo.heater",
         "label": "component"
       },
       {
-        "id": "ownership:Control::Demo.heater:Control::Demo.heater.command:31",
+        "id": "ownership:Control::Demo.heater:Control::Demo.heater.command:37",
         "kind": "ownership",
         "source": "Control::Demo.heater",
         "target": "Control::Demo.heater.command",
         "label": "port"
       },
       {
-        "id": "ownership:Control::Demo.heater.command:Control::Demo.heater.command.set:32",
+        "id": "ownership:Control::Demo.heater.command:Control::Demo.heater.command.set:38",
         "kind": "ownership",
         "source": "Control::Demo.heater.command",
         "target": "Control::Demo.heater.command.set",
         "label": "event"
       },
       {
-        "id": "ownership:Control::Demo.heater:Control::Demo.heater.power:33",
+        "id": "ownership:Control::Demo.heater:Control::Demo.heater.power:39",
         "kind": "ownership",
         "source": "Control::Demo.heater",
         "target": "Control::Demo.heater.power",
         "label": "attribute"
       },
       {
-        "id": "ownership:Control::Demo.heater:Control::Demo.heater.apply:34",
+        "id": "ownership:Control::Demo.heater:Control::Demo.heater.apply:40",
         "kind": "ownership",
         "source": "Control::Demo.heater",
         "target": "Control::Demo.heater.apply",
         "label": "operation"
       },
       {
-        "id": "ownership:Control::Responsive:Control::Responsive.limitMs:35",
+        "id": "ownership:Control:Control::Responsive:41",
+        "kind": "ownership",
+        "source": "Control",
+        "target": "Control::Responsive",
+        "label": "requirement"
+      },
+      {
+        "id": "ownership:Control::Responsive:Control::Responsive.limitMs:42",
         "kind": "ownership",
         "source": "Control::Responsive",
         "target": "Control::Responsive.limitMs",
         "label": "attribute"
       },
       {
-        "id": "ownership:Control::ControlLoop:Control::ControlLoop.measured:36",
+        "id": "ownership:Control:Control::ControlLoop:43",
+        "kind": "ownership",
+        "source": "Control",
+        "target": "Control::ControlLoop",
+        "label": "verificationCase"
+      },
+      {
+        "id": "ownership:Control::ControlLoop:Control::ControlLoop.measured:44",
         "kind": "ownership",
         "source": "Control::ControlLoop",
         "target": "Control::ControlLoop.measured",
         "label": "send"
       },
       {
-        "id": "ownership:Control::ControlLoop:Control::ControlLoop.applied:37",
+        "id": "ownership:Control::ControlLoop:Control::ControlLoop.applied:45",
         "kind": "ownership",
         "source": "Control::ControlLoop",
         "target": "Control::ControlLoop.applied",

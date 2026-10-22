@@ -3,7 +3,7 @@ import type { LangiumServices, RenameProvider, DefinitionProvider, ReferencesPro
 import type { DefinitionParams, Location, LocationLink, Range, ReferenceParams, RenameParams, TextDocumentPositionParams, WorkspaceEdit, TextEdit } from 'vscode-languageserver';
 import * as a from './generated/ast.js';
 import { viewCandidates, selectView } from './presentation.js';
-import { body, container, isExecutable, localOperation, memberEndpoint, members, nodes, owner, resolve, signature, type Node, type Structure } from './semantic.js';
+import { body, connectionRoutes, container, isExecutable, localOperation, memberEndpoint, members, nodes, owner, resolve, signature, OCCURRENCE_LIMIT, occurrenceCount, type Node, type Structure } from './semantic.js';
 export interface SemanticSymbol {
     key: string;
     node: AstNode;
@@ -59,7 +59,7 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
         }
         const d = AstUtils.getDocument(n), from = cst.offset + start; refs.push({ symbol: target, uri: d.uri.toString(), range: { start: d.textDocument.positionAt(from), end: d.textDocument.positionAt(from + (length ?? cst.length)) }, declaration: false }); };
     const native = (n: AstNode, cst: CstNode | undefined, target: AstNode | undefined) => { const s = symbol(target); if (!s || !cst)
-        return; const logical = CstUtils.flattenCst(cst).filter(l => !l.hidden).map(l => l.text).join(''); const offset = logical.lastIndexOf(s.name); add(n, cst, s, Math.max(0, offset), s.name.length, logical); const colon = logical.lastIndexOf('::'); if (colon >= 0) {
+        return; const logical = CstUtils.flattenCst(cst).filter(l => !l.hidden).map(l => l.text).join(''), head = logical.split('.')[0]; const offset = head.lastIndexOf(s.name); add(n, cst, s, Math.max(0, offset), s.name.length, logical); const colon = head.lastIndexOf('::'); if (colon >= 0) {
         const pkg = models.flatMap(m => m.packages).find(p => p.name === logical.slice(0, colon));
         add(n, cst, symbol(pkg), 0, colon, logical);
     } };
@@ -233,10 +233,12 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
                 if (root) {
                     pathRefs(n, 'source', n.source, root as Node);
                     pathRefs(n, 'target', n.target, root as Node);
-                    if (n.connector) {
-                        const connects = nodes(root).filter(a.isConnect).filter(c => c.name === n.connector);
+                    if (n.connector && occurrenceCount(root) <= OCCURRENCE_LIMIT) {
+                        const { links, leaf } = connectionRoutes(root);
+                        const ports = [n.source, n.target].map(path => leaf(root.name + '.' + path.slice(0, path.lastIndexOf('.'))));
+                        const connects = links.filter(l => l.node.name === n.connector && ports.every(p => l.ends.includes(p)));
                         if (connects.length === 1)
-                            add(n, property(n, 'connector'), symbol(connects[0]));
+                            add(n, property(n, 'connector'), symbol(connects[0].node));
                     }
                 }
                 if (scenario && n.predecessor)
@@ -311,6 +313,24 @@ export class SwamlPathServices implements RenameProvider, DefinitionProvider, Re
         if (proposed.some(d => d.diagnostics?.some(x => x.severity === 1)) || snapshots.some(s => s.version !== s.d.textDocument.version || s.text !== s.d.textDocument.getText()))
             return undefined;
         const trialModels = proposed.map(d => d.parseResult.value).filter(a.isModel);
+        // A valid reparse alone does not prevent capture. Compare every binding by
+        // stable AST position, translating reference offsets through the edit set.
+        const locator = this.services.workspace.AstNodeLocator;
+        const translated = (uri: string, offset: number) => {
+            const d = documents.find(d => d.uri.toString() === uri);
+            return offset + (changes.get(uri) ?? []).reduce((delta, edit) => {
+                const end = d!.textDocument.offsetAt(edit.range.end), start = d!.textDocument.offsetAt(edit.range.start);
+                return delta + (end <= offset ? edit.newText.length - (end - start) : 0);
+            }, 0);
+        };
+        const bindings = (refs: SemanticReference[], translate: boolean) => refs.map(r => {
+            const referenceDoc = (translate ? this.services : trial.Swaml).shared.workspace.LangiumDocuments.all.find(d => d.uri.toString() === r.uri)!;
+            const from = referenceDoc.textDocument.offsetAt(r.range.start), to = referenceDoc.textDocument.offsetAt(r.range.end);
+            return JSON.stringify([r.uri, translate ? translated(r.uri, from) : from, translate ? translated(r.uri, to) : to, r.declaration, r.symbol.uri, locator.getAstNodePath(r.symbol.node), r.symbol.property, r.symbol.index]);
+        }).sort();
+        const trialIndex = semanticIndex(trial.shared.workspace.LangiumDocuments.all.map(d => d.parseResult.value).filter(a.isModel).toArray());
+        if (JSON.stringify(bindings(index, true)) !== JSON.stringify(bindings(trialIndex, false)))
+            return undefined;
         for (const snapshot of snapshots) {
             const before = nodes(snapshot.d.parseResult.value).filter(a.isView), after = nodes(proposed.find(d => d.uri.toString() === snapshot.d.uri.toString())!.parseResult.value).filter(a.isView);
             for (let i = 0; i < before.length; i++)

@@ -1,7 +1,7 @@
 import { AstUtils, DocumentState, WorkspaceCache, type AstNode, type ValidationAcceptor } from 'langium';
 import type { LangiumServices } from 'langium/lsp';
 import * as a from './generated/ast.js';
-import { expressionTypes, OCCURRENCE_LIMIT, occurrenceCount, workspaceModels, assignable, body, compatibility, constantNumber, direction, effectiveQos, effects, endpoint, entryKey, identity, integral, isExecutable, isNode, localOperation, memberEndpoint, members, nanos, nodes, numeric, occurrences, owner, resolve, schedule, signature, typeKey, type Executable, type Node, type Structure, portMembers } from './semantic.js';
+import { connectionRoutes, expressionTypes, OCCURRENCE_LIMIT, occurrenceCount, workspaceModels, assignable, body, compatibility, constantNumber, direction, effectiveQos, effects, endpoint, entryKey, identity, integral, isExecutable, isNode, localOperation, memberEndpoint, members, nanos, nodes, numeric, occurrences, owner, resolve, schedule, signature, typeKey, type Executable, type Node, type Structure, portMembers } from './semantic.js';
 import { selectView, viewCandidates, type ViewSubject } from './presentation.js';
 type Env = Map<string, {
     type: string;
@@ -893,28 +893,7 @@ export class SwamlValidator {
         const root = s.root.ref;
         if (!root || occurrenceCount(root) > OCCURRENCE_LIMIT)
             return;
-        const occ = occurrences(root), aliases = new Map<string, string>(), links: {
-            node: a.Connect;
-            id: string;
-            ends: string[];
-        }[] = [];
-        for (const o of occ)
-            for (const link of members(o.structure).filter(a.isConnect)) {
-                const l = endpoint(o.structure, link.source), r = endpoint(o.structure, link.target);
-                if (!l || !r)
-                    continue;
-                const paths = [o.path + '.' + link.source, o.path + '.' + link.target];
-                if (l.child !== r.child)
-                    aliases.set(paths[l.child ? 1 : 0], paths[l.child ? 0 : 1]);
-                else
-                    links.push({ node: link, id: o.path + '.' + (link.name ?? '@' + links.length), ends: paths });
-            }
-        const leaf = (path: string) => { const seen = new Set<string>(); while (aliases.has(path) && !seen.has(path)) {
-            seen.add(path);
-            path = aliases.get(path)!;
-        } return path; };
-        for (const link of links)
-            link.ends = link.ends.map(leaf);
+        const occ = occurrences(root), { links, leaf } = connectionRoutes(root);
         const prior = new Map<string, {
             step: a.ScenarioStep;
             source: string;
