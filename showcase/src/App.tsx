@@ -126,7 +126,7 @@ export default function App() {
   return <>
     <a className="skip-link" href="#main">Skip to content</a>
     <header className="site-header">
-      <a href="#" className="wordmark" aria-label="swa.ml home"><img src="./swaml.svg" alt="" width="36" height="36"/>swa.ml<span className="version-label">2.0</span></a>
+      <a href="#" className="wordmark" aria-label="swa.ml home"><img src="./swaml.svg" alt="" width="36" height="36"/>swa.ml<span className="version-label">{model.edition}</span></a>
       <nav aria-label="Main navigation"><a href="#language">Language</a><a href="#explore">Example</a><a href="#execution">Execution</a><a href="#start">Documentation</a></nav>
       <button className="theme-toggle" onClick={() => setTheme(theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system')} aria-label={`Theme: ${theme}. Switch to ${theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system'}`} title={`Theme: ${theme}`}><Icon name={theme === 'light' ? 'sun' : theme === 'dark' ? 'moon' : 'system'}/><span>{theme}</span></button>
     </header>
@@ -138,7 +138,7 @@ export default function App() {
           <p className="hero-description">swa.ml is a textual modeling language for software architects. Define component boundaries, typed communication and the operations that implement software behavior in one reviewable model.</p>
           <p className="hero-detail">Validate the architecture, execute it in the reference interpreter, and inspect its state changes and message trace before implementing it on a target platform.</p>
           <div className="hero-actions"><a className="button primary" href="#explore">Inspect the example <Icon name="arrow"/></a><a className="text-link" href="#execution">Execution semantics <Icon name="arrow" size={16}/></a></div>
-          <div className="hero-footnote"><span>2.0.0 release edition</span><span>Open source · MIT</span></div>
+          <div className="hero-footnote"><span>{model.edition} standard</span><span>Open source · MIT</span></div>
         </div>
         <figure className="source-preview">
           <figcaption className="panel-heading"><span>controller.swaml</span><span>Definition excerpt</span></figcaption>
@@ -172,7 +172,7 @@ export default function App() {
           <article><h3>Language and reference tools</h3><p>The 2.0 guides describe the syntax, modeling workflow and current implementation limits.</p><div className="resource-links"><a href="./downloads/usage-guide.md" download>Usage guide <Icon name="arrow" size={15}/></a><a href="./downloads/implementation-status.md" download>Implementation status <Icon name="arrow" size={15}/></a><a href="./downloads/controller.swaml" download>Example source <Icon name="arrow" size={15}/></a><a href={github} target="_blank" rel="noreferrer">Source repository <Icon name="external" size={14}/></a></div></article>
           <article><h3>Agent-assisted authoring</h3><p>Use the authoring guide and portable skills to generate source, inspect diagnostics and revalidate the complete model after each change.</p><div className="resource-links"><a href="./downloads/ai-guide.md" download>AI authoring guide <Icon name="arrow" size={15}/></a><a href="./downloads/swaml-author-SKILL.md" download>Authoring skill <Icon name="arrow" size={15}/></a><a href="./downloads/swaml-validate-SKILL.md" download>Validation skill <Icon name="arrow" size={15}/></a></div></article>
         </div>
-        <p className="scope-note"><strong>Implementation scope.</strong> swa.ml 2.0.0 is the current reference edition. The reference interpreter executes software models under recorded assumptions; it does not generate a deployable application or establish target schedulability. Requirement links record intent. A bounded run supplies evidence for that run, not a general verification proof.</p>
+        <p className="scope-note"><strong>Implementation scope.</strong> swa.ml {model.edition} is the current standard. The reference interpreter executes software models under recorded assumptions; it does not generate a deployable application or establish target schedulability. Requirement links record intent. A bounded run supplies evidence for that run, not a general verification proof.</p>
       </section>
     </main>
     <footer className="site-footer"><a className="wordmark" href="#"><img src="./swaml.svg" alt="" width="28" height="28"/>swa.ml</a><p>Software Architecture Modeling Language</p><div><a href={`${github}/blob/main/LICENSE`} target="_blank" rel="noreferrer">MIT license</a><a href={github} target="_blank" rel="noreferrer">GitHub <Icon name="external" size={12}/></a></div></footer>

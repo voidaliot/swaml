@@ -6,7 +6,7 @@ import {createSwamlServices} from '../out/src/language/swaml-module.js';
 import {viewCandidates} from '../out/src/language/presentation.js';
 const root=new URL('../',import.meta.url),read=async p=>readFile(new URL(p,root),'utf8');
 const n=JSON.parse(await read('spec/notation.json')),grammar=await read('src/language/swaml.langium'),keys=JSON.parse(await read('spec/keywords.json'));
-assert.equal(n.languageVersion,'2.0');assert.equal(n.edition,'2.0.0');
+assert.equal(n.languageVersion,'2.0');assert.equal(n.edition,n.languageVersion);assert.equal(keys.edition,n.languageVersion);
 const productions=new Set([...grammar.matchAll(/^(?:(?:entry|hidden|terminal|type)\s+)*([A-Za-z]\w*)(?:\s+(?:returns|infers)\s+\w+)?\s*[:=]/gm)].map(m=>m[1])),terms=new Set([...grammar.matchAll(/'([A-Za-z]\w*)'/g)].map(m=>m[1]));
 const exact=(actual,expected)=>assert.deepEqual([...actual].sort(),[...expected].sort());
 exact(n.coverage.productions.map(x=>x.production),productions);exact(n.coverage.keywords.map(x=>x.term),terms);exact(keys.entries.map(x=>x.keyword),terms);

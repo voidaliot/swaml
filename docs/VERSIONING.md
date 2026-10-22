@@ -1,23 +1,40 @@
-# Language and extension version policy
+# Standard and implementation version policy
 
-The language package, editor extension and websites have separate release lifecycles. Read this before changing versions, changelog entries, published references or release workflows.
+The swa.ml standard uses **MAJOR.MINOR only**, currently **2.0**. The reference implementation, consuming tools and websites have separate release lifecycles. Read this before changing versions, changelog entries, published references or release workflows.
 
-## Language releases
+## Standard versions
 
-The root `package.json` is the language package version; keep the root version and root package entry in `package-lock.json` synchronized. The parser family and reference profile, currently `2.0` and `swaml-reference/2.0`, describe compatibility and semantics. Do not change these identifiers just because a documentation or editor patch is being released.
+[spec/standard.json](../spec/standard.json) owns the standard version. Use two nonnegative integers with no leading zeroes, patch component or prerelease suffix: 2.0, 2.1, 3.0. Draft status belongs in prose or separate status metadata, never in a version such as 2.1.0 or 2.1-beta.
 
-Use a patch for compatible language/runtime corrections, a minor for compatible additions and a major for breaking language changes. A language version change requires review of the grammar, validator, runtime, examples, inventories and documentation affected by it. Do not pick a number solely to match the extension. An exact Git commit remains necessary for a host pin, even when several documentation commits share a package version.
+Increment the major number for incompatible syntax or semantic changes and reset minor to zero. Increment minor for compatible normative additions or corrections that require a new standard edition. Editorial corrections, website changes and fixes that bring an implementation into conformance do not create a standard version. Record them under Unreleased with the exact implementation commit as needed. Never silently change a published edition's normative meaning.
 
-Before allocating a version, inspect tags, GitHub releases and published edition manifests. Never move an existing release tag, reuse a published version for different release bytes or delete older editions. Version-changing commands must not create a tag automatically; prepare the manifest, lockfile and release notes in a reviewable PR first. Local checks, packaging and merge do not authorize publication.
+Generated keyword/notation inventories, maintained reference headings and website edition metadata use the standard version. Parser compatibility and execution profiles, currently 2.0 and swaml-reference/2.0, must be reviewed deliberately when standard semantics change; do not bump them for an implementation patch.
 
-## Changelog and publication history
+Future standard release titles, tags, changelog headings and new publication filenames use X.Y: for example, swa.ml 2.1, v2.1 and SWAML-2.1-Specification.pdf. Inspect existing tags, GitHub releases and manifests before allocating a version. Never move a release tag or reuse a published version for different bytes.
 
-Record work after a published edition under `## Unreleased` in `CHANGELOG.md`. Describe user-visible behavior and distinguish language changes from website/documentation changes. Finalize the selected notes under `## X.Y.Z — YYYY-MM-DD` only when preparing that language release; use the intended publication date and confirm publication separately. Several commits can belong to the same unreleased work. A website deployment does not by itself release the language package or require a language version bump.
+## Implementation packages
 
-Preserve published changelog sections and their original terminology. Add later corrections to the unreleased section instead of rewriting history. The published 2.0.0 edition is distinct from the maintained 2.0 documentation. Keep its frozen reference source under `history/2.0.0/docs`, its PDF, embedded sources, manifest and checksum intact. The archive check validates those frozen inputs. A new edition must pass the strict current-source publication checks and complete page-by-page review in [PDF_PUBLICATION.md](PDF_PUBLICATION.md); archive validation cannot replace that gate.
+The root package.json owns the reference implementation's npm version. npm tooling uses three-part SemVer, currently 2.0.0; this is not the displayed standard version. Keep both root version entries in package-lock.json synchronized. Implementation packages may receive patch versions while continuing to implement standard 2.0. A consuming tool at 2.0.1 may likewise implement standard 2.0. Do not choose version numbers merely to match other products.
 
-## Consumers and sites
+When deliberately changing the implementation package version, use `npm version <X.Y.Z> --no-git-tag-version`, inspect both manifests, and run `npm run check`. Never run npm version merely to rename the standard. An exact source commit remains necessary for a host pin; unchanged package versions across documentation commits do not identify identical sources.
 
-Each consuming editor or tool owns its product version, changelog and release workflow. For example, a consumer at 2.0.1 can still bundle language 2.0.0. Do not change consumer versions as a side effect of a core bump, or bulk-bump a vendored language package during a consumer release. Follow the consumer's own agent instructions and version policy; update its exact source pin, checksums and bundled references only when deliberately integrating a reviewed core commit, then run its required checks.
+Do not bulk-bump consumers or vendored language packages. Follow each consumer's own version policy and update its source pin, checksums and bundled references only during an intentional integration.
 
-Web pages must distinguish the language edition from extension/download versions and link to actual published artifacts. Use the visible name **swa.ml**, preserve `.swaml` filenames and technical IDs, and preserve historical publication assets. Website design approval and deployment checks remain governed by `AGENTS.md` and the site repository; language or extension publication is a separate action.
+## Preparing an edition
+
+1. Record work under `## Unreleased` in CHANGELOG.md. Allocate a new standard version only for a reviewed normative change.
+2. Update spec/standard.json and review grammar, validator, runtime, parser/profile identifiers, examples and affected normative chapters. Regenerate inventories with `node scripts/build-inventories.mjs`, the maintained reference with `npm run docs:build`, and site data with `node scripts/build-showcase-data.mjs`. Update remaining versioned source paths deliberately.
+3. Run `npm run check` and the Publication and compatibility workflow. The standard-version gate rejects patch versions, mismatched generated metadata and unsynchronized implementation lockfiles.
+4. Prepare new publication files under X.Y names. Pass strict current-source PDF checks and inspect every rendered page as required by [PDF_PUBLICATION.md](PDF_PUBLICATION.md).
+5. Move the selected standard notes to `## X.Y — YYYY-MM-DD` using the intended publication date. Keep implementation-only changes identified separately. Prepare everything in a reviewable PR without creating a tag.
+6. Publish only when authorized, then confirm the actual tag, assets, checksums and date. A local build, merge or website deployment does not publish a standard.
+
+Several commits may belong to one unreleased version. Do not allocate a version per commit or label draft work as released.
+
+## Existing publication history
+
+Standard 2.0 was already published on 22 October 2026 under the legacy tag v2.0.0. This is the original publication of standard 2.0, not a separate patch-level standard. Preserve that tag, its release notes and all existing 1.x/2.0.0 artifacts and filenames. Do not create a duplicate v2.0 release or rename/rebuild its bytes merely to adopt the new numbering policy.
+
+The frozen reference remains under history/2.0.0/docs. Its PDF, embedded sources, manifest and checksum remain intact. The maintained reference keeps its existing SWAML-2.0.0-Reference.md path for links, while its heading uses standard 2.0. Archive validation checks the frozen inputs; it cannot replace the strict current-source gate for a new edition.
+
+Keep published changelog sections and their original terminology. Record later corrections under Unreleased. Public pages use **swa.ml 2.0**, distinguish the standard from implementation/download versions and link to the actual existing artifacts. Preserve .swaml filenames and technical IDs.
