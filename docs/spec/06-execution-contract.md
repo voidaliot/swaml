@@ -1,6 +1,6 @@
 # 6. Reference execution contract
 
-Normative contract of [SWAML 2.0](../LANGUAGE_SPECIFICATION.md), profile **swaml-reference/2.0**. A run records parser/package identity, source bytes, root, selected deployment, options, limits, fault assumptions and an ordinal logical trace. Host adapters load files and hash sources; the language core performs neither filesystem access nor hashing.
+Normative contract of [swa.ml 2.0](../LANGUAGE_SPECIFICATION.md), profile **swaml-reference/2.0**. A run records parser/package identity, source bytes, root, selected deployment, options, limits, fault assumptions and an ordinal logical trace. Host adapters load files and hash sources; the language core performs neither filesystem access nor hashing.
 
 ## 6.1 Lifecycle and time
 

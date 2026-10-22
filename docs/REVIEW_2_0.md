@@ -1,4 +1,4 @@
-# SWAML 2.0 review resolution
+# swa.ml 2.0 review resolution
 
 The 22 October 2026 source review of revision 46044b5 identified the following defects. Each row records implemented corrections and evidence; pending rows are not acceptance claims. The reference interpreter remains bounded evidence under its recorded assumptions.
 

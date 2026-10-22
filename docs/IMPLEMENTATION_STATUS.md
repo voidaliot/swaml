@@ -1,4 +1,4 @@
-# SWAML 2.0 implementation status
+# swa.ml 2.0 implementation status
 
 **Edition/package:** 2.0.0 release · **Parser:** 2.0 only · **Reference profile:** swaml-reference/2.0 · **Publication:** versioned reference edition.
 

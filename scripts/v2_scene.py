@@ -1,4 +1,4 @@
-"""Original SWAML 2.0 vector scenes; SVG and PNG share exact geometry."""
+"""Original swa.ml 2.0 vector scenes; SVG and PNG share exact geometry."""
 from pathlib import Path
 from xml.sax.saxutils import escape
 import json, textwrap, io, math
@@ -91,7 +91,7 @@ def scene(title, template):
     return s
 
 def artifacts(s):
-    w,h=s['width'],s['height']; image=Image.new('RGB',(w*2,h*2),'white');d=ImageDraw.Draw(image);svg=[f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" role="img"><title>SWAML 2.0 original notation</title>']
+    w,h=s['width'],s['height']; image=Image.new('RGB',(w*2,h*2),'white');d=ImageDraw.Draw(image);svg=[f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" role="img"><title>swa.ml 2.0 original notation</title>']
     def stroke(x1,y1,x2,y2,dashed=False):
         length=math.hypot(x2-x1,y2-y1)
         if not dashed or length==0:

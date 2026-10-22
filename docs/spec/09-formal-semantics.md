@@ -1,6 +1,6 @@
 # 9. Formal semantics
 
-Normative schemas of [SWAML 2.0](../LANGUAGE_SPECIFICATION.md). These constrain implementations without claiming a mechanically proved metatheory.
+Normative schemas of [swa.ml 2.0](../LANGUAGE_SPECIFICATION.md). These constrain implementations without claiming a mechanically proved metatheory.
 
 ## 9.1 Domains
 

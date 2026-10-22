@@ -1,6 +1,6 @@
 # 1. Structure, names and types
 
-Normative chapter of [SWAML 2.0](../LANGUAGE_SPECIFICATION.md).
+Normative chapter of [swa.ml 2.0](../LANGUAGE_SPECIFICATION.md).
 
 ## 1.1 Names and documentation
 

@@ -35,7 +35,7 @@ try {
     else {
         for (const d of diagnostics)
             console.log(`${URI.parse(d.uri).fsPath}:${d.range.start.line + 1}:${d.range.start.character + 1} ${d.severity === 1 ? 'error' : 'warning'} ${d.code}: ${d.message}`);
-        console.log(`Checked ${docs.length} model(s), SWAML ${LANGUAGE_VERSION}: ${errors} error(s).`);
+        console.log(`Checked ${docs.length} model(s), swa.ml ${LANGUAGE_VERSION}: ${errors} error(s).`);
     }
     process.exitCode = errors ? 1 : 0;
 }

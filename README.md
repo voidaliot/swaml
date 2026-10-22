@@ -1,8 +1,8 @@
-# SWAML 2.0
+# swa.ml 2.0
 
 **Software Architecture Modeling Language.** Readable source for software structure, typed communication and executable behavior.
 
-SWAML 2.0.0 is a clean restart with one component concept and one operation concept. It accepts only 2.0 source. Published 1.x books/PDFs remain archived.
+swa.ml 2.0.0 is a clean restart with one component concept and one operation concept. It accepts only 2.0 source. Published 1.x books/PDFs remain archived.
 
 ```swaml
 package CounterReadme {

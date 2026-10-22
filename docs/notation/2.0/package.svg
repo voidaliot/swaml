@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>SWAML 2.0 original notation</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>swa.ml 2.0 original notation</title>
 <rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
 <text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Packages and imports</text>
 <line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>

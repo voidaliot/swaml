@@ -1,4 +1,4 @@
-# SWAML 2.0 reference simulation
+# swa.ml 2.0 reference simulation
 
 The portable interpreter selects **swaml-reference/2.0** and requires linked, validated source. All activation comes from ordinary source schedules/ports/routes, including authored test drivers. [Execution semantics](spec/06-execution-contract.md) is normative; this guide covers the reference host.
 

@@ -1,6 +1,6 @@
-# Contributing to SWAML
+# Contributing to swa.ml
 
-SWAML 2.0 is a clean language restart. Read the [specification](docs/LANGUAGE_SPECIFICATION.md), [ADR 0016](docs/decisions/0016-swaml-2-0.md), [support matrix](docs/IMPLEMENTATION_STATUS.md) and the affected normative chapter. Published 1.x editions remain archived. This checkout does not convert or accept historical syntax.
+swa.ml 2.0 is a clean language restart. Read the [specification](docs/LANGUAGE_SPECIFICATION.md), [ADR 0016](docs/decisions/0016-swaml-2-0.md), [support matrix](docs/IMPLEMENTATION_STATUS.md) and the affected normative chapter. Published 1.x editions remain archived. This checkout does not convert or accept historical syntax.
 
 Use Node.js 22+ and npm 10.2.3+:
 

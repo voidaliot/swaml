@@ -1,8 +1,8 @@
 # Guide for UML architects
 
-SWAML 2.0.
+swa.ml 2.0.
 
-A SWAML component is a software ownership/communication boundary, with private attributes, child occurrences and operations. A component def is reusable; a usage is an occurrence. SWAML 2.0 intentionally has no separate class/function categories, performers or action allocation. Single specialization and explicit compatible whole-member redefinition are supported; generic UML object/reference semantics are not implicit.
+A swa.ml component is a software ownership/communication boundary, with private attributes, child occurrences and operations. A component def is reusable; a usage is an occurrence. swa.ml 2.0 intentionally has no separate class/function categories, performers or action allocation. Single specialization and explicit compatible whole-member redefinition are supported; generic UML object/reference semantics are not implicit.
 
 Ports expose directed attribute/event/operation members and use name-based structural compatibility. Provides/requires belongs to each member. Reversed flips a whole port. Explicit connect derives peer connection or boundary forwarding; forwarding adds no queue. A service diagram cannot replace member direction or prove a route.
 

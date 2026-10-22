@@ -84,5 +84,6 @@ jobs:
       - name: Check current and historical publication integrity
         run: |
           python scripts/test-publication-archive.py
+          python scripts/test-publication-2-0.py
           python scripts/check-spec-pdf.py
-          python scripts/check-spec-pdf-2.0.py
+          python scripts/check-spec-pdf-2.0.py --archive

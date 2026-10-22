@@ -1,4 +1,4 @@
-# SWAML 2.0 usage guide
+# swa.ml 2.0 usage guide
 
 Start with a component, give each persistent value a typed attribute, and write named operations for behavior. Add a schedule to say when those operations run. Add directed ports and explicit connections when behavior crosses component boundaries.
 

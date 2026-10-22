@@ -12,7 +12,7 @@ export function languageArguments(args: string[]): string[] {
             selected = true;
             const version = arg === '--language-version' ? args[++i] : arg.slice('--language-version='.length);
             if (version !== LANGUAGE_VERSION)
-                throw new Error(`Unsupported language version ${version ?? '(missing)'}; this host implements SWAML ${LANGUAGE_VERSION}.`);
+                throw new Error(`Unsupported language version ${version ?? '(missing)'}; this host implements swa.ml ${LANGUAGE_VERSION}.`);
         }
         else if (arg.startsWith('-')) {
             throw new Error(`Unknown option ${arg}`);
