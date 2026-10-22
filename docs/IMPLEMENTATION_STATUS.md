@@ -1,6 +1,6 @@
 # SWAML 2.0 implementation status
 
-**Edition/package:** 2.0.0 implementation candidate · **Parser:** 2.0 only · **Reference profile:** swaml-reference/2.0 · **Publication:** pending review.
+**Edition/package:** 2.0.0 release · **Parser:** 2.0 only · **Reference profile:** swaml-reference/2.0 · **Publication:** versioned reference edition.
 
 The 2.0 core replaces the 1.x grammar, AST, resolver, validator and interpreter. It does not accept historical source. Published 1.x books, PDFs, manifests/checksums and historical figure files remain unchanged. [ADR 0016](decisions/0016-swaml-2-0.md) defines the restart; [conformance obligations](spec/08-conformance-obligations.md) separate syntax, validation, execution, analysis, kernel and graphical claims.
 
@@ -28,10 +28,10 @@ The unit suite exercises observable positive/negative language behavior, malform
 
 ## Deliberate implementation limits
 
-The reference validator expands at most 10000 component occurrences per concrete root and reports SW2013 above that host limit. This is a reference resource boundary, not a new mathematical language multiplicity restriction. Stale-read analysis is conservative and may warn after a safe recheck. Definite-return/out assignment is conservative. Formatter range/on-type operations are not implemented. A rename that introduces an error or cannot preserve selected view identities is refused; persistent editor sidecar identity/native undo belongs to the editor integration.
+The reference validator expands at most 10000 component occurrences per concrete root and reports SW2013 above that host limit. This is a reference resource boundary, not a new mathematical language multiplicity restriction. Stale-read analysis is conservative and may warn after a safe recheck. Definite-return/out assignment is conservative. Formatter range/on-type operations are not implemented. A rename that introduces an error, changes any indexed reference binding, or cannot preserve selected view identities is refused; persistent editor sidecar identity/native undo belongs to the editor integration.
 
 Math abs/min/max/concat are ordinary source; floor/round/trunc/length are explicitly documented host intrinsics with checked semantics. The interpreter uses zero physical CPU cost and one deterministic permitted order, with finite resources and recorded fault assumptions. It does not implement a production scheduler, real network reliability protocol or universal analysis.
 
 No validated KerML exporter or executable KerML semantic library exists; chapter 5 and the mapping inventory remain a proposed contract. No XMI adapter, generic UML/SysML importer or graphical conformance certification is claimed. The adjacent editor has its own pin, source-edit, desktop/browser and package gates; its completion must be reported separately from a passing core suite.
 
-The website is a local design preview until approval. A 2.0 PDF/release publication requires the separate [publication gate](PDF_PUBLICATION.md); existing archived editions must not be rebuilt from development sources.
+The 2.0.0 release includes the production website and a separately versioned PDF under the [publication gate](PDF_PUBLICATION.md). Draft mockups are excluded. See the [review resolution](REVIEW_2_0.md) and [release notes](RELEASE_2_0_0.md); archived editions are never rebuilt from current sources.

@@ -122,5 +122,11 @@ def write_scene(path,s,check=False):
     svg,png=artifacts(s); outputs={path.with_suffix('.svg'):svg,path.with_suffix('.png'):png,path.with_suffix('.scene.json'):(json.dumps(s,indent=2,ensure_ascii=False)+'\n').encode()}
     for p,b in outputs.items():
         if check:
-            if not p.exists() or p.read_bytes()!=b:raise RuntimeError('Stale generated figure: '+str(p.relative_to(ROOT)))
+            # PNG compression may differ with the platform's zlib. Pixel content,
+            # dimensions and exact SVG/scene bytes define reproducibility.
+            same=p.exists() and p.read_bytes()==b
+            if not same and p.exists() and p.suffix=='.png':
+                with Image.open(p) as existing, Image.open(io.BytesIO(b)) as generated:
+                    same=existing.size==generated.size and existing.convert('RGB').tobytes()==generated.convert('RGB').tobytes()
+            if not same:raise RuntimeError('Stale generated figure: '+str(p.relative_to(ROOT)))
         else:p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(b)

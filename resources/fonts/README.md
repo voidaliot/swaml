@@ -33,3 +33,13 @@ CI passes `--diagnostics tmp/pdfs/notation-raster` to retain renderer and FreeTy
 versions, font hashes, per-image pixel statistics, expected/committed PNGs and
 amplified difference images when a check fails. These diagnostics do not relax
 the exact comparison; they make platform differences and stale assets inspectable.
+
+## Additional 2.0 PDF faces
+
+The unmodified oblique and monospace faces come from the official [DejaVu 2.37 release archive](https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37/dejavu-fonts-ttf-2.37.zip) and retain the same bundled license. The 2.0 builder embeds and records these exact font bytes.
+
+| File | SHA-256 |
+| --- | --- |
+| DejaVuSans-Oblique.ttf | `4af75fa16ee6d3ad43e1ecec41862c24954af26a55c6bb1ebb27bd486a50f5f4` |
+| DejaVuSans-BoldOblique.ttf | `eb436dca0c2594b73d8b603b892e374fdfd8d885d25ffb4f18df4c4c0b49e50f` |
+| DejaVuSansMono.ttf | `b4a6c3e4faab8773f4ff761d56451646409f29abedd68f05d38c2df667d3c582` |

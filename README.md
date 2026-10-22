@@ -2,7 +2,7 @@
 
 **Software Architecture Modeling Language.** Readable source for software structure, typed communication and executable behavior.
 
-This is the unpublished 2.0 implementation candidate: a clean restart with one component concept and one operation concept. It accepts only 2.0 source. Published 1.x books/PDFs remain archived.
+SWAML 2.0.0 is a clean restart with one component concept and one operation concept. It accepts only 2.0 source. Published 1.x books/PDFs remain archived.
 
 ```swaml
 package CounterReadme {
@@ -27,4 +27,4 @@ Components own private attributes, typed ports, child occurrences and operations
 
 Read the [normative specification](docs/LANGUAGE_SPECIFICATION.md), [ADR 0016](docs/decisions/0016-swaml-2-0.md), [support matrix](docs/IMPLEMENTATION_STATUS.md), [graphical catalog](docs/GRAPHICAL_CATALOG.md) and [contribution rules](CONTRIBUTING.md). A bounded reference run does not prove production scheduling, universal verification or KerML conformance.
 
-The monochrome light/dark GitHub Pages redesign is a local preview awaiting design review. No release or page publication is implied by these local changes. License: [MIT](LICENSE).
+The production website presents validated source views and bounded reference evidence. See the [2.0.0 release notes](docs/RELEASE_2_0_0.md) and [complete PDF](output/pdf/SWAML-2.0.0-Specification.pdf). License: [MIT](LICENSE).
