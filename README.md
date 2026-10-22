@@ -2,7 +2,7 @@
 
 **Software Architecture Modeling Language.** Readable source for software structure, typed communication and executable behavior.
 
-swa.ml 2.0.0 is a clean restart with one component concept and one operation concept. It accepts only 2.0 source. Published 1.x books/PDFs remain archived.
+swa.ml 2.0 is a clean restart with one component concept and one operation concept. It accepts only 2.0 source. Published 1.x books/PDFs remain archived.
 
 ```swaml
 package CounterReadme {
@@ -27,4 +27,4 @@ Components own private attributes, typed ports, child occurrences and operations
 
 Read the [normative specification](docs/LANGUAGE_SPECIFICATION.md), [ADR 0016](docs/decisions/0016-swaml-2-0.md), [support matrix](docs/IMPLEMENTATION_STATUS.md), [graphical catalog](docs/GRAPHICAL_CATALOG.md) and [contribution rules](CONTRIBUTING.md). A bounded reference run does not prove production scheduling, universal verification or KerML conformance.
 
-The production website presents validated source views and bounded reference evidence. See the [2.0.0 release notes](docs/RELEASE_2_0_0.md) and [complete PDF](output/pdf/SWAML-2.0.0-Specification.pdf). License: [MIT](LICENSE).
+The production website presents validated source views and bounded reference evidence. See the [2.0 release notes](docs/RELEASE_2_0_0.md) and [complete PDF](output/pdf/SWAML-2.0.0-Specification.pdf). The standard uses major.minor versions; the existing v2.0.0 tag and download filenames identify its original publication. See the [version policy](docs/VERSIONING.md). License: [MIT](LICENSE).

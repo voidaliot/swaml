@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Use major.minor versions for the swa.ml standard, beginning with the current 2.0 label. Generated inventories and website metadata read spec/standard.json and CI rejects patch or draft suffixes. Implementation package versions remain independent; existing published tags, release notes and artifacts retain their original identities.
+- Inventory regeneration now preserves the swa.ml branding and mixed-port catalog, with a reproducibility check in the core gate.
+
 - Display the maintained language documentation and websites as swa.ml while retaining .swaml filenames, technical identifiers and frozen publication assets.
 - Give the website timing view a shared logical-time ruler, execution lanes and the requested run horizon, and use the same dotted grid across all seven diagram views.
 - Validate the published 2.0.0 PDF against its frozen source snapshot while keeping strict current-source checks for new editions.

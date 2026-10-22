@@ -1,4 +1,4 @@
-# swa.ml 2.0.0 — Complete language reference
+# swa.ml 2.0 — Complete language reference
 
 Maintained reference for the 2.0 language. Headerless parser 2.0; profile swaml-reference/2.0. Generated from maintained 2.0 chapters. Published PDFs and frozen release references are unchanged. No compatibility parser or migration guide is included.
 
@@ -35,7 +35,7 @@ Maintained reference for the 2.0 language. Headerless parser 2.0; profile swaml-
 
 # swa.ml 2.0 language specification
 
-**Edition:** 2.0.0 · **Parser:** 2.0 · **Reference profile:** swaml-reference/2.0 · **Status:** release edition, 22 October 2026.
+**Edition:** 2.0 · **Parser:** 2.0 · **Reference profile:** swaml-reference/2.0 · **Status:** release edition, 22 October 2026.
 
 swa.ml is the Software Architecture Modeling Language: a textual language for explicit software structure, communication and executable behavior. [ADR 0016](decisions/0016-swaml-2-0.md) accepts the clean restart. The language has one component concept and one operation concept. It does not accept 1.x source. Published books and PDFs retain their original bytes.
 
@@ -1923,7 +1923,7 @@ Colon means typed by; returns names results. Dot is containment/member access; :
 
 # swa.ml 2.0 implementation status
 
-**Edition/package:** 2.0.0 release · **Parser:** 2.0 only · **Reference profile:** swaml-reference/2.0 · **Publication:** versioned reference edition.
+**Standard:** 2.0 · **Implementation package:** 2.0.0 · **Parser:** 2.0 only · **Reference profile:** swaml-reference/2.0 · **Publication:** versioned reference edition.
 
 The 2.0 core replaces the 1.x grammar, AST, resolver, validator and interpreter. It does not accept historical source. Published 1.x books, PDFs, manifests/checksums and historical figure files remain unchanged. [ADR 0016](decisions/0016-swaml-2-0.md) defines the restart; [conformance obligations](spec/08-conformance-obligations.md) separate syntax, validation, execution, analysis, kernel and graphical claims.
 
@@ -1957,7 +1957,7 @@ Math abs/min/max/concat are ordinary source; floor/round/trunc/length are explic
 
 No validated KerML exporter or executable KerML semantic library exists; chapter 5 and the mapping inventory remain a proposed contract. No XMI adapter, generic UML/SysML importer or graphical conformance certification is claimed. The adjacent editor has its own pin, source-edit, desktop/browser and package gates; its completion must be reported separately from a passing core suite.
 
-The 2.0.0 release includes the production website and a separately versioned PDF under the [publication gate](PDF_PUBLICATION.md). Draft mockups are excluded. See the [review resolution](REVIEW_2_0.md) and [release notes](RELEASE_2_0_0.md); archived editions are never rebuilt from current sources.
+The 2.0 standard, originally published under the legacy v2.0.0 tag, includes the production website and a separately versioned PDF under the [publication gate](PDF_PUBLICATION.md). Draft mockups are excluded. See the [review resolution](REVIEW_2_0.md) and [release notes](RELEASE_2_0_0.md); archived editions are never rebuilt from current sources.
 
 
 ---
