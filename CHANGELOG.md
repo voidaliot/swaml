@@ -2,6 +2,7 @@
 
 ## 2.0.0 — implementation candidate, unpublished
 
+- Close runtime findings F02/F04/F05/F06/F07/F13 with lexical package calls, checked port values and loop limits, covariant request outputs, initializer failure evidence and capacity-bounded duplicate delivery. Pin state timers to entry before entry actions, including suspension.
 - Close validation review findings F01/F08/F12/F14: include package operation out writes in concurrent effect checks, reject duration-valued capacity and ownerless redefinitions, and supply stable syntax/linking codes in the portable service and CLI.
 
 Clean restart with components and operations, private attributes, explicit returns, nested operations, expression calls and try, directed structural ports, derived connection/forwarding, versioned QoS/Math/Views/Platform libraries, schedules and suspension unlock, ordered states, multiplicity and Node deployments. The source, examples, guides, AI skills, inventories and diagrams use only 2.0. Published 1.x artifacts remain unchanged. No compatibility parser or 2.0 migration guide is supplied. The GitHub Pages redesign is prepared for design review before publication. See ADR 0016 and IMPLEMENTATION_STATUS for tested scope and evidence.
