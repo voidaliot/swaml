@@ -230,7 +230,9 @@ export function effects(op: Executable, c?: Structure, seen = new Set<Executable
                     result.writes = true;
             }
             else {
-                const called = localOperation(n, n.target, c);
+                const model = AstUtils.getDocument(n).parseResult.value as a.Model;
+                const target = localOperation(n, n.target, c) ?? resolve(n, n.target, workspaceModels.get(model) ?? [model]);
+                const called = target && isExecutable(target) ? target : undefined;
                 if (called && signature(called)?.parameters.some((p, i) => p.direction === 'out' && a.isReferenceExpression(n.args[i]) && attributes.has((n.args[i] as a.ReferenceExpression).path)))
                     result.writes = true;
                 if (called) {
