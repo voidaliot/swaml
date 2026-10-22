@@ -1,69 +1,40 @@
 name: Language checks
+
 on:
   push:
+    branches: [main]
   pull_request:
+  workflow_dispatch:
+
 permissions:
   contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node: [22, 24]
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          node-version: ${{ matrix.node }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            showcase/package-lock.json
       - run: npm ci --ignore-scripts
       - run: npm run check
+      - run: node --test test/ci/*.test.mjs
 
-  notation-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
+      # Reuse the built language core instead of building it in a second PR job.
       - run: npm ci --ignore-scripts
+        working-directory: showcase
       - run: npm run build
-      - name: Verify notation with native Windows paths
-        run: node scripts/check-notation.mjs
-
-  pdf:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: pip
-          cache-dependency-path: scripts/pdf-requirements.txt
-      - run: python -m pip install -r scripts/pdf-requirements.txt
-      - run: sudo apt-get update && sudo apt-get install -y fonts-dejavu-core poppler-utils
-      - name: Verify generated vector examples
-        run: python scripts/build-graphical-examples.py --check
-      - name: Verify graphical modeling overview
-        run: python scripts/build-modeling-overview.py --check
-      - name: Verify canonical SVG and PNG notation
-        run: python scripts/build-notation.py --check --diagnostics tmp/pdfs/notation-raster
-      - name: Preserve notation renderer diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: notation-renderer-diagnostics
-          path: tmp/pdfs/notation-raster
-          if-no-files-found: ignore
-      - name: Verify committed publication
-        run: |
-          python scripts/test-publication-archive.py
-          python scripts/check-spec-pdf.py
-          python scripts/check-spec-pdf-2.0.py
-      - name: Fetch the separately pinned original publication tooling
-        run: git fetch --no-tags --depth=1 origin 7e3cc2df00292127fdee20aa078100f520a8a16e
-      - name: Rebuild the archived edition from verified source attachments and original tooling
-        run: |
-          python scripts/rebuild-archived-pdf.py --output tmp/pdfs/rebuilt.pdf
-          python scripts/check-spec-pdf.py --pdf tmp/pdfs/rebuilt.pdf
+        working-directory: showcase
+      - run: node scripts/check-site-artifact.mjs

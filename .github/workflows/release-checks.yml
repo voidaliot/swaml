@@ -1,0 +1,88 @@
+name: Publication and compatibility
+
+# Run before an edition release, or when a PR changes publication tooling/assets.
+# Ordinary language changes keep the single Language checks job.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/release-checks.yml'
+      - 'scripts/*pdf*.py'
+      - 'scripts/*publication*.py'
+      - 'scripts/*pdf*requirements*.txt'
+      - 'scripts/publication-tooling-*.json'
+      - 'scripts/v2_scene.py'
+      - 'scripts/build-notation.py'
+      - 'scripts/build-graphical-examples.py'
+      - 'scripts/build-modeling-overview.py'
+      - 'scripts/check-notation.mjs'
+      - 'spec/notation.json'
+      - 'spec/graphical-examples.json'
+      - 'spec/modeling-overview.json'
+      - 'docs/GRAPHICAL_*.md'
+      - 'docs/figures/**'
+      - 'docs/notation/**'
+      - 'resources/fonts/**'
+      - 'output/pdf/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publication-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  node-compatibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - run: npm test
+
+  notation-windows:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - run: node scripts/check-notation.mjs
+
+  pdf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: scripts/ci-pdf-requirements.txt
+      - run: python -m pip install -r scripts/ci-pdf-requirements.txt
+      - name: Check generated figures and notation
+        run: |
+          python scripts/build-graphical-examples.py --check
+          python scripts/build-modeling-overview.py --check
+          python scripts/build-notation.py --check
+      - name: Check current and historical publication integrity
+        run: |
+          python scripts/test-publication-archive.py
+          python scripts/check-spec-pdf.py
+          python scripts/check-spec-pdf-2.0.py

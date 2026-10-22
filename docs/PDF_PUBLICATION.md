@@ -22,6 +22,17 @@ The original scripts/test-publication-archive.py, scripts/check-spec-pdf.py and 
 
 ## 2.0 commands
 
+Install maintained validation dependencies from `scripts/ci-pdf-requirements.txt`.
+The original `scripts/pdf-requirements.txt` is preserved as a publication input;
+its old versions have known security advisories and are no longer installed in CI.
+Reconstructing an archived edition with its original toolchain is a separate,
+isolated manual task on trusted pinned sources, not a PR test.
+
+Run the `Publication and compatibility` workflow before a new edition release.
+It checks current and archived PDF integrity with maintained dependencies and
+runs the Node 24 and Windows compatibility checks. Routine language CI keeps the
+semantic tests and production website build; it does not rebuild a frozen 1.x book.
+
 ```sh
 python scripts/build-spec-pdf-2.0.py
 python scripts/check-spec-pdf-2.0.py
