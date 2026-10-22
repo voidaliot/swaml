@@ -61,7 +61,7 @@ export function projectModel(models: readonly a.Model[]): Projection {
     const source = (n: AstNode) => ({ uri: AstUtils.getDocument(n).uri.toString(), range: n.$cstNode!.range });
     const addEdge = (kind: string, from: string, to: string, label: string, extra: Partial<ProjectionEdge> = {}) => result.edges.push({ id: `${kind}:${from}:${to}:${result.edges.length}`, kind, source: from, target: to, label, ...extra });
     for (const item of candidates) {
-        const n = item.node as Node, id = item.path, parent = candidates.filter(x => id.startsWith(x.path + '.')).sort((a, b) => b.path.length - a.path.length)[0];
+        const n = item.node as Node, id = item.path, parent = a.isPackage(n) ? undefined : candidates.filter(x => id.startsWith(x.path + '.') || a.isPackage(x.node) && id.startsWith(x.path + '::')).sort((a, b) => b.path.length - a.path.length)[0];
         const p: ProjectionNode = { id, name: item.name, kind: item.kind, definition: item.definition, owner: parent?.path, source: source(n), code: n.$cstNode!.text, doc: documentationText({ documentation: n.documentation }) };
         if (a.isAttribute(n) || a.isLocalVariable(n) || a.isField(n))
             p.type = typeKey(n.type);

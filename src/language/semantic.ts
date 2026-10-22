@@ -285,3 +285,30 @@ export function isNode(c: Structure, seen = new Set<Structure>()): boolean {
     const base = a.isComponentDef(c) ? c.specializes?.ref : c.definition?.ref;
     return !!base && isNode(base, seen);
 }
+
+/** Effective occurrence routes shared by case validation and authoring references. */
+export function connectionRoutes(root: a.ComponentUsage) {
+    const occ = occurrences(root), aliases = new Map<string, string>(), links: {
+        node: a.Connect;
+        id: string;
+        ends: string[];
+    }[] = [];
+    for (const o of occ)
+        for (const link of members(o.structure).filter(a.isConnect)) {
+            const l = endpoint(o.structure, link.source), r = endpoint(o.structure, link.target);
+            if (!l || !r)
+                continue;
+            const paths = [o.path + '.' + link.source, o.path + '.' + link.target];
+            if (l.child !== r.child)
+                aliases.set(paths[l.child ? 1 : 0], paths[l.child ? 0 : 1]);
+            else
+                links.push({ node: link, id: o.path + '.' + (link.name ?? '@' + links.length), ends: paths });
+        }
+    const leaf = (path: string) => { const seen = new Set<string>(); while (aliases.has(path) && !seen.has(path)) {
+        seen.add(path);
+        path = aliases.get(path)!;
+    } return path; };
+    for (const link of links)
+        link.ends = link.ends.map(leaf);
+    return { links, leaf };
+}
