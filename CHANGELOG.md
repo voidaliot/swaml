@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Display the maintained language documentation and websites as swa.ml while retaining .swaml filenames, technical identifiers and frozen publication assets.
+- Give the website timing view a shared logical-time ruler, execution lanes and the requested run horizon, and use the same dotted grid across all seven diagram views.
+- Validate the published 2.0.0 PDF against its frozen source snapshot while keeping strict current-source checks for new editions.
+- Document independent language, extension and website release lifecycles for future agents. These maintenance changes do not publish a new language edition.
+
 ## 2.0.0 — 2026-10-22
 
 - Clarify mixed-member port notation: neutral boundary square, member data/event arrows and operation ball/socket glyphs. Synchronize the production site and pin basic font layout for portable diagram rasterization.
