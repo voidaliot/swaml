@@ -1,6 +1,6 @@
 # SWAML 2.0.0 — Complete language reference
 
-Implementation candidate, unpublished. Headerless parser 2.0; profile swaml-reference/2.0. Generated from maintained 2.0 chapters. Published 1.x books are unchanged. No compatibility parser or migration guide is included.
+Release edition, 22 October 2026. Headerless parser 2.0; profile swaml-reference/2.0. Generated from maintained 2.0 chapters. Published 1.x books are unchanged. No compatibility parser or migration guide is included.
 
 ## Contents
 
@@ -26,14 +26,16 @@ Implementation candidate, unpublished. Headerless parser 2.0; profile swaml-refe
 - [ONTOLOGY_AND_VIEWS](#chapter-20)
 - [KEYWORD_REFERENCE](#chapter-21)
 - [IMPLEMENTATION_STATUS](#chapter-22)
-- [TOOLING](#chapter-23)
-- [decisions/0016-swaml-2-0](#chapter-24)
+- [REVIEW_2_0](#chapter-23)
+- [RELEASE_2_0_0](#chapter-24)
+- [TOOLING](#chapter-25)
+- [decisions/0016-swaml-2-0](#chapter-26)
 
 <a id="chapter-1"></a>
 
 # SWAML 2.0 language specification
 
-**Edition:** 2.0.0 · **Parser:** 2.0 · **Reference profile:** swaml-reference/2.0 · **Status:** implementation candidate, unpublished.
+**Edition:** 2.0.0 · **Parser:** 2.0 · **Reference profile:** swaml-reference/2.0 · **Status:** release edition, 22 October 2026.
 
 SWAML is the Software Architecture Modeling Language: a textual language for explicit software structure, communication and executable behavior. [ADR 0016](decisions/0016-swaml-2-0.md) accepts the clean restart. The language has one component concept and one operation concept. It does not accept 1.x source. Published books and PDFs retain their original bytes.
 
@@ -1921,7 +1923,7 @@ Colon means typed by; returns names results. Dot is containment/member access; :
 
 # SWAML 2.0 implementation status
 
-**Edition/package:** 2.0.0 implementation candidate · **Parser:** 2.0 only · **Reference profile:** swaml-reference/2.0 · **Publication:** pending review.
+**Edition/package:** 2.0.0 release · **Parser:** 2.0 only · **Reference profile:** swaml-reference/2.0 · **Publication:** versioned reference edition.
 
 The 2.0 core replaces the 1.x grammar, AST, resolver, validator and interpreter. It does not accept historical source. Published 1.x books, PDFs, manifests/checksums and historical figure files remain unchanged. [ADR 0016](decisions/0016-swaml-2-0.md) defines the restart; [conformance obligations](spec/08-conformance-obligations.md) separate syntax, validation, execution, analysis, kernel and graphical claims.
 
@@ -1949,18 +1951,70 @@ The unit suite exercises observable positive/negative language behavior, malform
 
 ## Deliberate implementation limits
 
-The reference validator expands at most 10000 component occurrences per concrete root and reports SW2013 above that host limit. This is a reference resource boundary, not a new mathematical language multiplicity restriction. Stale-read analysis is conservative and may warn after a safe recheck. Definite-return/out assignment is conservative. Formatter range/on-type operations are not implemented. A rename that introduces an error or cannot preserve selected view identities is refused; persistent editor sidecar identity/native undo belongs to the editor integration.
+The reference validator expands at most 10000 component occurrences per concrete root and reports SW2013 above that host limit. This is a reference resource boundary, not a new mathematical language multiplicity restriction. Stale-read analysis is conservative and may warn after a safe recheck. Definite-return/out assignment is conservative. Formatter range/on-type operations are not implemented. A rename that introduces an error, changes any indexed reference binding, or cannot preserve selected view identities is refused; persistent editor sidecar identity/native undo belongs to the editor integration.
 
 Math abs/min/max/concat are ordinary source; floor/round/trunc/length are explicitly documented host intrinsics with checked semantics. The interpreter uses zero physical CPU cost and one deterministic permitted order, with finite resources and recorded fault assumptions. It does not implement a production scheduler, real network reliability protocol or universal analysis.
 
 No validated KerML exporter or executable KerML semantic library exists; chapter 5 and the mapping inventory remain a proposed contract. No XMI adapter, generic UML/SysML importer or graphical conformance certification is claimed. The adjacent editor has its own pin, source-edit, desktop/browser and package gates; its completion must be reported separately from a passing core suite.
 
-The website is a local design preview until approval. A 2.0 PDF/release publication requires the separate [publication gate](PDF_PUBLICATION.md); existing archived editions must not be rebuilt from development sources.
+The 2.0.0 release includes the production website and a separately versioned PDF under the [publication gate](PDF_PUBLICATION.md). Draft mockups are excluded. See the [review resolution](REVIEW_2_0.md) and [release notes](RELEASE_2_0_0.md); archived editions are never rebuilt from current sources.
 
 
 ---
 
 <a id="chapter-23"></a>
+
+# SWAML 2.0 review resolution
+
+The 22 October 2026 source review of revision 46044b5 identified the following defects. Each row records implemented corrections and evidence; pending rows are not acceptance claims. The reference interpreter remains bounded evidence under its recorded assumptions.
+
+| Finding | Resolution and regression evidence |
+| --- | --- |
+| F01 Package operation out writes bypass concurrency validation | Fixed: resolve package callees and preserve the caller's out-target write effect; imported/transitive negative cases and serial/local positive cases in review-validation.test.ts |
+| F02 Package calls capture component helpers | Fixed: Lexical package calls and reused bodies cannot capture occurrence helpers; inheritance still dispatches effective component members. Regression evidence in review-runtime.test.ts |
+| F03 Rename changes reference binding | Fixed: Trial rename compares every indexed binding by stable AST identity and translated token ranges, rejecting capture even when validation passes. Regression evidence in review-authoring.test.ts |
+| F04 Request out variance crashes | Fixed: Request out cells use the provider type before successful caller copy-back. Regression evidence in review-runtime.test.ts |
+| F05 Port payloads bypass numeric domains | Fixed: Outgoing attribute/event/request values check the own port domain before offers, including wider peers. Regression evidence in review-runtime.test.ts |
+| F06 Negative computed loop limits succeed | Fixed: Computed limits check uint once; negative counts fail and can be caught. Regression evidence in review-runtime.test.ts |
+| F07 Initializer failure escapes evidence | Fixed: Initializer faults yield source-attributed failure evidence before startup; CLI returns JSON and exit 1. Regression evidence in review-runtime.test.ts |
+| F08 QoS capacity accepts duration | Fixed: capacity is a positive integer count; duration/boolean/string/fraction/zero rejection in review-validation.test.ts |
+| F09 Enum token indexing is ambiguous | Fixed: Enum heads use the first path segment with concrete token ranges, including qualified names and comments. Regression evidence in review-authoring.test.ts |
+| F10 Inherited case via references are missing | Fixed: Case navigation shares effective occurrence/alias route resolution with validation, including inherited repeated occurrences. Regression evidence in review-authoring.test.ts |
+| F11 Projection drops package containment | Fixed: Projection records package ownership without inventing namespace-prefix containment. Regression evidence in review-authoring.test.ts |
+| F12 Ownerless redefines is accepted | Fixed: replacement requires a containing component's inherited member; package/nested negative and valid replacement tests |
+| F13 Duplicate delivery exceeds queue capacity | Fixed: Every duplicate copy observes capacity/reject/dropNewest/dropOldest; committed copies remain observable. Regression evidence in review-runtime.test.ts |
+| F14 Linking diagnostics have missing/wrong code | Fixed: shared DocumentValidator assigns SW2001 to linking and SW2000 to syntax; CLI and malformed-recovery regression checks |
+
+
+All fourteen findings have implemented corrections and regression coverage. The validation, runtime and authoring groups passed npm run check with 185, 197 and 202 tests respectively, including example, simulation, documentation and inventory gates. Production site model data reflects corrected ownership. Final publication is gated separately on the versioned PDF, visual inspection and cross-platform checks. These results do not establish universal verification, production scheduling or kernel conformance.
+
+Timers begin at state entry before entry actions, including suspension. Elapsed timers precede queued input after entry; equal expiry uses source order, deadline ties win, and final entry completes once. Tests cover each ordering and successful after dependencies.
+
+
+---
+
+<a id="chapter-24"></a>
+
+# SWAML 2.0.0 release
+
+22 October 2026. Parser 2.0, package 2.0.0, reference profile swaml-reference/2.0.
+
+The clean 2.0 language replaces the 1.x grammar and runtime with components, private attributes, reusable operations, mixed directed port members, explicit routes, schedules and operation-owned states. It accepts only 2.0 source. Published 1.x editions retain their original artifacts.
+
+All fourteen findings from the source review have corrections and regression coverage in [the resolution record](REVIEW_2_0.md). The language gate passes 202 tests plus example, simulation, source/diagram inventory and documentation checks. These checks are bounded implementation evidence, not universal verification.
+
+State timer epochs begin at state entry before entry actions. Time spent suspended in entry counts toward the delay. Entry finishes before a transition runs; an elapsed timer precedes queued input, equal-expiry timers follow declaration order, and deadlines win ties. Final entry completes once and releases successful after dependencies.
+
+The port symbol is one square boundary with member-level glyphs: arrows for attribute/event direction and ball/socket for provided/required operations. Mixed members retain their individual names, types and directions.
+
+The release includes the [reference book](SWAML-2.0.0-Reference.md), [PDF](../output/pdf/SWAML-2.0.0-Specification.pdf), [source manifest](../output/pdf/SWAML-2.0.0-Specification.manifest.json) and [checksum](../output/pdf/SWAML-2.0.0-Specification.sha256). The manifest identifies the source base commit, package revision and exact canonical source bundle, fonts and dependency versions. Embedded sources use repository LF text bytes; the final publication commit also contains the generated PDF itself.
+
+The production website publishes the validated model views, current release downloads and mixed-port notation. Draft mockups are excluded. A bounded run does not establish production scheduling, real transport reliability, universal correctness or KerML export conformance; [implementation limits](IMPLEMENTATION_STATUS.md) remain explicit.
+
+
+---
+
+<a id="chapter-25"></a>
 
 # Tool integration
 
@@ -1977,7 +2031,7 @@ The adjacent editor repository has separate acceptance, diagram, refactoring and
 
 ---
 
-<a id="chapter-24"></a>
+<a id="chapter-26"></a>
 
 # ADR 0016: SWAML 2.0 restart
 

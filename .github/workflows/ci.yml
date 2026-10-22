@@ -60,6 +60,7 @@ jobs:
         run: |
           python scripts/test-publication-archive.py
           python scripts/check-spec-pdf.py
+          python scripts/check-spec-pdf-2.0.py
       - name: Fetch the separately pinned original publication tooling
         run: git fetch --no-tags --depth=1 origin 7e3cc2df00292127fdee20aa078100f520a8a16e
       - name: Rebuild the archived edition from verified source attachments and original tooling
