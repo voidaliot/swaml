@@ -2686,19 +2686,9 @@ package Policies {
 
 ```swaml
 package Classic {
-/**
- * ## comment
- */
-
   import Swaml::Views;
   port def Temperature {
-/**
- * ## comment
- */
-
-    provides attribute temperature: real /**
- * ## comment
- */;
+    provides attribute temperature: real;
   }
   port def Commands {
     provides event set(value: real);
@@ -3042,11 +3032,6 @@ package Interrupts {
       on start work();
     }
   }
-  useCase test of Demo
-  {
-    
-  }
-
   component Demo {
     component sender: Sender;
     component receiver: Receiver;
