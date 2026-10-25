@@ -32,7 +32,7 @@ package Traceability {
     connect (sender.output, receiver.input);
   }
   satisfy Delivery of Demo.receiver;
-  verificationCase Startup of Demo {
+  verification case Startup of Demo {
     verify Delivery;
     publish greeting from sender.output.message to receiver.input.message;
   }

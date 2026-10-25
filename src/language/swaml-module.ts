@@ -8,6 +8,7 @@ import { SwamlDocumentBuilder, SwamlDocumentValidator } from './swaml-document-b
 import { SwamlPathServices } from './path-services.js';
 import { SwamlFormatter } from './formatter.js';
 import { STANDARD_LIBRARY } from './standard-library.js';
+import { SwamlLexer, SwamlLexerErrorMessageProvider, SwamlParserErrorMessageProvider, SwamlValueConverter } from './swaml-syntax.js';
 export { effectiveQos } from './semantic.js';
 export { documentationText, modelComments, selectView, viewCandidates } from './presentation.js';
 export const SWAML_LANGUAGE_VERSION = '2.0' as const;
@@ -21,6 +22,7 @@ export const SwamlModule: Module<SwamlServices, PartialLangiumServices & {
         SwamlValidator: SwamlValidator;
     };
 }> = {
+    parser: { Lexer: services => new SwamlLexer(services), ValueConverter: () => new SwamlValueConverter(), ParserErrorMessageProvider: () => new SwamlParserErrorMessageProvider(), LexerErrorMessageProvider: () => new SwamlLexerErrorMessageProvider() },
     lsp: { Formatter: () => new SwamlFormatter(), RenameProvider: services => new SwamlPathServices(services), DefinitionProvider: services => new SwamlPathServices(services), ReferencesProvider: services => new SwamlPathServices(services) },
     references: { ScopeProvider: services => new SwamlScopeProvider(services) },
     validation: { SwamlValidator: services => new SwamlValidator(services), DocumentValidator: services => new SwamlDocumentValidator(services) }

@@ -51,6 +51,6 @@ Local calls, startup, periodic releases, waits, state timers and same-owner afte
 | Schedule/entry | Trigger binding, dispatch arguments, deadline and concurrency |
 | State/transition | Ordered nested receive/timer reactions; final completion |
 | Deployment/placement | Software occurrences placed on platform Node occurrences |
-| Requirement/case/view | Immutable intent, routed scenario and stable selection union |
+| Requirement/case/view | Immutable intent; use and verification cases with subject, actors, include/extend and routed steps; stable selection union |
 
 Definitions have qualified declaration identity. Occurrences have root plus indexed child paths. Activations add unique run identity. All transformations preserve these distinctions and source provenance.

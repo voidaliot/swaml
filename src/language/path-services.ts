@@ -1,9 +1,10 @@
-import { AstUtils, CstUtils, GrammarUtils, EmptyFileSystem, type AstNode, type CstNode, type LangiumDocument } from 'langium';
+import { AstUtils, CstUtils, GrammarUtils, EmptyFileSystem, type AstNode, type CstNode, type LangiumDocument, type LeafCstNode } from 'langium';
 import type { LangiumServices, RenameProvider, DefinitionProvider, ReferencesProvider } from 'langium/lsp';
 import type { DefinitionParams, Location, LocationLink, Range, ReferenceParams, RenameParams, TextDocumentPositionParams, WorkspaceEdit, TextEdit } from 'vscode-languageserver';
 import * as a from './generated/ast.js';
 import { viewCandidates, selectView } from './presentation.js';
 import { body, connectionRoutes, container, isExecutable, localOperation, memberEndpoint, members, nodes, owner, resolve, signature, OCCURRENCE_LIMIT, occurrenceCount, type Node, type Structure } from './semantic.js';
+import { decodeQuotedName, formatName, formatQualifiedName, nameProblem, parseNameInput } from './names.js';
 export interface SemanticSymbol {
     key: string;
     node: AstNode;
@@ -19,8 +20,12 @@ export interface SemanticReference {
     uri: string;
     range: Range;
     declaration: boolean;
+    /** The reference is spelled inside a string literal, such as a view filter path. */
+    literal?: boolean;
 }
 const property = (n: AstNode, p: string, i?: number): CstNode | undefined => GrammarUtils.findNodeForProperty(n.$cstNode, p as never, i);
+/** Decoded token value: path strings concatenate these values, never the quoted spelling. */
+const decoded = (leaf: LeafCstNode) => leaf.tokenType.name === 'UNRESTRICTED_NAME' ? decodeQuotedName(leaf.text) : leaf.tokenType.name === 'INT' ? String(Number(leaf.text)) : leaf.text;
 /** Includes strings deliberately outside Langium's reference index. No filesystem access. */
 export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
     const symbols: SemanticSymbol[] = [], refs: SemanticReference[] = [], byNode = new Map<AstNode, SemanticSymbol[]>();
@@ -46,20 +51,22 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
         }
     const add = (n: AstNode, cst: CstNode | undefined, target: SemanticSymbol | undefined, start = 0, length?: number, logical?: string) => { if (!cst || !target)
         return;
-        if (logical !== undefined) {
-            const names = [...logical.matchAll(/[_A-Za-z]\w*/g)], leaves = CstUtils.flattenCst(cst).filter(l => !l.hidden && /^[_A-Za-z]\w*$/.test(l.text)).toArray();
-            if (names.length === leaves.length && names.every((name, i) => name[0] === leaves[i].text)) {
-                const first = names.findIndex(name => name.index! <= start && start < name.index! + name[0].length), end = start + (length ?? logical.length), last = names.findIndex(name => name.index! < end && end <= name.index! + name[0].length);
-                if (first >= 0 && last >= 0) {
-                    const from = leaves[first].offset - cst.offset + start - names[first].index!;
-                    length = leaves[last].offset - cst.offset + end - names[last].index! - from;
-                    start = from;
-                }
+        const leaves = CstUtils.flattenCst(cst).filter(l => !l.hidden).toArray(), literal = leaves.length === 1 && leaves[0].tokenType.name === 'STRING';
+        if (logical !== undefined && !literal) {
+            // Map decoded logical offsets to tokens. A quoted name is replaced as a whole token.
+            let at = 0;
+            const parts = leaves.map(leaf => { const value = decoded(leaf), part = { leaf, from: at, to: at + value.length }; at += value.length; return part; });
+            const end = start + (length ?? logical.length), first = parts.find(p => p.from <= start && start < p.to), last = parts.find(p => p.from < end && end <= p.to);
+            if (parts.map(p => decoded(p.leaf)).join('') === logical && first && last) {
+                const quoted = (leaf: LeafCstNode) => leaf.tokenType.name === 'UNRESTRICTED_NAME';
+                const from = quoted(first.leaf) ? first.leaf.offset : first.leaf.offset + start - first.from, to = quoted(last.leaf) ? last.leaf.end : last.leaf.offset + end - last.from;
+                start = from - cst.offset;
+                length = to - from;
             }
         }
-        const d = AstUtils.getDocument(n), from = cst.offset + start; refs.push({ symbol: target, uri: d.uri.toString(), range: { start: d.textDocument.positionAt(from), end: d.textDocument.positionAt(from + (length ?? cst.length)) }, declaration: false }); };
+        const d = AstUtils.getDocument(n), from = cst.offset + start; refs.push({ symbol: target, uri: d.uri.toString(), range: { start: d.textDocument.positionAt(from), end: d.textDocument.positionAt(from + (length ?? cst.length)) }, declaration: false, ...(literal ? { literal } : {}) }); };
     const native = (n: AstNode, cst: CstNode | undefined, target: AstNode | undefined) => { const s = symbol(target); if (!s || !cst)
-        return; const logical = CstUtils.flattenCst(cst).filter(l => !l.hidden).map(l => l.text).join(''), head = logical.split('.')[0]; const offset = head.lastIndexOf(s.name); add(n, cst, s, Math.max(0, offset), s.name.length, logical); const colon = head.lastIndexOf('::'); if (colon >= 0) {
+        return; const logical = CstUtils.flattenCst(cst).filter(l => !l.hidden).map(decoded).join(''), head = logical.split('.')[0]; const offset = head.lastIndexOf(s.name); add(n, cst, s, Math.max(0, offset), s.name.length, logical); const colon = head.lastIndexOf('::'); if (colon >= 0) {
         const pkg = models.flatMap(m => m.packages).find(p => p.name === logical.slice(0, colon));
         add(n, cst, symbol(pkg), 0, colon, logical);
     } };
@@ -228,6 +235,11 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
                 if (d?.platform.ref)
                     pathRefs(n, 'node', n.node, d.platform.ref as Node);
             }
+            if (a.isCaseSubject(n) || a.isCaseActor(n)) {
+                const root = owner(n, a.isScenario)?.root.ref;
+                if (root)
+                    pathRefs(n, 'path', n.path, root as Node);
+            }
             if (a.isScenarioStep(n)) {
                 const scenario = owner(n, a.isScenario), root = scenario?.root.ref;
                 if (root) {
@@ -264,8 +276,11 @@ export class SwamlPathServices implements RenameProvider, DefinitionProvider, Re
         const models = this.models(), index = semanticIndex(models), selected = this.selected(document, params, index);
         if (!selected || selected.symbol.uri.startsWith('builtin:'))
             return undefined;
-        if (!/^[_a-zA-Z]\w*(?:::[_a-zA-Z]\w*)*$/.test(params.newName))
+        // Accept typed or quoted spellings; packages may have several :: segments.
+        const packageName = a.isPackage(selected.symbol.node), newName = packageName ? params.newName.split('::').map(parseNameInput).join('::') : parseNameInput(params.newName);
+        if ((packageName ? newName.split('::') : [newName]).some(segment => nameProblem(segment) !== undefined))
             return undefined;
+        const spelling = (r: SemanticReference) => r.literal ? newName.replace(/["\\]/g, c => '\\' + c) : packageName ? formatQualifiedName(newName) : formatName(newName);
         const documents = models.filter(m => AstUtils.getDocument(m).uri.scheme !== 'builtin').map(AstUtils.getDocument);
         if (documents.some(d => d.diagnostics?.some(x => x.severity === 1)))
             return undefined;
@@ -291,11 +306,11 @@ export class SwamlPathServices implements RenameProvider, DefinitionProvider, Re
         for (const r of index.filter(r => family.has(r.symbol.key))) {
             const list = changes.get(r.uri) ?? [];
             if (!list.some(x => JSON.stringify(x.range) === JSON.stringify(r.range)))
-                list.push({ range: r.range, newText: params.newName });
+                list.push({ range: r.range, newText: spelling(r) });
             changes.set(r.uri, list);
         }
         const renamedNodes = new Set(index.filter(r => r.declaration && family.has(r.symbol.key)).map(r => r.symbol.node));
-        const pathChanges = viewCandidates(models).filter(s => renamedNodes.has(s.node)).map(s => { const suffix = /\[\d+\]$/.exec(s.path)?.[0] ?? ''; return { before: s.path, after: s.path.slice(0, s.path.length - selected.symbol.name.length - suffix.length) + params.newName + suffix }; }).sort((a, b) => b.before.length - a.before.length);
+        const pathChanges = viewCandidates(models).filter(s => renamedNodes.has(s.node)).map(s => { const suffix = /\[\d+\]$/.exec(s.path)?.[0] ?? ''; return { before: s.path, after: s.path.slice(0, s.path.length - selected.symbol.name.length - suffix.length) + newName + suffix }; }).sort((a, b) => b.before.length - a.before.length);
         const expectedPath = (path: string) => { const change = pathChanges.find(c => path === c.before || path.startsWith(c.before + '.') || path.startsWith(c.before + '::')); return change ? change.after + path.slice(change.before.length) : path; };
         const snapshots = documents.map(d => ({ d, version: d.textDocument.version, text: d.textDocument.getText() }));
         const { createSwamlServices } = await import('./swaml-module.js');

@@ -87,7 +87,7 @@
       "kind": "text",
       "x": 547,
       "y": 133,
-      "text": "verificationCase Startup",
+      "text": "verification case Startup",
       "size": 14
     },
     {
@@ -116,7 +116,7 @@
       "kind": "text",
       "x": 400.0,
       "y": 193.0,
-      "text": "intent",
+      "text": "«verify» intent",
       "size": 12
     },
     {

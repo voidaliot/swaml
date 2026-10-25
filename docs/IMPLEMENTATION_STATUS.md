@@ -8,7 +8,7 @@ The 2.0 core replaces the 1.x grammar, AST, resolver, validator and interpreter.
 
 | Capability | Implemented evidence and boundary |
 | --- | --- |
-| Syntax and recovery | Normative Langium grammar, generated AST/TextMate, malformed input and retired-syntax rejection tests |
+| Syntax and recovery | Normative Langium grammar, generated AST/TextMate, quoted names with naming hints for spaces, reserved words, double quotes, non-ASCII letters and misplaced docs, malformed input and retired-syntax rejection tests |
 | Components and values | Single specialization, whole redefinition, usage bodies, typed roots, indexed multiplicity, private copied stores, nominal records/enums/arrays and checked domains |
 | Operations | Definitions/usages, explicit returns, nested no-capture scope, expression calls, in/out, success-only copy-back, definite out assignment and acyclic calls |
 | Effects and failures | Transitive write/read/communication/suspension flags, pure initializers, read-only guards, non-writing concurrency, lazy try and allowed suspension placement |
@@ -18,9 +18,9 @@ The 2.0 core replaces the 1.x grammar, AST, resolver, validator and interpreter.
 | Flow and state | Loops and copied iteration, wait/receive, interruption across callees, ordered nested transitions, final completion and queued startup input |
 | Correlation and adverse behavior | Routed results/out values, failures, timeout ties, terminal cancellation, late-reply suppression, policy overflow, age at eligibility and explicit resource limits |
 | Deployment | Separate software/platform roots, Node-only contents/targets, indexed/family placements and most-specific selection |
-| Requirements/cases/views | Immutable intent, routed named steps with causal replies, seven library definitions, package/member subjects and stable occurrence unions |
+| Requirements/cases/views | Immutable intent, use case/verification case with deprecated 2.0 spellings, subject and actor occurrences, acyclic include/extend, routed named steps with causal replies, seven library definitions, package/member subjects and stable occurrence unions |
 | AI authoring | Usage and AI guides, portable author/validate skills, --json diagnostics with code/range/URI/declaration/occurrence metadata and selected safe repair edits |
-| Authoring services | Canonical token-preserving full-document formatting; semantic index, definition/references and versioned multi-file rename over indexed paths, port members, nested operations, schedules, states, placements, cases and view subjects/eligible filters |
+| Authoring services | Canonical token-preserving full-document formatting; semantic index, definition/references and versioned multi-file rename over indexed paths, port members, nested operations, schedules, states, placements, cases, case subjects/actors and view subjects/eligible filters; rename writes quoted names where required and unquoted names inside string paths; portable name spelling helpers for hosts |
 | Host behavior | CLI exit/JSON/edition checks, LSP 2.0 negotiation, complete dependency enforcement, standard-library validation and workspace negative-lookup invalidation |
 | Diagrams and page | Exhaustive notation/mapping inventories; original 2.0 SVG/PNG/scenes and source-subject checks; generated source/trace site data, seven interactive views, light/dark/system themes and responsive preview |
 

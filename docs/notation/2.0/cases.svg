@@ -1,18 +1,38 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>swa.ml 2.0 original notation</title>
 <rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
-<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Named routed case steps</text>
+<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Use cases, actors and routed case steps</text>
 <line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
-<rect x="45" y="110" width="330" height="190" fill="#ffffff" stroke="#171717"/>
-<rect x="45" y="110" width="330" height="34" fill="#eeeeee" stroke="#171717"/>
-<text x="57" y="133" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">requirement Delivery</text>
-<text x="57" y="168" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">immutable typed attributes</text>
-<text x="57" y="190" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">one formal doc</text>
-<rect x="535" y="110" width="330" height="190" fill="#ffffff" stroke="#171717"/>
-<rect x="535" y="110" width="330" height="34" fill="#eeeeee" stroke="#171717"/>
-<text x="547" y="133" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">verificationCase Startup</text>
-<text x="547" y="168" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">verify Delivery</text>
-<text x="547" y="190" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">named routed publish step</text>
-<line x1="375" y1="205" x2="535" y2="205" stroke="#171717" stroke-dasharray="5 4"/>
-<text x="400.0" y="193.0" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">intent</text>
-<text x="45" y="345" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">satisfy and verify links are intent; a witness requires separate evidence.</text>
+<rect x="290" y="72" width="360" height="250" fill="#ffffff" stroke="#171717"/>
+<text x="302" y="94" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">subject atm : 'ATM Controller'</text>
+<ellipse cx="470.0" cy="136.0" rx="125.0" ry="26.0" fill="#ffffff" stroke="#171717"/>
+<text x="416.0" y="141" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">'Withdraw cash'</text>
+<ellipse cx="395.0" cy="265.0" rx="85.0" ry="23.0" fill="#ffffff" stroke="#171717"/>
+<text x="351.8" y="270" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">Authenticate</text>
+<ellipse cx="567.0" cy="265.0" rx="70.0" ry="23.0" fill="#ffffff" stroke="#171717"/>
+<text x="513.0" y="270" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">'Print receipt'</text>
+<line x1="440" y1="162" x2="410" y2="242" stroke="#171717" stroke-dasharray="5 4"/>
+<line x1="410" y1="242" x2="408.182" y2="232.167" stroke="#171717"/>
+<line x1="410" y1="242" x2="417.836" y2="235.787" stroke="#171717"/>
+<text x="433.0" y="206.0" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">«include»</text>
+<line x1="560" y1="242" x2="520" y2="161" stroke="#171717" stroke-dasharray="5 4"/>
+<line x1="520" y1="161" x2="528.416" y2="166.401" stroke="#171717"/>
+<line x1="520" y1="161" x2="519.172" y2="170.966" stroke="#171717"/>
+<text x="548.0" y="205.5" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">«extend»</text>
+<ellipse cx="120.0" cy="129.0" rx="11.0" ry="11.0" fill="#ffffff" stroke="#171717"/>
+<line x1="120" y1="140" x2="120" y2="182" stroke="#171717"/>
+<line x1="98" y1="154" x2="142" y2="154" stroke="#171717"/>
+<line x1="120" y1="182" x2="102" y2="214" stroke="#171717"/>
+<line x1="120" y1="182" x2="138" y2="214" stroke="#171717"/>
+<text x="91.2" y="236" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">customer</text>
+<ellipse cx="800.0" cy="129.0" rx="11.0" ry="11.0" fill="#ffffff" stroke="#171717"/>
+<line x1="800" y1="140" x2="800" y2="182" stroke="#171717"/>
+<line x1="778" y1="154" x2="822" y2="154" stroke="#171717"/>
+<line x1="800" y1="182" x2="782" y2="214" stroke="#171717"/>
+<line x1="800" y1="182" x2="818" y2="214" stroke="#171717"/>
+<text x="785.6" y="236" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">bank</text>
+<line x1="144" y1="160" x2="345" y2="136" stroke="#171717"/>
+<line x1="144" y1="170" x2="312" y2="258" stroke="#171717"/>
+<line x1="776" y1="160" x2="595" y2="136" stroke="#171717"/>
+<text x="45" y="350" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">Use cases sit inside the subject boundary; actors stay outside and take part through ports.</text>
+<text x="45" y="372" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">Solid lines associate actors; include, extend, satisfy and verify are intent, not proof.</text>
 </svg>

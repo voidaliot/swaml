@@ -104,7 +104,7 @@ export function endpoint(c: Structure, path: string): {
     const parts = path.split('.');
     let structure = c;
     if (parts.length === 2) {
-        const match = /^(\w+)(?:\[(\d+)\])?$/.exec(parts[0]);
+        const match = /^(.+?)(?:\[(\d+)\])?$/.exec(parts[0]);
         const child = match && members(c).filter(a.isComponentUsage).find(x => x.name === match[1]);
         if (!child || (child.size !== undefined ? match![2] === undefined || Number(match![2]) >= child.size : match![2] !== undefined))
             return undefined;

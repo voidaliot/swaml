@@ -10,7 +10,7 @@ Write operations with explicit parameter/result types. Use return for values, ex
 
 Put activation in one schedule. Use on start/every/receive/call or after same-owner operation. Select complete policy definitions where Default is unsuitable. Keep remote calls as whole initializer/assignment/statement forms, optionally in try. Recheck live attributes after suspension; use concurrent only when the transitive operation graph cannot write. Copy-back of out parameters occurs only on success.
 
-Multiplicity is literal and paths are indexed explicitly. Deployment targets are platform Node occurrences. Requirements and cases express intent; they are not proof or input drivers. View definitions select existing identities, with geometry separate.
+Multiplicity is literal and paths are indexed explicitly. Deployment targets are platform Node occurrences. Requirements and cases express intent; they are not proof or input drivers. Write use case/verification case with a subject and actors that are occurrences of the case root; relate use cases with include/extend. Quote names that contain spaces, letters outside ASCII or reserved words, such as 'Withdraw cash'. View definitions select existing identities, with geometry separate.
 
 ## Validate–fix loop
 
@@ -35,8 +35,9 @@ Run a bounded simulation only after validation. Record source bytes/hashes, root
 | SW2004/2005 | Repair member direction/type/route/closure, emission provenance or exclusive input owner |
 | SW2006 | Correct nested scope, return/out use, effects or whole-expression suspension |
 | SW2007/2008 | Repair schedule identity/signature/after graph or ordered state ownership |
-| SW2009/2010 | Resolve occurrence/Node paths, case route/correlation or view subject |
+| SW2009/2010 | Resolve occurrence/Node paths, case subject/actor membership, include/extend targets, case route/correlation or view subject |
 | SW2011/2012 | Recheck live state after resumption; account for inactive interrupt input |
 | SW2013 | Supply complete typed policy values and safe positive durations |
+| SW2015 | Apply the supplied replacement for a deprecated 2.0 spelling, such as useCase to use case |
 
 Keep diagnostics/evidence honest. Consult [implementation status](IMPLEMENTATION_STATUS.md) before claiming full V/E/G/K support. Publishing a page or release is a separate user-authorized action; this project requires a design preview before publication.

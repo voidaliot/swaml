@@ -15,7 +15,7 @@
       "kind": "text",
       "x": 26,
       "y": 36,
-      "text": "Named routed case steps",
+      "text": "Use cases, actors and routed case steps",
       "size": 21
     },
     {
@@ -28,103 +28,258 @@
     },
     {
       "kind": "rect",
-      "x": 45,
-      "y": 110,
-      "w": 330,
-      "h": 190,
+      "x": 290,
+      "y": 72,
+      "w": 360,
+      "h": 250,
       "fill": "#ffffff",
       "dash": false
     },
     {
-      "kind": "rect",
-      "x": 45,
-      "y": 110,
-      "w": 330,
-      "h": 34,
-      "fill": "#eeeeee",
+      "kind": "text",
+      "x": 302,
+      "y": 94,
+      "text": "subject atm : 'ATM Controller'",
+      "size": 12
+    },
+    {
+      "kind": "ellipse",
+      "x": 345.0,
+      "y": 110.0,
+      "w": 250,
+      "h": 52,
+      "fill": "#ffffff"
+    },
+    {
+      "kind": "text",
+      "x": 416.0,
+      "y": 141,
+      "text": "'Withdraw cash'",
+      "size": 13
+    },
+    {
+      "kind": "ellipse",
+      "x": 310.0,
+      "y": 242.0,
+      "w": 170,
+      "h": 46,
+      "fill": "#ffffff"
+    },
+    {
+      "kind": "text",
+      "x": 351.8,
+      "y": 270,
+      "text": "Authenticate",
+      "size": 13
+    },
+    {
+      "kind": "ellipse",
+      "x": 497.0,
+      "y": 242.0,
+      "w": 140,
+      "h": 46,
+      "fill": "#ffffff"
+    },
+    {
+      "kind": "text",
+      "x": 513.0,
+      "y": 270,
+      "text": "'Print receipt'",
+      "size": 13
+    },
+    {
+      "kind": "line",
+      "x1": 440,
+      "y1": 162,
+      "x2": 410,
+      "y2": 242,
+      "dash": true
+    },
+    {
+      "kind": "line",
+      "x1": 410,
+      "y1": 242,
+      "x2": 408.182,
+      "y2": 232.167,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 410,
+      "y1": 242,
+      "x2": 417.836,
+      "y2": 235.787,
       "dash": false
     },
     {
       "kind": "text",
-      "x": 57,
-      "y": 133,
-      "text": "requirement Delivery",
-      "size": 14
-    },
-    {
-      "kind": "text",
-      "x": 57,
-      "y": 168,
-      "text": "immutable typed attributes",
-      "size": 12
-    },
-    {
-      "kind": "text",
-      "x": 57,
-      "y": 190,
-      "text": "one formal doc",
-      "size": 12
-    },
-    {
-      "kind": "rect",
-      "x": 535,
-      "y": 110,
-      "w": 330,
-      "h": 190,
-      "fill": "#ffffff",
-      "dash": false
-    },
-    {
-      "kind": "rect",
-      "x": 535,
-      "y": 110,
-      "w": 330,
-      "h": 34,
-      "fill": "#eeeeee",
-      "dash": false
-    },
-    {
-      "kind": "text",
-      "x": 547,
-      "y": 133,
-      "text": "verificationCase Startup",
-      "size": 14
-    },
-    {
-      "kind": "text",
-      "x": 547,
-      "y": 168,
-      "text": "verify Delivery",
-      "size": 12
-    },
-    {
-      "kind": "text",
-      "x": 547,
-      "y": 190,
-      "text": "named routed publish step",
+      "x": 433.0,
+      "y": 206.0,
+      "text": "«include»",
       "size": 12
     },
     {
       "kind": "line",
-      "x1": 375,
-      "y1": 205,
-      "x2": 535,
-      "y2": 205,
+      "x1": 560,
+      "y1": 242,
+      "x2": 520,
+      "y2": 161,
       "dash": true
     },
     {
+      "kind": "line",
+      "x1": 520,
+      "y1": 161,
+      "x2": 528.416,
+      "y2": 166.401,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 520,
+      "y1": 161,
+      "x2": 519.172,
+      "y2": 170.966,
+      "dash": false
+    },
+    {
       "kind": "text",
-      "x": 400.0,
-      "y": 193.0,
-      "text": "intent",
+      "x": 548.0,
+      "y": 205.5,
+      "text": "«extend»",
       "size": 12
+    },
+    {
+      "kind": "ellipse",
+      "x": 109,
+      "y": 118,
+      "w": 22,
+      "h": 22,
+      "fill": "#ffffff"
+    },
+    {
+      "kind": "line",
+      "x1": 120,
+      "y1": 140,
+      "x2": 120,
+      "y2": 182,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 98,
+      "y1": 154,
+      "x2": 142,
+      "y2": 154,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 120,
+      "y1": 182,
+      "x2": 102,
+      "y2": 214,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 120,
+      "y1": 182,
+      "x2": 138,
+      "y2": 214,
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 91.2,
+      "y": 236,
+      "text": "customer",
+      "size": 13
+    },
+    {
+      "kind": "ellipse",
+      "x": 789,
+      "y": 118,
+      "w": 22,
+      "h": 22,
+      "fill": "#ffffff"
+    },
+    {
+      "kind": "line",
+      "x1": 800,
+      "y1": 140,
+      "x2": 800,
+      "y2": 182,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 778,
+      "y1": 154,
+      "x2": 822,
+      "y2": 154,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 800,
+      "y1": 182,
+      "x2": 782,
+      "y2": 214,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 800,
+      "y1": 182,
+      "x2": 818,
+      "y2": 214,
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 785.6,
+      "y": 236,
+      "text": "bank",
+      "size": 13
+    },
+    {
+      "kind": "line",
+      "x1": 144,
+      "y1": 160,
+      "x2": 345,
+      "y2": 136,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 144,
+      "y1": 170,
+      "x2": 312,
+      "y2": 258,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 776,
+      "y1": 160,
+      "x2": 595,
+      "y2": 136,
+      "dash": false
     },
     {
       "kind": "text",
       "x": 45,
-      "y": 345,
-      "text": "satisfy and verify links are intent; a witness requires separate evidence.",
-      "size": 14
+      "y": 350,
+      "text": "Use cases sit inside the subject boundary; actors stay outside and take part through ports.",
+      "size": 13
+    },
+    {
+      "kind": "text",
+      "x": 45,
+      "y": 372,
+      "text": "Solid lines associate actors; include, extend, satisfy and verify are intent, not proof.",
+      "size": 13
     }
   ]
 }

@@ -49,7 +49,7 @@ test('F09 enum head and literal have exact separate targets despite repeated nam
 
 test('F10 case via resolves the inherited routed connector even with repeated occurrence names',async()=>{
     const library='package Library{port def P{provides event ping();}component def A{port p:P;operation go(){publish p.ping();}schedule{on start go();}}component def B{reversed port p:P;operation take(){}schedule{on receive p.ping() take();}}component def Network{component sender:A;component receiver:B;connect link(sender.p,receiver.p);}}';
-    const application='package Test{import Library;component Demo{component first:Network;component second:Network;}useCase Sample of Demo{publish item from first.sender.p.ping to first.receiver.p.ping via link;}}';
+    const application='package Test{import Library;component Demo{component first:Network;component second:Network;}use case Sample of Demo{publish item from first.sender.p.ping to first.receiver.p.ping via link;}}';
     const r=await workspace([library,application]);
     assert.deepEqual(r.docs.flatMap(d=>d.diagnostics?.filter(x=>x.severity===1)??[]),[]);
     const d=r.docs[1],position=d.textDocument.positionAt(application.lastIndexOf('link'));

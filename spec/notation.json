@@ -613,9 +613,9 @@
     },
     {
       "id": "cases",
-      "title": "Named routed case steps",
+      "title": "Use cases, actors and routed case steps",
       "context": "swa.ml 2.0; Traceability::Startup",
-      "syntax": "verificationCase Startup of Demo {\n    verify Delivery;\n    publish greeting from sender.output.message to receiver.input.message;\n  }",
+      "syntax": "verification case Startup of Demo {\n    verify Delivery;\n    publish greeting from sender.output.message to receiver.input.message;\n  }",
       "model": "examples/16-requirements-and-views.swaml",
       "subject": "Traceability::Startup",
       "template": "case",
@@ -625,11 +625,21 @@
       ],
       "productions": [
         "Scenario",
+        "CaseKind",
+        "CaseSubject",
+        "CaseActor",
+        "CaseRelation",
         "ScenarioStep"
       ],
       "keywords": [
+        "use",
+        "case",
+        "verification",
         "useCase",
         "verificationCase",
+        "subject",
+        "actor",
+        "extend",
         "request",
         "reply",
         "from",
@@ -796,6 +806,7 @@
         "Path",
         "WS",
         "ID",
+        "UNRESTRICTED_NAME",
         "NUMBER",
         "INT",
         "STRING",
@@ -1206,6 +1217,34 @@
         "rationale": "Owned semantic projection preserves this production."
       },
       {
+        "production": "CaseKind",
+        "concepts": [
+          "cases"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "CaseSubject",
+        "concepts": [
+          "cases"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "CaseActor",
+        "concepts": [
+          "cases"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "CaseRelation",
+        "concepts": [
+          "cases"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
         "production": "ScenarioStep",
         "concepts": [
           "cases"
@@ -1451,6 +1490,13 @@
         "rationale": "Text spelling is retained in source captions."
       },
       {
+        "production": "UNRESTRICTED_NAME",
+        "concepts": [
+          "lexical"
+        ],
+        "rationale": "Text spelling is retained in source captions."
+      },
+      {
         "production": "NUMBER",
         "concepts": [
           "lexical"
@@ -1487,6 +1533,13 @@
       }
     ],
     "keywords": [
+      {
+        "term": "actor",
+        "concepts": [
+          "cases"
+        ],
+        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
+      },
       {
         "term": "after",
         "concepts": [
@@ -1535,6 +1588,13 @@
           "schedule"
         ],
         "rationale": "Shown in the source caption/compartment for schedule entry and successful chaining."
+      },
+      {
+        "term": "case",
+        "concepts": [
+          "cases"
+        ],
+        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
       },
       {
         "term": "component",
@@ -1642,6 +1702,13 @@
         "rationale": "Shown in the source caption/compartment for ordered state transitions."
       },
       {
+        "term": "extend",
+        "concepts": [
+          "cases"
+        ],
+        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
+      },
+      {
         "term": "fail",
         "concepts": [
           "try"
@@ -1674,7 +1741,7 @@
         "concepts": [
           "cases"
         ],
-        "rationale": "Shown in the source caption/compartment for named routed case steps."
+        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
       },
       {
         "term": "idempotent",
@@ -1772,7 +1839,7 @@
         "concepts": [
           "cases"
         ],
-        "rationale": "Shown in the source caption/compartment for named routed case steps."
+        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
       },
       {
         "term": "on",
@@ -1891,14 +1958,14 @@
         "concepts": [
           "cases"
         ],
-        "rationale": "Shown in the source caption/compartment for named routed case steps."
+        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
       },
       {
         "term": "request",
         "concepts": [
           "cases"
         ],
-        "rationale": "Shown in the source caption/compartment for named routed case steps."
+        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
       },
       {
         "term": "requirement",
@@ -1992,6 +2059,13 @@
         "rationale": "Shown in the source caption/compartment for typed copied values."
       },
       {
+        "term": "subject",
+        "concepts": [
+          "cases"
+        ],
+        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
+      },
+      {
         "term": "times",
         "concepts": [
           "loops"
@@ -2041,11 +2115,18 @@
         "rationale": "Shown in the source caption/compartment for lexical and path spelling."
       },
       {
+        "term": "use",
+        "concepts": [
+          "cases"
+        ],
+        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
+      },
+      {
         "term": "useCase",
         "concepts": [
           "cases"
         ],
-        "rationale": "Shown in the source caption/compartment for named routed case steps."
+        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
       },
       {
         "term": "var",
@@ -2055,11 +2136,18 @@
         "rationale": "Shown in the source caption/compartment for attributes and lexical locals."
       },
       {
+        "term": "verification",
+        "concepts": [
+          "cases"
+        ],
+        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
+      },
+      {
         "term": "verificationCase",
         "concepts": [
           "cases"
         ],
-        "rationale": "Shown in the source caption/compartment for named routed case steps."
+        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
       },
       {
         "term": "verify",
@@ -2073,7 +2161,7 @@
         "concepts": [
           "cases"
         ],
-        "rationale": "Shown in the source caption/compartment for named routed case steps."
+        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
       },
       {
         "term": "view",
