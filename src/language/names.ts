@@ -19,6 +19,20 @@ export function formatPath(path: string): string {
 export function decodeQuotedName(token: string): string { return token.slice(1, -1).replace(/\\(['\\])/g, '$1'); }
 /** Reads a name typed by a person or tool. A surrounding quote pair is optional. */
 export function parseNameInput(text: string): string { const value = text.trim(); return /^'(?:[^'\\]|\\['\\])*'$/.test(value) ? decodeQuotedName(value) : value; }
+/** Reads a typed path such as Shop::'Order Service'.port[2] into its decoded form. Quotes delimit names. */
+export function parsePathInput(text: string): string {
+    let out = '';
+    const value = text.trim();
+    for (let i = 0; i < value.length; i++) {
+        if (value[i] !== "'") {
+            out += value[i];
+            continue;
+        }
+        for (i++; i < value.length && value[i] !== "'"; i++)
+            out += value[i] === '\\' && i + 1 < value.length ? value[++i] : value[i];
+    }
+    return out.replace(/\s*(::|\.|\[)\s*/g, '$1').replace(/\s*\]/g, ']');
+}
 /** Why a decoded name cannot be written, or undefined when it is legal. */
 export function nameProblem(name: string): string | undefined {
     if (!name)

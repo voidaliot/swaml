@@ -3,7 +3,7 @@ const test = (name: string, fn: () => unknown) => nodeTest(name, async () => { a
 import assert from 'node:assert/strict';
 import { AstUtils, GrammarAST } from 'langium';
 import { invalid, parse, valid } from './helpers.js';
-import { CONTEXTUAL_KEYWORDS, RESERVED_WORDS, formatName, formatPath, formatQualifiedName, nameProblem, parseNameInput } from '../../src/language/names.js';
+import { CONTEXTUAL_KEYWORDS, RESERVED_WORDS, formatName, formatPath, formatQualifiedName, nameProblem, parseNameInput, parsePathInput } from '../../src/language/names.js';
 import { SwamlGrammar } from '../../src/language/generated/grammar.js';
 import { projectModel } from '../../src/language/projection.js';
 import { selectView } from '../../src/language/presentation.js';
@@ -50,6 +50,9 @@ test('name spelling quotes only when needed and round-trips', () => {
     assert.equal(formatPath('Shop::Demo.port'), "Shop::Demo.'port'");
     assert.equal(parseNameInput("  'Withdraw cash' "), 'Withdraw cash');
     assert.equal(parseNameInput('Withdraw cash'), 'Withdraw cash');
+    assert.equal(parsePathInput("Shop :: 'Order Service' . port[ 2 ].ready"), 'Shop::Order Service.port[2].ready');
+    assert.equal(formatPath(parsePathInput("'Cash Machine'::Branch.'state'")), "'Cash Machine'::Branch.'state'");
+    assert.equal(formatPath(parsePathInput('Cash Machine::Branch.atm')), "'Cash Machine'::Branch.atm");
     for (const bad of ['', ' padded', 'two  spaces', 'a.b', 'a::b', 'x[1]', 'tab\there'])
         assert.ok(nameProblem(bad), bad);
     assert.equal(nameProblem('Bestellübersicht'), undefined);
