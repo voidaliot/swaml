@@ -192,13 +192,13 @@ swa.ml 2.0; Traceability::Delivery.
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 
-## Named routed case steps
+## Use cases, actors and routed case steps
 
 swa.ml 2.0; Traceability::Startup.
 
-![Named routed case steps](notation/2.0/cases.svg)
+![Use cases, actors and routed case steps](notation/2.0/cases.svg)
 
-**Source:** [Traceability::Startup](../examples/16-requirements-and-views.swaml). **Grammar:** Scenario, ScenarioStep.
+**Source:** [Traceability::Startup](../examples/16-requirements-and-views.swaml). **Grammar:** Scenario, CaseKind, CaseSubject, CaseActor, CaseRelation, ScenarioStep.
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 
@@ -248,6 +248,6 @@ swa.ml 2.0; Hello::Demo.
 
 ![Lexical and path spelling](notation/2.0/lexical.svg)
 
-**Source:** [Hello::Demo](../examples/01-hello.swaml). **Grammar:** Duration, Name, Path, WS, ID, NUMBER, INT, STRING, ML_COMMENT, SL_COMMENT.
+**Source:** [Hello::Demo](../examples/01-hello.swaml). **Grammar:** Duration, Name, Path, WS, ID, UNRESTRICTED_NAME, NUMBER, INT, STRING, ML_COMMENT, SL_COMMENT.
 
 Text-only spelling; show as a source caption without invented semantic nodes. Drawing is a projection; it does not add execution semantics. Lexical spelling has no independent graphical identity.

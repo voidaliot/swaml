@@ -119,7 +119,9 @@ For a state machine, write initial and state directly in an operation. Put trans
 
 Use a separate deployment declaration over software and platform roots. Targets are component occurrences specializing Swaml::Platform::Node. Const attributes may retain external ref identities; task/core scheduling stays in target adapters. [The deployment example](../examples/22-platform-deployment.swaml) shows family placement with an indexed override.
 
-Requirements, satisfy and verificationCase/verify record intent. [The traceability example](../examples/16-requirements-and-views.swaml) includes a routed named case and views. A case does not inject events or prove a witness. Use from/to/via/after to describe exchange dependencies.
+Requirements, satisfy and verification case/verify record intent. [The traceability example](../examples/16-requirements-and-views.swaml) includes a routed named case and views. A case does not inject events or prove a witness. Use from/to/via/after to describe exchange dependencies.
+
+Write use case Name of Root { … } with subject for the system under consideration and actor for each participant outside it. Subject and actors are component occurrences inside the root, so actors still communicate through ports. A use case may include or extend another use case of the same root. [The use case example](../examples/28-use-cases.swaml) shows actors, include, extend and quoted names. Names containing spaces, letters outside ASCII or reserved words are written in single quotes, for example use case 'Withdraw cash' or attribute 'state': int = 0;.
 
 Import Swaml::Views and type views by General, Interconnect, Case, Sequence, Grid, Flow or Timing. Compact of selects a subject; include/recursive/where builds a stable union. Filter kinds are component and operation for the structural/executable families. Browser navigates ownership; Flow combines statements/states; Timing separates declared schedule/deadline information from identified observed traces. Presentation layout belongs in sidecars, not language source.
 

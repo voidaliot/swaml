@@ -7,7 +7,7 @@ Normative chapter of [swa.ml 2.0](../LANGUAGE_SPECIFICATION.md). Acceptance leve
 | ID | Required validation | Diagnostic group |
 | --- | --- | --- |
 | V01 | Headerless pinned edition, portable tokens, malformed recovery and literal domains | syntax, SW2000/2002 |
-| V02 | Unique names, explicit imports, unambiguous qualified/short references, no live-name shadowing | SW2001 |
+| V02 | Legal basic/quoted name spelling, unique names, explicit imports, unambiguous qualified/short references, no live-name shadowing | SW2001 |
 | V03 | Finite nominal records/enums/fixed arrays, complete typed values, no void data, index ranges | SW2002 |
 | V04 | Component-only definitions/usages, finite containment, acyclic single base, explicit compatible whole replacement, typed root additions, positive multiplicity | SW2003 |
 | V05 | Directed port shape, reversal, nominal payloads and structural variance with per-member diagnostics | SW2004 |
@@ -19,7 +19,7 @@ Normative chapter of [swa.ml 2.0](../LANGUAGE_SPECIFICATION.md). Acceptance leve
 | V11 | Stateful parameterless void signature, exactly one start entry, reachable states, ordered transitions and final restrictions | SW2008 |
 | V12 | Typed complete policies, effective-use idempotency, positive safe time/capacity domains | SW2013 |
 | V13 | Node-only target content, root/occurrence/index placement resolution and unique exact paths | SW2009 |
-| V14 | Immutable requirements, legal satisfy/verify, routed cases, causal unique replies, seven library view kinds/subjects and stable selection union | SW2010 |
+| V14 | Immutable requirements, legal satisfy/verify, case subject/actors and acyclic include/extend, routed cases, causal unique replies, seven library view kinds/subjects and stable selection union | SW2010 |
 | V15 | Stale-read and inactive interrupt-input warnings without a race-freedom claim | SW2011/2012 |
 
 Validation MUST rebuild semantic string paths as well as indexed references after workspace changes/additions/deletions. Negative lookups matter: a newly loaded declaration may make a previously resolved short name ambiguous. Malformed source remains editable and invalid; recovery cannot silently accept a different program. Definite-return analysis may be conservative rather than solving arbitrary conditions. Dynamic numeric/index/termination failures remain runtime obligations.

@@ -79,8 +79,25 @@ def scene(title, template):
         box(40,140,235,140,'try(api.get(1), -1.0)',['evaluate expression','retain committed effects']);box(360,90,230,105,'success',['return copied result']);box(360,235,230,105,'runtime failure',['evaluate lazy fallback']);line(275,185,360,145);line(275,230,360,275);text(640,180,'Interruption, deadline',13);text(640,205,'and resources bypass try.',13)
     elif template in ('call','flow'):
         box(40,140,235,130,'entry',['typed arguments']);box(345,140,235,130,'operation',['local expression call','or owned port request']);box(650,140,225,130,'return',['copied result / out','copy-back on success']);line(275,205,345,205);line(580,205,650,205)
-    elif template in ('requirement','case'):
-        box(45,110,330,190,'requirement Delivery',['immutable typed attributes','one formal doc']);box(535,110,330,190,'verificationCase Startup',['verify Delivery','named routed publish step']);line(375,205,535,205,'intent',True);text(45,345,'satisfy and verify links are intent; a witness requires separate evidence.',14)
+    elif template=='requirement':
+        box(45,110,330,190,'requirement Delivery',['immutable typed attributes','one formal doc']);box(535,110,330,190,'verification case Startup',['verify Delivery','named routed publish step']);line(375,205,535,205,'«verify» intent',True);text(45,345,'satisfy and verify links are intent; a witness requires separate evidence.',14)
+    elif template=='case':
+        def ellipse(cx,cy,w,h,name):
+            s['elements'].append({'kind':'ellipse','x':cx-w/2,'y':cy-h/2,'w':w,'h':h,'fill':'#ffffff'});text(cx-len(name)*3.6,cy+5,name,13)
+        def actor(cx,name):
+            s['elements'].append({'kind':'ellipse','x':cx-11,'y':118,'w':22,'h':22,'fill':'#ffffff'})
+            line(cx,140,cx,182);line(cx-22,154,cx+22,154);line(cx,182,cx-18,214);line(cx,182,cx+18,214);text(cx-len(name)*3.6,236,name,13)
+        def arrow(x1,y1,x2,y2,label):
+            line(x1,y1,x2,y2,'',True);angle=math.atan2(y2-y1,x2-x1)
+            for turn in (2.6,-2.6):line(x2,y2,round(x2+10*math.cos(angle+turn),3),round(y2+10*math.sin(angle+turn),3))
+            text((x1+x2)/2+8,(y1+y2)/2+4,label,12)
+        rect(290,72,360,250);text(302,94,"subject atm : 'ATM Controller'",12)
+        ellipse(470,136,250,52,"'Withdraw cash'");ellipse(395,265,170,46,'Authenticate');ellipse(567,265,140,46,"'Print receipt'")
+        arrow(440,162,410,242,'«include»');arrow(560,242,520,161,'«extend»')
+        actor(120,'customer');actor(800,'bank')
+        line(144,160,345,136);line(144,170,312,258);line(776,160,595,136)
+        text(45,350,'Use cases sit inside the subject boundary; actors stay outside and take part through ports.',13)
+        text(45,372,'Solid lines associate actors; include, extend, satisfy and verify are intent, not proof.',13)
     elif template=='view':
         for i,name in enumerate(['General','Interconnect','Case','Sequence','Grid','Flow','Timing']):box(38+(i%4)*220,95+(i//4)*130,200,105,name,['source-backed selection'])
         text(40,370,'Browser navigates ownership. Views never execute behavior.',13)

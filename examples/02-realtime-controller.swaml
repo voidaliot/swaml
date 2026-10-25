@@ -49,7 +49,7 @@ package Control {
     attribute limitMs: uint = 5;
   }
   satisfy Responsive of Demo.controller;
-  verificationCase ControlLoop of Demo {
+  verification case ControlLoop of Demo {
     verify Responsive;
     send measured from sensor.reading.temperature to controller.reading.temperature via samples;
     publish applied from controller.command.set to heater.command.set via commands after measured;

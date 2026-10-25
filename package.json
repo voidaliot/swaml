@@ -16,7 +16,8 @@
     "./timing": "./out/src/simulation/timing.js",
     "./projection": "./out/src/language/projection.js",
     "./semantic": "./out/src/language/semantic.js",
-    "./presentation": "./out/src/language/presentation.js"
+    "./presentation": "./out/src/language/presentation.js",
+    "./names": "./out/src/language/names.js"
   },
   "bin": {
     "swaml": "./out/src/cli/main.js",

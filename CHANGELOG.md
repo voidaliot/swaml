@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add quoted names such as 'Withdraw cash', 'Bestellübersicht' and 'state' for spaces, letters outside ASCII and reserved words; name, kind and path become contextual words. Quoted names exclude path separators and untidy spaces. Rename writes quoted names where required. Normative addition for the next minor edition; see ADR 0017.
+- Write cases as use case and verification case. The 2.0 spellings useCase and verificationCase remain valid and report the new SW2015 warning with a safe replacement.
+- Add case subject and actor occurrences, and acyclic include/extend relations between use cases of one root. The Case notation now draws a subject boundary, actors and labeled intent links. Add the executable use case example 28.
+- Explain spaces in names, double-quoted names, reserved words, letters outside ASCII and misplaced documentation comments in syntax diagnostics. Report each inherited provenance finding once.
 - Use major.minor versions for the swa.ml standard, beginning with the current 2.0 label. Generated inventories and website metadata read spec/standard.json and CI rejects patch or draft suffixes. Implementation package versions remain independent; existing published tags, release notes and artifacts retain their original identities.
 - Inventory regeneration now preserves the swa.ml branding and mixed-port catalog, with a reproducibility check in the core gate.
 

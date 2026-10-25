@@ -1,0 +1,107 @@
+package 'Cash Machine' {
+  import Swaml::Views;
+  port def Panel {
+    provides event cardInserted(cardId: string);
+    provides event cashRequested(amount: uint);
+    requires event cashDispensed(amount: uint);
+  }
+  port def Authorization {
+    requires operation authorize(cardId: string, amount: uint) returns bool;
+  }
+  component def Customer {
+    /** Actor: a bank customer at the machine. */
+    port panel: Panel;
+    attribute received: uint = 0;
+    operation arrive() {
+      publish panel.cardInserted("4711");
+      publish panel.cashRequested(100);
+    }
+    operation take(amount: uint) {
+      received = amount;
+    }
+    schedule {
+      on start arrive();
+      on receive panel.cashDispensed(amount) take(amount);
+    }
+  }
+  component def 'ATM Controller' {
+    /** The system under consideration. */
+    reversed port panel: Panel;
+    port bank: Authorization;
+    attribute card: string = "";
+    operation remember(cardId: string) {
+      card = cardId;
+    }
+    operation withdraw(amount: uint) {
+      var approved: bool = bank.authorize(card, amount);
+      if (approved) {
+        publish panel.cashDispensed(amount);
+      }
+    }
+    schedule {
+      on receive panel.cardInserted(cardId) remember(cardId);
+      on receive panel.cashRequested(amount) withdraw(amount);
+    }
+  }
+  component def Bank {
+    /** Actor: the card issuer's authorization service. */
+    reversed port link: Authorization;
+    operation authorize(cardId: string, amount: uint) returns bool {
+      return amount <= 500;
+    }
+    schedule {
+      on call link.authorize(cardId, amount) authorize(cardId, amount);
+    }
+  }
+  component Branch {
+    component customer: Customer;
+    component atm: 'ATM Controller';
+    component bank: Bank;
+    connect (customer.panel, atm.panel);
+    connect (atm.bank, bank.link);
+  }
+  requirement 'Cash limit' {
+    /** A single withdrawal never exceeds the limit. */
+    attribute limit: uint = 500;
+  }
+  satisfy 'Cash limit' of Branch.bank;
+  use case 'Withdraw cash' of Branch {
+    /** The customer inserts a card, asks for cash and receives it. */
+    subject atm;
+    actor customer;
+    actor bank;
+    include Authenticate;
+    publish 'insert card' from customer.panel.cardInserted to atm.panel.cardInserted;
+    publish 'ask for cash' from customer.panel.cashRequested to atm.panel.cashRequested after 'insert card';
+    request authorize from atm.bank.authorize to bank.link.authorize after 'ask for cash';
+    reply approve from bank.link.authorize to atm.bank.authorize after authorize;
+    publish 'dispense cash' from atm.panel.cashDispensed to customer.panel.cashDispensed after approve;
+  }
+  use case Authenticate of Branch {
+    /** The machine reads the card before any transaction. */
+    subject atm;
+    actor customer;
+    publish 'insert card' from customer.panel.cardInserted to atm.panel.cardInserted;
+  }
+  use case 'Print receipt' of Branch {
+    /** A receipt may follow a withdrawal. */
+    subject atm;
+    actor customer;
+    extend 'Withdraw cash';
+  }
+  verification case 'Limit honoured' of Branch {
+    subject atm;
+    actor customer;
+    actor bank;
+    verify 'Cash limit';
+    publish 'ask for cash' from customer.panel.cashRequested to atm.panel.cashRequested;
+    request authorize from atm.bank.authorize to bank.link.authorize after 'ask for cash';
+  }
+  view 'use cases': Case {
+    include 'Withdraw cash';
+    include Authenticate;
+    include 'Print receipt';
+    include 'Limit honoured';
+  }
+  view withdrawal: Sequence of 'Withdraw cash';
+}

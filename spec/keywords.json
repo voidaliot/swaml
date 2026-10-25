@@ -4,6 +4,18 @@
   "edition": "2.0",
   "entries": [
     {
+      "keyword": "actor",
+      "meaning": "Names a case occurrence outside the subject that takes part in the case.",
+      "concern": "Use cases, actors and routed case steps",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "'actor' path=Path ';';",
+      "contextual": false,
+      "productions": [
+        "CaseActor",
+        "Name"
+      ]
+    },
+    {
       "keyword": "after",
       "meaning": "Introduces a state timer, case dependency or success schedule dependency.",
       "concern": "Ordered state transitions",
@@ -83,6 +95,18 @@
       "contextual": false,
       "productions": [
         "ScheduleEntry"
+      ]
+    },
+    {
+      "keyword": "case",
+      "meaning": "Completes the use case or verification case keyword pair.",
+      "concern": "Use cases, actors and routed case steps",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "'use' 'case' | 'verification' 'case' | 'useCase' | 'verificationCase';",
+      "contextual": false,
+      "productions": [
+        "CaseKind",
+        "Name"
       ]
     },
     {
@@ -256,6 +280,18 @@
       ]
     },
     {
+      "keyword": "extend",
+      "meaning": "Records that a use case extends another use case of the same root.",
+      "concern": "Use cases, actors and routed case steps",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "kind=('include'|'extend') target=[Scenario:QualifiedName] ';';",
+      "contextual": false,
+      "productions": [
+        "CaseRelation",
+        "Name"
+      ]
+    },
+    {
       "keyword": "fail",
       "meaning": "Used in runtime failure and lazy fallback; see its grammar contexts and normative constraints.",
       "concern": "Runtime failure and lazy fallback",
@@ -303,7 +339,7 @@
     {
       "keyword": "from",
       "meaning": "Introduces the source endpoint of a named case step.",
-      "concern": "Named routed case steps",
+      "concern": "Use cases, actors and routed case steps",
       "normative": "docs/spec/04-systems-and-conformance.md",
       "example": "kind=('send'|'publish'|'request'|'reply') name=Name 'from' source=Path 'to' target=Path ('via' connector=Name)? ('after' predecessor=Name)? ';';",
       "contextual": true,
@@ -359,12 +395,13 @@
     },
     {
       "keyword": "include",
-      "meaning": "Used in seven library view definitions; see its grammar contexts and normative constraints.",
+      "meaning": "Adds a view selection, or records that a use case includes another use case of the same root.",
       "concern": "Seven library view definitions",
       "normative": "docs/spec/04-systems-and-conformance.md",
-      "example": "'include' subject=Path (recursive?='recursive')? ('where' filter=FilterExpression)? ';';",
+      "example": "kind=('include'|'extend') target=[Scenario:QualifiedName] ';';",
       "contextual": false,
       "productions": [
+        "CaseRelation",
         "ViewSelection"
       ]
     },
@@ -409,7 +446,8 @@
       "example": "field=('name'|'kind'|'path') operator=('=='|'!=') value=STRING;",
       "contextual": false,
       "productions": [
-        "FilterComparison"
+        "FilterComparison",
+        "Name"
       ]
     },
     {
@@ -431,7 +469,8 @@
       "example": "field=('name'|'kind'|'path') operator=('=='|'!=') value=STRING;",
       "contextual": false,
       "productions": [
-        "FilterComparison"
+        "FilterComparison",
+        "Name"
       ]
     },
     {
@@ -459,8 +498,8 @@
     },
     {
       "keyword": "of",
-      "meaning": "Used in named routed case steps; see its grammar contexts and normative constraints.",
-      "concern": "Named routed case steps",
+      "meaning": "Used in use cases, actors and routed case steps; see its grammar contexts and normative constraints.",
+      "concern": "Use cases, actors and routed case steps",
       "normative": "docs/spec/04-systems-and-conformance.md",
       "example": "'deployment' name=Name 'of' root=[ComponentUsage:QualifiedName] 'on' platform=[ComponentUsage:QualifiedName] '{' documentation=Documentation? placements+=Placement* '}';",
       "contextual": false,
@@ -555,7 +594,8 @@
       "example": "field=('name'|'kind'|'path') operator=('=='|'!=') value=STRING;",
       "contextual": false,
       "productions": [
-        "FilterComparison"
+        "FilterComparison",
+        "Name"
       ]
     },
     {
@@ -669,8 +709,8 @@
     },
     {
       "keyword": "reply",
-      "meaning": "Used in named routed case steps; see its grammar contexts and normative constraints.",
-      "concern": "Named routed case steps",
+      "meaning": "Used in use cases, actors and routed case steps; see its grammar contexts and normative constraints.",
+      "concern": "Use cases, actors and routed case steps",
       "normative": "docs/spec/04-systems-and-conformance.md",
       "example": "kind=('send'|'publish'|'request'|'reply') name=Name 'from' source=Path 'to' target=Path ('via' connector=Name)? ('after' predecessor=Name)? ';';",
       "contextual": false,
@@ -680,8 +720,8 @@
     },
     {
       "keyword": "request",
-      "meaning": "Used in named routed case steps; see its grammar contexts and normative constraints.",
-      "concern": "Named routed case steps",
+      "meaning": "Used in use cases, actors and routed case steps; see its grammar contexts and normative constraints.",
+      "concern": "Use cases, actors and routed case steps",
       "normative": "docs/spec/04-systems-and-conformance.md",
       "example": "kind=('send'|'publish'|'request'|'reply') name=Name 'from' source=Path 'to' target=Path ('via' connector=Name)? ('after' predecessor=Name)? ';';",
       "contextual": true,
@@ -837,6 +877,18 @@
       ]
     },
     {
+      "keyword": "subject",
+      "meaning": "Names the case occurrence whose boundary contains the use case.",
+      "concern": "Use cases, actors and routed case steps",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "'subject' path=Path ';';",
+      "contextual": false,
+      "productions": [
+        "CaseSubject",
+        "Name"
+      ]
+    },
+    {
       "keyword": "times",
       "meaning": "Introduces a once-evaluated uint loop limit.",
       "concern": "Loops and copied iteration",
@@ -918,14 +970,26 @@
       ]
     },
     {
-      "keyword": "useCase",
-      "meaning": "Used in named routed case steps; see its grammar contexts and normative constraints.",
-      "concern": "Named routed case steps",
+      "keyword": "use",
+      "meaning": "Starts the use case keyword pair use case.",
+      "concern": "Use cases, actors and routed case steps",
       "normative": "docs/spec/04-systems-and-conformance.md",
-      "example": "kind=('useCase'|'verificationCase') name=Name 'of' root=[ComponentUsage:QualifiedName] '{' documentation=Documentation? verifications+=Verification* steps+=ScenarioStep* '}';",
+      "example": "'use' 'case' | 'verification' 'case' | 'useCase' | 'verificationCase';",
       "contextual": false,
       "productions": [
-        "Scenario"
+        "CaseKind",
+        "Name"
+      ]
+    },
+    {
+      "keyword": "useCase",
+      "meaning": "Deprecated 2.0 spelling of use case, reported by SW2015 with a safe replacement.",
+      "concern": "Use cases, actors and routed case steps",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "'use' 'case' | 'verification' 'case' | 'useCase' | 'verificationCase';",
+      "contextual": false,
+      "productions": [
+        "CaseKind"
       ]
     },
     {
@@ -940,14 +1004,26 @@
       ]
     },
     {
-      "keyword": "verificationCase",
-      "meaning": "Used in named routed case steps; see its grammar contexts and normative constraints.",
-      "concern": "Named routed case steps",
+      "keyword": "verification",
+      "meaning": "Starts the verification case keyword pair verification case.",
+      "concern": "Use cases, actors and routed case steps",
       "normative": "docs/spec/04-systems-and-conformance.md",
-      "example": "kind=('useCase'|'verificationCase') name=Name 'of' root=[ComponentUsage:QualifiedName] '{' documentation=Documentation? verifications+=Verification* steps+=ScenarioStep* '}';",
+      "example": "'use' 'case' | 'verification' 'case' | 'useCase' | 'verificationCase';",
       "contextual": false,
       "productions": [
-        "Scenario"
+        "CaseKind",
+        "Name"
+      ]
+    },
+    {
+      "keyword": "verificationCase",
+      "meaning": "Deprecated 2.0 spelling of verification case, reported by SW2015 with a safe replacement.",
+      "concern": "Use cases, actors and routed case steps",
+      "normative": "docs/spec/04-systems-and-conformance.md",
+      "example": "'use' 'case' | 'verification' 'case' | 'useCase' | 'verificationCase';",
+      "contextual": false,
+      "productions": [
+        "CaseKind"
       ]
     },
     {
@@ -963,8 +1039,8 @@
     },
     {
       "keyword": "via",
-      "meaning": "Used in named routed case steps; see its grammar contexts and normative constraints.",
-      "concern": "Named routed case steps",
+      "meaning": "Used in use cases, actors and routed case steps; see its grammar contexts and normative constraints.",
+      "concern": "Use cases, actors and routed case steps",
       "normative": "docs/spec/04-systems-and-conformance.md",
       "example": "kind=('send'|'publish'|'request'|'reply') name=Name 'from' source=Path 'to' target=Path ('via' connector=Name)? ('after' predecessor=Name)? ';';",
       "contextual": false,

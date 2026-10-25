@@ -483,7 +483,43 @@
       "kernel": [
         "Feature"
       ],
-      "semantic": "Scenario: preserve named routed case steps, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "semantic": "Scenario: preserve use cases, actors and routed case steps, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
+    },
+    {
+      "source": "CaseKind",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "CaseKind: preserve use cases, actors and routed case steps, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
+    },
+    {
+      "source": "CaseSubject",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "CaseSubject: preserve use cases, actors and routed case steps, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
+    },
+    {
+      "source": "CaseActor",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "CaseActor: preserve use cases, actors and routed case steps, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
+    },
+    {
+      "source": "CaseRelation",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "CaseRelation: preserve use cases, actors and routed case steps, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
       "normative": "docs/spec/04-systems-and-conformance.md"
     },
     {
@@ -492,7 +528,7 @@
       "kernel": [
         "Feature"
       ],
-      "semantic": "ScenarioStep: preserve named routed case steps, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "semantic": "ScenarioStep: preserve use cases, actors and routed case steps, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
       "normative": "docs/spec/04-systems-and-conformance.md"
     },
     {
@@ -787,6 +823,13 @@
       "kind": "lexical",
       "kernel": [],
       "semantic": "ID: preserve lexical and path spelling, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
+      "source": "UNRESTRICTED_NAME",
+      "kind": "lexical",
+      "kernel": [],
+      "semantic": "UNRESTRICTED_NAME: preserve lexical and path spelling, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
       "normative": "docs/spec/01-structure-and-types.md"
     },
     {

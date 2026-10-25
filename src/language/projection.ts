@@ -83,6 +83,16 @@ export function projectModel(models: readonly a.Model[]): Projection {
         if (isExecutable(n) && body(n)?.states.length)
             for (const state of body(n)!.states)
                 state.transitions.forEach((t, i) => addEdge('transition', id + '.' + state.name, id + '.' + t.target, t.endpoint ? 'on receive ' + t.endpoint : 'after ' + t.delay?.value + t.delay?.unit, { order: i }));
+        if (a.isScenario(n) && n.root.ref) {
+            const root = identity(n.root.ref);
+            if (n.subject)
+                addEdge('subject', id, root + '.' + n.subject.path, 'subject');
+            for (const actor of n.actors)
+                addEdge('actor', id, root + '.' + actor.path, 'actor');
+            for (const r of n.relations)
+                if (r.target.ref)
+                    addEdge(r.kind, id, identity(r.target.ref), r.kind);
+        }
         result.nodes.push(p);
         if (parent)
             addEdge('ownership', parent.path, id, item.kind);

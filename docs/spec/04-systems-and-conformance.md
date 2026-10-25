@@ -10,7 +10,13 @@ A package deployment Name of Root on PlatformRoot owns placements. deploy on nod
 
 ## 4.2 Requirements and cases
 
-A requirement owns immutable typed attributes and at most one doc. satisfy Requirement of designPath records design intent. Only verificationCase owns verify Requirement. Neither relation proves fulfillment. A useCase or verificationCase selects one root with of; it owns routed steps and optional documentation, never behavior or hidden actors that bypass ports.
+A requirement owns immutable typed attributes and at most one doc. satisfy Requirement of designPath records design intent. Only a verification case owns verify Requirement. Neither relation proves fulfillment.
+
+A case is written use case Name of Root { … } or verification case Name of Root { … }. The 2.0 spellings useCase and verificationCase remain accepted with the same meaning; validation reports the SW2015 warning with a safe replacement. A case selects one concrete root with of and owns, in this order, optional documentation, an optional subject, actors, use case relations, verify links and routed steps. It never owns behavior or hidden actors that bypass ports.
+
+subject path; names the component occurrence inside the root whose boundary contains the case: the system under consideration. Without a subject the root itself is the subject. actor path; names a component occurrence inside the root that takes part from outside the subject boundary. Actors require a subject, are distinct, and neither contain nor lie inside the subject. Both paths index multiplicity occurrences. Actors are ordinary components: every exchange with them still crosses typed ports and explicit routes. When a subject is declared, every step endpoint belongs to the subject or to a declared actor, including their descendants.
+
+include Case; and extend Case; are owned only by use cases and name another use case of the same root. include records that the owning use case incorporates the named one; extend records that the owning use case optionally extends the named base use case. The combined include and extend graph is acyclic and repeats no relation. These relations are intent: steps are not merged and no relation executes behavior.
 
 A step has kind name from source to target, optional via connector and optional after step. Kinds are send, publish, request and reply. Source/target are occurrence port-member paths in the case root. Direction, kind and payload/signature compatibility must match a real resolved connection. via names a connector; it may be omitted only when exactly one connection joins the endpoints. Unnamed connectors cannot be selected by name. Forwarding aliases are resolved and do not create a case message.
 
@@ -20,7 +26,7 @@ Names are unique. An after predecessor names an earlier step; source order other
 
 Swaml::Views provides General, Interconnect, Case, Sequence, Grid, Flow and Timing. A view is typed by a definition, uses compact of subject or one or more include clauses, and owns optional documentation. Include may expand recursive descendants and apply a restricted Boolean where filter over name, kind and path, string comparisons, and/or/not. Filters never call operations or execute behavior. Selection is a union of occurrence identities in first-selection order; duplicates are removed stably.
 
-General and Grid select named semantic elements except views. Interconnect selects components. Case/Sequence select roots or cases. Flow/Timing select operations. Paths preserve definition/occurrence identity and explicit multiplicity indexes. Browser is navigation rather than an eighth view kind. General Box in box and Tree layouts retain exactly the same selected identities and topology; layout/collapse/geometry stay in presentation sidecars.
+General and Grid select named semantic elements except views. Interconnect selects components. Case/Sequence select roots or cases. Case draws selected cases inside their subject boundary, their actors outside it, and their include, extend, satisfy and verify intent links. Flow/Timing select operations. Paths preserve definition/occurrence identity and explicit multiplicity indexes. Browser is navigation rather than an eighth view kind. General Box in box and Tree layouts retain exactly the same selected identities and topology; layout/collapse/geometry stay in presentation sidecars.
 
 Flow covers statements, nested operation calls, loops, receive, interruption and function-owned states. Timing has declared and observed modes. Declared shows schedule release grid, causes, deadlines, static wait intervals and permitted concurrent overlap. Observed adds an identified trace, serial lock gaps, message latency, activation phases, terminal markers and open intervals; WCET/budget bars identify their target-binding/evidence source. A missing trace never produces fabricated observation. Views introduce no execution semantics.
 
@@ -29,7 +35,7 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | Code | Static group |
 | --- | --- |
 | SW2000 | Syntax and recovery diagnostics in machine-readable CLI output |
-| SW2001 | Names, imports, uniqueness and forbidden live-name shadowing |
+| SW2001 | Names, quoted-name spelling, imports, uniqueness and forbidden live-name shadowing |
 | SW2002 | Value types, nominal shapes, domains, arguments/results and indexes |
 | SW2003 | Definition/usage, specialization, containment and whole-member redefinition |
 | SW2004 | Port shape, structural compatibility, endpoints, aliases, closure/cardinality |
@@ -38,11 +44,12 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | SW2007 | Schedule identity, signatures, deadlines and after graph |
 | SW2008 | Stateful signatures, scheduling, ordered states and reachability/finality |
 | SW2009 | Node content, deployment paths, indexes and specificity |
-| SW2010 | Requirement/case/view references, direction, correlation and subject rules |
+| SW2010 | Requirement/case/view references, direction, correlation, case subject/actor and include/extend rules |
 | SW2011 | Conservative stale-read warning |
 | SW2012 | Inactive interrupt-input discard warning |
 | SW2013 | Complete typed policies and representable positive durations |
 | SW2014 | Canonical formatting differs, only in explicit formatting-check mode |
+| SW2015 | Deprecated 2.0 spelling with a safe replacement, reported as a warning |
 
 Every diagnostic includes a source range and stable code. Machine-readable diagnostics retain declaration identity and occurrence context when resolved. A suggested edit is supplied only for a safe unambiguous correction; tools must revalidate the resulting complete workspace before applying it. Parser recovery may suspend semantic checks on invalid syntax, but the document remains invalid and must not crash the service.
 

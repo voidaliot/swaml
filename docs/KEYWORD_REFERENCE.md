@@ -2,7 +2,15 @@
 
 Generated from spec/keywords.json and the normative grammar. Examples here are grammar fragments; complete runnable models are in the usage guide and examples. Five contextual words remain legal names outside their positions. Call appears only in the on call trigger.
 
-[after](#keyword-after) · [and](#keyword-and) · [assert](#keyword-assert) · [attribute](#keyword-attribute) · [bool](#keyword-bool) · [byte](#keyword-byte) · [call](#keyword-call) · [component](#keyword-component) · [concurrent](#keyword-concurrent) · [connect](#keyword-connect) · [const](#keyword-const) · [datatype](#keyword-datatype) · [deadline](#keyword-deadline) · [def](#keyword-def) · [deploy](#keyword-deploy) · [deployment](#keyword-deployment) · [else](#keyword-else) · [entry](#keyword-entry) · [enum](#keyword-enum) · [event](#keyword-event) · [every](#keyword-every) · [exit](#keyword-exit) · [fail](#keyword-fail) · [false](#keyword-false) · [final](#keyword-final) · [for](#keyword-for) · [from](#keyword-from) · [idempotent](#keyword-idempotent) · [if](#keyword-if) · [import](#keyword-import) · [in](#keyword-in) · [include](#keyword-include) · [initial](#keyword-initial) · [int](#keyword-int) · [interruptible](#keyword-interruptible) · [kind](#keyword-kind) · [ms](#keyword-ms) · [name](#keyword-name) · [not](#keyword-not) · [ns](#keyword-ns) · [of](#keyword-of) · [on](#keyword-on) · [operation](#keyword-operation) · [optional](#keyword-optional) · [or](#keyword-or) · [out](#keyword-out) · [package](#keyword-package) · [path](#keyword-path) · [port](#keyword-port) · [provides](#keyword-provides) · [publish](#keyword-publish) · [qos](#keyword-qos) · [real](#keyword-real) · [receive](#keyword-receive) · [record](#keyword-record) · [recursive](#keyword-recursive) · [redefines](#keyword-redefines) · [reply](#keyword-reply) · [request](#keyword-request) · [requirement](#keyword-requirement) · [requires](#keyword-requires) · [return](#keyword-return) · [returns](#keyword-returns) · [reversed](#keyword-reversed) · [s](#keyword-s) · [satisfy](#keyword-satisfy) · [schedule](#keyword-schedule) · [send](#keyword-send) · [specializes](#keyword-specializes) · [start](#keyword-start) · [state](#keyword-state) · [string](#keyword-string) · [times](#keyword-times) · [to](#keyword-to) · [true](#keyword-true) · [try](#keyword-try) · [uint](#keyword-uint) · [until](#keyword-until) · [us](#keyword-us) · [useCase](#keyword-usecase) · [var](#keyword-var) · [verificationCase](#keyword-verificationcase) · [verify](#keyword-verify) · [via](#keyword-via) · [view](#keyword-view) · [void](#keyword-void) · [wait](#keyword-wait) · [when](#keyword-when) · [where](#keyword-where) · [while](#keyword-while)
+[actor](#keyword-actor) · [after](#keyword-after) · [and](#keyword-and) · [assert](#keyword-assert) · [attribute](#keyword-attribute) · [bool](#keyword-bool) · [byte](#keyword-byte) · [call](#keyword-call) · [case](#keyword-case) · [component](#keyword-component) · [concurrent](#keyword-concurrent) · [connect](#keyword-connect) · [const](#keyword-const) · [datatype](#keyword-datatype) · [deadline](#keyword-deadline) · [def](#keyword-def) · [deploy](#keyword-deploy) · [deployment](#keyword-deployment) · [else](#keyword-else) · [entry](#keyword-entry) · [enum](#keyword-enum) · [event](#keyword-event) · [every](#keyword-every) · [exit](#keyword-exit) · [extend](#keyword-extend) · [fail](#keyword-fail) · [false](#keyword-false) · [final](#keyword-final) · [for](#keyword-for) · [from](#keyword-from) · [idempotent](#keyword-idempotent) · [if](#keyword-if) · [import](#keyword-import) · [in](#keyword-in) · [include](#keyword-include) · [initial](#keyword-initial) · [int](#keyword-int) · [interruptible](#keyword-interruptible) · [kind](#keyword-kind) · [ms](#keyword-ms) · [name](#keyword-name) · [not](#keyword-not) · [ns](#keyword-ns) · [of](#keyword-of) · [on](#keyword-on) · [operation](#keyword-operation) · [optional](#keyword-optional) · [or](#keyword-or) · [out](#keyword-out) · [package](#keyword-package) · [path](#keyword-path) · [port](#keyword-port) · [provides](#keyword-provides) · [publish](#keyword-publish) · [qos](#keyword-qos) · [real](#keyword-real) · [receive](#keyword-receive) · [record](#keyword-record) · [recursive](#keyword-recursive) · [redefines](#keyword-redefines) · [reply](#keyword-reply) · [request](#keyword-request) · [requirement](#keyword-requirement) · [requires](#keyword-requires) · [return](#keyword-return) · [returns](#keyword-returns) · [reversed](#keyword-reversed) · [s](#keyword-s) · [satisfy](#keyword-satisfy) · [schedule](#keyword-schedule) · [send](#keyword-send) · [specializes](#keyword-specializes) · [start](#keyword-start) · [state](#keyword-state) · [string](#keyword-string) · [subject](#keyword-subject) · [times](#keyword-times) · [to](#keyword-to) · [true](#keyword-true) · [try](#keyword-try) · [uint](#keyword-uint) · [until](#keyword-until) · [us](#keyword-us) · [use](#keyword-use) · [useCase](#keyword-usecase) · [var](#keyword-var) · [verification](#keyword-verification) · [verificationCase](#keyword-verificationcase) · [verify](#keyword-verify) · [via](#keyword-via) · [view](#keyword-view) · [void](#keyword-void) · [wait](#keyword-wait) · [when](#keyword-when) · [where](#keyword-where) · [while](#keyword-while)
+
+## Keyword: actor
+
+Names a case occurrence outside the subject that takes part in the case.
+
+**Context:** Use cases, actors and routed case steps. **Grammar:** CaseActor, Name. **Name use:** reserved.
+
+[Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
 ## Keyword: after
 
@@ -59,6 +67,14 @@ Used only as the on call schedule trigger.
 **Context:** Schedule entry and successful chaining. **Grammar:** ScheduleEntry. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
+
+## Keyword: case
+
+Completes the use case or verification case keyword pair.
+
+**Context:** Use cases, actors and routed case steps. **Grammar:** CaseKind, Name. **Name use:** reserved.
+
+[Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
 ## Keyword: component
 
@@ -180,6 +196,14 @@ Used in ordered state transitions; see its grammar contexts and normative constr
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
+## Keyword: extend
+
+Records that a use case extends another use case of the same root.
+
+**Context:** Use cases, actors and routed case steps. **Grammar:** CaseRelation, Name. **Name use:** reserved.
+
+[Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
+
 ## Keyword: fail
 
 Used in runtime failure and lazy fallback; see its grammar contexts and normative constraints.
@@ -216,7 +240,7 @@ Used in loops and copied iteration; see its grammar contexts and normative const
 
 Introduces the source endpoint of a named case step.
 
-**Context:** Named routed case steps. **Grammar:** ScenarioStep, Name. **Name use:** contextual.
+**Context:** Use cases, actors and routed case steps. **Grammar:** ScenarioStep, Name. **Name use:** contextual.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -254,9 +278,9 @@ Used in attributes and lexical locals; see its grammar contexts and normative co
 
 ## Keyword: include
 
-Used in seven library view definitions; see its grammar contexts and normative constraints.
+Adds a view selection, or records that a use case includes another use case of the same root.
 
-**Context:** Seven library view definitions. **Grammar:** ViewSelection. **Name use:** reserved.
+**Context:** Seven library view definitions. **Grammar:** CaseRelation, ViewSelection. **Name use:** reserved.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -288,7 +312,7 @@ Used in armed interrupt and cancellation; see its grammar contexts and normative
 
 Used in seven library view definitions; see its grammar contexts and normative constraints.
 
-**Context:** Seven library view definitions. **Grammar:** FilterComparison. **Name use:** reserved.
+**Context:** Seven library view definitions. **Grammar:** FilterComparison, Name. **Name use:** reserved.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -304,7 +328,7 @@ Used in lexical and path spelling; see its grammar contexts and normative constr
 
 Used in seven library view definitions; see its grammar contexts and normative constraints.
 
-**Context:** Seven library view definitions. **Grammar:** FilterComparison. **Name use:** reserved.
+**Context:** Seven library view definitions. **Grammar:** FilterComparison, Name. **Name use:** reserved.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -326,9 +350,9 @@ Used in lexical and path spelling; see its grammar contexts and normative constr
 
 ## Keyword: of
 
-Used in named routed case steps; see its grammar contexts and normative constraints.
+Used in use cases, actors and routed case steps; see its grammar contexts and normative constraints.
 
-**Context:** Named routed case steps. **Grammar:** Deployment, Satisfaction, Scenario, View. **Name use:** reserved.
+**Context:** Use cases, actors and routed case steps. **Grammar:** Deployment, Satisfaction, Scenario, View. **Name use:** reserved.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -384,7 +408,7 @@ Used in packages and imports; see its grammar contexts and normative constraints
 
 Used in seven library view definitions; see its grammar contexts and normative constraints.
 
-**Context:** Seven library view definitions. **Grammar:** FilterComparison. **Name use:** reserved.
+**Context:** Seven library view definitions. **Grammar:** FilterComparison, Name. **Name use:** reserved.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -462,17 +486,17 @@ Used in component definitions and usages; see its grammar contexts and normative
 
 ## Keyword: reply
 
-Used in named routed case steps; see its grammar contexts and normative constraints.
+Used in use cases, actors and routed case steps; see its grammar contexts and normative constraints.
 
-**Context:** Named routed case steps. **Grammar:** ScenarioStep. **Name use:** reserved.
+**Context:** Use cases, actors and routed case steps. **Grammar:** ScenarioStep. **Name use:** reserved.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
 ## Keyword: request
 
-Used in named routed case steps; see its grammar contexts and normative constraints.
+Used in use cases, actors and routed case steps; see its grammar contexts and normative constraints.
 
-**Context:** Named routed case steps. **Grammar:** ScenarioStep, Name. **Name use:** contextual.
+**Context:** Use cases, actors and routed case steps. **Grammar:** ScenarioStep, Name. **Name use:** contextual.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -580,6 +604,14 @@ Used in typed copied values; see its grammar contexts and normative constraints.
 
 [Normative rule](spec/01-structure-and-types.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
+## Keyword: subject
+
+Names the case occurrence whose boundary contains the use case.
+
+**Context:** Use cases, actors and routed case steps. **Grammar:** CaseSubject, Name. **Name use:** reserved.
+
+[Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
+
 ## Keyword: times
 
 Introduces a once-evaluated uint loop limit.
@@ -636,11 +668,19 @@ Used in lexical and path spelling; see its grammar contexts and normative constr
 
 [Normative rule](spec/01-structure-and-types.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
+## Keyword: use
+
+Starts the use case keyword pair use case.
+
+**Context:** Use cases, actors and routed case steps. **Grammar:** CaseKind, Name. **Name use:** reserved.
+
+[Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
+
 ## Keyword: useCase
 
-Used in named routed case steps; see its grammar contexts and normative constraints.
+Deprecated 2.0 spelling of use case, reported by SW2015 with a safe replacement.
 
-**Context:** Named routed case steps. **Grammar:** Scenario. **Name use:** reserved.
+**Context:** Use cases, actors and routed case steps. **Grammar:** CaseKind. **Name use:** reserved.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -652,11 +692,19 @@ Used in attributes and lexical locals; see its grammar contexts and normative co
 
 [Normative rule](spec/01-structure-and-types.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
+## Keyword: verification
+
+Starts the verification case keyword pair verification case.
+
+**Context:** Use cases, actors and routed case steps. **Grammar:** CaseKind, Name. **Name use:** reserved.
+
+[Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
+
 ## Keyword: verificationCase
 
-Used in named routed case steps; see its grammar contexts and normative constraints.
+Deprecated 2.0 spelling of verification case, reported by SW2015 with a safe replacement.
 
-**Context:** Named routed case steps. **Grammar:** Scenario. **Name use:** reserved.
+**Context:** Use cases, actors and routed case steps. **Grammar:** CaseKind. **Name use:** reserved.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -670,9 +718,9 @@ Used in requirements and intent links; see its grammar contexts and normative co
 
 ## Keyword: via
 
-Used in named routed case steps; see its grammar contexts and normative constraints.
+Used in use cases, actors and routed case steps; see its grammar contexts and normative constraints.
 
-**Context:** Named routed case steps. **Grammar:** ScenarioStep. **Name use:** reserved.
+**Context:** Use cases, actors and routed case steps. **Grammar:** ScenarioStep. **Name use:** reserved.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
