@@ -2,7 +2,7 @@ import { AstUtils, CstUtils, DocumentState, GrammarUtils, WorkspaceCache, type A
 import type { Range } from 'vscode-languageserver';
 import type { LangiumServices } from 'langium/lsp';
 import * as a from './generated/ast.js';
-import { connectionRoutes, expressionTypes, OCCURRENCE_LIMIT, occurrenceCount, workspaceModels, assignable, body, compatibility, constantNumber, direction, effectiveQos, effects, endpoint, entryKey, identity, integral, isExecutable, isNode, localOperation, memberEndpoint, members, nanos, nodes, numeric, occurrences, owner, resolve, schedule, signature, typeKey, type Executable, type Node, type Structure, portMembers } from './semantic.js';
+import { caseEndpoint, caseSubject, connectionRoutes, expressionTypes, OCCURRENCE_LIMIT, occurrenceCount, workspaceModels, assignable, body, compatibility, constantNumber, direction, effectiveQos, effects, endpoint, entryKey, identity, integral, isExecutable, isNode, localOperation, memberEndpoint, members, nanos, nodes, numeric, occurrences, owner, resolve, schedule, signature, typeKey, type Executable, type Node, type Structure, portMembers } from './semantic.js';
 import { selectView, viewCandidates, type ViewSubject } from './presentation.js';
 import { decodeQuotedName, nameProblem } from './names.js';
 type Env = Map<string, {
@@ -93,7 +93,9 @@ export class SwamlValidator {
                     this.view(e);
             }
             for (const s of p.satisfactions)
-                if (!this.selectView({ ...s, $type: 'View', subject: s.source, selections: [] } as unknown as a.View).length)
+                if (!s.source)
+                    this.report(s, 'SW2010', `A package satisfy names its design source with of; inside a component, satisfy ${s.requirement.$refText}; claims that component.`);
+                else if (!this.selectView({ ...s, $type: 'View', subject: s.source, selections: [] } as unknown as a.View).length)
                     this.report(s, 'SW2010', `Unknown satisfaction source ${s.source}.`);
         }
         for (const n of nodes(model)) {
@@ -171,7 +173,15 @@ export class SwamlValidator {
                 this.port(portMembers(m), m);
             if (a.isComponentUsage(m))
                 this.structure(m, new Set([...stack, c]));
+            if (a.isScenario(m))
+                this.scenario(m);
+            if (a.isSatisfaction(m) && m.source)
+                this.report(m, 'SW2010', `Inside a component, satisfy claims the component itself; write satisfy ${m.requirement.$refText};.`);
         }
+        const claims = c.members.filter(a.isSatisfaction);
+        for (const claim of claims)
+            if (claims.find(x => x.requirement.$refText === claim.requirement.$refText) !== claim)
+                this.report(claim, 'SW2010', `Duplicate satisfy ${claim.requirement.$refText}.`);
         const eff = members(c);
         if (this.containmentCycle(c, new Set()))
             this.report(c, 'SW2003', 'Component containment must be finite and acyclic.');
@@ -906,20 +916,18 @@ export class SwamlValidator {
         if (!selected.length)
             this.report(v, 'SW2010', 'View selects no subjects.');
         for (const item of selected)
-            if (['Flow', 'Timing'].includes(kind) && !isExecutable(item.node) || kind === 'Interconnect' && !a.isComponentUsage(item.node) && !a.isComponentDef(item.node) || ['Case', 'Sequence'].includes(kind) && !a.isScenario(item.node) && !a.isComponentUsage(item.node))
+            if (['Flow', 'Timing'].includes(kind) && !isExecutable(item.node) || kind === 'Interconnect' && !a.isComponentUsage(item.node) && !a.isComponentDef(item.node) || ['Case', 'Sequence'].includes(kind) && !a.isScenario(item.node) && !a.isComponentUsage(item.node) && !a.isComponentDef(item.node))
                 this.report(v, 'SW2010', `Subject ${item.path} is not valid for ${kind}.`);
     }
     private scenario(s: a.Scenario): void {
-        const spelling = GrammarUtils.findNodeForProperty(s.$cstNode, 'kind');
-        if (spelling && ['useCase', 'verificationCase'].includes(spelling.text)) {
-            const canonical = spelling.text === 'useCase' ? 'use case' : 'verification case';
-            this.report(s, 'SW2015', `${spelling.text} is the deprecated 2.0 spelling; write ${canonical}.`, true, { range: spelling.range, edits: [{ range: spelling.range, newText: canonical }] });
-        }
         if (s.kind === 'useCase' && s.verifications.length)
             this.report(s, 'SW2010', 'Only a verification case owns verify links.');
         if (new Set(s.verifications.map(v => v.requirement.$refText)).size !== s.verifications.length)
             this.report(s, 'SW2010', 'Duplicate verification link.');
         this.unique(s.steps, s);
+        this.unique(s.actors, s);
+        // The owner is the subject. Use cases relate to use cases of the same owner, including inherited ones.
+        const subject = caseSubject(s), siblings = subject ? members(subject).filter(a.isScenario) : (s.$container as a.Package).elements.filter(a.isScenario);
         const relations = new Set<string>();
         for (const r of s.relations) {
             const target = r.target.ref;
@@ -929,8 +937,8 @@ export class SwamlValidator {
                 this.report(r, 'SW2010', `A use case cannot ${r.kind} itself.`);
             else if (target && target.kind !== 'useCase')
                 this.report(r, 'SW2010', `${r.kind} must name a use case, not a verification case.`);
-            else if (target && target.root.ref !== s.root.ref)
-                this.report(r, 'SW2010', `${r.kind} must name a use case of the same root ${s.root.$refText}.`);
+            else if (target && !siblings.includes(target))
+                this.report(r, 'SW2010', `${r.kind} must name a use case of the same ${subject ? 'subject ' + subject.name : 'package'}.`);
             const key = r.kind + ':' + (target ? identity(target) : r.target.$refText);
             if (relations.has(key))
                 this.report(r, 'SW2010', `Duplicate ${r.kind} of ${r.target.$refText}.`);
@@ -938,26 +946,18 @@ export class SwamlValidator {
         }
         if (this.relationCycle(s, s, new Set()))
             this.report(s, 'SW2010', 'include and extend relations between use cases must be acyclic.');
-        const root = s.root.ref;
-        if (!root || occurrenceCount(root) > OCCURRENCE_LIMIT)
+        if (!subject) {
+            for (const step of s.steps)
+                this.report(step, 'SW2010', 'Case steps need a subject: declare the case inside the component it describes.');
             return;
-        const occ = occurrences(root), { links, leaf } = connectionRoutes(root);
-        const within = (path: string, base: string) => path === base || path.startsWith(base + '.');
-        const subject = s.subject && `${root.name}.${s.subject.path}`, actors: string[] = [];
-        if (s.subject && !occ.some(o => o.path === subject))
-            this.report(s.subject, 'SW2010', `Subject ${s.subject.path} must name a component occurrence inside ${root.name}, with an index for multiplicity.`);
-        for (const actor of s.actors) {
-            const path = `${root.name}.${actor.path}`;
-            if (!subject)
-                this.report(actor, 'SW2010', 'Actors need a subject: declare subject before actor so the actors stay outside its boundary.');
-            else if (!occ.some(o => o.path === path))
-                this.report(actor, 'SW2010', `Actor ${actor.path} must name a component occurrence inside ${root.name}, with an index for multiplicity.`);
-            else if (within(path, subject) || within(subject, path))
-                this.report(actor, 'SW2010', `Actor ${actor.path} must be outside the subject ${s.subject!.path}.`);
-            if (actors.includes(path))
-                this.report(actor, 'SW2010', `Duplicate actor ${actor.path}.`);
-            actors.push(path);
         }
+        // Step paths start with an actor or with a member of the subject, so the names must differ.
+        for (const actor of s.actors)
+            if (members(subject).some(m => (m as Node).name === actor.name))
+                this.report(actor, 'SW2010', `Actor ${actor.name} has the name of a member of ${subject.name}; choose another name so step paths stay unambiguous.`);
+        if (occurrenceCount(subject) > OCCURRENCE_LIMIT)
+            return;
+        const { links, leaf } = connectionRoutes(subject);
         const prior = new Map<string, {
             step: a.ScenarioStep;
             source: string;
@@ -967,22 +967,42 @@ export class SwamlValidator {
             replyTo?: string;
         }>(), answered = new Set<string>();
         for (const step of s.steps) {
-            const ports = [step.source, step.target].map(path => { const parts = path.split('.'), member = parts.pop()!, port = parts.pop()!, owner = [root.name, ...parts].join('.'), o = occ.find(x => x.path === owner); return { ep: o && memberEndpoint(o.structure, port + '.' + member), path: leaf(owner + '.' + port), member, owner }; });
-            for (const port of ports)
-                if (subject && port.ep && !within(port.owner, subject) && !actors.some(actor => within(port.owner, actor)))
-                    this.report(step, 'SW2010', `Step endpoint ${port.owner === root.name ? root.name : port.owner.slice(root.name.length + 1)} belongs to neither the subject nor a declared actor.`);
-            if (ports.some(p => !p.ep) || ports[0].member !== ports[1].member)
-                this.report(step, 'SW2010', 'Case endpoints must match root occurrence port members.');
-            const candidates = links.filter(l => ports.every(p => l.ends.includes(p.path)) && (!step.connector || l.node.name === step.connector));
-            if (candidates.length !== 1)
-                this.report(step, 'SW2010', 'via must select one named connection, or omit it for a unique route.');
+            const [from, to] = [step.source, step.target].map(path => caseEndpoint(s, path));
+            let route: string | undefined;
+            if (!from || !to || from.member.name !== to.member.name)
+                this.report(step, 'SW2010', 'Case endpoints must name the same port member of an actor, of the subject or of a part inside it.');
+            else if (from.actor && to.actor)
+                this.report(step, 'SW2010', 'Actors exchange messages with the subject, not with each other.');
+            else if (from.actor || to.actor) {
+                // An actor crosses the subject boundary through one of the subject's own ports.
+                const outside = from.actor ? from : to, inside = from.actor ? to : from;
+                if (inside.owner !== subject.name)
+                    this.report(step, 'SW2010', `Actor ${outside.owner} exchanges messages through a port of ${subject.name} itself, not of a part inside it.`);
+                else {
+                    if (step.connector)
+                        this.report(step, 'SW2010', 'via names a connection inside the subject; an exchange with an actor crosses the boundary without one.');
+                    for (const issue of compatibility(outside.port, inside.port))
+                        this.report(step, 'SW2010', `Actor port ${outside.owner}.${outside.port.name} cannot connect to ${inside.port.name}: ${issue}.`);
+                    route = `actor:${outside.owner}.${outside.port.name}|${inside.port.name}`;
+                }
+            }
+            else {
+                const ends = [from, to].map(e => leaf(e.owner + '.' + e.port.name));
+                const candidates = links.filter(l => ends.every(p => l.ends.includes(p)) && (!step.connector || l.node.name === step.connector));
+                if (candidates.length !== 1)
+                    this.report(step, 'SW2010', 'via must select one named connection inside the subject, or omit it for a unique route.');
+                else
+                    route = candidates[0].id;
+            }
+            const place = (e: typeof from) => e ? e.actor ? e.owner + '.' + e.port.name : leaf(e.owner + '.' + e.port.name) : '';
+            const ports = [{ ep: from, path: place(from), member: from?.member.name ?? '' }, { ep: to, path: place(to), member: to?.member.name ?? '' }];
             const first = ports[0].ep, last = ports[1].ep, kind = step.kind === 'send' ? 'attribute' : step.kind === 'publish' ? 'event' : 'operation', sourceDirection = step.kind === 'request' ? 'requires' : 'provides';
             if (first && (first.member.kind !== kind || direction(first.port, first.member) !== sourceDirection) || last && (last.member.kind !== kind || direction(last.port, last.member) === sourceDirection))
                 this.report(step, 'SW2010', 'Case kind/direction does not match both endpoint members.');
             const previous = step.predecessor && prior.get(step.predecessor), ancestors = new Set(previous ? [...previous.ancestors, step.predecessor!] : []);
             if (step.predecessor && !previous)
                 this.report(step, 'SW2010', 'after must name an earlier step.');
-            const current = { step, source: ports[0].path + '.' + ports[0].member, target: ports[1].path + '.' + ports[1].member, route: candidates.length === 1 ? candidates[0].id : undefined, ancestors, replyTo: undefined as string | undefined };
+            const current = { step, source: ports[0].path + '.' + ports[0].member, target: ports[1].path + '.' + ports[1].member, route, ancestors, replyTo: undefined as string | undefined };
             if (step.kind === 'reply') {
                 const requests = [...ancestors].filter(name => { const request = prior.get(name)!; return request.step.kind === 'request' && request.source === current.target && request.target === current.source && request.route === current.route && ![...ancestors].some(a => prior.get(a)?.replyTo === name); });
                 if (requests.length !== 1)

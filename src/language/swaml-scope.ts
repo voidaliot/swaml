@@ -1,6 +1,6 @@
 import { AstUtils, DocumentState, DefaultScopeProvider, MapScope, type AstNode, type ReferenceInfo, type Scope, type LangiumCoreServices } from 'langium';
 import * as a from './generated/ast.js';
-import { owner } from './semantic.js';
+import { caseSubject, members, owner } from './semantic.js';
 export { owner } from './semantic.js';
 export class SwamlScopeProvider extends DefaultScopeProvider {
     constructor(private services: LangiumCoreServices) {
@@ -23,6 +23,9 @@ export class SwamlScopeProvider extends DefaultScopeProvider {
         if (!pkg)
             return global;
         const key = `visible:${AstUtils.getDocument(pkg).uri.toString()}:${pkg.$cstNode?.offset}:${type}`;
-        return this.globalScopeCache.get(key, () => scope(packages().filter(p => p === pkg || pkg.imports.some(i => i.namespace === p.name)).flatMap(p => p.elements.map(node => ({ node, name: node.name }))), global));
+        const visible = this.globalScopeCache.get(key, () => scope(packages().filter(p => p === pkg || pkg.imports.some(i => i.namespace === p.name)).flatMap(p => p.elements.map(node => ({ node, name: node.name }))), global));
+        // include and extend inside a component name use cases of that subject, including inherited ones.
+        const relation = a.isCaseRelation(context.container) ? context.container.$container : undefined, subject = relation && caseSubject(relation);
+        return subject ? scope(members(subject).filter(a.isScenario).map(node => ({ node, name: node.name })), visible) : visible;
     }
 }

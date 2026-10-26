@@ -194,11 +194,11 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Use cases, actors and routed case steps
 
-swa.ml 2.0; Traceability::Startup.
+swa.ml 2.0; Cash Machine::ATM Controller.Withdraw cash.
 
 ![Use cases, actors and routed case steps](notation/2.0/cases.svg)
 
-**Source:** [Traceability::Startup](../examples/16-requirements-and-views.swaml). **Grammar:** Scenario, CaseKind, CaseSubject, CaseActor, CaseRelation, ScenarioStep.
+**Source:** [Cash Machine::ATM Controller.Withdraw cash](../examples/28-use-cases.swaml). **Grammar:** Scenario, CaseKind, CaseActor, CaseRelation, ScenarioStep.
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 

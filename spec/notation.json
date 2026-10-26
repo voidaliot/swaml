@@ -600,7 +600,8 @@
       "keywords": [
         "requirement",
         "satisfy",
-        "verify"
+        "verify",
+        "of"
       ],
       "drawing": "docs/notation/2.0/requirements.svg",
       "scene": "docs/notation/2.0/requirements.scene.json",
@@ -614,10 +615,10 @@
     {
       "id": "cases",
       "title": "Use cases, actors and routed case steps",
-      "context": "swa.ml 2.0; Traceability::Startup",
-      "syntax": "verification case Startup of Demo {\n    verify Delivery;\n    publish greeting from sender.output.message to receiver.input.message;\n  }",
-      "model": "examples/16-requirements-and-views.swaml",
-      "subject": "Traceability::Startup",
+      "context": "swa.ml 2.0; Cash Machine::ATM Controller.Withdraw cash",
+      "syntax": "use case 'Withdraw cash' {\n      /** The customer inserts a card, asks for cash and receives it. */\n      actor customer: Customer;\n      actor issuer: Bank;\n      include Authenticate;\n      publish 'insert card' from customer.panel.cardInserted to panel.cardInserted;\n      publish 'ask for cash' from customer.panel.cashRequested to panel.cashRequested after 'insert card';\n      request authorize from bank.authorize to issuer.link.authorize after 'ask for cash';\n      reply approve from issuer.link.authorize to bank.authorize after authorize;\n      publish 'dispense cash' from panel.cashDispensed to customer.panel.cashDispensed after approve;\n    }",
+      "model": "examples/28-use-cases.swaml",
+      "subject": "Cash Machine::ATM Controller.Withdraw cash",
       "template": "case",
       "views": [
         "General",
@@ -626,7 +627,6 @@
       "productions": [
         "Scenario",
         "CaseKind",
-        "CaseSubject",
         "CaseActor",
         "CaseRelation",
         "ScenarioStep"
@@ -635,16 +635,12 @@
         "use",
         "case",
         "verification",
-        "useCase",
-        "verificationCase",
-        "subject",
         "actor",
         "extend",
         "request",
         "reply",
         "from",
-        "via",
-        "of"
+        "via"
       ],
       "drawing": "docs/notation/2.0/cases.svg",
       "scene": "docs/notation/2.0/cases.scene.json",
@@ -659,7 +655,7 @@
       "id": "views",
       "title": "Seven library view definitions",
       "context": "swa.ml 2.0; Traceability::Demo",
-      "syntax": "component Demo {\n    component sender: Sender;\n    component receiver: Receiver;\n    connect (sender.output, receiver.input);\n  }",
+      "syntax": "component Demo {\n    component sender: Sender;\n    component receiver: Receiver;\n    connect (sender.output, receiver.input);\n    verification case Startup {\n      verify Delivery;\n      publish greeting from sender.output.message to receiver.input.message;\n    }\n  }",
       "model": "examples/16-requirements-and-views.swaml",
       "subject": "Traceability::Demo",
       "template": "view",
@@ -1218,13 +1214,6 @@
       },
       {
         "production": "CaseKind",
-        "concepts": [
-          "cases"
-        ],
-        "rationale": "Owned semantic projection preserves this production."
-      },
-      {
-        "production": "CaseSubject",
         "concepts": [
           "cases"
         ],
@@ -1837,9 +1826,9 @@
       {
         "term": "of",
         "concepts": [
-          "cases"
+          "requirements"
         ],
-        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
+        "rationale": "Shown in the source caption/compartment for requirements and intent links."
       },
       {
         "term": "on",
@@ -2059,13 +2048,6 @@
         "rationale": "Shown in the source caption/compartment for typed copied values."
       },
       {
-        "term": "subject",
-        "concepts": [
-          "cases"
-        ],
-        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
-      },
-      {
         "term": "times",
         "concepts": [
           "loops"
@@ -2122,13 +2104,6 @@
         "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
       },
       {
-        "term": "useCase",
-        "concepts": [
-          "cases"
-        ],
-        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
-      },
-      {
         "term": "var",
         "concepts": [
           "attributes"
@@ -2137,13 +2112,6 @@
       },
       {
         "term": "verification",
-        "concepts": [
-          "cases"
-        ],
-        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
-      },
-      {
-        "term": "verificationCase",
         "concepts": [
           "cases"
         ],

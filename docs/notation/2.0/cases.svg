@@ -3,7 +3,7 @@
 <text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Use cases, actors and routed case steps</text>
 <line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
 <rect x="290" y="72" width="360" height="250" fill="#ffffff" stroke="#171717"/>
-<text x="302" y="94" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">subject atm : 'ATM Controller'</text>
+<text x="302" y="94" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">'ATM Controller'</text>
 <ellipse cx="470.0" cy="136.0" rx="125.0" ry="26.0" fill="#ffffff" stroke="#171717"/>
 <text x="416.0" y="141" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">'Withdraw cash'</text>
 <ellipse cx="395.0" cy="265.0" rx="85.0" ry="23.0" fill="#ffffff" stroke="#171717"/>
@@ -23,16 +23,16 @@
 <line x1="98" y1="154" x2="142" y2="154" stroke="#171717"/>
 <line x1="120" y1="182" x2="102" y2="214" stroke="#171717"/>
 <line x1="120" y1="182" x2="138" y2="214" stroke="#171717"/>
-<text x="91.2" y="236" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">customer</text>
+<text x="51.599999999999994" y="236" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">customer : Customer</text>
 <ellipse cx="800.0" cy="129.0" rx="11.0" ry="11.0" fill="#ffffff" stroke="#171717"/>
 <line x1="800" y1="140" x2="800" y2="182" stroke="#171717"/>
 <line x1="778" y1="154" x2="822" y2="154" stroke="#171717"/>
 <line x1="800" y1="182" x2="782" y2="214" stroke="#171717"/>
 <line x1="800" y1="182" x2="818" y2="214" stroke="#171717"/>
-<text x="785.6" y="236" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">bank</text>
+<text x="753.2" y="236" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">issuer : Bank</text>
 <line x1="144" y1="160" x2="345" y2="136" stroke="#171717"/>
 <line x1="144" y1="170" x2="312" y2="258" stroke="#171717"/>
 <line x1="776" y1="160" x2="595" y2="136" stroke="#171717"/>
-<text x="45" y="350" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">Use cases sit inside the subject boundary; actors stay outside and take part through ports.</text>
+<text x="45" y="350" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">The owning component is the subject boundary; typed actor roles stay outside and take part through ports.</text>
 <text x="45" y="372" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">Solid lines associate actors; include, extend, satisfy and verify are intent, not proof.</text>
 </svg>

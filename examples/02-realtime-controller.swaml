@@ -44,19 +44,19 @@ package Control {
     component heater: Heater;
     connect samples (sensor.reading, controller.reading);
     connect commands (controller.command, heater.command);
+    verification case ControlLoop {
+      verify Responsive;
+      send measured from sensor.reading.temperature to controller.reading.temperature via samples;
+      publish applied from controller.command.set to heater.command.set via commands after measured;
+    }
   }
   requirement Responsive {
     attribute limitMs: uint = 5;
   }
   satisfy Responsive of Demo.controller;
-  verification case ControlLoop of Demo {
-    verify Responsive;
-    send measured from sensor.reading.temperature to controller.reading.temperature via samples;
-    publish applied from controller.command.set to heater.command.set via commands after measured;
-  }
   view overview: General of Demo;
-  view intent: Case of ControlLoop;
-  view sequence: Sequence of ControlLoop;
+  view intent: Case of Demo.ControlLoop;
+  view sequence: Sequence of Demo.ControlLoop;
   view inventory: Grid of Demo;
   view architecture: Interconnect of Demo;
   view logic: Flow of Demo.controller.regulate;

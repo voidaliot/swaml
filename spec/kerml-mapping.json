@@ -496,15 +496,6 @@
       "normative": "docs/spec/04-systems-and-conformance.md"
     },
     {
-      "source": "CaseSubject",
-      "kind": "element",
-      "kernel": [
-        "Feature"
-      ],
-      "semantic": "CaseSubject: preserve use cases, actors and routed case steps, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
-      "normative": "docs/spec/04-systems-and-conformance.md"
-    },
-    {
       "source": "CaseActor",
       "kind": "element",
       "kernel": [

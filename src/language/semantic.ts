@@ -258,10 +258,10 @@ export type Occurrence = {
     definition: Structure;
     parent?: string;
 };
-export function occurrences(root: a.ComponentUsage, prefix = root.name, seen = new Set<Structure>()): Occurrence[] {
+export function occurrences(root: Structure, prefix = root.name, seen = new Set<Structure>()): Occurrence[] {
     if (!seen.size && occurrenceCount(root) > OCCURRENCE_LIMIT)
         throw new Error('Reference occurrence limit exceeded');
-    const def = root.definition?.ref ?? root;
+    const def = a.isComponentUsage(root) ? root.definition?.ref ?? root : root;
     if (seen.has(def))
         return [];
     const out: Occurrence[] = [{ path: prefix, structure: root, definition: def }];
@@ -287,7 +287,7 @@ export function isNode(c: Structure, seen = new Set<Structure>()): boolean {
 }
 
 /** Effective occurrence routes shared by case validation and authoring references. */
-export function connectionRoutes(root: a.ComponentUsage) {
+export function connectionRoutes(root: Structure) {
     const occ = occurrences(root), aliases = new Map<string, string>(), links: {
         node: a.Connect;
         id: string;
@@ -311,4 +311,30 @@ export function connectionRoutes(root: a.ComponentUsage) {
     for (const link of links)
         link.ends = link.ends.map(leaf);
     return { links, leaf };
+}
+/** A case's subject is the component that owns it. A package case has no subject. */
+export function caseSubject(s: a.Scenario): Structure | undefined {
+    return a.isComponentDef(s.$container) || a.isComponentUsage(s.$container) ? s.$container : undefined;
+}
+/** A step end: a port member of an actor, or of the subject or a part inside it. */
+export type CaseEndpoint = {
+    actor?: a.CaseActor;
+    /** The actor name, or the subject occurrence path starting with the subject name. */
+    owner: string;
+    port: a.PortUsage;
+    member: a.PortMember;
+};
+export function caseEndpoint(s: a.Scenario, path: string): CaseEndpoint | undefined {
+    const subject = caseSubject(s), parts = path.split('.'), member = parts.pop(), port = parts.pop();
+    if (!subject || !member || !port)
+        return undefined;
+    const actor = parts.length === 1 ? s.actors.find(x => x.name === parts[0]) : undefined;
+    if (actor) {
+        const ep = actor.definition.ref && memberEndpoint(actor.definition.ref, port + '.' + member);
+        return ep && { actor, owner: actor.name, ...ep };
+    }
+    if (occurrenceCount(subject) > OCCURRENCE_LIMIT)
+        return undefined;
+    const owner = [subject.name, ...parts].join('.'), o = occurrences(subject).find(x => x.path === owner), ep = o && memberEndpoint(o.structure, port + '.' + member);
+    return ep && { owner, ...ep };
 }

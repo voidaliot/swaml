@@ -5,10 +5,10 @@
   "entries": [
     {
       "keyword": "actor",
-      "meaning": "Names a case occurrence outside the subject that takes part in the case.",
+      "meaning": "Declares a typed role outside the case subject that takes part through ports.",
       "concern": "Use cases, actors and routed case steps",
       "normative": "docs/spec/04-systems-and-conformance.md",
-      "example": "'actor' path=Path ';';",
+      "example": "'actor' name=Name ':' definition=[ComponentDef:QualifiedName] ';';",
       "contextual": false,
       "productions": [
         "CaseActor",
@@ -102,7 +102,7 @@
       "meaning": "Completes the use case or verification case keyword pair.",
       "concern": "Use cases, actors and routed case steps",
       "normative": "docs/spec/04-systems-and-conformance.md",
-      "example": "'use' 'case' | 'verification' 'case' | 'useCase' | 'verificationCase';",
+      "example": "'use' 'case' | 'verification' 'case';",
       "contextual": false,
       "productions": [
         "CaseKind",
@@ -281,7 +281,7 @@
     },
     {
       "keyword": "extend",
-      "meaning": "Records that a use case extends another use case of the same root.",
+      "meaning": "Records that a use case extends another use case of the same subject.",
       "concern": "Use cases, actors and routed case steps",
       "normative": "docs/spec/04-systems-and-conformance.md",
       "example": "kind=('include'|'extend') target=[Scenario:QualifiedName] ';';",
@@ -395,7 +395,7 @@
     },
     {
       "keyword": "include",
-      "meaning": "Adds a view selection, or records that a use case includes another use case of the same root.",
+      "meaning": "Adds a view selection, or records that a use case includes another use case of the same subject.",
       "concern": "Seven library view definitions",
       "normative": "docs/spec/04-systems-and-conformance.md",
       "example": "kind=('include'|'extend') target=[Scenario:QualifiedName] ';';",
@@ -498,15 +498,14 @@
     },
     {
       "keyword": "of",
-      "meaning": "Used in use cases, actors and routed case steps; see its grammar contexts and normative constraints.",
-      "concern": "Use cases, actors and routed case steps",
+      "meaning": "Used in requirements and intent links; see its grammar contexts and normative constraints.",
+      "concern": "Requirements and intent links",
       "normative": "docs/spec/04-systems-and-conformance.md",
       "example": "'deployment' name=Name 'of' root=[ComponentUsage:QualifiedName] 'on' platform=[ComponentUsage:QualifiedName] '{' documentation=Documentation? placements+=Placement* '}';",
       "contextual": false,
       "productions": [
         "Deployment",
         "Satisfaction",
-        "Scenario",
         "View"
       ]
     },
@@ -803,7 +802,7 @@
       "meaning": "Used in requirements and intent links; see its grammar contexts and normative constraints.",
       "concern": "Requirements and intent links",
       "normative": "docs/spec/04-systems-and-conformance.md",
-      "example": "'satisfy' requirement=[Requirement:QualifiedName] 'of' source=Path ';';",
+      "example": "'satisfy' requirement=[Requirement:QualifiedName] ('of' source=Path)? ';';",
       "contextual": false,
       "productions": [
         "Satisfaction"
@@ -874,18 +873,6 @@
       "contextual": false,
       "productions": [
         "TypeRef"
-      ]
-    },
-    {
-      "keyword": "subject",
-      "meaning": "Names the case occurrence whose boundary contains the use case.",
-      "concern": "Use cases, actors and routed case steps",
-      "normative": "docs/spec/04-systems-and-conformance.md",
-      "example": "'subject' path=Path ';';",
-      "contextual": false,
-      "productions": [
-        "CaseSubject",
-        "Name"
       ]
     },
     {
@@ -974,22 +961,11 @@
       "meaning": "Starts the use case keyword pair use case.",
       "concern": "Use cases, actors and routed case steps",
       "normative": "docs/spec/04-systems-and-conformance.md",
-      "example": "'use' 'case' | 'verification' 'case' | 'useCase' | 'verificationCase';",
+      "example": "'use' 'case' | 'verification' 'case';",
       "contextual": false,
       "productions": [
         "CaseKind",
         "Name"
-      ]
-    },
-    {
-      "keyword": "useCase",
-      "meaning": "Deprecated 2.0 spelling of use case, reported by SW2015 with a safe replacement.",
-      "concern": "Use cases, actors and routed case steps",
-      "normative": "docs/spec/04-systems-and-conformance.md",
-      "example": "'use' 'case' | 'verification' 'case' | 'useCase' | 'verificationCase';",
-      "contextual": false,
-      "productions": [
-        "CaseKind"
       ]
     },
     {
@@ -1008,22 +984,11 @@
       "meaning": "Starts the verification case keyword pair verification case.",
       "concern": "Use cases, actors and routed case steps",
       "normative": "docs/spec/04-systems-and-conformance.md",
-      "example": "'use' 'case' | 'verification' 'case' | 'useCase' | 'verificationCase';",
+      "example": "'use' 'case' | 'verification' 'case';",
       "contextual": false,
       "productions": [
         "CaseKind",
         "Name"
-      ]
-    },
-    {
-      "keyword": "verificationCase",
-      "meaning": "Deprecated 2.0 spelling of verification case, reported by SW2015 with a safe replacement.",
-      "concern": "Use cases, actors and routed case steps",
-      "normative": "docs/spec/04-systems-and-conformance.md",
-      "example": "'use' 'case' | 'verification' 'case' | 'useCase' | 'verificationCase';",
-      "contextual": false,
-      "productions": [
-        "CaseKind"
       ]
     },
     {
