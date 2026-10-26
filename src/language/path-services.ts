@@ -3,7 +3,7 @@ import type { LangiumServices, RenameProvider, DefinitionProvider, ReferencesPro
 import type { DefinitionParams, Location, LocationLink, Range, ReferenceParams, RenameParams, TextDocumentPositionParams, WorkspaceEdit, TextEdit } from 'vscode-languageserver';
 import * as a from './generated/ast.js';
 import { viewCandidates, selectView } from './presentation.js';
-import { body, connectionRoutes, container, isExecutable, localOperation, memberEndpoint, members, nodes, owner, resolve, signature, OCCURRENCE_LIMIT, occurrenceCount, type Node, type Structure } from './semantic.js';
+import { body, caseSubject, connectionRoutes, container, isExecutable, localOperation, memberEndpoint, members, nodes, owner, resolve, signature, OCCURRENCE_LIMIT, occurrenceCount, type Node, type Structure } from './semantic.js';
 import { decodeQuotedName, formatName, formatQualifiedName, nameProblem, parseNameInput } from './names.js';
 export interface SemanticSymbol {
     key: string;
@@ -113,7 +113,9 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
         if (a.isDataType(parent))
             return parent.fields.find(n => n.name === name) as Node;
         if (a.isScenario(parent))
-            return parent.steps.find(n => n.name === name) as Node;
+            return [...parent.steps, ...parent.actors].find(n => n.name === name) as Node;
+        if (a.isCaseActor(parent) && parent.definition.ref)
+            return members(parent.definition.ref).find(m => (m as Node).name === name) as Node;
         return undefined;
     };
     const pathRefs = (n: AstNode, p: string, path: string, start?: Node, offset = 0) => {
@@ -224,7 +226,7 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
             }
             if (a.isViewSelection(n))
                 pathRefs(n, 'subject', n.subject);
-            if (a.isSatisfaction(n))
+            if (a.isSatisfaction(n) && n.source)
                 pathRefs(n, 'source', n.source);
             if (a.isQosPolicy(n) && n.base)
                 native(n, property(n, 'base'), resolve(n, n.base, models));
@@ -235,16 +237,13 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
                 if (d?.platform.ref)
                     pathRefs(n, 'node', n.node, d.platform.ref as Node);
             }
-            if (a.isCaseSubject(n) || a.isCaseActor(n)) {
-                const root = owner(n, a.isScenario)?.root.ref;
-                if (root)
-                    pathRefs(n, 'path', n.path, root as Node);
-            }
             if (a.isScenarioStep(n)) {
-                const scenario = owner(n, a.isScenario), root = scenario?.root.ref;
-                if (root) {
-                    pathRefs(n, 'source', n.source, root as Node);
-                    pathRefs(n, 'target', n.target, root as Node);
+                // A step end starts with an actor of the case or with a member of the subject.
+                const scenario = owner(n, a.isScenario), root = scenario && caseSubject(scenario);
+                if (scenario && root) {
+                    const start = (path: string) => (scenario.actors.some(x => x.name === path.split('.')[0]) ? scenario : root) as Node;
+                    pathRefs(n, 'source', n.source, start(n.source));
+                    pathRefs(n, 'target', n.target, start(n.target));
                     if (n.connector && occurrenceCount(root) <= OCCURRENCE_LIMIT) {
                         const { links, leaf } = connectionRoutes(root);
                         const ports = [n.source, n.target].map(path => leaf(root.name + '.' + path.slice(0, path.lastIndexOf('.'))));

@@ -30,12 +30,12 @@ package Notation {
     component sender: Sender;
     component receiver: Receiver;
     connect (sender.output, receiver.input);
+    verification case Startup {
+      verify Delivery;
+      publish greeting from sender.output.message to receiver.input.message;
+    }
   }
   satisfy Delivery of Demo.receiver;
-  verification case Startup of Demo {
-    verify Delivery;
-    publish greeting from sender.output.message to receiver.input.message;
-  }
   view overview: General of Demo;
-  view delivery: Sequence of Startup;
+  view delivery: Sequence of Demo.Startup;
 }

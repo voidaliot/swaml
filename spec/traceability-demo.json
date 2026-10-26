@@ -23,7 +23,7 @@
     {
       "name": "Startup",
       "kind": "verificationCase",
-      "root": "Demo",
+      "subject": "Traceability::Demo",
       "status": "inconclusive",
       "verify": [
         "Delivery"

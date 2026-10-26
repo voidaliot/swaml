@@ -39,7 +39,7 @@
       "kind": "text",
       "x": 302,
       "y": 94,
-      "text": "subject atm : 'ATM Controller'",
+      "text": "'ATM Controller'",
       "size": 12
     },
     {
@@ -191,9 +191,9 @@
     },
     {
       "kind": "text",
-      "x": 91.2,
+      "x": 51.599999999999994,
       "y": 236,
-      "text": "customer",
+      "text": "customer : Customer",
       "size": 13
     },
     {
@@ -238,9 +238,9 @@
     },
     {
       "kind": "text",
-      "x": 785.6,
+      "x": 753.2,
       "y": 236,
-      "text": "bank",
+      "text": "issuer : Bank",
       "size": 13
     },
     {
@@ -271,7 +271,7 @@
       "kind": "text",
       "x": 45,
       "y": 350,
-      "text": "Use cases sit inside the subject boundary; actors stay outside and take part through ports.",
+      "text": "The owning component is the subject boundary; typed actor roles stay outside and take part through ports.",
       "size": 13
     },
     {

@@ -2,7 +2,7 @@ import {readStandardVersion} from './standard-version.mjs';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {posix} from 'node:path';
 import {createHash} from 'node:crypto';
-import {EmptyFileSystem,URI} from 'langium';
+import {AstUtils,EmptyFileSystem,URI} from 'langium';
 import {parseHelper} from 'langium/test';
 import {createSwamlServices} from '../out/src/language/swaml-module.js';
 import {isScenario,isRequirement,isOperation,isComponentDef,isWait} from '../out/src/language/generated/ast.js';
@@ -15,7 +15,7 @@ const source=await readFile(new URL('examples/02-realtime-controller.swaml',root
 const {Swaml}=createSwamlServices(EmptyFileSystem);const doc=await parseHelper(Swaml)(source,{documentUri:URI.parse('memory:///examples/02-realtime-controller.swaml'),validation:true});
 if(doc.diagnostics?.some(d=>d.severity===1))throw Error(JSON.stringify(doc.diagnostics));
 const projection=projectModel([doc.parseResult.value]);const run=simulate([doc.parseResult.value],'Control::Demo',{untilNs:29000000});
-const cases=doc.parseResult.value.packages.flatMap(p=>p.elements.filter(isScenario).map(c=>({name:c.name,kind:c.kind,steps:c.steps.map(s=>({name:s.name,kind:s.kind,source:s.source,target:s.target,via:s.connector,after:s.predecessor}))})));
+const cases=doc.parseResult.value.packages.flatMap(p=>AstUtils.streamAllContents(p).filter(isScenario).toArray().map(c=>({name:c.name,kind:c.kind,steps:c.steps.map(s=>({name:s.name,kind:s.kind,source:s.source,target:s.target,via:s.connector,after:s.predecessor}))})));
 const pkg=doc.parseResult.value.packages[0],controller=pkg.elements.find(x=>isComponentDef(x)&&x.name==='Controller'),regulate=controller.members.find(x=>isOperation(x)&&x.name==='regulate');
 const requirements=pkg.elements.filter(isRequirement).map(r=>({name:r.name,attributes:r.attributes.map(a=>({name:a.name,type:a.type.primitive,value:a.value.$cstNode.text}))}));
 const flow=regulate.body.statements.map(s=>({kind:s.$type,code:s.$cstNode.text}));

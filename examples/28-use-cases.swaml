@@ -25,7 +25,7 @@ package 'Cash Machine' {
     }
   }
   component def 'ATM Controller' {
-    /** The system under consideration. */
+    /** The system under consideration. Its use cases name the actors that take part. */
     reversed port panel: Panel;
     port bank: Authorization;
     attribute card: string = "";
@@ -42,6 +42,34 @@ package 'Cash Machine' {
       on receive panel.cardInserted(cardId) remember(cardId);
       on receive panel.cashRequested(amount) withdraw(amount);
     }
+    use case 'Withdraw cash' {
+      /** The customer inserts a card, asks for cash and receives it. */
+      actor customer: Customer;
+      actor issuer: Bank;
+      include Authenticate;
+      publish 'insert card' from customer.panel.cardInserted to panel.cardInserted;
+      publish 'ask for cash' from customer.panel.cashRequested to panel.cashRequested after 'insert card';
+      request authorize from bank.authorize to issuer.link.authorize after 'ask for cash';
+      reply approve from issuer.link.authorize to bank.authorize after authorize;
+      publish 'dispense cash' from panel.cashDispensed to customer.panel.cashDispensed after approve;
+    }
+    use case Authenticate {
+      /** The machine reads the card before any transaction. */
+      actor customer: Customer;
+      publish 'insert card' from customer.panel.cardInserted to panel.cardInserted;
+    }
+    use case 'Print receipt' {
+      /** A receipt may follow a withdrawal. */
+      actor customer: Customer;
+      extend 'Withdraw cash';
+    }
+    verification case 'Limit honoured' {
+      actor customer: Customer;
+      actor issuer: Bank;
+      verify 'Cash limit';
+      publish 'ask for cash' from customer.panel.cashRequested to panel.cashRequested;
+      request authorize from bank.authorize to issuer.link.authorize after 'ask for cash';
+    }
   }
   component def Bank {
     /** Actor: the card issuer's authorization service. */
@@ -52,6 +80,7 @@ package 'Cash Machine' {
     schedule {
       on call link.authorize(cardId, amount) authorize(cardId, amount);
     }
+    satisfy 'Cash limit';
   }
   component Branch {
     component customer: Customer;
@@ -64,44 +93,10 @@ package 'Cash Machine' {
     /** A single withdrawal never exceeds the limit. */
     attribute limit: uint = 500;
   }
-  satisfy 'Cash limit' of Branch.bank;
-  use case 'Withdraw cash' of Branch {
-    /** The customer inserts a card, asks for cash and receives it. */
-    subject atm;
-    actor customer;
-    actor bank;
-    include Authenticate;
-    publish 'insert card' from customer.panel.cardInserted to atm.panel.cardInserted;
-    publish 'ask for cash' from customer.panel.cashRequested to atm.panel.cashRequested after 'insert card';
-    request authorize from atm.bank.authorize to bank.link.authorize after 'ask for cash';
-    reply approve from bank.link.authorize to atm.bank.authorize after authorize;
-    publish 'dispense cash' from atm.panel.cashDispensed to customer.panel.cashDispensed after approve;
+  use case 'Open a branch' {
+    /** A package use case states intent before its subject is chosen. */
+    actor customer: Customer;
   }
-  use case Authenticate of Branch {
-    /** The machine reads the card before any transaction. */
-    subject atm;
-    actor customer;
-    publish 'insert card' from customer.panel.cardInserted to atm.panel.cardInserted;
-  }
-  use case 'Print receipt' of Branch {
-    /** A receipt may follow a withdrawal. */
-    subject atm;
-    actor customer;
-    extend 'Withdraw cash';
-  }
-  verification case 'Limit honoured' of Branch {
-    subject atm;
-    actor customer;
-    actor bank;
-    verify 'Cash limit';
-    publish 'ask for cash' from customer.panel.cashRequested to atm.panel.cashRequested;
-    request authorize from atm.bank.authorize to bank.link.authorize after 'ask for cash';
-  }
-  view 'use cases': Case {
-    include 'Withdraw cash';
-    include Authenticate;
-    include 'Print receipt';
-    include 'Limit honoured';
-  }
-  view withdrawal: Sequence of 'Withdraw cash';
+  view 'use cases': Case of 'ATM Controller';
+  view withdrawal: Sequence of 'ATM Controller'.'Withdraw cash';
 }

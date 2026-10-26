@@ -1,9 +1,10 @@
 import {readFile,writeFile} from 'node:fs/promises';
-import {EmptyFileSystem,URI} from 'langium';
+import {AstUtils,EmptyFileSystem,URI} from 'langium';
 import {parseHelper} from 'langium/test';
 import {createSwamlServices} from '../out/src/language/swaml-module.js';
 import {isRequirement,isScenario} from '../out/src/language/generated/ast.js';
+import {caseSubject,identity} from '../out/src/language/semantic.js';
 const root=new URL('../',import.meta.url),check=process.argv.includes('--check'),path='examples/16-requirements-and-views.swaml',source=await readFile(new URL(path,root),'utf8');
 const {Swaml}=createSwamlServices(EmptyFileSystem),doc=await parseHelper(Swaml)(source,{documentUri:URI.parse('memory:///'+path),validation:true});if(doc.diagnostics?.some(d=>d.severity===1))throw Error('Invalid traceability model');
-const pkg=doc.parseResult.value.packages[0],data={languageVersion:'2.0',source:path,requirements:pkg.elements.filter(isRequirement).map(r=>({id:pkg.name+'::'+r.name,attributes:r.attributes.map(a=>({name:a.name,value:a.value.$cstNode.text}))})),satisfactions:pkg.satisfactions.map(s=>({requirement:s.requirement.$refText,source:s.source,status:'intent'})),cases:pkg.elements.filter(isScenario).map(s=>({name:s.name,kind:s.kind,root:s.root.$refText,status:'inconclusive',verify:s.verifications.map(v=>v.requirement.$refText),steps:s.steps.map(x=>({name:x.name,kind:x.kind,source:x.source,target:x.target,via:x.connector,after:x.predecessor}))}))};
+const pkg=doc.parseResult.value.packages[0],data={languageVersion:'2.0',source:path,requirements:pkg.elements.filter(isRequirement).map(r=>({id:pkg.name+'::'+r.name,attributes:r.attributes.map(a=>({name:a.name,value:a.value.$cstNode.text}))})),satisfactions:pkg.satisfactions.map(s=>({requirement:s.requirement.$refText,source:s.source,status:'intent'})),cases:AstUtils.streamAllContents(pkg).filter(isScenario).toArray().map(s=>({name:s.name,kind:s.kind,subject:caseSubject(s)?identity(caseSubject(s)):null,status:'inconclusive',verify:s.verifications.map(v=>v.requirement.$refText),steps:s.steps.map(x=>({name:x.name,kind:x.kind,source:x.source,target:x.target,via:x.connector,after:x.predecessor}))}))};
 const text=JSON.stringify(data,null,2)+'\n',out=new URL('spec/traceability-demo.json',root);if(check){if(await readFile(out,'utf8')!==text)throw Error('Stale traceability projection');}else await writeFile(out,text);console.log('2.0 traceability intent projection '+(check?'checked.':'generated.'));

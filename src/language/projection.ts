@@ -1,7 +1,7 @@
 import { AstUtils, type AstNode } from 'langium';
 import type { Range } from 'vscode-languageserver';
 import * as a from './generated/ast.js';
-import { body, direction, effectiveQos, identity, isExecutable, members, nanos, owner, portMembers, schedule, signature, typeKey, type Node } from './semantic.js';
+import { body, caseSubject, direction, effectiveQos, identity, isExecutable, members, nanos, owner, portMembers, schedule, signature, typeKey, type Node } from './semantic.js';
 import { documentationText, viewCandidates } from './presentation.js';
 export interface ProjectionNode {
     id: string;
@@ -83,15 +83,16 @@ export function projectModel(models: readonly a.Model[]): Projection {
         if (isExecutable(n) && body(n)?.states.length)
             for (const state of body(n)!.states)
                 state.transitions.forEach((t, i) => addEdge('transition', id + '.' + state.name, id + '.' + t.target, t.endpoint ? 'on receive ' + t.endpoint : 'after ' + t.delay?.value + t.delay?.unit, { order: i }));
-        if (a.isScenario(n) && n.root.ref) {
-            const root = identity(n.root.ref);
-            if (n.subject)
-                addEdge('subject', id, root + '.' + n.subject.path, 'subject');
+        if (a.isScenario(n)) {
+            // The owning component, or each of its occurrences, is the subject. Actors are typed roles owned by the case.
+            const subject = caseSubject(n) && parent;
+            if (subject)
+                addEdge('subject', id, subject.path, 'subject');
             for (const actor of n.actors)
-                addEdge('actor', id, root + '.' + actor.path, 'actor');
+                addEdge('actor', id, id + '.' + actor.name, actor.name);
             for (const r of n.relations)
                 if (r.target.ref)
-                    addEdge(r.kind, id, identity(r.target.ref), r.kind);
+                    addEdge(r.kind, id, subject ? subject.path + '.' + r.target.ref.name : identity(r.target.ref), r.kind);
         }
         result.nodes.push(p);
         if (parent)

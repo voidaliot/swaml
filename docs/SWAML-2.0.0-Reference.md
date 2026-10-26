@@ -31,6 +31,7 @@ Maintained reference for the 2.0 language. Headerless parser 2.0; profile swaml-
 - [TOOLING](#chapter-25)
 - [decisions/0016-swaml-2-0](#chapter-26)
 - [decisions/0017-readable-names-and-use-cases](#chapter-27)
+- [decisions/0018-cases-belong-to-their-subject](#chapter-28)
 
 <a id="chapter-1"></a>
 
@@ -87,7 +88,7 @@ Local calls, startup, periodic releases, waits, state timers and same-owner afte
 | Schedule/entry | Trigger binding, dispatch arguments, deadline and concurrency |
 | State/transition | Ordered nested receive/timer reactions; final completion |
 | Deployment/placement | Software occurrences placed on platform Node occurrences |
-| Requirement/case/view | Immutable intent; use and verification cases with subject, actors, include/extend and routed steps; stable selection union |
+| Requirement/case/view | Immutable intent; use and verification cases owned by their subject, typed actors, include/extend and boundary or inner steps; stable selection union |
 
 Definitions have qualified declaration identity. Occurrences have root plus indexed child paths. Activations add unique run identity. All transformations preserve these distinctions and source provenance.
 
@@ -254,7 +255,7 @@ Use a separate deployment declaration over software and platform roots. Targets 
 
 Requirements, satisfy and verification case/verify record intent. [The traceability example](../examples/16-requirements-and-views.swaml) includes a routed named case and views. A case does not inject events or prove a witness. Use from/to/via/after to describe exchange dependencies.
 
-Write use case Name of Root { … } with subject for the system under consideration and actor for each participant outside it. Subject and actors are component occurrences inside the root, so actors still communicate through ports. A use case may include or extend another use case of the same root. [The use case example](../examples/28-use-cases.swaml) shows actors, include, extend and quoted names. Names containing spaces, letters outside ASCII or reserved words are written in single quotes, for example use case 'Withdraw cash' or attribute 'state': int = 0;.
+Declare use case Name { … } inside the component it describes; that component is the subject, the system under consideration. Each actor is a typed role outside the subject, actor customer: Customer;, and its steps use the actor's ports against the subject's own ports, for example publish 'insert card' from customer.panel.cardInserted to panel.cardInserted;. Steps between parts inside the subject follow its real connections. A case in a component definition applies to every usage and specialization. A use case declared directly in a package has no subject yet: it records intent with documentation, actors, include, extend and verify links, and moves into its subject once that exists. A use case may include or extend another use case of the same subject. Inside a component, satisfy Requirement; claims that component. [The use case example](../examples/28-use-cases.swaml) shows actors, include, extend and quoted names. Names containing spaces, letters outside ASCII or reserved words are written in single quotes, for example use case 'Withdraw cash' or attribute 'state': int = 0;.
 
 Import Swaml::Views and type views by General, Interconnect, Case, Sequence, Grid, Flow or Timing. Compact of selects a subject; include/recursive/where builds a stable union. Filter kinds are component and operation for the structural/executable families. Browser navigates ownership; Flow combines statements/states; Timing separates declared schedule/deadline information from identified observed traces. Presentation layout belongs in sidecars, not language source.
 
@@ -286,7 +287,7 @@ Write operations with explicit parameter/result types. Use return for values, ex
 
 Put activation in one schedule. Use on start/every/receive/call or after same-owner operation. Select complete policy definitions where Default is unsuitable. Keep remote calls as whole initializer/assignment/statement forms, optionally in try. Recheck live attributes after suspension; use concurrent only when the transitive operation graph cannot write. Copy-back of out parameters occurs only on success.
 
-Multiplicity is literal and paths are indexed explicitly. Deployment targets are platform Node occurrences. Requirements and cases express intent; they are not proof or input drivers. Write use case/verification case with a subject and actors that are occurrences of the case root; relate use cases with include/extend. Quote names that contain spaces, letters outside ASCII or reserved words, such as 'Withdraw cash'. View definitions select existing identities, with geometry separate.
+Multiplicity is literal and paths are indexed explicitly. Deployment targets are platform Node occurrences. Requirements and cases express intent; they are not proof or input drivers. Declare use case/verification case inside the component it describes: that component is the subject. Name each outside participant as a typed role, actor customer: Customer;, and write steps either between an actor and the subject's own ports or along connections inside the subject. A package use case has no subject and states intent only; relate use cases of one subject with include/extend. Quote names that contain spaces, letters outside ASCII or reserved words, such as 'Withdraw cash'. View definitions select existing identities, with geometry separate.
 
 ## Validate–fix loop
 
@@ -314,7 +315,6 @@ Run a bounded simulation only after validation. Record source bytes/hashes, root
 | SW2009/2010 | Resolve occurrence/Node paths, case subject/actor membership, include/extend targets, case route/correlation or view subject |
 | SW2011/2012 | Recheck live state after resumption; account for inactive interrupt input |
 | SW2013 | Supply complete typed policy values and safe positive durations |
-| SW2015 | Apply the supplied replacement for a deprecated 2.0 spelling, such as useCase to use case |
 
 Keep diagnostics/evidence honest. Consult [implementation status](IMPLEMENTATION_STATUS.md) before claiming full V/E/G/K support. Publishing a page or release is a separate user-authorized action; this project requires a design preview before publication.
 
@@ -329,7 +329,7 @@ Normative chapter of [swa.ml 2.0](LANGUAGE_SPECIFICATION.md).
 
 ## 1.1 Names and documentation
 
-Files contain packages without a version header. Package names may contain several :: segments; packages do not nest. import P; exposes P's top-level declarations and requires that package in the loaded workspace. Qualified references are unambiguous; ambiguous short imports are errors independent of load order. Names are unique in their scope. No overloads or implicit imports exist. The contextual words actor, case, extend, from, kind, name, path, request, reversed, subject, times, to, use and verification remain legal names outside their syntactic positions. Other literal words in the grammar are reserved.
+Files contain packages without a version header. Package names may contain several :: segments; packages do not nest. import P; exposes P's top-level declarations and requires that package in the loaded workspace. Qualified references are unambiguous; ambiguous short imports are errors independent of load order. Names are unique in their scope. No overloads or implicit imports exist. The contextual words actor, case, extend, from, kind, name, path, request, reversed, times, to, use and verification remain legal names outside their syntactic positions. Other literal words in the grammar are reserved.
 
 A name is written as a basic name, an ASCII letter or underscore followed by ASCII letters, digits or underscores, or as a quoted name between single quotes, such as 'Withdraw cash', 'Bestellübersicht' or 'state'. Inside quotes, \' writes a quote and \\ a backslash; other escapes, line breaks and control characters are invalid. The name is the quoted content: 'Pump' and Pump are the same name, and a quoted reserved word is an ordinary name. A quoted name is not empty, contains no '.', ':', '[' or ']', which delimit paths, and separates words by single spaces without leading or trailing space (SW2001). Tools write a basic name whenever one is legal and quote otherwise. Qualified names and paths combine spellings, as in Shop::'Order Service'.port; a string literal holding a path, such as a view filter value, contains the unquoted names.
 
@@ -490,23 +490,23 @@ A package deployment Name of Root on PlatformRoot owns placements. deploy on nod
 
 ## 4.2 Requirements and cases
 
-A requirement owns immutable typed attributes and at most one doc. satisfy Requirement of designPath records design intent. Only a verification case owns verify Requirement. Neither relation proves fulfillment.
+A requirement owns immutable typed attributes and at most one doc. satisfy Requirement of designPath; records design intent for a package-owned design path; inside a component, satisfy Requirement; claims that component and is inherited with its other members. Only a verification case owns verify Requirement. Neither relation proves fulfillment.
 
-A case is written use case Name of Root { … } or verification case Name of Root { … }. The 2.0 spellings useCase and verificationCase remain accepted with the same meaning; validation reports the SW2015 warning with a safe replacement. A case selects one concrete root with of and owns, in this order, optional documentation, an optional subject, actors, use case relations, verify links and routed steps. It never owns behavior or hidden actors that bypass ports.
+A case is written use case Name { … } or verification case Name { … }. It owns, in this order, optional documentation, actors, use case relations, verify links and steps. It never owns behavior or hidden actors that bypass ports.
 
-subject path; names the component occurrence inside the root whose boundary contains the case: the system under consideration. Without a subject the root itself is the subject. actor path; names a component occurrence inside the root that takes part from outside the subject boundary. Actors require a subject, are distinct, and neither contain nor lie inside the subject. Both paths index multiplicity occurrences. Actors are ordinary components: every exchange with them still crosses typed ports and explicit routes. When a subject is declared, every step endpoint belongs to the subject or to a declared actor, including their descendants.
+The component that owns a case is its subject, the system under consideration. A case declared in a component definition or a usage body is a member of that component: it is inherited by usages and specializations like other members, and each occurrence of the subject carries it. A package-owned case has no subject; it states intent and owns no steps. actor name: ComponentDefinition; declares a typed role outside the subject boundary. Actor names are unique in the case and differ from the names of the subject's members, so a step path starts unambiguously with an actor or with a subject member. Actors are not occurrences of the model: a concrete root binds a role to the occurrence connected to the subject port the actor's steps use, and a host reports a binding as unavailable when it is absent or ambiguous.
 
-include Case; and extend Case; are owned only by use cases and name another use case of the same root. include records that the owning use case incorporates the named one; extend records that the owning use case optionally extends the named base use case. The combined include and extend graph is acyclic and repeats no relation. These relations are intent: steps are not merged and no relation executes behavior.
+include Case; and extend Case; are owned only by use cases and name another use case of the same subject, including inherited ones; a package use case names another package use case. include records that the owning use case incorporates the named one; extend records that the owning use case optionally extends the named base use case. The combined include and extend graph is acyclic and repeats no relation. These relations are intent: steps are not merged and no relation executes behavior.
 
-A step has kind name from source to target, optional via connector and optional after step. Kinds are send, publish, request and reply. Source/target are occurrence port-member paths in the case root. Direction, kind and payload/signature compatibility must match a real resolved connection. via names a connector; it may be omitted only when exactly one connection joins the endpoints. Unnamed connectors cannot be selected by name. Forwarding aliases are resolved and do not create a case message.
+A step has kind name from source to target, optional via connector and optional after step. Kinds are send, publish, request and reply. Each end is a port-member path: actor.port.member names a port of the actor's definition, port.member a port of the subject itself, and part.port.member a port of an occurrence inside the subject, indexing multiplicity. A step either crosses the subject boundary between an actor and a port of the subject itself, or stays inside the subject. A boundary step needs ports that could be connected: their members are structurally compatible, and it names no connector. An inner step must match a real connection inside the subject; via names that connector and may be omitted only when exactly one connection joins the ends. Actors do not exchange messages with each other, and an actor never reaches a part inside the subject directly. Direction, kind and payload/signature compatibility must match at both ends. Unnamed connectors cannot be selected by name. Forwarding aliases are resolved and do not create a case message.
 
-Names are unique. An after predecessor names an earlier step; source order otherwise contributes display order only. A reply identifies one unanswered causal request ancestor with reversed endpoints, same member and route. A reply on an independent branch cannot answer another branch's request. Multiple replies to one request or ambiguous causal candidates are errors. Partial scenarios may leave a request unanswered. Route-valid scenarios are intent until an identified witness execution supplies payloads, assumptions and trace evidence.
+Names are unique. An after predecessor names an earlier step; source order otherwise contributes display order only. A reply identifies one unanswered causal request ancestor with reversed endpoints, same member and route, where a boundary route is the actor port paired with the subject port. A reply on an independent branch cannot answer another branch's request. Multiple replies to one request or ambiguous causal candidates are errors. Partial scenarios may leave a request unanswered. Route-valid scenarios are intent until an identified witness execution supplies payloads, assumptions and trace evidence.
 
 ## 4.3 Views
 
 Swaml::Views provides General, Interconnect, Case, Sequence, Grid, Flow and Timing. A view is typed by a definition, uses compact of subject or one or more include clauses, and owns optional documentation. Include may expand recursive descendants and apply a restricted Boolean where filter over name, kind and path, string comparisons, and/or/not. Filters never call operations or execute behavior. Selection is a union of occurrence identities in first-selection order; duplicates are removed stably.
 
-General and Grid select named semantic elements except views. Interconnect selects components. Case/Sequence select roots or cases. Case draws selected cases inside their subject boundary, their actors outside it, and their include, extend, satisfy and verify intent links. Flow/Timing select operations. Paths preserve definition/occurrence identity and explicit multiplicity indexes. Browser is navigation rather than an eighth view kind. General Box in box and Tree layouts retain exactly the same selected identities and topology; layout/collapse/geometry stay in presentation sidecars.
+General and Grid select named semantic elements except views. Interconnect selects components. Case and Sequence select components or cases; a selected component contributes the cases it owns. Case draws selected cases inside their subject boundary, their actors outside it, and their include, extend, satisfy and verify intent links. Flow/Timing select operations. Paths preserve definition/occurrence identity and explicit multiplicity indexes. Browser is navigation rather than an eighth view kind. General Box in box and Tree layouts retain exactly the same selected identities and topology; layout/collapse/geometry stay in presentation sidecars.
 
 Flow covers statements, nested operation calls, loops, receive, interruption and function-owned states. Timing has declared and observed modes. Declared shows schedule release grid, causes, deadlines, static wait intervals and permitted concurrent overlap. Observed adds an identified trace, serial lock gaps, message latency, activation phases, terminal markers and open intervals; WCET/budget bars identify their target-binding/evidence source. A missing trace never produces fabricated observation. Views introduce no execution semantics.
 
@@ -529,7 +529,7 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | SW2012 | Inactive interrupt-input discard warning |
 | SW2013 | Complete typed policies and representable positive durations |
 | SW2014 | Canonical formatting differs, only in explicit formatting-check mode |
-| SW2015 | Deprecated 2.0 spelling with a safe replacement, reported as a warning |
+| SW2015 | Retired in 2.1 together with the 2.0 case spellings; not reported |
 
 Every diagnostic includes a source range and stable code. Machine-readable diagnostics retain declaration identity and occurrence context when resolved. A suggested edit is supplied only for a safe unambiguous correction; tools must revalidate the resulting complete workspace before applying it. Parser recovery may suspend semantic checks on invalid syntax, but the document remains invalid and must not crash the service.
 
@@ -804,7 +804,7 @@ Port boundary squares expose direction per member: provides/requires attribute, 
 
 Flow shows expressions/calls, decisions, loop forms, lazy try fallback, receive/wait suspension and armed interrupt transfer. States are inside an operation; transitions are nested/ordered and labeled by input/guard or after timer and target. State bodies have no separate executable identity. Final completion is distinguishable from idle reactions.
 
-Platform Nodes own const attributes and child Nodes. Deployment edges refer to the separate placement declaration and preserve indexed occurrence identity. Requirement and case links are labeled «satisfy», «verify», «include» and «extend» and show intent rather than proof. A Case view draws each case as an ellipse inside its subject boundary, labeled with the subject occurrence and type, and each actor as a stick figure outside the boundary joined to its cases by solid association lines. include and extend are dashed open arrows from the owning use case. Sequence shows named from/to/via/after steps on real routes.
+Platform Nodes own const attributes and child Nodes. Deployment edges refer to the separate placement declaration and preserve indexed occurrence identity. Requirement and case links are labeled «satisfy», «verify», «include» and «extend» and show intent rather than proof. A Case view draws each case as an ellipse inside the boundary of its owning subject, labeled with the subject and its type, and each actor role as a stick figure outside the boundary, labeled name: Type and joined to its cases by solid association lines. Package use cases have no boundary. include and extend are dashed open arrows from the owning use case. Sequence shows named from/to/via/after steps on real routes.
 
 Browser remains navigation. General, Interconnect, Case, Sequence, Grid, Flow and Timing are imported view definitions. General Box in box/Tree preserve the same selected identities/topology. Timing declared mode shows schedules/deadlines/static waits; observed mode adds an identified run, lock gaps, message latency, terminals and open intervals. Missing evidence never becomes measured WCET. Geometry, collapse and routes stay in sidecars.
 
@@ -1011,11 +1011,11 @@ Preserve owned source and distinct definition/occurrence identities. Drawing is 
 
 ## Use cases, actors and routed case steps
 
-swa.ml 2.0; Traceability::Startup.
+swa.ml 2.0; Cash Machine::ATM Controller.Withdraw cash.
 
 ![Use cases, actors and routed case steps](notation/2.0/cases.svg)
 
-**Source:** [Traceability::Startup](../examples/16-requirements-and-views.swaml). **Grammar:** Scenario, CaseKind, CaseSubject, CaseActor, CaseRelation, ScenarioStep.
+**Source:** [Cash Machine::ATM Controller.Withdraw cash](../examples/28-use-cases.swaml). **Grammar:** Scenario, CaseKind, CaseActor, CaseRelation, ScenarioStep.
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 
@@ -1173,7 +1173,7 @@ swa.ml 2.0.
 
 A requirement owns immutable typed attributes and at most one formal doc. Use /** ... */ first in a body or immediately before the semicolon of a leaf declaration. Ordinary // and /* ... */ comments remain separate lexical annotations. Formal documentation is owned source, not an executable statement or proof.
 
-satisfy Requirement of designPath links intent from a design identity. Only a verification case owns verify. Use cases describe an intended interaction without asserting verification. A case selects a concrete root with of, may name its subject and the actors outside it, and uses named send/publish/request/reply steps from source to target, optionally via a named connection and after a predecessor. A use case may include or extend another use case of the same root.
+satisfy Requirement of designPath links intent from a design identity; inside a component, satisfy Requirement; claims the component. Only a verification case owns verify. Use cases describe an intended interaction without asserting verification. A case belongs to its subject, the component that owns it, names typed actor roles outside it, and uses named send/publish/request/reply steps from source to target: between an actor and the subject's own ports, or via a connection inside the subject, optionally after a predecessor. A use case may include or extend another use case of the same subject. A package use case has no subject and records intent only.
 
 Routes, member kinds/directions and request/reply correlation must resolve to the root topology. Cases do not create channels or inject events. A route-valid case needs an identified witness execution before realization can be claimed. A requirement needs associated test/analysis/review evidence before fulfillment can be claimed.
 
@@ -1203,11 +1203,11 @@ Compact of selects one subject. Include/recursive/where selects a stable union w
 
 Generated from spec/keywords.json and the normative grammar. Examples here are grammar fragments; complete runnable models are in the usage guide and examples. Five contextual words remain legal names outside their positions. Call appears only in the on call trigger.
 
-[actor](#keyword-actor) · [after](#keyword-after) · [and](#keyword-and) · [assert](#keyword-assert) · [attribute](#keyword-attribute) · [bool](#keyword-bool) · [byte](#keyword-byte) · [call](#keyword-call) · [case](#keyword-case) · [component](#keyword-component) · [concurrent](#keyword-concurrent) · [connect](#keyword-connect) · [const](#keyword-const) · [datatype](#keyword-datatype) · [deadline](#keyword-deadline) · [def](#keyword-def) · [deploy](#keyword-deploy) · [deployment](#keyword-deployment) · [else](#keyword-else) · [entry](#keyword-entry) · [enum](#keyword-enum) · [event](#keyword-event) · [every](#keyword-every) · [exit](#keyword-exit) · [extend](#keyword-extend) · [fail](#keyword-fail) · [false](#keyword-false) · [final](#keyword-final) · [for](#keyword-for) · [from](#keyword-from) · [idempotent](#keyword-idempotent) · [if](#keyword-if) · [import](#keyword-import) · [in](#keyword-in) · [include](#keyword-include) · [initial](#keyword-initial) · [int](#keyword-int) · [interruptible](#keyword-interruptible) · [kind](#keyword-kind) · [ms](#keyword-ms) · [name](#keyword-name) · [not](#keyword-not) · [ns](#keyword-ns) · [of](#keyword-of) · [on](#keyword-on) · [operation](#keyword-operation) · [optional](#keyword-optional) · [or](#keyword-or) · [out](#keyword-out) · [package](#keyword-package) · [path](#keyword-path) · [port](#keyword-port) · [provides](#keyword-provides) · [publish](#keyword-publish) · [qos](#keyword-qos) · [real](#keyword-real) · [receive](#keyword-receive) · [record](#keyword-record) · [recursive](#keyword-recursive) · [redefines](#keyword-redefines) · [reply](#keyword-reply) · [request](#keyword-request) · [requirement](#keyword-requirement) · [requires](#keyword-requires) · [return](#keyword-return) · [returns](#keyword-returns) · [reversed](#keyword-reversed) · [s](#keyword-s) · [satisfy](#keyword-satisfy) · [schedule](#keyword-schedule) · [send](#keyword-send) · [specializes](#keyword-specializes) · [start](#keyword-start) · [state](#keyword-state) · [string](#keyword-string) · [subject](#keyword-subject) · [times](#keyword-times) · [to](#keyword-to) · [true](#keyword-true) · [try](#keyword-try) · [uint](#keyword-uint) · [until](#keyword-until) · [us](#keyword-us) · [use](#keyword-use) · [useCase](#keyword-usecase) · [var](#keyword-var) · [verification](#keyword-verification) · [verificationCase](#keyword-verificationcase) · [verify](#keyword-verify) · [via](#keyword-via) · [view](#keyword-view) · [void](#keyword-void) · [wait](#keyword-wait) · [when](#keyword-when) · [where](#keyword-where) · [while](#keyword-while)
+[actor](#keyword-actor) · [after](#keyword-after) · [and](#keyword-and) · [assert](#keyword-assert) · [attribute](#keyword-attribute) · [bool](#keyword-bool) · [byte](#keyword-byte) · [call](#keyword-call) · [case](#keyword-case) · [component](#keyword-component) · [concurrent](#keyword-concurrent) · [connect](#keyword-connect) · [const](#keyword-const) · [datatype](#keyword-datatype) · [deadline](#keyword-deadline) · [def](#keyword-def) · [deploy](#keyword-deploy) · [deployment](#keyword-deployment) · [else](#keyword-else) · [entry](#keyword-entry) · [enum](#keyword-enum) · [event](#keyword-event) · [every](#keyword-every) · [exit](#keyword-exit) · [extend](#keyword-extend) · [fail](#keyword-fail) · [false](#keyword-false) · [final](#keyword-final) · [for](#keyword-for) · [from](#keyword-from) · [idempotent](#keyword-idempotent) · [if](#keyword-if) · [import](#keyword-import) · [in](#keyword-in) · [include](#keyword-include) · [initial](#keyword-initial) · [int](#keyword-int) · [interruptible](#keyword-interruptible) · [kind](#keyword-kind) · [ms](#keyword-ms) · [name](#keyword-name) · [not](#keyword-not) · [ns](#keyword-ns) · [of](#keyword-of) · [on](#keyword-on) · [operation](#keyword-operation) · [optional](#keyword-optional) · [or](#keyword-or) · [out](#keyword-out) · [package](#keyword-package) · [path](#keyword-path) · [port](#keyword-port) · [provides](#keyword-provides) · [publish](#keyword-publish) · [qos](#keyword-qos) · [real](#keyword-real) · [receive](#keyword-receive) · [record](#keyword-record) · [recursive](#keyword-recursive) · [redefines](#keyword-redefines) · [reply](#keyword-reply) · [request](#keyword-request) · [requirement](#keyword-requirement) · [requires](#keyword-requires) · [return](#keyword-return) · [returns](#keyword-returns) · [reversed](#keyword-reversed) · [s](#keyword-s) · [satisfy](#keyword-satisfy) · [schedule](#keyword-schedule) · [send](#keyword-send) · [specializes](#keyword-specializes) · [start](#keyword-start) · [state](#keyword-state) · [string](#keyword-string) · [times](#keyword-times) · [to](#keyword-to) · [true](#keyword-true) · [try](#keyword-try) · [uint](#keyword-uint) · [until](#keyword-until) · [us](#keyword-us) · [use](#keyword-use) · [var](#keyword-var) · [verification](#keyword-verification) · [verify](#keyword-verify) · [via](#keyword-via) · [view](#keyword-view) · [void](#keyword-void) · [wait](#keyword-wait) · [when](#keyword-when) · [where](#keyword-where) · [while](#keyword-while)
 
 ## Keyword: actor
 
-Names a case occurrence outside the subject that takes part in the case.
+Declares a typed role outside the case subject that takes part through ports.
 
 **Context:** Use cases, actors and routed case steps. **Grammar:** CaseActor, Name. **Name use:** reserved.
 
@@ -1399,7 +1399,7 @@ Used in ordered state transitions; see its grammar contexts and normative constr
 
 ## Keyword: extend
 
-Records that a use case extends another use case of the same root.
+Records that a use case extends another use case of the same subject.
 
 **Context:** Use cases, actors and routed case steps. **Grammar:** CaseRelation, Name. **Name use:** reserved.
 
@@ -1479,7 +1479,7 @@ Used in attributes and lexical locals; see its grammar contexts and normative co
 
 ## Keyword: include
 
-Adds a view selection, or records that a use case includes another use case of the same root.
+Adds a view selection, or records that a use case includes another use case of the same subject.
 
 **Context:** Seven library view definitions. **Grammar:** CaseRelation, ViewSelection. **Name use:** reserved.
 
@@ -1551,9 +1551,9 @@ Used in lexical and path spelling; see its grammar contexts and normative constr
 
 ## Keyword: of
 
-Used in use cases, actors and routed case steps; see its grammar contexts and normative constraints.
+Used in requirements and intent links; see its grammar contexts and normative constraints.
 
-**Context:** Use cases, actors and routed case steps. **Grammar:** Deployment, Satisfaction, Scenario, View. **Name use:** reserved.
+**Context:** Requirements and intent links. **Grammar:** Deployment, Satisfaction, View. **Name use:** reserved.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -1805,14 +1805,6 @@ Used in typed copied values; see its grammar contexts and normative constraints.
 
 [Normative rule](spec/01-structure-and-types.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
-## Keyword: subject
-
-Names the case occurrence whose boundary contains the use case.
-
-**Context:** Use cases, actors and routed case steps. **Grammar:** CaseSubject, Name. **Name use:** reserved.
-
-[Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
-
 ## Keyword: times
 
 Introduces a once-evaluated uint loop limit.
@@ -1877,14 +1869,6 @@ Starts the use case keyword pair use case.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
-## Keyword: useCase
-
-Deprecated 2.0 spelling of use case, reported by SW2015 with a safe replacement.
-
-**Context:** Use cases, actors and routed case steps. **Grammar:** CaseKind. **Name use:** reserved.
-
-[Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
-
 ## Keyword: var
 
 Used in attributes and lexical locals; see its grammar contexts and normative constraints.
@@ -1898,14 +1882,6 @@ Used in attributes and lexical locals; see its grammar contexts and normative co
 Starts the verification case keyword pair verification case.
 
 **Context:** Use cases, actors and routed case steps. **Grammar:** CaseKind, Name. **Name use:** reserved.
-
-[Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
-
-## Keyword: verificationCase
-
-Deprecated 2.0 spelling of verification case, reported by SW2015 with a safe replacement.
-
-**Context:** Use cases, actors and routed case steps. **Grammar:** CaseKind. **Name use:** reserved.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -2002,9 +1978,9 @@ The 2.0 core replaces the 1.x grammar, AST, resolver, validator and interpreter.
 | Flow and state | Loops and copied iteration, wait/receive, interruption across callees, ordered nested transitions, final completion and queued startup input |
 | Correlation and adverse behavior | Routed results/out values, failures, timeout ties, terminal cancellation, late-reply suppression, policy overflow, age at eligibility and explicit resource limits |
 | Deployment | Separate software/platform roots, Node-only contents/targets, indexed/family placements and most-specific selection |
-| Requirements/cases/views | Immutable intent, use case/verification case with deprecated 2.0 spellings, subject and actor occurrences, acyclic include/extend, routed named steps with causal replies, seven library definitions, package/member subjects and stable occurrence unions |
+| Requirements/cases/views | Immutable intent, use case/verification case owned by their subject component, typed actor roles, boundary and inner steps, subject-less package use cases, owned satisfy, acyclic include/extend, routed named steps with causal replies, seven library definitions, package/member subjects and stable occurrence unions |
 | AI authoring | Usage and AI guides, portable author/validate skills, --json diagnostics with code/range/URI/declaration/occurrence metadata and selected safe repair edits |
-| Authoring services | Canonical token-preserving full-document formatting; semantic index, definition/references and versioned multi-file rename over indexed paths, port members, nested operations, schedules, states, placements, cases, case subjects/actors and view subjects/eligible filters; rename writes quoted names where required and unquoted names inside string paths; portable name spelling helpers for hosts |
+| Authoring services | Canonical token-preserving full-document formatting; semantic index, definition/references and versioned multi-file rename over indexed paths, port members, nested operations, schedules, states, placements, cases, case actors and step ends and view subjects/eligible filters; rename writes quoted names where required and unquoted names inside string paths; portable name spelling helpers for hosts |
 | Host behavior | CLI exit/JSON/edition checks, LSP 2.0 negotiation, complete dependency enforcement, standard-library validation and workspace negative-lookup invalidation |
 | Diagrams and page | Exhaustive notation/mapping inventories; original 2.0 SVG/PNG/scenes and source-subject checks; generated source/trace site data, seven interactive views, light/dark/system themes and responsive preview |
 
@@ -2127,7 +2103,7 @@ The proposal’s deployment illustration spelling component def Ecu: Node is res
 
 # ADR 0017: Readable names and structured use cases
 
-Status: accepted for implementation, 2026-10-25. Normative additions for the next minor standard edition; recorded under Unreleased until that edition is prepared.
+Status: accepted for implementation, 2026-10-25. Normative additions for the next minor standard edition; recorded under Unreleased until that edition is prepared. The case root, subject and actor clauses and the deprecated 2.0 case spellings are superseded by [ADR 0018](decisions/0018-cases-belong-to-their-subject.md).
 
 ## Context
 
@@ -2152,6 +2128,35 @@ The parser, profile and edition identifiers remain 2.0 until the edition is prep
 
 ---
 
+<a id="chapter-28"></a>
+
+# ADR 0018: Cases belong to their subject
+
+Status: accepted for implementation, 2026-10-26. Normative change for the 2.1 standard edition; recorded under Unreleased until that edition is prepared. Supersedes the case root, subject and actor clauses of ADR 0017.
+
+## Context
+
+A usability review of the editor found that the case root was the hardest concept in the language. use case Name of Root { subject part; actor other; } asked authors for a root that was neither the subject nor the place the case was written, and a use case could not be recorded before a concrete system existed. Authors read use case A of B as "B is the subject" and expected a use case to be placed where they were modeling, with a subject and actors.
+
+## Decision
+
+A case belongs to the component that owns it, and that component is its subject. Cases are component members, written use case Name { … } or verification case Name { … } in a component definition or usage body, and are inherited by usages and specializations like other members. A case declared in a package has no subject: it records intent with documentation, actors, include, extend and verify links, and owns no steps.
+
+Actors are typed roles, actor customer: Customer;. They are not occurrences of the model, because a component definition does not know its surroundings. A step either crosses the subject boundary, between an actor's port and a port of the subject itself, or stays inside the subject along one of its real connections. A boundary step needs structurally compatible ports and names no connector. Actor names differ from the subject's member names so step paths are unambiguous. A concrete root binds each role to the occurrence connected to the subject port that the role's steps use; tools report an absent or ambiguous binding instead of guessing.
+
+include and extend relate use cases of the same subject, including inherited ones, or package use cases of one package. Inside a component, satisfy Requirement; claims that component. A package satisfy keeps of designPath for claims about one occurrence. Deployments and views keep of: a deployment pairs two independent roots and a view selects from anywhere, so ownership would not remove the reference.
+
+The of root form, the subject clause and the 2.0 spellings useCase and verificationCase are removed rather than deprecated. SW2015 is retired.
+
+## Consequences
+
+This is an incompatible change. The version policy calls for a new major number, but the owner approved it for the 2.1 edition on 2026-10-26 because swa.ml has no external adopters yet. Published 2.0.0 artifacts and their frozen sources remain unchanged. A 2.0 model moves a case into its root component, replaces subject part; with an owning part or a step through the subject's ports, and turns actor paths into typed roles.
+
+Case views draw the owning component as the boundary and actor roles outside it. Sequence views show the subject, its parts and the actor roles as lifelines. Hosts that overlay a case on a concrete root resolve roles through connections and mark unresolved roles unavailable. Cases remain intent: they execute nothing and prove nothing.
+
+
+---
+
 ## Complete concrete grammar
 
 ```text
@@ -2169,7 +2174,7 @@ type ValueType = DataType | EnumType;
 Argument: (direction=('in'|'out'))? name=Name ':' type=TypeRef;
 ComponentDef: 'component' 'def' name=Name ('specializes' specializes=[ComponentDef:QualifiedName])? '{' documentation=Documentation? members+=ComponentMember* '}';
 ComponentUsage: (redefines?='redefines')? 'component' name=Name (':' definition=[ComponentDef:QualifiedName] ('[' size=INT ']')?)? (';' | '{' documentation=Documentation? members+=ComponentMember* '}');
-ComponentMember: ComponentUsage | PortUsage | Attribute | Operation | OperationUsage | Connect | Schedule;
+ComponentMember: ComponentUsage | PortUsage | Attribute | Operation | OperationUsage | Connect | Schedule | Scenario | Satisfaction;
 Attribute: (redefines?='redefines')? (constant?='const')? 'attribute' name=Name ':' type=TypeRef '=' value=Expression documentation=Documentation? ';';
 PortDef: 'port' 'def' name=Name '{' documentation=Documentation? members+=PortMember* '}';
 PortUsage: (redefines?='redefines')? (optional?='optional')? (reversed?='reversed')? 'port' name=Name (':' definition=[PortDef:QualifiedName] documentation=Documentation? ';' | '{' documentation=Documentation? members+=PortMember* '}');
@@ -2209,12 +2214,11 @@ Deployment: 'deployment' name=Name 'of' root=[ComponentUsage:QualifiedName] 'on'
 Placement: 'deploy' target=Path? 'on' node=Path ';';
 Requirement: 'requirement' name=Name '{' documentation=Documentation? attributes+=Attribute* '}';
 Documentation: text=DOC_COMMENT;
-Satisfaction: 'satisfy' requirement=[Requirement:QualifiedName] 'of' source=Path ';';
+Satisfaction: 'satisfy' requirement=[Requirement:QualifiedName] ('of' source=Path)? ';';
 Verification: 'verify' requirement=[Requirement:QualifiedName] ';';
-Scenario: kind=CaseKind name=Name 'of' root=[ComponentUsage:QualifiedName] '{' documentation=Documentation? subject=CaseSubject? actors+=CaseActor* relations+=CaseRelation* verifications+=Verification* steps+=ScenarioStep* '}';
-CaseKind returns string: 'use' 'case' | 'verification' 'case' | 'useCase' | 'verificationCase';
-CaseSubject: 'subject' path=Path ';';
-CaseActor: 'actor' path=Path ';';
+Scenario: kind=CaseKind name=Name '{' documentation=Documentation? actors+=CaseActor* relations+=CaseRelation* verifications+=Verification* steps+=ScenarioStep* '}';
+CaseKind returns string: 'use' 'case' | 'verification' 'case';
+CaseActor: 'actor' name=Name ':' definition=[ComponentDef:QualifiedName] ';';
 CaseRelation: kind=('include'|'extend') target=[Scenario:QualifiedName] ';';
 ScenarioStep: kind=('send'|'publish'|'request'|'reply') name=Name 'from' source=Path 'to' target=Path ('via' connector=Name)? ('after' predecessor=Name)? ';';
 ViewDef: 'view' 'def' name=Name documentation=Documentation? ';';
@@ -2227,7 +2231,7 @@ FilterAnd returns FilterExpression: FilterPrimary ({infer FilterBinary.left=curr
 FilterPrimary returns FilterExpression: {infer FilterNot} 'not' operand=FilterPrimary | FilterComparison | '(' FilterExpression ')';
 FilterComparison: field=('name'|'kind'|'path') operator=('=='|'!=') value=STRING;
 Duration: value=INT unit=('ns'|'us'|'ms'|'s');
-Name returns string: ID | UNRESTRICTED_NAME | 'reversed' | 'from' | 'to' | 'times' | 'request' | 'name' | 'kind' | 'path' | 'use' | 'case' | 'verification' | 'subject' | 'actor' | 'extend';
+Name returns string: ID | UNRESTRICTED_NAME | 'reversed' | 'from' | 'to' | 'times' | 'request' | 'name' | 'kind' | 'path' | 'use' | 'case' | 'verification' | 'actor' | 'extend';
 MemberPath returns string: Name '.' Name;
 Path returns string: QualifiedName ('[' INT ']')? ('.' Name ('[' INT ']')?)*;
 QualifiedName returns string: Name ('::' Name)*;
@@ -2346,19 +2350,19 @@ package Control {
     component heater: Heater;
     connect samples (sensor.reading, controller.reading);
     connect commands (controller.command, heater.command);
+    verification case ControlLoop {
+      verify Responsive;
+      send measured from sensor.reading.temperature to controller.reading.temperature via samples;
+      publish applied from controller.command.set to heater.command.set via commands after measured;
+    }
   }
   requirement Responsive {
     attribute limitMs: uint = 5;
   }
   satisfy Responsive of Demo.controller;
-  verification case ControlLoop of Demo {
-    verify Responsive;
-    send measured from sensor.reading.temperature to controller.reading.temperature via samples;
-    publish applied from controller.command.set to heater.command.set via commands after measured;
-  }
   view overview: General of Demo;
-  view intent: Case of ControlLoop;
-  view sequence: Sequence of ControlLoop;
+  view intent: Case of Demo.ControlLoop;
+  view sequence: Sequence of Demo.ControlLoop;
   view inventory: Grid of Demo;
   view architecture: Interconnect of Demo;
   view logic: Flow of Demo.controller.regulate;
@@ -2943,14 +2947,14 @@ package Traceability {
     component sender: Sender;
     component receiver: Receiver;
     connect (sender.output, receiver.input);
+    verification case Startup {
+      verify Delivery;
+      publish greeting from sender.output.message to receiver.input.message;
+    }
   }
   satisfy Delivery of Demo.receiver;
-  verification case Startup of Demo {
-    verify Delivery;
-    publish greeting from sender.output.message to receiver.input.message;
-  }
   view overview: General of Demo;
-  view delivery: Sequence of Startup;
+  view delivery: Sequence of Demo.Startup;
 }
 ```
 
@@ -3308,7 +3312,7 @@ package 'Cash Machine' {
     }
   }
   component def 'ATM Controller' {
-    /** The system under consideration. */
+    /** The system under consideration. Its use cases name the actors that take part. */
     reversed port panel: Panel;
     port bank: Authorization;
     attribute card: string = "";
@@ -3325,6 +3329,34 @@ package 'Cash Machine' {
       on receive panel.cardInserted(cardId) remember(cardId);
       on receive panel.cashRequested(amount) withdraw(amount);
     }
+    use case 'Withdraw cash' {
+      /** The customer inserts a card, asks for cash and receives it. */
+      actor customer: Customer;
+      actor issuer: Bank;
+      include Authenticate;
+      publish 'insert card' from customer.panel.cardInserted to panel.cardInserted;
+      publish 'ask for cash' from customer.panel.cashRequested to panel.cashRequested after 'insert card';
+      request authorize from bank.authorize to issuer.link.authorize after 'ask for cash';
+      reply approve from issuer.link.authorize to bank.authorize after authorize;
+      publish 'dispense cash' from panel.cashDispensed to customer.panel.cashDispensed after approve;
+    }
+    use case Authenticate {
+      /** The machine reads the card before any transaction. */
+      actor customer: Customer;
+      publish 'insert card' from customer.panel.cardInserted to panel.cardInserted;
+    }
+    use case 'Print receipt' {
+      /** A receipt may follow a withdrawal. */
+      actor customer: Customer;
+      extend 'Withdraw cash';
+    }
+    verification case 'Limit honoured' {
+      actor customer: Customer;
+      actor issuer: Bank;
+      verify 'Cash limit';
+      publish 'ask for cash' from customer.panel.cashRequested to panel.cashRequested;
+      request authorize from bank.authorize to issuer.link.authorize after 'ask for cash';
+    }
   }
   component def Bank {
     /** Actor: the card issuer's authorization service. */
@@ -3335,6 +3367,7 @@ package 'Cash Machine' {
     schedule {
       on call link.authorize(cardId, amount) authorize(cardId, amount);
     }
+    satisfy 'Cash limit';
   }
   component Branch {
     component customer: Customer;
@@ -3347,46 +3380,12 @@ package 'Cash Machine' {
     /** A single withdrawal never exceeds the limit. */
     attribute limit: uint = 500;
   }
-  satisfy 'Cash limit' of Branch.bank;
-  use case 'Withdraw cash' of Branch {
-    /** The customer inserts a card, asks for cash and receives it. */
-    subject atm;
-    actor customer;
-    actor bank;
-    include Authenticate;
-    publish 'insert card' from customer.panel.cardInserted to atm.panel.cardInserted;
-    publish 'ask for cash' from customer.panel.cashRequested to atm.panel.cashRequested after 'insert card';
-    request authorize from atm.bank.authorize to bank.link.authorize after 'ask for cash';
-    reply approve from bank.link.authorize to atm.bank.authorize after authorize;
-    publish 'dispense cash' from atm.panel.cashDispensed to customer.panel.cashDispensed after approve;
+  use case 'Open a branch' {
+    /** A package use case states intent before its subject is chosen. */
+    actor customer: Customer;
   }
-  use case Authenticate of Branch {
-    /** The machine reads the card before any transaction. */
-    subject atm;
-    actor customer;
-    publish 'insert card' from customer.panel.cardInserted to atm.panel.cardInserted;
-  }
-  use case 'Print receipt' of Branch {
-    /** A receipt may follow a withdrawal. */
-    subject atm;
-    actor customer;
-    extend 'Withdraw cash';
-  }
-  verification case 'Limit honoured' of Branch {
-    subject atm;
-    actor customer;
-    actor bank;
-    verify 'Cash limit';
-    publish 'ask for cash' from customer.panel.cashRequested to atm.panel.cashRequested;
-    request authorize from atm.bank.authorize to bank.link.authorize after 'ask for cash';
-  }
-  view 'use cases': Case {
-    include 'Withdraw cash';
-    include Authenticate;
-    include 'Print receipt';
-    include 'Limit honoured';
-  }
-  view withdrawal: Sequence of 'Withdraw cash';
+  view 'use cases': Case of 'ATM Controller';
+  view withdrawal: Sequence of 'ATM Controller'.'Withdraw cash';
 }
 ```
 
