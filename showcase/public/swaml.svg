@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="14 14 36 40" fill="none">
-  <title>SWAML symbol</title>
-  <path d="m18 24 14-7 14 7-14 7z" fill="#000"/>
-  <path d="m18 33 14 7 14-7m-28 9 14 7 14-7" stroke="#000" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="12 13 40 40" fill="none">
+  <title>swa.ml symbol: a port with a required socket and a provided ball</title>
+  <circle cx="37" cy="42" r="5.5" fill="#000"/>
+  <path d="M22 26V40M22 33L32.71 39.43M22 33L32.28 26.83M34.17 19.28A5.5 5.5 0 0 0 39.83 28.72" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
