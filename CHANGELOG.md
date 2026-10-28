@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Refresh the website header, footer and favicons with the approved solid component, continuous stem and enlarged ball symbol while preserving its monochrome styling.
+
 - Cases belong to their subject (ADR 0018), an incompatible change approved for the 2.1 edition. A use case or verification case is declared inside the component it describes and that component is its subject; it is inherited like other members. Actors are typed roles, actor customer: Customer;. Steps cross the subject boundary between an actor port and a subject port, or follow a connection inside the subject. A use case declared in a package has no subject and records intent only. Inside a component, satisfy Requirement; claims that component. The of root form, the subject clause, the useCase/verificationCase spellings and SW2015 are removed.
 - Add quoted names such as 'Withdraw cash', 'Bestellübersicht' and 'state' for spaces, letters outside ASCII and reserved words; name, kind and path become contextual words. Quoted names exclude path separators and untidy spaces. Rename writes quoted names where required. Normative addition for the next minor edition; see ADR 0017.
 - Write cases as use case and verification case. The 2.0 spellings useCase and verificationCase remain valid and report the new SW2015 warning with a safe replacement.
