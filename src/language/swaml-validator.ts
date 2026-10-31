@@ -2,7 +2,7 @@ import { AstUtils, CstUtils, DocumentState, GrammarUtils, WorkspaceCache, type A
 import type { Range } from 'vscode-languageserver';
 import type { LangiumServices } from 'langium/lsp';
 import * as a from './generated/ast.js';
-import { caseEndpoint, caseSubject, connectionRoutes, expressionTypes, OCCURRENCE_LIMIT, occurrenceCount, workspaceModels, assignable, body, compatibility, constantNumber, direction, effectiveQos, effects, endpoint, entryKey, identity, integral, isExecutable, isNode, localOperation, memberEndpoint, members, nanos, nodes, numeric, occurrences, owner, resolve, schedule, signature, typeKey, type Executable, type Node, type Structure, portMembers } from './semantic.js';
+import { connectionRoutes, designComponent, interfaceOnly, packageEndpoint, packageOccurrences, expressionTypes, OCCURRENCE_LIMIT, occurrenceCount, workspaceModels, assignable, body, compatibility, constantNumber, direction, effectiveQos, effects, endpoint, entryKey, identity, integral, isExecutable, isNode, localOperation, memberEndpoint, members, nanos, nodes, numeric, occurrences, owner, resolve, schedule, signature, typeKey, type Executable, type Node, type Structure, portMembers } from './semantic.js';
 import { selectView, viewCandidates, type ViewSubject } from './presentation.js';
 import { decodeQuotedName, nameProblem } from './names.js';
 type Env = Map<string, {
@@ -54,7 +54,7 @@ export class SwamlValidator {
             for (const i of p.imports)
                 if (!packages.some(x => x.name === i.namespace))
                     this.report(i, 'SW2001', `Unknown imported package ${i.namespace}.`);
-            this.unique(p.elements, p);
+            this.unique([...p.elements, ...p.connections], p);
             for (const e of p.elements) {
                 if (a.isOperation(e)) {
                     if (!e.definition)
@@ -87,16 +87,11 @@ export class SwamlValidator {
                     this.report(e, 'SW2001', 'Enum literals must be unique.');
                 if (a.isDeployment(e))
                     this.deployment(e);
-                if (a.isScenario(e))
-                    this.scenario(e);
                 if (a.isView(e))
                     this.view(e);
             }
-            for (const s of p.satisfactions)
-                if (!s.source)
-                    this.report(s, 'SW2010', `A package satisfy names its design source with of; inside a component, satisfy ${s.requirement.$refText}; claims that component.`);
-                else if (!this.selectView({ ...s, $type: 'View', subject: s.source, selections: [] } as unknown as a.View).length)
-                    this.report(s, 'SW2010', `Unknown satisfaction source ${s.source}.`);
+            this.packageConnections(p);
+            this.links(p);
         }
         for (const n of nodes(model)) {
             if (n.redefines && !a.isComponentDef(n.$container) && !a.isComponentUsage(n.$container) && !a.isAttribute(n))
@@ -173,15 +168,7 @@ export class SwamlValidator {
                 this.port(portMembers(m), m);
             if (a.isComponentUsage(m))
                 this.structure(m, new Set([...stack, c]));
-            if (a.isScenario(m))
-                this.scenario(m);
-            if (a.isSatisfaction(m) && m.source)
-                this.report(m, 'SW2010', `Inside a component, satisfy claims the component itself; write satisfy ${m.requirement.$refText};.`);
         }
-        const claims = c.members.filter(a.isSatisfaction);
-        for (const claim of claims)
-            if (claims.find(x => x.requirement.$refText === claim.requirement.$refText) !== claim)
-                this.report(claim, 'SW2010', `Duplicate satisfy ${claim.requirement.$refText}.`);
         const eff = members(c);
         if (this.containmentCycle(c, new Set()))
             this.report(c, 'SW2003', 'Component containment must be finite and acyclic.');
@@ -229,47 +216,6 @@ export class SwamlValidator {
         this.ownership(c, forwarded);
         if (a.isPackage(c.$container) && a.isComponentUsage(c) && occurrenceCount(c) > OCCURRENCE_LIMIT)
             this.report(c, 'SW2013', 'Expanded root exceeds the reference validation limit of ' + OCCURRENCE_LIMIT + ' component occurrences.');
-        if (a.isPackage(c.$container) && a.isComponentUsage(c) && !this.containmentCycle(c, new Set()) && occurrenceCount(c) <= OCCURRENCE_LIMIT) {
-            const occ = occurrences(c), aliases = new Map<string, string>(), routes: [
-                string,
-                string
-            ][] = [];
-            for (const o of occ)
-                for (const l of members(o.structure).filter(a.isConnect)) {
-                    const left = endpoint(o.structure, l.source), right = endpoint(o.structure, l.target);
-                    if (!left || !right)
-                        continue;
-                    const paths: [
-                        string,
-                        string
-                    ] = [o.path + '.' + l.source, o.path + '.' + l.target];
-                    if (left.child !== right.child)
-                        aliases.set(paths[left.child ? 1 : 0], paths[left.child ? 0 : 1]);
-                    else
-                        routes.push(paths);
-                }
-            const leaf = (path: string) => { const seen = new Set<string>(); while (aliases.has(path) && !seen.has(path)) {
-                seen.add(path);
-                path = aliases.get(path)!;
-            } return path; };
-            const counts = new Map<string, number>(), pairs = new Set<string>();
-            for (const ends of routes) {
-                const pair = ends.map(leaf).sort().join('|');
-                if (pairs.has(pair))
-                    this.report(c, 'SW2004', 'Duplicate connection after forwarding resolution.');
-                pairs.add(pair);
-                for (const end of ends.map(leaf))
-                    counts.set(end, (counts.get(end) ?? 0) + 1);
-            }
-            for (const o of occ)
-                for (const p of members(o.structure).filter(a.isPortUsage)) {
-                    const path = o.path + '.' + p.name, count = counts.get(leaf(path)) ?? 0;
-                    if (!p.optional && !count)
-                        this.report(p, 'SW2004', 'Unconnected required port ' + path + ' in root ' + c.name + '.');
-                    if (count > 1 && portMembers(p).some(m => direction(p, m) === 'requires' && m.kind !== 'event'))
-                        this.report(p, 'SW2004', 'Port ' + path + ' requires exactly one peer after forwarding.');
-                }
-        }
     }
     private port(ms: a.PortMember[], n: AstNode): void {
         this.unique(ms, n);
@@ -841,6 +787,9 @@ export class SwamlValidator {
         }
     }
     private ownership(c: Structure, forwarded: Set<string>): void {
+        // An interface-only component needs no implementation: it neither emits nor owns inputs.
+        if (interfaceOnly(c))
+            return;
         const owners = new Map<string, Set<AstNode>>(), emitted = new Set<string>();
         const add = (path: string, n: AstNode) => { const set = owners.get(path) ?? new Set(); set.add(n); owners.set(path, set); };
         for (const e of schedule(c))
@@ -892,19 +841,6 @@ export class SwamlValidator {
                 this.report(p, 'SW2009', `Target ${p.node} must be a Node occurrence.`);
         }
     }
-    private relationCycle(start: a.Scenario, current: a.Scenario, seen: Set<a.Scenario>): boolean {
-        for (const r of current.relations) {
-            const next = r.target.ref;
-            if (next === start && current !== start)
-                return true;
-            if (next && !seen.has(next)) {
-                seen.add(next);
-                if (this.relationCycle(start, next, seen))
-                    return true;
-            }
-        }
-        return false;
-    }
     private view(v: a.View): void {
         const kind = v.definition.ref?.name;
         if (!kind)
@@ -916,105 +852,103 @@ export class SwamlValidator {
         if (!selected.length)
             this.report(v, 'SW2010', 'View selects no subjects.');
         for (const item of selected)
-            if (['Flow', 'Timing'].includes(kind) && !isExecutable(item.node) || kind === 'Interconnect' && !a.isComponentUsage(item.node) && !a.isComponentDef(item.node) || ['Case', 'Sequence'].includes(kind) && !a.isScenario(item.node) && !a.isComponentUsage(item.node) && !a.isComponentDef(item.node))
+            if (['Flow', 'Timing'].includes(kind) && !isExecutable(item.node) || kind === 'Interconnect' && !a.isComponentUsage(item.node) && !a.isComponentDef(item.node) || ['Case', 'Sequence'].includes(kind) && !a.isScenario(item.node) && !a.isComponentUsage(item.node) && !a.isComponentDef(item.node) && !a.isPackage(item.node))
                 this.report(v, 'SW2010', `Subject ${item.path} is not valid for ${kind}.`);
     }
-    private scenario(s: a.Scenario): void {
-        if (s.kind === 'useCase' && s.verifications.length)
-            this.report(s, 'SW2010', 'Only a verification case owns verify links.');
-        if (new Set(s.verifications.map(v => v.requirement.$refText)).size !== s.verifications.length)
-            this.report(s, 'SW2010', 'Duplicate verification link.');
-        this.unique(s.steps, s);
-        this.unique(s.actors, s);
-        // The owner is the subject. Use cases relate to use cases of the same owner, including inherited ones.
-        const subject = caseSubject(s), siblings = subject ? members(subject).filter(a.isScenario) : (s.$container as a.Package).elements.filter(a.isScenario);
-        const relations = new Set<string>();
-        for (const r of s.relations) {
-            const target = r.target.ref;
-            if (s.kind !== 'useCase')
-                this.report(r, 'SW2010', 'Only a use case can include or extend another use case.');
-            else if (target === s)
-                this.report(r, 'SW2010', `A use case cannot ${r.kind} itself.`);
-            else if (target && target.kind !== 'useCase')
-                this.report(r, 'SW2010', `${r.kind} must name a use case, not a verification case.`);
-            else if (target && !siblings.includes(target))
-                this.report(r, 'SW2010', `${r.kind} must name a use case of the same ${subject ? 'subject ' + subject.name : 'package'}.`);
-            const key = r.kind + ':' + (target ? identity(target) : r.target.$refText);
-            if (relations.has(key))
-                this.report(r, 'SW2010', `Duplicate ${r.kind} of ${r.target.$refText}.`);
-            relations.add(key);
-        }
-        if (this.relationCycle(s, s, new Set()))
-            this.report(s, 'SW2010', 'include and extend relations between use cases must be acyclic.');
-        if (!subject) {
-            for (const step of s.steps)
-                this.report(step, 'SW2010', 'Case steps need a subject: declare the case inside the component it describes.');
-            return;
-        }
-        // Step paths start with an actor or with a member of the subject, so the names must differ.
-        for (const actor of s.actors)
-            if (members(subject).some(m => (m as Node).name === actor.name))
-                this.report(actor, 'SW2010', `Actor ${actor.name} has the name of a member of ${subject.name}; choose another name so step paths stay unambiguous.`);
-        if (occurrenceCount(subject) > OCCURRENCE_LIMIT)
-            return;
-        const { links, leaf } = connectionRoutes(subject);
-        const prior = new Map<string, {
-            step: a.ScenarioStep;
-            source: string;
-            target: string;
-            route?: string;
-            ancestors: Set<string>;
-            replyTo?: string;
-        }>(), answered = new Set<string>();
-        for (const step of s.steps) {
-            const [from, to] = [step.source, step.target].map(path => caseEndpoint(s, path));
-            let route: string | undefined;
-            if (!from || !to || from.member.name !== to.member.name)
-                this.report(step, 'SW2010', 'Case endpoints must name the same port member of an actor, of the subject or of a part inside it.');
-            else if (from.actor && to.actor)
-                this.report(step, 'SW2010', 'Actors exchange messages with the subject, not with each other.');
-            else if (from.actor || to.actor) {
-                // An actor crosses the subject boundary through one of the subject's own ports.
-                const outside = from.actor ? from : to, inside = from.actor ? to : from;
-                if (inside.owner !== subject.name)
-                    this.report(step, 'SW2010', `Actor ${outside.owner} exchanges messages through a port of ${subject.name} itself, not of a part inside it.`);
-                else {
-                    if (step.connector)
-                        this.report(step, 'SW2010', 'via names a connection inside the subject; an exchange with an actor crosses the boundary without one.');
-                    for (const issue of compatibility(outside.port, inside.port))
-                        this.report(step, 'SW2010', `Actor port ${outside.owner}.${outside.port.name} cannot connect to ${inside.port.name}: ${issue}.`);
-                    route = `actor:${outside.owner}.${outside.port.name}|${inside.port.name}`;
+    /** Package connections join ports of top-level occurrences declared in the same package. */
+    private packageConnections(p: a.Package): void {
+        const pairs = new Set<string>();
+        for (const link of p.connections) {
+            const ends = [link.source, link.target].map(path => packageEndpoint(p, path));
+            if (!ends[0] || !ends[1]) {
+                for (const path of [link.source, link.target].filter((_, i) => !ends[i])) {
+                    const head = path.split(/[.[]/)[0], found = resolve(p, head, this.models);
+                    this.report(link, 'SW2004', found && !p.elements.includes(found)
+                        ? `Occurrences cannot be connected across packages: ${head} is not declared in package ${p.name}. Declare a top-level occurrence here.`
+                        : `Package connection end ${path} must name a port of a top-level component occurrence of package ${p.name}.`);
                 }
+                continue;
             }
-            else {
-                const ends = [from, to].map(e => leaf(e.owner + '.' + e.port.name));
-                const candidates = links.filter(l => ends.every(p => l.ends.includes(p)) && (!step.connector || l.node.name === step.connector));
-                if (candidates.length !== 1)
-                    this.report(step, 'SW2010', 'via must select one named connection inside the subject, or omit it for a unique route.');
-                else
-                    route = candidates[0].id;
+            const pair = [link.source, link.target].sort().join('|');
+            if (link.source === link.target || pairs.has(pair))
+                this.report(link, 'SW2004', 'Duplicate or self connector.');
+            pairs.add(pair);
+            for (const issue of compatibility(ends[0].port, ends[1].port))
+                this.report(link, 'SW2004', `Connection: ${issue}.`);
+            if (effectiveQos(link).delivery === 'atLeastOnce')
+                for (const ep of ends)
+                    for (const m of portMembers(ep!.port))
+                        if (m.kind === 'operation' && direction(ep!.port, m) === 'provides' && !m.idempotent)
+                            this.report(link, 'SW2013', `atLeastOnce requires idempotent provided operation ${ep!.path}.${m.name}.`);
+        }
+        // Closure is per package: each required port of every occurrence needs a peer, either inside
+        // its component or, for a port of a top-level occurrence, through a package connection.
+        // A top-level occurrence with a containment cycle or above the reference limit is reported elsewhere and skipped here.
+        const roots = packageOccurrences(p).filter(r => !this.containmentCycle(r, new Set()) && occurrenceCount(r) <= OCCURRENCE_LIMIT), checked = new Set(roots.map(r => r.name));
+        const { occurrences: occ, links, leaf } = connectionRoutes(p), counts = new Map<string, number>(), routes = new Set<string>();
+        for (const link of links) {
+            const pair = [...link.ends].sort().join('|');
+            if (routes.has(pair))
+                this.report(link.owner === undefined ? link.node : roots.find(r => r.name === link.owner!.split('.')[0]) ?? p, 'SW2004', 'Duplicate connection after forwarding resolution.');
+            routes.add(pair);
+            for (const end of link.ends)
+                counts.set(end, (counts.get(end) ?? 0) + 1);
+        }
+        for (const o of occ.filter(o => checked.has(o.path.split('.')[0])))
+            for (const port of members(o.structure).filter(a.isPortUsage)) {
+                const path = o.path + '.' + port.name, count = counts.get(leaf(path)) ?? 0;
+                if (!port.optional && !count)
+                    this.report(port, 'SW2004', `Unconnected required port ${path} in package ${p.name}.`);
+                if (count > 1 && portMembers(port).some(m => direction(port, m) === 'requires' && m.kind !== 'event'))
+                    this.report(port, 'SW2004', `Port ${path} requires exactly one peer after forwarding.`);
             }
-            const place = (e: typeof from) => e ? e.actor ? e.owner + '.' + e.port.name : leaf(e.owner + '.' + e.port.name) : '';
-            const ports = [{ ep: from, path: place(from), member: from?.member.name ?? '' }, { ep: to, path: place(to), member: to?.member.name ?? '' }];
-            const first = ports[0].ep, last = ports[1].ep, kind = step.kind === 'send' ? 'attribute' : step.kind === 'publish' ? 'event' : 'operation', sourceDirection = step.kind === 'request' ? 'requires' : 'provides';
-            if (first && (first.member.kind !== kind || direction(first.port, first.member) !== sourceDirection) || last && (last.member.kind !== kind || direction(last.port, last.member) === sourceDirection))
-                this.report(step, 'SW2010', 'Case kind/direction does not match both endpoint members.');
-            const previous = step.predecessor && prior.get(step.predecessor), ancestors = new Set(previous ? [...previous.ancestors, step.predecessor!] : []);
-            if (step.predecessor && !previous)
-                this.report(step, 'SW2010', 'after must name an earlier step.');
-            const current = { step, source: ports[0].path + '.' + ports[0].member, target: ports[1].path + '.' + ports[1].member, route, ancestors, replyTo: undefined as string | undefined };
-            if (step.kind === 'reply') {
-                const requests = [...ancestors].filter(name => { const request = prior.get(name)!; return request.step.kind === 'request' && request.source === current.target && request.target === current.source && request.route === current.route && ![...ancestors].some(a => prior.get(a)?.replyTo === name); });
-                if (requests.length !== 1)
-                    this.report(step, 'SW2010', 'Reply needs exactly one unanswered causal request ancestor with reversed endpoints and the same route.');
-                else {
-                    current.replyTo = requests[0];
-                    if (answered.has(requests[0]))
-                        this.report(step, 'SW2010', 'Multiple replies to one request are invalid.');
-                    answered.add(requests[0]);
-                }
-            }
-            prior.set(step.name, current);
+    }
+    /** Cases, associations, satisfy and verify claims are package members that record intent. */
+    private links(p: a.Package): void {
+        const local = (n: AstNode | undefined) => !!n && n.$container === p;
+        const at = (n: AstNode, property: string) => ({ range: GrammarUtils.findNodeForProperty(n.$cstNode, property)?.range });
+        for (const s of p.elements.filter(a.isScenario)) {
+            const subject = s.subject?.ref;
+            if (subject && !local(subject))
+                this.report(s, 'SW2010', `The subject of ${s.name} must be a top-level component occurrence of package ${p.name}; write the case in the package that declares ${subject.name}.`, false, at(s, 'subject'));
+        }
+        const associated = new Set<string>();
+        for (const x of p.associations) {
+            const occurrence = x.occurrence.ref, target = x.target.ref;
+            if (occurrence && !local(occurrence))
+                this.report(x, 'SW2010', `associate names a top-level component occurrence of package ${p.name}; ${occurrence.name} is declared elsewhere.`, false, at(x, 'occurrence'));
+            if (target && !local(target))
+                this.report(x, 'SW2010', `associate names a use case or test of package ${p.name}; ${target.name} is declared elsewhere.`, false, at(x, 'target'));
+            if (occurrence && target && target.subject?.ref === occurrence)
+                this.report(x, 'SW2010', `${occurrence.name} is the subject of ${target.name}; associate names another participant.`, false, at(x, 'occurrence'));
+            const key = x.occurrence.$refText + '|' + x.target.$refText;
+            if (associated.has(key))
+                this.report(x, 'SW2010', `Duplicate associate ${x.occurrence.$refText} to ${x.target.$refText}.`);
+            associated.add(key);
+        }
+        const claims = new Set<string>();
+        for (const x of p.satisfactions) {
+            const head = x.design.split(/[.[]/)[0], found = resolve(p, head, this.models);
+            if (!designComponent(p, x.design))
+                this.report(x, 'SW2010', found && !p.elements.includes(found)
+                    ? `satisfy names a component declared in package ${p.name}; write this claim in the package that declares ${head}.`
+                    : `satisfy by names a component definition or component occurrence path of package ${p.name}; ${x.design} is not one.`, false, at(x, 'design'));
+            const key = (x.requirement.ref ? identity(x.requirement.ref) : x.requirement.$refText) + '|' + x.design;
+            if (claims.has(key))
+                this.report(x, 'SW2010', `Duplicate satisfy ${x.requirement.$refText} by ${x.design}.`);
+            claims.add(key);
+        }
+        const verified = new Set<string>();
+        for (const x of p.verifications) {
+            const test = x.test.ref;
+            if (test && !local(test))
+                this.report(x, 'SW2010', `verify names a test of package ${p.name}; ${test.name} is declared elsewhere.`, false, at(x, 'test'));
+            else if (test && test.kind !== 'test')
+                this.report(x, 'SW2010', `verify names a test; ${test.name} is a use case.`, false, at(x, 'test'));
+            const key = (x.requirement.ref ? identity(x.requirement.ref) : x.requirement.$refText) + '|' + x.test.$refText;
+            if (verified.has(key))
+                this.report(x, 'SW2010', `Duplicate verify ${x.requirement.$refText} by ${x.test.$refText}.`);
+            verified.add(key);
         }
     }
 }

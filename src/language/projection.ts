@@ -1,7 +1,7 @@
 import { AstUtils, type AstNode } from 'langium';
 import type { Range } from 'vscode-languageserver';
 import * as a from './generated/ast.js';
-import { body, caseSubject, direction, effectiveQos, identity, isExecutable, members, nanos, owner, portMembers, schedule, signature, typeKey, type Node } from './semantic.js';
+import { body, direction, effectiveQos, identity, isExecutable, members, nanos, owner, portMembers, schedule, signature, typeKey, type Node } from './semantic.js';
 import { documentationText, viewCandidates } from './presentation.js';
 export interface ProjectionNode {
     id: string;
@@ -83,16 +83,22 @@ export function projectModel(models: readonly a.Model[]): Projection {
         if (isExecutable(n) && body(n)?.states.length)
             for (const state of body(n)!.states)
                 state.transitions.forEach((t, i) => addEdge('transition', id + '.' + state.name, id + '.' + t.target, t.endpoint ? 'on receive ' + t.endpoint : 'after ' + t.delay?.value + t.delay?.unit, { order: i }));
-        if (a.isScenario(n)) {
-            // The owning component, or each of its occurrences, is the subject. Actors are typed roles owned by the case.
-            const subject = caseSubject(n) && parent;
-            if (subject)
-                addEdge('subject', id, subject.path, 'subject');
-            for (const actor of n.actors)
-                addEdge('actor', id, id + '.' + actor.name, actor.name);
-            for (const r of n.relations)
-                if (r.target.ref)
-                    addEdge(r.kind, id, subject ? subject.path + '.' + r.target.ref.name : identity(r.target.ref), r.kind);
+        if (a.isScenario(n) && n.subject?.ref)
+            // The subject is a top-level occurrence of the same package; a case without of has none.
+            addEdge('subject', id, identity(n.subject.ref), 'subject');
+        if (a.isPackage(n)) {
+            // Package connections join ports of top-level occurrences; links record intent in the package.
+            for (const c of n.connections)
+                addEdge('connection', id + '::' + c.source, id + '::' + c.target, c.name ?? 'Default', { policy: effectiveQos(c) });
+            for (const x of n.associations)
+                if (x.occurrence.ref && x.target.ref)
+                    addEdge('associate', identity(x.occurrence.ref), identity(x.target.ref), 'associate');
+            for (const x of n.satisfactions)
+                if (x.requirement.ref)
+                    addEdge('satisfy', id + '::' + x.design, identity(x.requirement.ref), 'satisfy');
+            for (const x of n.verifications)
+                if (x.requirement.ref && x.test.ref)
+                    addEdge('verify', identity(x.test.ref), identity(x.requirement.ref), 'verify');
         }
         result.nodes.push(p);
         if (parent)

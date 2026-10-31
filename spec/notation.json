@@ -582,7 +582,7 @@
     },
     {
       "id": "requirements",
-      "title": "Requirements and intent links",
+      "title": "Requirements and package intent links",
       "context": "swa.ml 2.0; Traceability::Delivery",
       "syntax": "requirement Delivery {\n    /** One named routed message reaches the receiver. */\n    attribute description: string = \"Deliver startup message\";\n  }",
       "model": "examples/16-requirements-and-views.swaml",
@@ -601,7 +601,7 @@
         "requirement",
         "satisfy",
         "verify",
-        "of"
+        "by"
       ],
       "drawing": "docs/notation/2.0/requirements.svg",
       "scene": "docs/notation/2.0/requirements.scene.json",
@@ -614,11 +614,11 @@
     },
     {
       "id": "cases",
-      "title": "Use cases, actors and routed case steps",
-      "context": "swa.ml 2.0; Cash Machine::ATM Controller.Withdraw cash",
-      "syntax": "use case 'Withdraw cash' {\n      /** The customer inserts a card, asks for cash and receives it. */\n      actor customer: Customer;\n      actor issuer: Bank;\n      include Authenticate;\n      publish 'insert card' from customer.panel.cardInserted to panel.cardInserted;\n      publish 'ask for cash' from customer.panel.cashRequested to panel.cashRequested after 'insert card';\n      request authorize from bank.authorize to issuer.link.authorize after 'ask for cash';\n      reply approve from issuer.link.authorize to bank.authorize after authorize;\n      publish 'dispense cash' from panel.cashDispensed to customer.panel.cashDispensed after approve;\n    }",
+      "title": "Use cases, tests and associations",
+      "context": "swa.ml 2.0; Cash Machine::Withdraw cash",
+      "syntax": "use case 'Withdraw cash' of atm {\n    /** The customer inserts a card, asks for cash and receives it. */\n  }",
       "model": "examples/28-use-cases.swaml",
-      "subject": "Cash Machine::ATM Controller.Withdraw cash",
+      "subject": "Cash Machine::Withdraw cash",
       "template": "case",
       "views": [
         "General",
@@ -627,20 +627,14 @@
       "productions": [
         "Scenario",
         "CaseKind",
-        "CaseActor",
-        "CaseRelation",
-        "ScenarioStep"
+        "Association"
       ],
       "keywords": [
         "use",
         "case",
-        "verification",
-        "actor",
-        "extend",
-        "request",
-        "reply",
-        "from",
-        "via"
+        "test",
+        "associate",
+        "of"
       ],
       "drawing": "docs/notation/2.0/cases.svg",
       "scene": "docs/notation/2.0/cases.scene.json",
@@ -655,7 +649,7 @@
       "id": "views",
       "title": "Seven library view definitions",
       "context": "swa.ml 2.0; Traceability::Demo",
-      "syntax": "component Demo {\n    component sender: Sender;\n    component receiver: Receiver;\n    connect (sender.output, receiver.input);\n    verification case Startup {\n      verify Delivery;\n      publish greeting from sender.output.message to receiver.input.message;\n    }\n  }",
+      "syntax": "component Demo {\n    component sender: Sender;\n    component receiver: Receiver;\n    connect (sender.output, receiver.input);\n  }",
       "model": "examples/16-requirements-and-views.swaml",
       "subject": "Traceability::Demo",
       "template": "view",
@@ -1206,6 +1200,13 @@
         "rationale": "Owned semantic projection preserves this production."
       },
       {
+        "production": "Association",
+        "concepts": [
+          "cases"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
         "production": "Scenario",
         "concepts": [
           "cases"
@@ -1214,27 +1215,6 @@
       },
       {
         "production": "CaseKind",
-        "concepts": [
-          "cases"
-        ],
-        "rationale": "Owned semantic projection preserves this production."
-      },
-      {
-        "production": "CaseActor",
-        "concepts": [
-          "cases"
-        ],
-        "rationale": "Owned semantic projection preserves this production."
-      },
-      {
-        "production": "CaseRelation",
-        "concepts": [
-          "cases"
-        ],
-        "rationale": "Owned semantic projection preserves this production."
-      },
-      {
-        "production": "ScenarioStep",
         "concepts": [
           "cases"
         ],
@@ -1523,13 +1503,6 @@
     ],
     "keywords": [
       {
-        "term": "actor",
-        "concepts": [
-          "cases"
-        ],
-        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
-      },
-      {
         "term": "after",
         "concepts": [
           "states"
@@ -1551,6 +1524,13 @@
         "rationale": "Shown in the source caption/compartment for runtime failure and lazy fallback."
       },
       {
+        "term": "associate",
+        "concepts": [
+          "cases"
+        ],
+        "rationale": "Shown in the source caption/compartment for use cases, tests and associations."
+      },
+      {
         "term": "attribute",
         "concepts": [
           "attributes"
@@ -1563,6 +1543,13 @@
           "values"
         ],
         "rationale": "Shown in the source caption/compartment for typed copied values."
+      },
+      {
+        "term": "by",
+        "concepts": [
+          "requirements"
+        ],
+        "rationale": "Shown in the source caption/compartment for requirements and package intent links."
       },
       {
         "term": "byte",
@@ -1583,7 +1570,7 @@
         "concepts": [
           "cases"
         ],
-        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
+        "rationale": "Shown in the source caption/compartment for use cases, tests and associations."
       },
       {
         "term": "component",
@@ -1691,13 +1678,6 @@
         "rationale": "Shown in the source caption/compartment for ordered state transitions."
       },
       {
-        "term": "extend",
-        "concepts": [
-          "cases"
-        ],
-        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
-      },
-      {
         "term": "fail",
         "concepts": [
           "try"
@@ -1724,13 +1704,6 @@
           "loops"
         ],
         "rationale": "Shown in the source caption/compartment for loops and copied iteration."
-      },
-      {
-        "term": "from",
-        "concepts": [
-          "cases"
-        ],
-        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
       },
       {
         "term": "idempotent",
@@ -1826,9 +1799,9 @@
       {
         "term": "of",
         "concepts": [
-          "requirements"
+          "cases"
         ],
-        "rationale": "Shown in the source caption/compartment for requirements and intent links."
+        "rationale": "Shown in the source caption/compartment for use cases, tests and associations."
       },
       {
         "term": "on",
@@ -1943,25 +1916,11 @@
         "rationale": "Shown in the source caption/compartment for component definitions and usages."
       },
       {
-        "term": "reply",
-        "concepts": [
-          "cases"
-        ],
-        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
-      },
-      {
-        "term": "request",
-        "concepts": [
-          "cases"
-        ],
-        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
-      },
-      {
         "term": "requirement",
         "concepts": [
           "requirements"
         ],
-        "rationale": "Shown in the source caption/compartment for requirements and intent links."
+        "rationale": "Shown in the source caption/compartment for requirements and package intent links."
       },
       {
         "term": "requires",
@@ -2003,7 +1962,7 @@
         "concepts": [
           "requirements"
         ],
-        "rationale": "Shown in the source caption/compartment for requirements and intent links."
+        "rationale": "Shown in the source caption/compartment for requirements and package intent links."
       },
       {
         "term": "schedule",
@@ -2046,6 +2005,13 @@
           "values"
         ],
         "rationale": "Shown in the source caption/compartment for typed copied values."
+      },
+      {
+        "term": "test",
+        "concepts": [
+          "cases"
+        ],
+        "rationale": "Shown in the source caption/compartment for use cases, tests and associations."
       },
       {
         "term": "times",
@@ -2101,7 +2067,7 @@
         "concepts": [
           "cases"
         ],
-        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
+        "rationale": "Shown in the source caption/compartment for use cases, tests and associations."
       },
       {
         "term": "var",
@@ -2111,25 +2077,11 @@
         "rationale": "Shown in the source caption/compartment for attributes and lexical locals."
       },
       {
-        "term": "verification",
-        "concepts": [
-          "cases"
-        ],
-        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
-      },
-      {
         "term": "verify",
         "concepts": [
           "requirements"
         ],
-        "rationale": "Shown in the source caption/compartment for requirements and intent links."
-      },
-      {
-        "term": "via",
-        "concepts": [
-          "cases"
-        ],
-        "rationale": "Shown in the source caption/compartment for use cases, actors and routed case steps."
+        "rationale": "Shown in the source caption/compartment for requirements and package intent links."
       },
       {
         "term": "view",

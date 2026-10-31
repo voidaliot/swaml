@@ -15,27 +15,24 @@
   "satisfactions": [
     {
       "requirement": "Delivery",
-      "source": "Demo.receiver",
+      "design": "Demo.receiver",
       "status": "intent"
     }
   ],
   "cases": [
     {
       "name": "Startup",
-      "kind": "verificationCase",
+      "kind": "test",
       "subject": "Traceability::Demo",
-      "status": "inconclusive",
-      "verify": [
-        "Delivery"
-      ],
-      "steps": [
-        {
-          "name": "greeting",
-          "kind": "publish",
-          "source": "sender.output.message",
-          "target": "receiver.input.message"
-        }
-      ]
+      "status": "no checks",
+      "associated": []
+    }
+  ],
+  "verifications": [
+    {
+      "requirement": "Delivery",
+      "test": "Startup",
+      "status": "intent"
     }
   ]
 }

@@ -286,11 +286,32 @@ export function isNode(c: Structure, seen = new Set<Structure>()): boolean {
     return !!base && isNode(base, seen);
 }
 
-/** Effective occurrence routes shared by case validation and authoring references. */
-export function connectionRoutes(root: Structure) {
-    const occ = occurrences(root), aliases = new Map<string, string>(), links: {
+/** Top-level component occurrences of a package: the roots its connections, cases and runs use. */
+export function packageOccurrences(p: a.Package): a.ComponentUsage[] { return p.elements.filter(a.isComponentUsage); }
+/** A package connection end: a port of a top-level component occurrence declared in the same package. */
+export function packageEndpoint(p: a.Package, path: string): {
+    port: a.PortUsage;
+    structure: a.ComponentUsage;
+    path: string;
+} | undefined {
+    const parts = path.split('.');
+    if (parts.length !== 2)
+        return undefined;
+    const structure = packageOccurrences(p).find(x => x.name === parts[0]), port = structure && members(structure).filter(a.isPortUsage).find(x => x.name === parts[1]);
+    return structure && port ? { port, structure, path } : undefined;
+}
+/**
+ * Effective occurrence routes of one root, or of a whole package: every top-level occurrence
+ * with its internal connections plus the package connections between top-level ports.
+ * Forwarding aliases resolve each end to its leaf port.
+ */
+export function connectionRoutes(scope: Structure | a.Package) {
+    const roots = a.isPackage(scope) ? packageOccurrences(scope).filter(r => occurrenceCount(r) <= OCCURRENCE_LIMIT) : [scope];
+    const occ = roots.flatMap(r => occurrences(r)), aliases = new Map<string, string>(), links: {
         node: a.Connect;
         id: string;
+        /** The occurrence path that owns the connection; undefined for a package connection. */
+        owner?: string;
         ends: string[];
     }[] = [];
     for (const o of occ)
@@ -302,39 +323,43 @@ export function connectionRoutes(root: Structure) {
             if (l.child !== r.child)
                 aliases.set(paths[l.child ? 1 : 0], paths[l.child ? 0 : 1]);
             else
-                links.push({ node: link, id: o.path + '.' + (link.name ?? '@' + links.length), ends: paths });
+                links.push({ node: link, id: o.path + '.' + (link.name ?? '@' + links.length), owner: o.path, ends: paths });
         }
+    if (a.isPackage(scope))
+        scope.connections.forEach((link, i) => {
+            if (packageEndpoint(scope, link.source) && packageEndpoint(scope, link.target))
+                links.push({ node: link, id: link.name ?? '@package' + i, ends: [link.source, link.target] });
+        });
     const leaf = (path: string) => { const seen = new Set<string>(); while (aliases.has(path) && !seen.has(path)) {
         seen.add(path);
         path = aliases.get(path)!;
     } return path; };
     for (const link of links)
         link.ends = link.ends.map(leaf);
-    return { links, leaf };
+    return { occurrences: occ, links, leaf };
 }
-/** A case's subject is the component that owns it. A package case has no subject. */
-export function caseSubject(s: a.Scenario): Structure | undefined {
-    return a.isComponentDef(s.$container) || a.isComponentUsage(s.$container) ? s.$container : undefined;
+/**
+ * A component is interface-only when its effective members include ports but no operations,
+ * schedule entries or parts. It needs no implementation; only a case acts through its ports.
+ */
+export function interfaceOnly(c: Structure): boolean {
+    const effective = members(c);
+    return effective.some(a.isPortUsage) && !effective.some(m => isExecutable(m) || a.isComponentUsage(m)) && !schedule(c).length;
 }
-/** A step end: a port member of an actor, or of the subject or a part inside it. */
-export type CaseEndpoint = {
-    actor?: a.CaseActor;
-    /** The actor name, or the subject occurrence path starting with the subject name. */
-    owner: string;
-    port: a.PortUsage;
-    member: a.PortMember;
-};
-export function caseEndpoint(s: a.Scenario, path: string): CaseEndpoint | undefined {
-    const subject = caseSubject(s), parts = path.split('.'), member = parts.pop(), port = parts.pop();
-    if (!subject || !member || !port)
-        return undefined;
-    const actor = parts.length === 1 ? s.actors.find(x => x.name === parts[0]) : undefined;
-    if (actor) {
-        const ep = actor.definition.ref && memberEndpoint(actor.definition.ref, port + '.' + member);
-        return ep && { actor, owner: actor.name, ...ep };
+/** A case's subject is the top-level occurrence named after of; a case without of has none. */
+export function caseSubject(s: a.Scenario): a.ComponentUsage | undefined { return s.subject?.ref; }
+/**
+ * The component a satisfy claim names: a component definition or top-level occurrence declared
+ * in the package, optionally followed by nested parts such as Workbench.editor or cells[1].
+ */
+export function designComponent(p: a.Package, path: string): Structure | undefined {
+    const [head, ...tail] = path.split('.');
+    let current: Structure | undefined = p.elements.find((e): e is Structure => (a.isComponentDef(e) || a.isComponentUsage(e)) && e.name === head);
+    for (const part of tail) {
+        const match = /^(.+?)(?:\[(\d+)\])?$/.exec(part)!, child: a.ComponentUsage | undefined = current && members(current).filter(a.isComponentUsage).find(x => x.name === match[1]);
+        if (!child || match[2] !== undefined && (child.size === undefined || Number(match[2]) >= child.size))
+            return undefined;
+        current = child;
     }
-    if (occurrenceCount(subject) > OCCURRENCE_LIMIT)
-        return undefined;
-    const owner = [subject.name, ...parts].join('.'), o = occurrences(subject).find(x => x.path === owner), ep = o && memberEndpoint(o.structure, port + '.' + member);
-    return ep && { owner, ...ep };
+    return current;
 }

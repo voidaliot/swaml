@@ -47,18 +47,18 @@ test('F09 enum head and literal have exact separate targets despite repeated nam
     await valid(next);
 });
 
-test('F10 case via resolves the inherited routed connector even with repeated occurrence names',async()=>{
-    const library='package Library{port def P{provides event ping();}component def A{port p:P;operation go(){publish p.ping();}schedule{on start go();}}component def B{reversed port p:P;operation take(){}schedule{on receive p.ping() take();}}component def Network{component sender:A;component receiver:B;connect link(sender.p,receiver.p);}}';
-    const application='package Test{import Library;component Demo{component first:Network;component second:Network;use case Sample{publish item from first.sender.p.ping to first.receiver.p.ping via link;}}}';
+test('F10 a package connection end renames with the imported port definition it reaches',async()=>{
+    const library='package Library{port def P{provides event ping();}component def A{port link:P;operation go(){publish link.ping();}schedule{on start go();}}component def B{reversed port link:P;operation take(){}schedule{on receive link.ping() take();}}}';
+    const application='package Test{import Library;component first:A;component second:B;connect route(first.link,second.link);}';
     const r=await workspace([library,application]);
     assert.deepEqual(r.docs.flatMap(d=>d.diagnostics?.filter(x=>x.severity===1)??[]),[]);
-    const d=r.docs[1],position=d.textDocument.positionAt(application.lastIndexOf('link'));
+    const d=r.docs[1],position=d.textDocument.positionAt(application.indexOf('link,second'));
     const definitions=await r.Swaml.lsp.DefinitionProvider!.getDefinition(d,{textDocument:{uri:d.uri.toString()},position});
     assert.equal(definitions?.[0].targetUri,r.docs[0].uri.toString());
-    const edit=await r.Swaml.lsp.RenameProvider!.rename(d,{textDocument:{uri:d.uri.toString()},position,newName:'route'});
+    const edit=await r.Swaml.lsp.RenameProvider!.rename(d,{textDocument:{uri:d.uri.toString()},position,newName:'socket'});
     assert.ok(edit);
-    assert.ok(apply(r.docs[0],edit).includes('connect route'));
-    assert.ok(apply(d,edit).includes('via route'));
+    assert.ok(apply(r.docs[0],edit).includes('port socket:P'));
+    assert.ok(apply(d,edit).includes('connect route(first.socket,second.link)'));
     const next=await workspace(r.docs.map(d=>apply(d,edit)));
     assert.deepEqual(next.docs.flatMap(d=>d.diagnostics?.filter(x=>x.severity===1)??[]),[]);
 });

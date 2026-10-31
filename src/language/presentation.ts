@@ -18,7 +18,7 @@ export type ViewSubject = {
 export function viewCandidates(models: readonly a.Model[]): ViewSubject[] {
     const out: ViewSubject[] = [];
     const add = (n: Node, path: string) => {
-        out.push({ path, name: n.name, kind: a.isComponentDef(n) || a.isComponentUsage(n) ? 'component' : isExecutable(n) ? 'operation' : a.isPortUsage(n) || a.isPortDef(n) ? 'port' : a.isPortMember(n) ? n.kind === 'operation' ? 'signature' : n.kind : a.isScenario(n) || a.isScenarioStep(n) ? n.kind : a.isCaseActor(n) ? 'actor' : a.isDataType(n) ? 'datatype' : a.isEnumType(n) ? 'enum' : n.$type.replace(/^[A-Z]/, c => c.toLowerCase()), node: n, definition: (a.isComponentUsage(n) || a.isCaseActor(n)) && n.definition?.ref ? identity(n.definition.ref) : a.isOperationUsage(n) && n.definition.ref ? identity(n.definition.ref) : identity(n) });
+        out.push({ path, name: n.name, kind: a.isComponentDef(n) || a.isComponentUsage(n) ? 'component' : isExecutable(n) ? 'operation' : a.isPortUsage(n) || a.isPortDef(n) ? 'port' : a.isPortMember(n) ? n.kind === 'operation' ? 'signature' : n.kind : a.isScenario(n) ? n.kind : a.isDataType(n) ? 'datatype' : a.isEnumType(n) ? 'enum' : n.$type.replace(/^[A-Z]/, c => c.toLowerCase()), node: n, definition: a.isComponentUsage(n) && n.definition?.ref ? identity(n.definition.ref) : a.isOperationUsage(n) && n.definition.ref ? identity(n.definition.ref) : identity(n) });
         if (a.isPortUsage(n))
             for (const m of n.definition?.ref?.members ?? n.members)
                 add(m as Node, path + '.' + m.name);
@@ -31,9 +31,6 @@ export function viewCandidates(models: readonly a.Model[]): ViewSubject[] {
         if (a.isRequirement(n))
             for (const at of n.attributes)
                 add(at as Node, path + '.' + at.name);
-        if (a.isScenario(n))
-            for (const part of [...n.actors, ...n.steps])
-                add(part as Node, path + '.' + part.name);
         if (isExecutable(n)) {
             for (const op of body(n)?.operations ?? [])
                 add(op as Node, `${path}.${op.name}`);

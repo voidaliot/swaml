@@ -1,22 +1,14 @@
 # swa.ml 2.0 keyword reference
 
-Generated from spec/keywords.json and the normative grammar. Examples here are grammar fragments; complete runnable models are in the usage guide and examples. Five contextual words remain legal names outside their positions. Call appears only in the on call trigger.
+Generated from spec/keywords.json and the normative grammar. Examples here are grammar fragments; complete runnable models are in the usage guide and examples. 15 contextual words remain legal names outside their positions. Call appears only in the on call trigger.
 
-[actor](#keyword-actor) · [after](#keyword-after) · [and](#keyword-and) · [assert](#keyword-assert) · [attribute](#keyword-attribute) · [bool](#keyword-bool) · [byte](#keyword-byte) · [call](#keyword-call) · [case](#keyword-case) · [component](#keyword-component) · [concurrent](#keyword-concurrent) · [connect](#keyword-connect) · [const](#keyword-const) · [datatype](#keyword-datatype) · [deadline](#keyword-deadline) · [def](#keyword-def) · [deploy](#keyword-deploy) · [deployment](#keyword-deployment) · [else](#keyword-else) · [entry](#keyword-entry) · [enum](#keyword-enum) · [event](#keyword-event) · [every](#keyword-every) · [exit](#keyword-exit) · [extend](#keyword-extend) · [fail](#keyword-fail) · [false](#keyword-false) · [final](#keyword-final) · [for](#keyword-for) · [from](#keyword-from) · [idempotent](#keyword-idempotent) · [if](#keyword-if) · [import](#keyword-import) · [in](#keyword-in) · [include](#keyword-include) · [initial](#keyword-initial) · [int](#keyword-int) · [interruptible](#keyword-interruptible) · [kind](#keyword-kind) · [ms](#keyword-ms) · [name](#keyword-name) · [not](#keyword-not) · [ns](#keyword-ns) · [of](#keyword-of) · [on](#keyword-on) · [operation](#keyword-operation) · [optional](#keyword-optional) · [or](#keyword-or) · [out](#keyword-out) · [package](#keyword-package) · [path](#keyword-path) · [port](#keyword-port) · [provides](#keyword-provides) · [publish](#keyword-publish) · [qos](#keyword-qos) · [real](#keyword-real) · [receive](#keyword-receive) · [record](#keyword-record) · [recursive](#keyword-recursive) · [redefines](#keyword-redefines) · [reply](#keyword-reply) · [request](#keyword-request) · [requirement](#keyword-requirement) · [requires](#keyword-requires) · [return](#keyword-return) · [returns](#keyword-returns) · [reversed](#keyword-reversed) · [s](#keyword-s) · [satisfy](#keyword-satisfy) · [schedule](#keyword-schedule) · [send](#keyword-send) · [specializes](#keyword-specializes) · [start](#keyword-start) · [state](#keyword-state) · [string](#keyword-string) · [times](#keyword-times) · [to](#keyword-to) · [true](#keyword-true) · [try](#keyword-try) · [uint](#keyword-uint) · [until](#keyword-until) · [us](#keyword-us) · [use](#keyword-use) · [var](#keyword-var) · [verification](#keyword-verification) · [verify](#keyword-verify) · [via](#keyword-via) · [view](#keyword-view) · [void](#keyword-void) · [wait](#keyword-wait) · [when](#keyword-when) · [where](#keyword-where) · [while](#keyword-while)
-
-## Keyword: actor
-
-Declares a typed role outside the case subject that takes part through ports.
-
-**Context:** Use cases, actors and routed case steps. **Grammar:** CaseActor, Name. **Name use:** reserved.
-
-[Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
+[after](#keyword-after) · [and](#keyword-and) · [assert](#keyword-assert) · [associate](#keyword-associate) · [attribute](#keyword-attribute) · [bool](#keyword-bool) · [by](#keyword-by) · [byte](#keyword-byte) · [call](#keyword-call) · [case](#keyword-case) · [component](#keyword-component) · [concurrent](#keyword-concurrent) · [connect](#keyword-connect) · [const](#keyword-const) · [datatype](#keyword-datatype) · [deadline](#keyword-deadline) · [def](#keyword-def) · [deploy](#keyword-deploy) · [deployment](#keyword-deployment) · [else](#keyword-else) · [entry](#keyword-entry) · [enum](#keyword-enum) · [event](#keyword-event) · [every](#keyword-every) · [exit](#keyword-exit) · [fail](#keyword-fail) · [false](#keyword-false) · [final](#keyword-final) · [for](#keyword-for) · [idempotent](#keyword-idempotent) · [if](#keyword-if) · [import](#keyword-import) · [in](#keyword-in) · [include](#keyword-include) · [initial](#keyword-initial) · [int](#keyword-int) · [interruptible](#keyword-interruptible) · [kind](#keyword-kind) · [ms](#keyword-ms) · [name](#keyword-name) · [not](#keyword-not) · [ns](#keyword-ns) · [of](#keyword-of) · [on](#keyword-on) · [operation](#keyword-operation) · [optional](#keyword-optional) · [or](#keyword-or) · [out](#keyword-out) · [package](#keyword-package) · [path](#keyword-path) · [port](#keyword-port) · [provides](#keyword-provides) · [publish](#keyword-publish) · [qos](#keyword-qos) · [real](#keyword-real) · [receive](#keyword-receive) · [record](#keyword-record) · [recursive](#keyword-recursive) · [redefines](#keyword-redefines) · [requirement](#keyword-requirement) · [requires](#keyword-requires) · [return](#keyword-return) · [returns](#keyword-returns) · [reversed](#keyword-reversed) · [s](#keyword-s) · [satisfy](#keyword-satisfy) · [schedule](#keyword-schedule) · [send](#keyword-send) · [specializes](#keyword-specializes) · [start](#keyword-start) · [state](#keyword-state) · [string](#keyword-string) · [test](#keyword-test) · [times](#keyword-times) · [to](#keyword-to) · [true](#keyword-true) · [try](#keyword-try) · [uint](#keyword-uint) · [until](#keyword-until) · [us](#keyword-us) · [use](#keyword-use) · [var](#keyword-var) · [verify](#keyword-verify) · [view](#keyword-view) · [void](#keyword-void) · [wait](#keyword-wait) · [when](#keyword-when) · [where](#keyword-where) · [while](#keyword-while)
 
 ## Keyword: after
 
-Introduces a state timer, case dependency or success schedule dependency.
+Introduces a state timer, receive timeout or success schedule dependency.
 
-**Context:** Ordered state transitions. **Grammar:** ScheduleEntry, Receive, Transition, ScenarioStep. **Name use:** reserved.
+**Context:** Ordered state transitions. **Grammar:** ScheduleEntry, Receive, Transition. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -36,6 +28,14 @@ Used in runtime failure and lazy fallback; see its grammar contexts and normativ
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
+## Keyword: associate
+
+Records that a top-level occurrence of the package takes part in a use case or test other than as its subject.
+
+**Context:** Use cases, tests and associations. **Grammar:** Association, Name. **Name use:** contextual.
+
+[Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
+
 ## Keyword: attribute
 
 Declares typed occurrence state or an immutable requirement value.
@@ -51,6 +51,14 @@ Used in typed copied values; see its grammar contexts and normative constraints.
 **Context:** Typed copied values. **Grammar:** TypeRef. **Name use:** reserved.
 
 [Normative rule](spec/01-structure-and-types.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
+
+## Keyword: by
+
+Names the design that a satisfy claim refers to, or the test that a verify claim refers to.
+
+**Context:** Requirements and package intent links. **Grammar:** Satisfaction, Verification, Name. **Name use:** contextual.
+
+[Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
 ## Keyword: byte
 
@@ -70,9 +78,9 @@ Used only as the on call schedule trigger.
 
 ## Keyword: case
 
-Completes the use case or verification case keyword pair.
+Completes the use case keyword pair use case.
 
-**Context:** Use cases, actors and routed case steps. **Grammar:** CaseKind, Name. **Name use:** reserved.
+**Context:** Use cases, tests and associations. **Grammar:** CaseKind, Name. **Name use:** contextual.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -196,14 +204,6 @@ Used in ordered state transitions; see its grammar contexts and normative constr
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
-## Keyword: extend
-
-Records that a use case extends another use case of the same subject.
-
-**Context:** Use cases, actors and routed case steps. **Grammar:** CaseRelation, Name. **Name use:** reserved.
-
-[Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
-
 ## Keyword: fail
 
 Used in runtime failure and lazy fallback; see its grammar contexts and normative constraints.
@@ -235,14 +235,6 @@ Used in loops and copied iteration; see its grammar contexts and normative const
 **Context:** Loops and copied iteration. **Grammar:** For, ForEach. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
-
-## Keyword: from
-
-Introduces the source endpoint of a named case step.
-
-**Context:** Use cases, actors and routed case steps. **Grammar:** ScenarioStep, Name. **Name use:** contextual.
-
-[Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
 ## Keyword: idempotent
 
@@ -278,9 +270,9 @@ Used in attributes and lexical locals; see its grammar contexts and normative co
 
 ## Keyword: include
 
-Adds a view selection, or records that a use case includes another use case of the same subject.
+Adds a subject selection to a view.
 
-**Context:** Seven library view definitions. **Grammar:** CaseRelation, ViewSelection. **Name use:** reserved.
+**Context:** Seven library view definitions. **Grammar:** ViewSelection. **Name use:** reserved.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -312,7 +304,7 @@ Used in armed interrupt and cancellation; see its grammar contexts and normative
 
 Used in seven library view definitions; see its grammar contexts and normative constraints.
 
-**Context:** Seven library view definitions. **Grammar:** FilterComparison, Name. **Name use:** reserved.
+**Context:** Seven library view definitions. **Grammar:** FilterComparison, Name. **Name use:** contextual.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -320,7 +312,7 @@ Used in seven library view definitions; see its grammar contexts and normative c
 
 Used in lexical and path spelling; see its grammar contexts and normative constraints.
 
-**Context:** Lexical and path spelling. **Grammar:** Duration. **Name use:** reserved.
+**Context:** Lexical and path spelling. **Grammar:** Duration, Name. **Name use:** contextual.
 
 [Normative rule](spec/01-structure-and-types.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -328,7 +320,7 @@ Used in lexical and path spelling; see its grammar contexts and normative constr
 
 Used in seven library view definitions; see its grammar contexts and normative constraints.
 
-**Context:** Seven library view definitions. **Grammar:** FilterComparison, Name. **Name use:** reserved.
+**Context:** Seven library view definitions. **Grammar:** FilterComparison, Name. **Name use:** contextual.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -344,15 +336,15 @@ Used in typed expressions and operators; see its grammar contexts and normative 
 
 Used in lexical and path spelling; see its grammar contexts and normative constraints.
 
-**Context:** Lexical and path spelling. **Grammar:** Duration. **Name use:** reserved.
+**Context:** Lexical and path spelling. **Grammar:** Duration, Name. **Name use:** contextual.
 
 [Normative rule](spec/01-structure-and-types.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
 ## Keyword: of
 
-Used in requirements and intent links; see its grammar contexts and normative constraints.
+Used in use cases, tests and associations; see its grammar contexts and normative constraints.
 
-**Context:** Requirements and intent links. **Grammar:** Deployment, Satisfaction, View. **Name use:** reserved.
+**Context:** Use cases, tests and associations. **Grammar:** Deployment, Scenario, View. **Name use:** reserved.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -408,7 +400,7 @@ Used in packages and imports; see its grammar contexts and normative constraints
 
 Used in seven library view definitions; see its grammar contexts and normative constraints.
 
-**Context:** Seven library view definitions. **Grammar:** FilterComparison, Name. **Name use:** reserved.
+**Context:** Seven library view definitions. **Grammar:** FilterComparison, Name. **Name use:** contextual.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -432,7 +424,7 @@ Offers an attribute/event or implements an operation member.
 
 Used in directed port members; see its grammar contexts and normative constraints.
 
-**Context:** Directed port members. **Grammar:** Send, ScenarioStep. **Name use:** reserved.
+**Context:** Directed port members. **Grammar:** Send. **Name use:** reserved.
 
 [Normative rule](spec/02-communication.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -484,27 +476,11 @@ Used in component definitions and usages; see its grammar contexts and normative
 
 [Normative rule](spec/01-structure-and-types.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
-## Keyword: reply
-
-Used in use cases, actors and routed case steps; see its grammar contexts and normative constraints.
-
-**Context:** Use cases, actors and routed case steps. **Grammar:** ScenarioStep. **Name use:** reserved.
-
-[Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
-
-## Keyword: request
-
-Used in use cases, actors and routed case steps; see its grammar contexts and normative constraints.
-
-**Context:** Use cases, actors and routed case steps. **Grammar:** ScenarioStep, Name. **Name use:** contextual.
-
-[Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
-
 ## Keyword: requirement
 
-Used in requirements and intent links; see its grammar contexts and normative constraints.
+Used in requirements and package intent links; see its grammar contexts and normative constraints.
 
-**Context:** Requirements and intent links. **Grammar:** Requirement. **Name use:** reserved.
+**Context:** Requirements and package intent links. **Grammar:** Requirement. **Name use:** reserved.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -544,15 +520,15 @@ Flips each direction of a port usage.
 
 Used in lexical and path spelling; see its grammar contexts and normative constraints.
 
-**Context:** Lexical and path spelling. **Grammar:** Duration. **Name use:** reserved.
+**Context:** Lexical and path spelling. **Grammar:** Duration, Name. **Name use:** contextual.
 
 [Normative rule](spec/01-structure-and-types.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
 ## Keyword: satisfy
 
-Used in requirements and intent links; see its grammar contexts and normative constraints.
+Records the intent that a component definition or occurrence path declared in the package satisfies a requirement.
 
-**Context:** Requirements and intent links. **Grammar:** Satisfaction. **Name use:** reserved.
+**Context:** Requirements and package intent links. **Grammar:** Satisfaction. **Name use:** reserved.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -568,7 +544,7 @@ Owns trigger-to-operation bindings.
 
 Used in directed port members; see its grammar contexts and normative constraints.
 
-**Context:** Directed port members. **Grammar:** Send, ScenarioStep. **Name use:** reserved.
+**Context:** Directed port members. **Grammar:** Send. **Name use:** reserved.
 
 [Normative rule](spec/02-communication.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -604,6 +580,14 @@ Used in typed copied values; see its grammar contexts and normative constraints.
 
 [Normative rule](spec/01-structure-and-types.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
+## Keyword: test
+
+Declares a test: a package member that may name a top-level subject occurrence with of and is the target of verify links.
+
+**Context:** Use cases, tests and associations. **Grammar:** CaseKind, Name. **Name use:** contextual.
+
+[Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
+
 ## Keyword: times
 
 Introduces a once-evaluated uint loop limit.
@@ -614,9 +598,9 @@ Introduces a once-evaluated uint loop limit.
 
 ## Keyword: to
 
-Introduces a case endpoint or state transition target.
+Introduces a state transition target or the case of an associate link.
 
-**Context:** Ordered state transitions. **Grammar:** Transition, ScenarioStep, Name. **Name use:** contextual.
+**Context:** Ordered state transitions. **Grammar:** Transition, Association, Name. **Name use:** contextual.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -656,15 +640,15 @@ Runs body then tests the stopping condition.
 
 Used in lexical and path spelling; see its grammar contexts and normative constraints.
 
-**Context:** Lexical and path spelling. **Grammar:** Duration. **Name use:** reserved.
+**Context:** Lexical and path spelling. **Grammar:** Duration, Name. **Name use:** contextual.
 
 [Normative rule](spec/01-structure-and-types.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
 ## Keyword: use
 
-Starts the use case keyword pair use case.
+Starts the use case keyword pair use case: a package member that names a top-level occurrence of its package as subject with of.
 
-**Context:** Use cases, actors and routed case steps. **Grammar:** CaseKind, Name. **Name use:** reserved.
+**Context:** Use cases, tests and associations. **Grammar:** CaseKind, Name. **Name use:** contextual.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -676,27 +660,11 @@ Used in attributes and lexical locals; see its grammar contexts and normative co
 
 [Normative rule](spec/01-structure-and-types.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
-## Keyword: verification
-
-Starts the verification case keyword pair verification case.
-
-**Context:** Use cases, actors and routed case steps. **Grammar:** CaseKind, Name. **Name use:** reserved.
-
-[Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
-
 ## Keyword: verify
 
-Used in requirements and intent links; see its grammar contexts and normative constraints.
+Records the intent that a test of the package verifies a requirement; many-to-many.
 
-**Context:** Requirements and intent links. **Grammar:** Verification. **Name use:** reserved.
-
-[Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
-
-## Keyword: via
-
-Used in use cases, actors and routed case steps; see its grammar contexts and normative constraints.
-
-**Context:** Use cases, actors and routed case steps. **Grammar:** ScenarioStep. **Name use:** reserved.
+**Context:** Requirements and package intent links. **Grammar:** Verification. **Name use:** reserved.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 

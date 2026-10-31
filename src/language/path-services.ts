@@ -3,7 +3,7 @@ import type { LangiumServices, RenameProvider, DefinitionProvider, ReferencesPro
 import type { DefinitionParams, Location, LocationLink, Range, ReferenceParams, RenameParams, TextDocumentPositionParams, WorkspaceEdit, TextEdit } from 'vscode-languageserver';
 import * as a from './generated/ast.js';
 import { viewCandidates, selectView } from './presentation.js';
-import { body, caseSubject, connectionRoutes, container, isExecutable, localOperation, memberEndpoint, members, nodes, owner, resolve, signature, OCCURRENCE_LIMIT, occurrenceCount, type Node, type Structure } from './semantic.js';
+import { body, container, isExecutable, localOperation, memberEndpoint, members, nodes, owner, resolve, signature, type Node, type Structure } from './semantic.js';
 import { decodeQuotedName, formatName, formatQualifiedName, nameProblem, parseNameInput } from './names.js';
 export interface SemanticSymbol {
     key: string;
@@ -112,10 +112,6 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
             return parent.attributes.find(n => n.name === name) as Node;
         if (a.isDataType(parent))
             return parent.fields.find(n => n.name === name) as Node;
-        if (a.isScenario(parent))
-            return [...parent.steps, ...parent.actors].find(n => n.name === name) as Node;
-        if (a.isCaseActor(parent) && parent.definition.ref)
-            return members(parent.definition.ref).find(m => (m as Node).name === name) as Node;
         return undefined;
     };
     const pathRefs = (n: AstNode, p: string, path: string, start?: Node, offset = 0) => {
@@ -159,9 +155,10 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
             if (a.isImport(n))
                 add(n, property(n, 'namespace'), symbol(models.flatMap(m => m.packages).find(p => p.name === n.namespace)));
             const c = container(n);
-            if (a.isConnect(n) && c) {
-                pathRefs(n, 'source', n.source, c as Node);
-                pathRefs(n, 'target', n.target, c as Node);
+            if (a.isConnect(n)) {
+                // A package connection starts with a top-level occurrence of its package.
+                pathRefs(n, 'source', n.source, c as Node | undefined);
+                pathRefs(n, 'target', n.target, c as Node | undefined);
             }
             if (a.isSend(n) || a.isReceiveBranch(n) || a.isInterruptible(n) || a.isTransition(n) && n.endpoint || a.isScheduleEntry(n) && n.endpoint)
                 if (c)
@@ -226,8 +223,8 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
             }
             if (a.isViewSelection(n))
                 pathRefs(n, 'subject', n.subject);
-            if (a.isSatisfaction(n) && n.source)
-                pathRefs(n, 'source', n.source);
+            if (a.isSatisfaction(n))
+                pathRefs(n, 'design', n.design);
             if (a.isQosPolicy(n) && n.base)
                 native(n, property(n, 'base'), resolve(n, n.base, models));
             if (a.isPlacement(n)) {
@@ -236,24 +233,6 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
                     pathRefs(n, 'target', n.target, d.root.ref as Node);
                 if (d?.platform.ref)
                     pathRefs(n, 'node', n.node, d.platform.ref as Node);
-            }
-            if (a.isScenarioStep(n)) {
-                // A step end starts with an actor of the case or with a member of the subject.
-                const scenario = owner(n, a.isScenario), root = scenario && caseSubject(scenario);
-                if (scenario && root) {
-                    const start = (path: string) => (scenario.actors.some(x => x.name === path.split('.')[0]) ? scenario : root) as Node;
-                    pathRefs(n, 'source', n.source, start(n.source));
-                    pathRefs(n, 'target', n.target, start(n.target));
-                    if (n.connector && occurrenceCount(root) <= OCCURRENCE_LIMIT) {
-                        const { links, leaf } = connectionRoutes(root);
-                        const ports = [n.source, n.target].map(path => leaf(root.name + '.' + path.slice(0, path.lastIndexOf('.'))));
-                        const connects = links.filter(l => l.node.name === n.connector && ports.every(p => l.ends.includes(p)));
-                        if (connects.length === 1)
-                            add(n, property(n, 'connector'), symbol(connects[0].node));
-                    }
-                }
-                if (scenario && n.predecessor)
-                    add(n, property(n, 'predecessor'), symbol(scenario.steps.find(s => s.name === n.predecessor)));
             }
         }
     const unique = new Map<string, SemanticReference>();

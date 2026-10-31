@@ -1,7 +1,7 @@
 grammar Swaml
 
 entry Model: packages+=Package*;
-Package: 'package' name=QualifiedName '{' documentation=Documentation? (imports+=Import | elements+=Element | satisfactions+=Satisfaction)* '}';
+Package: 'package' name=QualifiedName '{' documentation=Documentation? (imports+=Import | elements+=Element | connections+=Connect | associations+=Association | satisfactions+=Satisfaction | verifications+=Verification)* '}';
 Import: 'import' namespace=QualifiedName ';';
 Element: DataType | EnumType | ComponentDef | ComponentUsage | PortDef | Operation | QosPolicy | ViewDef | Requirement | Scenario | View | Deployment;
 DataType: 'datatype' name=Name '{' documentation=Documentation? fields+=Field* '}';
@@ -12,7 +12,7 @@ type ValueType = DataType | EnumType;
 Argument: (direction=('in'|'out'))? name=Name ':' type=TypeRef;
 ComponentDef: 'component' 'def' name=Name ('specializes' specializes=[ComponentDef:QualifiedName])? '{' documentation=Documentation? members+=ComponentMember* '}';
 ComponentUsage: (redefines?='redefines')? 'component' name=Name (':' definition=[ComponentDef:QualifiedName] ('[' size=INT ']')?)? (';' | '{' documentation=Documentation? members+=ComponentMember* '}');
-ComponentMember: ComponentUsage | PortUsage | Attribute | Operation | OperationUsage | Connect | Schedule | Scenario | Satisfaction;
+ComponentMember: ComponentUsage | PortUsage | Attribute | Operation | OperationUsage | Connect | Schedule;
 Attribute: (redefines?='redefines')? (constant?='const')? 'attribute' name=Name ':' type=TypeRef '=' value=Expression documentation=Documentation? ';';
 PortDef: 'port' 'def' name=Name '{' documentation=Documentation? members+=PortMember* '}';
 PortUsage: (redefines?='redefines')? (optional?='optional')? (reversed?='reversed')? 'port' name=Name (':' definition=[PortDef:QualifiedName] documentation=Documentation? ';' | '{' documentation=Documentation? members+=PortMember* '}');
@@ -52,13 +52,11 @@ Deployment: 'deployment' name=Name 'of' root=[ComponentUsage:QualifiedName] 'on'
 Placement: 'deploy' target=Path? 'on' node=Path ';';
 Requirement: 'requirement' name=Name '{' documentation=Documentation? attributes+=Attribute* '}';
 Documentation: text=DOC_COMMENT;
-Satisfaction: 'satisfy' requirement=[Requirement:QualifiedName] ('of' source=Path)? ';';
-Verification: 'verify' requirement=[Requirement:QualifiedName] ';';
-Scenario: kind=CaseKind name=Name '{' documentation=Documentation? actors+=CaseActor* relations+=CaseRelation* verifications+=Verification* steps+=ScenarioStep* '}';
-CaseKind returns string: 'use' 'case' | 'verification' 'case';
-CaseActor: 'actor' name=Name ':' definition=[ComponentDef:QualifiedName] ';';
-CaseRelation: kind=('include'|'extend') target=[Scenario:QualifiedName] ';';
-ScenarioStep: kind=('send'|'publish'|'request'|'reply') name=Name 'from' source=Path 'to' target=Path ('via' connector=Name)? ('after' predecessor=Name)? ';';
+Satisfaction: 'satisfy' requirement=[Requirement:QualifiedName] 'by' design=Path ';';
+Verification: 'verify' requirement=[Requirement:QualifiedName] 'by' test=[Scenario:Name] ';';
+Association: 'associate' occurrence=[ComponentUsage:Name] 'to' target=[Scenario:Name] ';';
+Scenario: kind=CaseKind name=Name ('of' subject=[ComponentUsage:Name])? '{' documentation=Documentation? '}';
+CaseKind returns string: 'use' 'case' | 'test';
 ViewDef: 'view' 'def' name=Name documentation=Documentation? ';';
 View: 'view' name=Name ':' definition=[ViewDef:QualifiedName] ('of' subject=Path documentation=Documentation? ';' | '{' documentation=Documentation? selections+=ViewSelection+ '}');
 ViewSelection: 'include' subject=Path (recursive?='recursive')? ('where' filter=FilterExpression)? ';';
@@ -69,7 +67,7 @@ FilterAnd returns FilterExpression: FilterPrimary ({infer FilterBinary.left=curr
 FilterPrimary returns FilterExpression: {infer FilterNot} 'not' operand=FilterPrimary | FilterComparison | '(' FilterExpression ')';
 FilterComparison: field=('name'|'kind'|'path') operator=('=='|'!=') value=STRING;
 Duration: value=INT unit=('ns'|'us'|'ms'|'s');
-Name returns string: ID | UNRESTRICTED_NAME | 'reversed' | 'from' | 'to' | 'times' | 'request' | 'name' | 'kind' | 'path' | 'use' | 'case' | 'verification' | 'actor' | 'extend';
+Name returns string: ID | UNRESTRICTED_NAME | 'reversed' | 'to' | 'times' | 'name' | 'kind' | 'path' | 'use' | 'case' | 'test' | 'associate' | 'by' | 'ns' | 'us' | 'ms' | 's';
 MemberPath returns string: Name '.' Name;
 Path returns string: QualifiedName ('[' INT ']')? ('.' Name ('[' INT ']')?)*;
 QualifiedName returns string: Name ('::' Name)*;

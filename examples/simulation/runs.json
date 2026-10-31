@@ -269,18 +269,5 @@
         "last": 18.5
       }
     }
-  },
-  {
-    "model": "examples/28-use-cases.swaml",
-    "root": "Cash Machine::Branch",
-    "options": "examples/simulation/28-use-cases.json",
-    "expectedStores": {
-      "Branch.customer": {
-        "received": 100
-      },
-      "Branch.atm": {
-        "card": "4711"
-      }
-    }
   }
 ]
