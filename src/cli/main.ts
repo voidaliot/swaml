@@ -7,12 +7,18 @@ import { URI } from 'langium';
 import { NodeFileSystem } from 'langium/node';
 import { createSwamlServices } from '../language/swaml-module.js';
 import { formatDocument } from '../language/formatter.js';
-import { LANGUAGE_VERSION, languageArguments } from './options.js';
+import { LANGUAGE_VERSION, languageArguments, withoutLanguageVersion } from './options.js';
+import { simulateCommand } from './run.js';
 try {
-    const args = process.argv.slice(2), json = args.includes('--json'), format = args.includes('--format'), checkFormat = args.includes('--check-format');
+    const args = process.argv.slice(2);
+    if (args[0] === 'simulate') {
+        process.exitCode = await simulateCommand(withoutLanguageVersion(args.slice(1)));
+    }
+    else {
+    const json = args.includes('--json'), format = args.includes('--format'), checkFormat = args.includes('--check-format');
     const files = languageArguments(args.filter(a => !['--json', '--format', '--check-format'].includes(a)));
     if (!files.length || format && checkFormat)
-        throw new Error('Usage: swaml [--language-version 2.0] [--json] [--format|--check-format] file.swaml [more files...]');
+        throw new Error('Usage: swaml [--language-version 2.0] [--json] [--format|--check-format] file.swaml [more files...]\n       swaml simulate [--language-version 2.0] [--target Package|Package::component] (--options options.json | --until-ns N) file.swaml [more files...]');
     const { shared } = createSwamlServices(NodeFileSystem);
     const docs = await Promise.all(files.map(f => shared.workspace.LangiumDocuments.getOrCreateDocument(URI.file(resolve(f)))));
     await shared.workspace.DocumentBuilder.build(docs, { validation: true });
@@ -38,6 +44,7 @@ try {
         console.log(`Checked ${docs.length} model(s), swa.ml ${LANGUAGE_VERSION}: ${errors} error(s).`);
     }
     process.exitCode = errors ? 1 : 0;
+    }
 }
 catch (error) {
     console.error(String(error));

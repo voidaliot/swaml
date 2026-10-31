@@ -1,6 +1,9 @@
 {
   "profile": "swaml-reference/2.0",
-  "root": "Hello::Demo",
+  "target": {
+    "kind": "component",
+    "identity": "Hello::Demo"
+  },
   "options": {
     "untilNs": 19000000,
     "maxSteps": 100000,
@@ -51,6 +54,7 @@
       "kind": "release",
       "subject": "Demo.sender.emit",
       "activation": "a1",
+      "source": "Hello::Sender/schedule/0",
       "cause": "start"
     },
     {
@@ -59,6 +63,7 @@
       "kind": "dispatch",
       "subject": "Demo.sender.emit",
       "activation": "a1",
+      "source": "Hello::Sender/schedule/0",
       "concurrent": false
     },
     {
@@ -67,6 +72,7 @@
       "kind": "publish",
       "subject": "Demo.sender.output.message",
       "activation": "a1",
+      "source": "Hello::Sender.emit/0",
       "emitter": {
         "declaration": "Hello::Sender.emit",
         "uri": "file:///examples/01-hello.swaml",
@@ -90,18 +96,20 @@
       "ordinal": 7,
       "kind": "offer",
       "subject": "Demo.@connect0",
+      "source": "Hello::Sender.emit/0",
       "message": "m2",
       "member": "message",
-      "source": "Demo.sender.output",
-      "target": "Demo.receiver.input"
+      "sourcePort": "Demo.sender.output",
+      "targetPort": "Demo.receiver.input"
     },
     {
       "timeNs": 0,
       "ordinal": 8,
       "kind": "deliver",
       "subject": "Demo.@connect0",
+      "source": "Hello::Sender.emit/0",
       "message": "m2",
-      "target": "Demo.receiver.input"
+      "targetPort": "Demo.receiver.input"
     },
     {
       "timeNs": 0,
@@ -109,6 +117,7 @@
       "kind": "release",
       "subject": "Demo.receiver.accept",
       "activation": "a3",
+      "source": "Hello::Receiver/schedule/0",
       "cause": "receive"
     },
     {
@@ -117,6 +126,7 @@
       "kind": "dispatch",
       "subject": "Demo.receiver.accept",
       "activation": "a3",
+      "source": "Hello::Receiver/schedule/0",
       "concurrent": false
     },
     {
@@ -140,6 +150,7 @@
       "kind": "write",
       "subject": "Demo.receiver.last",
       "activation": "a3",
+      "source": "Hello::Receiver.accept/0",
       "scope": "attribute",
       "value": "Hello, SWAML"
     },

@@ -2,7 +2,10 @@
   "languageVersion": "2.0",
   "source": "examples/17-function-timing.swaml",
   "sha256": "c2ced1c6c550656f02a633713194cedeaee4fcfccdefe671b903b6738816a3cb",
-  "root": "Timing::Demo",
+  "target": {
+    "kind": "component",
+    "identity": "Timing::Demo"
+  },
   "profile": "swaml-reference/2.0",
   "options": {
     "untilNs": 19000000,

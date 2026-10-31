@@ -1,7 +1,7 @@
 [
   {
     "model": "examples/01-hello.swaml",
-    "root": "Hello::Demo",
+    "target": "Hello::Demo",
     "options": "examples/simulation/01-hello.json",
     "expectedStores": {
       "Demo.receiver": {
@@ -11,7 +11,7 @@
   },
   {
     "model": "examples/02-realtime-controller.swaml",
-    "root": "Control::Demo",
+    "target": "Control::Demo",
     "options": "examples/simulation/02-realtime-controller.json",
     "expectedStores": {
       "Demo.heater": {
@@ -21,7 +21,7 @@
   },
   {
     "model": "examples/03-service-pubsub.swaml",
-    "root": "Commerce::Demo",
+    "target": "Commerce::Demo",
     "options": "examples/simulation/03-service-pubsub.json",
     "expectedStores": {
       "Demo.client": {
@@ -32,7 +32,7 @@
   },
   {
     "model": "examples/04-stateful-function.swaml",
-    "root": "States::Demo",
+    "target": "States::Demo",
     "options": "examples/simulation/04-stateful-function.json",
     "expectedStores": {
       "Demo": {
@@ -42,7 +42,7 @@
   },
   {
     "model": "examples/05-values-and-flow.swaml",
-    "root": "Values::Demo",
+    "target": "Values::Demo",
     "options": "examples/simulation/05-values-and-flow.json",
     "expectedStores": {
       "Demo": {
@@ -53,7 +53,7 @@
   },
   {
     "model": "examples/06-mixed-gateway.swaml",
-    "root": "Gateway::Demo",
+    "target": "Gateway::Demo",
     "options": "examples/simulation/06-mixed-gateway.json",
     "expectedStores": {
       "Demo.receiver": {
@@ -63,7 +63,7 @@
   },
   {
     "model": "examples/07-client-server.swaml",
-    "root": "ClientServer::Demo",
+    "target": "ClientServer::Demo",
     "options": "examples/simulation/07-client-server.json",
     "expectedStores": {
       "Demo.client": {
@@ -73,7 +73,7 @@
   },
   {
     "model": "examples/08-service-field.swaml",
-    "root": "Settings::Demo",
+    "target": "Settings::Demo",
     "options": "examples/simulation/08-service-field.json",
     "expectedStores": {
       "Demo.client": {
@@ -83,7 +83,7 @@
   },
   {
     "model": "examples/09-component-roots.swaml",
-    "root": "Roots::Demo",
+    "target": "Roots::Demo",
     "options": "examples/simulation/09-component-roots.json",
     "expectedStores": {
       "Demo.left": {
@@ -96,7 +96,7 @@
   },
   {
     "model": "examples/10-reusable-qos.swaml",
-    "root": "Policies::Demo",
+    "target": "Policies::Demo",
     "options": "examples/simulation/10-reusable-qos.json",
     "expectedStores": {
       "Demo.receiver": {
@@ -106,7 +106,7 @@
   },
   {
     "model": "examples/11-autosar-classic.swaml",
-    "root": "Classic::Demo",
+    "target": "Classic::Demo",
     "options": "examples/simulation/11-autosar-classic.json",
     "expectedStores": {
       "Demo.heater": {
@@ -116,7 +116,7 @@
   },
   {
     "model": "examples/12-autosar-adaptive.swaml",
-    "root": "Adaptive::Demo",
+    "target": "Adaptive::Demo",
     "options": "examples/simulation/12-autosar-adaptive.json",
     "expectedStores": {
       "Demo.client": {
@@ -126,7 +126,7 @@
   },
   {
     "model": "examples/13-web-application.swaml",
-    "root": "Web::Demo",
+    "target": "Web::Demo",
     "options": "examples/simulation/13-web-application.json",
     "expectedStores": {
       "Demo.client": {
@@ -136,7 +136,7 @@
   },
   {
     "model": "examples/14-cloud-service.swaml",
-    "root": "Cloud::Demo",
+    "target": "Cloud::Demo",
     "options": "examples/simulation/14-cloud-service.json",
     "expectedStores": {
       "Demo.client": {
@@ -146,7 +146,7 @@
   },
   {
     "model": "examples/15-component-specialization.swaml",
-    "root": "Reuse::Demo",
+    "target": "Reuse::Demo",
     "options": "examples/simulation/15-component-specialization.json",
     "expectedStores": {
       "Demo.left": {
@@ -159,7 +159,7 @@
   },
   {
     "model": "examples/16-requirements-and-views.swaml",
-    "root": "Traceability::Demo",
+    "target": "Traceability::Demo",
     "options": "examples/simulation/16-requirements-and-views.json",
     "expectedStores": {
       "Demo.receiver": {
@@ -169,7 +169,7 @@
   },
   {
     "model": "examples/17-function-timing.swaml",
-    "root": "Timing::Demo",
+    "target": "Timing::Demo",
     "options": "examples/simulation/17-function-timing.json",
     "expectedStores": {
       "Demo": {
@@ -179,7 +179,7 @@
   },
   {
     "model": "examples/18-control-loops.swaml",
-    "root": "Loops::Demo",
+    "target": "Loops::Demo",
     "options": "examples/simulation/18-control-loops.json",
     "expectedStores": {
       "Demo": {
@@ -189,7 +189,7 @@
   },
   {
     "model": "examples/19-interruptible-function.swaml",
-    "root": "Interrupts::Demo",
+    "target": "Interrupts::Demo",
     "options": "examples/simulation/19-interruptible-function.json",
     "expectedStores": {
       "Demo.receiver": {
@@ -199,7 +199,7 @@
   },
   {
     "model": "examples/20-classes-and-operations.swaml",
-    "root": "Operations::Demo",
+    "target": "Operations::Demo",
     "options": "examples/simulation/20-classes-and-operations.json",
     "expectedStores": {
       "Demo": {
@@ -209,7 +209,7 @@
   },
   {
     "model": "examples/21-receive-and-try.swaml",
-    "root": "Receiving::Demo",
+    "target": "Receiving::Demo",
     "options": "examples/simulation/21-receive-and-try.json",
     "expectedStores": {
       "Demo.receiver": {
@@ -219,8 +219,13 @@
   },
   {
     "model": "examples/22-platform-deployment.swaml",
-    "root": "Placement::Demo",
+    "target": "Placement::Demo",
     "options": "examples/simulation/22-platform-deployment.json",
+    "expectedDeployments": {
+      "Demo": "Placement::Vehicle.front",
+      "Demo.workers[0]": "Placement::Vehicle.rear[0]",
+      "Demo.workers[2]": "Placement::Vehicle.rear[1]"
+    },
     "expectedStores": {
       "Demo.workers[2]": {
         "count": 1
@@ -229,7 +234,7 @@
   },
   {
     "model": "examples/23-multiplicity.swaml",
-    "root": "Multiplicity::Demo",
+    "target": "Multiplicity::Demo",
     "options": "examples/simulation/23-multiplicity.json",
     "expectedStores": {
       "Demo.counters[0]": {
@@ -242,7 +247,7 @@
   },
   {
     "model": "examples/24-operation-usage.swaml",
-    "root": "OperationUsage::Demo",
+    "target": "OperationUsage::Demo",
     "options": "examples/simulation/24-operation-usage.json",
     "expectedStores": {
       "Demo": {
@@ -252,7 +257,7 @@
   },
   {
     "model": "examples/25-function-completion.swaml",
-    "root": "Chaining::Demo",
+    "target": "Chaining::Demo",
     "options": "examples/simulation/25-function-completion.json",
     "expectedStores": {
       "Demo": {
@@ -262,11 +267,24 @@
   },
   {
     "model": "examples/26-boundary-forwarding.swaml",
-    "root": "Boundary::Demo",
+    "target": "Boundary::Demo",
     "options": "examples/simulation/26-boundary-forwarding.json",
     "expectedStores": {
       "Demo.display": {
         "last": 18.5
+      }
+    }
+  },
+  {
+    "model": "examples/28-use-cases.swaml",
+    "target": "Cash Machine",
+    "options": "examples/simulation/28-use-cases.json",
+    "expectedStores": {
+      "customer": {
+        "received": 100
+      },
+      "atm": {
+        "card": "4711"
       }
     }
   }

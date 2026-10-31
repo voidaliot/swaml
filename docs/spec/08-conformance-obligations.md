@@ -18,7 +18,7 @@ Normative chapter of [swa.ml 2.0](../LANGUAGE_SPECIFICATION.md). Acceptance leve
 | V10 | One schedule, unique effective identities, matching trigger/binding signatures, same-owner acyclic after, fresh void targets and period/deadline rules | SW2007 |
 | V11 | Stateful parameterless void signature, exactly one start entry, reachable states, ordered transitions and final restrictions | SW2008 |
 | V12 | Typed complete policies, effective-use idempotency, positive safe time/capacity domains | SW2013 |
-| V13 | Node-only target content, root/occurrence/index placement resolution and unique exact paths | SW2009 |
+| V13 | Node-only target content, root/occurrence/index placement resolution, unique exact paths and at most one deployment per top-level occurrence | SW2009 |
 | V14 | Immutable requirements, case subjects in the same package, legal associate/satisfy/verify links, seven library view kinds/subjects and stable selection union | SW2010 |
 | V15 | Stale-read and inactive interrupt-input warnings without a race-freedom claim | SW2011/2012 |
 
@@ -37,7 +37,7 @@ Validation MUST rebuild semantic string paths as well as indexed references afte
 | E07 | Entry release/deadline accounting, finite step/backlog/concurrent resources and explicit violations outside try |
 | E08 | Armed interrupt extent across callees/suspensions, same-activation unwind, terminal cancellation and no server rollback |
 | E09 | One fresh after activation per successful whole completion after unlock, failure suppression and new context/deadline |
-| E10 | Run/source/root/profile/option provenance, trace ordinals, occurrence stores and open observed timing intervals |
+| E10 | Run/source/target/profile/option provenance, package and isolated component targets, trace ordinals with statement sources, occurrence stores and open observed timing intervals |
 
 A deterministic reference run may choose one permitted order/delivery outcome. Its tests do not establish all possible traces or real transport reliability. A target implementation identifies additional scheduling/transport assumptions and evidence. Idempotency annotations are checked declarations, not proofs of side-effect behavior.
 

@@ -23,12 +23,12 @@ export class SwamlValidator {
         return selectView(view, this.models, this.viewSubjects.get('subjects', () => viewCandidates(this.models)));
     }
     private reported = new Set<string>();
-    private report(n: AstNode, code: string, message: string, warning = false, extra: { range?: Range; edits?: { range: Range; newText: string }[] } = {}): void { const declarationDoc=AstUtils.getDocument(n),currentDoc=AstUtils.getDocument(this.currentModel),foreign=declarationDoc!==currentDoc;
+    private report(n: AstNode, code: string, message: string, warning = false, extra: { range?: Range; edits?: { range: Range; newText: string }[]; declaration?: AstNode } = {}): void { const declarationDoc=AstUtils.getDocument(n),currentDoc=AstUtils.getDocument(this.currentModel),foreign=declarationDoc!==currentDoc;
         // Inherited members are checked for their definition and every usage; report each finding once.
         const reportKey=[code,message,declarationDoc.uri.toString(),JSON.stringify(extra.range??n.$cstNode?.range)].join('|');if(this.reported.has(reportKey))return;this.reported.add(reportKey);
         const declarationOwner=owner(n,(x):x is Structure=>a.isComponentDef(x)||a.isComponentUsage(x));
         const primary=foreign?this.currentModel.packages.flatMap(p=>p.elements.filter(a.isComponentUsage)).find(root=>occurrenceCount(root)<=OCCURRENCE_LIMIT&&occurrences(root).some(o=>o.structure===declarationOwner||o.definition===declarationOwner))??this.currentModel.packages[0]??this.currentModel:n;
-        this.accept(warning ? 'warning' : 'error', message, { node: primary, ...(extra.range&&!foreign?{range:extra.range}:{}), code, relatedInformation:foreign?[{location:{uri:declarationDoc.uri.toString(),range:n.$cstNode!.range},message:'Declaration '+identity(n)}]:undefined, data: { declaration: identity(n), occurrencePaths: this.models.flatMap(m => m.packages.flatMap(p => p.elements.filter(a.isComponentUsage))).filter(root => occurrenceCount(root) <= OCCURRENCE_LIMIT).flatMap(root => occurrences(root).filter(o => o.structure === n || o.structure === owner(n, (x): x is Structure => a.isComponentDef(x) || a.isComponentUsage(x)) || o.definition === owner(n, a.isComponentDef)).map(o => identity(root) + o.path.slice(root.name.length))), ...(!foreign && code === 'SW2003' && message.includes('needs redefines') && n.$cstNode ? { suggestedEdits: [{ uri: AstUtils.getDocument(n).uri.toString(), range: { start: n.$cstNode.range.start, end: n.$cstNode.range.start }, newText: 'redefines ' }] } : !foreign && extra.edits ? { suggestedEdits: extra.edits.map(edit => ({ uri: declarationDoc.uri.toString(), ...edit })) } : {}) } }); }
+        this.accept(warning ? 'warning' : 'error', message, { node: primary, ...(extra.range&&!foreign?{range:extra.range}:{}), code, relatedInformation:foreign?[{location:{uri:declarationDoc.uri.toString(),range:n.$cstNode!.range},message:'Declaration '+identity(n)}]:extra.declaration?[{location:{uri:AstUtils.getDocument(extra.declaration).uri.toString(),range:extra.declaration.$cstNode!.range},message:'Declaration '+identity(extra.declaration)}]:undefined, data: { declaration: identity(extra.declaration ?? n), occurrencePaths: this.models.flatMap(m => m.packages.flatMap(p => p.elements.filter(a.isComponentUsage))).filter(root => occurrenceCount(root) <= OCCURRENCE_LIMIT).flatMap(root => occurrences(root).filter(o => o.structure === n || o.structure === owner(n, (x): x is Structure => a.isComponentDef(x) || a.isComponentUsage(x)) || o.definition === owner(n, a.isComponentDef)).map(o => identity(root) + o.path.slice(root.name.length))), ...(!foreign && code === 'SW2003' && message.includes('needs redefines') && n.$cstNode ? { suggestedEdits: [{ uri: AstUtils.getDocument(n).uri.toString(), range: { start: n.$cstNode.range.start, end: n.$cstNode.range.start }, newText: 'redefines ' }] } : !foreign && extra.edits ? { suggestedEdits: extra.edits.map(edit => ({ uri: declarationDoc.uri.toString(), ...edit })) } : {}) } }); }
     checkModel = (model: a.Model, accept: ValidationAcceptor): void => {
         this.accept = accept;
         this.currentModel=model;
@@ -824,6 +824,10 @@ export class SwamlValidator {
     }
     private deployment(d: a.Deployment): void {
         const root = d.root.ref, platform = d.platform.ref;
+        // A run applies each top-level occurrence's deployment, so an occurrence has at most one.
+        const earlier = root && this.models.flatMap(m => m.packages.flatMap(p => p.elements.filter(a.isDeployment))).filter(x => x.root.ref === root);
+        if (earlier && earlier.length > 1 && earlier[0] !== d)
+            this.report(d, 'SW2009', `At most one deployment per top-level occurrence: ${root!.name} is already deployed by ${identity(earlier[0])}.`, false, this.at(d, 'root'));
         if (!root || !platform || occurrenceCount(root) > OCCURRENCE_LIMIT || occurrenceCount(platform) > OCCURRENCE_LIMIT)
             return;
         if (!isNode(platform))
@@ -855,23 +859,27 @@ export class SwamlValidator {
             if (['Flow', 'Timing'].includes(kind) && !isExecutable(item.node) || kind === 'Interconnect' && !a.isComponentUsage(item.node) && !a.isComponentDef(item.node) || ['Case', 'Sequence'].includes(kind) && !a.isScenario(item.node) && !a.isComponentUsage(item.node) && !a.isComponentDef(item.node) && !a.isPackage(item.node))
                 this.report(v, 'SW2010', `Subject ${item.path} is not valid for ${kind}.`);
     }
+    /** The range of one property of a node, for diagnostics on the offending reference. */
+    private at(n: AstNode, property: string): { range?: Range } { return { range: GrammarUtils.findNodeForProperty(n.$cstNode, property)?.range }; }
     /** Package connections join ports of top-level occurrences declared in the same package. */
     private packageConnections(p: a.Package): void {
-        const pairs = new Set<string>();
+        const pairs = new Set<string>(), duplicates = new Set<a.Connect>();
         for (const link of p.connections) {
             const ends = [link.source, link.target].map(path => packageEndpoint(p, path));
             if (!ends[0] || !ends[1]) {
-                for (const path of [link.source, link.target].filter((_, i) => !ends[i])) {
-                    const head = path.split(/[.[]/)[0], found = resolve(p, head, this.models);
+                for (const property of (['source', 'target'] as const).filter((_, i) => !ends[i])) {
+                    const path = link[property], head = path.split(/[.[]/)[0], found = resolve(p, head, this.models);
                     this.report(link, 'SW2004', found && !p.elements.includes(found)
                         ? `Occurrences cannot be connected across packages: ${head} is not declared in package ${p.name}. Declare a top-level occurrence here.`
-                        : `Package connection end ${path} must name a port of a top-level component occurrence of package ${p.name}.`);
+                        : `Package connection end ${path} must name a port of a top-level component occurrence of package ${p.name}.`, false, this.at(link, property));
                 }
                 continue;
             }
             const pair = [link.source, link.target].sort().join('|');
-            if (link.source === link.target || pairs.has(pair))
+            if (link.source === link.target || pairs.has(pair)) {
                 this.report(link, 'SW2004', 'Duplicate or self connector.');
+                duplicates.add(link);
+            }
             pairs.add(pair);
             for (const issue of compatibility(ends[0].port, ends[1].port))
                 this.report(link, 'SW2004', `Connection: ${issue}.`);
@@ -888,7 +896,8 @@ export class SwamlValidator {
         const { occurrences: occ, links, leaf } = connectionRoutes(p), counts = new Map<string, number>(), routes = new Set<string>();
         for (const link of links) {
             const pair = [...link.ends].sort().join('|');
-            if (routes.has(pair))
+            // An exact duplicate package connection was already reported above.
+            if (routes.has(pair) && !(link.owner === undefined && duplicates.has(link.node)))
                 this.report(link.owner === undefined ? link.node : roots.find(r => r.name === link.owner!.split('.')[0]) ?? p, 'SW2004', 'Duplicate connection after forwarding resolution.');
             routes.add(pair);
             for (const end of link.ends)
@@ -897,16 +906,19 @@ export class SwamlValidator {
         for (const o of occ.filter(o => checked.has(o.path.split('.')[0])))
             for (const port of members(o.structure).filter(a.isPortUsage)) {
                 const path = o.path + '.' + port.name, count = counts.get(leaf(path)) ?? 0;
+                // A top-level port is closed by the package, so its finding belongs to that occurrence, where a
+                // package connection is missing or repeated; a nested port is closed inside its component.
+                const top = roots.find(r => r.name === o.path), node = top ?? port, range = top ? { ...this.at(top, 'name'), declaration: port } : {};
                 if (!port.optional && !count)
-                    this.report(port, 'SW2004', `Unconnected required port ${path} in package ${p.name}.`);
+                    this.report(node, 'SW2004', `Unconnected required port ${path} in package ${p.name}.`, false, range);
                 if (count > 1 && portMembers(port).some(m => direction(port, m) === 'requires' && m.kind !== 'event'))
-                    this.report(port, 'SW2004', `Port ${path} requires exactly one peer after forwarding.`);
+                    this.report(node, 'SW2004', `Port ${path} requires exactly one peer after forwarding.`, false, range);
             }
     }
     /** Cases, associations, satisfy and verify claims are package members that record intent. */
     private links(p: a.Package): void {
         const local = (n: AstNode | undefined) => !!n && n.$container === p;
-        const at = (n: AstNode, property: string) => ({ range: GrammarUtils.findNodeForProperty(n.$cstNode, property)?.range });
+        const at = (n: AstNode, property: string) => this.at(n, property);
         for (const s of p.elements.filter(a.isScenario)) {
             const subject = s.subject?.ref;
             if (subject && !local(subject))

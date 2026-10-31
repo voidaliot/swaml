@@ -363,3 +363,103 @@ export function designComponent(p: a.Package, path: string): Structure | undefin
     }
     return current;
 }
+/** A run target: a whole package context, or one top-level component alone with its ports open. */
+export type RunTarget = {
+    kind: 'package' | 'component';
+    /** The package name, or the component occurrence identity such as Banking::atm. */
+    identity: string;
+    package: a.Package;
+    /** The executed top-level occurrences in declaration order. */
+    roots: a.ComponentUsage[];
+};
+/**
+ * The software roots of a package run: its top-level component occurrences except platform roots,
+ * which only describe deployment targets.
+ */
+export function softwareRoots(p: a.Package): a.ComponentUsage[] { return packageOccurrences(p).filter(r => !isNode(r)); }
+/** Every run target of a workspace: each package with software roots, then each software root alone. */
+export function runTargets(models: readonly a.Model[]): RunTarget[] {
+    const packages = models.flatMap(m => m.packages).filter(p => AstUtils.getDocument(p).uri.scheme !== 'builtin');
+    return [
+        ...packages.filter(p => softwareRoots(p).length).map(p => ({ kind: 'package' as const, identity: p.name, package: p, roots: softwareRoots(p) })),
+        ...packages.flatMap(p => softwareRoots(p).map(r => ({ kind: 'component' as const, identity: identity(r), package: p, roots: [r] })))
+    ];
+}
+/**
+ * Resolves Package or Package::component. A package name wins only when no component has the
+ * same identity; a name that selects both is ambiguous.
+ */
+export function runTarget(models: readonly a.Model[], name: string): RunTarget {
+    const matches = runTargets(models).filter(t => t.identity === name);
+    if (matches.length > 1)
+        throw new Error(`Ambiguous run target ${name}: it names both a package and a component.`);
+    if (!matches[0])
+        throw new Error(`Unknown run target ${name}; select a package or Package::component, a top-level software component occurrence.`);
+    return matches[0];
+}
+const statementSlot = (n: AstNode) => n.$containerProperty === 'statements' || a.isFor(n.$container) && (n.$containerProperty === 'initializer' || n.$containerProperty === 'update');
+const statementOwner = (n: AstNode) => isExecutable(n) || a.isScenario(n);
+/**
+ * Stable source identity of the statement or schedule entry that contains a node.
+ *
+ * A statement is written <executable identity>/<statement path>, for example
+ * Hello::Sender.emit/0 or Shop::Desk.serve/2/then/0. The executable identity is the declaring
+ * operation, or a case, with decoded names. The path walks the abstract syntax from that
+ * executable's body: a statement contributes its index in the enclosing statement list, and every
+ * other step contributes its slot name, followed by an index for list slots (then, otherwise, body,
+ * branches/N, timeoutBody, handler, initializer, update, states/N, actions/N, transitions/N, effect).
+ * A schedule entry is written <component identity>/schedule/N with N counting the entries the
+ * component declares. Identities follow source structure, so an edit that reorders statements
+ * changes them; resolveStatement maps an identity back to its node.
+ */
+export function statementIdentity(n: AstNode): string | undefined {
+    const entry = a.isScheduleEntry(n) ? n : owner(n, a.isScheduleEntry);
+    if (entry) {
+        const c = container(entry);
+        return c && `${identity(c)}/schedule/${c.members.filter(a.isSchedule).flatMap(s => s.entries).indexOf(entry)}`;
+    }
+    let s: AstNode | undefined = n;
+    while (s && !statementSlot(s)) {
+        if (statementOwner(s))
+            return undefined;
+        s = s.$container;
+    }
+    if (!s)
+        return undefined;
+    const path: string[] = [];
+    let x: AstNode = s;
+    for (; x.$container && !statementOwner(x); x = x.$container) {
+        if (a.isOperationBody(x) && isExecutable(x.$container))
+            continue;
+        if (x.$containerProperty === 'statements')
+            path.unshift(String(x.$containerIndex));
+        else
+            path.unshift(...(x.$containerIndex === undefined ? [x.$containerProperty!] : [x.$containerProperty!, String(x.$containerIndex)]));
+    }
+    return statementOwner(x) ? `${identity(x)}/${path.join('/')}` : undefined;
+}
+/** The statement or schedule entry a statement identity names, or undefined when none does. */
+export function resolveStatement(models: readonly a.Model[], source: string): AstNode | undefined {
+    // A quoted name may itself contain '/', so try every declared owner whose identity prefixes the source, longest first.
+    const owners = models.flatMap(m => nodes(m)).filter(n => statementOwner(n) || a.isComponentDef(n) || a.isComponentUsage(n)).map(n => ({ n, id: identity(n) })).filter(o => source.startsWith(o.id + '/')).sort((x, y) => y.id.length - x.id.length);
+    for (const { n, id } of owners) {
+        const segments = source.slice(id.length + 1).split('/');
+        if (!statementOwner(n)) {
+            const entries = (n as Structure).members.filter(a.isSchedule).flatMap(s => s.entries);
+            if (segments.length === 2 && segments[0] === 'schedule' && /^\d+$/.test(segments[1]) && entries[Number(segments[1])])
+                return entries[Number(segments[1])];
+            continue;
+        }
+        let x: Node | undefined = (isExecutable(n) ? n.body : n) as Node | undefined;
+        for (let i = 0; x && i < segments.length; i++) {
+            const segment = segments[i];
+            const value = /^\d+$/.test(segment) ? x.statements?.[Number(segment)] : x[segment];
+            x = Array.isArray(value) ? /^\d+$/.test(segments[i + 1] ?? '') ? value[Number(segments[++i])] : undefined : value;
+            if (x !== undefined && (typeof x !== 'object' || !('$type' in x)))
+                x = undefined;
+        }
+        if (x && statementIdentity(x) === source)
+            return x;
+    }
+    return undefined;
+}

@@ -1,6 +1,6 @@
-import { AstUtils, DocumentState } from 'langium';
+import { AstUtils, DocumentState, type AstNode } from 'langium';
 import * as a from '../language/generated/ast.js';
-import { expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, portMembers, resolve, schedule, signature, typeKey, type Executable, type Policy, type Structure } from '../language/semantic.js';
+import { expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
 import { binary, bind, checked, ContractViolation, copy, plain, RuntimeFault, scalar, voidValue, widen, type Environment, type Value } from './values.js';
 export { projectOperationTiming } from './timing.js';
 export interface SimulationOptions {
@@ -9,7 +9,6 @@ export interface SimulationOptions {
     maxPending?: number;
     maxConcurrent?: number;
     latencyNs?: number;
-    deployment?: string;
     faults?: {
         offer: number;
         kind: 'drop' | 'duplicate' | 'transport';
@@ -21,11 +20,17 @@ export interface TraceEvent {
     ordinal: number;
     kind: string;
     subject: string;
+    /** The statementIdentity of the statement or schedule entry that caused this observation, when one did. */
+    source?: string;
     [key: string]: unknown;
 }
 export interface SimulationResult {
     profile: 'swaml-reference/2.0';
-    root: string;
+    /** What ran: a whole package context, or one top-level component alone with its ports open. */
+    target: {
+        kind: 'package' | 'component';
+        identity: string;
+    };
     options: SimulationOptions;
     outcome: 'failure-observed' | 'no-failure-observed';
     status: 'quiescent' | 'horizon' | 'violation' | 'limit';
@@ -90,6 +95,8 @@ type Frame = {
     watches: Watch[];
     interrupted?: InterruptSignal;
     request?: Correlation;
+    /** The node being executed, for statement identities of observations; any node inside a statement. */
+    at?: AstNode;
 };
 type Watch = {
     node: a.Interruptible;
@@ -115,6 +122,8 @@ type Message = {
     route: Route;
     source: string;
     target: string;
+    /** Statement identity of the emitting send or publish, or of the call a request or reply belongs to. */
+    origin?: string;
     member: string;
     args: Value[];
     emitted: number;
@@ -128,6 +137,8 @@ type Correlation = {
     route: Route;
     state: 'pending' | 'succeeded' | 'failed' | 'interrupted';
     expiry: number;
+    /** Statement identity of the requesting call. */
+    origin?: string;
 };
 type Event = {
     time: number;
@@ -136,15 +147,18 @@ type Event = {
     run: () => void;
     live: () => boolean;
 };
-export function simulate(models: a.Model[], rootName: string, options: SimulationOptions): SimulationResult {
+/**
+ * Runs a validated workspace. target names a package, which runs all its top-level software
+ * occurrences with their package connections and deployments, or Package::component, which runs
+ * that top-level occurrence alone: its package connections are absent and its ports stay open.
+ */
+export function simulate(models: a.Model[], target: string, options: SimulationOptions): SimulationResult {
     for (const model of models) {
         const d = AstUtils.getDocument(model);
         if (d.parseResult.value!==model || d.state < DocumentState.Validated || d.diagnostics?.some(x => x.severity === 1))
             throw new Error('Simulation requires a linked, validated workspace without errors.');
     }
-    const root = models.flatMap(m => m.packages.flatMap(p => p.elements.filter(a.isComponentUsage))).find(c => identity(c) === rootName);
-    if (!root)
-        throw new Error(`Unknown root ${rootName}; select Package::Root.`);
+    const selected = runTarget(models, target);
     const libraries = (workspaceModels.get(models[0]) ?? []).filter(m => AstUtils.getDocument(m).uri.scheme === 'builtin');
     const supplied = new Set(models);
     for (const model of models) {
@@ -173,7 +187,7 @@ export function simulate(models: a.Model[], rootName: string, options: Simulatio
             }
         }
     }
-    return new Interpreter([...new Set([...models, ...libraries])], root, options).run();
+    return new Interpreter([...new Set([...models, ...libraries])], selected, options).run();
 }
 class Interpreter {
     private components = new Map<string, Component>();
@@ -195,11 +209,9 @@ class Interpreter {
     private order = 0;
     private offers = 0;
     private stop?: 'violation' | 'limit';
-    private options: Required<Omit<SimulationOptions, 'deployment'>> & {
-        deployment?: string;
-    };
-    constructor(private models: a.Model[], private root: a.ComponentUsage, options: SimulationOptions) {
-        this.options = { untilNs: options.untilNs, maxSteps: options.maxSteps ?? 100000, maxPending: options.maxPending ?? 1024, maxConcurrent: options.maxConcurrent ?? 64, latencyNs: options.latencyNs ?? 0, faults: options.faults ?? [], deployment: options.deployment };
+    private options: Required<SimulationOptions>;
+    constructor(private models: a.Model[], private target: RunTarget, options: SimulationOptions) {
+        this.options = { untilNs: options.untilNs, maxSteps: options.maxSteps ?? 100000, maxPending: options.maxPending ?? 1024, maxConcurrent: options.maxConcurrent ?? 64, latencyNs: options.latencyNs ?? 0, faults: options.faults ?? [] };
         for (const k of Object.keys(options))
             if (!(k in this.options))
                 throw new Error(`Unknown simulation option ${k}`);
@@ -214,6 +226,7 @@ class Interpreter {
         }
     }
     private id(prefix: string): string { return `${prefix}${++this.serial}`; }
+    private source(n?: AstNode): string | undefined { return n && statementIdentity(n); }
     private log(kind: string, subject: string, details: Record<string, unknown> = {}): void { this.trace.push({ timeNs: this.time, ordinal: this.trace.length + 1, kind, subject, ...details }); }
     private fuel = (): void => { if (++this.steps > this.options.maxSteps)
         throw new ContractViolation('StepLimit'); };
@@ -224,16 +237,16 @@ class Interpreter {
         path = this.aliases.get(path)!;
     } return path; }
     private env(f: Frame, local: Environment): Environment { return new Map([...(f.entry.concurrent ? f.snapshot : f.c.store), ...local]); }
-    private target(f: Frame, local: Environment, name: string): {
+    private cell(f: Frame, local: Environment, name: string): {
         type: string;
         value: Value;
     } { const c = local.get(name) ?? f.c.store.get(name); if (!c)
         throw new RuntimeFault('Type', `Unknown value ${name}`); return c; }
-    private assign(f: Frame, local: Environment, name: string, value: Value): void { const c = this.target(f, local, name); c.value = widen(value, c.type); this.log('write', `${f.c.path}.${name}`, { activation: f.id, scope: local.has(name) ? 'local' : 'attribute', value: plain(c.value) }); }
+    private assign(f: Frame, local: Environment, name: string, value: Value, site?: AstNode): void { const c = this.cell(f, local, name); c.value = widen(value, c.type); this.log('write', `${f.c.path}.${name}`, { activation: f.id, source: this.source(site ?? f.at), scope: local.has(name) ? 'local' : 'attribute', value: plain(c.value) }); }
     run(): SimulationResult {
         let initializing: { c: Component; attribute: a.Attribute } | undefined;
         try {
-            for (const o of occurrences(this.root)) {
+            for (const o of this.target.roots.flatMap(r => occurrences(r))) {
                 const c: Component = { path: o.path, structure: o.structure, store: new Map() };
                 this.components.set(c.path, c);
                 this.deployments[c.path] = null;
@@ -256,13 +269,19 @@ class Interpreter {
                         this.routes.push({ id: `${c.path}.${l.name ?? `@connect${connectorIndex}`}`, endpoints: [`${c.path}.${l.source}`, `${c.path}.${l.target}`], policy: effectiveQos(l) });
                 }
             }
+            // A package run adds the package connections between its top-level ports; a component run leaves them open.
+            if (this.target.kind === 'package')
+                this.target.package.connections.forEach((l, i) => {
+                    if (packageEndpoint(this.target.package, l.source) && packageEndpoint(this.target.package, l.target))
+                        this.routes.push({ id: l.name ?? `@package${i}`, endpoints: [l.source, l.target], policy: effectiveQos(l) });
+                });
             for (const r of this.routes)
                 r.endpoints = r.endpoints.map(p => this.leaf(p)) as [
                     string,
                     string
                 ];
-            if (this.options.deployment)
-                this.place(this.options.deployment);
+            for (const root of this.target.roots)
+                this.place(root);
             for (const c of this.components.values())
                 for (const e of schedule(c.structure)) {
                     if (e.kind === 'start')
@@ -294,19 +313,23 @@ class Interpreter {
             }
             else if (e instanceof ContractViolation) {
                 this.stop = e.code === 'StepLimit' ? 'limit' : 'violation';
-                this.log('violation', identity(this.root), { code: e.code });
+                this.log('violation', this.target.identity, { code: e.code });
             }
             else
                 throw e;
         }
-        return { profile: 'swaml-reference/2.0', root: identity(this.root), options: copy(this.options), outcome: this.stop || this.trace.some(t => t.kind === 'failure'||t.kind==='caught') ? 'failure-observed' : 'no-failure-observed', status: this.stop ?? (this.events.length || this.frames.some(f => !f.done) ? 'horizon' : 'quiescent'), timeNs: this.time, steps: this.steps, sources: this.models.map(m => ({ uri: AstUtils.getDocument(m).uri.toString(), text: AstUtils.getDocument(m).textDocument.getText() })), trace: this.trace, stores: Object.fromEntries([...this.components].map(([path, c]) => [path, Object.fromEntries([...c.store].map(([n, v]) => [n, plain(v.value)]))])), machines: this.machines, deployments: this.deployments };
+        return { profile: 'swaml-reference/2.0', target: { kind: this.target.kind, identity: this.target.identity }, options: copy(this.options), outcome: this.stop || this.trace.some(t => t.kind === 'failure'||t.kind==='caught') ? 'failure-observed' : 'no-failure-observed', status: this.stop ?? (this.events.length || this.frames.some(f => !f.done) ? 'horizon' : 'quiescent'), timeNs: this.time, steps: this.steps, sources: this.models.map(m => ({ uri: AstUtils.getDocument(m).uri.toString(), text: AstUtils.getDocument(m).textDocument.getText() })), trace: this.trace, stores: Object.fromEntries([...this.components].map(([path, c]) => [path, Object.fromEntries([...c.store].map(([n, v]) => [n, plain(v.value)]))])), machines: this.machines, deployments: this.deployments };
     }
-    private place(name: string): void {
-        const d = this.models.flatMap(m => m.packages.flatMap(p => p.elements.filter(a.isDeployment))).find(d => identity(d) === name && d.root.ref === this.root);
+    /** Applies the one deployment of a top-level occurrence, if it has one, to that occurrence's tree. */
+    private place(root: a.ComponentUsage): void {
+        const found = this.models.flatMap(m => m.packages.flatMap(p => p.elements.filter(a.isDeployment))).filter(d => d.root.ref === root);
+        if (found.length > 1)
+            throw new Error(`At most one deployment per top-level occurrence: ${identity(root)} has ${found.map(d => identity(d)).join(', ')}.`);
+        const d = found[0];
         if (!d)
-            throw new Error(`Unknown deployment ${name}`);
-        for (const path of this.components.keys()) {
-            const matches = d.placements.filter(p => !p.target || path === `${this.root.name}.${p.target}` || path.startsWith(`${this.root.name}.${p.target}.`) || path.startsWith(`${this.root.name}.${p.target}[`)).sort((a, b) => (b.target?.length ?? 0) - (a.target?.length ?? 0));
+            return;
+        for (const path of [...this.components.keys()].filter(p => p === root.name || p.startsWith(`${root.name}.`))) {
+            const matches = d.placements.filter(p => !p.target || path === `${root.name}.${p.target}` || path.startsWith(`${root.name}.${p.target}.`) || path.startsWith(`${root.name}.${p.target}[`)).sort((a, b) => (b.target?.length ?? 0) - (a.target?.length ?? 0));
             this.deployments[path] = matches[0] ? `${identity(d.platform.ref!)}.${matches[0].node}` : null;
         }
     }
@@ -317,10 +340,10 @@ class Interpreter {
         if (this.frames.filter(f => !f.done && !f.started).length >= this.options.maxPending)
             throw new ContractViolation('ActivationOverflow');
         const op = members(c.structure).filter(isExecutable).find(x => x.name === entry.operation)!;
-        const f: Frame = { id: this.id('a'), c, op, entry, released: this.time, iterator: undefined!, snapshot: new Map(), done: false, suspended: false, started: false, token: 0, watches: [], correlation: message?.correlation };
+        const f: Frame = { id: this.id('a'), c, op, entry, released: this.time, iterator: undefined!, snapshot: new Map(), done: false, suspended: false, started: false, token: 0, watches: [], correlation: message?.correlation, at: entry };
         f.iterator = this.activate(f, message);
         this.frames.push(f);
-        this.log('release', `${c.path}.${op.name}`, { activation: f.id, cause: entry.kind, predecessorActivation: predecessor?.id });
+        this.log('release', `${c.path}.${op.name}`, { activation: f.id, source: this.source(entry), cause: entry.kind, predecessorActivation: predecessor?.id });
         const deadline = entry.deadline ? nanos(entry.deadline) : entry.period ? nanos(entry.period) : undefined;
         if (deadline)
             this.at(this.time + deadline, 0, () => { if (!f.done)
@@ -338,7 +361,7 @@ class Interpreter {
             if (!f.started) {
                 f.started = true;
                 f.snapshot = new Map([...f.c.store].map(([n, v]) => [n, copy(v)]));
-                this.log('dispatch', `${f.c.path}.${f.op.name}`, { activation: f.id, concurrent: f.entry.concurrent });
+                this.log('dispatch', `${f.c.path}.${f.op.name}`, { activation: f.id, source: this.source(f.entry), concurrent: f.entry.concurrent });
             }
             if (!f.entry.concurrent)
                 f.c.lock = f;
@@ -383,7 +406,7 @@ class Interpreter {
             f.suspended = true;
             this.unlock(f);
             const token = ++f.token;
-            this.log(y.kind === 'request' ? 'requestWait' : y.kind === 'receive' ? 'receiveWait' : 'wait', `${f.c.path}.${f.op.name}`, { activation: f.id });
+            this.log(y.kind === 'request' ? 'requestWait' : y.kind === 'receive' ? 'receiveWait' : 'wait', `${f.c.path}.${f.op.name}`, { activation: f.id, source: this.source(f.at) });
             if (y.kind === 'wait')
                 this.at(this.time + y.duration, 2, () => { if (f.token === token)
                     this.resume(f); }, () => f.token === token && !f.done);
@@ -406,7 +429,7 @@ class Interpreter {
         for (const w of f.watches)
             w.active = false;
         this.unlock(f);
-        this.log(failure ? 'failure' : 'complete', `${f.c.path}.${f.op.name}`, { activation: f.id, value: value ? plain(value) : undefined, reason: failure });
+        this.log(failure ? 'failure' : 'complete', `${f.c.path}.${f.op.name}`, { activation: f.id, source: failure ? this.source(f.at) : undefined, value: value ? plain(value) : undefined, reason: failure });
         if (f.correlation)
             this.respond(f.correlation, { value, failure: failure ? 'remoteFailure' : undefined, out: (f as Frame & {
                     out?: Value[];
@@ -436,6 +459,7 @@ class Interpreter {
         const sig = signature(op)!, local: Environment = new Map();
         sig.parameters.forEach((p, i) => bind(local, p.name, typeKey(p.type), args[i] ?? this.zero(typeKey(p.type))));
         let result = voidValue();
+        const at = f.at;
         try {
             if (identity(sig).startsWith('Swaml::Math::') && ['floor', 'round', 'trunc', 'length'].includes(sig.name))
                 return this.intrinsic(sig.name, args);
@@ -449,6 +473,8 @@ class Interpreter {
                 throw e;
             result = e.value;
         }
+        // A failure keeps f.at on the failing statement; a successful callee hands execution back to the caller's statement.
+        f.at = at;
         result = widen(result, typeKey(sig.result));
         if (op === f.op)
             (f as Frame & {
@@ -511,7 +537,8 @@ class Interpreter {
             catch (error) {
                 if (!(error instanceof RuntimeFault))
                     throw error;
-                this.log('caught', f.op ? `${f.c.path}.${f.op.name}` : f.c.path, { activation: f.id, reason: error.code });
+                f.at = e;
+                this.log('caught', f.op ? `${f.c.path}.${f.op.name}` : f.c.path, { activation: f.id, source: this.source(e), reason: error.code });
                 return e.fallback ? widen(yield* this.evaluate(e.fallback, f, local),expressionTypes.get(e)!) : voidValue();
             }
         }
@@ -532,7 +559,7 @@ class Interpreter {
             if (reply?.failure)
                 throw new RuntimeFault(reply.failure);
             outs.forEach((n, i) => { if (n && reply?.out?.[i])
-                this.assign(f, local, n, reply.out[i]); });
+                this.assign(f, local, n, reply.out[i], e); });
             return widen(reply?.value ?? voidValue(), typeKey(sig?.result));
         }
         if (a.isUnaryExpression(e)) {
@@ -548,6 +575,7 @@ class Interpreter {
         const local = new Map(parent);
         for (const s of b.statements) {
             this.fuel();
+            f.at = s;
             if (a.isLocalVariable(s))
                 bind(local, s.name, typeKey(s.type), yield* this.evaluate(s.value, f, local));
             else if (a.isAssign(s))
@@ -579,6 +607,7 @@ class Interpreter {
                 while ((yield* this.evaluate(s.condition, f, loop)).data) {
                     this.fuel();
                     yield* this.block(s.body, f, loop);
+                    f.at = s.update;
                     this.assign(f, loop, s.update.target, yield* this.evaluate(s.update.value, f, loop));
                 }
             }
@@ -605,7 +634,7 @@ class Interpreter {
             else if (a.isInterruptible(s)) {
                 const watch: Watch = { node: s, frame: f, active: true };
                 f.watches.push(watch);
-                this.log('arm', `${f.c.path}.${s.endpoint}`, { activation: f.id });
+                this.log('arm', `${f.c.path}.${s.endpoint}`, { activation: f.id, source: this.source(s) });
                 try {
                     yield* this.block(s.body, f, local);
                 }
@@ -627,8 +656,13 @@ class Interpreter {
                     args.push(yield* this.evaluate(e, f, local));
                 this.emit(f, s.endpoint, args, s.kind === 'send' ? 'attribute' : 'event',s);
             }
-            else if (a.isAssert(s) && !(yield* this.evaluate(s.condition, f, local)).data)
-                throw new RuntimeFault('Assertion');
+            else if (a.isAssert(s)) {
+                const passed = !!(yield* this.evaluate(s.condition, f, local)).data;
+                f.at = s;
+                this.log('assert', `${f.c.path}.${f.op.name}`, { activation: f.id, source: this.source(s), passed });
+                if (!passed)
+                    throw new RuntimeFault('Assertion');
+            }
             else if (a.isFail(s))
                 throw new RuntimeFault('Failure', s.reason);
             yield { kind: 'step' };
@@ -686,8 +720,9 @@ class Interpreter {
         const types = declared.kind === 'attribute' ? [typeKey(declared.type)] : declared.parameters.map(p => typeKey(p.type));
         args = args.map((v, i) => widen(v, types[i]));
         const [port, member] = endpointName.split('.'), source = this.leaf(`${f.c.path}.${port}`);
-        this.log(kind === 'event' ? 'publish' : 'send', `${source}.${member}`, { activation: f.id, emitter:{declaration:identity(owner(site,isExecutable)!),uri:AstUtils.getDocument(site).uri.toString(),range:site.$cstNode!.range}, args: args.map(plain) });
-        for (const route of this.routes.filter(r => r.endpoints.includes(source))){const target=route.endpoints.find(p=>p!==source)!,destination=this.ports.get(target),memberTarget=destination&&portMembers(destination.p).find(m=>m.name===member&&m.kind===kind&&direction(destination.p,m)==='requires');if(!memberTarget)continue;this.offer({id:this.id('m'),route,source,target,member,args:copy(args),emitted:this.time,kind});}
+        const origin = this.source(site);
+        this.log(kind === 'event' ? 'publish' : 'send', `${source}.${member}`, { activation: f.id, source: origin, emitter:{declaration:identity(owner(site,isExecutable)!),uri:AstUtils.getDocument(site).uri.toString(),range:site.$cstNode!.range}, args: args.map(plain) });
+        for (const route of this.routes.filter(r => r.endpoints.includes(source))){const target=route.endpoints.find(p=>p!==source)!,destination=this.ports.get(target),memberTarget=destination&&portMembers(destination.p).find(m=>m.name===member&&m.kind===kind&&direction(destination.p,m)==='requires');if(!memberTarget)continue;this.offer({id:this.id('m'),route,source,target,member,args:copy(args),emitted:this.time,kind,origin});}
     }
     private request(f: Frame, y: Extract<Yield, {
         kind: 'request';
@@ -697,16 +732,16 @@ class Interpreter {
             this.resume(f, { failure: 'unavailable' });
             return;
         }
-        const correlation: Correlation = { id: this.id('r'), frame: f, route, state: 'pending', expiry: this.time + route.policy.requestTimeout };
+        const correlation: Correlation = { id: this.id('r'), frame: f, route, state: 'pending', expiry: this.time + route.policy.requestTimeout, origin: this.source(y.site) };
         f.request = correlation;
-        this.log('request', `${source}.${member}`, { activation: f.id, correlation: correlation.id, route: route.id, caller:y.site?{declaration:identity(owner(y.site,isExecutable)!),uri:AstUtils.getDocument(y.site).uri.toString(),range:y.site.$cstNode!.range}:undefined });
+        this.log('request', `${source}.${member}`, { activation: f.id, source: correlation.origin, correlation: correlation.id, route: route.id, caller:y.site?{declaration:identity(owner(y.site,isExecutable)!),uri:AstUtils.getDocument(y.site).uri.toString(),range:y.site.$cstNode!.range}:undefined });
         this.at(correlation.expiry, 0, () => { if (correlation.state === 'pending') {
             correlation.state = 'failed';
-            this.log('timeout', y.endpoint, { correlation: correlation.id });
+            this.log('timeout', y.endpoint, { source: correlation.origin, correlation: correlation.id });
             this.resume(f, { failure: 'timeout' });
         } }, () => correlation.state === 'pending');
         try {
-            this.offer({ id: this.id('m'), route, source, target: route.endpoints.find(p => p !== source)!, member, args: copy(y.args), emitted: this.time, correlation, kind: 'request' });
+            this.offer({ id: this.id('m'), route, source, target: route.endpoints.find(p => p !== source)!, member, args: copy(y.args), emitted: this.time, correlation, kind: 'request', origin: correlation.origin });
         }
         catch (e) {
             if (!(e instanceof RuntimeFault))
@@ -717,7 +752,7 @@ class Interpreter {
     }
     private respond(correlation: Correlation, response: Reply): void {
         if (correlation.state !== 'pending') {
-            this.log('lateReply', correlation.route.id, { correlation: correlation.id, terminal: correlation.state });
+            this.log('lateReply', correlation.route.id, { source: correlation.origin, correlation: correlation.id, terminal: correlation.state });
             return;
         }
         const request = (correlation as Correlation & {
@@ -726,7 +761,7 @@ class Interpreter {
         if (!request)
             return;
         try {
-            this.offer({ ...request, id: this.id('m'), source: request.target, target: request.source, emitted: this.time, kind: 'reply', args: [], response, correlation });
+            this.offer({ ...request, id: this.id('m'), source: request.target, target: request.source, emitted: this.time, kind: 'reply', args: [], response, correlation, origin: correlation.origin });
         }
         catch (e) {
             if (!(e instanceof RuntimeFault))
@@ -781,7 +816,7 @@ class Interpreter {
             const latency = this.options.latencyNs + (fault?.delayNs ?? 0);
             if (policy.maxLatency !== undefined && latency > policy.maxLatency)
                 throw new ContractViolation('MaxLatency');
-            this.log('offer', route.id, { message: m.id, member: m.member, correlation: m.correlation?.id, source: m.source, target: m.target });
+            this.log('offer', route.id, { source: m.origin, message: m.id, member: m.member, correlation: m.correlation?.id, sourcePort: m.source, targetPort: m.target });
             this.at(this.time + latency, 2, () => { if (!queue!.includes(m))
                 return; if (policy.maxAge !== undefined && this.time - m.emitted > policy.maxAge) {
                 queue!.splice(queue!.indexOf(m), 1);
@@ -805,16 +840,16 @@ class Interpreter {
                     this.log('discardAge', m.route.id, { message: m.id });
                     continue;
                 }
-                const remove = () => { queue.shift(); this.log('deliver', m.route.id, { message: m.id, correlation: m.correlation?.id, target: m.target }); };
+                const remove = () => { queue.shift(); this.log('deliver', m.route.id, { source: m.origin, message: m.id, correlation: m.correlation?.id, targetPort: m.target }); };
                 if (m.kind === 'reply') {
                     remove();
                     const c = m.correlation!;
                     if (c.state !== 'pending') {
-                        this.log('lateReply', m.route.id, { correlation: c.id, terminal: c.state });
+                        this.log('lateReply', m.route.id, { source: c.origin, correlation: c.id, terminal: c.state });
                         continue;
                     }
                     c.state = m.response?.failure ? 'failed' : 'succeeded';
-                    this.log('reply', m.route.id, { correlation: c.id, state: c.state });
+                    this.log('reply', m.route.id, { source: c.origin, correlation: c.id, state: c.state });
                     this.resume(c.frame, m.response);
                     continue;
                 }
