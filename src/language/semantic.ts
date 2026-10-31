@@ -397,7 +397,8 @@ export function runTarget(models: readonly a.Model[], name: string): RunTarget {
         throw new Error(`Unknown run target ${name}; select a package or Package::component, a top-level software component occurrence.`);
     return matches[0];
 }
-const statementSlot = (n: AstNode) => n.$containerProperty === 'statements' || a.isFor(n.$container) && (n.$containerProperty === 'initializer' || n.$containerProperty === 'update');
+// States and transitions have identities of their own, for state waits, reactions and guards.
+const statementSlot = (n: AstNode) => n.$containerProperty === 'statements' || a.isState(n) || a.isTransition(n) || a.isFor(n.$container) && (n.$containerProperty === 'initializer' || n.$containerProperty === 'update');
 const statementOwner = (n: AstNode) => isExecutable(n) || a.isScenario(n);
 /**
  * Stable source identity of the statement or schedule entry that contains a node.
@@ -408,7 +409,8 @@ const statementOwner = (n: AstNode) => isExecutable(n) || a.isScenario(n);
  * executable's body: a statement contributes its index in the enclosing statement list, and every
  * other step contributes its slot name, followed by an index for list slots (then, otherwise, body,
  * branches/N, timeoutBody, handler, initializer, update, states/N, actions/N, transitions/N, effect).
- * A schedule entry is written <component identity>/schedule/N with N counting the entries the
+ * A state is itself identified as <executable>/states/N and a transition, including its guard, as
+ * <executable>/states/N/transitions/M. A schedule entry is written <component identity>/schedule/N with N counting the entries the
  * component declares. Identities follow source structure, so an edit that reorders statements
  * changes them; resolveStatement maps an identity back to its node.
  */

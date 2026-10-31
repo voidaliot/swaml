@@ -88,7 +88,7 @@ function Execution() {
     <div className="execution-grid">
       <div className="execution-description">
         <h3>What “executable” means in swa.ml</h3>
-        <p>The reference interpreter executes a validated model with a selected root and a finite time horizon. It records operation activations, routed messages, waits and state changes.</p>
+        <p>The reference interpreter executes a validated model for a selected run target and a finite time horizon. It records operation activations, routed messages, waits and state changes.</p>
         <p>In this example, the sensor operation emits a fixed reading of <code>18.5</code>. The controller computes <code>(21.0 − 18.5) × 0.1</code> and sends a command. The heater component stores <code>{model.run.stores['Demo.heater'].power}</code>.</p>
         <p className="execution-limit">These are software interactions in logical time. The example has no thermal plant model, and the interpreter assigns zero physical CPU cost. Target timing and production deployment require separate implementation and evidence.</p>
         <a className="text-link" href="./downloads/simulation.md" download>Reference execution guide <Icon name="arrow" size={16}/></a>
@@ -166,7 +166,7 @@ export default function App() {
         <div className="start-grid">
           <article><span className="concern-index">01 / BUILD</span><h3>Build the reference tools</h3><p>Install the pinned dependencies, compile the tools and prepare the example’s run options.</p><Command text={'npm ci\nnpm run build\nnode scripts/build-showcase-data.mjs'} label="Copy build command"/></article>
           <article><span className="concern-index">02 / VALIDATE</span><h3>Check the source model</h3><p>Check ownership, types, routes and schedules. JSON diagnostics include source locations.</p><Command text={'node out/src/cli/main.js --json examples/02-realtime-controller.swaml'} label="Copy validation command"/></article>
-          <article><span className="concern-index">03 / EXECUTE</span><h3>Inspect a bounded run</h3><p>Run the same root to a 29 ms horizon using the supplied options. Review the trace and final stores.</p><Command text={'node out/src/cli/simulate.js Control::Demo showcase/public/downloads/controller-options.json examples/02-realtime-controller.swaml'} label="Copy execution command"/></article>
+          <article><span className="concern-index">03 / EXECUTE</span><h3>Inspect a bounded run</h3><p>Run the same run target to a 29 ms horizon using the supplied options. Review the trace and final stores.</p><Command text={'node out/src/cli/simulate.js Control::Demo showcase/public/downloads/controller-options.json examples/02-realtime-controller.swaml'} label="Copy execution command"/></article>
         </div>
         <div className="resource-grid">
           <article><h3>Language and reference tools</h3><p>The 2.0 guides describe the syntax, modeling workflow and current implementation limits.</p><div className="resource-links"><a href="./downloads/usage-guide.md" download>Usage guide <Icon name="arrow" size={15}/></a><a href="./downloads/implementation-status.md" download>Implementation status <Icon name="arrow" size={15}/></a><a href="./downloads/controller.swaml" download>Example source <Icon name="arrow" size={15}/></a><a href={github} target="_blank" rel="noreferrer">Source repository <Icon name="external" size={14}/></a></div></article>

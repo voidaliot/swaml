@@ -297,3 +297,86 @@ test('swaml simulate runs the package of a one-package file or a selected target
         await rm(folder, { recursive: true, force: true });
     }
 });
+
+test('loop conditions belong to their loop statement on every iteration', async () => {
+    const m = await models(`package S {
+  component def C {
+    attribute d: int = 1;
+    attribute e: int = 1;
+    attribute n: int = 0;
+    operation go() { while (10 / d > 0, 5 times) { n = n + 1; d = 0; } }
+    operation stop() { until (10 / e > 100, 5 times) { e = 0; } }
+    operation f() { for (var i: int = 0; 10 / (1 - i) > 0; i = i + 1) { n = n + 1; } }
+    schedule { on start go(); on start stop(); on start f(); }
+  }
+  component c: C;
+}`);
+    const r = simulate(m, 'S', { untilNs: 1000 });
+    assert.deepEqual(kinds(r, 'failure').map(e => [e.subject, e.source]), [['c.go', 'S::C.go/0'], ['c.stop', 'S::C.stop/0'], ['c.f', 'S::C.f/0']]);
+    assert.ok(r.trace.some(e => e.kind === 'write' && e.source === 'S::C.f/0/update'));
+});
+
+test('state waits belong to their state and guard failures to their transition', async () => {
+    const m = await models(`package M {
+  port def P { provides event go(v: int); }
+  component def C {
+    reversed port p: P;
+    attribute n: int = 0;
+    operation m() {
+      initial A;
+      state A { after 1 ms to B { n = 1; } }
+      state B { on receive p.go(v) when (10 / v > 0) to Done { n = v; } }
+      final state Done { }
+    }
+    schedule { on start m(); }
+  }
+  component def D { port p: P; operation emit() { wait 2 ms; publish p.go(0); } schedule { on start emit(); } }
+  component c: C;
+  component d: D;
+  connect (d.p, c.p);
+}`);
+    const r = simulate(m, 'M', { untilNs: 10000000 });
+    assert.deepEqual(r.trace.filter(e => e.subject === 'c.m' && ['state', 'receiveWait', 'failure'].includes(e.kind)).map(e => [e.kind, e.source]), [
+        ['state', 'M::C.m/states/0'],
+        ['receiveWait', 'M::C.m/states/0'],
+        ['state', 'M::C.m/states/1'],
+        ['receiveWait', 'M::C.m/states/1'],
+        ['failure', 'M::C.m/states/1/transitions/0']
+    ]);
+    assert.ok(r.trace.some(e => e.kind === 'write' && e.source === 'M::C.m/states/0/transitions/0/effect/0'));
+    for (const e of r.trace.filter(e => e.source))
+        assert.equal(statementIdentity(resolveStatement(m, e.source!)!), e.source);
+});
+
+test('message lifecycle observations name the emitting statement', async () => {
+    const m = await models(`package L {
+  import Swaml::Qos;
+  qos def One: Policy { delivery = Delivery.atMostOnce; ordering = Ordering.fifo; capacity = 1; overflow = Overflow.dropNewest; requestTimeout = 1s; }
+  port def P { provides event e(); }
+  component def S { port p: P; operation go() { publish p.e(); publish p.e(); } schedule { on start go(); } }
+  component def R { reversed port p: P; operation take() { } schedule { on receive p.e() take(); } }
+  component s: S;
+  component r: R;
+  connect: One (s.p, r.p);
+}`);
+    const r = simulate(m, 'L', { untilNs: 1000, faults: [{ offer: 1, kind: 'drop' }] });
+    assert.equal(kinds(r, 'drop')[0].source, 'L::S.go/0');
+    assert.ok(kinds(r, 'offer').length);
+    for (const e of [...kinds(r, 'overflow'), ...kinds(r, 'offer')])
+        assert.match(String(e.source), /^L::S\.go\/[01]$/);
+});
+
+test('the earlier deployment does not depend on document order', async () => {
+    const home = `package Placed {
+  import Swaml::Platform;
+  component def Worker { }
+  component left: Worker;
+  component Board: Platform { component a: Node; }
+  deployment Home of left on Board { deploy on a; }
+}`, away = 'package Other { import Placed; import Swaml::Platform; deployment Away of Placed::left on Placed::Board { deploy on a; } }';
+    for (const order of [[home, away], [away, home]]) {
+        const w = await workspace(order);
+        const found = w.docs.flatMap(d => (d.diagnostics ?? []).filter(x => x.code === 'SW2009').map(x => String(x.message)));
+        assert.deepEqual(found, ['At most one deployment per top-level occurrence: left is already deployed by Placed::Home.']);
+    }
+});

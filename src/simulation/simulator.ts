@@ -594,17 +594,21 @@ class Interpreter {
                 const limit = s.limit ? widen(yield* this.evaluate(s.limit, f, local), 'uint').data as number : Infinity;
                 for (let i = 0; i < limit; i++) {
                     this.fuel();
+                    // The body moves f.at; a condition belongs to the loop statement again.
+                    f.at = s;
                     if (a.isWhile(s) && !(yield* this.evaluate(s.condition, f, local)).data)
                         break;
                     yield* this.block(s.body, f, local);
+                    f.at = s;
                     if (a.isUntil(s) && (yield* this.evaluate(s.condition, f, local)).data)
                         break;
                 }
             }
             else if (a.isFor(s)) {
                 const loop = new Map(local);
+                f.at = s.initializer;
                 bind(loop, s.initializer.name, typeKey(s.initializer.type), yield* this.evaluate(s.initializer.value, f, loop));
-                while ((yield* this.evaluate(s.condition, f, loop)).data) {
+                while ((f.at = s, yield* this.evaluate(s.condition, f, loop)).data) {
                     this.fuel();
                     yield* this.block(s.body, f, loop);
                     f.at = s.update;
@@ -676,7 +680,8 @@ class Interpreter {
         while (true) {
             const entered = this.time;
             this.machines[key] = { state: state.name, live: !state.final };
-            this.log('state', key, { state: state.name, activation: f.id });
+            f.at = state;
+            this.log('state', key, { state: state.name, activation: f.id, source: this.source(state) });
             for (const action of state.actions.filter(x => x.kind === 'entry'))
                 yield* this.block(action.body, f, local);
             if (state.final)
@@ -688,6 +693,8 @@ class Interpreter {
                 if (expires !== undefined && !Number.isSafeInteger(expires))
                     throw new ContractViolation('ClockRange');
                 const delay = expires === undefined ? undefined : Math.max(0, expires - this.time);
+                // Entry actions move f.at; the wait and its selection belong to the state.
+                f.at = state;
                 // Entry may suspend past expiry. Select the elapsed timer before queued input.
                 const reply: Reply | undefined = delay === 0 ? undefined : yield { kind: 'receive', branches: state.transitions, timeout: delay };
                 input = reply?.input;
@@ -696,13 +703,14 @@ class Interpreter {
                     const scope = new Map(local);
                     if (input)
                         this.bindInputs(scope, t.bindings, input);
+                    f.at = t;
                     if (!t.guard || (yield* this.evaluate(t.guard, f, scope)).data) {
                         selected = t;
                         break;
                     }
                 }
                 if (!selected)
-                    this.log('discardInput', key, { activation: f.id, reason: 'noEnabledTransition' });
+                    this.log('discardInput', key, { activation: f.id, source: input?.origin ?? this.source(state), reason: 'noEnabledTransition' });
             }
             for (const action of state.actions.filter(x => x.kind === 'exit'))
                 yield* this.block(action.body, f, local);
@@ -780,11 +788,11 @@ class Interpreter {
         const admit = (): boolean => {
             if (message.kind === 'attribute') {
                 if (queue.length)
-                    this.log('replaceAttribute', route.id, { count: queue.length });
+                    this.log('replaceAttribute', route.id, { source: message.origin, count: queue.length });
                 queue.length = 0;
             }
             else if (queue.length >= policy.capacity) {
-                this.log('overflow', route.id, { policy: policy.overflow, member: message.member });
+                this.log('overflow', route.id, { source: message.origin, policy: policy.overflow, member: message.member });
                 if (policy.overflow === 'reject')
                     throw new RuntimeFault('rejected');
                 if (policy.overflow === 'dropNewest')
@@ -800,12 +808,12 @@ class Interpreter {
         if (fault?.kind === 'transport')
             throw new RuntimeFault('transport');
         if (fault?.kind === 'drop' && policy.delivery !== 'atLeastOnce') {
-            this.log('drop', route.id, { message: message.id });
+            this.log('drop', route.id, { source: message.origin, message: message.id });
             return;
         }
         if (fault?.kind === 'drop' && policy.delivery === 'atLeastOnce') {
-            this.log('drop', route.id, { message: message.id, attempt: 1 });
-            this.log('retry', route.id, { message: message.id, attempt: 2 });
+            this.log('drop', route.id, { source: message.origin, message: message.id, attempt: 1 });
+            this.log('retry', route.id, { source: message.origin, message: message.id, attempt: 2 });
         }
         const copies = fault?.kind === 'duplicate' && policy.delivery !== 'atMostOnce' ? 2 : 1;
         for (let i = 0; i < copies; i++) {
@@ -820,7 +828,7 @@ class Interpreter {
             this.at(this.time + latency, 2, () => { if (!queue!.includes(m))
                 return; if (policy.maxAge !== undefined && this.time - m.emitted > policy.maxAge) {
                 queue!.splice(queue!.indexOf(m), 1);
-                this.log('discardAge', route.id, { message: m.id });
+                this.log('discardAge', route.id, { source: m.origin, message: m.id });
                 return;
             } (m as Message & {
                 ready: boolean;
@@ -837,7 +845,7 @@ class Interpreter {
                     break;
                 if (m.route.policy.maxAge !== undefined && this.time - m.emitted > m.route.policy.maxAge) {
                     queue.shift();
-                    this.log('discardAge', m.route.id, { message: m.id });
+                    this.log('discardAge', m.route.id, { source: m.origin, message: m.id });
                     continue;
                 }
                 const remove = () => { queue.shift(); this.log('deliver', m.route.id, { source: m.origin, message: m.id, correlation: m.correlation?.id, targetPort: m.target }); };
@@ -885,10 +893,10 @@ class Interpreter {
                     watch.active = false;
                     if (f.request?.state === 'pending') {
                         f.request.state = 'interrupted';
-                        this.log('cancelRequest', endpointName, { correlation: f.request.id });
+                        this.log('cancelRequest', endpointName, { source: f.request.origin, correlation: f.request.id });
                     }
                     f.interrupted = new InterruptSignal(watch, { ...m, member: endpointName });
-                    this.log('interrupt', endpointName, { activation: f.id });
+                    this.log('interrupt', endpointName, { activation: f.id, source: m.origin, region: this.source(watch.node) });
                     this.resume(f);
                     continue;
                 }
@@ -906,7 +914,7 @@ class Interpreter {
                 const inactive = !!stateOwner || members(c.structure).filter(isExecutable).some(op => body(op) && nodes(body(op)!).some(n => a.isInterruptible(n) && n.endpoint === endpointName));
                 if (inactive) {
                     remove();
-                    this.log('discardInput', endpointName, { reason: 'inactiveOwner' });
+                    this.log('discardInput', endpointName, { source: m.origin, reason: 'inactiveOwner' });
                     continue;
                 }
                 break;

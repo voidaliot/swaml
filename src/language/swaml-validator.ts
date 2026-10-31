@@ -825,7 +825,9 @@ export class SwamlValidator {
     private deployment(d: a.Deployment): void {
         const root = d.root.ref, platform = d.platform.ref;
         // A run applies each top-level occurrence's deployment, so an occurrence has at most one.
-        const earlier = root && this.models.flatMap(m => m.packages.flatMap(p => p.elements.filter(a.isDeployment))).filter(x => x.root.ref === root);
+        // A stable order, independent of document loading: the root's own package first, then document URI, then offset.
+        const home = root && owner(root, a.isPackage), rank = (x: a.Deployment) => [owner(x, a.isPackage) === home ? 0 : 1, AstUtils.getDocument(x).uri.toString(), x.$cstNode?.offset ?? 0] as const;
+        const earlier = root && this.models.flatMap(m => m.packages.flatMap(p => p.elements.filter(a.isDeployment))).filter(x => x.root.ref === root).sort((x, y) => { const [p, q] = [rank(x), rank(y)]; return p[0] - q[0] || (p[1] < q[1] ? -1 : p[1] > q[1] ? 1 : 0) || p[2] - q[2]; });
         if (earlier && earlier.length > 1 && earlier[0] !== d)
             this.report(d, 'SW2009', `At most one deployment per top-level occurrence: ${root!.name} is already deployed by ${identity(earlier[0])}.`, false, this.at(d, 'root'));
         if (!root || !platform || occurrenceCount(root) > OCCURRENCE_LIMIT || occurrenceCount(platform) > OCCURRENCE_LIMIT)
