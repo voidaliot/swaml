@@ -2,24 +2,27 @@
   "cases": [
     {
       "name": "ControlLoop",
-      "kind": "verificationCase",
-      "steps": [
-        {
-          "name": "measured",
-          "kind": "send",
-          "source": "sensor.reading.temperature",
-          "target": "controller.reading.temperature",
-          "via": "samples"
-        },
-        {
-          "name": "applied",
-          "kind": "publish",
-          "source": "controller.command.set",
-          "target": "heater.command.set",
-          "via": "commands",
-          "after": "measured"
-        }
+      "kind": "test",
+      "subject": "Demo",
+      "verifies": [
+        "Responsive"
       ]
+    }
+  ],
+  "sequence": [
+    {
+      "member": "temperature",
+      "source": "sensor.reading",
+      "target": "controller.reading",
+      "via": "samples",
+      "timeNs": 11000000
+    },
+    {
+      "member": "set",
+      "source": "controller.command",
+      "target": "heater.command",
+      "via": "commands",
+      "timeNs": 11000000
     }
   ],
   "requirements": [
@@ -48,8 +51,8 @@
   "edition": "2.0",
   "status": "released",
   "model": "examples/02-realtime-controller.swaml",
-  "source": "package Control {\n  import Swaml::Views;\n  port def Temperature {\n    provides attribute temperature: real;\n  }\n  port def Commands {\n    provides event set(value: real);\n  }\n  component def Sensor {\n    port reading: Temperature;\n    operation sample() {\n      wait 1ms;\n      send reading.temperature(18.5);\n    }\n    schedule {\n      on every 10ms sample();\n    }\n  }\n  component def Controller {\n    reversed port reading: Temperature;\n    port command: Commands;\n    attribute target: real = 21.0;\n    operation regulate(measured: real) {\n      var power: real = (target - measured) * 0.1;\n      publish command.set(power);\n    }\n    schedule {\n      on receive reading.temperature(t) regulate(t) deadline 5ms;\n    }\n  }\n  component def Heater {\n    reversed port command: Commands;\n    attribute power: real = 0.0;\n    operation apply(value: real) {\n      power = value;\n    }\n    schedule {\n      on receive command.set(value) apply(value);\n    }\n  }\n  component Demo {\n    component sensor: Sensor;\n    component controller: Controller;\n    component heater: Heater;\n    connect samples (sensor.reading, controller.reading);\n    connect commands (controller.command, heater.command);\n    verification case ControlLoop {\n      verify Responsive;\n      send measured from sensor.reading.temperature to controller.reading.temperature via samples;\n      publish applied from controller.command.set to heater.command.set via commands after measured;\n    }\n  }\n  requirement Responsive {\n    attribute limitMs: uint = 5;\n  }\n  satisfy Responsive of Demo.controller;\n  view overview: General of Demo;\n  view intent: Case of Demo.ControlLoop;\n  view sequence: Sequence of Demo.ControlLoop;\n  view inventory: Grid of Demo;\n  view architecture: Interconnect of Demo;\n  view logic: Flow of Demo.controller.regulate;\n  view timing: Timing of Demo.sensor.sample;\n}\n",
-  "sha256": "21966c4dcaa3baed22982df774411dfeda2082483ddfee888efa5f60990689e1",
+  "source": "package Control {\n  import Swaml::Views;\n  port def Temperature {\n    provides attribute temperature: real;\n  }\n  port def Commands {\n    provides event set(value: real);\n  }\n  component def Sensor {\n    port reading: Temperature;\n    operation sample() {\n      wait 1ms;\n      send reading.temperature(18.5);\n    }\n    schedule {\n      on every 10ms sample();\n    }\n  }\n  component def Controller {\n    reversed port reading: Temperature;\n    port command: Commands;\n    attribute target: real = 21.0;\n    operation regulate(measured: real) {\n      var power: real = (target - measured) * 0.1;\n      publish command.set(power);\n    }\n    schedule {\n      on receive reading.temperature(t) regulate(t) deadline 5ms;\n    }\n  }\n  component def Heater {\n    reversed port command: Commands;\n    attribute power: real = 0.0;\n    operation apply(value: real) {\n      power = value;\n    }\n    schedule {\n      on receive command.set(value) apply(value);\n    }\n  }\n  component Demo {\n    component sensor: Sensor;\n    component controller: Controller;\n    component heater: Heater;\n    connect samples (sensor.reading, controller.reading);\n    connect commands (controller.command, heater.command);\n  }\n  requirement Responsive {\n    attribute limitMs: uint = 5;\n  }\n  test ControlLoop of Demo {\n    /** A sample reaches the controller, which commands the heater within its deadline. */\n  }\n  satisfy Responsive by Demo.controller;\n  verify Responsive by ControlLoop;\n  view overview: General of Demo;\n  view intent: Case of ControlLoop;\n  view sequence: Sequence of ControlLoop;\n  view inventory: Grid of Demo;\n  view architecture: Interconnect of Demo;\n  view logic: Flow of Demo.controller.regulate;\n  view timing: Timing of Demo.sensor.sample;\n}\n",
+  "sha256": "1121d0ba54e4a8a6cb2d8efa89665dca0b84d1365547baa04b22fbdc838c3501",
   "projection": {
     "languageVersion": "2.0",
     "nodes": [
@@ -66,12 +69,12 @@
               "character": 0
             },
             "end": {
-              "line": 63,
+              "line": 62,
               "character": 1
             }
           }
         },
-        "code": "package Control {\n  import Swaml::Views;\n  port def Temperature {\n    provides attribute temperature: real;\n  }\n  port def Commands {\n    provides event set(value: real);\n  }\n  component def Sensor {\n    port reading: Temperature;\n    operation sample() {\n      wait 1ms;\n      send reading.temperature(18.5);\n    }\n    schedule {\n      on every 10ms sample();\n    }\n  }\n  component def Controller {\n    reversed port reading: Temperature;\n    port command: Commands;\n    attribute target: real = 21.0;\n    operation regulate(measured: real) {\n      var power: real = (target - measured) * 0.1;\n      publish command.set(power);\n    }\n    schedule {\n      on receive reading.temperature(t) regulate(t) deadline 5ms;\n    }\n  }\n  component def Heater {\n    reversed port command: Commands;\n    attribute power: real = 0.0;\n    operation apply(value: real) {\n      power = value;\n    }\n    schedule {\n      on receive command.set(value) apply(value);\n    }\n  }\n  component Demo {\n    component sensor: Sensor;\n    component controller: Controller;\n    component heater: Heater;\n    connect samples (sensor.reading, controller.reading);\n    connect commands (controller.command, heater.command);\n    verification case ControlLoop {\n      verify Responsive;\n      send measured from sensor.reading.temperature to controller.reading.temperature via samples;\n      publish applied from controller.command.set to heater.command.set via commands after measured;\n    }\n  }\n  requirement Responsive {\n    attribute limitMs: uint = 5;\n  }\n  satisfy Responsive of Demo.controller;\n  view overview: General of Demo;\n  view intent: Case of Demo.ControlLoop;\n  view sequence: Sequence of Demo.ControlLoop;\n  view inventory: Grid of Demo;\n  view architecture: Interconnect of Demo;\n  view logic: Flow of Demo.controller.regulate;\n  view timing: Timing of Demo.sensor.sample;\n}"
+        "code": "package Control {\n  import Swaml::Views;\n  port def Temperature {\n    provides attribute temperature: real;\n  }\n  port def Commands {\n    provides event set(value: real);\n  }\n  component def Sensor {\n    port reading: Temperature;\n    operation sample() {\n      wait 1ms;\n      send reading.temperature(18.5);\n    }\n    schedule {\n      on every 10ms sample();\n    }\n  }\n  component def Controller {\n    reversed port reading: Temperature;\n    port command: Commands;\n    attribute target: real = 21.0;\n    operation regulate(measured: real) {\n      var power: real = (target - measured) * 0.1;\n      publish command.set(power);\n    }\n    schedule {\n      on receive reading.temperature(t) regulate(t) deadline 5ms;\n    }\n  }\n  component def Heater {\n    reversed port command: Commands;\n    attribute power: real = 0.0;\n    operation apply(value: real) {\n      power = value;\n    }\n    schedule {\n      on receive command.set(value) apply(value);\n    }\n  }\n  component Demo {\n    component sensor: Sensor;\n    component controller: Controller;\n    component heater: Heater;\n    connect samples (sensor.reading, controller.reading);\n    connect commands (controller.command, heater.command);\n  }\n  requirement Responsive {\n    attribute limitMs: uint = 5;\n  }\n  test ControlLoop of Demo {\n    /** A sample reaches the controller, which commands the heater within its deadline. */\n  }\n  satisfy Responsive by Demo.controller;\n  verify Responsive by ControlLoop;\n  view overview: General of Demo;\n  view intent: Case of ControlLoop;\n  view sequence: Sequence of ControlLoop;\n  view inventory: Grid of Demo;\n  view architecture: Interconnect of Demo;\n  view logic: Flow of Demo.controller.regulate;\n  view timing: Timing of Demo.sensor.sample;\n}"
       },
       {
         "id": "Control::Temperature",
@@ -617,12 +620,12 @@
               "character": 2
             },
             "end": {
-              "line": 51,
+              "line": 46,
               "character": 3
             }
           }
         },
-        "code": "component Demo {\n    component sensor: Sensor;\n    component controller: Controller;\n    component heater: Heater;\n    connect samples (sensor.reading, controller.reading);\n    connect commands (controller.command, heater.command);\n    verification case ControlLoop {\n      verify Responsive;\n      send measured from sensor.reading.temperature to controller.reading.temperature via samples;\n      publish applied from controller.command.set to heater.command.set via commands after measured;\n    }\n  }",
+        "code": "component Demo {\n    component sensor: Sensor;\n    component controller: Controller;\n    component heater: Heater;\n    connect samples (sensor.reading, controller.reading);\n    connect commands (controller.command, heater.command);\n  }",
         "ports": [],
         "schedule": []
       },
@@ -667,69 +670,6 @@
           }
         },
         "code": "connect commands (controller.command, heater.command);"
-      },
-      {
-        "id": "Control::Demo.ControlLoop",
-        "name": "ControlLoop",
-        "kind": "verificationCase",
-        "definition": "Control::Demo.ControlLoop",
-        "owner": "Control::Demo",
-        "source": {
-          "uri": "memory:/examples/02-realtime-controller.swaml",
-          "range": {
-            "start": {
-              "line": 46,
-              "character": 4
-            },
-            "end": {
-              "line": 50,
-              "character": 5
-            }
-          }
-        },
-        "code": "verification case ControlLoop {\n      verify Responsive;\n      send measured from sensor.reading.temperature to controller.reading.temperature via samples;\n      publish applied from controller.command.set to heater.command.set via commands after measured;\n    }"
-      },
-      {
-        "id": "Control::Demo.ControlLoop.measured",
-        "name": "measured",
-        "kind": "send",
-        "definition": "Control::Demo.ControlLoop.measured",
-        "owner": "Control::Demo.ControlLoop",
-        "source": {
-          "uri": "memory:/examples/02-realtime-controller.swaml",
-          "range": {
-            "start": {
-              "line": 48,
-              "character": 6
-            },
-            "end": {
-              "line": 48,
-              "character": 98
-            }
-          }
-        },
-        "code": "send measured from sensor.reading.temperature to controller.reading.temperature via samples;"
-      },
-      {
-        "id": "Control::Demo.ControlLoop.applied",
-        "name": "applied",
-        "kind": "publish",
-        "definition": "Control::Demo.ControlLoop.applied",
-        "owner": "Control::Demo.ControlLoop",
-        "source": {
-          "uri": "memory:/examples/02-realtime-controller.swaml",
-          "range": {
-            "start": {
-              "line": 49,
-              "character": 6
-            },
-            "end": {
-              "line": 49,
-              "character": 100
-            }
-          }
-        },
-        "code": "publish applied from controller.command.set to heater.command.set via commands after measured;"
       },
       {
         "id": "Control::Demo.sensor",
@@ -1187,11 +1127,11 @@
           "uri": "memory:/examples/02-realtime-controller.swaml",
           "range": {
             "start": {
-              "line": 52,
+              "line": 47,
               "character": 2
             },
             "end": {
-              "line": 54,
+              "line": 49,
               "character": 3
             }
           }
@@ -1208,162 +1148,198 @@
           "uri": "memory:/examples/02-realtime-controller.swaml",
           "range": {
             "start": {
-              "line": 53,
+              "line": 48,
               "character": 4
             },
             "end": {
-              "line": 53,
+              "line": 48,
               "character": 32
             }
           }
         },
         "code": "attribute limitMs: uint = 5;",
         "type": "uint"
+      },
+      {
+        "id": "Control::ControlLoop",
+        "name": "ControlLoop",
+        "kind": "test",
+        "definition": "Control::ControlLoop",
+        "owner": "Control",
+        "source": {
+          "uri": "memory:/examples/02-realtime-controller.swaml",
+          "range": {
+            "start": {
+              "line": 50,
+              "character": 2
+            },
+            "end": {
+              "line": 52,
+              "character": 3
+            }
+          }
+        },
+        "code": "test ControlLoop of Demo {\n    /** A sample reaches the controller, which commands the heater within its deadline. */\n  }",
+        "doc": "A sample reaches the controller, which commands the heater within its deadline."
       }
     ],
     "edges": [
       {
-        "id": "ownership:Control:Control::Temperature:0",
+        "id": "satisfy:Control::Demo.controller:Control::Responsive:0",
+        "kind": "satisfy",
+        "source": "Control::Demo.controller",
+        "target": "Control::Responsive",
+        "label": "satisfy"
+      },
+      {
+        "id": "verify:Control::ControlLoop:Control::Responsive:1",
+        "kind": "verify",
+        "source": "Control::ControlLoop",
+        "target": "Control::Responsive",
+        "label": "verify"
+      },
+      {
+        "id": "ownership:Control:Control::Temperature:2",
         "kind": "ownership",
         "source": "Control",
         "target": "Control::Temperature",
         "label": "port"
       },
       {
-        "id": "ownership:Control::Temperature:Control::Temperature.temperature:1",
+        "id": "ownership:Control::Temperature:Control::Temperature.temperature:3",
         "kind": "ownership",
         "source": "Control::Temperature",
         "target": "Control::Temperature.temperature",
         "label": "attribute"
       },
       {
-        "id": "ownership:Control:Control::Commands:2",
+        "id": "ownership:Control:Control::Commands:4",
         "kind": "ownership",
         "source": "Control",
         "target": "Control::Commands",
         "label": "port"
       },
       {
-        "id": "ownership:Control::Commands:Control::Commands.set:3",
+        "id": "ownership:Control::Commands:Control::Commands.set:5",
         "kind": "ownership",
         "source": "Control::Commands",
         "target": "Control::Commands.set",
         "label": "event"
       },
       {
-        "id": "ownership:Control:Control::Sensor:4",
+        "id": "ownership:Control:Control::Sensor:6",
         "kind": "ownership",
         "source": "Control",
         "target": "Control::Sensor",
         "label": "component"
       },
       {
-        "id": "ownership:Control::Sensor:Control::Sensor.reading:5",
+        "id": "ownership:Control::Sensor:Control::Sensor.reading:7",
         "kind": "ownership",
         "source": "Control::Sensor",
         "target": "Control::Sensor.reading",
         "label": "port"
       },
       {
-        "id": "ownership:Control::Sensor.reading:Control::Sensor.reading.temperature:6",
+        "id": "ownership:Control::Sensor.reading:Control::Sensor.reading.temperature:8",
         "kind": "ownership",
         "source": "Control::Sensor.reading",
         "target": "Control::Sensor.reading.temperature",
         "label": "attribute"
       },
       {
-        "id": "ownership:Control::Sensor:Control::Sensor.sample:7",
+        "id": "ownership:Control::Sensor:Control::Sensor.sample:9",
         "kind": "ownership",
         "source": "Control::Sensor",
         "target": "Control::Sensor.sample",
         "label": "operation"
       },
       {
-        "id": "ownership:Control:Control::Controller:8",
+        "id": "ownership:Control:Control::Controller:10",
         "kind": "ownership",
         "source": "Control",
         "target": "Control::Controller",
         "label": "component"
       },
       {
-        "id": "ownership:Control::Controller:Control::Controller.reading:9",
+        "id": "ownership:Control::Controller:Control::Controller.reading:11",
         "kind": "ownership",
         "source": "Control::Controller",
         "target": "Control::Controller.reading",
         "label": "port"
       },
       {
-        "id": "ownership:Control::Controller.reading:Control::Controller.reading.temperature:10",
+        "id": "ownership:Control::Controller.reading:Control::Controller.reading.temperature:12",
         "kind": "ownership",
         "source": "Control::Controller.reading",
         "target": "Control::Controller.reading.temperature",
         "label": "attribute"
       },
       {
-        "id": "ownership:Control::Controller:Control::Controller.command:11",
+        "id": "ownership:Control::Controller:Control::Controller.command:13",
         "kind": "ownership",
         "source": "Control::Controller",
         "target": "Control::Controller.command",
         "label": "port"
       },
       {
-        "id": "ownership:Control::Controller.command:Control::Controller.command.set:12",
+        "id": "ownership:Control::Controller.command:Control::Controller.command.set:14",
         "kind": "ownership",
         "source": "Control::Controller.command",
         "target": "Control::Controller.command.set",
         "label": "event"
       },
       {
-        "id": "ownership:Control::Controller:Control::Controller.target:13",
+        "id": "ownership:Control::Controller:Control::Controller.target:15",
         "kind": "ownership",
         "source": "Control::Controller",
         "target": "Control::Controller.target",
         "label": "attribute"
       },
       {
-        "id": "ownership:Control::Controller:Control::Controller.regulate:14",
+        "id": "ownership:Control::Controller:Control::Controller.regulate:16",
         "kind": "ownership",
         "source": "Control::Controller",
         "target": "Control::Controller.regulate",
         "label": "operation"
       },
       {
-        "id": "ownership:Control:Control::Heater:15",
+        "id": "ownership:Control:Control::Heater:17",
         "kind": "ownership",
         "source": "Control",
         "target": "Control::Heater",
         "label": "component"
       },
       {
-        "id": "ownership:Control::Heater:Control::Heater.command:16",
+        "id": "ownership:Control::Heater:Control::Heater.command:18",
         "kind": "ownership",
         "source": "Control::Heater",
         "target": "Control::Heater.command",
         "label": "port"
       },
       {
-        "id": "ownership:Control::Heater.command:Control::Heater.command.set:17",
+        "id": "ownership:Control::Heater.command:Control::Heater.command.set:19",
         "kind": "ownership",
         "source": "Control::Heater.command",
         "target": "Control::Heater.command.set",
         "label": "event"
       },
       {
-        "id": "ownership:Control::Heater:Control::Heater.power:18",
+        "id": "ownership:Control::Heater:Control::Heater.power:20",
         "kind": "ownership",
         "source": "Control::Heater",
         "target": "Control::Heater.power",
         "label": "attribute"
       },
       {
-        "id": "ownership:Control::Heater:Control::Heater.apply:19",
+        "id": "ownership:Control::Heater:Control::Heater.apply:21",
         "kind": "ownership",
         "source": "Control::Heater",
         "target": "Control::Heater.apply",
         "label": "operation"
       },
       {
-        "id": "connection:Control::Demo.sensor.reading:Control::Demo.controller.reading:20",
+        "id": "connection:Control::Demo.sensor.reading:Control::Demo.controller.reading:22",
         "kind": "connection",
         "source": "Control::Demo.sensor.reading",
         "target": "Control::Demo.controller.reading",
@@ -1377,7 +1353,7 @@
         }
       },
       {
-        "id": "connection:Control::Demo.controller.command:Control::Demo.heater.command:21",
+        "id": "connection:Control::Demo.controller.command:Control::Demo.heater.command:23",
         "kind": "connection",
         "source": "Control::Demo.controller.command",
         "target": "Control::Demo.heater.command",
@@ -1391,179 +1367,165 @@
         }
       },
       {
-        "id": "ownership:Control:Control::Demo:22",
+        "id": "ownership:Control:Control::Demo:24",
         "kind": "ownership",
         "source": "Control",
         "target": "Control::Demo",
         "label": "component"
       },
       {
-        "id": "ownership:Control::Demo:Control::Demo.samples:23",
+        "id": "ownership:Control::Demo:Control::Demo.samples:25",
         "kind": "ownership",
         "source": "Control::Demo",
         "target": "Control::Demo.samples",
         "label": "connect"
       },
       {
-        "id": "ownership:Control::Demo:Control::Demo.commands:24",
+        "id": "ownership:Control::Demo:Control::Demo.commands:26",
         "kind": "ownership",
         "source": "Control::Demo",
         "target": "Control::Demo.commands",
         "label": "connect"
       },
       {
-        "id": "subject:Control::Demo.ControlLoop:Control::Demo:25",
-        "kind": "subject",
-        "source": "Control::Demo.ControlLoop",
-        "target": "Control::Demo",
-        "label": "subject"
-      },
-      {
-        "id": "ownership:Control::Demo:Control::Demo.ControlLoop:26",
-        "kind": "ownership",
-        "source": "Control::Demo",
-        "target": "Control::Demo.ControlLoop",
-        "label": "verificationCase"
-      },
-      {
-        "id": "ownership:Control::Demo.ControlLoop:Control::Demo.ControlLoop.measured:27",
-        "kind": "ownership",
-        "source": "Control::Demo.ControlLoop",
-        "target": "Control::Demo.ControlLoop.measured",
-        "label": "send"
-      },
-      {
-        "id": "ownership:Control::Demo.ControlLoop:Control::Demo.ControlLoop.applied:28",
-        "kind": "ownership",
-        "source": "Control::Demo.ControlLoop",
-        "target": "Control::Demo.ControlLoop.applied",
-        "label": "publish"
-      },
-      {
-        "id": "ownership:Control::Demo:Control::Demo.sensor:29",
+        "id": "ownership:Control::Demo:Control::Demo.sensor:27",
         "kind": "ownership",
         "source": "Control::Demo",
         "target": "Control::Demo.sensor",
         "label": "component"
       },
       {
-        "id": "ownership:Control::Demo.sensor:Control::Demo.sensor.reading:30",
+        "id": "ownership:Control::Demo.sensor:Control::Demo.sensor.reading:28",
         "kind": "ownership",
         "source": "Control::Demo.sensor",
         "target": "Control::Demo.sensor.reading",
         "label": "port"
       },
       {
-        "id": "ownership:Control::Demo.sensor.reading:Control::Demo.sensor.reading.temperature:31",
+        "id": "ownership:Control::Demo.sensor.reading:Control::Demo.sensor.reading.temperature:29",
         "kind": "ownership",
         "source": "Control::Demo.sensor.reading",
         "target": "Control::Demo.sensor.reading.temperature",
         "label": "attribute"
       },
       {
-        "id": "ownership:Control::Demo.sensor:Control::Demo.sensor.sample:32",
+        "id": "ownership:Control::Demo.sensor:Control::Demo.sensor.sample:30",
         "kind": "ownership",
         "source": "Control::Demo.sensor",
         "target": "Control::Demo.sensor.sample",
         "label": "operation"
       },
       {
-        "id": "ownership:Control::Demo:Control::Demo.controller:33",
+        "id": "ownership:Control::Demo:Control::Demo.controller:31",
         "kind": "ownership",
         "source": "Control::Demo",
         "target": "Control::Demo.controller",
         "label": "component"
       },
       {
-        "id": "ownership:Control::Demo.controller:Control::Demo.controller.reading:34",
+        "id": "ownership:Control::Demo.controller:Control::Demo.controller.reading:32",
         "kind": "ownership",
         "source": "Control::Demo.controller",
         "target": "Control::Demo.controller.reading",
         "label": "port"
       },
       {
-        "id": "ownership:Control::Demo.controller.reading:Control::Demo.controller.reading.temperature:35",
+        "id": "ownership:Control::Demo.controller.reading:Control::Demo.controller.reading.temperature:33",
         "kind": "ownership",
         "source": "Control::Demo.controller.reading",
         "target": "Control::Demo.controller.reading.temperature",
         "label": "attribute"
       },
       {
-        "id": "ownership:Control::Demo.controller:Control::Demo.controller.command:36",
+        "id": "ownership:Control::Demo.controller:Control::Demo.controller.command:34",
         "kind": "ownership",
         "source": "Control::Demo.controller",
         "target": "Control::Demo.controller.command",
         "label": "port"
       },
       {
-        "id": "ownership:Control::Demo.controller.command:Control::Demo.controller.command.set:37",
+        "id": "ownership:Control::Demo.controller.command:Control::Demo.controller.command.set:35",
         "kind": "ownership",
         "source": "Control::Demo.controller.command",
         "target": "Control::Demo.controller.command.set",
         "label": "event"
       },
       {
-        "id": "ownership:Control::Demo.controller:Control::Demo.controller.target:38",
+        "id": "ownership:Control::Demo.controller:Control::Demo.controller.target:36",
         "kind": "ownership",
         "source": "Control::Demo.controller",
         "target": "Control::Demo.controller.target",
         "label": "attribute"
       },
       {
-        "id": "ownership:Control::Demo.controller:Control::Demo.controller.regulate:39",
+        "id": "ownership:Control::Demo.controller:Control::Demo.controller.regulate:37",
         "kind": "ownership",
         "source": "Control::Demo.controller",
         "target": "Control::Demo.controller.regulate",
         "label": "operation"
       },
       {
-        "id": "ownership:Control::Demo:Control::Demo.heater:40",
+        "id": "ownership:Control::Demo:Control::Demo.heater:38",
         "kind": "ownership",
         "source": "Control::Demo",
         "target": "Control::Demo.heater",
         "label": "component"
       },
       {
-        "id": "ownership:Control::Demo.heater:Control::Demo.heater.command:41",
+        "id": "ownership:Control::Demo.heater:Control::Demo.heater.command:39",
         "kind": "ownership",
         "source": "Control::Demo.heater",
         "target": "Control::Demo.heater.command",
         "label": "port"
       },
       {
-        "id": "ownership:Control::Demo.heater.command:Control::Demo.heater.command.set:42",
+        "id": "ownership:Control::Demo.heater.command:Control::Demo.heater.command.set:40",
         "kind": "ownership",
         "source": "Control::Demo.heater.command",
         "target": "Control::Demo.heater.command.set",
         "label": "event"
       },
       {
-        "id": "ownership:Control::Demo.heater:Control::Demo.heater.power:43",
+        "id": "ownership:Control::Demo.heater:Control::Demo.heater.power:41",
         "kind": "ownership",
         "source": "Control::Demo.heater",
         "target": "Control::Demo.heater.power",
         "label": "attribute"
       },
       {
-        "id": "ownership:Control::Demo.heater:Control::Demo.heater.apply:44",
+        "id": "ownership:Control::Demo.heater:Control::Demo.heater.apply:42",
         "kind": "ownership",
         "source": "Control::Demo.heater",
         "target": "Control::Demo.heater.apply",
         "label": "operation"
       },
       {
-        "id": "ownership:Control:Control::Responsive:45",
+        "id": "ownership:Control:Control::Responsive:43",
         "kind": "ownership",
         "source": "Control",
         "target": "Control::Responsive",
         "label": "requirement"
       },
       {
-        "id": "ownership:Control::Responsive:Control::Responsive.limitMs:46",
+        "id": "ownership:Control::Responsive:Control::Responsive.limitMs:44",
         "kind": "ownership",
         "source": "Control::Responsive",
         "target": "Control::Responsive.limitMs",
         "label": "attribute"
+      },
+      {
+        "id": "subject:Control::ControlLoop:Control::Demo:45",
+        "kind": "subject",
+        "source": "Control::ControlLoop",
+        "target": "Control::Demo",
+        "label": "subject"
+      },
+      {
+        "id": "ownership:Control:Control::ControlLoop:46",
+        "kind": "ownership",
+        "source": "Control",
+        "target": "Control::ControlLoop",
+        "label": "test"
       }
     ]
   },

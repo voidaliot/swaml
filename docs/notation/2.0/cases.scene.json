@@ -15,7 +15,7 @@
       "kind": "text",
       "x": 26,
       "y": 36,
-      "text": "Use cases, actors and routed case steps",
+      "text": "Use cases, tests and associations",
       "size": 21
     },
     {
@@ -39,115 +39,53 @@
       "kind": "text",
       "x": 302,
       "y": 94,
-      "text": "'ATM Controller'",
+      "text": "atm : 'ATM Controller'",
       "size": 12
     },
     {
       "kind": "ellipse",
       "x": 345.0,
-      "y": 110.0,
+      "y": 106.0,
       "w": 250,
-      "h": 52,
+      "h": 48,
       "fill": "#ffffff"
     },
     {
       "kind": "text",
       "x": 416.0,
-      "y": 141,
+      "y": 135,
       "text": "'Withdraw cash'",
       "size": 13
     },
     {
       "kind": "ellipse",
-      "x": 310.0,
-      "y": 242.0,
-      "w": 170,
+      "x": 370.0,
+      "y": 182.0,
+      "w": 200,
       "h": 46,
       "fill": "#ffffff"
     },
     {
       "kind": "text",
-      "x": 351.8,
-      "y": 270,
+      "x": 426.8,
+      "y": 210,
       "text": "Authenticate",
       "size": 13
     },
     {
       "kind": "ellipse",
-      "x": 497.0,
-      "y": 242.0,
-      "w": 140,
+      "x": 370.0,
+      "y": 257.0,
+      "w": 200,
       "h": 46,
       "fill": "#ffffff"
     },
     {
       "kind": "text",
-      "x": 513.0,
-      "y": 270,
+      "x": 416.0,
+      "y": 285,
       "text": "'Print receipt'",
       "size": 13
-    },
-    {
-      "kind": "line",
-      "x1": 440,
-      "y1": 162,
-      "x2": 410,
-      "y2": 242,
-      "dash": true
-    },
-    {
-      "kind": "line",
-      "x1": 410,
-      "y1": 242,
-      "x2": 408.182,
-      "y2": 232.167,
-      "dash": false
-    },
-    {
-      "kind": "line",
-      "x1": 410,
-      "y1": 242,
-      "x2": 417.836,
-      "y2": 235.787,
-      "dash": false
-    },
-    {
-      "kind": "text",
-      "x": 433.0,
-      "y": 206.0,
-      "text": "«include»",
-      "size": 12
-    },
-    {
-      "kind": "line",
-      "x1": 560,
-      "y1": 242,
-      "x2": 520,
-      "y2": 161,
-      "dash": true
-    },
-    {
-      "kind": "line",
-      "x1": 520,
-      "y1": 161,
-      "x2": 528.416,
-      "y2": 166.401,
-      "dash": false
-    },
-    {
-      "kind": "line",
-      "x1": 520,
-      "y1": 161,
-      "x2": 519.172,
-      "y2": 170.966,
-      "dash": false
-    },
-    {
-      "kind": "text",
-      "x": 548.0,
-      "y": 205.5,
-      "text": "«extend»",
-      "size": 12
     },
     {
       "kind": "ellipse",
@@ -238,9 +176,9 @@
     },
     {
       "kind": "text",
-      "x": 753.2,
+      "x": 760.4,
       "y": 236,
-      "text": "issuer : Bank",
+      "text": "bank : Bank",
       "size": 13
     },
     {
@@ -248,15 +186,23 @@
       "x1": 144,
       "y1": 160,
       "x2": 345,
-      "y2": 136,
+      "y2": 130,
       "dash": false
     },
     {
       "kind": "line",
       "x1": 144,
       "y1": 170,
-      "x2": 312,
-      "y2": 258,
+      "x2": 370,
+      "y2": 205,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 144,
+      "y1": 180,
+      "x2": 370,
+      "y2": 280,
       "dash": false
     },
     {
@@ -264,21 +210,21 @@
       "x1": 776,
       "y1": 160,
       "x2": 595,
-      "y2": 136,
+      "y2": 130,
       "dash": false
     },
     {
       "kind": "text",
       "x": 45,
       "y": 350,
-      "text": "The owning component is the subject boundary; typed actor roles stay outside and take part through ports.",
+      "text": "The subject occurrence of the package is the boundary; associated occurrences stay outside and take part through ports.",
       "size": 13
     },
     {
       "kind": "text",
       "x": 45,
       "y": 372,
-      "text": "Solid lines associate actors; include, extend, satisfy and verify are intent, not proof.",
+      "text": "Solid lines show associate links; satisfy and verify are package links that record intent, not proof.",
       "size": 13
     }
   ]

@@ -10,7 +10,7 @@ Write operations with explicit parameter/result types. Use return for values, ex
 
 Put activation in one schedule. Use on start/every/receive/call or after same-owner operation. Select complete policy definitions where Default is unsuitable. Keep remote calls as whole initializer/assignment/statement forms, optionally in try. Recheck live attributes after suspension; use concurrent only when the transitive operation graph cannot write. Copy-back of out parameters occurs only on success.
 
-Multiplicity is literal and paths are indexed explicitly. Deployment targets are platform Node occurrences. Requirements and cases express intent; they are not proof or input drivers. Declare use case/verification case inside the component it describes: that component is the subject. Name each outside participant as a typed role, actor customer: Customer;, and write steps either between an actor and the subject's own ports or along connections inside the subject. A package use case has no subject and states intent only; relate use cases of one subject with include/extend. Quote names that contain spaces, letters outside ASCII or reserved words, such as 'Withdraw cash'. View definitions select existing identities, with geometry separate.
+Multiplicity is literal and paths are indexed explicitly. Deployment targets are platform Node occurrences. Requirements and cases express intent; they are not proof or input drivers. A package is a closed context: declare top-level component occurrences, join their ports with package connections, connect (customer.panel, atm.panel);, and write use case Name of subject { … } or test Name of subject { … } as package members, where the subject is a top-level occurrence of the same package. Write external systems and test stubs as interface-only components (ports only) and record their part with associate customer to Name;. Claims are package links: satisfy Requirement by design; and verify Requirement by Test;. Quote names that contain spaces, letters outside ASCII or reserved words, such as 'Withdraw cash'. View definitions select existing identities, with geometry separate.
 
 ## Validate–fix loop
 
@@ -35,7 +35,7 @@ Run a bounded simulation only after validation. Record source bytes/hashes, root
 | SW2004/2005 | Repair member direction/type/route/closure, emission provenance or exclusive input owner |
 | SW2006 | Correct nested scope, return/out use, effects or whole-expression suspension |
 | SW2007/2008 | Repair schedule identity/signature/after graph or ordered state ownership |
-| SW2009/2010 | Resolve occurrence/Node paths, case subject/actor membership, include/extend targets, case route/correlation or view subject |
+| SW2009/2010 | Resolve occurrence/Node paths, case subjects, associate/satisfy/verify targets in the same package, or view subject |
 | SW2011/2012 | Recheck live state after resumption; account for inactive interrupt input |
 | SW2013 | Supply complete typed policy values and safe positive durations |
 

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>swa.ml 2.0 original notation</title>
 <rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
-<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Requirements and intent links</text>
+<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Requirements and package intent links</text>
 <line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
 <rect x="45" y="110" width="330" height="190" fill="#ffffff" stroke="#171717"/>
 <rect x="45" y="110" width="330" height="34" fill="#eeeeee" stroke="#171717"/>
@@ -9,10 +9,10 @@
 <text x="57" y="190" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">one formal doc</text>
 <rect x="535" y="110" width="330" height="190" fill="#ffffff" stroke="#171717"/>
 <rect x="535" y="110" width="330" height="34" fill="#eeeeee" stroke="#171717"/>
-<text x="547" y="133" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">verification case Startup</text>
-<text x="547" y="168" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">verify Delivery</text>
-<text x="547" y="190" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">named routed publish step</text>
+<text x="547" y="133" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">test Startup of Demo</text>
+<text x="547" y="168" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">package member</text>
+<text x="547" y="190" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">verify Delivery by Startup</text>
 <line x1="375" y1="205" x2="535" y2="205" stroke="#171717" stroke-dasharray="5 4"/>
 <text x="400.0" y="193.0" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">«verify» intent</text>
-<text x="45" y="345" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">satisfy and verify links are intent; a witness requires separate evidence.</text>
+<text x="45" y="345" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">satisfy and verify are package links that record intent; a witness requires separate evidence.</text>
 </svg>

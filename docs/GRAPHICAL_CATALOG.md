@@ -182,23 +182,23 @@ swa.ml 2.0; Placement::Demo.
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 
-## Requirements and intent links
+## Requirements and package intent links
 
 swa.ml 2.0; Traceability::Delivery.
 
-![Requirements and intent links](notation/2.0/requirements.svg)
+![Requirements and package intent links](notation/2.0/requirements.svg)
 
 **Source:** [Traceability::Delivery](../examples/16-requirements-and-views.swaml). **Grammar:** Requirement, Satisfaction, Verification.
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 
-## Use cases, actors and routed case steps
+## Use cases, tests and associations
 
-swa.ml 2.0; Cash Machine::ATM Controller.Withdraw cash.
+swa.ml 2.0; Cash Machine::Withdraw cash.
 
-![Use cases, actors and routed case steps](notation/2.0/cases.svg)
+![Use cases, tests and associations](notation/2.0/cases.svg)
 
-**Source:** [Cash Machine::ATM Controller.Withdraw cash](../examples/28-use-cases.swaml). **Grammar:** Scenario, CaseKind, CaseActor, CaseRelation, ScenarioStep.
+**Source:** [Cash Machine::Withdraw cash](../examples/28-use-cases.swaml). **Grammar:** Scenario, CaseKind, Association.
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 

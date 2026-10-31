@@ -15,7 +15,7 @@
       "kind": "text",
       "x": 26,
       "y": 36,
-      "text": "Requirements and intent links",
+      "text": "Requirements and package intent links",
       "size": 21
     },
     {
@@ -87,21 +87,21 @@
       "kind": "text",
       "x": 547,
       "y": 133,
-      "text": "verification case Startup",
+      "text": "test Startup of Demo",
       "size": 14
     },
     {
       "kind": "text",
       "x": 547,
       "y": 168,
-      "text": "verify Delivery",
+      "text": "package member",
       "size": 12
     },
     {
       "kind": "text",
       "x": 547,
       "y": 190,
-      "text": "named routed publish step",
+      "text": "verify Delivery by Startup",
       "size": 12
     },
     {
@@ -123,7 +123,7 @@
       "kind": "text",
       "x": 45,
       "y": 345,
-      "text": "satisfy and verify links are intent; a witness requires separate evidence.",
+      "text": "satisfy and verify are package links that record intent; a witness requires separate evidence.",
       "size": 14
     }
   ]

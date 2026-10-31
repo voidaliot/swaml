@@ -447,7 +447,7 @@
       "kernel": [
         "Feature"
       ],
-      "semantic": "Requirement: preserve requirements and intent links, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "semantic": "Requirement: preserve requirements and package intent links, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
       "normative": "docs/spec/04-systems-and-conformance.md"
     },
     {
@@ -465,7 +465,7 @@
       "kernel": [
         "Feature"
       ],
-      "semantic": "Satisfaction: preserve requirements and intent links, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "semantic": "Satisfaction: preserve requirements and package intent links, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
       "normative": "docs/spec/04-systems-and-conformance.md"
     },
     {
@@ -474,7 +474,16 @@
       "kernel": [
         "Feature"
       ],
-      "semantic": "Verification: preserve requirements and intent links, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "semantic": "Verification: preserve requirements and package intent links, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
+    },
+    {
+      "source": "Association",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "Association: preserve use cases, tests and associations, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
       "normative": "docs/spec/04-systems-and-conformance.md"
     },
     {
@@ -483,7 +492,7 @@
       "kernel": [
         "Feature"
       ],
-      "semantic": "Scenario: preserve use cases, actors and routed case steps, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "semantic": "Scenario: preserve use cases, tests and associations, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
       "normative": "docs/spec/04-systems-and-conformance.md"
     },
     {
@@ -492,34 +501,7 @@
       "kernel": [
         "Feature"
       ],
-      "semantic": "CaseKind: preserve use cases, actors and routed case steps, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
-      "normative": "docs/spec/04-systems-and-conformance.md"
-    },
-    {
-      "source": "CaseActor",
-      "kind": "element",
-      "kernel": [
-        "Feature"
-      ],
-      "semantic": "CaseActor: preserve use cases, actors and routed case steps, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
-      "normative": "docs/spec/04-systems-and-conformance.md"
-    },
-    {
-      "source": "CaseRelation",
-      "kind": "element",
-      "kernel": [
-        "Feature"
-      ],
-      "semantic": "CaseRelation: preserve use cases, actors and routed case steps, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
-      "normative": "docs/spec/04-systems-and-conformance.md"
-    },
-    {
-      "source": "ScenarioStep",
-      "kind": "element",
-      "kernel": [
-        "Feature"
-      ],
-      "semantic": "ScenarioStep: preserve use cases, actors and routed case steps, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "semantic": "CaseKind: preserve use cases, tests and associations, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
       "normative": "docs/spec/04-systems-and-conformance.md"
     },
     {

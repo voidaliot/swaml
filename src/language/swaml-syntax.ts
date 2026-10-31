@@ -2,13 +2,13 @@ import { DefaultLexer, DefaultLexerErrorMessageProvider, DefaultValueConverter, 
 import { CONTEXTUAL_KEYWORDS, RESERVED_WORDS, decodeQuotedName, formatName } from './names.js';
 type Token = Parameters<LangiumParserErrorMessageProvider['buildMismatchTokenMessage']>[0]['actual'];
 type TokenKind = Token['tokenType'];
-/** Decodes quoted names and normalizes the two case keyword spellings. */
+/** Decodes quoted names and normalizes the two-word use case keyword to useCase. */
 export class SwamlValueConverter extends DefaultValueConverter {
     protected override runConverter(rule: GrammarAST.AbstractRule, input: string, cstNode: CstNode): ValueType {
         if (rule.name === 'UNRESTRICTED_NAME')
             return decodeQuotedName(input);
         if (rule.name === 'CaseKind')
-            return input === 'usecase' ? 'useCase' : input === 'verificationcase' ? 'verificationCase' : input;
+            return input === 'usecase' ? 'useCase' : input;
         return super.runConverter(rule, input, cstNode);
     }
 }

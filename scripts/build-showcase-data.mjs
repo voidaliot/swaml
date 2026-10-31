@@ -2,7 +2,7 @@ import {readStandardVersion} from './standard-version.mjs';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {posix} from 'node:path';
 import {createHash} from 'node:crypto';
-import {AstUtils,EmptyFileSystem,URI} from 'langium';
+import {EmptyFileSystem,URI} from 'langium';
 import {parseHelper} from 'langium/test';
 import {createSwamlServices} from '../out/src/language/swaml-module.js';
 import {isScenario,isRequirement,isOperation,isComponentDef,isWait} from '../out/src/language/generated/ast.js';
@@ -15,11 +15,13 @@ const source=await readFile(new URL('examples/02-realtime-controller.swaml',root
 const {Swaml}=createSwamlServices(EmptyFileSystem);const doc=await parseHelper(Swaml)(source,{documentUri:URI.parse('memory:///examples/02-realtime-controller.swaml'),validation:true});
 if(doc.diagnostics?.some(d=>d.severity===1))throw Error(JSON.stringify(doc.diagnostics));
 const projection=projectModel([doc.parseResult.value]);const run=simulate([doc.parseResult.value],'Control::Demo',{untilNs:29000000});
-const cases=doc.parseResult.value.packages.flatMap(p=>AstUtils.streamAllContents(p).filter(isScenario).toArray().map(c=>({name:c.name,kind:c.kind,steps:c.steps.map(s=>({name:s.name,kind:s.kind,source:s.source,target:s.target,via:s.connector,after:s.predecessor}))})));
+const cases=doc.parseResult.value.packages.flatMap(p=>p.elements.filter(isScenario).map(c=>({name:c.name,kind:c.kind,subject:c.subject?.$refText??null,verifies:p.verifications.filter(v=>v.test.ref===c).map(v=>v.requirement.$refText)})));
+// The Sequence view shows the first observed offer on each connection of the reference run.
+const sequence=run.trace.filter(t=>t.kind==='offer').filter((t,i,all)=>all.findIndex(x=>x.subject===t.subject)===i).map(t=>({member:t.member,source:t.source.split('.').slice(1).join('.'),target:t.target.split('.').slice(1).join('.'),via:t.subject.split('.').at(-1),timeNs:t.timeNs}));
 const pkg=doc.parseResult.value.packages[0],controller=pkg.elements.find(x=>isComponentDef(x)&&x.name==='Controller'),regulate=controller.members.find(x=>isOperation(x)&&x.name==='regulate');
 const requirements=pkg.elements.filter(isRequirement).map(r=>({name:r.name,attributes:r.attributes.map(a=>({name:a.name,type:a.type.primitive,value:a.value.$cstNode.text}))}));
 const flow=regulate.body.statements.map(s=>({kind:s.$type,code:s.$cstNode.text}));
-const data={cases,requirements,flow,languageVersion:standardVersion,edition:standardVersion,status:'released',model:'examples/02-realtime-controller.swaml',source,sha256:createHash('sha256').update(source).digest('hex'),projection,timing:projectOperationTiming(run),run:{profile:run.profile,root:run.root,status:run.status,untilNs:run.options.untilNs,trace:run.trace,stores:run.stores}};
+const data={cases,sequence,requirements,flow,languageVersion:standardVersion,edition:standardVersion,status:'released',model:'examples/02-realtime-controller.swaml',source,sha256:createHash('sha256').update(source).digest('hex'),projection,timing:projectOperationTiming(run),run:{profile:run.profile,root:run.root,status:run.status,untilNs:run.options.untilNs,trace:run.trace,stores:run.stores}};
 const path=new URL('showcase/src/generated/model.json',root),text=JSON.stringify(data,null,2)+'\n';
 if(check){if(await readFile(path,'utf8')!==text)throw Error('Stale site model/trace; run scripts/build-showcase-data.mjs');}
 else{await mkdir(new URL('showcase/src/generated/',root),{recursive:true});await writeFile(path,text);for(const [input,output] of [['docs/notation/2.0/ports.svg','mixed-ports.svg'],['examples/02-realtime-controller.swaml','controller.swaml'],['docs/USER_GUIDE.md','usage-guide.md'],['docs/SIMULATION.md','simulation.md'],['docs/IMPLEMENTATION_STATUS.md','implementation-status.md'],['docs/AI_GUIDE.md','ai-guide.md'],['skills/swaml-author/SKILL.md','swaml-author-SKILL.md'],['skills/swaml-validate/SKILL.md','swaml-validate-SKILL.md']]){const dest=new URL('showcase/public/downloads/'+output,root);await mkdir(new URL('showcase/public/downloads/',root),{recursive:true});let content=await readFile(new URL(input,root),'utf8');if(input.endsWith('.md'))content=content.replace(/\]\(([^)]+)\)/g,(all,target)=>/^[a-z]+:|^#/.test(target)?all:'](https://github.com/voidaliot/swaml/blob/main/'+posix.normalize(posix.join(posix.dirname(input),target))+')');await writeFile(dest,content);}}

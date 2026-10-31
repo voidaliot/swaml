@@ -1,6 +1,6 @@
 # ADR 0018: Cases belong to their subject
 
-Status: accepted for implementation, 2026-10-26. Normative change for the 2.1 standard edition; recorded under Unreleased until that edition is prepared. Supersedes the case root, subject and actor clauses of ADR 0017.
+Status: superseded by [ADR 0019](0019-package-context.md) on 2026-11-01 before the 2.1 edition was prepared. Accepted for implementation on 2026-10-26; it superseded the case root, subject and actor clauses of ADR 0017.
 
 ## Context
 
