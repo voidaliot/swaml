@@ -1698,7 +1698,10 @@
   },
   "run": {
     "profile": "swaml-reference/2.0",
-    "root": "Control::Demo",
+    "target": {
+      "kind": "component",
+      "identity": "Control::Demo"
+    },
     "status": "horizon",
     "untilNs": 29000000,
     "trace": [
@@ -1736,6 +1739,7 @@
         "kind": "release",
         "subject": "Demo.sensor.sample",
         "activation": "a1",
+        "source": "Control::Sensor/schedule/0",
         "cause": "every"
       },
       {
@@ -1744,6 +1748,7 @@
         "kind": "dispatch",
         "subject": "Demo.sensor.sample",
         "activation": "a1",
+        "source": "Control::Sensor/schedule/0",
         "concurrent": false
       },
       {
@@ -1758,7 +1763,8 @@
         "ordinal": 8,
         "kind": "wait",
         "subject": "Demo.sensor.sample",
-        "activation": "a1"
+        "activation": "a1",
+        "source": "Control::Sensor.sample/0"
       },
       {
         "timeNs": 11000000,
@@ -1773,6 +1779,7 @@
         "kind": "send",
         "subject": "Demo.sensor.reading.temperature",
         "activation": "a1",
+        "source": "Control::Sensor.sample/1",
         "emitter": {
           "declaration": "Control::Sensor.sample",
           "uri": "memory:/examples/02-realtime-controller.swaml",
@@ -1796,18 +1803,20 @@
         "ordinal": 11,
         "kind": "offer",
         "subject": "Demo.samples",
+        "source": "Control::Sensor.sample/1",
         "message": "m2",
         "member": "temperature",
-        "source": "Demo.sensor.reading",
-        "target": "Demo.controller.reading"
+        "sourcePort": "Demo.sensor.reading",
+        "targetPort": "Demo.controller.reading"
       },
       {
         "timeNs": 11000000,
         "ordinal": 12,
         "kind": "deliver",
         "subject": "Demo.samples",
+        "source": "Control::Sensor.sample/1",
         "message": "m2",
-        "target": "Demo.controller.reading"
+        "targetPort": "Demo.controller.reading"
       },
       {
         "timeNs": 11000000,
@@ -1815,6 +1824,7 @@
         "kind": "release",
         "subject": "Demo.controller.regulate",
         "activation": "a3",
+        "source": "Control::Controller/schedule/0",
         "cause": "receive"
       },
       {
@@ -1823,6 +1833,7 @@
         "kind": "dispatch",
         "subject": "Demo.controller.regulate",
         "activation": "a3",
+        "source": "Control::Controller/schedule/0",
         "concurrent": false
       },
       {
@@ -1846,6 +1857,7 @@
         "kind": "publish",
         "subject": "Demo.controller.command.set",
         "activation": "a3",
+        "source": "Control::Controller.regulate/1",
         "emitter": {
           "declaration": "Control::Controller.regulate",
           "uri": "memory:/examples/02-realtime-controller.swaml",
@@ -1869,18 +1881,20 @@
         "ordinal": 18,
         "kind": "offer",
         "subject": "Demo.commands",
+        "source": "Control::Controller.regulate/1",
         "message": "m4",
         "member": "set",
-        "source": "Demo.controller.command",
-        "target": "Demo.heater.command"
+        "sourcePort": "Demo.controller.command",
+        "targetPort": "Demo.heater.command"
       },
       {
         "timeNs": 11000000,
         "ordinal": 19,
         "kind": "deliver",
         "subject": "Demo.commands",
+        "source": "Control::Controller.regulate/1",
         "message": "m4",
-        "target": "Demo.heater.command"
+        "targetPort": "Demo.heater.command"
       },
       {
         "timeNs": 11000000,
@@ -1888,6 +1902,7 @@
         "kind": "release",
         "subject": "Demo.heater.apply",
         "activation": "a5",
+        "source": "Control::Heater/schedule/0",
         "cause": "receive"
       },
       {
@@ -1896,6 +1911,7 @@
         "kind": "dispatch",
         "subject": "Demo.heater.apply",
         "activation": "a5",
+        "source": "Control::Heater/schedule/0",
         "concurrent": false
       },
       {
@@ -1919,6 +1935,7 @@
         "kind": "write",
         "subject": "Demo.heater.power",
         "activation": "a5",
+        "source": "Control::Heater.apply/0",
         "scope": "attribute",
         "value": 0.25
       },
@@ -1943,6 +1960,7 @@
         "kind": "release",
         "subject": "Demo.sensor.sample",
         "activation": "a6",
+        "source": "Control::Sensor/schedule/0",
         "cause": "every"
       },
       {
@@ -1951,6 +1969,7 @@
         "kind": "dispatch",
         "subject": "Demo.sensor.sample",
         "activation": "a6",
+        "source": "Control::Sensor/schedule/0",
         "concurrent": false
       },
       {
@@ -1965,7 +1984,8 @@
         "ordinal": 30,
         "kind": "wait",
         "subject": "Demo.sensor.sample",
-        "activation": "a6"
+        "activation": "a6",
+        "source": "Control::Sensor.sample/0"
       },
       {
         "timeNs": 21000000,
@@ -1980,6 +2000,7 @@
         "kind": "send",
         "subject": "Demo.sensor.reading.temperature",
         "activation": "a6",
+        "source": "Control::Sensor.sample/1",
         "emitter": {
           "declaration": "Control::Sensor.sample",
           "uri": "memory:/examples/02-realtime-controller.swaml",
@@ -2003,18 +2024,20 @@
         "ordinal": 33,
         "kind": "offer",
         "subject": "Demo.samples",
+        "source": "Control::Sensor.sample/1",
         "message": "m7",
         "member": "temperature",
-        "source": "Demo.sensor.reading",
-        "target": "Demo.controller.reading"
+        "sourcePort": "Demo.sensor.reading",
+        "targetPort": "Demo.controller.reading"
       },
       {
         "timeNs": 21000000,
         "ordinal": 34,
         "kind": "deliver",
         "subject": "Demo.samples",
+        "source": "Control::Sensor.sample/1",
         "message": "m7",
-        "target": "Demo.controller.reading"
+        "targetPort": "Demo.controller.reading"
       },
       {
         "timeNs": 21000000,
@@ -2022,6 +2045,7 @@
         "kind": "release",
         "subject": "Demo.controller.regulate",
         "activation": "a8",
+        "source": "Control::Controller/schedule/0",
         "cause": "receive"
       },
       {
@@ -2030,6 +2054,7 @@
         "kind": "dispatch",
         "subject": "Demo.controller.regulate",
         "activation": "a8",
+        "source": "Control::Controller/schedule/0",
         "concurrent": false
       },
       {
@@ -2053,6 +2078,7 @@
         "kind": "publish",
         "subject": "Demo.controller.command.set",
         "activation": "a8",
+        "source": "Control::Controller.regulate/1",
         "emitter": {
           "declaration": "Control::Controller.regulate",
           "uri": "memory:/examples/02-realtime-controller.swaml",
@@ -2076,18 +2102,20 @@
         "ordinal": 40,
         "kind": "offer",
         "subject": "Demo.commands",
+        "source": "Control::Controller.regulate/1",
         "message": "m9",
         "member": "set",
-        "source": "Demo.controller.command",
-        "target": "Demo.heater.command"
+        "sourcePort": "Demo.controller.command",
+        "targetPort": "Demo.heater.command"
       },
       {
         "timeNs": 21000000,
         "ordinal": 41,
         "kind": "deliver",
         "subject": "Demo.commands",
+        "source": "Control::Controller.regulate/1",
         "message": "m9",
-        "target": "Demo.heater.command"
+        "targetPort": "Demo.heater.command"
       },
       {
         "timeNs": 21000000,
@@ -2095,6 +2123,7 @@
         "kind": "release",
         "subject": "Demo.heater.apply",
         "activation": "a10",
+        "source": "Control::Heater/schedule/0",
         "cause": "receive"
       },
       {
@@ -2103,6 +2132,7 @@
         "kind": "dispatch",
         "subject": "Demo.heater.apply",
         "activation": "a10",
+        "source": "Control::Heater/schedule/0",
         "concurrent": false
       },
       {
@@ -2126,6 +2156,7 @@
         "kind": "write",
         "subject": "Demo.heater.power",
         "activation": "a10",
+        "source": "Control::Heater.apply/0",
         "scope": "attribute",
         "value": 0.25
       },
