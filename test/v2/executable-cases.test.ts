@@ -124,7 +124,7 @@ test('a use case is a black box; a test may read and call into its subject', asy
 });
 test('a test never assigns its subject', async () => {
     await invalid(script('atm.paid = 1;'));
-    assert.ok((await errors(script('paid = 1;'), 'SW2006')).some(m => m.includes('Cannot assign paid')));
+    assert.ok((await errors(script('paid = 1;'), 'SW2006')).some(m => m.includes('Cannot assign paid') && m.includes('never assigns its subject')));
     assert.ok((await errors(script('var x: uint = 0; x = atm.paid; on receive customer.panel.cashOut(paid) { paid = 1; }'), 'SW2006')).some(m => m.includes('Cannot assign paid')));
 });
 test('on call answers with the operation result and a top-level return ends the case', async () => {
@@ -214,13 +214,22 @@ test('a failure observed in the run fails a completed script', async () => {
     assert.equal(r.observed, 'atm.remember');
     assert.equal(r.source, 'Banking::ATM.remember/0');
 });
-test('the horizon or step limit makes a case inconclusive; a stalled script fails', async () => {
+test('the first failure decides: an earlier run failure wins over a later script failure', async () => {
+    const source = script('send customer.panel.amount(5); publish customer.panel.cashRequested(); wait 3s; fail "late";').replace('try(link.authorize(requested), false)', 'link.authorize(requested)');
+    const r = await result(source);
+    assert.deepEqual([r.result, r.reason, r.observed, r.source, r.timeNs], ['fail', 'run-failure', 'atm.withdraw', 'Banking::ATM.withdraw/1', 1000000000]);
+});
+test('the horizon, the step limit or a stalled script make a case inconclusive', async () => {
     const horizon = await result(script('wait 5ms;'), 'Banking::Script', { untilNs: 1000000 });
     assert.deepEqual([horizon.result, horizon.reason, horizon.source], ['inconclusive', 'horizon', 'Banking::Script/0']);
     const limit = await result(script('var n: uint = 0; while (true) { n = n + 1; }'), 'Banking::Script', { untilNs: 1000000, maxSteps: 200 });
     assert.deepEqual([limit.result, limit.reason], ['inconclusive', 'limit']);
     const stalled = await result(script('on receive customer.panel.cashOut(paid) { }'));
-    assert.deepEqual([stalled.result, stalled.reason, stalled.source], ['fail', 'stalled', 'Banking::Script/0']);
+    assert.deepEqual([stalled.result, stalled.reason, stalled.source], ['inconclusive', 'stalled', 'Banking::Script/0']);
+    assert.equal(stalled.run!.status, 'quiescent');
+    // The same stalled script stays inconclusive when unrelated periodic work keeps the run busy.
+    const busy = await result(script('on receive customer.panel.cashOut(paid) { }').replace('operation ping() { wait 1ms; }', 'operation ping() { wait 1ms; } operation tick() { }').replace('on call panel.balance() balance(); }', 'on call panel.balance() balance(); on every 100ms tick(); }'), 'Banking::Script', { untilNs: 1000000000 });
+    assert.deepEqual([busy.result, busy.reason, busy.run!.status], ['inconclusive', 'horizon', 'horizon']);
 });
 test('an intent-only case has no checks and no run', async () => {
     const m = [(await valid(bank('use case Script of atm { /** Intent. */ } test Other { }')))
@@ -273,6 +282,9 @@ test('on call replies carry results and out values; an unanswered request times 
     const unanswered = await result(script('send customer.panel.amount(200); publish customer.panel.cashRequested(); on receive customer.panel.refused() { } or after 2s { fail "not refused"; }'));
     assert.equal(unanswered.result, 'pass', JSON.stringify(unanswered.message));
     assert.ok(unanswered.run!.trace.some(e => e.kind === 'timeout'));
+    // A failure caught by try is evidence, not a failure of the case.
+    assert.equal(unanswered.run!.outcome, 'failure-observed');
+    assert.ok(unanswered.run!.trace.some(e => e.kind === 'caught'));
     // A failure inside on call answers with a remote failure and fails the case.
     const failing = await result(script('send customer.panel.amount(200); publish customer.panel.cashRequested(); on call bank.link.authorize(amount) { assert amount == 1; return true; }'));
     assert.deepEqual([failing.result, failing.reason], ['fail', 'Assertion']);
@@ -344,6 +356,9 @@ test('swaml test prints a summary, emits JSON and fails on a failed case', async
         assert.equal(one.status, 0, one.stderr);
         assert.match(one.stdout, /1 case\(s\)/);
         assert.equal(cli('--package', 'Broken', passing, failing).status, 1);
+        const intent = JSON.parse(cli('--json', '--case', 'Banking::Intent', passing).stdout);
+        assert.ok(intent.sourceDigests.some((d: { uri: string }) => d.uri.endsWith('pass.swaml')), 'digests also when no case ran');
+        assert.equal(intent.profile, 'swaml-reference/2.0');
         assert.equal(cli('--package', 'Nowhere', passing).status, 2);
         assert.equal(cli('--until-ns', '1', '--options', opts, passing).status, 2);
         assert.equal(cli().status, 2);

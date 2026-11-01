@@ -1,11 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
-import { URI } from 'langium';
+import { AstUtils, URI } from 'langium';
 import { NodeFileSystem } from 'langium/node';
 import { createSwamlServices } from '../language/swaml-module.js';
 import type { Model } from '../language/generated/ast.js';
-import { runTests, simulate, type SimulationOptions } from '../simulation/simulator.js';
+import { REFERENCE_PROFILE, runTests, simulate, type SimulationOptions } from '../simulation/simulator.js';
 import { implementationIdentity } from './evidence.js';
 import { LANGUAGE_VERSION } from './options.js';
 /** The default horizon of swaml test: a case run stops earlier when its script completes or fails. */
@@ -98,10 +98,10 @@ export async function testCommand(args: string[]): Promise<number> {
     for (const r of results)
         summary[r.result === 'no checks' ? 'noChecks' : r.result]++;
     if (f.switches.has('--json')) {
-        const sources = results.find(r => r.run)?.run?.sources ?? [];
-        // Each case run carries the same sources; the report states them once as digests.
+        // The report states the supplied sources once as digests, also when no case ran.
+        const sources = models.map(m => AstUtils.getDocument(m)).map(d => ({ uri: d.uri.toString(), text: d.textDocument.getText() }));
         const cases = results.map(r => r.run ? { ...r, run: { ...r.run, sources: undefined } } : r);
-        console.log(JSON.stringify({ languageVersion: LANGUAGE_VERSION, profile: 'swaml-reference/2.0', options, summary, cases, implementation: await implementationIdentity(), sourceDigests: digests(sources) }, null, 2));
+        console.log(JSON.stringify({ languageVersion: LANGUAGE_VERSION, profile: REFERENCE_PROFILE, options, summary, cases, implementation: await implementationIdentity(), sourceDigests: digests(sources) }, null, 2));
     }
     else {
         for (const r of results) {

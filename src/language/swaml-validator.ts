@@ -609,7 +609,7 @@ export class SwamlValidator {
             else if (a.isAssign(s)) {
                 const cell = env.get(s.target);
                 if (!cell?.mutable)
-                    this.report(s, 'SW2006', `Cannot assign ${s.target}; inputs and const attributes are immutable.`);
+                    this.report(s, 'SW2006', this.script ? `Cannot assign ${s.target}; a case script assigns only its own locals and the out bindings of on call, and a test never assigns its subject.` : `Cannot assign ${s.target}; inputs and const attributes are immutable.`);
                 this.value(s.value, cell?.type ?? '?', env, c, op, true);
             }
             else if (a.isExpressionStatement(s)) {

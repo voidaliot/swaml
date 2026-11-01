@@ -24,8 +24,10 @@ export interface TraceEvent {
     source?: string;
     [key: string]: unknown;
 }
+/** The execution profile this reference interpreter implements; recorded by every run and test report. */
+export const REFERENCE_PROFILE = 'swaml-reference/2.0' as const;
 export interface SimulationResult {
-    profile: 'swaml-reference/2.0';
+    profile: typeof REFERENCE_PROFILE;
     /** What ran: a whole package context, or one top-level component alone with its ports open. */
     target: {
         kind: 'package' | 'component';
@@ -206,13 +208,16 @@ export interface CaseResult {
     /** The subject occurrence identity, such as Banking::atm, when the case names one. */
     subject?: string;
     /**
-     * pass: the script completed, no assert or fail failed and the run observed no failure.
-     * fail: the script failed, the run observed an uncaught failure or contract violation, or the
-     * script waits while the run can make no further progress. inconclusive: the horizon or the step
-     * limit came first. no checks: the case has no statements and records intent only.
+     * pass: the script completed, no assert or fail failed and the run observed no uncaught failure
+     * or contract violation. A failure caught by try is not one: a passing case may carry
+     * run.outcome 'failure-observed' with caught events in its trace. fail: the first failure in the
+     * run, the script's own or an uncaught failure or contract violation of the run. inconclusive:
+     * the run ended before the script completed without a failure, at the horizon, the step limit or
+     * stalled (the script waits but no further event can occur). no checks: the case has no
+     * statements and records intent only.
      */
     result: 'pass' | 'fail' | 'inconclusive' | 'no checks';
-    /** For fail and inconclusive: Assertion, Failure, a runtime failure code, run-failure, violation, stalled, horizon or limit. */
+    /** For fail: Assertion, Failure, a runtime failure code, run-failure or violation. For inconclusive: horizon, limit or stalled. */
     reason?: string;
     message?: string;
     /** The statement identity where the case failed or stopped waiting, or of the observed failure. */
@@ -249,21 +254,21 @@ function caseResult(models: a.Model[], s: a.Scenario, options: SimulationOptions
     if (!executableCase(s))
         return base;
     const p = owner(s, a.isPackage)!, interpreter = new Interpreter(models, { kind: 'package', identity: p.name, package: p, roots: softwareRoots(p) }, options, s), run = interpreter.run(), f = interpreter.caseFrame;
-    const fail = (reason: string, message: string, source?: string, extra: Partial<CaseResult> = {}): CaseResult => ({ ...base, result: 'fail', reason, message, ...(source ? { source } : {}), timeNs: run.timeNs, ...extra, run });
-    const violation = run.trace.find(t => t.kind === 'violation');
-    if (run.status === 'violation')
-        return fail('violation', `Contract violation ${String(violation?.code)}.`, f && !f.done && f.at ? statementIdentity(f.at) : undefined);
-    if (f?.failure)
-        return fail(f.failure.code, f.failure.message, f.at && statementIdentity(f.at));
-    const observed = run.trace.find(t => t.kind === 'failure');
-    if (observed)
-        return fail('run-failure', `${observed.subject} failed: ${String(observed.reason)}${observed.message ? ' (' + String(observed.message) + ')' : ''}.`, observed.source, { observed: observed.subject, timeNs: observed.timeNs });
+    const fail = (reason: string, message: string, source: string | undefined, timeNs: number, extra: Partial<CaseResult> = {}): CaseResult => ({ ...base, result: 'fail', reason, message, ...(source ? { source } : {}), timeNs, ...extra, run });
+    // The first failure in trace order decides: the script's own, an uncaught failure of another activation or a contract violation.
+    const first = run.trace.find(t => t.kind === 'failure' || t.kind === 'violation' && run.status === 'violation');
+    if (first?.kind === 'violation')
+        return fail('violation', `Contract violation ${String(first.code)}.`, f && !f.done && f.at ? statementIdentity(f.at) : undefined, first.timeNs);
+    if (first && f?.failure && first.activation === f.id)
+        return fail(f.failure.code, f.failure.message, f.at && statementIdentity(f.at), first.timeNs);
+    if (first)
+        return fail('run-failure', `${first.subject} failed: ${String(first.reason)}${first.message ? ' (' + String(first.message) + ')' : ''}.`, first.source, first.timeNs, { observed: first.subject });
     if (f?.done)
         return { ...base, result: 'pass', timeNs: run.timeNs, run };
-    const waiting = f?.at ? statementIdentity(f.at) : undefined;
-    if (run.status === 'limit' || interpreter.pending)
-        return { ...base, result: 'inconclusive', reason: run.status === 'limit' ? 'limit' : 'horizon', message: run.status === 'limit' ? 'The step limit came before the script completed.' : `The horizon of ${run.options.untilNs} ns came before the script completed.`, ...(waiting ? { source: waiting } : {}), timeNs: run.timeNs, run };
-    return fail('stalled', 'The script waits, but the run can make no further progress.', waiting);
+    // The run ended before the script completed, without a failed check.
+    const waiting = f?.at ? statementIdentity(f.at) : undefined, reason = run.status === 'limit' ? 'limit' : interpreter.pending ? 'horizon' : 'stalled';
+    const message = { limit: 'The step limit came before the script completed.', horizon: `The horizon of ${run.options.untilNs} ns came before the script completed.`, stalled: 'The script waits for input, but no further event can occur in the run.' }[reason];
+    return { ...base, result: 'inconclusive', reason, message, ...(waiting ? { source: waiting } : {}), timeNs: run.timeNs, run };
 }
 /** The executable that owns a statement: an operation, or a case script. */
 const executableOwner = (n: AstNode): n is Executable | a.Scenario => isExecutable(n) || a.isScenario(n);
@@ -450,7 +455,7 @@ class Interpreter {
             else
                 throw e;
         }
-        return { profile: 'swaml-reference/2.0', target: { kind: this.target.kind, identity: this.target.identity }, options: copy(this.options), outcome: this.stop || this.trace.some(t => t.kind === 'failure'||t.kind==='caught') ? 'failure-observed' : 'no-failure-observed', status: this.stop ?? (this.ended ? 'stopped' : this.events.length || this.frames.some(f => !f.done) ? 'horizon' : 'quiescent'), timeNs: this.time, steps: this.steps, sources: this.models.map(m => ({ uri: AstUtils.getDocument(m).uri.toString(), text: AstUtils.getDocument(m).textDocument.getText() })), trace: this.trace, stores: Object.fromEntries([...this.components].map(([path, c]) => [path, Object.fromEntries([...c.store].map(([n, v]) => [n, plain(v.value)]))])), machines: this.machines, deployments: this.deployments };
+        return { profile: REFERENCE_PROFILE, target: { kind: this.target.kind, identity: this.target.identity }, options: copy(this.options), outcome: this.stop || this.trace.some(t => t.kind === 'failure'||t.kind==='caught') ? 'failure-observed' : 'no-failure-observed', status: this.stop ?? (this.ended ? 'stopped' : this.script ? this.pending ? 'horizon' : 'quiescent' : this.events.length || this.frames.some(f => !f.done) ? 'horizon' : 'quiescent'), timeNs: this.time, steps: this.steps, sources: this.models.map(m => ({ uri: AstUtils.getDocument(m).uri.toString(), text: AstUtils.getDocument(m).textDocument.getText() })), trace: this.trace, stores: Object.fromEntries([...this.components].map(([path, c]) => [path, Object.fromEntries([...c.store].map(([n, v]) => [n, plain(v.value)]))])), machines: this.machines, deployments: this.deployments };
     }
     /** Applies the one deployment of a top-level occurrence, if it has one, to that occurrence's tree. */
     private place(root: a.ComponentUsage): void {
