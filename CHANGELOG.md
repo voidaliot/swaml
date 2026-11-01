@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Website
+
+- The website Case view draws the case subject as a dotted boundary labelled with the occurrence and its type, with use cases and tests («test») as ellipses inside it, parts that satisfy a requirement inside the boundary, associated components as stick-figure actors outside it with association lines, intent-only cases outside any boundary and labelled «satisfy» and «verify» links to requirements. The site data now records each case's subject type, associated actors and the package satisfy links. No standard or implementation version change.
+
 ## 2.1 — 2026-11-01
 
 Standard 2.1 with parser 2.1 and reference profile swaml-reference/2.1; see the [release notes](docs/RELEASE_2_1.md) for the migration from 2.0. It is incompatible with 2.0 and supplies no compatibility parser. Published 2.0.0 and 1.x artifacts are unchanged.
