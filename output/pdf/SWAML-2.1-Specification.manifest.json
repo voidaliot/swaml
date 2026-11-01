@@ -1,0 +1,1228 @@
+{
+  "release": "2.1",
+  "languageVersion": "2.1",
+  "specificationRevision": "2.1",
+  "simulationProfile": "swaml-reference/2.1",
+  "implementationRevision": "3.0.0",
+  "publicationDate": "2026-11-01",
+  "pages": 125,
+  "pdf": "SWAML-2.1-Specification.pdf",
+  "sources": [
+    {
+      "path": "docs/LANGUAGE_SPECIFICATION.md",
+      "attachmentName": "docs__LANGUAGE_SPECIFICATION.md",
+      "sha256": "7a5f519de5d0b45f097fcd872fb6da20aac15138cce65b05eac1cab065c1932f"
+    },
+    {
+      "path": "docs/spec/01-structure-and-types.md",
+      "attachmentName": "docs__spec__01-structure-and-types.md",
+      "sha256": "58f49781bffd5348ca92f9f991648cb23ab5776a068ae65fa349f22d98303762"
+    },
+    {
+      "path": "docs/spec/02-communication.md",
+      "attachmentName": "docs__spec__02-communication.md",
+      "sha256": "e0e4983d93f66f40b8337ca9a08ea520e06f1e56eee16a7172eee0cc70433fc6"
+    },
+    {
+      "path": "docs/spec/03-behavior.md",
+      "attachmentName": "docs__spec__03-behavior.md",
+      "sha256": "0248d3ddf334ba1b18510647cfa94c420d14a900231e62e5c6cccbc308425ffb"
+    },
+    {
+      "path": "docs/spec/04-systems-and-conformance.md",
+      "attachmentName": "docs__spec__04-systems-and-conformance.md",
+      "sha256": "65c87f8944daac373d9ccb551342115b77f801e3c39d259c67a9fe952ef256a4"
+    },
+    {
+      "path": "docs/spec/05-kerml-mapping.md",
+      "attachmentName": "docs__spec__05-kerml-mapping.md",
+      "sha256": "9108d94da83467bdf199d088b32b46872e894974873ab598e003953ae72f1544"
+    },
+    {
+      "path": "docs/spec/06-execution-contract.md",
+      "attachmentName": "docs__spec__06-execution-contract.md",
+      "sha256": "577215f737886a87008f70bbdeb89d45b0ec139580096516a2667493183f71c2"
+    },
+    {
+      "path": "docs/spec/07-normalized-model.md",
+      "attachmentName": "docs__spec__07-normalized-model.md",
+      "sha256": "804c35cef8fae84db175519a77c244187d57564f2878703b8192fcb2de7dc374"
+    },
+    {
+      "path": "docs/spec/08-conformance-obligations.md",
+      "attachmentName": "docs__spec__08-conformance-obligations.md",
+      "sha256": "0fa69bed147563e16923b01e96df1c0ecd9522c3f8b3fe4b447dd0349e581388"
+    },
+    {
+      "path": "docs/spec/09-formal-semantics.md",
+      "attachmentName": "docs__spec__09-formal-semantics.md",
+      "sha256": "6ef001e6a0fbc9c789b1ef5862e1d61b4cb90ae4a8b243aa48120caab03369f4"
+    },
+    {
+      "path": "docs/GRAPHICAL_NOTATION.md",
+      "attachmentName": "docs__GRAPHICAL_NOTATION.md",
+      "sha256": "72f6150ab626cdc90128446f314edf36cf9d3346b758d080813ed602a92a3c18"
+    },
+    {
+      "path": "docs/GRAPHICAL_CATALOG.md",
+      "attachmentName": "docs__GRAPHICAL_CATALOG.md",
+      "sha256": "898bf863cbdfede53a0cb97c0ab9e2f97c9c6fdd07f4f9dfde9a98144db999e3"
+    },
+    {
+      "path": "docs/RELEASE_2_1.md",
+      "attachmentName": "docs__RELEASE_2_1.md",
+      "sha256": "461c4af02354abae0439a54a410e9d75fbcfc19a922f86ada0cd7746f7c1d3e2"
+    },
+    {
+      "path": "docs/QUICK_START.md",
+      "attachmentName": "docs__QUICK_START.md",
+      "sha256": "e27e4c0a394154690c0e0b3fae889129d7f06fdeae0966bbc358fdc98f34675e"
+    },
+    {
+      "path": "docs/USER_GUIDE.md",
+      "attachmentName": "docs__USER_GUIDE.md",
+      "sha256": "f060bd04b60aa1a17b34ef815626250638b58893f6cfeead3cb055270d1e3299"
+    },
+    {
+      "path": "docs/AI_GUIDE.md",
+      "attachmentName": "docs__AI_GUIDE.md",
+      "sha256": "9d652a2374c95c6e83a2aa25879d074b3a21801769a41a85dfe329dce9600e38"
+    },
+    {
+      "path": "docs/ARCHITECTURE_PATTERNS.md",
+      "attachmentName": "docs__ARCHITECTURE_PATTERNS.md",
+      "sha256": "6809be8282ba6a300350f6b2767f517ea1ea3de5e6f2758cc65870333a9767fe"
+    },
+    {
+      "path": "docs/ONTOLOGY_AND_VIEWS.md",
+      "attachmentName": "docs__ONTOLOGY_AND_VIEWS.md",
+      "sha256": "b99da84be38a8a6e7028f114c5fe81051b14f1db36d1628350ab53c02699c543"
+    },
+    {
+      "path": "docs/SIMULATION.md",
+      "attachmentName": "docs__SIMULATION.md",
+      "sha256": "e2fe06ef297714e1f047d78d8bac74eea9ad5190ecd86e096156b12f7ae5adb4"
+    },
+    {
+      "path": "docs/REQUIREMENTS_AND_DOCUMENTATION.md",
+      "attachmentName": "docs__REQUIREMENTS_AND_DOCUMENTATION.md",
+      "sha256": "ad7ff37be4ffd3c4b5fb3842a543afe879e3eee9e589844b6e6b5fadeb6403b4"
+    },
+    {
+      "path": "docs/KEYWORD_REFERENCE.md",
+      "attachmentName": "docs__KEYWORD_REFERENCE.md",
+      "sha256": "6ed09d25754384c6c4ba12418c660b2510d35de847702760e861677479616d75"
+    },
+    {
+      "path": "docs/GRAPHICAL_EXAMPLES.md",
+      "attachmentName": "docs__GRAPHICAL_EXAMPLES.md",
+      "sha256": "bad378b38fa40de18c2f947241e3d9f93fdb405a33a38dcc249437ff1003d7a8"
+    },
+    {
+      "path": "docs/IMPLEMENTATION_STATUS.md",
+      "attachmentName": "docs__IMPLEMENTATION_STATUS.md",
+      "sha256": "8d987ff6c4b6bdef3a98fe94c0fc71bd8f1a07a4b82cdf5725d10c31ebfba0a6"
+    },
+    {
+      "path": "docs/TOOLING.md",
+      "attachmentName": "docs__TOOLING.md",
+      "sha256": "1732107ec410dca9ceb3cc0451b02763ef82e2fa8ff5f296af4a627a8a5778b5"
+    },
+    {
+      "path": "docs/VERSIONING.md",
+      "attachmentName": "docs__VERSIONING.md",
+      "sha256": "2144966cedcbcc2e7f0539937e959b481afc5bdff906cca6572ae35a3fc4a856"
+    },
+    {
+      "path": "docs/decisions/0016-swaml-2-0.md",
+      "attachmentName": "docs__decisions__0016-swaml-2-0.md",
+      "sha256": "4b6bcc1ba02d982d86247982ec075ba5fc37fed19fae45262ee50dba4dc8cc32"
+    },
+    {
+      "path": "docs/decisions/0017-readable-names-and-use-cases.md",
+      "attachmentName": "docs__decisions__0017-readable-names-and-use-cases.md",
+      "sha256": "fd19f564e1ea3193b39a44dafb61f0e7ccee5cc9520b5fe8b3a8cc1c0ef3c577"
+    },
+    {
+      "path": "docs/decisions/0019-package-context.md",
+      "attachmentName": "docs__decisions__0019-package-context.md",
+      "sha256": "f23523f8f9d9a1142bb1cec4943f39773957f837fd75b08e39da97df58e1eb33"
+    },
+    {
+      "path": "src/language/swaml.langium",
+      "attachmentName": "src__language__swaml.langium",
+      "sha256": "8197bdb5c4f233b002cc9d404d64fb604583ba1c36e1b13aeebc98d88ea867d7"
+    },
+    {
+      "path": "spec/kerml-mapping.json",
+      "attachmentName": "spec__kerml-mapping.json",
+      "sha256": "af597f0e46cd7a4f6deccef48eee7ec07a84de733e02e7755eb1fa1ae5bbe5f3"
+    },
+    {
+      "path": "examples/01-hello.swaml",
+      "attachmentName": "examples__01-hello.swaml",
+      "sha256": "558b9265ff148a0c58fc81dd6ffe55250033b52c684f07149c49230af9a48256"
+    },
+    {
+      "path": "examples/02-realtime-controller.swaml",
+      "attachmentName": "examples__02-realtime-controller.swaml",
+      "sha256": "ecc4181065146ee7c8a8532badb2d6181bed3bec2fb108ce0d1b2dd0a62e1391"
+    },
+    {
+      "path": "examples/03-service-pubsub.swaml",
+      "attachmentName": "examples__03-service-pubsub.swaml",
+      "sha256": "5c71e58701eb77284fe0021a0cd9edf1227f067add26f19259d2f37d76dac481"
+    },
+    {
+      "path": "examples/04-stateful-function.swaml",
+      "attachmentName": "examples__04-stateful-function.swaml",
+      "sha256": "bdb2beb6d6a66ca2c44f0109dde8e11d4af8063ca12fa1a1ae2e936e9c542728"
+    },
+    {
+      "path": "examples/05-values-and-flow.swaml",
+      "attachmentName": "examples__05-values-and-flow.swaml",
+      "sha256": "4098b08b5b48b01074160fa2ba450bde0da7ccbebdcb9420bf5427bf404c59d8"
+    },
+    {
+      "path": "examples/06-mixed-gateway.swaml",
+      "attachmentName": "examples__06-mixed-gateway.swaml",
+      "sha256": "1fcda428c930f122e7c85756f88002b57c28a5ac809a43577cb4c778e307ed41"
+    },
+    {
+      "path": "examples/07-client-server.swaml",
+      "attachmentName": "examples__07-client-server.swaml",
+      "sha256": "90d474d4c5cb0f3ddb468a12b0cc0f259113b10f34c3dbf10b0f29f4af88c43c"
+    },
+    {
+      "path": "examples/08-service-field.swaml",
+      "attachmentName": "examples__08-service-field.swaml",
+      "sha256": "19afbb501255e5ed7483a1a5f1de2d95ea7c6b7402a9802d1f5593591e132cca"
+    },
+    {
+      "path": "examples/09-component-roots.swaml",
+      "attachmentName": "examples__09-component-roots.swaml",
+      "sha256": "36874eefa14675f18379441294235268d72be8700eea93dd5c1b1ce13eb7312c"
+    },
+    {
+      "path": "examples/10-reusable-qos.swaml",
+      "attachmentName": "examples__10-reusable-qos.swaml",
+      "sha256": "50ef4943a394477e7b4d95f263154ac8d6b0d82daf7f4c0ef0f6e5c55ba4024b"
+    },
+    {
+      "path": "examples/11-autosar-classic.swaml",
+      "attachmentName": "examples__11-autosar-classic.swaml",
+      "sha256": "5c392940125b4d4f8bd995f7a97c648f30f7a34db03f8af6f3f187882b77c128"
+    },
+    {
+      "path": "examples/12-autosar-adaptive.swaml",
+      "attachmentName": "examples__12-autosar-adaptive.swaml",
+      "sha256": "3621c6c9037fff45f44901ac6b703dfaf1543a99fd6c26f6754e7b4fe1d53163"
+    },
+    {
+      "path": "examples/13-web-application.swaml",
+      "attachmentName": "examples__13-web-application.swaml",
+      "sha256": "6fe1d85716d812f8cea25a8d77321c0bd8d44da0d289af8dcfe20c37925759a7"
+    },
+    {
+      "path": "examples/14-cloud-service.swaml",
+      "attachmentName": "examples__14-cloud-service.swaml",
+      "sha256": "b5bb239090d2f922771a0a9eebb8feb988d6c37aa69b6ee8d2769c4cabc42a0e"
+    },
+    {
+      "path": "examples/15-component-specialization.swaml",
+      "attachmentName": "examples__15-component-specialization.swaml",
+      "sha256": "9edbb8ccbe0f71aa49a6f252126b41c90dab41b6942119ec24475b1ba52b99fc"
+    },
+    {
+      "path": "examples/16-requirements-and-views.swaml",
+      "attachmentName": "examples__16-requirements-and-views.swaml",
+      "sha256": "e5e111315df18e60c049046dca62cf05de0b678d9648023554e01d6890c1d38d"
+    },
+    {
+      "path": "examples/17-function-timing.swaml",
+      "attachmentName": "examples__17-function-timing.swaml",
+      "sha256": "c2ced1c6c550656f02a633713194cedeaee4fcfccdefe671b903b6738816a3cb"
+    },
+    {
+      "path": "examples/18-control-loops.swaml",
+      "attachmentName": "examples__18-control-loops.swaml",
+      "sha256": "31aff9d8bc4c87e0f54c2426649472227b5da243bbfc1f912c30df6e32f6bf54"
+    },
+    {
+      "path": "examples/19-interruptible-function.swaml",
+      "attachmentName": "examples__19-interruptible-function.swaml",
+      "sha256": "ee36a9c5eeddc990572adc65dbbe9ea4b1e28b2bc03956a6849fbea0ef27957f"
+    },
+    {
+      "path": "examples/20-classes-and-operations.swaml",
+      "attachmentName": "examples__20-classes-and-operations.swaml",
+      "sha256": "e0f4e654263d0d15f116019cfff40cd3922d31b46edb39e80b1775ee12100bcb"
+    },
+    {
+      "path": "examples/21-receive-and-try.swaml",
+      "attachmentName": "examples__21-receive-and-try.swaml",
+      "sha256": "1379a0071cf2c9727ed11841b200e91b7dc35906fa50c64a187e000059ab818a"
+    },
+    {
+      "path": "examples/22-platform-deployment.swaml",
+      "attachmentName": "examples__22-platform-deployment.swaml",
+      "sha256": "c94473ed416785f43b791363f2472f98061048d7938035c0e0a619253ce8178a"
+    },
+    {
+      "path": "examples/23-multiplicity.swaml",
+      "attachmentName": "examples__23-multiplicity.swaml",
+      "sha256": "db015bc1fb81fc4985129dd60cceb58bd0a9ca79aab98cb2fdd228b3378b83b5"
+    },
+    {
+      "path": "examples/24-operation-usage.swaml",
+      "attachmentName": "examples__24-operation-usage.swaml",
+      "sha256": "85df62eca03dacbfc81e6c156012800271e42f6393165ec12c4031ebce28a089"
+    },
+    {
+      "path": "examples/25-function-completion.swaml",
+      "attachmentName": "examples__25-function-completion.swaml",
+      "sha256": "7cedf60065895941b23af70156936680d3edd04389a10e8717874398ad77ed3f"
+    },
+    {
+      "path": "examples/26-boundary-forwarding.swaml",
+      "attachmentName": "examples__26-boundary-forwarding.swaml",
+      "sha256": "ab9db715c49a2d92ccefdb49eecf850455f9a66a1c70fc509cc311b23fe43ea7"
+    },
+    {
+      "path": "examples/27-mixed-port.swaml",
+      "attachmentName": "examples__27-mixed-port.swaml",
+      "sha256": "cb3dc6a756f887bd068f48894ca13d61f027f4ecc6a2142fe96adc6b7aeded99"
+    },
+    {
+      "path": "examples/28-use-cases.swaml",
+      "attachmentName": "examples__28-use-cases.swaml",
+      "sha256": "74479648ebfd983117ce9e0f3f80efa71bb804ee02ecd22a001a33916ac2248a"
+    },
+    {
+      "path": "examples/29-executable-cases.swaml",
+      "attachmentName": "examples__29-executable-cases.swaml",
+      "sha256": "6cc18fa4059f876fc848ccd80ab8d10692f4f40a8a5cb27a8c632d6088707f9f"
+    },
+    {
+      "path": "libraries/swaml-2.0.swaml",
+      "attachmentName": "libraries__swaml-2.0.swaml",
+      "sha256": "2dbff90416abd887d8ec9dc403ac794c185c86f9eed6f4b50ca0198ac16b597f"
+    },
+    {
+      "path": "LICENSE",
+      "attachmentName": "LICENSE",
+      "sha256": "24d1618025e85d72fb57a7e108712a9a12799f83aa723006abc9ce71296ec46b"
+    },
+    {
+      "path": "docs/SWAML-2.1-Reference.md",
+      "attachmentName": "docs__SWAML-2.1-Reference.md",
+      "sha256": "98e90f489d677aa86a019bf4de060735f82e865621470593de6a6095620bc715"
+    },
+    {
+      "path": "spec/standard.json",
+      "attachmentName": "spec__standard.json",
+      "sha256": "77a950f9721644be6f4c8bf02edc5304f831e755ad57c039422882987461c73e"
+    },
+    {
+      "path": "spec/keywords.json",
+      "attachmentName": "spec__keywords.json",
+      "sha256": "d64579aae454dd34ad83c544543d876d9a04e387f1af130847f1dbd6ab0e8b01"
+    },
+    {
+      "path": "spec/notation.json",
+      "attachmentName": "spec__notation.json",
+      "sha256": "e83f03d2eac3e9ecefbaaac866e22cee04451fd90d5597954d64b4a041fc01b7"
+    },
+    {
+      "path": "spec/graphical-examples.json",
+      "attachmentName": "spec__graphical-examples.json",
+      "sha256": "7c34d5af45f216f624a6495e747b75f614bffb8c08ba7e0846808fc5cc7ca42d"
+    },
+    {
+      "path": "spec/modeling-overview.json",
+      "attachmentName": "spec__modeling-overview.json",
+      "sha256": "e00522f7821837895ca53230816e440218abdd1635f0d2959c08689d57dddd11"
+    },
+    {
+      "path": "package.json",
+      "attachmentName": "package.json",
+      "sha256": "d39a6f6b602f4e14c52e8ba5212dcf695eda622e18cb607e455daafd94c6662b"
+    },
+    {
+      "path": "package-lock.json",
+      "attachmentName": "package-lock.json",
+      "sha256": "ec2ba2ff464e14d23748a769441897682ab3d693dd941374e612259987835422"
+    },
+    {
+      "path": "tsconfig.json",
+      "attachmentName": "tsconfig.json",
+      "sha256": "40eb29a184b1f8d5b4f7314f69a8aa1c6856d7c09cce0ab9b3c0992628ba92ff"
+    },
+    {
+      "path": "scripts/build-spec-pdf-2.1.py",
+      "attachmentName": "scripts__build-spec-pdf-2.1.py",
+      "sha256": "16d4f1845c87ff4bb0e5d82260c53df61258a827ebe7bfa03bd334d807bfd6aa"
+    },
+    {
+      "path": "scripts/check-spec-pdf-2.1.py",
+      "attachmentName": "scripts__check-spec-pdf-2.1.py",
+      "sha256": "a166f34c986194c60f1b0348aa91e1b8e2fd7928c6daeb64a853bda64c5875db"
+    },
+    {
+      "path": "scripts/publication_2_1_sources.py",
+      "attachmentName": "scripts__publication_2_1_sources.py",
+      "sha256": "026cf01a55900f586393556f1955b350c07a0deb7bae033a77607d865c63bb5a"
+    },
+    {
+      "path": "scripts/publication_archive.py",
+      "attachmentName": "scripts__publication_archive.py",
+      "sha256": "d37f92943cb435b96a8e9c56df89aef6c99be2230fe3f0e7e30f86d4fad397d7"
+    },
+    {
+      "path": "scripts/ci-pdf-requirements.txt",
+      "attachmentName": "scripts__ci-pdf-requirements.txt",
+      "sha256": "ac624c39500c24e0022c87da56d1545904b1f6fd8da335b9a68bf6f8f57b7157"
+    },
+    {
+      "path": "scripts/v2_scene.py",
+      "attachmentName": "scripts__v2_scene.py",
+      "sha256": "68ee01f050bdcd517432febe3e86f06bd6a4a6b992b0e86a9ebbca37ab20bb85"
+    },
+    {
+      "path": "scripts/build-notation.py",
+      "attachmentName": "scripts__build-notation.py",
+      "sha256": "6492cda2b4da870b7cf8c14b952d107cf16655273dedb131e0109285ccec881c"
+    },
+    {
+      "path": "scripts/build-graphical-examples.py",
+      "attachmentName": "scripts__build-graphical-examples.py",
+      "sha256": "3f7d60d8a94b60bb2b9a38e2a50160c6408b5a69e1d83d2d864136aaa945e416"
+    },
+    {
+      "path": "scripts/build-reference.mjs",
+      "attachmentName": "scripts__build-reference.mjs",
+      "sha256": "4d0bc3c776a6f9d39c1870424cd5cd83a32f4689df8bcfeca1542df9c5416527"
+    },
+    {
+      "path": "scripts/standard-version.mjs",
+      "attachmentName": "scripts__standard-version.mjs",
+      "sha256": "af73e0d14f9a0156dc9c5c070072dee85a73025619598a884e3eb25a5adbd34d"
+    },
+    {
+      "path": "docs/figures/2.0/architecture.png",
+      "attachmentName": "docs__figures__2.0__architecture.png",
+      "sha256": "6f092e450dcac34a95a51051ed5a55dfb5148b1198b87297a4ddaede88f18cf6"
+    },
+    {
+      "path": "docs/figures/2.0/architecture.scene.json",
+      "attachmentName": "docs__figures__2.0__architecture.scene.json",
+      "sha256": "f2e49c61edeecb3a660a13008eb8edf97016c4212fa1cf711f17faabb029557e"
+    },
+    {
+      "path": "docs/figures/2.0/architecture.svg",
+      "attachmentName": "docs__figures__2.0__architecture.svg",
+      "sha256": "33259268b82190a1d46903d7e2e616759661bb730d1fbde6106d174cfac58553"
+    },
+    {
+      "path": "docs/figures/2.0/deployment.png",
+      "attachmentName": "docs__figures__2.0__deployment.png",
+      "sha256": "14cd45f56cb36656fae41d64f86652d116db415434519333a3cc12e5c60de0fa"
+    },
+    {
+      "path": "docs/figures/2.0/deployment.scene.json",
+      "attachmentName": "docs__figures__2.0__deployment.scene.json",
+      "sha256": "90ef6225880003214e78de34456251e7cdedde4e8e2a7f4d85125de4b79d8b37"
+    },
+    {
+      "path": "docs/figures/2.0/deployment.svg",
+      "attachmentName": "docs__figures__2.0__deployment.svg",
+      "sha256": "997d1b63ee049fbd0260a99199a0cc20447f3622ae0f508bddd5accdf13d727b"
+    },
+    {
+      "path": "docs/figures/2.0/forwarding.png",
+      "attachmentName": "docs__figures__2.0__forwarding.png",
+      "sha256": "34e98012820651abe3e32080e7d6be59edfe904cd83af71cece3ed73451a1d20"
+    },
+    {
+      "path": "docs/figures/2.0/forwarding.scene.json",
+      "attachmentName": "docs__figures__2.0__forwarding.scene.json",
+      "sha256": "6b9db9bf0ce38048c0c072a05fe5430276fda85759df18b8fff170e294188d7b"
+    },
+    {
+      "path": "docs/figures/2.0/forwarding.svg",
+      "attachmentName": "docs__figures__2.0__forwarding.svg",
+      "sha256": "b88ee9bdb7ab136251747a9db5ccf6ff90db79f17785efdbf30dc085119143ba"
+    },
+    {
+      "path": "docs/figures/2.0/modeling-overview.png",
+      "attachmentName": "docs__figures__2.0__modeling-overview.png",
+      "sha256": "fe7212f595f1116207d7ff473b114fd4b110c5f2d345e8efef41a89a6419bcca"
+    },
+    {
+      "path": "docs/figures/2.0/modeling-overview.scene.json",
+      "attachmentName": "docs__figures__2.0__modeling-overview.scene.json",
+      "sha256": "1bb38ee82eb3875a9268235e359bd9601cb12261e0ab44054c50ce251b957be9"
+    },
+    {
+      "path": "docs/figures/2.0/modeling-overview.svg",
+      "attachmentName": "docs__figures__2.0__modeling-overview.svg",
+      "sha256": "63d274063bbdd5496ea4b1ab733967b2c96fc66d38a7c5b5021c7d9faab7c314"
+    },
+    {
+      "path": "docs/figures/2.0/schedule.png",
+      "attachmentName": "docs__figures__2.0__schedule.png",
+      "sha256": "7199279832b3f302e2a59846269f4b0cc2c55498fa466513ca410828a49bd721"
+    },
+    {
+      "path": "docs/figures/2.0/schedule.scene.json",
+      "attachmentName": "docs__figures__2.0__schedule.scene.json",
+      "sha256": "bf70d14ef5c822294503b093a21851381624cd864954d9a7af9c6b4da36d0fb5"
+    },
+    {
+      "path": "docs/figures/2.0/schedule.svg",
+      "attachmentName": "docs__figures__2.0__schedule.svg",
+      "sha256": "3b05e916ac86a874ac8425c01293bbc0f30b1ae6557af2adbc7fd899baf5b600"
+    },
+    {
+      "path": "docs/figures/2.0/states.png",
+      "attachmentName": "docs__figures__2.0__states.png",
+      "sha256": "f8c40af59dd886454d49f84bb10ca16f2b520e15cd0101e58fb059c01d5b587c"
+    },
+    {
+      "path": "docs/figures/2.0/states.scene.json",
+      "attachmentName": "docs__figures__2.0__states.scene.json",
+      "sha256": "fc29352dc681ca20384c03cefcae47b3505872828e32ea59cdbc4762f984c7ff"
+    },
+    {
+      "path": "docs/figures/2.0/states.svg",
+      "attachmentName": "docs__figures__2.0__states.svg",
+      "sha256": "de9e39ed6cc16f7b3671206190ae413a651b1d5287414a730622eaed10e21c41"
+    },
+    {
+      "path": "docs/figures/2.0/timing.png",
+      "attachmentName": "docs__figures__2.0__timing.png",
+      "sha256": "c2c024feba23764882ac54e138e1668a2bf80f163263c78d1f6341d444c54b36"
+    },
+    {
+      "path": "docs/figures/2.0/timing.scene.json",
+      "attachmentName": "docs__figures__2.0__timing.scene.json",
+      "sha256": "ad47d0938bc06620ab17a1e1aa011824dd8d5beb546cce69d08183fd4c03cab5"
+    },
+    {
+      "path": "docs/figures/2.0/timing.svg",
+      "attachmentName": "docs__figures__2.0__timing.svg",
+      "sha256": "363efa65870e72b901000283d04aa7ca3c52c687ff57fd4ff6204bf0ce87d39c"
+    },
+    {
+      "path": "docs/notation/2.0/attributes.png",
+      "attachmentName": "docs__notation__2.0__attributes.png",
+      "sha256": "5130cc4d2702792d77d3eb32a82b2374d23cf7a24c9e82b0f3d713e5b952242c"
+    },
+    {
+      "path": "docs/notation/2.0/attributes.scene.json",
+      "attachmentName": "docs__notation__2.0__attributes.scene.json",
+      "sha256": "66c8105516abcbadd4138fb80b8d257bc65cf0c0520eed686664c365a5ba6d85"
+    },
+    {
+      "path": "docs/notation/2.0/attributes.svg",
+      "attachmentName": "docs__notation__2.0__attributes.svg",
+      "sha256": "cbe9c695ff14f950070e46b68f755883889f0f278ac5ab67e62670ae76fa7ede"
+    },
+    {
+      "path": "docs/notation/2.0/calls.png",
+      "attachmentName": "docs__notation__2.0__calls.png",
+      "sha256": "0a3f0a8bc3f66e578ebf32c693fd267dd485766c9affd6981fd6c2f6ee946954"
+    },
+    {
+      "path": "docs/notation/2.0/calls.scene.json",
+      "attachmentName": "docs__notation__2.0__calls.scene.json",
+      "sha256": "07c9b7b455a31fb33a05fefd140ec1362ab421d2cb43ff0bed8d991fdf29d20a"
+    },
+    {
+      "path": "docs/notation/2.0/calls.svg",
+      "attachmentName": "docs__notation__2.0__calls.svg",
+      "sha256": "6d52412f7bdb8dba8813d9b91f78e4948498cad16ec2ee9bf2d66082eb059dfa"
+    },
+    {
+      "path": "docs/notation/2.0/cases.png",
+      "attachmentName": "docs__notation__2.0__cases.png",
+      "sha256": "b12a089f0ca4733b5e4e9efd1b2156ffea3086ea9fd8f438fd2013ab5c6133dc"
+    },
+    {
+      "path": "docs/notation/2.0/cases.scene.json",
+      "attachmentName": "docs__notation__2.0__cases.scene.json",
+      "sha256": "06fbf69619d4172b35b147da394df98c5389919547312112c5fa8a2e48de9163"
+    },
+    {
+      "path": "docs/notation/2.0/cases.svg",
+      "attachmentName": "docs__notation__2.0__cases.svg",
+      "sha256": "216324aafec819ec00499462c522e7ebfb59ed2a050350ee78ee12407695d774"
+    },
+    {
+      "path": "docs/notation/2.0/components.png",
+      "attachmentName": "docs__notation__2.0__components.png",
+      "sha256": "7069e85ad20a78e197124f628bd36bdb2093a3a3218a029184d3708cfebe2bb7"
+    },
+    {
+      "path": "docs/notation/2.0/components.scene.json",
+      "attachmentName": "docs__notation__2.0__components.scene.json",
+      "sha256": "915096a411fae496d3d071c1ee9d457abbcae66e54987243d22f2a6743067a4a"
+    },
+    {
+      "path": "docs/notation/2.0/components.svg",
+      "attachmentName": "docs__notation__2.0__components.svg",
+      "sha256": "b1849db0c9437defd109a57f9dd0dc4374e53a13469f9f004266f0a547d03c93"
+    },
+    {
+      "path": "docs/notation/2.0/connection.png",
+      "attachmentName": "docs__notation__2.0__connection.png",
+      "sha256": "d35349a1595c140c96b8e608381e048cebd8a5cae5993c41c68a59405b2a82ad"
+    },
+    {
+      "path": "docs/notation/2.0/connection.scene.json",
+      "attachmentName": "docs__notation__2.0__connection.scene.json",
+      "sha256": "1546d0af316f909f23304f2f14ce7ce85912804bd399d48152648b58eb81e718"
+    },
+    {
+      "path": "docs/notation/2.0/connection.svg",
+      "attachmentName": "docs__notation__2.0__connection.svg",
+      "sha256": "8c23d6d643b6188284c680b95c0ef0e708e13a47316178ee0f995a30592f5fd9"
+    },
+    {
+      "path": "docs/notation/2.0/deployment.png",
+      "attachmentName": "docs__notation__2.0__deployment.png",
+      "sha256": "00b8beaa446bbbdc2b791fe508ae8c67f0e93b5fb23c6089909d8be41877bd66"
+    },
+    {
+      "path": "docs/notation/2.0/deployment.scene.json",
+      "attachmentName": "docs__notation__2.0__deployment.scene.json",
+      "sha256": "de33edb813028b9e5e9eddfc99e45d1d6194add643dd91215dfbecf30f0953f3"
+    },
+    {
+      "path": "docs/notation/2.0/deployment.svg",
+      "attachmentName": "docs__notation__2.0__deployment.svg",
+      "sha256": "7b20fb9d6b5d0f01fad639d1ea8eca4171d80b1ebd3f9a0241a3e642e75b9b8b"
+    },
+    {
+      "path": "docs/notation/2.0/documentation.png",
+      "attachmentName": "docs__notation__2.0__documentation.png",
+      "sha256": "fc5866e7afa051433e92287d614f27d460a4973c63fe5ecd0488ff6be22d55e2"
+    },
+    {
+      "path": "docs/notation/2.0/documentation.scene.json",
+      "attachmentName": "docs__notation__2.0__documentation.scene.json",
+      "sha256": "2b0036ec9924aca8844f039bc606bb313d9d17be0ff4ede0dabad33f31331974"
+    },
+    {
+      "path": "docs/notation/2.0/documentation.svg",
+      "attachmentName": "docs__notation__2.0__documentation.svg",
+      "sha256": "82e26e5407cd3f0e217a85e13a7d4e123336896ff3962d23a3ca1b53cd19ce8a"
+    },
+    {
+      "path": "docs/notation/2.0/expressions.png",
+      "attachmentName": "docs__notation__2.0__expressions.png",
+      "sha256": "edfbfd89b50b7fec72998bc9abbb42a5d6ea470bd24b41a3471ae966a2b73726"
+    },
+    {
+      "path": "docs/notation/2.0/expressions.scene.json",
+      "attachmentName": "docs__notation__2.0__expressions.scene.json",
+      "sha256": "b040e465b7b93c699763dbd2dde57f5f913c5a272540f51326b9f4d9d0d27481"
+    },
+    {
+      "path": "docs/notation/2.0/expressions.svg",
+      "attachmentName": "docs__notation__2.0__expressions.svg",
+      "sha256": "caf7a63047a9089ebfe9dc0e15d22da3436e4a670d42944d44c59c6a07ea7d7f"
+    },
+    {
+      "path": "docs/notation/2.0/flow.png",
+      "attachmentName": "docs__notation__2.0__flow.png",
+      "sha256": "b023b1fcb172f0936cfb0f2ad493e010c067cdf31dd115237cd357ec6ba4517b"
+    },
+    {
+      "path": "docs/notation/2.0/flow.scene.json",
+      "attachmentName": "docs__notation__2.0__flow.scene.json",
+      "sha256": "9df212d5937df5de7e29cb36188663c2676056402262a8b4cea5f32c56b8092e"
+    },
+    {
+      "path": "docs/notation/2.0/flow.svg",
+      "attachmentName": "docs__notation__2.0__flow.svg",
+      "sha256": "1793892192b7050e6a1b84ddf982448394f764d3b8e643306519a3f8cdac9eaa"
+    },
+    {
+      "path": "docs/notation/2.0/forwarding.png",
+      "attachmentName": "docs__notation__2.0__forwarding.png",
+      "sha256": "8434119b804e6665646a90b6f0d8a2a1623bba283ec69c884fb0ee3be355a054"
+    },
+    {
+      "path": "docs/notation/2.0/forwarding.scene.json",
+      "attachmentName": "docs__notation__2.0__forwarding.scene.json",
+      "sha256": "b2470a7b345a6c9818bce40a9a01ccee69398af641eefdbc66e6ef8035c0b395"
+    },
+    {
+      "path": "docs/notation/2.0/forwarding.svg",
+      "attachmentName": "docs__notation__2.0__forwarding.svg",
+      "sha256": "14442bca2725751ff52ceea9425363b85c5cb9a265c19df2d0af7b5b62da6e37"
+    },
+    {
+      "path": "docs/notation/2.0/interrupt.png",
+      "attachmentName": "docs__notation__2.0__interrupt.png",
+      "sha256": "a761cbd96fd03e3b06682bb8f05dedcddb71af0a5bc0548513f624fafb4b12ea"
+    },
+    {
+      "path": "docs/notation/2.0/interrupt.scene.json",
+      "attachmentName": "docs__notation__2.0__interrupt.scene.json",
+      "sha256": "c471cfdea2f6683dcc6fae620a5544f9e07e74c5055d363aa67ff827bae5e6fe"
+    },
+    {
+      "path": "docs/notation/2.0/interrupt.svg",
+      "attachmentName": "docs__notation__2.0__interrupt.svg",
+      "sha256": "12f6e8132e4260f6d072b78632e616a7dcdf86b4a333619df376574b368372a8"
+    },
+    {
+      "path": "docs/notation/2.0/lexical.png",
+      "attachmentName": "docs__notation__2.0__lexical.png",
+      "sha256": "de06aa397a8fd309326ea63b431105d9f1e6cdcdb1cdf6b9e6b3a2c5d85faca2"
+    },
+    {
+      "path": "docs/notation/2.0/lexical.scene.json",
+      "attachmentName": "docs__notation__2.0__lexical.scene.json",
+      "sha256": "8286b4a400e67b2e43426a160908aa91fd1593c137afdf5b013a3b3060270006"
+    },
+    {
+      "path": "docs/notation/2.0/lexical.svg",
+      "attachmentName": "docs__notation__2.0__lexical.svg",
+      "sha256": "42f8edc4b3537df76dcb7ba5ade8cc02676804511cc4a536f56f29659e049888"
+    },
+    {
+      "path": "docs/notation/2.0/loops.png",
+      "attachmentName": "docs__notation__2.0__loops.png",
+      "sha256": "c64e278dbf14a5f8c4195b0ed40044ebd9bb84c41c5f49191cd2db1b08e2cae6"
+    },
+    {
+      "path": "docs/notation/2.0/loops.scene.json",
+      "attachmentName": "docs__notation__2.0__loops.scene.json",
+      "sha256": "a1e03f374ed19c7b5ec9d9d248708985277ed5e134d9e65375537a6ef505e289"
+    },
+    {
+      "path": "docs/notation/2.0/loops.svg",
+      "attachmentName": "docs__notation__2.0__loops.svg",
+      "sha256": "9eeee29df2f9b785863d52819442f5595c69f64e03958416be3cc159d75abfed"
+    },
+    {
+      "path": "docs/notation/2.0/multiplicity.png",
+      "attachmentName": "docs__notation__2.0__multiplicity.png",
+      "sha256": "c819df147be843ed82e771a25e3c63d95414694189d85080084c5cbf43972802"
+    },
+    {
+      "path": "docs/notation/2.0/multiplicity.scene.json",
+      "attachmentName": "docs__notation__2.0__multiplicity.scene.json",
+      "sha256": "2ec903c7e1eb1a392cebf8bef04bdb35f03eb7273ba025c64431f707be16ba3f"
+    },
+    {
+      "path": "docs/notation/2.0/multiplicity.svg",
+      "attachmentName": "docs__notation__2.0__multiplicity.svg",
+      "sha256": "d45a82a6322f5cea66e18f90a943005c252b956c91e9894da10a19b41c6885f2"
+    },
+    {
+      "path": "docs/notation/2.0/operations.png",
+      "attachmentName": "docs__notation__2.0__operations.png",
+      "sha256": "70fc8f1f499ebb1f51b2797460ab56e6fe79bf68154170008934c391e0b425d5"
+    },
+    {
+      "path": "docs/notation/2.0/operations.scene.json",
+      "attachmentName": "docs__notation__2.0__operations.scene.json",
+      "sha256": "9f276833cf25e65641393f4d1143e7b57173050cb2ab13339fdaf7b5764e25ac"
+    },
+    {
+      "path": "docs/notation/2.0/operations.svg",
+      "attachmentName": "docs__notation__2.0__operations.svg",
+      "sha256": "52841fc0560d6df0636f1539194582fb982e3a86b2fa73fc405c6726c8a99970"
+    },
+    {
+      "path": "docs/notation/2.0/package.png",
+      "attachmentName": "docs__notation__2.0__package.png",
+      "sha256": "bc2c6a0de3277ce34a62bc3e61fe28b6db53cd3b621fdf4d5deeb174eef5a932"
+    },
+    {
+      "path": "docs/notation/2.0/package.scene.json",
+      "attachmentName": "docs__notation__2.0__package.scene.json",
+      "sha256": "2fd1fc2082d6bad38e110f82de7490f08e2ac63bfe704df8af407f79e00951f9"
+    },
+    {
+      "path": "docs/notation/2.0/package.svg",
+      "attachmentName": "docs__notation__2.0__package.svg",
+      "sha256": "79dffa96815954c34d433d77c47345c35928dc9463d4690629ae815c74f75c5d"
+    },
+    {
+      "path": "docs/notation/2.0/ports.png",
+      "attachmentName": "docs__notation__2.0__ports.png",
+      "sha256": "8c9dee3a83a571a13d85431158f58aa4828c2212d4c71f0a0901e1901f6bba3c"
+    },
+    {
+      "path": "docs/notation/2.0/ports.scene.json",
+      "attachmentName": "docs__notation__2.0__ports.scene.json",
+      "sha256": "59461e9af12e37b4930722f9e99a432578eccb97e66455b34e9c783577f57949"
+    },
+    {
+      "path": "docs/notation/2.0/ports.svg",
+      "attachmentName": "docs__notation__2.0__ports.svg",
+      "sha256": "61cd32ac557c146a5fd73ab62bc098d883a435e19f198110adc16f45773738b2"
+    },
+    {
+      "path": "docs/notation/2.0/receive.png",
+      "attachmentName": "docs__notation__2.0__receive.png",
+      "sha256": "f75434d63b3857527b06c0ceef62aef59495b3c0ece96fe4e89160307831b3f5"
+    },
+    {
+      "path": "docs/notation/2.0/receive.scene.json",
+      "attachmentName": "docs__notation__2.0__receive.scene.json",
+      "sha256": "f41f98ab08a32f114e8f72bd2cc60040a17d4f1cd6c852a48044a0120e55a0a1"
+    },
+    {
+      "path": "docs/notation/2.0/receive.svg",
+      "attachmentName": "docs__notation__2.0__receive.svg",
+      "sha256": "fc912a00ae04d77bb85db6415639388ad7ad1b227bb9ef951447d8918ca18b1c"
+    },
+    {
+      "path": "docs/notation/2.0/requirements.png",
+      "attachmentName": "docs__notation__2.0__requirements.png",
+      "sha256": "39eeb11059396dd015b1c3e4f6a1efeca2eac2a474d685628fc49d79f338f860"
+    },
+    {
+      "path": "docs/notation/2.0/requirements.scene.json",
+      "attachmentName": "docs__notation__2.0__requirements.scene.json",
+      "sha256": "786deb215ddc9cdc1cda77d61e936bc2802ca4bb33a6e8aa582ad9863eaf2f2b"
+    },
+    {
+      "path": "docs/notation/2.0/requirements.svg",
+      "attachmentName": "docs__notation__2.0__requirements.svg",
+      "sha256": "4126571b4d065602fe93a4ba4b0fb18ebed60dc17dc0a7df35d06fd25b5d3a42"
+    },
+    {
+      "path": "docs/notation/2.0/schedule.png",
+      "attachmentName": "docs__notation__2.0__schedule.png",
+      "sha256": "746a4849ce56004b07eb9e04f8006394ebc7b5ecc5e3a00dd3ed09699e266f75"
+    },
+    {
+      "path": "docs/notation/2.0/schedule.scene.json",
+      "attachmentName": "docs__notation__2.0__schedule.scene.json",
+      "sha256": "e9e7cf8a89c0132db24e6eea9e0909bf99995dc113d9ea5a2791fb44726fa00d"
+    },
+    {
+      "path": "docs/notation/2.0/schedule.svg",
+      "attachmentName": "docs__notation__2.0__schedule.svg",
+      "sha256": "84dbbf14c151791359793e82be49c7337535686a21b5754e9ce578a943a7896f"
+    },
+    {
+      "path": "docs/notation/2.0/scripts.png",
+      "attachmentName": "docs__notation__2.0__scripts.png",
+      "sha256": "ae348ddab2f584d07fd6a7c7a66f1a9d1e8aa645fd323f99bca0a6e86b8f1430"
+    },
+    {
+      "path": "docs/notation/2.0/scripts.scene.json",
+      "attachmentName": "docs__notation__2.0__scripts.scene.json",
+      "sha256": "b6345067fef0f85e9c8270dd230f785e616d8ec8625300d6998de3f650f26d63"
+    },
+    {
+      "path": "docs/notation/2.0/scripts.svg",
+      "attachmentName": "docs__notation__2.0__scripts.svg",
+      "sha256": "a147aef4e5212475e170ed192e555c530d4b4c7580e6de6c8f5715351fcfae35"
+    },
+    {
+      "path": "docs/notation/2.0/states.png",
+      "attachmentName": "docs__notation__2.0__states.png",
+      "sha256": "d845fcd4e28dd3dd19527d7ab15d96082273822af9f9e16174189da71127c1d0"
+    },
+    {
+      "path": "docs/notation/2.0/states.scene.json",
+      "attachmentName": "docs__notation__2.0__states.scene.json",
+      "sha256": "a256938eb09f5ebde76c175e5681518adb1bac8c6d793a6ca48e382d33287e1d"
+    },
+    {
+      "path": "docs/notation/2.0/states.svg",
+      "attachmentName": "docs__notation__2.0__states.svg",
+      "sha256": "73169ef7ca52b1826cf94b90b38ce1f46fd5a3c760a185d6823b21689966f596"
+    },
+    {
+      "path": "docs/notation/2.0/timing.png",
+      "attachmentName": "docs__notation__2.0__timing.png",
+      "sha256": "234e150256065dc0ab7bccb3dffdb1c946b44506c4cd54ec0671cab7cf4b844d"
+    },
+    {
+      "path": "docs/notation/2.0/timing.scene.json",
+      "attachmentName": "docs__notation__2.0__timing.scene.json",
+      "sha256": "ca91b8c7fb82411464016f15194126e8d435f742b005b385159e5b9d4495234b"
+    },
+    {
+      "path": "docs/notation/2.0/timing.svg",
+      "attachmentName": "docs__notation__2.0__timing.svg",
+      "sha256": "160bdb45bd06b42f865b096c4bc4e40fe8bb98e2ca518876cae82ceeaa2205eb"
+    },
+    {
+      "path": "docs/notation/2.0/try.png",
+      "attachmentName": "docs__notation__2.0__try.png",
+      "sha256": "16c64e92b5df3d16df7e6f6ac9af7fbc8998ed4e0df81eaff589af3b959d8980"
+    },
+    {
+      "path": "docs/notation/2.0/try.scene.json",
+      "attachmentName": "docs__notation__2.0__try.scene.json",
+      "sha256": "a54583d8b2feac8f03efeea18e426a90441f48bfc2eb736d94dce9d986545ab0"
+    },
+    {
+      "path": "docs/notation/2.0/try.svg",
+      "attachmentName": "docs__notation__2.0__try.svg",
+      "sha256": "450f639ad6a3c47adb316c10c27aef3ddcbfae69bb2064ee4ecbbf37d818d1ea"
+    },
+    {
+      "path": "docs/notation/2.0/values.png",
+      "attachmentName": "docs__notation__2.0__values.png",
+      "sha256": "4ca09e0058b045894e0b9362d0360bbf9e3c88306217f28a5fab4dbc92c417fc"
+    },
+    {
+      "path": "docs/notation/2.0/values.scene.json",
+      "attachmentName": "docs__notation__2.0__values.scene.json",
+      "sha256": "34a721d13ad5357b9e192f36f346019ee2cbacb0fa5142398c1f63589dad3424"
+    },
+    {
+      "path": "docs/notation/2.0/values.svg",
+      "attachmentName": "docs__notation__2.0__values.svg",
+      "sha256": "a49fef6705d45105be0a8ba0b3615fcafb185b24fc6615e9716e3b99190331d6"
+    },
+    {
+      "path": "docs/notation/2.0/views.png",
+      "attachmentName": "docs__notation__2.0__views.png",
+      "sha256": "f3d434d52f39e3a9d17f7e317d98aee6951ff266bd890599db934bce4ba4d6ad"
+    },
+    {
+      "path": "docs/notation/2.0/views.scene.json",
+      "attachmentName": "docs__notation__2.0__views.scene.json",
+      "sha256": "592fcad2bf36962b6d0eaf9d92ef9f8a744a275bbec5c2214c479cef92a61524"
+    },
+    {
+      "path": "docs/notation/2.0/views.svg",
+      "attachmentName": "docs__notation__2.0__views.svg",
+      "sha256": "c7d7d4c796e74120e79a65a7c2e115da7ef6f975410e0dc674a8b96c7a38dc16"
+    },
+    {
+      "path": "examples/notation/catalog.swaml",
+      "attachmentName": "examples__notation__catalog.swaml",
+      "sha256": "e19fc9f07e6af499bfb04b584de61a31b40c1237da85094d92b609f15e6ee7ab"
+    },
+    {
+      "path": "examples/notation/control-flow.swaml",
+      "attachmentName": "examples__notation__control-flow.swaml",
+      "sha256": "182f67df9c5ad27ac61aa3936a9ffb5350ff5abd4a6f16b097ae6703d722dfb6"
+    },
+    {
+      "path": "examples/simulation/01-hello.json",
+      "attachmentName": "examples__simulation__01-hello.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/02-realtime-controller.json",
+      "attachmentName": "examples__simulation__02-realtime-controller.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/03-service-pubsub.json",
+      "attachmentName": "examples__simulation__03-service-pubsub.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/04-stateful-function.json",
+      "attachmentName": "examples__simulation__04-stateful-function.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/05-values-and-flow.json",
+      "attachmentName": "examples__simulation__05-values-and-flow.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/06-mixed-gateway.json",
+      "attachmentName": "examples__simulation__06-mixed-gateway.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/07-client-server.json",
+      "attachmentName": "examples__simulation__07-client-server.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/08-service-field.json",
+      "attachmentName": "examples__simulation__08-service-field.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/09-component-roots.json",
+      "attachmentName": "examples__simulation__09-component-roots.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/10-reusable-qos.json",
+      "attachmentName": "examples__simulation__10-reusable-qos.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/11-autosar-classic.json",
+      "attachmentName": "examples__simulation__11-autosar-classic.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/12-autosar-adaptive.json",
+      "attachmentName": "examples__simulation__12-autosar-adaptive.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/13-web-application.json",
+      "attachmentName": "examples__simulation__13-web-application.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/14-cloud-service.json",
+      "attachmentName": "examples__simulation__14-cloud-service.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/15-component-specialization.json",
+      "attachmentName": "examples__simulation__15-component-specialization.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/16-requirements-and-views.json",
+      "attachmentName": "examples__simulation__16-requirements-and-views.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/17-function-timing.json",
+      "attachmentName": "examples__simulation__17-function-timing.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/18-control-loops.json",
+      "attachmentName": "examples__simulation__18-control-loops.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/19-interruptible-function.json",
+      "attachmentName": "examples__simulation__19-interruptible-function.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/20-classes-and-operations.json",
+      "attachmentName": "examples__simulation__20-classes-and-operations.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/21-receive-and-try.json",
+      "attachmentName": "examples__simulation__21-receive-and-try.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/22-platform-deployment.json",
+      "attachmentName": "examples__simulation__22-platform-deployment.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/23-multiplicity.json",
+      "attachmentName": "examples__simulation__23-multiplicity.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/24-operation-usage.json",
+      "attachmentName": "examples__simulation__24-operation-usage.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/25-function-completion.json",
+      "attachmentName": "examples__simulation__25-function-completion.json",
+      "sha256": "81c406a00e8faf7f2fd2c01d17252e61d0b69bf9c366829542ccc1916181ff65"
+    },
+    {
+      "path": "examples/simulation/26-boundary-forwarding.json",
+      "attachmentName": "examples__simulation__26-boundary-forwarding.json",
+      "sha256": "823bf4d1204f910e050512a3e0a60f5fa481c49b42f47d3e024a64d6cbe7f1da"
+    },
+    {
+      "path": "examples/simulation/28-use-cases.json",
+      "attachmentName": "examples__simulation__28-use-cases.json",
+      "sha256": "322f2fa245b2a25839d86dffce5262ad63e2c5aae5e6388a3ed73e4d1a5b53b6"
+    },
+    {
+      "path": "examples/simulation/29-executable-cases.json",
+      "attachmentName": "examples__simulation__29-executable-cases.json",
+      "sha256": "392e32ad97159016eb58598038d3b2674efa345c83cc4ef19fa5a0812687abc9"
+    },
+    {
+      "path": "examples/simulation/cases.json",
+      "attachmentName": "examples__simulation__cases.json",
+      "sha256": "195a3e399fe87f57a71c54f2fdf3089000ee40a4a3481f2c59bb8a0380a9e59d"
+    },
+    {
+      "path": "examples/simulation/hello-trace.json",
+      "attachmentName": "examples__simulation__hello-trace.json",
+      "sha256": "95aeecff2e2ac641619319300533e01d478d23d336c04ee4dbdb6d7810d759f2"
+    },
+    {
+      "path": "examples/simulation/runs.json",
+      "attachmentName": "examples__simulation__runs.json",
+      "sha256": "a02a0e447454befb6b86506a732fc3737e21cf2c22be7bf17ee30746c13fb6f7"
+    },
+    {
+      "path": "resources/fonts/DejaVuSans-Bold.ttf",
+      "attachmentName": "resources__fonts__DejaVuSans-Bold.ttf",
+      "sha256": "e6476c1b80502924294eed40894c5b18e06c181444ca953e5334262df9c27724"
+    },
+    {
+      "path": "resources/fonts/DejaVuSans-BoldOblique.ttf",
+      "attachmentName": "resources__fonts__DejaVuSans-BoldOblique.ttf",
+      "sha256": "eb436dca0c2594b73d8b603b892e374fdfd8d885d25ffb4f18df4c4c0b49e50f"
+    },
+    {
+      "path": "resources/fonts/DejaVuSans-Oblique.ttf",
+      "attachmentName": "resources__fonts__DejaVuSans-Oblique.ttf",
+      "sha256": "4af75fa16ee6d3ad43e1ecec41862c24954af26a55c6bb1ebb27bd486a50f5f4"
+    },
+    {
+      "path": "resources/fonts/DejaVuSans.ttf",
+      "attachmentName": "resources__fonts__DejaVuSans.ttf",
+      "sha256": "7da195a74c55bef988d0d48f9508bd5d849425c1770dba5d7bfc6ce9ed848954"
+    },
+    {
+      "path": "resources/fonts/DejaVuSansMono.ttf",
+      "attachmentName": "resources__fonts__DejaVuSansMono.ttf",
+      "sha256": "b4a6c3e4faab8773f4ff761d56451646409f29abedd68f05d38c2df667d3c582"
+    },
+    {
+      "path": "resources/fonts/LICENSE-DejaVu.txt",
+      "attachmentName": "resources__fonts__LICENSE-DejaVu.txt",
+      "sha256": "7a083b136e64d064794c3419751e5c7dd10d2f64c108fe5ba161eae5e5958a93"
+    },
+    {
+      "path": "resources/fonts/README.md",
+      "attachmentName": "resources__fonts__README.md",
+      "sha256": "f5d3a59d6ae9f3882224b15c9b75fa7a1673f3b8d987df3874c259e77ee01a42"
+    },
+    {
+      "path": "src/cli/evidence.ts",
+      "attachmentName": "src__cli__evidence.ts",
+      "sha256": "f6117703700255635a038eb55fd3c7a15e12fbe7d2634381ae3b56aa57d6cb03"
+    },
+    {
+      "path": "src/cli/main.ts",
+      "attachmentName": "src__cli__main.ts",
+      "sha256": "81fc73db56d028210435568bb870d5afae6b9f176144f906167b1ddbbd3bdde8"
+    },
+    {
+      "path": "src/cli/options.ts",
+      "attachmentName": "src__cli__options.ts",
+      "sha256": "490657ec1a5bddd4ced4294fde4877ff0da134b71f485ca0329ee76e64a26b29"
+    },
+    {
+      "path": "src/cli/run.ts",
+      "attachmentName": "src__cli__run.ts",
+      "sha256": "4dc52c5e6fdc50585cdf08777beec3f6be5f64b0a66738f43f5b19daff35e63b"
+    },
+    {
+      "path": "src/cli/simulate.ts",
+      "attachmentName": "src__cli__simulate.ts",
+      "sha256": "802578deab680c64b538fb0f1a4d42e418211a737a46d7be1b02d1b09830d8bc"
+    },
+    {
+      "path": "src/language/edition.ts",
+      "attachmentName": "src__language__edition.ts",
+      "sha256": "817799186aba081fb62ccd6fdbc675259ce7bdb3a4d00e5be52c587c788956a1"
+    },
+    {
+      "path": "src/language/formatter.ts",
+      "attachmentName": "src__language__formatter.ts",
+      "sha256": "d27d4522d8711db727b3ae0360550eb2a02f1d55e8c78361b4228358786d06c0"
+    },
+    {
+      "path": "src/language/language-server.ts",
+      "attachmentName": "src__language__language-server.ts",
+      "sha256": "e2b5ee6facdda528965b0a7016ee012e6b857bd583a8e20e9ff445b33c0fe54a"
+    },
+    {
+      "path": "src/language/names.ts",
+      "attachmentName": "src__language__names.ts",
+      "sha256": "002fca23d6656dea94d2c245c1f271f864b8a0e0a81a224ff3fb6653050ffdb3"
+    },
+    {
+      "path": "src/language/path-services.ts",
+      "attachmentName": "src__language__path-services.ts",
+      "sha256": "c2e681cc43712b0f91140c841f087a793125981042cd3e78e7a919d888ad3356"
+    },
+    {
+      "path": "src/language/presentation.ts",
+      "attachmentName": "src__language__presentation.ts",
+      "sha256": "204e88029128e9411cce09a2a462e109c9324201a201f4dedc141c754adcc113"
+    },
+    {
+      "path": "src/language/projection.ts",
+      "attachmentName": "src__language__projection.ts",
+      "sha256": "8e64de238e2fbef1fcb573704f7d45b63f560b2a7542abf41a86a7a0828782ba"
+    },
+    {
+      "path": "src/language/semantic.ts",
+      "attachmentName": "src__language__semantic.ts",
+      "sha256": "73f1262232ec70c9cfab56c483d45b32ccfbfbb1cc156d1a09fb2b47d447c664"
+    },
+    {
+      "path": "src/language/swaml-document-builder.ts",
+      "attachmentName": "src__language__swaml-document-builder.ts",
+      "sha256": "cc86a86511c5b5b7ad973518ecde3fe9a9de06dace6d707291d8a8d80fff3d48"
+    },
+    {
+      "path": "src/language/swaml-module.ts",
+      "attachmentName": "src__language__swaml-module.ts",
+      "sha256": "c4babd25d174ca953346b2ca9c7950988da58552678e62cd2749d8d7c8ae939d"
+    },
+    {
+      "path": "src/language/swaml-scope.ts",
+      "attachmentName": "src__language__swaml-scope.ts",
+      "sha256": "e96a29cfcf192f253138caa059781f67852a9b8b8e2877b9f79ed6f673d4ee2e"
+    },
+    {
+      "path": "src/language/swaml-syntax.ts",
+      "attachmentName": "src__language__swaml-syntax.ts",
+      "sha256": "ba87f0651f339a810b1b55bf555069b0c245442aeb35d9ad77e5066e4f577cb5"
+    },
+    {
+      "path": "src/language/swaml-validator.ts",
+      "attachmentName": "src__language__swaml-validator.ts",
+      "sha256": "bc42f515c7e8aa8d34a44ad223cb8ce321a49a862f61dc0f02491d3bfc283fc7"
+    },
+    {
+      "path": "src/server/main.ts",
+      "attachmentName": "src__server__main.ts",
+      "sha256": "3a734f20f8cb20aceed0be8e93845c5481d145ff93276505a00bb405e4027a83"
+    },
+    {
+      "path": "src/simulation/simulator.ts",
+      "attachmentName": "src__simulation__simulator.ts",
+      "sha256": "c7c06c00c91dbf368db44f220623bbf66039ff032db109403c39d2825d2bbd3f"
+    },
+    {
+      "path": "src/simulation/timing.ts",
+      "attachmentName": "src__simulation__timing.ts",
+      "sha256": "394c9b1d0868f40a5883da2fa04d31924e112083c7fa7ca96c321394f98f0901"
+    },
+    {
+      "path": "src/simulation/values.ts",
+      "attachmentName": "src__simulation__values.ts",
+      "sha256": "3bd99def5a50e30452ad37655863af324b6a31db472151b55cb9b3ed5a118bba"
+    }
+  ],
+  "sourceBaseCommit": "4a3a105a52448c060811668e2a790fd6406d4b12",
+  "sourceBundleSha256": "962763d04049af0b1ce6edaf16cbaa978c79080a184d297d13ac0b884e9174bf",
+  "dependencies": {
+    "reportlab": "4.4.9",
+    "mistune": "3.4.0",
+    "pypdf": "6.21.2",
+    "pdfplumber": "0.11.9",
+    "Pillow": "13.0.0"
+  },
+  "python": "3.14.4",
+  "pdfSha256": "d2bce7f2a0362232b4d1c032a9b68bc70466906f2f8922075486b06fca66d271"
+}

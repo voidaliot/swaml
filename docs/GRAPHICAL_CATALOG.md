@@ -38,7 +38,7 @@ swa.ml 2.1; Multiplicity::Demo.
 
 ![Indexed occurrence identity](notation/2.0/multiplicity.svg)
 
-**Source:** [Multiplicity::Demo](../examples/23-multiplicity.swaml). **Grammar:** .
+**Source:** [Multiplicity::Demo](../examples/23-multiplicity.swaml).
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 
@@ -78,7 +78,7 @@ swa.ml 2.1; Boundary::Demo.
 
 ![Queue-free boundary forwarding](notation/2.0/forwarding.svg)
 
-**Source:** [Boundary::Demo](../examples/26-boundary-forwarding.swaml). **Grammar:** .
+**Source:** [Boundary::Demo](../examples/26-boundary-forwarding.swaml).
 
 Preserve owned source and distinct definition/occurrence identities. Boundary alias adds no queue, policy or message. A canonical source-backed projection; geometry is separate from semantics.
 
@@ -228,7 +228,7 @@ swa.ml 2.1; Timing::Demo.sample.
 
 ![Declared and observed timing](notation/2.0/timing.svg)
 
-**Source:** [Timing::Demo.sample](../examples/17-function-timing.swaml). **Grammar:** .
+**Source:** [Timing::Demo.sample](../examples/17-function-timing.swaml).
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 

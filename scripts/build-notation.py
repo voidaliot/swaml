@@ -6,7 +6,7 @@ inv=json.loads((ROOT/'spec/notation.json').read_text(encoding='utf-8-sig'))
 text='# swa.ml '+STANDARD+' canonical graphical catalog\n\nGenerated from spec/notation.json. Original monochrome notation; no OMG notation-conformance claim. Every drawing preserves source ownership and identity.\n\n'
 for c in inv['concepts']:
     write_scene(ROOT/'docs/notation/2.0'/c['id'],scene(c['title'],c['template']),args.check)
-    text+='## '+c['title']+'\n\n'+c['context']+'.\n\n!['+c['title']+'](notation/2.0/'+c['id']+'.svg)\n\n**Source:** ['+c['subject']+'](../'+c['model']+'). **Grammar:** '+', '.join(c['productions'])+'.\n\n'+' '.join(c['constraints'])+' '+c['rationale']+'\n\n'
+    text+='## '+c['title']+'\n\n'+c['context']+'.\n\n!['+c['title']+'](notation/2.0/'+c['id']+'.svg)\n\n**Source:** ['+c['subject']+'](../'+c['model']+').'+(' **Grammar:** '+', '.join(c['productions'])+'.' if c['productions'] else '')+'\n\n'+' '.join(c['constraints'])+' '+c['rationale']+'\n\n'
 path=ROOT/'docs/GRAPHICAL_CATALOG.md'
 text=text.rstrip()+'\n'
 if args.check:

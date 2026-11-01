@@ -70,7 +70,7 @@ def scene(title, template):
         for x,n in [(170,0),(320,5),(470,10),(620,15),(770,20)]:line(x,110,x,330);text(x-10,355,str(n)+'ms',12)
         text(40,160,'release',13);text(40,240,'observed',13)
         for x in [320,470,620]:line(x,125,x,180);rect(x,205,30,34,'#dddddd');rect(x+30,205,60,34,'#ffffff',True)
-        text(300,287,'wait / unlock',12);text(590,315,'deadline contract',12)
+        text(332,268,'wait / unlock',12);text(628,292,'deadline contract',12)
     elif template=='state':
         dot(55,205);box(110,135,220,140,'state Off',['after 2ms to On']);box(400,135,230,140,'state On',['on entry: lit = true','on exit: lit = false']);dot(805,205,14);line(60,205,110,205);line(330,205,400,205);line(630,205,790,205,'after 3ms');text(670,305,'final state Done',14);text(80,345,'Nested transitions are tested in source order. Final entry completes the operation.',13)
     elif template=='deployment':
@@ -78,7 +78,7 @@ def scene(title, template):
     elif template=='loop':
         box(45,125,250,150,'while / until',['optional n times','limit evaluated once']);box(335,125,250,150,'counted for',['initializer / test','body / update']);box(625,125,250,150,'for in',['copied fixed array','fresh iteration scope']);text(45,330,'Reaching a loop limit exits normally. Runtime step/deadline limits remain explicit.',13)
     elif template in ('interrupt','receive'):
-        rect(45,105,510,220,'#ffffff',True);box(80,145,410,135,'interruptible body' if template=='interrupt' else 'on receive wait',['suspended continuation','serial lock released']);box(635,145,245,135,'handler / branch',['explicit bindings','same activation']);line(490,210,635,210,'receive');text(65,352,'Inactive region input is discarded.' if template=='interrupt' else 'Early input remains queued; optional after timeout selects a branch.',14)
+        rect(45,105,510,220,'#ffffff',True);box(80,145,410,135,'interruptible body' if template=='interrupt' else 'on receive wait',['suspended continuation','serial lock released']);box(635,145,245,135,'handler / branch',['explicit bindings','same activation']);line(490,210,635,210);text(565,198,'receive',12);text(65,352,'Inactive region input is discarded.' if template=='interrupt' else 'Early input remains queued; optional after timeout selects a branch.',14)
     elif template=='try':
         box(40,140,235,140,'try(api.get(1), -1.0)',['evaluate expression','retain committed effects']);box(360,90,230,105,'success',['return copied result']);box(360,235,230,105,'runtime failure',['evaluate lazy fallback']);line(275,185,360,145);line(275,230,360,275);text(640,180,'Interruption, deadline',13);text(640,205,'and resources bypass try.',13)
     elif template in ('call','flow'):

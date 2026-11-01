@@ -14,6 +14,6 @@
 <text x="647" y="203" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">explicit bindings</text>
 <text x="647" y="225" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">same activation</text>
 <line x1="490" y1="210" x2="635" y2="210" stroke="#171717"/>
-<text x="507.5" y="198.0" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">receive</text>
+<text x="565" y="198" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">receive</text>
 <text x="65" y="352" font-family="DejaVu Sans, sans-serif" font-size="14" fill="#171717">Inactive region input is discarded.</text>
 </svg>

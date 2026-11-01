@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.1 — 2026-11-02
+## 2.1 — 2026-11-01
 
 Standard 2.1 with parser 2.1 and reference profile swaml-reference/2.1; see the [release notes](docs/RELEASE_2_1.md) for the migration from 2.0. It is incompatible with 2.0 and supplies no compatibility parser. Published 2.0.0 and 1.x artifacts are unchanged.
 
@@ -24,6 +24,9 @@ Standard 2.1 with parser 2.1 and reference profile swaml-reference/2.1; see the 
 - Display the maintained language documentation and websites as swa.ml while retaining .swaml filenames, technical identifiers and frozen publication assets.
 - Give the website timing view a shared logical-time ruler, execution lanes and the requested run horizon, and use the same dotted grid across all seven diagram views.
 - Validate the published 2.0.0 PDF against its frozen source snapshot while keeping strict current-source checks for new editions.
+- Publish the complete 2.1 PDF, SWAML-2.1-Specification.pdf with its per-source manifest and SHA-256 checksum, built by the new build-spec-pdf-2.1.py and checked by check-spec-pdf-2.1.py and test-publication-2-1.py. The manifest records the standard 2.1 and the implementation package 3.0.0 separately. Example models share pages, tables size their columns by content and avoid single-row fragments, and broken links, comment markers parsed as emphasis or backslash escapes in prose fail the build. The Publication and compatibility workflow runs the strict current-source check when dispatched and the published-edition check on pull requests. A test keeps SWAML_LANGUAGE_VERSION equal to spec/standard.json.
+- Write comment markers in the structure and requirements chapters and the quoted-name escapes `\'` and `\\` as code so that they render, move the receive and timing labels of the canonical figures off the drawing lines, and omit the empty grammar clause of catalog entries without their own productions.
+- Link the 2.1 specification PDF from the website resources and draw its notation figure in the dark theme without a white panel.
 - Document independent language, extension and website release lifecycles for future agents.
 
 ## 2.0.0 — 2026-10-22

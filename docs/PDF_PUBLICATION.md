@@ -20,6 +20,18 @@ The site is the existing showcase project. Build the validated source/trace data
 
 The original scripts/test-publication-archive.py, scripts/check-spec-pdf.py and scripts/rebuild-archived-pdf.py retain historical responsibilities. They do not assert a 2.0 PDF exists or validate the new language. Their source pin and archived assets must remain unchanged unless a separately reviewed historical correction is explicitly requested.
 
+## 2.1 commands
+
+```sh
+python scripts/build-spec-pdf-2.1.py
+python scripts/check-spec-pdf-2.1.py
+python scripts/test-publication-2-1.py
+```
+
+The 2.1 builder refuses a workspace whose spec/standard.json or edition module selects another standard. Its manifest records release, specificationRevision and languageVersion 2.1, the simulation profile, the separate implementationRevision of the reference implementation package and the publicationDate. It embeds the current maintained sources, including SWAML-2.1-Reference.md, as exact canonical attachments. Unsupported Markdown tokens, comment markers parsed as emphasis, backslash escapes in prose outside code spans, unresolved section links and broken repository links fail the build. The checker verifies the source bundle, both versions, the edition module, bookmarks for every keyword and notation concept, internal link destinations, release-tag repository links, release-note content, page bounds and a minimum text size.
+
+Without --archive the 2.1 checker is the strict current-source gate; a manual run of the Publication and compatibility workflow applies it. Pull requests run check-spec-pdf-2.1.py --archive, which verifies the published PDF against its own manifest and attachments after the maintained sources move on. When the next edition is prepared, its own strict checker replaces the manual 2.1 step, which then also uses --archive.
+
 ## 2.0 commands
 
 Install maintained validation dependencies from `scripts/ci-pdf-requirements.txt`.
