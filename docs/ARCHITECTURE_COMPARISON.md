@@ -1,8 +1,8 @@
 # Architecture comparison
 
-swa.ml 2.0.
+swa.ml 2.1.
 
-| Pattern | swa.ml 2.0 representation | Separate target evidence |
+| Pattern | swa.ml 2.1 representation | Separate target evidence |
 | --- | --- | --- |
 | Periodic controller | Component attributes, operations, every schedule, latest sensor attributes and command events | Physical task/transport/WCET and schedulability |
 | Service | Directed operation members, on call handlers, request policy, try and correlated replies | Middleware reliability and measured latency |

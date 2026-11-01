@@ -11,6 +11,6 @@ __pycache__/
 showcase/dist/
 showcase/.vite/
 
-# Rebuilt from versioned 2.0 source by the build/preview scripts
+# Rebuilt from versioned source by the build/preview scripts
 src/language/standard-library.ts
 showcase/public/downloads/

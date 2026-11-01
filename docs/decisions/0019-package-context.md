@@ -1,6 +1,6 @@
 # ADR 0019: Package context, executable cases and package links
 
-Status: accepted for implementation, 2026-11-01. Normative change for the 2.1 standard edition; recorded under Unreleased until that edition is prepared. Supersedes [ADR 0018](0018-cases-belong-to-their-subject.md) and the case clauses of [ADR 0016](0016-swaml-2-0.md) and [ADR 0017](0017-readable-names-and-use-cases.md); quoted names from ADR 0017 stay.
+Status: accepted for implementation, 2026-11-01. Normative change for the 2.1 standard edition, prepared on 2026-11-01 with the 2.1 notes in CHANGELOG.md and [the release notes](../RELEASE_2_1.md). Supersedes [ADR 0018](0018-cases-belong-to-their-subject.md) and the case clauses of [ADR 0016](0016-swaml-2-0.md) and [ADR 0017](0017-readable-names-and-use-cases.md); quoted names from ADR 0017 stay.
 
 Implementation is incremental. The package context, interface-only components, package-owned intent-only cases and the package links are implemented with this decision. Run targets and trace identity are implemented by the run targets change. Executable use cases and tests are implemented by the executable cases change. The parts implemented by follow-up changes are marked below.
 
@@ -48,7 +48,7 @@ Case subjects include packages, cases and components; Sequence subjects include 
 
 ### Versions
 
-The edition is standard 2.1 in spec/standard.json, parser family 2.1 and execution profile swaml-reference/2.1, with implementation npm package 3.0.0 because the exported API changes incompatibly. *Prepared by the edition change; identifiers stay 2.0 until then.*
+The edition is standard 2.1 in spec/standard.json, parser family 2.1 and execution profile swaml-reference/2.1, with implementation npm package 3.0.0 because the exported API changes incompatibly. *Prepared by the edition change on 2026-11-01:* spec/standard.json is 2.1, hosts select parser 2.1 and record swaml-reference/2.1, and the implementation package is 3.0.0.
 
 ## Implementation choices
 

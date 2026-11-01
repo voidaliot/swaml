@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0",
-  "languageVersion": "2.0",
-  "edition": "2.0",
+  "languageVersion": "2.1",
+  "edition": "2.1",
   "style": {
     "background": "white",
     "stroke": "#171717",
@@ -13,7 +13,7 @@
     {
       "id": "package",
       "title": "Packages and imports",
-      "context": "swa.ml 2.0; Hello::Demo",
+      "context": "swa.ml 2.1; Hello::Demo",
       "syntax": "component Demo {\n    component sender: Sender;\n    component receiver: Receiver;\n    connect (sender.output, receiver.input);\n  }",
       "model": "examples/01-hello.swaml",
       "subject": "Hello::Demo",
@@ -44,7 +44,7 @@
     {
       "id": "values",
       "title": "Typed copied values",
-      "context": "swa.ml 2.0; Values::Demo",
+      "context": "swa.ml 2.1; Values::Demo",
       "syntax": "component Demo {\n    attribute sum: int = 0;\n    attribute mode: Mode = Mode.idle;\n    attribute reading: Reading = record Reading {\n      value = 4.5;\n      unit = \"C\";\n    };\n    operation add(a: int, b: int) returns int {\n      return a + b;\n    }\n    operation boot() {\n      var values: int[3] =[1, 2, 3];\n      for (value: int in values) {\n        sum = add(sum, value);\n      }\n      mode = Mode.active;\n    }\n    schedule {\n      on start boot();\n    }\n  }",
       "model": "examples/05-values-and-flow.swaml",
       "subject": "Values::Demo",
@@ -87,7 +87,7 @@
     {
       "id": "components",
       "title": "Component definitions and usages",
-      "context": "swa.ml 2.0; Reuse::Demo",
+      "context": "swa.ml 2.1; Reuse::Demo",
       "syntax": "component Demo {\n    component left: Counter {\n      redefines attribute count: int = 10;\n    }\n    component right: Fast;\n  }",
       "model": "examples/15-component-specialization.swaml",
       "subject": "Reuse::Demo",
@@ -120,7 +120,7 @@
     {
       "id": "multiplicity",
       "title": "Indexed occurrence identity",
-      "context": "swa.ml 2.0; Multiplicity::Demo",
+      "context": "swa.ml 2.1; Multiplicity::Demo",
       "syntax": "component Demo {\n    component counters: Counter[3];\n  }",
       "model": "examples/23-multiplicity.swaml",
       "subject": "Multiplicity::Demo",
@@ -143,7 +143,7 @@
     {
       "id": "attributes",
       "title": "Attributes and lexical locals",
-      "context": "swa.ml 2.0; Values::Demo",
+      "context": "swa.ml 2.1; Values::Demo",
       "syntax": "component Demo {\n    attribute sum: int = 0;\n    attribute mode: Mode = Mode.idle;\n    attribute reading: Reading = record Reading {\n      value = 4.5;\n      unit = \"C\";\n    };\n    operation add(a: int, b: int) returns int {\n      return a + b;\n    }\n    operation boot() {\n      var values: int[3] =[1, 2, 3];\n      for (value: int in values) {\n        sum = add(sum, value);\n      }\n      mode = Mode.active;\n    }\n    schedule {\n      on start boot();\n    }\n  }",
       "model": "examples/05-values-and-flow.swaml",
       "subject": "Values::Demo",
@@ -176,7 +176,7 @@
     {
       "id": "ports",
       "title": "Mixed directed port members",
-      "context": "swa.ml 2.0; Mixed::Boundary",
+      "context": "swa.ml 2.1; Mixed::Boundary",
       "syntax": "port def Boundary {\n    provides attribute value: real;\n    requires event reset();\n    provides operation read() returns real;\n    requires operation acknowledge();\n  }",
       "model": "examples/27-mixed-port.swaml",
       "subject": "Mixed::Boundary",
@@ -218,7 +218,7 @@
     {
       "id": "connection",
       "title": "Policy-bearing connection",
-      "context": "swa.ml 2.0; Policies::Demo",
+      "context": "swa.ml 2.1; Policies::Demo",
       "syntax": "component Demo {\n    component sender: Sender;\n    component receiver: Receiver;\n    connect delivery: Small (sender.output, receiver.input);\n  }",
       "model": "examples/10-reusable-qos.swaml",
       "subject": "Policies::Demo",
@@ -248,7 +248,7 @@
     {
       "id": "forwarding",
       "title": "Queue-free boundary forwarding",
-      "context": "swa.ml 2.0; Boundary::Demo",
+      "context": "swa.ml 2.1; Boundary::Demo",
       "syntax": "component Demo {\n    component source: Composite;\n    component display: Display;\n    connect (source.boundary, display.reading);\n  }",
       "model": "examples/26-boundary-forwarding.swaml",
       "subject": "Boundary::Demo",
@@ -271,7 +271,7 @@
     {
       "id": "operations",
       "title": "Operations and nested ownership",
-      "context": "swa.ml 2.0; OperationUsage::Demo",
+      "context": "swa.ml 2.1; OperationUsage::Demo",
       "syntax": "component Demo {\n    attribute result: real = 0.0;\n    operation clamp: Clamp;\n    operation low: Clamp {\n      return lo;\n    }\n    operation boot() {\n      operation double(v: real) returns real {\n        return v * 2.0;\n      }\n      result = clamp(double(4.0), 0.0, 5.0);\n    }\n    schedule {\n      on start boot();\n    }\n  }",
       "model": "examples/24-operation-usage.swaml",
       "subject": "OperationUsage::Demo",
@@ -302,7 +302,7 @@
     {
       "id": "calls",
       "title": "Expression calls and copied out values",
-      "context": "swa.ml 2.0; ClientServer::Client",
+      "context": "swa.ml 2.1; ClientServer::Client",
       "syntax": "component def Client {\n    reversed port api: Catalog;\n    attribute last: real = 0.0;\n    attribute changedKey: int = 0;\n    operation read() {\n      last = try(api.get(1), - 1.0);\n    }\n    operation changed(key: int) {\n      changedKey = key;\n    }\n    schedule {\n      on start read();\n      on receive api.changed(k) changed(k);\n    }\n  }",
       "model": "examples/07-client-server.swaml",
       "subject": "ClientServer::Client",
@@ -331,7 +331,7 @@
     {
       "id": "try",
       "title": "Runtime failure and lazy fallback",
-      "context": "swa.ml 2.0; ClientServer::Client",
+      "context": "swa.ml 2.1; ClientServer::Client",
       "syntax": "component def Client {\n    reversed port api: Catalog;\n    attribute last: real = 0.0;\n    attribute changedKey: int = 0;\n    operation read() {\n      last = try(api.get(1), - 1.0);\n    }\n    operation changed(key: int) {\n      changedKey = key;\n    }\n    schedule {\n      on start read();\n      on receive api.changed(k) changed(k);\n    }\n  }",
       "model": "examples/07-client-server.swaml",
       "subject": "ClientServer::Client",
@@ -362,7 +362,7 @@
     {
       "id": "flow",
       "title": "Statements and decisions",
-      "context": "swa.ml 2.0; Values::Demo",
+      "context": "swa.ml 2.1; Values::Demo",
       "syntax": "component Demo {\n    attribute sum: int = 0;\n    attribute mode: Mode = Mode.idle;\n    attribute reading: Reading = record Reading {\n      value = 4.5;\n      unit = \"C\";\n    };\n    operation add(a: int, b: int) returns int {\n      return a + b;\n    }\n    operation boot() {\n      var values: int[3] =[1, 2, 3];\n      for (value: int in values) {\n        sum = add(sum, value);\n      }\n      mode = Mode.active;\n    }\n    schedule {\n      on start boot();\n    }\n  }",
       "model": "examples/05-values-and-flow.swaml",
       "subject": "Values::Demo",
@@ -393,7 +393,7 @@
     {
       "id": "loops",
       "title": "Loops and copied iteration",
-      "context": "swa.ml 2.0; Loops::Demo",
+      "context": "swa.ml 2.1; Loops::Demo",
       "syntax": "component Demo {\n    attribute count: int = 0;\n    operation boot() {\n      while (count < 2, 3 times) {\n        count = count + 1;\n      }\n      until (count == 4, 5 times) {\n        count = count + 1;\n      }\n      for (var i: int = 0; i < 2; i = i + 1) {\n        count = count + i;\n      }\n      for (x: int in[1, 2]) {\n        count = count + x;\n      }\n    }\n    schedule {\n      on start boot();\n    }\n  }",
       "model": "examples/18-control-loops.swaml",
       "subject": "Loops::Demo",
@@ -427,7 +427,7 @@
     {
       "id": "schedule",
       "title": "Schedule entry and successful chaining",
-      "context": "swa.ml 2.0; Chaining::Demo",
+      "context": "swa.ml 2.1; Chaining::Demo",
       "syntax": "component Demo {\n    attribute count: int = 0;\n    operation load() {\n      wait 1ms;\n      count = 1;\n    }\n    operation report() {\n      count = count + 1;\n    }\n    schedule {\n      on start load();\n      after load report();\n    }\n  }",
       "model": "examples/25-function-completion.swaml",
       "subject": "Chaining::Demo",
@@ -460,7 +460,7 @@
     {
       "id": "receive",
       "title": "Suspending wait and receive",
-      "context": "swa.ml 2.0; Receiving::Receiver",
+      "context": "swa.ml 2.1; Receiving::Receiver",
       "syntax": "component def Receiver {\n    reversed port input: Messages;\n    attribute last: int = 0;\n    operation work() {\n      wait 2ms;\n      on receive input.message(value) {\n        last = value;\n      } or after 1ms {\n        last = - 1;\n      }\n    }\n    schedule {\n      on start work();\n    }\n  }",
       "model": "examples/21-receive-and-try.swaml",
       "subject": "Receiving::Receiver",
@@ -491,7 +491,7 @@
     {
       "id": "interrupt",
       "title": "Armed interrupt and cancellation",
-      "context": "swa.ml 2.0; Interrupts::Receiver",
+      "context": "swa.ml 2.1; Interrupts::Receiver",
       "syntax": "component def Receiver {\n    reversed port input: Messages;\n    attribute last: int = 0;\n    operation work() {\n      interruptible {\n        wait 8ms;\n        last = 99;\n      } on receive input.message(value) {\n        last = value;\n      }\n    }\n    schedule {\n      on start work();\n    }\n  }",
       "model": "examples/19-interruptible-function.swaml",
       "subject": "Interrupts::Receiver",
@@ -518,7 +518,7 @@
     {
       "id": "states",
       "title": "Ordered state transitions",
-      "context": "swa.ml 2.0; States::Demo.lamp",
+      "context": "swa.ml 2.1; States::Demo.lamp",
       "syntax": "operation lamp() {\n      initial Off;\n      state Off {\n        after 2ms to On {\n        }\n      }\n      state On {\n        on entry {\n          lit = true;\n        } on exit {\n          lit = false;\n        }\n        after 3ms to Done {\n        }\n      }\n      final state Done {\n      }\n    }",
       "model": "examples/04-stateful-function.swaml",
       "subject": "States::Demo.lamp",
@@ -554,7 +554,7 @@
     {
       "id": "deployment",
       "title": "Platform Nodes and placement",
-      "context": "swa.ml 2.0; Placement::Demo",
+      "context": "swa.ml 2.1; Placement::Demo",
       "syntax": "component Demo {\n    component workers: Worker[3];\n  }",
       "model": "examples/22-platform-deployment.swaml",
       "subject": "Placement::Demo",
@@ -583,7 +583,7 @@
     {
       "id": "requirements",
       "title": "Requirements and package intent links",
-      "context": "swa.ml 2.0; Traceability::Delivery",
+      "context": "swa.ml 2.1; Traceability::Delivery",
       "syntax": "requirement Delivery {\n    /** One named routed message reaches the receiver. */\n    attribute description: string = \"Deliver startup message\";\n  }",
       "model": "examples/16-requirements-and-views.swaml",
       "subject": "Traceability::Delivery",
@@ -615,7 +615,7 @@
     {
       "id": "cases",
       "title": "Use cases, tests and associations",
-      "context": "swa.ml 2.0; Cash Machine::Withdraw cash",
+      "context": "swa.ml 2.1; Cash Machine::Withdraw cash",
       "syntax": "use case 'Withdraw cash' of atm {\n    /** The customer inserts a card, asks for cash and receives it. */\n    publish customer.panel.cardInserted(\"4711\");\n    publish customer.panel.cashRequested(100);\n    on receive customer.panel.cashDispensed(amount) {\n      assert amount == 100;\n    } or after 2s {\n      fail \"no cash dispensed\";\n    }\n  }",
       "model": "examples/28-use-cases.swaml",
       "subject": "Cash Machine::Withdraw cash",
@@ -647,7 +647,7 @@
     {
       "id": "scripts",
       "title": "Executable case scripts",
-      "context": "swa.ml 2.0; AtmTests::Bank refusal",
+      "context": "swa.ml 2.1; AtmTests::Bank refusal",
       "syntax": "test 'Bank refusal' of atm {\n    /** The bank refuses: the machine refuses the customer and pays nothing. */\n    send customer.panel.amount(100);\n    publish customer.panel.cashRequested();\n    on call bank.link.authorize(amount) {\n      assert amount == 100;\n      return false;\n    } or after 1s {\n      fail \"no authorization request\";\n    }\n    on receive customer.panel.refused() {\n    } or after 1s {\n      fail \"not refused\";\n    }\n    assert atm.dispenser.count == 0;\n  }",
       "model": "examples/29-executable-cases.swaml",
       "subject": "AtmTests::Bank refusal",
@@ -672,7 +672,7 @@
     {
       "id": "views",
       "title": "Seven library view definitions",
-      "context": "swa.ml 2.0; Traceability::Demo",
+      "context": "swa.ml 2.1; Traceability::Demo",
       "syntax": "component Demo {\n    component sender: Sender;\n    component receiver: Receiver;\n    connect (sender.output, receiver.input);\n  }",
       "model": "examples/16-requirements-and-views.swaml",
       "subject": "Traceability::Demo",
@@ -714,7 +714,7 @@
     {
       "id": "timing",
       "title": "Declared and observed timing",
-      "context": "swa.ml 2.0; Timing::Demo.sample",
+      "context": "swa.ml 2.1; Timing::Demo.sample",
       "syntax": "operation sample() {\n      wait 1ms;\n      count = count + 1;\n    }",
       "model": "examples/17-function-timing.swaml",
       "subject": "Timing::Demo.sample",
@@ -736,7 +736,7 @@
     {
       "id": "documentation",
       "title": "Owned documentation and lexical notes",
-      "context": "swa.ml 2.0; Traceability::Delivery",
+      "context": "swa.ml 2.1; Traceability::Delivery",
       "syntax": "requirement Delivery {\n    /** One named routed message reaches the receiver. */\n    attribute description: string = \"Deliver startup message\";\n  }",
       "model": "examples/16-requirements-and-views.swaml",
       "subject": "Traceability::Delivery",
@@ -762,7 +762,7 @@
     {
       "id": "expressions",
       "title": "Typed expressions and operators",
-      "context": "swa.ml 2.0; Values::Demo",
+      "context": "swa.ml 2.1; Values::Demo",
       "syntax": "component Demo {\n    attribute sum: int = 0;\n    attribute mode: Mode = Mode.idle;\n    attribute reading: Reading = record Reading {\n      value = 4.5;\n      unit = \"C\";\n    };\n    operation add(a: int, b: int) returns int {\n      return a + b;\n    }\n    operation boot() {\n      var values: int[3] =[1, 2, 3];\n      for (value: int in values) {\n        sum = add(sum, value);\n      }\n      mode = Mode.active;\n    }\n    schedule {\n      on start boot();\n    }\n  }",
       "model": "examples/05-values-and-flow.swaml",
       "subject": "Values::Demo",
@@ -805,7 +805,7 @@
     {
       "id": "lexical",
       "title": "Lexical and path spelling",
-      "context": "swa.ml 2.0; Hello::Demo",
+      "context": "swa.ml 2.1; Hello::Demo",
       "syntax": "component Demo {\n    component sender: Sender;\n    component receiver: Receiver;\n    connect (sender.output, receiver.input);\n  }",
       "model": "examples/01-hello.swaml",
       "subject": "Hello::Demo",

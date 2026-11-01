@@ -1,6 +1,6 @@
 # ADR 0017: Readable names and structured use cases
 
-Status: accepted for implementation, 2026-10-25. Normative additions for the next minor standard edition; recorded under Unreleased until that edition is prepared. The case root, subject and actor clauses and the deprecated 2.0 case spellings were superseded by [ADR 0018](0018-cases-belong-to-their-subject.md); all case clauses are superseded by [ADR 0019](0019-package-context.md). Quoted names remain in force.
+Status: accepted for implementation, 2026-10-25. Normative additions for the next minor standard edition, included in the 2.1 edition. The case root, subject and actor clauses and the deprecated 2.0 case spellings were superseded by [ADR 0018](0018-cases-belong-to-their-subject.md); all case clauses are superseded by [ADR 0019](0019-package-context.md). Quoted names remain in force.
 
 ## Context
 

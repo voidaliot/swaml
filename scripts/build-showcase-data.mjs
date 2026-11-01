@@ -35,4 +35,4 @@ if (!check) {
     source: {path: data.model, sha256: data.sha256},
   }, null, 2) + '\n');
 }
-console.log('Validated site source, seven source views and identified 2.0 trace '+(check?'checked.':'generated.'));
+console.log('Validated site source, seven source views and identified '+standardVersion+' trace '+(check?'checked.':'generated.'));

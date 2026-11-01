@@ -11,7 +11,7 @@ import { STANDARD_LIBRARY } from './standard-library.js';
 import { SwamlLexer, SwamlLexerErrorMessageProvider, SwamlParserErrorMessageProvider, SwamlValueConverter } from './swaml-syntax.js';
 export { effectiveQos } from './semantic.js';
 export { documentationText, modelComments, selectView, viewCandidates } from './presentation.js';
-export const SWAML_LANGUAGE_VERSION = '2.0' as const;
+export { SWAML_IMPLEMENTATION_VERSION, SWAML_LANGUAGE_VERSION, SWAML_REFERENCE_PROFILE } from './edition.js';
 export type SwamlServices = LangiumServices & {
     validation: {
         SwamlValidator: SwamlValidator;

@@ -1,6 +1,7 @@
 import { AstUtils, type AstNode } from 'langium';
 import type { Range } from 'vscode-languageserver';
 import * as a from './generated/ast.js';
+import { SWAML_LANGUAGE_VERSION } from './edition.js';
 import { body, direction, effectiveQos, identity, isExecutable, members, nanos, owner, portMembers, schedule, signature, typeKey, type Node } from './semantic.js';
 import { documentationText, viewCandidates } from './presentation.js';
 export interface ProjectionNode {
@@ -52,12 +53,12 @@ export interface ProjectionEdge {
     order?: number;
 }
 export interface Projection {
-    languageVersion: '2.0';
+    languageVersion: typeof SWAML_LANGUAGE_VERSION;
     nodes: ProjectionNode[];
     edges: ProjectionEdge[];
 }
 export function projectModel(models: readonly a.Model[]): Projection {
-    const candidates = viewCandidates(models), result: Projection = { languageVersion: '2.0', nodes: [], edges: [] };
+    const candidates = viewCandidates(models), result: Projection = { languageVersion: SWAML_LANGUAGE_VERSION, nodes: [], edges: [] };
     const source = (n: AstNode) => ({ uri: AstUtils.getDocument(n).uri.toString(), range: n.$cstNode!.range });
     const addEdge = (kind: string, from: string, to: string, label: string, extra: Partial<ProjectionEdge> = {}) => result.edges.push({ id: `${kind}:${from}:${to}:${result.edges.length}`, kind, source: from, target: to, label, ...extra });
     for (const item of candidates) {

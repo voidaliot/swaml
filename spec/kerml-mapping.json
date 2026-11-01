@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "languageVersion": "2.0",
+  "languageVersion": "2.1",
   "status": "proposed contract; no validated kernel exporter",
   "mapping": [
     {

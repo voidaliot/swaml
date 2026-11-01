@@ -278,7 +278,7 @@ test('swaml simulate runs the package of a one-package file or a selected target
         assert.deepEqual(result.target, { kind: 'package', identity: 'Banking' });
         assert.equal(result.stores.customer.paid, 200);
         assert.ok(result.implementation.artifacts.some((x: { path: string }) => x.path === 'src/cli/run.js'));
-        const one = cli('--language-version', '2.0', '--target', 'Banking::atm', '--options', options, source);
+        const one = cli('--language-version', '2.1', '--target', 'Banking::atm', '--options', options, source);
         assert.equal(one.status, 0, one.stderr);
         assert.deepEqual(JSON.parse(one.stdout).target, { kind: 'component', identity: 'Banking::atm' });
         const ambiguous = cli('--until-ns', '1', source, other);

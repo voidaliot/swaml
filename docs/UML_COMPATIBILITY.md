@@ -1,6 +1,6 @@
 # UML relationship and boundaries
 
-swa.ml 2.0.
+swa.ml 2.1.
 
 swa.ml is independently authored and does not claim UML, SysML or XMI adapter conformance. Components, operation signatures, typed ports, state machines and views use familiar ideas with the explicit swa.ml rules in [the specification](LANGUAGE_SPECIFICATION.md).
 

@@ -1,11 +1,11 @@
 ---
 name: swaml-author
-description: Create or edit swa.ml 2.0 architecture source with typed components, operations, directed ports, schedules and source-backed views. Use for .swaml modeling requests, not generic software diagrams or historical swa.ml syntax.
+description: Create or edit swa.ml 2.1 architecture source with typed components, operations, directed ports, schedules and source-backed views. Use for .swaml modeling requests, not generic software diagrams or historical swa.ml syntax.
 ---
 
-# Author swa.ml 2.0
+# Author swa.ml 2.1
 
-Read [the usage guide](https://github.com/voidaliot/swaml/blob/main/docs/USER_GUIDE.md) and [AI guide](https://github.com/voidaliot/swaml/blob/main/docs/AI_GUIDE.md), then the relevant normative chapter linked from [the specification](https://github.com/voidaliot/swaml/blob/main/docs/LANGUAGE_SPECIFICATION.md). Prefer those documents from the configured 2.0 source checkout when available; resolve their paths from that checkout root. Online main must identify edition 2.0 before using it as guidance. Check [implemented support](https://github.com/voidaliot/swaml/blob/main/docs/IMPLEMENTATION_STATUS.md) before making evidence claims.
+Read [the usage guide](https://github.com/voidaliot/swaml/blob/main/docs/USER_GUIDE.md) and [AI guide](https://github.com/voidaliot/swaml/blob/main/docs/AI_GUIDE.md), then the relevant normative chapter linked from [the specification](https://github.com/voidaliot/swaml/blob/main/docs/LANGUAGE_SPECIFICATION.md). Prefer those documents from the configured 2.1 source checkout when available; resolve their paths from that checkout root. Online main must identify edition 2.1 before using it as guidance. Check [implemented support](https://github.com/voidaliot/swaml/blob/main/docs/IMPLEMENTATION_STATUS.md) before making evidence claims.
 
 Use one component family and one operation family. A def supplies a reusable structure/signature/body; a usage creates a distinct occurrence. Type every attribute, local, parameter and result explicitly. Place operations, attributes and child usages in their owning component. Put nested operations first and pass enclosing values explicitly; they never capture enclosing locals/parameters. Use explicit redefines for compatible whole inherited members. Keep each multiplicity occurrence's private state separate.
 
@@ -17,4 +17,4 @@ Use indexed literal multiplicity paths. Deployment is separate and targets platf
 
 Validate the complete model workspace with node out/src/cli/main.js --json file.swaml dependencies.swaml after npm run build. Fix syntax/names, ownership/routes, types/effects and schedule errors in that order when dependencies require it. Revalidate after each meaningful repair. Format with --format and revalidate. Add bounded simulation evidence only for validated source; report root/profile/options, relevant observations and final stores. Read the support matrix before claiming execution/graphical/kernel conformance. Keep publication within the user's explicit authorization.
 
-Locate a host pinned to parser 2.0 before running commands. A configured swaml CLI accepts --language-version 2.0 --json. Otherwise use the companion source checkout identified by the user/project, build it there, and run its out/src/cli/main.js or simulate.js with absolute model/dependency paths. Do not assume the model workspace contains the language implementation, install global tools without authorization or silently use an older host.
+Locate a host pinned to parser 2.1 before running commands. A configured swaml CLI accepts --language-version 2.1 --json. Otherwise use the companion source checkout identified by the user/project, build it there, and run its out/src/cli/main.js or simulate.js with absolute model/dependency paths. Do not assume the model workspace contains the language implementation, install global tools without authorization or silently use an older host.

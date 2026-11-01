@@ -1,8 +1,8 @@
-# swa.ml 2.0 usage guide
+# swa.ml 2.1 usage guide
 
 Start with a component, give each persistent value a typed attribute, and write named operations for behavior. Add a schedule to say when those operations run. Add directed ports and explicit connections when behavior crosses component boundaries.
 
-This guide targets the 2.0 parser only. Install Node.js 22+ and npm 10.2.3+, then run npm ci and npm run build in this repository. Validate with node out/src/cli/main.js --language-version 2.0 model.swaml. Files are headerless; the host and package revision select the edition.
+This guide targets the 2.1 parser only. Install Node.js 22+ and npm 10.2.3+, then run npm ci and npm run build in this repository. Validate with node out/src/cli/main.js --language-version 2.1 model.swaml. Files are headerless; the host and package revision select the edition.
 
 ## A first model
 
