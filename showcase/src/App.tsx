@@ -1,5 +1,5 @@
 import { Timing } from './Timing';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import model from './generated/model.json';
 import './v2.css';
 
@@ -54,7 +54,63 @@ function Sequence() {
     {steps.map((s, i) => { const from = names.indexOf(s.source.split('.')[0]), to = names.indexOf(s.target.split('.')[0]), y = 130 + i * 94; return <g key={s.via}><path className="connector" d={`M${160 + from * 320} ${y}H${160 + to * 320}`}/><path className="connector" d={`m${150 + to * 320} ${y - 5} 10 5-10 5`}/><text className="edge-label" x={(from + to) * 160 + 160} y={y - 15} textAnchor="middle">{s.member} · via {s.via}</text></g>; })}
   </svg>;
 }
-function CaseView() { return <div className="case-diagram"><div className="case-requirement"><span className="node-kicker">requirement</span><strong>{model.requirements[0].name}</strong><span>{model.requirements[0].attributes[0].name}: {model.requirements[0].attributes[0].type} = {model.requirements[0].attributes[0].value}</span></div><span className="intent-link">verify<br/><span>intent</span></span><div className="case-oval"><span className="node-kicker">test</span><strong>{model.cases[0].name}</strong><span>of {model.cases[0].subject} · reference run: {model.cases[0].result}</span></div><p className="diagram-footnote">This test runs as a script in a fresh package run; a pass is bounded evidence of that run. Its verify link does not establish requirement fulfillment.</p></div>; }
+const pkg = root.split('::')[0];
+type CaseData = { name: string; kind: string; subject: string | null; subjectType: string | null; actors: { name: string; type: string | null }[]; verifies: string[]; result?: string };
+const cases = model.cases as CaseData[];
+type CaseRow = { name: string; kind: string; result?: string; id: string; y: number };
+// Case view: each subject occurrence is a dotted boundary around its cases; associated occurrences are actors outside it.
+function CaseView({ selected, select }: { selected: string; select: (id: string) => void }) {
+  const W = 960, bx = 210, bw = 430, cx = bx + bw / 2, rowH = 104, rx = 128, ry = 38, rqX = 724, rqW = 220, rqH = 84;
+  const node = (id: string) => all.find(n => n.id === id);
+  const typeName = (id: string) => { const n = node(id); return n && n.definition !== n.id ? n.definition.split('::').at(-1) : undefined; };
+  // Subjects first, in source order; intent-only cases (no subject) follow outside any boundary.
+  const subjects = [...new Set(cases.map(c => c.subject))].sort((a, b) => a === null ? 1 : b === null ? -1 : 0);
+  const anchors = new Map<string, { x: number; y: number }>(), frames: { subject: string; type: string | null; y: number; h: number }[] = [];
+  const rows: CaseRow[] = [], parts: { design: string; y: number }[] = [];
+  let y = 26;
+  for (const subject of subjects) {
+    const own = cases.filter(c => c.subject === subject);
+    // A part of the subject that satisfies a requirement is drawn inside the boundary.
+    const inside = subject ? model.satisfactions.map(s => s.design).filter((d, i, a) => d.startsWith(subject + '.') && a.indexOf(d) === i && node(pkg + '::' + d)?.kind === 'component') : [];
+    const head = subject ? 58 : 6, top = y + head;
+    own.forEach((c, i) => { const row = { name: c.name, kind: c.kind, result: c.result, id: pkg + '::' + c.name, y: top + rowH * i + rowH / 2 - 8 }; rows.push(row); anchors.set(c.name, { x: cx + rx, y: row.y }); });
+    inside.forEach((design, j) => { const py = top + rowH * (own.length + j) + rowH / 2 - 8; parts.push({ design, y: py }); anchors.set(design, { x: cx + 95, y: py }); });
+    const h = head + rowH * (own.length + inside.length) - 8;
+    if (subject) { frames.push({ subject, type: own[0].subjectType, y, h }); anchors.set(subject, { x: bx + bw, y: y + 30 }); }
+    y += h + 26;
+  }
+  // Requirement links: verify from a test; satisfy from a case, a part inside a boundary or the boundary itself.
+  const links = [...cases.flatMap(c => c.verifies.map(r => ({ kind: 'verify', from: c.name, requirement: r }))), ...model.satisfactions.map(s => ({ kind: 'satisfy', from: s.design, requirement: s.requirement }))].filter(l => anchors.has(l.from));
+  const requirements = model.requirements.filter(r => links.some(l => l.requirement === r.name));
+  let next = 26;
+  const boxes = requirements.map(r => { const ys = links.filter(l => l.requirement === r.name).map(l => anchors.get(l.from)!.y); const top = Math.max(next, ys.reduce((a, b) => a + b, 0) / ys.length - rqH / 2); next = top + rqH + 20; return { r, y: top }; });
+  const actorList = [...new Map(cases.flatMap(c => c.actors.map(a => [a.name, a] as const))).values()];
+  const actors = actorList.map((a, i) => { const ys = rows.filter(row => cases.find(c => c.name === row.name)!.actors.some(x => x.name === a.name)).map(row => row.y); return { ...a, y: actorList.length === 1 ? ys.reduce((p, q) => p + q, 0) / ys.length + 10 : 80 + i * 120 }; });
+  // Without actors the left column stays empty, so the drawing starts at the boundary.
+  const minX = actors.length ? 0 : bx - 24;
+  const H = Math.max(y, next, ...actors.map(a => a.y + 60)) + 48;
+  const pick = (id: string, label: string) => node(id) ? { role: 'button', tabIndex: 0, 'aria-label': label, onClick: () => select(id), onKeyDown: (e: ReactKeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(id); } } } : {};
+  const sel = (id: string) => selected === id ? ' selected' : '';
+  const described = rows.map(r => `${r.kind} ${r.name}`).join(', ');
+  return <svg className="architecture-svg case-svg" viewBox={`${minX} 0 ${W - minX} ${H}`} role="img" aria-label={`Case view: ${described} inside the boundary of ${frames.map(f => f.subject).join(', ') || 'no subject'}, linked to ${requirements.map(r => r.name).join(', ')}`}>
+    <defs><marker id="case-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path className="case-arrowhead" d="M1 1 9 5 1 9"/></marker></defs>
+    {frames.map(f => <g key={f.subject} className={`diagram-component case-boundary${sel(pkg + '::' + f.subject)}`} {...pick(pkg + '::' + f.subject, `Inspect subject ${f.subject}`)}>
+      <rect x={bx} y={f.y} width={bw} height={f.h}/><text className="node-meta" x={bx + 16} y={f.y + 22}>subject · component</text><text className="case-boundary-name" x={bx + 16} y={f.y + 44}>{f.subject}{f.type ? ': ' + f.type : ''}</text>
+    </g>)}
+    {links.map(l => { const a = anchors.get(l.from)!, b = boxes.find(x => x.r.name === l.requirement)!, peers = links.filter(x => x.requirement === l.requirement), ty = b.y + rqH * (peers.indexOf(l) + 1) / (peers.length + 1), mx = (a.x + rqX) / 2; return <g key={l.kind + l.from + l.requirement}>
+      <path className="case-link" d={`M${a.x} ${a.y}C${mx} ${a.y} ${mx} ${ty} ${rqX} ${ty}`} markerEnd="url(#case-arrow)"/><text className="edge-label case-link-label" x={(bx + bw + rqX) / 2} y={ty - 10} textAnchor="middle">«{l.kind}»</text></g>; })}
+    {actors.flatMap(a => rows.filter(row => cases.find(c => c.name === row.name)!.actors.some(x => x.name === a.name)).map(row => <path key={a.name + row.name} className="connector" d={`M104 ${a.y - 34}L${cx - rx} ${row.y}`}/>))}
+    {actors.map(a => <g key={a.name} className={`case-actor${sel(pkg + '::' + a.name)}`} {...pick(pkg + '::' + a.name, `Inspect actor ${a.name}`)}>
+      <circle cx={80} cy={a.y - 56} r={9}/><path d={`M80 ${a.y - 47}v24m-18-14h36m-18 14-14 20m14-20 14 20`}/><text className="member-name" x={80} y={a.y + 14} textAnchor="middle">{a.name}{a.type ? ': ' + a.type : ''}</text></g>)}
+    {rows.map(r => <g key={r.name} className={`diagram-component case-ellipse${sel(r.id)}`} {...pick(r.id, `Inspect ${r.kind} ${r.name}`)}>
+      <ellipse cx={cx} cy={r.y} rx={rx} ry={ry}/>{r.kind === 'test' && <text className="node-meta" x={cx} y={r.y - 14} textAnchor="middle">«test»</text>}<text className="case-name" x={cx} y={r.y + 6} textAnchor="middle">{r.name}</text>{r.result && <text className="node-meta" x={cx} y={r.y + 22} textAnchor="middle">reference run: {r.result}</text>}</g>)}
+    {parts.map(p => <g key={p.design} className={`diagram-component${sel(pkg + '::' + p.design)}`} {...pick(pkg + '::' + p.design, `Inspect ${p.design}`)}>
+      <rect x={cx - 95} y={p.y - 28} width={190} height={56}/><text className="node-meta" x={cx - 81} y={p.y - 8}>component</text><text className="member-name" x={cx - 81} y={p.y + 12}>{p.design.split('.').at(-1)}{typeName(pkg + '::' + p.design) ? ': ' + typeName(pkg + '::' + p.design) : ''}</text></g>)}
+    {boxes.map(({ r, y: top }) => <g key={r.name} className={`diagram-component${sel(pkg + '::' + r.name)}`} {...pick(pkg + '::' + r.name, `Inspect requirement ${r.name}`)}>
+      <rect x={rqX} y={top} width={rqW} height={rqH}/><text className="node-meta" x={rqX + 16} y={top + 22}>«requirement»</text><text className="case-name" x={rqX + 16} y={top + 46}>{r.name}</text>{r.attributes.map((at, i) => <text key={at.name} className="member-dir" x={rqX + 16} y={top + 66 + i * 14}>{at.name}: {at.type} = {at.value}</text>)}</g>)}
+    <text className="diagram-caption" x={minX + 24} y={H - 26}>A test runs as a script in a fresh package run; a pass is bounded evidence of that run.</text><text className="diagram-caption" x={minX + 24} y={H - 11}>«satisfy» and «verify» record intent, not fulfillment.</text>
+  </svg>;
+}
 function Flow() { return <div className="flow-diagram"><span className="flow-dot"/>{model.flow.map((step,i)=><div className="flow-group" key={i}>{i>0&&<span className="flow-stem"/>}<div className="flow-step"><span className="node-kicker">{step.kind==='LocalVariable'?'typed local value':'provided event · explicit output route'}</span><Code text={step.code}/></div></div>)}<span className="flow-stem"/><span className="flow-end"/><p className="diagram-footnote">{components.find(n=>n.name==='controller')?.schedule?.[0].code}</p></div>; }
 
 function Explorer() {
@@ -68,7 +124,7 @@ function Explorer() {
       {showSource ? <div className="full-source" id="model-view" role="tabpanel" aria-labelledby={`tab-${view}`}><div className="source-actions"><span>Complete validated model</span><CopyButton text={model.source}/><a href="./downloads/controller.swaml" download>Download .swaml <Icon name="arrow" size={14}/></a></div><Code text={model.source} numbers/></div> : <div className="workbench-body">
         <aside className="model-browser" aria-label="Model Browser"><span className="pane-heading">BROWSER</span><span className="browser-root">▾ Demo</span>{components.map(n => <div key={n.id}><button aria-pressed={selected === n.id} onClick={() => select(n.id)}><span>⌞</span> {n.name}</button>{operations.filter(o => o.owner === n.id).map(o => <button key={o.id} className="browser-operation" aria-pressed={selected === o.id} onClick={() => select(o.id)}>{o.name}()</button>)}</div>)}<span className="browser-footer">3 occurrences<br/>Separate private state</span></aside>
         <div className="view-pane"><div className="view-toolbar"><span className="view-caption">{view} <span className="muted">/ Demo</span></span>{view === 'General' && <div className="segmented"><button aria-pressed={!tree} onClick={() => setTree(false)}>Box in box</button><button aria-pressed={tree} onClick={() => setTree(true)}>Tree</button></div>}{view === 'Timing' && <div className="segmented"><button aria-pressed={!observed} onClick={() => setObserved(false)}>Declared</button><button aria-pressed={observed} onClick={() => setObserved(true)}>Observed</button></div>}</div>
-          <div id="model-view" role="tabpanel" aria-labelledby={`tab-${view}`} className="model-canvas">{view === 'Interconnect' ? <Interconnect selected={selected} select={select}/> : view === 'General' ? <General selected={selected} select={select} tree={tree}/> : view === 'Sequence' ? <Sequence/> : view === 'Case' ? <CaseView/> : view === 'Flow' ? <Flow/> : view === 'Timing' ? <Timing observed={observed}/> : <div className="inventory-table"><table><caption>Model occurrence inventory</caption><thead><tr><th>Name</th><th>Kind</th><th>Owned by</th></tr></thead><tbody>{all.filter(n => n.id.startsWith(root + '.') && ['component','operation','port','attribute'].includes(n.kind)).map(n => <tr key={n.id}><td><button onClick={() => select(n.id)}>{n.name}{n.kind === 'operation' ? '()' : ''}</button></td><td>{n.kind}</td><td>{n.owner?.replace(root + '.', '') ?? 'Demo'}</td></tr>)}</tbody></table></div>}</div>
+          <div id="model-view" role="tabpanel" aria-labelledby={`tab-${view}`} className="model-canvas">{view === 'Interconnect' ? <Interconnect selected={selected} select={select}/> : view === 'General' ? <General selected={selected} select={select} tree={tree}/> : view === 'Sequence' ? <Sequence/> : view === 'Case' ? <CaseView selected={selected} select={select}/> : view === 'Flow' ? <Flow/> : view === 'Timing' ? <Timing observed={observed}/> : <div className="inventory-table"><table><caption>Model occurrence inventory</caption><thead><tr><th>Name</th><th>Kind</th><th>Owned by</th></tr></thead><tbody>{all.filter(n => n.id.startsWith(root + '.') && ['component','operation','port','attribute'].includes(n.kind)).map(n => <tr key={n.id}><td><button onClick={() => select(n.id)}>{n.name}{n.kind === 'operation' ? '()' : ''}</button></td><td>{n.kind}</td><td>{n.owner?.replace(root + '.', '') ?? 'Demo'}</td></tr>)}</tbody></table></div>}</div>
           <div className="canvas-status"><span>● {view === 'Timing' && observed ? `${model.run.profile} · horizon 29ms` : 'Source-backed projection'}</span><span>{view === 'Timing' ? 'Logical time · no physical cost claim' : 'Select a component to inspect its source'}</span></div>
         </div>
       </div>}
