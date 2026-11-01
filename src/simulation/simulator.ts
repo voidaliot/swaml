@@ -1,5 +1,6 @@
 import { AstUtils, DocumentState, type AstNode } from 'langium';
 import * as a from '../language/generated/ast.js';
+import { SWAML_REFERENCE_PROFILE } from '../language/edition.js';
 import { caseTarget, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
 import { binary, bind, checked, ContractViolation, copy, plain, RuntimeFault, scalar, voidValue, widen, type Environment, type Value } from './values.js';
 export { projectOperationTiming } from './timing.js';
@@ -25,7 +26,7 @@ export interface TraceEvent {
     [key: string]: unknown;
 }
 /** The execution profile this reference interpreter implements; recorded by every run and test report. */
-export const REFERENCE_PROFILE = 'swaml-reference/2.0' as const;
+export const REFERENCE_PROFILE = SWAML_REFERENCE_PROFILE;
 export interface SimulationResult {
     profile: typeof REFERENCE_PROFILE;
     /** What ran: a whole package context, or one top-level component alone with its ports open. */

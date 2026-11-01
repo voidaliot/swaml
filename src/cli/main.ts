@@ -21,7 +21,7 @@ try {
     const json = args.includes('--json'), format = args.includes('--format'), checkFormat = args.includes('--check-format');
     const files = languageArguments(args.filter(a => !['--json', '--format', '--check-format'].includes(a)));
     if (!files.length || format && checkFormat)
-        throw new Error('Usage: swaml [--language-version 2.0] [--json] [--format|--check-format] file.swaml [more files...]\n       swaml simulate [--language-version 2.0] [--target Package|Package::component] (--options options.json | --until-ns N) file.swaml [more files...]\n       ' + TEST_USAGE.replace('Usage: ', ''));
+        throw new Error('Usage: swaml [--language-version 2.1] [--json] [--format|--check-format] file.swaml [more files...]\n       swaml simulate [--language-version 2.1] [--target Package|Package::component] (--options options.json | --until-ns N) file.swaml [more files...]\n       ' + TEST_USAGE.replace('Usage: ', ''));
     const { shared } = createSwamlServices(NodeFileSystem);
     const docs = await Promise.all(files.map(f => shared.workspace.LangiumDocuments.getOrCreateDocument(URI.file(resolve(f)))));
     await shared.workspace.DocumentBuilder.build(docs, { validation: true });

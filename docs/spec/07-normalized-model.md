@@ -1,6 +1,6 @@
 # 7. Normalized model contract
 
-Normative information-preservation contract of [swa.ml 2.0](../LANGUAGE_SPECIFICATION.md). It defines what any exporter/target adapter must retain; it does not claim a kernel exporter exists.
+Normative information-preservation contract of [swa.ml 2.1](../LANGUAGE_SPECIFICATION.md). It defines what any exporter/target adapter must retain; it does not claim a kernel exporter exists.
 
 ## 7.1 Identity and provenance
 

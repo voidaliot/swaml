@@ -1,6 +1,6 @@
 # 3. Operations, schedules and states
 
-Normative chapter of [swa.ml 2.0](../LANGUAGE_SPECIFICATION.md).
+Normative chapter of [swa.ml 2.1](../LANGUAGE_SPECIFICATION.md).
 
 ## 3.1 Operations and effects
 

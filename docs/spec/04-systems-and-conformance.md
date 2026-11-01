@@ -1,6 +1,6 @@
 # 4. Deployment, cases, views and conformance
 
-Normative chapter of [swa.ml 2.0](../LANGUAGE_SPECIFICATION.md).
+Normative chapter of [swa.ml 2.1](../LANGUAGE_SPECIFICATION.md).
 
 ## 4.1 Deployment
 

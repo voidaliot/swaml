@@ -76,10 +76,10 @@ async function runOptions(f: Flags, fallback?: SimulationOptions): Promise<Simul
 export async function simulateCommand(args: string[]): Promise<number> {
     const f = flags(args, ['--target', '--options', '--until-ns']), options = await runOptions(f);
     if (!f.files.length || !options)
-        throw new Error('Usage: swaml simulate [--language-version 2.0] [--target Package|Package::component] (--options options.json | --until-ns N) file.swaml [more files...]');
+        throw new Error('Usage: swaml simulate [--language-version 2.1] [--target Package|Package::component] (--options options.json | --until-ns N) file.swaml [more files...]');
     return runFiles(f.files, f.values.get('--target'), options);
 }
-export const TEST_USAGE = 'Usage: swaml test [--language-version 2.0] [--package P] [--case Package::Case|Case] [--json] [--options options.json | --until-ns N] file.swaml [more files...]';
+export const TEST_USAGE = 'Usage: swaml test [--language-version 2.1] [--package P] [--case Package::Case|Case] [--json] [--options options.json | --until-ns N] file.swaml [more files...]';
 /**
  * Runs the use cases and tests of the supplied sources: swaml test. Prints a summary, or JSON
  * with --json, and returns 1 when a case fails or the sources are invalid, otherwise 0.

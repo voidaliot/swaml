@@ -1,6 +1,6 @@
-# swa.ml 2.0 reference simulation
+# swa.ml 2.1 reference simulation
 
-The portable interpreter selects **swaml-reference/2.0** and requires linked, validated source. All activation comes from ordinary source schedules/ports/routes, including authored test drivers. [Execution semantics](spec/06-execution-contract.md) is normative; this guide covers the reference host.
+The portable interpreter selects **swaml-reference/2.1** and requires linked, validated source. All activation comes from ordinary source schedules/ports/routes, including authored test drivers. [Execution semantics](spec/06-execution-contract.md) is normative; this guide covers the reference host.
 
 ```sh
 npm ci
@@ -37,7 +37,7 @@ Outcome failure-observed includes caught expression failures as well as failed a
 A use case or test with statements is a script ([behavior](spec/03-behavior.md), [case runs](spec/06-execution-contract.md)). swaml test runs the cases of the supplied sources:
 
 ```text
-swaml test [--language-version 2.0] [--package P] [--case Package::Case|Case] [--json] [--options options.json | --until-ns N] file.swaml [more files...]
+swaml test [--language-version 2.1] [--package P] [--case Package::Case|Case] [--json] [--options options.json | --until-ns N] file.swaml [more files...]
 ```
 
 Each case with statements runs in its own fresh run of its package. The default horizon is 10 s of logical time (untilNs 10000000000); the run stops earlier when the script completes or fails. The script is one serial activation released at 0 ns after every on start entry, and it acts at the ports of the associated interface-only occurrences. Input that reaches an actor port before the script waits for it is retained under the connection's policy and attributes keep their latest value, so a script is not sensitive to whether a reply arrives before or after it starts waiting. A request to an actor port waits until an on call branch answers it or the caller's request times out. A test may read and call into its subject; those accesses wait for the occurrence's serial lock.

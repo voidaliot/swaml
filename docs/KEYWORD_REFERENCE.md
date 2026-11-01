@@ -1,4 +1,4 @@
-# swa.ml 2.0 keyword reference
+# swa.ml 2.1 keyword reference
 
 Generated from spec/keywords.json and the normative grammar. Examples here are grammar fragments; complete runnable models are in the usage guide and examples. 15 contextual words remain legal names outside their positions. call appears in the on call schedule trigger and in on call branches of case scripts.
 

@@ -1,4 +1,4 @@
-# swa.ml 2.0 worked diagrams
+# swa.ml 2.1 worked diagrams
 
 Generated from original scene geometry; source subjects remain authoritative.
 

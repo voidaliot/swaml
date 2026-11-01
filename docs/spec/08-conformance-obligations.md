@@ -1,6 +1,6 @@
 # 8. Conformance obligations and evidence
 
-Normative chapter of [swa.ml 2.0](../LANGUAGE_SPECIFICATION.md). Acceptance levels are separate; implementations report the tested subset and limitations in their support matrix.
+Normative chapter of [swa.ml 2.1](../LANGUAGE_SPECIFICATION.md). Acceptance levels are separate; implementations report the tested subset and limitations in their support matrix.
 
 ## 8.1 Static obligations
 

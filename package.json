@@ -1,6 +1,6 @@
 {
   "name": "@swaml/language",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
   "description": "Software Architecture Modeling Language: specification and Langium reference workbench",
   "license": "MIT",

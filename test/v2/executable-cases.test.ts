@@ -344,7 +344,7 @@ test('swaml test prints a summary, emits JSON and fails on a failed case', async
         assert.match(ok.stdout, /^pass +Banking::Script$/m);
         assert.match(ok.stdout, /^no checks +Banking::Intent$/m);
         assert.match(ok.stdout, /2 case\(s\): 1 pass, 0 fail, 0 inconclusive, 1 no checks\./);
-        const bad = cli('--language-version', '2.0', '--json', '--options', opts, failing);
+        const bad = cli('--language-version', '2.1', '--json', '--options', opts, failing);
         assert.equal(bad.status, 1, bad.stderr);
         const report = JSON.parse(bad.stdout);
         assert.deepEqual(report.summary, { pass: 0, fail: 1, inconclusive: 0, noChecks: 0 });
@@ -358,7 +358,8 @@ test('swaml test prints a summary, emits JSON and fails on a failed case', async
         assert.equal(cli('--package', 'Broken', passing, failing).status, 1);
         const intent = JSON.parse(cli('--json', '--case', 'Banking::Intent', passing).stdout);
         assert.ok(intent.sourceDigests.some((d: { uri: string }) => d.uri.endsWith('pass.swaml')), 'digests also when no case ran');
-        assert.equal(intent.profile, 'swaml-reference/2.0');
+        assert.equal(intent.profile, 'swaml-reference/2.1');
+        assert.equal(intent.languageVersion, '2.1');
         assert.equal(cli('--package', 'Nowhere', passing).status, 2);
         assert.equal(cli('--until-ns', '1', '--options', opts, passing).status, 2);
         assert.equal(cli().status, 2);

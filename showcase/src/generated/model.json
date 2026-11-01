@@ -48,14 +48,14 @@
       "code": "publish command.set(power);"
     }
   ],
-  "languageVersion": "2.0",
-  "edition": "2.0",
+  "languageVersion": "2.1",
+  "edition": "2.1",
   "status": "released",
   "model": "examples/02-realtime-controller.swaml",
   "source": "package Control {\n  import Swaml::Views;\n  port def Temperature {\n    provides attribute temperature: real;\n  }\n  port def Commands {\n    provides event set(value: real);\n  }\n  component def Sensor {\n    port reading: Temperature;\n    operation sample() {\n      wait 1ms;\n      send reading.temperature(18.5);\n    }\n    schedule {\n      on every 10ms sample();\n    }\n  }\n  component def Controller {\n    reversed port reading: Temperature;\n    port command: Commands;\n    attribute target: real = 21.0;\n    operation regulate(measured: real) {\n      var power: real = (target - measured) * 0.1;\n      publish command.set(power);\n    }\n    schedule {\n      on receive reading.temperature(t) regulate(t) deadline 5ms;\n    }\n  }\n  component def Heater {\n    reversed port command: Commands;\n    attribute power: real = 0.0;\n    operation apply(value: real) {\n      power = value;\n    }\n    schedule {\n      on receive command.set(value) apply(value);\n    }\n  }\n  component Demo {\n    component sensor: Sensor;\n    component controller: Controller;\n    component heater: Heater;\n    connect samples (sensor.reading, controller.reading);\n    connect commands (controller.command, heater.command);\n  }\n  requirement Responsive {\n    attribute limitMs: uint = 5;\n  }\n  test ControlLoop of Demo {\n    /** A sample reaches the controller, which commands the heater within its deadline. */\n    wait 12ms;\n    assert Demo.heater.power > 0.2 and Demo.heater.power < 0.3;\n  }\n  satisfy Responsive by Demo.controller;\n  verify Responsive by ControlLoop;\n  view overview: General of Demo;\n  view intent: Case of ControlLoop;\n  view sequence: Sequence of ControlLoop;\n  view inventory: Grid of Demo;\n  view architecture: Interconnect of Demo;\n  view logic: Flow of Demo.controller.regulate;\n  view timing: Timing of Demo.sensor.sample;\n}\n",
   "sha256": "ecc4181065146ee7c8a8532badb2d6181bed3bec2fb108ce0d1b2dd0a62e1391",
   "projection": {
-    "languageVersion": "2.0",
+    "languageVersion": "2.1",
     "nodes": [
       {
         "id": "Control",
@@ -1531,7 +1531,7 @@
     ]
   },
   "timing": {
-    "profile": "swaml-reference/2.0",
+    "profile": "swaml-reference/2.1",
     "intervals": [
       {
         "activation": "a1",
@@ -1698,7 +1698,7 @@
     ]
   },
   "run": {
-    "profile": "swaml-reference/2.0",
+    "profile": "swaml-reference/2.1",
     "target": {
       "kind": "component",
       "identity": "Control::Demo"

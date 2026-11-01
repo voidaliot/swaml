@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
 import { EmptyFileSystem, URI } from 'langium';
 import { createSwamlServices } from '../../src/language/swaml-module.js';
 test('view inventories refresh after source replacement, addition and deletion', async () => {
@@ -47,13 +48,13 @@ function rpc() { const p = spawn(process.execPath, [fileURLToPath(new URL('../..
     else
         notifications.push(m);
 } }); const send = (m: unknown) => { const text = JSON.stringify(m); p.stdin.write(`Content-Length: ${Buffer.byteLength(text)}\r\n\r\n${text}`); }; const request = (method: string, params: unknown) => new Promise<any>((resolve, reject) => { const n = ++id, t = setTimeout(() => reject(Error('LSP request timed out: ' + method)), 8000); pending.set(n, m => { clearTimeout(t); resolve(m); }); send({ jsonrpc: '2.0', id: n, method, params }); }); return { p, send, request, notifications }; }
-test('LSP advertises 2.0 and rejects unsupported parser selection', async () => { for (const version of ['2.0', '1.4']) {
+test('LSP advertises 2.1 and rejects unsupported parser selection', async () => { for (const version of ['2.1', '2.0', '1.4']) {
     const r = rpc();
     try {
         const result = await r.request('initialize', { processId: null, rootUri: null, capabilities: {}, initializationOptions: { languageVersion: version } });
-        if (version === '2.0') {
-            assert.equal(result.result.serverInfo.version, '2.0.0');
-            assert.equal(result.result.capabilities.experimental.swaml.languageVersion, '2.0');
+        if (version === '2.1') {
+            assert.equal(result.result.serverInfo.version, JSON.parse(readFileSync(new URL('../../../package.json', import.meta.url), 'utf8')).version);
+            assert.deepEqual(result.result.capabilities.experimental.swaml, { languageVersion: '2.1', profile: 'swaml-reference/2.1' });
             await r.request('shutdown', null);
             r.send({ jsonrpc: '2.0', method: 'exit' });
         }
@@ -64,7 +65,7 @@ test('LSP advertises 2.0 and rejects unsupported parser selection', async () => 
         r.p.kill();
     }
 } });
-test('CLI emits structured diagnostics and distinct invocation errors', () => { const run = (args: string[]) => spawnSync(process.execPath, [main, ...args], { encoding: 'utf8', timeout: 10000 }); const good = run(['--json', 'examples/01-hello.swaml']); assert.equal(good.status, 0); assert.equal(JSON.parse(good.stdout).languageVersion, '2.0'); const bad = run(['--json', 'examples/invalid/bypass-port.swaml']); assert.equal(bad.status, 1); const diagnostics = JSON.parse(bad.stdout).diagnostics; assert.ok(diagnostics.some((d: any) => d.code === 'SW2002' && d.range && d.data.declaration)); assert.equal(run(['--language-version', '1.4', 'examples/01-hello.swaml']).status, 2); assert.equal(run([]).status, 2); });
+test('CLI emits structured diagnostics and distinct invocation errors', () => { const run = (args: string[]) => spawnSync(process.execPath, [main, ...args], { encoding: 'utf8', timeout: 10000 }); const good = run(['--json', 'examples/01-hello.swaml']); assert.equal(good.status, 0); assert.equal(JSON.parse(good.stdout).languageVersion, '2.1'); const bad = run(['--json', 'examples/invalid/bypass-port.swaml']); assert.equal(bad.status, 1); const diagnostics = JSON.parse(bad.stdout).diagnostics; assert.ok(diagnostics.some((d: any) => d.code === 'SW2002' && d.range && d.data.declaration)); assert.equal(run(['--language-version', '1.4', 'examples/01-hello.swaml']).status, 2); assert.equal(run(['--language-version', '2.0', 'examples/01-hello.swaml']).status, 2); assert.equal(run(['--language-version', '2.1', 'examples/01-hello.swaml']).status, 0); assert.equal(run([]).status, 2); });
 test('the shipped standard library is itself linked and validated', async () => { const { shared } = createSwamlServices(EmptyFileSystem), docs = shared.workspace.LangiumDocuments.all.toArray(); await shared.workspace.DocumentBuilder.build(docs, { validation: true }); assert.deepEqual(docs.flatMap(d => d.diagnostics?.filter(x => x.severity === 1) ?? []), []); });
 test('adding a newly ambiguous imported declaration revalidates negative lookups', async () => { const rawSources: [
     string,

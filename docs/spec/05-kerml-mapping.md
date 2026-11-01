@@ -1,6 +1,6 @@
 # 5. Proposed KerML semantic mapping
 
-Normative mapping contract of [swa.ml 2.0](../LANGUAGE_SPECIFICATION.md), conditional on a backend claiming K conformance. No exporter or validated KerML semantic library is supplied by the current reference implementation. Langium AST generation and exhaustive inventory coverage do not establish KerML conformance.
+Normative mapping contract of [swa.ml 2.1](../LANGUAGE_SPECIFICATION.md), conditional on a backend claiming K conformance. No exporter or validated KerML semantic library is supplied by the current reference implementation. Langium AST generation and exhaustive inventory coverage do not establish KerML conformance.
 
 ## 5.1 Representation
 

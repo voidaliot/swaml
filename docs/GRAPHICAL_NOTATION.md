@@ -1,4 +1,4 @@
-# swa.ml 2.0 graphical notation
+# swa.ml 2.1 graphical notation
 
 Original monochrome swa.ml notation uses thin rules, explicit labels and owned compartments. It does not claim OMG notation conformance. [The canonical catalog](GRAPHICAL_CATALOG.md) pairs every concept with context, source subject, drawing and constraints. [Worked diagrams](GRAPHICAL_EXAMPLES.md) retain source-backed model subjects. spec/notation.json covers every grammar/type family and every keyword, including a text-only rationale for lexical spelling.
 
@@ -12,4 +12,4 @@ Platform Nodes own const attributes and child Nodes. Deployment edges refer to t
 
 Browser remains navigation. General, Interconnect, Case, Sequence, Grid, Flow and Timing are imported view definitions. General Box in box/Tree preserve the same selected identities/topology. Timing declared mode shows schedules/deadlines/static waits; observed mode adds an identified run, lock gaps, message latency, terminals and open intervals. Missing evidence never becomes measured WCET. Geometry, collapse and routes stay in sidecars.
 
-Regenerate with python scripts/build-notation.py and python scripts/build-graphical-examples.py, then run both with --check. SVG, PNG and scene JSON share the same original geometry. New artifacts live under versioned 2.0 directories; historical publication assets remain untouched.
+Regenerate with python scripts/build-notation.py and python scripts/build-graphical-examples.py, then run both with --check. SVG, PNG and scene JSON share the same original geometry. Current artifacts keep their established docs/notation/2.0 and docs/figures/2.0 paths so that existing links work; the directory names are not edition labels, and each drawing carries the current standard version. Historical publication assets remain untouched.
