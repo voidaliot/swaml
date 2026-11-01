@@ -5,6 +5,12 @@ import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
 import { EmptyFileSystem, URI } from 'langium';
 import { createSwamlServices } from '../../src/language/swaml-module.js';
+import { SWAML_IMPLEMENTATION_VERSION, SWAML_LANGUAGE_VERSION } from '../../src/language/edition.js';
+test('the edition module matches the standard and the package version', () => {
+    const json = (path: string) => JSON.parse(readFileSync(new URL('../../../' + path, import.meta.url), 'utf8'));
+    assert.equal(SWAML_LANGUAGE_VERSION, json('spec/standard.json').version);
+    assert.equal(SWAML_IMPLEMENTATION_VERSION, json('package.json').version);
+});
 test('view inventories refresh after source replacement, addition and deletion', async () => {
     const services = createSwamlServices(EmptyFileSystem), { LangiumDocuments: documents, LangiumDocumentFactory: factory, DocumentBuilder: builder } = services.shared.workspace;
     const uri = URI.parse('memory:///views.swaml');

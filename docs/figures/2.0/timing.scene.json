@@ -202,15 +202,15 @@
     },
     {
       "kind": "text",
-      "x": 300,
-      "y": 287,
+      "x": 332,
+      "y": 268,
       "text": "wait / unlock",
       "size": 12
     },
     {
       "kind": "text",
-      "x": 590,
-      "y": 315,
+      "x": 628,
+      "y": 292,
       "text": "deadline contract",
       "size": 12
     }

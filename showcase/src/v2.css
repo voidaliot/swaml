@@ -46,6 +46,8 @@ code { font-family: var(--mono); }
 .wordmark { display: inline-flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; letter-spacing: .4px; }
 .wordmark img { flex-shrink: 0; }
 :root[data-theme=dark] .wordmark img { filter: invert(1); }
+/* Monochrome notation drawings follow the theme instead of showing a white panel in dark mode. */
+:root[data-theme=dark] .notation-figure { filter: invert(.9) hue-rotate(180deg); }
 .version-label { font: 11px var(--mono); color: var(--muted); padding: 3px 6px; border: 1px solid var(--line); }
 .site-header nav { display: flex; align-items: center; gap: 30px; margin-left: auto; font-size: 13px; }
 .theme-toggle { border-left: 1px solid var(--line); padding: 4px 0 4px 24px; display: flex; align-items: center; gap: 8px; font: 11px var(--mono); }

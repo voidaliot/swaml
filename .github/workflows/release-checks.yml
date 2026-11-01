@@ -87,3 +87,13 @@ jobs:
           python scripts/test-publication-2-0.py
           python scripts/check-spec-pdf.py
           python scripts/check-spec-pdf-2.0.py --archive
+          python scripts/test-publication-2-1.py
+      # A manual run is the release gate: every embedded 2.1 source must equal the
+      # checked-out workspace. Pull requests verify the published 2.1 edition against
+      # its own manifest, because maintained sources legitimately change after release.
+      - name: Check the 2.1 edition against the current sources
+        if: github.event_name == 'workflow_dispatch'
+        run: python scripts/check-spec-pdf-2.1.py
+      - name: Check the published 2.1 edition
+        if: github.event_name != 'workflow_dispatch'
+        run: python scripts/check-spec-pdf-2.1.py --archive

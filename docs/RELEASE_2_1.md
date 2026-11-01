@@ -1,12 +1,12 @@
 # swa.ml 2.1 release
 
-2 November 2026 (intended publication date). Standard 2.1, parser 2.1, reference profile swaml-reference/2.1, reference implementation package 3.0.0.
+1 November 2026. Standard 2.1, parser 2.1, reference profile swaml-reference/2.1, reference implementation package 3.0.0.
 
 swa.ml 2.1 makes the package the context in which a system, its surroundings and the scenarios that exercise them live side by side, and makes use cases and tests executable. [ADR 0019](decisions/0019-package-context.md) records the design; it supersedes [ADR 0018](decisions/0018-cases-belong-to-their-subject.md), which was never published, and the case clauses of [ADR 0016](decisions/0016-swaml-2-0.md) and [ADR 0017](decisions/0017-readable-names-and-use-cases.md). The edition also includes the quoted names of ADR 0017.
 
 This is an incompatible edition. The owner approved it as 2.1 because swa.ml has no external adopters. There is no compatibility parser, alias or deprecation period: removed forms are ordinary parse or validation errors, and a host selecting 2.1 rejects --language-version 2.0. The published 2.0 edition, its legacy v2.0.0 tag, PDF, manifest, checksum and [frozen reference](../history/2.0.0/docs/SWAML-2.0.0-Reference.md) remain unchanged.
 
-The release includes the [reference book](SWAML-2.1-Reference.md). The PDF, per-source manifest and SHA-256 checksum use the names SWAML-2.1-Specification.pdf, SWAML-2.1-Specification.manifest.json and SWAML-2.1-Specification.sha256 under output/pdf and are produced by the [publication gate](PDF_PUBLICATION.md).
+The release includes the [reference book](SWAML-2.1-Reference.md). The [complete PDF](../output/pdf/SWAML-2.1-Specification.pdf), its [per-source manifest](../output/pdf/SWAML-2.1-Specification.manifest.json) and [SHA-256 checksum](../output/pdf/SWAML-2.1-Specification.sha256) are produced by the [publication gate](PDF_PUBLICATION.md).
 
 ## What is new
 
@@ -22,9 +22,9 @@ A component with ports but no operations, schedule entries or parts is interface
 
 use case X of y { … } and test X of y { … } are package members; test replaces verification case. The optional subject y is a top-level occurrence of the same package. A case without of, or without statements, records intent only.
 
-After its documentation, a case body may contain statements: a script that acts as its associated interface-only actors through occurrence.port.member endpoints (send, publish, calls, on receive … or after D), answers requests at actor ports with on call actor.port.op(bindings) { return v; } branches, and, in a test only, reads and calls into its subject and the single parts inside it (atm.fee(20, 10), atm.dispenser.count) without assigning them. Statements require of.
+After its documentation, a case body may contain statements: a script that acts as its associated interface-only actors through occurrence.port.member endpoints (send, publish, calls, on receive … or after D), answers requests at actor ports with on call actor.port.op(bindings) { return v; } branches, and, in a test only, reads and calls into its subject and the single parts inside it (atm.fee(20, 10), atm.dispenser.count) without assigning them. A white-box call may only target an operation that neither communicates nor suspends (SW2006). Statements require of.
 
-Each case with statements runs in its own fresh deterministic package run. The script starts after the on start entries, and the run stops when the script completes or fails. Results are pass, fail (the first failure in the run, with its statement identity, message, time and trace), inconclusive (horizon, step limit or a stalled script) and no checks. A passing case is bounded evidence of one deterministic run, not proof.
+Each case with statements runs in its own fresh deterministic package run. The script starts after the on start entries. Input that reaches an actor port before the script waits for it is retained under the connection policy, and attributes keep their latest value. The run stops when the script completes or fails. Results are pass, fail (the first failure in the run, with its statement identity, message, time and trace), inconclusive (horizon, step limit or a stalled script) and no checks. A failure caught by try does not fail a case; it remains evidence in the trace. A passing case is bounded evidence of one deterministic run, not proof.
 
 swaml test [--package P] [--case X] [--json] [--options file | --until-ns N] runs the cases of the given sources, prints one line per case and a summary, and exits 1 when a case fails. See [the simulation guide](SIMULATION.md).
 

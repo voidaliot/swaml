@@ -24,6 +24,6 @@
 <line x1="620" y1="125" x2="620" y2="180" stroke="#171717"/>
 <rect x="620" y="205" width="30" height="34" fill="#dddddd" stroke="#171717"/>
 <rect x="650" y="205" width="60" height="34" fill="#ffffff" stroke="#171717" stroke-dasharray="5 4"/>
-<text x="300" y="287" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">wait / unlock</text>
-<text x="590" y="315" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">deadline contract</text>
+<text x="332" y="268" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">wait / unlock</text>
+<text x="628" y="292" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">deadline contract</text>
 </svg>

@@ -39,7 +39,7 @@ Maintained reference for the 2.1 language. Headerless parser 2.1; profile swaml-
 
 # swa.ml 2.1 language specification
 
-**Edition:** 2.1 · **Parser:** 2.1 · **Reference profile:** swaml-reference/2.1 · **Status:** prepared release edition, intended publication 2 November 2026. [Release notes](RELEASE_2_1.md) describe the changes and the migration from 2.0; the published 2.0 edition remains under its legacy v2.0.0 tag.
+**Edition:** 2.1 · **Parser:** 2.1 · **Reference profile:** swaml-reference/2.1 · **Status:** release edition, 1 November 2026. [Release notes](RELEASE_2_1.md) describe the changes and the migration from 2.0; the published 2.0 edition remains under its legacy v2.0.0 tag.
 
 swa.ml is the Software Architecture Modeling Language: a textual language for explicit software structure, communication and executable behavior. [ADR 0016](decisions/0016-swaml-2-0.md) accepts the clean restart; [ADR 0019](decisions/0019-package-context.md) adds the package context and executable cases of 2.1. The language has one component concept and one operation concept. It does not accept 1.x source. Published books and PDFs retain their original bytes.
 
@@ -337,7 +337,7 @@ A package is a closed context. It owns definitions, top-level component occurren
 
 A name is written as a basic name, an ASCII letter or underscore followed by ASCII letters, digits or underscores, or as a quoted name between single quotes, such as 'Withdraw cash', 'Bestellübersicht' or 'state'. Inside quotes, \' writes a quote and \\ a backslash; other escapes, line breaks and control characters are invalid. The name is the quoted content: 'Pump' and Pump are the same name, and a quoted reserved word is an ordinary name. A quoted name is not empty, contains no '.', ':', '[' or ']', which delimit paths, and separates words by single spaces without leading or trailing space (SW2001). Tools write a basic name whenever one is legal and quote otherwise. Qualified names and paths combine spellings, as in Shop::'Order Service'.port; a string literal holding a path, such as a view filter value, contains the unquoted names.
 
-Strings use double quotes and the portable escapes for quote, backslash, newline, carriage return and tab. Ordinary // and /* */ comments are lexical annotations. Each declaration owns at most one formal /** */ doc, first inside its body or immediately before the semicolon of a leaf. Documentation and comments do not execute.
+Strings use double quotes and the portable escapes for quote, backslash, newline, carriage return and tab. Ordinary `//` and `/* */` comments are lexical annotations. Each declaration owns at most one formal `/** */` doc, first inside its body or immediately before the semicolon of a leaf. Documentation and comments do not execute.
 
 ## 1.2 Components and occurrences
 
@@ -883,7 +883,7 @@ swa.ml 2.1; Multiplicity::Demo.
 
 ![Indexed occurrence identity](notation/2.0/multiplicity.svg)
 
-**Source:** [Multiplicity::Demo](../examples/23-multiplicity.swaml). **Grammar:** .
+**Source:** [Multiplicity::Demo](../examples/23-multiplicity.swaml).
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 
@@ -923,7 +923,7 @@ swa.ml 2.1; Boundary::Demo.
 
 ![Queue-free boundary forwarding](notation/2.0/forwarding.svg)
 
-**Source:** [Boundary::Demo](../examples/26-boundary-forwarding.swaml). **Grammar:** .
+**Source:** [Boundary::Demo](../examples/26-boundary-forwarding.swaml).
 
 Preserve owned source and distinct definition/occurrence identities. Boundary alias adds no queue, policy or message. A canonical source-backed projection; geometry is separate from semantics.
 
@@ -1073,7 +1073,7 @@ swa.ml 2.1; Timing::Demo.sample.
 
 ![Declared and observed timing](notation/2.0/timing.svg)
 
-**Source:** [Timing::Demo.sample](../examples/17-function-timing.swaml). **Grammar:** .
+**Source:** [Timing::Demo.sample](../examples/17-function-timing.swaml).
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 
@@ -1235,7 +1235,7 @@ Classic, Adaptive, web and cloud example filenames illustrate these software pat
 
 swa.ml 2.1.
 
-A requirement owns immutable typed attributes and at most one formal doc. Use /** ... */ first in a body or immediately before the semicolon of a leaf declaration. Ordinary // and /* ... */ comments remain separate lexical annotations. Formal documentation is owned source, not an executable statement or proof.
+A requirement owns immutable typed attributes and at most one formal doc. Use `/** ... */` first in a body or immediately before the semicolon of a leaf declaration. Ordinary `//` and `/* ... */` comments remain separate lexical annotations. Formal documentation is owned source, not an executable statement or proof.
 
 satisfy Requirement by design; links intent from a component definition or occurrence path declared in the same package. verify Requirement by Test; links a test of the package; a use case never verifies. Use cases describe an intended interaction without asserting verification. A use case or test is a package member; of names its subject, a top-level occurrence of the same package, and associate Occurrence to Case; names the other occurrences that take part. A case without of or without statements records intent only; a case with statements is a script that swaml test runs.
 
@@ -1992,7 +1992,7 @@ Colon means typed by; returns names results. Dot is containment/member access; :
 
 # swa.ml 2.1 implementation status
 
-**Standard:** 2.1 · **Implementation package:** 3.0.0 · **Parser:** 2.1 only · **Reference profile:** swaml-reference/2.1 · **Publication:** prepared 2.1 edition; the [reference book](SWAML-2.1-Reference.md) is generated, and its PDF, manifest and checksum pass the [publication gate](PDF_PUBLICATION.md) before release.
+**Standard:** 2.1 · **Implementation package:** 3.0.0 · **Parser:** 2.1 only · **Reference profile:** swaml-reference/2.1 · **Publication:** 2.1 release edition, 1 November 2026; the [reference book](SWAML-2.1-Reference.md) is generated, and the [complete PDF](../output/pdf/SWAML-2.1-Specification.pdf) with its manifest and checksum passes the [publication gate](PDF_PUBLICATION.md).
 
 The 2.0 core replaced the 1.x grammar, AST, resolver, validator and interpreter; 2.1 adds the package context, executable use cases and tests, package links, run targets and statement identities of [ADR 0019](decisions/0019-package-context.md). It does not accept 1.x or 2.0 source; the [release notes](RELEASE_2_1.md) describe the migration. Published 1.x and 2.0.0 books, PDFs, manifests/checksums and historical figure files remain unchanged. [ADR 0016](decisions/0016-swaml-2-0.md) defines the restart; [conformance obligations](spec/08-conformance-obligations.md) separate syntax, validation, execution, analysis, kernel and graphical claims.
 
@@ -2027,7 +2027,7 @@ Math abs/min/max/concat are ordinary source; floor/round/trunc/length are explic
 
 No validated KerML exporter or executable KerML semantic library exists; chapter 5 and the mapping inventory remain a proposed contract. No XMI adapter, generic UML/SysML importer or graphical conformance certification is claimed. The adjacent editor has its own pin, source-edit, desktop/browser and package gates; its completion must be reported separately from a passing core suite.
 
-The 2.1 edition is prepared for publication with the production website and a separately versioned PDF, SWAML-2.1-Specification.pdf with its manifest and checksum, under the [publication gate](PDF_PUBLICATION.md); see the [2.1 release notes](RELEASE_2_1.md). The 2.0 standard remains published under the legacy v2.0.0 tag with its [review resolution](REVIEW_2_0.md) and [release notes](RELEASE_2_0_0.md). Draft mockups are excluded; archived editions are never rebuilt from current sources.
+The 2.1 edition is published with the production website and a separately versioned [PDF](../output/pdf/SWAML-2.1-Specification.pdf), SWAML-2.1-Specification.pdf with its [manifest](../output/pdf/SWAML-2.1-Specification.manifest.json) and [checksum](../output/pdf/SWAML-2.1-Specification.sha256), under the [publication gate](PDF_PUBLICATION.md); see the [2.1 release notes](RELEASE_2_1.md). The 2.0 standard remains published under the legacy v2.0.0 tag with its [review resolution](REVIEW_2_0.md) and [release notes](RELEASE_2_0_0.md). Draft mockups are excluded; archived editions are never rebuilt from current sources.
 
 
 ---
@@ -2088,13 +2088,13 @@ The production website publishes the validated model views, current release down
 
 # swa.ml 2.1 release
 
-2 November 2026 (intended publication date). Standard 2.1, parser 2.1, reference profile swaml-reference/2.1, reference implementation package 3.0.0.
+1 November 2026. Standard 2.1, parser 2.1, reference profile swaml-reference/2.1, reference implementation package 3.0.0.
 
 swa.ml 2.1 makes the package the context in which a system, its surroundings and the scenarios that exercise them live side by side, and makes use cases and tests executable. [ADR 0019](decisions/0019-package-context.md) records the design; it supersedes [ADR 0018](decisions/0018-cases-belong-to-their-subject.md), which was never published, and the case clauses of [ADR 0016](decisions/0016-swaml-2-0.md) and [ADR 0017](decisions/0017-readable-names-and-use-cases.md). The edition also includes the quoted names of ADR 0017.
 
 This is an incompatible edition. The owner approved it as 2.1 because swa.ml has no external adopters. There is no compatibility parser, alias or deprecation period: removed forms are ordinary parse or validation errors, and a host selecting 2.1 rejects --language-version 2.0. The published 2.0 edition, its legacy v2.0.0 tag, PDF, manifest, checksum and [frozen reference](../history/2.0.0/docs/SWAML-2.0.0-Reference.md) remain unchanged.
 
-The release includes the [reference book](SWAML-2.1-Reference.md). The PDF, per-source manifest and SHA-256 checksum use the names SWAML-2.1-Specification.pdf, SWAML-2.1-Specification.manifest.json and SWAML-2.1-Specification.sha256 under output/pdf and are produced by the [publication gate](PDF_PUBLICATION.md).
+The release includes the [reference book](SWAML-2.1-Reference.md). The [complete PDF](../output/pdf/SWAML-2.1-Specification.pdf), its [per-source manifest](../output/pdf/SWAML-2.1-Specification.manifest.json) and [SHA-256 checksum](../output/pdf/SWAML-2.1-Specification.sha256) are produced by the [publication gate](PDF_PUBLICATION.md).
 
 ## What is new
 
@@ -2110,9 +2110,9 @@ A component with ports but no operations, schedule entries or parts is interface
 
 use case X of y { … } and test X of y { … } are package members; test replaces verification case. The optional subject y is a top-level occurrence of the same package. A case without of, or without statements, records intent only.
 
-After its documentation, a case body may contain statements: a script that acts as its associated interface-only actors through occurrence.port.member endpoints (send, publish, calls, on receive … or after D), answers requests at actor ports with on call actor.port.op(bindings) { return v; } branches, and, in a test only, reads and calls into its subject and the single parts inside it (atm.fee(20, 10), atm.dispenser.count) without assigning them. Statements require of.
+After its documentation, a case body may contain statements: a script that acts as its associated interface-only actors through occurrence.port.member endpoints (send, publish, calls, on receive … or after D), answers requests at actor ports with on call actor.port.op(bindings) { return v; } branches, and, in a test only, reads and calls into its subject and the single parts inside it (atm.fee(20, 10), atm.dispenser.count) without assigning them. A white-box call may only target an operation that neither communicates nor suspends (SW2006). Statements require of.
 
-Each case with statements runs in its own fresh deterministic package run. The script starts after the on start entries, and the run stops when the script completes or fails. Results are pass, fail (the first failure in the run, with its statement identity, message, time and trace), inconclusive (horizon, step limit or a stalled script) and no checks. A passing case is bounded evidence of one deterministic run, not proof.
+Each case with statements runs in its own fresh deterministic package run. The script starts after the on start entries. Input that reaches an actor port before the script waits for it is retained under the connection policy, and attributes keep their latest value. The run stops when the script completes or fails. Results are pass, fail (the first failure in the run, with its statement identity, message, time and trace), inconclusive (horizon, step limit or a stalled script) and no checks. A failure caught by try does not fail a case; it remains evidence in the trace. A passing case is bounded evidence of one deterministic run, not proof.
 
 swaml test [--package P] [--case X] [--json] [--options file | --until-ns N] runs the cases of the given sources, prints one line per case and a summary, and exits 1 when a case fails. See [the simulation guide](SIMULATION.md).
 
