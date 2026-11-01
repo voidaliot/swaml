@@ -616,13 +616,12 @@
       "id": "cases",
       "title": "Use cases, tests and associations",
       "context": "swa.ml 2.0; Cash Machine::Withdraw cash",
-      "syntax": "use case 'Withdraw cash' of atm {\n    /** The customer inserts a card, asks for cash and receives it. */\n  }",
+      "syntax": "use case 'Withdraw cash' of atm {\n    /** The customer inserts a card, asks for cash and receives it. */\n    publish customer.panel.cardInserted(\"4711\");\n    publish customer.panel.cashRequested(100);\n    on receive customer.panel.cashDispensed(amount) {\n      assert amount == 100;\n    } or after 2s {\n      fail \"no cash dispensed\";\n    }\n  }",
       "model": "examples/28-use-cases.swaml",
       "subject": "Cash Machine::Withdraw cash",
       "template": "case",
       "views": [
-        "General",
-        "Grid"
+        "Case"
       ],
       "productions": [
         "Scenario",
@@ -639,6 +638,31 @@
       "drawing": "docs/notation/2.0/cases.svg",
       "scene": "docs/notation/2.0/cases.scene.json",
       "raster": "docs/notation/2.0/cases.png",
+      "constraints": [
+        "Preserve owned source and distinct definition/occurrence identities.",
+        "Drawing is a projection; it does not add execution semantics."
+      ],
+      "rationale": "A canonical source-backed projection; geometry is separate from semantics."
+    },
+    {
+      "id": "scripts",
+      "title": "Executable case scripts",
+      "context": "swa.ml 2.0; AtmTests::Bank refusal",
+      "syntax": "test 'Bank refusal' of atm {\n    /** The bank refuses: the machine refuses the customer and pays nothing. */\n    send customer.panel.amount(100);\n    publish customer.panel.cashRequested();\n    on call bank.link.authorize(amount) {\n      assert amount == 100;\n      return false;\n    } or after 1s {\n      fail \"no authorization request\";\n    }\n    on receive customer.panel.refused() {\n    } or after 1s {\n      fail \"not refused\";\n    }\n    assert atm.dispenser.count == 0;\n  }",
+      "model": "examples/29-executable-cases.swaml",
+      "subject": "AtmTests::Bank refusal",
+      "template": "script",
+      "views": [
+        "Sequence",
+        "Flow"
+      ],
+      "productions": [
+        "EndpointPath"
+      ],
+      "keywords": [],
+      "drawing": "docs/notation/2.0/scripts.svg",
+      "scene": "docs/notation/2.0/scripts.scene.json",
+      "raster": "docs/notation/2.0/scripts.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -1294,6 +1318,13 @@
         "production": "MemberPath",
         "concepts": [
           "ports"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "EndpointPath",
+        "concepts": [
+          "scripts"
         ],
         "rationale": "Owned semantic projection preserves this production."
       },

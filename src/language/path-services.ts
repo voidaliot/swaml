@@ -3,7 +3,7 @@ import type { LangiumServices, RenameProvider, DefinitionProvider, ReferencesPro
 import type { DefinitionParams, Location, LocationLink, Range, ReferenceParams, RenameParams, TextDocumentPositionParams, WorkspaceEdit, TextEdit } from 'vscode-languageserver';
 import * as a from './generated/ast.js';
 import { viewCandidates, selectView } from './presentation.js';
-import { body, container, isExecutable, localOperation, memberEndpoint, members, nodes, owner, resolve, signature, type Node, type Structure } from './semantic.js';
+import { body, caseTarget, container, isExecutable, localOperation, memberEndpoint, members, nodes, owner, resolve, signature, packageOccurrences, type Node, type Structure } from './semantic.js';
 import { decodeQuotedName, formatName, formatQualifiedName, nameProblem, parseNameInput } from './names.js';
 export interface SemanticSymbol {
     key: string;
@@ -47,7 +47,7 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
             if (a.isEnumType(n))
                 n.literals.forEach((v, i) => make(n, 'literals', v, i));
             if (a.isScheduleEntry(n) || a.isReceiveBranch(n) || a.isInterruptible(n) || a.isTransition(n))
-                n.bindings.forEach((v, i) => { const c = container(n), ep = c && n.endpoint && memberEndpoint(c, n.endpoint); make(n, 'bindings', v, i, ep ? ep.member.kind === 'attribute' ? ep.member.type : ep.member.parameters[i]?.type : undefined); });
+                n.bindings.forEach((v, i) => { const c = container(n), script = owner(n, a.isScenario), scripted = script && n.endpoint ? caseTarget(script, n.endpoint) : undefined, ep = scripted?.kind === 'port' ? scripted : c && n.endpoint && memberEndpoint(c, n.endpoint); make(n, 'bindings', v, i, ep ? ep.member.kind === 'attribute' ? ep.member.type : ep.member.parameters[i]?.type : undefined); });
         }
     const add = (n: AstNode, cst: CstNode | undefined, target: SemanticSymbol | undefined, start = 0, length?: number, logical?: string) => { if (!cst || !target)
         return;
@@ -76,7 +76,7 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
     const valueSymbol = (origin: AstNode, name: string): SemanticSymbol | undefined => {
         let child = origin;
         for (let p = origin.$container; p; child = p, p = p.$container) {
-            if (a.isBlock(p) || a.isOperationBody(p)) {
+            if (a.isBlock(p) || a.isOperationBody(p) || a.isScenario(p)) {
                 const index = child.$containerProperty === 'statements' ? child.$containerIndex ?? 0 : p.statements.length;
                 const local = p.statements.slice(0, index).filter(a.isLocalVariable).reverse().find(v => v.name === name);
                 if (local)
@@ -148,13 +148,25 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
             pos += part.length + 1;
         }
     };
+    /** A case script path starts at a top-level occurrence of the case's own package. */
+    const scriptRefs = (n: AstNode, p: string, path: string, s: a.Scenario) => {
+        const cst = property(n, p), pkg = owner(s, a.isPackage), parts = path.split('.');
+        let current: Node | undefined = pkg && packageOccurrences(pkg).find(o => o.name === parts[0]) as Node | undefined, pos = 0;
+        for (let i = 0; cst && current && i < parts.length; i++) {
+            if (i)
+                current = childNode(current, parts[i]);
+            if (current)
+                add(n, cst, symbol(current), pos, parts[i].length, path);
+            pos += parts[i].length + 1;
+        }
+    };
     for (const model of models)
         for (const n of nodes(model)) {
             for (const r of AstUtils.streamReferences(n))
                 native(n, r.reference.$refNode, 'ref' in r.reference ? r.reference.ref : undefined);
             if (a.isImport(n))
                 add(n, property(n, 'namespace'), symbol(models.flatMap(m => m.packages).find(p => p.name === n.namespace)));
-            const c = container(n);
+            const c = container(n), script = owner(n, a.isScenario);
             if (a.isConnect(n)) {
                 // A package connection starts with a top-level occurrence of its package.
                 pathRefs(n, 'source', n.source, c as Node | undefined);
@@ -163,6 +175,9 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
             if (a.isSend(n) || a.isReceiveBranch(n) || a.isInterruptible(n) || a.isTransition(n) && n.endpoint || a.isScheduleEntry(n) && n.endpoint)
                 if (c)
                     pathRefs(n, 'endpoint', n.endpoint!, c as Node);
+                // A case script names occurrence.port.member from a top-level occurrence of its package.
+                else if (script)
+                    scriptRefs(n, 'endpoint', n.endpoint!, script);
             if (a.isScheduleEntry(n) && c) {
                 add(n, property(n, 'operation'), symbol(members(c).filter(isExecutable).find(x => x.name === n.operation)));
                 if (n.predecessor)
@@ -171,6 +186,8 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
             if (a.isCallExpression(n)) {
                 if (n.target.includes('.') && c)
                     pathRefs(n, 'target', n.target, c as Node);
+                else if (n.target.includes('.') && script)
+                    scriptRefs(n, 'target', n.target, script);
                 else
                     native(n, property(n, 'target'), localOperation(n, n.target, c) ?? resolve(n, n.target, models));
             }
@@ -179,7 +196,9 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
             if (a.isReferenceExpression(n)) {
                 const cst = property(n, 'path'), parts = n.path.split('.');
                 let s = valueSymbol(n, parts[0]), pos = 0;
-                if (!s) {
+                if (!s && script && caseTarget(script, n.path))
+                    scriptRefs(n, 'path', n.path, script);
+                else if (!s) {
                     const en = resolve(n, parts[0], models);
                     if (a.isEnumType(en)) {
                         native(n, cst, en);

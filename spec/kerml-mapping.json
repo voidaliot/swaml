@@ -600,6 +600,15 @@
       "normative": "docs/spec/02-communication.md"
     },
     {
+      "source": "EndpointPath",
+      "kind": "reference",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "EndpointPath: preserve executable case scripts, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "normative": "docs/spec/04-systems-and-conformance.md"
+    },
+    {
       "source": "Path",
       "kind": "lexical",
       "kernel": [],

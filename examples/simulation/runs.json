@@ -277,14 +277,27 @@
   },
   {
     "model": "examples/28-use-cases.swaml",
-    "target": "Cash Machine",
+    "case": "Cash Machine::Withdraw cash",
     "options": "examples/simulation/28-use-cases.json",
+    "expectedResult": "pass",
     "expectedStores": {
-      "customer": {
-        "received": 100
-      },
       "atm": {
         "card": "4711"
+      }
+    }
+  },
+  {
+    "model": "examples/29-executable-cases.swaml",
+    "case": "AtmTests::Approved withdrawal",
+    "options": "examples/simulation/29-executable-cases.json",
+    "expectedResult": "pass",
+    "expectedStores": {
+      "atm.controller": {
+        "amount": 300
+      },
+      "atm.dispenser": {
+        "count": 1,
+        "dispensedToday": 300
       }
     }
   }

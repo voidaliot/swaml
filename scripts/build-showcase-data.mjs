@@ -7,7 +7,7 @@ import {parseHelper} from 'langium/test';
 import {createSwamlServices} from '../out/src/language/swaml-module.js';
 import {isScenario,isRequirement,isOperation,isComponentDef,isWait} from '../out/src/language/generated/ast.js';
 import {projectModel} from '../out/src/language/projection.js';
-import {simulate} from '../out/src/simulation/simulator.js';
+import {runTests,simulate} from '../out/src/simulation/simulator.js';
 import {projectOperationTiming} from '../out/src/simulation/timing.js';
 const standardVersion=await readStandardVersion();
 const root=new URL('../',import.meta.url), check=process.argv.includes('--check');
@@ -15,7 +15,9 @@ const source=await readFile(new URL('examples/02-realtime-controller.swaml',root
 const {Swaml}=createSwamlServices(EmptyFileSystem);const doc=await parseHelper(Swaml)(source,{documentUri:URI.parse('memory:///examples/02-realtime-controller.swaml'),validation:true});
 if(doc.diagnostics?.some(d=>d.severity===1))throw Error(JSON.stringify(doc.diagnostics));
 const projection=projectModel([doc.parseResult.value]);const run=simulate([doc.parseResult.value],'Control::Demo',{untilNs:29000000});
-const cases=doc.parseResult.value.packages.flatMap(p=>p.elements.filter(isScenario).map(c=>({name:c.name,kind:c.kind,subject:c.subject?.$refText??null,verifies:p.verifications.filter(v=>v.test.ref===c).map(v=>v.requirement.$refText)})));
+// Each test runs as a script in its own package run; the site shows its bounded result.
+const results=new Map(runTests([doc.parseResult.value],{untilNs:1000000000}).map(r=>[r.case,r.result]));
+const cases=doc.parseResult.value.packages.flatMap(p=>p.elements.filter(isScenario).map(c=>({name:c.name,kind:c.kind,subject:c.subject?.$refText??null,verifies:p.verifications.filter(v=>v.test.ref===c).map(v=>v.requirement.$refText),result:results.get(p.name+'::'+c.name)})));
 // The Sequence view shows the first observed offer on each connection of the reference run.
 const sequence=run.trace.filter(t=>t.kind==='offer').filter((t,i,all)=>all.findIndex(x=>x.subject===t.subject)===i).map(t=>({member:t.member,source:t.sourcePort.split('.').slice(1).join('.'),target:t.targetPort.split('.').slice(1).join('.'),via:t.subject.split('.').at(-1),timeNs:t.timeNs}));
 const pkg=doc.parseResult.value.packages[0],controller=pkg.elements.find(x=>isComponentDef(x)&&x.name==='Controller'),regulate=controller.members.find(x=>isOperation(x)&&x.name==='regulate');

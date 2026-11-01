@@ -33,6 +33,8 @@ package Notation {
   }
   test Startup of Demo {
     /** The startup greeting reaches the receiver. */
+    wait 1ms;
+    assert Demo.receiver.last == "Hello, SWAML";
   }
   satisfy Delivery by Demo.receiver;
   verify Delivery by Startup;

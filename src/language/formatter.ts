@@ -1,6 +1,7 @@
 import { CstUtils, type LangiumDocument } from 'langium';
 import type { Formatter } from 'langium/lsp';
 import type { TextEdit } from 'vscode-languageserver';
+import { isReceive } from './generated/ast.js';
 /** Token-preserving canonical whitespace. Formatting is independent of validation. */
 export function formatDocument(document: LangiumDocument): string {
     if (document.parseResult.lexerErrors.length || document.parseResult.parserErrors.length)
@@ -33,7 +34,8 @@ export function formatDocument(document: LangiumDocument): string {
             flush();
             indent--;
             line = '}';
-            if (![';', ',', ')', ']', 'else', 'or', 'on'].includes(next ?? ''))
+            // A following on receive statement starts a new line; other on clauses continue it.
+            if (![';', ',', ')', ']', 'else', 'or', 'on'].includes(next ?? '') || next === 'on' && isReceive(tokens[i + 1].astNode))
                 flush();
         }
         else if (text === ';') {

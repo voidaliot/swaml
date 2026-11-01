@@ -254,9 +254,9 @@ For a state machine, write initial and state directly in an operation. Put trans
 
 Use a separate deployment declaration over software and platform roots. Targets are component occurrences specializing Swaml::Platform::Node. Const attributes may retain external ref identities; task/core scheduling stays in target adapters. [The deployment example](../examples/22-platform-deployment.swaml) shows family placement with an indexed override.
 
-Requirements, satisfy and test/verify record intent. [The traceability example](../examples/16-requirements-and-views.swaml) includes a test of its root, satisfy and verify links and views. A case does not inject events or prove a witness.
+Requirements, satisfy and test/verify record intent. [The traceability example](../examples/16-requirements-and-views.swaml) includes a test of its root, satisfy and verify links and views. A case does not inject events at a destination; a case script acts through actor ports and its pass is evidence of one run, not proof.
 
-A package is a closed context. Declare the system and its surroundings as top-level component occurrences and join their ports with package connections, connect (customer.panel, atm.panel);. Write use case Name of subject { … } or test Name of subject { … } in the package; the subject is a top-level occurrence of the same package, the system under consideration. Without of, a case records intent only. External systems and test stubs are interface-only components, component def Customer { port panel: Panel; }, which need no implementation; associate customer to 'Withdraw cash'; records that one takes part. satisfy Requirement by design; claims a component definition or occurrence path of the package, and verify Requirement by Test; links a test. [The use case example](../examples/28-use-cases.swaml) shows top-level occurrences, package connections, use cases, a test, associations and quoted names. Names containing spaces, letters outside ASCII or reserved words are written in single quotes, for example use case 'Withdraw cash' or attribute 'state': int = 0;.
+A package is a closed context. Declare the system and its surroundings as top-level component occurrences and join their ports with package connections, connect (customer.panel, atm.panel);. Write use case Name of subject { … } or test Name of subject { … } in the package; the subject is a top-level occurrence of the same package, the system under consideration. Without of, a case records intent only. External systems and test stubs are interface-only components, component def Customer { port panel: Panel; }, which need no implementation; associate customer to 'Withdraw cash'; records that one takes part. satisfy Requirement by design; claims a component definition or occurrence path of the package, and verify Requirement by Test; links a test. [The use case example](../examples/28-use-cases.swaml) shows top-level occurrences, package connections, use cases, a test, associations and quoted names. A case body may continue after its documentation with statements that act as its associated interface-only actors, publish customer.panel.cashRequested(100); and on receive customer.panel.cashDispensed(amount) { assert amount == 100; } or after 2s { fail "no cash"; }; a test may also read and call into its subject, assert atm.fee(20, 10) == 2;, and answer a stub's request with on call bank.link.authorize(amount) { return false; }. swaml test runs every case in its own package run and reports pass, fail, inconclusive or no checks; [the executable cases example](../examples/29-executable-cases.swaml) adds an isolation package with a bank stub. Names containing spaces, letters outside ASCII or reserved words are written in single quotes, for example use case 'Withdraw cash' or attribute 'state': int = 0;.
 
 Import Swaml::Views and type views by General, Interconnect, Case, Sequence, Grid, Flow or Timing. Compact of selects a subject; include/recursive/where builds a stable union. Filter kinds are component and operation for the structural/executable families. Browser navigates ownership; Flow combines statements/states; Timing separates declared schedule/deadline information from identified observed traces. Presentation layout belongs in sidecars, not language source.
 
@@ -288,7 +288,7 @@ Write operations with explicit parameter/result types. Use return for values, ex
 
 Put activation in one schedule. Use on start/every/receive/call or after same-owner operation. Select complete policy definitions where Default is unsuitable. Keep remote calls as whole initializer/assignment/statement forms, optionally in try. Recheck live attributes after suspension; use concurrent only when the transitive operation graph cannot write. Copy-back of out parameters occurs only on success.
 
-Multiplicity is literal and paths are indexed explicitly. Deployment targets are platform Node occurrences. Requirements and cases express intent; they are not proof or input drivers. A package is a closed context: declare top-level component occurrences, join their ports with package connections, connect (customer.panel, atm.panel);, and write use case Name of subject { … } or test Name of subject { … } as package members, where the subject is a top-level occurrence of the same package. Write external systems and test stubs as interface-only components (ports only) and record their part with associate customer to Name;. Claims are package links: satisfy Requirement by design; and verify Requirement by Test;. Quote names that contain spaces, letters outside ASCII or reserved words, such as 'Withdraw cash'. View definitions select existing identities, with geometry separate.
+Multiplicity is literal and paths are indexed explicitly. Deployment targets are platform Node occurrences. Requirements express intent. A case without statements records intent; a case with statements is a script that drives its subject through associated interface-only actors and runs with swaml test, as bounded evidence rather than proof. A package is a closed context: declare top-level component occurrences, join their ports with package connections, connect (customer.panel, atm.panel);, and write use case Name of subject { … } or test Name of subject { … } as package members, where the subject is a top-level occurrence of the same package. Write external systems and test stubs as interface-only components (ports only) and record their part with associate customer to Name;. In a script, write endpoints as occurrence.port.member, answer stub requests with on call bank.link.authorize(amount) { return true; }, and keep white-box reads and calls such as atm.dispenser.count to tests. Claims are package links: satisfy Requirement by design; and verify Requirement by Test;. Quote names that contain spaces, letters outside ASCII or reserved words, such as 'Withdraw cash'. View definitions select existing identities, with geometry separate.
 
 ## Validate–fix loop
 
@@ -313,7 +313,7 @@ Run a bounded simulation only after validation. Choose the run target: a package
 | SW2004/2005 | Repair member direction/type/route/closure, emission provenance or exclusive input owner |
 | SW2006 | Correct nested scope, return/out use, effects or whole-expression suspension |
 | SW2007/2008 | Repair schedule identity/signature/after graph or ordered state ownership |
-| SW2009/2010 | Resolve occurrence/Node paths, case subjects, associate/satisfy/verify targets in the same package, or view subject |
+| SW2009/2010 | Resolve occurrence/Node paths, case subjects, associate/satisfy/verify targets in the same package, view subject, or a script actor that must be associated and interface-only |
 | SW2011/2012 | Recheck live state after resumption; account for inactive interrupt input |
 | SW2013 | Supply complete typed policy values and safe positive durations |
 
@@ -342,7 +342,7 @@ Strings use double quotes and the portable escapes for quote, backslash, newline
 
 component def declares a reusable type. component name: Type; creates a usage; a package-owned usage is a top-level occurrence and an execution root. An untyped package usage may own inline topology. Child usages require definitions. Closure is checked per package over all top-level occurrences and package connections (section 2.3). Definitions may be reusable open libraries; an unused definition is not an execution root.
 
-A component whose effective members, including specialization, have ports but no operations, schedule entries or parts is interface-only. It needs no implementation: the emission and input-owner rules of section 2.1 do not apply to it. In a run it does nothing on its own; actors (external systems) and test stubs are written as interface-only components.
+A component whose effective members, including specialization, have ports but no operations, schedule entries or parts is interface-only. It needs no implementation: the emission and input-owner rules of section 2.1 do not apply to it. In a run it does nothing on its own; only a case script acts through its ports. Actors (external systems) and test stubs are written as interface-only components.
 
 A usage body is an anonymous specialization with explicit whole-member replacement and added members, including typed roots. Single specializes inheritance is acyclic. An inherited member with the same name requires redefines; a nonexistent inherited target is an error. Replacement preserves category, types, operation signature and body category. Child component definitions may specialize the replaced type. Port replacement preserves directed compatibility and optionality. Attributes preserve constness and type. No partial operation-body merge, super dispatch or implicit shadowing exists.
 
@@ -385,7 +385,7 @@ A component uses port p: Definition; or an inline port body. reversed flips ever
 
 Every provided attribute/event MUST have syntactic operation emission provenance. Every required attribute/event and provided operation MUST have exactly one owner: a schedule entry, one stateful operation's transition set, one receive statement or one interrupt region. Multiple alternative transitions in that one stateful operation are one owner. A forwarded boundary is never also locally handled or emitted. An interface-only component (section 1.2) is exempt from these provenance and owner rules.
 
-All input stimuli, including operator/test drivers, are ordinary typed emissions from validated source operations through routes. Hidden harness releases and destination injection are forbidden. An unconnected optional request fails unavailable. An optional unconnected event/attribute emission has no recipient and remains observable.
+All input stimuli, including operator/test drivers, are ordinary typed emissions from validated source operations or case scripts through routes; a case script emits only at the ports of its associated interface-only occurrences. Hidden harness releases and destination injection are forbidden. An unconnected optional request fails unavailable. An optional unconnected event/attribute emission has no recipient and remains observable.
 
 ## 2.2 Structural compatibility
 
@@ -480,6 +480,16 @@ A stateful operation is parameterless void and has exactly one on start entry. i
 
 A reaction runs exit, transition effect, state update and entry in that order. Timers are invalidated by state exit and stale firings are observable discards. Unhandled input does not reset the current state timer. Every state is graph-reachable from initial; a final state has no outgoing transitions or exit action. Reaching final runs entry and completes the whole operation once. Hierarchical/orthogonal states and physical preemption are outside the language.
 
+## 3.7 Case scripts
+
+A use case or test whose body holds statements after its optional documentation is a case script ([ADR 0019](decisions/0019-package-context.md)). Its statements are the statement language of section 3.3: var, assignment to its own locals, send, publish, calls, on receive … or receive … or after D, wait, if, while, until, for, for in, assert, fail and return. A case owns no nested operations, states, schedule entries or interrupt regions. A case with statements needs of; a case without statements records intent only.
+
+A script is the environment of its subject. Its endpoints are occurrence.port.member, where occurrence is a top-level component occurrence of the case's package that is not the subject, is associated with the case by associate occurrence to Case; and is interface-only. send and publish emit a provided attribute or event of that actor port; on receive waits for a required attribute or event of it; a call such as customer.panel.withdraw(200) requests a required operation and suspends like any request. on call occurrence.port.op(bindings) { … } is a further branch of on … or …, allowed only in case scripts, that answers a request for a provided operation of the actor port. Inside it return v; is the reply exactly like the result of a served operation: out bindings are mutable and their values return with the reply, a non-void branch returns or fails on every path, and a failure inside the branch replies with a remote failure and fails the case. Any other return ends the case and has no value. Operations keep port.member endpoints and serve requests through schedule on call entries.
+
+A use case is a black box: it acts only through the ports of its actors. A test may additionally read attributes of its subject and of single parts inside it, including record fields, such as atm.dispensedToday or atm.dispenser.count, and call their operations, such as atm.fee(20, 10), when the operation neither communicates nor suspends. A test never assigns them; assignment targets only the script's own locals and out bindings. Such reads observe the live store and such calls borrow the occurrence's context and serial lock like a local call, both when no other activation holds that lock.
+
+SW2010 reports a script without of, an actor that is not associated or not interface-only, the subject used as an actor and white-box access from a use case or into anything other than the test's subject. SW2004 reports emission and call endpoints of the wrong shape, kind or direction and SW2005 input endpoints; SW2006 reports on call outside case scripts, white-box calls that communicate or suspend, on call branches without a reply on every path and interrupt regions in cases; SW2002 reports values, bindings and results.
+
 
 ---
 
@@ -499,9 +509,9 @@ A package deployment Name of Root on PlatformRoot owns placements. deploy on nod
 
 A requirement owns immutable typed attributes and at most one doc. Requirements may be imported. Every relation that records intent about requirements and cases is a package member, never a component member, and none of them proves fulfillment.
 
-A case is written use case Name of subject { … } or test Name of subject { … }. Cases are package members only; components never own cases. The of clause is optional and names a top-level component occurrence declared in the same package: the subject, the system under consideration. A case of a part is written in a package where that component is a top-level occurrence. A case without of, or without statements, records intent only. The case body currently owns only optional documentation; the executable case statements decided by ADR 0019, which act through the ports of associated interface-only components, are not yet part of the grammar.
+A case is written use case Name of subject { … } or test Name of subject { … }. Cases are package members only; components never own cases. The of clause is optional and names a top-level component occurrence declared in the same package: the subject, the system under consideration. A case of a part is written in a package where that component is a top-level occurrence. A case without of, or without statements, records intent only. The case body owns optional documentation followed by optional statements; a case with statements is a script that acts through the ports of its associated interface-only components (section 3.7) and runs in a fresh run of its package (section 6.7).
 
-associate Occurrence to Case; records that a top-level component occurrence of the same package takes part in a use case or test of the same package. The occurrence is not the case's subject and each pair is associated at most once. Associated occurrences are the actors of the case; they communicate with the subject only through ports and package connections.
+associate Occurrence to Case; records that a top-level component occurrence of the same package takes part in a use case or test of the same package. The occurrence is not the case's subject and each pair is associated at most once. Associated occurrences are the actors of the case; they communicate with the subject only through ports and package connections, and a case script acts through the ports of the interface-only ones.
 
 satisfy Requirement by design; claims that a component satisfies a requirement. design is a component definition or a top-level component occurrence declared in this package, optionally followed by nested parts such as Workbench.editor or cells[1]; a literal index is within the multiplicity. The claim is written in the package that declares the head of the design path; the requirement may be imported. Each requirement and design pair is claimed at most once.
 
@@ -513,7 +523,7 @@ The 2.0 and ADR 0018 case forms are removed rather than deprecated: verification
 
 Swaml::Views provides General, Interconnect, Case, Sequence, Grid, Flow and Timing. A view is typed by a definition, uses compact of subject or one or more include clauses, and owns optional documentation. Include may expand recursive descendants and apply a restricted Boolean where filter over name, kind and path, string comparisons, and/or/not. Filters never call operations or execute behavior. Selection is a union of occurrence identities in first-selection order; duplicates are removed stably.
 
-General and Grid select named semantic elements except views. Interconnect selects components. Case selects packages, cases and components; Sequence selects cases, components and packages. A selected package contributes its cases. Case draws each selected case inside the boundary of its subject occurrence, its associated occurrences outside it, and the satisfy and verify intent links of the package. Flow/Timing select operations. Paths preserve definition/occurrence identity and explicit multiplicity indexes. Browser is navigation rather than an eighth view kind. General Box in box and Tree layouts retain exactly the same selected identities and topology; layout/collapse/geometry stay in presentation sidecars.
+General and Grid select named semantic elements except views. Interconnect selects components. Case selects packages, cases and components; Sequence selects operations, cases, components and packages. A selected package contributes its cases. Case draws each selected case inside the boundary of its subject occurrence, its associated occurrences outside it, and the satisfy and verify intent links of the package. Flow and Timing select operations, use cases and tests. Paths preserve definition/occurrence identity and explicit multiplicity indexes. Browser is navigation rather than an eighth view kind. General Box in box and Tree layouts retain exactly the same selected identities and topology; layout/collapse/geometry stay in presentation sidecars.
 
 Flow covers statements, nested operation calls, loops, receive, interruption and function-owned states. Timing has declared and observed modes. Declared shows schedule release grid, causes, deadlines, static wait intervals and permitted concurrent overlap. Observed adds an identified trace, serial lock gaps, message latency, activation phases, terminal markers and open intervals; WCET/budget bars identify their target-binding/evidence source. A missing trace never produces fabricated observation. Views introduce no execution semantics.
 
@@ -531,7 +541,7 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | SW2007 | Schedule identity, signatures, deadlines and after graph |
 | SW2008 | Stateful signatures, scheduling, ordered states and reachability/finality |
 | SW2009 | Node content, deployment paths, indexes and specificity |
-| SW2010 | Requirement/case/view references, case subjects, associate, satisfy and verify links |
+| SW2010 | Requirement/case/view references, case subjects, associate, satisfy and verify links, the environment role and white-box access of case scripts |
 | SW2011 | Conservative stale-read warning |
 | SW2012 | Inactive interrupt-input discard warning |
 | SW2013 | Complete typed policies and representable positive durations |
@@ -618,6 +628,12 @@ A state machine waits without the component lock. Each reaction selects the firs
 
 Trace ordinals distinguish equal-time observations. Record initialize, release, dispatch, ready, unlock, wait/requestWait/receiveWait, messages/offers/delivery, writes, states, interruption, completion/failure, caught failures, timeout, overflow/discards, late replies and violations. Retain activation/correlation/route identities where applicable. Each observation caused by a statement or schedule entry records its statement identity as source: writes, emissions, asserts, failures and suspensions name the executing statement, a state wait or reaction its state or transition, releases and dispatches the schedule entry, and every message lifecycle observation (offer, delivery, replacement, overflow, drop, retry, age or input discard, interruption, request, reply, timeout, cancellation, late reply) the statement that emitted or requested the message. Messages and correlations keep the identity of the emitting or requesting statement. Final stores are occurrence-indexed and timing projections leave live intervals open. No-failure-observed means only that finite run under its recorded assumptions. Step, backlog and concurrent limits are finite, explicit options. Production timing, real transport guarantees and universal verification remain separate claims.
 
+## 6.7 Case runs
+
+Each case with statements runs in its own fresh run of its package target. The script is a serial activation of its own, released at 0 ns after every on start entry, so it starts after the initialization barrier; it acts only at the ports of its associated interface-only occurrences, which do nothing else. Input that reaches an actor port before the script waits for it stays in that connection's queue under the connection's policy (capacity, overflow, ordering and age), and an attribute keeps only its latest value, so a later on receive consumes the oldest queued event or the latest attribute value. A request addressed to an actor port waits in its queue until an on call branch takes it or the caller's requestTimeout expires. A test's white-box reads and calls wait until no other activation holds the occurrence's serial lock.
+
+The run stops with status stopped when the script completes or fails, otherwise at the horizon or step limit, or with status quiescent when no event remains while the script waits. The case result is pass when the script completed and the run observed neither an uncaught activation failure nor a contract violation; fail when a failure occurred, decided by the first in trace order with its statement identity, message and time: the script's own (a failed assert, fail or a runtime failure), an uncaught failure of another activation or a contract violation; inconclusive when the run ended before the script completed without a failure, at the horizon, at the step limit or stalled because the script waits while no further event can occur; and no checks for a case without statements, which does not run. A caught expression failure remains trace evidence and does not fail a case, so a passing case may record the failure-observed outcome. Observations of the script name the case identity as subject and carry its statement identities as source. A use case runs the same way as a test. A pass is bounded evidence of one deterministic run under its recorded assumptions, not proof.
+
 
 ---
 
@@ -648,7 +664,7 @@ Each normalized node/constraint retains source declaration URI/range and any inh
 | Schedule/entry | Trigger identity, effective target, dispatch arguments/bindings, period/deadline, concurrent |
 | State/transition | Initial/final, entry/exit/effects, receive bindings/guard or timer, ordered selection |
 | Deployment | Software/platform roots, Node paths, family/index placements, effective specificity |
-| Requirement/case/view | Immutable attributes/docs, package intent links (associate, satisfy, verify), case kind and subject occurrence, ordered selection union |
+| Requirement/case/view | Immutable attributes/docs, package intent links (associate, satisfy, verify), case kind, subject occurrence and ordered script statements with their resolved actor ports and white-box targets, ordered selection union |
 
 Expansion creates every literal multiplicity occurrence independently and keeps the definition reference. Inheritance produces an ordered effective set; replacement points to its inherited declaration. Late-bound local calls use that occurrence's effective operation name with the preserved signature. An operation usage retains the definition signature and either inherited or replacement body; no partial merge is inferred.
 
@@ -696,7 +712,7 @@ Normative chapter of [swa.ml 2.0](LANGUAGE_SPECIFICATION.md). Acceptance levels 
 | V11 | Stateful parameterless void signature, exactly one start entry, reachable states, ordered transitions and final restrictions | SW2008 |
 | V12 | Typed complete policies, effective-use idempotency, positive safe time/capacity domains | SW2013 |
 | V13 | Node-only target content, root/occurrence/index placement resolution, unique exact paths and at most one deployment per top-level occurrence | SW2009 |
-| V14 | Immutable requirements, case subjects in the same package, legal associate/satisfy/verify links, seven library view kinds/subjects and stable selection union | SW2010 |
+| V14 | Immutable requirements, case subjects in the same package, legal associate/satisfy/verify links, case script environment role and white-box access, seven library view kinds/subjects and stable selection union | SW2010 |
 | V15 | Stale-read and inactive interrupt-input warnings without a race-freedom claim | SW2011/2012 |
 
 Validation MUST rebuild semantic string paths as well as indexed references after workspace changes/additions/deletions. Negative lookups matter: a newly loaded declaration may make a previously resolved short name ambiguous. Malformed source remains editable and invalid; recovery cannot silently accept a different program. Definite-return analysis may be conservative rather than solving arbitrary conditions. Dynamic numeric/index/termination failures remain runtime obligations.
@@ -715,12 +731,13 @@ Validation MUST rebuild semantic string paths as well as indexed references afte
 | E08 | Armed interrupt extent across callees/suspensions, same-activation unwind, terminal cancellation and no server rollback |
 | E09 | One fresh after activation per successful whole completion after unlock, failure suppression and new context/deadline |
 | E10 | Run/source/target/profile/option provenance, package and isolated component targets, trace ordinals with statement sources, occurrence stores and open observed timing intervals |
+| E11 | Fresh package run per case script, release after startup entries, retained early actor input, on call replies, white-box reads/calls under the serial lock, stop on script completion or failure and pass/fail/inconclusive/no checks results with statement identities |
 
 A deterministic reference run may choose one permitted order/delivery outcome. Its tests do not establish all possible traces or real transport reliability. A target implementation identifies additional scheduling/transport assumptions and evidence. Idempotency annotations are checked declarations, not proofs of side-effect behavior.
 
 ## 8.3 Analysis, kernel and graphical claims
 
-Case realization needs a witness execution with payloads/assumptions. Requirement fulfillment needs identified test/analysis/review evidence beyond satisfy/verify links. Schedulability needs target scheduler, cost and transport assumptions plus measurement/proof. Race/deadlock freedom requires analysis of suspension/interleaving and requests. A finite search without failure is not universal proof.
+Case realization needs a witness execution with payloads/assumptions; a passing case script is one such deterministic witness under its recorded assumptions, not a proof for every execution. Requirement fulfillment needs identified test/analysis/review evidence beyond satisfy/verify links. Schedulability needs target scheduler, cost and transport assumptions plus measurement/proof. Race/deadlock freedom requires analysis of suspension/interleaving and requests. A finite search without failure is not universal proof.
 
 K requires the complete normalized model, a pinned semantic library/exporter, kernel validation and round trips. Inventory coverage is not K. G requires Browser plus seven source views, occurrence-aware identity, notation, source-validated edits, sidecar layout and atomic native undo/redo. LSP syntax/formatting alone is not G. Semantic paths need path-aware rename/reference/navigation; generic name references are insufficient.
 
@@ -791,6 +808,7 @@ Scalar type assignability uses widening, with checked integral value conversion 
 | state reaction | Select first enabled transition, exit/effect/update/entry, invalidate old timer generation; idle releases lock |
 | complete | Finish activation and unlock; correlated reply is offered separately; successful whole completion releases after targets fresh |
 | violation | Deadline, activation overflow, step/concurrent resource or clock failure stops the reference run and bypasses try |
+| case script | A fresh package configuration adds one serial script activation after startup releases; its emissions, requests and receives use actor ports, on call replies to the pending correlation, and its completion or failure stops the run |
 
 At terminal correlation, later replies cannot change R. Inactive interrupt input is discarded observably. Receive statements preserve queued early input. A state's unhandled input leaves its entry time/timer generation intact. Set entry time at the state update, before entry actions. Select an already elapsed timer after entry completes before queued input; earliest expiry then declaration order determines competing timers. Deadline/timeout measurements include suspension and backlog; zero-cost interpreter steps do not supply physical cost evidence.
 
@@ -813,7 +831,7 @@ Port boundary squares expose direction per member: provides/requires attribute, 
 
 Flow shows expressions/calls, decisions, loop forms, lazy try fallback, receive/wait suspension and armed interrupt transfer. States are inside an operation; transitions are nested/ordered and labeled by input/guard or after timer and target. State bodies have no separate executable identity. Final completion is distinguishable from idle reactions.
 
-Platform Nodes own const attributes and child Nodes. Deployment edges refer to the separate placement declaration and preserve indexed occurrence identity. Requirement links are labeled «satisfy» and «verify» and show intent rather than proof. A Case view draws each case as an ellipse inside the boundary of its subject occurrence, labeled with the occurrence and its type, and each associated occurrence as a stick figure outside the boundary, labeled name: Type and joined to its cases by solid association lines. A case without a subject has no boundary. Sequence shows the subject, its parts and the associated occurrences as lifelines on real routes.
+Platform Nodes own const attributes and child Nodes. Deployment edges refer to the separate placement declaration and preserve indexed occurrence identity. Requirement links are labeled «satisfy» and «verify» and show intent rather than proof. A Case view draws each case as an ellipse inside the boundary of its subject occurrence, labeled with the occurrence and its type, and each associated occurrence as a stick figure outside the boundary, labeled name: Type and joined to its cases by solid association lines. A case without a subject has no boundary; a test is labeled «test». Sequence shows the subject, its parts and the associated occurrences as lifelines on real routes. For a case script, statements start on the lifeline of the interface-only actor whose port they use: send and publish are asynchronous arrows, calls are call arrows with dashed returns, on call answers with a dashed return, on … or after D is a timeout fragment and assert a check marker; a test's white-box reads and calls start on a «test» lifeline. Flow shows a case script as a frame of its statements.
 
 Browser remains navigation. General, Interconnect, Case, Sequence, Grid, Flow and Timing are imported view definitions. General Box in box/Tree preserve the same selected identities/topology. Timing declared mode shows schedules/deadlines/static waits; observed mode adds an identified run, lock gaps, message latency, terminals and open intervals. Missing evidence never becomes measured WCET. Geometry, collapse and routes stay in sidecars.
 
@@ -1028,6 +1046,16 @@ swa.ml 2.0; Cash Machine::Withdraw cash.
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 
+## Executable case scripts
+
+swa.ml 2.0; AtmTests::Bank refusal.
+
+![Executable case scripts](notation/2.0/scripts.svg)
+
+**Source:** [AtmTests::Bank refusal](../examples/29-executable-cases.swaml). **Grammar:** EndpointPath.
+
+Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
+
 ## Seven library view definitions
 
 swa.ml 2.0; Traceability::Demo.
@@ -1139,6 +1167,8 @@ node out/src/cli/main.js --json examples/01-hello.swaml
 node out/src/cli/main.js simulate --until-ns 10000000 examples/28-use-cases.swaml
 node out/src/cli/main.js simulate --target Hello::Demo --options examples/simulation/01-hello.json examples/01-hello.swaml
 node out/src/cli/simulate.js Hello::Demo examples/simulation/01-hello.json examples/01-hello.swaml
+node out/src/cli/main.js test examples/29-executable-cases.swaml
+node out/src/cli/main.js test --json --case 'AtmTests::Bank refusal' examples/29-executable-cases.swaml
 node scripts/check-simulations.mjs
 ```
 
@@ -1148,7 +1178,7 @@ Options include required untilNs and optional maxSteps (100000), maxPending (102
 
 Serial wait/request/receive suspensions release the component lock; resumption reads live state. Concurrent activations retain a dispatch snapshot and cannot write. Default connection policy is atMostOnce/fifo/16/reject/requestTimeout 1s. Attribute queues keep latest values independently. try catches runtime expression failures with lazy fallback and retained effects; deadlines/resources/interrupts bypass it. Requests retain route correlation, timeout wins ties and late replies are suppressed. After edges release fresh work after successful whole completion/unlock.
 
-The JSON result records profile, target (kind package or component and its identity), options, logical trace ordinals/identities, sources, final occurrence stores, state machines and placements. Store and deployment keys are occurrence paths that begin with the top-level occurrence name, such as atm or Demo.receiver. Route identities are occurrence-relative: Demo.@connect0 inside a component, and the connection name or @packageN for the Nth package connection. CLI adds SHA-256 source digests. Status is quiescent, horizon, violation or limit. Failure observations remain evidence even when a caller catches them. Horizon retains live/open intervals. An event left pending without possible progress may be quiescent; that is not proof of useful behavior.
+The JSON result records profile, target (kind package or component and its identity), options, logical trace ordinals/identities, sources, final occurrence stores, state machines and placements. Store and deployment keys are occurrence paths that begin with the top-level occurrence name, such as atm or Demo.receiver. Route identities are occurrence-relative: Demo.@connect0 inside a component, and the connection name or @packageN for the Nth package connection. CLI adds SHA-256 source digests. Status is quiescent, horizon, violation, limit, or stopped for a case run that ended with its script; a case run whose script still waits with no event left is quiescent. Failure observations remain evidence even when a caller catches them. Horizon retains live/open intervals. An event left pending without possible progress may be quiescent; that is not proof of useful behavior.
 
 ## Statement sources
 
@@ -1156,9 +1186,23 @@ Trace events carry source, the statementIdentity of the statement or schedule en
 
 A statement identity is the identity of its executable, a slash and a statement path, for example Hello::Sender.emit/0 or Banking::ATM.serve/2/then/0. The executable identity is the declaring operation, or a case, with decoded names; an operation usage that inherits its body names the definition. The path walks the abstract syntax from the executable's body: a statement contributes its index in the enclosing statement list and every other step its slot name, followed by an index for list slots: then, otherwise, body, branches/N, timeoutBody, handler, initializer, update, states/N, actions/N, transitions/N and effect. A state is itself identified as Executable/states/N and a transition, with its guard, as Executable/states/N/transitions/M. A schedule entry is the component identity followed by /schedule/N. resolveStatement maps an identity back to its node, trying the longest declared owner first because a quoted name may contain a slash. That makes identities ambiguous only for contrived names that end in a path: an operation 'run/0/then' with statement 0 and an operation run with statement path 0/then/0 both yield Pkg::Def.run/0/then/0 in a component definition Pkg::Def, and resolveStatement then selects the longer owner. Avoid names whose slash is followed by statement indexes or slot names when trace sources must be unambiguous. Identities follow source structure: reordering statements changes them, and the activation and subject fields identify the occurrence that ran the statement.
 
-The examples' expected final stores and placements are checked independently, and deterministic reruns check reproducibility. Tests cover package and isolated component runs, adversarial requests, interruptions, failure effects and resource limits. Physical CPU/WCET, production transport/retry protocols, target scheduling and universal analysis remain outside this logical interpreter. Exporting a trace does not establish those claims.
+The examples' expected final stores and placements are checked independently, every use case and test of the examples runs with its expected result (examples/simulation/cases.json), and deterministic reruns check reproducibility. Tests cover package and isolated component runs, adversarial requests, interruptions, failure effects and resource limits. Physical CPU/WCET, production transport/retry protocols, target scheduling and universal analysis remain outside this logical interpreter. Exporting a trace does not establish those claims.
 
 Outcome failure-observed includes caught expression failures as well as failed activations; status separately records whether execution reached quiescence, a horizon or a resource/contract stop. The CLI returns 1 when a failure was observed, including a successfully handled fallback, so automation must inspect the trace and final stores when exercising expected failure scenarios.
+
+## Use cases and tests
+
+A use case or test with statements is a script ([behavior](spec/03-behavior.md), [case runs](spec/06-execution-contract.md)). swaml test runs the cases of the supplied sources:
+
+```text
+swaml test [--language-version 2.0] [--package P] [--case Package::Case|Case] [--json] [--options options.json | --until-ns N] file.swaml [more files...]
+```
+
+Each case with statements runs in its own fresh run of its package. The default horizon is 10 s of logical time (untilNs 10000000000); the run stops earlier when the script completes or fails. The script is one serial activation released at 0 ns after every on start entry, and it acts at the ports of the associated interface-only occurrences. Input that reaches an actor port before the script waits for it is retained under the connection's policy and attributes keep their latest value, so a script is not sensitive to whether a reply arrives before or after it starts waiting. A request to an actor port waits until an on call branch answers it or the caller's request times out. A test may read and call into its subject; those accesses wait for the occurrence's serial lock.
+
+Results are pass, fail, inconclusive and no checks. The first failure in trace order decides a failed case, with its statement identity and time: the script's own (a failed assert reports Assertion and the assert source, fail reports its message, a runtime failure its code), an uncaught failure of another activation (run-failure, with the failing activation as observed), or a contract violation (violation). An earlier run failure, such as a request timeout of the subject at 1 s, therefore wins over a later fail of the script. A case is inconclusive when the run ends before the script completes without a failure: at the horizon (horizon), at the step limit (limit), or because the script waits but no further event can occur (stalled); a stalled case run has status quiescent, since nothing remains that could reach the script, while ordinary runs keep horizon for waiting activations so that their intervals stay open. A case without statements has no checks. Caught failures stay evidence without failing a case: a passing case can carry run.outcome failure-observed, with caught events in its trace, when a try fallback handled a failure, so consumers read result rather than outcome. The summary prints one line per case and a count; --json prints languageVersion, profile, options, summary and cases with case, kind, subject, result, reason, message, source, timeNs and the run (target, status, trace and stores, without source text), plus implementation identity and source digests. The exit code is 1 when a case fails or the sources are invalid, 2 for usage errors and 0 otherwise.
+
+The core exports runCase(models, 'Package::Case', options), runTests(models, options, { package, case }) and workspaceCases(models), returning CaseResult values, and caseTarget from semantic, which resolves a script path to an actor port member, a white-box operation or an attribute. Script trace events name the case identity as subject, for example AtmTests::Bank refusal, and carry case statement identities such as AtmTests::Bank refusal/2/branches/0/body/0 as source; failure events also record the message of fail and of a failed case assert. A package run, without a case, leaves interface-only occurrences idle.
 
 
 ---
@@ -1192,9 +1236,9 @@ swa.ml 2.0.
 
 A requirement owns immutable typed attributes and at most one formal doc. Use /** ... */ first in a body or immediately before the semicolon of a leaf declaration. Ordinary // and /* ... */ comments remain separate lexical annotations. Formal documentation is owned source, not an executable statement or proof.
 
-satisfy Requirement by design; links intent from a component definition or occurrence path declared in the same package. verify Requirement by Test; links a test of the package; a use case never verifies. Use cases describe an intended interaction without asserting verification. A use case or test is a package member; of names its subject, a top-level occurrence of the same package, and associate Occurrence to Case; names the other occurrences that take part. A case without of records intent only.
+satisfy Requirement by design; links intent from a component definition or occurrence path declared in the same package. verify Requirement by Test; links a test of the package; a use case never verifies. Use cases describe an intended interaction without asserting verification. A use case or test is a package member; of names its subject, a top-level occurrence of the same package, and associate Occurrence to Case; names the other occurrences that take part. A case without of or without statements records intent only; a case with statements is a script that swaml test runs.
 
-Subjects, associations and design paths must resolve in the package. Cases do not create channels or inject events. A case needs an identified witness execution before realization can be claimed. A requirement needs associated test/analysis/review evidence before fulfillment can be claimed.
+Subjects, associations and design paths must resolve in the package. Cases do not create channels or inject events at a destination; a case script emits only through the ports of its associated interface-only actors. A passing script is an identified witness execution of one deterministic run; it does not prove realization in every execution. A requirement needs associated test/analysis/review evidence before fulfillment can be claimed.
 
 [The complete traceability model](../examples/16-requirements-and-views.swaml) contains a documented requirement, satisfaction, a test with its verify link and selected views. General/Grid can inspect intent relations; Case/Sequence present cases. All preserve occurrence identity and retain unproven status where evidence is absent.
 
@@ -1209,7 +1253,7 @@ swa.ml 2.0.
 
 The semantic families are package, nominal values/types, component definition/usage, attribute/local/parameter, port/member, operation definition/declaration/usage, schedule/entry, connection/forwarding, state/transition, deployment, requirement, case and view. A nested operation has no closure capture; an operation body has no independent executable identity. An indexed occurrence is distinct from its shared definition.
 
-Browser navigates ownership. Seven imported library definitions provide source views: General, Interconnect, Case, Sequence, Grid, Flow and Timing. General and Grid can select named model identities; Interconnect selects components; Case/Sequence select roots/cases; Flow/Timing select operations. General Box in box and Tree retain the same selected graph. Flow contains statements, loops, receive/interrupt regions and states.
+Browser navigates ownership. Seven imported library definitions provide source views: General, Interconnect, Case, Sequence, Grid, Flow and Timing. General and Grid can select named model identities; Interconnect selects components; Case selects packages, cases and components; Sequence also selects operations; Flow/Timing select operations, use cases and tests. General Box in box and Tree retain the same selected graph. Flow contains statements, loops, receive/interrupt regions and states.
 
 Compact of selects one subject. Include/recursive/where selects a stable union with Boolean name/kind/path predicates. Structural/executable kinds are component and operation. Filters do not call behavior. Timing declared mode shows schedules/deadlines/static waits; observed mode requires a run identity and preserves open intervals. Geometry/routing/camera live in sidecars. See [normative view rules](spec/04-systems-and-conformance.md) and [traceability example](../examples/16-requirements-and-views.swaml).
 
@@ -1220,7 +1264,7 @@ Compact of selects one subject. Include/recursive/where selects a stable union w
 
 # swa.ml 2.0 keyword reference
 
-Generated from spec/keywords.json and the normative grammar. Examples here are grammar fragments; complete runnable models are in the usage guide and examples. 15 contextual words remain legal names outside their positions. Call appears only in the on call trigger.
+Generated from spec/keywords.json and the normative grammar. Examples here are grammar fragments; complete runnable models are in the usage guide and examples. 15 contextual words remain legal names outside their positions. call appears in the on call schedule trigger and in on call branches of case scripts.
 
 [after](#keyword-after) · [and](#keyword-and) · [assert](#keyword-assert) · [associate](#keyword-associate) · [attribute](#keyword-attribute) · [bool](#keyword-bool) · [by](#keyword-by) · [byte](#keyword-byte) · [call](#keyword-call) · [case](#keyword-case) · [component](#keyword-component) · [concurrent](#keyword-concurrent) · [connect](#keyword-connect) · [const](#keyword-const) · [datatype](#keyword-datatype) · [deadline](#keyword-deadline) · [def](#keyword-def) · [deploy](#keyword-deploy) · [deployment](#keyword-deployment) · [else](#keyword-else) · [entry](#keyword-entry) · [enum](#keyword-enum) · [event](#keyword-event) · [every](#keyword-every) · [exit](#keyword-exit) · [fail](#keyword-fail) · [false](#keyword-false) · [final](#keyword-final) · [for](#keyword-for) · [idempotent](#keyword-idempotent) · [if](#keyword-if) · [import](#keyword-import) · [in](#keyword-in) · [include](#keyword-include) · [initial](#keyword-initial) · [int](#keyword-int) · [interruptible](#keyword-interruptible) · [kind](#keyword-kind) · [ms](#keyword-ms) · [name](#keyword-name) · [not](#keyword-not) · [ns](#keyword-ns) · [of](#keyword-of) · [on](#keyword-on) · [operation](#keyword-operation) · [optional](#keyword-optional) · [or](#keyword-or) · [out](#keyword-out) · [package](#keyword-package) · [path](#keyword-path) · [port](#keyword-port) · [provides](#keyword-provides) · [publish](#keyword-publish) · [qos](#keyword-qos) · [real](#keyword-real) · [receive](#keyword-receive) · [record](#keyword-record) · [recursive](#keyword-recursive) · [redefines](#keyword-redefines) · [requirement](#keyword-requirement) · [requires](#keyword-requires) · [return](#keyword-return) · [returns](#keyword-returns) · [reversed](#keyword-reversed) · [s](#keyword-s) · [satisfy](#keyword-satisfy) · [schedule](#keyword-schedule) · [send](#keyword-send) · [specializes](#keyword-specializes) · [start](#keyword-start) · [state](#keyword-state) · [string](#keyword-string) · [test](#keyword-test) · [times](#keyword-times) · [to](#keyword-to) · [true](#keyword-true) · [try](#keyword-try) · [uint](#keyword-uint) · [until](#keyword-until) · [us](#keyword-us) · [use](#keyword-use) · [var](#keyword-var) · [verify](#keyword-verify) · [view](#keyword-view) · [void](#keyword-void) · [wait](#keyword-wait) · [when](#keyword-when) · [where](#keyword-where) · [while](#keyword-while)
 
@@ -1290,9 +1334,9 @@ Used in typed copied values; see its grammar contexts and normative constraints.
 
 ## Keyword: call
 
-Used only as the on call schedule trigger.
+Serves a provided operation as an on call schedule trigger, or answers a request at an actor port as an on call branch of a case script.
 
-**Context:** Schedule entry and successful chaining. **Grammar:** ScheduleEntry. **Name use:** reserved.
+**Context:** Schedule entry and successful chaining. **Grammar:** ScheduleEntry, ReceiveBranch. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -1965,9 +2009,10 @@ The 2.0 core replaces the 1.x grammar, AST, resolver, validator and interpreter.
 | Flow and state | Loops and copied iteration, wait/receive, interruption across callees, ordered nested transitions, final completion and queued startup input |
 | Correlation and adverse behavior | Routed results/out values, failures, timeout ties, terminal cancellation, late-reply suppression, policy overflow, age at eligibility and explicit resource limits |
 | Deployment | Separate software/platform roots, Node-only contents/targets, indexed/family placements and most-specific selection |
-| Requirements/cases/views | Immutable intent; package-owned use case/test with an optional subject that is a top-level occurrence of the same package; intent-only case bodies (executable case statements are not implemented yet); package associate, satisfy … by and verify … by links with SW2010 rules; seven library definitions, package/member subjects and stable occurrence unions |
+| Requirements/cases/views | Immutable intent; package-owned use case/test with an optional subject that is a top-level occurrence of the same package; case scripts with the environment role of associated interface-only actors, on call replies and test white-box reads/calls (SW2010/SW2004/SW2005/SW2006); intent-only cases without statements; package associate, satisfy … by and verify … by links with SW2010 rules; seven library definitions, package/member subjects and stable occurrence unions |
 | AI authoring | Usage and AI guides, portable author/validate skills, --json diagnostics with code/range/URI/declaration/occurrence metadata and selected safe repair edits |
 | Authoring services | Canonical token-preserving full-document formatting; semantic index, definition/references and versioned multi-file rename over indexed paths, port members, nested operations, schedules, states, placements, package connection ends, case subjects, associate, satisfy and verify links and view subjects/eligible filters; rename writes quoted names where required and unquoted names inside string paths; portable name spelling helpers for hosts |
+| Case runs | A fresh package run per case script released after startup entries, retained early actor input, on call replies, white-box access under the serial lock, stop on completion or failure, pass/fail/inconclusive/no checks with statement identities; swaml test with summary, JSON and exit codes; every example case runs with its expected result |
 | Host behavior | CLI exit/JSON/edition checks, LSP 2.0 negotiation, complete dependency enforcement, standard-library validation and workspace negative-lookup invalidation |
 | Diagrams and page | Exhaustive notation/mapping inventories; original 2.0 SVG/PNG/scenes and source-subject checks; generated source/trace site data, seven interactive views, light/dark/system themes and responsive preview |
 
@@ -1975,7 +2020,7 @@ The unit suite exercises observable positive/negative language behavior, malform
 
 ## Deliberate implementation limits
 
-The reference validator expands at most 10000 component occurrences per top-level occurrence and reports SW2013 above that host limit; closure is not checked for a top-level occurrence that exceeds it. This is a reference resource boundary, not a new mathematical language multiplicity restriction. The reference simulator runs a package target (all top-level software occurrences with their package connections and deployments) or one top-level component alone with its ports open, and records statement identities as trace sources; case execution is not implemented yet. Stale-read analysis is conservative and may warn after a safe recheck. Definite-return/out assignment is conservative. Formatter range/on-type operations are not implemented. A rename that introduces an error, changes any indexed reference binding, or cannot preserve selected view identities is refused; persistent editor sidecar identity/native undo belongs to the editor integration.
+The reference validator expands at most 10000 component occurrences per top-level occurrence and reports SW2013 above that host limit; closure is not checked for a top-level occurrence that exceeds it. This is a reference resource boundary, not a new mathematical language multiplicity restriction. The reference simulator runs a package target (all top-level software occurrences with their package connections and deployments) or one top-level component alone with its ports open, and records statement identities as trace sources. A case script runs in one deterministic order; a pass is evidence of that run only. Script endpoints reach only top-level actors without multiplicity, white-box paths follow single parts (no indexed parts) and white-box calls cannot communicate or suspend. An unassigned out binding of on call replies with its zero value. Stale-read analysis is conservative and may warn after a safe recheck. Definite-return/out assignment is conservative. Formatter range/on-type operations are not implemented. A rename that introduces an error, changes any indexed reference binding, or cannot preserve selected view identities is refused; persistent editor sidecar identity/native undo belongs to the editor integration.
 
 Math abs/min/max/concat are ordinary source; floor/round/trunc/length are explicitly documented host intrinsics with checked semantics. The interpreter uses zero physical CPU cost and one deterministic permitted order, with finite resources and recorded fault assumptions. It does not implement a production scheduler, real network reliability protocol or universal analysis.
 
@@ -2150,7 +2195,7 @@ Case views draw the owning component as the boundary and actor roles outside it.
 
 Status: accepted for implementation, 2026-11-01. Normative change for the 2.1 standard edition; recorded under Unreleased until that edition is prepared. Supersedes [ADR 0018](decisions/0018-cases-belong-to-their-subject.md) and the case clauses of [ADR 0016](decisions/0016-swaml-2-0.md) and [ADR 0017](decisions/0017-readable-names-and-use-cases.md); quoted names from ADR 0017 stay.
 
-Implementation is incremental. The package context, interface-only components, package-owned intent-only cases and the package links are implemented with this decision. Run targets and trace identity are implemented by the run targets change. Executable use cases and tests are implemented by a follow-up change; its parts are marked below.
+Implementation is incremental. The package context, interface-only components, package-owned intent-only cases and the package links are implemented with this decision. Run targets and trace identity are implemented by the run targets change. Executable use cases and tests are implemented by the executable cases change. The parts implemented by follow-up changes are marked below.
 
 ## Context
 
@@ -2176,7 +2221,7 @@ A component, as its effective definition including specialization or as a bodied
 
 use case X of y { … } and test X of y { … } are package members only; components no longer own cases. test replaces verification case. y names a top-level component occurrence of the same package: the subject. of is optional. A case without of, or without statements, records intent only. A use case of a sub-component is written in a package where that component is a top-level occurrence. The case body owns optional documentation. Case kinds are useCase and test in the abstract syntax.
 
-*Implemented by the follow-up executable cases change:* after the documentation, a case body owns the existing statement language: var, assignment to locals, send p.m(v);, publish p.e(args);, calls through ports, on receive … { } or receive … { } or after D { }, on call actor.port.op(a) { return v; }, wait D;, if, while, for, for … in, assert, fail "reason"; and return. Cases own no nested operations, states or schedules. Statements require of. Endpoints in case scripts are occurrence.port.member. Statements act as associated interface-only components, through their ports. A use case may act only through ports of associated interface-only components (black box). A test may do the same and may additionally call operations of the subject and of parts inside it and read their attributes, such as atm.fee(20, 10), atm.dispensedToday or atm.dispenser.count; it cannot assign them. on call answers a request addressed to an actor port, a provided operation of the actor's port; inside it return v; is the reply, exactly like a served operation. A top-level return ends the case. Each case with statements runs in its own fresh deterministic run of its package; the script starts after the initialization barrier and the run stops when the script completes or fails, or at the horizon or limit. Results are pass (script completed, no failed assert or fail, no failure observed in the run), fail (with location and trace), inconclusive (horizon or limit first) and no checks (intent-only case). swaml test runs them. A use case runs the same way as an executable example.
+*Implemented by the executable cases change:* after the documentation, a case body owns the existing statement language: var, assignment to locals, send p.m(v);, publish p.e(args);, calls through ports, on receive … { } or receive … { } or after D { }, on call actor.port.op(a) { return v; }, wait D;, if, while, for, for … in, assert, fail "reason"; and return. Cases own no nested operations, states or schedules. Statements require of. Endpoints in case scripts are occurrence.port.member. Statements act as associated interface-only components, through their ports. A use case may act only through ports of associated interface-only components (black box). A test may do the same and may additionally call operations of the subject and of parts inside it and read their attributes, such as atm.fee(20, 10), atm.dispensedToday or atm.dispenser.count; it cannot assign them. on call answers a request addressed to an actor port, a provided operation of the actor's port; inside it return v; is the reply, exactly like a served operation. A top-level return ends the case. Each case with statements runs in its own fresh deterministic run of its package; the script starts after the initialization barrier and the run stops when the script completes or fails, or at the horizon or limit. Results are pass (script completed, no failed assert or fail, no failure observed in the run), fail (with location and trace), inconclusive (horizon or limit first) and no checks (intent-only case). swaml test runs them. A use case runs the same way as an executable example.
 
 ### Links live in the package
 
@@ -2192,7 +2237,7 @@ The new words test, associate and by are contextual and remain usable as names, 
 
 ### Views
 
-Case subjects include packages, cases and components; Sequence subjects include cases, components and packages; a selected package contributes its cases. *Implemented by the follow-up executable cases change:* Flow and Timing subjects include use cases and tests, and Sequence subjects include operations.
+Case subjects include packages, cases and components; Sequence subjects include cases, components and packages; a selected package contributes its cases. *Implemented by the executable cases change:* Flow and Timing subjects include use cases and tests, and Sequence subjects include operations.
 
 ### Versions
 
@@ -2206,11 +2251,24 @@ The run targets change resolves Package or Package::component through runTarget,
 
 The abstract syntax keeps Scenario for cases, with subject as a reference to a component usage. Package owns connections, associations, satisfactions and verifications beside its elements. The references of of, associate and verify resolve in the owning package first and fall back to imports only so that validation can explain a cross-package reference instead of reporting an unresolved name. semantic exports packageOccurrences, packageEndpoint, interfaceOnly, designComponent and caseSubject; connectionRoutes accepts a whole package and resolves package connections through forwarding aliases. Projections add subject, associate, satisfy and verify edges and package connection edges.
 
+### Executable cases (implementation choices)
+
+The executable cases change implements the case scripts with these choices, each the closest option consistent with the existing semantics:
+
+- Grammar. Scenario owns statements after its documentation. Send and ReceiveBranch take an EndpointPath of two or three names, and ReceiveBranch gains kind receive or call; the validator decides by context: occurrence.port.member only in case scripts, port.member in operations, and on call branches only in case scripts. Interrupt regions, schedule entries, states and nested operations stay outside cases; interruptible is rejected in a case (SW2006) because its endpoint form belongs to operations.
+- Environment role. An endpoint occurrence is a top-level occurrence of the case's package, not the subject, associated with the case and interface-only (SW2010); its kind and direction follow the actor port (SW2004 for emissions and calls, SW2005 for inputs). Calls through actor ports use the existing call expression, and a white-box call is an ordinary expression call.
+- White-box access. A test reads attributes, with record fields and indexes, and calls operations of its subject and of single (unindexed) parts inside it. Calls are restricted to operations that neither communicate nor suspend, so they can occur inside expressions such as assert atm.fee(20, 10) == 2;; they borrow the occurrence's context and serial lock like a local call, and reads observe the live store; both wait while another activation holds that lock. Assignment syntax names locals only, so a test cannot assign its subject.
+- Early input. Input reaching an actor port before the script waits stays in the connection queue under its policy, attributes keep the latest value, and requests wait for an on call branch or the caller's timeout. This needs no new mechanism: an interface-only occurrence has no input owner, so the existing rule that receive input stays queued applies.
+- Start and stop. The script is one serial activation, released at 0 ns after every on start entry, with the case identity as trace subject and case statement identities as sources. The run stops after the event that completes or fails the script, with the new status stopped; a case run whose script waits with no event left is quiescent.
+- Results. A failure observed in the run means an uncaught activation failure or a contract violation; a caught expression failure is handled behavior and does not fail a case, so a test can check a fallback such as a refusal after a bank timeout. The first failure in trace order decides a failed case, so an earlier run failure wins over a later script failure. A script that waits while no further event can occur is inconclusive with reason stalled, like a script that reaches the horizon: the run ended before the script completed without a failed check, and the result must not depend on unrelated activity that merely moves the end of the run to the horizon. A passing case may carry the failure-observed run outcome when a try fallback handled a failure. A failure inside on call replies with a remote failure and fails the case; an out binding that the branch does not assign replies with its zero value.
+- API and host. The core exports runCase, runTests and workspaceCases with CaseResult values (case, kind, subject, result, reason, message, source, observed, timeNs, run) and caseTarget, associatedOccurrences and executableCase from semantic. swaml test shares loading and option parsing with swaml simulate, defaults to a 10 s horizon, prints a summary or JSON without repeating source text, and exits 1 when a case fails.
+- Examples. Customer in example 28 is an interface-only actor driven by its use cases; its reference run is now the run of the use case 'Withdraw cash' with the ATM's expected store, and every example case runs with its expected result in the simulation gate. Example 29 is the reference example of the design with a composite ATM, so that white-box reads reach parts such as atm.dispenser.count; its fee operation uses real values because division yields real.
+
 ## Consequences
 
 This is an incompatible change, approved by the owner for the 2.1 edition because swa.ml has no external adopters. Published 2.0.0 artifacts and their frozen sources remain unchanged. A 2.0 or ADR 0018 model declares its system and surroundings as top-level occurrences joined by package connections, moves its cases into the package with of naming the subject, replaces actor roles by associated interface-only occurrences, drops include, extend and steps, and rewrites satisfy and verify as package links.
 
-Case views draw the subject occurrence as the boundary and associated occurrences outside it. Sequence views show the subject, its parts and the associated occurrences as lifelines. Until executable cases are implemented, cases remain intent: they execute nothing and prove nothing; afterwards a passing case is bounded evidence of one deterministic run, not proof.
+Case views draw the subject occurrence as the boundary and associated occurrences outside it. Sequence views show the subject, its parts and the associated occurrences as lifelines. A case without statements remains intent: it executes nothing and proves nothing. A passing case script is bounded evidence of one deterministic run, not proof.
 
 
 ---
@@ -2251,7 +2309,7 @@ Statement: LocalVariable | Assign | Send | ExpressionStatement | Return | If | W
 LocalVariable: 'var' name=Name ':' type=TypeRef '=' value=Expression ';';
 Assign: target=Name '=' value=Expression ';';
 ExpressionStatement: expression=Expression ';';
-Send: kind=('send'|'publish') endpoint=MemberPath '(' (args+=Expression (',' args+=Expression)*)? ')' ';';
+Send: kind=('send'|'publish') endpoint=EndpointPath '(' (args+=Expression (',' args+=Expression)*)? ')' ';';
 Return: 'return' value=Expression? ';';
 If: 'if' '(' condition=Expression ')' then=Block ('else' otherwise=Block)?;
 While: 'while' '(' condition=Expression (',' limit=Expression 'times')? ')' body=Block;
@@ -2261,7 +2319,7 @@ ForUpdate infers Assign: target=Name '=' value=Expression;
 ForEach: 'for' '(' variable=Argument 'in' collection=Expression ')' body=Block;
 Wait: 'wait' duration=Duration ';';
 Receive: 'on' branches+=ReceiveBranch ('or' branches+=ReceiveBranch)* ('or' 'after' timeout=Duration timeoutBody=Block)?;
-ReceiveBranch: 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' body=Block;
+ReceiveBranch: kind=('receive'|'call') endpoint=EndpointPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' body=Block;
 Interruptible: 'interruptible' body=Block 'on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' handler=Block;
 Fail: 'fail' reason=STRING ';';
 Assert: 'assert' condition=Expression ';';
@@ -2275,7 +2333,7 @@ Documentation: text=DOC_COMMENT;
 Satisfaction: 'satisfy' requirement=[Requirement:QualifiedName] 'by' design=Path ';';
 Verification: 'verify' requirement=[Requirement:QualifiedName] 'by' test=[Scenario:Name] ';';
 Association: 'associate' occurrence=[ComponentUsage:Name] 'to' target=[Scenario:Name] ';';
-Scenario: kind=CaseKind name=Name ('of' subject=[ComponentUsage:Name])? '{' documentation=Documentation? '}';
+Scenario: kind=CaseKind name=Name ('of' subject=[ComponentUsage:Name])? '{' documentation=Documentation? statements+=Statement* '}';
 CaseKind returns string: 'use' 'case' | 'test';
 ViewDef: 'view' 'def' name=Name documentation=Documentation? ';';
 View: 'view' name=Name ':' definition=[ViewDef:QualifiedName] ('of' subject=Path documentation=Documentation? ';' | '{' documentation=Documentation? selections+=ViewSelection+ '}');
@@ -2289,6 +2347,7 @@ FilterComparison: field=('name'|'kind'|'path') operator=('=='|'!=') value=STRING
 Duration: value=INT unit=('ns'|'us'|'ms'|'s');
 Name returns string: ID | UNRESTRICTED_NAME | 'reversed' | 'to' | 'times' | 'name' | 'kind' | 'path' | 'use' | 'case' | 'test' | 'associate' | 'by' | 'ns' | 'us' | 'ms' | 's';
 MemberPath returns string: Name '.' Name;
+EndpointPath returns string: Name '.' Name ('.' Name)?;
 Path returns string: QualifiedName ('[' INT ']')? ('.' Name ('[' INT ']')?)*;
 QualifiedName returns string: Name ('::' Name)*;
 ValuePath returns string: QualifiedName ('.' Name)*;
@@ -2412,6 +2471,8 @@ package Control {
   }
   test ControlLoop of Demo {
     /** A sample reaches the controller, which commands the heater within its deadline. */
+    wait 12ms;
+    assert Demo.heater.power > 0.2 and Demo.heater.power < 0.3;
   }
   satisfy Responsive by Demo.controller;
   verify Responsive by ControlLoop;
@@ -3005,6 +3066,8 @@ package Traceability {
   }
   test Startup of Demo {
     /** The startup greeting reaches the receiver. */
+    wait 1ms;
+    assert Demo.receiver.last == "Hello, SWAML";
   }
   satisfy Delivery by Demo.receiver;
   verify Delivery by Startup;
@@ -3351,20 +3414,8 @@ package 'Cash Machine' {
     requires operation authorize(cardId: string, amount: uint) returns bool;
   }
   component def Customer {
-    /** Actor: a bank customer at the machine. */
+    /** Actor: a bank customer at the machine. Interface-only: the use cases act through its panel. */
     port panel: Panel;
-    attribute received: uint = 0;
-    operation arrive() {
-      publish panel.cardInserted("4711");
-      publish panel.cashRequested(100);
-    }
-    operation take(amount: uint) {
-      received = amount;
-    }
-    schedule {
-      on start arrive();
-      on receive panel.cashDispensed(amount) take(amount);
-    }
   }
   component def 'ATM Controller' {
     /** The system under consideration: the subject of the machine's use cases. */
@@ -3406,15 +3457,30 @@ package 'Cash Machine' {
   connect (atm.bank, bank.link);
   use case 'Withdraw cash' of atm {
     /** The customer inserts a card, asks for cash and receives it. */
+    publish customer.panel.cardInserted("4711");
+    publish customer.panel.cashRequested(100);
+    on receive customer.panel.cashDispensed(amount) {
+      assert amount == 100;
+    } or after 2s {
+      fail "no cash dispensed";
+    }
   }
   use case Authenticate of atm {
     /** The machine reads the card before any transaction. */
+    publish customer.panel.cardInserted("4711");
   }
   use case 'Print receipt' of atm {
     /** A receipt may follow a withdrawal. */
   }
   test 'Limit honoured' of atm {
-    /** A request above the limit is refused by the bank. */
+    /** A request above the limit is refused by the bank: no cash, and the card stays known. */
+    publish customer.panel.cardInserted("4711");
+    publish customer.panel.cashRequested(600);
+    on receive customer.panel.cashDispensed(amount) {
+      fail "cash above the limit";
+    } or after 1s {
+    }
+    assert atm.card == "4711";
   }
   use case 'Open a branch' {
     /** A use case without of states intent before its subject is chosen. */
@@ -3429,6 +3495,167 @@ package 'Cash Machine' {
   verify 'Cash limit' by 'Limit honoured';
   view 'use cases': Case of 'Cash Machine';
   view withdrawal: Sequence of 'Withdraw cash';
+}
+```
+
+### 29-executable-cases.swaml
+
+```swaml
+package Banking {
+  import Swaml::Views;
+  port def Panel {
+    provides attribute amount: uint;
+    provides event cashRequested();
+    requires event cashOut(paid: uint);
+    requires event refused();
+  }
+  port def BankLink {
+    requires operation authorize(amount: uint) returns bool;
+  }
+  port def Cash {
+    provides event pay(amount: uint);
+  }
+  requirement 'Cash limit' {
+    /** Withdrawals above the limit are refused. */
+    attribute limit: uint = 500;
+  }
+  component def Customer {
+    /** Actor: a customer at the machine. Interface-only: a case script acts through its panel. */
+    port panel: Panel;
+  }
+  component def Controller {
+    reversed port panel: Panel;
+    port link: BankLink;
+    port cash: Cash;
+    attribute amount: uint = 0;
+    operation remember(value: uint) {
+      amount = value;
+    }
+    operation withdraw() {
+      var requested: uint = amount;
+      var approved: bool = link.authorize(requested);
+      if (approved) {
+        publish cash.pay(requested);
+        publish panel.cashOut(requested);
+      } else {
+        publish panel.refused();
+      }
+    }
+    schedule {
+      on receive panel.amount(value) remember(value);
+      on receive panel.cashRequested() withdraw();
+    }
+  }
+  component def Dispenser {
+    reversed port cash: Cash;
+    attribute count: uint = 0;
+    attribute dispensedToday: uint = 0;
+    operation pay(amount: uint) {
+      count = count + 1;
+      dispensedToday = dispensedToday + amount;
+    }
+    schedule {
+      on receive cash.pay(amount) pay(amount);
+    }
+  }
+  component def ATM {
+    /** The machine: a controller and a cash dispenser behind one panel and one bank link. */
+    reversed port panel: Panel;
+    port link: BankLink;
+    component controller: Controller;
+    component dispenser: Dispenser;
+    connect (panel, controller.panel);
+    connect (link, controller.link);
+    connect (controller.cash, dispenser.cash);
+    operation fee(amount: real, percent: real) returns real {
+      return amount * percent / 100.0;
+    }
+  }
+  component def BankHost {
+    reversed port link: BankLink;
+    operation authorize(amount: uint) returns bool {
+      return amount <= 500;
+    }
+    schedule {
+      on call link.authorize(amount) authorize(amount);
+    }
+  }
+  component atm: ATM;
+  component customer: Customer;
+  component bank: BankHost;
+  connect (customer.panel, atm.panel);
+  connect (atm.link, bank.link);
+  use case Withdraw of atm {
+    /** A customer withdraws 200 within the limit. */
+    send customer.panel.amount(200);
+    publish customer.panel.cashRequested();
+    on receive customer.panel.cashOut(paid) {
+      assert paid == 200;
+    } or after 2s {
+      fail "no cash";
+    }
+  }
+  associate customer to Withdraw;
+  associate bank to Withdraw;
+  satisfy 'Cash limit' by atm;
+  view withdrawal: Sequence of Withdraw;
+}
+package AtmTests {
+  /** An isolation package: the machine under test with an interface-only bank stub. */
+  import Swaml::Views;
+  import Banking;
+  component def BankPeer {
+    /** Stub: the test answers authorization requests itself. */
+    reversed port link: BankLink;
+  }
+  component atm: ATM;
+  component customer: Customer;
+  component bank: BankPeer;
+  connect (customer.panel, atm.panel);
+  connect (atm.link, bank.link);
+  test 'Fee rounding' of atm {
+    assert atm.fee(20, 10) == 2;
+  }
+  test 'Bank refusal' of atm {
+    /** The bank refuses: the machine refuses the customer and pays nothing. */
+    send customer.panel.amount(100);
+    publish customer.panel.cashRequested();
+    on call bank.link.authorize(amount) {
+      assert amount == 100;
+      return false;
+    } or after 1s {
+      fail "no authorization request";
+    }
+    on receive customer.panel.refused() {
+    } or after 1s {
+      fail "not refused";
+    }
+    assert atm.dispenser.count == 0;
+  }
+  test 'Approved withdrawal' of atm {
+    /** An approved request pays once and counts the amount. */
+    send customer.panel.amount(300);
+    publish customer.panel.cashRequested();
+    on call bank.link.authorize(amount) {
+      return amount <= 500;
+    } or after 1s {
+      fail "no authorization request";
+    }
+    on receive customer.panel.cashOut(paid) {
+      assert paid == 300;
+    } or after 1s {
+      fail "no cash";
+    }
+    wait 1ms;
+    assert atm.dispenser.count == 1 and atm.dispenser.dispensedToday == 300;
+  }
+  associate customer to 'Bank refusal';
+  associate bank to 'Bank refusal';
+  associate customer to 'Approved withdrawal';
+  associate bank to 'Approved withdrawal';
+  verify 'Cash limit' by 'Bank refusal';
+  view refusal: Sequence of 'Bank refusal';
+  view checks: Case of AtmTests;
 }
 ```
 

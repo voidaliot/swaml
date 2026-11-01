@@ -9,20 +9,8 @@ package 'Cash Machine' {
     requires operation authorize(cardId: string, amount: uint) returns bool;
   }
   component def Customer {
-    /** Actor: a bank customer at the machine. */
+    /** Actor: a bank customer at the machine. Interface-only: the use cases act through its panel. */
     port panel: Panel;
-    attribute received: uint = 0;
-    operation arrive() {
-      publish panel.cardInserted("4711");
-      publish panel.cashRequested(100);
-    }
-    operation take(amount: uint) {
-      received = amount;
-    }
-    schedule {
-      on start arrive();
-      on receive panel.cashDispensed(amount) take(amount);
-    }
   }
   component def 'ATM Controller' {
     /** The system under consideration: the subject of the machine's use cases. */
@@ -64,15 +52,30 @@ package 'Cash Machine' {
   connect (atm.bank, bank.link);
   use case 'Withdraw cash' of atm {
     /** The customer inserts a card, asks for cash and receives it. */
+    publish customer.panel.cardInserted("4711");
+    publish customer.panel.cashRequested(100);
+    on receive customer.panel.cashDispensed(amount) {
+      assert amount == 100;
+    } or after 2s {
+      fail "no cash dispensed";
+    }
   }
   use case Authenticate of atm {
     /** The machine reads the card before any transaction. */
+    publish customer.panel.cardInserted("4711");
   }
   use case 'Print receipt' of atm {
     /** A receipt may follow a withdrawal. */
   }
   test 'Limit honoured' of atm {
-    /** A request above the limit is refused by the bank. */
+    /** A request above the limit is refused by the bank: no cash, and the card stays known. */
+    publish customer.panel.cardInserted("4711");
+    publish customer.panel.cashRequested(600);
+    on receive customer.panel.cashDispensed(amount) {
+      fail "cash above the limit";
+    } or after 1s {
+    }
+    assert atm.card == "4711";
   }
   use case 'Open a branch' {
     /** A use case without of states intent before its subject is chosen. */

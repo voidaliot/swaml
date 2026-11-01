@@ -227,7 +227,7 @@ for (const [name, source] of [
     ['satisfy inside a component', 'package Test { requirement R { } component def C { satisfy R; } }'],
     ['a verify without by', 'package Test { requirement R { } verify R; }'],
     ['a qualified subject', 'package Test { component def C { } component c: C; use case A of Test::c { } }'],
-    ['statements in a case body before executable cases', 'package Test { component def C { } component c: C; test A of c { assert true; } }'],
+    ['documentation after case statements', 'package Test { component def C { } component c: C; test A of c { assert true; /** late */ } }'],
 ] as const)
     test(`rejects removed or unsupported form: ${name}`, async () => assert.ok((await parse(source)).errors.some(e => e.code === 'SW2000'), source));
 for (const partial of ['package P { connect (a.p, ', 'package P { associate x to', 'package P { satisfy R by ;', 'package P { verify R by', 'package P { use case X of { } }', 'package P { test { } }', 'package P { test X of y { /** doc */'])

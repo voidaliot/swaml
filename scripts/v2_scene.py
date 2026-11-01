@@ -88,11 +88,25 @@ def scene(title, template):
             s['elements'].append({'kind':'ellipse','x':cx-11,'y':118,'w':22,'h':22,'fill':'#ffffff'})
             line(cx,140,cx,182);line(cx-22,154,cx+22,154);line(cx,182,cx-18,214);line(cx,182,cx+18,214);text(cx-len(name)*3.6,236,name,13)
         rect(290,72,360,250);text(302,94,"atm : 'ATM Controller'",12)
-        ellipse(470,130,250,48,"'Withdraw cash'");ellipse(470,205,200,46,'Authenticate');ellipse(470,280,200,46,"'Print receipt'")
+        ellipse(470,122,250,40,"'Withdraw cash'");ellipse(470,172,200,40,'Authenticate');ellipse(470,222,200,40,"'Print receipt'");ellipse(470,276,250,44,"«test» 'Limit honoured'")
         actor(120,'customer : Customer');actor(800,'bank : Bank')
-        line(144,160,345,130);line(144,170,370,205);line(144,180,370,280);line(776,160,595,130)
+        line(144,160,345,122);line(144,166,370,172);line(144,172,370,222);line(144,180,345,276);line(776,160,595,122);line(776,172,595,276)
         text(45,350,'The subject occurrence of the package is the boundary; associated occurrences stay outside and take part through ports.',13)
-        text(45,372,'Solid lines show associate links; satisfy and verify are package links that record intent, not proof.',13)
+        text(45,372,'Solid lines show associate links; a case with statements runs as a script, otherwise it records intent only.',13)
+    elif template=='script':
+        heads=[(150,'customer : Customer'),(460,'atm : ATM'),(770,'bank : BankPeer')]
+        for x,name in heads:
+            rect(x-95,72,190,34,'#eeeeee');text(x-len(name)*3.6,94,name,12);line(x,106,x,318,'',True)
+        rect(454,150,12,118)
+        def message(x1,x2,y,label,dash=False):
+            back=-1 if x2>x1 else 1
+            line(x1,y,x2,y,'',dash);line(x2,y,x2+8*back,y-5);line(x2,y,x2+8*back,y+5);text(min(x1,x2)+14,y-7,label,12)
+        message(150,454,140,'send amount(100)');message(150,454,170,'publish cashRequested()')
+        message(466,770,198,'authorize(100) — on call');message(770,466,228,'return false',True)
+        message(454,150,258,'refused() — on receive')
+        rect(118,282,64,22,'#ffffff');text(126,298,'assert',12);text(196,298,'atm.dispenser.count == 0',12)
+        text(45,350,"Script statements start on the lifeline of the interface-only actor whose port they use.",13)
+        text(45,372,'on call answers a request with return; on receive or after D waits; a test may also read its subject.',13)
     elif template=='view':
         for i,name in enumerate(['General','Interconnect','Case','Sequence','Grid','Flow','Timing']):box(38+(i%4)*220,95+(i//4)*130,200,105,name,['source-backed selection'])
         text(40,370,'Browser navigates ownership. Views never execute behavior.',13)
