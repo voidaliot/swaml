@@ -100,13 +100,14 @@
     },
     {
       "keyword": "call",
-      "meaning": "Used only as the on call schedule trigger.",
+      "meaning": "Serves a provided operation as an on call schedule trigger, or answers a request at an actor port as an on call branch of a case script.",
       "concern": "Schedule entry and successful chaining",
       "normative": "docs/spec/03-behavior.md",
       "example": "('on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' deadline=Duration)? (concurrent?='concurrent')? ';';",
       "contextual": false,
       "productions": [
-        "ScheduleEntry"
+        "ScheduleEntry",
+        "ReceiveBranch"
       ]
     },
     {
@@ -614,7 +615,7 @@
       "meaning": "Used in directed port members; see its grammar contexts and normative constraints.",
       "concern": "Directed port members",
       "normative": "docs/spec/02-communication.md",
-      "example": "kind=('send'|'publish') endpoint=MemberPath '(' (args+=Expression (',' args+=Expression)*)? ')' ';';",
+      "example": "kind=('send'|'publish') endpoint=EndpointPath '(' (args+=Expression (',' args+=Expression)*)? ')' ';';",
       "contextual": false,
       "productions": [
         "Send"
@@ -790,7 +791,7 @@
       "meaning": "Used in directed port members; see its grammar contexts and normative constraints.",
       "concern": "Directed port members",
       "normative": "docs/spec/02-communication.md",
-      "example": "kind=('send'|'publish') endpoint=MemberPath '(' (args+=Expression (',' args+=Expression)*)? ')' ';';",
+      "example": "kind=('send'|'publish') endpoint=EndpointPath '(' (args+=Expression (',' args+=Expression)*)? ')' ';';",
       "contextual": false,
       "productions": [
         "Send"

@@ -2,9 +2,9 @@ import { AstUtils, CstUtils, DocumentState, GrammarUtils, WorkspaceCache, type A
 import type { Range } from 'vscode-languageserver';
 import type { LangiumServices } from 'langium/lsp';
 import * as a from './generated/ast.js';
-import { connectionRoutes, designComponent, interfaceOnly, packageEndpoint, packageOccurrences, expressionTypes, OCCURRENCE_LIMIT, occurrenceCount, workspaceModels, assignable, body, compatibility, constantNumber, direction, effectiveQos, effects, endpoint, entryKey, identity, integral, isExecutable, isNode, localOperation, memberEndpoint, members, nanos, nodes, numeric, occurrences, owner, resolve, schedule, signature, typeKey, type Executable, type Node, type Structure, portMembers } from './semantic.js';
+import { associatedOccurrences, caseTarget, connectionRoutes, designComponent, interfaceOnly, packageEndpoint, packageOccurrences, expressionTypes, OCCURRENCE_LIMIT, occurrenceCount, workspaceModels, assignable, body, compatibility, constantNumber, direction, effectiveQos, effects, endpoint, entryKey, identity, integral, isExecutable, isNode, localOperation, memberEndpoint, members, nanos, nodes, numeric, occurrences, owner, resolve, schedule, signature, typeKey, type Executable, type Node, type Structure, portMembers } from './semantic.js';
 import { selectView, viewCandidates, type ViewSubject } from './presentation.js';
-import { decodeQuotedName, nameProblem } from './names.js';
+import { decodeQuotedName, formatName, nameProblem } from './names.js';
 type Env = Map<string, {
     type: string;
     mutable: boolean;
@@ -92,6 +92,8 @@ export class SwamlValidator {
             }
             this.packageConnections(p);
             this.links(p);
+            for (const s of p.elements.filter(a.isScenario))
+                this.caseScript(s, p);
         }
         for (const n of nodes(model)) {
             if (n.redefines && !a.isComponentDef(n.$container) && !a.isComponentUsage(n.$container) && !a.isAttribute(n))
@@ -411,6 +413,10 @@ export class SwamlValidator {
             check(op, end);
     }
     private callTarget(call: a.CallExpression, c?: Structure): Executable | a.PortMember | undefined {
+        if (this.script && call.target.includes('.')) {
+            const t = caseTarget(this.script.scenario, call.target);
+            return t?.kind === 'port' ? t.member : t?.kind === 'operation' ? t.operation : undefined;
+        }
         if (call.target.includes('.'))
             return c && memberEndpoint(c, call.target)?.member;
         const t = localOperation(call, call.target, c) ?? resolve(call, call.target, this.models);
@@ -426,7 +432,7 @@ export class SwamlValidator {
         }
         else if (!(integral(actual) && integral(expected) && constantNumber(e) === undefined) && !assignable(actual, expected, constantNumber(e)))
             this.report(e, 'SW2002', `Expected ${expected}, received ${actual}.`);
-        if (!op)
+        if (!op && !this.script)
             for (const call of nodes(e).filter(a.isCallExpression)) {
                 const t = this.callTarget(call, c);
                 if (t && (!isExecutable(t) || Object.values(effects(t, c)).some(Boolean)))
@@ -446,14 +452,23 @@ export class SwamlValidator {
             return e.boolean !== undefined ? 'bool' : 'string';
         }
         if (a.isReferenceExpression(e)) {
-            const [head, ...fields] = e.path.split('.');
-            let t = env.get(head)?.type;
+            const [head, ...path] = e.path.split('.');
+            let t = env.get(head)?.type, fields = path;
             if (!t) {
                 const en = resolve(e, head, this.models);
                 if (a.isEnumType(en) && fields.length === 1 && en.literals.includes(fields[0]))
                     return identity(en);
-                this.report(e, 'SW2002', `Unknown local value ${e.path}; nested operations never capture enclosing locals and component attributes are private.`);
-                return '?';
+                // A test may read attributes of its subject and of parts inside it.
+                const read = this.script && caseTarget(this.script.scenario, e.path);
+                if (read && read.kind === 'attribute') {
+                    this.whiteBox(e, 'path', read.path, 'read');
+                    t = typeKey(read.attribute.type);
+                    fields = read.fields;
+                }
+                else {
+                    this.report(e, 'SW2002', this.script ? `Unknown value ${e.path}; a case reads its locals and bindings, and a test may also read attributes of its subject and of parts inside it.` : `Unknown local value ${e.path}; nested operations never capture enclosing locals and component attributes are private.`);
+                    return '?';
+                }
             }
             for (const field of fields) {
                 const record = this.models.flatMap(m => m.packages.flatMap(p => p.elements)).find(x => identity(x) === t);
@@ -520,12 +535,22 @@ export class SwamlValidator {
             const sig = isExecutable(t) ? signature(t) : t;
             if (!sig)
                 return '?';
-            if (a.isPortMember(t)) {
+            const scripted = this.script && e.target.includes('.') ? caseTarget(this.script.scenario, e.target) : undefined;
+            if (scripted?.kind === 'port')
+                this.scriptPort(e, 'target', e.target, ['operation'], 'requires', 'A call', 'SW2004');
+            else if (scripted?.kind === 'operation') {
+                // A white-box call borrows the occurrence's context, like a local call.
+                this.whiteBox(e, 'target', scripted.path, 'call');
+                const x = effects(scripted.operation, scripted.structure);
+                if (x.communicates || x.suspends)
+                    this.report(e, 'SW2006', `A test calls only operations that neither communicate nor suspend; ${e.target} does. Drive that behavior through an actor port.`, false, this.at(e, 'target'));
+            }
+            else if (a.isPortMember(t)) {
                 const ep = c && memberEndpoint(c, e.target);
                 if (!ep || t.kind !== 'operation' || direction(ep.port, t) !== 'requires')
                     this.report(e, 'SW2004', 'Remote calls need an owned required operation member.');
             }
-            if ((!isExecutable(t) || effects(t, c).suspends) && !allow)
+            if ((!isExecutable(t) || scripted?.kind !== 'operation' && effects(t, c).suspends) && !allow)
                 this.report(e, 'SW2006', 'Suspending calls must be the whole initializer, assignment value or statement, optionally in try.');
             this.arguments(e, sig.parameters, e.args, env, c, op);
             if (sig.parameters.some(x => x.direction === 'out') && !a.isExpressionStatement(e.$container) && !(a.isTryExpression(e.$container) && a.isExpressionStatement(e.$container.$container)))
@@ -572,7 +597,7 @@ export class SwamlValidator {
         else
             this.value(v, typeKey(p.type), env, c, op); });
     }
-    private block(b: a.Block | a.OperationBody, inherited: Env, c: Structure | undefined, op: Executable): void {
+    private block(b: a.Block | a.OperationBody | a.Scenario, inherited: Env, c: Structure | undefined, op: Executable | undefined): void {
         const env = new Map(inherited);
         for (const s of b.statements) {
             if (a.isLocalVariable(s)) {
@@ -595,11 +620,12 @@ export class SwamlValidator {
                     this.report(s, 'SW2006', 'Expression statements must call an operation or try.');
             }
             else if (a.isReturn(s)) {
-                if (body(op)?.states.length)
+                if (op && body(op)?.states.length)
                     this.report(s, 'SW2008', 'A stateful operation completes by reaching final state, not return.');
-                const t = typeKey(signature(op)?.result);
+                // In a case, return inside on call is the reply; any other return ends the case.
+                const t = this.script ? this.script.reply ?? 'void' : typeKey(op && signature(op)?.result);
                 if (!s.value && t !== 'void' || s.value && t === 'void')
-                    this.report(s, 'SW2002', 'Return does not match the result.');
+                    this.report(s, 'SW2002', this.script && this.script.reply === undefined ? 'A return outside on call ends the case and has no value.' : this.script ? 'Return does not match the result of the answered operation.' : 'Return does not match the result.');
                 if (s.value)
                     this.value(s.value, t, env, c, op);
             }
@@ -640,8 +666,14 @@ export class SwamlValidator {
             else if (a.isAssert(s))
                 this.value(s.condition, 'bool', env, c, op);
             else if (a.isSend(s)) {
-                const ep = c && memberEndpoint(c, s.endpoint);
-                if (!ep || direction(ep.port, ep.member) !== 'provides' || ep.member.kind !== (s.kind === 'send' ? 'attribute' : 'event'))
+                const ep = this.script ? this.scriptPort(s, 'endpoint', s.endpoint, [s.kind === 'send' ? 'attribute' : 'event'], 'provides', s.kind, 'SW2004') : c && memberEndpoint(c, s.endpoint);
+                if (!this.script && s.endpoint.split('.').length === 3)
+                    this.report(s, 'SW2004', 'occurrence.port.member endpoints belong to case scripts; an operation emits through its own port as port.member.', false, this.at(s, 'endpoint'));
+                else if (!ep) {
+                    if (!this.script)
+                        this.report(s, 'SW2004', 'Emission needs a matching owned provided member.');
+                }
+                else if (!this.script && (direction(ep.port, ep.member) !== 'provides' || ep.member.kind !== (s.kind === 'send' ? 'attribute' : 'event')))
                     this.report(s, 'SW2004', 'Emission needs a matching owned provided member.');
                 else if (ep.member.kind === 'attribute') {
                     if (s.args.length !== 1)
@@ -653,13 +685,32 @@ export class SwamlValidator {
                     this.arguments(s, ep.member.parameters, s.args, env, c, op);
             }
             else if (a.isReceive(s)) {
-                for (const br of s.branches)
-                    this.block(br.body, this.inputEnv(br, env, c), c, op);
+                for (const br of s.branches) {
+                    const call = br.kind === 'call';
+                    if (call && !this.script) {
+                        this.report(br, 'SW2006', 'on call branches answer requests at actor ports and belong to case scripts; a component serves a provided operation with a schedule on call entry.');
+                        continue;
+                    }
+                    const input = this.inputEnv(br, env, c, call);
+                    if (!call || !this.script) {
+                        this.block(br.body, input, c, op);
+                        continue;
+                    }
+                    // Inside on call, return is the reply, exactly like a served operation.
+                    const answered = caseTarget(this.script.scenario, br.endpoint), saved = this.script.reply, result = answered?.kind === 'port' ? typeKey(answered.member.result) : '?';
+                    this.script.reply = result;
+                    this.block(br.body, input, c, op);
+                    this.script.reply = saved;
+                    if (result !== 'void' && result !== '?' && !this.terminates(br.body))
+                        this.report(br, 'SW2006', `An on call branch for ${br.endpoint} must return a ${result} reply or fail on every path.`);
+                }
                 if (s.timeoutBody)
                     this.block(s.timeoutBody, env, c, op);
             }
+            else if (a.isInterruptible(s) && this.script)
+                this.report(s, 'SW2006', 'Case scripts have no interrupt regions; wait with on receive or after D instead.');
             else if (a.isInterruptible(s)) {
-                if (body(op)?.states.length)
+                if (op && body(op)?.states.length)
                     this.report(s, 'SW2006', 'Interrupt regions cannot occur in stateful operations.');
                 this.block(s.body, env, c, op);
                 this.block(s.handler, this.inputEnv(s, env, c), c, op);
@@ -671,11 +722,24 @@ export class SwamlValidator {
         endpoint?: string;
         bindings: string[];
     } & AstNode, env: Env, c?: Structure, operation = false): Env {
-        const result = new Map(env), ep = c && n.endpoint && memberEndpoint(c, n.endpoint);
+        const result = new Map(env);
+        if (this.script && a.isReceiveBranch(n)) {
+            const ep = this.scriptPort(n, 'endpoint', n.endpoint, operation ? ['operation'] : ['attribute', 'event'], operation ? 'provides' : 'requires', operation ? 'on call' : 'on receive', 'SW2005');
+            return ep ? this.bindings(n, ep.member, env, result, operation) : result;
+        }
+        if (n.endpoint?.split('.').length === 3) {
+            this.report(n, 'SW2005', 'occurrence.port.member endpoints belong to case scripts; an operation receives through its own port as port.member.', false, this.at(n, 'endpoint'));
+            return result;
+        }
+        const ep = c && n.endpoint && memberEndpoint(c, n.endpoint);
         if (!ep || (ep.member.kind === 'operation') !== operation || direction(ep.port, ep.member) !== (operation ? 'provides' : 'requires')) {
             this.report(n, 'SW2005', 'Input needs the matching owned member direction/kind.');
             return result;
         }
+        return this.bindings(n, ep.member, env, result, operation);
+    }
+    private bindings(n: { bindings: string[] } & AstNode, member: a.PortMember, env: Env, result: Env, operation: boolean): Env {
+        const ep = { member };
         const types = ep.member.kind === 'attribute' ? [typeKey(ep.member.type)] : ep.member.parameters.map(x => typeKey(x.type));
         if (types.length !== n.bindings.length || new Set(n.bindings).size !== n.bindings.length)
             this.report(n, 'SW2002', 'Input bindings must uniquely match every parameter.');
@@ -858,7 +922,8 @@ export class SwamlValidator {
         if (!selected.length)
             this.report(v, 'SW2010', 'View selects no subjects.');
         for (const item of selected)
-            if (['Flow', 'Timing'].includes(kind) && !isExecutable(item.node) || kind === 'Interconnect' && !a.isComponentUsage(item.node) && !a.isComponentDef(item.node) || ['Case', 'Sequence'].includes(kind) && !a.isScenario(item.node) && !a.isComponentUsage(item.node) && !a.isComponentDef(item.node) && !a.isPackage(item.node))
+            // Flow and Timing show executables, operations and cases; Sequence also starts from an operation.
+            if (['Flow', 'Timing'].includes(kind) && !isExecutable(item.node) && !a.isScenario(item.node) || kind === 'Interconnect' && !a.isComponentUsage(item.node) && !a.isComponentDef(item.node) || ['Case', 'Sequence'].includes(kind) && !a.isScenario(item.node) && !a.isComponentUsage(item.node) && !a.isComponentDef(item.node) && !a.isPackage(item.node) && !(kind === 'Sequence' && isExecutable(item.node)))
                 this.report(v, 'SW2010', `Subject ${item.path} is not valid for ${kind}.`);
     }
     /** The range of one property of a node, for diagnostics on the offending reference. */
@@ -916,6 +981,56 @@ export class SwamlValidator {
                 if (count > 1 && portMembers(port).some(m => direction(port, m) === 'requires' && m.kind !== 'event'))
                     this.report(node, 'SW2004', `Port ${path} requires exactly one peer after forwarding.`, false, range);
             }
+    }
+    /** The case script being validated: its case and, inside on call, the answered result type. */
+    private script?: { scenario: a.Scenario; reply?: string };
+    /**
+     * A case with statements is a script (ADR 0019): it needs a subject, acts as associated
+     * interface-only components through their ports and, in a test, may also read and call into its subject.
+     */
+    private caseScript(s: a.Scenario, p: a.Package): void {
+        if (!s.statements.length)
+            return;
+        if (!s.subject)
+            this.report(s, 'SW2010', `Statements of ${s.name} require of: name the top-level occurrence of package ${p.name} that the case exercises.`, false, this.at(s, 'name'));
+        this.script = { scenario: s };
+        try {
+            this.block(s, new Map(), undefined, undefined);
+        }
+        finally {
+            this.script = undefined;
+        }
+    }
+    /** Resolves occurrence.port.member in a case script and checks the environment role, kind and direction. */
+    private scriptPort(n: AstNode, property: string, path: string, kinds: string[], expected: 'provides' | 'requires', what: string, code: string): { port: a.PortUsage; member: a.PortMember } | undefined {
+        const s = this.script!.scenario, range = this.at(n, property), p = owner(s, a.isPackage)!;
+        const t = path.split('.').length === 3 ? caseTarget(s, path) : undefined;
+        if (!t || t.kind !== 'port') {
+            this.report(n, code, `Endpoints in case scripts are occurrence.port.member, naming a port member of a top-level component occurrence of package ${p.name}; ${path} is not one.`, false, range);
+            return undefined;
+        }
+        const o = t.occurrence;
+        if (o === s.subject?.ref) {
+            this.report(n, 'SW2010', `${s.name} acts as the environment of its subject ${o.name}; act through the port of an associated interface-only component connected to it.`, false, range);
+            return undefined;
+        }
+        if (!associatedOccurrences(s).includes(o))
+            this.report(n, 'SW2010', `${o.name} takes part in ${s.name} only when associated: write associate ${formatName(o.name)} to ${formatName(s.name)}; in package ${p.name}.`, false, range);
+        if (!interfaceOnly(o))
+            this.report(n, 'SW2010', `A case acts only as interface-only components (ports without operations, schedule entries or parts); ${o.name} has behavior of its own.`, false, range);
+        if (!kinds.includes(t.member.kind) || direction(t.port, t.member) !== expected) {
+            this.report(n, code, `${what} needs a ${expected} ${kinds.join(' or ')} of ${o.name}.${t.port.name}; ${t.member.name} is a ${direction(t.port, t.member)} ${t.member.kind}.`, false, range);
+            return undefined;
+        }
+        return { port: t.port, member: t.member };
+    }
+    /** White-box access: only a test, and only into its subject and the parts inside it. */
+    private whiteBox(n: AstNode, property: string, path: string, what: 'read' | 'call'): void {
+        const s = this.script!.scenario, head = path.split('.')[0];
+        if (s.kind !== 'test')
+            this.report(n, 'SW2010', `A use case is a black box: it acts only through ports of associated interface-only components. Write a test to ${what} ${path}.`, false, this.at(n, property));
+        else if (head !== s.subject?.ref?.name)
+            this.report(n, 'SW2010', `A test may ${what} only its subject${s.subject?.ref ? ' ' + s.subject.ref.name : ''} and parts inside it; ${head} is not its subject.`, false, this.at(n, property));
     }
     /** Cases, associations, satisfy and verify claims are package members that record intent. */
     private links(p: a.Package): void {

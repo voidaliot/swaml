@@ -465,3 +465,61 @@ export function resolveStatement(models: readonly a.Model[], source: string): As
     }
     return undefined;
 }
+/** The top-level occurrences associated with a case by associate links of its package. */
+export function associatedOccurrences(s: a.Scenario): a.ComponentUsage[] {
+    const p = owner(s, a.isPackage);
+    return p ? [...new Set(p.associations.filter(x => x.target.ref === s).flatMap(x => x.occurrence.ref ? [x.occurrence.ref] : []))] : [];
+}
+/** A case with statements is executable; a case without statements records intent only. */
+export const executableCase = (s: a.Scenario): boolean => s.statements.length > 0;
+/**
+ * What a dotted path in a case script names. occurrence.port.member is a port member of a
+ * top-level occurrence of the case's package, which a script uses as that occurrence. Any other
+ * path walks single parts from a top-level occurrence and ends at an operation, or at an attribute
+ * followed by record fields, which a test may call or read (white-box access).
+ */
+export type CaseTarget = {
+    kind: 'port';
+    occurrence: a.ComponentUsage;
+    port: a.PortUsage;
+    member: a.PortMember;
+} | {
+    kind: 'operation';
+    /** The occurrence path of the owner, such as atm or atm.dispenser. */
+    path: string;
+    structure: Structure;
+    operation: Executable;
+} | {
+    kind: 'attribute';
+    path: string;
+    structure: Structure;
+    attribute: a.Attribute;
+    fields: string[];
+};
+export function caseTarget(s: a.Scenario, path: string): CaseTarget | undefined {
+    const p = owner(s, a.isPackage), [head, ...rest] = path.split('.');
+    const occurrence = p && packageOccurrences(p).find(o => o.name === head);
+    if (!occurrence || !rest.length)
+        return undefined;
+    const port = members(occurrence).filter(a.isPortUsage).find(x => x.name === rest[0]);
+    if (port) {
+        const member = rest.length === 2 ? portMembers(port).find(m => m.name === rest[1]) : undefined;
+        return member && { kind: 'port', occurrence, port, member };
+    }
+    let structure: Structure = occurrence, at = head, i = 0;
+    for (; i < rest.length; i++) {
+        const child: a.ComponentUsage | undefined = members(structure).filter(a.isComponentUsage).find(x => x.name === rest[i] && x.size === undefined);
+        if (!child)
+            break;
+        structure = child;
+        at += '.' + rest[i];
+    }
+    const name = rest[i];
+    if (name === undefined)
+        return undefined;
+    const operation = members(structure).filter(isExecutable).find(x => x.name === name);
+    if (operation)
+        return i === rest.length - 1 ? { kind: 'operation', path: at, structure, operation } : undefined;
+    const attribute = members(structure).filter(a.isAttribute).find(x => x.name === name);
+    return attribute && { kind: 'attribute', path: at, structure, attribute, fields: rest.slice(i + 1) };
+}

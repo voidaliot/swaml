@@ -50,6 +50,8 @@ package Control {
   }
   test ControlLoop of Demo {
     /** A sample reaches the controller, which commands the heater within its deadline. */
+    wait 12ms;
+    assert Demo.heater.power > 0.2 and Demo.heater.power < 0.3;
   }
   satisfy Responsive by Demo.controller;
   verify Responsive by ControlLoop;

@@ -45,46 +45,61 @@
     {
       "kind": "ellipse",
       "x": 345.0,
-      "y": 106.0,
+      "y": 102.0,
       "w": 250,
-      "h": 48,
+      "h": 40,
       "fill": "#ffffff"
     },
     {
       "kind": "text",
       "x": 416.0,
-      "y": 135,
+      "y": 127,
       "text": "'Withdraw cash'",
       "size": 13
     },
     {
       "kind": "ellipse",
       "x": 370.0,
-      "y": 182.0,
+      "y": 152.0,
       "w": 200,
-      "h": 46,
+      "h": 40,
       "fill": "#ffffff"
     },
     {
       "kind": "text",
       "x": 426.8,
-      "y": 210,
+      "y": 177,
       "text": "Authenticate",
       "size": 13
     },
     {
       "kind": "ellipse",
       "x": 370.0,
-      "y": 257.0,
+      "y": 202.0,
       "w": 200,
-      "h": 46,
+      "h": 40,
       "fill": "#ffffff"
     },
     {
       "kind": "text",
       "x": 416.0,
-      "y": 285,
+      "y": 227,
       "text": "'Print receipt'",
+      "size": 13
+    },
+    {
+      "kind": "ellipse",
+      "x": 345.0,
+      "y": 254.0,
+      "w": 250,
+      "h": 44,
+      "fill": "#ffffff"
+    },
+    {
+      "kind": "text",
+      "x": 387.2,
+      "y": 281,
+      "text": "«test» 'Limit honoured'",
       "size": 13
     },
     {
@@ -186,23 +201,31 @@
       "x1": 144,
       "y1": 160,
       "x2": 345,
-      "y2": 130,
+      "y2": 122,
       "dash": false
     },
     {
       "kind": "line",
       "x1": 144,
-      "y1": 170,
+      "y1": 166,
       "x2": 370,
-      "y2": 205,
+      "y2": 172,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 144,
+      "y1": 172,
+      "x2": 370,
+      "y2": 222,
       "dash": false
     },
     {
       "kind": "line",
       "x1": 144,
       "y1": 180,
-      "x2": 370,
-      "y2": 280,
+      "x2": 345,
+      "y2": 276,
       "dash": false
     },
     {
@@ -210,7 +233,15 @@
       "x1": 776,
       "y1": 160,
       "x2": 595,
-      "y2": 130,
+      "y2": 122,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 776,
+      "y1": 172,
+      "x2": 595,
+      "y2": 276,
       "dash": false
     },
     {
@@ -224,7 +255,7 @@
       "kind": "text",
       "x": 45,
       "y": 372,
-      "text": "Solid lines show associate links; satisfy and verify are package links that record intent, not proof.",
+      "text": "Solid lines show associate links; a case with statements runs as a script, otherwise it records intent only.",
       "size": 13
     }
   ]

@@ -202,6 +202,16 @@ swa.ml 2.0; Cash Machine::Withdraw cash.
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 
+## Executable case scripts
+
+swa.ml 2.0; AtmTests::Bank refusal.
+
+![Executable case scripts](notation/2.0/scripts.svg)
+
+**Source:** [AtmTests::Bank refusal](../examples/29-executable-cases.swaml). **Grammar:** EndpointPath.
+
+Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
+
 ## Seven library view definitions
 
 swa.ml 2.0; Traceability::Demo.

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>swa.ml 2.0 original notation</title>
+<rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
+<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Executable case scripts</text>
+<line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
+<rect x="55" y="72" width="190" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="81.6" y="94" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">customer : Customer</text>
+<line x1="150" y1="106" x2="150" y2="318" stroke="#171717" stroke-dasharray="5 4"/>
+<rect x="365" y="72" width="190" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="427.6" y="94" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">atm : ATM</text>
+<line x1="460" y1="106" x2="460" y2="318" stroke="#171717" stroke-dasharray="5 4"/>
+<rect x="675" y="72" width="190" height="34" fill="#eeeeee" stroke="#171717"/>
+<text x="716.0" y="94" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">bank : BankPeer</text>
+<line x1="770" y1="106" x2="770" y2="318" stroke="#171717" stroke-dasharray="5 4"/>
+<rect x="454" y="150" width="12" height="118" fill="#ffffff" stroke="#171717"/>
+<line x1="150" y1="140" x2="454" y2="140" stroke="#171717"/>
+<line x1="454" y1="140" x2="446" y2="135" stroke="#171717"/>
+<line x1="454" y1="140" x2="446" y2="145" stroke="#171717"/>
+<text x="164" y="133" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">send amount(100)</text>
+<line x1="150" y1="170" x2="454" y2="170" stroke="#171717"/>
+<line x1="454" y1="170" x2="446" y2="165" stroke="#171717"/>
+<line x1="454" y1="170" x2="446" y2="175" stroke="#171717"/>
+<text x="164" y="163" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">publish cashRequested()</text>
+<line x1="466" y1="198" x2="770" y2="198" stroke="#171717"/>
+<line x1="770" y1="198" x2="762" y2="193" stroke="#171717"/>
+<line x1="770" y1="198" x2="762" y2="203" stroke="#171717"/>
+<text x="480" y="191" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">authorize(100) — on call</text>
+<line x1="770" y1="228" x2="466" y2="228" stroke="#171717" stroke-dasharray="5 4"/>
+<line x1="466" y1="228" x2="474" y2="223" stroke="#171717"/>
+<line x1="466" y1="228" x2="474" y2="233" stroke="#171717"/>
+<text x="480" y="221" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">return false</text>
+<line x1="454" y1="258" x2="150" y2="258" stroke="#171717"/>
+<line x1="150" y1="258" x2="158" y2="253" stroke="#171717"/>
+<line x1="150" y1="258" x2="158" y2="263" stroke="#171717"/>
+<text x="164" y="251" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">refused() — on receive</text>
+<rect x="118" y="282" width="64" height="22" fill="#ffffff" stroke="#171717"/>
+<text x="126" y="298" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">assert</text>
+<text x="196" y="298" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">atm.dispenser.count == 0</text>
+<text x="45" y="350" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">Script statements start on the lifeline of the interface-only actor whose port they use.</text>
+<text x="45" y="372" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">on call answers a request with return; on receive or after D waits; a test may also read its subject.</text>
+</svg>

@@ -1,6 +1,6 @@
 import { AstUtils, DocumentState, type AstNode } from 'langium';
 import * as a from '../language/generated/ast.js';
-import { expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
+import { caseTarget, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
 import { binary, bind, checked, ContractViolation, copy, plain, RuntimeFault, scalar, voidValue, widen, type Environment, type Value } from './values.js';
 export { projectOperationTiming } from './timing.js';
 export interface SimulationOptions {
@@ -33,7 +33,8 @@ export interface SimulationResult {
     };
     options: SimulationOptions;
     outcome: 'failure-observed' | 'no-failure-observed';
-    status: 'quiescent' | 'horizon' | 'violation' | 'limit';
+    /** stopped: a case run ended when its script completed or failed. */
+    status: 'quiescent' | 'horizon' | 'violation' | 'limit' | 'stopped';
     timeNs: number;
     steps: number;
     sources: {
@@ -97,6 +98,10 @@ type Frame = {
     request?: Correlation;
     /** The node being executed, for statement identities of observations; any node inside a statement. */
     at?: AstNode;
+    /** The case whose script this activation runs, acting at the ports of its associated actors. */
+    script?: a.Scenario;
+    /** Why the activation failed: the runtime code and its message. */
+    failure?: { code: string; message: string };
 };
 type Watch = {
     node: a.Interruptible;
@@ -153,12 +158,16 @@ type Event = {
  * that top-level occurrence alone: its package connections are absent and its ports stay open.
  */
 export function simulate(models: a.Model[], target: string, options: SimulationOptions): SimulationResult {
+    const selected = runTarget(models, target);
+    return new Interpreter(workspace(models), selected, options).run();
+}
+/** Checks that a run receives a linked, validated and complete workspace; returns it with the built-in libraries. */
+function workspace(models: a.Model[]): a.Model[] {
     for (const model of models) {
         const d = AstUtils.getDocument(model);
         if (d.parseResult.value!==model || d.state < DocumentState.Validated || d.diagnostics?.some(x => x.severity === 1))
             throw new Error('Simulation requires a linked, validated workspace without errors.');
     }
-    const selected = runTarget(models, target);
     const libraries = (workspaceModels.get(models[0]) ?? []).filter(m => AstUtils.getDocument(m).uri.scheme === 'builtin');
     const supplied = new Set(models);
     for (const model of models) {
@@ -187,9 +196,83 @@ export function simulate(models: a.Model[], target: string, options: SimulationO
             }
         }
     }
-    return new Interpreter([...new Set([...models, ...libraries])], selected, options).run();
+    return [...new Set([...models, ...libraries])];
 }
+/** The result of one use case or test: pass, fail, inconclusive or no checks. */
+export interface CaseResult {
+    /** The case identity, such as Banking::Withdraw. */
+    case: string;
+    kind: 'useCase' | 'test';
+    /** The subject occurrence identity, such as Banking::atm, when the case names one. */
+    subject?: string;
+    /**
+     * pass: the script completed, no assert or fail failed and the run observed no failure.
+     * fail: the script failed, the run observed an uncaught failure or contract violation, or the
+     * script waits while the run can make no further progress. inconclusive: the horizon or the step
+     * limit came first. no checks: the case has no statements and records intent only.
+     */
+    result: 'pass' | 'fail' | 'inconclusive' | 'no checks';
+    /** For fail and inconclusive: Assertion, Failure, a runtime failure code, run-failure, violation, stalled, horizon or limit. */
+    reason?: string;
+    message?: string;
+    /** The statement identity where the case failed or stopped waiting, or of the observed failure. */
+    source?: string;
+    /** The occurrence or activation subject of an observed run failure. */
+    observed?: string;
+    timeNs?: number;
+    /** The package run of an executable case, with its trace; absent for no checks. */
+    run?: SimulationResult;
+}
+/** Every use case and test of the supplied application sources, in declaration order. */
+export function workspaceCases(models: readonly a.Model[]): a.Scenario[] {
+    return models.flatMap(m => m.packages).filter(p => AstUtils.getDocument(p).uri.scheme !== 'builtin').flatMap(p => p.elements.filter(a.isScenario));
+}
+/**
+ * Runs one use case or test, named by its identity such as Banking::Withdraw. A case with
+ * statements runs in its own fresh run of its package: the script is released after every on start
+ * entry at 0 ns, acts at the ports of its associated interface-only components and the run stops
+ * when the script completes or fails, or at the horizon or step limit.
+ */
+export function runCase(models: a.Model[], name: string, options: SimulationOptions): CaseResult {
+    const matches = workspaceCases(models).filter(s => identity(s) === name);
+    if (matches.length !== 1)
+        throw new Error(matches.length ? `Ambiguous case ${name}.` : `Unknown case ${name}; name a use case or test as Package::Case.`);
+    return caseResult(workspace(models), matches[0], options);
+}
+/** Runs every case of the supplied sources, optionally only one package's or one case's (by identity or name). */
+export function runTests(models: a.Model[], options: SimulationOptions, select: { package?: string; case?: string } = {}): CaseResult[] {
+    const all = workspace(models), cases = workspaceCases(models).filter(s => (!select.package || owner(s, a.isPackage)!.name === select.package) && (!select.case || identity(s) === select.case || s.name === select.case));
+    return cases.map(s => caseResult(all, s, options));
+}
+function caseResult(models: a.Model[], s: a.Scenario, options: SimulationOptions): CaseResult {
+    const base: CaseResult = { case: identity(s), kind: s.kind as CaseResult['kind'], ...(s.subject?.ref ? { subject: identity(s.subject.ref) } : {}), result: 'no checks' };
+    if (!executableCase(s))
+        return base;
+    const p = owner(s, a.isPackage)!, interpreter = new Interpreter(models, { kind: 'package', identity: p.name, package: p, roots: softwareRoots(p) }, options, s), run = interpreter.run(), f = interpreter.caseFrame;
+    const fail = (reason: string, message: string, source?: string, extra: Partial<CaseResult> = {}): CaseResult => ({ ...base, result: 'fail', reason, message, ...(source ? { source } : {}), timeNs: run.timeNs, ...extra, run });
+    const violation = run.trace.find(t => t.kind === 'violation');
+    if (run.status === 'violation')
+        return fail('violation', `Contract violation ${String(violation?.code)}.`, f && !f.done && f.at ? statementIdentity(f.at) : undefined);
+    if (f?.failure)
+        return fail(f.failure.code, f.failure.message, f.at && statementIdentity(f.at));
+    const observed = run.trace.find(t => t.kind === 'failure');
+    if (observed)
+        return fail('run-failure', `${observed.subject} failed: ${String(observed.reason)}${observed.message ? ' (' + String(observed.message) + ')' : ''}.`, observed.source, { observed: observed.subject, timeNs: observed.timeNs });
+    if (f?.done)
+        return { ...base, result: 'pass', timeNs: run.timeNs, run };
+    const waiting = f?.at ? statementIdentity(f.at) : undefined;
+    if (run.status === 'limit' || interpreter.pending)
+        return { ...base, result: 'inconclusive', reason: run.status === 'limit' ? 'limit' : 'horizon', message: run.status === 'limit' ? 'The step limit came before the script completed.' : `The horizon of ${run.options.untilNs} ns came before the script completed.`, ...(waiting ? { source: waiting } : {}), timeNs: run.timeNs, run };
+    return fail('stalled', 'The script waits, but the run can make no further progress.', waiting);
+}
+/** The executable that owns a statement: an operation, or a case script. */
+const executableOwner = (n: AstNode): n is Executable | a.Scenario => isExecutable(n) || a.isScenario(n);
 class Interpreter {
+    /** The activation of the case script, in a case run. */
+    caseFrame?: Frame;
+    /** True when work remained beyond the horizon. */
+    pending = false;
+    private ended = false;
     private components = new Map<string, Component>();
     private ports = new Map<string, {
         c: Component;
@@ -210,7 +293,7 @@ class Interpreter {
     private offers = 0;
     private stop?: 'violation' | 'limit';
     private options: Required<SimulationOptions>;
-    constructor(private models: a.Model[], private target: RunTarget, options: SimulationOptions) {
+    constructor(private models: a.Model[], private target: RunTarget, options: SimulationOptions, private script?: a.Scenario) {
         this.options = { untilNs: options.untilNs, maxSteps: options.maxSteps ?? 100000, maxPending: options.maxPending ?? 1024, maxConcurrent: options.maxConcurrent ?? 64, latencyNs: options.latencyNs ?? 0, faults: options.faults ?? [] };
         for (const k of Object.keys(options))
             if (!(k in this.options))
@@ -226,6 +309,47 @@ class Interpreter {
         }
     }
     private id(prefix: string): string { return `${prefix}${++this.serial}`; }
+    /** The trace subject of an activation: the operation, or the case whose script it runs. */
+    private label(f: Frame): string { return f.script ? f.c.path : `${f.c.path}.${f.op.name}`; }
+    /** Releases the case script as one serial activation of its own. */
+    private startScript(): void {
+        const s = this.script!, c: Component = { path: identity(s), structure: s.subject!.ref!, store: new Map() };
+        const f: Frame = { id: this.id('a'), c, op: undefined!, entry: { concurrent: false } as a.ScheduleEntry, released: this.time, iterator: undefined!, snapshot: new Map(), done: false, suspended: false, started: false, token: 0, watches: [], script: s, at: s };
+        f.iterator = this.scriptBody(f);
+        this.frames.push(f);
+        this.caseFrame = f;
+        this.log('release', c.path, { activation: f.id, cause: 'case' });
+    }
+    private *scriptBody(f: Frame): Iterator {
+        try {
+            yield* this.block(f.script!, f, new Map());
+        }
+        catch (e) {
+            // A top-level return ends the case.
+            if (!(e instanceof ReturnValue))
+                throw e;
+        }
+        return voidValue();
+    }
+    /** The component and port.member an endpoint names: the frame's own port, or for a script an actor's port. */
+    private portOf(f: Frame, endpoint: string): { c: Component; local: string } {
+        if (!f.script)
+            return { c: f.c, local: endpoint };
+        const [occurrence, ...rest] = endpoint.split('.');
+        return { c: this.components.get(occurrence)!, local: rest.join('.') };
+    }
+    /** Whether a waiting branch takes a message that reached port.member of component c. */
+    private listens(f: Frame, b: a.ReceiveBranch | a.Transition, c: Component, endpoint: string, kind: Message['kind']): boolean {
+        if (f.script)
+            return a.isReceiveBranch(b) && b.endpoint === `${c.path}.${endpoint}` && (b.kind === 'call') === (kind === 'request');
+        return f.c === c && b.endpoint === endpoint;
+    }
+    /** White-box access of a test waits until no other activation holds the occurrence's serial lock. */
+    private *borrow(f: Frame, target: Component): Iterator {
+        while (target.lock && target.lock !== f && !target.lock.done)
+            yield { kind: 'step' };
+        return voidValue();
+    }
     private source(n?: AstNode): string | undefined { return n && statementIdentity(n); }
     private log(kind: string, subject: string, details: Record<string, unknown> = {}): void { this.trace.push({ timeNs: this.time, ordinal: this.trace.length + 1, kind, subject, ...details }); }
     private fuel = (): void => { if (++this.steps > this.options.maxSteps)
@@ -289,9 +413,12 @@ class Interpreter {
                     if (e.kind === 'every') {
                         const period = nanos(e.period!);
                         const tick = () => { this.release(c, e); this.at(this.time + period, 2, tick); };
-                        this.at(period, 2, tick);
+                        this.at(this.time + period, 2, tick);
                     }
                 }
+            // A case script starts after the initialization barrier, released after every on start entry.
+            if (this.script)
+                this.at(0, 2, () => this.startScript());
             while (this.events.length) {
                 this.events = this.events.filter(e => e.live());
                 if (!this.events.length)
@@ -304,7 +431,12 @@ class Interpreter {
                 this.fuel();
                 event.run();
                 this.pump();
+                if (this.caseFrame?.done) {
+                    this.ended = true;
+                    break;
+                }
             }
+            this.pending = this.events.some(e => e.live());
         }
         catch (e) {
             if (e instanceof RuntimeFault && initializing) {
@@ -318,7 +450,7 @@ class Interpreter {
             else
                 throw e;
         }
-        return { profile: 'swaml-reference/2.0', target: { kind: this.target.kind, identity: this.target.identity }, options: copy(this.options), outcome: this.stop || this.trace.some(t => t.kind === 'failure'||t.kind==='caught') ? 'failure-observed' : 'no-failure-observed', status: this.stop ?? (this.events.length || this.frames.some(f => !f.done) ? 'horizon' : 'quiescent'), timeNs: this.time, steps: this.steps, sources: this.models.map(m => ({ uri: AstUtils.getDocument(m).uri.toString(), text: AstUtils.getDocument(m).textDocument.getText() })), trace: this.trace, stores: Object.fromEntries([...this.components].map(([path, c]) => [path, Object.fromEntries([...c.store].map(([n, v]) => [n, plain(v.value)]))])), machines: this.machines, deployments: this.deployments };
+        return { profile: 'swaml-reference/2.0', target: { kind: this.target.kind, identity: this.target.identity }, options: copy(this.options), outcome: this.stop || this.trace.some(t => t.kind === 'failure'||t.kind==='caught') ? 'failure-observed' : 'no-failure-observed', status: this.stop ?? (this.ended ? 'stopped' : this.events.length || this.frames.some(f => !f.done) ? 'horizon' : 'quiescent'), timeNs: this.time, steps: this.steps, sources: this.models.map(m => ({ uri: AstUtils.getDocument(m).uri.toString(), text: AstUtils.getDocument(m).textDocument.getText() })), trace: this.trace, stores: Object.fromEntries([...this.components].map(([path, c]) => [path, Object.fromEntries([...c.store].map(([n, v]) => [n, plain(v.value)]))])), machines: this.machines, deployments: this.deployments };
     }
     /** Applies the one deployment of a top-level occurrence, if it has one, to that occurrence's tree. */
     private place(root: a.ComponentUsage): void {
@@ -361,7 +493,7 @@ class Interpreter {
             if (!f.started) {
                 f.started = true;
                 f.snapshot = new Map([...f.c.store].map(([n, v]) => [n, copy(v)]));
-                this.log('dispatch', `${f.c.path}.${f.op.name}`, { activation: f.id, source: this.source(f.entry), concurrent: f.entry.concurrent });
+                this.log('dispatch', this.label(f), { activation: f.id, source: f.script ? undefined : this.source(f.entry), concurrent: f.entry.concurrent });
             }
             if (!f.entry.concurrent)
                 f.c.lock = f;
@@ -378,7 +510,7 @@ class Interpreter {
         this.log('unlock', f.c.path, { activation: f.id });
     } }
     private resume(f: Frame, reply?: Reply): void { if (f.done)
-        return; f.token++; f.waiting = undefined; f.suspended = false; f.reply = reply; this.log('ready', `${f.c.path}.${f.op.name}`, { activation: f.id }); }
+        return; f.token++; f.waiting = undefined; f.suspended = false; f.reply = reply; this.log('ready', this.label(f), { activation: f.id }); }
     private drive(f: Frame): void {
         if (f.done)
             return;
@@ -406,7 +538,7 @@ class Interpreter {
             f.suspended = true;
             this.unlock(f);
             const token = ++f.token;
-            this.log(y.kind === 'request' ? 'requestWait' : y.kind === 'receive' ? 'receiveWait' : 'wait', `${f.c.path}.${f.op.name}`, { activation: f.id, source: this.source(f.at) });
+            this.log(y.kind === 'request' ? 'requestWait' : y.kind === 'receive' ? 'receiveWait' : 'wait', this.label(f), { activation: f.id, source: this.source(f.at) });
             if (y.kind === 'wait')
                 this.at(this.time + y.duration, 2, () => { if (f.token === token)
                     this.resume(f); }, () => f.token === token && !f.done);
@@ -419,22 +551,24 @@ class Interpreter {
         catch (e) {
             if (!(e instanceof RuntimeFault))
                 throw e;
-            this.finish(f, undefined, e.code);
+            this.finish(f, undefined, e.code, e.message);
         }
     }
-    private finish(f: Frame, value?: Value, failure?: string): void {
+    private finish(f: Frame, value?: Value, failure?: string, message?: string): void {
         f.done = true;
+        if (failure)
+            f.failure = { code: failure, message: message ?? failure };
         f.suspended = false;
         f.token++;
         for (const w of f.watches)
             w.active = false;
         this.unlock(f);
-        this.log(failure ? 'failure' : 'complete', `${f.c.path}.${f.op.name}`, { activation: f.id, source: failure ? this.source(f.at) : undefined, value: value ? plain(value) : undefined, reason: failure });
+        this.log(failure ? 'failure' : 'complete', this.label(f), { activation: f.id, source: failure ? this.source(f.at) : undefined, value: value ? plain(value) : undefined, reason: failure, message: failure && message !== failure ? message : undefined });
         if (f.correlation)
             this.respond(f.correlation, { value, failure: failure ? 'remoteFailure' : undefined, out: (f as Frame & {
                     out?: Value[];
                 }).out });
-        if (!failure)
+        if (!failure && !f.script)
             for (const e of schedule(f.c.structure))
                 if (e.kind === 'after' && e.predecessor === f.op.name)
                     this.at(this.time, 2, () => this.release(f.c, e, undefined, f));
@@ -498,13 +632,22 @@ class Interpreter {
         if (a.isLiteral(e))
             return e.number !== undefined ? checked(e.$cstNode!.text.includes('.') ? 'real' : 'int', e.number) : e.boolean !== undefined ? scalar('bool', e.boolean === 'true') : scalar('string', e.text!);
         if (a.isReferenceExpression(e)) {
-            const [head, ...fields] = e.path.split('.');
+            let [head, ...fields] = e.path.split('.');
             let value = env.get(head)?.value;
             if (!value) {
                 const en = resolve(e, head, this.models);
                 if (a.isEnumType(en))
                     return scalar(identity(en), fields[0]);
-                throw new RuntimeFault('Type', e.path);
+                // A test reads a live attribute of its subject or a part inside it.
+                const read = f.script && caseTarget(f.script, e.path);
+                if (!read || read.kind !== 'attribute')
+                    throw new RuntimeFault('Type', e.path);
+                const target = this.components.get(read.path);
+                if (!target)
+                    throw new RuntimeFault('Type', `${read.path} does not run in this package`);
+                yield* this.borrow(f, target);
+                value = target.store.get(read.attribute.name)!.value;
+                fields = read.fields;
             }
             for (const key of fields)
                 value = (value.data as Record<string, Value>)[key];
@@ -543,7 +686,8 @@ class Interpreter {
             }
         }
         if (a.isCallExpression(e)) {
-            const remote = e.target.includes('.'), op = remote ? undefined : localOperation(e, e.target, container(e) ? f.c.structure : undefined) ?? resolve(e, e.target, this.models), sig = op && isExecutable(op) ? signature(op) : memberEndpoint(f.c.structure, e.target)?.member;
+            const scripted = f.script && e.target.includes('.') ? caseTarget(f.script, e.target) : undefined;
+            const remote = e.target.includes('.') && scripted?.kind !== 'operation', op = scripted?.kind === 'operation' ? scripted.operation : remote ? undefined : localOperation(e, e.target, container(e) ? f.c.structure : undefined) ?? resolve(e, e.target, this.models), sig = op && isExecutable(op) ? signature(op) : scripted?.kind === 'port' ? scripted.member : memberEndpoint(f.c.structure, e.target)?.member;
             const args: Value[] = [], outs: (string | undefined)[] = [];
             for (let i = 0; i < e.args.length; i++) {
                 if (sig?.parameters[i]?.direction === 'out') {
@@ -552,6 +696,21 @@ class Interpreter {
                 }
                 else
                     args.push(widen(yield* this.evaluate(e.args[i], f, local), typeKey(sig!.parameters[i].type)));
+            }
+            if (scripted?.kind === 'operation') {
+                // A test's white-box call borrows the occurrence's context and serial lock, like a local call.
+                const target = this.components.get(scripted.path);
+                if (!target)
+                    throw new RuntimeFault('Type', `${scripted.path} does not run in this package`);
+                yield* this.borrow(f, target);
+                target.lock = f;
+                try {
+                    return yield* this.call(scripted.operation, args, { ...f, c: target, op: scripted.operation, watches: [] }, local, outs);
+                }
+                finally {
+                    if (target.lock === f)
+                        target.lock = undefined;
+                }
             }
             if (!remote && op && isExecutable(op))
                 return yield* this.call(op, args, f, local, outs);
@@ -571,7 +730,7 @@ class Interpreter {
             return left;
         return binary(e.operator, left, yield* this.evaluate(e.right, f, local));
     }
-    private *block(b: a.Block | a.OperationBody, f: Frame, parent: Environment): Iterator {
+    private *block(b: a.Block | a.OperationBody | a.Scenario, f: Frame, parent: Environment): Iterator {
         const local = new Map(parent);
         for (const s of b.statements) {
             this.fuel();
@@ -630,7 +789,10 @@ class Interpreter {
                 if (reply?.input && reply.branch && a.isReceiveBranch(reply.branch)) {
                     const scope = new Map(local);
                     this.bindInputs(scope, reply.branch.bindings, reply.input);
-                    yield* this.block(reply.branch.body, f, scope);
+                    if (reply.branch.kind === 'call')
+                        yield* this.answer(reply.branch, reply.input, f, scope);
+                    else
+                        yield* this.block(reply.branch.body, f, scope);
                 }
                 else if (s.timeoutBody)
                     yield* this.block(s.timeoutBody, f, local);
@@ -663,9 +825,9 @@ class Interpreter {
             else if (a.isAssert(s)) {
                 const passed = !!(yield* this.evaluate(s.condition, f, local)).data;
                 f.at = s;
-                this.log('assert', `${f.c.path}.${f.op.name}`, { activation: f.id, source: this.source(s), passed });
+                this.log('assert', this.label(f), { activation: f.id, source: this.source(s), passed });
                 if (!passed)
-                    throw new RuntimeFault('Assertion');
+                    throw new RuntimeFault('Assertion', f.script ? `Assertion failed: ${s.$cstNode!.text}` : 'Assertion');
             }
             else if (a.isFail(s))
                 throw new RuntimeFault('Failure', s.reason);
@@ -721,28 +883,47 @@ class Interpreter {
             state = b.states.find(s => s.name === selected!.target)!;
         }
     }
+    /** A script's on call branch answers a request at an actor port; return inside it is the reply. */
+    private *answer(branch: a.ReceiveBranch, input: Message, f: Frame, scope: Environment): Iterator {
+        const t = caseTarget(f.script!, branch.endpoint), result = t?.kind === 'port' ? typeKey(t.member.result) : 'void';
+        let value = voidValue();
+        try {
+            yield* this.block(branch.body, f, scope);
+        }
+        catch (e) {
+            if (!(e instanceof ReturnValue)) {
+                if (e instanceof RuntimeFault && input.correlation)
+                    this.respond(input.correlation, { failure: 'remoteFailure' });
+                throw e;
+            }
+            value = e.value;
+        }
+        if (input.correlation)
+            this.respond(input.correlation, { value: widen(value, result), out: branch.bindings.map(n => copy(scope.get(n)!.value)) });
+        return voidValue();
+    }
     private bindInputs(env: Environment, bindings: string[], message: Message): void { bindings.forEach((n, i) => { if (message.args[i])
         bind(env, n, message.args[i].type, message.args[i]); }); }
     private emit(f: Frame, endpointName: string, args: Value[], kind: 'event' | 'attribute',site:a.Send): void {
-        const declared = memberEndpoint(f.c.structure, endpointName)!.member;
+        const { c, local } = this.portOf(f, endpointName), declared = memberEndpoint(c.structure, local)!.member;
         const types = declared.kind === 'attribute' ? [typeKey(declared.type)] : declared.parameters.map(p => typeKey(p.type));
         args = args.map((v, i) => widen(v, types[i]));
-        const [port, member] = endpointName.split('.'), source = this.leaf(`${f.c.path}.${port}`);
+        const [port, member] = local.split('.'), source = this.leaf(`${c.path}.${port}`);
         const origin = this.source(site);
-        this.log(kind === 'event' ? 'publish' : 'send', `${source}.${member}`, { activation: f.id, source: origin, emitter:{declaration:identity(owner(site,isExecutable)!),uri:AstUtils.getDocument(site).uri.toString(),range:site.$cstNode!.range}, args: args.map(plain) });
+        this.log(kind === 'event' ? 'publish' : 'send', `${source}.${member}`, { activation: f.id, source: origin, emitter:{declaration:identity(owner(site,executableOwner)!),uri:AstUtils.getDocument(site).uri.toString(),range:site.$cstNode!.range}, args: args.map(plain) });
         for (const route of this.routes.filter(r => r.endpoints.includes(source))){const target=route.endpoints.find(p=>p!==source)!,destination=this.ports.get(target),memberTarget=destination&&portMembers(destination.p).find(m=>m.name===member&&m.kind===kind&&direction(destination.p,m)==='requires');if(!memberTarget)continue;this.offer({id:this.id('m'),route,source,target,member,args:copy(args),emitted:this.time,kind,origin});}
     }
     private request(f: Frame, y: Extract<Yield, {
         kind: 'request';
     }>): void {
-        const [port, member] = y.endpoint.split('.'), source = this.leaf(`${f.c.path}.${port}`), route = this.routes.find(r => r.endpoints.includes(source));
+        const { c, local } = this.portOf(f, y.endpoint), [port, member] = local.split('.'), source = this.leaf(`${c.path}.${port}`), route = this.routes.find(r => r.endpoints.includes(source));
         if (!route) {
             this.resume(f, { failure: 'unavailable' });
             return;
         }
         const correlation: Correlation = { id: this.id('r'), frame: f, route, state: 'pending', expiry: this.time + route.policy.requestTimeout, origin: this.source(y.site) };
         f.request = correlation;
-        this.log('request', `${source}.${member}`, { activation: f.id, source: correlation.origin, correlation: correlation.id, route: route.id, caller:y.site?{declaration:identity(owner(y.site,isExecutable)!),uri:AstUtils.getDocument(y.site).uri.toString(),range:y.site.$cstNode!.range}:undefined });
+        this.log('request', `${source}.${member}`, { activation: f.id, source: correlation.origin, correlation: correlation.id, route: route.id, caller:y.site?{declaration:identity(owner(y.site,executableOwner)!),uri:AstUtils.getDocument(y.site).uri.toString(),range:y.site.$cstNode!.range}:undefined });
         this.at(correlation.expiry, 0, () => { if (correlation.state === 'pending') {
             correlation.state = 'failed';
             this.log('timeout', y.endpoint, { source: correlation.origin, correlation: correlation.id });
@@ -900,10 +1081,10 @@ class Interpreter {
                     this.resume(f);
                     continue;
                 }
-                const waiting = this.frames.find(f => !f.done && f.c === c && f.waiting?.kind === 'receive' && f.waiting.branches.some(b => b.endpoint === endpointName));
+                const waiting = this.frames.find(f => !f.done && f.waiting?.kind === 'receive' && f.waiting.branches.some(b => this.listens(f, b, c, endpointName, m.kind)));
                 if (waiting && waiting.waiting?.kind === 'receive') {
                     remove();
-                    const branch = waiting.waiting.branches.find(b => b.endpoint === endpointName)!;
+                    const branch = waiting.waiting.branches.find(b => this.listens(waiting, b, c, endpointName, m.kind))!;
                     this.resume(waiting, { input: { ...m, member: endpointName }, branch });
                     continue;
                 }

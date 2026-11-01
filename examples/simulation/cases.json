@@ -1,0 +1,29 @@
+{
+  "options": {
+    "untilNs": 10000000000
+  },
+  "examples": {
+    "examples/02-realtime-controller.swaml": {
+      "Control::ControlLoop": "pass"
+    },
+    "examples/16-requirements-and-views.swaml": {
+      "Traceability::Startup": "pass"
+    },
+    "examples/28-use-cases.swaml": {
+      "Cash Machine::Withdraw cash": "pass",
+      "Cash Machine::Authenticate": "pass",
+      "Cash Machine::Print receipt": "no checks",
+      "Cash Machine::Limit honoured": "pass",
+      "Cash Machine::Open a branch": "no checks"
+    },
+    "examples/29-executable-cases.swaml": {
+      "Banking::Withdraw": "pass",
+      "AtmTests::Fee rounding": "pass",
+      "AtmTests::Bank refusal": "pass",
+      "AtmTests::Approved withdrawal": "pass"
+    },
+    "examples/notation/catalog.swaml": {
+      "Notation::Startup": "pass"
+    }
+  }
+}

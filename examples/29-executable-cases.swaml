@@ -1,0 +1,156 @@
+package Banking {
+  import Swaml::Views;
+  port def Panel {
+    provides attribute amount: uint;
+    provides event cashRequested();
+    requires event cashOut(paid: uint);
+    requires event refused();
+  }
+  port def BankLink {
+    requires operation authorize(amount: uint) returns bool;
+  }
+  port def Cash {
+    provides event pay(amount: uint);
+  }
+  requirement 'Cash limit' {
+    /** Withdrawals above the limit are refused. */
+    attribute limit: uint = 500;
+  }
+  component def Customer {
+    /** Actor: a customer at the machine. Interface-only: a case script acts through its panel. */
+    port panel: Panel;
+  }
+  component def Controller {
+    reversed port panel: Panel;
+    port link: BankLink;
+    port cash: Cash;
+    attribute amount: uint = 0;
+    operation remember(value: uint) {
+      amount = value;
+    }
+    operation withdraw() {
+      var requested: uint = amount;
+      var approved: bool = link.authorize(requested);
+      if (approved) {
+        publish cash.pay(requested);
+        publish panel.cashOut(requested);
+      } else {
+        publish panel.refused();
+      }
+    }
+    schedule {
+      on receive panel.amount(value) remember(value);
+      on receive panel.cashRequested() withdraw();
+    }
+  }
+  component def Dispenser {
+    reversed port cash: Cash;
+    attribute count: uint = 0;
+    attribute dispensedToday: uint = 0;
+    operation pay(amount: uint) {
+      count = count + 1;
+      dispensedToday = dispensedToday + amount;
+    }
+    schedule {
+      on receive cash.pay(amount) pay(amount);
+    }
+  }
+  component def ATM {
+    /** The machine: a controller and a cash dispenser behind one panel and one bank link. */
+    reversed port panel: Panel;
+    port link: BankLink;
+    component controller: Controller;
+    component dispenser: Dispenser;
+    connect (panel, controller.panel);
+    connect (link, controller.link);
+    connect (controller.cash, dispenser.cash);
+    operation fee(amount: real, percent: real) returns real {
+      return amount * percent / 100.0;
+    }
+  }
+  component def BankHost {
+    reversed port link: BankLink;
+    operation authorize(amount: uint) returns bool {
+      return amount <= 500;
+    }
+    schedule {
+      on call link.authorize(amount) authorize(amount);
+    }
+  }
+  component atm: ATM;
+  component customer: Customer;
+  component bank: BankHost;
+  connect (customer.panel, atm.panel);
+  connect (atm.link, bank.link);
+  use case Withdraw of atm {
+    /** A customer withdraws 200 within the limit. */
+    send customer.panel.amount(200);
+    publish customer.panel.cashRequested();
+    on receive customer.panel.cashOut(paid) {
+      assert paid == 200;
+    } or after 2s {
+      fail "no cash";
+    }
+  }
+  associate customer to Withdraw;
+  associate bank to Withdraw;
+  satisfy 'Cash limit' by atm;
+  view withdrawal: Sequence of Withdraw;
+}
+package AtmTests {
+  /** An isolation package: the machine under test with an interface-only bank stub. */
+  import Swaml::Views;
+  import Banking;
+  component def BankPeer {
+    /** Stub: the test answers authorization requests itself. */
+    reversed port link: BankLink;
+  }
+  component atm: ATM;
+  component customer: Customer;
+  component bank: BankPeer;
+  connect (customer.panel, atm.panel);
+  connect (atm.link, bank.link);
+  test 'Fee rounding' of atm {
+    assert atm.fee(20, 10) == 2;
+  }
+  test 'Bank refusal' of atm {
+    /** The bank refuses: the machine refuses the customer and pays nothing. */
+    send customer.panel.amount(100);
+    publish customer.panel.cashRequested();
+    on call bank.link.authorize(amount) {
+      assert amount == 100;
+      return false;
+    } or after 1s {
+      fail "no authorization request";
+    }
+    on receive customer.panel.refused() {
+    } or after 1s {
+      fail "not refused";
+    }
+    assert atm.dispenser.count == 0;
+  }
+  test 'Approved withdrawal' of atm {
+    /** An approved request pays once and counts the amount. */
+    send customer.panel.amount(300);
+    publish customer.panel.cashRequested();
+    on call bank.link.authorize(amount) {
+      return amount <= 500;
+    } or after 1s {
+      fail "no authorization request";
+    }
+    on receive customer.panel.cashOut(paid) {
+      assert paid == 300;
+    } or after 1s {
+      fail "no cash";
+    }
+    wait 1ms;
+    assert atm.dispenser.count == 1 and atm.dispenser.dispensedToday == 300;
+  }
+  associate customer to 'Bank refusal';
+  associate bank to 'Bank refusal';
+  associate customer to 'Approved withdrawal';
+  associate bank to 'Approved withdrawal';
+  verify 'Cash limit' by 'Bank refusal';
+  view refusal: Sequence of 'Bank refusal';
+  view checks: Case of AtmTests;
+}
