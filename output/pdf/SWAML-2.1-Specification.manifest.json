@@ -16,7 +16,7 @@
     {
       "path": "docs/spec/01-structure-and-types.md",
       "attachmentName": "docs__spec__01-structure-and-types.md",
-      "sha256": "0f725bdda4b4aa1eabb22aba74c65319e8518eaf6ed4d8fe7e432324a4c46c7c"
+      "sha256": "58f49781bffd5348ca92f9f991648cb23ab5776a068ae65fa349f22d98303762"
     },
     {
       "path": "docs/spec/02-communication.md",
@@ -316,7 +316,7 @@
     {
       "path": "docs/SWAML-2.1-Reference.md",
       "attachmentName": "docs__SWAML-2.1-Reference.md",
-      "sha256": "7b6293e89b6376940f78909d8e70049c31c6a0dd6e6065fc55c8b40ad6e82da2"
+      "sha256": "98e90f489d677aa86a019bf4de060735f82e865621470593de6a6095620bc715"
     },
     {
       "path": "spec/standard.json",
@@ -361,7 +361,7 @@
     {
       "path": "scripts/build-spec-pdf-2.1.py",
       "attachmentName": "scripts__build-spec-pdf-2.1.py",
-      "sha256": "bfbf620b37b0252c076ed6964cf4686e02fdf317dc6a3baa0122746a56dad233"
+      "sha256": "16d4f1845c87ff4bb0e5d82260c53df61258a827ebe7bfa03bd334d807bfd6aa"
     },
     {
       "path": "scripts/check-spec-pdf-2.1.py",
@@ -371,7 +371,7 @@
     {
       "path": "scripts/publication_2_1_sources.py",
       "attachmentName": "scripts__publication_2_1_sources.py",
-      "sha256": "98e0f13a6fd544232d16f36e9dfde46a77e5b40cbb97dfc7dc311d1fcff79e91"
+      "sha256": "026cf01a55900f586393556f1955b350c07a0deb7bae033a77607d865c63bb5a"
     },
     {
       "path": "scripts/publication_archive.py",
@@ -1214,8 +1214,8 @@
       "sha256": "3bd99def5a50e30452ad37655863af324b6a31db472151b55cb9b3ed5a118bba"
     }
   ],
-  "sourceBaseCommit": "82f5fee4d1b77936528895f80113d0af821ad3c7",
-  "sourceBundleSha256": "4f4c06eed8ffa30c9d741def66a3539cf078190c9452c66d4d664f2b5c7d79bc",
+  "sourceBaseCommit": "4a3a105a52448c060811668e2a790fd6406d4b12",
+  "sourceBundleSha256": "962763d04049af0b1ce6edaf16cbaa978c79080a184d297d13ac0b884e9174bf",
   "dependencies": {
     "reportlab": "4.4.9",
     "mistune": "3.4.0",
@@ -1224,5 +1224,5 @@
     "Pillow": "13.0.0"
   },
   "python": "3.14.4",
-  "pdfSha256": "e8dd0bebb5ac26c531ec936e0bdf45e85132bb9c566ee17cda1037945b2f6ae6"
+  "pdfSha256": "d2bce7f2a0362232b4d1c032a9b68bc70466906f2f8922075486b06fca66d271"
 }

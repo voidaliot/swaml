@@ -31,6 +31,7 @@ from reportlab.platypus import (
     Paragraph, Spacer, Table, TableStyle, KeepTogether,
 )
 from reportlab.platypus.tableofcontents import TableOfContents
+from publication_2_1_sources import prose_escapes
 
 ROOT = Path(__file__).resolve().parents[1]
 NAVY = colors.HexColor('#102A43')
@@ -328,7 +329,12 @@ def table(rows: list[list[str]], widths=None):
 
 
 def markdown(source: str, status: str):
-    ast=mistune.create_markdown(renderer='ast',plugins=['table'])((ROOT/source).read_text(encoding='utf-8'))
+    text=(ROOT/source).read_text(encoding='utf-8')
+    escapes=prose_escapes(text)
+    if escapes:
+        # Markdown drops the backslash of an escape, which would misprint source escape rules.
+        raise ValueError(f'Backslash escape in prose of {source}: {escapes[:3]}; write it as a code span')
+    ast=mistune.create_markdown(renderer='ast',plugins=['table'])(text)
     result=[PageBreak(),Paragraph(status,STYLES['label'])]
     counter=0; figures=0
     def blocks(nodes,indent=0):

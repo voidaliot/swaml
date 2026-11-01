@@ -5,7 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from publication_archive import extract_sources, sha256
-from publication_2_1_sources import verify_edition_sources
+from publication_2_1_sources import prose_escapes, verify_edition_sources
 
 
 class EditionSourcesTests(unittest.TestCase):
@@ -73,6 +73,24 @@ class EditionSourcesTests(unittest.TestCase):
                 entry = next(e for e in m['sources'] if e['path'] == path); entry['sha256'] = sha256(raw)
                 m['sourceBundleSha256'] = sha256(b''.join(e['path'].encode() + b'\0' + a[e['attachmentName']][0] for e in m['sources']))
                 with self.assertRaises(ValueError): verify_edition_sources(m, a, None, '2.1')
+
+
+class ProseEscapeTests(unittest.TestCase):
+    def test_backslash_escapes_in_prose_are_reported(self):
+        self.assertEqual(prose_escapes("Inside quotes, \\' writes a quote and \\\\ a backslash."), ["\\'", '\\\\'])
+        self.assertEqual(prose_escapes('| a \\| b |'), ['\\|'])
+
+    def test_code_spans_fences_and_plain_backslashes_are_accepted(self):
+        self.assertEqual(prose_escapes("Inside quotes, `\\'` writes a quote and `\\\\` a backslash."), [])
+        self.assertEqual(prose_escapes("Use ``a `\\'` b`` here."), [])
+        self.assertEqual(prose_escapes("```text\nname: 'it\\'s'\n```\nafter"), [])
+        self.assertEqual(prose_escapes('~~~\n\\*\n~~~'), [])
+        self.assertEqual(prose_escapes('A path C:\\data or \\n stays literal.'), [])
+
+    def test_maintained_book_sources_have_no_prose_escapes(self):
+        root = Path(__file__).resolve().parents[1]
+        for path in [root/'docs/LANGUAGE_SPECIFICATION.md', *sorted((root/'docs/spec').glob('*.md')), root/'docs/RELEASE_2_1.md']:
+            self.assertEqual(prose_escapes(path.read_text(encoding='utf-8')), [], path.name)
 
 
 class PublishedEditionTests(unittest.TestCase):

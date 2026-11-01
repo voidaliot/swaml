@@ -10,6 +10,29 @@ from pathlib import Path, PurePosixPath
 from publication_archive import sha256, source_path
 
 
+ESCAPABLE = re.compile(r'\\[!-/:-@\[-`{-~]')
+FENCE = re.compile(r'^ {0,3}(`{3,}|~{3,})')
+
+
+def prose_escapes(markdown: str) -> list[str]:
+    """Return backslash escapes written in prose outside code spans and fences.
+
+    Markdown silently drops the backslash of an escape such as \\' or \\\\, so a
+    rule that spells source escapes would print wrong. Such text belongs in a code span."""
+    found, fence = [], None
+    for line in markdown.splitlines():
+        marker = FENCE.match(line)
+        if fence:
+            if marker and marker.group(1)[0] == fence[0] and len(marker.group(1)) >= len(fence): fence = None
+            continue
+        if marker:
+            fence = marker.group(1); continue
+        # Remove code spans with matching backtick runs before looking for escapes.
+        prose = re.sub(r'(`+)(?!`).*?(?<!`)\1(?!`)', '', line)
+        found.extend(match.group(0) for match in ESCAPABLE.finditer(prose))
+    return found
+
+
 def canonical(path: Path) -> bytes:
     raw = path.read_bytes()
     return raw if path.suffix in ('.png', '.ttf') else raw.replace(b'\r\n', b'\n')
