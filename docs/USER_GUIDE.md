@@ -1,8 +1,8 @@
-# swa.ml 2.1 usage guide
+# swa.ml 2.2 usage guide
 
 Start with a component, give each persistent value a typed attribute, and write named operations for behavior. Add a schedule to say when those operations run. Add directed ports and explicit connections when behavior crosses component boundaries.
 
-This guide targets the 2.1 parser only. Install Node.js 22+ and npm 10.2.3+, then run npm ci and npm run build in this repository. Validate with node out/src/cli/main.js --language-version 2.1 model.swaml. Files are headerless; the host and package revision select the edition.
+This guide targets the unreleased 2.2 host semantics and the unchanged 2.1 concrete grammar. For repository validation use Node.js 26.12.0 from .node-version and npm 10.2.3+, then run npm ci and npm run build. Validate with node out/src/cli/main.js --language-version 2.2 model.swaml. Files are headerless; the host and exact package revision select the edition. The published 2.1 reference remains frozen.
 
 ## A first model
 
@@ -121,7 +121,11 @@ Use a separate deployment declaration over software and platform roots. Targets 
 
 Requirements, satisfy and test/verify record intent. [The traceability example](../examples/16-requirements-and-views.swaml) includes a test of its root, satisfy and verify links and views. A case does not inject events at a destination; a case script acts through actor ports and its pass is evidence of one run, not proof.
 
-A package is a closed context. Declare the system and its surroundings as top-level component occurrences and join their ports with package connections, connect (customer.panel, atm.panel);. Write use case Name of subject { … } or test Name of subject { … } in the package; the subject is a top-level occurrence of the same package, the system under consideration. Without of, a case records intent only. External systems and test stubs are interface-only components, component def Customer { port panel: Panel; }, which need no implementation; associate customer to 'Withdraw cash'; records that one takes part. satisfy Requirement by design; claims a component definition or occurrence path of the package, and verify Requirement by Test; links a test. [The use case example](../examples/28-use-cases.swaml) shows top-level occurrences, package connections, use cases, a test, associations and quoted names. A case body may continue after its documentation with statements that act as its associated interface-only actors, publish customer.panel.cashRequested(100); and on receive customer.panel.cashDispensed(amount) { assert amount == 100; } or after 2s { fail "no cash"; }; a test may also read and call into its subject, assert atm.fee(20, 10) == 2;, and answer a stub's request with on call bank.link.authorize(amount) { return false; }. swaml test runs every case in its own package run and reports pass, fail, inconclusive or no checks; [the executable cases example](../examples/29-executable-cases.swaml) adds an isolation package with a bank stub. Names containing spaces, letters outside ASCII or reserved words are written in single quotes, for example use case 'Withdraw cash' or attribute 'state': int = 0;.
+A package is a closed context. Declare the system and its surroundings as top-level component occurrences and join their ports with package connections, connect (customer.panel, atm.panel);. Write use case Name of subject { … } or test Name of subject { … } in the package; the subject is its focal top-level occurrence. A case without statements records intent only and may omit of; a script requires of. Script-driven actors and stubs are interface-only components, component def Customer { port panel: Panel; }, which need no implementation; associate customer to 'Withdraw cash'; records participation. satisfy Requirement by design; claims a component definition or occurrence path of the package, and verify Requirement by Test; links a test. [The use case example](../examples/28-use-cases.swaml) shows these package links and quoted names.
+
+A case body may continue after its documentation with statements acting through its associated interface-only actors: publish customer.panel.cashRequested(100); and on receive customer.panel.cashDispensed(amount) { assert amount == 100; } or after 2s { fail "no cash"; }. A script can answer a stub request with on call bank.link.authorize(amount) { return false; }. A test may also inspect or call eligible operations of its subject, explicitly associated same-package software roots and their single parts, such as assert atm.fee(20, 10) == 2;. A use case remains black-box. Association does not create components or permit impersonating an active collaborator's ports.
+
+swaml test runs every case in its own fresh whole-package run and reports pass, fail, inconclusive or no checks; [the executable cases example](../examples/29-executable-cases.swaml) adds an isolation package with a bank stub, and [the associated-component example](../examples/30-associated-integration.swaml) checks several implemented peers. Names containing spaces, letters outside ASCII or reserved words are written in single quotes, for example use case 'Withdraw cash' or attribute 'state': int = 0;.
 
 Import Swaml::Views and type views by General, Interconnect, Case, Sequence, Grid, Flow or Timing. Compact of selects a subject; include/recursive/where builds a stable union. Filter kinds are component and operation for the structural/executable families. Browser navigates ownership; Flow combines statements/states; Timing separates declared schedule/deadline information from identified observed traces. Presentation layout belongs in sidecars, not language source.
 
@@ -135,3 +139,25 @@ npm run check
 ```
 
 Load every application dependency together. Fix syntax/names first, then ownership/routes, types/effects and schedules. JSON diagnostics expose stable codes/ranges and identity metadata. Always revalidate after a repair; formatting is not a semantic repair. Read [AI authoring](AI_GUIDE.md), the [keyword reference](KEYWORD_REFERENCE.md) and the [support matrix](IMPLEMENTATION_STATUS.md) for precise boundaries.
+
+## Test explicitly associated components
+
+In the unreleased 2.2 semantics, a test may inspect its primary subject and the software components explicitly referenced by its `associate` links, including their single parts. The components remain owned by the structural model. For example:
+
+```swaml
+package AssociatedTests {
+  component def Counter { attribute count: int = 0; operation bump() { count = count + 1; } }
+  component def Assembly { component worker: Counter; }
+  component primary: Counter;
+  component companion: Assembly;
+  test Integration of primary {
+    companion.worker.bump();
+    assert primary.count == 0 and companion.worker.count == 1;
+  }
+  associate companion to Integration;
+}
+```
+
+Without the association, access to `companion` is rejected. A use case remains black-box even with that association. Direct test calls must neither communicate nor suspend, although they may change the target through its own operation. Direct attribute assignment stays forbidden. Stimulate communicating behavior through associated interface-only actor ports and real connections; association does not let a script take over an active component's ports.
+
+Every case still initializes and runs its whole package, and each run gets fresh stores. Associations do not select a subset, disable unrelated startup work, create an atomic snapshot or own components. Only executed, non-multiple software roots are accessible; nested singleton parts work, while intermediate component indexes remain unsupported. See the [ten-component routed integration](../examples/30-associated-integration.swaml) and [draft changes](RELEASE_2_2.md).

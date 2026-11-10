@@ -1,0 +1,163 @@
+{
+  "width": 920,
+  "height": 390,
+  "elements": [
+    {
+      "kind": "rect",
+      "x": 1,
+      "y": 1,
+      "w": 918,
+      "h": 388,
+      "fill": "#fafafa",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 36,
+      "text": "Runtime failure and lazy fallback",
+      "size": 21
+    },
+    {
+      "kind": "line",
+      "x1": 26,
+      "y1": 54,
+      "x2": 894,
+      "y2": 54,
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 40,
+      "y": 140,
+      "w": 235,
+      "h": 140,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 40,
+      "y": 140,
+      "w": 235,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 52,
+      "y": 163,
+      "text": "try(api.get(1), -1.0)",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 52,
+      "y": 198,
+      "text": "evaluate expression",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 52,
+      "y": 220,
+      "text": "retain committed effects",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 360,
+      "y": 90,
+      "w": 230,
+      "h": 105,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 360,
+      "y": 90,
+      "w": 230,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 372,
+      "y": 113,
+      "text": "success",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 372,
+      "y": 148,
+      "text": "return copied result",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 360,
+      "y": 235,
+      "w": 230,
+      "h": 105,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 360,
+      "y": 235,
+      "w": 230,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 372,
+      "y": 258,
+      "text": "runtime failure",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 372,
+      "y": 293,
+      "text": "evaluate lazy fallback",
+      "size": 12
+    },
+    {
+      "kind": "line",
+      "x1": 275,
+      "y1": 185,
+      "x2": 360,
+      "y2": 145,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 275,
+      "y1": 230,
+      "x2": 360,
+      "y2": 275,
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 640,
+      "y": 180,
+      "text": "Interruption, deadline",
+      "size": 13
+    },
+    {
+      "kind": "text",
+      "x": 640,
+      "y": 205,
+      "text": "and resources bypass try.",
+      "size": 13
+    }
+  ]
+}

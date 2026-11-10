@@ -1,6 +1,6 @@
 # 9. Formal semantics
 
-Normative schemas of [swa.ml 2.1](../LANGUAGE_SPECIFICATION.md). These constrain implementations without claiming a mechanically proved metatheory.
+Normative schemas of [swa.ml 2.2](../LANGUAGE_SPECIFICATION.md). These constrain implementations without claiming a mechanically proved metatheory.
 
 ## 9.1 Domains
 
@@ -24,6 +24,7 @@ Values are bounded primitive scalars, nominal enums/records and fixed copied arr
 | Enum.literal | No live first-segment value shadows the enum; unambiguous accessible nominal enum and literal |
 | operation(args) | Resolved same-owner/nested or imported pure definition; copied typed in arguments; mutable compatible out targets; result declared type; effect is union of arguments and callee |
 | p.member(args) | p is owned, member requires operation; arguments satisfy signature; effect communicates and suspends |
+| test occurrence access | Resolved own-package executed software root is the subject or an explicit association, followed by single effective parts; reads use its live store under its lock, calls neither communicate nor suspend; no ownership transfer or direct attribute assignment |
 | try(e, f) | e:T and f:U assignable to T; lazy f; effect union; no fallback only when T is void |
 | var x:T=e | Compatible value, fresh live name; Γ extends with mutable x; suspension allowed only when e is whole call/try |
 | x=e | Mutable local/out/attribute, compatible type; attribute write adds write effect; same whole-expression suspension rule |

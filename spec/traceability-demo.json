@@ -1,5 +1,5 @@
 {
-  "languageVersion": "2.1",
+  "languageVersion": "2.2",
   "source": "examples/16-requirements-and-views.swaml",
   "requirements": [
     {

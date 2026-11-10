@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Language 2.2 draft / implementation 3.1.0
+
+- Allow a test to read attributes and call eligible operations of explicitly associated software component occurrences and their single parts, using existing `associate` links and dotted paths. Unassociated components stay inaccessible; use cases remain black-box. Associations reference existing occurrences and do not own components or select execution roots.
+- Reject executable platform and unindexed multiplicity subjects before a run, and exclude nonexecuted roots from test access.
+- Preserve the published 2.1 reference, PDF, manifests, checksums and figures. The 2.2 reference and figures are unreleased draft artifacts; the concrete grammar is unchanged and hosts select the 2.2 semantics/profile explicitly.
+- Require independent adversarial review and passing local Node 26 checks before PR readiness. Hosted source checks confirm readiness and the reviewed merge; publication checks are separately deliberate.
+
 ### Website
 
 - The website Case view draws the case subject as a dotted boundary labelled with the occurrence and its type, with use cases and tests («test») as ellipses inside it, parts that satisfy a requirement inside the boundary, associated components as stick-figure actors outside it with association lines, intent-only cases outside any boundary and labelled «satisfy» and «verify» links to requirements. The site data now records each case's subject type, associated actors and the package satisfy links. No standard or implementation version change.

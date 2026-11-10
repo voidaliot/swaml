@@ -1,0 +1,186 @@
+{
+  "profile": "swaml-reference/2.2",
+  "target": {
+    "kind": "component",
+    "identity": "Hello::Demo"
+  },
+  "options": {
+    "untilNs": 19000000,
+    "maxSteps": 100000,
+    "maxPending": 1024,
+    "maxConcurrent": 64,
+    "latencyNs": 0,
+    "faults": []
+  },
+  "outcome": "no-failure-observed",
+  "status": "quiescent",
+  "timeNs": 0,
+  "steps": 16,
+  "sources": [
+    {
+      "uri": "file:///examples/01-hello.swaml",
+      "text": "package Hello {\n  port def Messages {\n    provides event message(value: string);\n  }\n  component def Sender {\n    port output: Messages;\n    operation emit() {\n      publish output.message(\"Hello, SWAML\");\n    }\n    schedule {\n      on start emit();\n    }\n  }\n  component def Receiver {\n    reversed port input: Messages;\n    attribute last: string = \"\";\n    operation accept(value: string) {\n      last = value;\n    }\n    schedule {\n      on receive input.message(value) accept(value);\n    }\n  }\n  component Demo {\n    component sender: Sender;\n    component receiver: Receiver;\n    connect (sender.output, receiver.input);\n  }\n}\n"
+    },
+    {
+      "uri": "builtin:/swaml-2.0.swaml",
+      "text": "package Swaml::Qos {\n  enum Delivery { bestEffort, atMostOnce, atLeastOnce }\n  enum Ordering { fifo, unordered }\n  enum Overflow { dropOldest, dropNewest, reject }\n  qos def Policy { }\n  qos def Default: Policy { delivery = Delivery.atMostOnce; ordering = Ordering.fifo; capacity = 16; overflow = Overflow.reject; requestTimeout = 1s; }\n  qos def Latest: Policy { delivery = Delivery.atMostOnce; ordering = Ordering.fifo; capacity = 1; overflow = Overflow.dropOldest; requestTimeout = 1s; }\n  qos def Reliable: Policy { delivery = Delivery.atLeastOnce; ordering = Ordering.fifo; capacity = 16; overflow = Overflow.reject; requestTimeout = 1s; }\n  qos def BestEffort: Policy { delivery = Delivery.bestEffort; ordering = Ordering.unordered; capacity = 16; overflow = Overflow.dropNewest; requestTimeout = 1s; }\n}\npackage Swaml::Views {\n  view def General; view def Interconnect; view def Case; view def Sequence;\n  view def Grid; view def Flow; view def Timing;\n}\npackage Swaml::Platform {\n  component def Node { }\n  component def Platform specializes Node { }\n  component def Partition specializes Node { }\n  component def Process specializes Node { }\n}\npackage Swaml::Calls { enum CallFailure { timeout, unavailable, rejected, transport, remoteFailure, interrupted } }\npackage Swaml::Math {\n  operation def abs(v: real) returns real { if (v < 0.0) { return -v; } return v; }\n  operation def min(a: real, b: real) returns real { if (a < b) { return a; } return b; }\n  operation def max(a: real, b: real) returns real { if (a > b) { return a; } return b; }\n  operation def floor(v: real) returns int { /** Host intrinsic: checked floor conversion. */ }\n  operation def round(v: real) returns int { /** Host intrinsic: ties toward positive infinity. */ }\n  operation def trunc(v: real) returns int { /** Host intrinsic: truncate toward zero. */ }\n  operation def length(v: string) returns uint { /** Host intrinsic: Unicode scalar count. */ }\n  operation def concat(a: string, b: string) returns string { return a + b; }\n}\n"
+    }
+  ],
+  "trace": [
+    {
+      "timeNs": 0,
+      "ordinal": 1,
+      "kind": "initialize",
+      "subject": "Demo",
+      "definition": "Hello::Demo"
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 2,
+      "kind": "initialize",
+      "subject": "Demo.sender",
+      "definition": "Hello::Demo.sender"
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 3,
+      "kind": "initialize",
+      "subject": "Demo.receiver",
+      "definition": "Hello::Demo.receiver"
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 4,
+      "kind": "release",
+      "subject": "Demo.sender.emit",
+      "activation": "a1",
+      "source": "Hello::Sender/schedule/0",
+      "cause": "start"
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 5,
+      "kind": "dispatch",
+      "subject": "Demo.sender.emit",
+      "activation": "a1",
+      "source": "Hello::Sender/schedule/0",
+      "concurrent": false
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 6,
+      "kind": "publish",
+      "subject": "Demo.sender.output.message",
+      "activation": "a1",
+      "source": "Hello::Sender.emit/0",
+      "emitter": {
+        "declaration": "Hello::Sender.emit",
+        "uri": "file:///examples/01-hello.swaml",
+        "range": {
+          "start": {
+            "line": 7,
+            "character": 6
+          },
+          "end": {
+            "line": 7,
+            "character": 45
+          }
+        }
+      },
+      "args": [
+        "Hello, SWAML"
+      ]
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 7,
+      "kind": "offer",
+      "subject": "Demo.@connect0",
+      "source": "Hello::Sender.emit/0",
+      "message": "m2",
+      "member": "message",
+      "sourcePort": "Demo.sender.output",
+      "targetPort": "Demo.receiver.input"
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 8,
+      "kind": "deliver",
+      "subject": "Demo.@connect0",
+      "source": "Hello::Sender.emit/0",
+      "message": "m2",
+      "targetPort": "Demo.receiver.input"
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 9,
+      "kind": "release",
+      "subject": "Demo.receiver.accept",
+      "activation": "a3",
+      "source": "Hello::Receiver/schedule/0",
+      "cause": "receive"
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 10,
+      "kind": "dispatch",
+      "subject": "Demo.receiver.accept",
+      "activation": "a3",
+      "source": "Hello::Receiver/schedule/0",
+      "concurrent": false
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 11,
+      "kind": "unlock",
+      "subject": "Demo.sender",
+      "activation": "a1"
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 12,
+      "kind": "complete",
+      "subject": "Demo.sender.emit",
+      "activation": "a1",
+      "value": null
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 13,
+      "kind": "write",
+      "subject": "Demo.receiver.last",
+      "activation": "a3",
+      "source": "Hello::Receiver.accept/0",
+      "scope": "attribute",
+      "value": "Hello, SWAML"
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 14,
+      "kind": "unlock",
+      "subject": "Demo.receiver",
+      "activation": "a3"
+    },
+    {
+      "timeNs": 0,
+      "ordinal": 15,
+      "kind": "complete",
+      "subject": "Demo.receiver.accept",
+      "activation": "a3",
+      "value": null
+    }
+  ],
+  "stores": {
+    "Demo": {},
+    "Demo.sender": {},
+    "Demo.receiver": {
+      "last": "Hello, SWAML"
+    }
+  },
+  "machines": {},
+  "deployments": {
+    "Demo": null,
+    "Demo.sender": null,
+    "Demo.receiver": null
+  }
+}

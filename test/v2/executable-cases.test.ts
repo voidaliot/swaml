@@ -113,11 +113,12 @@ test('a use case is a black box; a test may read and call into its subject', asy
     await valid(script('assert atm.fee(20, 10) == 2; assert atm.paid == 7 and atm.counter.count == 0; atm.reset();'));
     assert.ok((await errors(script('assert atm.paid == 7;', 'use case'), 'SW2010')).some(m => m.includes('black box')));
     assert.ok((await errors(script('assert atm.fee(20, 10) == 2;', 'use case'), 'SW2010')).some(m => m.includes('black box')));
-    // Only the subject and its parts, never another participant.
+    // Unknown members remain invalid; an associated software participant is explicit test access.
     const other = script('assert bank.anything == 1;');
     assert.ok((await errors(other, 'SW2002')).length);
     const host = script('assert atm.paid == 7;').replace('test Script of atm', 'test Script of customer').replace('associate customer to Script;', 'associate atm to Script;');
-    assert.ok((await errors(host, 'SW2010')).some(m => m.includes('not its subject')));
+    await valid(host);
+    assert.ok((await errors(host.replace('associate atm to Script;', ''), 'SW2010')).some(m => m.includes('not an accessible occurrence')));
     // White-box calls borrow the occurrence's context: no communication or suspension.
     assert.ok((await errors(script('atm.ping();'), 'SW2006')).some(m => m.includes('neither communicate nor suspend')));
     assert.ok((await errors(script('atm.withdraw();'), 'SW2006')).some(m => m.includes('neither communicate nor suspend')));
@@ -344,7 +345,7 @@ test('swaml test prints a summary, emits JSON and fails on a failed case', async
         assert.match(ok.stdout, /^pass +Banking::Script$/m);
         assert.match(ok.stdout, /^no checks +Banking::Intent$/m);
         assert.match(ok.stdout, /2 case\(s\): 1 pass, 0 fail, 0 inconclusive, 1 no checks\./);
-        const bad = cli('--language-version', '2.1', '--json', '--options', opts, failing);
+        const bad = cli('--language-version', '2.2', '--json', '--options', opts, failing);
         assert.equal(bad.status, 1, bad.stderr);
         const report = JSON.parse(bad.stdout);
         assert.deepEqual(report.summary, { pass: 0, fail: 1, inconclusive: 0, noChecks: 0 });
@@ -358,8 +359,8 @@ test('swaml test prints a summary, emits JSON and fails on a failed case', async
         assert.equal(cli('--package', 'Broken', passing, failing).status, 1);
         const intent = JSON.parse(cli('--json', '--case', 'Banking::Intent', passing).stdout);
         assert.ok(intent.sourceDigests.some((d: { uri: string }) => d.uri.endsWith('pass.swaml')), 'digests also when no case ran');
-        assert.equal(intent.profile, 'swaml-reference/2.1');
-        assert.equal(intent.languageVersion, '2.1');
+        assert.equal(intent.profile, 'swaml-reference/2.2');
+        assert.equal(intent.languageVersion, '2.2');
         assert.equal(cli('--package', 'Nowhere', passing).status, 2);
         assert.equal(cli('--until-ns', '1', '--options', opts, passing).status, 2);
         assert.equal(cli().status, 2);

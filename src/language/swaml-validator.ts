@@ -2,7 +2,7 @@ import { AstUtils, CstUtils, DocumentState, GrammarUtils, WorkspaceCache, type A
 import type { Range } from 'vscode-languageserver';
 import type { LangiumServices } from 'langium/lsp';
 import * as a from './generated/ast.js';
-import { associatedOccurrences, caseTarget, connectionRoutes, designComponent, interfaceOnly, packageEndpoint, packageOccurrences, expressionTypes, OCCURRENCE_LIMIT, occurrenceCount, workspaceModels, assignable, body, compatibility, constantNumber, direction, effectiveQos, effects, endpoint, entryKey, identity, integral, isExecutable, isNode, localOperation, memberEndpoint, members, nanos, nodes, numeric, occurrences, owner, resolve, schedule, signature, typeKey, type Executable, type Node, type Structure, portMembers } from './semantic.js';
+import { associatedOccurrences, caseTarget, testCanAccess, connectionRoutes, designComponent, interfaceOnly, packageEndpoint, packageOccurrences, expressionTypes, OCCURRENCE_LIMIT, occurrenceCount, workspaceModels, assignable, body, compatibility, constantNumber, direction, effectiveQos, effects, endpoint, entryKey, identity, integral, isExecutable, isNode, localOperation, memberEndpoint, members, nanos, nodes, numeric, occurrences, owner, resolve, schedule, signature, typeKey, type Executable, type Node, type Structure, portMembers } from './semantic.js';
 import { selectView, viewCandidates, type ViewSubject } from './presentation.js';
 import { decodeQuotedName, formatName, nameProblem } from './names.js';
 type Env = Map<string, {
@@ -466,7 +466,7 @@ export class SwamlValidator {
                     fields = read.fields;
                 }
                 else {
-                    this.report(e, 'SW2002', this.script ? `Unknown value ${e.path}; a case reads its locals and bindings, and a test may also read attributes of its subject and of parts inside it.` : `Unknown local value ${e.path}; nested operations never capture enclosing locals and component attributes are private.`);
+                    this.report(e, 'SW2002', this.script ? `Unknown value ${e.path}; a case reads its locals and bindings, and a test may also read attributes of its subject, explicitly associated software components and their single parts.` : `Unknown local value ${e.path}; nested operations never capture enclosing locals and component attributes are private.`);
                     return '?';
                 }
             }
@@ -993,6 +993,8 @@ export class SwamlValidator {
             return;
         if (!s.subject)
             this.report(s, 'SW2010', `Statements of ${s.name} require of: name the top-level occurrence of package ${p.name} that the case exercises.`, false, this.at(s, 'name'));
+        else if (s.subject.ref && (isNode(s.subject.ref) || s.subject.ref.size !== undefined))
+            this.report(s, 'SW2010', 'An executable case subject must be one software occurrence; platform roots do not execute and multiplicity families require an indexed identity that case subjects cannot express.', false, this.at(s, 'subject'));
         this.script = { scenario: s };
         try {
             this.block(s, new Map(), undefined, undefined);
@@ -1024,13 +1026,13 @@ export class SwamlValidator {
         }
         return { port: t.port, member: t.member };
     }
-    /** White-box access: only a test, and only into its subject and the parts inside it. */
+    /** White-box access: only a test, into its subject or explicitly associated software roots. */
     private whiteBox(n: AstNode, property: string, path: string, what: 'read' | 'call'): void {
-        const s = this.script!.scenario, head = path.split('.')[0];
+        const s = this.script!.scenario;
         if (s.kind !== 'test')
             this.report(n, 'SW2010', `A use case is a black box: it acts only through ports of associated interface-only components. Write a test to ${what} ${path}.`, false, this.at(n, property));
-        else if (head !== s.subject?.ref?.name)
-            this.report(n, 'SW2010', `A test may ${what} only its subject${s.subject?.ref ? ' ' + s.subject.ref.name : ''} and parts inside it; ${head} is not its subject.`, false, this.at(n, property));
+        else if (!testCanAccess(s, path))
+            this.report(n, 'SW2010', `A test may ${what} only its subject, explicitly associated software components and their single parts; ${path} is not an accessible occurrence. Associate its top-level software component with ${formatName(s.name)}.`, false, this.at(n, property));
     }
     /** Cases, associations, satisfy and verify claims are package members that record intent. */
     private links(p: a.Package): void {

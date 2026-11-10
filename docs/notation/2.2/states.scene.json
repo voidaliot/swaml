@@ -1,0 +1,162 @@
+{
+  "width": 920,
+  "height": 390,
+  "elements": [
+    {
+      "kind": "rect",
+      "x": 1,
+      "y": 1,
+      "w": 918,
+      "h": 388,
+      "fill": "#fafafa",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 36,
+      "text": "Ordered state transitions",
+      "size": 21
+    },
+    {
+      "kind": "line",
+      "x1": 26,
+      "y1": 54,
+      "x2": 894,
+      "y2": 54,
+      "dash": false
+    },
+    {
+      "kind": "ellipse",
+      "x": 50,
+      "y": 200,
+      "w": 10,
+      "h": 10,
+      "fill": "#171717"
+    },
+    {
+      "kind": "rect",
+      "x": 110,
+      "y": 135,
+      "w": 220,
+      "h": 140,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 110,
+      "y": 135,
+      "w": 220,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 122,
+      "y": 158,
+      "text": "state Off",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 122,
+      "y": 193,
+      "text": "after 2ms to On",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 400,
+      "y": 135,
+      "w": 230,
+      "h": 140,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 400,
+      "y": 135,
+      "w": 230,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 412,
+      "y": 158,
+      "text": "state On",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 412,
+      "y": 193,
+      "text": "on entry: lit = true",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 412,
+      "y": 215,
+      "text": "on exit: lit = false",
+      "size": 12
+    },
+    {
+      "kind": "ellipse",
+      "x": 791,
+      "y": 191,
+      "w": 28,
+      "h": 28,
+      "fill": "#171717"
+    },
+    {
+      "kind": "line",
+      "x1": 60,
+      "y1": 205,
+      "x2": 110,
+      "y2": 205,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 330,
+      "y1": 205,
+      "x2": 400,
+      "y2": 205,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 630,
+      "y1": 205,
+      "x2": 790,
+      "y2": 205,
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 655.0,
+      "y": 193.0,
+      "text": "after 3ms",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 670,
+      "y": 305,
+      "text": "final state Done",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 80,
+      "y": 345,
+      "text": "Nested transitions are tested in source order. Final entry completes the operation.",
+      "size": 13
+    }
+  ]
+}
