@@ -1,0 +1,1103 @@
+{
+  "release": "2.2",
+  "languageVersion": "2.2",
+  "specificationRevision": "2.2",
+  "simulationProfile": "swaml-reference/2.2",
+  "implementationRevision": "3.1.0",
+  "publicationDate": "2026-11-10",
+  "pages": 128,
+  "pdf": "SWAML-2.2-Specification.pdf",
+  "sources": [
+    {
+      "path": "docs/LANGUAGE_SPECIFICATION.md",
+      "attachmentName": "docs__LANGUAGE_SPECIFICATION.md",
+      "sha256": "af7ad591820d7f9c325d4c9a10b5c96246a9a0726e27919d94fd52fa035bef62"
+    },
+    {
+      "path": "docs/spec/01-structure-and-types.md",
+      "attachmentName": "docs__spec__01-structure-and-types.md",
+      "sha256": "4d8bb93ce2534b7c84847a8f48b7da97029fd54535b6ba1526464503c2e84916"
+    },
+    {
+      "path": "docs/spec/02-communication.md",
+      "attachmentName": "docs__spec__02-communication.md",
+      "sha256": "1f3d2b755521056952e69804a668c6e3250b7a96cafaebbd1afdfc9700e9728b"
+    },
+    {
+      "path": "docs/spec/03-behavior.md",
+      "attachmentName": "docs__spec__03-behavior.md",
+      "sha256": "0e3efb3987c1f382dbd05a044f3eeae5225a3b7455bf2ecc72bf81482260b951"
+    },
+    {
+      "path": "docs/spec/04-systems-and-conformance.md",
+      "attachmentName": "docs__spec__04-systems-and-conformance.md",
+      "sha256": "1518d4f724fdc54408aaa37544c868fa11896104d6fa3fc4b181f10f13ded6b1"
+    },
+    {
+      "path": "docs/spec/05-kerml-mapping.md",
+      "attachmentName": "docs__spec__05-kerml-mapping.md",
+      "sha256": "983787a597096b715fe28ff37459c73ffe493da9e2899bcb7a246302dfdc7319"
+    },
+    {
+      "path": "docs/spec/06-execution-contract.md",
+      "attachmentName": "docs__spec__06-execution-contract.md",
+      "sha256": "1682018c22611e678006face3d38950cd394336de68851621bb4aab319ea9693"
+    },
+    {
+      "path": "docs/spec/07-normalized-model.md",
+      "attachmentName": "docs__spec__07-normalized-model.md",
+      "sha256": "1f31066ceb885747fd7672fb4159339f26af494f40ca28e9b82bd849f7754c27"
+    },
+    {
+      "path": "docs/spec/08-conformance-obligations.md",
+      "attachmentName": "docs__spec__08-conformance-obligations.md",
+      "sha256": "4df67832b086677cd768e8dc23d8015b40950c0c618c76609bfe13848ccf50da"
+    },
+    {
+      "path": "docs/spec/09-formal-semantics.md",
+      "attachmentName": "docs__spec__09-formal-semantics.md",
+      "sha256": "0359bc63f290370acbba5ec0a57b3ba224b9ccf93af8c4b95ec0c98c2e2fbbc9"
+    },
+    {
+      "path": "docs/GRAPHICAL_NOTATION.md",
+      "attachmentName": "docs__GRAPHICAL_NOTATION.md",
+      "sha256": "a0a3f68b8ff8cd5a61fcda7472368488406e120f2e36480de682254b9776039f"
+    },
+    {
+      "path": "docs/GRAPHICAL_CATALOG.md",
+      "attachmentName": "docs__GRAPHICAL_CATALOG.md",
+      "sha256": "b221dc03b754a32fbccb5d51e2b1133f65c35415ffd9917481854189f0acb218"
+    },
+    {
+      "path": "docs/RELEASE_2_2.md",
+      "attachmentName": "docs__RELEASE_2_2.md",
+      "sha256": "e4edcb34ab52d0316a9711e7b0d42d152ff2183f2f868826e5c406bfb59d93ac"
+    },
+    {
+      "path": "docs/QUICK_START.md",
+      "attachmentName": "docs__QUICK_START.md",
+      "sha256": "31fca83743975f14da9c8cca5f502cf813fec962a76497cc26c84646df62468f"
+    },
+    {
+      "path": "docs/USER_GUIDE.md",
+      "attachmentName": "docs__USER_GUIDE.md",
+      "sha256": "a311a22f27e2a6ced300080533a1104d2d9155d757246980c81728036c6e0d1b"
+    },
+    {
+      "path": "docs/AI_GUIDE.md",
+      "attachmentName": "docs__AI_GUIDE.md",
+      "sha256": "c3198020a9993f30538aa76917c8edd2e5084d67f462430b005066fbe8f1ecc8"
+    },
+    {
+      "path": "docs/ARCHITECTURE_PATTERNS.md",
+      "attachmentName": "docs__ARCHITECTURE_PATTERNS.md",
+      "sha256": "73bf013ee4070056600b8b7e1c8f020d00d3d2602dfd775b8cce1ed01930eea2"
+    },
+    {
+      "path": "docs/ONTOLOGY_AND_VIEWS.md",
+      "attachmentName": "docs__ONTOLOGY_AND_VIEWS.md",
+      "sha256": "dd366cee3bbfa1fdeb0234d9459798a36eb10681f2ee0697aaa5a93aedd87d83"
+    },
+    {
+      "path": "docs/SIMULATION.md",
+      "attachmentName": "docs__SIMULATION.md",
+      "sha256": "7fb90b1162d182181235e0d56c310b7a4bd2c01d725cd66c9964b5fedbb9adfd"
+    },
+    {
+      "path": "docs/REQUIREMENTS_AND_DOCUMENTATION.md",
+      "attachmentName": "docs__REQUIREMENTS_AND_DOCUMENTATION.md",
+      "sha256": "250540806a457c98ee3055edc1ded65d52f5499e8aeb7b49f7fc309e76722740"
+    },
+    {
+      "path": "docs/KEYWORD_REFERENCE.md",
+      "attachmentName": "docs__KEYWORD_REFERENCE.md",
+      "sha256": "dec9a1a03c4f0ce692e6d95d1a816efb4275dc82a21cc390e0366bd644e0d352"
+    },
+    {
+      "path": "docs/GRAPHICAL_EXAMPLES.md",
+      "attachmentName": "docs__GRAPHICAL_EXAMPLES.md",
+      "sha256": "8c3a1d532d245f6b0d5a161af7415df2e6fdc38b4283f47f3081178c4c78a563"
+    },
+    {
+      "path": "docs/IMPLEMENTATION_STATUS.md",
+      "attachmentName": "docs__IMPLEMENTATION_STATUS.md",
+      "sha256": "7c6d0070efef084c555a331b6f3e50cbfea3cf7b40215bf8633d10e4f045fdaf"
+    },
+    {
+      "path": "docs/TOOLING.md",
+      "attachmentName": "docs__TOOLING.md",
+      "sha256": "d18f71f46c8f80cc78526693508db592e21432d0631e19c974cbf60751e60b25"
+    },
+    {
+      "path": "docs/VERSIONING.md",
+      "attachmentName": "docs__VERSIONING.md",
+      "sha256": "4120dc7779344e9f1800e08bea7556a13fa3dbcef5168cb6ad971fae0ee7a8c7"
+    },
+    {
+      "path": "docs/decisions/0016-swaml-2-0.md",
+      "attachmentName": "docs__decisions__0016-swaml-2-0.md",
+      "sha256": "4b6bcc1ba02d982d86247982ec075ba5fc37fed19fae45262ee50dba4dc8cc32"
+    },
+    {
+      "path": "docs/decisions/0017-readable-names-and-use-cases.md",
+      "attachmentName": "docs__decisions__0017-readable-names-and-use-cases.md",
+      "sha256": "fd19f564e1ea3193b39a44dafb61f0e7ccee5cc9520b5fe8b3a8cc1c0ef3c577"
+    },
+    {
+      "path": "docs/decisions/0019-package-context.md",
+      "attachmentName": "docs__decisions__0019-package-context.md",
+      "sha256": "f23523f8f9d9a1142bb1cec4943f39773957f837fd75b08e39da97df58e1eb33"
+    },
+    {
+      "path": "docs/decisions/0020-associated-test-access.md",
+      "attachmentName": "docs__decisions__0020-associated-test-access.md",
+      "sha256": "4e4cd4cbd642677d6d6d63008be66ab708b51c8f0e8240eb23017ad026839893"
+    },
+    {
+      "path": "docs/decisions/0021-case-subject-calls.md",
+      "attachmentName": "docs__decisions__0021-case-subject-calls.md",
+      "sha256": "08b07d4b671752bb71e1dbf724280ae616b649eea1df3498bba38720ab330d6f"
+    },
+    {
+      "path": "src/language/swaml.langium",
+      "attachmentName": "src__language__swaml.langium",
+      "sha256": "8197bdb5c4f233b002cc9d404d64fb604583ba1c36e1b13aeebc98d88ea867d7"
+    },
+    {
+      "path": "spec/kerml-mapping.json",
+      "attachmentName": "spec__kerml-mapping.json",
+      "sha256": "845dda00fdf8af67751ae0dd9630a9ffcb083f7f90d13230d3f1809b8b28b813"
+    },
+    {
+      "path": "examples/01-hello.swaml",
+      "attachmentName": "examples__01-hello.swaml",
+      "sha256": "558b9265ff148a0c58fc81dd6ffe55250033b52c684f07149c49230af9a48256"
+    },
+    {
+      "path": "examples/02-realtime-controller.swaml",
+      "attachmentName": "examples__02-realtime-controller.swaml",
+      "sha256": "ecc4181065146ee7c8a8532badb2d6181bed3bec2fb108ce0d1b2dd0a62e1391"
+    },
+    {
+      "path": "examples/03-service-pubsub.swaml",
+      "attachmentName": "examples__03-service-pubsub.swaml",
+      "sha256": "5c71e58701eb77284fe0021a0cd9edf1227f067add26f19259d2f37d76dac481"
+    },
+    {
+      "path": "examples/04-stateful-function.swaml",
+      "attachmentName": "examples__04-stateful-function.swaml",
+      "sha256": "bdb2beb6d6a66ca2c44f0109dde8e11d4af8063ca12fa1a1ae2e936e9c542728"
+    },
+    {
+      "path": "examples/05-values-and-flow.swaml",
+      "attachmentName": "examples__05-values-and-flow.swaml",
+      "sha256": "4098b08b5b48b01074160fa2ba450bde0da7ccbebdcb9420bf5427bf404c59d8"
+    },
+    {
+      "path": "examples/06-mixed-gateway.swaml",
+      "attachmentName": "examples__06-mixed-gateway.swaml",
+      "sha256": "1fcda428c930f122e7c85756f88002b57c28a5ac809a43577cb4c778e307ed41"
+    },
+    {
+      "path": "examples/07-client-server.swaml",
+      "attachmentName": "examples__07-client-server.swaml",
+      "sha256": "90d474d4c5cb0f3ddb468a12b0cc0f259113b10f34c3dbf10b0f29f4af88c43c"
+    },
+    {
+      "path": "examples/08-service-field.swaml",
+      "attachmentName": "examples__08-service-field.swaml",
+      "sha256": "19afbb501255e5ed7483a1a5f1de2d95ea7c6b7402a9802d1f5593591e132cca"
+    },
+    {
+      "path": "examples/09-component-roots.swaml",
+      "attachmentName": "examples__09-component-roots.swaml",
+      "sha256": "36874eefa14675f18379441294235268d72be8700eea93dd5c1b1ce13eb7312c"
+    },
+    {
+      "path": "examples/10-reusable-qos.swaml",
+      "attachmentName": "examples__10-reusable-qos.swaml",
+      "sha256": "50ef4943a394477e7b4d95f263154ac8d6b0d82daf7f4c0ef0f6e5c55ba4024b"
+    },
+    {
+      "path": "examples/11-autosar-classic.swaml",
+      "attachmentName": "examples__11-autosar-classic.swaml",
+      "sha256": "5c392940125b4d4f8bd995f7a97c648f30f7a34db03f8af6f3f187882b77c128"
+    },
+    {
+      "path": "examples/12-autosar-adaptive.swaml",
+      "attachmentName": "examples__12-autosar-adaptive.swaml",
+      "sha256": "3621c6c9037fff45f44901ac6b703dfaf1543a99fd6c26f6754e7b4fe1d53163"
+    },
+    {
+      "path": "examples/13-web-application.swaml",
+      "attachmentName": "examples__13-web-application.swaml",
+      "sha256": "6fe1d85716d812f8cea25a8d77321c0bd8d44da0d289af8dcfe20c37925759a7"
+    },
+    {
+      "path": "examples/14-cloud-service.swaml",
+      "attachmentName": "examples__14-cloud-service.swaml",
+      "sha256": "b5bb239090d2f922771a0a9eebb8feb988d6c37aa69b6ee8d2769c4cabc42a0e"
+    },
+    {
+      "path": "examples/15-component-specialization.swaml",
+      "attachmentName": "examples__15-component-specialization.swaml",
+      "sha256": "9edbb8ccbe0f71aa49a6f252126b41c90dab41b6942119ec24475b1ba52b99fc"
+    },
+    {
+      "path": "examples/16-requirements-and-views.swaml",
+      "attachmentName": "examples__16-requirements-and-views.swaml",
+      "sha256": "e5e111315df18e60c049046dca62cf05de0b678d9648023554e01d6890c1d38d"
+    },
+    {
+      "path": "examples/17-function-timing.swaml",
+      "attachmentName": "examples__17-function-timing.swaml",
+      "sha256": "c2ced1c6c550656f02a633713194cedeaee4fcfccdefe671b903b6738816a3cb"
+    },
+    {
+      "path": "examples/18-control-loops.swaml",
+      "attachmentName": "examples__18-control-loops.swaml",
+      "sha256": "31aff9d8bc4c87e0f54c2426649472227b5da243bbfc1f912c30df6e32f6bf54"
+    },
+    {
+      "path": "examples/19-interruptible-function.swaml",
+      "attachmentName": "examples__19-interruptible-function.swaml",
+      "sha256": "ee36a9c5eeddc990572adc65dbbe9ea4b1e28b2bc03956a6849fbea0ef27957f"
+    },
+    {
+      "path": "examples/20-classes-and-operations.swaml",
+      "attachmentName": "examples__20-classes-and-operations.swaml",
+      "sha256": "e0f4e654263d0d15f116019cfff40cd3922d31b46edb39e80b1775ee12100bcb"
+    },
+    {
+      "path": "examples/21-receive-and-try.swaml",
+      "attachmentName": "examples__21-receive-and-try.swaml",
+      "sha256": "1379a0071cf2c9727ed11841b200e91b7dc35906fa50c64a187e000059ab818a"
+    },
+    {
+      "path": "examples/22-platform-deployment.swaml",
+      "attachmentName": "examples__22-platform-deployment.swaml",
+      "sha256": "c94473ed416785f43b791363f2472f98061048d7938035c0e0a619253ce8178a"
+    },
+    {
+      "path": "examples/23-multiplicity.swaml",
+      "attachmentName": "examples__23-multiplicity.swaml",
+      "sha256": "db015bc1fb81fc4985129dd60cceb58bd0a9ca79aab98cb2fdd228b3378b83b5"
+    },
+    {
+      "path": "examples/24-operation-usage.swaml",
+      "attachmentName": "examples__24-operation-usage.swaml",
+      "sha256": "85df62eca03dacbfc81e6c156012800271e42f6393165ec12c4031ebce28a089"
+    },
+    {
+      "path": "examples/25-function-completion.swaml",
+      "attachmentName": "examples__25-function-completion.swaml",
+      "sha256": "7cedf60065895941b23af70156936680d3edd04389a10e8717874398ad77ed3f"
+    },
+    {
+      "path": "examples/26-boundary-forwarding.swaml",
+      "attachmentName": "examples__26-boundary-forwarding.swaml",
+      "sha256": "ab9db715c49a2d92ccefdb49eecf850455f9a66a1c70fc509cc311b23fe43ea7"
+    },
+    {
+      "path": "examples/27-mixed-port.swaml",
+      "attachmentName": "examples__27-mixed-port.swaml",
+      "sha256": "cb3dc6a756f887bd068f48894ca13d61f027f4ecc6a2142fe96adc6b7aeded99"
+    },
+    {
+      "path": "examples/28-use-cases.swaml",
+      "attachmentName": "examples__28-use-cases.swaml",
+      "sha256": "74479648ebfd983117ce9e0f3f80efa71bb804ee02ecd22a001a33916ac2248a"
+    },
+    {
+      "path": "examples/29-executable-cases.swaml",
+      "attachmentName": "examples__29-executable-cases.swaml",
+      "sha256": "6cc18fa4059f876fc848ccd80ab8d10692f4f40a8a5cb27a8c632d6088707f9f"
+    },
+    {
+      "path": "examples/30-associated-integration.swaml",
+      "attachmentName": "examples__30-associated-integration.swaml",
+      "sha256": "79c4aa479d2d2f918e38b1aecd1c9a25281df94f11b5f4c7f302f99c975dc2a9"
+    },
+    {
+      "path": "examples/31-case-subject-calls.swaml",
+      "attachmentName": "examples__31-case-subject-calls.swaml",
+      "sha256": "cb840b4ec38597b8f71787a162dc9b8370ff845d40a75f737b9f4fdb6ba8e128"
+    },
+    {
+      "path": "libraries/swaml-2.0.swaml",
+      "attachmentName": "libraries__swaml-2.0.swaml",
+      "sha256": "2dbff90416abd887d8ec9dc403ac794c185c86f9eed6f4b50ca0198ac16b597f"
+    },
+    {
+      "path": "LICENSE",
+      "attachmentName": "LICENSE",
+      "sha256": "24d1618025e85d72fb57a7e108712a9a12799f83aa723006abc9ce71296ec46b"
+    },
+    {
+      "path": "docs/SWAML-2.2-Reference.md",
+      "attachmentName": "docs__SWAML-2.2-Reference.md",
+      "sha256": "313e2b67d152647ffd323e9c69e529f6edcf912ef592b3f60f8bfc26434f098b"
+    },
+    {
+      "path": "spec/standard.json",
+      "attachmentName": "spec__standard.json",
+      "sha256": "452e031037c51cd21bf7909b4921967326b6891aa2518155a7bf443907192dc8"
+    },
+    {
+      "path": "spec/keywords.json",
+      "attachmentName": "spec__keywords.json",
+      "sha256": "de97d83e69bb07d756d48ac5f04a958f9ca521e555fa76ade4dad13486c860cf"
+    },
+    {
+      "path": "spec/notation.json",
+      "attachmentName": "spec__notation.json",
+      "sha256": "a0622bdb164a0ec9d4445d18d2fe9f8926ba44a18ef5cbf99d5400726d0defe8"
+    },
+    {
+      "path": "spec/graphical-examples.json",
+      "attachmentName": "spec__graphical-examples.json",
+      "sha256": "2dbda8e7cdf66e119608d527bb25c17de029e1fcdeac5167e240579ef23ac379"
+    },
+    {
+      "path": "spec/modeling-overview.json",
+      "attachmentName": "spec__modeling-overview.json",
+      "sha256": "5f5d782b0e0982f35d518cf3fe92b581f56cb89ba0ced38e465f0b79fb17879b"
+    },
+    {
+      "path": "package.json",
+      "attachmentName": "package.json",
+      "sha256": "8619c95d29ab237d9a8b514e5ec14a6fdb6f89c67ca1c349603162b99b7936ce"
+    },
+    {
+      "path": "package-lock.json",
+      "attachmentName": "package-lock.json",
+      "sha256": "490aed3ea8aefa826759a164997acee03d599f0245c05b13c60e95be19b36af1"
+    },
+    {
+      "path": "tsconfig.json",
+      "attachmentName": "tsconfig.json",
+      "sha256": "40eb29a184b1f8d5b4f7314f69a8aa1c6856d7c09cce0ab9b3c0992628ba92ff"
+    },
+    {
+      "path": "scripts/build-spec-pdf-2.2.py",
+      "attachmentName": "scripts__build-spec-pdf-2.2.py",
+      "sha256": "7cc698eba3857b5c47f8759d9c697b6d0c032bba1df14c3b3817a0ad5dbec12f"
+    },
+    {
+      "path": "scripts/check-spec-pdf-2.2.py",
+      "attachmentName": "scripts__check-spec-pdf-2.2.py",
+      "sha256": "bec5bda7b3748505e38368ac926a30f9c4273c30c6090a94c1ffa00ee9b89aaa"
+    },
+    {
+      "path": "scripts/publication_2_2_sources.py",
+      "attachmentName": "scripts__publication_2_2_sources.py",
+      "sha256": "132838c601eaba7c1415b9cf7414997005293854c9e5a6259aeff245e0e018f9"
+    },
+    {
+      "path": "scripts/publication_archive.py",
+      "attachmentName": "scripts__publication_archive.py",
+      "sha256": "d37f92943cb435b96a8e9c56df89aef6c99be2230fe3f0e7e30f86d4fad397d7"
+    },
+    {
+      "path": "scripts/ci-pdf-requirements.txt",
+      "attachmentName": "scripts__ci-pdf-requirements.txt",
+      "sha256": "ac624c39500c24e0022c87da56d1545904b1f6fd8da335b9a68bf6f8f57b7157"
+    },
+    {
+      "path": "scripts/v2_scene.py",
+      "attachmentName": "scripts__v2_scene.py",
+      "sha256": "9995de9bd8bc04fb1b4377d14c15d404bc45f965e8630b0b0ab1ca1944069845"
+    },
+    {
+      "path": "scripts/build-notation.py",
+      "attachmentName": "scripts__build-notation.py",
+      "sha256": "ea2bf388f4ec9cb72fabdc3c4162c2fbaa3b6b8b85d19345aabfe467f80bce9e"
+    },
+    {
+      "path": "scripts/build-graphical-examples.py",
+      "attachmentName": "scripts__build-graphical-examples.py",
+      "sha256": "9d2e4fc09ce6b535306a5690cf9c62d30f11b00d8f7d4bef50638fd56e682059"
+    },
+    {
+      "path": "scripts/build-reference.mjs",
+      "attachmentName": "scripts__build-reference.mjs",
+      "sha256": "cb1e2a09aeb4bbe501c97f720ee5a3a9f2e81706aa8399b893f81e0f7660612f"
+    },
+    {
+      "path": "scripts/standard-version.mjs",
+      "attachmentName": "scripts__standard-version.mjs",
+      "sha256": "af73e0d14f9a0156dc9c5c070072dee85a73025619598a884e3eb25a5adbd34d"
+    },
+    {
+      "path": "scripts/test-publication-2-2.py",
+      "attachmentName": "scripts__test-publication-2-2.py",
+      "sha256": "b4942ca9ae09070bbe7458ec15ec25b475b200845a61011d16802f6f0845cc52"
+    },
+    {
+      "path": "docs/figures/2.2/architecture.png",
+      "attachmentName": "docs__figures__2.2__architecture.png",
+      "sha256": "6f092e450dcac34a95a51051ed5a55dfb5148b1198b87297a4ddaede88f18cf6"
+    },
+    {
+      "path": "docs/figures/2.2/architecture.scene.json",
+      "attachmentName": "docs__figures__2.2__architecture.scene.json",
+      "sha256": "f2e49c61edeecb3a660a13008eb8edf97016c4212fa1cf711f17faabb029557e"
+    },
+    {
+      "path": "docs/figures/2.2/architecture.svg",
+      "attachmentName": "docs__figures__2.2__architecture.svg",
+      "sha256": "1683c975f78d5a390cf43fc0a82aedace11d7c3ccbb0e95bfe0be6ec8c872f92"
+    },
+    {
+      "path": "docs/figures/2.2/deployment.png",
+      "attachmentName": "docs__figures__2.2__deployment.png",
+      "sha256": "14cd45f56cb36656fae41d64f86652d116db415434519333a3cc12e5c60de0fa"
+    },
+    {
+      "path": "docs/figures/2.2/deployment.scene.json",
+      "attachmentName": "docs__figures__2.2__deployment.scene.json",
+      "sha256": "90ef6225880003214e78de34456251e7cdedde4e8e2a7f4d85125de4b79d8b37"
+    },
+    {
+      "path": "docs/figures/2.2/deployment.svg",
+      "attachmentName": "docs__figures__2.2__deployment.svg",
+      "sha256": "b550344a2a214a137a6305a42a7547e1d8f9b87c5370ca4ad6179f5268b02998"
+    },
+    {
+      "path": "docs/figures/2.2/forwarding.png",
+      "attachmentName": "docs__figures__2.2__forwarding.png",
+      "sha256": "34e98012820651abe3e32080e7d6be59edfe904cd83af71cece3ed73451a1d20"
+    },
+    {
+      "path": "docs/figures/2.2/forwarding.scene.json",
+      "attachmentName": "docs__figures__2.2__forwarding.scene.json",
+      "sha256": "6b9db9bf0ce38048c0c072a05fe5430276fda85759df18b8fff170e294188d7b"
+    },
+    {
+      "path": "docs/figures/2.2/forwarding.svg",
+      "attachmentName": "docs__figures__2.2__forwarding.svg",
+      "sha256": "6f6f8f1ba6f11189b3af590b082478d0b73ec2dce421da5869eb2d3762001f2e"
+    },
+    {
+      "path": "docs/figures/2.2/modeling-overview.png",
+      "attachmentName": "docs__figures__2.2__modeling-overview.png",
+      "sha256": "fe7212f595f1116207d7ff473b114fd4b110c5f2d345e8efef41a89a6419bcca"
+    },
+    {
+      "path": "docs/figures/2.2/modeling-overview.scene.json",
+      "attachmentName": "docs__figures__2.2__modeling-overview.scene.json",
+      "sha256": "1bb38ee82eb3875a9268235e359bd9601cb12261e0ab44054c50ce251b957be9"
+    },
+    {
+      "path": "docs/figures/2.2/modeling-overview.svg",
+      "attachmentName": "docs__figures__2.2__modeling-overview.svg",
+      "sha256": "d2483966a62949f9f04ad4b08cc5dea6b69cde081fd366aede1768b67e5569d9"
+    },
+    {
+      "path": "docs/figures/2.2/schedule.png",
+      "attachmentName": "docs__figures__2.2__schedule.png",
+      "sha256": "7199279832b3f302e2a59846269f4b0cc2c55498fa466513ca410828a49bd721"
+    },
+    {
+      "path": "docs/figures/2.2/schedule.scene.json",
+      "attachmentName": "docs__figures__2.2__schedule.scene.json",
+      "sha256": "bf70d14ef5c822294503b093a21851381624cd864954d9a7af9c6b4da36d0fb5"
+    },
+    {
+      "path": "docs/figures/2.2/schedule.svg",
+      "attachmentName": "docs__figures__2.2__schedule.svg",
+      "sha256": "98ed44ae3fdcf070c8f984ad7272a77f9dcdf192196f154933180c4e6dde2354"
+    },
+    {
+      "path": "docs/figures/2.2/states.png",
+      "attachmentName": "docs__figures__2.2__states.png",
+      "sha256": "f8c40af59dd886454d49f84bb10ca16f2b520e15cd0101e58fb059c01d5b587c"
+    },
+    {
+      "path": "docs/figures/2.2/states.scene.json",
+      "attachmentName": "docs__figures__2.2__states.scene.json",
+      "sha256": "fc29352dc681ca20384c03cefcae47b3505872828e32ea59cdbc4762f984c7ff"
+    },
+    {
+      "path": "docs/figures/2.2/states.svg",
+      "attachmentName": "docs__figures__2.2__states.svg",
+      "sha256": "f181e8767ac097b10019f2e5f080bde6ff46dc126d761820db9fa68ed6bb423f"
+    },
+    {
+      "path": "docs/figures/2.2/timing.png",
+      "attachmentName": "docs__figures__2.2__timing.png",
+      "sha256": "c2c024feba23764882ac54e138e1668a2bf80f163263c78d1f6341d444c54b36"
+    },
+    {
+      "path": "docs/figures/2.2/timing.scene.json",
+      "attachmentName": "docs__figures__2.2__timing.scene.json",
+      "sha256": "ad47d0938bc06620ab17a1e1aa011824dd8d5beb546cce69d08183fd4c03cab5"
+    },
+    {
+      "path": "docs/figures/2.2/timing.svg",
+      "attachmentName": "docs__figures__2.2__timing.svg",
+      "sha256": "2f06d7367c11e8fd2191e679662a7995cc2ea10b1c82ebc21166373dfe0f0f9b"
+    },
+    {
+      "path": "docs/notation/2.2/attributes.png",
+      "attachmentName": "docs__notation__2.2__attributes.png",
+      "sha256": "5130cc4d2702792d77d3eb32a82b2374d23cf7a24c9e82b0f3d713e5b952242c"
+    },
+    {
+      "path": "docs/notation/2.2/attributes.scene.json",
+      "attachmentName": "docs__notation__2.2__attributes.scene.json",
+      "sha256": "66c8105516abcbadd4138fb80b8d257bc65cf0c0520eed686664c365a5ba6d85"
+    },
+    {
+      "path": "docs/notation/2.2/attributes.svg",
+      "attachmentName": "docs__notation__2.2__attributes.svg",
+      "sha256": "e23a7cb4c95839e94da396d744bb335f414069af4ba4ad45786d4029e04f13ec"
+    },
+    {
+      "path": "docs/notation/2.2/calls.png",
+      "attachmentName": "docs__notation__2.2__calls.png",
+      "sha256": "0a3f0a8bc3f66e578ebf32c693fd267dd485766c9affd6981fd6c2f6ee946954"
+    },
+    {
+      "path": "docs/notation/2.2/calls.scene.json",
+      "attachmentName": "docs__notation__2.2__calls.scene.json",
+      "sha256": "07c9b7b455a31fb33a05fefd140ec1362ab421d2cb43ff0bed8d991fdf29d20a"
+    },
+    {
+      "path": "docs/notation/2.2/calls.svg",
+      "attachmentName": "docs__notation__2.2__calls.svg",
+      "sha256": "bff4c10d64e21178c29561304a419410bd5071bc1e56b92de2b689c81b0fd21c"
+    },
+    {
+      "path": "docs/notation/2.2/cases.png",
+      "attachmentName": "docs__notation__2.2__cases.png",
+      "sha256": "b12a089f0ca4733b5e4e9efd1b2156ffea3086ea9fd8f438fd2013ab5c6133dc"
+    },
+    {
+      "path": "docs/notation/2.2/cases.scene.json",
+      "attachmentName": "docs__notation__2.2__cases.scene.json",
+      "sha256": "06fbf69619d4172b35b147da394df98c5389919547312112c5fa8a2e48de9163"
+    },
+    {
+      "path": "docs/notation/2.2/cases.svg",
+      "attachmentName": "docs__notation__2.2__cases.svg",
+      "sha256": "cb5baffe8416336caad3e72f3ea6f9a92373d6069f0b80165a3b89508622407d"
+    },
+    {
+      "path": "docs/notation/2.2/components.png",
+      "attachmentName": "docs__notation__2.2__components.png",
+      "sha256": "7069e85ad20a78e197124f628bd36bdb2093a3a3218a029184d3708cfebe2bb7"
+    },
+    {
+      "path": "docs/notation/2.2/components.scene.json",
+      "attachmentName": "docs__notation__2.2__components.scene.json",
+      "sha256": "915096a411fae496d3d071c1ee9d457abbcae66e54987243d22f2a6743067a4a"
+    },
+    {
+      "path": "docs/notation/2.2/components.svg",
+      "attachmentName": "docs__notation__2.2__components.svg",
+      "sha256": "397ee657de48d4f16889c093380b1077459852e275f273d78aab4d563206f639"
+    },
+    {
+      "path": "docs/notation/2.2/connection.png",
+      "attachmentName": "docs__notation__2.2__connection.png",
+      "sha256": "d35349a1595c140c96b8e608381e048cebd8a5cae5993c41c68a59405b2a82ad"
+    },
+    {
+      "path": "docs/notation/2.2/connection.scene.json",
+      "attachmentName": "docs__notation__2.2__connection.scene.json",
+      "sha256": "1546d0af316f909f23304f2f14ce7ce85912804bd399d48152648b58eb81e718"
+    },
+    {
+      "path": "docs/notation/2.2/connection.svg",
+      "attachmentName": "docs__notation__2.2__connection.svg",
+      "sha256": "f87963722bc831c219b39ddd1c3b773badfb367168ad2423606aaefef8f35a25"
+    },
+    {
+      "path": "docs/notation/2.2/deployment.png",
+      "attachmentName": "docs__notation__2.2__deployment.png",
+      "sha256": "00b8beaa446bbbdc2b791fe508ae8c67f0e93b5fb23c6089909d8be41877bd66"
+    },
+    {
+      "path": "docs/notation/2.2/deployment.scene.json",
+      "attachmentName": "docs__notation__2.2__deployment.scene.json",
+      "sha256": "de33edb813028b9e5e9eddfc99e45d1d6194add643dd91215dfbecf30f0953f3"
+    },
+    {
+      "path": "docs/notation/2.2/deployment.svg",
+      "attachmentName": "docs__notation__2.2__deployment.svg",
+      "sha256": "576301415bb70e4c7dca3b07939cf9e699038aab5a80f6e0da6a23a620bd0024"
+    },
+    {
+      "path": "docs/notation/2.2/documentation.png",
+      "attachmentName": "docs__notation__2.2__documentation.png",
+      "sha256": "fc5866e7afa051433e92287d614f27d460a4973c63fe5ecd0488ff6be22d55e2"
+    },
+    {
+      "path": "docs/notation/2.2/documentation.scene.json",
+      "attachmentName": "docs__notation__2.2__documentation.scene.json",
+      "sha256": "2b0036ec9924aca8844f039bc606bb313d9d17be0ff4ede0dabad33f31331974"
+    },
+    {
+      "path": "docs/notation/2.2/documentation.svg",
+      "attachmentName": "docs__notation__2.2__documentation.svg",
+      "sha256": "f45544a548d2c17e9ada4e46a97d2169508e584b6316ca42c52dd5c6dba4aa23"
+    },
+    {
+      "path": "docs/notation/2.2/expressions.png",
+      "attachmentName": "docs__notation__2.2__expressions.png",
+      "sha256": "edfbfd89b50b7fec72998bc9abbb42a5d6ea470bd24b41a3471ae966a2b73726"
+    },
+    {
+      "path": "docs/notation/2.2/expressions.scene.json",
+      "attachmentName": "docs__notation__2.2__expressions.scene.json",
+      "sha256": "b040e465b7b93c699763dbd2dde57f5f913c5a272540f51326b9f4d9d0d27481"
+    },
+    {
+      "path": "docs/notation/2.2/expressions.svg",
+      "attachmentName": "docs__notation__2.2__expressions.svg",
+      "sha256": "bf1c4f7cc9747f9dfb67d24de7636a7bfdb4eeb0223eee11259f3047d6828ecb"
+    },
+    {
+      "path": "docs/notation/2.2/flow.png",
+      "attachmentName": "docs__notation__2.2__flow.png",
+      "sha256": "b023b1fcb172f0936cfb0f2ad493e010c067cdf31dd115237cd357ec6ba4517b"
+    },
+    {
+      "path": "docs/notation/2.2/flow.scene.json",
+      "attachmentName": "docs__notation__2.2__flow.scene.json",
+      "sha256": "9df212d5937df5de7e29cb36188663c2676056402262a8b4cea5f32c56b8092e"
+    },
+    {
+      "path": "docs/notation/2.2/flow.svg",
+      "attachmentName": "docs__notation__2.2__flow.svg",
+      "sha256": "b695598ea1f722997515d22e3f9a493b33a8e30d0582d5833454022012d0c26b"
+    },
+    {
+      "path": "docs/notation/2.2/forwarding.png",
+      "attachmentName": "docs__notation__2.2__forwarding.png",
+      "sha256": "8434119b804e6665646a90b6f0d8a2a1623bba283ec69c884fb0ee3be355a054"
+    },
+    {
+      "path": "docs/notation/2.2/forwarding.scene.json",
+      "attachmentName": "docs__notation__2.2__forwarding.scene.json",
+      "sha256": "b2470a7b345a6c9818bce40a9a01ccee69398af641eefdbc66e6ef8035c0b395"
+    },
+    {
+      "path": "docs/notation/2.2/forwarding.svg",
+      "attachmentName": "docs__notation__2.2__forwarding.svg",
+      "sha256": "145e21dab29ef0b026bd25c03c819db7b4758285490d40b405737bc0b16125a8"
+    },
+    {
+      "path": "docs/notation/2.2/interrupt.png",
+      "attachmentName": "docs__notation__2.2__interrupt.png",
+      "sha256": "a761cbd96fd03e3b06682bb8f05dedcddb71af0a5bc0548513f624fafb4b12ea"
+    },
+    {
+      "path": "docs/notation/2.2/interrupt.scene.json",
+      "attachmentName": "docs__notation__2.2__interrupt.scene.json",
+      "sha256": "c471cfdea2f6683dcc6fae620a5544f9e07e74c5055d363aa67ff827bae5e6fe"
+    },
+    {
+      "path": "docs/notation/2.2/interrupt.svg",
+      "attachmentName": "docs__notation__2.2__interrupt.svg",
+      "sha256": "34c6aaadecdf5c9d6ac674c4f19b600d79dfb30c2bd8e8506742dece6666cae4"
+    },
+    {
+      "path": "docs/notation/2.2/lexical.png",
+      "attachmentName": "docs__notation__2.2__lexical.png",
+      "sha256": "de06aa397a8fd309326ea63b431105d9f1e6cdcdb1cdf6b9e6b3a2c5d85faca2"
+    },
+    {
+      "path": "docs/notation/2.2/lexical.scene.json",
+      "attachmentName": "docs__notation__2.2__lexical.scene.json",
+      "sha256": "8286b4a400e67b2e43426a160908aa91fd1593c137afdf5b013a3b3060270006"
+    },
+    {
+      "path": "docs/notation/2.2/lexical.svg",
+      "attachmentName": "docs__notation__2.2__lexical.svg",
+      "sha256": "7e6458aace363e3f45ef970d8a1f3fc462e0fd49f53c79a90d3ca96f7b89d442"
+    },
+    {
+      "path": "docs/notation/2.2/loops.png",
+      "attachmentName": "docs__notation__2.2__loops.png",
+      "sha256": "c64e278dbf14a5f8c4195b0ed40044ebd9bb84c41c5f49191cd2db1b08e2cae6"
+    },
+    {
+      "path": "docs/notation/2.2/loops.scene.json",
+      "attachmentName": "docs__notation__2.2__loops.scene.json",
+      "sha256": "a1e03f374ed19c7b5ec9d9d248708985277ed5e134d9e65375537a6ef505e289"
+    },
+    {
+      "path": "docs/notation/2.2/loops.svg",
+      "attachmentName": "docs__notation__2.2__loops.svg",
+      "sha256": "33100942d83bfdd53c01014fcacc2f18b6b5198c4c81d92ffb009017c8a6ad79"
+    },
+    {
+      "path": "docs/notation/2.2/multiplicity.png",
+      "attachmentName": "docs__notation__2.2__multiplicity.png",
+      "sha256": "c819df147be843ed82e771a25e3c63d95414694189d85080084c5cbf43972802"
+    },
+    {
+      "path": "docs/notation/2.2/multiplicity.scene.json",
+      "attachmentName": "docs__notation__2.2__multiplicity.scene.json",
+      "sha256": "2ec903c7e1eb1a392cebf8bef04bdb35f03eb7273ba025c64431f707be16ba3f"
+    },
+    {
+      "path": "docs/notation/2.2/multiplicity.svg",
+      "attachmentName": "docs__notation__2.2__multiplicity.svg",
+      "sha256": "b9df1fe0eafaf7786e78c9978f8b5f11024f85b8cdf787ded7f81d9bf49dcd86"
+    },
+    {
+      "path": "docs/notation/2.2/operations.png",
+      "attachmentName": "docs__notation__2.2__operations.png",
+      "sha256": "70fc8f1f499ebb1f51b2797460ab56e6fe79bf68154170008934c391e0b425d5"
+    },
+    {
+      "path": "docs/notation/2.2/operations.scene.json",
+      "attachmentName": "docs__notation__2.2__operations.scene.json",
+      "sha256": "9f276833cf25e65641393f4d1143e7b57173050cb2ab13339fdaf7b5764e25ac"
+    },
+    {
+      "path": "docs/notation/2.2/operations.svg",
+      "attachmentName": "docs__notation__2.2__operations.svg",
+      "sha256": "f4b54f69cd6b4b0b0b5655681ffbd2fc964aaaddbca3c21f2100a5618c469d2f"
+    },
+    {
+      "path": "docs/notation/2.2/package.png",
+      "attachmentName": "docs__notation__2.2__package.png",
+      "sha256": "bc2c6a0de3277ce34a62bc3e61fe28b6db53cd3b621fdf4d5deeb174eef5a932"
+    },
+    {
+      "path": "docs/notation/2.2/package.scene.json",
+      "attachmentName": "docs__notation__2.2__package.scene.json",
+      "sha256": "2fd1fc2082d6bad38e110f82de7490f08e2ac63bfe704df8af407f79e00951f9"
+    },
+    {
+      "path": "docs/notation/2.2/package.svg",
+      "attachmentName": "docs__notation__2.2__package.svg",
+      "sha256": "012ad3afae66c12bed8b1772486671e7850ccce3321f88a5a49c36db9acae990"
+    },
+    {
+      "path": "docs/notation/2.2/ports.png",
+      "attachmentName": "docs__notation__2.2__ports.png",
+      "sha256": "8c9dee3a83a571a13d85431158f58aa4828c2212d4c71f0a0901e1901f6bba3c"
+    },
+    {
+      "path": "docs/notation/2.2/ports.scene.json",
+      "attachmentName": "docs__notation__2.2__ports.scene.json",
+      "sha256": "59461e9af12e37b4930722f9e99a432578eccb97e66455b34e9c783577f57949"
+    },
+    {
+      "path": "docs/notation/2.2/ports.svg",
+      "attachmentName": "docs__notation__2.2__ports.svg",
+      "sha256": "cf517615972595ce62ebca2ab21081bed34ace4ca2f84eb92f35d94a016fcfca"
+    },
+    {
+      "path": "docs/notation/2.2/receive.png",
+      "attachmentName": "docs__notation__2.2__receive.png",
+      "sha256": "f75434d63b3857527b06c0ceef62aef59495b3c0ece96fe4e89160307831b3f5"
+    },
+    {
+      "path": "docs/notation/2.2/receive.scene.json",
+      "attachmentName": "docs__notation__2.2__receive.scene.json",
+      "sha256": "f41f98ab08a32f114e8f72bd2cc60040a17d4f1cd6c852a48044a0120e55a0a1"
+    },
+    {
+      "path": "docs/notation/2.2/receive.svg",
+      "attachmentName": "docs__notation__2.2__receive.svg",
+      "sha256": "5bd32a2d21c757e730fc769c90186c25945a599a35d2393514cdda7156feed49"
+    },
+    {
+      "path": "docs/notation/2.2/requirements.png",
+      "attachmentName": "docs__notation__2.2__requirements.png",
+      "sha256": "39eeb11059396dd015b1c3e4f6a1efeca2eac2a474d685628fc49d79f338f860"
+    },
+    {
+      "path": "docs/notation/2.2/requirements.scene.json",
+      "attachmentName": "docs__notation__2.2__requirements.scene.json",
+      "sha256": "786deb215ddc9cdc1cda77d61e936bc2802ca4bb33a6e8aa582ad9863eaf2f2b"
+    },
+    {
+      "path": "docs/notation/2.2/requirements.svg",
+      "attachmentName": "docs__notation__2.2__requirements.svg",
+      "sha256": "dd53cc7bc78919f232dbb82fcac9ad3802a883f735431b8e47ec2afdcdf3a8dc"
+    },
+    {
+      "path": "docs/notation/2.2/schedule.png",
+      "attachmentName": "docs__notation__2.2__schedule.png",
+      "sha256": "746a4849ce56004b07eb9e04f8006394ebc7b5ecc5e3a00dd3ed09699e266f75"
+    },
+    {
+      "path": "docs/notation/2.2/schedule.scene.json",
+      "attachmentName": "docs__notation__2.2__schedule.scene.json",
+      "sha256": "e9e7cf8a89c0132db24e6eea9e0909bf99995dc113d9ea5a2791fb44726fa00d"
+    },
+    {
+      "path": "docs/notation/2.2/schedule.svg",
+      "attachmentName": "docs__notation__2.2__schedule.svg",
+      "sha256": "8a5b9aa8a6b308e45e7290a419fc398acab451e88fe9925300fdb88247e5d9f8"
+    },
+    {
+      "path": "docs/notation/2.2/scripts.png",
+      "attachmentName": "docs__notation__2.2__scripts.png",
+      "sha256": "ae348ddab2f584d07fd6a7c7a66f1a9d1e8aa645fd323f99bca0a6e86b8f1430"
+    },
+    {
+      "path": "docs/notation/2.2/scripts.scene.json",
+      "attachmentName": "docs__notation__2.2__scripts.scene.json",
+      "sha256": "b6345067fef0f85e9c8270dd230f785e616d8ec8625300d6998de3f650f26d63"
+    },
+    {
+      "path": "docs/notation/2.2/scripts.svg",
+      "attachmentName": "docs__notation__2.2__scripts.svg",
+      "sha256": "542ba4c6f23b0b0d787ed637b3763e13db49de30d6353781fa684193ac1921c2"
+    },
+    {
+      "path": "docs/notation/2.2/states.png",
+      "attachmentName": "docs__notation__2.2__states.png",
+      "sha256": "d845fcd4e28dd3dd19527d7ab15d96082273822af9f9e16174189da71127c1d0"
+    },
+    {
+      "path": "docs/notation/2.2/states.scene.json",
+      "attachmentName": "docs__notation__2.2__states.scene.json",
+      "sha256": "a256938eb09f5ebde76c175e5681518adb1bac8c6d793a6ca48e382d33287e1d"
+    },
+    {
+      "path": "docs/notation/2.2/states.svg",
+      "attachmentName": "docs__notation__2.2__states.svg",
+      "sha256": "8d4f264d54b546c12d27273b987dd406a2f5e8b9330eaa80a8304d81858ac129"
+    },
+    {
+      "path": "docs/notation/2.2/timing.png",
+      "attachmentName": "docs__notation__2.2__timing.png",
+      "sha256": "234e150256065dc0ab7bccb3dffdb1c946b44506c4cd54ec0671cab7cf4b844d"
+    },
+    {
+      "path": "docs/notation/2.2/timing.scene.json",
+      "attachmentName": "docs__notation__2.2__timing.scene.json",
+      "sha256": "ca91b8c7fb82411464016f15194126e8d435f742b005b385159e5b9d4495234b"
+    },
+    {
+      "path": "docs/notation/2.2/timing.svg",
+      "attachmentName": "docs__notation__2.2__timing.svg",
+      "sha256": "3876ad46c3824fd14a09063f7f1cb5edc85abdd73eb5552669517447db0c0953"
+    },
+    {
+      "path": "docs/notation/2.2/try.png",
+      "attachmentName": "docs__notation__2.2__try.png",
+      "sha256": "16c64e92b5df3d16df7e6f6ac9af7fbc8998ed4e0df81eaff589af3b959d8980"
+    },
+    {
+      "path": "docs/notation/2.2/try.scene.json",
+      "attachmentName": "docs__notation__2.2__try.scene.json",
+      "sha256": "a54583d8b2feac8f03efeea18e426a90441f48bfc2eb736d94dce9d986545ab0"
+    },
+    {
+      "path": "docs/notation/2.2/try.svg",
+      "attachmentName": "docs__notation__2.2__try.svg",
+      "sha256": "451591f7c628cdca749ceff3132ca76b995e9cd2e5cea9a183545d407dc79e94"
+    },
+    {
+      "path": "docs/notation/2.2/values.png",
+      "attachmentName": "docs__notation__2.2__values.png",
+      "sha256": "4ca09e0058b045894e0b9362d0360bbf9e3c88306217f28a5fab4dbc92c417fc"
+    },
+    {
+      "path": "docs/notation/2.2/values.scene.json",
+      "attachmentName": "docs__notation__2.2__values.scene.json",
+      "sha256": "34a721d13ad5357b9e192f36f346019ee2cbacb0fa5142398c1f63589dad3424"
+    },
+    {
+      "path": "docs/notation/2.2/values.svg",
+      "attachmentName": "docs__notation__2.2__values.svg",
+      "sha256": "b4244983b8b8deec3fcdf7219d7b3c6a7a64e566737f2b3403f3530eb32bcc6f"
+    },
+    {
+      "path": "docs/notation/2.2/views.png",
+      "attachmentName": "docs__notation__2.2__views.png",
+      "sha256": "f3d434d52f39e3a9d17f7e317d98aee6951ff266bd890599db934bce4ba4d6ad"
+    },
+    {
+      "path": "docs/notation/2.2/views.scene.json",
+      "attachmentName": "docs__notation__2.2__views.scene.json",
+      "sha256": "592fcad2bf36962b6d0eaf9d92ef9f8a744a275bbec5c2214c479cef92a61524"
+    },
+    {
+      "path": "docs/notation/2.2/views.svg",
+      "attachmentName": "docs__notation__2.2__views.svg",
+      "sha256": "250d905e918cf7d9c90345f408d25afaa4cd710cebeda30ff6ab1f00ee80bdde"
+    },
+    {
+      "path": "examples/notation/catalog.swaml",
+      "attachmentName": "examples__notation__catalog.swaml",
+      "sha256": "e19fc9f07e6af499bfb04b584de61a31b40c1237da85094d92b609f15e6ee7ab"
+    },
+    {
+      "path": "examples/notation/control-flow.swaml",
+      "attachmentName": "examples__notation__control-flow.swaml",
+      "sha256": "182f67df9c5ad27ac61aa3936a9ffb5350ff5abd4a6f16b097ae6703d722dfb6"
+    },
+    {
+      "path": "examples/simulation/2.2/hello-trace.json",
+      "attachmentName": "examples__simulation__2.2__hello-trace.json",
+      "sha256": "dbcee833859aeff3acbdf05e9ee1633db7eeb8e2f84a6abe8b384349ed7c4410"
+    },
+    {
+      "path": "resources/fonts/DejaVuSans-Bold.ttf",
+      "attachmentName": "resources__fonts__DejaVuSans-Bold.ttf",
+      "sha256": "e6476c1b80502924294eed40894c5b18e06c181444ca953e5334262df9c27724"
+    },
+    {
+      "path": "resources/fonts/DejaVuSans-BoldOblique.ttf",
+      "attachmentName": "resources__fonts__DejaVuSans-BoldOblique.ttf",
+      "sha256": "eb436dca0c2594b73d8b603b892e374fdfd8d885d25ffb4f18df4c4c0b49e50f"
+    },
+    {
+      "path": "resources/fonts/DejaVuSans-Oblique.ttf",
+      "attachmentName": "resources__fonts__DejaVuSans-Oblique.ttf",
+      "sha256": "4af75fa16ee6d3ad43e1ecec41862c24954af26a55c6bb1ebb27bd486a50f5f4"
+    },
+    {
+      "path": "resources/fonts/DejaVuSans.ttf",
+      "attachmentName": "resources__fonts__DejaVuSans.ttf",
+      "sha256": "7da195a74c55bef988d0d48f9508bd5d849425c1770dba5d7bfc6ce9ed848954"
+    },
+    {
+      "path": "resources/fonts/DejaVuSansMono.ttf",
+      "attachmentName": "resources__fonts__DejaVuSansMono.ttf",
+      "sha256": "b4a6c3e4faab8773f4ff761d56451646409f29abedd68f05d38c2df667d3c582"
+    },
+    {
+      "path": "resources/fonts/LICENSE-DejaVu.txt",
+      "attachmentName": "resources__fonts__LICENSE-DejaVu.txt",
+      "sha256": "7a083b136e64d064794c3419751e5c7dd10d2f64c108fe5ba161eae5e5958a93"
+    },
+    {
+      "path": "resources/fonts/README.md",
+      "attachmentName": "resources__fonts__README.md",
+      "sha256": "f5d3a59d6ae9f3882224b15c9b75fa7a1673f3b8d987df3874c259e77ee01a42"
+    },
+    {
+      "path": "src/cli/evidence.ts",
+      "attachmentName": "src__cli__evidence.ts",
+      "sha256": "f6117703700255635a038eb55fd3c7a15e12fbe7d2634381ae3b56aa57d6cb03"
+    },
+    {
+      "path": "src/cli/main.ts",
+      "attachmentName": "src__cli__main.ts",
+      "sha256": "3e7434958e0ec44f20fd7efa425d16def9ac16627c9ccdcedc39480975516ae6"
+    },
+    {
+      "path": "src/cli/options.ts",
+      "attachmentName": "src__cli__options.ts",
+      "sha256": "490657ec1a5bddd4ced4294fde4877ff0da134b71f485ca0329ee76e64a26b29"
+    },
+    {
+      "path": "src/cli/run.ts",
+      "attachmentName": "src__cli__run.ts",
+      "sha256": "0749ea1684771bd3f970116e5ca8520c08ef5deb38d13bd91bb912415d24f47f"
+    },
+    {
+      "path": "src/cli/simulate.ts",
+      "attachmentName": "src__cli__simulate.ts",
+      "sha256": "283ff671ef8fe5f53667e9e87e458f9203e28bb7a3a45fcddc0dc541836c69bb"
+    },
+    {
+      "path": "src/language/edition.ts",
+      "attachmentName": "src__language__edition.ts",
+      "sha256": "dc7ab4e1ce827962eb4d95a4321e8eab33a9481654856cb98703624ec3d6e7b3"
+    },
+    {
+      "path": "src/language/formatter.ts",
+      "attachmentName": "src__language__formatter.ts",
+      "sha256": "d27d4522d8711db727b3ae0360550eb2a02f1d55e8c78361b4228358786d06c0"
+    },
+    {
+      "path": "src/language/language-server.ts",
+      "attachmentName": "src__language__language-server.ts",
+      "sha256": "e2b5ee6facdda528965b0a7016ee012e6b857bd583a8e20e9ff445b33c0fe54a"
+    },
+    {
+      "path": "src/language/names.ts",
+      "attachmentName": "src__language__names.ts",
+      "sha256": "002fca23d6656dea94d2c245c1f271f864b8a0e0a81a224ff3fb6653050ffdb3"
+    },
+    {
+      "path": "src/language/path-services.ts",
+      "attachmentName": "src__language__path-services.ts",
+      "sha256": "c2e681cc43712b0f91140c841f087a793125981042cd3e78e7a919d888ad3356"
+    },
+    {
+      "path": "src/language/presentation.ts",
+      "attachmentName": "src__language__presentation.ts",
+      "sha256": "204e88029128e9411cce09a2a462e109c9324201a201f4dedc141c754adcc113"
+    },
+    {
+      "path": "src/language/projection.ts",
+      "attachmentName": "src__language__projection.ts",
+      "sha256": "8e64de238e2fbef1fcb573704f7d45b63f560b2a7542abf41a86a7a0828782ba"
+    },
+    {
+      "path": "src/language/semantic.ts",
+      "attachmentName": "src__language__semantic.ts",
+      "sha256": "f6235682b9f22b76d337554d2c3175222073ae3be88d68d27f06f085e3d5c722"
+    },
+    {
+      "path": "src/language/swaml-document-builder.ts",
+      "attachmentName": "src__language__swaml-document-builder.ts",
+      "sha256": "cc86a86511c5b5b7ad973518ecde3fe9a9de06dace6d707291d8a8d80fff3d48"
+    },
+    {
+      "path": "src/language/swaml-module.ts",
+      "attachmentName": "src__language__swaml-module.ts",
+      "sha256": "c4babd25d174ca953346b2ca9c7950988da58552678e62cd2749d8d7c8ae939d"
+    },
+    {
+      "path": "src/language/swaml-scope.ts",
+      "attachmentName": "src__language__swaml-scope.ts",
+      "sha256": "e96a29cfcf192f253138caa059781f67852a9b8b8e2877b9f79ed6f673d4ee2e"
+    },
+    {
+      "path": "src/language/swaml-syntax.ts",
+      "attachmentName": "src__language__swaml-syntax.ts",
+      "sha256": "ba87f0651f339a810b1b55bf555069b0c245442aeb35d9ad77e5066e4f577cb5"
+    },
+    {
+      "path": "src/language/swaml-validator.ts",
+      "attachmentName": "src__language__swaml-validator.ts",
+      "sha256": "acf53dca6c3f30c387539459ec89fb3420f99de80ed02e6ad051986700c321ee"
+    },
+    {
+      "path": "src/server/main.ts",
+      "attachmentName": "src__server__main.ts",
+      "sha256": "3a734f20f8cb20aceed0be8e93845c5481d145ff93276505a00bb405e4027a83"
+    },
+    {
+      "path": "src/simulation/simulator.ts",
+      "attachmentName": "src__simulation__simulator.ts",
+      "sha256": "cf51417c5b28a20ca0ea8eb1d00ed84869cd74cf037100d3ab4766e2262b5b28"
+    },
+    {
+      "path": "src/simulation/timing.ts",
+      "attachmentName": "src__simulation__timing.ts",
+      "sha256": "394c9b1d0868f40a5883da2fa04d31924e112083c7fa7ca96c321394f98f0901"
+    },
+    {
+      "path": "src/simulation/values.ts",
+      "attachmentName": "src__simulation__values.ts",
+      "sha256": "3bd99def5a50e30452ad37655863af324b6a31db472151b55cb9b3ed5a118bba"
+    }
+  ],
+  "sourceBaseCommit": "97fd7733fd98e3131ba321465edf0ca8095d9991",
+  "sourceBundleSha256": "a3a0864b8a42856db5e1c8518133643c4f77ae0318c46d5c8ed522ce59209959",
+  "dependencies": {
+    "reportlab": "4.4.9",
+    "mistune": "3.4.0",
+    "pypdf": "6.21.2",
+    "pdfplumber": "0.11.9",
+    "Pillow": "13.0.0"
+  },
+  "python": "3.14.4",
+  "pdfSha256": "481ee9a6a08d155f332180aa89a97b4854bf82abd73c12dd4a817b03b04ec868"
+}

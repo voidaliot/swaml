@@ -1,6 +1,6 @@
 # ADR 0020: Associated software components in tests
 
-Status: accepted for implementation in the unreleased 2.2 draft, 10 November 2026. Amends the white-box access clauses of ADR 0019. Published 2.1 artifacts remain unchanged.
+Status: accepted for standard 2.2, 10 November 2026. Amends the white-box access clauses of ADR 0019. Published 2.1 artifacts remain unchanged.
 
 [ADR 0021](0021-case-subject-calls.md) subsequently allows normal calls on the exact primary subject from both case kinds. It supersedes the primary-subject call/effect restrictions below; the additional test inspection/helper boundary remains unchanged.
 

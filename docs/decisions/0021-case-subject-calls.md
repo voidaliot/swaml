@@ -1,6 +1,6 @@
 # ADR 0021: Normal subject calls from use cases and tests
 
-Status: accepted for implementation in the unreleased 2.2 draft, 10 November 2026. Amends the primary-subject call clauses of ADRs 0019 and 0020. Published editions remain unchanged.
+Status: accepted for standard 2.2, 10 November 2026. Amends the primary-subject call clauses of ADRs 0019 and 0020. Published editions remain unchanged.
 
 ## Decision
 

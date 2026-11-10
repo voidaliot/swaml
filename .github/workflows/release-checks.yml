@@ -68,7 +68,10 @@ jobs:
           python scripts/check-spec-pdf.py
           python scripts/check-spec-pdf-2.0.py --archive
           python scripts/test-publication-2-1.py
-      # 2.1 is published. The 2.2 draft must never rebuild or reinterpret its bytes.
-      # A future 2.2 publication needs its own strict current-source PDF gate.
+      - name: Check the current 2.2 publication against exact source
+        run: |
+          python scripts/test-publication-2-2.py
+          python scripts/check-spec-pdf-2.2.py
+      # Published 2.1 bytes are checked only against their own embedded sources.
       - name: Check the published 2.1 edition
         run: python scripts/check-spec-pdf-2.1.py --archive

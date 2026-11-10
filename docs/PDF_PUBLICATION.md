@@ -1,6 +1,6 @@
 # Publication and historical editions
 
-swa.ml 2.1 is the current standard, with parser 2.1 and profile swaml-reference/2.1. Its [reference book](SWAML-2.1-Reference.md), PDF, source manifest and checksum use dedicated X.Y files: SWAML-2.1-Reference.md and SWAML-2.1-Specification.pdf, .manifest.json and .sha256. The published 2.0 standard uses the legacy v2.0.0 tag and filenames; preserve those artifacts. Its frozen [reference](../history/2.0.0/docs/SWAML-2.0.0-Reference.md) stays under history/2.0.0, and docs/SWAML-2.0.0-Reference.md remains as a pointer so that existing links work. No compatibility parser is part of the language; the [2.1 release notes](RELEASE_2_1.md) describe the migration from 2.0.
+swa.ml 2.2 is the current release edition, with parser/host semantics 2.2 and profile swaml-reference/2.2. Its dedicated [reference](SWAML-2.2-Reference.md), PDF, source manifest and checksum use new 2.2 paths. Published 2.1 artifacts remain frozen: the [2.1 reference book](SWAML-2.1-Reference.md), PDF, source manifest and checksum use dedicated X.Y files, SWAML-2.1-Reference.md and SWAML-2.1-Specification.pdf, .manifest.json and .sha256. The published 2.0 standard uses the legacy v2.0.0 tag and filenames; preserve those artifacts. Its frozen [reference](../history/2.0.0/docs/SWAML-2.0.0-Reference.md) stays under history/2.0.0, and docs/SWAML-2.0.0-Reference.md remains as a pointer so that existing links work. No compatibility parser is part of the language; the [2.1 release notes](RELEASE_2_1.md) describe the migration from 2.0.
 
 Preserve every published 1.x Markdown/PDF, source manifest, checksum and historical figure file. Their embedded sources retain their own grammar and provenance. The pinned 1.3.1 builder refuses a different workspace edition; do not relabel current development as an archived release. [The tooling pin](../scripts/publication-tooling-1.3.1.json) and archive/rebuild scripts retain the original source/tool hashes. Archive-aware checks compare an older PDF to its own embedded manifest rather than the evolving current chapters.
 
@@ -20,6 +20,16 @@ The site is the existing showcase project. Build the validated source/trace data
 
 The original scripts/test-publication-archive.py, scripts/check-spec-pdf.py and scripts/rebuild-archived-pdf.py retain historical responsibilities. They do not assert a 2.0 PDF exists or validate the new language. Their source pin and archived assets must remain unchanged unless a separately reviewed historical correction is explicitly requested.
 
+## 2.2 commands
+
+```sh
+python scripts/build-spec-pdf-2.2.py
+python scripts/check-spec-pdf-2.2.py
+python scripts/test-publication-2-2.py
+```
+
+The strict 2.2 checker requires every attached source to match the current workspace, including ADRs 0020/0021, examples 30/31, the 2.2 trace and edition-specific figure assets. Run the Publication and compatibility workflow after the same checks pass locally. Render and inspect every new PDF page before publication. Preserve the published 2.1 builder, checker and assets, and check them in archive mode.
+
 ## 2.1 commands
 
 ```sh
@@ -30,7 +40,7 @@ python scripts/test-publication-2-1.py
 
 The 2.1 builder refuses a workspace whose spec/standard.json or edition module selects another standard. Its manifest records release, specificationRevision and languageVersion 2.1, the simulation profile, the separate implementationRevision of the reference implementation package and the publicationDate. It embeds the current maintained sources, including SWAML-2.1-Reference.md, as exact canonical attachments. Unsupported Markdown tokens, comment markers parsed as emphasis, backslash escapes in prose outside code spans, unresolved section links and broken repository links fail the build. The checker verifies the source bundle, both versions, the edition module, bookmarks for every keyword and notation concept, internal link destinations, release-tag repository links, release-note content, page bounds and a minimum text size.
 
-Without --archive the 2.1 checker is the strict current-source gate; a manual run of the Publication and compatibility workflow applies it. Pull requests run check-spec-pdf-2.1.py --archive, which verifies the published PDF against its own manifest and attachments after the maintained sources move on. When the next edition is prepared, its own strict checker replaces the manual 2.1 step, which then also uses --archive.
+Without --archive the 2.1 checker retains its historical strict current-source behavior; the maintained workspace now uses the strict 2.2 checker. Pull requests run check-spec-pdf-2.1.py --archive, which verifies the published PDF against its own manifest and attachments after the maintained sources move on. When the next edition is prepared, its own strict checker replaces the manual 2.1 step, which then also uses --archive.
 
 ## 2.0 commands
 

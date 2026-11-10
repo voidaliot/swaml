@@ -1,6 +1,6 @@
 # swa.ml 2.2 — Complete language reference
 
-Unreleased draft reference for the 2.2 language. Headerless parser 2.2; profile swaml-reference/2.2. Generated from maintained 2.2 chapters. Published PDFs and frozen release references, including the 2.0 reference under history/2.0.0, are unchanged. The release notes describe the migration from 2.0; no compatibility parser is included.
+Complete reference for the 2.2 language. Headerless parser 2.2; profile swaml-reference/2.2. Generated from maintained 2.2 chapters. Published PDFs and frozen release references, including the 2.0 reference under history/2.0.0, are unchanged. The release notes describe edition changes and the migration from 2.0; no compatibility parser is included.
 
 ## Contents
 
@@ -42,7 +42,7 @@ Unreleased draft reference for the 2.2 language. Headerless parser 2.2; profile 
 
 # swa.ml 2.2 language specification
 
-**Edition:** 2.2 · **Parser:** 2.2 · **Reference profile:** swaml-reference/2.2 · **Status:** unreleased draft, 10 November 2026. The published 2.1 edition and its artifacts are unchanged. [Draft changes](RELEASE_2_2.md) describe syntax-preserving associated-component test access and normal primary-subject calls from both case kinds. [Release notes](RELEASE_2_1.md) describe the changes and the migration from 2.0; the published 2.0 edition remains under its legacy v2.0.0 tag.
+**Edition:** 2.2 · **Parser:** 2.2 · **Reference profile:** swaml-reference/2.2 · **Status:** release edition, 10 November 2026. The published 2.1 edition and its artifacts are unchanged. [2.2 release notes](RELEASE_2_2.md) describe syntax-preserving associated-component test access and normal primary-subject calls from both case kinds. [Release notes](RELEASE_2_1.md) describe the changes and the migration from 2.0; the published 2.0 edition remains under its legacy v2.0.0 tag.
 
 swa.ml is the Software Architecture Modeling Language: a textual language for explicit software structure, communication and executable behavior. [ADR 0016](decisions/0016-swaml-2-0.md) accepts the clean restart; [ADR 0019](decisions/0019-package-context.md) adds the package context and executable cases of 2.1. The language has one component concept and one operation concept. It does not accept 1.x source. Published books and PDFs retain their original bytes.
 
@@ -130,7 +130,7 @@ package HelloGuide {
 
 Install dependencies with npm ci, build with npm run build, then validate the saved file using node out/src/cli/main.js --json hello.swaml. To execute, create options.json with {"untilNs": 1000000} and run node out/src/cli/simulate.js HelloGuide::Demo options.json hello.swaml. Listener.last becomes Hello, swa.ml through a real routed event. Bare connect uses the pinned Default policy.
 
-Continue with the [usage guide](USER_GUIDE.md), [complete examples](../examples), [AI guide](AI_GUIDE.md) and [support matrix](IMPLEMENTATION_STATUS.md). The unreleased 2.2 draft uses the same concrete grammar as 2.1; hosts must select its added test semantics deliberately. See the [draft changes](RELEASE_2_2.md). Published references, including 2.1, remain unchanged; the [2.1 release notes](RELEASE_2_1.md) describe the migration from 2.0.
+Continue with the [usage guide](USER_GUIDE.md), [complete examples](../examples), [AI guide](AI_GUIDE.md) and [support matrix](IMPLEMENTATION_STATUS.md). The 2.2 edition uses the same concrete grammar as 2.1; hosts must select its added test semantics deliberately. See the [2.2 release notes](RELEASE_2_2.md). Published references, including 2.1, remain unchanged; the [2.1 release notes](RELEASE_2_1.md) describe the migration from 2.0.
 
 
 ---
@@ -141,7 +141,7 @@ Continue with the [usage guide](USER_GUIDE.md), [complete examples](../examples)
 
 Start with a component, give each persistent value a typed attribute, and write named operations for behavior. Add a schedule to say when those operations run. Add directed ports and explicit connections when behavior crosses component boundaries.
 
-This guide targets the unreleased 2.2 host semantics and the unchanged 2.1 concrete grammar. For repository validation use Node.js 26.12.0 from .node-version and npm 10.2.3+, then run npm ci and npm run build. Validate with node out/src/cli/main.js --language-version 2.2 model.swaml. Files are headerless; the host and exact package revision select the edition. The published 2.1 reference remains frozen.
+This guide targets the 2.2 host semantics and the unchanged 2.1 concrete grammar. For repository validation use Node.js 26.12.0 from .node-version and npm 10.2.3+, then run npm ci and npm run build. Validate with node out/src/cli/main.js --language-version 2.2 model.swaml. Files are headerless; the host and exact package revision select the edition. The published 2.1 reference remains frozen.
 
 ## A first model
 
@@ -283,7 +283,7 @@ Load every application dependency together. Fix syntax/names first, then ownersh
 
 ## Test explicitly associated components
 
-In the unreleased 2.2 semantics, a test may inspect its primary subject and the software components explicitly referenced by its `associate` links, including their single parts. The components remain owned by the structural model. For example:
+In the 2.2 semantics, a test may inspect its primary subject and the software components explicitly referenced by its `associate` links, including their single parts. The components remain owned by the structural model. For example:
 
 ```swaml
 package AssociatedTests {
@@ -301,7 +301,7 @@ package AssociatedTests {
 
 Without the association, access to `companion` is rejected. A use case gains no private state or direct peer/part access from that association. Normal calls on the exact primary subject work in both case kinds; helper calls on the extra test owners must neither communicate nor suspend, although they may change the target through its own operation. Direct attribute assignment stays forbidden. Communicate through the subject's own operation or associated interface-only actor ports and real connections; association does not let a script take over an active component's ports.
 
-Every case still initializes and runs its whole package, and each run gets fresh stores. Associations do not select a subset, disable unrelated startup work, create an atomic snapshot or own components. Only executed, non-multiple software roots are accessible; nested singleton parts work, while intermediate component indexes remain unsupported. See the [ten-component routed integration](../examples/30-associated-integration.swaml) and [draft changes](RELEASE_2_2.md).
+Every case still initializes and runs its whole package, and each run gets fresh stores. Associations do not select a subset, disable unrelated startup work, create an atomic snapshot or own components. Only executed, non-multiple software roots are accessible; nested singleton parts work, while intermediate component indexes remain unsupported. See the [ten-component routed integration](../examples/30-associated-integration.swaml) and [2.2 release notes](RELEASE_2_2.md).
 
 
 ---
@@ -1230,7 +1230,7 @@ Trace events carry source, the statementIdentity of the statement or schedule en
 
 A statement identity is the identity of its executable, a slash and a statement path, for example Hello::Sender.emit/0 or Banking::ATM.serve/2/then/0. The executable identity is the declaring operation, or a case, with decoded names; an operation usage that inherits its body names the definition. The path walks the abstract syntax from the executable's body: a statement contributes its index in the enclosing statement list and every other step its slot name, followed by an index for list slots: then, otherwise, body, branches/N, timeoutBody, handler, initializer, update, states/N, actions/N, transitions/N and effect. A state is itself identified as Executable/states/N and a transition, with its guard, as Executable/states/N/transitions/M. A schedule entry is the component identity followed by /schedule/N. resolveStatement maps an identity back to its node, trying the longest declared owner first because a quoted name may contain a slash. Legal names can therefore make it ambiguous: an operation 'run/0/then' with statement 0 and an operation run with statement path 0/then/0 both yield Pkg::Def.run/0/then/0, and resolveStatement selects the longer owner. Avoid such names when trace sources must be unambiguous. Identities follow source structure, so reordering statements changes them. Preserve available subject and activation fields; these often distinguish occurrences but cannot distinguish every borrowed-call failure or repeated invocation. Do not copy a shared declaration's facts to every instance, or claim that an individual read, short-circuited subexpression or return was observed when the trace provides no such observation.
 
-The examples' expected final stores and placements are checked independently, every use case and test of the examples runs with its expected result (examples/simulation/cases.json), and deterministic reruns check reproducibility. The current [2.2 hello trace](../examples/simulation/2.2/hello-trace.json) uses the selected draft profile; the [published 2.1 trace](../examples/simulation/hello-trace.json) stays frozen. Tests cover package and isolated component runs, adversarial requests, interruptions, failure effects and resource limits. Physical CPU/WCET, production transport/retry protocols, target scheduling and universal analysis remain outside this logical interpreter. Exporting a trace does not establish those claims.
+The examples' expected final stores and placements are checked independently, every use case and test of the examples runs with its expected result (examples/simulation/cases.json), and deterministic reruns check reproducibility. The current [2.2 hello trace](../examples/simulation/2.2/hello-trace.json) uses the selected 2.2 profile; the [published 2.1 trace](../examples/simulation/hello-trace.json) stays frozen. Tests cover package and isolated component runs, adversarial requests, interruptions, failure effects and resource limits. Physical CPU/WCET, production transport/retry protocols, target scheduling and universal analysis remain outside this logical interpreter. Exporting a trace does not establish those claims.
 
 Outcome failure-observed includes caught expression failures as well as failed activations; status separately records whether execution reached quiescence, a horizon or a resource/contract stop. The CLI returns 1 when a failure was observed, including a successfully handled fallback, so automation must inspect the trace and final stores when exercising expected failure scenarios.
 
@@ -2033,15 +2033,15 @@ Colon means typed by; returns names results. Dot is containment/member access; :
 
 <a id="chapter-22"></a>
 
-# swa.ml 2.2 draft implementation status
+# swa.ml 2.2 implementation status
 
-**Standard:** 2.2 (unreleased draft) · **Implementation package:** 3.1.0 · **Selected host semantics:** 2.2 · **Reference profile:** swaml-reference/2.2. The concrete grammar is unchanged. The [draft reference](SWAML-2.2-Reference.md) records current sources. **Latest publication:** 2.1, 1 November 2026; its [reference book](SWAML-2.1-Reference.md) and [complete PDF](../output/pdf/SWAML-2.1-Specification.pdf), manifest and checksum remain frozen. A 2.2 publication needs a separately authorized current-source [publication gate](PDF_PUBLICATION.md).
+**Standard:** 2.2 · **Implementation package:** 3.1.0 · **Selected host semantics:** 2.2 · **Reference profile:** swaml-reference/2.2. The concrete grammar is unchanged. The [2.2 reference](SWAML-2.2-Reference.md) and [PDF](../output/pdf/SWAML-2.2-Specification.pdf) record the release sources. The published 2.1 [reference book](SWAML-2.1-Reference.md) and [complete PDF](../output/pdf/SWAML-2.1-Specification.pdf), manifest and checksum remain frozen. The strict current-source [publication gate](PDF_PUBLICATION.md) checks the new edition independently of historical publications.
 
 The 2.0 core replaced the 1.x grammar, AST, resolver, validator and interpreter; 2.1 adds the package context, executable use cases and tests, package links, run targets and statement identities of [ADR 0019](decisions/0019-package-context.md). It does not accept 1.x or 2.0 source; the [release notes](RELEASE_2_1.md) describe the migration. Published 1.x and 2.0.0 books, PDFs, manifests/checksums and historical figure files remain unchanged. [ADR 0016](decisions/0016-swaml-2-0.md) defines the restart; [conformance obligations](spec/08-conformance-obligations.md) separate syntax, validation, execution, analysis, kernel and graphical claims.
 
 ## Reference implementation
 
-The 2.2 draft adds explicit test access to the subject and associated software occurrence roots and their single parts, using the existing grammar. Both case kinds may call their exact primary subject's operations normally, including its own port communication and waits, with actual context/lock restoration and local activation semantics. Use cases gain no private reads or direct part/peer calls; extra test-owner calls remain restricted helpers. Actor port and whole-package run rules remain unchanged. [ADR 0020](decisions/0020-associated-test-access.md) and [ADR 0021](decisions/0021-case-subject-calls.md) specify the boundaries. The [ten-component integration](../examples/30-associated-integration.swaml) exercises real routes and checks explicitly associated occurrences.
+The 2.2 edition adds explicit test access to the subject and associated software occurrence roots and their single parts, using the existing grammar. Both case kinds may call their exact primary subject's operations normally, including its own port communication and waits, with actual context/lock restoration and local activation semantics. Use cases gain no private reads or direct part/peer calls; extra test-owner calls remain restricted helpers. Actor port and whole-package run rules remain unchanged. [ADR 0020](decisions/0020-associated-test-access.md) and [ADR 0021](decisions/0021-case-subject-calls.md) specify the boundaries. The [ten-component integration](../examples/30-associated-integration.swaml) exercises real routes and checks explicitly associated occurrences.
 
 | Capability | Implemented evidence and boundary |
 | --- | --- |
@@ -2055,7 +2055,7 @@ The 2.2 draft adds explicit test access to the subject and associated software o
 | Flow and state | Loops and copied iteration, wait/receive, interruption across callees, ordered nested transitions, final completion and queued startup input |
 | Correlation and adverse behavior | Routed results/out values, failures, timeout ties, terminal cancellation, late-reply suppression, policy overflow, age at eligibility and explicit resource limits |
 | Deployment | Separate software/platform roots, Node-only contents/targets, indexed/family placements and most-specific selection |
-| Requirements/cases/views | Immutable intent; package-owned use case/test with an optional subject that is a top-level occurrence of the same package; case scripts with the environment role of associated interface-only actors, on call replies and test white-box reads/calls (SW2010/SW2004/SW2005/SW2006); intent-only cases without statements; package associate, satisfy … by and verify … by links with SW2010 rules; seven library definitions, package/member subjects and stable occurrence unions |
+| Requirements/cases/views | Immutable intent; package-owned use case/test with an optional subject that is a top-level occurrence of the same package; case scripts with the environment role of associated interface-only actors, on call replies, normal primary-subject operation calls in both case kinds and tests' private reads/helper calls (SW2010/SW2004/SW2005/SW2006); intent-only cases without statements; package associate, satisfy … by and verify … by links with SW2010 rules; seven library definitions, package/member subjects and stable occurrence unions |
 | AI authoring | Usage and AI guides, portable author/validate skills, --json diagnostics with code/range/URI/declaration/occurrence metadata and selected safe repair edits |
 | Authoring services | Canonical token-preserving full-document formatting; semantic index, definition/references and versioned multi-file rename over indexed paths, port members, nested operations, schedules, states, placements, package connection ends, case subjects, associate, satisfy and verify links and view subjects/eligible filters; rename writes quoted names where required and unquoted names inside string paths; portable name spelling helpers for hosts |
 | Case runs | A fresh package run per case script released after startup entries, retained early actor input, on call replies, white-box access under the serial lock, stop on completion or failure, pass/fail/inconclusive/no checks with statement identities; swaml test with summary, JSON and exit codes; every example case runs with its expected result |
@@ -2066,7 +2066,7 @@ The unit suite exercises observable positive/negative language behavior, malform
 
 ## Deliberate implementation limits
 
-The reference validator expands at most 10000 component occurrences per top-level occurrence and reports SW2013 above that host limit; closure is not checked for a top-level occurrence that exceeds it. This is a reference resource boundary, not a new mathematical language multiplicity restriction. The reference simulator runs a package target (all top-level software occurrences with their package connections and deployments) or one top-level component alone with its ports open, and records statement identities as trace sources. A case script runs in one deterministic order; a pass is evidence of that run only. Script endpoints reach only top-level actors without multiplicity, white-box paths follow single parts (no indexed parts) and white-box calls cannot communicate or suspend. An unassigned out binding of on call replies with its zero value. Stale-read analysis is conservative and may warn after a safe recheck. Definite-return/out assignment is conservative. Formatter range/on-type operations are not implemented. A rename that introduces an error, changes any indexed reference binding, or cannot preserve selected view identities is refused; persistent editor sidecar identity/native undo belongs to the editor integration.
+The reference validator expands at most 10000 component occurrences per top-level occurrence and reports SW2013 above that host limit; closure is not checked for a top-level occurrence that exceeds it. This is a reference resource boundary, not a new mathematical language multiplicity restriction. The reference simulator runs a package target (all top-level software occurrences with their package connections and deployments) or one top-level component alone with its ports open, and records statement identities as trace sources. A case script runs in one deterministic order; a pass is evidence of that run only. Script endpoints reach only top-level actors without multiplicity, white-box paths follow single parts (no indexed parts) and helper calls outside the exact primary subject cannot communicate or suspend. Normal primary-subject calls in both case kinds may use the subject's own ports and wait. An unassigned out binding of on call replies with its zero value. Stale-read analysis is conservative and may warn after a safe recheck. Definite-return/out assignment is conservative. Formatter range/on-type operations are not implemented. A rename that introduces an error, changes any indexed reference binding, or cannot preserve selected view identities is refused; persistent editor sidecar identity/native undo belongs to the editor integration.
 
 Math abs/min/max/concat are ordinary source; floor/round/trunc/length are explicitly documented host intrinsics with checked semantics. The interpreter uses zero physical CPU cost and one deterministic permitted order, with finite resources and recorded fault assumptions. It does not implement a production scheduler, real network reliability protocol or universal analysis.
 
@@ -2339,17 +2339,27 @@ New exports include runCase, runTests, workspaceCases, runTarget, runTargets, st
 
 <a id="chapter-26"></a>
 
-# swa.ml 2.2 draft
+# swa.ml 2.2 release
 
-**Status: Unreleased.** Implementation package 3.1.0 selects language semantics 2.2 and profile `swaml-reference/2.2`. The concrete grammar is unchanged from 2.1. This source tree and its generated draft reference are not a published standard edition or a new PDF publication.
+10 November 2026. Standard 2.2, parser/host semantics 2.2, reference profile `swaml-reference/2.2`, reference implementation package 3.1.0. The concrete grammar is unchanged from 2.1. Hosts select the new semantics and pin an exact implementation revision; source models need no new syntax.
 
-Tests may inspect their subject, explicitly associated software component occurrences and those roots' single parts. Existing `associate` links and dotted paths express these references; tests and use cases still own no components. Direct attribute assignment remains forbidden. See [ADR 0020](decisions/0020-associated-test-access.md).
+## Primary-subject operation calls
 
-Both use cases and tests may also call operations of their exact primary subject, including operations that communicate through their own ports, receive or wait. The call uses the subject's actual serial context, releases its lock during suspension and returns to the case on completion. It retains local-call semantics without a new schedule activation or `after` release. Use cases gain no private reads or calls on parts/associated components; tests' additional helper calls outside the primary subject retain their noncommunicating/nonsuspending restriction. Actor port rules remain unchanged. See [ADR 0021](decisions/0021-case-subject-calls.md).
+Both use cases and tests may also call operations of their exact primary subject, including operations that communicate through their own ports, receive or wait. The call uses the subject's actual serial context, releases its lock during suspension and returns to the case on completion. It retains local-call semantics without a new schedule activation, route, transport timeout or `after` release. Caller context restores on return or failure; failing statements retain their actual source and outputs copy back only after success. Stateful operations remain on-start-only. See [ADR 0021](decisions/0021-case-subject-calls.md) and [example 31](../examples/31-case-subject-calls.swaml).
 
-Source models do not need new syntax. Consumers must deliberately select the 2.2 host/profile to use the added access rule. Associations do not restrict initialization, choose a fixture topology or suppress unrelated work: cases still run a fresh package configuration. Indexed component paths remain outside the grammar.
+A case is sequential: a later actor reply branch cannot execute while that same case is blocked in a subject call. Use independently behaving actors or stimulate the subject asynchronously before serving its reply. Waiting calls occupy ordinary whole-value statements, declarations or assignments, with optional `try`; evaluate a call before a loop if its result is needed in the header.
 
-The published [2.1 reference](SWAML-2.1-Reference.md), [2.1 PDF](../output/pdf/SWAML-2.1-Specification.pdf), manifests, checksums, figures, release notes and tag keep their original bytes. New draft figures use edition-specific 2.2 paths. The [version policy](VERSIONING.md) and [PDF publication gate](PDF_PUBLICATION.md) apply before any separately authorized 2.2 release.
+## Referencing associated test components
+
+Tests may inspect their subject, explicitly associated software component occurrences and those roots' single parts. Existing `associate` links and dotted paths express the references. Use cases gain no private reads or direct calls on parts or associated peers. Tests' helper calls outside the primary subject may change the target through its operation but must neither communicate nor suspend. Direct attribute assignment remains forbidden. See [ADR 0020](decisions/0020-associated-test-access.md) and the [ten-component integration](../examples/30-associated-integration.swaml).
+
+Neither case kind owns components. Associations reference existing same-package software occurrences; they do not select execution roots, choose a fixture topology or suppress unrelated startup work. Every case still runs a fresh package configuration. Indexed component paths remain outside the grammar. Actor-port association, interface-only, direction and route rules are unchanged.
+
+## Publication and compatibility
+
+The release includes the [complete reference](SWAML-2.2-Reference.md), [PDF](../output/pdf/SWAML-2.2-Specification.pdf), [source manifest](../output/pdf/SWAML-2.2-Specification.manifest.json) and [SHA-256 checksum](../output/pdf/SWAML-2.2-Specification.sha256). The [publication gate](PDF_PUBLICATION.md) checks exact current sources, embedded attachments, navigation, readable bounds and every rendered page. A tagged release and uploaded artifacts establish publication; a source merge alone does not.
+
+All published [2.1 reference](SWAML-2.1-Reference.md), [2.1 PDF](../output/pdf/SWAML-2.1-Specification.pdf), manifests, checksums, figures, release notes and tags retain their bytes, as do earlier editions. The 2.2 assets use their own paths. This edition extends the supported 2.1 behavior without a compatibility parser or source migration. Passing tests and example cases remain bounded evidence, not universal verification or production scheduling certification.
 
 
 ---
@@ -2548,7 +2558,7 @@ Case views draw the subject occurrence as the boundary and associated occurrence
 
 # ADR 0020: Associated software components in tests
 
-Status: accepted for implementation in the unreleased 2.2 draft, 10 November 2026. Amends the white-box access clauses of ADR 0019. Published 2.1 artifacts remain unchanged.
+Status: accepted for standard 2.2, 10 November 2026. Amends the white-box access clauses of ADR 0019. Published 2.1 artifacts remain unchanged.
 
 [ADR 0021](decisions/0021-case-subject-calls.md) subsequently allows normal calls on the exact primary subject from both case kinds. It supersedes the primary-subject call/effect restrictions below; the additional test inspection/helper boundary remains unchanged.
 
@@ -2581,7 +2591,7 @@ Validation includes accepted associated roots and inherited parts, rejected unas
 
 # ADR 0021: Normal subject calls from use cases and tests
 
-Status: accepted for implementation in the unreleased 2.2 draft, 10 November 2026. Amends the primary-subject call clauses of ADRs 0019 and 0020. Published editions remain unchanged.
+Status: accepted for standard 2.2, 10 November 2026. Amends the primary-subject call clauses of ADRs 0019 and 0020. Published editions remain unchanged.
 
 ## Decision
 

@@ -1,11 +1,21 @@
-# swa.ml 2.2 draft
+# swa.ml 2.2 release
 
-**Status: Unreleased.** Implementation package 3.1.0 selects language semantics 2.2 and profile `swaml-reference/2.2`. The concrete grammar is unchanged from 2.1. This source tree and its generated draft reference are not a published standard edition or a new PDF publication.
+10 November 2026. Standard 2.2, parser/host semantics 2.2, reference profile `swaml-reference/2.2`, reference implementation package 3.1.0. The concrete grammar is unchanged from 2.1. Hosts select the new semantics and pin an exact implementation revision; source models need no new syntax.
 
-Tests may inspect their subject, explicitly associated software component occurrences and those roots' single parts. Existing `associate` links and dotted paths express these references; tests and use cases still own no components. Direct attribute assignment remains forbidden. See [ADR 0020](decisions/0020-associated-test-access.md).
+## Primary-subject operation calls
 
-Both use cases and tests may also call operations of their exact primary subject, including operations that communicate through their own ports, receive or wait. The call uses the subject's actual serial context, releases its lock during suspension and returns to the case on completion. It retains local-call semantics without a new schedule activation or `after` release. Use cases gain no private reads or calls on parts/associated components; tests' additional helper calls outside the primary subject retain their noncommunicating/nonsuspending restriction. Actor port rules remain unchanged. See [ADR 0021](decisions/0021-case-subject-calls.md).
+Both use cases and tests may also call operations of their exact primary subject, including operations that communicate through their own ports, receive or wait. The call uses the subject's actual serial context, releases its lock during suspension and returns to the case on completion. It retains local-call semantics without a new schedule activation, route, transport timeout or `after` release. Caller context restores on return or failure; failing statements retain their actual source and outputs copy back only after success. Stateful operations remain on-start-only. See [ADR 0021](decisions/0021-case-subject-calls.md) and [example 31](../examples/31-case-subject-calls.swaml).
 
-Source models do not need new syntax. Consumers must deliberately select the 2.2 host/profile to use the added access rule. Associations do not restrict initialization, choose a fixture topology or suppress unrelated work: cases still run a fresh package configuration. Indexed component paths remain outside the grammar.
+A case is sequential: a later actor reply branch cannot execute while that same case is blocked in a subject call. Use independently behaving actors or stimulate the subject asynchronously before serving its reply. Waiting calls occupy ordinary whole-value statements, declarations or assignments, with optional `try`; evaluate a call before a loop if its result is needed in the header.
 
-The published [2.1 reference](SWAML-2.1-Reference.md), [2.1 PDF](../output/pdf/SWAML-2.1-Specification.pdf), manifests, checksums, figures, release notes and tag keep their original bytes. New draft figures use edition-specific 2.2 paths. The [version policy](VERSIONING.md) and [PDF publication gate](PDF_PUBLICATION.md) apply before any separately authorized 2.2 release.
+## Referencing associated test components
+
+Tests may inspect their subject, explicitly associated software component occurrences and those roots' single parts. Existing `associate` links and dotted paths express the references. Use cases gain no private reads or direct calls on parts or associated peers. Tests' helper calls outside the primary subject may change the target through its operation but must neither communicate nor suspend. Direct attribute assignment remains forbidden. See [ADR 0020](decisions/0020-associated-test-access.md) and the [ten-component integration](../examples/30-associated-integration.swaml).
+
+Neither case kind owns components. Associations reference existing same-package software occurrences; they do not select execution roots, choose a fixture topology or suppress unrelated startup work. Every case still runs a fresh package configuration. Indexed component paths remain outside the grammar. Actor-port association, interface-only, direction and route rules are unchanged.
+
+## Publication and compatibility
+
+The release includes the [complete reference](SWAML-2.2-Reference.md), [PDF](../output/pdf/SWAML-2.2-Specification.pdf), [source manifest](../output/pdf/SWAML-2.2-Specification.manifest.json) and [SHA-256 checksum](../output/pdf/SWAML-2.2-Specification.sha256). The [publication gate](PDF_PUBLICATION.md) checks exact current sources, embedded attachments, navigation, readable bounds and every rendered page. A tagged release and uploaded artifacts establish publication; a source merge alone does not.
+
+All published [2.1 reference](SWAML-2.1-Reference.md), [2.1 PDF](../output/pdf/SWAML-2.1-Specification.pdf), manifests, checksums, figures, release notes and tags retain their bytes, as do earlier editions. The 2.2 assets use their own paths. This edition extends the supported 2.1 behavior without a compatibility parser or source migration. Passing tests and example cases remain bounded evidence, not universal verification or production scheduling certification.
