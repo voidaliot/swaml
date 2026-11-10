@@ -4,7 +4,8 @@
 
 ### Language 2.2 draft / implementation 3.1.0
 
-- Allow a test to read attributes and call eligible operations of explicitly associated software component occurrences and their single parts, using existing `associate` links and dotted paths. Unassociated components stay inaccessible; use cases remain black-box. Associations reference existing occurrences and do not own components or select execution roots.
+- Allow both use cases and tests to call operations of their exact primary subject, including its own port communication, receive and wait behavior. Calls retain local activation semantics, serial unlock/live-state resume, ordinary failure handling and success-only outputs. Private reads and extra component/part helper calls remain test-only; actor ports keep their existing rules.
+- Allow a test to read attributes and call eligible operations of explicitly associated software component occurrences and their single parts, using existing `associate` links and dotted paths. Unassociated components stay inaccessible; use cases gain no private inspection or part/peer calls. Associations reference existing occurrences and do not own components or select execution roots.
 - Reject executable platform and unindexed multiplicity subjects before a run, and exclude nonexecuted roots from test access.
 - Preserve the published 2.1 reference, PDF, manifests, checksums and figures. The 2.2 reference and figures are unreleased draft artifacts; the concrete grammar is unchanged and hosts select the 2.2 semantics/profile explicitly.
 - Require independent adversarial review and passing local Node 26 checks before PR readiness. Hosted source checks confirm readiness and the reviewed merge; publication checks are separately deliberate.

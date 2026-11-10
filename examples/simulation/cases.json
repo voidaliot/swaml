@@ -25,6 +25,10 @@
     "examples/30-associated-integration.swaml": {
       "AssociatedIntegration::Delivery": "pass"
     },
+    "examples/31-case-subject-calls.swaml": {
+      "SubjectCalls::Advance": "pass",
+      "SubjectCalls::AdvanceAndInspect": "pass"
+    },
     "examples/notation/catalog.swaml": {
       "Notation::Startup": "pass"
     }

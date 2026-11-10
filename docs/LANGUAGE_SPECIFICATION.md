@@ -1,6 +1,6 @@
 # swa.ml 2.2 language specification
 
-**Edition:** 2.2 · **Parser:** 2.2 · **Reference profile:** swaml-reference/2.2 · **Status:** unreleased draft, 10 November 2026. The published 2.1 edition and its artifacts are unchanged. [Draft changes](RELEASE_2_2.md) describe the syntax-preserving associated-component access rule. [Release notes](RELEASE_2_1.md) describe the changes and the migration from 2.0; the published 2.0 edition remains under its legacy v2.0.0 tag.
+**Edition:** 2.2 · **Parser:** 2.2 · **Reference profile:** swaml-reference/2.2 · **Status:** unreleased draft, 10 November 2026. The published 2.1 edition and its artifacts are unchanged. [Draft changes](RELEASE_2_2.md) describe syntax-preserving associated-component test access and normal primary-subject calls from both case kinds. [Release notes](RELEASE_2_1.md) describe the changes and the migration from 2.0; the published 2.0 edition remains under its legacy v2.0.0 tag.
 
 swa.ml is the Software Architecture Modeling Language: a textual language for explicit software structure, communication and executable behavior. [ADR 0016](decisions/0016-swaml-2-0.md) accepts the clean restart; [ADR 0019](decisions/0019-package-context.md) adds the package context and executable cases of 2.1. The language has one component concept and one operation concept. It does not accept 1.x source. Published books and PDFs retain their original bytes.
 

@@ -1,0 +1,33 @@
+package SubjectCalls {
+  import Swaml::Views;
+  port def Status { provides event changed(value: int); }
+  component def Counter {
+    port status: Status;
+    attribute count: int = 0;
+    operation advance() returns int {
+      count = count + 1;
+      wait 1ns;
+      publish status.changed(count);
+      return count;
+    }
+  }
+  component subject: Counter;
+  component observer { reversed port status: Status; }
+  connect (subject.status, observer.status);
+  use case Advance of subject {
+    /** Invoke the subject, then consume the actor message retained during the call. */
+    var result: int = subject.advance();
+    on receive observer.status.changed(value) {
+      assert result == 1 and value == result;
+    }
+  }
+  associate observer to Advance;
+  test AdvanceAndInspect of subject {
+    var result: int = subject.advance();
+    on receive observer.status.changed(value) {
+      assert result == 1 and value == subject.count;
+    }
+  }
+  associate observer to AdvanceAndInspect;
+  view behavior: Sequence of Advance;
+}

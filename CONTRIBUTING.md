@@ -1,6 +1,6 @@
 # Contributing to swa.ml
 
-swa.ml 2.2 is an unreleased draft with the unchanged 2.1 concrete grammar and an explicit associated-component test access rule. Read the [specification](docs/LANGUAGE_SPECIFICATION.md), [ADR 0020](docs/decisions/0020-associated-test-access.md), [support matrix](docs/IMPLEMENTATION_STATUS.md) and the affected normative chapter. Published editions, including the 2.1 reference and PDF, keep their original bytes.
+swa.ml 2.2 is an unreleased draft with the unchanged 2.1 concrete grammar, explicit associated-component test access and normal primary-subject calls from both case kinds. Read the [specification](docs/LANGUAGE_SPECIFICATION.md), [ADR 0020](docs/decisions/0020-associated-test-access.md), [ADR 0021](docs/decisions/0021-case-subject-calls.md), [support matrix](docs/IMPLEMENTATION_STATUS.md) and the affected normative chapter. Published editions, including the 2.1 reference and PDF, keep their original bytes.
 
 Use the pinned Node.js 26.12.0 runtime from [.node-version](.node-version) and npm 10.2.3+ for local validation. The source confirmation job reads the same runtime file:
 

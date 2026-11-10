@@ -105,6 +105,8 @@ type Frame = {
     script?: a.Scenario;
     /** Why the activation failed: the runtime code and its message. */
     failure?: { code: string; message: string };
+    /** Current operation's parameter values, retained only for successful out copy-back. */
+    out?: Value[];
 };
 type Watch = {
     node: a.Interruptible;
@@ -704,19 +706,39 @@ class Interpreter {
                     args.push(widen(yield* this.evaluate(e.args[i], f, local), typeKey(sig!.parameters[i].type)));
             }
             if (scripted?.kind === 'operation') {
-                // A test's white-box call borrows the occurrence's context and serial lock, like a local call.
+                // A case call executes on the actual driving frame. Switching only
+                // a copied frame would emit through actor ports and retain the
+                // target lock when drive() suspends its caller.
                 const target = this.components.get(scripted.path);
                 if (!target)
                     throw new RuntimeFault('Type', `${scripted.path} does not run in this package`);
                 yield* this.borrow(f, target);
+                const saved = { c: f.c, op: f.op, script: f.script, at: f.at, watches: f.watches, out: f.out };
                 target.lock = f;
+                f.c = target;
+                f.op = scripted.operation;
+                f.script = undefined;
+                f.watches = [];
+                let completed = false, result: Value, outputs: Value[] | undefined;
                 try {
-                    return yield* this.call(scripted.operation, args, { ...f, c: target, op: scripted.operation, watches: [] }, local, outs);
+                    result = yield* this.call(scripted.operation, args, f);
+                    outputs = f.out?.map(copy);
+                    completed = true;
                 }
                 finally {
-                    if (target.lock === f)
-                        target.lock = undefined;
+                    const failedAt = f.at;
+                    this.unlock(f);
+                    Object.assign(f, saved);
+                    // A failure keeps its actual callee statement; a successful
+                    // return and all out writes belong to the restored caller.
+                    if (!completed)
+                        f.at = failedAt;
                 }
+                sig!.parameters.forEach((parameter, i) => {
+                    if (parameter.direction === 'out' && outs[i])
+                        this.assign(f, local, outs[i]!, outputs![i], e);
+                });
+                return result!;
             }
             if (!remote && op && isExecutable(op))
                 return yield* this.call(op, args, f, local, outs);

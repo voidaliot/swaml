@@ -6,7 +6,7 @@ The 2.0 core replaced the 1.x grammar, AST, resolver, validator and interpreter;
 
 ## Reference implementation
 
-The 2.2 draft adds explicit test access to the subject and associated software occurrence roots and their single parts, using the existing grammar. Use cases stay black-box; actor port, effect, locking and whole-package run rules remain unchanged. [ADR 0020](decisions/0020-associated-test-access.md) specifies the access boundary. The [ten-component integration](../examples/30-associated-integration.swaml) exercises real routes and checks explicitly associated occurrences.
+The 2.2 draft adds explicit test access to the subject and associated software occurrence roots and their single parts, using the existing grammar. Both case kinds may call their exact primary subject's operations normally, including its own port communication and waits, with actual context/lock restoration and local activation semantics. Use cases gain no private reads or direct part/peer calls; extra test-owner calls remain restricted helpers. Actor port and whole-package run rules remain unchanged. [ADR 0020](decisions/0020-associated-test-access.md) and [ADR 0021](decisions/0021-case-subject-calls.md) specify the boundaries. The [ten-component integration](../examples/30-associated-integration.swaml) exercises real routes and checks explicitly associated occurrences.
 
 | Capability | Implemented evidence and boundary |
 | --- | --- |

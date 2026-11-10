@@ -492,6 +492,45 @@ export function testCanAccess(s: a.Scenario, path: string): boolean {
     }
     return !!current;
 }
+/** Roots that supply direct calls to a case. Only the exact primary subject is
+ * a normal call target; tests retain additional private helper roots. */
+export function caseCallRoots(s: a.Scenario): a.ComponentUsage[] {
+    const p = owner(s, a.isPackage), subject = caseSubject(s);
+    if (!p || !subject || subject.size !== undefined || !softwareRoots(p).includes(subject))
+        return [];
+    return s.kind === 'test' ? testAccessRoots(s) : [subject];
+}
+export type CaseCallAccess = 'subject' | 'testHelper';
+/** Decoded occurrence-owner path, without a member suffix or source quoting. */
+export function caseCallAccess(s: a.Scenario, path: string): CaseCallAccess | undefined {
+    const roots = caseCallRoots(s);
+    if (!roots.length)
+        return undefined;
+    if (path === s.subject!.ref!.name)
+        return 'subject';
+    return testCanAccess(s, path) ? 'testHelper' : undefined;
+}
+/** The language-level call limit, shared with authoring hosts. Source call shape
+ * and the ordinary placement of suspending calls remain separate checks. */
+export function caseCallRestriction(s: a.Scenario, path: string, operation: Executable, structure: Structure): 'scope' | 'stateful' | 'effects' | undefined {
+    const access = caseCallAccess(s, path);
+    if (!access)
+        return 'scope';
+    if (body(operation)?.states.length)
+        return 'stateful';
+    const effect = effects(operation, structure);
+    return access === 'testHelper' && (effect.communicates || effect.suspends) ? 'effects' : undefined;
+}
+/** Normal suspension belongs to a whole statement value, optionally wrapped in
+ * try. For initializers/updates are not these statement slots. */
+export function allowsSuspendingCall(node: AstNode): boolean {
+    let value = node;
+    while (a.isTryExpression(value.$container))
+        value = value.$container;
+    const parent = value.$container;
+    return a.isExpressionStatement(parent) && parent.expression === value
+        || parent?.$containerProperty === 'statements' && (a.isLocalVariable(parent) || a.isAssign(parent)) && parent.value === value;
+}
 /** A case with statements is executable; a case without statements records intent only. */
 export const executableCase = (s: a.Scenario): boolean => s.statements.length > 0;
 /**
