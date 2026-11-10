@@ -1,10 +1,12 @@
 # Standard and implementation version policy
 
-The swa.ml standard uses **MAJOR.MINOR only**. The maintained source is the **unreleased 2.2 draft**; the latest published edition remains **2.1**. The reference implementation, consuming tools and websites have separate release lifecycles. Read this before changing versions, changelog entries, published references or release workflows.
+The swa.ml standard uses **MAJOR.MINOR only**. The maintained source prepares the authorized **2.2 release edition**, dated **10 November 2026**. Publication is established by the immutable `v2.2` tag and its verified reference/PDF/manifest/checksum, not by a local build or merge. The reference implementation, consuming tools and websites have separate release lifecycles. Read this before changing versions, changelog entries, published references or release workflows.
 
 On 10 November 2026, the owner selected explicitly associated component access for tests using unchanged syntax. This is a normative addition, so it allocates draft standard 2.2, implementation 3.1.0 and selected host/profile 2.2 / `swaml-reference/2.2`. Remote tags/releases contained no 2.2 or 3.1.0 allocation. The complete 2.1 reference, PDF, manifests, checksums, release notes, tag and figure paths remain unchanged. New draft references and figures use 2.2 paths; no new PDF, release tag or publication is authorized by this work.
 
 The owner subsequently selected primary-subject operation calls from both use cases and tests, including the subject's own messages and waits, without extending use-case private access. This continues the same unpublished 2.2 / 3.1.0 candidate under ADR 0021; it does not allocate a version per commit or alter any published artifact. Consumers pin the exact reviewed implementation commit, since execution observations can change within this draft profile.
+
+The owner then explicitly authorized a fresh adversarial release review, correction of findings, release-preparation PRs and publication of swa.ml 2.2 and the consuming extension. This supersedes the earlier implementation-only hold. The standard remains 2.2 and implementation 3.1.0; no upstream npm package is published from this private workspace root. Every published artifact remains immutable.
 
 ## Standard versions
 
@@ -18,7 +20,7 @@ Future standard release titles, tags, changelog headings and new publication fil
 
 ## Implementation packages
 
-The root package.json owns the reference implementation's npm version. npm tooling uses three-part SemVer, currently 3.1.0 for the 2.2 draft; this is not the displayed standard version. Keep both root version entries in package-lock.json synchronized. Implementation packages may receive patch versions while continuing to implement the same standard edition. A consuming tool has its independent version. Do not choose version numbers merely to match other products.
+The root package.json owns the reference implementation's npm version. npm tooling uses three-part SemVer, currently 3.1.0 for standard 2.2; this is not the displayed standard version. Keep both root version entries in package-lock.json synchronized. Implementation packages may receive patch versions while continuing to implement the same standard edition. A consuming tool has its independent version. Do not choose version numbers merely to match other products.
 
 When deliberately changing the implementation package version, use `npm version <X.Y.Z> --no-git-tag-version`, inspect both manifests, and run `npm run check`. Never run npm version merely to rename the standard. An exact source commit remains necessary for a host pin; unchanged package versions across documentation commits do not identify identical sources.
 
@@ -39,6 +41,6 @@ Several commits may belong to one unreleased version. Do not allocate a version 
 
 Standard 2.0 was already published on 22 October 2026 under the legacy tag v2.0.0. This is the original publication of standard 2.0, not a separate patch-level standard. Preserve that tag, its release notes and all existing 1.x/2.0.0 artifacts and filenames. Do not create a duplicate v2.0 release or rename/rebuild its bytes merely to adopt the new numbering policy.
 
-The frozen 2.0 reference remains under history/2.0.0/docs. Its PDF, embedded sources, manifest and checksum remain intact. The published docs/SWAML-2.1-Reference.md is frozen too. The maintained draft reference is generated as docs/SWAML-2.2-Reference.md; its new figures and simulation trace use edition-specific 2.2 paths. Published figure paths and examples/simulation/hello-trace.json retain their bytes. The former maintained path docs/SWAML-2.0.0-Reference.md remains a historical pointer. Archive validation checks frozen inputs; it cannot replace the strict current-source gate for a new edition.
+The frozen 2.0 reference remains under history/2.0.0/docs. Its PDF, embedded sources, manifest and checksum remain intact. The published docs/SWAML-2.1-Reference.md is frozen too. The current 2.2 reference is generated as docs/SWAML-2.2-Reference.md; its new figures and simulation trace use edition-specific 2.2 paths. Published figure paths and examples/simulation/hello-trace.json retain their bytes. The former maintained path docs/SWAML-2.0.0-Reference.md remains a historical pointer. Archive validation checks frozen inputs; it cannot replace the strict current-source gate for a new edition.
 
-Keep published changelog sections and their original terminology. Record later corrections under Unreleased. Maintained documentation identifies **swa.ml 2.2 (Unreleased)** and distinguishes it from the published 2.1 artifacts; local website builds use the selected 2.2 edition metadata. A local build does not deploy a website or publish an edition. Link to actual existing publications; older pages and artifacts keep their original names. Preserve .swaml filenames and technical IDs.
+Keep published changelog sections and their original terminology. Record later corrections under Unreleased. Maintained documentation identifies **swa.ml 2.2** and distinguishes it from historical 2.1 artifacts; local website builds use the selected 2.2 edition metadata. A local build does not deploy a website or publish an edition. Link to actual existing publications; older pages and artifacts keep their original names. Preserve .swaml filenames and technical IDs.

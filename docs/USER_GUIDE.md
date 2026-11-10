@@ -2,7 +2,7 @@
 
 Start with a component, give each persistent value a typed attribute, and write named operations for behavior. Add a schedule to say when those operations run. Add directed ports and explicit connections when behavior crosses component boundaries.
 
-This guide targets the unreleased 2.2 host semantics and the unchanged 2.1 concrete grammar. For repository validation use Node.js 26.12.0 from .node-version and npm 10.2.3+, then run npm ci and npm run build. Validate with node out/src/cli/main.js --language-version 2.2 model.swaml. Files are headerless; the host and exact package revision select the edition. The published 2.1 reference remains frozen.
+This guide targets the 2.2 host semantics and the unchanged 2.1 concrete grammar. For repository validation use Node.js 26.12.0 from .node-version and npm 10.2.3+, then run npm ci and npm run build. Validate with node out/src/cli/main.js --language-version 2.2 model.swaml. Files are headerless; the host and exact package revision select the edition. The published 2.1 reference remains frozen.
 
 ## A first model
 
@@ -144,7 +144,7 @@ Load every application dependency together. Fix syntax/names first, then ownersh
 
 ## Test explicitly associated components
 
-In the unreleased 2.2 semantics, a test may inspect its primary subject and the software components explicitly referenced by its `associate` links, including their single parts. The components remain owned by the structural model. For example:
+In the 2.2 semantics, a test may inspect its primary subject and the software components explicitly referenced by its `associate` links, including their single parts. The components remain owned by the structural model. For example:
 
 ```swaml
 package AssociatedTests {
@@ -162,4 +162,4 @@ package AssociatedTests {
 
 Without the association, access to `companion` is rejected. A use case gains no private state or direct peer/part access from that association. Normal calls on the exact primary subject work in both case kinds; helper calls on the extra test owners must neither communicate nor suspend, although they may change the target through its own operation. Direct attribute assignment stays forbidden. Communicate through the subject's own operation or associated interface-only actor ports and real connections; association does not let a script take over an active component's ports.
 
-Every case still initializes and runs its whole package, and each run gets fresh stores. Associations do not select a subset, disable unrelated startup work, create an atomic snapshot or own components. Only executed, non-multiple software roots are accessible; nested singleton parts work, while intermediate component indexes remain unsupported. See the [ten-component routed integration](../examples/30-associated-integration.swaml) and [draft changes](RELEASE_2_2.md).
+Every case still initializes and runs its whole package, and each run gets fresh stores. Associations do not select a subset, disable unrelated startup work, create an atomic snapshot or own components. Only executed, non-multiple software roots are accessible; nested singleton parts work, while intermediate component indexes remain unsupported. See the [ten-component routed integration](../examples/30-associated-integration.swaml) and [2.2 release notes](RELEASE_2_2.md).
