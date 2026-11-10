@@ -2,7 +2,7 @@ import { AstUtils, CstUtils, DocumentState, GrammarUtils, WorkspaceCache, type A
 import type { Range } from 'vscode-languageserver';
 import type { LangiumServices } from 'langium/lsp';
 import * as a from './generated/ast.js';
-import { associatedOccurrences, caseTarget, testCanAccess, connectionRoutes, designComponent, interfaceOnly, packageEndpoint, packageOccurrences, expressionTypes, OCCURRENCE_LIMIT, occurrenceCount, workspaceModels, assignable, body, compatibility, constantNumber, direction, effectiveQos, effects, endpoint, entryKey, identity, integral, isExecutable, isNode, localOperation, memberEndpoint, members, nanos, nodes, numeric, occurrences, owner, resolve, schedule, signature, typeKey, type Executable, type Node, type Structure, portMembers } from './semantic.js';
+import { associatedOccurrences, caseTarget, testCanAccess, caseCallAccess, caseCallRestriction, allowsSuspendingCall, connectionRoutes, designComponent, interfaceOnly, packageEndpoint, packageOccurrences, expressionTypes, OCCURRENCE_LIMIT, occurrenceCount, workspaceModels, assignable, body, compatibility, constantNumber, direction, effectiveQos, effects, endpoint, entryKey, identity, integral, isExecutable, isNode, localOperation, memberEndpoint, members, nanos, nodes, numeric, occurrences, owner, resolve, schedule, signature, typeKey, type Executable, type Node, type Structure, portMembers } from './semantic.js';
 import { selectView, viewCandidates, type ViewSubject } from './presentation.js';
 import { decodeQuotedName, formatName, nameProblem } from './names.js';
 type Env = Map<string, {
@@ -539,19 +539,24 @@ export class SwamlValidator {
             if (scripted?.kind === 'port')
                 this.scriptPort(e, 'target', e.target, ['operation'], 'requires', 'A call', 'SW2004');
             else if (scripted?.kind === 'operation') {
-                // A white-box call borrows the occurrence's context, like a local call.
-                this.whiteBox(e, 'target', scripted.path, 'call');
-                const x = effects(scripted.operation, scripted.structure);
-                if (x.communicates || x.suspends)
-                    this.report(e, 'SW2006', `A test calls only operations that neither communicate nor suspend; ${e.target} does. Drive that behavior through an actor port.`, false, this.at(e, 'target'));
+                const restriction = caseCallRestriction(this.script!.scenario, scripted.path, scripted.operation, scripted.structure);
+                if (restriction === 'scope')
+                    this.report(e, 'SW2010', this.script!.scenario.kind === 'test'
+                        ? `A test may call its primary subject, or eligible helpers of its single parts and explicitly associated software components; ${scripted.path} is not accessible.`
+                        : `A use case may call operations of its primary subject only; ${scripted.path} is not that subject. Use associated actor ports to interact with other components.`, false, this.at(e, 'target'));
+                if (restriction === 'effects')
+                    this.report(e, 'SW2006', `A test's private helper calls neither communicate nor suspend; ${e.target} does. Use a primary-subject operation or an actor port for that behavior.`, false, this.at(e, 'target'));
             }
             else if (a.isPortMember(t)) {
                 const ep = c && memberEndpoint(c, e.target);
                 if (!ep || t.kind !== 'operation' || direction(ep.port, t) !== 'requires')
                     this.report(e, 'SW2004', 'Remote calls need an owned required operation member.');
             }
-            if ((!isExecutable(t) || scripted?.kind !== 'operation' && effects(t, c).suspends) && !allow)
-                this.report(e, 'SW2006', 'Suspending calls must be the whole initializer, assignment value or statement, optionally in try.');
+            const suspends = scripted?.kind === 'operation'
+                ? caseCallAccess(this.script!.scenario, scripted.path) === 'subject' && effects(scripted.operation, scripted.structure).suspends
+                : !isExecutable(t) || effects(t, c).suspends;
+            if (suspends && (!allow || !allowsSuspendingCall(e)))
+                this.report(e, 'SW2006', 'Suspending calls must be standalone statements or whole values of ordinary variable declarations or assignments, optionally in try. Store their result before using it in an expression or loop header.');
             this.arguments(e, sig.parameters, e.args, env, c, op);
             if (sig.parameters.some(x => x.direction === 'out') && !a.isExpressionStatement(e.$container) && !(a.isTryExpression(e.$container) && a.isExpressionStatement(e.$container.$container)))
                 this.report(e, 'SW2006', 'A call with out arguments must be a statement.');
@@ -986,7 +991,8 @@ export class SwamlValidator {
     private script?: { scenario: a.Scenario; reply?: string };
     /**
      * A case with statements is a script (ADR 0019): it needs a subject, acts as associated
-     * interface-only components through their ports and, in a test, may also read and call into its subject.
+     * interface-only components through their ports and may call its primary subject.
+     * Tests also have private read/helper access to their permitted occurrence roots.
      */
     private caseScript(s: a.Scenario, p: a.Package): void {
         if (!s.statements.length)
@@ -1026,11 +1032,11 @@ export class SwamlValidator {
         }
         return { port: t.port, member: t.member };
     }
-    /** White-box access: only a test, into its subject or explicitly associated software roots. */
+    /** Private state access: only a test, into its subject or explicitly associated software roots. */
     private whiteBox(n: AstNode, property: string, path: string, what: 'read' | 'call'): void {
         const s = this.script!.scenario;
         if (s.kind !== 'test')
-            this.report(n, 'SW2010', `A use case is a black box: it acts only through ports of associated interface-only components. Write a test to ${what} ${path}.`, false, this.at(n, property));
+            this.report(n, 'SW2010', `Private attribute access belongs to tests. A use case calls its primary subject or interacts through associated actor ports; it cannot ${what} ${path}.`, false, this.at(n, property));
         else if (!testCanAccess(s, path))
             this.report(n, 'SW2010', `A test may ${what} only its subject, explicitly associated software components and their single parts; ${path} is not an accessible occurrence. Associate its top-level software component with ${formatName(s.name)}.`, false, this.at(n, property));
     }

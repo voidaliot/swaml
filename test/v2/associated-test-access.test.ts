@@ -39,7 +39,7 @@ test('unassociated peers cannot be read or called and matching name prefixes gra
         await invalid(model(statement), 'SW2010');
 });
 
-test('use cases stay black-box even when the same occurrence is associated', async () => {
+test('use cases gain no private reads or helper access when an occurrence is associated', async () => {
     for (const statement of ['assert subject.n == 0;', 'assert peer.n == 1;', 'peer.bump();', 'assert peer.child.n == 2;', 'peer.child.bump();'])
         await invalid(model(statement, 'associate peer to Check;', 'use case'), 'SW2010');
     const parsed = await valid(model('assert true;', 'associate peer to Check;', 'use case'));

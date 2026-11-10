@@ -24,7 +24,8 @@ Values are bounded primitive scalars, nominal enums/records and fixed copied arr
 | Enum.literal | No live first-segment value shadows the enum; unambiguous accessible nominal enum and literal |
 | operation(args) | Resolved same-owner/nested or imported pure definition; copied typed in arguments; mutable compatible out targets; result declared type; effect is union of arguments and callee |
 | p.member(args) | p is owned, member requires operation; arguments satisfy signature; effect communicates and suspends |
-| test occurrence access | Resolved own-package executed software root is the subject or an explicit association, followed by single effective parts; reads use its live store under its lock, calls neither communicate nor suspend; no ownership transfer or direct attribute assignment |
+| case subject call | Exact primary software subject; copied typed arguments/results, actual serial operation context and normal effects; suspension releases/reacquires its lock, caller context restores on return/failure; local activation semantics, no implicit route or schedule release |
+| test occurrence access | Resolved own-package executed software root is the subject or an explicit association, followed by single effective parts; reads use its live store under its lock, helper calls outside the exact primary subject neither communicate nor suspend; no ownership transfer or direct attribute assignment |
 | try(e, f) | e:T and f:U assignable to T; lazy f; effect union; no fallback only when T is void |
 | var x:T=e | Compatible value, fresh live name; Γ extends with mutable x; suspension allowed only when e is whole call/try |
 | x=e | Mutable local/out/attribute, compatible type; attribute write adds write effect; same whole-expression suspension rule |
@@ -59,7 +60,7 @@ Scalar type assignability uses widening, with checked integral value conversion 
 | state reaction | Select first enabled transition, exit/effect/update/entry, invalidate old timer generation; idle releases lock |
 | complete | Finish activation and unlock; correlated reply is offered separately; successful whole completion releases after targets fresh |
 | violation | Deadline, activation overflow, step/concurrent resource or clock failure stops the reference run and bypasses try |
-| case script | A fresh package configuration adds one serial script activation after startup releases; its emissions, requests and receives use actor ports, on call replies to the pending correlation, and its completion or failure stops the run |
+| case script | A fresh package configuration adds one serial script activation after startup releases; direct primary-subject calls borrow its actual serial context, script emissions/requests/receives use actor ports, on call replies to the pending correlation, and script completion or failure stops the run |
 
 At terminal correlation, later replies cannot change R. Inactive interrupt input is discarded observably. Receive statements preserve queued early input. A state's unhandled input leaves its entry time/timer generation intact. Set entry time at the state update, before entry actions. Select an already elapsed timer after entry completes before queued input; earliest expiry then declaration order determines competing timers. Deadline/timeout measurements include suspension and backlog; zero-cost interpreter steps do not supply physical cost evidence.
 

@@ -2,6 +2,8 @@
 
 Status: accepted for implementation in the unreleased 2.2 draft, 10 November 2026. Amends the white-box access clauses of ADR 0019. Published 2.1 artifacts remain unchanged.
 
+[ADR 0021](0021-case-subject-calls.md) subsequently allows normal calls on the exact primary subject from both case kinds. It supersedes the primary-subject call/effect restrictions below; the additional test inspection/helper boundary remains unchanged.
+
 ## Context
 
 The 2.1 test script can inspect only its primary subject and that subject's single parts. An integration spanning existing peer components therefore cannot inspect all of its explicitly associated participants. The owner selected existing associations as the access boundary, with neither new reference syntax nor case-owned components.

@@ -4,6 +4,8 @@ The swa.ml standard uses **MAJOR.MINOR only**. The maintained source is the **un
 
 On 10 November 2026, the owner selected explicitly associated component access for tests using unchanged syntax. This is a normative addition, so it allocates draft standard 2.2, implementation 3.1.0 and selected host/profile 2.2 / `swaml-reference/2.2`. Remote tags/releases contained no 2.2 or 3.1.0 allocation. The complete 2.1 reference, PDF, manifests, checksums, release notes, tag and figure paths remain unchanged. New draft references and figures use 2.2 paths; no new PDF, release tag or publication is authorized by this work.
 
+The owner subsequently selected primary-subject operation calls from both use cases and tests, including the subject's own messages and waits, without extending use-case private access. This continues the same unpublished 2.2 / 3.1.0 candidate under ADR 0021; it does not allocate a version per commit or alter any published artifact. Consumers pin the exact reviewed implementation commit, since execution observations can change within this draft profile.
+
 ## Standard versions
 
 [spec/standard.json](../spec/standard.json) owns the standard version. Use two nonnegative integers with no leading zeroes, patch component or prerelease suffix: 2.0, 2.1, 2.2, 3.0. Draft status belongs in prose or separate status metadata, never in a version such as 2.2.0 or 2.2-beta.

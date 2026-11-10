@@ -36,12 +36,13 @@ Unreleased draft reference for the 2.2 language. Headerless parser 2.2; profile 
 - [decisions/0018-cases-belong-to-their-subject](#chapter-30)
 - [decisions/0019-package-context](#chapter-31)
 - [decisions/0020-associated-test-access](#chapter-32)
+- [decisions/0021-case-subject-calls](#chapter-33)
 
 <a id="chapter-1"></a>
 
 # swa.ml 2.2 language specification
 
-**Edition:** 2.2 · **Parser:** 2.2 · **Reference profile:** swaml-reference/2.2 · **Status:** unreleased draft, 10 November 2026. The published 2.1 edition and its artifacts are unchanged. [Draft changes](RELEASE_2_2.md) describe the syntax-preserving associated-component access rule. [Release notes](RELEASE_2_1.md) describe the changes and the migration from 2.0; the published 2.0 edition remains under its legacy v2.0.0 tag.
+**Edition:** 2.2 · **Parser:** 2.2 · **Reference profile:** swaml-reference/2.2 · **Status:** unreleased draft, 10 November 2026. The published 2.1 edition and its artifacts are unchanged. [Draft changes](RELEASE_2_2.md) describe syntax-preserving associated-component test access and normal primary-subject calls from both case kinds. [Release notes](RELEASE_2_1.md) describe the changes and the migration from 2.0; the published 2.0 edition remains under its legacy v2.0.0 tag.
 
 swa.ml is the Software Architecture Modeling Language: a textual language for explicit software structure, communication and executable behavior. [ADR 0016](decisions/0016-swaml-2-0.md) accepts the clean restart; [ADR 0019](decisions/0019-package-context.md) adds the package context and executable cases of 2.1. The language has one component concept and one operation concept. It does not accept 1.x source. Published books and PDFs retain their original bytes.
 
@@ -261,7 +262,9 @@ Requirements, satisfy and test/verify record intent. [The traceability example](
 
 A package is a closed context. Declare the system and its surroundings as top-level component occurrences and join their ports with package connections, connect (customer.panel, atm.panel);. Write use case Name of subject { … } or test Name of subject { … } in the package; the subject is its focal top-level occurrence. A case without statements records intent only and may omit of; a script requires of. Script-driven actors and stubs are interface-only components, component def Customer { port panel: Panel; }, which need no implementation; associate customer to 'Withdraw cash'; records participation. satisfy Requirement by design; claims a component definition or occurrence path of the package, and verify Requirement by Test; links a test. [The use case example](../examples/28-use-cases.swaml) shows these package links and quoted names.
 
-A case body may continue after its documentation with statements acting through its associated interface-only actors: publish customer.panel.cashRequested(100); and on receive customer.panel.cashDispensed(amount) { assert amount == 100; } or after 2s { fail "no cash"; }. A script can answer a stub request with on call bank.link.authorize(amount) { return false; }. A test may also inspect or call eligible operations of its subject, explicitly associated same-package software roots and their single parts, such as assert atm.fee(20, 10) == 2;. A use case remains black-box. Association does not create components or permit impersonating an active collaborator's ports.
+A case body may continue after its documentation with statements acting through its associated interface-only actors: publish customer.panel.cashRequested(100); and on receive customer.panel.cashDispensed(amount) { assert amount == 100; } or after 2s { fail "no cash"; }. A script can answer a stub request with on call bank.link.authorize(amount) { return false; }. Both use cases and tests may call operations of their primary subject, such as var amount: int = atm.withdraw(20);. The operation runs in the subject's own context and may communicate, receive and wait; the case resumes when it returns. A test may additionally inspect private attributes and call eligible helpers on explicitly associated same-package roots and single parts. Use cases cannot inspect private state or directly call those extra owners. Association does not create components or permit impersonating an active collaborator's ports.
+
+Subject calls are sequential. An event emitted by the subject can stay queued for a later actor receive, as in the [subject-call example](../examples/31-case-subject-calls.swaml). If the subject instead waits for a reply from an actor, a later reply branch in the same blocked case cannot run. Give that actor independent behavior, or start the subject with an actor event before handling its reply. Stateful operations retain their on-start-only lifecycle. Suspended calls use a whole initializer, assignment or statement; immediate calls may still appear in expressions.
 
 swaml test runs every case in its own fresh whole-package run and reports pass, fail, inconclusive or no checks; [the executable cases example](../examples/29-executable-cases.swaml) adds an isolation package with a bank stub, and [the associated-component example](../examples/30-associated-integration.swaml) checks several implemented peers. Names containing spaces, letters outside ASCII or reserved words are written in single quotes, for example use case 'Withdraw cash' or attribute 'state': int = 0;.
 
@@ -296,7 +299,7 @@ package AssociatedTests {
 }
 ```
 
-Without the association, access to `companion` is rejected. A use case remains black-box even with that association. Direct test calls must neither communicate nor suspend, although they may change the target through its own operation. Direct attribute assignment stays forbidden. Stimulate communicating behavior through associated interface-only actor ports and real connections; association does not let a script take over an active component's ports.
+Without the association, access to `companion` is rejected. A use case gains no private state or direct peer/part access from that association. Normal calls on the exact primary subject work in both case kinds; helper calls on the extra test owners must neither communicate nor suspend, although they may change the target through its own operation. Direct attribute assignment stays forbidden. Communicate through the subject's own operation or associated interface-only actor ports and real connections; association does not let a script take over an active component's ports.
 
 Every case still initializes and runs its whole package, and each run gets fresh stores. Associations do not select a subset, disable unrelated startup work, create an atomic snapshot or own components. Only executed, non-multiple software roots are accessible; nested singleton parts work, while intermediate component indexes remain unsupported. See the [ten-component routed integration](../examples/30-associated-integration.swaml) and [draft changes](RELEASE_2_2.md).
 
@@ -317,7 +320,7 @@ Write operations with explicit parameter/result types. Use return for values, ex
 
 Put activation in one schedule. Use on start/every/receive/call or after same-owner operation. Select complete policy definitions where Default is unsuitable. Keep remote calls as whole initializer/assignment/statement forms, optionally in try. Recheck live attributes after suspension; use concurrent only when the transitive operation graph cannot write. Copy-back of out parameters occurs only on success.
 
-Multiplicity is literal and paths are indexed explicitly. Deployment targets are platform Node occurrences. Requirements express intent. A case without statements records intent; a case with statements is a script that drives its subject through associated interface-only actors and runs with swaml test, as bounded evidence rather than proof. A package is a closed context: declare top-level component occurrences, join their ports with package connections, connect (customer.panel, atm.panel);, and write use case Name of subject { … } or test Name of subject { … } as package members, where the subject is a top-level occurrence of the same package. Write external systems and test stubs as interface-only components (ports only) and record their part with associate customer to Name;. In a script, write endpoints as occurrence.port.member, answer stub requests with on call bank.link.authorize(amount) { return true; }, and keep white-box reads and calls such as atm.dispenser.count to tests. Claims are package links: satisfy Requirement by design; and verify Requirement by Test;. Quote names that contain spaces, letters outside ASCII or reserved words, such as 'Withdraw cash'. View definitions select existing identities, with geometry separate.
+Multiplicity is literal and paths are indexed explicitly. Deployment targets are platform Node occurrences. Requirements express intent. A case without statements records intent; a case with statements drives its primary subject through normal operation calls or associated interface-only actor ports and runs with swaml test, as bounded evidence rather than proof. A package is a closed context: declare top-level component occurrences, join their ports with package connections, connect (customer.panel, atm.panel);, and write use case Name of subject { … } or test Name of subject { … } as package members, where the subject is a top-level occurrence of the same package. Write script-driven external systems and stubs as interface-only components (ports only) and associate them with associate customer to Name;. Script endpoints use occurrence.port.member, and on call bank.link.authorize(amount) { return true; } answers a stub request. Private reads and direct helper calls on parts/peers remain test-only; a normal primary-subject call works in either case kind. Claims are package links: satisfy Requirement by design; and verify Requirement by Test;. Quote names that contain spaces, letters outside ASCII or reserved words, such as 'Withdraw cash'. View definitions select existing identities, with geometry separate.
 
 ## Validate–fix loop
 
@@ -348,7 +351,7 @@ Run a bounded simulation only after validation. Choose the run target: a package
 
 Keep diagnostics/evidence honest. Consult [implementation status](IMPLEMENTATION_STATUS.md) before claiming full V/E/G/K support. Publishing a page or release is a separate user-authorized action; this project requires a design preview before publication.
 
-For 2.2 tests, resolve each white-box root to the subject or an explicit same-package `associate` occurrence. Follow only existing single parts; preserve effective inherited members and exact occurrence identity. Unassociated peers, same-prefix names, platform roots and multiplicity families do not gain access. Use cases keep the actor-port-only rule. Association never owns an occurrence or narrows the whole-package run. See [ADR 0020](decisions/0020-associated-test-access.md).
+For 2.2 tests, resolve each inspection root to the subject or an explicit same-package `associate` occurrence. Follow only existing single parts; preserve effective inherited members and exact occurrence identity. Both case kinds may call operations of the exact primary subject normally, including its own port communication and waits; use cases gain no private reads, part calls or peer calls. Calls on extra test owners remain immediate noncommunicating helpers. Unassociated peers, same-prefix names, platform roots and multiplicity families do not gain access. Association never owns an occurrence or narrows the whole-package run. Actor interaction keeps its associated interface-only port rules. See [ADR 0020](decisions/0020-associated-test-access.md) and [ADR 0021](decisions/0021-case-subject-calls.md).
 
 
 ---
@@ -461,11 +464,11 @@ Normative chapter of [swa.ml 2.2](LANGUAGE_SPECIFICATION.md).
 
 An operation declaration always has parentheses and an optional returns T result; omission means void. operation def is package-owned reusable behavior. An operation usage has a type after a colon, no parentheses/result, and optionally replaces the whole inherited body. Names are unique and call graphs acyclic. Nested operations precede executable statements/states and never capture enclosing locals/parameters. A body owns flow or states directly; the body grouping has no executable identity.
 
-Calls are expressions. A void call is a statement; a non-void result cannot be silently discarded. Calls with out arguments are statements; each out argument is a mutable compatible local, out parameter or component attribute. In/out values are copied and out copy-back occurs only after successful whole return. A caller cannot invoke a different component by a structural path; it must use its own required port operation. Stateful operations are activated by their schedule rather than called locally.
+Calls are expressions. A void call is a statement; a non-void result cannot be silently discarded. Calls with out arguments are statements; each out argument is a mutable compatible local, out parameter or component attribute. In/out values are copied and out copy-back occurs only after successful whole return. An operation of a component cannot invoke a different component by a structural path; it must use its own required port operation. Case scripts have the explicitly limited subject/helper access of section 3.7. Stateful operations are activated by their schedule rather than called locally.
 
 Effects are inferred transitively through the acyclic call graph: pure, reads state, writes state, communicates, suspends. The implementation MUST also retain a writes flag when a higher effect dominates, so communicating/suspending callees cannot conceal a write. Passing an attribute as out is a write. Attribute initializers are pure. State guards may only be pure or read state. Concurrent schedule entries cannot write state through any reachable callee or out argument.
 
-Suspending calls may be the whole var initializer, assignment right side or expression statement, optionally wrapped in try; they cannot be embedded in arithmetic, call arguments, return values or predicates. Other expressions can have nonsuspending effects. Arguments evaluate left to right; only and/or short-circuit. Declarations and source order do not select overloads or change resolution.
+Suspending calls may be the whole var initializer, assignment right side or expression statement, optionally wrapped in try; these must be ordinary statement values, not for-header initializers or updates. Evaluate the call before the loop when its result is needed there. Suspending calls cannot be embedded in arithmetic, call arguments, return values or predicates. Other expressions can have nonsuspending effects. Arguments evaluate left to right; only and/or short-circuit. Declarations and source order do not select overloads or change resolution.
 
 ## 3.2 Failure
 
@@ -517,9 +520,11 @@ A use case or test whose body holds statements after its optional documentation 
 
 A script is the environment of its subject. Its endpoints are occurrence.port.member, where occurrence is a top-level component occurrence of the case's package that is not the subject, is associated with the case by associate occurrence to Case; and is interface-only. send and publish emit a provided attribute or event of that actor port; on receive waits for a required attribute or event of it; a call such as customer.panel.withdraw(200) requests a required operation and suspends like any request. on call occurrence.port.op(bindings) { … } is a further branch of on … or …, allowed only in case scripts, that answers a request for a provided operation of the actor port. Inside it return v; is the reply exactly like the result of a served operation: out bindings are mutable and their values return with the reply, a non-void branch returns or fails on every path, and a failure inside the branch replies with a remote failure and fails the case. Any other return ends the case and has no value. Operations keep port.member endpoints and serve requests through schedule on call entries.
 
-A use case is a black box: it acts only through the ports of its actors. A test may additionally read attributes of its subject, its explicitly associated software component occurrences and the single parts inside those roots, including record fields, such as atm.dispensedToday or atm.dispenser.count, and call their operations, such as atm.fee(20, 10), when the operation neither communicates nor suspends. A referenced root must be an executed, non-multiple software occurrence of the same package; platform roots have no runtime store. Association grants no ownership and does not select execution roots. Dotted value reads retain lexical local precedence; dotted operation calls retain their occurrence-call namespace. A test never assigns component attributes directly; assignment targets only the script's own locals and out bindings. Such reads observe the live store and such calls borrow the occurrence's context and serial lock like a local call, both when no other activation holds that lock.
+Both case kinds may call operations of their exact primary subject, such as atm.withdraw(20), using its normal serial context ([ADR 0021](decisions/0021-case-subject-calls.md)). The operation may communicate through its own ports, receive and wait; the case resumes on return. Stateful operations remain on-start only, and suspending calls obey the whole-expression rule. The call is local within the case activation, not a fresh schedule release or an implicit port request.
 
-SW2010 reports a script without of, an actor that is not associated or not interface-only, the subject used as an actor and white-box access from a use case or into a root outside the test subject and its explicitly associated software occurrences. SW2004 reports emission and call endpoints of the wrong shape, kind or direction and SW2005 input endpoints; SW2006 reports on call outside case scripts, white-box calls that communicate or suspend, on call branches without a reply on every path and interrupt regions in cases; SW2002 reports values, bindings and results.
+A use case cannot inspect private attributes or directly call subject parts or associated components. A test may additionally read attributes of its subject, explicitly associated software component occurrences and the single parts inside those roots, including record fields, such as atm.dispensedToday or atm.dispenser.count. Helper calls on those extra owners remain restricted to operations that neither communicate nor suspend. A referenced root must be an executed, non-multiple software occurrence of the same package; platform roots have no runtime store. Association grants no ownership and does not select execution roots. Dotted value reads retain lexical local precedence; dotted operation calls retain their occurrence-call namespace. A case never assigns component attributes directly; assignment targets only the script's own locals and out bindings. Reads observe the live store under the target's serial lock. Calls borrow the occurrence's actual execution context; suspension releases its lock and resumption reads live state. Results and output values copy back only on successful return, after restoring the caller context.
+
+SW2010 reports a script without of, an actor that is not associated or not interface-only, the subject used as an actor, private reads or non-subject direct calls from a use case, and test inspection outside the subject and explicitly associated software roots. SW2004 reports emission and call endpoints of the wrong shape, kind or direction and SW2005 input endpoints; SW2006 reports on call outside case scripts, communicating or suspending test-helper calls outside the primary subject, on call branches without a reply on every path and interrupt regions in cases; SW2002 reports values, bindings and results.
 
 
 ---
@@ -540,7 +545,7 @@ A package deployment Name of Root on PlatformRoot owns placements. deploy on nod
 
 A requirement owns immutable typed attributes and at most one doc. Requirements may be imported. Every relation that records intent about requirements and cases is a package member, never a component member, and none of them proves fulfillment.
 
-A case is written use case Name of subject { … } or test Name of subject { … }. Cases are package members only; components never own cases. The of clause is optional and names a top-level component occurrence declared in the same package: the subject, the system under consideration. A case of a part is written in a package where that component is a top-level occurrence. A case without of, or without statements, records intent only. The case body owns optional documentation followed by optional statements; an executable subject must be a non-multiple software occurrence; platform roots do not execute. A case with statements is a script that acts through the ports of its associated interface-only components (section 3.7) and runs in a fresh run of its package (section 6.7).
+A case is written use case Name of subject { … } or test Name of subject { … }. Cases are package members only; components never own cases. The of clause is optional and names a top-level component occurrence declared in the same package: the subject, the system under consideration. A case of a part is written in a package where that component is a top-level occurrence. A case without of, or without statements, records intent only. The case body owns optional documentation followed by optional statements; an executable subject must be a non-multiple software occurrence; platform roots do not execute. A case with statements is a script that may call its primary subject's operations and act through the ports of associated interface-only components (section 3.7), and runs in a fresh run of its package (section 6.7).
 
 associate Occurrence to Case; records that a top-level component occurrence of the same package takes part in a use case or test of the same package. The occurrence is not the case's subject and each pair is associated at most once. In a use case, associated occurrences are its actors. In a test, an associated software occurrence also establishes an explicit white-box participant reference; it may have its own behavior, and its single parts may be read or called under section 3.7. Neither kind of case owns those components. Interface-only participants act as actor port proxies; they communicate with the subject only through ports and package connections, and a case script acts through the ports of the interface-only ones.
 
@@ -661,7 +666,11 @@ Trace ordinals distinguish equal-time observations. Record initialize, release, 
 
 ## 6.7 Case runs
 
-Each case with statements runs in its own fresh run of its package target. The script is a serial activation of its own, released at 0 ns after every on start entry, so it starts after the initialization barrier; it acts only at the ports of its associated interface-only occurrences, which do nothing else. Input that reaches an actor port before the script waits for it stays in that connection's queue under the connection's policy (capacity, overflow, ordering and age), and an attribute keeps only its latest value, so a later on receive consumes the oldest queued event or the latest attribute value. A request addressed to an actor port waits in its queue until an on call branch takes it or the caller's requestTimeout expires. A test's white-box reads and calls target its subject or explicitly associated software roots and their single parts, and wait until no other activation holds the target occurrence's serial lock. Associations preserve occurrence identity without cloning stores or changing the package's initialization, connections or execution roots. A call may mutate that target through its operation but may neither communicate nor suspend.
+Each case with statements runs in its own fresh run of its package target. The script is a serial activation of its own, released at 0 ns after every on start entry, so it starts after the initialization barrier. It may call operations of its exact primary subject and act at the ports of its associated interface-only occurrences, which do nothing else. Input that reaches an actor port before the script waits for it stays in that connection's queue under the connection's policy (capacity, overflow, ordering and age), and an attribute keeps only its latest value, so a later on receive consumes the oldest queued event or the latest attribute value. A request addressed to an actor port waits in its queue until an on call branch takes it or the caller's requestTimeout expires.
+
+A primary-subject call waits for its serial lock, switches the actual running frame into the subject's operation context and restores the case context on return or failure. The operation uses its own ports and live store, and may suspend; suspension releases its lock and resumption reacquires it. This local call creates no new schedule activation, implicit port, route, QoS timeout or `after` release. The script waits for completion, with ordinary `try` and success-only result/output-copy semantics and the case's existing horizon and resource bounds. It cannot execute a later actor-reply branch while blocked in the call; use an independently behaving actor or an earlier actor event when that response must proceed concurrently.
+
+Tests additionally inspect their subject and explicitly associated software roots and their single parts under the target's serial lock. Helper calls on owners other than the exact primary subject may mutate through their operation but may neither communicate nor suspend. Use cases gain no private reads or part/peer calls. Associations preserve occurrence identity without cloning stores or changing package initialization, connections or execution roots.
 
 Execution stores remain occurrence-local, but the trace records only the observations it emits. Local and white-box calls reuse their caller's activation, and individual reads and call invocations have no separate observation. A borrowed-call failure may be labelled with the case instead of its target. Consumers must retain available declaring-source, subject, activation and correlation context; a shared statement identity alone cannot attribute facts to every instance or invocation. Legal slash names can also produce ambiguous statement identities. Leave such attribution unknown, and never infer that a short-circuited expression or an unobserved return executed merely because its containing statement was reached.
 
@@ -697,7 +706,7 @@ Each normalized node/constraint retains source declaration URI/range and any inh
 | Schedule/entry | Trigger identity, effective target, dispatch arguments/bindings, period/deadline, concurrent |
 | State/transition | Initial/final, entry/exit/effects, receive bindings/guard or timer, ordered selection |
 | Deployment | Software/platform roots, Node paths, family/index placements, effective specificity |
-| Requirement/case/view | Immutable attributes/docs, package intent links (associate, satisfy, verify), case kind, subject occurrence and ordered script statements with their resolved actor ports, explicitly associated test access roots and exact white-box occurrence targets, ordered selection union |
+| Requirement/case/view | Immutable attributes/docs, package intent links (associate, satisfy, verify), case kind, subject occurrence and ordered script statements with resolved actor ports, exact normal primary-subject call targets, explicitly associated test access roots and exact inspection/helper targets, ordered selection union |
 
 Expansion creates every literal multiplicity occurrence independently and keeps the definition reference. Inheritance produces an ordered effective set; replacement points to its inherited declaration. Late-bound local calls use that occurrence's effective operation name with the preserved signature. An operation usage retains the definition signature and either inherited or replacement body; no partial merge is inferred.
 
@@ -764,7 +773,7 @@ Validation MUST rebuild semantic string paths as well as indexed references afte
 | E08 | Armed interrupt extent across callees/suspensions, same-activation unwind, terminal cancellation and no server rollback |
 | E09 | One fresh after activation per successful whole completion after unlock, failure suppression and new context/deadline |
 | E10 | Run/source/target/profile/option provenance, package and isolated component targets, trace ordinals with statement sources, occurrence stores and open observed timing intervals |
-| E11 | Fresh package run per case script, release after startup entries, retained early actor input, on call replies, white-box reads/calls under the serial lock, stop on script completion or failure and pass/fail/inconclusive/no checks results with statement identities |
+| E11 | Fresh package run per case script, release after startup entries, retained early actor input, on call replies, normal primary-subject calls with actual context/lock suspension and restoration, test inspection/helper access under its serial lock, stop on script completion or failure and pass/fail/inconclusive/no checks results with statement identities |
 
 A deterministic reference run may choose one permitted order/delivery outcome. Its tests do not establish all possible traces or real transport reliability. A target implementation identifies additional scheduling/transport assumptions and evidence. Idempotency annotations are checked declarations, not proofs of side-effect behavior.
 
@@ -807,7 +816,8 @@ Values are bounded primitive scalars, nominal enums/records and fixed copied arr
 | Enum.literal | No live first-segment value shadows the enum; unambiguous accessible nominal enum and literal |
 | operation(args) | Resolved same-owner/nested or imported pure definition; copied typed in arguments; mutable compatible out targets; result declared type; effect is union of arguments and callee |
 | p.member(args) | p is owned, member requires operation; arguments satisfy signature; effect communicates and suspends |
-| test occurrence access | Resolved own-package executed software root is the subject or an explicit association, followed by single effective parts; reads use its live store under its lock, calls neither communicate nor suspend; no ownership transfer or direct attribute assignment |
+| case subject call | Exact primary software subject; copied typed arguments/results, actual serial operation context and normal effects; suspension releases/reacquires its lock, caller context restores on return/failure; local activation semantics, no implicit route or schedule release |
+| test occurrence access | Resolved own-package executed software root is the subject or an explicit association, followed by single effective parts; reads use its live store under its lock, helper calls outside the exact primary subject neither communicate nor suspend; no ownership transfer or direct attribute assignment |
 | try(e, f) | e:T and f:U assignable to T; lazy f; effect union; no fallback only when T is void |
 | var x:T=e | Compatible value, fresh live name; Γ extends with mutable x; suspension allowed only when e is whole call/try |
 | x=e | Mutable local/out/attribute, compatible type; attribute write adds write effect; same whole-expression suspension rule |
@@ -842,7 +852,7 @@ Scalar type assignability uses widening, with checked integral value conversion 
 | state reaction | Select first enabled transition, exit/effect/update/entry, invalidate old timer generation; idle releases lock |
 | complete | Finish activation and unlock; correlated reply is offered separately; successful whole completion releases after targets fresh |
 | violation | Deadline, activation overflow, step/concurrent resource or clock failure stops the reference run and bypasses try |
-| case script | A fresh package configuration adds one serial script activation after startup releases; its emissions, requests and receives use actor ports, on call replies to the pending correlation, and its completion or failure stops the run |
+| case script | A fresh package configuration adds one serial script activation after startup releases; direct primary-subject calls borrow its actual serial context, script emissions/requests/receives use actor ports, on call replies to the pending correlation, and script completion or failure stops the run |
 
 At terminal correlation, later replies cannot change R. Inactive interrupt input is discarded observably. Receive statements preserve queued early input. A state's unhandled input leaves its entry time/timer generation intact. Set entry time at the state update, before entry actions. Select an already elapsed timer after entry completes before queued input; earliest expiry then declaration order determines competing timers. Deadline/timeout measurements include suspension and backlog; zero-cost interpreter steps do not supply physical cost evidence.
 
@@ -865,7 +875,7 @@ Port boundary squares expose direction per member: provides/requires attribute, 
 
 Flow shows expressions/calls, decisions, loop forms, lazy try fallback, receive/wait suspension and armed interrupt transfer. States are inside an operation; transitions are nested/ordered and labeled by input/guard or after timer and target. State bodies have no separate executable identity. Final completion is distinguishable from idle reactions.
 
-Platform Nodes own const attributes and child Nodes. Deployment edges refer to the separate placement declaration and preserve indexed occurrence identity. Requirement links are labeled «satisfy» and «verify» and show intent rather than proof. A Case view draws each case as an ellipse inside the boundary of its subject occurrence, labeled with the occurrence and its type, and each associated occurrence as a stick figure outside the boundary, labeled name: Type and joined to its cases by solid association lines. A case without a subject has no boundary; a test is labeled «test». Sequence shows the subject, its parts and the associated occurrences as lifelines on real routes. For a case script, statements start on the lifeline of the interface-only actor whose port they use: send and publish are asynchronous arrows, calls are call arrows with dashed returns, on call answers with a dashed return, on … or after D is a timeout fragment and assert a check marker; a test's white-box reads and calls start on a «test» lifeline. Flow shows a case script as a frame of its statements.
+Platform Nodes own const attributes and child Nodes. Deployment edges refer to the separate placement declaration and preserve indexed occurrence identity. Requirement links are labeled «satisfy» and «verify» and show intent rather than proof. A Case view draws each case as an ellipse inside the boundary of its subject occurrence, labeled with the occurrence and its type, and each associated occurrence outside the boundary, labeled name: Type and joined to its cases by solid association lines. Use-case associations and interface-only test proxies use actor notation; active test collaborators retain component notation. A case without a subject has no boundary; a test is labeled «test». Sequence shows the subject, its parts and the associated occurrences as lifelines on real routes. Actor-port statements start on the interface-only actor whose port they use: send and publish are asynchronous arrows, calls are call arrows with dashed returns, on call answers with a dashed return, on … or after D is a timeout fragment and assert a check marker. Direct subject calls start on the source-backed case behavior context, named for the actual use case or test and marked accordingly; test-private reads and helper calls use that same test context. This context is not a component or the host runner. Local-like calls do not imply scheduled after successors. Flow shows a case script as a frame of its statements.
 
 Browser remains navigation. General, Interconnect, Case, Sequence, Grid, Flow and Timing are imported view definitions. General Box in box/Tree preserve the same selected identities/topology. Timing declared mode shows schedules/deadlines/static waits; observed mode adds an identified run, lock gaps, message latency, terminals and open intervals. Missing evidence never becomes measured WCET. Geometry, collapse and routes stay in sidecars.
 
@@ -1232,7 +1242,7 @@ A use case or test with statements is a script ([behavior](spec/03-behavior.md),
 swaml test [--language-version 2.2] [--package P] [--case Package::Case|Case] [--json] [--options options.json | --until-ns N] file.swaml [more files...]
 ```
 
-Each case with statements runs in its own fresh run of its package. The default horizon is 10 s of logical time (untilNs 10000000000); the run stops earlier when the script completes or fails. The script is one serial activation released at 0 ns after every on start entry, and it acts at the ports of the associated interface-only occurrences. Input that reaches an actor port before the script waits for it is retained under the connection's policy and attributes keep their latest value, so a script is not sensitive to whether a reply arrives before or after it starts waiting. A request to an actor port waits until an on call branch answers it or the caller's request times out. A test may also read attributes or call eligible operations of its subject, explicitly associated same-package software roots and those roots' single parts. Those accesses wait for the target occurrence's serial lock; direct calls may mutate the target but cannot communicate or suspend. Associations do not create occurrences or alter the whole-package run.
+Each case with statements runs in its own fresh run of its package. The default horizon is 10 s of logical time (untilNs 10000000000); the run stops earlier when the script completes or fails. The script is one serial activation released at 0 ns after every on start entry. Both case kinds may call operations of the exact primary subject, including its own port communication, receive and wait behavior; the actual frame uses the subject's context, releases its lock while suspended and restores the caller context on return or failure. This remains a local call, with no new schedule release or implicit transport timeout. The script also acts at the ports of its associated interface-only occurrences. Input that reaches an actor port before the script waits for it is retained under the connection's policy and attributes keep their latest value. A request to an actor port waits until an on call branch answers it or the caller's request times out; a later branch in the same case cannot run while blocked in a synchronous subject call. A test additionally reads private attributes and calls eligible helpers of explicitly associated same-package roots and single parts. Those extra helper calls cannot communicate or suspend. Associations do not create occurrences or alter the whole-package run.
 
 Results are pass, fail, inconclusive and no checks. The first failure in trace order decides a failed case, with its statement identity and time: the script's own (a failed assert reports Assertion and the assert source, fail reports its message, a runtime failure its code), an uncaught failure of another activation (run-failure, with the failing activation as observed), or a contract violation (violation). An earlier run failure, such as a request timeout of the subject at 1 s, therefore wins over a later fail of the script. A case is inconclusive when the run ends before the script completes without a failure: at the horizon (horizon), at the step limit (limit), or because the script waits but no further event can occur (stalled); a stalled case run has status quiescent, since nothing remains that could reach the script, while ordinary runs keep horizon for waiting activations so that their intervals stay open. A case without statements has no checks. Caught failures stay evidence without failing a case: a passing case can carry run.outcome failure-observed, with caught events in its trace, when a try fallback handled a failure, so consumers read result rather than outcome. The summary prints one line per case and a count; --json prints languageVersion, profile, options, summary and cases with case, kind, subject, result, reason, message, source, timeNs and the run (target, status, trace and stores, without source text), plus implementation identity and source digests. The exit code is 1 when a case fails or the sources are invalid, 2 for usage errors and 0 otherwise.
 
@@ -2031,7 +2041,7 @@ The 2.0 core replaced the 1.x grammar, AST, resolver, validator and interpreter;
 
 ## Reference implementation
 
-The 2.2 draft adds explicit test access to the subject and associated software occurrence roots and their single parts, using the existing grammar. Use cases stay black-box; actor port, effect, locking and whole-package run rules remain unchanged. [ADR 0020](decisions/0020-associated-test-access.md) specifies the access boundary. The [ten-component integration](../examples/30-associated-integration.swaml) exercises real routes and checks explicitly associated occurrences.
+The 2.2 draft adds explicit test access to the subject and associated software occurrence roots and their single parts, using the existing grammar. Both case kinds may call their exact primary subject's operations normally, including its own port communication and waits, with actual context/lock restoration and local activation semantics. Use cases gain no private reads or direct part/peer calls; extra test-owner calls remain restricted helpers. Actor port and whole-package run rules remain unchanged. [ADR 0020](decisions/0020-associated-test-access.md) and [ADR 0021](decisions/0021-case-subject-calls.md) specify the boundaries. The [ten-component integration](../examples/30-associated-integration.swaml) exercises real routes and checks explicitly associated occurrences.
 
 | Capability | Implemented evidence and boundary |
 | --- | --- |
@@ -2333,7 +2343,9 @@ New exports include runCase, runTests, workspaceCases, runTarget, runTargets, st
 
 **Status: Unreleased.** Implementation package 3.1.0 selects language semantics 2.2 and profile `swaml-reference/2.2`. The concrete grammar is unchanged from 2.1. This source tree and its generated draft reference are not a published standard edition or a new PDF publication.
 
-Tests may inspect their subject, explicitly associated software component occurrences and those roots' single parts. Existing `associate` links and dotted paths express these references; tests and use cases still own no components. Direct calls keep their nonsuspending/noncommunicating restriction, and direct attribute assignment remains forbidden. Use cases stay black-box and actor port rules do not change. See [ADR 0020](decisions/0020-associated-test-access.md).
+Tests may inspect their subject, explicitly associated software component occurrences and those roots' single parts. Existing `associate` links and dotted paths express these references; tests and use cases still own no components. Direct attribute assignment remains forbidden. See [ADR 0020](decisions/0020-associated-test-access.md).
+
+Both use cases and tests may also call operations of their exact primary subject, including operations that communicate through their own ports, receive or wait. The call uses the subject's actual serial context, releases its lock during suspension and returns to the case on completion. It retains local-call semantics without a new schedule activation or `after` release. Use cases gain no private reads or calls on parts/associated components; tests' additional helper calls outside the primary subject retain their noncommunicating/nonsuspending restriction. Actor port rules remain unchanged. See [ADR 0021](decisions/0021-case-subject-calls.md).
 
 Source models do not need new syntax. Consumers must deliberately select the 2.2 host/profile to use the added access rule. Associations do not restrict initialization, choose a fixture topology or suppress unrelated work: cases still run a fresh package configuration. Indexed component paths remain outside the grammar.
 
@@ -2538,6 +2550,8 @@ Case views draw the subject occurrence as the boundary and associated occurrence
 
 Status: accepted for implementation in the unreleased 2.2 draft, 10 November 2026. Amends the white-box access clauses of ADR 0019. Published 2.1 artifacts remain unchanged.
 
+[ADR 0021](decisions/0021-case-subject-calls.md) subsequently allows normal calls on the exact primary subject from both case kinds. It supersedes the primary-subject call/effect restrictions below; the additional test inspection/helper boundary remains unchanged.
+
 ## Context
 
 The 2.1 test script can inspect only its primary subject and that subject's single parts. An integration spanning existing peer components therefore cannot inspect all of its explicitly associated participants. The owner selected existing associations as the access boundary, with neither new reference syntax nor case-owned components.
@@ -2559,6 +2573,39 @@ Shared semantic helpers expose the exact permitted roots and single-part lookup 
 This is a compatible normative addition with a new 2.2 draft edition, implementation 3.1.0 and `swaml-reference/2.2`. Hosts select 2.2 semantics even though the source grammar is unchanged. The published 2.1 book/PDF and its source attachments, notes, manifests and checksums are immutable. No 2.2 publication is authorized by implementation alone.
 
 Validation includes accepted associated roots and inherited parts, rejected unassociated roots/use-case access/effectful calls, quoted names, lexical precedence, per-run store isolation, actual routed ten-component integration and exact occurrence evidence in consuming tools.
+
+
+---
+
+<a id="chapter-33"></a>
+
+# ADR 0021: Normal subject calls from use cases and tests
+
+Status: accepted for implementation in the unreleased 2.2 draft, 10 November 2026. Amends the primary-subject call clauses of ADRs 0019 and 0020. Published editions remain unchanged.
+
+## Decision
+
+Both a use case and a test may call operations of their exact primary subject using the existing `subject.operation(arguments)` syntax. The subject remains a referenced top-level software occurrence of the case's package. The case owns no component, and no runner component, implicit port or connection is created.
+
+The call borrows the subject's serial execution context as a local call. Its body may use the subject's own state and ports, communicate, receive and wait. Suspension releases the subject lock; resumption reacquires it and reads live state. The case continues only after the call returns. Stateful operations retain their existing on-start-only rule. Normal suspension-position rules apply: a suspending call is the whole value of an ordinary variable declaration or assignment, or a standalone statement, optionally in `try`. It cannot occupy a for-header initializer/update; evaluate it before the loop. Existing immediate expression calls remain legal.
+
+The interpreter switches the actual running frame into the subject context for the call, rather than executing a copied case frame. It restores the case context and releases the subject lock on normal return and failure. Results and successful output values return to the caller; failed calls do not copy outputs. Ordinary runtime failures remain catchable by `try`; contract and resource violations remain outside it.
+
+This is a local call within the case activation, not a fresh schedule release. It creates no transport queue, route, QoS policy or implicit request timeout and does not release `after` successors on return. The case horizon and existing runtime limits remain effective. Trace consumers preserve source, occurrence and activation context without inventing a separate invocation observation.
+
+## Access boundary
+
+A use case may call only its primary subject's own operations. It cannot inspect private component attributes or directly call subject parts or associated components. Tests additionally retain the private reads and helper calls authorized by ADR 0020: subject and explicitly associated software roots and their single parts. Calls on those extra owners must neither communicate nor suspend. Neither case kind assigns component attributes directly.
+
+Actor interaction remains through associated interface-only actor ports with the existing direction, ownership and explicit-route rules. Association does not permit impersonating an active component's ports or choosing execution roots.
+
+## Sequential actor replies
+
+A direct call is synchronous from the script's perspective. An actor message sent before return remains queued for a later receive. If the subject waits for a reply that the same case would provide in a later `on call` branch, that branch cannot run while the case is blocked. Model an independently behaving actor, or stimulate the subject through an actor event before serving the reply. Do not silently execute later case statements concurrently or turn the call into a fire-and-forget invocation.
+
+## Validation evidence
+
+Require positive use-case and test calls with state/results, own-port emission and request/reply, waits with live-state interleaving, receive, failure/`try`, success-only outputs, context restoration and bounded unfinished calls. Reject use-case private reads, part/peer calls and subject-port impersonation; retain the test-helper restrictions. Graphical creation and completion use the same core call policy and retain the actual case source identity.
 
 
 ---
@@ -4003,5 +4050,43 @@ package AssociatedIntegration {
   associate c9 to Delivery;
   associate c10 to Delivery;
   view integration: Sequence of Delivery;
+}
+```
+
+### 31-case-subject-calls.swaml
+
+```swaml
+package SubjectCalls {
+  import Swaml::Views;
+  port def Status { provides event changed(value: int); }
+  component def Counter {
+    port status: Status;
+    attribute count: int = 0;
+    operation advance() returns int {
+      count = count + 1;
+      wait 1ns;
+      publish status.changed(count);
+      return count;
+    }
+  }
+  component subject: Counter;
+  component observer { reversed port status: Status; }
+  connect (subject.status, observer.status);
+  use case Advance of subject {
+    /** Invoke the subject, then consume the actor message retained during the call. */
+    var result: int = subject.advance();
+    on receive observer.status.changed(value) {
+      assert result == 1 and value == result;
+    }
+  }
+  associate observer to Advance;
+  test AdvanceAndInspect of subject {
+    var result: int = subject.advance();
+    on receive observer.status.changed(value) {
+      assert result == 1 and value == subject.count;
+    }
+  }
+  associate observer to AdvanceAndInspect;
+  view behavior: Sequence of Advance;
 }
 ```

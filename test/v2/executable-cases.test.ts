@@ -109,19 +109,19 @@ test('operations keep port.member endpoints and serve requests through schedules
     const call = bank().replace('operation reset() { paid = 0; }', 'operation reset() { on call panel.amount(v) { } }');
     assert.ok((await errors(call, 'SW2006')).some(m => m.includes('on call branches')));
 });
-test('a use case is a black box; a test may read and call into its subject', async () => {
+test('both case kinds call their subject; only tests read private attributes and parts', async () => {
     await valid(script('assert atm.fee(20, 10) == 2; assert atm.paid == 7 and atm.counter.count == 0; atm.reset();'));
-    assert.ok((await errors(script('assert atm.paid == 7;', 'use case'), 'SW2010')).some(m => m.includes('black box')));
-    assert.ok((await errors(script('assert atm.fee(20, 10) == 2;', 'use case'), 'SW2010')).some(m => m.includes('black box')));
+    assert.ok((await errors(script('assert atm.paid == 7;', 'use case'), 'SW2010')).some(m => m.includes('Private attribute')));
+    await valid(script('assert atm.fee(20, 10) == 2;', 'use case'));
     // Unknown members remain invalid; an associated software participant is explicit test access.
     const other = script('assert bank.anything == 1;');
     assert.ok((await errors(other, 'SW2002')).length);
     const host = script('assert atm.paid == 7;').replace('test Script of atm', 'test Script of customer').replace('associate customer to Script;', 'associate atm to Script;');
     await valid(host);
     assert.ok((await errors(host.replace('associate atm to Script;', ''), 'SW2010')).some(m => m.includes('not an accessible occurrence')));
-    // White-box calls borrow the occurrence's context: no communication or suspension.
-    assert.ok((await errors(script('atm.ping();'), 'SW2006')).some(m => m.includes('neither communicate nor suspend')));
-    assert.ok((await errors(script('atm.withdraw();'), 'SW2006')).some(m => m.includes('neither communicate nor suspend')));
+    // The primary subject is a normal call target, including its waits and ports.
+    await valid(script('atm.ping();'));
+    await valid(script('atm.withdraw();'));
 });
 test('a test never assigns its subject', async () => {
     await invalid(script('atm.paid = 1;'));
