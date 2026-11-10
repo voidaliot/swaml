@@ -1,7 +1,7 @@
 """Original swa.ml vector scenes; SVG and PNG share exact geometry.
 
-The docs/notation/2.0 and docs/figures/2.0 directories keep their established paths
-for links; drawings are labeled with the current standard version."""
+Current drawings use edition-specific paths; published figure directories remain
+unchanged. Drawings are labeled with the selected standard version."""
 from pathlib import Path
 from xml.sax.saxutils import escape
 import json, textwrap, io, math

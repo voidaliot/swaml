@@ -1,29 +1,9 @@
 name: Publication and compatibility
 
-# Run before an edition release, or when a PR changes publication tooling/assets.
-# Ordinary language changes keep the single Language checks job.
+# Deliberate publication acceptance only. PR development uses local checks and
+# the single reviewed-readiness Language checks confirmation job.
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - '.github/workflows/release-checks.yml'
-      - 'scripts/*pdf*.py'
-      - 'scripts/*publication*.py'
-      - 'scripts/*pdf*requirements*.txt'
-      - 'scripts/publication-tooling-*.json'
-      - 'scripts/v2_scene.py'
-      - 'scripts/build-notation.py'
-      - 'scripts/build-graphical-examples.py'
-      - 'scripts/build-modeling-overview.py'
-      - 'scripts/check-notation.mjs'
-      - 'spec/notation.json'
-      - 'spec/graphical-examples.json'
-      - 'spec/modeling-overview.json'
-      - 'docs/GRAPHICAL_*.md'
-      - 'docs/figures/**'
-      - 'docs/notation/**'
-      - 'resources/fonts/**'
-      - 'output/pdf/**'
 
 permissions:
   contents: read
@@ -88,12 +68,7 @@ jobs:
           python scripts/check-spec-pdf.py
           python scripts/check-spec-pdf-2.0.py --archive
           python scripts/test-publication-2-1.py
-      # A manual run is the release gate: every embedded 2.1 source must equal the
-      # checked-out workspace. Pull requests verify the published 2.1 edition against
-      # its own manifest, because maintained sources legitimately change after release.
-      - name: Check the 2.1 edition against the current sources
-        if: github.event_name == 'workflow_dispatch'
-        run: python scripts/check-spec-pdf-2.1.py
+      # 2.1 is published. The 2.2 draft must never rebuild or reinterpret its bytes.
+      # A future 2.2 publication needs its own strict current-source PDF gate.
       - name: Check the published 2.1 edition
-        if: github.event_name != 'workflow_dispatch'
         run: python scripts/check-spec-pdf-2.1.py --archive

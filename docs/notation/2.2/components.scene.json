@@ -1,0 +1,130 @@
+{
+  "width": 920,
+  "height": 390,
+  "elements": [
+    {
+      "kind": "rect",
+      "x": 1,
+      "y": 1,
+      "w": 918,
+      "h": 388,
+      "fill": "#fafafa",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 36,
+      "text": "Component definitions and usages",
+      "size": 21
+    },
+    {
+      "kind": "line",
+      "x1": 26,
+      "y1": 54,
+      "x2": 894,
+      "y2": 54,
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 50,
+      "y": 120,
+      "w": 330,
+      "h": 170,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 50,
+      "y": 120,
+      "w": 330,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 62,
+      "y": 143,
+      "text": "component def Counter",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 62,
+      "y": 178,
+      "text": "attribute count: int = 0",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 62,
+      "y": 200,
+      "text": "operation increment()",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 62,
+      "y": 222,
+      "text": "schedule { on start increment(); }",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 535,
+      "y": 120,
+      "w": 330,
+      "h": 170,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 535,
+      "y": 120,
+      "w": 330,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 547,
+      "y": 143,
+      "text": "component left: Counter",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 547,
+      "y": 178,
+      "text": "redefines attribute count: int = 10",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 547,
+      "y": 200,
+      "text": "private occurrence store",
+      "size": 12
+    },
+    {
+      "kind": "line",
+      "x1": 380,
+      "y1": 205,
+      "x2": 535,
+      "y2": 205,
+      "dash": true
+    },
+    {
+      "kind": "text",
+      "x": 402.5,
+      "y": 193.0,
+      "text": "typed by",
+      "size": 12
+    }
+  ]
+}

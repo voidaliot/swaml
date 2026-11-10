@@ -1,0 +1,52 @@
+package AssociatedIntegration {
+  import Swaml::Views;
+  port def Values { provides event value(n: int); }
+  component def Source {
+    port output: Values;
+    attribute sent: bool = false;
+    operation emit() { sent = true; publish output.value(0); }
+    schedule { on start emit(); }
+  }
+  component def Cell {
+    reversed port input: Values;
+    optional port output: Values;
+    attribute last: int = -1;
+    operation accept(n: int) { last = n + 1; publish output.value(last); }
+    schedule { on receive input.value(n) accept(n); }
+  }
+  component source: Source;
+  component c2: Cell;
+  component c3: Cell;
+  component c4: Cell;
+  component c5: Cell;
+  component c6: Cell;
+  component c7: Cell;
+  component c8: Cell;
+  component c9: Cell;
+  component c10: Cell;
+  connect (source.output, c2.input);
+  connect (c2.output, c3.input);
+  connect (c3.output, c4.input);
+  connect (c4.output, c5.input);
+  connect (c5.output, c6.input);
+  connect (c6.output, c7.input);
+  connect (c7.output, c8.input);
+  connect (c8.output, c9.input);
+  connect (c9.output, c10.input);
+  test Delivery of source {
+    /** Nine real routed deliveries exercise ten existing components. */
+    wait 1ns;
+    assert source.sent;
+    assert c2.last == 1 and c5.last == 4 and c10.last == 9;
+  }
+  associate c2 to Delivery;
+  associate c3 to Delivery;
+  associate c4 to Delivery;
+  associate c5 to Delivery;
+  associate c6 to Delivery;
+  associate c7 to Delivery;
+  associate c8 to Delivery;
+  associate c9 to Delivery;
+  associate c10 to Delivery;
+  view integration: Sequence of Delivery;
+}

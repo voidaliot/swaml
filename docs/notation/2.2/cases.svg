@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 390" role="img"><title>swa.ml 2.2 original notation</title>
+<rect x="1" y="1" width="918" height="388" fill="#fafafa" stroke="#171717"/>
+<text x="26" y="36" font-family="DejaVu Sans, sans-serif" font-size="21" fill="#171717">Use cases, tests and associations</text>
+<line x1="26" y1="54" x2="894" y2="54" stroke="#171717"/>
+<rect x="290" y="72" width="360" height="250" fill="#ffffff" stroke="#171717"/>
+<text x="302" y="94" font-family="DejaVu Sans, sans-serif" font-size="12" fill="#171717">atm : 'ATM Controller'</text>
+<ellipse cx="470.0" cy="122.0" rx="125.0" ry="20.0" fill="#ffffff" stroke="#171717"/>
+<text x="416.0" y="127" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">'Withdraw cash'</text>
+<ellipse cx="470.0" cy="172.0" rx="100.0" ry="20.0" fill="#ffffff" stroke="#171717"/>
+<text x="426.8" y="177" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">Authenticate</text>
+<ellipse cx="470.0" cy="222.0" rx="100.0" ry="20.0" fill="#ffffff" stroke="#171717"/>
+<text x="416.0" y="227" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">'Print receipt'</text>
+<ellipse cx="470.0" cy="276.0" rx="125.0" ry="22.0" fill="#ffffff" stroke="#171717"/>
+<text x="387.2" y="281" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">«test» 'Limit honoured'</text>
+<ellipse cx="120.0" cy="129.0" rx="11.0" ry="11.0" fill="#ffffff" stroke="#171717"/>
+<line x1="120" y1="140" x2="120" y2="182" stroke="#171717"/>
+<line x1="98" y1="154" x2="142" y2="154" stroke="#171717"/>
+<line x1="120" y1="182" x2="102" y2="214" stroke="#171717"/>
+<line x1="120" y1="182" x2="138" y2="214" stroke="#171717"/>
+<text x="51.599999999999994" y="236" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">customer : Customer</text>
+<ellipse cx="800.0" cy="129.0" rx="11.0" ry="11.0" fill="#ffffff" stroke="#171717"/>
+<line x1="800" y1="140" x2="800" y2="182" stroke="#171717"/>
+<line x1="778" y1="154" x2="822" y2="154" stroke="#171717"/>
+<line x1="800" y1="182" x2="782" y2="214" stroke="#171717"/>
+<line x1="800" y1="182" x2="818" y2="214" stroke="#171717"/>
+<text x="760.4" y="236" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">bank : Bank</text>
+<line x1="144" y1="160" x2="345" y2="122" stroke="#171717"/>
+<line x1="144" y1="166" x2="370" y2="172" stroke="#171717"/>
+<line x1="144" y1="172" x2="370" y2="222" stroke="#171717"/>
+<line x1="144" y1="180" x2="345" y2="276" stroke="#171717"/>
+<line x1="776" y1="160" x2="595" y2="122" stroke="#171717"/>
+<line x1="776" y1="172" x2="595" y2="276" stroke="#171717"/>
+<text x="45" y="350" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">The subject occurrence of the package is the boundary; associated occurrences stay outside and take part through ports.</text>
+<text x="45" y="372" font-family="DejaVu Sans, sans-serif" font-size="13" fill="#171717">Solid lines show associate links; a case with statements runs as a script, otherwise it records intent only.</text>
+</svg>

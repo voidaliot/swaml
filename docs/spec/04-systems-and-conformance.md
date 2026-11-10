@@ -1,6 +1,6 @@
 # 4. Deployment, cases, views and conformance
 
-Normative chapter of [swa.ml 2.1](../LANGUAGE_SPECIFICATION.md).
+Normative chapter of [swa.ml 2.2](../LANGUAGE_SPECIFICATION.md).
 
 ## 4.1 Deployment
 
@@ -12,9 +12,9 @@ A package deployment Name of Root on PlatformRoot owns placements. deploy on nod
 
 A requirement owns immutable typed attributes and at most one doc. Requirements may be imported. Every relation that records intent about requirements and cases is a package member, never a component member, and none of them proves fulfillment.
 
-A case is written use case Name of subject { … } or test Name of subject { … }. Cases are package members only; components never own cases. The of clause is optional and names a top-level component occurrence declared in the same package: the subject, the system under consideration. A case of a part is written in a package where that component is a top-level occurrence. A case without of, or without statements, records intent only. The case body owns optional documentation followed by optional statements; a case with statements is a script that acts through the ports of its associated interface-only components (section 3.7) and runs in a fresh run of its package (section 6.7).
+A case is written use case Name of subject { … } or test Name of subject { … }. Cases are package members only; components never own cases. The of clause is optional and names a top-level component occurrence declared in the same package: the subject, the system under consideration. A case of a part is written in a package where that component is a top-level occurrence. A case without of, or without statements, records intent only. The case body owns optional documentation followed by optional statements; an executable subject must be a non-multiple software occurrence; platform roots do not execute. A case with statements is a script that acts through the ports of its associated interface-only components (section 3.7) and runs in a fresh run of its package (section 6.7).
 
-associate Occurrence to Case; records that a top-level component occurrence of the same package takes part in a use case or test of the same package. The occurrence is not the case's subject and each pair is associated at most once. Associated occurrences are the actors of the case; they communicate with the subject only through ports and package connections, and a case script acts through the ports of the interface-only ones.
+associate Occurrence to Case; records that a top-level component occurrence of the same package takes part in a use case or test of the same package. The occurrence is not the case's subject and each pair is associated at most once. In a use case, associated occurrences are its actors. In a test, an associated software occurrence also establishes an explicit white-box participant reference; it may have its own behavior, and its single parts may be read or called under section 3.7. Neither kind of case owns those components. Interface-only participants act as actor port proxies; they communicate with the subject only through ports and package connections, and a case script acts through the ports of the interface-only ones.
 
 satisfy Requirement by design; claims that a component satisfies a requirement. design is a component definition or a top-level component occurrence declared in this package, optionally followed by nested parts such as Workbench.editor or cells[1]; a literal index is within the multiplicity. The claim is written in the package that declares the head of the design path; the requirement may be imported. Each requirement and design pair is claimed at most once.
 

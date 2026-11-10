@@ -1,8 +1,8 @@
 # Contributing to swa.ml
 
-swa.ml 2.1 builds on the clean 2.0 language restart. Read the [specification](docs/LANGUAGE_SPECIFICATION.md), [ADR 0016](docs/decisions/0016-swaml-2-0.md), [ADR 0019](docs/decisions/0019-package-context.md), [support matrix](docs/IMPLEMENTATION_STATUS.md) and the affected normative chapter. Published 1.x and 2.0 editions remain archived. This checkout does not convert or accept historical syntax.
+swa.ml 2.2 is an unreleased draft with the unchanged 2.1 concrete grammar and an explicit associated-component test access rule. Read the [specification](docs/LANGUAGE_SPECIFICATION.md), [ADR 0020](docs/decisions/0020-associated-test-access.md), [support matrix](docs/IMPLEMENTATION_STATUS.md) and the affected normative chapter. Published editions, including the 2.1 reference and PDF, keep their original bytes.
 
-Use Node.js 22+ and npm 10.2.3+:
+Use the pinned Node.js 26.12.0 runtime from [.node-version](.node-version) and npm 10.2.3+ for local validation. The source confirmation job reads the same runtime file:
 
 ```sh
 npm ci
@@ -11,14 +11,7 @@ npm run check
 
 The gate generates the AST/TextMate grammar, compiles TypeScript, runs the language/runtime/host tests, validates examples and simulations, and checks maintained documentation, exhaustive inventories, generated references, diagrams and site sources. Generated parser files, out/, dependencies and bundles are not committed.
 
-Routine CI runs that gate once on Node 22, the public-artifact boundary and version-policy tests,
-and a production showcase build in the same job. Branch pushes with an open PR do
-not launch a duplicate run. Node 24, Windows notation and PDF integrity checks are
-in the `Publication and compatibility` workflow; run it before an edition release.
-It also runs for PRs that change publication tooling or assets. Pages deployment
-remains a separate manual action on the default branch. See the
-[CI security audit](CI_SECURITY_AUDIT.md) for the tested boundaries and remaining
-repository-setting recommendations.
+Start an independent adversarial review subagent before every PR and fix its actionable findings with reviewer verification. Run the complete gate, CI helper tests, workflow lint and the production showcase build locally before marking a draft PR ready. The single Linux Node 26 source job confirms only an explicit ready-for-review transition and the reviewed main merge. PR creation, pushes, synchronization and reopening do not allocate hosted testing; returning to draft cancels the ready run. Return to draft before every subsequent commit. `Publication and compatibility` is manual release acceptance; published 2.1 is checked in archive mode, and a future 2.2 release needs its own strict current-source PDF gate. Pages deployment remains separately manual. See the [CI security audit](CI_SECURITY_AUDIT.md).
 
 The standard version is MAJOR.MINOR only and is owned by spec/standard.json. Implementation packages use independent npm SemVer. Read [the version policy](docs/VERSIONING.md) before changing either; existing published tags and artifact filenames remain intact.
 

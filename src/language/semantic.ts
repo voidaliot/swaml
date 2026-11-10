@@ -470,6 +470,28 @@ export function associatedOccurrences(s: a.Scenario): a.ComponentUsage[] {
     const p = owner(s, a.isPackage);
     return p ? [...new Set(p.associations.filter(x => x.target.ref === s).flatMap(x => x.occurrence.ref ? [x.occurrence.ref] : []))] : [];
 }
+/** Existing software occurrence roots a test may inspect or call directly.
+ * Association is a reference, never containment or an execution-root selection.
+ * Multiplicity families have no unindexed runtime store and platform roots do not execute. */
+export function testAccessRoots(s: a.Scenario): a.ComponentUsage[] {
+    const p = owner(s, a.isPackage);
+    if (s.kind !== 'test' || !p || !s.subject?.ref)
+        return [];
+    const executed = new Set(softwareRoots(p).filter(root => root.size === undefined));
+    return [...new Set([s.subject.ref, ...associatedOccurrences(s)])].filter(root => executed.has(root));
+}
+/** Whether a decoded occurrence-owner path names an exact permitted root or single part.
+ * The path has no package prefix, member suffix or source quoting, like caseTarget().path. */
+export function testCanAccess(s: a.Scenario, path: string): boolean {
+    const [head, ...parts] = path.split('.');
+    let current: Structure | undefined = testAccessRoots(s).find(root => root.name === head);
+    for (const name of parts) {
+        current = current && members(current).filter(a.isComponentUsage).find(child => child.name === name && child.size === undefined);
+        if (!current)
+            return false;
+    }
+    return !!current;
+}
 /** A case with statements is executable; a case without statements records intent only. */
 export const executableCase = (s: a.Scenario): boolean => s.statements.length > 0;
 /**

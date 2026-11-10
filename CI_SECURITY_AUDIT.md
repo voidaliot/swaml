@@ -24,27 +24,28 @@ and [Pillow GIF sizing](https://github.com/python-pillow/Pillow/security/advisor
 
 ## Minimum test policy
 
+The security findings above record the October audit. The following workflow policy was updated on 10 November 2026 for the 2.2 draft; it does not claim new publication or a fresh security audit.
+
 | Event | Required work |
 | --- | --- |
-| Ordinary PR, push to `main`, or manual language check | One Node 22 job: the complete language gate, three artifact-boundary tests, production site build and artifact validation. |
-| Publication tooling/assets change, or manual pre-release check | Additional Node 24 language tests, Windows notation check and current/historical PDF integrity checks with maintained dependencies. |
+| Explicit PR ready-for-review transition, or reviewed merge to `main` | One Linux job using Node 26.12.0 from `.node-version`: the complete language gate, CI helper tests, production site build and artifact validation. Local checks and independent adversarial review precede readiness. |
+| PR creation, synchronization or reopening | No hosted source tests. Returning to draft cancels the ready run; subsequent commits require returning to draft first. |
+| Deliberate manual publication check | Node 24 compatibility tests, Windows notation check and historical PDF integrity checks with maintained dependencies. Published 2.1 is checked in archive mode; a new 2.2 publication needs a separate strict current-source PDF gate. |
 | Manual Pages deployment from the default branch | Build and validate the actual site, upload the checked artifact, then deploy in a separate job. |
 
 A normal PR previously started five jobs; an update to its same-repository branch
-also started four duplicate push jobs. It now starts one job. The 202 language
-tests take about 3.4 seconds locally and cover distinct contracts, including the
-fourteen review regressions. They are retained and run once in routine CI, rather
-than four times across two events and two Node versions. The site reuses that
-job's compiled language core. Node 24 and Windows checks remain available before
-release, and historical publication integrity remains checked without rebuilding
-the frozen 326-page 1.x book. Historical tests and published artifacts are not
-deleted or rewritten.
+also started four duplicate push jobs. The reviewed-readiness policy now allocates
+one source confirmation job. The site reuses that job's compiled language core.
+Node 24 and Windows checks remain available for deliberate publication acceptance,
+and historical publication integrity remains checked without rebuilding frozen
+books. Historical tests and published artifacts are not deleted or rewritten.
 
-The pre-release workflow must be dispatched before tagging a new edition. It is
-also triggered by PRs that change its tooling, figures, fonts or PDF assets. This
-explicit release step replaces running those expensive checks for every language
-edit. Only `Language checks / check` is suitable as an always-present required PR
-check; the publication workflow intentionally uses path filters.
+The publication workflow must be dispatched before tagging a new edition. It has
+no automatic PR or push trigger or path filters. This explicit release step replaces
+running those expensive checks for every language edit. `Language checks / check`
+provides source confirmation at reviewed PR readiness and on the reviewed main merge;
+it does not run on draft creation or synchronization. Publication acceptance remains
+manual-only and is not a routine required PR check.
 
 ## Privacy and dependency evidence
 

@@ -1,8 +1,8 @@
-# swa.ml 2.1
+# swa.ml 2.2 draft
 
 **Software Architecture Modeling Language.** Readable source for software structure, typed communication and executable behavior.
 
-swa.ml 2.1 builds on the clean 2.0 restart with one component concept and one operation concept, and makes the package the context of a system, its surroundings and its executable use cases and tests. It accepts only 2.1 source. Published 1.x and 2.0 books/PDFs remain archived.
+swa.ml 2.2 is an unreleased draft with the same concrete syntax as 2.1 and explicit associated-component access for tests. It retains one component concept, one operation concept and the package execution context. Hosts select 2.2 semantics; the latest published standard remains 2.1. All published books, PDFs, manifests, checksums and figures retain their original bytes. See the [draft changes](docs/RELEASE_2_2.md) and [maintained draft reference](docs/SWAML-2.2-Reference.md).
 
 ```swaml
 package CounterReadme {
@@ -27,4 +27,4 @@ Components own private attributes, typed ports, child occurrences and operations
 
 Read the [normative specification](docs/LANGUAGE_SPECIFICATION.md), [ADR 0016](docs/decisions/0016-swaml-2-0.md), [ADR 0019](docs/decisions/0019-package-context.md), [support matrix](docs/IMPLEMENTATION_STATUS.md), [graphical catalog](docs/GRAPHICAL_CATALOG.md) and [contribution rules](CONTRIBUTING.md). A bounded reference run does not prove production scheduling, universal verification or KerML conformance.
 
-The production website presents validated source views and bounded reference evidence. See the [2.1 release notes](docs/RELEASE_2_1.md), with the migration from 2.0, the [maintained reference](docs/SWAML-2.1-Reference.md) and the [complete 2.1 PDF](output/pdf/SWAML-2.1-Specification.pdf) with its [manifest](output/pdf/SWAML-2.1-Specification.manifest.json) and [checksum](output/pdf/SWAML-2.1-Specification.sha256). The published 2.0 edition keeps its [release notes](docs/RELEASE_2_0_0.md) and [complete PDF](output/pdf/SWAML-2.0.0-Specification.pdf). The standard uses major.minor versions; the existing v2.0.0 tag and download filenames identify the original 2.0 publication, and new editions use X.Y names such as v2.1. See the [version policy](docs/VERSIONING.md). License: [MIT](LICENSE).
+The production website presents validated source views and bounded reference evidence. See the [2.1 release notes](docs/RELEASE_2_1.md), with the migration from 2.0, the [frozen 2.1 reference](docs/SWAML-2.1-Reference.md) and the [complete 2.1 PDF](output/pdf/SWAML-2.1-Specification.pdf) with its [manifest](output/pdf/SWAML-2.1-Specification.manifest.json) and [checksum](output/pdf/SWAML-2.1-Specification.sha256). The published 2.0 edition keeps its [release notes](docs/RELEASE_2_0_0.md) and [complete PDF](output/pdf/SWAML-2.0.0-Specification.pdf). The standard uses major.minor versions; the existing v2.0.0 tag and download filenames identify the original 2.0 publication, and new editions use X.Y names such as v2.1. See the [version policy](docs/VERSIONING.md). License: [MIT](LICENSE).

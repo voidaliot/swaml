@@ -1,6 +1,6 @@
-# swa.ml 2.1 language specification
+# swa.ml 2.2 language specification
 
-**Edition:** 2.1 · **Parser:** 2.1 · **Reference profile:** swaml-reference/2.1 · **Status:** release edition, 1 November 2026. [Release notes](RELEASE_2_1.md) describe the changes and the migration from 2.0; the published 2.0 edition remains under its legacy v2.0.0 tag.
+**Edition:** 2.2 · **Parser:** 2.2 · **Reference profile:** swaml-reference/2.2 · **Status:** unreleased draft, 10 November 2026. The published 2.1 edition and its artifacts are unchanged. [Draft changes](RELEASE_2_2.md) describe the syntax-preserving associated-component access rule. [Release notes](RELEASE_2_1.md) describe the changes and the migration from 2.0; the published 2.0 edition remains under its legacy v2.0.0 tag.
 
 swa.ml is the Software Architecture Modeling Language: a textual language for explicit software structure, communication and executable behavior. [ADR 0016](decisions/0016-swaml-2-0.md) accepts the clean restart; [ADR 0019](decisions/0019-package-context.md) adds the package context and executable cases of 2.1. The language has one component concept and one operation concept. It does not accept 1.x source. Published books and PDFs retain their original bytes.
 
@@ -22,7 +22,7 @@ The [concrete grammar](../src/language/swaml.langium) defines tokens and parse s
 
 ## 2. Precedence and scope
 
-MUST and MUST NOT state requirements; SHOULD requires a documented reason for deviation; MAY grants permission. Grammar acceptance is insufficient when prose constraints fail. Unknown syntax and unsupported editions MUST be rejected. The host selects parser 2.1 and pins its package revision; files are headerless. Formatting never changes validity.
+MUST and MUST NOT state requirements; SHOULD requires a documented reason for deviation; MAY grants permission. Grammar acceptance is insufficient when prose constraints fail. Unknown syntax and unsupported editions MUST be rejected. The host selects parser 2.2 and pins its package revision; files are headerless. Formatting never changes validity.
 
 The language is closed. No generic UML/SysML constructs, host code, dynamic topology, generics, overloading, multiple inheritance, recursion or global mutable values are implicit. Platform Nodes model placement identities rather than hardware execution. A simulator run does not prove schedulability, absence of races, universal verification, KerML conformance or graphical editability.
 

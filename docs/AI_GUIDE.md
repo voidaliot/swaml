@@ -1,6 +1,6 @@
-# AI authoring with swa.ml 2.1
+# AI authoring with swa.ml 2.2
 
-Treat swa.ml as typed source that must be validated, rather than prose to approximate. Start with [the usage guide](USER_GUIDE.md), inspect a relevant [complete example](../examples/), and read the affected normative chapter. Pin parser 2.1 and the exact package revision. Use the portable repository skills [swaml-author](../skills/swaml-author/SKILL.md) and [swaml-validate](../skills/swaml-validate/SKILL.md); they are versioned with the language and may be installed in the user's agent skill directory. They do not authorize publication or external messages.
+Treat swa.ml as typed source that must be validated, rather than prose to approximate. Start with [the usage guide](USER_GUIDE.md), inspect a relevant [complete example](../examples/), and read the affected normative chapter. Pin parser 2.2 and the exact package revision. Use the portable repository skills [swaml-author](../skills/swaml-author/SKILL.md) and [swaml-validate](../skills/swaml-validate/SKILL.md); they are versioned with the language and may be installed in the user's agent skill directory. They do not authorize publication or external messages.
 
 ## Build a model from intent
 
@@ -40,3 +40,5 @@ Run a bounded simulation only after validation. Choose the run target: a package
 | SW2013 | Supply complete typed policy values and safe positive durations |
 
 Keep diagnostics/evidence honest. Consult [implementation status](IMPLEMENTATION_STATUS.md) before claiming full V/E/G/K support. Publishing a page or release is a separate user-authorized action; this project requires a design preview before publication.
+
+For 2.2 tests, resolve each white-box root to the subject or an explicit same-package `associate` occurrence. Follow only existing single parts; preserve effective inherited members and exact occurrence identity. Unassociated peers, same-prefix names, platform roots and multiplicity families do not gain access. Use cases keep the actor-port-only rule. Association never owns an occurrence or narrows the whole-package run. See [ADR 0020](decisions/0020-associated-test-access.md).

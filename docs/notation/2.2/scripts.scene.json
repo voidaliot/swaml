@@ -1,0 +1,303 @@
+{
+  "width": 920,
+  "height": 390,
+  "elements": [
+    {
+      "kind": "rect",
+      "x": 1,
+      "y": 1,
+      "w": 918,
+      "h": 388,
+      "fill": "#fafafa",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 36,
+      "text": "Executable case scripts",
+      "size": 21
+    },
+    {
+      "kind": "line",
+      "x1": 26,
+      "y1": 54,
+      "x2": 894,
+      "y2": 54,
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 55,
+      "y": 72,
+      "w": 190,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 81.6,
+      "y": 94,
+      "text": "customer : Customer",
+      "size": 12
+    },
+    {
+      "kind": "line",
+      "x1": 150,
+      "y1": 106,
+      "x2": 150,
+      "y2": 318,
+      "dash": true
+    },
+    {
+      "kind": "rect",
+      "x": 365,
+      "y": 72,
+      "w": 190,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 427.6,
+      "y": 94,
+      "text": "atm : ATM",
+      "size": 12
+    },
+    {
+      "kind": "line",
+      "x1": 460,
+      "y1": 106,
+      "x2": 460,
+      "y2": 318,
+      "dash": true
+    },
+    {
+      "kind": "rect",
+      "x": 675,
+      "y": 72,
+      "w": 190,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 716.0,
+      "y": 94,
+      "text": "bank : BankPeer",
+      "size": 12
+    },
+    {
+      "kind": "line",
+      "x1": 770,
+      "y1": 106,
+      "x2": 770,
+      "y2": 318,
+      "dash": true
+    },
+    {
+      "kind": "rect",
+      "x": 454,
+      "y": 150,
+      "w": 12,
+      "h": 118,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 150,
+      "y1": 140,
+      "x2": 454,
+      "y2": 140,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 454,
+      "y1": 140,
+      "x2": 446,
+      "y2": 135,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 454,
+      "y1": 140,
+      "x2": 446,
+      "y2": 145,
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 164,
+      "y": 133,
+      "text": "send amount(100)",
+      "size": 12
+    },
+    {
+      "kind": "line",
+      "x1": 150,
+      "y1": 170,
+      "x2": 454,
+      "y2": 170,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 454,
+      "y1": 170,
+      "x2": 446,
+      "y2": 165,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 454,
+      "y1": 170,
+      "x2": 446,
+      "y2": 175,
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 164,
+      "y": 163,
+      "text": "publish cashRequested()",
+      "size": 12
+    },
+    {
+      "kind": "line",
+      "x1": 466,
+      "y1": 198,
+      "x2": 770,
+      "y2": 198,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 770,
+      "y1": 198,
+      "x2": 762,
+      "y2": 193,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 770,
+      "y1": 198,
+      "x2": 762,
+      "y2": 203,
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 480,
+      "y": 191,
+      "text": "authorize(100) — on call",
+      "size": 12
+    },
+    {
+      "kind": "line",
+      "x1": 770,
+      "y1": 228,
+      "x2": 466,
+      "y2": 228,
+      "dash": true
+    },
+    {
+      "kind": "line",
+      "x1": 466,
+      "y1": 228,
+      "x2": 474,
+      "y2": 223,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 466,
+      "y1": 228,
+      "x2": 474,
+      "y2": 233,
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 480,
+      "y": 221,
+      "text": "return false",
+      "size": 12
+    },
+    {
+      "kind": "line",
+      "x1": 454,
+      "y1": 258,
+      "x2": 150,
+      "y2": 258,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 150,
+      "y1": 258,
+      "x2": 158,
+      "y2": 253,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 150,
+      "y1": 258,
+      "x2": 158,
+      "y2": 263,
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 164,
+      "y": 251,
+      "text": "refused() — on receive",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 118,
+      "y": 282,
+      "w": 64,
+      "h": 22,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 126,
+      "y": 298,
+      "text": "assert",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 196,
+      "y": 298,
+      "text": "atm.dispenser.count == 0",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 45,
+      "y": 350,
+      "text": "Script statements start on the lifeline of the interface-only actor whose port they use.",
+      "size": 13
+    },
+    {
+      "kind": "text",
+      "x": 45,
+      "y": 372,
+      "text": "on call answers a request with return; on receive or after D waits; a test may also read its subject.",
+      "size": 13
+    }
+  ]
+}

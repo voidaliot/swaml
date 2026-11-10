@@ -1,10 +1,12 @@
-import { readFile, readdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { EmptyFileSystem } from 'langium';
 import { parseHelper } from 'langium/test';
 import { createSwamlServices } from '../out/src/language/swaml-module.js';
 import { runCase, runTests, simulate } from '../out/src/simulation/simulator.js';
+import { readStandardVersion } from './standard-version.mjs';
 const root = new URL('../', import.meta.url);
+const edition = await readStandardVersion();
 async function load(model) {
     const { Swaml } = createSwamlServices(EmptyFileSystem);
     const text = await readFile(new URL(model, root), 'utf8');
@@ -27,9 +29,11 @@ for (const run of runs) {
     for (const [path, node] of Object.entries(run.expectedDeployments ?? {})) assert.equal(result.deployments[path], node, `${name}: deployment of ${path}`);
     assert.deepEqual(outcome, execute(), 'Reproducibility');
     if (run.target === 'Hello::Demo') {
-        const path = new URL('examples/simulation/hello-trace.json', root);
-        if (process.argv.includes('--write')) await writeFile(path, JSON.stringify(result, null, 2) + '\n');
-        else assert.deepEqual(JSON.parse(await readFile(path, 'utf8')), JSON.parse(JSON.stringify(result)), 'Published trace is stale; regenerate deliberately with --write');
+        const directory = new URL(`examples/simulation/${edition}/`, root), path = new URL('hello-trace.json', directory);
+        if (process.argv.includes('--write')) {
+            await mkdir(directory, { recursive: true });
+            await writeFile(path, JSON.stringify(result, null, 2) + '\n');
+        } else assert.deepEqual(JSON.parse(await readFile(path, 'utf8')), JSON.parse(JSON.stringify(result)), 'Current edition trace is stale; regenerate deliberately with --write');
     }
     console.log(`Simulated ${run.case ? 'case' : result.target.kind} ${name}: ${result.status}, ${result.trace.length} observations, expected stores match.`);
 }

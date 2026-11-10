@@ -1,0 +1,262 @@
+{
+  "width": 920,
+  "height": 390,
+  "elements": [
+    {
+      "kind": "rect",
+      "x": 1,
+      "y": 1,
+      "w": 918,
+      "h": 388,
+      "fill": "#fafafa",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 36,
+      "text": "Use cases, tests and associations",
+      "size": 21
+    },
+    {
+      "kind": "line",
+      "x1": 26,
+      "y1": 54,
+      "x2": 894,
+      "y2": 54,
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 290,
+      "y": 72,
+      "w": 360,
+      "h": 250,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 302,
+      "y": 94,
+      "text": "atm : 'ATM Controller'",
+      "size": 12
+    },
+    {
+      "kind": "ellipse",
+      "x": 345.0,
+      "y": 102.0,
+      "w": 250,
+      "h": 40,
+      "fill": "#ffffff"
+    },
+    {
+      "kind": "text",
+      "x": 416.0,
+      "y": 127,
+      "text": "'Withdraw cash'",
+      "size": 13
+    },
+    {
+      "kind": "ellipse",
+      "x": 370.0,
+      "y": 152.0,
+      "w": 200,
+      "h": 40,
+      "fill": "#ffffff"
+    },
+    {
+      "kind": "text",
+      "x": 426.8,
+      "y": 177,
+      "text": "Authenticate",
+      "size": 13
+    },
+    {
+      "kind": "ellipse",
+      "x": 370.0,
+      "y": 202.0,
+      "w": 200,
+      "h": 40,
+      "fill": "#ffffff"
+    },
+    {
+      "kind": "text",
+      "x": 416.0,
+      "y": 227,
+      "text": "'Print receipt'",
+      "size": 13
+    },
+    {
+      "kind": "ellipse",
+      "x": 345.0,
+      "y": 254.0,
+      "w": 250,
+      "h": 44,
+      "fill": "#ffffff"
+    },
+    {
+      "kind": "text",
+      "x": 387.2,
+      "y": 281,
+      "text": "«test» 'Limit honoured'",
+      "size": 13
+    },
+    {
+      "kind": "ellipse",
+      "x": 109,
+      "y": 118,
+      "w": 22,
+      "h": 22,
+      "fill": "#ffffff"
+    },
+    {
+      "kind": "line",
+      "x1": 120,
+      "y1": 140,
+      "x2": 120,
+      "y2": 182,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 98,
+      "y1": 154,
+      "x2": 142,
+      "y2": 154,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 120,
+      "y1": 182,
+      "x2": 102,
+      "y2": 214,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 120,
+      "y1": 182,
+      "x2": 138,
+      "y2": 214,
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 51.599999999999994,
+      "y": 236,
+      "text": "customer : Customer",
+      "size": 13
+    },
+    {
+      "kind": "ellipse",
+      "x": 789,
+      "y": 118,
+      "w": 22,
+      "h": 22,
+      "fill": "#ffffff"
+    },
+    {
+      "kind": "line",
+      "x1": 800,
+      "y1": 140,
+      "x2": 800,
+      "y2": 182,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 778,
+      "y1": 154,
+      "x2": 822,
+      "y2": 154,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 800,
+      "y1": 182,
+      "x2": 782,
+      "y2": 214,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 800,
+      "y1": 182,
+      "x2": 818,
+      "y2": 214,
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 760.4,
+      "y": 236,
+      "text": "bank : Bank",
+      "size": 13
+    },
+    {
+      "kind": "line",
+      "x1": 144,
+      "y1": 160,
+      "x2": 345,
+      "y2": 122,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 144,
+      "y1": 166,
+      "x2": 370,
+      "y2": 172,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 144,
+      "y1": 172,
+      "x2": 370,
+      "y2": 222,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 144,
+      "y1": 180,
+      "x2": 345,
+      "y2": 276,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 776,
+      "y1": 160,
+      "x2": 595,
+      "y2": 122,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 776,
+      "y1": 172,
+      "x2": 595,
+      "y2": 276,
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 45,
+      "y": 350,
+      "text": "The subject occurrence of the package is the boundary; associated occurrences stay outside and take part through ports.",
+      "size": 13
+    },
+    {
+      "kind": "text",
+      "x": 45,
+      "y": 372,
+      "text": "Solid lines show associate links; a case with statements runs as a script, otherwise it records intent only.",
+      "size": 13
+    }
+  ]
+}
