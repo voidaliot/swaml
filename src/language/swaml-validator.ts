@@ -5,6 +5,7 @@ import * as a from './generated/ast.js';
 import { associatedOccurrences, caseTarget, testCanAccess, caseCallAccess, caseCallRestriction, allowsSuspendingCall, connectionRoutes, designComponent, interfaceOnly, packageEndpoint, packageOccurrences, expressionTypes, OCCURRENCE_LIMIT, occurrenceCount, workspaceModels, assignable, body, compatibility, constantNumber, direction, effectiveQos, effects, endpoint, entryKey, identity, integral, isExecutable, isNode, localOperation, memberEndpoint, members, nanos, nodes, numeric, occurrences, owner, resolve, schedule, signature, typeKey, type Executable, type Node, type Structure, portMembers } from './semantic.js';
 import { selectView, viewCandidates, type ViewSubject } from './presentation.js';
 import { decodeQuotedName, formatName, nameProblem } from './names.js';
+import { staleWrite } from './stale-read.js';
 type Env = Map<string, {
     type: string;
     mutable: boolean;
@@ -288,18 +289,9 @@ export class SwamlValidator {
         }
         if (sig.parameters.some(p => p.direction === 'out')) this.outFlow(op,c);
         if (c && effects(op, c).writes && effects(op, c).suspends) {
-            const attrs = new Set(members(c).filter(a.isAttribute).map(x => x.name));
-            let suspended = false, read = false;
-            for (const n of nodes(b)) {
-                if (a.isReferenceExpression(n) && attrs.has(n.path.split('.')[0]) && !suspended)
-                    read = true;
-                if (a.isWait(n) || a.isReceive(n) || a.isCallExpression(n) && (!this.callTarget(n, c) || !isExecutable(this.callTarget(n, c)!) || effects(this.callTarget(n, c) as Executable, c).suspends))
-                    suspended = true;
-                if (read && suspended && a.isAssign(n) && attrs.has(n.target)) {
-                    this.report(n, 'SW2011', 'A read before suspension may influence this write. Recheck live attributes after resuming.', true);
-                    break;
-                }
-            }
+            const write = staleWrite(op, { attributes: new Set(members(c).filter(a.isAttribute).map(x => x.name)), target: call => this.callTarget(call, c), effects: x => effects(x, c) });
+            if (write)
+                this.report(write, 'SW2011', 'A read before suspension may influence this write. Recheck live attributes after resuming.', true);
         }
     }
     private outFlow(op: Executable, c?: Structure): void {
