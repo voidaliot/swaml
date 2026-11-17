@@ -348,13 +348,20 @@ package DoorEcu::Requirements {
   /** Stakeholder and system requirements of the front-left door control unit. */
   requirement 'Anti-pinch protection' {
     /**
-     * During a close the window reverses before the clamping force reaches the limit, for
-     * hard and soft obstacles alike, including a close that starts against the obstacle: a
-     * current rise in the pinch zone, a stalled Hall counter under load or in the pinch
-     * zone, or no Hall pulse after a start is a pinch, never just a stop. It then opens by the reversal
-     * distance (illustrative value of the order used by power-window regulations) at any
-     * supply in the allowed range down to 9 V. Detection is re-armed for every close,
-     * including after a reversal that could not complete.
+     * With a working Hall position sensor, during a close the window reverses before the
+     * clamping force reaches the limit, for hard and soft obstacles alike, including a close
+     * that starts against the obstacle: a current rise in the pinch zone, a stalled Hall
+     * counter under load or in the pinch zone, or no Hall pulse after a start is a pinch and
+     * reverses. It then opens by the reversal distance (illustrative value of the order used
+     * by power-window regulations) at any supply in the allowed range down to 9 V. Detection
+     * is re-armed for every close, including after a reversal that could not complete.
+     *
+     * With a confirmed Hall fault there is no position: the window moves only while the
+     * switch is held, an obstruction is detected by motor current only and stops the window
+     * without reversal, and no force limit is guaranteed. In particular the current check is
+     * blanked for the first 50 ms of each start, so a held close that starts against an
+     * obstacle can exceed the force limit before it stops; once moving, the bench stays
+     * below it.
      */
     attribute maxForceN: real = 100.0;
     attribute pinchZoneMm: uint = 200;
@@ -424,7 +431,8 @@ package DoorEcu::Requirements {
      * pinch zone while closing the first occurrence reverses instead, because a very soft
      * obstacle looks the same. A confirmed Hall fault disables one-touch; the window can
      * still be closed and opened with the switch held, protected only by a current limit
-     * that stops it (degraded mode, no reversal).
+     * that stops it after the 50 ms start blanking (degraded mode: no reversal and no
+     * guaranteed force limit).
      */
     attribute tripMa: uint = 30000;
   }
@@ -1647,11 +1655,13 @@ package DoorEcu {
      * | stalled | below half the reference | unpowered: stop | unpowered: stop |
      * | no pulse within 20 ms of a start | inrush, not usable | pinch: reverse, Hall pre-failed | - |
      * | counting | above reference + 2 A in the zone | pinch: reverse | - |
-     * | Hall fault confirmed | above reference + 2 A or 9 A | degraded: stop | degraded: stop |
+     * | Hall fault confirmed, after the start blanking | above reference + 2 A or 9 A | degraded: stop, no reversal | degraded: stop |
      *
-     * A frozen sensor in the pinch zone therefore reverses once while closing and fails
+     * Every row but the last assumes a working Hall sensor and gives the reversal before the
+     * force limit. A frozen sensor in the pinch zone reverses once while closing and fails
      * again in that reversal, which confirms the Hall fault; from then on only held manual
-     * motion with the degraded current-only stop is possible, and one-touch is inhibited.
+     * motion with the degraded current-only stop is possible, one-touch is inhibited, and no
+     * force limit is guaranteed (the first 50 ms of each start are not checked).
      */
     reversed port feedback: WindowFeedbackPort;
     reversed port drive: WindowMotorPort;
@@ -1847,7 +1857,8 @@ package DoorEcu {
        * Hall fault confirmed: no position, so no soft stops, no reversal distance and no
        * Hall-based rules. After the start blanking a current above the running reference
        * plus 2 A or above the absolute 9 A limit stops the window (no reversal, since its
-       * distance cannot be measured). The window lifter allows only held manual motion.
+       * distance cannot be measured). The window lifter allows only held manual motion. No
+       * force limit is guaranteed: a start against an obstacle is not checked for 50 ms.
        */
       if (runSamples <= blankingSamples) {
         return;
@@ -3686,7 +3697,11 @@ package DoorEcu {
   }
 
   test 'Frozen Hall, degraded close stops at an obstacle' of dcu {
-    /** Under a confirmed Hall fault a hand in the window during a held close is stopped by the current limit before 100 N. */
+    /**
+     * Under a confirmed Hall fault a hand met while a held close is already moving is
+     * stopped, without reversal, by the current limit; here that happens below 100 N. A
+     * start against the hand is not covered: degraded mode guarantees no force limit.
+     */
     door.freezeHall(true);
     send driver.contacts.window(WindowRequest.manualDown);
     wait 250ms;
