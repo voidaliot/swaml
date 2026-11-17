@@ -64,6 +64,24 @@
       "AdaptiveV2x::Shutdown on ignition off": "pass",
       "AdaptiveV2x::Station identifier rotates": "pass",
       "AdaptiveV2x::Hazard validity expiry": "pass"
+    },
+    "examples/showcase/autosar-classic-door-controller.swaml": {
+      "DoorEcu::Lock and unlock": "pass",
+      "DoorEcu::Close the window with one touch": "pass",
+      "DoorEcu::Read fault memory": "pass",
+      "DoorEcu::Wake on door handle": "pass",
+      "DoorEcu::Comfort close from the key fob": "pass",
+      "DoorEcu::Mirror adjust, heat and remote side": "pass",
+      "DoorEcu::Pinch reversal": "pass",
+      "DoorEcu::One-touch close learns the closed stop": "pass",
+      "DoorEcu::Crash unlocks a locked door": "pass",
+      "DoorEcu::Auto-lock by speed": "pass",
+      "DoorEcu::Bus timeout fallback": "pass",
+      "DoorEcu::Sleep and wake": "pass",
+      "DoorEcu::Calibration stored at shutdown": "pass",
+      "DoorEcu::Undervoltage fault reported": "pass",
+      "DoorEcu::Watchdog serviced": "pass",
+      "DoorEcu::Courtesy light afterglow": "pass"
     }
   }
 }
