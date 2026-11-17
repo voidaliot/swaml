@@ -32,10 +32,10 @@ In an operation body or a guard of the owning component, `p.m` reads a sample ce
 | --- | --- |
 | Port | `p` is owned by the executing component and is not a forwarded boundary (SW2005). A child's port is not readable (SW2006, unchanged). |
 | Cell | One per port occurrence and sampled member, initialized to the member's initial value before startup work is released. |
-| Update instant | A cell takes a value at the instant the value is delivered to the port: the message's delivery time after the route's latency and fault delay. This is independent of consumption by any receive owner. A dropped offer never updates the cell; each duplicate copy updates it again at its own delivery instant. All cell updates of one logical instant happen before any activation dispatched at that instant evaluates its release guard or dispatch arguments. |
+| Update instant | A cell takes a value at the instant the value is delivered to the port: the message's delivery time after the route's latency and fault delay. This is independent of consumption by any receive owner. A dropped offer never updates the cell; each duplicate copy updates it again at its own delivery instant. Within an instant, a read sees the cell updates ordered before it in the deterministic event order. A zero-latency delivery produced later in the same instant is seen only by later reads (worked example in the chapter 2 draft, WP6-R02). |
 | Initial value (D7) | Mandatory. When any component samples a member, the sampling port's effective member declaration has `= e`, a pure expression assignable to the member type (SW2004, port shape; typing SW2002). The provider side's initial value, if written, has no runtime meaning in 2.3. Reads never fail, including in transition, completion, timer and release guards. |
 | Ownership | Sampling is not ownership. A sampled required attribute has zero or one consuming owner. An unsampled one keeps exactly one owner (SW2005). |
-| Effects | Reads state. Every read, serial or concurrent, reads the cell live; cells are not part of a concurrent dispatch snapshot, like `now()`. A guard and the body of one activation see the same value unless the body suspends in between. A body read after a suspension sees the newer value. |
+| Effects | Reads state. Every read, serial or concurrent, reads the cell live and copies the whole value atomically. Cells are not part of a concurrent dispatch snapshot, like `now()`; concurrent entries still read attributes from their snapshot (WP6-R07 amends chapter 3.4). A guard and the body of one activation see the same value unless the body suspends in between. A body read after a suspension sees the newer value. |
 | Forbidden positions | Attribute initializers (pure), the constant sublanguage (ADR 0022) and case scripts. Scripts keep `on receive` at actor ports. |
 | Trace | A cell update is a new `sample` observation, separate from `deliver`, which keeps meaning consumption by an owner. Reads are not traced. |
 
@@ -112,6 +112,6 @@ The new forms are new syntax. A 2.2 source has no sampled reads, because 2.2 rej
 
 ## Open items
 
-- **When a sampled value becomes readable.** Decided by the coordinator for WP0: the delivery instant, before release guards and dispatch arguments of that instant, with live reads; see the table above. WP6 implements it with the simulator's delivery events. It must show by tests that duplicates, drops and latency update the cell as stated.
+- **When a sampled value becomes readable.** Decided by the owner for WP0: the delivery instant, ordered within the instant by the event order, with live reads; see the table above. WP6 implements it with the simulator's delivery events. It must show by tests that duplicates, drops and latency update the cell as stated.
 - Port arrays: 2.4 candidate.
 - B12: Tier 2.

@@ -40,6 +40,7 @@ on receive ctl.ack(id) { … } or after (ackTimeoutMs * 1ms) { … }
 | ID | Rule |
 | --- | --- |
 | WP1-R03 | A place assignment's read-modify-write happens under the serial lock after any resumption; no suspension splits it. |
+| WP6-R07 | **Concurrent reads (amends 3.4).** The sentence on concurrent entries becomes: "Concurrent entries overlap and read attributes from the dispatch snapshot throughout, including after resumption; they read sample cells and `now()` live; they never write state." Each cell read copies the whole value atomically, so a record is never observed half-updated. The 2.2 snapshot guarantee is unaffected, because 2.2 models have no cells. |
 | WP1-M01 | The stale-read warning (SW2011, after tool fix A2) treats a place write as a write of its root. Index values read before a suspension are tracked like other pre-suspension reads. |
 
 ## 3.5 Schedule

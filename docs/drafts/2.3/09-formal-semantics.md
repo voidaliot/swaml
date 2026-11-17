@@ -34,7 +34,7 @@ C = (D, O, σ, S, Q, A, M, R, L, B, t)
 | guarded timer | At expiry, a false guard consumes the timer generation for this entry (`discardTimer`) | [WP5] |
 | internal reaction | Effect only; M (timer generations) unchanged | [WP5] |
 | retain | A deferred member's message stays in Q, marked retained (`defer` once); it is consumed in offer-ordinal order on entering a handling state | [WP5] |
-| sample | At the delivery instant of a value, S[p, m] := value, with a `sample` observation; all updates of an instant precede first execution steps (guards, dispatch arguments) of that instant | [WP6] |
+| sample | At the delivery event of a value, S[p, m] := value, with a `sample` observation; a read sees the updates ordered before it in the event order (time, phase, insertion ordinal) | [WP6] |
 | guarded dispatch | At the first execution step. Guard false: cancel the deadline, record `skip`, release `after` targets as on completion, release L[o]. Guard failure: `failure`, no successors | [WP7] |
 | ordered selection | Equal (t, phase) items ordered by descending priority, then in-task position, then insertion ordinal | [WP8] |
 

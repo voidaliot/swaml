@@ -25,7 +25,7 @@ Planned identifiers: standard 2.3, parser and host semantics 2.3, reference prof
 | B17 | Operation-level placement; one Core per component occurrence | 0025 | WP8 |
 | B18 | `Swaml::Os` (`Core`, `Task`, `TaskKind`), rules T1–T7, in-task order, priority ordering in the run, `swaml-binding/2.3` schema and `swaml binding check` | 0025 | WP8 |
 
-New stable diagnostics: SW2016 (computed duration without a unit), SW2017 (completion guard that cannot change while the machine waits) and SW2018 (deferred member with a rejecting overflow policy), all warnings. New runtime codes: `DurationRange` (runtime failure) and `CompletionLoop` (contract violation). New or extended trace observations: `skip`, `defer`, `discardTimer`, `sample`, `state` with `internal`, `write` with `place`, `discardInput` with reason `releaseGuard`, and `durationNs`/`timerNs` on computed waits and state timers. They appear only where new syntax is used, so 2.2 traces are unchanged.
+New stable diagnostics: SW2016 (computed duration without a unit), SW2017 (completion guard that cannot change while the machine waits) and SW2018 (deferred member with a rejecting overflow policy), all warnings. New runtime codes: `DurationRange` (runtime failure) and `CompletionLoop` (contract violation). New or extended trace observations: `skip`, `defer`, `discardTimer`, `sample`, `state` with `internal`, `write` with `place`, `discardInput` with reason `releaseGuard`, `durationNs` on computed waits and timeouts, and `timer` for computed state timers. They appear only where new syntax is used, so 2.2 traces are unchanged.
 
 ## Deferred (Tier 2) and rejected
 
@@ -44,8 +44,8 @@ New stable diagnostics: SW2016 (computed duration without a unit), SW2017 (compl
 
 Release gates for D1. WP1a adds them before any language change; every later package and WP9 run them ([ADR 0022](decisions/0022-values-places-and-expressions.md#compatibility)):
 
-1. **Corpus AST identity.** Every repository `.swaml` file and the three showcase models parse to identical ASTs under the 2.2 and 2.3 grammars, after the single normalization N1 for `PolicySetting`, applied to both sides. The test is `test/compatibility-2-2.test.ts`.
-2. **Behaviour identity.** A fixture recorded once with the 3.1.0 implementation freezes the complete result of every run in `examples/simulation/runs.json`, every example case and every showcase test: status, final stores, case results and the complete trace. Every package compares with it, ignoring only `profile` and `languageVersion`. New trace fields and observation kinds appear only where new syntax is used.
+1. **Corpus AST identity.** Every repository `.swaml` file, including the showcase models at `examples/showcase/*.swaml`, parses to identical ASTs under the 2.2 and 2.3 grammars, after the single normalization N1 for `PolicySetting`, applied to both sides. The test is `test/compatibility-2-2.test.ts`.
+2. **Behaviour identity.** A fixture recorded once with the 3.1.0 implementation freezes the result of every run in `examples/simulation/runs.json`, every example case and every showcase test (`examples/showcase/*.swaml` on main, run through the API or `--json`): status, full final stores, case verdicts and a SHA-256 digest of the canonical JSON trace (rule WP1a-M02). Every package compares with it, ignoring only `profile` and `languageVersion`. New trace fields and observation kinds appear only where new syntax is used.
 3. **Warning-free grammar.** No Langium generation or parser-construction warning, enforced by a unit test.
 
 The implementation package becomes 4.0.0 because existing AST properties silently widen (`Assign.target`, `CallExpression.target`, `Association`, `PolicySetting`; D2).

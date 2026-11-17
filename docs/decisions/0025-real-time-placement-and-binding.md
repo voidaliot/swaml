@@ -1,6 +1,6 @@
 # ADR 0025: Release guards, operation placement, tasks and the target binding
 
-Status: accepted for the unreleased standard 2.3, 18 November 2026. Owner approval of the 2.3 scope and decisions D9, D10, D11 and D13 of the [2.3 proposal](../proposals/NEXT_MINOR_PROPOSAL.md). The coordinator decided the state-machine rule T4. Not implemented: each rule lands with the work package named in the [2.3 chapter drafts](../drafts/2.3/README.md). This ADR is normative where it differs from the proposal. It amends chapter 4.1 of the specification, which leaves core and task allocation to target translation. Published editions remain unchanged.
+Status: accepted for the unreleased standard 2.3, 18 November 2026. Owner approval of the 2.3 scope and decisions D9, D10, D11 and D13 of the [2.3 proposal](../proposals/NEXT_MINOR_PROPOSAL.md). The owner decided the state-machine rule T4. Not implemented: each rule lands with the work package named in the [2.3 chapter drafts](../drafts/2.3/README.md). This ADR is normative where it differs from the proposal. It amends chapter 4.1 of the specification, which leaves core and task allocation to target translation. Published editions remain unchanged.
 
 Items: B19 mode-dependent schedules, B17 operation-level deployment, B18 tasks (Tier 1). Deferred: B18 timed run and B20 latency chains (Tier 2). Work packages: WP7 (B19, after WP4), WP8 (B17, B18, after WP4, WP7 and tool fix A4).
 
@@ -34,7 +34,7 @@ on every 20ms slot() when (mode.current != PowerMode.sleep) deadline 2ms;
 
 - **Allowed entries (SW2007).** A guard on `start` or `call` entries is an error.
 - **Effects (SW2007).** The guard is pure or reads state. Its scope is the component's attributes, its sampled ports (ADR 0024), `now()` and the entry's receive bindings.
-- **Evaluation.** At the activation's first execution step, together with its dispatch arguments. This is after every delivery and sample-cell update of that logical instant (ADR 0024). A serial entry evaluates under the serial lock. A concurrent entry reads attributes from its dispatch snapshot and sample cells live.
+- **Evaluation.** At the activation's first execution step, together with its dispatch arguments. It sees the deliveries and sample-cell updates ordered before that step in the instant's event order (ADR 0024). A serial entry evaluates under the serial lock. A concurrent entry reads attributes from its dispatch snapshot and sample cells live.
 - **False guard.**
   - No operation runs, and the deadline armed at release is cancelled.
   - The trace records `skip` with the entry as source.
@@ -76,7 +76,7 @@ package Swaml::Os {
 - Tasks with no `Core` ancestor form one implicit Core per platform root, so single-core targets need not declare one.
 - An entry is *on* Task K when its effective placement target is K or a Node whose nearest Task ancestor is K.
 
-**Static rules (SW2009).** T1–T7 apply to every deployment whose platform tree contains a `Swaml::Os::Task` or `Swaml::Os::Core` occurrence. Re-pointing placements from Tasks to Cores or plain Nodes therefore cannot switch them off. A platform with Cores but no Tasks fails T6 for every entry; a target that has no task mapping uses plain Nodes. A 2.2 platform contains neither, so it keeps its 2.2 meaning.
+**Static rules (SW2009).** T1–T6 apply to every deployment whose platform tree contains a `Swaml::Os::Task` occurrence. T7 applies whenever the platform tree contains a `Swaml::Os::Core` or `Task` occurrence. Re-pointing placements from Tasks to Cores or plain Nodes therefore cannot switch the rules off. A 2.2 platform contains neither, so it keeps its 2.2 meaning. T6 reports each unplaced entry with an example `deploy` line for a Task of the platform.
 
 | # | Rule |
 | --- | --- |
@@ -164,7 +164,7 @@ It computes no schedule in 2.3.
 - **Per-entry placement (D13 alternative).** It needs entry names, which do not exist. Wrapper operations cover the showcase.
 - **Cross-core operations of one component.** This is cross-core blocking under one serial lock, with no defined semantics before Tier 2 (finding 3a).
 - **Releasing event entries at the next grid point of a periodic task.** It hides queueing delay in the release semantics; T2 makes the mapping explicit instead (finding 3b).
-- **State machines on extended tasks only.** Rejected by the coordinator's decision: a machine whose reactions never suspend runs each reaction to completion like a basic-task runnable. A machine with a suspending reaction (door `ModeManager`, whose entry action requests `nvm.writeAll()`) needs an extended task under T4.
+- **State machines on extended tasks only.** Rejected by the owner's decision: a machine whose reactions never suspend runs each reaction to completion like a basic-task runnable. A machine with a suspending reaction (door `ModeManager`, whose entry action requests `nvm.writeAll()`) needs an extended task under T4.
 - **Activating the T rules only when something is placed on a Task** (first WP0 draft). Re-pointing every placement to a Core silently switched off T1–T6 (WP0 review finding 3).
 - **Separate binding identities for connections** (first WP0 draft, `owner@connectN` counting connections only). They disagreed with trace route identities whenever a forwarding connect precedes (WP0 review finding 4).
 - **Leaving the in-task order to insertion order.** A generator must still decide it (finding 3d). Deploy order expresses it with existing syntax.

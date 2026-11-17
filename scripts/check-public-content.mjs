@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
 import { extname } from 'node:path';
 
-import { isDisallowed } from './public-content-rules.mjs';
+import { isDisallowed, pathFixtureFiles } from './public-content-rules.mjs';
 
 const extensions = new Set(['.md', '.json', '.yml', '.yaml', '.ts', '.tsx', '.mjs', '.py', '.html', '.css', '.svg', '.txt', '.swaml']);
 const ignored = new Set(['.git', 'node_modules', 'out', 'dist', '.vite', '.venv-pdf', 'tmp', '__pycache__', 'generated']);
@@ -18,7 +18,7 @@ async function visit(directory) {
             const source = await readFile(new URL(path, root), 'utf8');
             checked++;
             source.split(/\r?\n/).forEach((line, index) => {
-                if (isDisallowed(line)) failures.push(`${path}:${index + 1}`);
+                if (isDisallowed(line, { allowLocalPaths: pathFixtureFiles.has(path) })) failures.push(`${path}:${index + 1}`);
             });
         }
     }

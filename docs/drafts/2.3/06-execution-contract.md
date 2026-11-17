@@ -1,6 +1,6 @@
 # 6. Reference execution contract: 2.3 changes (draft)
 
-**Draft for the unreleased standard 2.3; see [the draft index](README.md).** Target: [chapter 6](../../spec/06-execution-contract.md). The profile becomes `swaml-reference/2.3` when the candidate is allocated (WP1); the Tier 2 timed profile `swaml-reference-timed/2.4` is not part of 2.3. Every rule below leaves a 2.2 model's run unchanged: gate 2 (WP1a-M02) compares complete traces with the frozen 3.1.0 fixture, ignoring only `profile` and `languageVersion`. New trace information appears only where new syntax is used.
+**Draft for the unreleased standard 2.3; see [the draft index](README.md).** Target: [chapter 6](../../spec/06-execution-contract.md). The profile becomes `swaml-reference/2.3` when the candidate is allocated (WP1a); the Tier 2 timed profile `swaml-reference-timed/2.4` is not part of 2.3. Every rule below leaves a 2.2 model's run unchanged: gate 2 (WP1a-M02) compares complete traces with the frozen 3.1.0 fixture, ignoring only `profile` and `languageVersion`. New trace information appears only where new syntax is used.
 
 ## 6.1 Lifecycle and time
 
@@ -16,7 +16,7 @@ Release guards (new paragraph after the `after` paragraph):
 
 | ID | Rule |
 | --- | --- |
-| WP7-R01 | **Evaluation.** A release guard is evaluated at the activation's first execution step, together with its dispatch arguments. This is after every delivery and sample-cell update of that logical instant (WP6-R02). Serial entries evaluate under the serial lock. Concurrent entries read attributes from their dispatch snapshot and sample cells live. |
+| WP7-R01 | **Evaluation.** A release guard is evaluated at the activation's first execution step, together with its dispatch arguments. It sees every sample-cell update ordered before that step in the instant's event order (time, phase, insertion ordinal; WP6-R02), and none ordered after it. Serial entries evaluate under the serial lock. Concurrent entries read attributes from their dispatch snapshot and sample cells and `now()` live (WP6-R07). |
 | WP7-R02 | **False guard.** No operation runs, and the deadline armed at release is cancelled. The serial lock is released. |
 | WP7-R03 | **Skip as completion.** A skip counts as a successful whole completion for `after` successors: each successor is released at the time of the skip and applies its own guard. |
 | WP7-R04 | **Receive entries.** A `receive` entry consumes its input at release, as in 2.2. When its guard is false, that input is discarded. |
@@ -35,7 +35,7 @@ Release guards (new paragraph after the `after` paragraph):
 | ID | Rule |
 | --- | --- |
 | WP6-R05 | **Per-member policy.** Each member route uses its effective policy (member policy, else connection policy, else `Default`) for capacity, overflow, ordering, delivery, request timeout, latency and age. Queues remain per connection occurrence, direction and member. |
-| WP6-R06 | **Sample cells.** Sample cells follow WP6-R01 to WP6-R04. Updating a cell never consumes input and never releases work. In the event order of an instant, cell updates belong to delivery, before the first execution step of any activation (WP7-R01). |
+| WP6-R06 | **Sample cells.** Sample cells follow WP6-R01 to WP6-R04. Updating a cell never consumes input and never releases work. A cell update is part of its delivery event and takes its place in the instant's event order like every other event. |
 
 ## 6.5 Input ownership and interruption
 
@@ -63,7 +63,7 @@ New and extended observations. Field names follow the existing trace (`timeNs`, 
 | ID | Observation | Fields and meaning |
 | --- | --- | --- |
 | WP1-T01 | `write` (extended) | A place assignment adds `place`, the evaluated place text such as `statuses[2].confirmed`. `value` is the new whole root value; `subject` is the root. |
-| WP4-T01 | `wait`, `receiveWait` (extended, computed forms only) | A wait or receive timeout whose duration is computed adds the optional field `durationNs` with the evaluated value. A computed state timer adds `timerNs` to the `state` observation of the entry it was evaluated for. Observations of literal forms are unchanged, so 2.2 traces stay identical. |
+| WP4-T01 | `wait`, `receiveWait` (extended, computed forms only); `timer` (new) | A wait or receive timeout whose duration is computed adds the optional field `durationNs` with the evaluated value. A computed state timer is evaluated when the entry actions finish, after the `state` observation of that entry, so it gets a new `timer` observation at that moment: `subject` the machine, `state`, `source` the timer transition, `timerNs` the evaluated value and `expiresNs` the expiry time. Literal waits and literal state timers produce no new field and no `timer` observation, so 2.2 traces stay identical. |
 | WP5-T01 | `state` (extended) | An internal reaction is a `state` observation with `internal: true`, the unchanged `state` and the transition as `source`. |
 | WP5-T02 | `discardTimer` (new) | A timer consumed because its guard was false: `subject` the machine, `state`, `source` the timer transition, `reason: 'guard'`. |
 | WP5-T03 | `defer` (new) | Exactly one per retained message, the first time the machine waits in a deferring state while the message is deliverable: `subject` the machine, `state`, `member`, `source` the message origin, and the message or correlation identity. |

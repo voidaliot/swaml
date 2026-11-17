@@ -31,7 +31,7 @@ deployment 'Front left door' of dcu on vehicle {
 | WP8-S01 | **Operation placement.** A placement path may end at an operation of the addressed occurrence that is the target of at least one effective schedule entry of that occurrence; otherwise SW2009. It applies to every activation released by those entries. Callees run in their caller's placement. |
 | WP8-S02 | **Specificity.** Each schedule entry's effective placement is the most specific placement among its operation, its occurrence and that occurrence's ancestors. An operation placement overrides any occurrence placement. A multiplicity family path applies to every index, and an indexed path overrides it. Exact paths, including operation paths, are unique within one deployment (SW2009). |
 | WP8-S03 | **Core grouping.** The Tasks of a Core are the `Swaml::Os::Task` occurrences whose nearest `Swaml::Os::Core` ancestor is that Core. Tasks without a Core ancestor form one implicit Core per platform root. An entry is on Task K when its effective placement target is K or a Node whose nearest Task ancestor is K. |
-| WP8-S04 | **Activation.** T1–T7 apply to every deployment whose platform tree contains a `Swaml::Os::Task` or `Swaml::Os::Core` occurrence, wherever its placements point. A platform with Cores but no Tasks therefore fails T6; a target without a task mapping uses plain Nodes. A platform with neither keeps its 2.2 meaning. |
+| WP8-S04 | **Activation.** T1–T6 apply to every deployment whose platform tree contains a `Swaml::Os::Task` occurrence, wherever its placements point. T7 applies whenever the platform tree contains a `Swaml::Os::Core` or `Swaml::Os::Task` occurrence. A platform with neither keeps its 2.2 meaning. |
 | WP8-S05 | **T1.** Priorities are unique among the Tasks of one Core (SW2009). |
 | WP8-S06 | **T2.** A Task with `periodNs > 0` receives only `every` entries whose evaluated period is a positive multiple of `periodNs`, plus `after` successors of entries on the same Task. `receive`, `call` and `start` entries go to Tasks with `periodNs = 0` (SW2009). |
 | WP8-S07 | **T3.** A Task of kind `isr` has `periodNs = 0` and `preemptive = true`, and receives only `receive` entries and their `after` successors (SW2009). |
@@ -118,7 +118,7 @@ Diagnostics added or extended by 2.3. Message shapes are templates in the existi
 | WP8-D04 | SW2009 | T3 | `ISR task {task} {must have periodNs = 0 \| must be preemptive \| accepts only receive entries and their after successors}.` |
 | WP8-D05 | SW2009 | T4 | `{entry} may suspend in {statement} and needs an extended task; {task} is {basic \| isr}.` |
 | WP8-D06 | SW2009 | T5 | `Deadline {d} of {entry} is shorter than the response bound {r} of {task}.` |
-| WP8-D07 | SW2009 | T6 | `{entry} of {occurrence} is not placed on a task.` |
+| WP8-D07 | SW2009 | T6 | `{entry} of {occurrence} is not placed on a task of {platform}; place {operation} or {occurrence} on a task, for example: deploy {occurrencePath}.{operation} on {taskPath};` (the example names the nearest Task that already hosts an entry of the occurrence, or the first Task of the platform). |
 | WP8-D08 | SW2009 | T7 | `{occurrence} runs on {core1} and {core2}; all its operations must run on one core.` |
 | WP8-D09 | SW2009 | Duplicate exact operation path (WP8-S02) | The existing `Duplicate exact deployment path.` |
 | WP8-D10 | — (CLI) | `swaml binding check` findings (WP8-M03) | One line per finding with the JSON Pointer of the offending value, the identity and the reason; missing costs are marked as findings, not errors. |
