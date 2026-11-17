@@ -38,8 +38,8 @@ package DoorEcu::Types {
     motorOvercurrent, hallSensor, lockActuator, supplyUndervoltage, linNoResponse, canTimeout
   }
   enum SupervisedEntity {
-    /** Supervised entities of the watchdog manager's alive supervision: the periodic main functions. */
-    linInterface, latchMonitor, supplyMonitor, communication
+    /** Supervised entities of the watchdog manager's alive supervision: periodic main functions and the 1 ms event task. */
+    linInterface, latchMonitor, supplyMonitor, communication, eventTask
   }
   datatype SwitchFrame {
     /** Switch states carried in the LIN response of the driver's switch panel (12 bits). */
@@ -304,6 +304,8 @@ package DoorEcu::Interfaces {
     provides event reversalComplete();
     provides event endPosition(closed: bool);
     provides event sensorFault();
+    provides event obstructed();
+    provides event motionStalled();
   }
   port def WindowStatusPort { provides attribute windowStatus: WindowStatus; }
   port def WindowMotorPort { provides attribute windowMotor: MotorCommand; }
@@ -345,10 +347,12 @@ package DoorEcu::Requirements {
   /** Stakeholder and system requirements of the front-left door control unit. */
   requirement 'Anti-pinch protection' {
     /**
-     * During a one-touch close in the pinch zone the window reverses before the clamping
-     * force reaches the limit and then opens by the reversal distance (illustrative value
-     * of the order used by power-window regulations). Detection is re-armed for every
-     * close, including after a reversal that could not complete.
+     * During a close the window reverses before the clamping force reaches the limit, for
+     * hard and soft obstacles alike: a current rise in the pinch zone or a stalled Hall
+     * counter under load is a pinch, never just a stop. It then opens by the reversal
+     * distance (illustrative value of the order used by power-window regulations) at any
+     * supply in the allowed range down to 9 V. Detection is re-armed for every close,
+     * including after a reversal that could not complete.
      */
     attribute maxForceN: real = 100.0;
     attribute pinchZoneMm: uint = 200;
@@ -371,7 +375,11 @@ package DoorEcu::Requirements {
     attribute speedKph: real = 15.0;
   }
   requirement 'Crash unlock' {
-    /** A crash signal unlocks the door within 10 ms and inhibits auto-lock afterwards. */
+    /**
+     * The unlock pulse starts within 10 ms of the crash frame's transmission on body CAN
+     * (within 4 ms of its reception), whatever the speed; the door is unlocked when the
+     * 250 ms pulse completes, and auto-lock stays inhibited afterwards.
+     */
     attribute latencyMs: uint = 10;
   }
   requirement 'Bus timeout substitution' {
@@ -408,7 +416,11 @@ package DoorEcu::Requirements {
     attribute recoveryMv: uint = 9500;
   }
   requirement 'Window motor protection' {
-    /** The window H-bridge is switched off at 30 A; a Hall signal without pulses stops the motor and disables one-touch. */
+    /**
+     * The window H-bridge is switched off at 30 A. A Hall signal without pulses while the
+     * motor draws free-running current is a Hall fault: the motor stops and a confirmed
+     * fault disables one-touch.
+     */
     attribute tripMa: uint = 30000;
   }
   requirement 'Input debouncing' {
@@ -422,9 +434,9 @@ package DoorEcu::Requirements {
   }
   requirement 'Watchdog supervision' {
     /**
-     * Supervised software entities report alive; the external watchdog is triggered only
-     * while every entity is correct. A failed supervision window stops triggering, so the
-     * external watchdog expires.
+     * Supervised software entities, including the event task that carries anti-pinch,
+     * report alive; the external watchdog is triggered only while every entity is correct.
+     * A failed supervision window stops triggering, so the external watchdog expires.
      */
     attribute windowMs: uint = 200;
   }
@@ -452,7 +464,8 @@ package DoorEcu {
    * category and core binding are recorded as constant attributes without effect; the
    * reference run executes in logical zero time and does not simulate placement, so
    * deadlines and route latencies are declared budgets, checked only as logical evidence.
-   * This model will be revisited with the planned language revision.
+   * Core rule for routes: every route between occurrences placed on different cores names
+   * the CrossCore policy; routes within a core use the default policy or RteQueued.
    */
   import Swaml::Views;
   import Swaml::Platform;
@@ -486,7 +499,7 @@ package DoorEcu {
     const attribute bridgeTripMa: uint = 30000 /** H-bridge overcurrent trip, below the 32 A stall current. */;
     const attribute supplyHysteresisMv: uint = 100;
     attribute raw: PinInputs = record PinInputs {
-      hallCount = 250;
+      hallCount = 200;
       currentRaw = 0;
       supplyRaw = 2700;
       latchPrimary = true;
@@ -500,7 +513,6 @@ package DoorEcu {
     attribute reportedLatch: LatchSample = record LatchSample { primary = true; secondary = true; };
     attribute reportedLockSwitch: bool = false;
     attribute lastFoldEndStop: bool = false;
-    attribute lastFeedbackCounts: uint = 250;
     attribute sleeping: bool = false;
     attribute trips: uint = 0;
     operation acquire(sample: PinInputs) {
@@ -519,11 +531,8 @@ package DoorEcu {
       }
     }
     operation distribute() {
-      /** After acquire: window feedback while the motor draws current or moves, slow signals on change only. */
-      if (currentMa > 0 or raw.hallCount != lastFeedbackCounts) {
-        lastFeedbackCounts = raw.hallCount;
-        send window.feedback(record WindowFeedback { positionCounts = raw.hallCount; currentMa = currentMa; supplyMv = supplyMv; });
-      }
+      /** After acquire: window feedback for every conversion, slow signals on change only. */
+      send window.feedback(record WindowFeedback { positionCounts = raw.hallCount; currentMa = currentMa; supplyMv = supplyMv; });
       if (supplyMv + supplyHysteresisMv <= reportedSupplyMv or supplyMv >= reportedSupplyMv + supplyHysteresisMv) {
         reportedSupplyMv = supplyMv;
         send supply.supplyMv(supplyMv);
@@ -562,8 +571,8 @@ package DoorEcu {
   component def IoHwAbOutput {
     /**
      * I/O hardware abstraction, output side: drives the power stages on request, keeps the
-     * window H-bridge off after a trip until the next stop command and switches every
-     * output off in sleep.
+     * window H-bridge off after a trip until the next stop command, switches every output
+     * off in sleep and restores the lamp duties on wake-up.
      */
     port outputs: EcuOutputs;
     reversed port windowDrive: WindowMotorPort;
@@ -577,6 +586,8 @@ package DoorEcu {
     attribute bridge: MotorCommand = record MotorCommand { direction = MotorDirection.stop; dutyPercent = 0; };
     attribute bridgeTripped: bool = false;
     attribute sleeping: bool = false;
+    attribute puddleDuty: uint = 0;
+    attribute courtesyDuty: uint = 0;
     operation stopBridge() {
       send outputs.windowBridge(record MotorCommand { direction = MotorDirection.stop; dutyPercent = 0; });
     }
@@ -611,20 +622,32 @@ package DoorEcu {
       send outputs.mirrorHeaterPercent(percent);
     }
     operation drivePuddle(percent: uint) {
-      send outputs.puddleLampPercent(percent);
+      puddleDuty = percent;
+      if (not sleeping) {
+        send outputs.puddleLampPercent(percent);
+      }
     }
     operation driveCourtesy(percent: uint) {
-      send outputs.courtesyLampPercent(percent);
+      courtesyDuty = percent;
+      if (not sleeping) {
+        send outputs.courtesyLampPercent(percent);
+      }
     }
     operation onMode(current: PowerMode) {
-      sleeping = current == PowerMode.sleep;
-      if (sleeping) {
+      /** Sleep switches every output off; leaving sleep restores the requested lamp duties. */
+      var asleep: bool = current == PowerMode.sleep;
+      if (asleep and not sleeping) {
         stopBridge();
         send outputs.lockMotor(LockDrive.idle);
         send outputs.mirrorHeaterPercent(0);
         send outputs.puddleLampPercent(0);
         send outputs.courtesyLampPercent(0);
       }
+      if (sleeping and not asleep) {
+        send outputs.puddleLampPercent(puddleDuty);
+        send outputs.courtesyLampPercent(courtesyDuty);
+      }
+      sleeping = asleep;
     }
     schedule {
       on receive windowDrive.windowMotor(command) driveWindow(command) deadline 1ms;
@@ -744,7 +767,7 @@ package DoorEcu {
     attribute framesSent: uint = 0;
     attribute doorAjar: bool = false;
     attribute locked: bool = false;
-    attribute windowState: WindowStatus = record WindowStatus { positionCounts = 250; pinchActive = false; learned = false; };
+    attribute windowState: WindowStatus = record WindowStatus { positionCounts = 200; pinchActive = false; learned = false; };
     attribute powerMode: PowerMode = PowerMode.startup;
     operation networkActive() returns bool {
       return powerMode == PowerMode.run;
@@ -1070,7 +1093,8 @@ package DoorEcu {
     /**
      * Diagnostic communication manager: serves ReadDTCInformation-, ClearDiagnosticInformation-
      * and ReadDataByIdentifier-like services, mapping three-byte trouble codes to monitored
-     * faults. It runs in its own task and calls the event manager in another task.
+     * faults. It runs in its own extended task, which may wait for the event manager's
+     * reply from another task.
      */
     port service: Diagnostics;
     reversed port dem: DtcAccess;
@@ -1086,7 +1110,7 @@ package DoorEcu {
     const attribute didWindowCounts: uint = 64770 /** 0xFD02 */;
     const attribute didLearned: uint = 64771 /** 0xFD03 */;
     attribute supplyMv: uint = 13500;
-    attribute windowState: WindowStatus = record WindowStatus { positionCounts = 250; pinchActive = false; learned = false; };
+    attribute windowState: WindowStatus = record WindowStatus { positionCounts = 200; pinchActive = false; learned = false; };
     operation faultOf(dtc: uint) returns FaultId {
       if (dtc == dtcOvercurrent) {
         return FaultId.motorOvercurrent;
@@ -1176,6 +1200,12 @@ package DoorEcu {
     attribute writeAllRequests: uint = 0;
     attribute writeCycles: uint = 0;
     attribute cancelled: uint = 0;
+    attribute writing: bool = false;
+    attribute flashHangs: bool = false;
+    operation hangFlash() {
+      /** Bench fault injection: the data flash answers slowly, so a write-all takes 300 ms instead of 4 ms. */
+      flashHangs = true;
+    }
     operation readAll() {
       ramMirror = nvBlock;
       send calibration.windowCalibration(ramMirror);
@@ -1186,31 +1216,39 @@ package DoorEcu {
     }
     operation writeAllJob() {
       /** Write every dirty block; the data flash program time is 4 ms. */
+      writing = true;
       interruptible {
         wait 4ms;
+        if (flashHangs) {
+          wait 300ms;
+        }
         writeAllRequests = writeAllRequests + 1;
         if (dirty) {
           nvBlock = ramMirror;
           dirty = false;
           writeCycles = writeCycles + 1;
         }
+        writing = false;
         publish control.writeAllDone(true);
       } on receive control.cancelWriteAll() {
-        cancelled = cancelled + 1;
+        if (writing) {
+          cancelled = cancelled + 1;
+        }
+        writing = false;
       }
     }
     schedule {
       on start readAll();
       on receive calibration.store(block) store(block);
-      on receive control.writeAll() writeAllJob() deadline 100ms;
+      on receive control.writeAll() writeAllJob() deadline 500ms;
     }
   }
 
   component def WdgM {
     /**
-     * Watchdog manager: alive supervision of four supervised entities in a 200 ms window
-     * (1 to 3 checkpoints each, the first window after start-up or wake-up is a grace
-     * window). The external watchdog is triggered every 40 ms while the global status is
+     * Watchdog manager: alive supervision of five supervised entities in a 200 ms window
+     * (1 to 3 checkpoints each), suspended in low-power mode. Every entity reports within
+     * 100 ms of start-up or wake-up, so no grace window is needed. The external watchdog is triggered every 40 ms while the global status is
      * correct; one failed window expires the global status and triggering stops for good,
      * so the external watchdog resets the ECU (the reset itself is not modeled).
      */
@@ -1223,7 +1261,7 @@ package DoorEcu {
     attribute latchAlive: uint = 0;
     attribute supplyAlive: uint = 0;
     attribute comAlive: uint = 0;
-    attribute graceWindows: uint = 1;
+    attribute eventTaskAlive: uint = 0;
     attribute expired: bool = false;
     attribute failedWindows: uint = 0;
     attribute lowPower: bool = false;
@@ -1242,6 +1280,9 @@ package DoorEcu {
       if (entity == SupervisedEntity.communication) {
         comAlive = comAlive + 1;
       }
+      if (entity == SupervisedEntity.eventTask) {
+        eventTaskAlive = eventTaskAlive + 1;
+      }
     }
     operation correct(count: uint) returns bool {
       return count >= minAlive and count <= maxAlive;
@@ -1251,17 +1292,15 @@ package DoorEcu {
       latchAlive = 0;
       supplyAlive = 0;
       comAlive = 0;
+      eventTaskAlive = 0;
     }
     operation supervise() {
       /** 200 ms: evaluate the alive counters of the supervision window. */
-      if (lowPower or graceWindows > 0) {
-        if (graceWindows > 0) {
-          graceWindows = graceWindows - 1;
-        }
+      if (lowPower) {
         resetCounters();
         return;
       }
-      var ok: bool = correct(linAlive) and correct(latchAlive) and correct(supplyAlive) and correct(comAlive);
+      var ok: bool = correct(linAlive) and correct(latchAlive) and correct(supplyAlive) and correct(comAlive) and correct(eventTaskAlive);
       if (not ok) {
         failedWindows = failedWindows + 1;
         expired = true;
@@ -1280,7 +1319,6 @@ package DoorEcu {
       var asleep: bool = current == PowerMode.sleep;
       if (asleep != lowPower) {
         lowPower = asleep;
-        graceWindows = 1;
         send line.lowPower(asleep);
       }
     }
@@ -1361,7 +1399,11 @@ package DoorEcu {
         }
       }
       state shutdown {
-        /** Bus silent: request the asynchronous write-all; bus activity or a wake-up aborts the shutdown. */
+        /**
+         * Bus silent: request the asynchronous write-all and wait at most 200 ms for it; a slower
+         * job is cancelled and the ECU sleeps without stored NVRAM. Bus activity or a wake-up
+         * aborts the shutdown.
+         */
         on entry {
           announce(PowerMode.shutdown);
           publish nvm.writeAll();
@@ -1381,6 +1423,7 @@ package DoorEcu {
         }
         after 200ms to sleep {
           nvmStored = false;
+          publish nvm.cancelWriteAll();
         }
       }
       state sleep {
@@ -1576,10 +1619,12 @@ package DoorEcu {
   component def AntiPinch {
     /**
      * Anti-pinch and position supervision of the window lifter, triggered by every feedback
-     * sample: inrush blanking, an adaptive running-current reference, pinch detection in the
-     * pinch zone, the reversal distance, soft stops, Hall plausibility and the normalization
-     * flag. The pinch state is resynchronized with every motor command, so detection is
-     * re-armed for each close even if a reversal did not complete.
+     * sample: inrush blanking, an adaptive running-current reference, pinch detection by a
+     * current rise in the pinch zone or by a stalled Hall counter under load (soft
+     * obstacles), the reversal distance, soft stops, Hall plausibility, unpowered-motor
+     * detection and the normalization flag. The pinch state is resynchronized with every
+     * motor command, so detection is re-armed for each close even if a reversal did not
+     * complete. A 100 ms heartbeat reports the event task alive.
      */
     reversed port feedback: WindowFeedbackPort;
     reversed port drive: WindowMotorPort;
@@ -1587,7 +1632,9 @@ package DoorEcu {
     port events: WindowSupervision;
     port status: WindowStatusPort;
     port diag: DiagEvents;
+    port alive: AliveSupervision;
     const attribute blankingSamples: uint = 5 /** 50 ms inrush blanking after a motor start. */;
+    const attribute obstructionDeltaMa: uint = 600 /** About 15 N above the running current: load on a stalled regulator. */;
     const attribute reversalCounts: uint = 280 /** About 125 mm at 0.45 mm per Hall count. */;
     const attribute hallStuckSamples: uint = 5;
     attribute cal: WindowCalibration = record WindowCalibration {
@@ -1600,8 +1647,8 @@ package DoorEcu {
     };
     attribute direction: MotorDirection = MotorDirection.stop;
     attribute runSamples: uint = 0;
-    attribute position: uint = 250;
-    attribute lastPosition: uint = 250;
+    attribute position: uint = 200;
+    attribute lastPosition: uint = 200;
     attribute referenceMa: uint = 0;
     attribute peakDeltaMa: int = 0;
     attribute pinchPosition: uint = 0;
@@ -1610,6 +1657,7 @@ package DoorEcu {
     attribute pinchEvents: uint = 0;
     attribute stuckSamples: uint = 0;
     attribute hallFaultSeen: bool = false;
+    attribute hung: bool = false;
     operation useCalibration(block: WindowCalibration) {
       cal = block;
     }
@@ -1651,76 +1699,110 @@ package DoorEcu {
         publish calibration.store(cal);
       }
     }
-    operation superviseClosing(currentMa: uint) {
-      if (position <= cal.closedCounts + cal.softStopCounts) {
-        confirmClosedStop();
-        publish events.endPosition(true);
-        return;
-      }
-      if (runSamples <= blankingSamples) {
-        referenceMa = currentMa;
-        return;
-      }
-      var delta: int = currentMa - referenceMa;
-      if (delta > peakDeltaMa) {
-        peakDeltaMa = delta;
-      }
-      if (position <= cal.closedCounts + cal.pinchZoneCounts and delta > cal.pinchDeltaMa and not reversing) {
-        reversing = true;
-        pinchActive = true;
-        pinchPosition = position;
-        pinchEvents = pinchEvents + 1;
-        publish events.pinchDetected();
-        return;
-      }
-      referenceMa = trunc((referenceMa * 7 + currentMa) / 8);
-    }
-    operation superviseOpening() {
-      if (reversing and position >= pinchPosition + reversalCounts) {
-        reversing = false;
-        publish events.reversalComplete();
-      }
-      if (position + cal.softStopCounts >= cal.openCounts) {
-        reversing = false;
-        publish events.endPosition(false);
-      }
+    operation pinch() {
+      reversing = true;
+      pinchActive = true;
+      pinchPosition = position;
+      pinchEvents = pinchEvents + 1;
+      publish events.pinchDetected();
     }
     operation evaluate(sample: WindowFeedback) {
-      /** Data-received runnable for each window feedback sample. */
+      /**
+       * Data-received runnable for each window feedback sample. A stalled Hall counter is
+       * classified by the motor current: above the running reference it is an obstruction
+       * (a pinch while closing), near it a Hall fault, far below it an unpowered motor.
+       */
+      if (hung) {
+        return;
+      }
       lastPosition = position;
       position = sample.positionCounts;
       if (direction == MotorDirection.stop) {
         return;
       }
       runSamples = runSamples + 1;
-      if (position == lastPosition and runSamples > blankingSamples) {
+      if (direction == MotorDirection.up and position <= cal.closedCounts + cal.softStopCounts) {
+        confirmClosedStop();
+        publish events.endPosition(true);
+        return;
+      }
+      if (direction == MotorDirection.down and position + cal.softStopCounts >= cal.openCounts) {
+        reversing = false;
+        publish events.endPosition(false);
+        return;
+      }
+      if (runSamples <= blankingSamples) {
+        referenceMa = sample.currentMa;
+        return;
+      }
+      var delta: int = sample.currentMa - referenceMa;
+      if (delta > peakDeltaMa) {
+        peakDeltaMa = delta;
+      }
+      var moved: bool = position != lastPosition;
+      if (moved) {
+        stuckSamples = 0;
+      } else {
         stuckSamples = stuckSamples + 1;
-        if (stuckSamples >= hallStuckSamples and not hallFaultSeen) {
-          hallFaultSeen = true;
-          publish diag.report(FaultId.hallSensor, true);
-          publish events.sensorFault();
+      }
+      var stalled: bool = stuckSamples >= hallStuckSamples;
+      var loaded: bool = delta > obstructionDeltaMa;
+      if (direction == MotorDirection.up) {
+        var inZone: bool = position <= cal.closedCounts + cal.pinchZoneCounts;
+        if (not reversing and ((inZone and delta > cal.pinchDeltaMa) or (stalled and loaded))) {
+          pinch();
           return;
         }
       } else {
-        stuckSamples = 0;
+        if (reversing and position >= pinchPosition + reversalCounts) {
+          reversing = false;
+          publish events.reversalComplete();
+          return;
+        }
+        if (stalled and loaded) {
+          publish events.obstructed();
+          return;
+        }
       }
-      if (direction == MotorDirection.up) {
-        superviseClosing(sample.currentMa);
-      } else {
-        superviseOpening();
+      if (stalled) {
+        if (sample.currentMa * 2 < referenceMa) {
+          publish events.motionStalled();
+          return;
+        }
+        if (not hallFaultSeen) {
+          hallFaultSeen = true;
+          publish diag.report(FaultId.hallSensor, true);
+          publish events.sensorFault();
+        }
+        return;
       }
+      if (moved) {
+        referenceMa = trunc((referenceMa * 7 + sample.currentMa) / 8);
+      }
+    }
+    operation heartbeat() {
+      /** 100 ms alarm on the event task: alive indication of the task that carries anti-pinch. */
+      if (not hung) {
+        publish alive.checkpoint(SupervisedEntity.eventTask);
+      }
+    }
+    operation simulateHang() {
+      /** Bench fault injection: the event task stops executing the anti-pinch runnables. */
+      hung = true;
     }
     schedule {
       on receive feedback.feedback(sample) evaluate(sample) deadline 2ms;
       on receive drive.windowMotor(command) trackCommand(command) deadline 1ms;
       on receive calibration.windowCalibration(block) useCalibration(block);
+      on every 100ms heartbeat() deadline 1ms;
     }
   }
 
   component def WindowLifter {
     /**
-     * Window lifter: manual and one-touch movement in both directions, reversal after a
-     * pinch, stop at the soft stops, on a Hall fault and on a motor run-time limit. A
+     * Window lifter: manual and one-touch movement in both directions, reversal after any
+     * obstruction while closing, stop at the soft stops, on an obstruction while opening,
+     * on a Hall fault, on an unpowered motor and on a motor run-time limit. A
      * withdrawn motion permission (undervoltage, confirmed overcurrent) stops any movement
      * except a pinch reversal, which is completed to release the obstacle.
      */
@@ -1736,6 +1818,7 @@ package DoorEcu {
     attribute runTimeouts: uint = 0;
     attribute oneTouchCloses: uint = 0;
     attribute inhibitedStops: uint = 0;
+    attribute stalledStops: uint = 0;
     operation drive(direction: MotorDirection) {
       var duty: uint = 0;
       if (direction != MotorDirection.stop) {
@@ -1772,6 +1855,9 @@ package DoorEcu {
         on receive supervision.pinchDetected() to reversing {
           pinchReversals = pinchReversals + 1;
         }
+        on receive supervision.motionStalled() to idle {
+          stalledStops = stalledStops + 1;
+        }
         on receive supervision.endPosition(closed) when (closed) to idle {
         }
         on receive supervision.sensorFault() to idle {
@@ -1796,6 +1882,9 @@ package DoorEcu {
         on receive supervision.pinchDetected() to reversing {
           pinchReversals = pinchReversals + 1;
         }
+        on receive supervision.motionStalled() to idle {
+          stalledStops = stalledStops + 1;
+        }
         on receive supervision.endPosition(closed) when (closed) to idle {
         }
         on receive supervision.sensorFault() to idle {
@@ -1812,8 +1901,9 @@ package DoorEcu {
       state reversing {
         /**
          * Pinch reversal: open by the reversal distance. Switch requests and a withdrawn
-         * motion permission are ignored, because opening releases the obstacle; a Hall fault
-         * or the 1.2 s limit ends it.
+         * motion permission are ignored, because opening releases the obstacle. It ends on
+         * the distance, the open stop, a Hall fault, an obstruction, an unpowered motor, or
+         * the 1.6 s limit (the 125 mm travel takes 1.05 s at the 9 V minimum supply).
          */
         on entry {
           drive(MotorDirection.down);
@@ -1824,13 +1914,23 @@ package DoorEcu {
         }
         on receive supervision.sensorFault() to idle {
         }
-        after 1200ms to idle {
+        on receive supervision.obstructed() to idle {
+        }
+        on receive supervision.motionStalled() to idle {
+          stalledStops = stalledStops + 1;
+        }
+        after 1600ms to idle {
           runTimeouts = runTimeouts + 1;
         }
       }
       state manualDown {
         on entry {
           drive(MotorDirection.down);
+        }
+        on receive supervision.obstructed() to idle {
+        }
+        on receive supervision.motionStalled() to idle {
+          stalledStops = stalledStops + 1;
         }
         on receive supervision.endPosition(closed) when (not closed) to idle {
         }
@@ -1850,6 +1950,11 @@ package DoorEcu {
       state autoDown {
         on entry {
           drive(MotorDirection.down);
+        }
+        on receive supervision.obstructed() to idle {
+        }
+        on receive supervision.motionStalled() to idle {
+          stalledStops = stalledStops + 1;
         }
         on receive supervision.endPosition(closed) when (not closed) to idle {
         }
@@ -2211,7 +2316,10 @@ package DoorEcu {
      * Software of the front-left door control unit: basic-software-like services and the
      * application components, joined by explicit routes in the manner of an RTE. The
      * boundary ports are the ECU connector, LIN with its wake line, CAN, the diagnostic
-     * channel and the watchdog line. Routes between the two cores use the CrossCore policy.
+     * channel and the watchdog line. Core 0 hosts ioIn, ioOut, antiPinch, window, lock,
+     * switches, ecuMode, linIf, latch, wdgM and supply; core 1 hosts canIf, comMain, dem,
+     * dcm, nvm, mirror, heater, lighting and the lamps. Every route between the two cores
+     * names the CrossCore policy.
      */
     reversed port pins: EcuInputs;
     port outputs: EcuOutputs;
@@ -2253,20 +2361,20 @@ package DoorEcu {
     // sensing and actuation (core 0)
     connect windowFeedback (ioIn.window, antiPinch.feedback);
     connect (ioIn.supply, supply.supply);
-    connect (ioIn.supply, dcm.supply);
+    connect: CrossCore (ioIn.supply, dcm.supply);
     connect (ioIn.latch, latch.latch);
     connect (ioIn.lockSense, lock.feedback);
-    connect (ioIn.mirrorSense, mirror.feedback);
+    connect: CrossCore (ioIn.mirrorSense, mirror.feedback);
     connect bridgeTrip: RteQueued (ioIn.trip, ioOut.trip);
     connect windowMotor (window.motor, ioOut.windowDrive);
     connect (window.motor, antiPinch.drive);
     connect lockMotor (lock.motor, ioOut.lockDrive);
-    connect (mirror.drive, ioOut.mirrorDrive);
-    connect (heater.drive, ioOut.heaterDrive);
+    connect: CrossCore (mirror.drive, ioOut.mirrorDrive);
+    connect: CrossCore (heater.drive, ioOut.heaterDrive);
     connect (lighting.puddle, lamps[0].request);
     connect (lighting.courtesy, lamps[1].request);
-    connect (lamps[0].output, ioOut.puddleLamp);
-    connect (lamps[1].output, ioOut.courtesyLamp);
+    connect: CrossCore (lamps[0].output, ioOut.puddleLamp);
+    connect: CrossCore (lamps[1].output, ioOut.courtesyLamp);
     // switch panel requests
     connect switchFrames (linIf.frames, switches.frames);
     connect windowRequests: RteQueued (switches.window, window.requests);
@@ -2278,22 +2386,22 @@ package DoorEcu {
     connect remoteMirror: CrossCore (switches.remoteMirror, canIf.remoteMirror);
     // window supervision
     connect pinch: RteQueued (antiPinch.events, window.supervision);
-    connect (antiPinch.status, comMain.window);
-    connect (antiPinch.status, dcm.window);
-    connect (nvm.calibration, antiPinch.calibration);
+    connect: CrossCore (antiPinch.status, comMain.window);
+    connect: CrossCore (antiPinch.status, dcm.window);
+    connect: CrossCore (nvm.calibration, antiPinch.calibration);
     // CAN and vehicle state
     connect (canIf.rx, comMain.rx);
     connect (comMain.tx, canIf.tx);
-    connect (comMain.vehicle, lock.vehicle);
-    connect (comMain.vehicle, ecuMode.vehicle);
+    connect: CrossCore (comMain.vehicle, lock.vehicle);
+    connect: CrossCore (comMain.vehicle, ecuMode.vehicle);
     connect crashPath: CrossCore (canIf.crash, lock.crash);
     connect (latch.door, lock.door);
-    connect (latch.door, lighting.door);
-    connect (latch.door, comMain.door);
+    connect: CrossCore (latch.door, lighting.door);
+    connect: CrossCore (latch.door, comMain.door);
     connect lockStatusToCan: CrossCore (lock.status, canIf.lockStatus);
-    connect (lock.status, comMain.lockStatus);
+    connect: CrossCore (lock.status, comMain.lockStatus);
     connect lockStatusToMirror: CrossCore (lock.status, mirror.lockStatus);
-    connect (lock.status, lighting.lockStatus);
+    connect: CrossCore (lock.status, lighting.lockStatus);
     // mode and network management
     connect (ioIn.wake, ecuMode.wake);
     connect canWake: CrossCore (canIf.wake, ecuMode.wake);
@@ -2301,18 +2409,18 @@ package DoorEcu {
     connect nvmJobs: CrossCore (ecuMode.nvm, nvm.control);
     connect (ecuMode.modeOut, ioIn.modeIn);
     connect (ecuMode.modeOut, ioOut.modeIn);
-    connect (ecuMode.modeOut, canIf.modeIn);
-    connect (ecuMode.modeOut, comMain.modeIn);
+    connect: CrossCore (ecuMode.modeOut, canIf.modeIn);
+    connect: CrossCore (ecuMode.modeOut, comMain.modeIn);
     connect (ecuMode.modeOut, linIf.modeIn);
     connect (ecuMode.modeOut, wdgM.modeIn);
     connect (ecuMode.modeOut, window.modeIn);
     connect (ecuMode.modeOut, lock.modeIn);
     // diagnostics
-    connect (ioIn.diag, dem.events);
-    connect (antiPinch.diag, dem.events);
-    connect (lock.diag, dem.events);
-    connect (supply.diag, dem.events);
-    connect (linIf.diag, dem.events);
+    connect: CrossCore (ioIn.diag, dem.events);
+    connect: CrossCore (antiPinch.diag, dem.events);
+    connect: CrossCore (lock.diag, dem.events);
+    connect: CrossCore (supply.diag, dem.events);
+    connect: CrossCore (linIf.diag, dem.events);
     connect (comMain.diag, dem.events);
     connect permission: CrossCore (dem.fim, window.permissionIn);
     connect dtcAccess (dcm.dem, dem.access);
@@ -2320,7 +2428,8 @@ package DoorEcu {
     connect (linIf.alive, wdgM.alive);
     connect (latch.alive, wdgM.alive);
     connect (supply.alive, wdgM.alive);
-    connect (comMain.alive, wdgM.alive);
+    connect: CrossCore (comMain.alive, wdgM.alive);
+    connect (antiPinch.alive, wdgM.alive);
   }
 
   // --------------------------------------------------------- environment and bench
@@ -2414,7 +2523,7 @@ package DoorEcu {
     /**
      * Test-bench plant model of the door, not ECU software: window regulator with motor
      * inrush, running and 32 A stall current, a pinch force rising by 2 N per millisecond of
-     * blocked travel and 40 mA per newton, Hall counter (0.45 mm per count, 0 is fully
+     * blocked travel (adjustable) and 40 mA per newton, Hall counter (0.45 mm per count, 0 is fully
      * closed), latch, lock actuator with position switch, fold motor with end stop, heater
      * and lamps. The bench can block the regulator, freeze the Hall counter and jam the
      * lock actuator.
@@ -2423,15 +2532,15 @@ package DoorEcu {
     port sensors: EcuInputs;
     reversed port occupant: PassengerInteraction;
     reversed port supply: SupplyTerminal;
-    const attribute countsPerMs: real = 0.3 /** Window speed at 100 % duty and 13.5 V, about 135 mm/s. */;
+    const attribute countsPerMs: real = 0.4 /** Window speed at 100 % duty and 13.5 V, about 180 mm/s. */;
     const attribute runningMa: real = 5500.0;
     const attribute inrushMa: real = 16000.0;
     const attribute stallMa: real = 32000.0;
     const attribute maPerNewton: real = 40.0;
-    const attribute newtonPerMs: real = 2.0;
     const attribute handAtCounts: real = 150.0 /** An obstacle 68 mm below the closed position. */;
     const attribute openCounts: real = 1000.0;
-    attribute position: real = 250.0 /** Initially open by about 110 mm. */;
+    attribute position: real = 200.0 /** Initially open by about 90 mm. */;
+    attribute newtonPerMs: real = 2.0 /** Obstacle stiffness: force rise per millisecond of blocked travel. */;
     attribute motor: MotorCommand = record MotorCommand { direction = MotorDirection.stop; dutyPercent = 0; };
     attribute motorRunMs: uint = 0;
     attribute pinchForceN: real = 0.0;
@@ -2463,7 +2572,11 @@ package DoorEcu {
       latchSecondary = false;
       lockSwitchLocked = false;
       foldEndStop = false;
-    } /** The last converted sample: conversions run every step while the window motor runs, otherwise only on a change. */;
+    } /** The last converted sample: conversions run every step while the window motor is commanded, otherwise only on a change. */;
+    operation setObstacleStiffness(rate: real) {
+      /** Bench setting: a softer or harder obstacle in the window opening. */
+      newtonPerMs = rate;
+    }
     operation blockRegulator(value: bool) {
       /** Bench fault injection: the regulator is mechanically blocked. */
       regulatorBlocked = value;
@@ -2559,7 +2672,7 @@ package DoorEcu {
     operation step() {
       /** 10 ms plant step: integrate the active actuators, then trigger a conversion of the connector inputs. */
       var windowActive: bool = motor.direction != MotorDirection.stop and motor.dutyPercent > 0 and supplyMv >= 6000;
-      if (not changed and not windowActive and lockDrive == LockDrive.idle and foldDrive == FoldRequest.none) {
+      if (not changed and motor.direction == MotorDirection.stop and lockDrive == LockDrive.idle and foldDrive == FoldRequest.none) {
         return;
       }
       changed = false;
@@ -2594,7 +2707,7 @@ package DoorEcu {
         lockSwitchLocked = boltLocked;
         foldEndStop = foldDrive != FoldRequest.none and foldMs >= 800;
       };
-      if (windowActive or sample != lastSample) {
+      if (motor.direction != MotorDirection.stop or sample != lastSample) {
         lastSample = sample;
         send sensors.inputs(sample);
       }
@@ -2735,9 +2848,10 @@ package DoorEcu {
     component taskDcm: OsTask {
       redefines const attribute responseUs: uint = 50000;
       redefines const attribute priority: uint = 12;
+      redefines const attribute category: string = "extended";
     }
     component taskBackground: OsTask {
-      redefines const attribute responseUs: uint = 100000;
+      redefines const attribute responseUs: uint = 500000;
       redefines const attribute priority: uint = 1;
       redefines const attribute category: string = "extended";
     }
@@ -2788,9 +2902,14 @@ package DoorEcu {
      * Task mapping of the front-left door module. Each occurrence is placed on the one task
      * of its deadline-carrying runnables: a periodic task whose period divides the periods
      * of its runnables and does not exceed their deadlines' release grid, or an interrupt or
-     * event task whose response bound is at most the smallest deadline it serves. Crash
-     * chain budget: CAN interrupt 1 ms, CrossCore route 1 ms, lock state machine on the
-     * 1 ms event task, lock output 1 ms: at most 4 ms against the 10 ms requirement.
+     * event task whose response bound is at most the smallest deadline it serves.
+     *
+     * Crash chain budget, hop by hop from the crash frame's transmission:
+     * body CAN route (BodyCanFrames maxLatency) 5 ms; CanInterface.rxCrash on isrCan,
+     * deadline 1 ms; crashPath route (CrossCore maxLatency) 1 ms; LockControl transition to
+     * crashUnlocking on taskEventHigh, response 1 ms; lockMotor route within core 0 and
+     * IoHwAbOutput.driveLock, deadline 1 ms. The unlock pulse starts at most 9 ms after
+     * transmission (4 ms after reception), against the 10 ms requirement.
      */
     deploy on doorModules[0];
     deploy ioIn on doorModules[0].core0.isrAdc;
@@ -2939,14 +3058,14 @@ package DoorEcu {
     send driver.contacts.window(WindowRequest.autoUp);
     wait 50ms;
     send driver.contacts.window(WindowRequest.neutral);
-    for (var cycle: uint = 1; cycle <= 14; cycle = cycle + 1) {
+    for (var cycle: uint = 1; cycle <= 9; cycle = cycle + 1) {
       wait 100ms;
       send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 0.0; ignitionOn = true; rolling = cycle; });
     }
     assert dcu.window.pinchReversals == 1;
     assert dcu.antiPinch.pinchEvents == 1 and not dcu.antiPinch.reversing;
     assert door.peakPinchForceN > 0.0 and door.peakPinchForceN < 100.0;
-    assert door.position >= 420.0;
+    assert door.position >= 420.0 and door.position >= dcu.antiPinch.pinchPosition + 280.0;
     assert door.motor.direction == MotorDirection.stop;
     on receive bcm.bus.doorStatus(status) {
       assert status.pinchActive;
@@ -2957,9 +3076,9 @@ package DoorEcu {
 
   test 'Pinch protection after an interrupted reversal' of dcu {
     /**
-     * The supply collapses to 5.5 V during a reversal, so the window stalls and the reversal
-     * ends at its time limit. After recovery, a new one-touch close detects the same
-     * obstacle again before 100 N.
+     * The supply collapses to 5.5 V during a reversal, so the motor stops turning and the
+     * reversal ends as an unpowered stall. After recovery, a new one-touch close detects the
+     * same obstacle again before 100 N.
      */
     send passenger.body.handInWindow(true);
     send driver.contacts.window(WindowRequest.autoUp);
@@ -2970,9 +3089,9 @@ package DoorEcu {
     }
     wait 100ms;
     send supply.terminal.batteryMv(5500);
-    wait 1150ms;
+    wait 200ms;
     assert door.motor.direction == MotorDirection.stop;
-    assert dcu.window.runTimeouts == 1 and not dcu.antiPinch.reversing;
+    assert dcu.window.stalledStops == 1 and not dcu.antiPinch.reversing;
     send supply.terminal.batteryMv(13500);
     wait 300ms;
     assert dcu.window.permission.windowMotion;
@@ -3004,7 +3123,10 @@ package DoorEcu {
   }
 
   test 'Crash unlocks a locked door' of dcu {
-    /** A crash signal unlocks a door locked by the key fob within 10 ms and inhibits auto-lock afterwards. */
+    /**
+     * A crash signal starts the unlock pulse of a door locked by the key fob within 10 ms
+     * and inhibits auto-lock afterwards; the mirror fold started by the lock is reversed.
+     */
     publish bcm.bus.centralLock(LockRequest.lock);
     on receive bcm.bus.lockStatus(reported) {
       assert reported == LockState.locked;
@@ -3024,8 +3146,9 @@ package DoorEcu {
     send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 40.0; ignitionOn = true; rolling = 1; });
     wait 100ms;
     send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 42.0; ignitionOn = true; rolling = 2; });
-    wait 400ms;
+    wait 600ms;
     assert not dcu.lock.locked and not dcu.lock.autoLocked;
+    assert dcu.mirror.foldMoves == 2 and not dcu.mirror.folded and not door.mirrorFolded;
   }
 
   test 'Auto-lock by speed' of dcu {
@@ -3086,10 +3209,12 @@ package DoorEcu {
 
   test 'Sleep and wake' of dcu {
     /**
-     * Ignition off and bus silence: post-run, ready-sleep, write-all and sleep with the
-     * watchdog in low-power mode; a LIN wake-up from the switch panel wakes the ECU into
-     * post-run.
+     * With the door open, ignition off and bus silence: post-run, ready-sleep, write-all and
+     * sleep with every lamp off and the watchdog in low-power mode; a LIN wake-up from the
+     * switch panel wakes the ECU into post-run, restores the lamp and supervision resumes
+     * without a failed window.
      */
+    send passenger.body.innerHandle(true);
     send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 0.0; ignitionOn = true; rolling = 1; });
     wait 100ms;
     assert dcu.ecuMode.current == PowerMode.run;
@@ -3097,17 +3222,21 @@ package DoorEcu {
     wait 100ms;
     assert dcu.ecuMode.current == PowerMode.postRun;
     wait 1000ms;
-    assert dcu.ecuMode.current == PowerMode.readySleep;
+    assert dcu.ecuMode.current == PowerMode.readySleep and door.courtesyPercent == 100;
     wait 600ms;
     assert dcu.ecuMode.current == PowerMode.sleep and dcu.ecuMode.sleeps == 1;
     assert dcu.nvm.writeAllRequests == 1 and dcu.ecuMode.nvmStored;
     assert watchdogIc.lowPower and watchdogIc.expirations == 0;
+    assert door.courtesyPercent == 0 and door.puddlePercent == 0;
     wait 200ms;
     send driver.contacts.window(WindowRequest.manualDown);
     wait 100ms;
     assert switchPanel.wakePulses == 1;
     assert dcu.ecuMode.lastWake == WakeSource.lin and dcu.ecuMode.wakeups == 1;
     assert dcu.ecuMode.current == PowerMode.postRun;
+    assert door.courtesyPercent == 100;
+    wait 400ms;
+    assert not dcu.wdgM.expired and watchdogIc.expirations == 0;
   }
 
   test 'Bus keeps the ECU awake after ignition off' of dcu {
@@ -3157,7 +3286,7 @@ package DoorEcu {
     assert not dcu.window.permission.windowMotion;
     send driver.contacts.window(WindowRequest.manualDown);
     wait 200ms;
-    assert door.position == 250.0;
+    assert door.position == 200.0;
     send driver.contacts.window(WindowRequest.neutral);
     send supply.terminal.batteryMv(9200);
     wait 300ms;
@@ -3222,6 +3351,111 @@ package DoorEcu {
     assert door.courtesyPercent == 100 and door.puddlePercent == 0;
     wait 1600ms;
     assert door.courtesyPercent == 0;
+  }
+
+  test 'Soft obstacle reverses' of dcu {
+    /** A soft obstacle (1 N/ms) stalls the Hall counter under load: the window reverses before 100 N and records no Hall fault. */
+    door.setObstacleStiffness(1.0);
+    send passenger.body.handInWindow(true);
+    send driver.contacts.window(WindowRequest.autoUp);
+    wait 50ms;
+    send driver.contacts.window(WindowRequest.neutral);
+    until (dcu.antiPinch.pinchEvents == 1, 60 times) {
+      wait 10ms;
+    }
+    wait 150ms;
+    assert dcu.window.pinchReversals == 1 and door.motor.direction == MotorDirection.down;
+    assert door.peakPinchForceN > 0.0 and door.peakPinchForceN < 100.0;
+    var counters: int[6] = dcu.dem.counters;
+    assert counters[1] <= 0;
+  }
+
+  test 'Very soft obstacle reverses' of dcu {
+    /** A very soft obstacle (0.5 N/ms) is also a pinch: the window reverses instead of stopping on it. */
+    door.setObstacleStiffness(0.5);
+    send passenger.body.handInWindow(true);
+    send driver.contacts.window(WindowRequest.autoUp);
+    wait 50ms;
+    send driver.contacts.window(WindowRequest.neutral);
+    until (dcu.antiPinch.pinchEvents == 1, 60 times) {
+      wait 10ms;
+    }
+    wait 150ms;
+    assert dcu.window.pinchReversals == 1 and door.motor.direction == MotorDirection.down;
+    assert door.peakPinchForceN > 0.0 and door.peakPinchForceN < 100.0;
+    var counters: int[6] = dcu.dem.counters;
+    assert counters[1] <= 0;
+  }
+
+  test 'Reversal distance at minimum supply' of dcu {
+    /** At 9.2 V, just above the undervoltage threshold, the pinch reversal still opens the full 125 mm before it ends. */
+    send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 0.0; ignitionOn = true; rolling = 0; });
+    send supply.terminal.batteryMv(9200);
+    send passenger.body.handInWindow(true);
+    send driver.contacts.window(WindowRequest.autoUp);
+    wait 50ms;
+    send driver.contacts.window(WindowRequest.neutral);
+    until (dcu.antiPinch.pinchEvents == 1, 60 times) {
+      wait 10ms;
+    }
+    var at: uint = dcu.antiPinch.pinchPosition;
+    for (var cycle: uint = 1; cycle <= 12; cycle = cycle + 1) {
+      wait 100ms;
+      send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 0.0; ignitionOn = true; rolling = cycle; });
+    }
+    assert door.motor.direction == MotorDirection.stop;
+    assert dcu.window.runTimeouts == 0 and dcu.window.pinchReversals == 1;
+    assert door.position >= at + 280.0;
+  }
+
+  test 'Shutdown aborts on bus activity and wake-up' of dcu {
+    /**
+     * A frame during the write-all aborts the shutdown and cancels the NVRAM job; a door
+     * opening during the next, slow write-all aborts it again into post-run.
+     */
+    send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 0.0; ignitionOn = false; rolling = 1; });
+    wait 1500ms;
+    until (dcu.ecuMode.current == PowerMode.shutdown, 100 times) {
+      wait 1ms;
+    }
+    send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 0.0; ignitionOn = false; rolling = 2; });
+    wait 2ms;
+    assert dcu.ecuMode.current == PowerMode.readySleep and dcu.ecuMode.shutdownsAborted == 1;
+    wait 10ms;
+    assert dcu.nvm.cancelled == 1 and dcu.nvm.writeAllRequests == 0 and dcu.ecuMode.sleeps == 0;
+    dcu.nvm.hangFlash();
+    until (dcu.ecuMode.current == PowerMode.shutdown, 600 times) {
+      wait 1ms;
+    }
+    send passenger.body.innerHandle(true);
+    wait 20ms;
+    assert dcu.ecuMode.current == PowerMode.postRun and dcu.ecuMode.lastWake == WakeSource.localInput;
+    assert dcu.ecuMode.shutdownsAborted == 2 and dcu.nvm.cancelled == 2 and dcu.ecuMode.sleeps == 0;
+  }
+
+  test 'Shutdown falls back when the write-all hangs' of dcu {
+    /** The data flash answers too slowly: 200 ms after shutdown entry the ECU cancels the write-all and sleeps, recording that NVRAM was not stored. */
+    dcu.nvm.hangFlash();
+    wait 1500ms;
+    until (dcu.ecuMode.current == PowerMode.shutdown, 100 times) {
+      wait 1ms;
+    }
+    wait 150ms;
+    assert dcu.ecuMode.current == PowerMode.shutdown;
+    wait 100ms;
+    assert dcu.ecuMode.current == PowerMode.sleep and not dcu.ecuMode.nvmStored;
+    assert dcu.nvm.cancelled == 1 and dcu.nvm.writeAllRequests == 0;
+  }
+
+  test 'Watchdog detects a hung event task' of dcu {
+    /** The event task carrying anti-pinch stops executing: its heartbeat is missing, supervision fails, triggering stops and the external watchdog expires. */
+    wait 300ms;
+    dcu.antiPinch.simulateHang();
+    wait 400ms;
+    assert dcu.wdgM.expired and dcu.wdgM.failedWindows == 1;
+    var triggersAfterFailure: uint = dcu.wdgM.triggers;
+    wait 200ms;
+    assert dcu.wdgM.triggers == triggersAfterFailure and watchdogIc.expirations >= 1;
   }
 
   test 'Debounced switch and latch inputs' of dcu {
@@ -3302,7 +3536,7 @@ package DoorEcu {
     wait 60ms;
     send driver.contacts.window(WindowRequest.manualDown);
     wait 150ms;
-    assert door.motor.direction == MotorDirection.stop and door.position == 250.0;
+    assert door.motor.direction == MotorDirection.stop and door.position == 200.0;
   }
 
   test 'Lock actuator fault' of dcu {
@@ -3354,6 +3588,8 @@ package DoorEcu {
   associate driver to 'Sleep and wake';
   associate switchPanel to 'Sleep and wake';
   associate watchdogIc to 'Sleep and wake';
+  associate passenger to 'Sleep and wake';
+  associate door to 'Sleep and wake';
   associate bcm to 'Bus keeps the ECU awake after ignition off';
   associate driver to 'Calibration stored at shutdown';
   associate supply to 'Undervoltage fault reported';
@@ -3369,6 +3605,20 @@ package DoorEcu {
   associate bcm to 'Courtesy light afterglow';
   associate passenger to 'Courtesy light afterglow';
   associate door to 'Courtesy light afterglow';
+  associate passenger to 'Soft obstacle reverses';
+  associate driver to 'Soft obstacle reverses';
+  associate door to 'Soft obstacle reverses';
+  associate passenger to 'Very soft obstacle reverses';
+  associate driver to 'Very soft obstacle reverses';
+  associate door to 'Very soft obstacle reverses';
+  associate bcm to 'Reversal distance at minimum supply';
+  associate supply to 'Reversal distance at minimum supply';
+  associate passenger to 'Reversal distance at minimum supply';
+  associate driver to 'Reversal distance at minimum supply';
+  associate door to 'Reversal distance at minimum supply';
+  associate bcm to 'Shutdown aborts on bus activity and wake-up';
+  associate passenger to 'Shutdown aborts on bus activity and wake-up';
+  associate watchdogIc to 'Watchdog detects a hung event task';
   associate driver to 'Debounced switch and latch inputs';
   associate passenger to 'Debounced switch and latch inputs';
   associate bcm to 'Debounced switch and latch inputs';
@@ -3412,6 +3662,9 @@ package DoorEcu {
   satisfy 'Mirror auto-fold' by dcu.mirror;
   verify 'Anti-pinch protection' by 'Pinch reversal';
   verify 'Anti-pinch protection' by 'Pinch protection after an interrupted reversal';
+  verify 'Anti-pinch protection' by 'Soft obstacle reverses';
+  verify 'Anti-pinch protection' by 'Very soft obstacle reverses';
+  verify 'Anti-pinch protection' by 'Reversal distance at minimum supply';
   verify 'One-touch close' by 'One-touch close learns the closed stop';
   verify 'Central locking' by 'Debounced switch and latch inputs';
   verify 'Central locking' by 'Crash unlocks a locked door';
@@ -3432,8 +3685,11 @@ package DoorEcu {
   verify 'Network-managed sleep' by 'Sleep and wake';
   verify 'Network-managed sleep' by 'Bus keeps the ECU awake after ignition off';
   verify 'Network-managed sleep' by 'Calibration stored at shutdown';
+  verify 'Network-managed sleep' by 'Shutdown aborts on bus activity and wake-up';
+  verify 'Network-managed sleep' by 'Shutdown falls back when the write-all hangs';
   verify 'Watchdog supervision' by 'Watchdog serviced';
   verify 'Watchdog supervision' by 'Watchdog stops on a supervision failure';
+  verify 'Watchdog supervision' by 'Watchdog detects a hung event task';
 
   // ---------------------------------------------------------------------- views
 
