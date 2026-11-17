@@ -53,6 +53,8 @@
       "FleetCloud::Command acknowledgements are authenticated": "pass",
       "FleetCloud::Paging queue follows alert state": "pass",
       "FleetCloud::Gateway audit names the responsible tenant": "pass",
+      "FleetCloud::Supersede during a refused re-hello": "pass",
+      "FleetCloud::Supersede after a refused re-hello": "pass",
       "FleetCloud::Resilience::Store outage trips the breaker and recovers": "pass",
       "FleetCloud::Edge::Gateway retries with backoff": "pass",
       "FleetCloud::Edge::Gateway gives up after three attempts": "pass",

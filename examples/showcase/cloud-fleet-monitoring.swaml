@@ -622,9 +622,12 @@ package FleetCloud {
     requests between a high and a low watermark. A command acknowledgement is relayed only from the authenticated
     session that was sent that command and only while it is pending there. When the registry announces a newer session
     of the same vehicle, this session is closed and forgotten: the vehicle is told so, and it no longer receives
-    commands or relays frames, heartbeats or acknowledgements. A refused re-hello keeps an existing session. Refused
-    sessions, frames and acknowledgements are audited; an entry carries a tenant only when an authenticated session
-    is responsible, otherwise the claimed vehicle id with an empty tenant.
+    commands or relays frames, heartbeats or acknowledgements. An announcement that arrives while a hello on this link
+    is being authenticated is applied once the hello resolves, whether it succeeded or was refused. A refused re-hello
+    keeps an existing session. Refused sessions, frames and acknowledgements are audited. A refused hello names the
+    claimed vehicle with an empty tenant, even when an earlier session stays open; a refused frame or acknowledgement
+    carries the session's vehicle and tenant when an authenticated session is responsible, and otherwise the claimed
+    vehicle (or none) with an empty tenant.
     */
     reversed port vehicle: VehicleLink;
     reversed port directory: DeviceAuth;
@@ -650,7 +653,9 @@ package FleetCloud {
     attribute pendingCommand: uint = 0 /** The command delivered in this session and not yet acknowledged, 0 when none. */;
     attribute refusedAcks: uint = 0;
     attribute closedSessions: uint = 0;
-    attribute opening: bool = false /** A hello on this link is being authenticated; its own announcement must not close it. */;
+    attribute opening: bool = false /** A hello on this link is being authenticated; announcements meanwhile are deferred. */;
+    attribute announcedVehicle: string = "";
+    attribute announcedEpoch: uint = 0 /** The newest session announced while a hello was being authenticated. */;
     operation openSession(claimed: string, deviceKey: string) {
       opening = true;
       var identity: DeviceIdentity = try(directory.authenticate(claimed, deviceKey), Unknown(claimed));
@@ -671,6 +676,17 @@ package FleetCloud {
         }
       }
       publish vehicle.welcome(identity.known);
+      if (authenticated and announcedVehicle == sessionVehicle and announcedEpoch > sessionEpoch) {
+        supersede();
+      }
+      announcedVehicle = "";
+      announcedEpoch = 0;
+    }
+    operation supersede() {
+      closedSessions = closedSessions + 1;
+      publish audit.logged(Entry(AuditKind.access, sessionVehicle, sessionTenant, "device session superseded", sessionVehicle));
+      clearSession();
+      publish vehicle.welcome(false);
     }
     operation clearSession() {
       /** Forget the session, so nothing later is attributed to its vehicle or tenant. */
@@ -682,11 +698,16 @@ package FleetCloud {
       sessionEpoch = 0;
     }
     operation closeSuperseded(id: string, epoch: uint) {
-      if (authenticated and not opening and id == sessionVehicle and epoch > sessionEpoch) {
-        closedSessions = closedSessions + 1;
-        publish audit.logged(Entry(AuditKind.access, id, sessionTenant, "device session superseded", id));
-        clearSession();
-        publish vehicle.welcome(false);
+      /** While a hello is being authenticated, an announcement is remembered and applied once the hello resolves. */
+      if (opening) {
+        if (id != announcedVehicle or epoch > announcedEpoch) {
+          announcedVehicle = id;
+          announcedEpoch = epoch;
+        }
+      } else {
+        if (authenticated and id == sessionVehicle and epoch > sessionEpoch) {
+          supersede();
+        }
       }
     }
     operation submitWithRetry(e: Envelope) returns IngestOutcome {
@@ -3196,6 +3217,98 @@ package FleetCloud {
   }
   associate truck to 'Gateway audit names the responsible tenant';
   associate van to 'Gateway audit names the responsible tenant';
+  test 'Supersede during a refused re-hello' of backend {
+    /** The van link opens a new TRK-101 session while the truck link's re-hello with a wrong key is being authenticated: once the re-hello is refused, the truck session is still closed. */
+    var me: Principal = alderDispatcher.console.login("tok-alder-ana");
+    assert me.authenticated;
+    publish truck.link.hello("TRK-101", "key-101");
+    on receive truck.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "truck session not opened";
+    }
+    publish van.link.hello("TRK-101", "key-101");
+    publish truck.link.hello("TRK-101", "key-999");
+    on receive van.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "second session not opened";
+    }
+    on receive truck.link.welcome(accepted) {
+      assert not accepted;
+    } or after 1s {
+      fail "re-hello not refused";
+    }
+    on receive truck.link.welcome(accepted) {
+      assert not accepted;
+    } or after 300ms {
+      fail "truck session not told it is closed";
+    }
+    publish truck.link.frame(Reading("TRK-101", 9, 2, 10.0, 10.0, 50.0, 85.0, 70.0, true));
+    on receive truck.link.ack(sequence, outcome) {
+      assert outcome == IngestOutcome.unauthenticated;
+    } or after 1s {
+      fail "frame on the superseded session not refused";
+    }
+    var c: CommandUpdate = alderDispatcher.console.issueCommand("TRK-101", CommandKind.locate, 0);
+    assert c.status == CommandStatus.pending;
+    on receive truck.link.command(x) {
+      fail "superseded session received a command";
+    } or after 100ms {
+    }
+    on receive van.link.command(x) {
+      assert x.commandId == c.commandId;
+    } or after 1s {
+      fail "new session did not receive the command";
+    }
+    assert backend.audit.accessEntries == 2;
+  }
+  test 'Supersede after a refused re-hello' of backend {
+    /** The same race with the hellos in the opposite order: the truck re-hello with a wrong key is sent first, then the van link opens the new TRK-101 session; the truck session ends closed. */
+    var me: Principal = alderDispatcher.console.login("tok-alder-ana");
+    assert me.authenticated;
+    publish truck.link.hello("TRK-101", "key-101");
+    on receive truck.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "truck session not opened";
+    }
+    publish truck.link.hello("TRK-101", "key-999");
+    publish van.link.hello("TRK-101", "key-101");
+    on receive van.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "second session not opened";
+    }
+    on receive truck.link.welcome(accepted) {
+      assert not accepted;
+    } or after 1s {
+      fail "re-hello not refused";
+    }
+    on receive truck.link.welcome(accepted) {
+      assert not accepted;
+    } or after 300ms {
+      fail "truck session not told it is closed";
+    }
+    publish truck.link.frame(Reading("TRK-101", 9, 2, 10.0, 10.0, 50.0, 85.0, 70.0, true));
+    on receive truck.link.ack(sequence, outcome) {
+      assert outcome == IngestOutcome.unauthenticated;
+    } or after 1s {
+      fail "frame on the superseded session not refused";
+    }
+    var c: CommandUpdate = alderDispatcher.console.issueCommand("TRK-101", CommandKind.locate, 0);
+    on receive truck.link.command(x) {
+      fail "superseded session received a command";
+    } or after 100ms {
+    }
+    assert c.status == CommandStatus.pending and backend.audit.accessEntries == 2;
+  }
+  associate truck to 'Supersede during a refused re-hello';
+  associate van to 'Supersede during a refused re-hello';
+  associate alderDispatcher to 'Supersede during a refused re-hello';
+  associate truck to 'Supersede after a refused re-hello';
+  associate van to 'Supersede after a refused re-hello';
+  associate alderDispatcher to 'Supersede after a refused re-hello';
   associate truck to 'Superseded session closes';
   associate van to 'Superseded session closes';
   associate alderDispatcher to 'Superseded session closes';
@@ -3233,6 +3346,8 @@ package FleetCloud {
   verify 'Lossless ingestion' by 'Malformed frame dead-lettered';
   verify 'Device authentication' by 'Device authentication enforced';
   verify 'Device authentication' by 'Superseded session closes';
+  verify 'Device authentication' by 'Supersede during a refused re-hello';
+  verify 'Device authentication' by 'Supersede after a refused re-hello';
   verify 'Device authentication' by 'Command acknowledgements are authenticated';
   verify 'Command resolution' by 'Command acknowledgements are authenticated';
   verify Escalation by 'Paging queue follows alert state';
