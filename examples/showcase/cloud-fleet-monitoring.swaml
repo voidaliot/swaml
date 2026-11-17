@@ -1,0 +1,2584 @@
+package FleetCloud {
+  /**
+  # Cloud backend for vehicle fleet monitoring
+
+  The server side of a multi-tenant fleet telematics service. Vehicles open a session at a **device gateway**, which
+  checks their key against the **vehicle registry**, forwards frames to the **ingestion pipeline** with retries and
+  relays back-pressure. Ingestion validates, deduplicates and upgrades frames, quarantines bad ones in a
+  **dead-letter store** and publishes accepted telemetry to the **router**, the **persistence writer** (time-series
+  store behind a circuit breaker) and the **OTA campaign tracker**. Per-vehicle **digital twins** track connection
+  state, trips, a geofence and threshold conditions with hysteresis; **alerting** turns conditions into alerts and
+  pages the on-call engineer through an external provider, escalating when nobody acknowledges. Operators use
+  **sessions** of the dashboard API: tenant-scoped queries, live subscriptions and remote commands, whose lifecycle
+  the **command service** tracks until the vehicle acknowledges or the command times out. Every privileged action
+  lands in the append-only **audit log**, and a **health monitor** probes the stateful services.
+
+  Timers are scaled for the reference run (seconds instead of minutes) so that every case finishes inside the
+  default 10 s horizon. Positions use a projected metric grid in kilometres instead of latitude and longitude.
+  */
+  import Swaml::Qos;
+  import Swaml::Views;
+  import Swaml::Platform;
+  import Swaml::Math;
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Value types
+  // ---------------------------------------------------------------------------------------------------------------
+
+  enum LinkState {
+    /** Connection state of a vehicle as seen by its digital twin. */
+    offline, online, stale
+  }
+  enum IngestOutcome {
+    /** Result of submitting one frame; every frame is acknowledged with one of these. */
+    accepted, duplicate, malformed, unsupportedSchema, unauthenticated, unavailable
+  }
+  enum AlertKind {
+    overspeed, geofenceBreach, engineOverheat, lowFuel, vehicleOffline
+  }
+  enum Severity {
+    /** Warnings reach the operator console; critical alerts also page the on-call engineer. */
+    warning, critical
+  }
+  enum AlertStatus {
+    raised, paged, escalated, acknowledged, resolved
+  }
+  enum CommandKind {
+    lockDoors, unlockDoors, immobilize, locate
+  }
+  enum CommandStatus {
+    /** Lifecycle of a remote command: pending until the vehicle acknowledges or the command times out. A command is refused as busy while another is in flight. */
+    pending, delivered, timedOut, rejected, busy
+  }
+  enum Role {
+    viewer, dispatcher
+  }
+  enum Breaker {
+    closed, open, halfOpen
+  }
+  enum Channel {
+    push, voice
+  }
+  enum QueryStatus {
+    ok, notFound, forbidden, throttled, unauthenticated
+  }
+  datatype GridPosition {
+    /** A position in the service's projected metric grid. */
+    xKm: real;
+    yKm: real;
+  }
+  datatype Zone {
+    /** A rectangular permitted operating area with a hysteresis margin around its edge. */
+    minXKm: real;
+    maxXKm: real;
+    minYKm: real;
+    maxYKm: real;
+    marginKm: real;
+  }
+  datatype Frame {
+    /** One raw uplink frame as the vehicle sends it. Schema 1 reports fuel as a fraction, schema 2 as a percentage. */
+    vehicleId: string;
+    sequence: uint;
+    schemaVersion: uint;
+    payloadBytes: uint;
+    checksumOk: bool;
+    sentAtMs: uint;
+    position: GridPosition;
+    speedKph: real;
+    engineTempC: real;
+    fuel: real;
+    ignitionOn: bool;
+    firmware: uint;
+  }
+  datatype Envelope {
+    /** A frame stamped by the gateway with the authenticated tenant and the twin slot of its vehicle. */
+    frame: Frame;
+    tenantId: string;
+    slot: uint;
+  }
+  datatype Telemetry {
+    /** Normalized telemetry in the newest schema, published to the stream processors. */
+    vehicleId: string;
+    tenantId: string;
+    slot: uint;
+    sequence: uint;
+    sentAtMs: uint;
+    position: GridPosition;
+    speedKph: real;
+    engineTempC: real;
+    fuelPct: real;
+    ignitionOn: bool;
+    firmware: uint;
+  }
+  datatype DeadLetter { vehicleId: string; sequence: uint; reason: string; }
+  datatype DeviceIdentity { known: bool; vehicleId: string; tenantId: string; slot: uint; }
+  datatype Principal {
+    /** An authenticated operator: identity, tenant and role. */
+    authenticated: bool;
+    operatorId: string;
+    tenantId: string;
+    role: Role;
+  }
+  datatype VehicleView {
+    /** What an operator sees of one vehicle; a refused query carries only the status and the requested id. */
+    status: QueryStatus;
+    vehicleId: string;
+    tenantId: string;
+    link: LinkState;
+    position: GridPosition;
+    speedKph: real;
+    engineTempC: real;
+    fuelPct: real;
+    tripActive: bool;
+    insideZone: bool;
+    lastSequence: uint;
+  }
+  datatype TripSummary { vehicleId: string; tenantId: string; distanceKm: real; maxSpeedKph: real; }
+  datatype AlertCondition {
+    /** A raise (active) or clear edge of a twin condition, already debounced by hysteresis. */
+    vehicleId: string;
+    tenantId: string;
+    kind: AlertKind;
+    severity: Severity;
+    active: bool;
+    atMs: uint;
+    detail: string;
+  }
+  datatype Alert {
+    alertId: uint;
+    vehicleId: string;
+    tenantId: string;
+    kind: AlertKind;
+    severity: Severity;
+    status: AlertStatus;
+    raisedAtMs: uint;
+    detail: string;
+  }
+  datatype Page {
+    /** One notification handed to the external provider. */
+    alertId: uint;
+    channel: Channel;
+    recipient: string;
+    text: string;
+  }
+  datatype Command {
+    commandId: uint;
+    tenantId: string;
+    vehicleId: string;
+    kind: CommandKind;
+    argument: int;
+    issuedBy: string;
+  }
+  datatype CommandUpdate { commandId: uint; tenantId: string; vehicleId: string; status: CommandStatus; }
+  datatype Rollup {
+    /** One aggregation window of the time-series store. */
+    frames: uint;
+    meanSpeedKph: real;
+  }
+  datatype AuditEntry { actor: string; tenantId: string; action: string; subject: string; }
+  datatype PlatformHealth { registryUp: bool; storeUp: bool; ingestionUp: bool; probes: uint; }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Value helpers (pure package operations)
+  // ---------------------------------------------------------------------------------------------------------------
+
+  operation def Reading(vehicleId: string, sequence: uint, schemaVersion: uint, xKm: real, yKm: real, speedKph: real, engineTempC: real, fuel: real, ignitionOn: bool) returns Frame {
+    /** A well-formed frame. Schema 1 is sent by firmware 37, schema 2 by firmware 42. */
+    var firmware: uint = 42;
+    if (schemaVersion == 1) {
+      firmware = 37;
+    }
+    return record Frame {
+      vehicleId = vehicleId;
+      sequence = sequence;
+      schemaVersion = schemaVersion;
+      payloadBytes = 184;
+      checksumOk = true;
+      sentAtMs = sequence * 1000;
+      position = record GridPosition { xKm = xKm; yKm = yKm; };
+      speedKph = speedKph;
+      engineTempC = engineTempC;
+      fuel = fuel;
+      ignitionOn = ignitionOn;
+      firmware = firmware;
+    };
+  }
+  operation def Damaged(f: Frame) returns Frame {
+    /** The same frame with a failed transport checksum. */
+    return record Frame {
+      vehicleId = f.vehicleId;
+      sequence = f.sequence;
+      schemaVersion = f.schemaVersion;
+      payloadBytes = f.payloadBytes;
+      checksumOk = false;
+      sentAtMs = f.sentAtMs;
+      position = f.position;
+      speedKph = f.speedKph;
+      engineTempC = f.engineTempC;
+      fuel = f.fuel;
+      ignitionOn = f.ignitionOn;
+      firmware = f.firmware;
+    };
+  }
+  operation def Sample(vehicleId: string, sequence: uint, speedKph: real) returns Telemetry {
+    /** Normalized telemetry for stage-level tests. */
+    return record Telemetry {
+      vehicleId = vehicleId;
+      tenantId = "alder";
+      slot = 0;
+      sequence = sequence;
+      sentAtMs = sequence * 1000;
+      position = record GridPosition { xKm = 10.0; yKm = 10.0; };
+      speedKph = speedKph;
+      engineTempC = 85.0;
+      fuelPct = 60.0;
+      ignitionOn = true;
+      firmware = 42;
+    };
+  }
+  operation def NoTelemetry() returns Telemetry {
+    return Sample("", 0, 0.0);
+  }
+  operation def Unknown(vehicleId: string) returns DeviceIdentity {
+    return record DeviceIdentity { known = false; vehicleId = vehicleId; tenantId = ""; slot = 0; };
+  }
+  operation def Anonymous() returns Principal {
+    return record Principal { authenticated = false; operatorId = "anonymous"; tenantId = ""; role = Role.viewer; };
+  }
+  operation def Refused(vehicleId: string, status: QueryStatus) returns VehicleView {
+    /** A view that reveals nothing but the refusal. */
+    return record VehicleView {
+      status = status;
+      vehicleId = vehicleId;
+      tenantId = "";
+      link = LinkState.offline;
+      position = record GridPosition { xKm = 0.0; yKm = 0.0; };
+      speedKph = 0.0;
+      engineTempC = 0.0;
+      fuelPct = 0.0;
+      tripActive = false;
+      insideZone = true;
+      lastSequence = 0;
+    };
+  }
+  operation def NoAlert() returns Alert {
+    return record Alert {
+      alertId = 0;
+      vehicleId = "";
+      tenantId = "";
+      kind = AlertKind.vehicleOffline;
+      severity = Severity.warning;
+      status = AlertStatus.resolved;
+      raisedAtMs = 0;
+      detail = "";
+    };
+  }
+  operation def WithStatus(a: Alert, status: AlertStatus) returns Alert {
+    return record Alert {
+      alertId = a.alertId;
+      vehicleId = a.vehicleId;
+      tenantId = a.tenantId;
+      kind = a.kind;
+      severity = a.severity;
+      status = status;
+      raisedAtMs = a.raisedAtMs;
+      detail = a.detail;
+    };
+  }
+  operation def NoCommand() returns Command {
+    return record Command {
+      commandId = 0;
+      tenantId = "";
+      vehicleId = "";
+      kind = CommandKind.locate;
+      argument = 0;
+      issuedBy = "";
+    };
+  }
+  operation def Outcome(c: Command, status: CommandStatus) returns CommandUpdate {
+    return record CommandUpdate { commandId = c.commandId; tenantId = c.tenantId; vehicleId = c.vehicleId; status = status; };
+  }
+  operation def Entry(actor: string, tenantId: string, action: string, subject: string) returns AuditEntry {
+    return record AuditEntry { actor = actor; tenantId = tenantId; action = action; subject = subject; };
+  }
+  operation def Unprobed() returns PlatformHealth {
+    return record PlatformHealth { registryUp = false; storeUp = false; ingestionUp = false; probes = 0; };
+  }
+  operation def WithValue(values: uint[4], index: uint, value: uint) returns uint[4] {
+    /** Replace one element: the language has no in-place index assignment, so the array is rebuilt. */
+    var a: uint = values[0];
+    var b: uint = values[1];
+    var c: uint = values[2];
+    var d: uint = values[3];
+    if (index == 0) {
+      a = value;
+    }
+    if (index == 1) {
+      b = value;
+    }
+    if (index == 2) {
+      c = value;
+    }
+    if (index == 3) {
+      d = value;
+    }
+    return [a, b, c, d];
+  }
+  operation def WithView(views: VehicleView[2], slot: uint, v: VehicleView) returns VehicleView[2] {
+    if (slot == 0) {
+      return [v, views[1]];
+    }
+    if (slot == 1) {
+      return [views[0], v];
+    }
+    return views;
+  }
+  operation def WithAlert(ring: Alert[4], index: uint, a: Alert) returns Alert[4] {
+    var r0: Alert = ring[0];
+    var r1: Alert = ring[1];
+    var r2: Alert = ring[2];
+    var r3: Alert = ring[3];
+    if (index == 0) {
+      r0 = a;
+    }
+    if (index == 1) {
+      r1 = a;
+    }
+    if (index == 2) {
+      r2 = a;
+    }
+    if (index == 3) {
+      r3 = a;
+    }
+    return [r0, r1, r2, r3];
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Communication policies
+  // ---------------------------------------------------------------------------------------------------------------
+
+  qos def VehicleUplink: Policy {
+    /** Cellular link to a vehicle: bounded, and under overload the oldest message gives way to fresher data. */
+    delivery = Delivery.atMostOnce;
+    ordering = Ordering.fifo;
+    capacity = 32;
+    overflow = Overflow.dropOldest;
+    requestTimeout = 1s;
+  }
+  qos def TelemetryIntake: Policy {
+    /** Gateway to ingestion. At-least-once is safe because submit is idempotent: ingestion deduplicates by sequence. */
+    delivery = Delivery.atLeastOnce;
+    ordering = Ordering.fifo;
+    capacity = 64;
+    overflow = Overflow.reject;
+    requestTimeout = 200ms;
+    maxLatency = 50ms;
+  }
+  qos def StreamFanout: Policy {
+    /** Publish/subscribe between pipeline stages; a slow subscriber loses its oldest backlog first. */
+    delivery = Delivery.atMostOnce;
+    ordering = Ordering.fifo;
+    capacity = 128;
+    overflow = Overflow.dropOldest;
+    requestTimeout = 1s;
+  }
+  qos def WriterBuffer: Policy {
+    /** The writer's bounded buffer: a writer stalled on slow writes sheds its oldest points first, and points older than 5 s are discarded. */
+    delivery = Delivery.atMostOnce;
+    ordering = Ordering.fifo;
+    capacity = 32;
+    overflow = Overflow.dropOldest;
+    requestTimeout = 1s;
+    maxAge = 5s;
+  }
+  qos def ControlCalls: Policy {
+    /** Synchronous control-plane requests: registry, access control, fleet queries and commands. */
+    delivery = Delivery.atMostOnce;
+    ordering = Ordering.fifo;
+    capacity = 32;
+    overflow = Overflow.reject;
+    requestTimeout = 300ms;
+  }
+  qos def StoreCalls: Policy {
+    /** Writes to the time-series store; appends are idempotent so a redelivered write is harmless. */
+    delivery = Delivery.atLeastOnce;
+    ordering = Ordering.fifo;
+    capacity = 32;
+    overflow = Overflow.reject;
+    requestTimeout = 250ms;
+  }
+  qos def HealthChecks: Policy {
+    /** Probes fail fast; a probe that cannot be queued is dropped and counts as down. */
+    delivery = Delivery.atMostOnce;
+    ordering = Ordering.fifo;
+    capacity = 4;
+    overflow = Overflow.dropNewest;
+    requestTimeout = 100ms;
+  }
+  qos def ProviderCalls: Policy {
+    /** The external notification provider. */
+    delivery = Delivery.atMostOnce;
+    ordering = Ordering.fifo;
+    capacity = 8;
+    overflow = Overflow.reject;
+    requestTimeout = 500ms;
+    maxLatency = 200ms;
+  }
+  qos def AuditTrail: Policy {
+    /** Audit entries are never dropped: a full queue rejects, so the producer observes the failure. */
+    delivery = Delivery.atLeastOnce;
+    ordering = Ordering.fifo;
+    capacity = 256;
+    overflow = Overflow.reject;
+    requestTimeout = 1s;
+    maxLatency = 50ms;
+  }
+  qos def ConsoleLink: Policy {
+    /** Operator console connection (dashboard web socket and API calls). */
+    delivery = Delivery.atMostOnce;
+    ordering = Ordering.fifo;
+    capacity = 32;
+    overflow = Overflow.dropOldest;
+    requestTimeout = 1s;
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Ports
+  // ---------------------------------------------------------------------------------------------------------------
+
+  port def VehicleLink {
+    /** The vehicle's side of its session: uplink frames, heartbeats and command acknowledgements; downlink acks, throttling and commands. */
+    provides event hello(vehicleId: string, deviceKey: string);
+    provides event frame(f: Frame);
+    provides event heartbeat(vehicleId: string, sequence: uint);
+    provides event commandAck(commandId: uint, executed: bool);
+    requires event welcome(accepted: bool);
+    requires event ack(sequence: uint, outcome: IngestOutcome);
+    requires event throttle(intervalMs: uint);
+    requires event command(c: Command);
+  }
+  port def Directory {
+    /** The vehicle registry's request interface. */
+    provides operation authenticate(vehicleId: string, deviceKey: string) returns DeviceIdentity;
+    provides operation lookup(vehicleId: string) returns DeviceIdentity;
+  }
+  port def DeviceAuth {
+    provides operation authenticate(vehicleId: string, deviceKey: string) returns DeviceIdentity;
+  }
+  port def VehicleLookup {
+    provides operation lookup(vehicleId: string) returns DeviceIdentity;
+  }
+  port def Health {
+    provides operation ping() returns bool;
+  }
+  port def HealthReport {
+    provides attribute health: PlatformHealth;
+  }
+  port def Intake {
+    /** Frame submission with an idempotent request and a latest-value back-pressure signal. */
+    provides idempotent operation submit(e: Envelope) returns IngestOutcome;
+    provides attribute backlog: uint;
+  }
+  port def TelemetryStream {
+    provides event accepted(t: Telemetry);
+  }
+  port def DeadLetterFeed {
+    provides event rejected(d: DeadLetter);
+  }
+  port def Liveness {
+    provides event heartbeat(vehicleId: string, slot: uint, sequence: uint);
+  }
+  port def TwinFeed {
+    provides event reading(t: Telemetry);
+    provides event beat(sequence: uint);
+  }
+  port def SnapshotFeed {
+    provides event changed(slot: uint, v: VehicleView);
+  }
+  port def ConditionFeed {
+    provides event changed(c: AlertCondition);
+  }
+  port def TripFeed {
+    provides event completed(s: TripSummary);
+  }
+  port def FleetQueries {
+    provides operation vehicleView(tenantId: string, vehicleId: string) returns VehicleView;
+  }
+  port def SeriesApi {
+    provides idempotent operation append(t: Telemetry) returns bool;
+    provides idempotent operation appendRollup(r: Rollup) returns bool;
+  }
+  port def AlertFeed {
+    provides event alert(a: Alert);
+  }
+  port def PageQueue {
+    provides event page(a: Alert);
+  }
+  port def AlertStatusFeed {
+    provides event changed(alertId: uint, status: AlertStatus);
+  }
+  port def NotifyApi {
+    /** The external notification provider (push and voice calls). */
+    provides operation deliver(p: Page) returns bool;
+  }
+  port def OnCallConsole {
+    /** The on-call engineer's acknowledgement channel. */
+    provides event acknowledge(alertId: uint, engineer: string);
+  }
+  port def OperatorAuth {
+    provides operation authorize(token: string) returns Principal;
+  }
+  port def CommandApi {
+    provides operation submit(c: Command) returns CommandUpdate;
+  }
+  port def CommandDispatch {
+    provides event queued(c: Command);
+  }
+  port def CommandDownlink {
+    provides event deliver(c: Command);
+  }
+  port def CommandAcks {
+    provides event ack(commandId: uint, executed: bool);
+  }
+  port def CommandUpdates {
+    provides event update(u: CommandUpdate);
+  }
+  port def AuditFeed {
+    provides event logged(e: AuditEntry);
+  }
+  port def Console {
+    /** The operator's side of a dashboard session: API requests, a live subscription and pushed updates. */
+    requires operation login(token: string) returns Principal;
+    requires operation vehicleStatus(vehicleId: string) returns VehicleView;
+    requires operation issueCommand(vehicleId: string, kind: CommandKind, argument: int) returns CommandUpdate;
+    requires operation platformStatus() returns PlatformHealth;
+    provides event subscribe();
+    requires event vehicleUpdate(v: VehicleView);
+    requires event alert(a: Alert);
+    requires event commandUpdate(u: CommandUpdate);
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Actors and external systems (interface-only)
+  // ---------------------------------------------------------------------------------------------------------------
+
+  component def Vehicle {
+    /** Actor: a connected vehicle's telematics unit. */
+    port link: VehicleLink;
+  }
+  component def FleetOperator {
+    /** Actor: a dispatcher or viewer of one tenant at the fleet dashboard. */
+    port console: Console;
+  }
+  component def OnCallEngineer {
+    /** Actor: the engineer on call, who acknowledges pages. */
+    port console: OnCallConsole;
+  }
+  component def NotificationProvider {
+    /** External system: the push and voice notification provider. */
+    port api: NotifyApi;
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Device edge
+  // ---------------------------------------------------------------------------------------------------------------
+
+  component def DeviceGateway {
+    /**
+    Terminates one vehicle session. It authenticates the vehicle's key against the registry, stamps each frame with
+    the tenant and twin slot, submits it to ingestion with **retry and backoff** and acknowledges it with the outcome.
+    It relays heartbeats and commands, and turns the ingestion **backlog** (a latest-value attribute) into throttle
+    requests between a high and a low watermark.
+    */
+    reversed port vehicle: VehicleLink;
+    reversed port directory: DeviceAuth;
+    reversed port intake: Intake;
+    port liveness: Liveness;
+    reversed port downlink: CommandDownlink;
+    port commandAcks: CommandAcks;
+    const attribute highWatermark: uint = 6;
+    const attribute lowWatermark: uint = 1;
+    const attribute normalIntervalMs: uint = 1000;
+    const attribute throttledIntervalMs: uint = 5000;
+    attribute sessionVehicle: string = "";
+    attribute sessionTenant: string = "";
+    attribute sessionSlot: uint = 0;
+    attribute authenticated: bool = false;
+    attribute forwarded: uint = 0;
+    attribute refused: uint = 0;
+    attribute retries: uint = 0;
+    attribute backlog: uint = 0;
+    attribute throttled: bool = false;
+    operation openSession(claimed: string, deviceKey: string) {
+      var identity: DeviceIdentity = try(directory.authenticate(claimed, deviceKey), Unknown(claimed));
+      authenticated = identity.known;
+      if (identity.known) {
+        sessionVehicle = identity.vehicleId;
+        sessionTenant = identity.tenantId;
+        sessionSlot = identity.slot;
+      }
+      publish vehicle.welcome(identity.known);
+    }
+    operation submitWithRetry(e: Envelope) returns IngestOutcome {
+      /** Up to three attempts with 50 ms and 150 ms backoff; the idempotent submit makes a retried duplicate harmless. Counts retries and forwarded frames. */
+      var outcome: IngestOutcome = IngestOutcome.unavailable;
+      var attempt: uint = 0;
+      while (outcome == IngestOutcome.unavailable, 3 times) {
+        if (attempt == 1) {
+          wait 50ms;
+        }
+        if (attempt == 2) {
+          wait 150ms;
+        }
+        attempt = attempt + 1;
+        outcome = try(intake.submit(e), IngestOutcome.unavailable);
+      }
+      if (attempt > 1) {
+        retries = retries + attempt - 1;
+      }
+      if (outcome == IngestOutcome.accepted) {
+        forwarded = forwarded + 1;
+      }
+      return outcome;
+    }
+    operation handleFrame(f: Frame) {
+      if (not authenticated or f.vehicleId != sessionVehicle) {
+        refused = refused + 1;
+        publish vehicle.ack(f.sequence, IngestOutcome.unauthenticated);
+        return;
+      }
+      var envelope: Envelope = record Envelope { frame = f; tenantId = sessionTenant; slot = sessionSlot; };
+      var outcome: IngestOutcome = submitWithRetry(envelope);
+      publish vehicle.ack(f.sequence, outcome);
+    }
+    operation handleBacklog(level: uint) {
+      backlog = level;
+      if (authenticated and not throttled and level >= highWatermark) {
+        throttled = true;
+        publish vehicle.throttle(throttledIntervalMs);
+      } else {
+        if (throttled and level <= lowWatermark) {
+          throttled = false;
+          publish vehicle.throttle(normalIntervalMs);
+        }
+      }
+    }
+    operation forwardBeat(id: string, sequence: uint) {
+      if (authenticated and id == sessionVehicle) {
+        publish liveness.heartbeat(id, sessionSlot, sequence);
+      }
+    }
+    operation deliverCommand(c: Command) {
+      if (authenticated and c.vehicleId == sessionVehicle) {
+        publish vehicle.command(c);
+      }
+    }
+    operation relayAck(commandId: uint, executed: bool) {
+      publish commandAcks.ack(commandId, executed);
+    }
+    schedule {
+      on receive vehicle.hello(claimed, deviceKey) openSession(claimed, deviceKey) deadline 500ms;
+      on receive vehicle.frame(f) handleFrame(f) deadline 1s;
+      on receive vehicle.heartbeat(id, sequence) forwardBeat(id, sequence) concurrent;
+      on receive vehicle.commandAck(commandId, executed) relayAck(commandId, executed) concurrent;
+      on receive intake.backlog(level) handleBacklog(level);
+      on receive downlink.deliver(c) deliverCommand(c) concurrent;
+    }
+  }
+  component def VehicleRegistry {
+    /** The vehicle registry: device keys, tenant ownership and twin slot assignment. TRK-099 is decommissioned. */
+    port directory: Directory;
+    port health: Health;
+    const attribute vehicleIds: string[3] = ["TRK-101", "VAN-202", "TRK-099"];
+    const attribute owners: string[3] = ["alder", "birch", "alder"];
+    const attribute deviceKeys: string[3] = ["key-101", "key-202", "key-099"];
+    const attribute slots: uint[3] = [0, 1, 0];
+    const attribute active: bool[3] = [true, true, false];
+    attribute authentications: uint = 0;
+    attribute failedAuthentications: uint = 0;
+    operation find(vehicle: string) returns int {
+      for (var i: int = 0; i < 3; i = i + 1) {
+        if (vehicleIds[i] == vehicle) {
+          return i;
+        }
+      }
+      return - 1;
+    }
+    operation identity(i: int) returns DeviceIdentity {
+      return record DeviceIdentity { known = true; vehicleId = vehicleIds[i]; tenantId = owners[i]; slot = slots[i]; };
+    }
+    operation authenticate(vehicle: string, deviceKey: string) returns DeviceIdentity {
+      var i: int = find(vehicle);
+      if (i >= 0) {
+        if (active[i] and deviceKeys[i] == deviceKey) {
+          authentications = authentications + 1;
+          return identity(i);
+        }
+      }
+      failedAuthentications = failedAuthentications + 1;
+      return Unknown(vehicle);
+    }
+    operation lookup(vehicle: string) returns DeviceIdentity {
+      var i: int = find(vehicle);
+      if (i >= 0) {
+        if (active[i]) {
+          return identity(i);
+        }
+      }
+      return Unknown(vehicle);
+    }
+    operation ping() returns bool {
+      return true;
+    }
+    schedule {
+      on call directory.authenticate(vehicle, deviceKey) authenticate(vehicle, deviceKey);
+      on call directory.lookup(vehicle) lookup(vehicle) concurrent;
+      on call health.ping() ping() concurrent;
+    }
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Ingestion and stream processing
+  // ---------------------------------------------------------------------------------------------------------------
+
+  component def IngestionPipeline {
+    /**
+    Validates, deduplicates and normalizes frames. Malformed frames and unsupported schemas go to the dead-letter
+    path, retransmissions (a sequence at or below the newest accepted one) are acknowledged as duplicates, and schema 1
+    frames are upgraded to schema 2. The number of submissions in flight is published as the back-pressure backlog.
+    */
+    port intake: Intake;
+    port stream: TelemetryStream;
+    port deadLetters: DeadLetterFeed;
+    port health: Health;
+    const attribute maxPayloadBytes: uint = 512;
+    const attribute newestSchema: uint = 2;
+    attribute lastSequence: uint[4] = [0, 0, 0, 0];
+    attribute inFlight: uint = 0;
+    attribute acceptedFrames: uint = 0;
+    attribute duplicateFrames: uint = 0;
+    attribute deadLettered: uint = 0;
+    attribute upgraded: uint = 0;
+    operation problem(f: Frame) returns string {
+      if (not f.checksumOk) {
+        return "checksum mismatch";
+      }
+      if (f.payloadBytes > maxPayloadBytes) {
+        return "payload too large";
+      }
+      if (f.speedKph < 0.0 or f.speedKph > 250.0) {
+        return "speed out of range";
+      }
+      if (f.schemaVersion == 0 or f.schemaVersion > newestSchema) {
+        return "unsupported schema version";
+      }
+      return "";
+    }
+    operation normalize(e: Envelope) returns Telemetry {
+      var fuelPct: real = e.frame.fuel;
+      if (e.frame.schemaVersion == 1) {
+        fuelPct = e.frame.fuel * 100.0;
+        upgraded = upgraded + 1;
+      }
+      return record Telemetry {
+        vehicleId = e.frame.vehicleId;
+        tenantId = e.tenantId;
+        slot = e.slot;
+        sequence = e.frame.sequence;
+        sentAtMs = e.frame.sentAtMs;
+        position = e.frame.position;
+        speedKph = e.frame.speedKph;
+        engineTempC = e.frame.engineTempC;
+        fuelPct = fuelPct;
+        ignitionOn = e.frame.ignitionOn;
+        firmware = e.frame.firmware;
+      };
+    }
+    operation track(delta: int) {
+      /** Adjust the in-flight count and publish it as the latest back-pressure value. */
+      inFlight = inFlight + delta;
+      send intake.backlog(inFlight);
+    }
+    operation submit(e: Envelope) returns IngestOutcome {
+      track(1);
+      wait 2ms;
+      track(- 1);
+      var reason: string = problem(e.frame);
+      if (reason != "") {
+        deadLettered = deadLettered + 1;
+        publish deadLetters.rejected(record DeadLetter { vehicleId = e.frame.vehicleId; sequence = e.frame.sequence; reason = reason; });
+        if (e.frame.schemaVersion > newestSchema) {
+          return IngestOutcome.unsupportedSchema;
+        }
+        return IngestOutcome.malformed;
+      }
+      if (e.frame.sequence <= lastSequence[e.slot]) {
+        duplicateFrames = duplicateFrames + 1;
+        return IngestOutcome.duplicate;
+      }
+      lastSequence = WithValue(lastSequence, e.slot, e.frame.sequence);
+      acceptedFrames = acceptedFrames + 1;
+      publish stream.accepted(normalize(e));
+      return IngestOutcome.accepted;
+    }
+    operation ping() returns bool {
+      return true;
+    }
+    schedule {
+      on call intake.submit(e) submit(e) deadline 100ms;
+      on call health.ping() ping() concurrent;
+    }
+  }
+  component def DeadLetterStore {
+    /** Quarantine for rejected frames, retained for two 5 s windows for inspection and replay. */
+    reversed port letters: DeadLetterFeed;
+    attribute currentWindow: uint = 0;
+    attribute previousWindow: uint = 0;
+    attribute expired: uint = 0;
+    attribute lastReason: string = "";
+    attribute lastVehicle: string = "";
+    operation keep(d: DeadLetter) {
+      currentWindow = currentWindow + 1;
+      lastReason = d.reason;
+      lastVehicle = d.vehicleId;
+    }
+    operation rotate() {
+      expired = expired + previousWindow;
+      previousWindow = currentWindow;
+      currentWindow = 0;
+    }
+    schedule {
+      on receive letters.rejected(d) keep(d);
+      on every 5s rotate();
+    }
+  }
+  component def TelemetryRouter {
+    /** Partitions the accepted stream and the heartbeats by twin slot (one partition per digital twin). */
+    reversed port stream: TelemetryStream;
+    reversed port liveness: Liveness;
+    port slot0: TwinFeed;
+    port slot1: TwinFeed;
+    attribute routed: uint = 0;
+    attribute unroutable: uint = 0;
+    operation route(t: Telemetry) {
+      if (t.slot == 0) {
+        routed = routed + 1;
+        publish slot0.reading(t);
+      } else {
+        if (t.slot == 1) {
+          routed = routed + 1;
+          publish slot1.reading(t);
+        } else {
+          unroutable = unroutable + 1;
+        }
+      }
+    }
+    operation beat(id: string, slot: uint, sequence: uint) {
+      if (slot == 0) {
+        publish slot0.beat(sequence);
+      }
+      if (slot == 1) {
+        publish slot1.beat(sequence);
+      }
+    }
+    schedule {
+      on receive stream.accepted(t) route(t) deadline 20ms;
+      on receive liveness.heartbeat(id, slot, sequence) beat(id, slot, sequence) concurrent;
+    }
+  }
+  component def VehicleTwin {
+    /**
+    The digital twin of the vehicle in one slot. Its `connection` state machine detects silence: a vehicle without
+    frames or heartbeats for 3 s becomes **stale** and after another 3 s **offline**. Each frame updates trip
+    detection, a geofence and threshold conditions. Every condition has a raise and a lower clear threshold
+    (**hysteresis**), so a value hovering around a limit raises one alert, not a stream of them.
+    */
+    reversed port feed: TwinFeed;
+    port snapshots: SnapshotFeed;
+    port conditions: ConditionFeed;
+    port trips: TripFeed;
+    const attribute overspeedRaiseKph: real = 110.0;
+    const attribute overspeedClearKph: real = 100.0;
+    const attribute overheatRaiseC: real = 105.0;
+    const attribute overheatClearC: real = 95.0;
+    const attribute lowFuelRaisePct: real = 10.0;
+    const attribute lowFuelClearPct: real = 15.0;
+    const attribute zone: Zone = record Zone {
+      minXKm = 0.0;
+      maxXKm = 40.0;
+      minYKm = 0.0;
+      maxYKm = 30.0;
+      marginKm = 0.5;
+    } /** The permitted operating area of the fleet. */;
+    attribute slot: uint = 0;
+    attribute vehicleId: string = "";
+    attribute tenantId: string = "";
+    attribute link: LinkState = LinkState.offline;
+    attribute last: Telemetry = NoTelemetry();
+    attribute frames: uint = 0;
+    attribute beats: uint = 0;
+    attribute insideZone: bool = true;
+    attribute overspeeding: bool = false;
+    attribute overheating: bool = false;
+    attribute fuelLow: bool = false;
+    attribute tripActive: bool = false;
+    attribute tripDistanceKm: real = 0.0;
+    attribute tripMaxSpeedKph: real = 0.0;
+    operation condition(kind: AlertKind, severity: Severity, active: bool, detail: string) returns AlertCondition {
+      return record AlertCondition {
+        vehicleId = vehicleId;
+        tenantId = tenantId;
+        kind = kind;
+        severity = severity;
+        active = active;
+        atMs = last.sentAtMs;
+        detail = detail;
+      };
+    }
+    operation currentView() returns VehicleView {
+      return record VehicleView {
+        status = QueryStatus.ok;
+        vehicleId = vehicleId;
+        tenantId = tenantId;
+        link = link;
+        position = last.position;
+        speedKph = last.speedKph;
+        engineTempC = last.engineTempC;
+        fuelPct = last.fuelPct;
+        tripActive = tripActive;
+        insideZone = insideZone;
+        lastSequence = last.sequence;
+      };
+    }
+    operation publishSnapshot() {
+      publish snapshots.changed(slot, currentView());
+    }
+    operation watchTrip(t: Telemetry) {
+      if (tripActive) {
+        tripDistanceKm = tripDistanceKm + abs(t.position.xKm - last.position.xKm) + abs(t.position.yKm - last.position.yKm);
+        tripMaxSpeedKph = max(tripMaxSpeedKph, t.speedKph);
+        if (not t.ignitionOn) {
+          tripActive = false;
+          publish trips.completed(record TripSummary { vehicleId = vehicleId; tenantId = tenantId; distanceKm = tripDistanceKm; maxSpeedKph = tripMaxSpeedKph; });
+        }
+      } else {
+        if (t.ignitionOn and t.speedKph > 5.0) {
+          tripActive = true;
+          tripDistanceKm = 0.0;
+          tripMaxSpeedKph = t.speedKph;
+        }
+      }
+    }
+    operation watchSpeed(speed: real) {
+      if (not overspeeding and speed > overspeedRaiseKph) {
+        overspeeding = true;
+        publish conditions.changed(condition(AlertKind.overspeed, Severity.warning, true, "speed above 110 km/h"));
+      } else {
+        if (overspeeding and speed < overspeedClearKph) {
+          overspeeding = false;
+          publish conditions.changed(condition(AlertKind.overspeed, Severity.warning, false, "speed back below 100 km/h"));
+        }
+      }
+    }
+    operation watchEngine(temperature: real) {
+      if (not overheating and temperature > overheatRaiseC) {
+        overheating = true;
+        publish conditions.changed(condition(AlertKind.engineOverheat, Severity.critical, true, "engine above 105 C"));
+      } else {
+        if (overheating and temperature < overheatClearC) {
+          overheating = false;
+          publish conditions.changed(condition(AlertKind.engineOverheat, Severity.critical, false, "engine back below 95 C"));
+        }
+      }
+    }
+    operation watchFuel(fuel: real) {
+      if (not fuelLow and fuel < lowFuelRaisePct) {
+        fuelLow = true;
+        publish conditions.changed(condition(AlertKind.lowFuel, Severity.warning, true, "fuel below 10 %"));
+      } else {
+        if (fuelLow and fuel > lowFuelClearPct) {
+          fuelLow = false;
+          publish conditions.changed(condition(AlertKind.lowFuel, Severity.warning, false, "fuel above 15 %"));
+        }
+      }
+    }
+    operation watchZone(p: GridPosition) {
+      /** Positive excursion is the distance outside the zone, negative the distance inside it. */
+      var excursion: real = max(max(zone.minXKm - p.xKm, p.xKm - zone.maxXKm), max(zone.minYKm - p.yKm, p.yKm - zone.maxYKm));
+      if (insideZone and excursion > zone.marginKm) {
+        insideZone = false;
+        publish conditions.changed(condition(AlertKind.geofenceBreach, Severity.critical, true, "left the permitted operating area"));
+      } else {
+        if (not insideZone and excursion < - zone.marginKm) {
+          insideZone = true;
+          publish conditions.changed(condition(AlertKind.geofenceBreach, Severity.critical, false, "back inside the permitted operating area"));
+        }
+      }
+    }
+    operation apply(t: Telemetry) {
+      slot = t.slot;
+      vehicleId = t.vehicleId;
+      tenantId = t.tenantId;
+      watchTrip(t);
+      last = t;
+      frames = frames + 1;
+      watchSpeed(t.speedKph);
+      watchEngine(t.engineTempC);
+      watchFuel(t.fuelPct);
+      watchZone(t.position);
+    }
+    operation connection() {
+      initial Unseen;
+      state Unseen {
+        /** No vehicle has reported in this slot yet. */
+        on receive feed.reading(t) to Online {
+          apply(t);
+        }
+      }
+      state Online {
+        on entry {
+          link = LinkState.online;
+          publishSnapshot();
+        }
+        on receive feed.reading(t) to Online {
+          apply(t);
+        }
+        on receive feed.beat(sequence) to Online {
+          beats = beats + 1;
+        }
+        after 3s to Stale {
+        }
+      }
+      state Stale {
+        on entry {
+          link = LinkState.stale;
+          publishSnapshot();
+        }
+        on receive feed.reading(t) to Online {
+          apply(t);
+        }
+        on receive feed.beat(sequence) to Online {
+          beats = beats + 1;
+        }
+        after 3s to Offline {
+        }
+      }
+      state Offline {
+        on entry {
+          link = LinkState.offline;
+          publishSnapshot();
+          publish conditions.changed(condition(AlertKind.vehicleOffline, Severity.warning, true, "no frames or heartbeats for 6 s"));
+        }
+        on exit {
+          publish conditions.changed(condition(AlertKind.vehicleOffline, Severity.warning, false, "vehicle reporting again"));
+        }
+        on receive feed.reading(t) to Online {
+          apply(t);
+        }
+        on receive feed.beat(sequence) to Online {
+          beats = beats + 1;
+        }
+      }
+    }
+    schedule {
+      on start connection();
+    }
+  }
+  component def FleetStateStore {
+    /** The materialized fleet view behind the dashboard queries. Every query is scoped to the caller's tenant. */
+    reversed port snapshots: SnapshotFeed;
+    reversed port trips: TripFeed;
+    port api: FleetQueries;
+    attribute views: VehicleView[2] = [Refused("", QueryStatus.notFound), Refused("", QueryStatus.notFound)];
+    attribute tripsCompleted: uint = 0;
+    attribute lastTripKm: real = 0.0;
+    attribute queries: uint = 0;
+    attribute denied: uint = 0;
+    operation remember(slot: uint, v: VehicleView) {
+      views = WithView(views, slot, v);
+    }
+    operation recordTrip(s: TripSummary) {
+      tripsCompleted = tripsCompleted + 1;
+      lastTripKm = s.distanceKm;
+    }
+    operation vehicleView(tenant: string, vehicle: string) returns VehicleView {
+      queries = queries + 1;
+      for (v: VehicleView in views) {
+        if (v.vehicleId == vehicle) {
+          if (v.tenantId != tenant) {
+            denied = denied + 1;
+            return Refused(vehicle, QueryStatus.forbidden);
+          }
+          return v;
+        }
+      }
+      return Refused(vehicle, QueryStatus.notFound);
+    }
+    schedule {
+      on receive snapshots.changed(slot, v) remember(slot, v);
+      on receive trips.completed(s) recordTrip(s);
+      on call api.vehicleView(tenant, vehicle) vehicleView(tenant, vehicle);
+    }
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Storage
+  // ---------------------------------------------------------------------------------------------------------------
+
+  component def TimeSeriesStore {
+    /** The telemetry time-series store with idempotent append, window rollups and a two-window retention job. */
+    port data: SeriesApi;
+    port health: Health;
+    attribute points: uint = 0;
+    attribute rollups: uint = 0;
+    attribute lastVehicle: string = "";
+    attribute lastRollup: Rollup = record Rollup { frames = 0; meanSpeedKph = 0.0; };
+    attribute currentWindow: uint = 0;
+    attribute previousWindow: uint = 0;
+    attribute expired: uint = 0;
+    operation append(t: Telemetry) returns bool {
+      wait 1ms;
+      points = points + 1;
+      currentWindow = currentWindow + 1;
+      lastVehicle = t.vehicleId;
+      return true;
+    }
+    operation appendRollup(r: Rollup) returns bool {
+      rollups = rollups + 1;
+      lastRollup = r;
+      return true;
+    }
+    operation retention() {
+      expired = expired + previousWindow;
+      previousWindow = currentWindow;
+      currentWindow = 0;
+    }
+    operation ping() returns bool {
+      return true;
+    }
+    schedule {
+      on call data.append(t) append(t);
+      on call data.appendRollup(r) appendRollup(r);
+      on call health.ping() ping() concurrent;
+      on every 5s retention();
+    }
+  }
+  component def PersistenceWriter {
+    /**
+    Writes accepted telemetry to the time-series store behind a **circuit breaker**. Three consecutive failed writes
+    trip the breaker on the next arrival; while open, arrivals are shed without touching the store (the open state
+    does not handle them, so each is discarded observably). After a 2 s cool-down the breaker half-opens and the next
+    point is a probe: success closes it, failure trips it again on the following arrival. A periodic job writes one rollup per 1 s aggregation window.
+    */
+    reversed port stream: TelemetryStream;
+    reversed port store: SeriesApi;
+    const attribute failureThreshold: uint = 3;
+    attribute breaker: Breaker = Breaker.closed;
+    attribute consecutiveFailures: uint = 0;
+    attribute written: uint = 0;
+    attribute shed: uint = 0;
+    attribute opened: uint = 0;
+    attribute windowFrames: uint = 0;
+    attribute windowSpeedSum: real = 0.0;
+    attribute rollupsWritten: uint = 0;
+    attribute rollupsSkipped: uint = 0;
+    operation write(t: Telemetry) {
+      var stored: bool = try(store.append(t), false);
+      if (stored) {
+        consecutiveFailures = 0;
+        written = written + 1;
+        windowFrames = windowFrames + 1;
+        windowSpeedSum = windowSpeedSum + t.speedKph;
+      } else {
+        consecutiveFailures = consecutiveFailures + 1;
+      }
+    }
+    operation probe(t: Telemetry) {
+      write(t);
+      if (consecutiveFailures > 0) {
+        consecutiveFailures = failureThreshold;
+      }
+    }
+    operation enter(position: Breaker) {
+      /** Record the breaker state for observers and count openings. */
+      breaker = position;
+      if (position == Breaker.open) {
+        opened = opened + 1;
+      }
+    }
+    operation circuit() {
+      initial Closed;
+      state Closed {
+        on entry {
+          enter(Breaker.closed);
+        }
+        on receive stream.accepted(t) when (consecutiveFailures >= failureThreshold) to Open {
+          shed = shed + 1;
+        }
+        on receive stream.accepted(t) to Closed {
+          write(t);
+        }
+      }
+      state Open {
+        /** Arrivals have no transition here and are discarded; a self-transition would restart the cool-down timer. */
+        on entry {
+          enter(Breaker.open);
+        }
+        after 2s to HalfOpen {
+        }
+      }
+      state HalfOpen {
+        on entry {
+          enter(Breaker.halfOpen);
+        }
+        on receive stream.accepted(t) to Closed {
+          probe(t);
+        }
+      }
+    }
+    operation storeRollup(window: Rollup) {
+      var stored: bool = try(store.appendRollup(window), false);
+      if (stored) {
+        rollupsWritten = rollupsWritten + 1;
+      } else {
+        rollupsSkipped = rollupsSkipped + 1;
+      }
+    }
+    operation flushWindow() {
+      if (windowFrames == 0) {
+        return;
+      }
+      if (breaker != Breaker.closed) {
+        rollupsSkipped = rollupsSkipped + 1;
+        return;
+      }
+      var window: Rollup = record Rollup { frames = windowFrames; meanSpeedKph = windowSpeedSum / windowFrames; };
+      windowFrames = 0;
+      windowSpeedSum = 0.0;
+      storeRollup(window);
+    }
+    schedule {
+      on start circuit();
+      on every 1s flushWindow() deadline 500ms;
+    }
+  }
+  component def CampaignTracker {
+    /** Over-the-air campaign progress: the share of reporting vehicles that run the target firmware. */
+    reversed port stream: TelemetryStream;
+    const attribute targetFirmware: uint = 42;
+    attribute reported: uint[4] = [0, 0, 0, 0];
+    attribute progressPct: real = 0.0;
+    attribute evaluations: uint = 0;
+    operation observe(t: Telemetry) {
+      reported = WithValue(reported, t.slot, t.firmware);
+    }
+    operation evaluate() {
+      var seen: uint = 0;
+      var done: uint = 0;
+      for (firmware: uint in reported) {
+        if (firmware > 0) {
+          seen = seen + 1;
+          if (firmware >= targetFirmware) {
+            done = done + 1;
+          }
+        }
+      }
+      if (seen > 0) {
+        progressPct = 100.0 * done / seen;
+      }
+      evaluations = evaluations + 1;
+    }
+    schedule {
+      on receive stream.accepted(t) observe(t);
+      on every 2s evaluate();
+    }
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Alerting and notification
+  // ---------------------------------------------------------------------------------------------------------------
+
+  component def AlertRouter {
+    /** Turns condition edges into alerts, keeps the four most recent alerts and republishes their status changes. Critical alerts are paged one at a time: while the desk is busy, up to four further pages wait here. */
+    reversed port conditions: ConditionFeed;
+    port feed: AlertFeed;
+    port pages: PageQueue;
+    reversed port status: AlertStatusFeed;
+    attribute nextAlertId: uint = 1;
+    attribute recent: Alert[4] = [NoAlert(), NoAlert(), NoAlert(), NoAlert()];
+    attribute ringNext: uint = 0;
+    attribute raised: uint = 0;
+    attribute paged: uint = 0;
+    attribute resolved: uint = 0;
+    attribute deskBusy: bool = false;
+    attribute waiting: Alert[4] = [NoAlert(), NoAlert(), NoAlert(), NoAlert()];
+    attribute waitingHead: uint = 0;
+    attribute waitingCount: uint = 0;
+    attribute droppedPages: uint = 0;
+    operation page(a: Alert) {
+      paged = paged + 1;
+      if (not deskBusy) {
+        deskBusy = true;
+        publish pages.page(a);
+      } else {
+        if (waitingCount < 4) {
+          waiting = WithAlert(waiting, (waitingHead + waitingCount) % 4, a);
+          waitingCount = waitingCount + 1;
+        } else {
+          droppedPages = droppedPages + 1;
+        }
+      }
+    }
+    operation deskFree() {
+      if (waitingCount > 0) {
+        var next: Alert = waiting[waitingHead];
+        waitingHead = (waitingHead + 1) % 4;
+        waitingCount = waitingCount - 1;
+        publish pages.page(next);
+      } else {
+        deskBusy = false;
+      }
+    }
+    operation findOpen(vehicle: string, kind: AlertKind) returns int {
+      for (var i: int = 0; i < 4; i = i + 1) {
+        var a: Alert = recent[i];
+        if (a.vehicleId == vehicle and a.kind == kind and a.status != AlertStatus.resolved) {
+          return i;
+        }
+      }
+      return - 1;
+    }
+    operation findId(alertId: uint) returns int {
+      for (var i: int = 0; i < 4; i = i + 1) {
+        var a: Alert = recent[i];
+        if (a.alertId == alertId) {
+          return i;
+        }
+      }
+      return - 1;
+    }
+    operation replace(index: int, a: Alert) {
+      recent = WithAlert(recent, index, a);
+      publish feed.alert(a);
+    }
+    operation onCondition(c: AlertCondition) {
+      if (c.active) {
+        var a: Alert = record Alert {
+          alertId = nextAlertId;
+          vehicleId = c.vehicleId;
+          tenantId = c.tenantId;
+          kind = c.kind;
+          severity = c.severity;
+          status = AlertStatus.raised;
+          raisedAtMs = c.atMs;
+          detail = c.detail;
+        };
+        nextAlertId = nextAlertId + 1;
+        replace(ringNext, a);
+        ringNext = (ringNext + 1) % 4;
+        raised = raised + 1;
+        if (a.severity == Severity.critical) {
+          page(a);
+        }
+      } else {
+        var open: int = findOpen(c.vehicleId, c.kind);
+        if (open >= 0) {
+          resolved = resolved + 1;
+          replace(open, WithStatus(recent[open], AlertStatus.resolved));
+        }
+      }
+    }
+    operation onStatus(alertId: uint, status: AlertStatus) {
+      var index: int = findId(alertId);
+      if (index >= 0) {
+        replace(index, WithStatus(recent[index], status));
+      }
+      if (status == AlertStatus.acknowledged) {
+        deskFree();
+      }
+    }
+    schedule {
+      on receive conditions.changed(c) onCondition(c) deadline 50ms;
+      on receive status.changed(alertId, status) onStatus(alertId, status);
+    }
+  }
+  component def EscalationDesk {
+    /**
+    The alert lifecycle of a paged alert. The desk pages the primary on-call by push; without an acknowledgement
+    within 2 s it **escalates** by voice call to the secondary and repeats the escalation every 5 s. Each delivery
+    is retried once after 100 ms. The desk handles one paged alert at a time: the router holds further pages and
+    hands over the next one when the current alert is acknowledged.
+    */
+    reversed port pages: PageQueue;
+    reversed port acks: OnCallConsole;
+    reversed port provider: NotifyApi;
+    port status: AlertStatusFeed;
+    port audit: AuditFeed;
+    const attribute primaryRecipient: string = "oncall-primary";
+    const attribute secondaryRecipient: string = "oncall-secondary";
+    attribute current: Alert = NoAlert();
+    attribute pagesSent: uint = 0;
+    attribute deliveryFailures: uint = 0;
+    attribute escalations: uint = 0;
+    attribute acknowledged: uint = 0;
+    attribute lastAcknowledgedBy: string = "";
+    operation compose(channel: Channel, recipient: string) returns Page {
+      return record Page { alertId = current.alertId; channel = channel; recipient = recipient; text = "CRITICAL " + current.vehicleId + ": " + current.detail; };
+    }
+    operation notify(page: Page) {
+      /** Deliver one page, retrying once after 100 ms. */
+      var delivered: bool = try(provider.deliver(page), false);
+      if (not delivered) {
+        deliveryFailures = deliveryFailures + 1;
+        wait 100ms;
+        delivered = try(provider.deliver(page), false);
+      }
+      if (delivered) {
+        pagesSent = pagesSent + 1;
+      } else {
+        deliveryFailures = deliveryFailures + 1;
+      }
+    }
+    operation report(s: AlertStatus, action: string) {
+      publish status.changed(current.alertId, s);
+      publish audit.logged(Entry("escalation-desk", current.tenantId, action, current.vehicleId));
+    }
+    operation escalation() {
+      initial Idle;
+      state Idle {
+        on receive pages.page(a) to Paging {
+          current = a;
+        }
+      }
+      state Paging {
+        on entry {
+          notify(compose(Channel.push, primaryRecipient));
+          report(AlertStatus.paged, "paged primary on-call");
+        }
+        on receive acks.acknowledge(alertId, engineer) when (alertId == current.alertId) to Acknowledged {
+          lastAcknowledgedBy = engineer;
+        }
+        after 2s to Escalated {
+          escalations = escalations + 1;
+        }
+      }
+      state Escalated {
+        on entry {
+          notify(compose(Channel.voice, secondaryRecipient));
+          report(AlertStatus.escalated, "escalated to secondary on-call");
+        }
+        on receive acks.acknowledge(alertId, engineer) when (alertId == current.alertId) to Acknowledged {
+          lastAcknowledgedBy = engineer;
+        }
+        after 5s to Escalated {
+          escalations = escalations + 1;
+        }
+      }
+      state Acknowledged {
+        on entry {
+          acknowledged = acknowledged + 1;
+          report(AlertStatus.acknowledged, "acknowledged by " + lastAcknowledgedBy);
+        }
+        on receive pages.page(a) to Paging {
+          current = a;
+        }
+        after 100ms to Idle {
+        }
+      }
+    }
+    schedule {
+      on start escalation();
+    }
+  }
+  component def AlertingService {
+    /** Alerting: routing and the escalation desk behind one boundary. */
+    reversed port conditions: ConditionFeed;
+    port feed: AlertFeed;
+    reversed port acks: OnCallConsole;
+    reversed port provider: NotifyApi;
+    port audit: AuditFeed;
+    component router: AlertRouter;
+    component desk: EscalationDesk;
+    connect (conditions, router.conditions);
+    connect (feed, router.feed);
+    connect (acks, desk.acks);
+    connect (provider, desk.provider);
+    connect (audit, desk.audit);
+    connect paging: Reliable (router.pages, desk.pages);
+    connect statusUpdates: Reliable (desk.status, router.status);
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Remote commands
+  // ---------------------------------------------------------------------------------------------------------------
+
+  component def CommandIntake {
+    /** Accepts operator commands, checks that the vehicle belongs to the operator's tenant, allocates the command id and relays the tracker's outcomes. With one command in flight, a further command is refused as busy instead of being queued. */
+    port api: CommandApi;
+    reversed port directory: VehicleLookup;
+    port dispatch: CommandDispatch;
+    reversed port resolved: CommandUpdates;
+    port updates: CommandUpdates;
+    port audit: AuditFeed;
+    attribute nextCommandId: uint = 1001;
+    attribute inFlight: bool = false;
+    attribute accepted: uint = 0;
+    attribute rejected: uint = 0;
+    attribute busyRefusals: uint = 0;
+    operation submit(c: Command) returns CommandUpdate {
+      var owner: DeviceIdentity = try(directory.lookup(c.vehicleId), Unknown(c.vehicleId));
+      if (not owner.known or owner.tenantId != c.tenantId) {
+        rejected = rejected + 1;
+        publish audit.logged(Entry(c.issuedBy, c.tenantId, "command rejected: foreign or unknown vehicle", c.vehicleId));
+        return Outcome(c, CommandStatus.rejected);
+      }
+      if (inFlight) {
+        busyRefusals = busyRefusals + 1;
+        return Outcome(c, CommandStatus.busy);
+      }
+      var issued: Command = record Command {
+        commandId = nextCommandId;
+        tenantId = c.tenantId;
+        vehicleId = c.vehicleId;
+        kind = c.kind;
+        argument = c.argument;
+        issuedBy = c.issuedBy;
+      };
+      nextCommandId = nextCommandId + 1;
+      inFlight = true;
+      accepted = accepted + 1;
+      publish dispatch.queued(issued);
+      publish audit.logged(Entry(c.issuedBy, c.tenantId, "command issued", c.vehicleId));
+      return Outcome(issued, CommandStatus.pending);
+    }
+    operation relay(u: CommandUpdate) {
+      inFlight = false;
+      publish updates.update(u);
+    }
+    schedule {
+      on call api.submit(c) submit(c) deadline 500ms;
+      on receive resolved.update(u) relay(u);
+    }
+  }
+  component def CommandTracker {
+    /** The command lifecycle: one command in flight, delivered or refused by the vehicle's acknowledgement, or timed out after 1.5 s. */
+    reversed port dispatch: CommandDispatch;
+    port downlink: CommandDownlink;
+    reversed port acks: CommandAcks;
+    port updates: CommandUpdates;
+    attribute current: Command = NoCommand();
+    attribute delivered: uint = 0;
+    attribute refusedByVehicle: uint = 0;
+    attribute timedOut: uint = 0;
+    operation tracking() {
+      initial Idle;
+      state Idle {
+        on receive dispatch.queued(c) to AwaitingAck {
+          current = c;
+        }
+      }
+      state AwaitingAck {
+        on entry {
+          publish downlink.deliver(current);
+        }
+        on receive acks.ack(commandId, executed) when (commandId == current.commandId and executed) to Idle {
+          delivered = delivered + 1;
+          publish updates.update(Outcome(current, CommandStatus.delivered));
+        }
+        on receive acks.ack(commandId, executed) when (commandId == current.commandId) to Idle {
+          refusedByVehicle = refusedByVehicle + 1;
+          publish updates.update(Outcome(current, CommandStatus.rejected));
+        }
+        after 1500ms to Idle {
+          timedOut = timedOut + 1;
+          publish updates.update(Outcome(current, CommandStatus.timedOut));
+        }
+      }
+    }
+    schedule {
+      on start tracking();
+    }
+  }
+  component def CommandService {
+    /** Remote commands: intake and lifecycle tracking behind one boundary. */
+    port api: CommandApi;
+    reversed port directory: VehicleLookup;
+    port downlink: CommandDownlink;
+    reversed port acks: CommandAcks;
+    port updates: CommandUpdates;
+    port audit: AuditFeed;
+    component intake: CommandIntake;
+    component tracker: CommandTracker;
+    connect (api, intake.api);
+    connect (directory, intake.directory);
+    connect (audit, intake.audit);
+    connect (downlink, tracker.downlink);
+    connect (acks, tracker.acks);
+    connect (updates, intake.updates);
+    connect queue: Reliable (intake.dispatch, tracker.dispatch);
+    connect outcomes: Reliable (tracker.updates, intake.resolved);
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Operator API, access control, audit and health
+  // ---------------------------------------------------------------------------------------------------------------
+
+  component def AccessControl {
+    /** Operator identities, tenants and roles. */
+    port api: OperatorAuth;
+    const attribute tokens: string[3] = ["tok-alder-ana", "tok-birch-ben", "tok-alder-vic"];
+    const attribute operatorIds: string[3] = ["ana", "ben", "vic"];
+    const attribute tenants: string[3] = ["alder", "birch", "alder"];
+    const attribute roles: Role[3] = [Role.dispatcher, Role.dispatcher, Role.viewer];
+    attribute grants: uint = 0;
+    attribute refusals: uint = 0;
+    operation authorize(token: string) returns Principal {
+      for (var i: int = 0; i < 3; i = i + 1) {
+        if (tokens[i] == token) {
+          grants = grants + 1;
+          return record Principal { authenticated = true; operatorId = operatorIds[i]; tenantId = tenants[i]; role = roles[i]; };
+        }
+      }
+      refusals = refusals + 1;
+      return Anonymous();
+    }
+    schedule {
+      on call api.authorize(token) authorize(token);
+    }
+  }
+  component def OperatorSession {
+    /**
+    One dashboard session of the operator API. It binds to the tenant of the operator who logs in, answers
+    tenant-scoped queries under a **token-bucket rate limit** (5 queries, one token per second), forwards live
+    updates, alerts and command outcomes of that tenant only, and audits logins and refusals.
+    */
+    reversed port console: Console;
+    reversed port identity: OperatorAuth;
+    reversed port queries: FleetQueries;
+    reversed port commands: CommandApi;
+    reversed port commandUpdates: CommandUpdates;
+    reversed port live: SnapshotFeed;
+    reversed port alerts: AlertFeed;
+    reversed port health: HealthReport;
+    port audit: AuditFeed;
+    const attribute bucketSize: uint = 5;
+    attribute principal: Principal = Anonymous();
+    attribute subscribed: bool = false;
+    attribute budget: uint = 5;
+    attribute platform: PlatformHealth = Unprobed();
+    attribute forwardedUpdates: uint = 0;
+    operation signIn(token: string) returns Principal {
+      var p: Principal = try(identity.authorize(token), Anonymous());
+      principal = p;
+      subscribed = false;
+      if (p.authenticated) {
+        publish audit.logged(Entry(p.operatorId, p.tenantId, "login", "console"));
+      } else {
+        publish audit.logged(Entry("anonymous", "", "login refused", "console"));
+      }
+      return p;
+    }
+    operation status(vehicle: string) returns VehicleView {
+      if (not principal.authenticated) {
+        return Refused(vehicle, QueryStatus.unauthenticated);
+      }
+      if (budget == 0) {
+        return Refused(vehicle, QueryStatus.throttled);
+      }
+      budget = budget - 1;
+      var tenant: string = principal.tenantId;
+      var v: VehicleView = try(queries.vehicleView(tenant, vehicle), Refused(vehicle, QueryStatus.notFound));
+      if (v.status == QueryStatus.forbidden) {
+        publish audit.logged(Entry(principal.operatorId, principal.tenantId, "query denied", vehicle));
+      }
+      return v;
+    }
+    operation command(vehicle: string, kind: CommandKind, argument: int) returns CommandUpdate {
+      var request: Command = record Command {
+        commandId = 0;
+        tenantId = principal.tenantId;
+        vehicleId = vehicle;
+        kind = kind;
+        argument = argument;
+        issuedBy = principal.operatorId;
+      };
+      if (not principal.authenticated or principal.role != Role.dispatcher) {
+        publish audit.logged(Entry(principal.operatorId, principal.tenantId, "command refused: role", vehicle));
+        return Outcome(request, CommandStatus.rejected);
+      }
+      var update: CommandUpdate = try(commands.submit(request), Outcome(request, CommandStatus.rejected));
+      return update;
+    }
+    operation platformStatus() returns PlatformHealth {
+      return platform;
+    }
+    operation subscribe() {
+      subscribed = true;
+    }
+    operation forwardSnapshot(slot: uint, v: VehicleView) {
+      if (subscribed and principal.authenticated and v.tenantId == principal.tenantId) {
+        forwardedUpdates = forwardedUpdates + 1;
+        publish console.vehicleUpdate(v);
+      }
+    }
+    operation forwardAlert(a: Alert) {
+      if (subscribed and principal.authenticated and a.tenantId == principal.tenantId) {
+        publish console.alert(a);
+      }
+    }
+    operation forwardCommand(u: CommandUpdate) {
+      if (principal.authenticated and u.tenantId == principal.tenantId) {
+        publish console.commandUpdate(u);
+      }
+    }
+    operation noteHealth(h: PlatformHealth) {
+      platform = h;
+    }
+    operation refill() {
+      if (budget < bucketSize) {
+        budget = budget + 1;
+      }
+    }
+    schedule {
+      on call console.login(token) signIn(token) deadline 900ms;
+      on call console.vehicleStatus(vehicle) status(vehicle) deadline 900ms;
+      on call console.issueCommand(vehicle, kind, argument) command(vehicle, kind, argument) deadline 900ms;
+      on call console.platformStatus() platformStatus() concurrent;
+      on receive console.subscribe() subscribe();
+      on receive live.changed(slot, v) forwardSnapshot(slot, v);
+      on receive alerts.alert(a) forwardAlert(a);
+      on receive commandUpdates.update(u) forwardCommand(u);
+      on receive health.health(h) noteHealth(h);
+      on every 1s refill();
+    }
+  }
+  component def AuditLog {
+    /** Append-only audit log in the standby region. Entries are never purged; every 5 s the new entries are sealed into a tamper-evident segment. */
+    reversed port entries: AuditFeed;
+    reversed port outcomes: CommandUpdates;
+    attribute entryCount: uint = 0;
+    attribute lastEntry: AuditEntry = Entry("", "", "", "");
+    attribute commandOutcomes: uint = 0;
+    attribute sealedSegments: uint = 0;
+    attribute sealedThrough: uint = 0;
+    operation append(e: AuditEntry) {
+      entryCount = entryCount + 1;
+      lastEntry = e;
+    }
+    operation outcome(u: CommandUpdate) {
+      commandOutcomes = commandOutcomes + 1;
+      append(Entry("command-service", u.tenantId, "command outcome", u.vehicleId));
+    }
+    operation seal() {
+      if (entryCount > sealedThrough) {
+        sealedSegments = sealedSegments + 1;
+        sealedThrough = entryCount;
+      }
+    }
+    schedule {
+      on receive entries.logged(e) append(e);
+      on receive outcomes.update(u) outcome(u);
+      on every 5s seal();
+    }
+  }
+  component def HealthMonitor {
+    /** Probes the registry, ingestion and the time-series store every 500 ms and publishes the platform health as a latest value. */
+    reversed port registry: Health;
+    reversed port ingestion: Health;
+    reversed port store: Health;
+    port report: HealthReport;
+    attribute probes: uint = 0;
+    attribute failedProbes: uint = 0;
+    operation probe() {
+      var registryUp: bool = try(registry.ping(), false);
+      var ingestionUp: bool = try(ingestion.ping(), false);
+      var storeUp: bool = try(store.ping(), false);
+      probes = probes + 1;
+      if (not registryUp or not ingestionUp or not storeUp) {
+        failedProbes = failedProbes + 1;
+      }
+      send report.health(record PlatformHealth { registryUp = registryUp; storeUp = storeUp; ingestionUp = ingestionUp; probes = probes; });
+    }
+    schedule {
+      on every 500ms probe() deadline 400ms;
+    }
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // The backend
+  // ---------------------------------------------------------------------------------------------------------------
+
+  component def FleetBackend {
+    /**
+    The fleet monitoring backend. Two gateway instances each terminate one vehicle connection, two dashboard
+    sessions each serve one operator console and two digital twins each track one vehicle slot; the remaining
+    services are single instances.
+    */
+    reversed port uplinkA: VehicleLink;
+    reversed port uplinkB: VehicleLink;
+    reversed port consoleA: Console;
+    reversed port consoleB: Console;
+    reversed port onCall: OnCallConsole;
+    reversed port notify: NotifyApi;
+    component gateways: DeviceGateway[2];
+    component registry: VehicleRegistry;
+    component access: AccessControl;
+    component ingestion: IngestionPipeline;
+    component deadLetters: DeadLetterStore;
+    component router: TelemetryRouter;
+    component twins: VehicleTwin[2];
+    component fleet: FleetStateStore;
+    component writer: PersistenceWriter;
+    component store: TimeSeriesStore;
+    component campaign: CampaignTracker;
+    component alerting: AlertingService;
+    component commands: CommandService;
+    component sessions: OperatorSession[2];
+    component audit: AuditLog;
+    component monitor: HealthMonitor;
+    connect (uplinkA, gateways[0].vehicle);
+    connect (uplinkB, gateways[1].vehicle);
+    connect (consoleA, sessions[0].console);
+    connect (consoleB, sessions[1].console);
+    connect (onCall, alerting.acks);
+    connect (notify, alerting.provider);
+    connect auth0: ControlCalls (gateways[0].directory, registry.directory);
+    connect auth1: ControlCalls (gateways[1].directory, registry.directory);
+    connect intake0: TelemetryIntake (gateways[0].intake, ingestion.intake);
+    connect intake1: TelemetryIntake (gateways[1].intake, ingestion.intake);
+    connect beats0: BestEffort (gateways[0].liveness, router.liveness);
+    connect beats1: BestEffort (gateways[1].liveness, router.liveness);
+    connect downlink0 (commands.downlink, gateways[0].downlink);
+    connect downlink1 (commands.downlink, gateways[1].downlink);
+    connect commandAcks0 (gateways[0].commandAcks, commands.acks);
+    connect commandAcks1 (gateways[1].commandAcks, commands.acks);
+    connect routing: StreamFanout (ingestion.stream, router.stream);
+    connect archiving: WriterBuffer (ingestion.stream, writer.stream);
+    connect rollout: StreamFanout (ingestion.stream, campaign.stream);
+    connect quarantine: Reliable (ingestion.deadLetters, deadLetters.letters);
+    connect partition0: StreamFanout (router.slot0, twins[0].feed);
+    connect partition1: StreamFanout (router.slot1, twins[1].feed);
+    connect: Latest (twins[0].snapshots, fleet.snapshots);
+    connect: Latest (twins[1].snapshots, fleet.snapshots);
+    connect: Latest (twins[0].snapshots, sessions[0].live);
+    connect: Latest (twins[1].snapshots, sessions[0].live);
+    connect: Latest (twins[0].snapshots, sessions[1].live);
+    connect: Latest (twins[1].snapshots, sessions[1].live);
+    connect: Reliable (twins[0].conditions, alerting.conditions);
+    connect: Reliable (twins[1].conditions, alerting.conditions);
+    connect (twins[0].trips, fleet.trips);
+    connect (twins[1].trips, fleet.trips);
+    connect persistence: StoreCalls (writer.store, store.data);
+    connect lookups: ControlCalls (commands.directory, registry.directory);
+    connect: ControlCalls (sessions[0].identity, access.api);
+    connect: ControlCalls (sessions[1].identity, access.api);
+    connect: ControlCalls (sessions[0].queries, fleet.api);
+    connect: ControlCalls (sessions[1].queries, fleet.api);
+    connect: ControlCalls (sessions[0].commands, commands.api);
+    connect: ControlCalls (sessions[1].commands, commands.api);
+    connect (commands.updates, sessions[0].commandUpdates);
+    connect (commands.updates, sessions[1].commandUpdates);
+    connect (alerting.feed, sessions[0].alerts);
+    connect (alerting.feed, sessions[1].alerts);
+    connect: AuditTrail (sessions[0].audit, audit.entries);
+    connect: AuditTrail (sessions[1].audit, audit.entries);
+    connect: AuditTrail (alerting.audit, audit.entries);
+    connect: AuditTrail (commands.audit, audit.entries);
+    connect: AuditTrail (commands.updates, audit.outcomes);
+    connect: HealthChecks (monitor.registry, registry.health);
+    connect: HealthChecks (monitor.ingestion, ingestion.health);
+    connect: HealthChecks (monitor.store, store.health);
+    connect (monitor.report, sessions[0].health);
+    connect (monitor.report, sessions[1].health);
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Platform and deployment
+  // ---------------------------------------------------------------------------------------------------------------
+
+  component def ComputeNode specializes Node {
+    /** A virtual machine of a cluster node pool, running one container runtime process. */
+    const attribute vcpus: uint = 8;
+    const attribute memoryGiB: uint = 32;
+    component runtime: Process;
+  }
+  component def Cluster specializes Partition {
+    /** A container cluster of one tier. */
+    const attribute tier: string = "processing";
+    component nodes: ComputeNode[3];
+  }
+  component def Region specializes Node {
+    const attribute ref: string = "region-1";
+    component edge: Cluster {
+      redefines const attribute tier: string = "edge";
+    }
+    component processing: Cluster;
+    component storage: Cluster {
+      redefines const attribute tier: string = "storage";
+    }
+  }
+  component def FleetCloudPlatform specializes Platform {
+    /** Two regions: the primary runs the service, the standby keeps the audit archive and an independent health monitor. */
+    component primary: Region;
+    component standby: Region {
+      redefines const attribute ref: string = "region-2";
+    }
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // The system context
+  // ---------------------------------------------------------------------------------------------------------------
+
+  component backend: FleetBackend;
+  component truck: Vehicle;
+  component van: Vehicle;
+  component alderDispatcher: FleetOperator;
+  component birchDispatcher: FleetOperator;
+  component onCall: OnCallEngineer;
+  component pager: NotificationProvider;
+  component cloud: FleetCloudPlatform;
+  connect truckLink: VehicleUplink (truck.link, backend.uplinkA);
+  connect vanLink: VehicleUplink (van.link, backend.uplinkB);
+  connect alderConsole: ConsoleLink (alderDispatcher.console, backend.consoleA);
+  connect birchConsole: ConsoleLink (birchDispatcher.console, backend.consoleB);
+  connect onCallConsole (onCall.console, backend.onCall);
+  connect notifications: ProviderCalls (backend.notify, pager.api);
+  deployment Production of backend on cloud {
+    /** Gateways and sessions on the edge tier, stream processing on the processing tier, state on the storage tier; the audit log and a health monitor run in the standby region. */
+    deploy on primary.processing.nodes[0];
+    deploy gateways on primary.edge.nodes[0];
+    deploy gateways[1] on primary.edge.nodes[1];
+    deploy sessions on primary.edge.nodes[2];
+    deploy ingestion on primary.processing.nodes[0].runtime;
+    deploy router on primary.processing.nodes[1];
+    deploy twins on primary.processing.nodes[1];
+    deploy twins[1] on primary.processing.nodes[2];
+    deploy alerting on primary.processing.nodes[2];
+    deploy commands on primary.processing.nodes[2];
+    deploy registry on primary.storage.nodes[1];
+    deploy access on primary.storage.nodes[1];
+    deploy fleet on primary.storage.nodes[1];
+    deploy store on primary.storage.nodes[0];
+    deploy writer on primary.storage.nodes[0].runtime;
+    deploy deadLetters on primary.storage.nodes[2];
+    deploy audit on standby.storage.nodes[0];
+    deploy monitor on standby.processing.nodes[0];
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Requirements
+  // ---------------------------------------------------------------------------------------------------------------
+
+  requirement 'Alert latency' {
+    /** A critical condition reaches the notification provider within 2 s of the frame that revealed it. */
+    attribute budgetMs: uint = 2000;
+  }
+  requirement Escalation {
+    /** A critical page that nobody acknowledges within 2 s escalates to the secondary on-call engineer. */
+    attribute escalateAfterMs: uint = 2000;
+  }
+  requirement 'Lossless ingestion' {
+    /** Every frame is acknowledged with an outcome: retransmissions are deduplicated and malformed frames are quarantined, never silently dropped. */
+    attribute silentLosses: uint = 0;
+  }
+  requirement 'Device authentication' {
+    /** Only active vehicles with a valid device key can submit telemetry. */
+    attribute unauthenticatedFramesAccepted: uint = 0;
+  }
+  requirement 'Back-pressure' {
+    /** When the ingestion backlog reaches the high watermark, the vehicle is told to stretch its reporting interval until the backlog drains. */
+    attribute highWatermark: uint = 6;
+    attribute throttledIntervalMs: uint = 5000;
+  }
+  requirement 'Offline detection' {
+    /** A vehicle that stops reporting is shown stale after 3 s and offline after 6 s, with a warning alert. */
+    attribute staleAfterMs: uint = 3000;
+    attribute offlineAfterMs: uint = 6000;
+  }
+  requirement 'Command resolution' {
+    /** Every accepted remote command resolves as delivered, rejected or timed out within 2 s. */
+    attribute resolveWithinMs: uint = 2000;
+  }
+  requirement 'Tenant isolation' {
+    /** An operator never sees, queries or commands another tenant's vehicles. */
+    attribute crossTenantLeaks: uint = 0;
+  }
+  requirement Auditability {
+    /** Logins, refusals, commands and their outcomes, pages, escalations and acknowledgements are recorded in the append-only audit log. */
+    attribute retentionDays: uint = 400;
+  }
+  requirement 'Store resilience' {
+    /** A time-series store outage opens a circuit after three failed writes, sheds load and recovers automatically after the cool-down. */
+    attribute failureThreshold: uint = 3;
+    attribute coolDownMs: uint = 2000;
+  }
+  requirement 'Operator rate limit' {
+    /** A session answers at most five queries in a burst and regains one query per second. */
+    attribute burst: uint = 5;
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Use cases
+  // ---------------------------------------------------------------------------------------------------------------
+
+  use case 'Monitor live position' of backend {
+    /** A dispatcher subscribes to the live map, a truck connects and reports, and the dispatcher sees it move and queries it. */
+    var me: Principal = alderDispatcher.console.login("tok-alder-ana");
+    assert me.authenticated and me.tenantId == "alder";
+    publish alderDispatcher.console.subscribe();
+    publish truck.link.hello("TRK-101", "key-101");
+    on receive truck.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "vehicle session not opened";
+    }
+    publish truck.link.frame(Reading("TRK-101", 1, 2, 12.0, 8.5, 64.0, 88.0, 72.0, true));
+    on receive truck.link.ack(sequence, outcome) {
+      assert sequence == 1 and outcome == IngestOutcome.accepted;
+    } or after 1s {
+      fail "frame not acknowledged";
+    }
+    on receive alderDispatcher.console.vehicleUpdate(v) {
+      assert v.vehicleId == "TRK-101" and v.link == LinkState.online and v.speedKph == 64.0 and v.tripActive;
+    } or after 1s {
+      fail "no live update on the map";
+    }
+    var shown: VehicleView = alderDispatcher.console.vehicleStatus("TRK-101");
+    assert shown.status == QueryStatus.ok and shown.position.xKm == 12.0 and shown.insideZone;
+    wait 500ms;
+    var health: PlatformHealth = alderDispatcher.console.platformStatus();
+    assert health.storeUp and health.registryUp and health.ingestionUp;
+  }
+  use case 'Command a vehicle' of backend {
+    /** A dispatcher locks a truck remotely; the truck executes the command and the dispatcher sees it delivered. */
+    var me: Principal = alderDispatcher.console.login("tok-alder-ana");
+    assert me.role == Role.dispatcher;
+    publish truck.link.hello("TRK-101", "key-101");
+    on receive truck.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "vehicle session not opened";
+    }
+    var issued: CommandUpdate = alderDispatcher.console.issueCommand("TRK-101", CommandKind.lockDoors, 0);
+    assert issued.status == CommandStatus.pending and issued.commandId > 0;
+    on receive truck.link.command(c) {
+      assert c.commandId == issued.commandId and c.kind == CommandKind.lockDoors and c.issuedBy == "ana";
+      publish truck.link.commandAck(c.commandId, true);
+    } or after 1s {
+      fail "command not delivered to the vehicle";
+    }
+    on receive alderDispatcher.console.commandUpdate(u) {
+      assert u.commandId == issued.commandId and u.status == CommandStatus.delivered;
+    } or after 2s {
+      fail "no delivery confirmation";
+    }
+  }
+  use case 'Respond to a critical alert' of backend {
+    /** A truck's engine overheats: the on-call engineer is paged and acknowledges, and the dispatcher follows the alert to acknowledged. */
+    var me: Principal = alderDispatcher.console.login("tok-alder-ana");
+    assert me.authenticated;
+    publish alderDispatcher.console.subscribe();
+    publish truck.link.hello("TRK-101", "key-101");
+    on receive truck.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "vehicle session not opened";
+    }
+    publish truck.link.frame(Reading("TRK-101", 1, 2, 12.0, 9.0, 80.0, 112.0, 60.0, true));
+    var alertId: uint = 0;
+    on call pager.api.deliver(p) {
+      assert p.channel == Channel.push and p.recipient == "oncall-primary";
+      alertId = p.alertId;
+      return true;
+    } or after 2s {
+      fail "on-call engineer not paged within the alert latency budget";
+    }
+    publish onCall.console.acknowledge(alertId, "dana");
+    var status: AlertStatus = AlertStatus.raised;
+    while (status != AlertStatus.acknowledged, 4 times) {
+      on receive alderDispatcher.console.alert(a) {
+        assert a.alertId == alertId and a.kind == AlertKind.engineOverheat;
+        status = a.status;
+      } or after 1s {
+        fail "alert status not shown to the dispatcher";
+      }
+    }
+    assert status == AlertStatus.acknowledged;
+  }
+  use case 'Run a firmware campaign' of backend {
+    /** Intent only: an administrator targets a firmware version and follows the campaign until every reporting vehicle runs it. */
+  }
+  associate truck to 'Monitor live position';
+  associate alderDispatcher to 'Monitor live position';
+  associate truck to 'Command a vehicle';
+  associate alderDispatcher to 'Command a vehicle';
+  associate truck to 'Respond to a critical alert';
+  associate pager to 'Respond to a critical alert';
+  associate onCall to 'Respond to a critical alert';
+  associate alderDispatcher to 'Respond to a critical alert';
+  associate truck to 'Run a firmware campaign';
+  associate alderDispatcher to 'Run a firmware campaign';
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Tests
+  // ---------------------------------------------------------------------------------------------------------------
+
+  test 'Telemetry stored and visible' of backend {
+    /** Two frames are accepted, written to the store, routed to the twin, counted by the campaign and probed as healthy. */
+    publish truck.link.hello("TRK-101", "key-101");
+    on receive truck.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "vehicle session not opened";
+    }
+    publish truck.link.frame(Reading("TRK-101", 1, 2, 10.0, 10.0, 50.0, 85.0, 70.0, true));
+    publish truck.link.frame(Reading("TRK-101", 2, 2, 10.5, 10.0, 54.0, 86.0, 69.5, true));
+    var acks: uint = 0;
+    while (acks < 2, 2 times) {
+      on receive truck.link.ack(sequence, outcome) {
+        assert outcome == IngestOutcome.accepted;
+        acks = acks + 1;
+      } or after 1s {
+        fail "frame not acknowledged";
+      }
+    }
+    wait 2100ms;
+    assert backend.ingestion.acceptedFrames == 2 and backend.router.routed == 2;
+    assert backend.store.points == 2 and backend.writer.written == 2 and backend.writer.rollupsWritten == 1;
+    assert backend.store.lastRollup.frames == 2 and backend.store.lastRollup.meanSpeedKph == 52.0;
+    var truckView: VehicleView = backend.fleet.views[0];
+    assert truckView.vehicleId == "TRK-101" and truckView.lastSequence == 2;
+    assert backend.campaign.progressPct == 100.0;
+    assert backend.monitor.probes >= 4 and backend.monitor.failedProbes == 0;
+    assert backend.registry.authentications == 1;
+  }
+  test 'Duplicate frame dropped' of backend {
+    /** A retransmitted frame is acknowledged as a duplicate and stored once. */
+    publish truck.link.hello("TRK-101", "key-101");
+    on receive truck.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "vehicle session not opened";
+    }
+    publish truck.link.frame(Reading("TRK-101", 7, 2, 10.0, 10.0, 50.0, 85.0, 70.0, true));
+    on receive truck.link.ack(sequence, outcome) {
+      assert sequence == 7 and outcome == IngestOutcome.accepted;
+    } or after 1s {
+      fail "first copy not acknowledged";
+    }
+    publish truck.link.frame(Reading("TRK-101", 7, 2, 10.0, 10.0, 50.0, 85.0, 70.0, true));
+    on receive truck.link.ack(sequence, outcome) {
+      assert sequence == 7 and outcome == IngestOutcome.duplicate;
+    } or after 1s {
+      fail "retransmission not acknowledged";
+    }
+    wait 50ms;
+    assert backend.ingestion.acceptedFrames == 1 and backend.ingestion.duplicateFrames == 1;
+    assert backend.store.points == 1 and backend.router.routed == 1;
+  }
+  test 'Malformed frame dead-lettered' of backend {
+    /** A corrupted frame and a frame in an unknown schema are quarantined; a schema 1 frame is upgraded and accepted. */
+    publish truck.link.hello("TRK-101", "key-101");
+    on receive truck.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "vehicle session not opened";
+    }
+    publish truck.link.frame(Damaged(Reading("TRK-101", 1, 2, 10.0, 10.0, 50.0, 85.0, 70.0, true)));
+    on receive truck.link.ack(sequence, outcome) {
+      assert sequence == 1 and outcome == IngestOutcome.malformed;
+    } or after 1s {
+      fail "corrupted frame not acknowledged";
+    }
+    publish truck.link.frame(Reading("TRK-101", 2, 3, 10.0, 10.0, 50.0, 85.0, 70.0, true));
+    on receive truck.link.ack(sequence, outcome) {
+      assert sequence == 2 and outcome == IngestOutcome.unsupportedSchema;
+    } or after 1s {
+      fail "schema 3 frame not acknowledged";
+    }
+    publish truck.link.frame(Reading("TRK-101", 3, 1, 10.0, 10.0, 50.0, 85.0, 0.5, true));
+    on receive truck.link.ack(sequence, outcome) {
+      assert sequence == 3 and outcome == IngestOutcome.accepted;
+    } or after 1s {
+      fail "schema 1 frame not acknowledged";
+    }
+    wait 50ms;
+    assert backend.ingestion.deadLettered == 2 and backend.deadLetters.currentWindow == 2;
+    assert backend.deadLetters.lastReason == "unsupported schema version" and backend.deadLetters.lastVehicle == "TRK-101";
+    var truckView: VehicleView = backend.fleet.views[0];
+    assert backend.ingestion.upgraded == 1 and truckView.fuelPct == 50.0;
+    assert backend.store.points == 1;
+  }
+  test 'Unknown device rejected' of backend {
+    /** A decommissioned vehicle cannot open a session, and its frames are refused at the gateway. */
+    publish truck.link.hello("TRK-099", "key-099");
+    on receive truck.link.welcome(accepted) {
+      assert not accepted;
+    } or after 1s {
+      fail "no answer to the hello";
+    }
+    publish truck.link.frame(Reading("TRK-099", 1, 2, 10.0, 10.0, 50.0, 85.0, 70.0, true));
+    on receive truck.link.ack(sequence, outcome) {
+      assert outcome == IngestOutcome.unauthenticated;
+    } or after 1s {
+      fail "frame not refused";
+    }
+    assert backend.registry.failedAuthentications == 1 and backend.ingestion.acceptedFrames == 0;
+  }
+  test 'Burst throttles the vehicle' of backend {
+    /** Twelve frames at once raise the ingestion backlog above the watermark: the vehicle is throttled, then released once the backlog drains. */
+    publish truck.link.hello("TRK-101", "key-101");
+    on receive truck.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "vehicle session not opened";
+    }
+    for (var i: uint = 1; i <= 12; i = i + 1) {
+      publish truck.link.frame(Reading("TRK-101", i, 2, 10.0, 10.0, 50.0, 85.0, 70.0, true));
+    }
+    on receive truck.link.throttle(intervalMs) {
+      assert intervalMs == 5000;
+    } or after 1s {
+      fail "vehicle not throttled";
+    }
+    on receive truck.link.throttle(intervalMs) {
+      assert intervalMs == 1000;
+    } or after 1s {
+      fail "throttle not released";
+    }
+    var acks: uint = 0;
+    while (acks < 12, 12 times) {
+      on receive truck.link.ack(sequence, outcome) {
+        assert outcome == IngestOutcome.accepted;
+        acks = acks + 1;
+      } or after 1s {
+        fail "frame not acknowledged";
+      }
+    }
+    wait 50ms;
+    assert backend.ingestion.acceptedFrames == 12 and backend.ingestion.inFlight == 0;
+    assert backend.store.points == 12;
+  }
+  test 'Unacknowledged breach escalates' of backend {
+    /** A truck leaves the operating area: the primary on-call is paged within the latency budget, nobody acknowledges, and after 2 s the alert escalates to the secondary, who acknowledges. */
+    publish truck.link.hello("TRK-101", "key-101");
+    on receive truck.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "vehicle session not opened";
+    }
+    publish truck.link.frame(Reading("TRK-101", 1, 2, 30.0, 20.0, 72.0, 88.0, 55.0, true));
+    publish truck.link.frame(Reading("TRK-101", 2, 2, 41.2, 20.5, 76.0, 89.0, 54.5, true));
+    var alertId: uint = 0;
+    on call pager.api.deliver(p) {
+      assert p.channel == Channel.push and p.recipient == "oncall-primary";
+      alertId = p.alertId;
+      return true;
+    } or after 2s {
+      fail "primary not paged within the alert latency budget";
+    }
+    on call pager.api.deliver(p) {
+      assert p.channel == Channel.voice and p.recipient == "oncall-secondary" and p.alertId == alertId;
+      return true;
+    } or after 3s {
+      fail "alert did not escalate";
+    }
+    publish onCall.console.acknowledge(alertId, "dana");
+    wait 200ms;
+    assert backend.alerting.desk.escalations == 1 and backend.alerting.desk.acknowledged == 1;
+    assert backend.alerting.desk.lastAcknowledgedBy == "dana" and backend.alerting.desk.pagesSent == 2;
+    assert backend.alerting.router.raised == 1 and backend.alerting.router.paged == 1;
+    var breach: Alert = backend.alerting.router.recent[0];
+    assert breach.alertId == alertId and breach.kind == AlertKind.geofenceBreach and breach.status == AlertStatus.acknowledged;
+    assert backend.audit.entryCount == 3;
+  }
+  test 'Silent vehicle detected offline' of backend {
+    /** A truck reports once and sends one heartbeat, then falls silent: the dispatcher sees it stale and then offline, with a warning alert that pages nobody. */
+    var me: Principal = alderDispatcher.console.login("tok-alder-ana");
+    assert me.authenticated;
+    publish alderDispatcher.console.subscribe();
+    publish truck.link.hello("TRK-101", "key-101");
+    on receive truck.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "vehicle session not opened";
+    }
+    publish truck.link.frame(Reading("TRK-101", 1, 2, 10.0, 10.0, 0.0, 70.0, 70.0, false));
+    wait 1s;
+    publish truck.link.heartbeat("TRK-101", 2);
+    var link: LinkState = LinkState.online;
+    var updates: uint = 0;
+    while (link != LinkState.offline, 6 times) {
+      on receive alderDispatcher.console.vehicleUpdate(v) {
+        link = v.link;
+        updates = updates + 1;
+      } or after 4s {
+        fail "no liveness update within 4 s";
+      }
+    }
+    assert link == LinkState.offline and updates == 4;
+    on receive alderDispatcher.console.alert(a) {
+      assert a.kind == AlertKind.vehicleOffline and a.severity == Severity.warning and a.vehicleId == "TRK-101";
+    } or after 1s {
+      fail "offline alert not shown";
+    }
+    var truckView: VehicleView = backend.fleet.views[0];
+    assert backend.alerting.router.paged == 0 and truckView.link == LinkState.offline;
+  }
+  test 'Command times out' of backend {
+    /** The truck receives an immobilize command but never acknowledges it: a second command meanwhile is refused as busy, the first times out and its outcome is audited. */
+    var me: Principal = alderDispatcher.console.login("tok-alder-ana");
+    assert me.authenticated;
+    publish truck.link.hello("TRK-101", "key-101");
+    on receive truck.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "vehicle session not opened";
+    }
+    var issued: CommandUpdate = alderDispatcher.console.issueCommand("TRK-101", CommandKind.immobilize, 0);
+    assert issued.status == CommandStatus.pending;
+    var second: CommandUpdate = alderDispatcher.console.issueCommand("TRK-101", CommandKind.lockDoors, 0);
+    assert second.status == CommandStatus.busy;
+    on receive truck.link.command(c) {
+      assert c.kind == CommandKind.immobilize;
+    } or after 1s {
+      fail "command not delivered to the vehicle";
+    }
+    on receive alderDispatcher.console.commandUpdate(u) {
+      assert u.commandId == issued.commandId and u.status == CommandStatus.timedOut;
+    } or after 2s {
+      fail "command did not resolve within 2 s";
+    }
+    wait 10ms;
+    assert backend.commands.tracker.timedOut == 1 and backend.commands.tracker.delivered == 0;
+    assert backend.commands.intake.busyRefusals == 1 and not backend.commands.intake.inFlight;
+    assert backend.audit.commandOutcomes == 1 and backend.audit.lastEntry.action == "command outcome";
+  }
+  test 'Tenant isolation holds' of backend {
+    /** Two tenants' dispatchers see only their own vehicles; a cross-tenant query and command are refused and audited. */
+    var alder: Principal = alderDispatcher.console.login("tok-alder-ana");
+    var birch: Principal = birchDispatcher.console.login("tok-birch-ben");
+    assert alder.tenantId == "alder" and birch.tenantId == "birch";
+    publish alderDispatcher.console.subscribe();
+    publish birchDispatcher.console.subscribe();
+    publish truck.link.hello("TRK-101", "key-101");
+    publish van.link.hello("VAN-202", "key-202");
+    on receive truck.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "truck session not opened";
+    }
+    on receive van.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "van session not opened";
+    }
+    publish truck.link.frame(Reading("TRK-101", 1, 2, 10.0, 10.0, 50.0, 85.0, 70.0, true));
+    publish van.link.frame(Reading("VAN-202", 1, 2, 20.0, 5.0, 40.0, 80.0, 65.0, true));
+    on receive alderDispatcher.console.vehicleUpdate(v) {
+      assert v.vehicleId == "TRK-101" and v.tenantId == "alder";
+    } or after 1s {
+      fail "alder update missing";
+    }
+    on receive birchDispatcher.console.vehicleUpdate(v) {
+      assert v.vehicleId == "VAN-202" and v.tenantId == "birch";
+    } or after 1s {
+      fail "birch update missing";
+    }
+    on receive alderDispatcher.console.vehicleUpdate(v) {
+      fail "alder received a second update";
+    } or after 500ms {
+    }
+    var foreign: VehicleView = alderDispatcher.console.vehicleStatus("VAN-202");
+    assert foreign.status == QueryStatus.forbidden and foreign.tenantId == "" and foreign.speedKph == 0.0;
+    var own: VehicleView = birchDispatcher.console.vehicleStatus("VAN-202");
+    assert own.status == QueryStatus.ok and own.speedKph == 40.0;
+    var refused: CommandUpdate = alderDispatcher.console.issueCommand("VAN-202", CommandKind.unlockDoors, 0);
+    assert refused.status == CommandStatus.rejected;
+    wait 10ms;
+    assert backend.fleet.denied == 1 and backend.commands.intake.rejected == 1 and backend.commands.intake.accepted == 0;
+    assert backend.audit.entryCount == 4 and backend.audit.lastEntry.action == "command rejected: foreign or unknown vehicle";
+  }
+  test 'Console guards' of backend {
+    /** A viewer may query but not command, and a burst of queries beyond the bucket is throttled. */
+    var vic: Principal = alderDispatcher.console.login("tok-alder-vic");
+    assert vic.authenticated and vic.role == Role.viewer;
+    var denied: CommandUpdate = alderDispatcher.console.issueCommand("TRK-101", CommandKind.locate, 0);
+    assert denied.status == CommandStatus.rejected;
+    var answered: uint = 0;
+    var throttled: uint = 0;
+    for (var i: int = 0; i < 6; i = i + 1) {
+      var v: VehicleView = alderDispatcher.console.vehicleStatus("TRK-101");
+      if (v.status == QueryStatus.throttled) {
+        throttled = throttled + 1;
+      } else {
+        answered = answered + 1;
+      }
+    }
+    assert answered == 5 and throttled == 1;
+    var stranger: Principal = birchDispatcher.console.login("tok-forged");
+    assert not stranger.authenticated;
+    var nothing: VehicleView = birchDispatcher.console.vehicleStatus("VAN-202");
+    assert nothing.status == QueryStatus.unauthenticated;
+    wait 10ms;
+    assert backend.access.refusals == 1 and backend.commands.intake.accepted == 0;
+    assert backend.audit.entryCount == 3;
+  }
+  associate truck to 'Telemetry stored and visible';
+  associate truck to 'Duplicate frame dropped';
+  associate truck to 'Malformed frame dead-lettered';
+  associate truck to 'Unknown device rejected';
+  associate truck to 'Burst throttles the vehicle';
+  associate truck to 'Unacknowledged breach escalates';
+  associate pager to 'Unacknowledged breach escalates';
+  associate onCall to 'Unacknowledged breach escalates';
+  associate truck to 'Silent vehicle detected offline';
+  associate alderDispatcher to 'Silent vehicle detected offline';
+  associate truck to 'Command times out';
+  associate alderDispatcher to 'Command times out';
+  associate truck to 'Tenant isolation holds';
+  associate van to 'Tenant isolation holds';
+  associate alderDispatcher to 'Tenant isolation holds';
+  associate birchDispatcher to 'Tenant isolation holds';
+  associate alderDispatcher to 'Console guards';
+  associate birchDispatcher to 'Console guards';
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Intent links
+  // ---------------------------------------------------------------------------------------------------------------
+
+  satisfy 'Alert latency' by backend.alerting;
+  satisfy Escalation by EscalationDesk;
+  satisfy 'Lossless ingestion' by IngestionPipeline;
+  satisfy 'Lossless ingestion' by backend.deadLetters;
+  satisfy 'Device authentication' by backend.registry;
+  satisfy 'Back-pressure' by DeviceGateway;
+  satisfy 'Offline detection' by VehicleTwin;
+  satisfy 'Command resolution' by CommandTracker;
+  satisfy 'Tenant isolation' by OperatorSession;
+  satisfy 'Tenant isolation' by FleetStateStore;
+  satisfy 'Tenant isolation' by CommandIntake;
+  satisfy Auditability by backend.audit;
+  satisfy 'Store resilience' by PersistenceWriter;
+  satisfy 'Operator rate limit' by OperatorSession;
+  verify 'Alert latency' by 'Unacknowledged breach escalates';
+  verify Escalation by 'Unacknowledged breach escalates';
+  verify 'Lossless ingestion' by 'Telemetry stored and visible';
+  verify 'Lossless ingestion' by 'Duplicate frame dropped';
+  verify 'Lossless ingestion' by 'Malformed frame dead-lettered';
+  verify 'Device authentication' by 'Unknown device rejected';
+  verify 'Back-pressure' by 'Burst throttles the vehicle';
+  verify 'Offline detection' by 'Silent vehicle detected offline';
+  verify 'Command resolution' by 'Command times out';
+  verify 'Tenant isolation' by 'Tenant isolation holds';
+  verify Auditability by 'Command times out';
+  verify Auditability by 'Tenant isolation holds';
+  verify Auditability by 'Unacknowledged breach escalates';
+  verify 'Operator rate limit' by 'Console guards';
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Views
+  // ---------------------------------------------------------------------------------------------------------------
+
+  view overview: General of FleetCloud;
+  view services: General of backend;
+  view platform: General {
+    /** The deployment targets: regions, tiers and node pools. */
+    include cloud recursive;
+  }
+  view topology: Interconnect of backend;
+  view context: Interconnect {
+    /** The backend in its environment: vehicles, operators, the on-call engineer and the notification provider. */
+    include backend;
+    include truck;
+    include van;
+    include alderDispatcher;
+    include birchDispatcher;
+    include onCall;
+    include pager;
+  }
+  view 'alerting internals': Interconnect of backend.alerting;
+  view 'command internals': Interconnect of backend.commands;
+  view 'use cases': Case of FleetCloud;
+  view 'live position': Sequence of 'Monitor live position';
+  view 'command round trip': Sequence of 'Command a vehicle';
+  view 'critical alert': Sequence of 'Respond to a critical alert';
+  view 'breach escalation': Sequence of 'Unacknowledged breach escalates';
+  view 'tenant isolation': Sequence of 'Tenant isolation holds';
+  view inventory: Grid of backend;
+  view 'state machines': Grid {
+    /** The stateful operations of the backend. */
+    include backend recursive where kind == "operation" and (name == "connection" or name == "circuit" or name == "escalation" or name == "tracking");
+  }
+  view 'vehicle connection': Flow of VehicleTwin.connection;
+  view 'alert lifecycle': Flow of EscalationDesk.escalation;
+  view 'command lifecycle': Flow of CommandTracker.tracking;
+  view 'circuit breaker': Flow of PersistenceWriter.circuit;
+  view 'frame retry': Flow of DeviceGateway.submitWithRetry;
+  view 'frame ingestion': Flow of IngestionPipeline.submit;
+  view 'alert latency': Timing of 'Unacknowledged breach escalates';
+  view 'command latency': Timing of 'Command a vehicle';
+  view 'periodic jobs': Timing {
+    /** Aggregation window, retention, health probes, audit sealing, dead-letter rotation, campaign evaluation and rate-limit refill. */
+    include backend.writer.flushWindow;
+    include backend.store.retention;
+    include backend.monitor.probe;
+    include backend.audit.seal;
+    include backend.deadLetters.rotate;
+    include backend.campaign.evaluate;
+    include backend.sessions[0].refill;
+  }
+}
+package FleetCloud::Resilience {
+  /** An isolation package for the persistence writer: a telemetry source and a store stub driven by the test script, so a store outage can be staged. */
+  import FleetCloud;
+  import Swaml::Views;
+  component def TelemetrySource {
+    /** Actor: the accepted-telemetry stream. */
+    port stream: TelemetryStream;
+  }
+  component def StoreStub {
+    /** Stub: the test answers or ignores the store's write requests. */
+    port data: SeriesApi;
+  }
+  component writer: PersistenceWriter;
+  component feed: TelemetrySource;
+  component store: StoreStub;
+  connect buffered: WriterBuffer (feed.stream, writer.stream);
+  connect writes: StoreCalls (writer.store, store.data);
+  test 'Store outage trips the breaker and recovers' of writer {
+    /** Three writes time out against a silent store and the next arrival opens the breaker; a point during the cool-down is shed, and after 2 s the next point probes the recovered store and closes the breaker. */
+    publish feed.stream.accepted(Sample("TRK-101", 1, 50.0));
+    publish feed.stream.accepted(Sample("TRK-101", 2, 52.0));
+    publish feed.stream.accepted(Sample("TRK-101", 3, 54.0));
+    wait 1s;
+    assert writer.consecutiveFailures == 3 and writer.breaker == Breaker.closed and writer.written == 0;
+    publish feed.stream.accepted(Sample("TRK-101", 4, 56.0));
+    wait 10ms;
+    assert writer.breaker == Breaker.open and writer.opened == 1 and writer.shed == 1;
+    publish feed.stream.accepted(Sample("TRK-101", 5, 58.0));
+    wait 1s;
+    assert writer.breaker == Breaker.open and writer.written == 0;
+    wait 1s;
+    assert writer.breaker == Breaker.halfOpen;
+    publish feed.stream.accepted(Sample("TRK-101", 6, 60.0));
+    on call store.data.append(t) {
+      assert t.sequence == 6;
+      return true;
+    } or after 1s {
+      fail "no probe after the cool-down";
+    }
+    wait 10ms;
+    assert writer.breaker == Breaker.closed and writer.consecutiveFailures == 0 and writer.written == 1;
+  }
+  associate feed to 'Store outage trips the breaker and recovers';
+  associate store to 'Store outage trips the breaker and recovers';
+  verify 'Store resilience' by 'Store outage trips the breaker and recovers';
+  view isolation: Interconnect {
+    include writer;
+    include feed;
+    include store;
+  }
+  view outage: Sequence of 'Store outage trips the breaker and recovers';
+  view 'outage timing': Timing of 'Store outage trips the breaker and recovers';
+}

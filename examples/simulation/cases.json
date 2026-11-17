@@ -31,6 +31,23 @@
     },
     "examples/notation/catalog.swaml": {
       "Notation::Startup": "pass"
+    },
+    "examples/showcase/cloud-fleet-monitoring.swaml": {
+      "FleetCloud::Monitor live position": "pass",
+      "FleetCloud::Command a vehicle": "pass",
+      "FleetCloud::Respond to a critical alert": "pass",
+      "FleetCloud::Run a firmware campaign": "no checks",
+      "FleetCloud::Telemetry stored and visible": "pass",
+      "FleetCloud::Duplicate frame dropped": "pass",
+      "FleetCloud::Malformed frame dead-lettered": "pass",
+      "FleetCloud::Unknown device rejected": "pass",
+      "FleetCloud::Burst throttles the vehicle": "pass",
+      "FleetCloud::Unacknowledged breach escalates": "pass",
+      "FleetCloud::Silent vehicle detected offline": "pass",
+      "FleetCloud::Command times out": "pass",
+      "FleetCloud::Tenant isolation holds": "pass",
+      "FleetCloud::Console guards": "pass",
+      "FleetCloud::Resilience::Store outage trips the breaker and recovers": "pass"
     }
   }
 }
