@@ -6,6 +6,8 @@ import { associatedOccurrences, caseTarget, testCanAccess, caseCallAccess, caseC
 import { selectView, viewCandidates, type ViewSubject } from './presentation.js';
 import { decodeQuotedName, formatName, nameProblem } from './names.js';
 import { staleWrite } from './stale-read.js';
+const EXPRESSION_TYPES = new Set(['BinaryExpression', 'UnaryExpression', 'Literal', 'CallExpression', 'TryExpression', 'ReferenceExpression', 'RecordLiteral', 'ArrayLiteral']);
+const isExpression = (n: unknown): n is a.Expression => !!n && typeof n === 'object' && EXPRESSION_TYPES.has((n as AstNode).$type);
 import { useEffectCache } from './semantic.js';
 type Env = Map<string, {
     type: string;
@@ -44,6 +46,7 @@ export class SwamlValidator {
         for (const item of this.models)
             workspaceModels.set(item, this.models);
         useEffectCache(this.models);
+        this.checkExpressionDepth(model);
         if (model.$cstNode)
             for (const leaf of CstUtils.flattenCst(model.$cstNode).filter(l => l.tokenType.name === 'UNRESTRICTED_NAME')) {
                 const problem = nameProblem(decodeQuotedName(leaf.text));
@@ -437,7 +440,27 @@ export class SwamlValidator {
                     this.report(e, 'SW2006', 'Attribute initializers must be pure.');
             }
     }
-    private infer(e: a.Expression | undefined, env: Env, c?: Structure, op?: Executable, allow = false): string { const t=this.inferValue(e,env,c,op,allow);if(e)expressionTypes.set(e,t);return t;}
+    /** Expressions nested deeper than this are reported instead of inferred, so validation cannot exhaust the stack. */
+    private static readonly EXPRESSION_DEPTH_LIMIT = 1000;
+    private readonly tooDeep = new Set<AstNode>();
+    private checkExpressionDepth(model: a.Model): void {
+        this.tooDeep.clear();
+        for (const root of AstUtils.streamAst(model).filter(n => isExpression(n) && !isExpression(n.$container))) {
+            let deepest = 0;
+            const stack: [AstNode, number][] = [[root, 1]];
+            while (stack.length && deepest <= SwamlValidator.EXPRESSION_DEPTH_LIMIT) {
+                const [n, depth] = stack.pop()!;
+                deepest = Math.max(deepest, depth);
+                for (const child of AstUtils.streamContents(n))
+                    stack.push([child, depth + 1]);
+            }
+            if (deepest > SwamlValidator.EXPRESSION_DEPTH_LIMIT) {
+                this.tooDeep.add(root);
+                this.report(root, 'SW2000', `This expression is nested more than ${SwamlValidator.EXPRESSION_DEPTH_LIMIT} levels deep, beyond what this reference implementation checks and runs; split it into local variables.`);
+            }
+        }
+    }
+    private infer(e: a.Expression | undefined, env: Env, c?: Structure, op?: Executable, allow = false): string { if (e && this.tooDeep.has(e)) return '?'; const t=this.inferValue(e,env,c,op,allow);if(e)expressionTypes.set(e,t);return t;}
     private inferValue(e: a.Expression | undefined, env: Env, c?: Structure, op?: Executable, allow = false): string {
         if (!e)
             return 'void';
