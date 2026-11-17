@@ -1,5 +1,7 @@
 # swa.ml next minor (2.3): language gaps from the showcase models
 
+**Design record.** The owner approved this proposal. The normative decisions are ADRs [0022](../decisions/0022-values-places-and-expressions.md), [0023](../decisions/0023-state-reactions.md), [0024](../decisions/0024-communication-and-package-links.md) and [0025](../decisions/0025-real-time-placement-and-binding.md), with the rules to implement in the [2.3 chapter drafts](../drafts/2.3/README.md). Where they differ from this proposal, the ADRs are normative. Changes include separate warning codes SW2016–SW2018 instead of one shared SW2016, and the state-machine rule T4.
+
 **Status:** design proposal for owner approval, revision 2 (after the adversarial review `E:\t\review-proposal-2.3.md`). Not normative. Nothing here changes the grammar, validator, standard version or a published artefact.
 
 **Bases:**

@@ -1,0 +1,81 @@
+# 6. Reference execution contract: 2.3 changes (draft)
+
+**Draft for the unreleased standard 2.3; see [the draft index](README.md).** Target: [chapter 6](../../spec/06-execution-contract.md). The profile becomes `swaml-reference/2.3` when the candidate is allocated (WP1); the Tier 2 timed profile `swaml-reference-timed/2.4` is not part of 2.3. Every rule below leaves a 2.2 model's run unchanged (gate 2). WP5 and WP8 add explicit trace-identity tests for that.
+
+## 6.1 Lifecycle and time
+
+| ID | Rule |
+| --- | --- |
+| WP4-R02 | **Computed durations.** A computed `wait` or receive timeout is evaluated when the statement starts waiting. A computed state timer is evaluated when the entry actions finish, and its expiry is the state-update time plus the value. Periods and deadlines use the per-occurrence constant values (WP4-S06). A non-positive or unrepresentable value is `DurationRange` (WP4-R01). An expiry outside the clock range stays the `ClockRange` violation. |
+| WP8-R01 | **Ordering keys.** Releases, dispatches and ready continuations at equal logical time and phase are ordered by descending Task priority (unplaced activations at priority 0), then, between activations on the same Task, by in-task position (WP8-M01), then by the existing insertion ordinal. A run without Tasks has equal keys and keeps its 2.2 order. |
+| WP8-R02 | **Zero cost.** With zero-cost steps, `preemptive`, `kind` and `responseNs` have no runtime effect beyond the static rules. A run records the applied deployment as before. |
+
+## 6.2 Lock and snapshot
+
+Release guards (new paragraph after the `after` paragraph):
+
+| ID | Rule |
+| --- | --- |
+| WP7-R01 | **Evaluation.** A release guard is evaluated at dispatch, after the dispatch arguments: under the serial lock for serial entries, or in the dispatch snapshot for concurrent entries. |
+| WP7-R02 | **False guard.** No operation runs, and the deadline armed at release is cancelled. The serial lock is released. |
+| WP7-R03 | **Skip as completion.** A skip counts as a successful whole completion for `after` successors: each successor is released at the time of the skip and applies its own guard. |
+| WP7-R04 | **Receive entries.** A skipped `receive` entry has consumed its input at dispatch; the input is discarded. |
+| WP7-R05 | **Grid.** Periodic releases stay on the root-epoch grid `kD` whatever the guard results (D9). |
+| WP7-R06 | **Guard failure.** A runtime failure inside a release guard is an uncaught failure of that release: the deadline is cancelled, no successor is released and the lock is released. |
+
+## 6.3 Values, flow and failure
+
+| ID | Rule |
+| --- | --- |
+| WP1-R04 | **Places and reads.** Place assignment follows WP1-R01 to WP1-R03. Selector reads evaluate index expressions left to right and return a copy; a dynamic index outside its extent is `Bounds`. |
+| WP2-R01 | **Conditional.** Evaluate the condition, then only the selected branch. |
+
+## 6.4 Communication
+
+| ID | Rule |
+| --- | --- |
+| WP6-R05 | **Per-member policy.** Each member route uses its effective policy (member policy, else connection policy, else `Default`) for capacity, overflow, ordering, delivery, request timeout, latency and age. Queues remain per connection occurrence, direction and member. |
+| WP6-R06 | **Sample cells.** Sample cells follow WP6-R01 to WP6-R04. Updating a cell never consumes input and never releases work. |
+
+## 6.5 Input ownership and interruption
+
+The state-machine paragraph is replaced by the rules below.
+
+| ID | Rule |
+| --- | --- |
+| WP5-R01 | **Selection order.** After the entry actions of a state finish, the machine evaluates the state's completion transitions in declaration order and takes the first enabled one at once (exit, effect, state update, entry). If none is enabled, it selects the earliest elapsed timer (declaration order on equal expiry), then queued input. If nothing is selectable, it waits without the lock. |
+| WP5-R02 | **After internal reactions.** The same completion evaluation follows every internal reaction. |
+| WP5-R03 | **No completion after discards.** Completion is not evaluated after `discardInput` or `discardTimer`. |
+| WP5-R04 | **Guarded timers.** When a guarded timer is selected, its guard is evaluated. If the guard is false, the timer is consumed for this state entry (`discardTimer`) and the next timer with the same expiry is tried in declaration order. Later timers stay armed. |
+| WP5-R05 | **Internal reactions.** An internal transition runs only its effect: no exit, no entry, no state update. The state's timers keep their epoch and generation. An internal timer fires at most once per state entry. |
+| WP5-R06 | **Suspended effects.** If an entry action or an internal effect suspends, the timers keep their epoch. On resumption, the machine evaluates completion, then elapsed timers, then input, as after entry actions. |
+| WP5-R07 | **`CompletionLoop`.** Within one stateful activation, a completion reaction that enters a state already entered since the last consumption of input or a timer (or since the activation started) is the contract violation `CompletionLoop`. It stops the run and bypasses `try`. |
+| WP5-R08 | **Retention.** While the current state defers member `m`, input for `m` stays in its connection queue, and capacity, overflow, ordering and `maxAge` apply to it observably. A retained attribute keeps only its latest value. |
+| WP5-R09 | **Retained order.** On entering a state that handles retained members, the machine consumes retained input first, in global offer-ordinal order across all of its queues. Input that was never retained follows in the 2.2 order. |
+| WP5-R10 | **Retained discard.** On entering a state that neither handles nor defers `m`, retained input for `m` is discarded at the next wait with reason `inactiveOwner`. |
+| WP5-R11 | **2.2 machines.** A machine without completion transitions, internal transitions, timer guards and deferrals selects and orders exactly as in 2.2. |
+
+## 6.6 Evidence and resources
+
+New and extended observations. Field names follow the existing trace (`timeNs`, `ordinal`, `kind`, `subject`, `source`).
+
+| ID | Observation | Fields and meaning |
+| --- | --- | --- |
+| WP1-T01 | `write` (extended) | A place assignment adds `place`, the evaluated place text such as `statuses[2].confirmed`. `value` is the new whole root value; `subject` is the root. |
+| WP4-T01 | waits and timers (extended) | Observations that record a wait, receive timeout or state-timer duration record the evaluated nanoseconds for computed forms, in the same field as literal forms. |
+| WP5-T01 | `state` (extended) | An internal reaction is a `state` observation with `internal: true`, the unchanged `state` and the transition as `source`. |
+| WP5-T02 | `discardTimer` (new) | A timer consumed because its guard was false: `subject` the machine, `state`, `source` the timer transition, `reason: 'guard'`. |
+| WP5-T03 | `defer` (new) | Exactly one per retained message, the first time the machine waits in a deferring state while the message is deliverable: `subject` the machine, `state`, `member`, `source` the message origin, and the message or correlation identity. |
+| WP5-T04 | `violation` (extended) | `code: 'CompletionLoop'` with the machine as `subject` and the completion transition as `source`. |
+| WP6-T01 | `deliver` (extended) | A value written into a sample cell is a `deliver` observation with `sample: true`, the `targetPort` and the member. Reads are not observed. |
+| WP7-T01 | `skip` (new) | A release whose guard was false: `subject` the operation occurrence, `activation`, `source` the schedule entry. |
+| WP7-T02 | `discardInput`, `failure` (extended) | A skipped `receive` entry's input is a `discardInput` with `reason: 'releaseGuard'`. A failing release guard is a `failure` with the entry as `source`. |
+
+`DurationRange` (WP4-R01) and the `sqrt` and `realText` failures (WP3-R01, WP3-R02) are recorded like every runtime failure. A caught one is a `caught` observation.
+
+## 6.7 Case runs
+
+| ID | Rule |
+| --- | --- |
+| WP5-R12 | A `CompletionLoop` violation fails a case: it is a contract violation in trace order, like the existing ones, and never an inconclusive step-limit stop. |
+| WP7-R07 | A skipped release is neither a failure nor a completion of the case script. A failing release guard is an uncaught activation failure and fails the case. |
