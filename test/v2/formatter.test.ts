@@ -10,6 +10,7 @@ import { parseHelper } from 'langium/test';
 import { createSwamlServices } from '../../src/language/swaml-module.js';
 import { formatDocument, FormattingSafetyError, verifyFormatting } from '../../src/language/formatter.js';
 import type { Model } from '../../src/language/generated/ast.js';
+import { bodyDocsModel, largeModel } from './format-fixtures.js';
 
 const services = createSwamlServices(EmptyFileSystem);
 const parseOnly = parseHelper<Model>(services.Swaml);
@@ -56,63 +57,24 @@ function swamlFiles(dir: string): string[] {
     });
 }
 
-/** A valid model exercising every comment position and the layout rules, repeated count times. */
-export function largeModel(count: number): string {
-    let s = '// Generated formatter stress model.\npackage Large {\n  /** Generated package documentation. */\n  port def Messages {\n    /** Message port. */\n    provides event message(value: int) /** Trailing member documentation. */;\n  }\n  datatype Pair { left: int /** Left value. */; right: int; }\n';
-    for (let i = 0; i < count; i++)
-        s += `
-  component def Unit${i} {
-    /**
-     * Component number ${i}: documentation spanning
-     *   several indented lines.
-     */
-    reversed port input: Messages;
-    reversed port control: Messages;
-    // A line comment before an attribute ${i}.
-    attribute last: int = - ${i} /** Leaf documentation ${i}. */;
-    attribute values: int[3] =[1, -2, 3];
-    attribute pair: Pair = record Pair { left = 1; right = -(2 + ${i}); };
-    /* A block comment ${i}. */
-    operation pick() returns int[3] {
-      return[last, - last, 0]; // trailing line comment ${i}
+test('documentation first in operation and state bodies survives the first in-process format', async () => {
+    // The canonical form of the fixture is the fixture itself.
+    for (const count of [1, 120])
+        assert.equal(await assertCanonical(bodyDocsModel(count), 'body docs ' + count), bodyDocsModel(count));
+    // A fresh process formats once, as an editor or script calling parseHelper and formatDocument does.
+    const url = (path: string) => JSON.stringify(new URL(path, import.meta.url).href);
+    const script = `import { EmptyFileSystem } from 'langium'; import { parseHelper } from 'langium/test';
+const { createSwamlServices } = await import(${url('../../src/language/swaml-module.js')});
+const { formatDocument } = await import(${url('../../src/language/formatter.js')});
+const { bodyDocsModel } = await import(${url('./format-fixtures.js')});
+const text = bodyDocsModel(120), { Swaml } = createSwamlServices(EmptyFileSystem);
+const doc = await parseHelper(Swaml)(text, { validation: true });
+process.stdout.write(String(doc.diagnostics.filter(d => d.severity === 1).length) + ' ' + (formatDocument(doc) === text));`;
+    for (let run = 0; run < 3; run++) {
+        const r = spawnSync(process.execPath, ['--input-type=module', '-e', script], { encoding: 'utf8', cwd: root });
+        assert.equal(r.stdout, '0 true', r.stderr);
     }
-    operation work() {
-      interruptible {
-        wait 8ms;
-        last = values[0] + (pair.left);
-      } on receive input.message(value) {
-        last = value;
-      }
-    }
-    operation lamp() {
-      initial Off;
-      state Off {
-        /** State documentation ${i}. */
-        after 2ms to On {
-        } on receive control.message(v) when(v > 0) to On {
-          last = v;
-        }
-      }
-      state On {
-        on entry {
-          last = 1;
-        } on exit {
-          last = 0;
-        }
-        after 3ms to Done {
-        }
-      }
-      final state Done {
-      }
-    }
-    schedule {
-      on start work();
-      on start lamp();
-    }
-  }
-`;
-    return s + '}\n// Trailing comment after the last declaration.\n';
-}
+});
 
 test('formatting every repository example keeps comments, documentation and the AST and is idempotent', async () => {
     const files = swamlFiles(join(root, 'examples'));
