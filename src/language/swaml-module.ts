@@ -23,7 +23,7 @@ export const SwamlModule: Module<SwamlServices, PartialLangiumServices & {
     };
 }> = {
     parser: { Lexer: services => new SwamlLexer(services), ValueConverter: () => new SwamlValueConverter(), ParserErrorMessageProvider: () => new SwamlParserErrorMessageProvider(), LexerErrorMessageProvider: () => new SwamlLexerErrorMessageProvider() },
-    lsp: { Formatter: () => new SwamlFormatter(), RenameProvider: services => new SwamlPathServices(services), DefinitionProvider: services => new SwamlPathServices(services), ReferencesProvider: services => new SwamlPathServices(services) },
+    lsp: { Formatter: services => new SwamlFormatter(services.parser.Lexer), RenameProvider: services => new SwamlPathServices(services), DefinitionProvider: services => new SwamlPathServices(services), ReferencesProvider: services => new SwamlPathServices(services) },
     references: { ScopeProvider: services => new SwamlScopeProvider(services) },
     validation: { SwamlValidator: services => new SwamlValidator(services), DocumentValidator: services => new SwamlDocumentValidator(services) }
 };
