@@ -59,6 +59,7 @@
       "AdaptiveV2x::Rotation deferred during own hazard": "pass",
       "AdaptiveV2x::New hazard right after cancellation": "pass",
       "AdaptiveV2x::Rotation deferral is bounded": "pass",
+      "AdaptiveV2x::Long uptime and clock wrap": "pass",
       "AdaptiveV2x::Hazard validity expiry": "pass"
     }
   }
