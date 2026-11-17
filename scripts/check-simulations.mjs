@@ -5,7 +5,7 @@ import { parseHelper } from 'langium/test';
 import { createSwamlServices } from '../out/src/language/swaml-module.js';
 import { runCase, runTests, simulate } from '../out/src/simulation/simulator.js';
 import { readStandardVersion } from './standard-version.mjs';
-import { caseOptions, checkCasesFile } from './simulation-cases.mjs';
+import { caseOptions, checkCasesFile, checkModelOptionsUsed } from './simulation-cases.mjs';
 const root = new URL('../', import.meta.url);
 const edition = await readStandardVersion();
 async function load(model) {
@@ -46,6 +46,7 @@ const expected = checkCasesFile(JSON.parse(await readFile(new URL('examples/simu
 let total = 0;
 for (const model of examples) {
     const options = caseOptions(expected, model), models = await load(model), results = runTests(models, options);
+    checkModelOptionsUsed(expected, model, results.length);
     if (!results.length) continue;
     assert.deepEqual(Object.fromEntries(results.map(r => [r.case, r.result])), expected.examples[model] ?? {}, `${model}: case results (${results.filter(r => r.message).map(r => r.case + ': ' + r.message).join('; ')})`);
     assert.deepEqual(results, runTests(models, options), `${model}: case reproducibility`);
