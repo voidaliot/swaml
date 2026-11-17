@@ -317,6 +317,7 @@ package DoorEcu::Interfaces {
   port def HeaterPort { provides attribute heaterPercent: uint; }
   port def LampRequest { provides attribute lampOn: bool; }
   port def LampPwm { provides attribute dutyPercent: uint; }
+  port def HallState { provides attribute hallConfirmed: bool; }
   port def PermissionPort {
     /** Function inhibition: the current permission and an event when window motion is withdrawn. */
     provides attribute permission: FunctionPermission;
@@ -419,8 +420,11 @@ package DoorEcu::Requirements {
   requirement 'Window motor protection' {
     /**
      * The window H-bridge is switched off at 30 A. A Hall signal without pulses while the
-     * motor draws free-running current is a Hall fault: the motor stops and a confirmed
-     * fault disables one-touch.
+     * motor draws free-running current is a Hall fault and stops the motor; inside the
+     * pinch zone while closing the first occurrence reverses instead, because a very soft
+     * obstacle looks the same. A confirmed Hall fault disables one-touch; the window can
+     * still be closed and opened with the switch held, protected only by a current limit
+     * that stops it (degraded mode, no reversal).
      */
     attribute tripMa: uint = 30000;
   }
@@ -954,6 +958,7 @@ package DoorEcu {
     reversed port events: DiagEvents;
     port access: DtcAccess;
     port fim: PermissionPort;
+    port hall: HallState;
     const attribute stepUp: int = 64;
     const attribute stepDown: int = 32;
     const attribute failedThreshold: int = 127;
@@ -969,6 +974,7 @@ package DoorEcu {
     ];
     attribute permission: FunctionPermission = record FunctionPermission { windowMotion = true; oneTouch = true; };
     attribute reports: uint = 0;
+    attribute hallConfirmed: bool = false;
     operation indexOf(fault: FaultId) returns uint {
       if (fault == FaultId.motorOvercurrent) {
         return 0;
@@ -1012,6 +1018,10 @@ package DoorEcu {
       var overcurrent: DtcStatus = statuses[0];
       var hall: DtcStatus = statuses[1];
       var supply: DtcStatus = statuses[3];
+      if (hall.confirmed != hallConfirmed) {
+        hallConfirmed = hall.confirmed;
+        send hall.hallConfirmed(hallConfirmed);
+      }
       var next: FunctionPermission = record FunctionPermission {
         windowMotion = not supply.testFailed and not overcurrent.confirmed;
         oneTouch = not hall.confirmed;
@@ -1027,6 +1037,7 @@ package DoorEcu {
     }
     operation publishPermission() {
       send fim.permission(permission);
+      send hall.hallConfirmed(hallConfirmed);
     }
     operation report(fault: FaultId, failed: bool) {
       reports = reports + 1;
@@ -1627,10 +1638,25 @@ package DoorEcu {
      * detection and the normalization flag. The pinch state is resynchronized with every
      * motor command, so detection is re-armed for each close even if a reversal did not
      * complete. A 100 ms heartbeat reports the anti-pinch path alive.
+     *
+     * | Hall counter | Motor current | Closing | Opening |
+     * | --- | --- | --- | --- |
+     * | stalled | above reference + 0.6 A | pinch: reverse | obstructed: stop |
+     * | stalled | near reference, in the pinch zone | pinch: reverse, Hall pre-failed | Hall fault: stop |
+     * | stalled | near reference, outside the zone | Hall fault: stop | Hall fault: stop |
+     * | stalled | below half the reference | unpowered: stop | unpowered: stop |
+     * | no pulse within 20 ms of a start | inrush, not usable | pinch: reverse, Hall pre-failed | - |
+     * | counting | above reference + 2 A in the zone | pinch: reverse | - |
+     * | Hall fault confirmed | above reference + 2 A or 9 A | degraded: stop | degraded: stop |
+     *
+     * A frozen sensor in the pinch zone therefore reverses once while closing and fails
+     * again in that reversal, which confirms the Hall fault; from then on only held manual
+     * motion with the degraded current-only stop is possible, and one-touch is inhibited.
      */
     reversed port feedback: WindowFeedbackPort;
     reversed port drive: WindowMotorPort;
     reversed port calibration: CalibrationBlock;
+    reversed port hall: HallState;
     port events: WindowSupervision;
     port status: WindowStatusPort;
     port diag: DiagEvents;
@@ -1639,6 +1665,7 @@ package DoorEcu {
     const attribute obstructionDeltaMa: uint = 600 /** About 15 N above the running current: load on a stalled regulator. */;
     const attribute reversalCounts: uint = 280 /** About 125 mm at 0.45 mm per Hall count. */;
     const attribute hallStuckSamples: uint = 5;
+    const attribute degradedLimitMa: uint = 9000 /** Absolute current limit of the degraded close under a confirmed Hall fault. */;
     const attribute startStuckSamples: uint = 2 /** During blanking: no Hall pulse for 20 ms after a start while closing is an obstacle. */;
     attribute cal: WindowCalibration = record WindowCalibration {
       closedCounts = 0;
@@ -1663,6 +1690,8 @@ package DoorEcu {
     attribute stuckSamples: uint = 0;
     attribute hallFaultSeen: bool = false;
     attribute hung: bool = false;
+    attribute hallConfirmed: bool = false;
+    attribute degradedStops: uint = 0;
     operation useCalibration(block: WindowCalibration) {
       cal = block;
     }
@@ -1748,9 +1777,14 @@ package DoorEcu {
         stuckSamples = stuckSamples + 1;
       }
       var powered: bool = sample.currentMa * 2 >= referenceMa;
+      var inZone: bool = position <= cal.closedCounts + cal.pinchZoneCounts;
+      if (hallConfirmed) {
+        degradedEvaluate(sample.currentMa);
+        return;
+      }
       if (runSamples <= blankingSamples) {
-        if (direction == MotorDirection.up and not reversing and powered and stuckSamples >= startStuckSamples) {
-          pinch();
+        if (direction == MotorDirection.up and not reversing and powered and inZone and stuckSamples >= startStuckSamples) {
+          suspectPinch(false);
         }
         return;
       }
@@ -1761,9 +1795,12 @@ package DoorEcu {
       var stalled: bool = stuckSamples >= hallStuckSamples;
       var loaded: bool = delta > obstructionDeltaMa;
       if (direction == MotorDirection.up) {
-        var inZone: bool = position <= cal.closedCounts + cal.pinchZoneCounts;
-        if (not reversing and ((inZone and delta > cal.pinchDeltaMa) or (stalled and powered and (loaded or inZone)))) {
+        if (not reversing and inZone and delta > cal.pinchDeltaMa) {
           pinch();
+          return;
+        }
+        if (not reversing and stalled and powered and (loaded or inZone)) {
+          suspectPinch(loaded);
           return;
         }
       } else {
@@ -1793,6 +1830,37 @@ package DoorEcu {
         referenceMa = trunc((referenceMa * 7 + sample.currentMa) / 8);
       }
     }
+    operation suspectPinch(loaded: bool) {
+      /**
+       * A stalled Hall counter while closing: with load it is an obstacle; without load
+       * inside the pinch zone a very soft obstacle cannot be told from a frozen sensor, so
+       * the window reverses (conservative side) and the Hall monitor is pre-failed.
+       */
+      if (not loaded and not hallFaultSeen) {
+        hallFaultSeen = true;
+        publish diag.report(FaultId.hallSensor, true);
+      }
+      pinch();
+    }
+    operation degradedEvaluate(currentMa: uint) {
+      /**
+       * Hall fault confirmed: no position, so no soft stops, no reversal distance and no
+       * Hall-based rules. After the start blanking a current above the running reference
+       * plus 2 A or above the absolute 9 A limit stops the window (no reversal, since its
+       * distance cannot be measured). The window lifter allows only held manual motion.
+       */
+      if (runSamples <= blankingSamples) {
+        return;
+      }
+      var delta: int = currentMa - referenceMa;
+      if (delta > cal.pinchDeltaMa or currentMa > degradedLimitMa) {
+        degradedStops = degradedStops + 1;
+        publish events.obstructed();
+      }
+    }
+    operation storeHall(confirmed: bool) {
+      hallConfirmed = confirmed;
+    }
     operation heartbeat() {
       /** 100 ms alarm on the event task: heartbeat of the anti-pinch path only (window and lock do not contribute). */
       if (not hung) {
@@ -1807,6 +1875,7 @@ package DoorEcu {
       on receive feedback.feedback(sample) evaluate(sample) deadline 2ms;
       on receive drive.windowMotor(command) trackCommand(command) deadline 1ms;
       on receive calibration.windowCalibration(block) useCalibration(block);
+      on receive hall.hallConfirmed(confirmed) storeHall(confirmed);
       on every 100ms heartbeat() deadline 1ms;
     }
   }
@@ -1871,6 +1940,9 @@ package DoorEcu {
         }
         on receive supervision.motionStalled() to idle {
           stalledStops = stalledStops + 1;
+        }
+        on receive supervision.obstructed() to idle {
+          obstructionStops = obstructionStops + 1;
         }
         on receive supervision.endPosition(closed) when (closed) to idle {
         }
@@ -2440,6 +2512,7 @@ package DoorEcu {
     connect: CrossCore (linIf.diag, dem.events);
     connect (comMain.diag, dem.events);
     connect permission: CrossCore (dem.fim, window.permissionIn);
+    connect hallState: CrossCore (dem.hall, antiPinch.hall);
     connect dtcAccess (dcm.dem, dem.access);
     // alive supervision
     connect (linIf.alive, wdgM.alive);
@@ -2554,6 +2627,7 @@ package DoorEcu {
     const attribute inrushMa: real = 16000.0;
     const attribute stallMa: real = 32000.0;
     const attribute maPerNewton: real = 40.0;
+    const attribute sealNewtonPerMs: real = 4.0 /** The glass pressing into the top seal at the closed position. */;
     const attribute handAtCounts: real = 150.0 /** An obstacle 68 mm below the closed position. */;
     const attribute openCounts: real = 1000.0;
     attribute position: real = 200.0 /** Initially open by about 90 mm. */;
@@ -2562,6 +2636,7 @@ package DoorEcu {
     attribute motorRunMs: uint = 0;
     attribute pinchForceN: real = 0.0;
     attribute peakPinchForceN: real = 0.0;
+    attribute sealForceN: real = 0.0;
     attribute currentMa: real = 0.0;
     attribute handInWindow: bool = false;
     attribute doorOpen: bool = false;
@@ -2678,11 +2753,13 @@ package DoorEcu {
           } else {
             position = max(position - speed * stepMs, 0.0);
             if (position <= 0.0) {
-              load = stallMa;
+              sealForceN = sealForceN + sealNewtonPerMs * stepMs;
+              load = min(runningMa + sealForceN * maPerNewton, stallMa);
             }
           }
         } else {
           pinchForceN = 0.0;
+          sealForceN = 0.0;
           position = min(position + speed * stepMs, openCounts);
           if (position >= openCounts) {
             load = stallMa;
@@ -2703,6 +2780,7 @@ package DoorEcu {
       } else {
         currentMa = 0.0;
         pinchForceN = 0.0;
+        sealForceN = 0.0;
       }
       if (lockDrive != LockDrive.idle and not lockJammed) {
         lockDriveMs = lockDriveMs + 10;
@@ -3438,7 +3516,7 @@ package DoorEcu {
     assert dcu.window.pinchReversals == 1 and door.motor.direction == MotorDirection.down;
     assert door.peakPinchForceN > 0.0 and door.peakPinchForceN < 100.0;
     var counters: int[6] = dcu.dem.counters;
-    assert counters[1] <= 0;
+    assert counters[1] <= 64;
   }
 
   test 'Reversal distance at minimum supply' of dcu {
@@ -3573,6 +3651,60 @@ package DoorEcu {
     assert door.motor.direction == MotorDirection.stop and dcu.window.oneTouchCloses == 0;
   }
 
+  test 'Frozen Hall, closing with the switch held' of dcu {
+    /**
+     * With a frozen Hall counter the first close reverses once and confirms the Hall fault;
+     * then the window closes in degraded mode while the switch is held and stops at the
+     * seal by current, without further reversals.
+     */
+    send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 0.0; ignitionOn = true; rolling = 0; });
+    door.freezeHall(true);
+    for (var i: uint = 1; i <= 3; i = i + 1) {
+      send driver.contacts.window(WindowRequest.manualUp);
+      wait 600ms;
+      send driver.contacts.window(WindowRequest.neutral);
+      wait 100ms;
+    }
+    assert door.position <= 6.0 and door.motor.direction == MotorDirection.stop;
+    assert dcu.window.pinchReversals == 1 and dcu.antiPinch.hallConfirmed;
+    assert dcu.antiPinch.degradedStops >= 1 and dcu.ioIn.trips == 0;
+  }
+
+  test 'Frozen Hall, one-touch falls back to held close' of dcu {
+    /** With a frozen Hall counter one-touch is inhibited after the first attempt; holding the one-touch detent closes the window. */
+    send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 0.0; ignitionOn = true; rolling = 0; });
+    door.freezeHall(true);
+    for (var i: uint = 1; i <= 3; i = i + 1) {
+      send driver.contacts.window(WindowRequest.autoUp);
+      wait 600ms;
+      send driver.contacts.window(WindowRequest.neutral);
+      wait 100ms;
+    }
+    assert door.position <= 6.0 and door.motor.direction == MotorDirection.stop;
+    assert dcu.window.pinchReversals == 1 and dcu.window.oneTouchCloses == 1;
+    assert not dcu.window.permission.oneTouch;
+  }
+
+  test 'Frozen Hall, degraded close stops at an obstacle' of dcu {
+    /** Under a confirmed Hall fault a hand in the window during a held close is stopped by the current limit before 100 N. */
+    door.freezeHall(true);
+    send driver.contacts.window(WindowRequest.manualDown);
+    wait 250ms;
+    send driver.contacts.window(WindowRequest.neutral);
+    wait 60ms;
+    send driver.contacts.window(WindowRequest.manualDown);
+    wait 250ms;
+    send driver.contacts.window(WindowRequest.neutral);
+    wait 60ms;
+    assert dcu.antiPinch.hallConfirmed;
+    send passenger.body.handInWindow(true);
+    send driver.contacts.window(WindowRequest.manualUp);
+    wait 600ms;
+    assert door.motor.direction == MotorDirection.stop and dcu.antiPinch.degradedStops == 1;
+    assert door.peakPinchForceN > 0.0 and door.peakPinchForceN < 100.0;
+    send driver.contacts.window(WindowRequest.neutral);
+  }
+
   test 'Blocked window trips the bridge' of dcu {
     /** A blocked regulator draws stall current: the H-bridge trips at 30 A twice, the overcurrent code is confirmed and window motion is inhibited. */
     door.blockRegulator(true);
@@ -3690,6 +3822,15 @@ package DoorEcu {
   associate switchPanel to 'Switch panel lost';
   associate driver to 'Hall sensor fault disables one-touch';
   associate door to 'Hall sensor fault disables one-touch';
+  associate bcm to 'Frozen Hall, closing with the switch held';
+  associate driver to 'Frozen Hall, closing with the switch held';
+  associate door to 'Frozen Hall, closing with the switch held';
+  associate bcm to 'Frozen Hall, one-touch falls back to held close';
+  associate driver to 'Frozen Hall, one-touch falls back to held close';
+  associate door to 'Frozen Hall, one-touch falls back to held close';
+  associate driver to 'Frozen Hall, degraded close stops at an obstacle';
+  associate passenger to 'Frozen Hall, degraded close stops at an obstacle';
+  associate door to 'Frozen Hall, degraded close stops at an obstacle';
   associate driver to 'Blocked window trips the bridge';
   associate door to 'Blocked window trips the bridge';
   associate bcm to 'Lock actuator fault';
@@ -3726,6 +3867,9 @@ package DoorEcu {
   verify 'Anti-pinch protection' by 'Very soft obstacle reverses';
   verify 'Anti-pinch protection' by 'Close starting against an obstacle';
   verify 'Window motor protection' by 'Obstructed opening stops';
+  verify 'Window motor protection' by 'Frozen Hall, closing with the switch held';
+  verify 'Window motor protection' by 'Frozen Hall, one-touch falls back to held close';
+  verify 'Window motor protection' by 'Frozen Hall, degraded close stops at an obstacle';
   verify 'Anti-pinch protection' by 'Reversal distance at minimum supply';
   verify 'One-touch close' by 'One-touch close learns the closed stop';
   verify 'Central locking' by 'Debounced switch and latch inputs';
