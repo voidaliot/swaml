@@ -352,12 +352,16 @@ package AdaptiveV2x::Types {
   requirement 'Secured reception' {
     /**
     Every received frame is range-checked field by field and then integrity-checked before any use.
+    Every value folded into the digest or the signature lies in the digest domain, strictly between
+    minus and plus half the prime modulus; the fold rejects any other value, so no two accepted
+    values are congruent.
     The integrity check recomputes a digest that folds every field of the header and both
     containers non-linearly and compares the signature, which binds that digest to the signer's
     pseudonym, certificate and trust anchor. Malformed frames, frames whose signature does not
     match and frames with an untrusted certificate are dropped. The model's tests show single-field
     tampering and the multi-field forgeries of its test set rejected. Digest and signature are
-    arithmetic stand-ins, not cryptography: they give no cryptographic guarantee.
+    arithmetic stand-ins, not cryptography: they give no cryptographic guarantee, including against
+    a brute-force search for colliding field values.
     */
     attribute dropUnverified: bool = true;
   }
@@ -518,14 +522,24 @@ package AdaptiveV2x::Types {
       trailer = unsignedTrailer();
     };
   }
+  operation def foldable(v: int) returns bool {
+    /** The digest domain: strictly between minus and plus half the prime, so no two values in it are congruent modulo the prime. */
+    return v > - 47453124 and v < 47453124;
+  }
   operation def mix(acc: int, value: int) returns int {
     /**
     Folds one value into a running digest below the prime 94906249, the largest prime whose square
-    is a safe integer. The cubic round makes the fold non-linear, so changes to several fields do
-    not cancel out the way they would in a weighted sum. It is kept to one expression per round
-    because every evaluated expression is a step of the bounded reference run. An arithmetic
-    stand-in for a hash, not cryptography.
+    is a safe integer. The single rule that keeps the fold faithful: every folded value must lie in
+    the digest domain (foldable), otherwise the fold fails, so a value and the same value plus the
+    prime can never share a digest. The cubic round makes the fold non-linear, so changes to
+    several fields do not cancel out the way they would in a weighted sum. It is kept short because
+    every evaluated expression is a step of the bounded reference run. An arithmetic stand-in for a
+    hash, not cryptography: it gives no guarantee, including against a brute-force search for
+    colliding field values.
     */
+    if (not foldable(value)) {
+      fail "value outside the digest domain";
+    }
     var x: int = (acc % 94906249 * 131 + value % 94906249 + 94906256) % 94906249;
     return ((x * x + 40503) % 94906249 * x % 94906249 + value % 94906249 + 94906250) % 94906249;
   }
@@ -596,8 +610,8 @@ package AdaptiveV2x::Types {
   operation def frameDigest(frame: V2xFrame) returns int {
     /**
     A deterministic content digest standing in for a cryptographic hash. One fold per signed
-    datatype folds every field of that datatype, so a new field is added in exactly one place;
-    two final rounds spread every input over the result. Only the container named by the message
+    datatype folds every field of that datatype, so a new field is added in exactly one place.
+    Only the container named by the message
     kind is folded: wellFormed requires the other container to be exactly empty. The trailer is not part of the signed
     payload; the signature binds the pseudonym and certificate separately. The language has no
     generic record hashing, so this field-by-field structure is kept by convention, not checked.
@@ -608,7 +622,7 @@ package AdaptiveV2x::Types {
     } else {
       d = hazardDigest(d, frame.hazard);
     }
-    return mix(mix(d, 1), 2);
+    return d;
   }
   operation def withTrailer(frame: V2xFrame, trailer: SecurityTrailer) returns V2xFrame {
     return record V2xFrame {
@@ -745,11 +759,11 @@ package AdaptiveV2x::Types {
     return inRange(p.east, - 100000.0, 100000.0) and inRange(p.north, - 100000.0, 100000.0);
   }
   operation def wellFormed(frame: V2xFrame) returns bool {
-    /** Range checks on every field that a received frame's use depends on, applied before verification. */
-    if (frame.header.protocolVersion != 2 or frame.header.stationId == 0) {
+    /** Range checks on every field that a received frame's use depends on, applied before verification. Identifiers and time must be non-zero and inside the digest domain. The 600 s validity cap and the 5 km radius cap are showcase limits. */
+    if (frame.header.protocolVersion != 2 or frame.header.stationId == 0 or not foldable(frame.header.stationId) or not foldable(frame.header.generationTimeMs)) {
       return false;
     }
-    if (frame.trailer.pseudonymId == 0 or frame.trailer.certificateId == 0 or frame.trailer.signature < 1 or frame.trailer.signature > 1000003) {
+    if (frame.trailer.pseudonymId == 0 or not foldable(frame.trailer.pseudonymId) or frame.trailer.certificateId == 0 or not foldable(frame.trailer.certificateId) or frame.trailer.signature < 1 or frame.trailer.signature > 1000003) {
       return false;
     }
     if (frame.header.messageKind == MessageKind.awareness) {
@@ -1260,7 +1274,11 @@ package AdaptiveV2x {
         countMalformed();
         return;
       }
-      var digest: int = frameDigest(frame);
+      var digest: int = try(frameDigest(frame), - 1);
+      if (digest < 0) {
+        countMalformed();
+        return;
+      }
       var verdict: VerifyResult = try(security.verifySignature(frame.trailer, digest), VerifyResult.unavailable);
       if (verdict != VerifyResult.valid) {
         droppedSecurity = droppedSecurity + 1;
@@ -1384,7 +1402,8 @@ package AdaptiveV2x {
         verificationFailures = verificationFailures + 1;
         return VerifyResult.unknownCertificate;
       }
-      if (trailer.signature != signatureOf(digest, trailer.pseudonymId, trailer.certificateId, pkiKey())) {
+      var expected: int = try(signatureOf(digest, trailer.pseudonymId, trailer.certificateId, pkiKey()), - 1);
+      if (trailer.signature != expected) {
         verificationFailures = verificationFailures + 1;
         return VerifyResult.badSignature;
       }
@@ -2395,7 +2414,7 @@ package AdaptiveV2x {
     assert app.v2x.droppedSecurity == 13 and app.v2x.neighbourCount == 1;
   }
   test 'Forged frames rejected' of app {
-    /** Multi-field forgeries that would cancel out in a weighted-sum digest, and out-of-range values, are rejected; none reaches the driver. */
+    /** Multi-field forgeries that would cancel out in a weighted-sum digest with weight 31 or 131, identifiers raised by the prime modulus, and out-of-range values are rejected; none reaches the driver. The non-linearity of the fold itself is checked by 'Digest fold is non-linear'. */
     wait 300ms;
     var genuine: V2xFrame = signedBy(hazardFrame(5002, 300, 1, HazardCause.collisionRisk, record LocalPosition { east = 100.0; north = 1000.0; }, 300.0, 60000, false), 5002, 1142);
     var seal: SecurityTrailer = genuine.trailer;
@@ -2413,7 +2432,34 @@ package AdaptiveV2x {
       fail "a forged frame reached the driver";
     } or after 100ms {
     }
-    assert app.v2x.droppedSecurity == 7 and app.v2x.droppedMalformed == 2 and app.v2x.warningsIssued == 0;
+    var far: V2xFrame = signedBy(hazardFrame(5002, 300, 1, HazardCause.adverseWeather, record LocalPosition { east = 900.0; north = 0.0; }, 300.0, 60000, false), 5002, 1142);
+    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002 + 94906249, 300, 1, HazardCause.adverseWeather, record LocalPosition { east = 900.0; north = 0.0; }, 300.0, 60000, false), far.trailer), - 70);
+    publish roadsideUnit.sch.frameIn(withTrailer(near, record SecurityTrailer { pseudonymId = 5002 + 94906249; certificateId = 1142 + 9490624900; signature = near.trailer.signature; }), - 70);
+    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5002, 300, 1, HazardCause.collisionRisk, record LocalPosition { east = 100.0; north = 0.0; }, 6000.0, 60000, false), 5002, 1142), - 70);
+    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5002, 300, 2, HazardCause.collisionRisk, record LocalPosition { east = 100.0; north = 0.0; }, 300.0, 700000, false), 5002, 1142), - 70);
+    on receive driver.warnings.warning(item) {
+      fail "a frame outside the field ranges reached the driver";
+    } or after 100ms {
+    }
+    assert app.v2x.droppedSecurity == 7 and app.v2x.droppedMalformed == 6 and app.v2x.warningsIssued == 0;
+  }
+  test 'Digest fold is non-linear' of app {
+    /** A fold of the form (a * acc + b * value + c) mod p has a zero second difference in each argument. The digest fold does not, in either argument, at several points, so no fold of that linear form passes. */
+    var p: int = 94906249;
+    var k: int = 0;
+    var nonlinear: bool = true;
+    while (k < 4) {
+      var u: int = 1000 + k * 7919;
+      var v: int = 37 + k * 104729;
+      var inValue: int = ((mix(u, v + 5) - mix(u, v + 3) - mix(u, v + 2) + mix(u, v)) % p + p) % p;
+      var inAcc: int = ((mix(u + 5, v) - mix(u + 3, v) - mix(u + 2, v) + mix(u, v)) % p + p) % p;
+      if (inValue == 0 or inAcc == 0) {
+        nonlinear = false;
+      }
+      k = k + 1;
+    }
+    assert nonlinear;
+    assert try(mix(1, 47453124), - 1) == - 1 and try(mix(1, - 47453124), - 1) == - 1 and mix(1, 47453123) >= 0;
   }
   test 'Most urgent hazards kept' of app {
     /** With four events shown, a less urgent event is not shown; a more urgent one displaces the least urgent shown event, ranked by cause severity and then distance. Displacement is not counted as expiry. */
@@ -2962,6 +3008,7 @@ package AdaptiveV2x {
   verify 'Secured reception' by 'Signature failure dropped';
   verify 'Secured reception' by 'Tampered frames dropped';
   verify 'Secured reception' by 'Forged frames rejected';
+  verify 'Secured reception' by 'Digest fold is non-linear';
   verify 'Hazard relevance filtering' by 'Most urgent hazards kept';
   verify 'Pseudonym rotation' by 'New hazard right after cancellation';
   verify 'Pseudonym rotation' by 'Rotation deferral is bounded';

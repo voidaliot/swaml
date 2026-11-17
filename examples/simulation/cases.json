@@ -42,6 +42,7 @@
       "AdaptiveV2x::Concurrent hazards and validity": "pass",
       "AdaptiveV2x::Tampered frames dropped": "pass",
       "AdaptiveV2x::Forged frames rejected": "pass",
+      "AdaptiveV2x::Digest fold is non-linear": "pass",
       "AdaptiveV2x::Most urgent hazards kept": "pass",
       "AdaptiveV2x::Signature failure dropped": "pass",
       "AdaptiveV2x::Neighbour ageing and plausibility": "pass",
