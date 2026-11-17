@@ -1,145 +1,144 @@
 // Deterministic large swa.ml models for the performance benchmark and the equivalence tests.
 //
-// largeModel(scale) has the shape of the editor's large-model budget fixture: at scale 1 about 1,750
-// lines with 24 port definitions of 8 events, 6 leaf definitions with 3 long operations each, a state
-// machine, 4 levels of nested parts (129 occurrences under one System), 6 use cases and 6 tests of 25
-// steps and 12 requirements with satisfy/verify links. Every size grows with scale, including the
-// number of top-level System occurrences, so projection work scales with the model.
+// largeModel(scale) is a process plant written for this benchmark: signal port definitions, device
+// definitions with looping operations, a controller state machine, sites of lines of cells of devices,
+// use cases and tests that drive a site through its panel, and requirements with satisfy/verify links.
+// Every count grows with scale, including the number of top-level sites, so projection work scales
+// with the model.
 //
 // periodicModel(options) is a running model whose activations never stop: periodic producers publish
-// over package connections to consumers, which forward requests to a server with a state machine.
-// Its run length is chosen by untilNs, so simulation work scales with the number of steps.
+// over package connections to consumers, which call a server. Its run length is chosen by untilNs, so
+// simulation work scales with the number of steps. timerModel(options) cancels long receive timeouts.
 //
 // Usage: node scripts/bench/large-model.mjs [scale] > model.swaml
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 export function largeModel(scale = 1) {
-    const ports = 24 * scale, events = 8, leaves = 6, steps = 25, systems = scale;
-    const out = [];
+    const out = [], devices = 8, sites = 2 * scale;
     const line = (depth, text) => out.push('  '.repeat(depth) + text);
-    line(0, 'package Large {');
+    line(0, 'package Plant {');
     line(1, 'import Swaml::Views;');
-    for (let p = 0; p < ports; p++) {
-        line(1, `port def Bus${p} {`);
-        for (let e = 0; e < events; e++)
-            line(2, `provides event e${e}(value: uint);`);
+    for (let k = 0; k < 20 * scale; k++) {
+        line(1, `port def Signal${k} {`);
+        for (let j = 0; j < 6; j++)
+            line(2, `provides event level${j}(amount: int);`);
+        line(2, 'provides event alarm(code: int);');
         line(1, '}');
     }
-    for (let r = 0; r < 12 * scale; r++) {
-        line(1, `requirement 'Requirement ${r}' {`);
-        line(2, `/** The system keeps signal ${r} below its limit. */`);
-        line(2, `attribute limit: uint = ${100 + r};`);
+    for (let r = 0; r < 16 * scale; r++) {
+        line(1, `requirement 'Limit ${r}' {`);
+        line(2, `/** Reading ${r} stays within its bound after every cycle. */`);
+        line(2, `attribute bound: int = ${50 + 3 * r};`);
+        line(2, `attribute margin: int = ${r % 7};`);
         line(1, '}');
     }
-    for (let d = 0; d < leaves; d++) {
-        line(1, `component def Leaf${d} {`);
-        line(2, 'reversed port input: Bus0;');
-        line(2, 'port output: Bus0;');
-        for (let a = 0; a < 6; a++)
-            line(2, `attribute a${a}: uint = ${a};`);
-        line(2, 'attribute ready: bool = false;');
+    for (let d = 0; d < devices; d++) {
+        line(1, `component def Device${d} {`);
+        line(2, 'reversed port inlet: Signal0;');
+        line(2, 'port outlet: Signal0;');
+        for (let v = 0; v < 5; v++)
+            line(2, `attribute reading${v}: int = ${d + v};`);
+        line(2, 'attribute faults: int = 0;');
         for (let o = 0; o < 3; o++) {
-            line(2, `operation step${o}(value: uint) {`);
-            line(3, 'var total: uint = value;');
-            const emitted = [[0], [1, 2, 3, 4], [5, 6, 7]][o];
-            for (let s = 0; s < 4 + 2 * o; s++) {
-                line(3, `if (total > ${s * 10}) {`);
-                line(4, `a${s % 6} = a${s % 6} + total;`);
-                line(4, s < emitted.length ? `publish output.e${emitted[s]}(total);` : `ready = total > ${s};`);
-                line(3, '} else {');
-                line(4, `total = total + ${s + 1};`);
+            line(2, `operation handle${o}(amount: int) {`);
+            line(3, 'var rest: int = amount;');
+            line(3, `for (var i: int = 0; i < ${2 + o}; i = i + 1) {`);
+            line(4, `reading${o} = reading${o} + i;`);
+            line(3, '}');
+            for (let s = 0; s < 5 + 2 * o; s++) {
+                line(3, `while (rest > ${40 + 5 * s}, 2 times) {`);
+                line(4, `rest = rest - ${s + 2};`);
+                line(4, `reading${(s + o) % 5} = reading${(s + o) % 5} + 1;`);
                 line(3, '}');
             }
+            for (const j of [[0, 1], [2, 3, 4], [5]][o])
+                line(3, `publish outlet.level${j}(rest);`);
+            if (o === 2)
+                line(3, 'publish outlet.alarm(faults);');
             line(2, '}');
         }
         line(2, 'schedule {');
-        for (let e = 0; e < events; e++)
-            line(3, `on receive input.e${e}(value) step${e % 3}(value);`);
+        for (let j = 0; j < 6; j++)
+            line(3, `on receive inlet.level${j}(amount) handle${j % 3}(amount);`);
+        line(3, 'on receive inlet.alarm(code) handle0(code);');
         line(2, '}');
         line(1, '}');
     }
-    line(1, 'component def Modes {');
-    line(2, 'attribute lit: bool = false;');
-    line(2, 'operation cycle() {');
-    line(3, 'initial S0;');
-    for (let s = 0; s < 8; s++) {
-        line(3, `state S${s} {`);
+    line(1, 'component def Controller {');
+    line(2, 'attribute phase: int = 0;');
+    line(2, 'operation sequence() {');
+    line(3, 'initial Warmup;');
+    const states = ['Warmup', 'Fill', 'Heat', 'Hold', 'Drain', 'Rinse'];
+    states.forEach((name, i) => {
+        line(3, `state ${name} {`);
         line(4, 'on entry {');
-        line(5, 'lit = true;');
-        line(4, '} on exit {');
-        line(5, 'lit = false;');
+        line(5, `phase = ${i + 1};`);
         line(4, '}');
-        line(4, `after ${s + 1}ms to ${s === 7 ? 'Done' : 'S' + (s + 1)} {`);
+        line(4, `after ${2 * i + 1}ms to ${states[i + 1] ?? 'Stopped'} {`);
         line(4, '}');
         line(3, '}');
-    }
-    line(3, 'final state Done {');
+    });
+    line(3, 'final state Stopped {');
     line(3, '}');
     line(2, '}');
     line(2, 'schedule {');
-    line(3, 'on start cycle();');
+    line(3, 'on start sequence();');
     line(2, '}');
     line(1, '}');
-    const level = (name, child, count) => {
+    const assembly = (name, parts) => {
         line(1, `component def ${name} {`);
-        line(2, 'reversed port input: Bus0;');
-        line(2, 'port output: Bus0;');
-        for (let c = 0; c < count; c++)
-            line(2, `component c${c}: ${child(c)};`);
-        line(2, 'connect (input, c0.input);');
-        for (let c = 0; c + 1 < count; c++)
-            line(2, `connect (c${c}.output, c${c + 1}.input);`);
-        line(2, `connect (c${count - 1}.output, output);`);
-        line(2, 'attribute mode: uint = 0;');
-        line(2, 'operation tick(value: uint) {');
-        for (let s = 0; s < 10; s++)
-            line(3, `mode = mode + value + ${s};`);
+        line(2, 'reversed port inlet: Signal0;');
+        line(2, 'port outlet: Signal0;');
+        parts.forEach((type, i) => line(2, `component p${i}: ${type};`));
+        line(2, 'connect (inlet, p0.inlet);');
+        for (let i = 1; i < parts.length; i++)
+            line(2, `connect (p${i - 1}.outlet, p${i}.inlet);`);
+        line(2, `connect (p${parts.length - 1}.outlet, outlet);`);
+        line(2, 'attribute cycles: int = 0;');
+        line(2, 'operation count(amount: int) {');
+        for (let s = 0; s < 6; s++)
+            line(3, `cycles = cycles + amount - ${s};`);
         line(2, '}');
         line(1, '}');
     };
-    level('Level3', c => `Leaf${(c + 2) % leaves}`, 4);
-    level('Level2', () => 'Level3', 4);
-    level('Level1', () => 'Level2', 3);
-    level('System', () => 'Level1', 2);
-    line(1, 'component def Operator {');
-    line(2, 'port panel: Bus0;');
-    line(2, 'reversed port feedback: Bus0;');
+    for (let c = 0; c < 4; c++)
+        assembly(`Cell${c}`, Array.from({ length: 5 }, (_, i) => `Device${(c + i) % devices}`));
+    assembly('Line', ['Cell0', 'Cell1', 'Cell2', 'Cell3']);
+    assembly('Site', ['Line', 'Line', 'Line', 'Line']);
+    line(1, 'component def Panel {');
+    line(2, 'port command: Signal0;');
+    line(2, 'reversed port display: Signal0;');
     line(1, '}');
-    line(1, 'component def Observer {');
-    line(2, 'attribute seen: uint = 0;');
-    line(1, '}');
-    line(1, 'component modes: Modes;');
-    for (let u = 0; u < 3; u++)
-        line(1, `component observer${u}: Observer;`);
-    for (let k = 0; k < systems; k++) {
-        line(1, `component system${k}: System;`);
-        line(1, `component operator${k}: Operator;`);
-        line(1, `connect (operator${k}.panel, system${k}.input);`);
-        line(1, `connect (system${k}.output, operator${k}.feedback);`);
+    line(1, 'component controller: Controller;');
+    for (let k = 0; k < sites; k++) {
+        line(1, `component site${k}: Site;`);
+        line(1, `component panel${k}: Panel;`);
+        line(1, `connect (panel${k}.command, site${k}.inlet);`);
+        line(1, `connect (site${k}.outlet, panel${k}.display);`);
     }
-    const scenario = (keyword, name, kind, k) => {
-        line(1, `${keyword} '${name}' of system${k} {`);
-        line(2, `/** ${kind} with ${steps} steps. */`);
-        for (let s = 0; s < steps; s++)
-            line(2, `publish operator${k}.panel.e${s % 5 === 4 ? 1 : 0}(${s});`);
-        line(2, `on receive operator${k}.feedback.e1(value) {`);
-        line(3, 'assert value >= 0;');
-        line(2, '} or after 2s {');
-        line(3, 'fail "no feedback";');
+    const scenario = (keyword, name, k) => {
+        line(1, `${keyword} '${name}' of site${k} {`);
+        line(2, `/** The operator drives site ${k} through 20 commands and waits for its alarm report. */`);
+        for (let s = 0; s < 20; s++)
+            line(2, `publish panel${k}.command.level${s % 3}(${10 * s});`);
+        line(2, `on receive panel${k}.display.alarm(code) {`);
+        line(3, 'assert code == 0;');
+        line(2, '} or after 1s {');
+        line(3, 'fail "no alarm report";');
         line(2, '}');
         line(1, '}');
-        line(1, `associate operator${k} to '${name}';`);
+        line(1, `associate panel${k} to '${name}';`);
     };
-    for (let u = 0; u < 6 * scale; u++)
-        scenario('use case', `Use ${u}`, 'A use case', u % systems);
-    for (let t = 0; t < 6 * scale; t++)
-        scenario('test', `Check ${t}`, 'A test', t % systems);
-    for (let r = 0; r < 12 * scale; r++) {
-        line(1, `satisfy 'Requirement ${r}' by system${r % systems};`);
-        line(1, `verify 'Requirement ${r}' by 'Check ${r % (6 * scale)}';`);
+    for (let u = 0; u < 5 * scale; u++)
+        scenario('use case', `Operate ${u}`, u % sites);
+    for (let t = 0; t < 5 * scale; t++)
+        scenario('test', `Inspect ${t}`, t % sites);
+    for (let r = 0; r < 16 * scale; r++) {
+        line(1, `satisfy 'Limit ${r}' by site${r % sites};`);
+        line(1, `verify 'Limit ${r}' by 'Inspect ${r % (5 * scale)}';`);
     }
-    line(1, "view story: Sequence of 'Use 0';");
+    line(1, "view walkthrough: Sequence of 'Operate 0';");
     line(0, '}');
     return out.join('\n') + '\n';
 }

@@ -11,13 +11,20 @@ const root = new URL('../../../', import.meta.url);
 /** The benchmark model generators, shared with npm run bench and the differential check. */
 const generators = (): Promise<{ largeModel(scale: number): string; timerModel(options: { iterations: number; timeout: string }): string }> => import(new URL('scripts/bench/large-model.mjs', root).href);
 /** The owner rule as originally written: the longest candidate path before '.', or a package before '::'; the first among equal paths. */
-function referenceOwners(models: readonly Model[]): (string | undefined)[] {
+function referenceOwners(models: readonly Model[]): ({ path: string } | undefined)[] {
     const candidates = viewCandidates(models);
-    return candidates.map(item => item.node.$type === 'Package' ? undefined : candidates.filter(x => item.path.startsWith(x.path + '.') || x.node.$type === 'Package' && item.path.startsWith(x.path + '::')).sort((a, b) => b.path.length - a.path.length)[0]?.path);
+    return candidates.map(item => item.node.$type === 'Package' ? undefined : candidates.filter(x => item.path.startsWith(x.path + '.') || x.node.$type === 'Package' && item.path.startsWith(x.path + '::')).sort((a, b) => b.path.length - a.path.length)[0]);
 }
+/** The result or thrown message of a projection step, so a failure of the original rule is compared too. */
+function outcome<T>(work: () => T): { value: T } | { error: string } { try { return { value: work() }; } catch (e) { return { error: (e as Error).message }; } }
 function assertOwners(models: readonly Model[], label: string): void {
-    const projection = projectModel(models), expected = referenceOwners(models);
-    assert.deepEqual(projection.nodes.map(n => n.owner), expected, label);
+    const projected = outcome(() => projectModel(models)), reference = outcome(() => referenceOwners(models));
+    if ('error' in reference || 'error' in projected) {
+        assert.deepEqual('error' in projected ? projected.error : 'projected', 'error' in reference ? reference.error : 'projected', label);
+        return;
+    }
+    const projection = projected.value, expected = reference.value;
+    assert.deepEqual(projection.nodes.map(n => n.owner), expected.map(x => x?.path), label);
     assert.deepEqual(projection.edges.filter(e => e.kind === 'ownership').map(e => [e.source, e.target]), projection.nodes.filter((_, i) => expected[i] !== undefined).map((n, i) => [n.owner, n.id]), `${label}: ownership edges`);
 }
 
@@ -35,6 +42,15 @@ test('projection owners of a large model, duplicate names and a package split ac
     assertOwners([(await parse('package Test { component def A { attribute x: int = 0; } component def A { attribute x: int = 1; operation f() { } } component a: A; component a: A; }')).model], 'duplicate names');
     const split = await workspace(['package Test { component def A { attribute x: int = 0; } }', 'package Test { component def B { attribute y: int = 0; } }']);
     assertOwners(split.docs.map(d => d.parseResult.value as Model), 'split package');
+
+    // A package being typed has no name and no string path; the original search keeps its results and failures.
+    assertOwners([(await parse('package { component def A { attribute x: int = 0; } }')).model], 'nameless package');
+    for (const sources of [['package P { component def A { attribute x: int = 0; } }', 'package P { component def A { attribute y: int = 0; } component def B { } }', 'package { component def A { } }'], ['package undefined { component def B { attribute x: int = 0; } }', 'package { component def A { attribute y: int = 0; } }'], ['package { component def A { attribute y: int = 0; } }', 'package undefined { component def B { } }']]) {
+        const w = await workspace(sources), models = w.docs.map(d => d.parseResult.value as Model);
+        assertOwners(models, sources.join(' + '));
+    }
+    // A name with many dots is invalid but still projects; only candidate path lengths are probed.
+    assertOwners([(await parse(`package P { component def '${'a.'.repeat(400)}a' { attribute x: int = 0; } }`)).model], 'dotted name');
 });
 
 test('simultaneous events keep phase order, then the order in which they were scheduled', async () => {

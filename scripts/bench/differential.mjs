@@ -1,4 +1,4 @@
-// Differential check of projectModel, simulate, runCase and runTests between this build (out/) and a
+// Differential check of projectModel, simulate and runTests between this build (out/) and a
 // reference build of another revision, for example the revision before a performance change:
 //   git worktree add ../swaml-ref <revision> && (cd ../swaml-ref && npm ci && npm run build)
 //   node scripts/bench/differential.mjs --reference ../swaml-ref/out [--seeds 300] [--corpus calls.jsonl]
@@ -7,7 +7,8 @@
 // final stores, statuses, failures and projection nodes and edges. Models: every example (with its
 // reference options and adverse options for limits, faults and latency), the large benchmark models,
 // seeded random models, and optionally a corpus of recorded calls (JSON lines of
-// { fn, sources: [{ uri, text }], args }).
+// { fn, sources: [{ uri, text }], args }). Invalid sources (examples/invalid and every example with its
+// package name removed or truncated) compare projectModel only, since a run requires a valid model.
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -52,16 +53,16 @@ function difference(x, y, at = '$') {
 }
 const attempt = work => { try { return { value: work() }; } catch (e) { return { error: String(e?.message ?? e) }; } };
 const coverage = {};
-const stats = { models: 0, invalid: 0, comparisons: 0, simulations: 0, traceEvents: 0, ties: 0 };
-/** Simultaneous observations (same time) in a trace; their order is part of the compared result. */
-const ties = run => { let n = 0; for (let i = 1; i < (run?.trace?.length ?? 0); i++) if (run.trace[i].timeNs === run.trace[i - 1].timeNs) n++; return n; };
+const stats = { models: 0, invalid: 0, comparisons: 0, simulations: 0, traceEvents: 0, sameTimeObservations: 0 };
+/** Consecutive observations at the same time in a trace (not a count of distinct simultaneous events). */
+const sameTime = run => { let n = 0; for (let i = 1; i < (run?.trace?.length ?? 0); i++) if (run.trace[i].timeNs === run.trace[i - 1].timeNs) n++; return n; };
 function count(result) {
     const runs = Array.isArray(result) ? result.map(x => x.run) : [result?.run ?? result];
     for (const run of runs)
         if (run?.trace) {
             stats.simulations++;
             stats.traceEvents += run.trace.length;
-            stats.ties += ties(run);
+            stats.sameTimeObservations += sameTime(run);
             coverage[run.status] = (coverage[run.status] ?? 0) + 1;
             for (const t of run.trace)
                 if (t.kind !== 'write' && t.kind !== 'release' && t.kind !== 'dispatch')
@@ -74,6 +75,9 @@ async function compare(name, sources, calls) {
     stats.models++;
     if (a.errors) {
         stats.invalid++;
+        const mine = attempt(() => current.projectModel(a.models)), theirs = attempt(() => old.projectModel(b.models));
+        assert.deepStrictEqual(mine, theirs, `${name}: projectModel of an invalid model: first difference at ${difference(mine, theirs)}`);
+        stats.comparisons++;
         return;
     }
     for (const call of calls(a.models)) {
@@ -107,6 +111,13 @@ for (const file of await walk('examples/')) {
     const own = await Promise.all(runs.filter(r => r.model === file).map(async r => JSON.parse(await text(r.options))));
     const options = [...own, ...variants({ untilNs: 1_000_000_000 }), { untilNs: 10_000_000_000 }];
     await compare(file, [{ uri: `file:///${file}`, text: await text(file) }], standard(options));
+}
+for (const file of (await readdir(new URL('examples/invalid/', root))).filter(f => f.endsWith('.swaml')).sort())
+    await compare(file, [{ uri: `file:///examples/invalid/${file}`, text: await text(`examples/invalid/${file}`) }], standard([]));
+for (const file of await walk('examples/')) {
+    const source = await text(file), nameless = source.replace(/^package [^{]*\{/m, 'package {');
+    for (const [i, variant] of [nameless, ...[0.2, 0.4, 0.6, 0.8].flatMap(f => [source, nameless].map(t => t.slice(0, Math.floor(t.length * f))))].entries())
+        await compare(`${file} edit ${i}`, [{ uri: `file:///${file}`, text: variant }, ...(i % 2 ? [] : [{ uri: 'file:///other.swaml', text: 'package undefined { component def B { attribute x: int = 0; } }' }])], standard([{ untilNs: 100_000_000 }]));
 }
 console.log(`examples: ${JSON.stringify(stats)}`);
 for (const scale of [1, 2])
