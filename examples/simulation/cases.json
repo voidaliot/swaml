@@ -88,6 +88,7 @@
       "AdaptiveV2x::Rotation deferred during own hazard": "pass",
       "AdaptiveV2x::New hazard right after cancellation": "pass",
       "AdaptiveV2x::Rotation deferral is bounded": "pass",
+      "AdaptiveV2x::Long uptime and clock wrap": "pass",
       "AdaptiveV2x::Hazard validity expiry": "pass"
     },
     "examples/showcase/autosar-classic-door-controller.swaml": {
@@ -122,6 +123,9 @@
       "DoorEcu::Debounced switch and latch inputs": "pass",
       "DoorEcu::Switch panel lost": "pass",
       "DoorEcu::Hall sensor fault disables one-touch": "pass",
+      "DoorEcu::Frozen Hall, closing with the switch held": "pass",
+      "DoorEcu::Frozen Hall, one-touch falls back to held close": "pass",
+      "DoorEcu::Frozen Hall, degraded close stops at an obstacle": "pass",
       "DoorEcu::Blocked window trips the bridge": "pass",
       "DoorEcu::Lock actuator fault": "pass"
     }
