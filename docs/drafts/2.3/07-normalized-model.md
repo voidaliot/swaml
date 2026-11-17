@@ -1,0 +1,42 @@
+# 7. Normalized model contract: 2.3 changes (draft)
+
+**Draft for the unreleased standard 2.3; see [the draft index](README.md).** Target: [chapter 7](../../spec/07-normalized-model.md).
+
+## 7.1 Identity and provenance
+
+| ID | Rule |
+| --- | --- |
+| WP2-M04 | **Association pairs.** Each occurrence–case pair of an association list is one normalized link. Its provenance is the statement plus the positions of the occurrence and the case in their lists. Deleting one pair in a tool rewrites the list and keeps the other pairs. |
+| WP4-M04 | **Entry identity.** A schedule entry keeps the identity `Component/schedule/N`. Its trigger identity for replacement and duplicates is the normalized form of WP4-S07. |
+| WP8-M06 | **Placement identity.** An operation placement is identified by its deployment and exact path, like an occurrence placement. |
+
+## 7.2 Families
+
+The family table gains the following content:
+
+| Family | Additional required content | Package |
+| --- | --- | --- |
+| Statement/expression | Places with root, ordered selectors and index expressions; conditional with condition and both branches | WP1, WP2 |
+| Schedule/entry | Period and deadline as expression text plus per-occurrence values; release guard | WP4, WP7 |
+| State/transition | Transition kind (receive, timer or completion), optional target (internal when absent), timer guard, computed delay; state deferrals in order | WP4, WP5 |
+| Port/member | Initial value of attribute members; sampled members per port | WP6 |
+| Connection/forwarding | Member policies with their effective policy per member route | WP6 |
+| Deployment | Operation placements, effective placement per entry, Task, Core and in-task position | WP8 |
+| Requirement/case/view | Association pairs from list statements | WP2 |
+
+## 7.3 Routes and queues
+
+| ID | Rule |
+| --- | --- |
+| WP6-M04 | A normalized connection records the effective policy of each member route, and the member-policy declaration where one applies. Every sampled member of a port occurrence records its sample cell with its initial value, and its zero or one consuming owner. |
+
+## 7.4 Executable lowering
+
+| ID | Rule |
+| --- | --- |
+| WP5-M03 | Stateful reactions retain source-order completion, timer and receive groups, internal reactions without a state update, timer guards and the deferral set per state. |
+| WP7-M02 | A schedule entry with a release guard lowers to its release mechanism, then guard evaluation at dispatch, then either the activation or a skip that counts as completion for `after` edges. |
+
+## 7.5 Presentation and equivalence
+
+Equivalence additionally preserves place evaluation order, conditional branch selection, per-occurrence period and deadline values, completion and timer selection order, deferral retention order, sample cell updates, per-member policies, release-guard skips and the priority and in-task ordering keys.

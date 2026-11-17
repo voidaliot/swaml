@@ -1,0 +1,58 @@
+# 1. Structure, names and types: 2.3 changes (draft)
+
+**Draft for the unreleased standard 2.3; see [the draft index](README.md).** Target: [chapter 1](../../spec/01-structure-and-types.md). Examples are `text` fences until their work package lands.
+
+## 1.1 Names and documentation
+
+| ID | Rule |
+| --- | --- |
+| WP2-S01 | `view`, `state`, `in` and `out` join the contextual words: they remain legal names outside their syntactic positions, in every name position (attribute, local, parameter, operation, state, initial state, port endpoint, view, and both positions of `for (x: T in values)`). The sentence listing contextual words becomes: "The contextual words associate, by, case, defer, in, kind, name, out, path, reversed, state, test, times, to, use and view and the duration units ns, us, ms and s remain legal names outside their syntactic positions." |
+| WP5-S01 | `defer` is a contextual word from its introduction (ADR 0023). |
+| WP2-M01 | Name services (`src/language/names.ts` `formatName`/`formatPath`) are edition-aware. For a 2.3 workspace they write a contextual word as a basic name; for a 2.2 workspace they keep quoting `view`, `state`, `in`, `out` and `defer`, which are reserved there. A quoted spelling such as `'state'` remains valid and denotes the same name. The example `'state'` in this section is replaced by a word that stays reserved, such as `'operation'`. |
+
+## 1.2 Components and occurrences
+
+No rule changes. The sentence "Connector loops and port arrays do not exist" stays: port arrays are rejected for 2.3 and are an additive 2.4 candidate (ADR 0024). Literal-index paths into multiplicity families are unchanged; their new use in test inspection paths is chapter 3.7 (WP1-S06).
+
+## 1.3 State and lexical values
+
+| ID | Rule |
+| --- | --- |
+| WP1-S01 | The sentence "Local data access never traverses child components or ports" gains: "except a sampled read `p.m` of an owned port (chapter 2.6)". Places (chapter 3.3) are rooted in locals, `out` parameters and non-const attributes only. *(Text change in WP1; the sampled-read exception is activated by WP6-S01.)* |
+
+## 1.4 Value domains
+
+Replace "In-place field/index assignment and reference values are absent." with the rules below.
+
+| ID | Rule |
+| --- | --- |
+| WP1-S02 | **Selectors.** After a first `[index]`, a value reference or assignment target continues with any sequence of `.field` and `[index]` selectors. `.f` selects a field of a record type and `[i]` indexes a fixed array with an integral index; the result type is the field or element type. Index expressions evaluate left to right. A read yields a copy. Reference values remain absent. |
+| WP1-S03 | **Static index range.** A literal index outside the extent of the indexed array type is a static error, at every selector position. |
+| WP2-S02 | **Conditional typing.** `if (c) a else b` requires `c: bool`. Its type is the common type of `a` and `b` under scalar widening (byte → uint → int → real). Records, enums and arrays must be identical types. The conditional is not a known literal, so initializing a smaller integral domain from it follows the general computed-assignment rule. |
+| WP2-S03 | **Conditional precedence.** The conditional is a whole expression; as an operand it is parenthesized. Within it, `else` extends to the end of the expression. |
+| WP4-S01 | **Duration literals as values.** A duration literal in an expression is a `uint` value in nanoseconds (`1us` = 1000). Its value is representable or the literal is a static error. Computed durations (chapter 3) are integral expressions; `real` is rejected. |
+
+```text
+statuses[index].confirmed = true;
+if (recent[i].vehicleId == vehicle and recent[i].status != AlertStatus.resolved) { return i; }
+counter = clampInt((if (previous < 0) 0 else previous) + stepUp, passedThreshold, failedThreshold);
+var lastRxNs: uint = 0;   // compared with now() - lastRxNs >= rxTimeoutMs * 1ms
+```
+
+## 1.5 Reuse and library boundaries
+
+The library sentence becomes: "The versioned source libraries are Swaml::Math, Swaml::Numeric, Swaml::Text, Swaml::Time, Swaml::Calls, Swaml::Qos, Swaml::Views, Swaml::Platform and Swaml::Os."
+
+| ID | Rule |
+| --- | --- |
+| WP3-L01 | `Swaml::Numeric` declares `operation def minInt(a: int, b: int) returns int`, `maxInt(a: int, b: int) returns int`, `clampInt(v: int, low: int, high: int) returns int` and `clamp(v: real, low: real, high: real) returns real` with swa.ml source bodies (as in [proposal B4](../../proposals/NEXT_MINOR_PROPOSAL.md#b4-numbers-and-text)), and `sqrt(v: real) returns real` as a host intrinsic. |
+| WP3-L02 | `Swaml::Text` declares `intText(v: int) returns string` and `realText(v: real, decimals: uint) returns string` as host intrinsics and `boolText(v: bool) returns string` with a source body. |
+| WP3-L03 | `Swaml::Time` declares `now() returns uint` as a host intrinsic. |
+| WP3-L04 | No operation is added to `Swaml::Math` or `Swaml::Platform`. A workspace that imports one of the new packages and declares a same-named operation follows the existing ambiguity rule (SW2001); the WP3 tests show that no corpus model becomes ambiguous. |
+| WP3-M01 | The new packages are part of the versioned library source (`libraries/`), loaded like the existing libraries and imported explicitly. Intrinsic bodies are documentation-only, as for the `Swaml::Math` intrinsics. |
+| WP3-R01 | `sqrt` is IEEE-754 correctly rounded. An argument below zero is the runtime failure `Arithmetic`. |
+| WP3-R02 | `intText` writes decimal digits, with `-` for negatives and no leading zeros. `realText` rounds the exact binary value of `v` to exactly `decimals` fraction digits, ties away from zero, and writes plain decimal notation with no exponent: `realText(2.5, 0)` is `3` and `realText(-2.5, 0)` is `-3`. A result that rounds to zero has no sign: `realText(-0.0001, 2)` is `0.00`. `decimals` above 15, or `abs(v)` of at least 1e21, is the runtime failure `Bounds`. This is not the tie rule of `Swaml::Math::round`, which rounds ties toward positive infinity. An implementation must not rely on JavaScript `toFixed` alone, which writes `-0.00` and switches to exponent notation from 1e21. |
+| WP3-R03 | `now()` returns the logical time of the evaluating step, in nanoseconds since the run epoch. A concurrent activation reads live time, not its dispatch snapshot. |
+| WP8-L01 | `Swaml::Os` declares `enum TaskKind { basic, extended, isr }`, `component def Core specializes Node { }` and `component def Task specializes Process` with the const attributes `kind: TaskKind = TaskKind.basic`, `priority: uint = 0`, `preemptive: bool = true`, `periodNs: uint = 0` and `responseNs: uint = 0`, documented as in ADR 0025. It imports `Swaml::Platform`. |
+
+Tier 2, not part of 2.3: trigonometry as swa.ml source in `Swaml::Numeric` and enum conversions with the library-only `enum` parameter type (ADR 0022).
