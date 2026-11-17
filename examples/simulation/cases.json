@@ -31,6 +31,22 @@
     },
     "examples/notation/catalog.swaml": {
       "Notation::Startup": "pass"
+    },
+    "examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "AdaptiveV2x::Share awareness": "pass",
+      "AdaptiveV2x::Warn driver of road hazard": "pass",
+      "AdaptiveV2x::Broadcast own hazard": "pass",
+      "AdaptiveV2x::Report fleet telemetry": "pass",
+      "AdaptiveV2x::Awareness rate follows dynamics": "pass",
+      "AdaptiveV2x::Irrelevant hazard filtered": "pass",
+      "AdaptiveV2x::Signature failure dropped": "pass",
+      "AdaptiveV2x::Neighbour ageing and plausibility": "pass",
+      "AdaptiveV2x::Offline store and forward": "pass",
+      "AdaptiveV2x::Consent withdrawn stops telemetry": "pass",
+      "AdaptiveV2x::Degraded on supervision failure": "pass",
+      "AdaptiveV2x::Shutdown on ignition off": "pass",
+      "AdaptiveV2x::Station identifier rotates": "pass",
+      "AdaptiveV2x::Hazard validity expiry": "pass"
     }
   }
 }
