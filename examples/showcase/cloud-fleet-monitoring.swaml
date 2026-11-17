@@ -621,8 +621,10 @@ package FleetCloud {
     It relays heartbeats and commands, and turns the ingestion **backlog** (a latest-value attribute) into throttle
     requests between a high and a low watermark. A command acknowledgement is relayed only from the authenticated
     session that was sent that command and only while it is pending there. When the registry announces a newer session
-    of the same vehicle, this session is closed: the vehicle is told so, and it no longer receives commands or relays
-    frames, heartbeats or acknowledgements. Refused sessions, frames and acknowledgements are audited.
+    of the same vehicle, this session is closed and forgotten: the vehicle is told so, and it no longer receives
+    commands or relays frames, heartbeats or acknowledgements. A refused re-hello keeps an existing session. Refused
+    sessions, frames and acknowledgements are audited; an entry carries a tenant only when an authenticated session
+    is responsible, otherwise the claimed vehicle id with an empty tenant.
     */
     reversed port vehicle: VehicleLink;
     reversed port directory: DeviceAuth;
@@ -653,24 +655,37 @@ package FleetCloud {
       opening = true;
       var identity: DeviceIdentity = try(directory.authenticate(claimed, deviceKey), Unknown(claimed));
       opening = false;
-      authenticated = identity.known;
-      pendingCommand = 0;
       if (identity.known) {
+        authenticated = true;
+        pendingCommand = 0;
         sessionVehicle = identity.vehicleId;
         sessionTenant = identity.tenantId;
         sessionSlot = identity.slot;
         sessionEpoch = identity.epoch;
       } else {
-        publish audit.logged(Entry(AuditKind.refusal, claimed, "", "device session refused", claimed));
+        if (authenticated) {
+          publish audit.logged(Entry(AuditKind.refusal, claimed, "", "device re-authentication refused: session kept", claimed));
+        } else {
+          clearSession();
+          publish audit.logged(Entry(AuditKind.refusal, claimed, "", "device session refused", claimed));
+        }
       }
       publish vehicle.welcome(identity.known);
     }
+    operation clearSession() {
+      /** Forget the session, so nothing later is attributed to its vehicle or tenant. */
+      authenticated = false;
+      pendingCommand = 0;
+      sessionVehicle = "";
+      sessionTenant = "";
+      sessionSlot = 0;
+      sessionEpoch = 0;
+    }
     operation closeSuperseded(id: string, epoch: uint) {
       if (authenticated and not opening and id == sessionVehicle and epoch > sessionEpoch) {
-        authenticated = false;
-        pendingCommand = 0;
         closedSessions = closedSessions + 1;
         publish audit.logged(Entry(AuditKind.access, id, sessionTenant, "device session superseded", id));
+        clearSession();
         publish vehicle.welcome(false);
       }
     }
@@ -699,7 +714,11 @@ package FleetCloud {
     operation handleFrame(f: Frame) {
       if (not authenticated or f.vehicleId != sessionVehicle) {
         refused = refused + 1;
-        publish audit.logged(Entry(AuditKind.refusal, f.vehicleId, sessionTenant, "frame refused: no session for this vehicle", f.vehicleId));
+        if (authenticated) {
+          publish audit.logged(Entry(AuditKind.refusal, sessionVehicle, sessionTenant, "frame refused: claims another vehicle", f.vehicleId));
+        } else {
+          publish audit.logged(Entry(AuditKind.refusal, f.vehicleId, "", "frame refused: no session", f.vehicleId));
+        }
         publish vehicle.ack(f.sequence, IngestOutcome.unauthenticated);
         return;
       }
@@ -753,22 +772,23 @@ package FleetCloud {
     /**
     The vehicle registry: device keys, tenant ownership, twin slot assignment and session epochs. Every vehicle has its
     own slot. A session is refused for a decommissioned vehicle (TRK-099), a wrong key, a slot beyond the twin
-    capacity (TRK-303 is registered before its twin exists) or a slot shared with another active vehicle. Every new
+    capacity (TRK-303 is registered before its twin exists) or a slot already held by an earlier registered active
+    vehicle (VAN-404 was misconfigured onto VAN-202's slot). Every new
     session is announced so that older sessions of the same vehicle close.
     */
     port directory: Directory;
     port health: Health;
     const attribute twinCapacity: uint = 2;
-    const attribute vehicleIds: string[4] = ["TRK-101", "VAN-202", "TRK-099", "TRK-303"];
-    const attribute owners: string[4] = ["alder", "birch", "alder", "alder"];
-    const attribute deviceKeys: string[4] = ["key-101", "key-202", "key-099", "key-303"];
-    const attribute slots: uint[4] = [0, 1, 2, 3];
-    const attribute active: bool[4] = [true, true, false, true];
-    attribute epochs: uint[4] = [0, 0, 0, 0];
+    const attribute vehicleIds: string[5] = ["TRK-101", "VAN-202", "TRK-099", "TRK-303", "VAN-404"];
+    const attribute owners: string[5] = ["alder", "birch", "alder", "alder", "birch"];
+    const attribute deviceKeys: string[5] = ["key-101", "key-202", "key-099", "key-303", "key-404"];
+    const attribute slots: uint[5] = [0, 1, 2, 3, 1];
+    const attribute active: bool[5] = [true, true, false, true, true];
+    attribute epochs: uint[4] = [0, 0, 0, 0] /** Session epoch per slot. */;
     attribute authentications: uint = 0;
     attribute failedAuthentications: uint = 0;
     operation find(vehicle: string) returns int {
-      for (var i: int = 0; i < 4; i = i + 1) {
+      for (var i: int = 0; i < 5; i = i + 1) {
         if (vehicleIds[i] == vehicle) {
           return i;
         }
@@ -776,27 +796,27 @@ package FleetCloud {
       return - 1;
     }
     operation slotUsable(i: int) returns bool {
-      /** The slot has a twin and no other active vehicle claims it. */
+      /** The slot has a twin and no earlier registered active vehicle claims it. */
       if (slots[i] >= twinCapacity) {
         return false;
       }
-      for (var j: int = 0; j < 4; j = j + 1) {
-        if (j != i and active[j] and slots[j] == slots[i]) {
+      for (var j: int = 0; j < 5; j = j + 1) {
+        if (j < i and active[j] and slots[j] == slots[i]) {
           return false;
         }
       }
       return true;
     }
     operation identity(i: int) returns DeviceIdentity {
-      return Known(vehicleIds[i], owners[i], slots[i], epochs[i]);
+      return Known(vehicleIds[i], owners[i], slots[i], epochs[slots[i]]);
     }
     operation authenticate(vehicle: string, deviceKey: string) returns DeviceIdentity {
       var i: int = find(vehicle);
       if (i >= 0) {
         if (active[i] and deviceKeys[i] == deviceKey and slotUsable(i)) {
           authentications = authentications + 1;
-          epochs = WithValue(epochs, i, epochs[i] + 1);
-          publish directory.sessionOpened(vehicleIds[i], epochs[i]);
+          epochs = WithValue(epochs, slots[i], epochs[slots[i]] + 1);
+          publish directory.sessionOpened(vehicleIds[i], epochs[slots[i]]);
           return identity(i);
         }
       }
@@ -806,7 +826,7 @@ package FleetCloud {
     operation lookup(vehicle: string) returns DeviceIdentity {
       var i: int = find(vehicle);
       if (i >= 0) {
-        if (active[i]) {
+        if (active[i] and slotUsable(i)) {
           return identity(i);
         }
       }
@@ -1661,6 +1681,7 @@ package FleetCloud {
     port updates: CommandUpdates;
     port audit: AuditFeed;
     const attribute commandTtlMs: uint = 1500;
+    const attribute trackerCount: uint = 2 /** Matches the trackers of CommandService. */;
     attribute nextCommandId: uint = 1001;
     attribute inFlight: uint[4] = [0, 0, 0, 0] /** Command id in flight per vehicle slot, 0 when none. */;
     attribute accepted: uint = 0;
@@ -1676,7 +1697,7 @@ package FleetCloud {
         publish audit.logged(Entry(AuditKind.refusal, c.issuedBy, c.tenantId, "command rejected: foreign or unknown vehicle", c.vehicleId));
         return Outcome(c, CommandStatus.rejected);
       }
-      if (owner.slot > 1) {
+      if (owner.slot >= trackerCount) {
         rejected = rejected + 1;
         publish audit.logged(Entry(AuditKind.refusal, c.issuedBy, c.tenantId, "command rejected: vehicle has no command tracker", c.vehicleId));
         return Outcome(c, CommandStatus.rejected);
@@ -1885,8 +1906,13 @@ package FleetCloud {
         publish audit.logged(Entry(AuditKind.refusal, principal.operatorId, principal.tenantId, "command refused: role", vehicle));
         return Outcome(request, CommandStatus.rejected);
       }
-      var update: CommandUpdate = try(commands.submit(request), Outcome(request, CommandStatus.rejected));
+      var update: CommandUpdate = try(commands.submit(request), serviceUnavailable(request));
       return update;
+    }
+    operation serviceUnavailable(request: Command) returns CommandUpdate {
+      /** Fallback when the command service does not answer: the command is refused and the refusal audited. */
+      publish audit.logged(Entry(AuditKind.refusal, request.issuedBy, request.tenantId, "command refused: command service unavailable", request.vehicleId));
+      return Outcome(request, CommandStatus.rejected);
     }
     operation platformStatus() returns PlatformHealth {
       if (not principal.authenticated) {
@@ -2455,7 +2481,7 @@ package FleetCloud {
     assert backend.store.points == 1;
   }
   test 'Device authentication enforced' of backend {
-    /** A decommissioned vehicle, a wrong device key and a vehicle without twin capacity cannot open a session; an authenticated session cannot submit frames in another vehicle's name. Each refusal is audited. */
+    /** A decommissioned vehicle, a wrong device key, a vehicle without twin capacity and a vehicle on an occupied slot cannot open a session; an authenticated session cannot submit frames in another vehicle's name. Each refusal is audited. */
     publish truck.link.hello("TRK-099", "key-099");
     on receive truck.link.welcome(accepted) {
       assert not accepted;
@@ -2480,6 +2506,12 @@ package FleetCloud {
     } or after 1s {
       fail "no answer to a vehicle without twin capacity";
     }
+    publish truck.link.hello("VAN-404", "key-404");
+    on receive truck.link.welcome(accepted) {
+      assert not accepted;
+    } or after 1s {
+      fail "no answer to a vehicle on an occupied slot";
+    }
     publish truck.link.hello("TRK-101", "key-101");
     on receive truck.link.welcome(accepted) {
       assert accepted;
@@ -2499,8 +2531,8 @@ package FleetCloud {
       fail "own frame not accepted";
     }
     wait 10ms;
-    assert backend.registry.failedAuthentications == 3 and backend.registry.authentications == 1;
-    assert backend.audit.refusalEntries == 5 and backend.audit.lastEntry.action == "frame refused: no session for this vehicle";
+    assert backend.registry.failedAuthentications == 4 and backend.registry.authentications == 1;
+    assert backend.audit.refusalEntries == 6 and backend.audit.lastEntry.action == "frame refused: claims another vehicle";
     assert backend.ingestion.acceptedFrames == 1 and backend.router.routed == 1;
     var vanView: VehicleView = backend.fleet.views[1];
     assert vanView.vehicleId == "";
@@ -2742,8 +2774,8 @@ package FleetCloud {
   test 'Command times out' of backend {
     /**
     The truck receives an immobilize command but never acknowledges it. A second command for the same truck is
-    refused as busy while a birch command for the van is accepted, and a command for TRK-303, which has no tracker, is
-    rejected. Both commands time out; each tenant sees only its own outcome, commands, outcomes and refusals are
+    refused as busy while a birch command for the van is accepted, and commands for TRK-303 (no twin or tracker) and
+    VAN-404 (on an occupied slot), which the registry does not resolve, are rejected. Both commands time out; each tenant sees only its own outcome, commands, outcomes and refusals are
     audited, and once the truck's command has completed it accepts a new one.
     */
     var me: Principal = alderDispatcher.console.login("tok-alder-ana");
@@ -2769,6 +2801,8 @@ package FleetCloud {
     assert other.status == CommandStatus.pending;
     var untracked: CommandUpdate = alderDispatcher.console.issueCommand("TRK-303", CommandKind.locate, 0);
     assert untracked.status == CommandStatus.rejected;
+    var misplaced: CommandUpdate = birchDispatcher.console.issueCommand("VAN-404", CommandKind.locate, 0);
+    assert misplaced.status == CommandStatus.rejected;
     on receive truck.link.command(c) {
       assert c.kind == CommandKind.immobilize and c.ttlMs == 1500;
     } or after 1s {
@@ -2789,9 +2823,9 @@ package FleetCloud {
     } or after 300ms {
     }
     assert backend.commands.intake.timedOut == 2 and backend.commands.intake.delivered == 0;
-    assert backend.commands.intake.busyRefusals == 1 and backend.commands.intake.accepted == 2 and backend.commands.intake.rejected == 1;
+    assert backend.commands.intake.busyRefusals == 1 and backend.commands.intake.accepted == 2 and backend.commands.intake.rejected == 2;
     assert backend.audit.commandOutcomes == 2 and backend.audit.commandEntries == 4;
-    assert backend.audit.refusalEntries == 2 and backend.audit.accessEntries == 2;
+    assert backend.audit.refusalEntries == 3 and backend.audit.accessEntries == 2;
     var later: CommandUpdate = alderDispatcher.console.issueCommand("TRK-101", CommandKind.lockDoors, 0);
     assert later.status == CommandStatus.pending;
   }
@@ -2966,7 +3000,8 @@ package FleetCloud {
   test 'Command acknowledgements are authenticated' of backend {
     /**
     Acknowledgements of a pending command are refused from an unauthenticated link, from another tenant's
-    authenticated vehicle and from the truck's own session after it was superseded; the command times out instead of
+    authenticated vehicle, from the truck after it re-authenticated on the same link (a new session that was not sent
+    the command) and from the truck's session after it was superseded; the command times out instead of
     being reported delivered. A second command, after the first completed, reaches only the new session and its
     genuine acknowledgement is accepted.
     */
@@ -2993,6 +3028,13 @@ package FleetCloud {
       fail "van session not opened";
     }
     publish van.link.commandAck(issued.commandId, true);
+    publish truck.link.hello("TRK-101", "key-101");
+    on receive truck.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "truck could not re-authenticate on its link";
+    }
+    publish truck.link.commandAck(issued.commandId, true);
     publish van.link.hello("TRK-101", "key-101");
     on receive van.link.welcome(accepted) {
       assert accepted;
@@ -3028,7 +3070,7 @@ package FleetCloud {
       fail "genuine acknowledgement not accepted";
     }
     assert backend.commands.intake.timedOut == 1 and backend.commands.intake.delivered == 1;
-    assert backend.audit.refusalEntries == 3;
+    assert backend.audit.refusalEntries == 4;
   }
   test 'Paging queue follows alert state' of backend {
     /**
@@ -3082,6 +3124,78 @@ package FleetCloud {
     assert not backend.alerting.router.deskBusy and backend.alerting.router.waitingCount == 0;
     assert backend.alerting.desk.acknowledged == 1 and backend.alerting.desk.escalations == 0;
   }
+  test 'Gateway audit names the responsible tenant' of backend {
+    /** A refusal carries a tenant only when an authenticated session is responsible: a refused re-hello keeps the truck session, a frame claiming the van is charged to the truck's tenant, and after the truck session is superseded its refusals, like an unauthenticated link's, carry no tenant. */
+    publish van.link.hello("VAN-202", "key-999");
+    on receive van.link.welcome(accepted) {
+      assert not accepted;
+    } or after 1s {
+      fail "wrong van key accepted";
+    }
+    wait 10ms;
+    assert backend.audit.lastEntry.actor == "VAN-202" and backend.audit.lastEntry.tenantId == "";
+    publish truck.link.hello("TRK-101", "key-101");
+    on receive truck.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "truck session not opened";
+    }
+    publish truck.link.hello("TRK-101", "key-999");
+    on receive truck.link.welcome(accepted) {
+      assert not accepted;
+    } or after 1s {
+      fail "wrong re-hello key accepted";
+    }
+    wait 10ms;
+    assert backend.audit.lastEntry.action == "device re-authentication refused: session kept" and backend.audit.lastEntry.tenantId == "";
+    publish truck.link.frame(Reading("TRK-101", 1, 2, 10.0, 10.0, 50.0, 85.0, 70.0, true));
+    on receive truck.link.ack(sequence, outcome) {
+      assert outcome == IngestOutcome.accepted;
+    } or after 1s {
+      fail "session lost after a refused re-hello";
+    }
+    publish truck.link.frame(Reading("VAN-202", 1, 2, 10.0, 10.0, 50.0, 85.0, 70.0, true));
+    on receive truck.link.ack(sequence, outcome) {
+      assert outcome == IngestOutcome.unauthenticated;
+    } or after 1s {
+      fail "frame claiming the van not refused";
+    }
+    wait 10ms;
+    assert backend.audit.lastEntry.actor == "TRK-101" and backend.audit.lastEntry.tenantId == "alder" and backend.audit.lastEntry.subject == "VAN-202";
+    publish van.link.frame(Reading("VAN-202", 1, 2, 10.0, 10.0, 50.0, 85.0, 70.0, true));
+    on receive van.link.ack(sequence, outcome) {
+      assert outcome == IngestOutcome.unauthenticated;
+    } or after 1s {
+      fail "unauthenticated van frame not refused";
+    }
+    wait 10ms;
+    assert backend.audit.lastEntry.actor == "VAN-202" and backend.audit.lastEntry.tenantId == "";
+    publish van.link.hello("TRK-101", "key-101");
+    on receive van.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "truck could not reconnect over the second link";
+    }
+    on receive truck.link.welcome(accepted) {
+      assert not accepted;
+    } or after 1s {
+      fail "old session not closed";
+    }
+    publish truck.link.frame(Reading("VAN-202", 2, 2, 10.0, 10.0, 50.0, 85.0, 70.0, true));
+    on receive truck.link.ack(sequence, outcome) {
+      assert outcome == IngestOutcome.unauthenticated;
+    } or after 1s {
+      fail "frame on the closed session not refused";
+    }
+    wait 10ms;
+    assert backend.audit.lastEntry.actor == "VAN-202" and backend.audit.lastEntry.tenantId == "" and backend.audit.lastEntry.action == "frame refused: no session";
+    publish truck.link.commandAck(1001, true);
+    wait 10ms;
+    assert backend.audit.lastEntry.action == "command acknowledgement refused" and backend.audit.lastEntry.tenantId == "" and backend.audit.lastEntry.actor == "";
+    assert backend.audit.refusalEntries == 6 and backend.audit.accessEntries == 1 and backend.ingestion.acceptedFrames == 1;
+  }
+  associate truck to 'Gateway audit names the responsible tenant';
+  associate van to 'Gateway audit names the responsible tenant';
   associate truck to 'Superseded session closes';
   associate van to 'Superseded session closes';
   associate alderDispatcher to 'Superseded session closes';
@@ -3123,6 +3237,8 @@ package FleetCloud {
   verify 'Command resolution' by 'Command acknowledgements are authenticated';
   verify Escalation by 'Paging queue follows alert state';
   verify Auditability by 'Device authentication enforced';
+  verify Auditability by 'Gateway audit names the responsible tenant';
+  verify 'Tenant isolation' by 'Gateway audit names the responsible tenant';
   verify 'Back-pressure' by 'Burst throttles the vehicle';
   verify 'Offline detection' by 'Silent vehicle detected offline';
   verify 'Alert hysteresis' by 'Alert thresholds use hysteresis';
