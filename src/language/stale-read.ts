@@ -16,11 +16,13 @@ import { body, isExecutable, signature, type Effect, type Executable } from './s
  * condition when it reads again every attribute that condition read stale, or every attribute the write
  * depends on (its value's attributes and the written attribute).
  *
- * A call to an operation of the component is followed with the caller's argument values and conditions, so a
- * write moved into a helper is still found; it is reported at the call unless the helper reports it itself.
- * Each followed call is summarised once per distinct abstract input and reused at every call site, loops run
- * to a fixed point over the finite domain of attribute sets, and the total work is capped: an operation
- * that exceeds the cap gets the warning conservatively. One state machine reaction runs the source state's
+ * A call to an operation of the component is followed, so a write moved into a helper is still found. Each
+ * operation is summarised once per validation pass in terms of its parameters and its caller's conditions;
+ * every call site instantiates the summary with its own argument values and conditions. A write the helper
+ * reports by itself (with neutral inputs) stays the helper's finding; every other write of the helper that
+ * this call site makes stale is reported at the call, so both are reported. Loops run to a fixed point over
+ * the finite domain of attribute sets. The work per document is capped; past the cap the analysis stops and
+ * the caller reports a reference validation limit instead of a stale read. One state machine reaction runs the source state's
  * exit action, the transition effect and the target state's entry action under the transition's guard; the
  * initial state's entry action runs on its own. Nested operations are analysed on their own.
  */
@@ -28,6 +30,9 @@ export interface StaleReadContext {
     readonly attributes: ReadonlySet<string>;
     target(call: a.CallExpression): Executable | a.PortMember | undefined;
     effects(op: Executable): Effect;
+    /** Summaries of the component's operations, shared by every operation of one validation pass. */
+    readonly summaries: Map<Executable, Summary>;
+    readonly budget: StaleReadBudget;
 }
 
 type Value = { fresh: Set<string>, stale: Set<string> };
@@ -59,37 +64,72 @@ class Flow {
     }
 }
 
-/** What a followed call means to its caller. */
-type Summary = { found: boolean, returned: Value, outs: Value[] };
-
-/** Statement visits allowed for one operation, its reactions and every call it follows. */
-const WORK_LIMIT = 20000;
+/** One write of a followed operation, in terms of its parameters (LABEL + index) and the caller's conditions (GUARD). */
+type Rec = { value: Value, guards: Value[], target?: string, own: boolean };
+/** What a call to an operation means to its callers, independent of the call site. */
+export type Summary = { records: Rec[], returned: Value, outs: Value[] };
+/** Work shared by every analysis of one validation pass of one document. */
+export type StaleReadBudget = { work: number, limit?: number };
+/** Statement visits allowed per document for SW2011 analysis, followed calls included. */
+export const STALE_READ_WORK_LIMIT = 200000;
 class WorkLimit extends Error { }
 
-/** Shared by the analysis of one operation and of every call it follows. */
-class Shared {
-    work = 0;
-    readonly summaries = new Map<string, Summary>();
-    readonly own = new Map<Executable, boolean>();
-    readonly active = new Set<Executable>();
-    private readonly ids = new Map<Executable, number>();
-    constructor(readonly ctx: StaleReadContext) { }
-    id(op: Executable): number {
-        if (!this.ids.has(op))
-            this.ids.set(op, this.ids.size);
-        return this.ids.get(op)!;
+const LABEL = '\u0001', GUARD = LABEL + 'guard';
+const isLabel = (k: string) => k.startsWith(LABEL) && k !== GUARD;
+/** A value of the callee expressed in the caller's values: a parameter label stands for its argument. */
+function instantiate(v: Value, args: readonly Value[]): Value {
+    const out = none();
+    for (const k of v.fresh) {
+        if (!isLabel(k)) {
+            out.fresh.add(k);
+            continue;
+        }
+        const arg = args[Number(k.slice(1))] ?? none();
+        arg.fresh.forEach(x => out.fresh.add(x));
+        arg.stale.forEach(x => out.stale.add(x));
     }
+    for (const k of v.stale) {
+        if (!isLabel(k)) {
+            out.stale.add(k);
+            continue;
+        }
+        const arg = args[Number(k.slice(1))] ?? none();
+        arg.fresh.forEach(x => out.stale.add(x));
+        arg.stale.forEach(x => out.stale.add(x));
+    }
+    return out;
 }
+/** The callee's conditions at a write in the caller's terms: GUARD stands for every condition of the caller. */
+function instantiateGuards(guards: readonly Value[], args: readonly Value[], caller: readonly Value[]): Value[] {
+    return guards.flatMap(g => g.fresh.has(GUARD) ? [...caller] : g.stale.has(GUARD) ? caller.map(aged) : [instantiate(g, args)]);
+}
+/** The SW2011 rule for one write: a stale value, or a stale condition that no later condition re-checks. */
+function isStaleWrite(value: Value, guards: readonly Value[], target?: string): boolean {
+    const depends = new Set([...value.fresh, ...value.stale, ...(target ? [target] : [])]);
+    const covers = (g: Value, wanted: Set<string>) => wanted.size > 0 && [...wanted].every(k => g.fresh.has(k));
+    return value.stale.size > 0 || guards.some((g, i) => g.stale.size > 0 && !guards.slice(i).some(inner => covers(inner, g.stale) || covers(inner, depends)));
+}
+/**
+ * Records that differ only in the attributes their value read fresh are merged by joining those: a larger
+ * set can only make a re-check harder, so the merge is conservative and keeps summaries small.
+ */
+const recordKey = (r: { value: Value, guards: Value[], target?: string }) => [...r.value.stale].sort().join(',') + '/' + r.guards.map(key).join(';') + '/' + (r.target ?? '');
+/** Distinct writes a summary may hold; more is reported as a reference validation limit. */
+const RECORD_LIMIT = 256;
 
 class Analysis {
     found?: AstNode;
-    /** Values returned by a followed callee. */
+    /** Values returned by an operation being summarised. */
     returned?: Value;
+    /** The writes of an operation being summarised; undefined when its own writes are checked directly. */
+    private readonly records?: Map<string, Rec>;
     /** Flows at each suspension inside the protected bodies of the enclosing interrupt regions. */
     private readonly collectors: Flow[][] = [];
     private suspensions = 0;
-    constructor(private readonly shared: Shared) { }
-    private get ctx() { return this.shared.ctx; }
+    constructor(private readonly ctx: StaleReadContext, private readonly active: Set<Executable>, summarising = false) {
+        if (summarising)
+            this.records = new Map();
+    }
 
     private suspend(flow: Flow): void {
         this.suspensions++;
@@ -97,13 +137,14 @@ class Analysis {
         for (const c of this.collectors)
             c.push(flow.copy());
     }
-    private write(node: AstNode, value: Value, flow: Flow, target?: string): void {
-        if (this.found)
-            return;
-        const depends = new Set([...value.fresh, ...value.stale, ...(target ? [target] : [])]);
-        const covers = (g: Value, wanted: Set<string>) => wanted.size > 0 && [...wanted].every(k => g.fresh.has(k));
-        const unchecked = flow.guards.some((g, i) => g.stale.size > 0 && !flow.guards.slice(i).some(inner => covers(inner, g.stale) || covers(inner, depends)));
-        if (value.stale.size || unchecked)
+    private write(node: AstNode, value: Value, guards: readonly Value[], target?: string): void {
+        if (this.records) {
+            const r = { value, guards: [...guards], target, own: false }, k = recordKey(r), known = this.records.get(k);
+            this.records.set(k, known ? { ...known, value: join(known.value, value) } : r);
+            if (this.records.size > RECORD_LIMIT)
+                throw new WorkLimit();
+        }
+        else if (!this.found && isStaleWrite(value, guards, target))
             this.found = node;
     }
     private sequence(values: a.Expression[], flow: Flow): Value[] {
@@ -155,17 +196,30 @@ class Analysis {
         // Out arguments are written by the call, not read.
         const inputs = call.args.map((arg, i) => ({ arg, i })).filter(x => !out(x.i));
         const values = this.sequence(inputs.map(x => x.arg), flow), argument = new Map(inputs.map((x, k) => [x.i, values[k]]));
-        let summary: Summary;
-        if (!target || !isExecutable(target)) {
+        const args = parameters.map((_, i) => argument.get(i) ?? none());
+        let returned = none(), outs: Value[] = parameters.map(() => none());
+        if (!target || !isExecutable(target))
             // A request (or an unresolved call) waits for its reply; the reply itself is not component state.
             this.suspend(flow);
-            summary = { found: false, returned: none(), outs: parameters.map(() => none()) };
-        }
         else {
-            const effect = this.ctx.effects(target);
-            summary = this.follow(target, effect, parameters.map((_, i) => argument.get(i) ?? none()), flow);
-            if (summary.found && !this.found)
-                this.found = call;
+            const effect = this.ctx.effects(target), summary = this.summary(target, effect);
+            if (summary) {
+                // The callee's own findings are reported at the callee; the others depend on this call site.
+                for (const r of summary.records)
+                    if (!r.own)
+                        this.write(call, instantiate(r.value, args), instantiateGuards(r.guards, args, flow.guards), r.target);
+                returned = instantiate(summary.returned, args);
+                outs = summary.outs.map(v => instantiate(v, args));
+            }
+            else {
+                // Not followed (a pure operation, or a recursive call that is itself an error): its writes and
+                // results depend on every argument.
+                const all = args.reduce(join, none()), result = effect.suspends ? aged(all) : all;
+                returned = join(effect.reads ? { fresh: new Set(['call:' + call.target]), stale: new Set<string>() } : none(), result);
+                outs = parameters.map(() => returned);
+                if (effect.writes && body(target))
+                    this.write(call, result, effect.suspends ? flow.guards.map(aged) : flow.guards);
+            }
             if (effect.suspends)
                 this.suspend(flow);
         }
@@ -174,57 +228,35 @@ class Analysis {
                 return;
             const name = arg.path.split('.')[0];
             if (this.ctx.attributes.has(name))
-                this.write(call, summary.outs[i] ?? none(), flow, name);
+                this.write(call, outs[i] ?? none(), flow.guards, name);
             else
-                flow.locals.set(name, summary.outs[i] ?? none());
+                flow.locals.set(name, outs[i] ?? none());
         });
-        return summary.returned;
+        return returned;
     }
-    /** The meaning of a call to target with these argument values under the caller's conditions. */
-    private follow(target: Executable, effect: Effect, args: Value[], flow: Flow): Summary {
-        const b = body(target), parameters = signature(target)?.parameters ?? [];
-        const followable = (effect.reads || effect.writes) && b && !b.states.length && !this.shared.active.has(target);
-        if (!followable) {
-            // Not followed (a pure operation, or a recursive call that is itself an error): assume its writes
-            // and outputs depend on every argument.
-            const all = args.reduce(join, none()), result = effect.suspends ? aged(all) : all;
-            const reads = effect.reads ? { fresh: new Set(['call:' + identityOf(target)]), stale: new Set<string>() } : none();
-            const found = effect.writes && !!b && this.wouldReport(result, flow);
-            return { found, returned: join(reads, result), outs: parameters.map(() => join(reads, result)) };
+    /** The call-site independent summary of target, computed once per validation pass and component. */
+    private summary(target: Executable, effect: Effect): Summary | undefined {
+        const b = body(target);
+        if (!(effect.reads || effect.writes) || !b || b.states.length || this.active.has(target))
+            return undefined;
+        const cached = this.ctx.summaries.get(target);
+        if (cached)
+            return cached;
+        const parameters = signature(target)?.parameters ?? [];
+        this.active.add(target);
+        try {
+            const callee = new Analysis(this.ctx, this.active, true);
+            callee.returned = none();
+            let f = new Flow(new Map(parameters.map((p, i) => [p.name, { fresh: new Set([LABEL + i]), stale: new Set<string>() }])), [{ fresh: new Set([GUARD]), stale: new Set() }]);
+            f = callee.statements(b.statements, f);
+            const records = [...callee.records!.values()].map(r => ({ ...r, own: isStaleWrite(instantiate(r.value, []), instantiateGuards(r.guards, [], []), r.target) }));
+            const summary: Summary = { records, returned: callee.returned, outs: parameters.map(p => f.locals.get(p.name) ?? none()) };
+            this.ctx.summaries.set(target, summary);
+            return summary;
         }
-        const run = (inputs: Value[], guards: Value[]): Summary => {
-            const k = this.shared.id(target) + ':' + inputs.map(key).join(';') + '#' + guards.map(key).join(';');
-            const cached = this.shared.summaries.get(k);
-            if (cached)
-                return cached;
-            this.shared.active.add(target);
-            try {
-                const callee = new Analysis(this.shared);
-                callee.returned = none();
-                let f = new Flow(new Map(parameters.map((p, i) => [p.name, inputs[i] ?? none()])), [...guards]);
-                f = callee.statements(b.statements, f);
-                const summary = { found: !!callee.found, returned: callee.returned, outs: parameters.map(p => f.locals.get(p.name) ?? none()) };
-                this.shared.summaries.set(k, summary);
-                return summary;
-            }
-            finally {
-                this.shared.active.delete(target);
-            }
-        };
-        const actual = run(args, flow.guards);
-        if (actual.found) {
-            // A finding with neutral inputs is the callee's own SW2011 and is reported there.
-            if (!this.shared.own.has(target))
-                this.shared.own.set(target, run(parameters.map(() => none()), []).found);
-            if (this.shared.own.get(target))
-                return { ...actual, found: false };
+        finally {
+            this.active.delete(target);
         }
-        return actual;
-    }
-    private wouldReport(value: Value, flow: Flow): boolean {
-        const probe = new Analysis(this.shared);
-        probe.write({} as AstNode, value, flow);
-        return !!probe.found;
     }
     /** Runs code under a condition; the condition no longer guards what follows. */
     private guarded(condition: Value, flow: Flow, run: (inner: Flow) => Flow): Flow {
@@ -261,14 +293,14 @@ class Analysis {
     statement(s: a.Statement, flow: Flow): Flow {
         if (this.found)
             return flow;
-        if (++this.shared.work > WORK_LIMIT)
+        if (++this.ctx.budget.work > (this.ctx.budget.limit ?? STALE_READ_WORK_LIMIT))
             throw new WorkLimit();
         if (a.isLocalVariable(s))
             flow.locals.set(s.name, this.expression(s.value, flow));
         else if (a.isAssign(s)) {
             const v = this.expression(s.value, flow);
             if (this.ctx.attributes.has(s.target))
-                this.write(s, v, flow, s.target);
+                this.write(s, v, flow.guards, s.target);
             else
                 flow.locals.set(s.target, v);
         }
@@ -351,19 +383,18 @@ class Analysis {
 }
 
 const terminates = (b: a.Block | undefined) => { const last = b?.statements.at(-1); return !!last && (a.isReturn(last) || a.isFail(last)); };
-const identityOf = (op: Executable) => op.name;
 
-/** The first write of op that a pre-suspension state read may influence, if any. */
-export function staleWrite(op: Executable, ctx: StaleReadContext): AstNode | undefined {
+/** The first write of op that a pre-suspension state read may influence; limit when the work budget ran out. */
+export function staleWrite(op: Executable, ctx: StaleReadContext): { write?: AstNode, limit?: boolean } {
     const b = body(op);
     if (!b)
-        return undefined;
-    const shared = new Shared(ctx), analysis = new Analysis(shared);
+        return {};
+    const analysis = new Analysis(ctx, new Set([op]));
     const parameters = () => new Flow(new Map((signature(op)?.parameters ?? []).map(p => [p.name, none()])));
     try {
         if (!b.states.length) {
             analysis.statements(b.statements, parameters());
-            return analysis.found;
+            return { write: analysis.found };
         }
         const actions = (state: a.State | undefined, kind: 'entry' | 'exit') => state?.actions.filter(x => x.kind === kind) ?? [];
         const run = (list: a.StateAction[], flow: Flow) => list.reduce((f, x) => analysis.block(x.body, f), flow);
@@ -372,7 +403,7 @@ export function staleWrite(op: Executable, ctx: StaleReadContext): AstNode | und
         for (const state of b.states)
             for (const t of state.transitions) {
                 if (analysis.found)
-                    return analysis.found;
+                    return { write: analysis.found };
                 const flow = parameters();
                 t.bindings.forEach(n => flow.locals.set(n, none()));
                 const guard = analysis.expression(t.guard, flow), inner = flow.copy();
@@ -380,26 +411,11 @@ export function staleWrite(op: Executable, ctx: StaleReadContext): AstNode | und
                 const target = b.states.find(x => x.name === t.target);
                 run(actions(target, 'entry'), analysis.block(t.effect, run(actions(state, 'exit'), inner)));
             }
-        return analysis.found;
+        return { write: analysis.found };
     }
     catch (error) {
         if (!(error instanceof WorkLimit))
             throw error;
-        // Too much to follow: warn conservatively at the first attribute write.
-        return firstWrite(b, ctx) ?? op;
+        return { limit: true };
     }
-}
-function firstWrite(b: a.OperationBody, ctx: StaleReadContext): AstNode | undefined {
-    const stack: AstNode[] = [b];
-    while (stack.length) {
-        const n = stack.shift()!;
-        if (a.isAssign(n) && ctx.attributes.has(n.target))
-            return n;
-        for (const [k, v] of Object.entries(n))
-            if (!k.startsWith('$'))
-                for (const child of Array.isArray(v) ? v : [v])
-                    if (child && typeof child === 'object' && '$type' in child && !isExecutable(child as AstNode))
-                        stack.push(child as AstNode);
-    }
-    return undefined;
 }

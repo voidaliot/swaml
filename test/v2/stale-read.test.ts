@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parse, valid } from './helpers.js';
+import { staleWrite } from '../../src/language/stale-read.js';
+import { isComponentUsage, isOperation } from '../../src/language/generated/ast.js';
 
 const wrap = (members: string, extra = '') => `package Test { ${extra} component Demo { ${members} } }`;
 const ports = 'port def Ticks { provides event tick(v: int); } component Source { port output: Ticks; operation go() { publish output.tick(1); } schedule { on start go(); } } connect (Source.output, Demo.input);';
@@ -128,4 +130,53 @@ test('SW2011 stays fast on deep call graphs with shared callees inside loops and
                 // Generous: these took seconds to minutes when every call site was followed again.
                 assert.ok(performance.now() - started < 1500, `depth ${depth}, ${calls} calls, ${loop ? 'loop' : 'if'}: ${performance.now() - started} ms`);
             }
+});
+
+test('SW2011 reports both a helper\'s own stale write and the one its caller makes stale', async () => {
+    const r = await valid(wrap('attribute n: int = 1; attribute m: int = 0; attribute k: int = 0; operation h(v: int) { var x: int = n; wait 1ms; n = x; m = v; } operation f() { h(k); } schedule { on start f(); }'));
+    assert.deepEqual(r.warnings.filter(w => w.code === 'SW2011').map(w => r.doc.textDocument.getText(w.range)).sort(), ['h(k)', 'n = x;']);
+    // With a neutral argument only the helper's own finding remains.
+    assert.deepEqual(await stale('attribute n: int = 1; attribute m: int = 0; operation h(v: int) { var x: int = n; wait 1ms; n = x; m = v; } operation f() { h(0); } schedule { on start f(); }'), ['n = x;']);
+});
+
+test('SW2011 summaries stay small and fast on valid graphs that once hit the analysis cap', async () => {
+    const timed = async (source: string, label: string) => {
+        const started = performance.now(), r = await parse(source), elapsed = performance.now() - started;
+        assert.ok(elapsed < 1500, `${label}: ${elapsed} ms`);
+        assert.deepEqual(r.warnings.filter(w => w.code === 'SW2013'), [], label);
+        return r;
+    };
+    // A chain where each operation calls the next twice with different attribute arguments.
+    for (const depth of [14, 20]) {
+        let ops = '', attributes = '';
+        for (let i = 0; i < depth; i++) {
+            attributes += `attribute a${i}: int = 0; attribute b${i}: int = 0; `;
+            ops += `operation o${i}(v: int) { o${i + 1}(v + a${i}); o${i + 1}(v + b${i}); } `;
+        }
+        const r = await timed(wrap(`attribute n: int = 1; ${attributes} ${ops} operation o${depth}(v: int) { n = v; } operation f() { wait 1ms; o0(0); } schedule { on start f(); }`), `chain ${depth}`);
+        assert.deepEqual(r.errors, []);
+    }
+    // An acyclic graph of looping operations that each call three others, and a recursive variant (an error).
+    const graph = (count: number, cyclic: boolean) => {
+        let ops = '', attributes = '';
+        for (let i = 0; i < 200; i++)
+            attributes += `attribute q${i}: int = 0; `;
+        for (let i = 0; i < count; i++)
+            ops += `operation r${i}(v: int) { while (v > 0, 3 times) { ${[0, 1, 2].map(j => cyclic ? `r${(i + j + 1) % count}(v + q${(i * 7 + j) % 200});` : i + j + 1 < count ? `r${i + j + 1}(v + q${(i * 7 + j) % 200});` : '').join(' ')} wait 1ms; q${i % 200} = v; } } `;
+        return `package Test { component Demo { ${attributes} ${ops} schedule { on start r0(1); } } }`;
+    };
+    for (const count of [20, 40, 60]) {
+        const r = await timed(graph(count, false), `graph ${count}`);
+        assert.deepEqual(r.errors, []);
+        assert.equal(r.warnings.filter(w => w.code === 'SW2011').length, count - 1);
+        await timed(graph(count, true), `recursive graph ${count}`);
+    }
+});
+
+test('the stale-read work limit stops the analysis without claiming a stale read', async () => {
+    const r = await valid(wrap('attribute n: int = 1; operation f() { var x: int = n; wait 1ms; n = x; } schedule { on start f(); }'));
+    const demo = r.model.packages[0].elements.find(isComponentUsage)!, f = demo.members.find(isOperation)!;
+    const ctx = (limit?: number) => ({ attributes: new Set(['n']), target: () => undefined, effects: () => ({ reads: true, writes: true, communicates: false, suspends: true }), summaries: new Map(), budget: { work: 0, limit } });
+    assert.deepEqual(staleWrite(f, ctx(2)), { limit: true });
+    assert.equal((staleWrite(f, ctx()).write as { target?: string } | undefined)?.target, 'n');
 });
