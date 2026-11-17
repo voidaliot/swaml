@@ -39,13 +39,19 @@
       "AdaptiveV2x::Report fleet telemetry": "pass",
       "AdaptiveV2x::Awareness rate follows dynamics": "pass",
       "AdaptiveV2x::Irrelevant hazard filtered": "pass",
+      "AdaptiveV2x::Concurrent hazards and validity": "pass",
+      "AdaptiveV2x::Tampered frames dropped": "pass",
       "AdaptiveV2x::Signature failure dropped": "pass",
       "AdaptiveV2x::Neighbour ageing and plausibility": "pass",
       "AdaptiveV2x::Offline store and forward": "pass",
+      "AdaptiveV2x::Coverage loss aborts backoff": "pass",
       "AdaptiveV2x::Consent withdrawn stops telemetry": "pass",
+      "AdaptiveV2x::Consent gates the uplink": "pass",
       "AdaptiveV2x::Degraded on supervision failure": "pass",
+      "AdaptiveV2x::Supervision judges every entity": "pass",
       "AdaptiveV2x::Shutdown on ignition off": "pass",
       "AdaptiveV2x::Station identifier rotates": "pass",
+      "AdaptiveV2x::Rotation deferred during own hazard": "pass",
       "AdaptiveV2x::Hazard validity expiry": "pass"
     }
   }
