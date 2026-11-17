@@ -1,18 +1,18 @@
 // Door control unit software in the style of AUTOSAR Classic.
 // A showcase model: application software components, an explicit basic-software-like
-// boundary (I/O hardware abstraction, CAN and LIN communication, diagnostics, NVRAM,
-// watchdog, mode management), an RTE-like routing of owned ports, the OS schedule,
-// a body-electronics test bench (door mechanics, external watchdog, switch panel) and
-// executable use cases and tests. Values are illustrative; this model makes no claim of
-// conformance to any AUTOSAR or vehicle-manufacturer specification.
+// boundary (I/O hardware abstraction, CAN and LIN communication, network-managed sleep,
+// diagnostics, NVRAM, watchdog, mode management), an RTE-like routing of owned ports,
+// the task mapping, a body-electronics test bench (door mechanics, external watchdog,
+// switch panel) and executable use cases and tests. Values are illustrative; this model
+// makes no claim of conformance to any AUTOSAR or vehicle-manufacturer specification.
 package DoorEcu::Types {
   /** Value types shared by the door control unit, its bus peers and the test bench. */
   enum PowerMode {
-    /** ECU state as managed by the mode manager (EcuM/BswM-like). */
-    startup, run, postRun, sleep, wakeup
+    /** ECU state as managed by the mode manager (EcuM/BswM/ComM-like). */
+    startup, run, postRun, readySleep, shutdown, sleep, wakeup
   }
   enum WakeSource {
-    /** Validated wake-up source reported to the mode manager. */
+    /** Validated wake-up source or local user activity reported to the mode manager. */
     none, can, lin, localInput
   }
   enum WindowRequest {
@@ -38,11 +38,11 @@ package DoorEcu::Types {
     motorOvercurrent, hallSensor, lockActuator, supplyUndervoltage, linNoResponse, canTimeout
   }
   enum SupervisedEntity {
-    /** Supervised entities of the watchdog manager's alive supervision. */
-    windowLifter, lockControl, antiPinch, communication
+    /** Supervised entities of the watchdog manager's alive supervision: the periodic main functions. */
+    linInterface, latchMonitor, supplyMonitor, communication
   }
   datatype SwitchFrame {
-    /** Switch states carried in the LIN response of the driver's switch panel. */
+    /** Switch states carried in the LIN response of the driver's switch panel (12 bits). */
     window: WindowRequest;
     lock: LockRequest;
     mirror: MirrorRequest;
@@ -51,19 +51,19 @@ package DoorEcu::Types {
     mirrorHeat: bool;
   }
   datatype LinResponse {
-    /** One LIN frame response: payload, alive counter and checksum result. */
+    /** One LIN frame response, 3 data bytes: switch states, alive counter and checksum result. */
     switches: SwitchFrame;
     alive: uint /** Rolling 0..255 counter incremented by the slave for every response. */;
-    valid: bool /** False when no response or an invalid checksum was received. */;
+    valid: bool /** False when the checksum was invalid. */;
   }
   datatype VehicleStatusPdu {
     /** CAN frame VehicleStatus, sent by the body control module every 100 ms. */
     speedKph: real;
     ignitionOn: bool;
-    rolling: uint;
+    rolling: uint /** Alive counter 0..15, incremented by the sender for every frame. */;
   }
   datatype VehicleSignals {
-    /** Received vehicle signals after deadline monitoring and substitution. */
+    /** Received vehicle signals after alive-counter check, deadline monitoring and substitution. */
     speedKph: real;
     speedValid: bool;
     ignitionOn: bool;
@@ -173,13 +173,17 @@ package DoorEcu::Interfaces {
     maxLatency = 5ms;
   }
   qos def LinSlot: Policy {
-    /** One LIN schedule-table slot: a header or response is never queued behind another; the frame fits in 5 ms. */
+    /**
+     * One LIN schedule-table slot at 19.2 kbit/s: header plus a 3-byte response is 74 bit
+     * times (3.9 ms) nominal and at most 5.4 ms with the 40 % frame tolerance, inside the
+     * 20 ms slot. A header or response is never queued behind another.
+     */
     delivery = Delivery.atMostOnce;
     ordering = Ordering.fifo;
     capacity = 1;
     overflow = Overflow.dropOldest;
-    requestTimeout = 5ms;
-    maxLatency = 5ms;
+    requestTimeout = 6ms;
+    maxLatency = 6ms;
   }
   qos def UdsSession: Policy {
     /** Diagnostic requests: the server answers within its 50 ms response time. */
@@ -190,20 +194,21 @@ package DoorEcu::Interfaces {
     requestTimeout = 50ms;
   }
   qos def RteQueued: Policy {
-    /** Intra-ECU queued events with a short queue that never loses an event silently. */
+    /** Intra-core queued events with a short queue that never loses an event silently. */
     delivery = Delivery.atLeastOnce;
     ordering = Ordering.fifo;
     capacity = 8;
     overflow = Overflow.reject;
     requestTimeout = 10ms;
   }
-  qos def NvmJob: Policy {
-    /** NVRAM manager jobs: a write-all completes within 100 ms. */
-    delivery = Delivery.atMostOnce;
+  qos def CrossCore: Policy {
+    /** Inter-core queued events through the inter-OS-application communicator, delivered within 1 ms. */
+    delivery = Delivery.atLeastOnce;
     ordering = Ordering.fifo;
-    capacity = 2;
+    capacity = 8;
     overflow = Overflow.reject;
-    requestTimeout = 100ms;
+    requestTimeout = 10ms;
+    maxLatency = 1ms;
   }
   // ECU connector and environment
   port def EcuInputs {
@@ -235,9 +240,12 @@ package DoorEcu::Interfaces {
     provides attribute mirrorHeat: bool;
   }
   port def LinBus {
-    /** LIN slave side: the switch panel answers the master's frame header with its response and may wake the cluster. */
+    /** LIN slave side: the switch panel answers each frame header of the master with its response. */
     requires event header();
     provides event response(frame: LinResponse);
+  }
+  port def LinWakeLine {
+    /** LIN wake-up pulse, seen by the door module's transceiver as a wake-capable input. */
     provides event wakeup();
   }
   port def PassengerInteraction {
@@ -271,7 +279,9 @@ package DoorEcu::Interfaces {
   port def LatchInputs { provides attribute latchSample: LatchSample; }
   port def LockFeedback { provides attribute lockSwitchLocked: bool; }
   port def MirrorFeedback { provides event foldEndStop(); }
+  port def BridgeTrip { provides event tripped(); }
   port def WakeIndication { provides event request(source: WakeSource); }
+  port def BusActivity { provides event frameReceived(); }
   port def ModeBroadcast { provides event changed(powerMode: PowerMode); }
   port def SwitchFrames { provides event frame(switches: SwitchFrame); }
   port def WindowRequests { provides event request(command: WindowRequest); }
@@ -279,22 +289,21 @@ package DoorEcu::Interfaces {
   port def MirrorRequests {
     provides event adjust(direction: MirrorRequest);
     provides event fold(command: FoldRequest);
-    provides event heat(enabled: bool);
   }
+  port def HeaterRequest { provides event heat(enabled: bool); }
   port def RemoteMirror { provides event adjust(direction: MirrorRequest); }
+  port def RxPdu { provides attribute vehicleStatus: VehicleStatusPdu; }
+  port def TxPdu { provides attribute doorStatus: DoorStatusPdu; }
   port def VehicleSignalsPort { provides attribute signals: VehicleSignals; }
   port def CrashPort { provides event crashUnlock(); }
   port def LockStatus { provides event changed(current: LockState); }
-  port def DoorState {
-    provides attribute ajar: bool;
-    provides attribute latchState: LatchState;
-  }
-  port def DoorAjar { provides attribute ajar: bool; }
+  port def DoorState { provides attribute ajar: bool; }
   port def WindowSupervision {
     /** Anti-pinch and position supervision results for the window lifter state machine. */
     provides event pinchDetected();
     provides event reversalComplete();
     provides event endPosition(closed: bool);
+    provides event sensorFault();
   }
   port def WindowStatusPort { provides attribute windowStatus: WindowStatus; }
   port def WindowMotorPort { provides attribute windowMotor: MotorCommand; }
@@ -302,11 +311,15 @@ package DoorEcu::Interfaces {
   port def MirrorMotorPort {
     provides attribute mirrorMotors: MirrorDrive;
     provides attribute foldMotor: FoldRequest;
-    provides attribute heaterPercent: uint;
   }
+  port def HeaterPort { provides attribute heaterPercent: uint; }
   port def LampRequest { provides attribute lampOn: bool; }
   port def LampPwm { provides attribute dutyPercent: uint; }
-  port def PermissionPort { provides attribute permission: FunctionPermission; }
+  port def PermissionPort {
+    /** Function inhibition: the current permission and an event when window motion is withdrawn. */
+    provides attribute permission: FunctionPermission;
+    provides event motionInhibited();
+  }
   port def DiagEvents {
     /** Monitor results reported to the diagnostic event manager (pre-failed or pre-passed). */
     provides event report(fault: FaultId, failed: bool);
@@ -320,19 +333,26 @@ package DoorEcu::Interfaces {
     provides attribute windowCalibration: WindowCalibration;
     requires event store(block: WindowCalibration);
   }
-  port def NvmControl { provides operation writeAll() returns bool; }
+  port def NvmJobs {
+    /** Asynchronous NVRAM jobs: write-all and its cancellation are requested, completion is reported. */
+    requires event writeAll();
+    requires event cancelWriteAll();
+    provides event writeAllDone(ok: bool);
+  }
   port def AliveSupervision { provides event checkpoint(entity: SupervisedEntity); }
 }
 package DoorEcu::Requirements {
   /** Stakeholder and system requirements of the front-left door control unit. */
   requirement 'Anti-pinch protection' {
     /**
-     * During a one-touch close in the pinch zone the window reverses before the
-     * clamping force reaches the limit, then opens by at least the reversal distance.
+     * During a one-touch close in the pinch zone the window reverses before the clamping
+     * force reaches the limit and then opens by the reversal distance (illustrative value
+     * of the order used by power-window regulations). Detection is re-armed for every
+     * close, including after a reversal that could not complete.
      */
     attribute maxForceN: real = 100.0;
     attribute pinchZoneMm: uint = 200;
-    attribute reversalMm: uint = 90;
+    attribute reversalMm: uint = 125;
   }
   requirement 'One-touch close' {
     /** A one-touch request closes the window completely without holding the switch. */
@@ -341,6 +361,10 @@ package DoorEcu::Requirements {
   requirement 'Central locking' {
     /** Lock and unlock requests from the switch panel or the key fob complete within 400 ms. */
     attribute responseMs: uint = 400;
+  }
+  requirement 'Lock actuator supervision' {
+    /** A lock pulse that does not reach the locked position is a pre-failed lock actuator report. */
+    attribute pulseMs: uint = 250;
   }
   requirement 'Speed-dependent auto-lock' {
     /** The doors lock once per ignition cycle when the speed exceeds the threshold. */
@@ -351,27 +375,61 @@ package DoorEcu::Requirements {
     attribute latencyMs: uint = 10;
   }
   requirement 'Bus timeout substitution' {
-    /** Missing VehicleStatus frames are detected within 500 ms and substituted with invalid speed. */
+    /**
+     * VehicleStatus frames with a repeated alive counter are ignored; missing valid frames
+     * are detected 500 ms after the last valid one (20 ms resolution) and the speed is
+     * substituted as invalid.
+     */
     attribute timeoutMs: uint = 500;
   }
   requirement 'Network-managed sleep' {
-    /** After ignition off, the ECU stores its NVRAM and sleeps after the post-run time; it wakes on CAN, LIN or the door handle. */
+    /**
+     * After ignition off the ECU keeps its own network request for the post-run time, then
+     * stays awake while the body CAN is active and goes to sleep only after the bus has been
+     * silent for the NM timeout, writing NVRAM first. It wakes on CAN, LIN or the door handle.
+     */
     attribute postRunMs: uint = 1000;
+    attribute nmTimeoutMs: uint = 500;
   }
   requirement 'Fault memory' {
-    /** Faults are debounced, stored as confirmed trouble codes and readable by a tester. */
+    /**
+     * Faults are debounced and confirmed after two pre-failed reports, stored as trouble
+     * codes and readable and clearable by a tester. Simplified: pending and confirmed are
+     * set together, with no operation cycles and no aging.
+     */
     attribute confirmationReports: uint = 2;
   }
   requirement 'Supply voltage protection' {
-    /** Below 9 V the window does not move and an undervoltage fault is recorded. */
+    /**
+     * Below 9 V the window does not start and a moving window stops; a pinch reversal is
+     * completed. An undervoltage is recorded and recovers only above 9.5 V.
+     */
     attribute undervoltageMv: uint = 9000;
+    attribute recoveryMv: uint = 9500;
+  }
+  requirement 'Window motor protection' {
+    /** The window H-bridge is switched off at 30 A; a Hall signal without pulses stops the motor and disables one-touch. */
+    attribute tripMa: uint = 30000;
+  }
+  requirement 'Input debouncing' {
+    /** Switch panel states are accepted after two identical LIN frames, latch switches after three 20 ms samples. */
+    attribute switchFrames: uint = 2;
+    attribute latchSamples: uint = 3;
+  }
+  requirement 'Switch panel communication' {
+    /** After five missing LIN responses the switches are treated as neutral; after three a fault is reported. */
+    attribute substituteSlots: uint = 5;
   }
   requirement 'Watchdog supervision' {
-    /** Supervised software entities report alive; only then is the external watchdog triggered. */
-    attribute windowMs: uint = 100;
+    /**
+     * Supervised software entities report alive; the external watchdog is triggered only
+     * while every entity is correct. A failed supervision window stops triggering, so the
+     * external watchdog expires.
+     */
+    attribute windowMs: uint = 200;
   }
   requirement 'Mirror auto-fold' {
-    /** Locking folds both mirrors, unlocking unfolds them; the fold motor stops at its end stop. */
+    /** Locking folds this door's mirror, unlocking unfolds it; the fold motor stops at its end stop or after 1.5 s. */
     attribute maxFoldMs: uint = 1500;
   }
 }
@@ -382,6 +440,19 @@ package DoorEcu {
    * the LIN switch panel, the door mechanics plant model, the external watchdog, the
    * vehicle platform, and the interface-only actors driver, passenger, body control
    * module, diagnostic tester and power supply.
+   *
+   * Task mapping and what swa.ml 2.2 cannot express: an OS task is a Process node with a
+   * period or response bound and a priority, and each component occurrence is placed on
+   * exactly one task. Components are split so that the runnables carrying deadlines of
+   * one occurrence belong to that task: interrupt-like receive sides (CAN, ADC), periodic
+   * main functions and event tasks are separate occurrences. A receive entry that only
+   * copies a value into an attribute stands for the RTE's implicit buffer update in the
+   * sender's context; swa.ml has no non-activating read of a required attribute. The
+   * language places occurrences, not individual runnables; task priority, preemption,
+   * category and core binding are recorded as constant attributes without effect; the
+   * reference run executes in logical zero time and does not simulate placement, so
+   * deadlines and route latencies are declared budgets, checked only as logical evidence.
+   * This model will be revisited with the planned language revision.
    */
   import Swaml::Views;
   import Swaml::Platform;
@@ -392,31 +463,27 @@ package DoorEcu {
 
   // ---------------------------------------------------------------- basic software
 
-  component def IoHwAb {
+  component def IoHwAbInput {
     /**
-     * I/O hardware abstraction: converts the connector's ADC, ICU and DIO values into
-     * engineering units, distributes them to the application and drives the power stages.
-     * The ADC/ICU/DIO group is converted by a hardware trigger whenever the door hardware
-     * changes; each conversion-complete notification starts the acquire and distribute
-     * chain. A 5 ms task supervises the window H-bridge current.
+     * I/O hardware abstraction, input side, in the ADC conversion-complete interrupt: the
+     * ADC/ICU/DIO group is converted whenever the door hardware changes. Converts raw
+     * counts to engineering units, switches the window H-bridge off at the trip current,
+     * reports wake-capable edges (latch, LIN wake pulse) and distributes the values.
      */
     reversed port pins: EcuInputs;
-    port outputs: EcuOutputs;
+    reversed port linWake: LinWakeLine;
+    reversed port modeIn: ModeBroadcast;
     port window: WindowFeedbackPort;
     port supply: SupplyVoltage;
     port latch: LatchInputs;
     port lockSense: LockFeedback;
     port mirrorSense: MirrorFeedback;
+    port trip: BridgeTrip;
     port wake: WakeIndication;
-    reversed port windowDrive: WindowMotorPort;
-    reversed port lockDrive: LockMotorPort;
-    reversed port mirrorDrive: MirrorMotorPort;
-    reversed port puddleLamp: LampPwm;
-    reversed port courtesyLamp: LampPwm;
-    reversed port modeIn: ModeBroadcast;
+    port diag: DiagEvents;
     const attribute currentMaPerBit: uint = 10;
     const attribute supplyMvPerBit: uint = 5;
-    const attribute bridgeTripMa: uint = 30000 /** Hardware-near overcurrent trip of the window H-bridge. */;
+    const attribute bridgeTripMa: uint = 30000 /** H-bridge overcurrent trip, below the 32 A stall current. */;
     const attribute supplyHysteresisMv: uint = 100;
     attribute raw: PinInputs = record PinInputs {
       hallCount = 250;
@@ -433,30 +500,27 @@ package DoorEcu {
     attribute reportedLatch: LatchSample = record LatchSample { primary = true; secondary = true; };
     attribute reportedLockSwitch: bool = false;
     attribute lastFoldEndStop: bool = false;
-    attribute bridgeTripped: bool = false;
-    attribute sleeping: bool = false;
-    attribute bridge: MotorCommand = record MotorCommand { direction = MotorDirection.stop; dutyPercent = 0; };
     attribute lastFeedbackCounts: uint = 250;
+    attribute sleeping: bool = false;
+    attribute trips: uint = 0;
     operation acquire(sample: PinInputs) {
-      /** Conversion complete: convert to engineering units; a latch edge during sleep is a local wake-up. */
-      if (sleeping and sample.latchPrimary != raw.latchPrimary) {
+      /** Conversion complete: convert, trip the bridge at overcurrent, report a latch edge as local activity or wake-up. */
+      if (sample.latchPrimary != raw.latchPrimary) {
         sleeping = false;
         publish wake.request(WakeSource.localInput);
       }
       raw = sample;
       currentMa = sample.currentRaw * currentMaPerBit;
       supplyMv = sample.supplyRaw * supplyMvPerBit;
-    }
-    operation protect() {
-      /** 5 ms: hardware-near overcurrent cut-off of the window H-bridge. */
-      if (currentMa >= bridgeTripMa and not bridgeTripped) {
-        bridgeTripped = true;
-        send outputs.windowBridge(record MotorCommand { direction = MotorDirection.stop; dutyPercent = 0; });
+      if (currentMa >= bridgeTripMa) {
+        trips = trips + 1;
+        publish trip.tripped();
+        publish diag.report(FaultId.motorOvercurrent, true);
       }
     }
     operation distribute() {
-      /** After acquire: window feedback while the motor runs or moves, slow signals on change only. */
-      if (bridge.direction != MotorDirection.stop or raw.hallCount != lastFeedbackCounts) {
+      /** After acquire: window feedback while the motor draws current or moves, slow signals on change only. */
+      if (currentMa > 0 or raw.hallCount != lastFeedbackCounts) {
         lastFeedbackCounts = raw.hallCount;
         send window.feedback(record WindowFeedback { positionCounts = raw.hallCount; currentMa = currentMa; supplyMv = supplyMv; });
       }
@@ -478,18 +542,64 @@ package DoorEcu {
       }
       lastFoldEndStop = raw.foldEndStop;
     }
+    operation onLinWake() {
+      if (sleeping) {
+        sleeping = false;
+        publish wake.request(WakeSource.lin);
+      }
+    }
+    operation onMode(current: PowerMode) {
+      sleeping = current == PowerMode.sleep;
+    }
+    schedule {
+      on receive pins.inputs(sample) acquire(sample) deadline 1ms;
+      after acquire distribute() deadline 2ms;
+      on receive linWake.wakeup() onLinWake() deadline 1ms;
+      on receive modeIn.changed(current) onMode(current);
+    }
+  }
+
+  component def IoHwAbOutput {
+    /**
+     * I/O hardware abstraction, output side: drives the power stages on request, keeps the
+     * window H-bridge off after a trip until the next stop command and switches every
+     * output off in sleep.
+     */
+    port outputs: EcuOutputs;
+    reversed port windowDrive: WindowMotorPort;
+    reversed port lockDrive: LockMotorPort;
+    reversed port mirrorDrive: MirrorMotorPort;
+    reversed port heaterDrive: HeaterPort;
+    reversed port puddleLamp: LampPwm;
+    reversed port courtesyLamp: LampPwm;
+    reversed port trip: BridgeTrip;
+    reversed port modeIn: ModeBroadcast;
+    attribute bridge: MotorCommand = record MotorCommand { direction = MotorDirection.stop; dutyPercent = 0; };
+    attribute bridgeTripped: bool = false;
+    attribute sleeping: bool = false;
+    operation stopBridge() {
+      send outputs.windowBridge(record MotorCommand { direction = MotorDirection.stop; dutyPercent = 0; });
+    }
     operation driveWindow(command: MotorCommand) {
+      bridge = command;
       if (command.direction == MotorDirection.stop) {
         bridgeTripped = false;
       }
       if (bridgeTripped or sleeping) {
         return;
       }
-      bridge = command;
       send outputs.windowBridge(command);
     }
+    operation onTrip() {
+      if (not bridgeTripped) {
+        bridgeTripped = true;
+        stopBridge();
+      }
+    }
     operation driveLock(drive: LockDrive) {
-      send outputs.lockMotor(drive);
+      if (not sleeping) {
+        send outputs.lockMotor(drive);
+      }
     }
     operation driveMirror(drive: MirrorDrive) {
       send outputs.mirrorMotors(drive);
@@ -507,50 +617,123 @@ package DoorEcu {
       send outputs.courtesyLampPercent(percent);
     }
     operation onMode(current: PowerMode) {
-      /** Sleep: switch every power stage off; only wake-capable inputs stay monitored. */
       sleeping = current == PowerMode.sleep;
       if (sleeping) {
-        send outputs.windowBridge(record MotorCommand { direction = MotorDirection.stop; dutyPercent = 0; });
+        stopBridge();
+        send outputs.lockMotor(LockDrive.idle);
         send outputs.mirrorHeaterPercent(0);
+        send outputs.puddleLampPercent(0);
+        send outputs.courtesyLampPercent(0);
       }
     }
     schedule {
-      on receive pins.inputs(sample) acquire(sample) deadline 1ms;
-      after acquire distribute() deadline 2ms;
-      on every 5ms protect() deadline 1ms;
       on receive windowDrive.windowMotor(command) driveWindow(command) deadline 1ms;
+      on receive trip.tripped() onTrip() deadline 1ms;
       on receive lockDrive.lockMotor(drive) driveLock(drive) deadline 1ms;
-      on receive mirrorDrive.mirrorMotors(drive) driveMirror(drive);
-      on receive mirrorDrive.foldMotor(command) driveFold(command);
-      on receive mirrorDrive.heaterPercent(percent) driveHeater(percent);
-      on receive puddleLamp.dutyPercent(percent) drivePuddle(percent);
-      on receive courtesyLamp.dutyPercent(percent) driveCourtesy(percent);
-      on receive modeIn.changed(current) onMode(current);
+      on receive mirrorDrive.mirrorMotors(drive) driveMirror(drive) deadline 5ms;
+      on receive mirrorDrive.foldMotor(command) driveFold(command) deadline 5ms;
+      on receive heaterDrive.heaterPercent(percent) driveHeater(percent) deadline 5ms;
+      on receive puddleLamp.dutyPercent(percent) drivePuddle(percent) deadline 5ms;
+      on receive courtesyLamp.dutyPercent(percent) driveCourtesy(percent) deadline 5ms;
+      on receive modeIn.changed(current) onMode(current) deadline 5ms;
     }
   }
 
-  component def ComStack {
+  component def CanInterface {
     /**
-     * CAN communication (CanIf, PduR and Com-like): unpacks VehicleStatus with deadline
-     * monitoring and substitution, forwards event frames, packs DoorStatusFL every 100 ms
-     * and the event-triggered LockStatus frame, and reports CAN wake-ups.
+     * CAN interface in the CAN receive interrupt (CanIf/PduR-like): Rx indications of
+     * VehicleStatus (handed to the Com main function), immediate routing of the crash,
+     * central-lock and comfort-close event frames, transmit requests, bus-activity
+     * indications for network management and the CAN wake-up while asleep.
      */
     reversed port can: BodyCan;
-    port vehicle: VehicleSignalsPort;
+    port rx: RxPdu;
     port crash: CrashPort;
     port lockRequests: LockRequests;
     port windowRequests: WindowRequests;
     port wake: WakeIndication;
+    port nm: BusActivity;
+    reversed port tx: TxPdu;
+    reversed port lockStatus: LockStatus;
+    reversed port remoteMirror: RemoteMirror;
+    reversed port modeIn: ModeBroadcast;
+    const attribute crashSeverityThreshold: uint = 1;
+    attribute sleeping: bool = false;
+    attribute wakeRequested: bool = false;
+    attribute frames: uint = 0;
+    operation indication() {
+      /** Every received frame is bus activity; the first one while asleep is a CAN wake-up. */
+      frames = frames + 1;
+      publish nm.frameReceived();
+      if (sleeping and not wakeRequested) {
+        wakeRequested = true;
+        publish wake.request(WakeSource.can);
+      }
+    }
+    operation rxVehicleStatus(pdu: VehicleStatusPdu) {
+      indication();
+      send rx.vehicleStatus(pdu);
+    }
+    operation rxCrash(severity: uint) {
+      if (severity >= crashSeverityThreshold) {
+        publish crash.crashUnlock();
+      }
+      indication();
+    }
+    operation rxCentralLock(request: LockRequest) {
+      indication();
+      publish lockRequests.request(request);
+    }
+    operation rxComfortClose() {
+      indication();
+      publish windowRequests.request(WindowRequest.autoUp);
+    }
+    operation txDoorStatus(pdu: DoorStatusPdu) {
+      send can.doorStatus(pdu);
+    }
+    operation txLockStatus(current: LockState) {
+      publish can.lockStatus(current);
+    }
+    operation txRemoteMirror(direction: MirrorRequest) {
+      publish can.remoteMirror(direction);
+    }
+    operation onMode(current: PowerMode) {
+      sleeping = current == PowerMode.sleep;
+      wakeRequested = false;
+    }
+    schedule {
+      on receive can.vehicleStatus(pdu) rxVehicleStatus(pdu) deadline 2ms;
+      on receive can.crash(severity) rxCrash(severity) deadline 1ms;
+      on receive can.centralLock(request) rxCentralLock(request) deadline 2ms;
+      on receive can.comfortClose() rxComfortClose() deadline 2ms;
+      on receive tx.doorStatus(pdu) txDoorStatus(pdu) deadline 2ms;
+      on receive lockStatus.changed(current) txLockStatus(current) deadline 2ms;
+      on receive remoteMirror.adjust(direction) txRemoteMirror(direction) deadline 2ms;
+      on receive modeIn.changed(current) onMode(current);
+    }
+  }
+
+  component def ComMain {
+    /**
+     * Com main functions every 20 ms: VehicleStatus alive-counter check, deadline
+     * monitoring and substitution (active only while the network is requested, in run),
+     * signal routing, and the cyclic DoorStatusFL transmission every 100 ms.
+     */
+    reversed port rx: RxPdu;
+    port vehicle: VehicleSignalsPort;
+    port tx: TxPdu;
     port diag: DiagEvents;
     port alive: AliveSupervision;
     reversed port lockStatus: LockStatus;
-    reversed port door: DoorAjar;
+    reversed port door: DoorState;
     reversed port window: WindowStatusPort;
-    reversed port remoteMirror: RemoteMirror;
     reversed port modeIn: ModeBroadcast;
     const attribute rxTimeoutMs: uint = 500;
     const attribute txPeriodMs: uint = 100;
-    const attribute crashSeverityThreshold: uint = 1;
+    attribute pending: VehicleStatusPdu = record VehicleStatusPdu { speedKph = 0.0; ignitionOn = false; rolling = 0; };
+    attribute fresh: bool = false;
+    attribute lastRolling: uint = 16;
+    attribute aliveErrors: uint = 0;
     attribute rxSeen: bool = false;
     attribute rxAgeMs: uint = 0;
     attribute timedOut: bool = false;
@@ -566,43 +749,18 @@ package DoorEcu {
     operation networkActive() returns bool {
       return powerMode == PowerMode.run;
     }
-    operation rxVehicleStatus(pdu: VehicleStatusPdu) {
-      /** Rx indication of VehicleStatus: a frame while asleep is a CAN wake-up. */
-      if (powerMode == PowerMode.sleep) {
-        publish wake.request(WakeSource.can);
-      }
-      rxSeen = true;
-      rxAgeMs = 0;
-      timedOut = false;
-      lastSignals = record VehicleSignals { speedKph = pdu.speedKph; speedValid = true; ignitionOn = pdu.ignitionOn; };
-      send vehicle.signals(lastSignals);
+    operation storePdu(pdu: VehicleStatusPdu) {
+      pending = pdu;
+      fresh = true;
     }
-    operation rxCrash(severity: uint) {
-      if (severity >= crashSeverityThreshold) {
-        publish crash.crashUnlock();
-      }
-    }
-    operation rxCentralLock(request: LockRequest) {
-      if (powerMode == PowerMode.sleep) {
-        publish wake.request(WakeSource.can);
-      }
-      publish lockRequests.request(request);
-    }
-    operation rxComfortClose() {
-      publish windowRequests.request(WindowRequest.autoUp);
-    }
-    operation txLockStatus(current: LockState) {
+    operation storeLock(current: LockState) {
       locked = current == LockState.locked;
-      publish can.lockStatus(current);
     }
     operation storeAjar(ajar: bool) {
       doorAjar = ajar;
     }
     operation storeWindow(status: WindowStatus) {
       windowState = status;
-    }
-    operation txRemoteMirror(direction: MirrorRequest) {
-      publish can.remoteMirror(direction);
     }
     operation onMode(current: PowerMode) {
       powerMode = current;
@@ -611,7 +769,20 @@ package DoorEcu {
       }
     }
     operation rxMainFunction() {
-      /** 20 ms: deadline monitoring, active only while the network is requested (run). */
+      /** 20 ms: accept a frame with a new alive counter, otherwise age the reception and substitute after the timeout. */
+      if (fresh) {
+        fresh = false;
+        if (pending.rolling != lastRolling) {
+          lastRolling = pending.rolling;
+          rxSeen = true;
+          rxAgeMs = 0;
+          timedOut = false;
+          lastSignals = record VehicleSignals { speedKph = pending.speedKph; speedValid = true; ignitionOn = pending.ignitionOn; };
+          send vehicle.signals(lastSignals);
+          return;
+        }
+        aliveErrors = aliveErrors + 1;
+      }
       if (not rxSeen or not networkActive() or timedOut) {
         return;
       }
@@ -633,7 +804,7 @@ package DoorEcu {
         txTimerMs = 0;
         txAlive = (txAlive + 1) % 16;
         framesSent = framesSent + 1;
-        send can.doorStatus(record DoorStatusPdu {
+        send tx.doorStatus(record DoorStatusPdu {
           ajar = doorAjar;
           locked = locked;
           windowCounts = windowState.positionCounts;
@@ -644,50 +815,62 @@ package DoorEcu {
       }
     }
     operation reportDiagnostics() {
-      /** 100 ms: report the VehicleStatus timeout monitor and the alive checkpoint. */
+      /** 100 ms: VehicleStatus timeout monitor and the alive checkpoint. */
       if (rxSeen and networkActive()) {
         publish diag.report(FaultId.canTimeout, timedOut);
       }
       publish alive.checkpoint(SupervisedEntity.communication);
     }
     schedule {
-      on receive can.vehicleStatus(pdu) rxVehicleStatus(pdu) deadline 2ms;
-      on receive can.crash(severity) rxCrash(severity) deadline 1ms;
-      on receive can.centralLock(request) rxCentralLock(request) deadline 5ms;
-      on receive can.comfortClose() rxComfortClose() deadline 5ms;
-      on receive lockStatus.changed(current) txLockStatus(current) deadline 5ms;
+      on receive rx.vehicleStatus(pdu) storePdu(pdu);
+      on receive lockStatus.changed(current) storeLock(current);
       on receive door.ajar(ajar) storeAjar(ajar);
       on receive window.windowStatus(status) storeWindow(status);
-      on receive remoteMirror.adjust(direction) txRemoteMirror(direction);
       on receive modeIn.changed(current) onMode(current);
       on every 20ms rxMainFunction() deadline 2ms;
       after rxMainFunction txMainFunction() deadline 5ms;
-      on every 100ms reportDiagnostics();
+      on every 100ms reportDiagnostics() deadline 10ms;
     }
   }
 
   component def LinMaster {
     /**
-     * LIN master (LinIf-like) with a 20 ms schedule table holding one unconditional
-     * frame: the master sends the header, the switch panel sends the response. A slot
-     * whose response is missing or carries a stale alive counter counts as missed; after
-     * five missed slots the switches are substituted as neutral. Reports LIN wake-ups.
+     * LIN master (LinIf-like) with a 20 ms schedule table holding one unconditional frame:
+     * each slot evaluates the response received in the previous slot and sends the next
+     * header. A missing response or a stale alive counter counts as missed; from the fifth
+     * missed slot on the switches are substituted as neutral in every slot.
      */
     reversed port bus: LinBus;
     port frames: SwitchFrames;
-    port wake: WakeIndication;
     port diag: DiagEvents;
+    port alive: AliveSupervision;
     reversed port modeIn: ModeBroadcast;
     const attribute substituteAfter: uint = 5;
     const attribute faultAfter: uint = 3;
+    attribute response: LinResponse = record LinResponse {
+      switches = record SwitchFrame {
+        window = WindowRequest.neutral;
+        lock = LockRequest.none;
+        mirror = MirrorRequest.none;
+        side = MirrorSide.driver;
+        fold = FoldRequest.none;
+        mirrorHeat = false;
+      };
+      alive = 256;
+      valid = false;
+    };
+    attribute received: bool = false;
     attribute lastAlive: uint = 256;
     attribute missed: uint = 0;
     attribute polls: uint = 0;
     attribute sleeping: bool = false;
-    attribute awaiting: bool = false;
+    operation storeResponse(frame: LinResponse) {
+      response = frame;
+      received = true;
+    }
     operation missSlot() {
       missed = missed + 1;
-      if (missed == substituteAfter) {
+      if (missed >= substituteAfter) {
         publish frames.frame(record SwitchFrame {
           window = WindowRequest.neutral;
           lock = LockRequest.none;
@@ -698,40 +881,32 @@ package DoorEcu {
         });
       }
     }
-    operation pollSwitchPanel() {
-      /** 20 ms schedule-table slot: close the previous slot and send the next header; no headers while asleep. */
+    operation slot() {
+      /** 20 ms schedule-table slot; no headers while asleep. */
       if (sleeping) {
         return;
       }
-      if (awaiting) {
-        missSlot();
+      if (polls > 0) {
+        if (received and response.valid and response.alive != lastAlive) {
+          missed = 0;
+          lastAlive = response.alive;
+          publish frames.frame(response.switches);
+        } else {
+          missSlot();
+        }
       }
-      awaiting = true;
+      received = false;
       polls = polls + 1;
+      if (polls % 5 == 0) {
+        publish alive.checkpoint(SupervisedEntity.linInterface);
+      }
       publish bus.header();
-    }
-    operation onResponse(response: LinResponse) {
-      /** Response received in the slot: check checksum and alive counter. */
-      if (not awaiting) {
-        return;
-      }
-      awaiting = false;
-      if (response.valid and response.alive != lastAlive) {
-        missed = 0;
-        lastAlive = response.alive;
-        publish frames.frame(response.switches);
-      } else {
-        missSlot();
-      }
-    }
-    operation onWakeup() {
-      if (sleeping) {
-        sleeping = false;
-        publish wake.request(WakeSource.lin);
-      }
     }
     operation onMode(current: PowerMode) {
       sleeping = current == PowerMode.sleep;
+      if (sleeping) {
+        polls = 0;
+      }
     }
     operation reportDiagnostics() {
       if (not sleeping) {
@@ -739,18 +914,19 @@ package DoorEcu {
       }
     }
     schedule {
-      on every 20ms pollSwitchPanel() deadline 2ms;
-      on receive bus.response(response) onResponse(response) deadline 2ms;
-      on receive bus.wakeup() onWakeup();
+      on receive bus.response(frame) storeResponse(frame);
       on receive modeIn.changed(current) onMode(current);
-      on every 100ms reportDiagnostics();
+      on every 20ms slot() deadline 2ms;
+      on every 100ms reportDiagnostics() deadline 10ms;
     }
   }
 
   component def Dem {
     /**
-     * Diagnostic event manager: counter-based debouncing of monitor reports, trouble-code
-     * status per fault and function inhibition derived from the fault memory.
+     * Diagnostic event manager: counter-based debouncing of monitor reports (jump to zero,
+     * +64 per pre-failed and -32 per pre-passed report, failed at 127), trouble-code status
+     * per fault and function inhibition derived from the fault memory. Simplified: a fault
+     * becomes pending and confirmed together; there are no operation cycles and no aging.
      */
     reversed port events: DiagEvents;
     port access: DtcAccess;
@@ -809,24 +985,27 @@ package DoorEcu {
       ];
     }
     operation derivePermission() {
-      /** Function inhibition: undervoltage or overcurrent stop window motion; a Hall fault disables one-touch. */
+      /** Undervoltage or a confirmed overcurrent stops window motion; a confirmed Hall fault disables one-touch. */
       var overcurrent: DtcStatus = statuses[0];
       var hall: DtcStatus = statuses[1];
       var supply: DtcStatus = statuses[3];
       var next: FunctionPermission = record FunctionPermission {
-        windowMotion = not supply.testFailed and not overcurrent.testFailed;
+        windowMotion = not supply.testFailed and not overcurrent.confirmed;
         oneTouch = not hall.confirmed;
       };
       if (next != permission) {
+        var withdrawn: bool = permission.windowMotion and not next.windowMotion;
         permission = next;
         send fim.permission(next);
+        if (withdrawn) {
+          publish fim.motionInhibited();
+        }
       }
     }
     operation publishPermission() {
       send fim.permission(permission);
     }
     operation report(fault: FaultId, failed: bool) {
-      /** Counter-based debouncing with jump to zero: +64 per pre-failed and -32 per pre-passed report. */
       reports = reports + 1;
       var index: uint = indexOf(fault);
       var previous: int = counters[index];
@@ -890,7 +1069,8 @@ package DoorEcu {
   component def Dcm {
     /**
      * Diagnostic communication manager: serves ReadDTCInformation-, ClearDiagnosticInformation-
-     * and ReadDataByIdentifier-like services, mapping three-byte trouble codes to monitored faults.
+     * and ReadDataByIdentifier-like services, mapping three-byte trouble codes to monitored
+     * faults. It runs in its own task and calls the event manager in another task.
      */
     port service: Diagnostics;
     reversed port dem: DtcAccess;
@@ -969,11 +1149,13 @@ package DoorEcu {
 
   component def NvM {
     /**
-     * NVRAM manager with one block, WindowCalibration: a read-all at start-up fills the
-     * RAM mirror, application writes mark it dirty and the write-all at shutdown stores it.
+     * NVRAM manager with one block, WindowCalibration: a read-all at start-up fills the RAM
+     * mirror, application writes mark it dirty, and the asynchronous write-all job requested
+     * at shutdown stores it in its background task and reports completion. A wake-up during
+     * shutdown cancels the job; a cancellation while no job runs is discarded.
      */
     port calibration: CalibrationBlock;
-    port control: NvmControl;
+    port control: NvmJobs;
     attribute nvBlock: WindowCalibration = record WindowCalibration {
       closedCounts = 0;
       openCounts = 1000;
@@ -993,6 +1175,7 @@ package DoorEcu {
     attribute dirty: bool = false;
     attribute writeAllRequests: uint = 0;
     attribute writeCycles: uint = 0;
+    attribute cancelled: uint = 0;
     operation readAll() {
       ramMirror = nvBlock;
       send calibration.windowCalibration(ramMirror);
@@ -1001,52 +1184,60 @@ package DoorEcu {
       ramMirror = block;
       dirty = true;
     }
-    operation writeAll() returns bool {
+    operation writeAllJob() {
       /** Write every dirty block; the data flash program time is 4 ms. */
-      wait 4ms;
-      writeAllRequests = writeAllRequests + 1;
-      if (dirty) {
-        nvBlock = ramMirror;
-        dirty = false;
-        writeCycles = writeCycles + 1;
+      interruptible {
+        wait 4ms;
+        writeAllRequests = writeAllRequests + 1;
+        if (dirty) {
+          nvBlock = ramMirror;
+          dirty = false;
+          writeCycles = writeCycles + 1;
+        }
+        publish control.writeAllDone(true);
+      } on receive control.cancelWriteAll() {
+        cancelled = cancelled + 1;
       }
-      return true;
     }
     schedule {
       on start readAll();
       on receive calibration.store(block) store(block);
-      on call control.writeAll() writeAll() deadline 50ms;
+      on receive control.writeAll() writeAllJob() deadline 100ms;
     }
   }
 
   component def WdgM {
     /**
      * Watchdog manager: alive supervision of four supervised entities in a 200 ms window
-     * (1 to 3 checkpoints each); the external watchdog is triggered every 40 ms only while
-     * every entity is correct.
+     * (1 to 3 checkpoints each, the first window after start-up or wake-up is a grace
+     * window). The external watchdog is triggered every 40 ms while the global status is
+     * correct; one failed window expires the global status and triggering stops for good,
+     * so the external watchdog resets the ECU (the reset itself is not modeled).
      */
     reversed port alive: AliveSupervision;
     port line: WatchdogLine;
     reversed port modeIn: ModeBroadcast;
     const attribute minAlive: uint = 1;
     const attribute maxAlive: uint = 3;
-    attribute windowAlive: uint = 0;
-    attribute lockAlive: uint = 0;
-    attribute pinchAlive: uint = 0;
+    attribute linAlive: uint = 0;
+    attribute latchAlive: uint = 0;
+    attribute supplyAlive: uint = 0;
     attribute comAlive: uint = 0;
-    attribute supervisionOk: bool = true;
+    attribute graceWindows: uint = 1;
+    attribute expired: bool = false;
     attribute failedWindows: uint = 0;
+    attribute lowPower: bool = false;
     attribute level: bool = false;
     attribute triggers: uint = 0;
     operation checkpoint(entity: SupervisedEntity) {
-      if (entity == SupervisedEntity.windowLifter) {
-        windowAlive = windowAlive + 1;
+      if (entity == SupervisedEntity.linInterface) {
+        linAlive = linAlive + 1;
       }
-      if (entity == SupervisedEntity.lockControl) {
-        lockAlive = lockAlive + 1;
+      if (entity == SupervisedEntity.latchMonitor) {
+        latchAlive = latchAlive + 1;
       }
-      if (entity == SupervisedEntity.antiPinch) {
-        pinchAlive = pinchAlive + 1;
+      if (entity == SupervisedEntity.supplyMonitor) {
+        supplyAlive = supplyAlive + 1;
       }
       if (entity == SupervisedEntity.communication) {
         comAlive = comAlive + 1;
@@ -1055,52 +1246,71 @@ package DoorEcu {
     operation correct(count: uint) returns bool {
       return count >= minAlive and count <= maxAlive;
     }
-    operation supervise() {
-      /** 200 ms: evaluate the alive counters of the supervision window. */
-      var ok: bool = correct(windowAlive) and correct(lockAlive) and correct(pinchAlive) and correct(comAlive);
-      if (not ok) {
-        failedWindows = failedWindows + 1;
-      }
-      supervisionOk = ok;
-      windowAlive = 0;
-      lockAlive = 0;
-      pinchAlive = 0;
+    operation resetCounters() {
+      linAlive = 0;
+      latchAlive = 0;
+      supplyAlive = 0;
       comAlive = 0;
     }
+    operation supervise() {
+      /** 200 ms: evaluate the alive counters of the supervision window. */
+      if (lowPower or graceWindows > 0) {
+        if (graceWindows > 0) {
+          graceWindows = graceWindows - 1;
+        }
+        resetCounters();
+        return;
+      }
+      var ok: bool = correct(linAlive) and correct(latchAlive) and correct(supplyAlive) and correct(comAlive);
+      if (not ok) {
+        failedWindows = failedWindows + 1;
+        expired = true;
+      }
+      resetCounters();
+    }
     operation trigger() {
-      /** 40 ms: toggle the trigger line while supervision is correct. */
-      if (supervisionOk) {
+      /** 40 ms: toggle the trigger line while the global supervision status is correct. */
+      if (not expired and not lowPower) {
         level = not level;
         triggers = triggers + 1;
         send line.trigger(level);
       }
     }
     operation onMode(current: PowerMode) {
-      send line.lowPower(current == PowerMode.sleep);
+      var asleep: bool = current == PowerMode.sleep;
+      if (asleep != lowPower) {
+        lowPower = asleep;
+        graceWindows = 1;
+        send line.lowPower(asleep);
+      }
     }
     schedule {
-      on receive alive.checkpoint(entity) checkpoint(entity) deadline 1ms;
-      on every 200ms supervise() deadline 5ms;
-      on every 40ms trigger() deadline 2ms;
+      on receive alive.checkpoint(entity) checkpoint(entity);
       on receive modeIn.changed(current) onMode(current);
+      on every 40ms trigger() deadline 2ms;
+      on every 200ms supervise() deadline 5ms;
     }
   }
 
   component def ModeManager {
     /**
-     * ECU state manager: start-up, run while ignition is on, post-run after ignition off,
-     * sleep after the post-run time with an NVRAM write-all, and wake-up on a validated
-     * CAN, LIN or local wake-up source. Each state change is broadcast to the mode users.
+     * ECU state manager with network management: start-up, run while ignition is on,
+     * post-run after ignition off (restarted by local activity), ready-sleep while the body
+     * CAN is still active, shutdown with an asynchronous NVRAM write-all after 500 ms of bus
+     * silence, sleep, and wake-up on a validated CAN, LIN or local wake-up source. Each
+     * state change is broadcast to the mode users.
      */
     reversed port vehicle: VehicleSignalsPort;
     reversed port wake: WakeIndication;
+    reversed port bus: BusActivity;
+    reversed port nvm: NvmJobs;
     port modeOut: ModeBroadcast;
-    reversed port nvm: NvmControl;
     attribute current: PowerMode = PowerMode.startup;
     attribute lastWake: WakeSource = WakeSource.none;
     attribute sleeps: uint = 0;
     attribute wakeups: uint = 0;
     attribute nvmStored: bool = false;
+    attribute shutdownsAborted: uint = 0;
     operation announce(next: PowerMode) {
       current = next;
       publish modeOut.changed(next);
@@ -1125,7 +1335,7 @@ package DoorEcu {
         }
       }
       state postRun {
-        /** Network released; local functions stay available until the post-run time elapses. */
+        /** Own network request kept for the post-run time; local activity restarts it. */
         on entry {
           announce(PowerMode.postRun);
         }
@@ -1134,14 +1344,48 @@ package DoorEcu {
         on receive wake.request(source) to postRun {
           lastWake = source;
         }
-        after 1s to sleep {
+        after 1s to readySleep {
+          announce(PowerMode.readySleep);
+        }
+      }
+      state readySleep {
+        /** Network released: every received frame restarts the 500 ms NM timeout. */
+        on receive vehicle.signals(s) when (s.ignitionOn) to run {
+        }
+        on receive wake.request(source) to postRun {
+          lastWake = source;
+        }
+        on receive bus.frameReceived() to readySleep {
+        }
+        after 500ms to shutdown {
+        }
+      }
+      state shutdown {
+        /** Bus silent: request the asynchronous write-all; bus activity or a wake-up aborts the shutdown. */
+        on entry {
+          announce(PowerMode.shutdown);
+          publish nvm.writeAll();
+        }
+        on receive nvm.writeAllDone(ok) to sleep {
+          nvmStored = ok;
+        }
+        on receive bus.frameReceived() to readySleep {
+          shutdownsAborted = shutdownsAborted + 1;
+          publish nvm.cancelWriteAll();
+          announce(PowerMode.readySleep);
+        }
+        on receive wake.request(source) to postRun {
+          lastWake = source;
+          shutdownsAborted = shutdownsAborted + 1;
+          publish nvm.cancelWriteAll();
+        }
+        after 200ms to sleep {
+          nvmStored = false;
         }
       }
       state sleep {
-        /** Shutdown: write-all, then low-power mode with wake-capable inputs only. */
+        /** Low-power mode: only wake-capable inputs and the CAN transceiver stay active. */
         on entry {
-          var stored: bool = try(nvm.writeAll(), false);
-          nvmStored = stored;
           sleeps = sleeps + 1;
           announce(PowerMode.sleep);
         }
@@ -1170,12 +1414,14 @@ package DoorEcu {
   component def SwitchDebounce {
     /**
      * Switch panel debouncing: a switch state is accepted after two identical LIN frames
-     * (40 ms at the 20 ms LIN schedule); accepted changes become window, lock and mirror requests.
+     * (40 ms at the 20 ms LIN schedule); accepted changes become window, lock, mirror and
+     * heater requests.
      */
     reversed port frames: SwitchFrames;
     port window: WindowRequests;
     port lock: LockRequests;
     port mirror: MirrorRequests;
+    port heater: HeaterRequest;
     port remoteMirror: RemoteMirror;
     const attribute stableFrames: uint = 2;
     attribute candidate: SwitchFrame = record SwitchFrame {
@@ -1213,7 +1459,7 @@ package DoorEcu {
         publish mirror.fold(next.fold);
       }
       if (next.mirrorHeat != previous.mirrorHeat) {
-        publish mirror.heat(next.mirrorHeat);
+        publish heater.heat(next.mirrorHeat);
       }
     }
     operation debounce(frame: SwitchFrame) {
@@ -1239,10 +1485,12 @@ package DoorEcu {
     /** Door-ajar and latch state: three identical 20 ms samples of both latch switches. */
     reversed port latch: LatchInputs;
     port door: DoorState;
+    port alive: AliveSupervision;
     const attribute stableSamples: uint = 3;
     attribute sample: LatchSample = record LatchSample { primary = true; secondary = true; };
     attribute candidate: LatchSample = record LatchSample { primary = true; secondary = true; };
     attribute stableCount: uint = 0;
+    attribute cycles: uint = 0;
     attribute latchState: LatchState = LatchState.primary;
     attribute ajar: bool = false;
     operation storeSample(value: LatchSample) {
@@ -1258,6 +1506,10 @@ package DoorEcu {
       return LatchState.open;
     }
     operation debounce() {
+      cycles = cycles + 1;
+      if (cycles % 5 == 0) {
+        publish alive.checkpoint(SupervisedEntity.latchMonitor);
+      }
       if (sample == candidate) {
         if (stableCount < stableSamples) {
           stableCount = stableCount + 1;
@@ -1275,7 +1527,6 @@ package DoorEcu {
       if (next != latchState) {
         latchState = next;
         ajar = next != LatchState.primary;
-        send door.latchState(next);
         send door.ajar(ajar);
       }
     }
@@ -1287,9 +1538,10 @@ package DoorEcu {
   }
 
   component def SupplyMonitor {
-    /** Supply voltage monitor: undervoltage below 9.0 V for 100 ms, recovery above 9.5 V. */
+    /** Supply voltage monitor: undervoltage below 9.0 V for two 50 ms samples, recovery only above 9.5 V. */
     reversed port supply: SupplyVoltage;
     port diag: DiagEvents;
+    port alive: AliveSupervision;
     const attribute underMv: uint = 9000;
     const attribute recoverMv: uint = 9500;
     const attribute qualifySamples: uint = 2;
@@ -1312,20 +1564,22 @@ package DoorEcu {
     }
     operation report() {
       publish diag.report(FaultId.supplyUndervoltage, undervoltage);
+      publish alive.checkpoint(SupervisedEntity.supplyMonitor);
     }
     schedule {
       on receive supply.supplyMv(mv) store(mv);
       on every 50ms classify() deadline 2ms;
-      on every 100ms report();
+      on every 100ms report() deadline 10ms;
     }
   }
 
   component def AntiPinch {
     /**
-     * Anti-pinch and position supervision of the window lifter, triggered by every 10 ms
-     * feedback sample: inrush blanking, an adaptive running-current reference, pinch
-     * detection inside the pinch zone, reversal distance, soft stops, Hall plausibility,
-     * overcurrent monitoring and learning of the closed stop.
+     * Anti-pinch and position supervision of the window lifter, triggered by every feedback
+     * sample: inrush blanking, an adaptive running-current reference, pinch detection in the
+     * pinch zone, the reversal distance, soft stops, Hall plausibility and the normalization
+     * flag. The pinch state is resynchronized with every motor command, so detection is
+     * re-armed for each close even if a reversal did not complete.
      */
     reversed port feedback: WindowFeedbackPort;
     reversed port drive: WindowMotorPort;
@@ -1333,10 +1587,8 @@ package DoorEcu {
     port events: WindowSupervision;
     port status: WindowStatusPort;
     port diag: DiagEvents;
-    port alive: AliveSupervision;
     const attribute blankingSamples: uint = 5 /** 50 ms inrush blanking after a motor start. */;
-    const attribute reversalCounts: uint = 200 /** About 90 mm at 0.45 mm per Hall count. */;
-    const attribute overcurrentMa: uint = 20000;
+    const attribute reversalCounts: uint = 280 /** About 125 mm at 0.45 mm per Hall count. */;
     const attribute hallStuckSamples: uint = 5;
     attribute cal: WindowCalibration = record WindowCalibration {
       closedCounts = 0;
@@ -1357,16 +1609,29 @@ package DoorEcu {
     attribute pinchActive: bool = false;
     attribute pinchEvents: uint = 0;
     attribute stuckSamples: uint = 0;
-    attribute overcurrentSeen: bool = false;
     attribute hallFaultSeen: bool = false;
     operation useCalibration(block: WindowCalibration) {
       cal = block;
     }
+    operation motionEnded() {
+      /** End of a motion: Hall monitor result and the window status for Com and the diagnostic services. */
+      if (runSamples > blankingSamples and not hallFaultSeen) {
+        publish diag.report(FaultId.hallSensor, false);
+      }
+      hallFaultSeen = false;
+      send status.windowStatus(record WindowStatus { positionCounts = position; pinchActive = pinchActive; learned = cal.learned; });
+    }
     operation trackCommand(command: MotorCommand) {
       if (command.direction != direction) {
+        if (direction != MotorDirection.stop) {
+          motionEnded();
+        }
         direction = command.direction;
         runSamples = 0;
         stuckSamples = 0;
+        if (direction != MotorDirection.down) {
+          reversing = false;
+        }
         if (direction == MotorDirection.up) {
           pinchActive = false;
         }
@@ -1428,13 +1693,13 @@ package DoorEcu {
         return;
       }
       runSamples = runSamples + 1;
-      if (sample.currentMa >= overcurrentMa and runSamples > blankingSamples) {
-        overcurrentSeen = true;
-      }
       if (position == lastPosition and runSamples > blankingSamples) {
         stuckSamples = stuckSamples + 1;
-        if (stuckSamples >= hallStuckSamples) {
+        if (stuckSamples >= hallStuckSamples and not hallFaultSeen) {
           hallFaultSeen = true;
+          publish diag.report(FaultId.hallSensor, true);
+          publish events.sensorFault();
+          return;
         }
       } else {
         stuckSamples = 0;
@@ -1445,41 +1710,32 @@ package DoorEcu {
         superviseOpening();
       }
     }
-    operation reportStatus() {
-      /** 100 ms: window status, diagnostic monitor results and the alive checkpoint. */
-      send status.windowStatus(record WindowStatus { positionCounts = position; pinchActive = pinchActive; learned = cal.learned; });
-      publish diag.report(FaultId.motorOvercurrent, overcurrentSeen);
-      publish diag.report(FaultId.hallSensor, hallFaultSeen);
-      overcurrentSeen = false;
-      hallFaultSeen = false;
-      publish alive.checkpoint(SupervisedEntity.antiPinch);
-    }
     schedule {
       on receive feedback.feedback(sample) evaluate(sample) deadline 2ms;
       on receive drive.windowMotor(command) trackCommand(command) deadline 1ms;
       on receive calibration.windowCalibration(block) useCalibration(block);
-      on every 100ms reportStatus() deadline 10ms;
     }
   }
 
   component def WindowLifter {
     /**
      * Window lifter: manual and one-touch movement in both directions, reversal after a
-     * pinch, stop at the soft stops and a motor run-time limit. Motion is permitted in
-     * run, post-run and wake-up and only while the fault memory allows it.
+     * pinch, stop at the soft stops, on a Hall fault and on a motor run-time limit. A
+     * withdrawn motion permission (undervoltage, confirmed overcurrent) stops any movement
+     * except a pinch reversal, which is completed to release the obstacle.
      */
     reversed port requests: WindowRequests;
     reversed port supervision: WindowSupervision;
     reversed port permissionIn: PermissionPort;
     reversed port modeIn: ModeBroadcast;
     port motor: WindowMotorPort;
-    port alive: AliveSupervision;
     const attribute dutyPercent: uint = 100;
     attribute permission: FunctionPermission = record FunctionPermission { windowMotion = true; oneTouch = true; };
     attribute powerMode: PowerMode = PowerMode.startup;
     attribute pinchReversals: uint = 0;
     attribute runTimeouts: uint = 0;
     attribute oneTouchCloses: uint = 0;
+    attribute inhibitedStops: uint = 0;
     operation drive(direction: MotorDirection) {
       var duty: uint = 0;
       if (direction != MotorDirection.stop) {
@@ -1518,17 +1774,22 @@ package DoorEcu {
         }
         on receive supervision.endPosition(closed) when (closed) to idle {
         }
+        on receive supervision.sensorFault() to idle {
+        }
+        on receive permissionIn.motionInhibited() to idle {
+          inhibitedStops = inhibitedStops + 1;
+        }
         on receive requests.request(command) when (command == WindowRequest.autoUp and oneTouchAllowed()) to autoUp {
           oneTouchCloses = oneTouchCloses + 1;
         }
-        on receive requests.request(command) when (command != WindowRequest.manualUp) to idle {
+        on receive requests.request(command) when (command != WindowRequest.manualUp and command != WindowRequest.autoUp) to idle {
         }
         after 8s to idle {
           runTimeouts = runTimeouts + 1;
         }
       }
       state autoUp {
-        /** One-touch close: continues after the switch is released; any other request stops it. */
+        /** One-touch close: continues after the switch is released; a down request stops it. */
         on entry {
           drive(MotorDirection.up);
         }
@@ -1537,6 +1798,11 @@ package DoorEcu {
         }
         on receive supervision.endPosition(closed) when (closed) to idle {
         }
+        on receive supervision.sensorFault() to idle {
+        }
+        on receive permissionIn.motionInhibited() to idle {
+          inhibitedStops = inhibitedStops + 1;
+        }
         on receive requests.request(command) when (command == WindowRequest.manualDown or command == WindowRequest.autoDown) to idle {
         }
         after 8s to idle {
@@ -1544,7 +1810,11 @@ package DoorEcu {
         }
       }
       state reversing {
-        /** Pinch reversal: open by the reversal distance; switch requests are ignored. */
+        /**
+         * Pinch reversal: open by the reversal distance. Switch requests and a withdrawn
+         * motion permission are ignored, because opening releases the obstacle; a Hall fault
+         * or the 1.2 s limit ends it.
+         */
         on entry {
           drive(MotorDirection.down);
         }
@@ -1552,7 +1822,9 @@ package DoorEcu {
         }
         on receive supervision.endPosition(closed) when (not closed) to idle {
         }
-        after 2s to idle {
+        on receive supervision.sensorFault() to idle {
+        }
+        after 1200ms to idle {
           runTimeouts = runTimeouts + 1;
         }
       }
@@ -1562,9 +1834,14 @@ package DoorEcu {
         }
         on receive supervision.endPosition(closed) when (not closed) to idle {
         }
+        on receive supervision.sensorFault() to idle {
+        }
+        on receive permissionIn.motionInhibited() to idle {
+          inhibitedStops = inhibitedStops + 1;
+        }
         on receive requests.request(command) when (command == WindowRequest.autoDown and oneTouchAllowed()) to autoDown {
         }
-        on receive requests.request(command) when (command != WindowRequest.manualDown) to idle {
+        on receive requests.request(command) when (command != WindowRequest.manualDown and command != WindowRequest.autoDown) to idle {
         }
         after 8s to idle {
           runTimeouts = runTimeouts + 1;
@@ -1575,6 +1852,11 @@ package DoorEcu {
           drive(MotorDirection.down);
         }
         on receive supervision.endPosition(closed) when (not closed) to idle {
+        }
+        on receive supervision.sensorFault() to idle {
+        }
+        on receive permissionIn.motionInhibited() to idle {
+          inhibitedStops = inhibitedStops + 1;
         }
         on receive requests.request(command) when (command == WindowRequest.manualUp or command == WindowRequest.autoUp) to idle {
         }
@@ -1589,35 +1871,30 @@ package DoorEcu {
     operation onMode(current: PowerMode) {
       powerMode = current;
     }
-    operation reportAlive() {
-      publish alive.checkpoint(SupervisedEntity.windowLifter);
-    }
     schedule {
       on start control();
       on receive permissionIn.permission(next) updatePermission(next);
       on receive modeIn.changed(current) onMode(current);
-      on every 100ms reportAlive();
     }
   }
 
   component def LockControl {
     /**
      * Central locking of the door: lock and unlock requests from the switch panel and the
-     * key fob, speed-dependent auto-lock once per ignition cycle, crash unlock with
-     * priority over every other state, timed actuator pulses and feedback supervision.
+     * key fob, speed-dependent auto-lock once per ignition cycle, crash unlock with priority
+     * over every other state, timed actuator pulses and supervision of each lock pulse by
+     * the lock position switch.
      */
     reversed port requests: LockRequests;
     reversed port vehicle: VehicleSignalsPort;
     reversed port crash: CrashPort;
-    reversed port door: DoorAjar;
+    reversed port door: DoorState;
     reversed port feedback: LockFeedback;
     reversed port modeIn: ModeBroadcast;
     port motor: LockMotorPort;
     port status: LockStatus;
     port diag: DiagEvents;
-    port alive: AliveSupervision;
     const attribute autoLockKph: real = 15.0;
-    const attribute pulseMs: uint = 250;
     attribute ajar: bool = false;
     attribute switchLocked: bool = false;
     attribute autoLockArmed: bool = true;
@@ -1676,7 +1953,6 @@ package DoorEcu {
         }
         after 250ms to unlocked {
           lockCycles = lockCycles + 1;
-          checkFeedback(false);
           announce(LockState.unlocked);
         }
       }
@@ -1712,35 +1988,28 @@ package DoorEcu {
         autoLockArmed = true;
       }
     }
-    operation reportAlive() {
-      publish alive.checkpoint(SupervisedEntity.lockControl);
-    }
     schedule {
       on start control();
       on receive door.ajar(value) setAjar(value);
       on receive feedback.lockSwitchLocked(value) setFeedback(value);
       on receive modeIn.changed(current) onMode(current);
-      on every 100ms reportAlive();
     }
   }
 
   component def MirrorControl {
     /**
-     * Exterior mirror: glass adjustment while the joystick is held, heating with a
-     * 10 minute limit, and folding on request or automatically with the lock state. The
-     * fold motor runs until its end stop is reported or 1.5 s elapse.
+     * Exterior mirror of this door: glass adjustment while the joystick is held, and the
+     * fold motor as an asynchronous job: fold or unfold on request or with the lock state,
+     * stopping at the end stop or after 1.5 s.
      */
     reversed port request: MirrorRequests;
     reversed port lockStatus: LockStatus;
     reversed port feedback: MirrorFeedback;
     port drive: MirrorMotorPort;
     const attribute autoFold: bool = true;
-    const attribute heaterPercent: uint = 70;
-    const attribute heaterLimitTicks: uint = 600 /** 10 minutes in 1 s ticks. */;
     attribute folded: bool = false;
+    attribute foldMoves: uint = 0;
     attribute foldTimeouts: uint = 0;
-    attribute heaterTicks: uint = 0;
-    attribute heating: bool = false;
     operation adjust(direction: MirrorRequest) {
       var horizontal: int = 0;
       var vertical: int = 0;
@@ -1758,64 +2027,104 @@ package DoorEcu {
       }
       send drive.mirrorMotors(record MirrorDrive { horizontal = horizontal; vertical = vertical; });
     }
-    operation moveFold(target: FoldRequest) {
-      /** Run the fold motor until the end stop; an end stop outside a motion is discarded. */
-      send drive.foldMotor(target);
-      interruptible {
-        wait 1500ms;
-        foldTimeouts = foldTimeouts + 1;
-      } on receive feedback.foldEndStop() {
-        folded = target == FoldRequest.fold;
+    operation foldControl() {
+      initial stopped;
+      state stopped {
+        on entry {
+          send drive.foldMotor(FoldRequest.none);
+        }
+        on receive request.fold(command) when (command == FoldRequest.fold and not folded) to folding {
+        }
+        on receive request.fold(command) when (command == FoldRequest.unfold and folded) to unfolding {
+        }
+        on receive lockStatus.changed(current) when (autoFold and current == LockState.locked and not folded) to folding {
+        }
+        on receive lockStatus.changed(current) when (autoFold and current == LockState.unlocked and folded) to unfolding {
+        }
       }
-      send drive.foldMotor(FoldRequest.none);
-    }
-    operation foldCommand(command: FoldRequest) {
-      moveFold(command);
-    }
-    operation onLock(current: LockState) {
-      if (not autoFold) {
-        return;
+      state folding {
+        on entry {
+          foldMoves = foldMoves + 1;
+          send drive.foldMotor(FoldRequest.fold);
+        }
+        on receive feedback.foldEndStop() to stopped {
+          folded = true;
+        }
+        on receive request.fold(command) when (command == FoldRequest.unfold) to unfolding {
+        }
+        on receive lockStatus.changed(current) when (autoFold and current == LockState.unlocked) to unfolding {
+        }
+        after 1500ms to stopped {
+          foldTimeouts = foldTimeouts + 1;
+        }
       }
-      if (current == LockState.locked) {
-        moveFold(FoldRequest.fold);
-      } else {
-        moveFold(FoldRequest.unfold);
-      }
-    }
-    operation heat(enabled: bool) {
-      heating = enabled;
-      heaterTicks = 0;
-      if (enabled) {
-        send drive.heaterPercent(heaterPercent);
-      } else {
-        send drive.heaterPercent(0);
-      }
-    }
-    operation heaterTimer() {
-      if (not heating) {
-        return;
-      }
-      heaterTicks = heaterTicks + 1;
-      if (heaterTicks >= heaterLimitTicks) {
-        heating = false;
-        send drive.heaterPercent(0);
+      state unfolding {
+        on entry {
+          foldMoves = foldMoves + 1;
+          send drive.foldMotor(FoldRequest.unfold);
+        }
+        on receive feedback.foldEndStop() to stopped {
+          folded = false;
+        }
+        on receive request.fold(command) when (command == FoldRequest.fold) to folding {
+        }
+        on receive lockStatus.changed(current) when (autoFold and current == LockState.locked) to folding {
+        }
+        after 1500ms to stopped {
+          foldTimeouts = foldTimeouts + 1;
+        }
       }
     }
     schedule {
-      on receive request.adjust(direction) adjust(direction);
-      on receive request.fold(command) foldCommand(command);
-      on receive request.heat(enabled) heat(enabled);
-      on receive lockStatus.changed(current) onLock(current);
-      on every 1s heaterTimer();
+      on start foldControl();
+      on receive request.adjust(direction) adjust(direction) deadline 5ms;
+    }
+  }
+
+  component def MirrorHeater {
+    /** Mirror heater: switched on request in the 100 ms task, with a 10 minute limit (not exercised by the bounded bench). */
+    reversed port request: HeaterRequest;
+    port drive: HeaterPort;
+    const attribute heaterPercent: uint = 70;
+    const attribute heaterLimitTicks: uint = 6000 /** 10 minutes in 100 ms ticks. */;
+    attribute requested: bool = false;
+    attribute heating: bool = false;
+    attribute heaterTicks: uint = 0;
+    operation store(enabled: bool) {
+      requested = enabled;
+    }
+    operation tick() {
+      if (requested and not heating) {
+        heating = true;
+        heaterTicks = 0;
+        send drive.heaterPercent(heaterPercent);
+      }
+      if (not requested and heating) {
+        heating = false;
+        send drive.heaterPercent(0);
+      }
+      if (heating) {
+        heaterTicks = heaterTicks + 1;
+        if (heaterTicks >= heaterLimitTicks) {
+          heating = false;
+          requested = false;
+          send drive.heaterPercent(0);
+        }
+      }
+    }
+    schedule {
+      on receive request.heat(enabled) store(enabled);
+      on every 100ms tick() deadline 10ms;
     }
   }
 
   component def CourtesyLighting {
     /**
-     * Puddle and courtesy lamps: approach light for 30 s after unlocking, door-open light,
-     * 2 s afterglow after the door closes, and both lamps off when the vehicle locks.
+     * Puddle and courtesy lamps in the 100 ms task: approach light for 30 s after unlocking,
+     * door-open light, 2 s afterglow after the door closes, and both lamps off when the
+     * vehicle locks.
      */
-    reversed port door: DoorAjar;
+    reversed port door: DoorState;
     reversed port lockStatus: LockStatus;
     port puddle: LampRequest;
     port courtesy: LampRequest;
@@ -1826,7 +2135,27 @@ package DoorEcu {
     attribute afterglowLeft: uint = 0;
     attribute puddleOn: bool = false;
     attribute courtesyOn: bool = false;
-    operation apply() {
+    operation onDoor(value: bool) {
+      if (ajar and not value) {
+        afterglowLeft = afterglowTicks;
+      }
+      ajar = value;
+    }
+    operation onLock(current: LockState) {
+      if (current == LockState.unlocked) {
+        approachLeft = approachTicks;
+      } else {
+        approachLeft = 0;
+        afterglowLeft = 0;
+      }
+    }
+    operation tick() {
+      if (approachLeft > 0) {
+        approachLeft = approachLeft - 1;
+      }
+      if (afterglowLeft > 0) {
+        afterglowLeft = afterglowLeft - 1;
+      }
       var puddleNext: bool = ajar or approachLeft > 0;
       var courtesyNext: bool = ajar or afterglowLeft > 0;
       if (puddleNext != puddleOn) {
@@ -1838,35 +2167,10 @@ package DoorEcu {
         send courtesy.lampOn(courtesyNext);
       }
     }
-    operation onDoor(value: bool) {
-      if (ajar and not value) {
-        afterglowLeft = afterglowTicks;
-      }
-      ajar = value;
-      apply();
-    }
-    operation onLock(current: LockState) {
-      if (current == LockState.unlocked) {
-        approachLeft = approachTicks;
-      } else {
-        approachLeft = 0;
-        afterglowLeft = 0;
-      }
-      apply();
-    }
-    operation tick() {
-      if (approachLeft > 0) {
-        approachLeft = approachLeft - 1;
-      }
-      if (afterglowLeft > 0) {
-        afterglowLeft = afterglowLeft - 1;
-      }
-      apply();
-    }
     schedule {
       on receive door.ajar(value) onDoor(value);
       on receive lockStatus.changed(current) onLock(current);
-      on every 100ms tick();
+      on every 100ms tick() deadline 10ms;
     }
   }
 
@@ -1906,17 +2210,20 @@ package DoorEcu {
     /**
      * Software of the front-left door control unit: basic-software-like services and the
      * application components, joined by explicit routes in the manner of an RTE. The
-     * boundary ports are the ECU connector, LIN, CAN, the diagnostic channel and the
-     * watchdog line.
+     * boundary ports are the ECU connector, LIN with its wake line, CAN, the diagnostic
+     * channel and the watchdog line. Routes between the two cores use the CrossCore policy.
      */
     reversed port pins: EcuInputs;
     port outputs: EcuOutputs;
     reversed port linBus: LinBus;
+    reversed port linWake: LinWakeLine;
     reversed port canBus: BodyCan;
     port uds: Diagnostics;
     port wdgLine: WatchdogLine;
-    component ioHwAb: IoHwAb;
-    component com: ComStack;
+    component ioIn: IoHwAbInput;
+    component ioOut: IoHwAbOutput;
+    component canIf: CanInterface;
+    component comMain: ComMain;
     component linIf: LinMaster;
     component dem: Dem;
     component dcm: Dcm;
@@ -1930,91 +2237,104 @@ package DoorEcu {
     component window: WindowLifter;
     component lock: LockControl;
     component mirror: MirrorControl;
+    component heater: MirrorHeater;
     component lighting: CourtesyLighting;
     component lamps: CourtesyLamp[2] {
       /** lamps[0] is the puddle lamp, lamps[1] the courtesy lamp. */
     }
     // boundary forwarding
-    connect (pins, ioHwAb.pins);
-    connect (outputs, ioHwAb.outputs);
+    connect (pins, ioIn.pins);
+    connect (linWake, ioIn.linWake);
+    connect (outputs, ioOut.outputs);
     connect (linBus, linIf.bus);
-    connect (canBus, com.can);
+    connect (canBus, canIf.can);
     connect (uds, dcm.service);
     connect (wdgLine, wdgM.line);
-    // sensing and actuation
-    connect windowFeedback (ioHwAb.window, antiPinch.feedback);
-    connect (ioHwAb.supply, supply.supply);
-    connect (ioHwAb.supply, dcm.supply);
-    connect (ioHwAb.latch, latch.latch);
-    connect (ioHwAb.lockSense, lock.feedback);
-    connect (ioHwAb.mirrorSense, mirror.feedback);
-    connect windowMotor (window.motor, ioHwAb.windowDrive);
+    // sensing and actuation (core 0)
+    connect windowFeedback (ioIn.window, antiPinch.feedback);
+    connect (ioIn.supply, supply.supply);
+    connect (ioIn.supply, dcm.supply);
+    connect (ioIn.latch, latch.latch);
+    connect (ioIn.lockSense, lock.feedback);
+    connect (ioIn.mirrorSense, mirror.feedback);
+    connect bridgeTrip: RteQueued (ioIn.trip, ioOut.trip);
+    connect windowMotor (window.motor, ioOut.windowDrive);
     connect (window.motor, antiPinch.drive);
-    connect lockMotor (lock.motor, ioHwAb.lockDrive);
-    connect (mirror.drive, ioHwAb.mirrorDrive);
+    connect lockMotor (lock.motor, ioOut.lockDrive);
+    connect (mirror.drive, ioOut.mirrorDrive);
+    connect (heater.drive, ioOut.heaterDrive);
     connect (lighting.puddle, lamps[0].request);
     connect (lighting.courtesy, lamps[1].request);
-    connect (lamps[0].output, ioHwAb.puddleLamp);
-    connect (lamps[1].output, ioHwAb.courtesyLamp);
+    connect (lamps[0].output, ioOut.puddleLamp);
+    connect (lamps[1].output, ioOut.courtesyLamp);
     // switch panel requests
     connect switchFrames (linIf.frames, switches.frames);
     connect windowRequests: RteQueued (switches.window, window.requests);
-    connect comfortClose: RteQueued (com.windowRequests, window.requests);
+    connect comfortClose: CrossCore (canIf.windowRequests, window.requests);
     connect lockRequests: RteQueued (switches.lock, lock.requests);
-    connect keyFob: RteQueued (com.lockRequests, lock.requests);
-    connect (switches.mirror, mirror.request);
-    connect (switches.remoteMirror, com.remoteMirror);
+    connect keyFob: CrossCore (canIf.lockRequests, lock.requests);
+    connect mirrorRequests: CrossCore (switches.mirror, mirror.request);
+    connect heaterRequests: CrossCore (switches.heater, heater.request);
+    connect remoteMirror: CrossCore (switches.remoteMirror, canIf.remoteMirror);
     // window supervision
     connect pinch: RteQueued (antiPinch.events, window.supervision);
-    connect (antiPinch.status, com.window);
+    connect (antiPinch.status, comMain.window);
     connect (antiPinch.status, dcm.window);
     connect (nvm.calibration, antiPinch.calibration);
-    // vehicle state and locking
-    connect (com.vehicle, lock.vehicle);
-    connect (com.vehicle, ecuMode.vehicle);
-    connect crashPath: RteQueued (com.crash, lock.crash);
+    // CAN and vehicle state
+    connect (canIf.rx, comMain.rx);
+    connect (comMain.tx, canIf.tx);
+    connect (comMain.vehicle, lock.vehicle);
+    connect (comMain.vehicle, ecuMode.vehicle);
+    connect crashPath: CrossCore (canIf.crash, lock.crash);
     connect (latch.door, lock.door);
     connect (latch.door, lighting.door);
-    connect (latch.door, com.door);
-    connect lockStatusToCom: RteQueued (lock.status, com.lockStatus);
-    connect (lock.status, mirror.lockStatus);
+    connect (latch.door, comMain.door);
+    connect lockStatusToCan: CrossCore (lock.status, canIf.lockStatus);
+    connect (lock.status, comMain.lockStatus);
+    connect lockStatusToMirror: CrossCore (lock.status, mirror.lockStatus);
     connect (lock.status, lighting.lockStatus);
-    // mode management
-    connect (ioHwAb.wake, ecuMode.wake);
-    connect (linIf.wake, ecuMode.wake);
-    connect (com.wake, ecuMode.wake);
-    connect nvmControl: NvmJob (ecuMode.nvm, nvm.control);
-    connect (ecuMode.modeOut, ioHwAb.modeIn);
-    connect (ecuMode.modeOut, com.modeIn);
+    // mode and network management
+    connect (ioIn.wake, ecuMode.wake);
+    connect canWake: CrossCore (canIf.wake, ecuMode.wake);
+    connect busActivity: CrossCore (canIf.nm, ecuMode.bus);
+    connect nvmJobs: CrossCore (ecuMode.nvm, nvm.control);
+    connect (ecuMode.modeOut, ioIn.modeIn);
+    connect (ecuMode.modeOut, ioOut.modeIn);
+    connect (ecuMode.modeOut, canIf.modeIn);
+    connect (ecuMode.modeOut, comMain.modeIn);
     connect (ecuMode.modeOut, linIf.modeIn);
     connect (ecuMode.modeOut, wdgM.modeIn);
     connect (ecuMode.modeOut, window.modeIn);
     connect (ecuMode.modeOut, lock.modeIn);
     // diagnostics
+    connect (ioIn.diag, dem.events);
     connect (antiPinch.diag, dem.events);
     connect (lock.diag, dem.events);
     connect (supply.diag, dem.events);
     connect (linIf.diag, dem.events);
-    connect (com.diag, dem.events);
-    connect (dem.fim, window.permissionIn);
+    connect (comMain.diag, dem.events);
+    connect permission: CrossCore (dem.fim, window.permissionIn);
     connect dtcAccess (dcm.dem, dem.access);
     // alive supervision
-    connect (window.alive, wdgM.alive);
-    connect (lock.alive, wdgM.alive);
-    connect (antiPinch.alive, wdgM.alive);
-    connect (com.alive, wdgM.alive);
+    connect (linIf.alive, wdgM.alive);
+    connect (latch.alive, wdgM.alive);
+    connect (supply.alive, wdgM.alive);
+    connect (comMain.alive, wdgM.alive);
   }
 
   // --------------------------------------------------------- environment and bench
 
   component def LinSwitchPanel {
     /**
-     * Driver's door switch panel, a LIN slave: scans its contacts, answers the master's
-     * frame header with the switch states and a rolling alive counter, and sends a wake-up
-     * pulse when a contact changes while the cluster sleeps (no header for 200 ms).
+     * Driver's door switch panel, a LIN slave: scans its contacts, answers each frame header
+     * with the switch states and a rolling alive counter, and sends a wake-up pulse when a
+     * contact changes while the cluster sleeps (no header for at least 100 ms). The bench
+     * can unplug its connector.
      */
     reversed port contacts: SwitchContacts;
     port bus: LinBus;
+    port wake: LinWakeLine;
     attribute window: WindowRequest = WindowRequest.neutral;
     attribute lock: LockRequest = LockRequest.none;
     attribute mirror: MirrorRequest = MirrorRequest.none;
@@ -2024,8 +2344,16 @@ package DoorEcu {
     attribute alive: uint = 0;
     attribute idleTicks: uint = 0;
     attribute busAsleep: bool = false;
+    attribute connected: bool = true;
     attribute wakePulses: uint = 0;
+    operation unplug() {
+      /** Bench fault injection: the panel connector is disconnected. */
+      connected = false;
+    }
     operation respond() {
+      if (not connected) {
+        return;
+      }
       alive = (alive + 1) % 256;
       idleTicks = 0;
       busAsleep = false;
@@ -2036,9 +2364,9 @@ package DoorEcu {
       });
     }
     operation contactChanged() {
-      if (busAsleep) {
+      if (busAsleep and connected) {
         wakePulses = wakePulses + 1;
-        publish bus.wakeup();
+        publish wake.wakeup();
       }
     }
     operation onWindow(value: WindowRequest) {
@@ -2084,10 +2412,12 @@ package DoorEcu {
 
   component def DoorMechanics {
     /**
-     * Test-bench plant model of the door: window regulator with motor inrush, running and
-     * stall current, a pinch force rising by 2 N per millisecond of blocked travel and 40 mA per newton,
-     * Hall counter (0.45 mm per count, 0 is fully closed), latch, lock actuator with
-     * position switch, fold motor with end stop, heater and lamps. Not ECU software.
+     * Test-bench plant model of the door, not ECU software: window regulator with motor
+     * inrush, running and 32 A stall current, a pinch force rising by 2 N per millisecond of
+     * blocked travel and 40 mA per newton, Hall counter (0.45 mm per count, 0 is fully
+     * closed), latch, lock actuator with position switch, fold motor with end stop, heater
+     * and lamps. The bench can block the regulator, freeze the Hall counter and jam the
+     * lock actuator.
      */
     reversed port drive: EcuOutputs;
     port sensors: EcuInputs;
@@ -2096,7 +2426,7 @@ package DoorEcu {
     const attribute countsPerMs: real = 0.3 /** Window speed at 100 % duty and 13.5 V, about 135 mm/s. */;
     const attribute runningMa: real = 5500.0;
     const attribute inrushMa: real = 16000.0;
-    const attribute stallMa: real = 24000.0;
+    const attribute stallMa: real = 32000.0;
     const attribute maPerNewton: real = 40.0;
     const attribute newtonPerMs: real = 2.0;
     const attribute handAtCounts: real = 150.0 /** An obstacle 68 mm below the closed position. */;
@@ -2109,6 +2439,10 @@ package DoorEcu {
     attribute currentMa: real = 0.0;
     attribute handInWindow: bool = false;
     attribute doorOpen: bool = false;
+    attribute regulatorBlocked: bool = false;
+    attribute hallFrozen: bool = false;
+    attribute frozenHall: uint = 0;
+    attribute lockJammed: bool = false;
     attribute lockDrive: LockDrive = LockDrive.idle;
     attribute lockDriveMs: uint = 0;
     attribute boltLocked: bool = false;
@@ -2121,6 +2455,28 @@ package DoorEcu {
     attribute courtesyPercent: uint = 0;
     attribute supplyMv: uint = 13500;
     attribute changed: bool = true;
+    attribute lastSample: PinInputs = record PinInputs {
+      hallCount = 0;
+      currentRaw = 0;
+      supplyRaw = 0;
+      latchPrimary = false;
+      latchSecondary = false;
+      lockSwitchLocked = false;
+      foldEndStop = false;
+    } /** The last converted sample: conversions run every step while the window motor runs, otherwise only on a change. */;
+    operation blockRegulator(value: bool) {
+      /** Bench fault injection: the regulator is mechanically blocked. */
+      regulatorBlocked = value;
+    }
+    operation freezeHall(value: bool) {
+      /** Bench fault injection: the Hall counter stops counting. */
+      hallFrozen = value;
+      frozenHall = trunc(position);
+    }
+    operation jamLockActuator(value: bool) {
+      /** Bench fault injection: the lock bolt does not move. */
+      lockJammed = value;
+    }
     operation setMotor(command: MotorCommand) {
       if (command.direction != motor.direction) {
         motorRunMs = 0;
@@ -2172,24 +2528,30 @@ package DoorEcu {
       if (motorRunMs <= 30) {
         load = inrushMa;
       }
-      if (motor.direction == MotorDirection.up) {
-        if (handInWindow and position <= handAtCounts) {
-          pinchForceN = pinchForceN + newtonPerMs * stepMs;
-          if (pinchForceN > peakPinchForceN) {
-            peakPinchForceN = pinchForceN;
-          }
-          load = min(runningMa + pinchForceN * maPerNewton, stallMa);
-        } else {
-          position = max(position - speed * stepMs, 0.0);
-          if (position <= 0.0) {
-            load = stallMa;
-          }
+      if (regulatorBlocked) {
+        if (motorRunMs > 30) {
+          load = stallMa;
         }
       } else {
-        pinchForceN = 0.0;
-        position = min(position + speed * stepMs, openCounts);
-        if (position >= openCounts) {
-          load = stallMa;
+        if (motor.direction == MotorDirection.up) {
+          if (handInWindow and position <= handAtCounts) {
+            pinchForceN = pinchForceN + newtonPerMs * stepMs;
+            if (pinchForceN > peakPinchForceN) {
+              peakPinchForceN = pinchForceN;
+            }
+            load = min(runningMa + pinchForceN * maPerNewton, stallMa);
+          } else {
+            position = max(position - speed * stepMs, 0.0);
+            if (position <= 0.0) {
+              load = stallMa;
+            }
+          }
+        } else {
+          pinchForceN = 0.0;
+          position = min(position + speed * stepMs, openCounts);
+          if (position >= openCounts) {
+            load = stallMa;
+          }
         }
       }
       currentMa = load;
@@ -2207,7 +2569,7 @@ package DoorEcu {
         currentMa = 0.0;
         pinchForceN = 0.0;
       }
-      if (lockDrive != LockDrive.idle) {
+      if (lockDrive != LockDrive.idle and not lockJammed) {
         lockDriveMs = lockDriveMs + 10;
         if (lockDriveMs >= 120) {
           boltLocked = lockDrive == LockDrive.lockPulse;
@@ -2219,15 +2581,23 @@ package DoorEcu {
           mirrorFolded = foldDrive == FoldRequest.fold;
         }
       }
-      send sensors.inputs(record PinInputs {
-        hallCount = trunc(position);
+      var hall: uint = trunc(position);
+      if (hallFrozen) {
+        hall = frozenHall;
+      }
+      var sample: PinInputs = record PinInputs {
+        hallCount = hall;
         currentRaw = trunc(min(currentMa / 10.0, 4095.0));
         supplyRaw = trunc(supplyMv / 5.0);
         latchPrimary = not doorOpen;
         latchSecondary = not doorOpen;
         lockSwitchLocked = boltLocked;
         foldEndStop = foldDrive != FoldRequest.none and foldMs >= 800;
-      });
+      };
+      if (windowActive or sample != lastSample) {
+        lastSample = sample;
+        send sensors.inputs(sample);
+      }
     }
     schedule {
       on receive drive.windowBridge(command) setMotor(command);
@@ -2295,50 +2665,81 @@ package DoorEcu {
   // ------------------------------------------------------------------- platform
 
   component def OsTask specializes Process {
-    /** An OS task: activation period (0 = event-triggered) and priority (higher wins). */
+    /**
+     * An OS task: period (0 for an event-activated task or interrupt), response bound of an
+     * event task, priority (higher wins) and category. The values document the target
+     * configuration; the reference run does not schedule by them.
+     */
     const attribute periodUs: uint = 0;
+    const attribute responseUs: uint = 0;
     const attribute priority: uint = 0;
+    const attribute category: string = "basic";
   }
   component def SafetyCore specializes Partition {
-    /** Core 0: sensing, window, lock, mode and supervision tasks. */
+    /** Core 0: sensing, actuation, window, lock, mode management and supervision. */
     const attribute clockMhz: uint = 160;
-    component taskEvent: OsTask {
-      redefines const attribute priority: uint = 40;
+    component isrAdc: OsTask {
+      redefines const attribute responseUs: uint = 500;
+      redefines const attribute priority: uint = 60;
+      redefines const attribute category: string = "isr2";
     }
-    component task5ms: OsTask {
-      redefines const attribute periodUs: uint = 5000;
-      redefines const attribute priority: uint = 30;
+    component taskEventHigh: OsTask {
+      redefines const attribute responseUs: uint = 1000;
+      redefines const attribute priority: uint = 50;
+    }
+    component taskEventLow: OsTask {
+      redefines const attribute responseUs: uint = 10000;
+      redefines const attribute priority: uint = 15;
     }
     component task20ms: OsTask {
       redefines const attribute periodUs: uint = 20000;
-      redefines const attribute priority: uint = 25;
+      redefines const attribute priority: uint = 30;
     }
     component task40ms: OsTask {
       redefines const attribute periodUs: uint = 40000;
-      redefines const attribute priority: uint = 22;
+      redefines const attribute priority: uint = 28;
     }
     component task50ms: OsTask {
       redefines const attribute periodUs: uint = 50000;
-      redefines const attribute priority: uint = 20;
+      redefines const attribute priority: uint = 25;
     }
   }
   component def ComfortCore specializes Partition {
     /** Core 1: communication, diagnostics, comfort functions and memory services. */
     const attribute clockMhz: uint = 160;
+    component isrCan: OsTask {
+      redefines const attribute responseUs: uint = 500;
+      redefines const attribute priority: uint = 60;
+      redefines const attribute category: string = "isr2";
+    }
+    component taskDem: OsTask {
+      redefines const attribute responseUs: uint = 2000;
+      redefines const attribute priority: uint = 40;
+    }
     component task20ms: OsTask {
       redefines const attribute periodUs: uint = 20000;
-      redefines const attribute priority: uint = 25;
+      redefines const attribute priority: uint = 30;
     }
     component task50ms: OsTask {
       redefines const attribute periodUs: uint = 50000;
-      redefines const attribute priority: uint = 20;
+      redefines const attribute priority: uint = 25;
     }
     component task100ms: OsTask {
       redefines const attribute periodUs: uint = 100000;
-      redefines const attribute priority: uint = 10;
+      redefines const attribute priority: uint = 20;
+    }
+    component taskEventLow: OsTask {
+      redefines const attribute responseUs: uint = 5000;
+      redefines const attribute priority: uint = 18;
+    }
+    component taskDcm: OsTask {
+      redefines const attribute responseUs: uint = 50000;
+      redefines const attribute priority: uint = 12;
     }
     component taskBackground: OsTask {
+      redefines const attribute responseUs: uint = 100000;
       redefines const attribute priority: uint = 1;
+      redefines const attribute category: string = "extended";
     }
   }
   component def DoorModule specializes Node {
@@ -2374,6 +2775,7 @@ package DoorEcu {
   connect connector (door.sensors, dcu.pins);
   connect harness (dcu.outputs, door.drive);
   connect lin: LinSlot (switchPanel.bus, dcu.linBus);
+  connect linWakeLine (switchPanel.wake, dcu.linWake);
   connect bodyCan: BodyCanFrames (bcm.bus, dcu.canBus);
   connect diagnosticCan: UdsSession (tester.uds, dcu.uds);
   connect watchdogTrigger (dcu.wdgLine, watchdogIc.line);
@@ -2383,26 +2785,33 @@ package DoorEcu {
 
   deployment 'Front left door' of dcu on vehicle {
     /**
-     * Software placed on the front-left door module. Each component occurrence is placed
-     * on the OS task of its main runnable; event-triggered components share the event task.
+     * Task mapping of the front-left door module. Each occurrence is placed on the one task
+     * of its deadline-carrying runnables: a periodic task whose period divides the periods
+     * of its runnables and does not exceed their deadlines' release grid, or an interrupt or
+     * event task whose response bound is at most the smallest deadline it serves. Crash
+     * chain budget: CAN interrupt 1 ms, CrossCore route 1 ms, lock state machine on the
+     * 1 ms event task, lock output 1 ms: at most 4 ms against the 10 ms requirement.
      */
     deploy on doorModules[0];
-    deploy ioHwAb on doorModules[0].core0.task5ms;
-    deploy antiPinch on doorModules[0].core0.taskEvent;
-    deploy window on doorModules[0].core0.taskEvent;
-    deploy lock on doorModules[0].core0.taskEvent;
-    deploy ecuMode on doorModules[0].core0.taskEvent;
-    deploy switches on doorModules[0].core0.task20ms;
-    deploy latch on doorModules[0].core0.task20ms;
+    deploy ioIn on doorModules[0].core0.isrAdc;
+    deploy ioOut on doorModules[0].core0.taskEventHigh;
+    deploy antiPinch on doorModules[0].core0.taskEventHigh;
+    deploy window on doorModules[0].core0.taskEventHigh;
+    deploy lock on doorModules[0].core0.taskEventHigh;
+    deploy switches on doorModules[0].core0.taskEventHigh;
+    deploy ecuMode on doorModules[0].core0.taskEventLow;
     deploy linIf on doorModules[0].core0.task20ms;
+    deploy latch on doorModules[0].core0.task20ms;
     deploy wdgM on doorModules[0].core0.task40ms;
     deploy supply on doorModules[0].core0.task50ms;
-    deploy com on doorModules[0].core1.task20ms;
-    deploy dem on doorModules[0].core1.task20ms;
+    deploy canIf on doorModules[0].core1.isrCan;
+    deploy dem on doorModules[0].core1.taskDem;
+    deploy comMain on doorModules[0].core1.task20ms;
     deploy lamps on doorModules[0].core1.task50ms;
-    deploy dcm on doorModules[0].core1.task100ms;
-    deploy mirror on doorModules[0].core1.task100ms;
+    deploy heater on doorModules[0].core1.task100ms;
     deploy lighting on doorModules[0].core1.task100ms;
+    deploy mirror on doorModules[0].core1.taskEventLow;
+    deploy dcm on doorModules[0].core1.taskDcm;
     deploy nvm on doorModules[0].core1.taskBackground;
   }
   deployment 'Switch panel' of switchPanel on vehicle {
@@ -2453,19 +2862,25 @@ package DoorEcu {
   }
 
   use case 'Read fault memory' of dcu {
-    /** A tester reads a trouble code status and a data identifier and clears the fault memory. */
+    /** The supply drops below 9 V; a tester reads the confirmed undervoltage code and the supply voltage, then clears the fault memory. */
+    send supply.terminal.batteryMv(8000);
+    wait 400ms;
     var status: DtcStatus = tester.uds.readDtcStatus(10100758);
-    assert not status.confirmed;
+    assert status.confirmed and status.testFailed;
     var supplyMv: uint = tester.uds.readData(64769);
-    assert supplyMv >= 13000 and supplyMv <= 14000;
+    assert supplyMv >= 7900 and supplyMv <= 8100;
+    send supply.terminal.batteryMv(13500);
+    wait 300ms;
     var cleared: uint = tester.uds.clearDtcs();
-    assert cleared == 0;
+    assert cleared == 1;
+    var empty: DtcStatus = tester.uds.readDtcStatus(10100758);
+    assert not empty.confirmed;
   }
 
   use case 'Wake on door handle' of dcu {
-    /** The ECU sleeps after ignition off; opening the door wakes it and the door status reports the open door. */
+    /** The ECU sleeps after ignition off and bus silence; opening the door wakes it and the door status reports the open door. */
     send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 0.0; ignitionOn = false; rolling = 1; });
-    wait 1500ms;
+    wait 1700ms;
     send passenger.body.innerHandle(true);
     var reported: bool = false;
     until (reported, 5 times) {
@@ -2502,8 +2917,8 @@ package DoorEcu {
     wait 80ms;
     assert door.mirrorMotors.horizontal == 0;
     send driver.contacts.mirrorHeat(true);
-    wait 80ms;
-    assert door.heaterPercent == 70 and dcu.mirror.heating;
+    wait 180ms;
+    assert door.heaterPercent == 70 and dcu.heater.heating;
     send driver.contacts.side(MirrorSide.passenger);
     send driver.contacts.mirror(MirrorRequest.up);
     on receive bcm.bus.remoteMirror(direction) {
@@ -2524,20 +2939,49 @@ package DoorEcu {
     send driver.contacts.window(WindowRequest.autoUp);
     wait 50ms;
     send driver.contacts.window(WindowRequest.neutral);
-    for (var cycle: uint = 1; cycle <= 11; cycle = cycle + 1) {
+    for (var cycle: uint = 1; cycle <= 14; cycle = cycle + 1) {
       wait 100ms;
       send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 0.0; ignitionOn = true; rolling = cycle; });
     }
     assert dcu.window.pinchReversals == 1;
-    assert dcu.antiPinch.pinchEvents == 1;
+    assert dcu.antiPinch.pinchEvents == 1 and not dcu.antiPinch.reversing;
     assert door.peakPinchForceN > 0.0 and door.peakPinchForceN < 100.0;
-    assert door.position >= 340.0;
+    assert door.position >= 420.0;
     assert door.motor.direction == MotorDirection.stop;
     on receive bcm.bus.doorStatus(status) {
       assert status.pinchActive;
     } or after 200ms {
       fail "no door status";
     }
+  }
+
+  test 'Pinch protection after an interrupted reversal' of dcu {
+    /**
+     * The supply collapses to 5.5 V during a reversal, so the window stalls and the reversal
+     * ends at its time limit. After recovery, a new one-touch close detects the same
+     * obstacle again before 100 N.
+     */
+    send passenger.body.handInWindow(true);
+    send driver.contacts.window(WindowRequest.autoUp);
+    wait 50ms;
+    send driver.contacts.window(WindowRequest.neutral);
+    until (dcu.antiPinch.pinchEvents == 1, 60 times) {
+      wait 10ms;
+    }
+    wait 100ms;
+    send supply.terminal.batteryMv(5500);
+    wait 1150ms;
+    assert door.motor.direction == MotorDirection.stop;
+    assert dcu.window.runTimeouts == 1 and not dcu.antiPinch.reversing;
+    send supply.terminal.batteryMv(13500);
+    wait 300ms;
+    assert dcu.window.permission.windowMotion;
+    send driver.contacts.window(WindowRequest.autoUp);
+    wait 50ms;
+    send driver.contacts.window(WindowRequest.neutral);
+    wait 400ms;
+    assert dcu.antiPinch.pinchEvents == 2 and dcu.window.pinchReversals == 2;
+    assert door.peakPinchForceN < 100.0;
   }
 
   test 'One-touch close learns the closed stop' of dcu {
@@ -2560,7 +3004,7 @@ package DoorEcu {
   }
 
   test 'Crash unlocks a locked door' of dcu {
-    /** A crash signal unlocks a locked door within 10 ms and inhibits auto-lock afterwards. */
+    /** A crash signal unlocks a door locked by the key fob within 10 ms and inhibits auto-lock afterwards. */
     publish bcm.bus.centralLock(LockRequest.lock);
     on receive bcm.bus.lockStatus(reported) {
       assert reported == LockState.locked;
@@ -2585,7 +3029,7 @@ package DoorEcu {
   }
 
   test 'Auto-lock by speed' of dcu {
-    /** The door locks once when the speed passes 15 km/h; the mirrors fold with the lock. */
+    /** The door locks once when the speed passes 15 km/h and the mirror folds; unlocking with the panel unfolds it. */
     send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 5.0; ignitionOn = true; rolling = 1; });
     wait 100ms;
     send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 12.0; ignitionOn = true; rolling = 2; });
@@ -2598,30 +3042,41 @@ package DoorEcu {
       fail "no auto-lock";
     }
     assert dcu.lock.autoLocked and not dcu.lock.autoLockArmed;
-    wait 1s;
+    wait 900ms;
     assert door.mirrorFolded and dcu.mirror.folded and dcu.mirror.foldTimeouts == 0;
+    send driver.contacts.lock(LockRequest.unlock);
+    on receive bcm.bus.lockStatus(reported) {
+      assert reported == LockState.unlocked;
+    } or after 400ms {
+      fail "the panel did not unlock";
+    }
+    wait 900ms;
+    assert not door.mirrorFolded and not dcu.mirror.folded and dcu.mirror.foldMoves == 2;
   }
 
   test 'Bus timeout fallback' of dcu {
     /**
-     * VehicleStatus stops: after 500 ms the speed is substituted as invalid, the timeout
-     * is confirmed in the fault memory and auto-lock no longer acts on stale speed.
+     * A frame with a repeated alive counter is ignored; 500 ms after the last valid frame the
+     * speed is substituted as invalid, the timeout is confirmed in the fault memory and
+     * auto-lock acts again once valid frames return.
      */
     send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 8.0; ignitionOn = true; rolling = 1; });
     wait 100ms;
     send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 9.0; ignitionOn = true; rolling = 2; });
-    wait 300ms;
-    assert not dcu.com.timedOut;
-    wait 500ms;
-    assert dcu.com.timedOut and dcu.com.timeouts == 1;
-    assert not dcu.com.lastSignals.speedValid and dcu.com.lastSignals.ignitionOn;
+    wait 200ms;
+    send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 9.0; ignitionOn = true; rolling = 2; });
+    wait 290ms;
+    assert not dcu.comMain.timedOut and dcu.comMain.aliveErrors == 1;
+    wait 60ms;
+    assert dcu.comMain.timedOut and dcu.comMain.timeouts == 1;
+    assert not dcu.comMain.lastSignals.speedValid and dcu.comMain.lastSignals.ignitionOn;
     assert dcu.ecuMode.current == PowerMode.run;
     wait 300ms;
     var status: DtcStatus = tester.uds.readDtcStatus(12664967);
     assert status.confirmed and status.testFailed;
     send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 20.0; ignitionOn = true; rolling = 3; });
-    wait 20ms;
-    assert not dcu.com.timedOut and dcu.com.lastSignals.speedValid;
+    wait 30ms;
+    assert not dcu.comMain.timedOut and dcu.comMain.lastSignals.speedValid;
     on receive bcm.bus.lockStatus(reported) {
       assert reported == LockState.locked;
     } or after 400ms {
@@ -2631,8 +3086,9 @@ package DoorEcu {
 
   test 'Sleep and wake' of dcu {
     /**
-     * Ignition off: post-run for 1 s, NVRAM write-all, sleep with the watchdog in low-power
-     * mode; a LIN wake-up from the switch panel wakes the ECU into post-run.
+     * Ignition off and bus silence: post-run, ready-sleep, write-all and sleep with the
+     * watchdog in low-power mode; a LIN wake-up from the switch panel wakes the ECU into
+     * post-run.
      */
     send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 0.0; ignitionOn = true; rolling = 1; });
     wait 100ms;
@@ -2640,7 +3096,9 @@ package DoorEcu {
     send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 0.0; ignitionOn = false; rolling = 2; });
     wait 100ms;
     assert dcu.ecuMode.current == PowerMode.postRun;
-    wait 1100ms;
+    wait 1000ms;
+    assert dcu.ecuMode.current == PowerMode.readySleep;
+    wait 600ms;
     assert dcu.ecuMode.current == PowerMode.sleep and dcu.ecuMode.sleeps == 1;
     assert dcu.nvm.writeAllRequests == 1 and dcu.ecuMode.nvmStored;
     assert watchdogIc.lowPower and watchdogIc.expirations == 0;
@@ -2652,30 +3110,48 @@ package DoorEcu {
     assert dcu.ecuMode.current == PowerMode.postRun;
   }
 
-  test 'Calibration stored at shutdown' of dcu {
-    /** A first complete close marks the window calibration learned; the write-all at shutdown stores the block. */
+  test 'Bus keeps the ECU awake after ignition off' of dcu {
+    /** While the body control module keeps sending after ignition off, the ECU stays in ready-sleep; 500 ms after the bus falls silent it sleeps. */
     send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 0.0; ignitionOn = true; rolling = 0; });
+    wait 100ms;
+    for (var cycle: uint = 1; cycle <= 20; cycle = cycle + 1) {
+      send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 0.0; ignitionOn = false; rolling = cycle % 16; });
+      wait 100ms;
+    }
+    assert dcu.ecuMode.current == PowerMode.readySleep;
+    assert dcu.ecuMode.sleeps == 0 and dcu.nvm.writeAllRequests == 0;
+    wait 600ms;
+    assert dcu.ecuMode.current == PowerMode.sleep and dcu.ecuMode.sleeps == 1;
+    assert dcu.nvm.writeAllRequests == 1;
+  }
+
+  test 'Calibration stored at shutdown' of dcu {
+    /** A first complete close in post-run marks the window calibration learned; the write-all at shutdown stores the block. */
     send driver.contacts.window(WindowRequest.autoUp);
     wait 50ms;
     send driver.contacts.window(WindowRequest.neutral);
-    for (var cycle: uint = 1; cycle <= 9; cycle = cycle + 1) {
-      wait 100ms;
-      send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 0.0; ignitionOn = true; rolling = cycle; });
-    }
+    wait 900ms;
     assert dcu.nvm.dirty and not dcu.nvm.nvBlock.learned;
-    send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 0.0; ignitionOn = false; rolling = 10; });
-    wait 1050ms;
+    wait 650ms;
     assert dcu.ecuMode.current == PowerMode.sleep;
     assert dcu.nvm.writeCycles == 1 and not dcu.nvm.dirty and dcu.nvm.nvBlock.learned;
   }
 
   test 'Undervoltage fault reported' of dcu {
     /**
-     * The supply drops to 8 V: the monitor qualifies the undervoltage, the fault memory
-     * confirms it, window motion is inhibited, and the tester reads and clears the code.
+     * The supply drops to 8 V: the first pre-failed report does not confirm, the second
+     * does, window motion is inhibited, 9.2 V does not recover it, 13.5 V does, and the
+     * tester reads and clears the code.
      */
     send supply.terminal.batteryMv(8000);
-    wait 400ms;
+    var counters: int[6] = dcu.dem.counters;
+    until (counters[3] > 0, 50 times) {
+      wait 10ms;
+      counters = dcu.dem.counters;
+    }
+    var first: DtcStatus = tester.uds.readDtcStatus(10100758);
+    assert counters[3] == 64 and not first.confirmed;
+    wait 110ms;
     var failed: DtcStatus = tester.uds.readDtcStatus(10100758);
     assert failed.confirmed and failed.testFailed;
     assert not dcu.window.permission.windowMotion;
@@ -2683,29 +3159,61 @@ package DoorEcu {
     wait 200ms;
     assert door.position == 250.0;
     send driver.contacts.window(WindowRequest.neutral);
+    send supply.terminal.batteryMv(9200);
+    wait 300ms;
+    assert dcu.supply.undervoltage and not dcu.window.permission.windowMotion;
     send supply.terminal.batteryMv(13500);
-    wait 500ms;
+    wait 300ms;
     var recovered: DtcStatus = tester.uds.readDtcStatus(10100758);
     assert recovered.confirmed and not recovered.testFailed;
     assert dcu.window.permission.windowMotion;
     var cleared: uint = tester.uds.clearDtcs();
     assert cleared == 1;
-    var empty: DtcStatus = tester.uds.readDtcStatus(10100758);
-    assert not empty.confirmed;
+  }
+
+  test 'Undervoltage stops a moving window' of dcu {
+    /** The supply drops to 8 V while the window opens with the switch held: the window stops although the switch is still pressed. */
+    send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 0.0; ignitionOn = true; rolling = 0; });
+    send driver.contacts.window(WindowRequest.manualDown);
+    wait 150ms;
+    assert door.motor.direction == MotorDirection.down;
+    send supply.terminal.batteryMv(8000);
+    wait 450ms;
+    assert not dcu.window.permission.windowMotion and dcu.window.inhibitedStops == 1;
+    assert door.motor.direction == MotorDirection.stop;
+    var stoppedAt: real = door.position;
+    wait 100ms;
+    assert door.position == stoppedAt;
   }
 
   test 'Watchdog serviced' of dcu {
     /** With every supervised entity alive, the external watchdog is triggered in every window. */
     wait 1s;
-    assert dcu.wdgM.supervisionOk and dcu.wdgM.failedWindows == 0;
+    assert not dcu.wdgM.expired and dcu.wdgM.failedWindows == 0;
     assert dcu.wdgM.triggers >= 24;
     assert watchdogIc.windows >= 9 and watchdogIc.expirations == 0;
   }
 
+  test 'Watchdog stops on a supervision failure' of dcu {
+    /** Extra alive indications of one entity (it runs too often) fail the window; triggering stops and the external watchdog expires. */
+    wait 300ms;
+    dcu.wdgM.checkpoint(SupervisedEntity.communication);
+    dcu.wdgM.checkpoint(SupervisedEntity.communication);
+    dcu.wdgM.checkpoint(SupervisedEntity.communication);
+    dcu.wdgM.checkpoint(SupervisedEntity.communication);
+    wait 300ms;
+    assert dcu.wdgM.expired and dcu.wdgM.failedWindows == 1;
+    var triggersAfterFailure: uint = dcu.wdgM.triggers;
+    wait 200ms;
+    assert dcu.wdgM.triggers == triggersAfterFailure;
+    assert watchdogIc.expirations >= 2;
+  }
+
   test 'Courtesy light afterglow' of dcu {
     /** Opening the door lights both lamps with a soft start; after closing, the courtesy lamp stays on for the afterglow. */
+    send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 0.0; ignitionOn = true; rolling = 0; });
     send passenger.body.innerHandle(true);
-    wait 300ms;
+    wait 400ms;
     assert dcu.latch.ajar and dcu.latch.latchState == LatchState.open;
     assert door.courtesyPercent == 100 and door.puddlePercent == 100;
     send passenger.body.innerHandle(false);
@@ -2716,11 +3224,107 @@ package DoorEcu {
     assert door.courtesyPercent == 0;
   }
 
+  test 'Debounced switch and latch inputs' of dcu {
+    /**
+     * A lock contact shorter than one LIN slot and a 30 ms latch bounce are filtered; a real
+     * lock press then locks within 400 ms.
+     */
+    send driver.contacts.lock(LockRequest.lock);
+    send passenger.body.innerHandle(true);
+    wait 25ms;
+    send driver.contacts.lock(LockRequest.none);
+    wait 5ms;
+    send passenger.body.innerHandle(false);
+    wait 370ms;
+    assert not dcu.lock.locked and dcu.lock.lockCycles == 0;
+    assert not dcu.latch.ajar and dcu.lighting.afterglowLeft == 0 and door.courtesyPercent == 0;
+    send driver.contacts.lock(LockRequest.lock);
+    on receive bcm.bus.lockStatus(reported) {
+      assert reported == LockState.locked;
+    } or after 400ms {
+      fail "the panel did not lock within 400 ms";
+    }
+    assert door.boltLocked;
+  }
+
+  test 'Switch panel lost' of dcu {
+    /** The panel connector is unplugged while the driver holds the window switch: from the fifth missed slot the switches are neutral, the window stops and the LIN fault is confirmed. */
+    send bcm.bus.vehicleStatus(record VehicleStatusPdu { speedKph = 0.0; ignitionOn = true; rolling = 0; });
+    send driver.contacts.window(WindowRequest.manualDown);
+    wait 150ms;
+    assert door.motor.direction == MotorDirection.down;
+    switchPanel.unplug();
+    wait 200ms;
+    assert dcu.linIf.missed >= 5;
+    assert door.motor.direction == MotorDirection.stop;
+    wait 200ms;
+    var status: DtcStatus = tester.uds.readDtcStatus(12728199);
+    assert status.confirmed;
+  }
+
+  test 'Hall sensor fault disables one-touch' of dcu {
+    /** A frozen Hall counter stops the motor twice and confirms the Hall fault; a one-touch request then only moves the window while the switch is held. */
+    door.freezeHall(true);
+    send driver.contacts.window(WindowRequest.manualDown);
+    wait 250ms;
+    assert door.motor.direction == MotorDirection.stop;
+    send driver.contacts.window(WindowRequest.neutral);
+    wait 60ms;
+    send driver.contacts.window(WindowRequest.manualDown);
+    wait 250ms;
+    assert door.motor.direction == MotorDirection.stop;
+    assert not dcu.window.permission.oneTouch;
+    send driver.contacts.window(WindowRequest.neutral);
+    door.freezeHall(false);
+    wait 60ms;
+    send driver.contacts.window(WindowRequest.autoUp);
+    wait 150ms;
+    assert door.motor.direction == MotorDirection.up;
+    send driver.contacts.window(WindowRequest.neutral);
+    wait 80ms;
+    assert door.motor.direction == MotorDirection.stop and dcu.window.oneTouchCloses == 0;
+  }
+
+  test 'Blocked window trips the bridge' of dcu {
+    /** A blocked regulator draws stall current: the H-bridge trips at 30 A twice, the overcurrent code is confirmed and window motion is inhibited. */
+    door.blockRegulator(true);
+    send driver.contacts.window(WindowRequest.manualDown);
+    wait 150ms;
+    assert dcu.ioIn.trips == 1 and door.motor.direction == MotorDirection.stop;
+    send driver.contacts.window(WindowRequest.neutral);
+    wait 60ms;
+    send driver.contacts.window(WindowRequest.manualDown);
+    wait 150ms;
+    assert dcu.ioIn.trips == 2 and door.motor.direction == MotorDirection.stop;
+    assert not dcu.window.permission.windowMotion;
+    send driver.contacts.window(WindowRequest.neutral);
+    door.blockRegulator(false);
+    wait 60ms;
+    send driver.contacts.window(WindowRequest.manualDown);
+    wait 150ms;
+    assert door.motor.direction == MotorDirection.stop and door.position == 250.0;
+  }
+
+  test 'Lock actuator fault' of dcu {
+    /** A jammed lock bolt makes two lock pulses fail their position check; the lock actuator code is confirmed. */
+    door.jamLockActuator(true);
+    publish bcm.bus.centralLock(LockRequest.lock);
+    wait 300ms;
+    publish bcm.bus.centralLock(LockRequest.unlock);
+    wait 300ms;
+    publish bcm.bus.centralLock(LockRequest.lock);
+    wait 300ms;
+    assert not door.boltLocked and dcu.lock.lockCycles == 3;
+    var status: DtcStatus = tester.uds.readDtcStatus(10096647);
+    assert status.confirmed and status.occurrences == 1;
+  }
+
   associate driver to 'Lock and unlock';
   associate bcm to 'Lock and unlock';
   associate driver to 'Close the window with one touch';
   associate bcm to 'Close the window with one touch';
   associate tester to 'Read fault memory';
+  associate supply to 'Read fault memory';
   associate passenger to 'Wake on door handle';
   associate bcm to 'Wake on door handle';
   associate bcm to 'Comfort close from the key fob';
@@ -2731,6 +3335,10 @@ package DoorEcu {
   associate driver to 'Pinch reversal';
   associate bcm to 'Pinch reversal';
   associate door to 'Pinch reversal';
+  associate passenger to 'Pinch protection after an interrupted reversal';
+  associate driver to 'Pinch protection after an interrupted reversal';
+  associate supply to 'Pinch protection after an interrupted reversal';
+  associate door to 'Pinch protection after an interrupted reversal';
   associate driver to 'One-touch close learns the closed stop';
   associate bcm to 'One-touch close learns the closed stop';
   associate tester to 'One-touch close learns the closed stop';
@@ -2738,6 +3346,7 @@ package DoorEcu {
   associate bcm to 'Crash unlocks a locked door';
   associate door to 'Crash unlocks a locked door';
   associate bcm to 'Auto-lock by speed';
+  associate driver to 'Auto-lock by speed';
   associate door to 'Auto-lock by speed';
   associate bcm to 'Bus timeout fallback';
   associate tester to 'Bus timeout fallback';
@@ -2745,44 +3354,86 @@ package DoorEcu {
   associate driver to 'Sleep and wake';
   associate switchPanel to 'Sleep and wake';
   associate watchdogIc to 'Sleep and wake';
-  associate bcm to 'Calibration stored at shutdown';
+  associate bcm to 'Bus keeps the ECU awake after ignition off';
   associate driver to 'Calibration stored at shutdown';
   associate supply to 'Undervoltage fault reported';
   associate tester to 'Undervoltage fault reported';
   associate driver to 'Undervoltage fault reported';
   associate door to 'Undervoltage fault reported';
+  associate bcm to 'Undervoltage stops a moving window';
+  associate driver to 'Undervoltage stops a moving window';
+  associate supply to 'Undervoltage stops a moving window';
+  associate door to 'Undervoltage stops a moving window';
   associate watchdogIc to 'Watchdog serviced';
+  associate watchdogIc to 'Watchdog stops on a supervision failure';
+  associate bcm to 'Courtesy light afterglow';
   associate passenger to 'Courtesy light afterglow';
   associate door to 'Courtesy light afterglow';
+  associate driver to 'Debounced switch and latch inputs';
+  associate passenger to 'Debounced switch and latch inputs';
+  associate bcm to 'Debounced switch and latch inputs';
+  associate door to 'Debounced switch and latch inputs';
+  associate bcm to 'Switch panel lost';
+  associate driver to 'Switch panel lost';
+  associate tester to 'Switch panel lost';
+  associate door to 'Switch panel lost';
+  associate switchPanel to 'Switch panel lost';
+  associate driver to 'Hall sensor fault disables one-touch';
+  associate door to 'Hall sensor fault disables one-touch';
+  associate driver to 'Blocked window trips the bridge';
+  associate door to 'Blocked window trips the bridge';
+  associate bcm to 'Lock actuator fault';
+  associate tester to 'Lock actuator fault';
+  associate door to 'Lock actuator fault';
 
   satisfy 'Anti-pinch protection' by dcu.antiPinch;
   satisfy 'Anti-pinch protection' by dcu.window;
   satisfy 'One-touch close' by dcu.window;
   satisfy 'Central locking' by dcu.lock;
+  satisfy 'Lock actuator supervision' by dcu.lock;
   satisfy 'Speed-dependent auto-lock' by dcu.lock;
   satisfy 'Crash unlock' by dcu.lock;
-  satisfy 'Crash unlock' by dcu.com;
-  satisfy 'Bus timeout substitution' by dcu.com;
+  satisfy 'Crash unlock' by dcu.canIf;
+  satisfy 'Bus timeout substitution' by dcu.comMain;
   satisfy 'Network-managed sleep' by dcu.ecuMode;
+  satisfy 'Network-managed sleep' by dcu.canIf;
   satisfy 'Network-managed sleep' by dcu.nvm;
   satisfy 'Fault memory' by dcu.dem;
   satisfy 'Fault memory' by dcu.dcm;
   satisfy 'Supply voltage protection' by dcu.supply;
+  satisfy 'Supply voltage protection' by dcu.window;
+  satisfy 'Window motor protection' by dcu.ioIn;
+  satisfy 'Window motor protection' by dcu.ioOut;
+  satisfy 'Window motor protection' by dcu.antiPinch;
+  satisfy 'Input debouncing' by dcu.switches;
+  satisfy 'Input debouncing' by dcu.latch;
+  satisfy 'Switch panel communication' by dcu.linIf;
   satisfy 'Watchdog supervision' by dcu.wdgM;
   satisfy 'Mirror auto-fold' by dcu.mirror;
   verify 'Anti-pinch protection' by 'Pinch reversal';
+  verify 'Anti-pinch protection' by 'Pinch protection after an interrupted reversal';
   verify 'One-touch close' by 'One-touch close learns the closed stop';
-  verify 'Crash unlock' by 'Crash unlocks a locked door';
+  verify 'Central locking' by 'Debounced switch and latch inputs';
   verify 'Central locking' by 'Crash unlocks a locked door';
+  verify 'Lock actuator supervision' by 'Lock actuator fault';
+  verify 'Crash unlock' by 'Crash unlocks a locked door';
   verify 'Speed-dependent auto-lock' by 'Auto-lock by speed';
   verify 'Mirror auto-fold' by 'Auto-lock by speed';
   verify 'Bus timeout substitution' by 'Bus timeout fallback';
   verify 'Fault memory' by 'Bus timeout fallback';
   verify 'Fault memory' by 'Undervoltage fault reported';
+  verify 'Fault memory' by 'Lock actuator fault';
   verify 'Supply voltage protection' by 'Undervoltage fault reported';
+  verify 'Supply voltage protection' by 'Undervoltage stops a moving window';
+  verify 'Window motor protection' by 'Blocked window trips the bridge';
+  verify 'Window motor protection' by 'Hall sensor fault disables one-touch';
+  verify 'Input debouncing' by 'Debounced switch and latch inputs';
+  verify 'Switch panel communication' by 'Switch panel lost';
   verify 'Network-managed sleep' by 'Sleep and wake';
+  verify 'Network-managed sleep' by 'Bus keeps the ECU awake after ignition off';
   verify 'Network-managed sleep' by 'Calibration stored at shutdown';
   verify 'Watchdog supervision' by 'Watchdog serviced';
+  verify 'Watchdog supervision' by 'Watchdog stops on a supervision failure';
 
   // ---------------------------------------------------------------------- views
 
@@ -2811,16 +3462,18 @@ package DoorEcu {
   view windowStates: Flow of dcu.window.control;
   view lockStates: Flow of dcu.lock.control;
   view modeStates: Flow of dcu.ecuMode.control;
+  view foldStates: Flow of dcu.mirror.foldControl;
   view antiPinchFlow: Flow of dcu.antiPinch.evaluate;
+  view writeAllFlow: Flow of dcu.nvm.writeAllJob;
   view sensingTiming: Timing {
-    /** The conversion-triggered sense, decide and actuate chain, the 5 ms bridge supervision and the 20 ms LIN and CAN tasks. */
-    include dcu.ioHwAb.acquire;
-    include dcu.ioHwAb.protect;
-    include dcu.ioHwAb.distribute;
+    /** The conversion-triggered sense, decide and actuate chain and the 20 ms LIN and CAN main functions. */
+    include dcu.ioIn.acquire;
+    include dcu.ioIn.distribute;
     include dcu.antiPinch.evaluate;
-    include dcu.linIf.pollSwitchPanel;
-    include dcu.com.rxMainFunction;
-    include dcu.com.txMainFunction;
+    include dcu.ioOut.driveWindow;
+    include dcu.linIf.slot;
+    include dcu.comMain.rxMainFunction;
+    include dcu.comMain.txMainFunction;
   }
   view crashTiming: Timing of 'Crash unlocks a locked door';
 }
