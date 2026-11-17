@@ -157,6 +157,70 @@ type Event = {
     run: () => void;
     live: () => boolean;
 };
+const before = (x: Event, y: Event): boolean => x.time !== y.time ? x.time < y.time : x.phase !== y.phase ? x.phase < y.phase : x.order < y.order;
+/**
+ * Pending events, ordered by time, then phase, then scheduling order; order is unique, so the order is
+ * total and ties keep the order in which they were scheduled. A binary heap makes each step logarithmic
+ * in the pending events. Dead events (live() false) are skipped when they reach the front and compacted
+ * once they outnumber the live ones: live() never becomes true again once it is false.
+ */
+class EventQueue {
+    private heap: Event[] = [];
+    private compactAt = 1024;
+    get size(): number { return this.heap.length; }
+    push(e: Event): void {
+        const h = this.heap;
+        h.push(e);
+        this.up(h.length - 1);
+        if (h.length > this.compactAt) {
+            this.heap = h.filter(x => x.live());
+            for (let i = (this.heap.length >> 1) - 1; i >= 0; i--)
+                this.down(i);
+            this.compactAt = Math.max(1024, 2 * this.heap.length);
+        }
+    }
+    /** The earliest live event, after discarding dead events before it. */
+    peek(): Event | undefined {
+        while (this.heap.length && !this.heap[0].live())
+            this.pop();
+        return this.heap[0];
+    }
+    pop(): Event | undefined {
+        const h = this.heap, top = h[0], last = h.pop();
+        if (h.length && last) {
+            h[0] = last;
+            this.down(0);
+        }
+        return top;
+    }
+    some(test: (e: Event) => boolean): boolean { return this.heap.some(test); }
+    private up(i: number): void {
+        const h = this.heap, e = h[i];
+        while (i > 0) {
+            const p = (i - 1) >> 1;
+            if (!before(e, h[p]))
+                break;
+            h[i] = h[p];
+            i = p;
+        }
+        h[i] = e;
+    }
+    private down(i: number): void {
+        const h = this.heap, e = h[i], n = h.length;
+        while (true) {
+            let c = 2 * i + 1;
+            if (c >= n)
+                break;
+            if (c + 1 < n && before(h[c + 1], h[c]))
+                c++;
+            if (!before(h[c], e))
+                break;
+            h[i] = h[c];
+            i = c;
+        }
+        h[i] = e;
+    }
+}
 /**
  * Runs a validated workspace. target names a package, which runs all its top-level software
  * occurrences with their package connections and deployments, or Package::component, which runs
@@ -289,8 +353,11 @@ class Interpreter {
     private aliases = new Map<string, string>();
     private routes: Route[] = [];
     private queues = new Map<string, Message[]>();
-    private frames: Frame[] = [];
-    private events: Event[] = [];
+    /** Activations that have not completed, in release order; completed ones never act again. */
+    private frames = new Set<Frame>();
+    /** Released activations not yet dispatched; an activation completes only after its dispatch. */
+    private unstarted = 0;
+    private events = new EventQueue();
     private trace: TraceEvent[] = [];
     private machines: SimulationResult['machines'] = {};
     private deployments: SimulationResult['deployments'] = {};
@@ -324,7 +391,8 @@ class Interpreter {
         const s = this.script!, c: Component = { path: identity(s), structure: s.subject!.ref!, store: new Map() };
         const f: Frame = { id: this.id('a'), c, op: undefined!, entry: { concurrent: false } as a.ScheduleEntry, released: this.time, iterator: undefined!, snapshot: new Map(), done: false, suspended: false, started: false, token: 0, watches: [], script: s, at: s };
         f.iterator = this.scriptBody(f);
-        this.frames.push(f);
+        this.frames.add(f);
+        this.unstarted++;
         this.caseFrame = f;
         this.log('release', c.path, { activation: f.id, cause: 'case' });
     }
@@ -364,6 +432,10 @@ class Interpreter {
         throw new ContractViolation('StepLimit'); };
     private at(time: number, phase: number, run: () => void, live: () => boolean = () => true): void { if (!Number.isSafeInteger(time))
         throw new ContractViolation('ClockRange'); this.events.push({ time, phase, order: this.order++, run, live }); }
+    /** The first not completed activation that satisfies test, in release order. */
+    private findFrame(test: (f: Frame) => boolean): Frame | undefined { for (const f of this.frames)
+        if (test(f))
+            return f; return undefined; }
     private leaf(path: string): string { const seen = new Set<string>(); while (this.aliases.has(path) && !seen.has(path)) {
         seen.add(path);
         path = this.aliases.get(path)!;
@@ -427,14 +499,11 @@ class Interpreter {
             // A case script starts after the initialization barrier, released after every on start entry.
             if (this.script)
                 this.at(0, 2, () => this.startScript());
-            while (this.events.length) {
-                this.events = this.events.filter(e => e.live());
-                if (!this.events.length)
+            while (true) {
+                const next = this.events.peek();
+                if (!next || next.time > this.options.untilNs)
                     break;
-                this.events.sort((x, y) => x.time - y.time || x.phase - y.phase || x.order - y.order);
-                if (this.events[0].time > this.options.untilNs)
-                    break;
-                const event = this.events.shift()!;
+                const event = this.events.pop()!;
                 this.time = event.time;
                 this.fuel();
                 event.run();
@@ -458,7 +527,7 @@ class Interpreter {
             else
                 throw e;
         }
-        return { profile: REFERENCE_PROFILE, target: { kind: this.target.kind, identity: this.target.identity }, options: copy(this.options), outcome: this.stop || this.trace.some(t => t.kind === 'failure'||t.kind==='caught') ? 'failure-observed' : 'no-failure-observed', status: this.stop ?? (this.ended ? 'stopped' : this.script ? this.pending ? 'horizon' : 'quiescent' : this.events.length || this.frames.some(f => !f.done) ? 'horizon' : 'quiescent'), timeNs: this.time, steps: this.steps, sources: this.models.map(m => ({ uri: AstUtils.getDocument(m).uri.toString(), text: AstUtils.getDocument(m).textDocument.getText() })), trace: this.trace, stores: Object.fromEntries([...this.components].map(([path, c]) => [path, Object.fromEntries([...c.store].map(([n, v]) => [n, plain(v.value)]))])), machines: this.machines, deployments: this.deployments };
+        return { profile: REFERENCE_PROFILE, target: { kind: this.target.kind, identity: this.target.identity }, options: copy(this.options), outcome: this.stop || this.trace.some(t => t.kind === 'failure'||t.kind==='caught') ? 'failure-observed' : 'no-failure-observed', status: this.stop ?? (this.ended ? 'stopped' : this.script ? this.pending ? 'horizon' : 'quiescent' : this.events.size || this.frames.size ? 'horizon' : 'quiescent'), timeNs: this.time, steps: this.steps, sources: this.models.map(m => ({ uri: AstUtils.getDocument(m).uri.toString(), text: AstUtils.getDocument(m).textDocument.getText() })), trace: this.trace, stores: Object.fromEntries([...this.components].map(([path, c]) => [path, Object.fromEntries([...c.store].map(([n, v]) => [n, plain(v.value)]))])), machines: this.machines, deployments: this.deployments };
     }
     /** Applies the one deployment of a top-level occurrence, if it has one, to that occurrence's tree. */
     private place(root: a.ComponentUsage): void {
@@ -477,12 +546,13 @@ class Interpreter {
         r = g.next(); if (!r.done)
         throw new Error('A pure expression suspended.'); return r.value; }
     private release(c: Component, entry: a.ScheduleEntry, message?: Message, predecessor?: Frame): void {
-        if (this.frames.filter(f => !f.done && !f.started).length >= this.options.maxPending)
+        if (this.unstarted >= this.options.maxPending)
             throw new ContractViolation('ActivationOverflow');
         const op = members(c.structure).filter(isExecutable).find(x => x.name === entry.operation)!;
         const f: Frame = { id: this.id('a'), c, op, entry, released: this.time, iterator: undefined!, snapshot: new Map(), done: false, suspended: false, started: false, token: 0, watches: [], correlation: message?.correlation, at: entry };
         f.iterator = this.activate(f, message);
-        this.frames.push(f);
+        this.frames.add(f);
+        this.unstarted++;
         this.log('release', `${c.path}.${op.name}`, { activation: f.id, source: this.source(entry), cause: entry.kind, predecessorActivation: predecessor?.id });
         const deadline = entry.deadline ? nanos(entry.deadline) : entry.period ? nanos(entry.period) : undefined;
         if (deadline)
@@ -496,10 +566,11 @@ class Interpreter {
                 queued?: boolean;
             }).queued || (!f.entry.concurrent || !f.started) && f.c.lock && f.c.lock !== f)
                 continue;
-            if (f.entry.concurrent && !f.started && this.frames.filter(x => x.c === f.c && x.entry.concurrent && x.started && !x.done).length >= this.options.maxConcurrent)
+            if (f.entry.concurrent && !f.started && this.concurrent(f.c) >= this.options.maxConcurrent)
                 throw new ContractViolation('ConcurrentOverflow');
             if (!f.started) {
                 f.started = true;
+                this.unstarted--;
                 f.snapshot = new Map([...f.c.store].map(([n, v]) => [n, copy(v)]));
                 this.log('dispatch', this.label(f), { activation: f.id, source: f.script ? undefined : this.source(f.entry), concurrent: f.entry.concurrent });
             }
@@ -513,6 +584,10 @@ class Interpreter {
             }).queued = false; this.drive(f); });
         }
     }
+    /** Dispatched, not completed concurrent activations of c. */
+    private concurrent(c: Component): number { let n = 0; for (const x of this.frames)
+        if (x.c === c && x.entry.concurrent && x.started)
+            n++; return n; }
     private unlock(f: Frame): void { if (f.c.lock === f) {
         f.c.lock = undefined;
         this.log('unlock', f.c.path, { activation: f.id });
@@ -564,6 +639,8 @@ class Interpreter {
     }
     private finish(f: Frame, value?: Value, failure?: string, message?: string): void {
         f.done = true;
+        if (this.frames.delete(f) && !f.started)
+            this.unstarted--;
         if (failure)
             f.failure = { code: failure, message: message ?? failure };
         f.suspended = false;
@@ -1095,7 +1172,12 @@ class Interpreter {
                     this.release(c, entry, m);
                     continue;
                 }
-                const watch = this.frames.flatMap(f => f.watches).find(w => w.active && !w.frame.done && w.frame.c === c && w.node.endpoint === endpointName);
+                let watch: Watch | undefined;
+                for (const f of this.frames) {
+                    watch = f.watches.find(w => w.active && !w.frame.done && w.frame.c === c && w.node.endpoint === endpointName);
+                    if (watch)
+                        break;
+                }
                 if (watch) {
                     remove();
                     const f = watch.frame;
@@ -1109,7 +1191,7 @@ class Interpreter {
                     this.resume(f);
                     continue;
                 }
-                const waiting = this.frames.find(f => !f.done && f.waiting?.kind === 'receive' && f.waiting.branches.some(b => this.listens(f, b, c, endpointName, m.kind)));
+                const waiting = this.findFrame(f => !f.done && f.waiting?.kind === 'receive' && f.waiting.branches.some(b => this.listens(f, b, c, endpointName, m.kind)));
                 if (waiting && waiting.waiting?.kind === 'receive') {
                     remove();
                     const branch = waiting.waiting.branches.find(b => this.listens(waiting, b, c, endpointName, m.kind))!;
@@ -1117,7 +1199,7 @@ class Interpreter {
                     continue;
                 }
                 const stateOwner = members(c.structure).filter(isExecutable).find(op => body(op)?.states.length && nodes(body(op)!).some(n => a.isTransition(n) && n.endpoint === endpointName));
-                const stateFrame = stateOwner && this.frames.find(f => f.c === c && f.op === stateOwner && !f.done);
+                const stateFrame = stateOwner && this.findFrame(f => f.c === c && f.op === stateOwner && !f.done);
                 if (stateFrame && stateFrame.waiting?.kind !== 'receive')
                     break;
                 const inactive = !!stateOwner || members(c.structure).filter(isExecutable).some(op => body(op) && nodes(body(op)!).some(n => a.isInterruptible(n) && n.endpoint === endpointName));

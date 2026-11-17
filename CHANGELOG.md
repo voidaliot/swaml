@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Reference implementation (not part of the standard)
+
+- Make model projection and simulation scale with the model and the run instead of their square, with identical results. projectModel indexes candidate paths once to find each owner, so a 1,750-line model with 4,000 projected nodes projects in about 14 ms instead of 1.3 s. The interpreter keeps pending events in a binary heap ordered by time, phase and scheduling order, skipping and compacting events whose activation, wait or request already ended, and keeps only uncompleted activations for dispatch, input and limit checks, so a step no longer costs time for every earlier event and activation. Simultaneous events keep their phase and scheduling order; traces, ordinals, stores, statuses, failures and case results are unchanged. npm run bench measures projection and simulation scaling, and scripts/bench/differential.mjs compares this build with another revision over the examples and generated and seeded random models. No standard, grammar, API or implementation version change.
+
 ## 2.2 — 2026-11-10
 
 ### Language 2.2 / implementation 3.1.0
