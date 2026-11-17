@@ -313,8 +313,16 @@ export function runCase(models: a.Model[], name: string, options: SimulationOpti
 }
 /** Runs every case of the supplied sources, optionally only one package's or one case's (by identity or name). */
 export function runTests(models: a.Model[], options: SimulationOptions, select: { package?: string; case?: string } = {}): CaseResult[] {
+    return [...eachTest(models, options, select)];
+}
+/**
+ * Runs the same cases as runTests one at a time: each case runs only when the previous result has been
+ * consumed, so a caller that keeps only what it reports never holds more than one case's run.
+ */
+export function* eachTest(models: a.Model[], options: SimulationOptions, select: { package?: string; case?: string } = {}): Generator<CaseResult> {
     const all = workspace(models), cases = workspaceCases(models).filter(s => (!select.package || owner(s, a.isPackage)!.name === select.package) && (!select.case || identity(s) === select.case || s.name === select.case));
-    return cases.map(s => caseResult(all, s, options));
+    for (const s of cases)
+        yield caseResult(all, s, options);
 }
 function caseResult(models: a.Model[], s: a.Scenario, options: SimulationOptions): CaseResult {
     const base: CaseResult = { case: identity(s), kind: s.kind as CaseResult['kind'], ...(s.subject?.ref ? { subject: identity(s.subject.ref) } : {}), result: 'no checks' };
