@@ -71,7 +71,7 @@ package AdaptiveV2x::Types {
     updates: uint;
   }
   datatype ItsPduHeader {
-    /** The common header. stationId is pseudonymous and changes with the pseudonym (1001 to 401000); generationDeltaTime is synchronized ITS time at generation in milliseconds modulo 65536, so it wraps every 65.5 s and stays bounded however long the station runs. */
+    /** The common header. stationId is pseudonymous and changes with the pseudonym (1001 to 401000); generationDeltaTime is synchronized ITS time at generation in milliseconds modulo 65536, so it wraps every 65.536 s and stays bounded however long the station runs. Age is therefore known only modulo 65.536 s: a frame replayed a whole number of wraps later looks fresh. Real stations bound this with the generation time in the security header, which this model does not include. */
     protocolVersion: uint;
     messageKind: MessageKind;
     stationId: uint;
@@ -336,7 +336,7 @@ package AdaptiveV2x::Types {
   requirement 'Hazard relevance filtering' {
     /**
     A received hazard warns the driver only when the own vehicle is inside the event's relevance
-    radius. Repetitions warn once, a cancellation clears only the event with the same origin
+    radius. Repetitions warn once while the event is shown, a cancellation clears only the event with the same origin
     station and action, and a warning is withdrawn when its validity ends. Up to four events are
     shown, ranked by cause severity and then distance: a new event displaces the least urgent
     shown event only when it is more urgent, and is otherwise not shown. Displacement is counted
@@ -361,12 +361,14 @@ package AdaptiveV2x::Types {
     match and frames with an untrusted certificate are dropped. The model's tests show single-field
     tampering and the multi-field forgeries of its test set rejected. Digest and signature are
     arithmetic stand-ins, not cryptography: they give no cryptographic guarantee, including against
-    a brute-force search for colliding field values.
+    a brute-force search for colliding field values. Replay is not prevented: the signature covers
+    the generation time only modulo 65.536 s, so a genuine frame replayed a whole number of wraps
+    later verifies and passes the age check.
     */
     attribute dropUnverified: bool = true;
   }
   requirement 'Plausible neighbours' {
-    /** Frames older than 2 s or more than 200 ms ahead of the own ITS time, compared modulo the 65.5 s wrap of the generation time, implausible awareness data and positions beyond radio range are dropped; neighbours not heard for 2 s leave the neighbour table. */
+    /** Frames whose wrapped generation time is more than 2 s behind or more than 200 ms ahead of the own ITS time, implausible awareness data and positions beyond radio range are dropped; neighbours not heard for 2 s leave the neighbour table. Age is known only modulo the 65.536 s wrap of the generation time, so a frame replayed a whole number of wraps later passes the age check; real stations bound this with the security header's generation time, which this model does not include. */
     attribute maxSpeedMps: real = 70.0;
     attribute maxAgeMs: uint = 2000;
   }
@@ -753,7 +755,7 @@ package AdaptiveV2x::Types {
     return delay;
   }
   operation def wrappedAge(nowMs: uint, generationDeltaTime: uint) returns int {
-    /** How long ago a wrapped generation time was, in -32768 .. 32767 ms; negative means ahead of the own clock. */
+    /** How long ago a wrapped generation time was, in -32768 .. 32767 ms; negative means ahead of the own clock. The result is only known modulo the 65.536 s wrap: a time a whole number of wraps earlier gives the same value, so this check cannot detect replay. */
     var d: int = (nowMs % 65536 - generationDeltaTime + 65536) % 65536;
     if (d >= 32768) {
       d = d - 65536;
