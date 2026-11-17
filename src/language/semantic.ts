@@ -198,19 +198,50 @@ export type Effect = {
     communicates: boolean;
     suspends: boolean;
 };
-export function effects(op: Executable, c?: Structure, seen = new Set<Executable>()): Effect {
+/** Effects computed during one validation pass of one workspace snapshot (see useEffectCache). */
+let effectCache: { models: a.Model[], byStructure: Map<Structure | undefined, Map<Executable, Effect>>, attributeNames: Map<Structure, Set<string>> } | undefined;
+/** Caches effects for the models of one validation pass; a later pass or another workspace snapshot replaces it. */
+export function useEffectCache(models: a.Model[]): void {
+    effectCache = { models, byStructure: new Map(), attributeNames: new Map() };
+}
+export function effects(op: Executable, c?: Structure, seen = new Set<Executable>(), memo?: Map<Executable, Effect>, attributeNames?: Map<Structure, Set<string>>): Effect {
     // Package definitions have no caller-owned state, including when a parameter
     // happens to share an attribute's name at a call site.
     if (!container(body(op) ?? op))
         c = undefined;
+    if (!memo) {
+        const model = AstUtils.getDocument(op).parseResult.value as a.Model;
+        if (effectCache && workspaceModels.get(model) === effectCache.models) {
+            memo = effectCache.byStructure.get(c) ?? effectCache.byStructure.set(c, new Map()).get(c)!;
+            attributeNames = effectCache.attributeNames;
+        }
+        else
+            memo = new Map();
+    }
+    attributeNames ??= new Map();
     const result: Effect = { reads: false, writes: false, communicates: false, suspends: false };
+    // seen is the current call path (a cycle is an error reported elsewhere); memo holds each operation's
+    // effect once computed, so a call graph with shared callees is walked once rather than once per path.
+    const known = memo.get(op);
+    if (known)
+        return known;
     if (seen.has(op))
         return result;
     seen.add(op);
+    try {
+        const attributes = !c ? new Set<string>() : attributeNames.get(c) ?? attributeNames.set(c, new Set(members(c).filter(a.isAttribute).map(x => x.name))).get(c)!;
+        effectsOf(op, c, seen, memo, result, attributes, attributeNames);
+    }
+    finally {
+        seen.delete(op);
+    }
+    memo.set(op, result);
+    return result;
+}
+function effectsOf(op: Executable, c: Structure | undefined, seen: Set<Executable>, memo: Map<Executable, Effect>, result: Effect, attributes: Set<string>, attributeNames: Map<Structure, Set<string>>): void {
     const b = body(op);
     if (!b)
-        return result;
-    const attributes = new Set(c ? members(c).filter(a.isAttribute).map(x => x.name) : []);
+        return;
     const contents = nodes(b).filter(n => owner(n, isExecutable) === (op.body ? op : signature(op)));
     for (const n of contents) {
         if (a.isReferenceExpression(n) && attributes.has(n.path.split('.')[0]))
@@ -236,14 +267,13 @@ export function effects(op: Executable, c?: Structure, seen = new Set<Executable
                 if (called && signature(called)?.parameters.some((p, i) => p.direction === 'out' && a.isReferenceExpression(n.args[i]) && attributes.has((n.args[i] as a.ReferenceExpression).path)))
                     result.writes = true;
                 if (called) {
-                    const e = effects(called, c, new Set(seen));
+                    const e = effects(called, c, seen, memo, attributeNames);
                     for (const k of Object.keys(result) as (keyof Effect)[])
                         result[k] ||= e[k];
                 }
             }
         }
     }
-    return result;
 }
 export const OCCURRENCE_LIMIT = 10000;
 export function occurrenceCount(c: Structure, seen = new Set<Structure>()): number { const def = a.isComponentUsage(c) ? c.definition?.ref ?? c : c; if (seen.has(def))

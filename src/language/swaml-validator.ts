@@ -6,6 +6,7 @@ import { associatedOccurrences, caseTarget, testCanAccess, caseCallAccess, caseC
 import { selectView, viewCandidates, type ViewSubject } from './presentation.js';
 import { decodeQuotedName, formatName, nameProblem } from './names.js';
 import { staleWrite } from './stale-read.js';
+import { useEffectCache } from './semantic.js';
 type Env = Map<string, {
     type: string;
     mutable: boolean;
@@ -42,6 +43,7 @@ export class SwamlValidator {
             this.models.push(model);
         for (const item of this.models)
             workspaceModels.set(item, this.models);
+        useEffectCache(this.models);
         if (model.$cstNode)
             for (const leaf of CstUtils.flattenCst(model.$cstNode).filter(l => l.tokenType.name === 'UNRESTRICTED_NAME')) {
                 const problem = nameProblem(decodeQuotedName(leaf.text));
@@ -275,8 +277,12 @@ export class SwamlValidator {
             this.operation(nested, c);
         if (!c && !identity(op).startsWith('Swaml::Math::') && Object.values(effects(op)).some(Boolean))
             this.report(op, 'SW2006', 'Package definitions may use only parameters and nested operations.');
+        // Depth-first search with a finished set, so shared callees are explored once rather than once per path.
+        const finished = new Set<Executable>();
         const cycle = (x: Executable, stack: Set<Executable>): boolean => { if (stack.has(x))
-            return true; return (body(x) ? nodes(body(x)!) : []).filter(a.isCallExpression).some(call => { const t = this.callTarget(call, c); return t && isExecutable(t) && cycle(t, new Set([...stack, x])); }); };
+            return true; if (finished.has(x))
+            return false; stack.add(x); const found = (body(x) ? nodes(body(x)!) : []).filter(a.isCallExpression).some(call => { const t = this.callTarget(call, c); return t && isExecutable(t) && cycle(t, stack); }); stack.delete(x); if (!found)
+            finished.add(x); return found; };
         if (cycle(op, new Set()))
             this.report(op, 'SW2006', 'Operation calls must be acyclic; recursion is forbidden.');
         if(b.states.length&&owner(op,isExecutable))this.report(op,'SW2008','A stateful operation must be directly component-owned with one on start entry.');
