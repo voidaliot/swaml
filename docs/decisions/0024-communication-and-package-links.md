@@ -31,12 +31,13 @@ In an operation body or a guard of the owning component, `p.m` reads a sample ce
 | Aspect | Rule |
 | --- | --- |
 | Port | `p` is owned by the executing component and is not a forwarded boundary (SW2005). A child's port is not readable (SW2006, unchanged). |
-| Cell | One per port occurrence and sampled member. It is updated when a value becomes deliverable to that port: after the connection's latency and fault assumptions, independent of consumption by any receive owner. |
-| Initial value (D7) | Mandatory. When any component samples a member, the sampling port's effective member declaration has `= e`, a pure expression assignable to the member type (SW2005; typing SW2002). The provider side's initial value, if written, has no runtime meaning in 2.3. Reads never fail, including in transition, completion, timer and release guards. |
+| Cell | One per port occurrence and sampled member, initialized to the member's initial value before startup work is released. |
+| Update instant | A cell takes a value at the instant the value is delivered to the port: the message's delivery time after the route's latency and fault delay. This is independent of consumption by any receive owner. A dropped offer never updates the cell; each duplicate copy updates it again at its own delivery instant. All cell updates of one logical instant happen before any activation dispatched at that instant evaluates its release guard or dispatch arguments. |
+| Initial value (D7) | Mandatory. When any component samples a member, the sampling port's effective member declaration has `= e`, a pure expression assignable to the member type (SW2004, port shape; typing SW2002). The provider side's initial value, if written, has no runtime meaning in 2.3. Reads never fail, including in transition, completion, timer and release guards. |
 | Ownership | Sampling is not ownership. A sampled required attribute has zero or one consuming owner. An unsampled one keeps exactly one owner (SW2005). |
-| Effects | Reads state. Concurrent entries read the cell in their dispatch snapshot; serial work reads it live after resumption. |
+| Effects | Reads state. Every read, serial or concurrent, reads the cell live; cells are not part of a concurrent dispatch snapshot, like `now()`. A guard and the body of one activation see the same value unless the body suspends in between. A body read after a suspension sees the newer value. |
 | Forbidden positions | Attribute initializers (pure), the constant sublanguage (ADR 0022) and case scripts. Scripts keep `on receive` at actor ports. |
-| Trace | A delivery into a cell is a `deliver` observation with `sample: true`. Reads are not traced. |
+| Trace | A cell update is a new `sample` observation, separate from `deliver`, which keeps meaning consumption by an owner. Reads are not traced. |
 
 Sampled reads serve level-triggered use. Edge reactions keep their receive handlers: resetting on a mode change, switching outputs off on entering sleep, detecting wake-up. In the door rewrite (WP6, WP9):
 - a new `ModeState` port carries the mode as a level;
@@ -63,7 +64,7 @@ connect bodyCan: BodyCanFrames (bcm.bus, dcu.canBus) {
 
 ### Contextual words (B15, WP2)
 
-`view`, `state`, `in` and `out` become contextual words, legal as names outside their syntactic positions: attribute, local, parameter, operation, state, initial state, port endpoint, view and both `for … in` positions. `defer` (ADR 0023) is contextual from the start. Name services (`names.ts` `formatName`) write these words unquoted, since a basic name is legal. A quoted spelling such as `'state'` stays valid and denotes the same name.
+`view`, `state`, `in` and `out` become contextual words, legal as names outside their syntactic positions: attribute, local, parameter, operation, state, initial state, port endpoint, view and both `for … in` positions. `defer` (ADR 0023) is contextual from the start. For a 2.3 workspace, name services (`names.ts` `formatName`) write these words unquoted, since a basic name is legal. They are edition-aware: for a 2.2 workspace they keep quoting the words, which are reserved there. A quoted spelling such as `'state'` stays valid and denotes the same name.
 
 ### Association lists (B16, WP2)
 
@@ -71,7 +72,7 @@ connect bodyCan: BodyCanFrames (bcm.bus, dcu.canBus) {
 - Each pair follows the existing SW2010 rules.
 - A pair repeated in one statement or across statements is an error (SW2010), reported at the later reference.
 - The normalized model records pairs, each with its statement and list positions as provenance.
-- Deleting one pair rewrites the list and keeps the other pairs.
+- A tool that deletes one pair must rewrite the list and keep the other pairs. A consumer that reads only the first occurrence and case of a statement misses pairs.
 
 ## Rejected and deferred
 
@@ -98,14 +99,12 @@ connect bodyCan: BodyCanFrames (bcm.bus, dcu.canBus) {
 
 - **Grammar.** `PortMember` gains an optional initial value and `Connect` an optional member-policy body with `MemberPolicy` (WP6). `Association` takes lists and `Name` gains `view`, `state`, `in` and `out` (WP2). Inventories are regenerated in those packages.
 - **AST.** `Association` holds several pairs, a silent widening of ADR 0022's 4.0.0 reasoning.
-- **Validator.** SW2005 sampling, initial value and ownership changes; SW2004 and SW2013 member policies; SW2010 list pairs and duplicates.
-- **Simulator.** Sample cells and their `deliver` observations; per-member policy lookup.
+- **Validator.** SW2005 sampling and ownership changes; SW2004 initial values; SW2004 and SW2013 member policies; SW2010 list pairs and duplicates.
+- **Simulator.** Sample cells and their `sample` observations; per-member policy lookup.
 - **Formatter** (A1). Prints lists, member-policy bodies and initial values.
+- **Name services.** Edition-aware unquoting of contextual words.
 - **Projection.** Interconnect labels member policies.
-- **Consuming editor.**
-  - E1 must fix a data loss before lists are accepted: deleting one `associate` pair currently deletes the whole statement, which would silently drop the other pairs, and readers see only the first pair.
-  - E2 adds sampled reads to labels and completion.
-  - E3 adds member policies to connection labels.
+- **Consuming tools.** Tools must read and edit every pair of a list statement, and must show sampled reads and member policies.
 
 ## Compatibility
 
@@ -113,6 +112,6 @@ The new forms are new syntax. A 2.2 source has no sampled reads, because 2.2 rej
 
 ## Open items
 
-- **When a sampled value becomes readable.** The exact instant relative to the simulator's delivery events is settled in WP6, which must reconcile "deliverable after latency and faults" with the existing `offer`, `deliver` and `replaceAttribute` observations, including duplicates and drops. The proposal did not prototype it. Until WP6 lands, the rule above is normative only as "no earlier than the value could be delivered and independent of consumption".
+- **When a sampled value becomes readable.** Decided by the coordinator for WP0: the delivery instant, before release guards and dispatch arguments of that instant, with live reads; see the table above. WP6 implements it with the simulator's delivery events. It must show by tests that duplicates, drops and latency update the cell as stated.
 - Port arrays: 2.4 candidate.
 - B12: Tier 2.

@@ -7,7 +7,7 @@
 | ID | Rule |
 | --- | --- |
 | WP6-S02 | **Initial value.** An attribute member may declare an initial value, `provides attribute ajar: bool = false;`. The expression is pure (SW2006) and assignable to the member type (SW2002). Event and operation members have none (grammar). |
-| WP6-S03 | **Mandatory when sampled.** When any component samples a member (chapter 2.6), the sampling port's effective member declaration, after reversal, has an initial value (SW2005). The provider side's initial value, if any, has no runtime meaning in 2.3. |
+| WP6-S03 | **Mandatory when sampled.** When any component samples a member (chapter 2.6), the sampling port's effective member declaration, after reversal, has an initial value (SW2004, port shape). The provider side's initial value, if any, has no runtime meaning in 2.3. |
 | WP6-S04 | **Ownership.** The owner sentence becomes: "Every required event and provided operation, and every required attribute that is not sampled, MUST have exactly one owner … A sampled required attribute has zero or one consuming owner; sampling is not ownership." |
 
 ## 2.3 Connectors and closure
@@ -46,8 +46,8 @@ component def ComMain {
 | WP6-S01 | **Form.** In an operation body, or in a transition, completion, timer or release guard of the owning component, `p.m` is a sampled read. `p` is an owned port of the executing component and `m` is a required attribute member of `p` after reversal. The value is the member's type and the effect class is *reads state*. |
 | WP6-S08 | **Forbidden ports and positions.** Sampling a forwarded boundary port is an error (SW2005). `p.m` on a child's port remains an error (SW2006). Sampled reads are not allowed in attribute or member initializers (SW2006) or in the constant sublanguage of chapter 3.5 (SW2007). Case scripts do not sample (WP6-S09). |
 | WP6-R01 | **Cell.** Each port occurrence holds one sample cell per sampled member, initialized to the member's initial value (WP6-S03) before startup work is released. A read never fails. |
-| WP6-R02 | **Update.** A cell takes a value when that value becomes deliverable to the port: after the route's latency and the recorded fault assumptions (drop, duplicate, additional latency), independently of whether a receive owner consumes it. A dropped offer does not update the cell. The exact instant relative to the `deliver` and `replaceAttribute` observations is settled by WP6 (ADR 0024, open item). Until then this rule is normative only as "no earlier than the value could be delivered and independent of consumption". |
-| WP6-R03 | **Snapshots.** Concurrent entries read cells from their dispatch snapshot. Serial work reads them live, also after resumption. |
+| WP6-R02 | **Update instant.** A cell takes a value at the instant the value is delivered to the port: the message's delivery time after the route's latency and fault delay. This is independent of whether a receive owner consumes it. A dropped offer does not update the cell. Each duplicate copy updates it at its own delivery instant. All cell updates of a logical instant happen before any activation dispatched at that instant evaluates its release guard or dispatch arguments (chapter 6.2). |
+| WP6-R03 | **Live reads.** Every read of a cell, serial or concurrent, is live. Cells are not part of a concurrent dispatch snapshot. A guard and the body of one activation see the same value unless the body suspends in between; a body read after a suspension sees the newer value. |
 | WP6-R04 | **No consumer.** A sampled member without a consuming owner has no pending-value queue observation. Its cell is the only store, and its offers and drops remain observable. |
 
 Sampled reads serve level-triggered use. Edge reactions, such as resetting on a mode change, switching outputs off on entering sleep or detecting wake-up, keep receive handlers.

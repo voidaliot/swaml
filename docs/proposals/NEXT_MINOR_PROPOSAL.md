@@ -2,12 +2,11 @@
 
 **Design record.** The owner approved this proposal. The normative decisions are ADRs [0022](../decisions/0022-values-places-and-expressions.md), [0023](../decisions/0023-state-reactions.md), [0024](../decisions/0024-communication-and-package-links.md) and [0025](../decisions/0025-real-time-placement-and-binding.md), with the rules to implement in the [2.3 chapter drafts](../drafts/2.3/README.md). Where they differ from this proposal, the ADRs are normative. Changes include separate warning codes SW2016–SW2018 instead of one shared SW2016, and the state-machine rule T4.
 
-**Status:** design proposal for owner approval, revision 2 (after the adversarial review `E:\t\review-proposal-2.3.md`). Not normative. Nothing here changes the grammar, validator, standard version or a published artefact.
+**Status:** design proposal for owner approval, revision 2 (after the adversarial review of 17 November 2026). Not normative. Nothing here changes the grammar, validator, standard version or a published artefact.
 
 **Bases:**
 - **Language:** swa.ml 2.2 (`v2.2` published; `spec/standard.json` 2.2; implementation 3.1.0; profile `swaml-reference/2.2`), main `e6fd783`.
 - **Evidence:** branch `showcase/all` at `cc16c25`. Door = `autosar-classic-door-controller.swaml` (3,479 lines), v2x = `autosar-adaptive-v2x-telemetry.swaml` (2,726), cloud = `cloud-fleet-monitoring.swaml` (3,136). Line numbers refer to that commit.
-- **Extension:** `E:\GitHub\swaml-vsc-ext`, pinned to swaml `93065ec` (3.1.0).
 
 Item numbers B1–B21 follow the limitation list; A1–A7 are tool defects. Recommendation labels: **add**, **library-only**, **reject** (keep by design), **defer**.
 
@@ -86,7 +85,7 @@ Prerequisites on branch `fix/showcase-tool-defects` (tool fixes, no standard cha
 | WP7 | Release guards (B19) | WP4; WP6 for the showcase proof only |
 | WP8 | Operation placement, `Swaml::Os`, task rules, in-task order, binding schema and `swaml binding check` (B17, B18) | WP4, WP7, A4 |
 | WP9 | Edition: inventories, notation, reference book, showcase rewrites, site data, PDF | WP1–WP8, A1, A7 |
-| E1–E3 | Extension integration (§5.4); E1 must fix the `associate` list data loss | the matching language WPs |
+| Consuming tools | Integration against the consequences in §5.4 | the matching language WPs |
 
 ### What a door ECU team can and cannot derive after 2.3
 
@@ -107,7 +106,7 @@ Prerequisites on branch `fix/showcase-tool-defects` (tool fixes, no standard cha
 
 ### 1.1 Delta
 
-Only these productions change. Verified with Langium 4.4.0 `createServicesForGrammar` on Node 26 (the reviewer's `E:\t\rev23` harness with this revision's grammar):
+Only these productions change. Verified with Langium 4.4.0 `createServicesForGrammar` on Node 26 (the review harness with this revision's grammar):
 - 0 generation warnings and 0 parser-construction warnings
 - 26 + 7 snippets for the new forms and for contextual words in every name position
 - the corpus result in §1.2
@@ -218,7 +217,7 @@ A consumer compiled against 3.1.0 types keeps compiling but misreads these. Henc
 
 ## 2. Items
 
-Each item gives the problem with the current code (**before**), the recommendation, the same code rewritten (**after**), interactions and cost. Costs: S ≤ 1 day, M ≤ 3 days, L ≤ 2 weeks (one agent with tests). Extension costs are in §5.4.
+Each item gives the problem with the current code (**before**), the recommendation, the same code rewritten (**after**), interactions and cost. Costs: S ≤ 1 day, M ≤ 3 days, L ≤ 2 weeks (one agent with tests). Consequences for consuming tools are in §5.4.
 
 ### B1 Element and field assignment
 
@@ -398,7 +397,7 @@ package Swaml::Numeric {
 }
 package Swaml::Text {
   operation def intText(v: int) returns string { /** Host intrinsic: decimal, '-' for negatives. */ }
-  operation def realText(v: real, decimals: uint) returns string { /** Host intrinsic: decimals <= 15; nearest decimal of the exact binary value, ties toward positive infinity (as Swaml::Math::round and JavaScript toFixed). */ }
+  operation def realText(v: real, decimals: uint) returns string { /** Host intrinsic: decimals <= 15; nearest decimal of the exact binary value, ties away from zero (ADR 0022 is normative). */ }
   operation def boolText(v: bool) returns string { if (v) { return "true"; } return "false"; }
 }
 ```
@@ -515,7 +514,7 @@ If entry suspended past the computed state-timer value, the timer has already el
 **Constant sublanguage.**
 - **Allowed:** integer and duration literals, const attributes of the owning occurrence (effective value after redefinition), unary `-`, `+ - * / %`, comparisons, `and`/`or`/`not`, the conditional, parentheses.
 - **Not allowed:** calls, mutable state, sampled reads.
-- **Evaluator:** one, `semantic.ts` `constantValue(expression, occurrence)`, used by the validator, `projection.ts`, the simulator and the extension. It replaces `constantNumber`, which today folds only literals and negation.
+- **Evaluator:** one, `semantic.ts` `constantValue(expression, occurrence)`, used by the validator, `projection.ts`, the simulator and consuming tools. It replaces `constantNumber`, which today folds only literals and negation.
 - **Trigger identity** of `every (e)`, used for inheritance replacement, duplicate detection and `semantic.ts:42 entryKey`: the normalized expression text (comments and whitespace removed, names canonical). A parenthesized single literal normalizes to its nanoseconds, so `every (20ms)` equals `every 20ms`. The release guard is not part of identity.
 - **Timing projection** becomes per occurrence. At definition level it shows the expression text; at occurrence level, the evaluated nanoseconds.
 
@@ -593,7 +592,7 @@ operation openSession(attempt: uint) {
 - A final state has no completion transitions.
 - Reachability includes completion edges.
 - A cycle connected only by `when (true)` is an error.
-- **SW2016 warning:** a completion guard that reads nothing written by the stateful operation's own entry, exit or effect blocks (or their callees), because it cannot change while the machine waits.
+- **SW2017 warning** (ADR 0023; revision 2 said SW2016): a completion guard that reads nothing written by the stateful operation's own entry, exit or effect blocks (or their callees), because it cannot change while the machine waits.
 
 **Runtime.**
 - After the entry actions finish, and after every internal reaction (B8), completion transitions are evaluated in declaration order. The first enabled one is taken immediately. Otherwise the earliest elapsed timer is selected, then queued input.
@@ -731,7 +730,7 @@ state locking {
 - A state cannot both defer `m` and have a transition on `m` (D8).
 - A final state defers nothing.
 - Some state must handle `m`.
-- **SW2016 warning:** a deferred member whose effective policy has `overflow = reject`, because a full queue fails the sender.
+- **SW2018 warning** (ADR 0023; revision 2 said SW2016): a deferred member whose effective policy has `overflow = reject`, because a full queue fails the sender.
 
 **Runtime.**
 - In a deferring state, input for `m` stays in its connection queue. Capacity, overflow and `maxAge` apply observably.
@@ -758,7 +757,7 @@ state locking {
 
 Notes:
 - `unlocking` gets the same `defer requests.request;`.
-- Both routes into `lock.requests`, `lockRequests: RteQueued` and `keyFob: CrossCore` (2274–2275), use `reject`, so SW2016 asks for a decision: keep capacity 8, or move to a `dropOldest` policy.
+- Both routes into `lock.requests`, `lockRequests: RteQueued` and `keyFob: CrossCore` (2274–2275), use `reject`, so SW2018 asks for a decision: keep capacity 8, or move to a `dropOldest` policy.
 - The cloud `AlertRouter` waiting ring is **not** removed by deferral, because the router also drops waiting pages of alerts that resolved meanwhile (`stillOpen`, 1384–1390), which the desk cannot see. Revision 1's claim is withdrawn.
 
 **Cost.** Grammar S, validator S, simulator M, docs S.
@@ -870,7 +869,7 @@ on receive window.windowStatus(status) storeWindow(status);
 | Initial (D7) | Mandatory: when any component samples a member, its declaration must have `= e` (pure, assignable) (SW2005). Reads never fail, including inside transition, completion and release guards. |
 | Ownership (finding 7b) | Sampling is not ownership. A sampled required attribute may have zero or one consuming owner; an unsampled one keeps exactly one. |
 | Effects | A state read. Concurrent entries read the dispatch snapshot; serial resumption reads live. |
-| Trace | A `deliver` into a cell carries `sample: true`; reads are not traced. |
+| Trace | A `deliver` into a cell carries `sample: true`; reads are not traced. (ADR 0024: a separate `sample` observation.) |
 
 Sampled reads cover level-triggered use only. Edge reactions keep their receive handlers: resetting on a mode change, switching outputs off on entering sleep, detecting wake-up.
 
@@ -939,7 +938,7 @@ associate pager, onCall to 'Respond to a critical alert';
 associate van to 'Run a firmware campaign';
 ```
 
-**Cost.** Grammar S, validator S, formatter S, docs S. Extension E1 must fix a data loss (§5.4).
+**Cost.** Grammar S, validator S, formatter S, docs S. Consuming tools must rewrite lists when deleting one link (§5.4).
 
 ### B17 Operation-level deployment
 
@@ -1194,7 +1193,7 @@ Dynamic topology is outside the language (spec §2, ADR 0019, I1/I5). Instead:
 | Computed durations vs deadlines and Timing | Periods and deadlines come from the constant sublanguage per occurrence, so declared grids stay exact. `wait`/`after` expressions are dynamic intervals. State timers are evaluated after entry. |
 | Completion vs ordered transitions | Completion, then elapsed timers, then input, each group in declaration order. No completion after discards. `CompletionLoop` violation. |
 | Internal transitions vs timers | No restart; an internal timer fires once per entry; a suspending internal effect keeps the timers. |
-| Deferral vs queues | Capacity, overflow and age apply; order by offer ordinal; SW2016 on `reject`. |
+| Deferral vs queues | Capacity, overflow and age apply; order by offer ordinal; SW2018 on `reject`. |
 | Sampled reads vs owners | Zero or one consumer; mandatory initial value; no sampling of forwarded boundaries. |
 | Release guards vs `after` and suspension | A skip counts as completion for successors; the deadline is cancelled; the guard is evaluated at dispatch. |
 | Operation placement vs occurrence placement and Timing | Operation placement overrides; one Core per occurrence; in-task position from deploy order; Timing lanes per Task. |
@@ -1213,9 +1212,9 @@ Dynamic topology is outside the language (spec §2, ADR 0019, I1/I5). Instead:
 | SW2009 | Operation placement, same Core, T1–T7 |
 | SW2010 | Association lists, indexed test paths |
 | SW2013 | Policy duration literals, constant durations |
-| SW2016 (new, warning) | Completion guard that reads only external state; deferred member with `reject` overflow; computed duration without a unit |
+| SW2016, SW2017, SW2018 (new, warnings; ADRs 0022, 0023) | Computed duration without a unit (SW2016); completion guard that reads only external state (SW2017); deferred member with `reject` overflow (SW2018) |
 
-New runtime codes: `DurationRange`, and `CompletionLoop` (a violation). New trace events: `skip`, `defer`, `discardTimer`, `state.internal`, `deliver.sample`.
+New runtime codes: `DurationRange`, and `CompletionLoop` (a violation). New trace events: `skip`, `defer`, `discardTimer`, `state.internal`, `deliver.sample` (ADR 0024: `sample`).
 
 ## 5. Versioning, publication, plan and costs
 
@@ -1226,7 +1225,7 @@ New runtime codes: `DurationRange`, and `CompletionLoop` (a violation). New trac
 | Standard | 2.3 (`v2.2` exists, `v2.3` does not) |
 | Parser/host semantics, profile | 2.3, `swaml-reference/2.3`; Tier 2 timed profile `swaml-reference-timed/2.4` |
 | Implementation | 4.0.0 (§1.3); root and lockfile synchronized |
-| Extension | Own version under its `docs/VERSIONING.md`; pin via `scripts/sync-language.mjs` |
+| Consuming tools | Own versions and pins |
 | ADRs | 0022 expressions and places; 0023 state reactions (reverses §307); 0024 ports, sampled reads and member policies; 0025 tasks, operation placement and binding |
 | Notes | `docs/RELEASE_2_3.md`; no migration guide (compatible) |
 
@@ -1253,29 +1252,24 @@ One draft PR at a time, each with an adversarial review, merged before the next 
 | WP2 conditional, contextual words, association lists | A1 | operand and statement rejection, chains, every word in every name position, list duplicates and rename | `DoorEcu::Types`, v2x `state`, cloud associations |
 | WP3 libraries | A2 | `sqrt`, text intrinsics (ties), `now()` effect class, no import ambiguity across the corpus | v2x `sqrt`, `ComMain` reception age |
 | WP4 durations, `PolicySetting`, constant evaluator | WP3 | §1.2 gates; constant sublanguage; per-occurrence values; trigger identity; `DurationRange`; SW2016 unit warning | v2x hazard validity |
-| WP5 state reactions | WP4 | ordering, discards, `CompletionLoop`, suspending internal effect, deferral order by offer ordinal, SW2016 | v2x session, breaker, `LockControl` |
+| WP5 state reactions | WP4 | ordering, discards, `CompletionLoop`, suspending internal effect, deferral order by offer ordinal, SW2017, SW2018 | v2x session, breaker, `LockControl` |
 | WP6 sampled reads and member policies; completion-guard warning revisited | WP5 | cell timing with latency and faults, mandatory initial value, ownership, forwarded boundary, snapshots, per-member queues | `ComMain` stores, `BodyCan` |
 | WP7 release guards | WP4 (WP6 for the proof) | skip as completion, deadline cancel, receive discard, guard failure, grid | `LinMaster`, `ComMain` |
 | WP8 tasks, placement, binding | WP4, WP7, A4 | T1–T7, same Core, override, priority and position order, binding schema and check | door deployment |
 | WP9 edition | WP1–WP8, A1, A7 | `npm run check`, figures, PDF | three models |
 
-### 5.4 Extension cost (call sites at the pinned extension)
+### 5.4 Consequences for consuming tools
 
-| Package | Work | Call sites | Size |
-| --- | --- | --- | --- |
-| E1: text services, edits, forms (after WP1–WP4) | **Must-fix data loss:** deleting one `associate` pair deletes the whole statement. With lists this silently drops other pairs; edits must rewrite the list. Readers see only the first pair. | delete: `diagram-edits.ts` 598, 620, 463; duplicate check 906; readers: `diagrams.ts` 298, 507, 718; `case-model.ts` 73 | M |
-| | Places: out-parameter detection and edits compare `s.target` to a bare name | `diagram-flow.ts` 96, 169, 194; `statement-edits.ts` 366, 519; `edit-refusals.ts` 397; `diagram-edits.ts` 847, 860 | M |
-| | Call paths with `[n]`; test inspection | `edit-refusals.ts` 397; `test-inspection.ts`; `field-completion.ts` | S |
-| | `Wait.duration` optional; computed waits and timeouts | `statement-edits.ts` 270, 375–376, 504, 506; `behavior-projection.ts` 356, 371, 417, 473; `diagram-flow.ts` 130 | M |
-| | `PolicySetting.value` (the read already falls back) | `diagram-grid.ts` 155 | S |
-| | Completion for `.`/`[` after places, `defer`, `when` and the new libraries; creation forms for guards and computed durations | `field-completion.ts`, `completion.ts`, `diagram-creation-fields.ts`, `creation-draft.tsx`, `diagram-edits.ts` 775–776 | M |
-| E2: Flow/Sequence (after WP5–WP6) | Optional `Transition.target`; completion and internal transitions; deferrals; computed delays | `diagram-edits.ts` 168 (always writes `to`), 673, 874, 947; `diagram-flow.ts` 271; `diagrams.ts` 467, 472, 474, 483; `flow-properties.ts` 23, 53, 66; `behavior-projection.ts` 428; `field-edits.ts` 143–151; `app.tsx` 2971; core `projection.ts` 109 (edge to `…undefined`) | L |
-| | Sampled reads in labels and completion; mode ports | `field-completion.ts`, Flow labels | S |
-| E3: Timing/Interconnect/deployment (after WP4, WP6–WP8) | Computed periods and deadlines: `nanos(n.period!)` and `period.value` throw on expressions; per-occurrence projection | `timing-edits.ts` 48, 150, 154, 218; `timing-projection.ts` 123, 126, 183, 198; `diagram-edits.ts` 931; `field-edits.ts` 73–108; `views/time.tsx` 375, 436, 438, 839; `timing-graphics.ts` 45; core `projection.ts` 98 | L |
-| | Release guards and skip markers (run overlay) | `timing-projection.ts`, `run-overlay.ts`, `run-evidence.ts` | M |
-| | Task lanes, operation placements, member policies on connections | deployment view in `diagrams.ts`, Interconnect labels, `diagram-grid.ts` | M |
+A consuming tool that reads, edits or draws swa.ml source must follow the widened AST (§1.3) before it accepts 2.3 sources:
+- **Association lists.** A tool that reads only the first occurrence and case of an `associate` statement misses pairs. A tool that deletes one link must rewrite the list and keep the other pairs.
+- **Places and call paths.** `Assign.target` may be a place and `CallExpression.target` may contain `[n]`. Code that compares an assignment target with a bare name, for example to find out parameters, must handle places.
+- **Durations.** `Wait.duration` and the literal duration properties of receive timeouts, schedule entries and transitions may be absent when a computed form is used. Timing code must use `constantValue` per occurrence for periods and deadlines instead of reading a literal.
+- **Policies.** `PolicySetting.value` replaces `PolicySetting.duration`.
+- **States.** `Transition.target` may be absent (internal transitions). Completion transitions have no trigger. States own deferrals.
+- **Run evidence.** New observations (`skip`, `defer`, `discardTimer`, `sample`) and fields (`write.place`, `state.internal`) appear only for models that use the new forms.
+- **Deployment.** Placements may name operations; Tasks, Cores and member policies are new presentation content.
 
-Each package runs `npm run check`, `npm run test:web` and `npm run test:creation`; showcase views are reviewed in the preview editor.
+Consuming tools plan their own integration work against these consequences; their costs are outside this proposal.
 
 ## 6. What still will not be expressible
 
@@ -1311,14 +1305,14 @@ It does **not** establish that this schedule meets its deadlines on the target. 
 | 1 | `PolicySetting` ambiguity changes every 2.2 QoS duration | Accepted (mandatory) | `PolicySetting` reduced to `value=Expression`. Verified: 0 generation and 0 parser warnings; corpus 38/38 identical under N1. Three release gates in §1.2 (corpus AST identity, behaviour identity, warning-free grammar). Validator and `effectiveQos` read `value.duration`. Reordering alone was rejected because it still warns. |
 | 2 | Skip breaks `after` chains; deadline contradiction | Accepted (mandatory) | A skip counts as completion for successors; the deadline is cancelled; guard scope and guard-failure meaning are defined (B19). The `ComMain` rewrite guards `txMainFunction`, not `rxMainFunction`. |
 | 3 | Deployment leaves target decisions open | Accepted (mandatory) | Same-Core rule T7; T2 entry kinds per Task; T4 suspension only on extended Tasks (state-machine idle excluded); `kind`, `preemptive`, `responseNs` in `Swaml::Os` in Tier 1; in-task position from deploy order; binding schema and `swaml binding check` in 2.3; the §0 and §6 closing claims were rewritten. |
-| 4 | Computed periods: identity, evaluator, projection, crashes | Accepted (mandatory) | Constant sublanguage; one evaluator `constantValue` in `semantic.ts`; trigger identity is the normalized text; per-occurrence projection; extension Timing cost raised to L with call sites (§5.4). |
+| 4 | Computed periods: identity, evaluator, projection, crashes | Accepted (mandatory) | Constant sublanguage; one evaluator `constantValue` in `semantic.ts`; trigger identity is the normalized text; per-occurrence projection; consuming-tool Timing cost raised to L with call sites (§5.4). |
 | 5 | State timer evaluated before entry | Accepted (mandatory) | Evaluated when entry actions finish; expiry = state-update time + value (B6). |
-| 6 | Completion traps | Accepted | `now()` forbidden in completion guards; SW2016 for guards reading only external state; `CompletionLoop` violation; no completion after discards; suspending internal effects specified; v2x note corrected. |
+| 6 | Completion traps | Accepted | `now()` forbidden in completion guards; SW2017 for guards reading only external state; `CompletionLoop` violation; no completion after discards; suspending internal effects specified; v2x note corrected. |
 | 7 | Sampled reads | Accepted | D7 mandatory initial value; the "sampling is not ownership" wording; forwarded boundaries rejected; edge handlers kept, with showcase claims and costs corrected (`ModeState` port, eight consumers). |
-| 8 | Deferral order | Accepted | Global offer-ordinal order for retained input (simulator change named); SW2016 on `reject`; the cloud claim is withdrawn (router `stillOpen`). |
+| 8 | Deferral order | Accepted | Global offer-ordinal order for retained input (simulator change named); SW2018 on `reject`; the cloud claim is withdrawn (router `stillOpen`). |
 | 9 | B1/B3 rule gaps | Accepted | Root read after index and right-side evaluation; places are not out arguments; a conditional is never a statement (grammar, verified); whole-expression conditional (grammar, verified). |
-| 10 | D2 rationale, AST claim, extension breakage | Accepted | §1.3 corrected (only two newly optional properties; silent widenings are the reason); D2 alternative restated; breakages listed in §5.4. |
-| 11 | Trigonometry and text rounding | Accepted | D6: `sqrt` is the only intrinsic; trigonometry as source in Tier 2; `realText` ties toward positive infinity, matching `round` and `toFixed`. |
+| 10 | D2 rationale, AST claim, consumer breakage | Accepted | §1.3 corrected (only two newly optional properties; silent widenings are the reason); D2 alternative restated; consumer consequences in §5.4. |
+| 11 | Trigonometry and text rounding | Accepted | D6: `sqrt` is the only intrinsic; trigonometry as source in Tier 2; `realText` rounding (ADR 0022 fixes ties away from zero, because `round` and `toFixed` disagree for negatives). |
 | 12 | Index forms, multiple roots, port-array rationale | Accepted | Literal-index rule for component segments (SW2010); roots stay non-multiple; port-array rationale and alternative corrected (additive 2.4). |
 | 13 | Work-package prerequisites | Accepted | A1, A2, A4 (and A7) are prerequisites; WP7 → WP6 marked as proof-only; WP6 revisits the WP5 warning; D13 wrapper note. |
 | 14 | Unit lint, negative durations, B13 spec wording | Accepted | SW2016 unit warning; one code `DurationRange`, checked before widening; spec 2.4 wording and the `redefines connect` rule. |
@@ -1332,7 +1326,7 @@ Other changes from re-taking the showcase snippets at `cc16c25`:
 
 ## Appendix B. Unresolved
 
-- **SW2016 groups three heuristic warnings under one new code.** The owner may prefer separate codes; stable code allocation is an owner decision.
-- **T4 is my reading of how a state machine maps to basic tasks** (its idle wait does not count as suspension). A target team may want state machines on extended tasks only; that is a one-line rule change.
-- **The instant a sampled cell is updated** ("delivery eligibility") must be reconciled with the simulator's delivery events in WP6. Not prototyped.
+- **SW2016 groups three heuristic warnings under one new code.** Decided: separate codes SW2016–SW2018 (ADRs 0022, 0023).
+- **T4 (decided in ADR 0025: a state machine uses a basic task only if no reaction can suspend) was my reading of how a state machine maps to basic tasks** (its idle wait does not count as suspension). A target team may want state machines on extended tasks only; that is a one-line rule change.
+- **The instant a sampled cell is updated** ("delivery eligibility"). Decided in ADR 0024: at the delivery instant, before any activation dispatched at that instant evaluates its release guard.
 - **Not prototyped:** the runtime and validation rules (B6, B7, B9, B14, B18, B19). Only the grammar and the corpus gate were.

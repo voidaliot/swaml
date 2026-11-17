@@ -2,7 +2,7 @@
 
 Status: accepted for the unreleased standard 2.3, 18 November 2026. Owner approval of the 2.3 scope and decisions D1, D2, D4, D5, D6 and D14 of the [2.3 proposal](../proposals/NEXT_MINOR_PROPOSAL.md). Not implemented: each rule lands with the work package named in the [2.3 chapter drafts](../drafts/2.3/README.md). This ADR is normative where it differs from the proposal. Amends the indexed-path clause of [ADR 0020](0020-associated-test-access.md). Published editions remain unchanged.
 
-Items: B1 element and field assignment, B2 index followed by member access, B3 conditional expression, B4 numbers and text, B5 logical clock, B6 computed durations, B11a indexed parts in tests. Work packages: WP1 (B1, B2, B11a), WP2 (B3), WP3 (B4, B5), WP4 (B6 and the compatibility gate).
+Items: B1 element and field assignment, B2 index followed by member access, B3 conditional expression, B4 numbers and text, B5 logical clock, B6 computed durations, B11a indexed parts in tests. Work packages: WP1 (B1, B2, B11a), WP2 (B3), WP3 (B4, B5), WP4 (B6). The compatibility gates are added by the allocation package WP1a.
 
 ## Context
 
@@ -15,7 +15,7 @@ The three showcase models at `showcase/all` `cc16c25` (door, v2x and cloud; line
 - **Counted time.** Door `ComMain` (774–798) and v2x `camCycle` (1013) and `TelemetryAggregator` (1394) count elapsed time with `rxAgeMs = rxAgeMs + 20`, which is only correct while the period does not change.
 - **Literal-only durations.** v2x `hazardLifecycle` (1066–1079) repeats `ownHazardValidityMs` as the literal `after 5s`, and `UplinkTransfer.backoff` (1589–1606) waits in 250 ms steps because `wait` cannot take a computed delay.
 
-The adversarial review of the proposal (`E:\t\review-proposal-2.3.md`) found that a naive `Literal{duration}` makes `PolicySetting` ambiguous and silently changes the AST of every 2.2 QoS duration, including the bundled library (finding 1); that computed periods had no identity, evaluator or per-occurrence projection (finding 4); that the state timer was evaluated before entry actions changed its operands (finding 5); that the place and conditional rules left evaluation order, out arguments, statement use and precedence open (finding 9); that host trigonometry and `realText` ties are not reproducible (finding 11); and that read and call index forms disagreed (finding 12). This decision adopts the revised rules.
+The adversarial review of the proposal (17 November 2026) found that a naive `Literal{duration}` makes `PolicySetting` ambiguous and silently changes the AST of every 2.2 QoS duration, including the bundled library (finding 1); that computed periods had no identity, evaluator or per-occurrence projection (finding 4); that the state timer was evaluated before entry actions changed its operands (finding 5); that the place and conditional rules left evaluation order, out arguments, statement use and precedence open (finding 9); that host trigonometry and `realText` ties are not reproducible (finding 11); and that read and call index forms disagreed (finding 12). This decision adopts the revised rules.
 
 ## Decision
 
@@ -62,10 +62,12 @@ New source packages are loaded like the existing libraries and imported explicit
 | Package | Operations | Semantics |
 | --- | --- | --- |
 | `Swaml::Numeric` | `minInt`, `maxInt`, `clampInt(v, low, high)` on `int`; `clamp(v, low, high)` on `real`; `sqrt(v: real) returns real` | Source bodies except `sqrt`. `sqrt` is a host intrinsic, IEEE-754 correctly rounded; an argument below zero is the runtime failure `Arithmetic`. |
-| `Swaml::Text` | `intText(v: int)`, `realText(v: real, decimals: uint)`, `boolText(v: bool)`, all `returns string` | `intText` writes decimal digits with `-` for negatives. `realText` writes the decimal nearest to the exact binary value with `decimals` fraction digits, ties toward positive infinity (as `Swaml::Math::round` and JavaScript `toFixed`); `decimals` above 15 is the runtime failure `Bounds`. `boolText` is source. |
+| `Swaml::Text` | `intText(v: int)`, `realText(v: real, decimals: uint)`, `boolText(v: bool)`, all `returns string` | `intText` writes decimal digits with `-` for negatives. `realText` rounds the exact binary value of `v` to `decimals` fraction digits, ties away from zero, and writes plain decimal notation with no exponent. A result that rounds to zero has no sign, so `realText(-0.0001, 2)` is `0.00`. `decimals` above 15, or an absolute value of `v` of at least 1e21, is the runtime failure `Bounds`. `boolText` is source. |
 | `Swaml::Time` | `now() returns uint` | Host intrinsic: the logical time of the evaluating step in nanoseconds since the run epoch. |
 
 `sqrt` is the only new numeric intrinsic (D6). `intText` and `realText` are text intrinsics with the exact rules above.
+
+**Rounding of `realText`.** Round half away from zero is the conventional rule for decimal text, and it is not the rule of `Swaml::Math::round`, which rounds ties toward positive infinity: `round(-2.5)` is `-2`, while `realText(-2.5, 0)` is `-3`. JavaScript `toFixed` applies the same tie rule to the exact binary value, but it writes `-0.00` for small negatives and exponent notation from 1e21. An implementation must therefore not rely on `toFixed` alone; the conformance tests cover ties of both signs, values that round to zero and the 1e21 bound.
 
 `now()` has the effect class *reads state*.
 - It is not allowed in attribute initializers (which are pure, SW2006), in completion guards (SW2008, ADR 0023) or in the constant sublanguage below (SW2007).
@@ -89,7 +91,7 @@ The expression is integral (`byte`, `uint` or `int`); a `real` result is SW2002.
 **Constant sublanguage.**
 - **Allowed:** integer and duration literals; const attributes of the owning occurrence, with their effective value after redefinition, whose effective initializers are themselves in the sublanguage (acyclic); unary `-`; `+ - * / %`; comparisons; `and`/`or`/`not`; the conditional; parentheses.
 - **Not allowed:** calls, mutable attributes, locals, parameters, sampled reads and `now()`.
-- **Typing.** `/` follows chapter 1.4 and yields `real`, so a period or deadline whose result uses `/` outside a comparison is rejected as non-integral (SW2002).
+- **Exact integral division.** In the constant sublanguage, `/` on two integral operands is integral and must divide exactly for every occurrence. `deadline (periodMs * 1ms / 2)` is valid when the period is even in nanoseconds. A non-exact quotient or a zero divisor is a named SW2013 error. Outside the constant sublanguage, `/` keeps the chapter 1.4 rule and yields `real`, so a dynamic computed duration (`wait`, timeouts, state timers) that uses `/` is rejected as non-integral (SW2002).
 - **Evaluator.** One evaluator in `semantic.ts`, `constantValue(expression, occurrence)`, used by the validator, `projection.ts`, the simulator and consuming tools. It replaces `constantNumber`, which folds only literals and negation.
 - **Where values are checked.** Values are checked per expanded occurrence of every top-level occurrence of a package: positivity and representability (SW2013) and `deadline ≤ period` for `every` entries (SW2007). A definition that is never instantiated is checked only for sublanguage membership and typing, because its default const values need not be meaningful.
 
@@ -99,7 +101,12 @@ The expression is integral (`byte`, `uint` or `int`); a `real` result is SW2002.
 
 **Policy settings (compatibility fix).** `PolicySetting` has the single form `name = Expression;`, and a 2.2 duration setting becomes `Literal{duration}`. The settings `requestTimeout`, `maxLatency` and `maxAge` must be a duration literal; computed policy values are not allowed. Any other setting must not be a duration literal, so `capacity = 5ms;` stays invalid. Both rules are SW2013. The validator and `semantic.ts` `effectiveQos` read `value.duration`.
 
-**Unit warning (D4).** SW2016, a new stable warning: a computed duration expression that contains neither a duration literal nor a `now()` call. For example, `after (pulseMs)` means 250 ns.
+**Unit warning (D4).** SW2016 is a new stable warning on a computed duration expression that contains none of the following:
+- a duration literal;
+- a `now()` call;
+- a reference to a const attribute whose effective initializer, followed through const references with `constantValue` provenance, contains a duration literal or `now()`, for example `const attribute timeoutNs: uint = 5ms;`.
+
+For example, `after (pulseMs)` with `pulseMs = 250` means 250 ns and warns, while `wait (timeoutNs);` does not.
 
 ### Tier 2 (not in 2.3)
 
@@ -117,7 +124,8 @@ The expression is integral (`byte`, `uint` or `int`); a `real` result is SW2002.
 - **Places as out arguments.** Out copy-back into a place would add a second read-modify-write path with its own ordering rules. This is not needed by any showcase model and can be added compatibly later.
 - **Adding the operations to `Swaml::Math`.** This breaks door `DoorEcu` by import ambiguity.
 - **Trigonometry as host intrinsics (D6 alternative).** Results differ between hosts and Node versions, so stores, traces and control flow on them diverge (finding 11).
-- **`realText` ties to even.** Cannot be implemented with JavaScript `toFixed` and disagrees with `round` (finding 11).
+- **`realText` ties to even, or ties toward positive infinity.** Ties to even is unusual for decimal text. Ties toward positive infinity (the rule of `round`) writes `-2` for `-2.5`, which readers do not expect from a text conversion. Revision 2 claimed that `round` and `toFixed` agree; they disagree for negatives (finding 11 and the WP0 review).
+- **`/` always yielding `real` in the constant sublanguage.** Without exact integral division, half-period deadlines need rescaling such as `periodMs * 500us`, and calls (`trunc`) are excluded.
 - **Expression indexes in test call paths.** Read and call forms disagreed (finding 12a). Literal indexes keep component identity static.
 
 ## Consequences
@@ -133,21 +141,17 @@ The expression is integral (`byte`, `uint` or `int`); a `real` result is SW2002.
 - **Simulator.** Place evaluation order and `Bounds`; the `place` field on `write`; conditional evaluation; the `sqrt`, `intText`, `realText` and `now()` intrinsics; computed waits, timeouts and state timers; `DurationRange`.
 - **Formatter** (prerequisite A1). Prints places, conditionals with their parentheses and computed durations.
 - **Projection.** `constantValue` and per-occurrence Timing values.
-- **Consuming editor (E1, E3).**
-  - Out-parameter detection and statement edits compare `Assign.target` with a bare name and must accept places.
-  - Test inspection and completion must accept `[n]`.
-  - `Wait.duration` becomes optional.
-  - Timing code that calls `nanos(period)` or reads `period.value` throws on an expression; it must use `constantValue` per occurrence.
+- **Consuming tools.** A tool that compares an assignment target with a bare name, for example to find out parameters, must handle places. Test-path tools must accept literal component indexes. Tools must accept an absent `Wait.duration`. Timing tools must read periods and deadlines through `constantValue` per occurrence instead of a literal.
 
 ## Compatibility
 
-Every valid 2.2 source stays valid with unchanged meaning. This is a compatible minor edition (D1), established by three release gates. WP4 runs them first and WP9 runs them again on the final grammar.
+Every valid 2.2 source stays valid with unchanged meaning. This is a compatible minor edition (D1), established by three release gates. The allocation package WP1a adds all three gates before any language change. Every later package reruns them, and WP9 runs them on the final grammar.
 
-1. **Corpus AST identity.** Parse every repository `.swaml` file and the three showcase models with the 2.2 and 2.3 grammars. Compare the ASTs (references as text; positions and empty defaults stripped) after exactly one normalization, N1: a 2.2 `PolicySetting{duration: d}` equals a 2.3 `PolicySetting{value: Literal{duration: d}}`. The gate is `test/compatibility-2-2.test.ts`, which lists the corpus and N1. Prototype result: 39 files, 38 identical, 1 skipped (a 2.2 negative example with parse errors), 0 differences.
-2. **Behaviour identity.** `scripts/check-simulations.mjs` reproduces every expected final store and case result of `examples/simulation/cases.json` unchanged.
+1. **Corpus AST identity.** Parse every repository `.swaml` file and the three showcase models with the 2.2 grammar (kept as a test fixture) and the current grammar. Compare the ASTs (references as text; positions and empty defaults stripped) after exactly one normalization, N1, applied to both sides: `PolicySetting{duration: d}` is rewritten to `PolicySetting{value: Literal{duration: d}}`. The gate is `test/compatibility-2-2.test.ts`, which lists the corpus and N1. Prototype result: 39 files, 38 identical, 1 skipped (a 2.2 negative example with parse errors), 0 differences.
+2. **Behaviour identity.** The complete run result of every run in `examples/simulation/runs.json`, every case of every example (`examples/simulation/cases.json`) and every test of the three showcase models is compared with a frozen fixture. The fixture is recorded once with the 3.1.0 implementation: final stores, case results, status and the complete trace. Only `profile` and `languageVersion` are ignored. New trace fields and observation kinds appear only where new syntax is used, so a 2.2 model's trace stays identical.
 3. **Warning-free grammar.** `langium generate` and parser construction emit no ambiguity warning. A unit test captures `console.warn` during `createSwamlServices` and fails on any output.
 
-The formatter may print a 2.2 source differently where a new form is shorter. Meaning does not change.
+The formatter may print a 2.2 source differently where a new form is shorter. Meaning does not change. Contextual words are written unquoted only for a 2.3 workspace (ADR 0024).
 
 ## Open items
 

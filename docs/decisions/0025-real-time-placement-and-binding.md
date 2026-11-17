@@ -34,12 +34,12 @@ on every 20ms slot() when (mode.current != PowerMode.sleep) deadline 2ms;
 
 - **Allowed entries (SW2007).** A guard on `start` or `call` entries is an error.
 - **Effects (SW2007).** The guard is pure or reads state. Its scope is the component's attributes, its sampled ports (ADR 0024), `now()` and the entry's receive bindings.
-- **Evaluation.** At dispatch, after the dispatch arguments: under the serial lock, or in the dispatch snapshot for a concurrent entry.
+- **Evaluation.** At the activation's first execution step, together with its dispatch arguments. This is after every delivery and sample-cell update of that logical instant (ADR 0024). A serial entry evaluates under the serial lock. A concurrent entry reads attributes from its dispatch snapshot and sample cells live.
 - **False guard.**
   - No operation runs, and the deadline armed at release is cancelled.
   - The trace records `skip` with the entry as source.
   - The skip counts as a successful whole completion for `after` successors: they are released at the time of the skip and apply their own guards. AUTOSAR mode disabling suppresses one runnable, not its successors.
-  - A `receive` entry's input is consumed and discarded with `discardInput` reason `releaseGuard`.
+  - A `receive` entry's input, consumed at release as in 2.2, is discarded with `discardInput` reason `releaseGuard`.
   - The periodic grid stays on the root epoch (D9), and the serial lock is released.
 - **Guard failure.** A runtime failure inside the guard is an uncaught failure of that release. The trace records `failure` with the entry as source; the deadline is cancelled, no successor is released and the lock is released. Sampled reads cannot cause it (D7); arithmetic can.
 - **Identity.** The guard is not part of entry identity.
@@ -51,7 +51,7 @@ A placement may end at an operation: `deploy comMain.storePdu on doorModules[0].
 - **Target (SW2009).** The operation is the target of at least one effective schedule entry of that occurrence.
 - **Scope.** The placement applies to every activation released by those entries. Callees run in their caller's placement. It overrides any placement of the occurrence or an ancestor. A multiplicity family path applies to every index, and an indexed path overrides it.
 - **Effective placement.** Each schedule entry's effective placement is the most specific placement among its operation, its occurrence and that occurrence's ancestors.
-- **Same Core (T7, SW2009).** The effective placements of all entries of one component occurrence resolve to Tasks or Nodes of at most one Core. Placements on Nodes outside any Core do not count. One serial lock therefore never spans Cores until the Tier 2 timed run defines cross-core blocking.
+- **Same Core (T7, SW2009).** The effective placements of all entries of one component occurrence reach at most one Core. A placement reaches a Core when its target is that Core or lies below it; Tasks without a Core ancestor belong to the implicit Core of their platform root. Placements on Nodes outside any Core, explicit or implicit, do not count. One serial lock therefore never spans Cores until the Tier 2 timed run defines cross-core blocking.
 - **Granularity (D13).** Per operation. An operation released both periodically and by an event that needs different Tasks is split with a wrapper operation (`operation pollEvent() { poll(); }`).
 
 ### Tasks (B18 Tier 1, WP8)
@@ -76,7 +76,7 @@ package Swaml::Os {
 - Tasks with no `Core` ancestor form one implicit Core per platform root, so single-core targets need not declare one.
 - An entry is *on* Task K when its effective placement target is K or a Node whose nearest Task ancestor is K.
 
-**Static rules (SW2009).** They apply to a deployment as soon as it places anything on a Task. A deployment without Tasks keeps its 2.2 meaning.
+**Static rules (SW2009).** T1–T7 apply to every deployment whose platform tree contains a `Swaml::Os::Task` or `Swaml::Os::Core` occurrence. Re-pointing placements from Tasks to Cores or plain Nodes therefore cannot switch them off. A platform with Cores but no Tasks fails T6 for every entry; a target that has no task mapping uses plain Nodes. A 2.2 platform contains neither, so it keeps its 2.2 meaning.
 
 | # | Rule |
 | --- | --- |
@@ -89,15 +89,18 @@ package Swaml::Os {
 | T7 | Same Core per component occurrence (above). |
 
 **In-task position.**
-- The position of an entry in its Task is the order of the `deploy` statements naming that Task in the deployment.
+- The position of an entry in its Task is the order of the `deploy` statements whose target is that Task or a Node whose nearest Task ancestor is that Task.
 - An operation placement contributes the entries of that operation in schedule order.
 - An occurrence placement contributes, in schedule order, those entries of the occurrence that no more specific placement claims. Its descendants without their own placement follow depth-first in declaration order, with multiplicity indexes ascending.
+- *Schedule order* is the effective schedule order of `semantic.ts` `schedule()`: inherited entries first in their base order, a replacing entry at the position of the entry it replaces, then new entries in authored order.
 
 **Reference run (Tier 1).**
 - Releases, dispatches and ready continuations at equal logical time and phase are ordered by:
   1. descending Task priority, with unplaced activations at priority 0;
-  2. then, between activations on the same Task, in-task position;
-  3. then the existing insertion ordinal.
+  2. then activations on a Task before unplaced activations of equal priority;
+  3. then, between activations on the same Task, in-task position;
+  4. then the existing insertion ordinal.
+- A case-script activation is unplaced. A primary-subject call borrowed by a case (ADR 0021) runs within the case's activation and keeps its keys; it does not take the Task of the subject's entries.
 - With zero-cost steps, `preemptive`, `kind` and `responseNs` affect only the static rules. Release notes and documentation say so.
 - A run without Tasks has all keys equal and keeps its 2.2 order.
 
@@ -113,8 +116,7 @@ No other properties are allowed.
 
 **Identities.**
 - Paths use the canonical name spelling of the normalized model: software operations as occurrence path plus operation name from the deployed root, and Tasks as platform occurrence paths.
-- A named connection is its owner path plus name.
-- An unnamed one is its owner path plus `@connect` and its zero-based index among the owner's effective connections in declaration order.
+- A connection is identified by the route identity that runs and traces already use, so there is one identity scheme. A component connection is `owner.name`, or `owner.@connectN` when unnamed, where `N` is the zero-based index among all `connect` members of the owner, forwarding included. A package connection is its `name`, or `@packageN` when unnamed, where `N` is the index among the package's connections.
 
 `swaml binding check <binding> <sources…>`:
 - validates the file against the schema;
@@ -163,6 +165,8 @@ It computes no schedule in 2.3.
 - **Cross-core operations of one component.** This is cross-core blocking under one serial lock, with no defined semantics before Tier 2 (finding 3a).
 - **Releasing event entries at the next grid point of a periodic task.** It hides queueing delay in the release semantics; T2 makes the mapping explicit instead (finding 3b).
 - **State machines on extended tasks only.** Rejected by the coordinator's decision: a machine whose reactions never suspend runs each reaction to completion like a basic-task runnable. A machine with a suspending reaction (door `ModeManager`, whose entry action requests `nvm.writeAll()`) needs an extended task under T4.
+- **Activating the T rules only when something is placed on a Task** (first WP0 draft). Re-pointing every placement to a Core silently switched off T1–T6 (WP0 review finding 3).
+- **Separate binding identities for connections** (first WP0 draft, `owner@connectN` counting connections only). They disagreed with trace route identities whenever a forwarding connect precedes (WP0 review finding 4).
 - **Leaving the in-task order to insertion order.** A generator must still decide it (finding 3d). Deploy order expresses it with existing syntax.
 
 ## Consequences
@@ -178,11 +182,11 @@ It computes no schedule in 2.3.
   - Per-model simulation options (tool fix A4) for the door's 1 ms task.
 - **CLI.** The `swaml binding check` command and the binding schema with tests.
 - **Projection.** Timing gains Task lanes, guarded entries and skip markers. The General view shows operation placements.
-- **Consuming editor (E3).** Release guards and skip markers in the run overlay; Task lanes, operation placements and member policies in deployment and Interconnect views.
+- **Consuming tools.** Tools must accept release guards and `skip` evidence, operation placements and Task lanes.
 
 ## Compatibility
 
-Release guards are new syntax. An operation placement path was a SW2009 error in 2.2 and is now valid; every valid 2.2 placement keeps its meaning. `Swaml::Os` is a new package; no 2.2 source imports it. The T rules and ordering keys apply only to deployments that place something on a `Swaml::Os::Task`, so every 2.2 run keeps its trace (gate 2). Release gates: corpus AST identity, unchanged simulation results and a warning-free grammar (ADR 0022).
+Release guards are new syntax. An operation placement path was a SW2009 error in 2.2 and is now valid; every valid 2.2 placement keeps its meaning. `Swaml::Os` is a new package; no 2.2 source imports it. The T rules apply only to platforms that contain a `Swaml::Os` Task or Core, and the ordering keys are equal without Tasks, so every 2.2 run keeps its trace (gate 2). Release gates: corpus AST identity, unchanged simulation results and a warning-free grammar (ADR 0022).
 
 ## Open items
 

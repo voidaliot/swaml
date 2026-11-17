@@ -51,11 +51,11 @@ Name returns string: ID | UNRESTRICTED_NAME | 'reversed' | 'to' | 'times' | 'nam
 
 | ID | Rule |
 | --- | --- |
-| WP4-M05 | **Gate 1: corpus AST identity.** `test/compatibility-2-2.test.ts` parses every repository `.swaml` file and the three showcase models with the 2.2 and the current grammar. It compares the ASTs (references as text; positions and empty defaults stripped) after exactly one normalization, N1: a 2.2 `PolicySetting{duration: d}` equals `PolicySetting{value: Literal{duration: d}}`. The 2.2 grammar is kept as a test fixture. A file with 2.2 parse errors is skipped and listed. Any difference fails. |
-| WP4-M06 | **Gate 2: behaviour identity.** `scripts/check-simulations.mjs` reproduces every expected final store and case result of `examples/simulation/cases.json` unchanged. |
-| WP4-M07 | **Gate 3: warning-free grammar.** A unit test captures `console.warn` during `createSwamlServices` and fails on any output. `langium generate` emits no ambiguity warning. |
+| WP1a-M01 | **Gate 1: corpus AST identity.** `test/compatibility-2-2.test.ts` parses every repository `.swaml` file and the three showcase models with the 2.2 grammar, kept as a test fixture, and the current grammar. It compares the ASTs (references as text; positions and empty defaults stripped) after exactly one normalization, N1, applied to both sides: `PolicySetting{duration: d}` is rewritten to `PolicySetting{value: Literal{duration: d}}`. A file with 2.2 parse errors is skipped and listed. Any difference fails. |
+| WP1a-M02 | **Gate 2: behaviour identity.** A fixture recorded once with the 3.1.0 implementation, before any 2.3 change, freezes the complete result of every run in `examples/simulation/runs.json`, every case of every example (`examples/simulation/cases.json`) and every test of the three showcase models: status, final stores, machines, deployments, case results and the complete trace. A test compares every current result with it, ignoring only `profile` and `languageVersion`. Any other difference fails. |
+| WP1a-M03 | **Gate 3: warning-free grammar.** A unit test captures `console.warn` during `createSwamlServices` and fails on any output. `langium generate` emits no ambiguity warning. |
 
-Each later package (WP5–WP8) and WP9 reruns the three gates. WP1–WP3 run gates 2 and 3, and gate 1 against their own grammar if the test already exists.
+WP1a adds the three gates before any language change. Every later package and WP9 run them. A rule that adds trace information adds it only for new syntax, as a new optional field or a new observation kind, so gate 2 holds.
 
 ## Formatter
 

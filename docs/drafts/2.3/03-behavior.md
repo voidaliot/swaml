@@ -46,8 +46,8 @@ on receive ctl.ack(id) { … } or after (ackTimeoutMs * 1ms) { … }
 
 | ID | Rule |
 | --- | --- |
-| WP4-S04 | **Computed periods and deadlines.** `on every (e)` and `deadline (e)` take an expression of the constant sublanguage, evaluated once per expanded occurrence. Its value is integral; a period or deadline that uses `/` outside a comparison is non-integral (SW2002). |
-| WP4-S05 | **Constant sublanguage.** Allowed: integer and duration literals; const attributes of the owning occurrence with their effective value after redefinition, whose effective initializers are themselves in the sublanguage (acyclic); unary `-`; `+ - * / %`; comparisons; `and`/`or`/`not`; the conditional; parentheses. Rejected (SW2007): calls, mutable attributes, locals, parameters, sampled reads and `now()`. |
+| WP4-S04 | **Computed periods and deadlines.** `on every (e)` and `deadline (e)` take an expression of the constant sublanguage, evaluated once per expanded occurrence. Its value is integral (SW2002). |
+| WP4-S05 | **Constant sublanguage.** Allowed: integer and duration literals; const attributes of the owning occurrence with their effective value after redefinition, whose effective initializers are themselves in the sublanguage (acyclic); unary `-`; `+ - * / %`; comparisons; `and`/`or`/`not`; the conditional; parentheses. In this sublanguage, `/` on two integral operands is integral and must divide exactly for every occurrence. A non-exact quotient or a zero divisor is WP4-D07 (SW2013). Outside the sublanguage, `/` keeps the chapter 1.4 rule (real). Rejected (SW2007): calls, mutable attributes, locals, parameters, sampled reads and `now()`. |
 | WP4-S06 | **Per-occurrence values.** For every expanded occurrence of every top-level occurrence of a package, each computed period and deadline is positive and representable (SW2013), and an `every` entry's deadline does not exceed its period (SW2007). A definition that is never instantiated is checked for sublanguage membership and typing only. |
 | WP4-S07 | **Trigger identity.** The trigger of `on every (e)` is identified by the normalized expression text: comments and whitespace removed, names in canonical spelling. A parenthesized single literal normalizes to its nanoseconds, so `every (20ms)` is `every 20ms`. This identity drives inheritance replacement, duplicate detection (SW2007) and `semantic.ts` `entryKey`. |
 | WP4-M02 | **One evaluator.** `semantic.ts` `constantValue(expression, occurrence)` evaluates the sublanguage. It is used by the validator, `projection.ts`, the simulator and consuming tools, and it replaces `constantNumber`. |
@@ -56,7 +56,7 @@ on receive ctl.ack(id) { … } or after (ackTimeoutMs * 1ms) { … }
 | WP7-S03 | **Identity.** A release guard is not part of entry identity, so two entries that differ only in their guard are duplicates (SW2007). |
 
 ```text
-on every (cyclePeriodMs * 1ms) poll() deadline (cyclePeriodMs * 1ms / 2);   // rejected: '/' yields real (WP4-S04)
+on every (cyclePeriodMs * 1ms) poll() deadline (cyclePeriodMs * 1ms / 2);   // valid when exact in every occurrence (WP4-S05)
 on every 20ms slot() when (mode.current != PowerMode.sleep) deadline 2ms;  // WP7
 after rxMainFunction txMainFunction() when (mode.current != PowerMode.sleep) deadline 5ms;
 ```
@@ -98,7 +98,7 @@ state Backoff { after (lastBackoffMs * 1ms) to Connecting { } }
 | WP5-S09 | **Deferral and ownership.** A deferral belongs to the machine's single input ownership (SW2005); it is never a second owner. |
 | WP5-S10 | **Explicit self transitions.** A transition `to` its own state keeps its 2.2 meaning: exit, effect, state update, entry, with timers restarted. |
 
-The runtime rules for these forms are in chapter 6.5 (WP5-R01 to WP5-R11).
+The runtime rules for these forms are in chapter 6.5 (WP5-R01 to WP5-R13).
 
 ## 3.7 Case scripts
 

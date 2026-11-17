@@ -25,7 +25,7 @@ Planned identifiers: standard 2.3, parser and host semantics 2.3, reference prof
 | B17 | Operation-level placement; one Core per component occurrence | 0025 | WP8 |
 | B18 | `Swaml::Os` (`Core`, `Task`, `TaskKind`), rules T1–T7, in-task order, priority ordering in the run, `swaml-binding/2.3` schema and `swaml binding check` | 0025 | WP8 |
 
-New stable diagnostics: SW2016 (computed duration without a unit), SW2017 (completion guard that cannot change while the machine waits) and SW2018 (deferred member with a rejecting overflow policy), all warnings. New runtime codes: `DurationRange` (runtime failure) and `CompletionLoop` (contract violation). New or extended trace observations: `skip`, `defer`, `discardTimer`, `state` with `internal`, `deliver` with `sample`, `write` with `place`, `discardInput` with reason `releaseGuard`.
+New stable diagnostics: SW2016 (computed duration without a unit), SW2017 (completion guard that cannot change while the machine waits) and SW2018 (deferred member with a rejecting overflow policy), all warnings. New runtime codes: `DurationRange` (runtime failure) and `CompletionLoop` (contract violation). New or extended trace observations: `skip`, `defer`, `discardTimer`, `sample`, `state` with `internal`, `write` with `place`, `discardInput` with reason `releaseGuard`, and `durationNs`/`timerNs` on computed waits and state timers. They appear only where new syntax is used, so 2.2 traces are unchanged.
 
 ## Deferred (Tier 2) and rejected
 
@@ -42,28 +42,30 @@ New stable diagnostics: SW2016 (computed duration without a unit), SW2017 (compl
 
 ## Compatibility gates
 
-Release gates for D1. WP4 runs them first; every later package and WP9 run them again ([ADR 0022](decisions/0022-values-places-and-expressions.md#compatibility)):
+Release gates for D1. WP1a adds them before any language change; every later package and WP9 run them ([ADR 0022](decisions/0022-values-places-and-expressions.md#compatibility)):
 
-1. **Corpus AST identity.** Every repository `.swaml` file and the three showcase models parse to identical ASTs under the 2.2 and 2.3 grammars, after the single normalization N1 for `PolicySetting`. The test is `test/compatibility-2-2.test.ts`.
-2. **Behaviour identity.** `scripts/check-simulations.mjs` reproduces every expected final store and case result of `examples/simulation/cases.json`.
+1. **Corpus AST identity.** Every repository `.swaml` file and the three showcase models parse to identical ASTs under the 2.2 and 2.3 grammars, after the single normalization N1 for `PolicySetting`, applied to both sides. The test is `test/compatibility-2-2.test.ts`.
+2. **Behaviour identity.** A fixture recorded once with the 3.1.0 implementation freezes the complete result of every run in `examples/simulation/runs.json`, every example case and every showcase test: status, final stores, case results and the complete trace. Every package compares with it, ignoring only `profile` and `languageVersion`. New trace fields and observation kinds appear only where new syntax is used.
 3. **Warning-free grammar.** No Langium generation or parser-construction warning, enforced by a unit test.
 
 The implementation package becomes 4.0.0 because existing AST properties silently widen (`Assign.target`, `CallExpression.target`, `Association`, `PolicySetting`; D2).
 
 ## Version allocation
 
-The first implementing package (WP1) allocates the unreleased candidate, following [VERSIONING.md](VERSIONING.md):
-- `spec/standard.json` 2.3;
-- the edition module with parser 2.3 and `swaml-reference/2.3`;
-- `npm version 4.0.0 --no-git-tag-version` with both lockfile entries synchronized;
-- a note under `## Unreleased`.
+Three PRs, in this order, before any language change is reviewed:
 
-At that point:
-- `npm run docs:build` writes `docs/SWAML-2.3-Reference.md` and no longer regenerates the published 2.2 book.
-- Pull-request PDF checks switch to `scripts/check-spec-pdf-2.2.py --archive`, as was done for 2.1.
-- Maintained chapters may carry 2.3 text. Each package moves its rules from the drafts into them.
+1. **P0: archive the 2.2 PDF check.** A tiny standalone tooling PR, needed regardless of 2.3. The strict `scripts/check-spec-pdf-2.2.py` compares the published PDF's embedded sources with the workspace, and those sources include `src/**/*.ts` (`scripts/publication_2_2_sources.py`). `src` already changed on main after `v2.2` (PR 50), so the strict check is stale today. The Publication and compatibility workflow, which runs only on manual dispatch, switches its 2.2 step to `--archive`, as was done for 2.1. `docs/PDF_PUBLICATION.md` says so. There are no pull-request PDF checks to change.
+2. **WP1a: allocate the 2.3 candidate.** No language change. Following [VERSIONING.md](VERSIONING.md):
+   - `spec/standard.json` 2.3;
+   - the edition module with parser 2.3 and `swaml-reference/2.3`;
+   - `npm version 4.0.0 --no-git-tag-version` with both lockfile entries synchronized;
+   - `examples/simulation/2.3/hello-trace.json`, written with `node scripts/check-simulations.mjs --write` and reviewed;
+   - `npm run docs:build` writing `docs/SWAML-2.3-Reference.md`;
+   - the three compatibility gates, with the gate-2 fixture recorded from the 3.1.0 implementation before the allocation commit;
+   - a note under `## Unreleased`.
 
-This is a recommendation of WP0. The coordinator may instead keep 2.2 identifiers until WP9, but then no package can edit a maintained chapter without failing `build-reference --check`.
+   From then on the published 2.2 book is no longer regenerated, and maintained chapters may carry 2.3 text.
+3. **WP1: places.** Reviewed for the language change only. Each package from WP1 on moves its rules from the drafts into the maintained chapters.
 
 ## Work packages
 
@@ -72,18 +74,19 @@ One draft PR at a time, each with an independent adversarial review, merged befo
 | WP | Content | Needs | Showcase proof (fragments at `cc16c25`) |
 | --- | --- | --- | --- |
 | WP0 | ADRs 0022–0025, chapter drafts, this file, changelog | — | — |
-| WP1 | Places, indexed reads, test indexes; version allocation | A2 | `Dem.report`, `AlertRouter.findOpen`, twins test |
+| P0 | 2.2 PDF check to archive mode (tooling only) | — | — |
+| WP1a | Allocate the 2.3 candidate; compatibility gates 1–3 | P0 | — |
+| WP1 | Places, indexed reads, test indexes | WP1a, A2 | `Dem.report`, `AlertRouter.findOpen`, twins test |
 | WP2 | Conditional, contextual words, association lists | A1 | `DoorEcu::Types`, v2x `state`, cloud associations |
 | WP3 | `Swaml::Numeric`, `Swaml::Text`, `Swaml::Time` | A2 | v2x `sqrt`, `ComMain` reception age |
-| WP4 | Durations, `PolicySetting`, constant evaluator, gates 1–3 | WP3 | v2x hazard validity |
+| WP4 | Durations, `PolicySetting`, constant evaluator | WP3 | v2x hazard validity |
 | WP5 | Completion, guarded timers, internal transitions, deferral | WP4 | v2x session, cloud breaker, door `LockControl` |
-| WP6 | Sampled reads, member policies; revisit SW2017; settle when a sampled value becomes readable | WP5 | `ComMain` stores, `BodyCan` |
+| WP6 | Sampled reads (update instant decided in ADR 0024), member policies; confirm SW2017 for sampled cells | WP5 | `ComMain` stores, `BodyCan` |
 | WP7 | Release guards | WP4 (WP6 for the proof only) | `LinMaster`, `ComMain` |
 | WP8 | Operation placement, `Swaml::Os`, T1–T7, ordering keys, binding schema and check | WP4, WP7, A4 | door deployment |
 | WP9 | Edition: inventories, notation, figures, reference book, showcase rewrites, site data, PDF | WP1–WP8, A1, A7 | the three models |
-| E1 | Consuming editor: text services, edits and forms; fix the `associate` list data loss before lists are accepted | WP1–WP4 | — |
-| E2 | Consuming editor: Flow and Sequence for completion, internal transitions, deferral, sampled reads | WP5–WP6 | — |
-| E3 | Consuming editor: Timing, Interconnect and deployment for computed periods, release guards, Task lanes and member policies | WP4, WP6–WP8 | — |
+
+Consuming tools plan their own integration against the consequences sections of the ADRs. A tool must read and edit every pair of an association list before it accepts 2.3 sources.
 
 Rule counts per package are in the [draft index](drafts/2.3/README.md#rules-per-work-package).
 
@@ -103,7 +106,7 @@ These live on branch `fix/showcase-tool-defects`. They change no standard and mu
 Following [VERSIONING.md](VERSIONING.md) and [PDF_PUBLICATION.md](PDF_PUBLICATION.md). Nothing here is authorized by this draft.
 
 1. Changes recorded under `## Unreleased` in `CHANGELOG.md`; standard and implementation changes kept apart.
-2. `spec/standard.json` 2.3, edition module and profile reviewed; implementation 4.0.0 and lockfile synchronized (done in WP1 if the allocation above is accepted).
+2. `spec/standard.json` 2.3, edition module and profile reviewed; implementation 4.0.0 and lockfile synchronized (done in WP1a).
 3. Inventories regenerated (`node scripts/build-inventories.mjs`):
    - new productions `Selector`, `ConditionalExpression`, `Deferral`, `MemberPolicy`;
    - changed `PolicySetting`, `Assign`, `ReferenceExpression`, `CallExpression`, `Literal`, `ExpressionStatement`, `Expression`, `Wait`, `Receive`, `ScheduleEntry`, `Transition`, `State`, `Connect`, `PortMember`, `Association`, `Name`.
@@ -112,7 +115,7 @@ Following [VERSIONING.md](VERSIONING.md) and [PDF_PUBLICATION.md](PDF_PUBLICATIO
 6. `scripts/build-reference.mjs` lists ADRs 0022–0025 and `RELEASE_2_3`; `npm run docs:build` writes `docs/SWAML-2.3-Reference.md`.
 7. Showcase rewrites of the three models; `node scripts/build-showcase-data.mjs`; light/dark responsive preview of the site.
 8. Compatibility gates 1–3 and the complete `npm run check` on Node 26.12.0.
-9. New `scripts/build-spec-pdf-2.3.py`, `scripts/check-spec-pdf-2.3.py` and `scripts/test-publication-2-3.py` (with the 2.2 source inventory generalized); `SWAML-2.3-Specification.pdf`, manifest and SHA-256; every page rendered and inspected; 2.2 checks in archive mode.
+9. New `scripts/build-spec-pdf-2.3.py`, `scripts/check-spec-pdf-2.3.py` and `scripts/test-publication-2-3.py` (with the 2.2 source inventory generalized); `SWAML-2.3-Specification.pdf`, manifest and SHA-256; every page rendered and inspected; 2.2 checks in archive mode (done in P0).
 10. The Publication and compatibility workflow on the release commit.
 11. Notes moved to `## 2.3 — YYYY-MM-DD` with the intended date; this file's status line updated; the `v2.3` tag only when publication is authorized.
 12. The 2.2 reference, PDF, manifest, checksum, figures and notes keep their bytes.

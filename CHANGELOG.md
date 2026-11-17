@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-### Language 2.3 (draft, not released)
+### Language 2.3 (planned, not allocated)
 
 - Record the approved design of swa.ml 2.3, a compatible minor edition after 2.2.
   - Decisions: ADRs [0022](docs/decisions/0022-values-places-and-expressions.md) (values, places and expressions), [0023](docs/decisions/0023-state-reactions.md) (state reactions), [0024](docs/decisions/0024-communication-and-package-links.md) (sampled reads, member policies, association lists, contextual words) and [0025](docs/decisions/0025-real-time-placement-and-binding.md) (release guards, operation placement, tasks and the target binding).
@@ -29,6 +29,7 @@
 
 ### Reference implementation (not part of the standard)
 
+- The public-content check also rejects local drive-letter paths and editor-product repository names, with its patterns in `scripts/public-content-rules.mjs` and a CI test. No standard, grammar, API or implementation version change.
 - Make model projection and simulation scale with the model and the run instead of their square, with identical results. projectModel indexes candidate paths once to find each owner, so the 1,800-line benchmark model with 5,600 projected nodes projects in milliseconds instead of seconds; a workspace with an unnamed package, while one is being typed, keeps the previous search and its results. The interpreter keeps pending events in a binary heap ordered by time, phase and scheduling order, skipping and compacting events whose activation, wait or request already ended, and keeps only uncompleted activations for dispatch, input and limit checks, so a step no longer costs time for every earlier event and activation. Simultaneous events keep their phase and scheduling order; projections, traces, ordinals, stores, statuses, failures and case results are unchanged in every compared model. npm run bench measures projection and simulation scaling, and scripts/bench/differential.mjs compares this build with another revision over the examples and generated and seeded random models. No standard, grammar, API or implementation version change.
 
 ## 2.2 — 2026-11-10
