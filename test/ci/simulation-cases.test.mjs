@@ -22,17 +22,19 @@ test('an example may set its own step limit and horizon over the global options'
 
 test('malformed cases files are rejected', () => {
     assert.throws(() => checkCasesFile({ options: { untilNs: 1 }, modelOptions: { 'examples/missing.swaml': { maxSteps: 1 } }, examples: {} }, models), /not a complete example/);
-    assert.throws(() => checkCasesFile({ options: { untilNs: 1 }, modelOptions: { [models[0]]: { steps: 1 } }, examples: {} }, models), /unknown simulation option steps/);
+    assert.throws(() => checkCasesFile({ options: { untilNs: 1 }, modelOptions: { [models[0]]: { steps: 1 } }, examples: {} }, models), /Unknown simulation option steps/);
     assert.throws(() => checkCasesFile({ options: { untilNs: 1 }, modelOptions: { [models[0]]: [] }, examples: {} }, models), /must be an object/);
-    assert.throws(() => checkCasesFile({ options: { maxSteps: 1 }, examples: {} }, models), /needs untilNs/);
+    assert.throws(() => checkCasesFile({ options: { maxSteps: 1 }, examples: {} }, models), /Invalid untilNs/);
     assert.throws(() => checkCasesFile({ options: { untilNs: 1 }, perModel: {}, examples: {} }, models), /unknown key perModel/);
     assert.throws(() => checkCasesFile({ options: { untilNs: 1 }, examples: { 'examples/other.swaml': {} } }, models), /not a complete example/);
 });
 
 test('option values are type-checked and options for an example without cases are rejected', () => {
-    for (const bad of [{ maxSteps: '10' }, { maxSteps: 0 }, { untilNs: 1.5 }, { latencyNs: -1 }, { faults: [{ offer: 1, kind: 'lose' }] }, { faults: {} }])
-        assert.throws(() => checkCasesFile({ options: { untilNs: 1 }, modelOptions: { [models[0]]: bad }, examples: {} }, models), /invalid/, JSON.stringify(bad));
-    assert.throws(() => checkCasesFile({ options: { untilNs: '1' }, examples: {} }, models), /invalid untilNs/);
+    // The simulator's own validator decides, so the file and the runs cannot disagree.
+    for (const bad of [{ maxSteps: '10' }, { maxSteps: 0 }, { untilNs: 1.5 }, { latencyNs: -1 }, { faults: [{ offer: 1, kind: 'lose' }] }, { faults: {} }, { faults: [{ offer: 0, kind: 'drop' }] }, { faults: [{ offer: 1, kind: 'drop' }, { offer: 1, kind: 'duplicate' }] }, { faults: [{ offer: 1, kind: 'drop', after: 2 }] }])
+        assert.throws(() => checkCasesFile({ options: { untilNs: 1 }, modelOptions: { [models[0]]: bad }, examples: {} }, models), /Invalid/, JSON.stringify(bad));
+    assert.throws(() => checkCasesFile({ options: { untilNs: '1' }, examples: {} }, models), /Invalid untilNs/);
+    checkCasesFile({ options: { untilNs: 0 }, examples: {} }, models);
     checkCasesFile({ options: { untilNs: 1 }, modelOptions: { [models[0]]: { faults: [{ offer: 2, kind: 'drop', delayNs: 5 }], latencyNs: 0 } }, examples: {} }, models);
     const cases = { options: { untilNs: 1 }, modelOptions: { [models[0]]: { maxSteps: 5 } }, examples: {} };
     assert.throws(() => checkModelOptionsUsed(cases, models[0], 0), /has no use case or test/);
