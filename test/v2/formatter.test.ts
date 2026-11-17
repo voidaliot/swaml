@@ -120,8 +120,9 @@ test('the formatting safety net refuses lost, reordered, changed and merged toke
     refused(text.replace('attribute a: int = 1;\n    attribute b: int = 2;', 'attribute b: int = 2;\n    attribute a: int = 1;'));
     refused(text + '// added\n');
     refused(text.replace('component C', 'componentC'));
-    // Without the lexer the character walk alone cannot see two tokens merge; the lexer can.
-    verifyFormatting(text, tokens, text.replace('component C', 'componentC'));
+    // The character walk alone cannot see two tokens merge; without a lexer argument the language's own
+    // lexer re-lexes the result, as for hosts that call formatDocument(document) with no services.
+    assert.throws(() => verifyFormatting(text, tokens, text.replace('component C', 'componentC')), FormattingSafetyError);
     // Whitespace between tokens may change freely.
     verifyFormatting(text, tokens, text.replace('= 1;', '=1;').replace('a: int', 'a:int'), lexer);
     // A comment the parser did not attach anywhere is still protected by the whole-text comparison.
@@ -177,4 +178,18 @@ test('CLI --format leaves a model with errors untouched', () => {
     finally {
         rmSync(dir, { recursive: true, force: true });
     }
+});
+
+test('formatting keeps the dominant line ending everywhere, inside multi-line comments too', async () => {
+    const lf = 'package P {\n  /**\n   * Doc.\n   */\n  component C {\n    // note\n    attribute a: int = 1;\n  }\n}\n';
+    const crlf = lf.replace(/\n/g, '\r\n');
+    assert.equal(formatDocument(await syntax(lf)), lf);
+    assert.equal(formatDocument(await syntax(crlf)), crlf);
+    // A mostly CRLF file with one LF line break, also inside a comment, comes out all CRLF.
+    const mixed = crlf.replace('   * Doc.\r\n', '   * Doc.\n').replace('component C {\r\n', 'component C {\n');
+    assert.equal(formatDocument(await syntax(mixed)), crlf);
+    // A mostly LF file comes out all LF.
+    assert.equal(formatDocument(await syntax(lf.replace('component C {\n', 'component C {\r\n'))), lf);
+    // The one-argument form used by hosts without services is the fully checked one.
+    assert.equal(formatDocument(await syntax(largeModel(2))), formatDocument(await syntax(largeModel(2)), lexer));
 });
