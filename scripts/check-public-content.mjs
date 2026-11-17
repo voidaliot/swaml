@@ -2,15 +2,8 @@ import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
 import { extname } from 'node:path';
 
-// Public guidance is independent of editor products and private companion projects.
-// Protocol-library dependency names and ordinary file/language extensions are valid.
-const disallowed = [
-    /\bvs[\s-]+code\b/i,
-    /\bvisual[\s-]+studio[\s-]+code\b/i,
-    /\bvoidaliot\/(?!swaml(?:[\/#?\s)"`\x27<>]|$))[\w.-]+/i,
-    /\bextension (?:package|repository|development|boundary)\b/i,
-    /[.]vsi[x]\b/i,
-];
+import { isDisallowed, waivesLocalPaths } from './public-content-rules.mjs';
+
 const extensions = new Set(['.md', '.json', '.yml', '.yaml', '.ts', '.tsx', '.mjs', '.py', '.html', '.css', '.svg', '.txt', '.swaml']);
 const ignored = new Set(['.git', 'node_modules', 'out', 'dist', '.vite', '.venv-pdf', 'tmp', '__pycache__', 'generated']);
 const root = new URL('../', import.meta.url);
@@ -24,12 +17,13 @@ async function visit(directory) {
         } else if (entry.isFile() && extensions.has(extname(path))) {
             const source = await readFile(new URL(path, root), 'utf8');
             checked++;
+            const allowLocalPaths = waivesLocalPaths(path, source);
             source.split(/\r?\n/).forEach((line, index) => {
-                if (disallowed.some(pattern => pattern.test(line))) failures.push(`${path}:${index + 1}`);
+                if (isDisallowed(line, { allowLocalPaths })) failures.push(`${path}:${index + 1}`);
             });
         }
     }
 }
 await visit('');
-assert.deepEqual(failures, [], 'Public content contains an editor-product or private-companion reference');
+assert.deepEqual(failures, [], 'Public content contains an editor-product, private-companion or local-path reference');
 console.log(`Verified independent public guidance across ${checked} text files.`);

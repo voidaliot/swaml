@@ -2,8 +2,34 @@
 
 ## Unreleased
 
+### Language 2.3 (planned, not allocated)
+
+- Record the approved design of swa.ml 2.3, a compatible minor edition after 2.2.
+  - Decisions: ADRs [0022](docs/decisions/0022-values-places-and-expressions.md) (values, places and expressions), [0023](docs/decisions/0023-state-reactions.md) (state reactions), [0024](docs/decisions/0024-communication-and-package-links.md) (sampled reads, member policies, association lists, contextual words) and [0025](docs/decisions/0025-real-time-placement-and-binding.md) (release guards, operation placement, tasks and the target binding).
+  - Rules: [chapter drafts](docs/drafts/2.3/README.md) list every static rule, runtime rule, diagnostic and trace observation by work package.
+  - Plan: the [release draft](docs/RELEASE_2_3.md) gives scope, compatibility gates, work packages and the publication checklist.
+- No grammar, validator, simulator, library, inventory, version or published artifact changes yet; the standard remains 2.2.
+- Planned for 2.3, each with its work package:
+  - element and field assignment and index-then-member reads;
+  - literal component indexes in test paths;
+  - a whole-expression conditional;
+  - `view`, `state`, `in`, `out` and `defer` as contextual words;
+  - association lists;
+  - `Swaml::Numeric`, `Swaml::Text` and `Swaml::Time`;
+  - durations as `uint` nanosecond values with computed waits, timeouts, state timers, periods and deadlines;
+  - guard-only completion transitions, guarded timers, internal transitions and deferral;
+  - sampled reads of required attributes with mandatory initial values;
+  - policies per connection member;
+  - release guards;
+  - operation-level placement;
+  - `Swaml::Os` tasks with static mapping rules, priority ordering in the reference run and a `swaml-binding/2.3` schema checked by `swaml binding check`.
+- Planned new warnings: SW2016 (computed duration without a unit), SW2017 (completion guard that cannot change while the machine waits) and SW2018 (deferred member with a rejecting overflow policy). Planned runtime codes: `DurationRange` and the `CompletionLoop` violation.
+- Planned versions: implementation package 4.0.0, because existing AST properties widen; profile `swaml-reference/2.3`.
+- Not in 2.3: port arrays (an additive 2.4 candidate); trigonometry, enum conversions and the timed run (Tier 2). Rejected: per-index configuration, service discovery and a "did not arrive" construct.
+
 ### Reference implementation (not part of the standard)
 
+- The public-content check also rejects local drive-letter paths and editor-product repository names, with its patterns in `scripts/public-content-rules.mjs` and a CI test. No standard, grammar, API or implementation version change.
 - Make model projection and simulation scale with the model and the run instead of their square, with identical results. projectModel indexes candidate paths once to find each owner, so the 1,800-line benchmark model with 5,600 projected nodes projects in milliseconds instead of seconds; a workspace with an unnamed package, while one is being typed, keeps the previous search and its results. The interpreter keeps pending events in a binary heap ordered by time, phase and scheduling order, skipping and compacting events whose activation, wait or request already ended, and keeps only uncompleted activations for dispatch, input and limit checks, so a step no longer costs time for every earlier event and activation. Simultaneous events keep their phase and scheduling order; projections, traces, ordinals, stores, statuses, failures and case results are unchanged in every compared model. npm run bench measures projection and simulation scaling, and scripts/bench/differential.mjs compares this build with another revision over the examples and generated and seeded random models. No standard, grammar, API or implementation version change.
 
 ## 2.2 — 2026-11-10
