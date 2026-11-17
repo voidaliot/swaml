@@ -3,7 +3,7 @@ import type { Range } from 'vscode-languageserver';
 import * as a from './generated/ast.js';
 import { SWAML_LANGUAGE_VERSION } from './edition.js';
 import { body, direction, effectiveQos, identity, isExecutable, members, nanos, owner, portMembers, schedule, signature, typeKey, type Node } from './semantic.js';
-import { documentationText, viewCandidates } from './presentation.js';
+import { documentationText, viewCandidates, type ViewSubject } from './presentation.js';
 export interface ProjectionNode {
     id: string;
     name: string;
@@ -61,8 +61,31 @@ export function projectModel(models: readonly a.Model[]): Projection {
     const candidates = viewCandidates(models), result: Projection = { languageVersion: SWAML_LANGUAGE_VERSION, nodes: [], edges: [] };
     const source = (n: AstNode) => ({ uri: AstUtils.getDocument(n).uri.toString(), range: n.$cstNode!.range });
     const addEdge = (kind: string, from: string, to: string, label: string, extra: Partial<ProjectionEdge> = {}) => result.edges.push({ id: `${kind}:${from}:${to}:${result.edges.length}`, kind, source: from, target: to, label, ...extra });
+    // The owner of a candidate is the candidate with the longest path that prefixes it before a '.',
+    // or a package whose path prefixes it before '::'; the first such candidate wins among equal paths.
+    // Index candidate paths once so each lookup probes only those prefixes of its own path that have a
+    // candidate's length. A package without a name (while it is being typed) has no string path; such a
+    // workspace keeps the direct search, including its failure when that package ties with another owner.
+    const byPath = new Map<string, ViewSubject>(), packageByPath = new Map<string, ViewSubject>(), lengths = new Set<number>();
+    for (const x of candidates) {
+        if (!byPath.has(x.path))
+            byPath.set(x.path, x);
+        if (a.isPackage(x.node) && !packageByPath.has(x.path))
+            packageByPath.set(x.path, x);
+        lengths.add(x.path?.length);
+    }
+    const ownerOf = candidates.every(x => typeof x.path === 'string') ? (id: string): ViewSubject | undefined => {
+        for (let i = id.length - 1; i >= 0; i--) {
+            if (!lengths.has(i))
+                continue;
+            const found = id[i] === '.' ? byPath.get(id.slice(0, i)) : id.startsWith('::', i) ? packageByPath.get(id.slice(0, i)) : undefined;
+            if (found)
+                return found;
+        }
+        return undefined;
+    } : (id: string): ViewSubject | undefined => candidates.filter(x => id.startsWith(x.path + '.') || a.isPackage(x.node) && id.startsWith(x.path + '::')).sort((a, b) => b.path.length - a.path.length)[0];
     for (const item of candidates) {
-        const n = item.node as Node, id = item.path, parent = a.isPackage(n) ? undefined : candidates.filter(x => id.startsWith(x.path + '.') || a.isPackage(x.node) && id.startsWith(x.path + '::')).sort((a, b) => b.path.length - a.path.length)[0];
+        const n = item.node as Node, id = item.path, parent = a.isPackage(n) ? undefined : ownerOf(id);
         const p: ProjectionNode = { id, name: item.name, kind: item.kind, definition: item.definition, owner: parent?.path, source: source(n), code: n.$cstNode!.text, doc: documentationText({ documentation: n.documentation }) };
         if (a.isAttribute(n) || a.isLocalVariable(n) || a.isField(n))
             p.type = typeKey(n.type);
