@@ -1,63 +1,141 @@
 # swa.ml next minor (2.3): language gaps from the showcase models
 
-**Status:** design proposal for owner approval. Not normative. Nothing here changes the grammar, validator, standard version or a published artefact. **Base:** swa.ml 2.2 (`v2.2`, `spec/standard.json` 2.2, implementation 3.1.0, `swaml-reference/2.2`), main `e6fd783`. **Evidence:** `examples/showcase/*.swaml` on branch `showcase/all` (`361173a`): door = `autosar-classic-door-controller.swaml`, v2x = `autosar-adaptive-v2x-telemetry.swaml`, cloud = `cloud-fleet-monitoring.swaml`. Item numbers B1–B21 follow the limitation list (section B); section A (tool defects) is referenced only where it interacts.
+**Status:** design proposal for owner approval, revision 2 (after the adversarial review `E:\t\review-proposal-2.3.md`). Not normative. Nothing here changes the grammar, validator, standard version or a published artefact.
 
-Recommendation labels: **add** (grammar and/or semantics), **library-only**, **reject** (keep by design), **defer**.
+**Bases:**
+- **Language:** swa.ml 2.2 (`v2.2` published; `spec/standard.json` 2.2; implementation 3.1.0; profile `swaml-reference/2.2`), main `e6fd783`.
+- **Evidence:** branch `showcase/all` at `cc16c25`. Door = `autosar-classic-door-controller.swaml` (3,479 lines), v2x = `autosar-adaptive-v2x-telemetry.swaml` (2,726), cloud = `cloud-fleet-monitoring.swaml` (3,136). Line numbers refer to that commit.
+- **Extension:** `E:\GitHub\swaml-vsc-ext`, pinned to swaml `93065ec` (3.1.0).
 
-## 0. Summary
+Item numbers B1–B21 follow the limitation list; A1–A7 are tool defects. Recommendation labels: **add**, **library-only**, **reject** (keep by design), **defer**.
 
-| Item | Recommendation | Tier | One-line syntax |
+## 0. One-page summary
+
+### Tier 1 (2.3) and Tier 2 (later)
+
+| Item | Recommendation | Tier | One line |
 | --- | --- | --- | --- |
-| B1 in-place element/field assignment | add | 1 | `statuses[index].confirmed = true;` |
-| B2 index followed by member access | add | 1 | `recent[i].vehicleId == vehicle` |
-| B3 conditional expression | add | 1 | `dutyPercent = if (stop) 0 else dutyPercent;` |
-| B4 numeric/text library | library-only (+ enum pseudo-type in Tier 2) | 1 / 2 | `Swaml::Numeric::sqrt(d2)`, `Swaml::Text::intText(n)` |
-| B5 logical clock | library-only | 1 | `lastRxNs = now();` |
-| B6 computed durations | add | 1 | `after (pulseMs * 1ms) to locked { }` |
-| B7 completion / guarded timer / result transitions | add | 1 | `when (sessionId > 0) to Connected { }` |
-| B8 internal transitions | add | 1 | `on receive stream.accepted(t) { shed = shed + 1; }` |
-| B9 deferral | add | 1 | `defer pages.page;` |
-| B10 entry picks transition | covered by B7 | 1 | `when (not nvmStored) to postRun { }` |
-| B11 multiplicity | add (indexed test paths); reject port arrays, per-index config | 1 | `assert backend.twins[0].link == LinkState.online;` |
-| B12 boundary port to several children | add (member split) | 2 | `connect (service, intake.service); connect (service, tracker.service);` |
+| B1 element/field assignment | add | 1 | `statuses[index].confirmed = true;` |
+| B2 index then member | add | 1 | `recent[i].vehicleId == vehicle` |
+| B3 conditional expression | add (whole-expression only) | 1 | `counter = clampInt((if (previous < 0) 0 else previous) + stepUp, …);` |
+| B4 numbers and text | library-only: `sqrt`, integer min/max/clamp, `intText`/`realText`/`boolText` | 1 | `distanceM = sqrt(d2)` |
+| B4 trigonometry | library swa.ml source (bit-reproducible) | 2 | `Swaml::Numeric::sin(x)` |
+| B4 enum ordinal/text | add an `enum` parameter type, allowed only in library operations | 2 | `counters[ordinal(fault)]` |
+| B5 logical clock | library-only `Swaml::Time::now()` | 1 | `lastRxNs = now();` |
+| B6 computed durations | add; a duration literal is a `uint` in ns; `every`/`deadline` take a constant sublanguage | 1 | `after (ownHazardValidityMs * 1ms) to Idle { }` |
+| B7 + B10 completion, guarded timers | add (guard-only completion transitions) | 1 | `when (sessionId > 0) to Connected { }` |
+| B8 internal transitions | add (transition without `to`) | 1 | `on receive stream.accepted(t) { write(t); }` |
+| B9 deferral | add (`defer`, still usable as a name) | 1 | `defer requests.request;` |
+| B11 indexed parts in tests | add (literal index) | 1 | `assert backend.twins[0].link == LinkState.offline;` |
+| B12 one boundary port to several children | add (member split) | 2 | no instance left in the revised models |
 | B13 policy per member | add | 1 | `connect bodyCan: BodyCanFrames (bcm.bus, dcu.canBus) { crash: CanEvent; }` |
-| B14 synchronous read of a required attribute | add | 1 | `when (not door.ajar)` |
-| B15 reserved member names | add (contextual) | 1 | `attribute state: SessionState = …;` |
-| B16 associate per pair; absence assertion | add list form; keep absence idiom | 1 | `associate truck, alderDispatcher to 'Monitor live position', 'Command a vehicle';` |
-| B17 runnable-level deployment | add (semantic only) | 1 | `deploy ioHwAb.protect on doorModules[0].core0.task5ms;` |
-| B18 task period/priority/preemption/budget | add `Swaml::Os` + ordering (Tier 1); timed profile (Tier 2) | 1 / 2 | `component task5ms: Task { redefines const attribute priority: uint = 30; }` |
-| B19 mode-dependent schedules | add (entry guard) | 1 | `on every 20ms poll() when (mode.current != PowerMode.sleep);` |
-| B20 end-to-end latency chain | defer (B5 makes it testable now) | 2 | `assert now() - t0 <= 150ms;` |
-| B21 service discovery | reject | — | static connection + `provides attribute available: bool` |
+| B14 sampled read of a required attribute | add (mandatory initial value) | 1 | `ajar = door.ajar;` |
+| B15 `view`/`state`/`in`/`out` as names | add (contextual) | 1 | `attribute state: SessionState = …;` |
+| B16 association lists | add | 1 | `associate truck, alderDispatcher to 'Monitor live position', 'Command a vehicle';` |
+| B17 operation-level deployment | add (no new syntax) | 1 | `deploy comMain.storePdu on doorModules[0].core1.isrCan;` |
+| B18 tasks | add `Swaml::Os`, static rules, priority and in-task order, binding schema | 1 | `component task20ms: Task { redefines const attribute periodNs: uint = 20ms; }` |
+| B18 timed run | binding-driven, fixed-priority scheduling per Core | 2 | `swaml simulate --binding door.binding.json` |
+| B19 mode-dependent schedules | add release guard; a skip counts as completion for `after` successors | 1 | `on every 20ms slot() when (mode.current != PowerMode.sleep) deadline 2ms;` |
+| B20 latency chains | defer; measurable in tests now | 2 | `assert now() - t0 <= 150ms;` |
+| B21 service discovery | reject | — | static optional connection plus an availability attribute |
 
-All Tier 1 additions are syntax-preserving: every valid 2.2 source stays valid with unchanged meaning, provided library additions go into **new** library packages (decision D5; the door model itself would break if `clampInt` were added to `Swaml::Math`, because `DoorEcu` imports both `Swaml::Math` and `DoorEcu::Types`, which declares `clampInt`).
+Rejected:
+- B11 port arrays and connector loops for 2.3 (additive candidate for 2.4)
+- B11 per-index configuration
+- B16 absence construct
+- B21
 
-## 1. Consolidated grammar delta
+### Owner decisions (final recommendations)
 
-Only these productions change. Everything not listed is unchanged. Fragments use the style of `src/language/swaml.langium`.
+| # | Question | Recommendation | Alternative |
+| --- | --- | --- | --- |
+| D1 | Release as standard 2.3? | Yes. Compatibility is shown by the corpus AST-identity gate (§1.2). | 3.0. |
+| D2 | Implementation package 4.0.0? | Yes, because existing AST properties silently widen (§1.3). | 3.2.0 only with parallel new node types for every widened form. |
+| D3 | Reintroduce completion transitions (guard-only)? | Yes, with the B7 restrictions. | Timer guards and internal transitions only. |
+| D4 | Durations as `uint` ns? | Yes, plus the SW2016 unit warning. | Nominal `duration` type. |
+| D5 | Library additions in new packages? | Yes: `Swaml::Numeric`, `Swaml::Text`, `Swaml::Time`, `Swaml::Os`. | Extend `Swaml::Math`/`Swaml::Platform`, which breaks the door model (`clampInt`). |
+| D6 | Intrinsics? | `sqrt` is the only new intrinsic; trigonometry as swa.ml source in Tier 2. | Trigonometry intrinsics with host variance. |
+| D7 | Initial value for sampled members? | Mandatory for every sampled member. | Optional, so early reads fail. |
+| D8 | Deferral vs transitions on the same member? | Disjoint; retained input in global offer order. | UML-style pool with guard re-evaluation. |
+| D9 | Skipped periodic releases? | Keep the root-epoch grid; a skip counts as completion for `after` successors. | Restart phase on guard change. |
+| D10 | Where do timing assumptions live? | Costs and budgets in a binding file whose schema is defined in 2.3. Task kind, priority, preemptability, period and response bound in source. | Everything in source, or everything in the binding. |
+| D11 | Task priorities? | Unique per Core. | Equal priorities with FIFO. |
+| D12 | Port arrays and connector loops? | Not in 2.3; static port arrays with runtime-indexed emission are an additive 2.4 candidate. | Add now. |
+| D13 | Placement granularity? | Per operation, with every placement of one component occurrence on one Core. Entries that need different Tasks use wrapper operations. | Per schedule entry (needs entry names). |
+| D14 | Enum pseudo-type tier? | Tier 2. | Tier 1. |
+
+### Work packages and dependencies
+
+Prerequisites on branch `fix/showcase-tool-defects` (tool fixes, no standard change):
+- **A1** formatter data loss and layout
+- **A2** flow-sensitive SW2011
+- **A4** per-model simulation options
+- **A7** `swaml test` text mode exhausts the V8 heap on a long door case while `--json` completes
+
+| WP | Content | Needs |
+| --- | --- | --- |
+| WP0 | ADRs 0022–0025, chapter drafts, `## Unreleased` | — |
+| WP1 | Places, indexed reads, test indexes (B1, B2, B11) | A2 |
+| WP2 | Conditional, contextual words, association lists (B3, B15, B16) | A1 |
+| WP3 | `Swaml::Numeric`, `Swaml::Text`, `Swaml::Time` (B4, B5) | A2 |
+| WP4 | Durations as values, `PolicySetting` change, constant evaluator, compatibility gate (B6) | WP3 |
+| WP5 | Completion, guarded timers, internal transitions, deferral (B7–B10) | WP4 |
+| WP6 | Sampled reads, member policies (B14, B13), then the WP5 completion-guard warning revisited | WP5 (warning) |
+| WP7 | Release guards (B19) | WP4; WP6 for the showcase proof only |
+| WP8 | Operation placement, `Swaml::Os`, task rules, in-task order, binding schema and `swaml binding check` (B17, B18) | WP4, WP7, A4 |
+| WP9 | Edition: inventories, notation, reference book, showcase rewrites, site data, PDF | WP1–WP8, A1, A7 |
+| E1–E3 | Extension integration (§5.4); E1 must fix the `associate` list data loss | the matching language WPs |
+
+### What a door ECU team can and cannot derive after 2.3
+
+**Statically checked:**
+- the task set per Core: kind (basic, extended, ISR), priority, preemptability, period or response bound
+- runnable-to-task mapping per operation, and the order within each task
+- per-entry deadlines, consistent with periods and response bounds
+- one Core per component; no event entries on periodic tasks; no suspension on basic tasks or ISRs
+- level-triggered mode gating
+- per-member communication policies
+- typed data and behaviour precise enough for a backend to generate code
+
+**Runs:** in logical zero time, with equal-time work ordered by task priority and in-task position. A binding file can be validated against the model with the 2.3 schema.
+
+**Not derived or checked:** response times or schedulability (Tier 2 timed run or external analysis), WCET, cross-core blocking, CAN signal packing, OS configuration format, memory mapping, generated code.
+
+## 1. Grammar
+
+### 1.1 Delta
+
+Only these productions change. Verified with Langium 4.4.0 `createServicesForGrammar` on Node 26 (the reviewer's `E:\t\rev23` harness with this revision's grammar):
+- 0 generation warnings and 0 parser-construction warnings
+- 26 + 7 snippets for the new forms and for contextual words in every name position
+- the corpus result in §1.2
 
 ```text
-// B1, B2, B11: places (assignment targets and references) with selectors
+// B6 compatibility fix (review finding 1): one alternative. A 2.2 duration setting is now Literal{duration}.
+PolicySetting: name=Name '=' value=Expression ';';
+
+// B1, B2, B11: places with selectors; call targets allow literal indexes
 Assign: target=ValuePath ('[' index=Expression ']' selectors+=Selector*)? '=' value=Expression ';';
-ForUpdate infers Assign: target=Name '=' value=Expression;                        // unchanged
+ForUpdate infers Assign: target=Name '=' value=Expression;                                 // unchanged
 ReferenceExpression: path=ValuePath ('[' index=Expression ']' selectors+=Selector*)?;
 Selector: '.' field=Name | '[' index=Expression ']';
-CallExpression: target=Path '(' (args+=Expression (',' args+=Expression)*)? ')';  // was ValuePath (B11)
+CallExpression: target=Path '(' (args+=Expression (',' args+=Expression)*)? ')';           // was ValuePath
 
-// B3: conditional expression
+// B3: the conditional is a whole expression; operand use needs parentheses; never a statement
 type Expression = BinaryExpression | UnaryExpression | Literal | CallExpression | TryExpression
                 | ConditionalExpression | ReferenceExpression | RecordLiteral | ArrayLiteral;
-PrimaryExpression returns Expression: Literal | TryExpression | ConditionalExpression | CallExpression
-                | ReferenceExpression | RecordLiteral | ArrayLiteral | '(' Expression ')';
+Expression returns Expression: ConditionalExpression | OrExpression;
 ConditionalExpression: 'if' '(' condition=Expression ')' then=Expression 'else' otherwise=Expression;
+ExpressionStatement: expression=OrExpression ';';                                          // was Expression
+// PrimaryExpression unchanged: '(' Expression ')' admits a parenthesized conditional
 
-// B6: durations are values; computed durations are parenthesized expressions
+// B6: durations are values; computed durations are parenthesized
 Literal: {infer Literal} (number=Numeric | text=STRING | boolean=('true'|'false') | duration=Duration);
 Wait: 'wait' (duration=Duration | '(' delay=Expression ')') ';';
 Receive: 'on' branches+=ReceiveBranch ('or' branches+=ReceiveBranch)*
          ('or' 'after' (timeout=Duration | '(' timeoutValue=Expression ')') timeoutBody=Block)?;
 
-// B6, B19: schedule entries with computed period/deadline and a release guard
+// B6, B19: schedule entries
 ScheduleEntry: ('on' (kind='start'
                      | kind='every' (period=Duration | '(' periodValue=Expression ')')
                      | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')')
@@ -67,7 +145,7 @@ ScheduleEntry: ('on' (kind='start'
                ('deadline' (deadline=Duration | '(' deadlineValue=Expression ')'))?
                (concurrent?='concurrent')? ';';
 
-// B6, B7, B8, B9, B10: states
+// B6–B10: states
 State: (final?='final')? 'state' name=Name '{' documentation=Documentation?
        (actions+=StateAction | transitions+=Transition | deferrals+=Deferral)* '}';
 Transition: ( 'on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')?
@@ -76,80 +154,134 @@ Transition: ( 'on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindin
             ('to' target=Name)? effect=Block;
 Deferral: 'defer' endpoints+=MemberPath (',' endpoints+=MemberPath)* ';';
 
-// B13: per-member policy
+// B13
 Connect: (redefines?='redefines')? 'connect' (name=Name)? (':' policy=[QosPolicy:QualifiedName])?
          '(' source=Path ',' target=Path ')'
          (documentation=Documentation? ';' | '{' documentation=Documentation? memberPolicies+=MemberPolicy+ '}');
 MemberPolicy: member=Name ':' policy=[QosPolicy:QualifiedName] documentation=Documentation? ';';
 
-// B14: optional initial value of an attribute member (sample cell)
+// B14: initial value of an attribute member (mandatory when sampled, D7)
 PortMember: direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name
             (':' type=TypeRef ('=' initial=Expression)? | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?)
             documentation=Documentation? ';';
 
-// B16: association lists (cross product)
+// B16
 Association: 'associate' occurrence=[ComponentUsage:Name] (',' moreOccurrences+=[ComponentUsage:Name])*
              'to' target=[Scenario:Name] (',' moreTargets+=[Scenario:Name])* ';';
 
-// B15, B9: contextual words
+// B9, B15
 Name returns string: ID | UNRESTRICTED_NAME | 'reversed' | 'to' | 'times' | 'name' | 'kind' | 'path' | 'use' | 'case'
                    | 'test' | 'associate' | 'by' | 'ns' | 'us' | 'ms' | 's'
                    | 'defer' | 'view' | 'state' | 'in' | 'out';
 ```
 
-Parse notes (Langium 4.4, ALL(*) lookahead): `if (c) {` (statement) and `if (c) e else f` (expression) differ at the token after `)`; an expression never starts with `{`. `a.b = …;` versus `a.b(…);` already relies on unbounded lookahead. `5ms` lexes as INT + `ms`; no other expression position accepts an integer followed by a name except the loop-limit `times`, which is not a unit. `to` stays contextual although now optional: after `)`/a duration/a guard, a Name can only be the transition target. `state`, `view`, `in`, `out` as names: `state` only starts a State after `initial X;`; `view` only starts a package element; `in`/`out` as a parameter name is followed by `:` (LL(2)). The implementer must run the Langium ambiguity report and add parser tests for each contextual word in every name position.
+Verified parses:
 
-AST compatibility: every existing property keeps its type and meaning for 2.2 sources, except `Transition.target` and `Wait.duration`/`Transition.delay`/`ScheduleEntry.period`/`deadline`, which become optional. That is an exported TypeScript API change (decision D2).
+| Input | Result |
+| --- | --- |
+| `x = 1 + if (c) 2 else 3;` | syntax error |
+| `x = 1 + (if (c) 2 else 3) + 4;` | parses |
+| `if (c) g() else h();` | syntax error: a conditional is never a statement |
+| `x = if (a) 1 else if (b) 2 else 3;` | parses |
+| `backend.twins[i].currentView()` | syntax error: call paths take literal indexes |
+| `backend.twins[i].link` | parses; the validator requires literal indexes on component multiplicity segments (SW2010), so reads and calls agree (finding 12a) |
+
+Within a whole conditional, `else` extends to the end: `assert if (p) a else b == 3;` reads `if (p) a else (b == 3)`. The specification states this, and the formatter never drops parentheses.
+
+### 1.2 Compatibility gate (release gate for D1)
+
+"Every valid 2.2 source stays valid with unchanged meaning" is established by three release gates, run in WP4 and again in WP9.
+
+1. **Corpus AST identity.** Parse every repository `.swaml` file plus the three showcase models with the 2.2 and 2.3 grammars. Compare the ASTs (references as text; positions and empty defaults stripped) after exactly one normalization, N1: a 2.2 `PolicySetting{duration: d}` equals a 2.3 `PolicySetting{value: Literal{duration: d}}`. The gate is `test/compatibility-2-2.test.ts`; the corpus list and N1 are in the test.
+   - Prototype result: 39 files, 38 identical, 1 skipped (a 2.2 negative example with parse errors), 0 differences.
+2. **Behaviour identity.** `scripts/check-simulations.mjs` reproduces every expected final store and case result of `examples/simulation/cases.json` unchanged.
+3. **Warning-free grammar.** `langium generate` and parser construction emit no ambiguity warning. A unit test captures `console.warn` during `createSwamlServices` and fails on any output.
+   - Only reordering the `PolicySetting` alternatives still warns, so the single-alternative form is required.
+
+Validator consequence of N1:
+- A setting named `requestTimeout`, `maxLatency` or `maxAge` must be a `Literal` with a `duration`; computed policy values are not allowed (SW2013).
+- `swaml-validator.ts:248` and `semantic.ts:192` (`effectiveQos`) read `value.duration`.
+
+### 1.3 AST API changes (D2)
+
+Only two properties become optional: `Transition.target` and `Wait.duration`. `Transition.delay`, `ScheduleEntry.period`/`deadline` and `Receive.timeout` are already optional in the generated 2.2 AST.
+
+The breaking part is that existing properties silently widen:
+- `Assign.target` may be dotted and carry `index`/`selectors`
+- `CallExpression.target` may contain `[n]`
+- `Association` holds several pairs
+- `PolicySetting.duration` is removed
+
+A consumer compiled against 3.1.0 types keeps compiling but misreads these. Hence 4.0.0. The alternative, 3.2.0, is only honest if every widened form gets its own new node type (`PlaceAssign`, `IndexedCall`, `AssociationList`) and `PolicySetting` keeps its alternative; the last condition fails gate 3.
 
 ## 2. Items
 
-Each item: problem and before, recommendation (syntax, static rules, runtime, diagnostics, library, views, inventories), after, interactions, cost. Cost scale: S ≤ 1 day, M ≤ 3 days, L ≤ 2 weeks of one agent including tests. "Ext" is `E:\GitHub\swaml-vsc-ext`.
+Each item gives the problem with the current code (**before**), the recommendation, the same code rewritten (**after**), interactions and cost. Costs: S ≤ 1 day, M ≤ 3 days, L ≤ 2 weeks (one agent with tests). Extension costs are in §5.4.
 
-### B1 In-place element and field assignment
+### B1 Element and field assignment
 
-**Problem.** `Assign` takes a bare name (`target=Name`; spec 1.4: "In-place field/index assignment and reference values are absent"). All three models rebuild arrays through helper operations, one per element type.
+**Before** (door `Dem`, 967–975 and 1008–1040; same pattern in cloud `WithValue`/`WithView`/`WithAlert` 330–380 and v2x `withNeighbour`/`withBatch`):
 
 ```text
-// door, Dem (lines 791-810, 853-862)
 operation withCounter(index: uint, value: int) {
   counters = [
     pickInt(index == 0, value, counters[0]),
-    pickInt(index == 1, value, counters[1]),
     …
     pickInt(index == 5, value, counters[5])
   ];
 }
-…
-if (counter <= 0 and status.testFailed) {
-  withStatus(index, record DtcStatus {
-    testFailed = false;
-    testFailedThisCycle = status.testFailedThisCycle;
-    pending = status.pending;
-    confirmed = status.confirmed;
-    occurrences = status.occurrences;
-  });
+operation report(fault: FaultId, failed: bool) {
+  reports = reports + 1;
+  var index: uint = indexOf(fault);
+  var previous: int = counters[index];
+  var counter: int = 0;
+  if (failed) {
+    counter = clampInt(pickInt(previous < 0, 0, previous) + stepUp, passedThreshold, failedThreshold);
+  } else {
+    counter = clampInt(pickInt(previous > 0, 0, previous) - stepDown, passedThreshold, failedThreshold);
+  }
+  if (counter == previous) {
+    return;
+  }
+  withCounter(index, counter);
+  var status: DtcStatus = statuses[index];
+  if (counter >= failedThreshold and not status.testFailed) {
+    withStatus(index, record DtcStatus {
+      testFailed = true;
+      testFailedThisCycle = true;
+      pending = true;
+      confirmed = true;
+      occurrences = status.occurrences + 1;
+    });
+  }
+  if (counter <= 0 and status.testFailed) {
+    withStatus(index, record DtcStatus {
+      testFailed = false;
+      testFailedThisCycle = status.testFailedThisCycle;
+      pending = status.pending;
+      confirmed = status.confirmed;
+      occurrences = status.occurrences;
+    });
+  }
+  derivePermission();
 }
 ```
 
-(cloud `WithValue`, `WithView`, `WithAlert`; v2x `withNeighbour`, `withBatch`, `placeBatch`, `placeNeighbour` are the same pattern.)
-
-**Recommendation: add.** Grammar: `Assign` with `selectors` (section 1). Static rules (SW2006 for mutability, SW2002 for types):
+**Recommendation: add.**
 
 | Rule | Text |
 | --- | --- |
-| Root | The first segment of `target` is a mutable local, `out` parameter or non-const component attribute of the executing operation (case scripts: own locals and `on call` out bindings only, as today). Dotted segments after the root are record fields. A qualified name, a port, a child component or an `in` parameter as root is an error. |
-| Path typing | Each `.f` selects a field of a nominal record; each `[i]` indexes a fixed array with an integral index. The final place type is the destination type for the usual assignability rule. A literal out-of-range index is SW2002. |
-| `out` roots | A selector write to an `out` parameter reads the rest of the value, so the parameter must be definitely assigned before (SW2006, same analysis as today). |
-| Effects | A selector write to an attribute is a write effect on that attribute (and a read of it). Concurrent entries still cannot reach it. |
-| `for` update | `ForUpdate` keeps a bare name. |
+| Root | The first segment is a mutable local, an `out` parameter or a non-const attribute. In case scripts: own locals and `on call` out bindings. Rejected (SW2006): `in` parameters, const attributes, ports, children, qualified names. |
+| Typing | `.f` selects a record field and `[i]` indexes a fixed array with an integral index. A literal out-of-range index is an error. (SW2002) |
+| `out` root | Must be definitely assigned before (SW2006). |
+| Out arguments | A place is not allowed as an out argument in 2.3; out arguments stay bare names (validator line 599 unchanged). |
+| Order (finding 9a) | Evaluate the target's index expressions left to right, then the right side, then read the root cell, check the indexes, and write the root with one place replaced. Writes done by the right side (`counters[i] = bump();` where `bump` writes `counters`) are kept. |
+| Failure | A failed index check is a runtime failure (`Bounds`); the root is unchanged. |
+| Effects and trace | A write effect on the root attribute. One `write` observation of the root with a `place` field such as `statuses[2].confirmed`. Values remain copies (I4). |
 
-Runtime (reference run, chapter 6.3): evaluate the index expressions of the target left to right, then the right side, then check every index against its extent; on success replace the root cell with a copy that differs only at the place. A failed index check is a runtime failure (catchable only by moving the computation into an operation called inside `try`, as for every statement) and leaves the root unchanged. The write is one `write` observation of the root with an added `place` field (for example `statuses[2].confirmed`) and the new root value. Values remain copied (I4): no references are introduced, and `var s: DtcStatus = statuses[i]; s.confirmed = true;` changes only `s`.
+Locks and snapshots are unchanged: a read-modify-write happens under the serial lock after any resumption.
 
-Serial lock and suspension: the right side cannot suspend unless it is the whole value (existing rule); the read-modify-write is evaluated under the serial lock after any resumption, so it uses live state. Snapshots: unchanged (concurrent entries cannot write). Determinism: unchanged.
-
-Views: Flow shows the statement text with the place; the statement edit/creation forms accept a place. KerML: `Assign` keeps its mapping (`FeatureValue` write lowering); `Selector` is a grouping node lowered into the assignment's target chain. Keywords: none. Notation: one concept row update ("assignment") with an element/field example.
-
-**After.**
+**After** (the same operation; `withCounter`, `withStatus`, `pickInt` and `pickStatus` are removed; `clampInt` now comes from `Swaml::Numeric`, so `DoorEcu::Types::clampInt` is deleted to avoid an import ambiguity):
 
 ```text
 operation report(fault: FaultId, failed: bool) {
@@ -180,18 +312,18 @@ operation report(fault: FaultId, failed: bool) {
 }
 ```
 
-`withCounter`, `withStatus`, `pickInt`, `pickStatus` disappear (`clampInt` comes from `Swaml::Numeric`, B4).
+**Interactions.**
+- SW2011 (A2) must treat a place write as a write of its root and track index values read before a suspension.
+- B2 shares `Selector`.
+- The formatter (A1) prints places.
 
-**Interactions.** `const` attributes and `in` parameters stay immutable (rejected roots). Concurrent snapshot rule unchanged. Stale reads: an element write is a write of the root for SW2011; the index computed from a pre-suspension read is exactly what A2's flow-sensitive fix must track. B2 shares `Selector`. A1: the formatter must print places.
-
-**Cost.** Grammar S; validator M (place typing, definite assignment, effect); simulator S (place write + trace field); formatter S; projection S (statement text); Ext M (`statement-edits.ts`, `diagram-edits.ts` assignment templates, `field-completion.ts` for `.`/`[` after a place, Flow statement labels, creation card validation); docs S (chapters 1.4, 3.3, 9.2).
+**Cost.** Grammar S, validator M, simulator S, formatter S, projection S, docs S (1.4, 3.3, 9.2).
 
 ### B2 Index followed by member access
 
-**Problem.** `ReferenceExpression: path=ValuePath ('[' index=Expression ']')?` ends at the index. Every row read needs a local copy.
+**Before** (cloud `AlertRouter.findOpen` 1405–1412; test 2307):
 
 ```text
-// cloud, AlertRouter.findOpen (lines 1342-1349) and a test (line 2149)
 for (var i: int = 0; i < 4; i = i + 1) {
   var a: Alert = recent[i];
   if (a.vehicleId == vehicle and a.kind == kind and a.status != AlertStatus.resolved) {
@@ -200,12 +332,11 @@ for (var i: int = 0; i < 4; i = i + 1) {
 }
 …
 var truckView: VehicleView = backend.fleet.views[0];
-assert truckView.vehicleId == "TRK-101" and truckView.lastSequence == 2;
 ```
 
-**Recommendation: add.** `ReferenceExpression` gains `selectors` (section 1). Typing as for B1 places. Runtime: evaluate index expressions left to right; bounds failure is a runtime failure; the value is a copy (I4). Test inspection paths (ADR 0020) accept the same selectors after an attribute. No new diagnostics (SW2002). KerML: `Selector` lowering. Views: Flow text only.
+**Recommendation: add.** `ReferenceExpression` gains `selectors`, with the B1 typing rules and left-to-right index evaluation. A read yields a copy. Diagnostics: SW2002.
 
-**After.**
+**After:**
 
 ```text
 for (var i: int = 0; i < 4; i = i + 1) {
@@ -214,55 +345,31 @@ for (var i: int = 0; i < 4; i = i + 1) {
   }
 }
 …
-assert backend.fleet.views[0].vehicleId == "TRK-101" and backend.fleet.views[0].lastSequence == 2;
+assert backend.fleet.views[0].vehicleId == "TRK-101";
 ```
 
-**Interactions.** Each read of `recent[i]` in a serial activation reads the live store; between two reads without suspension nothing can interleave, so no consistency issue. Concurrent activations read their snapshot. B11 reuses the grammar for component multiplicity segments.
-
-**Cost.** Grammar S; validator S; simulator S; formatter S; Ext S (completion after `]`); docs S.
+**Cost.** Grammar S, validator S, simulator S, docs S.
 
 ### B3 Conditional expression
 
-**Problem.** No conditional value form; the door model declares one helper per type.
+**Before:** door `DoorEcu::Types` `pickInt`/`pickStatus` (137–148), used in `Dem.report` (B1).
+
+**Recommendation: add** the whole-expression conditional (§1.1).
+- `c` is `bool`. The result type is the common type under widening; records, enums and arrays must be identical (SW2002).
+- The effect is the union of condition and branches. No suspending call in a branch (SW2006).
+- Only the selected branch is evaluated.
+- It is never a statement (grammar), so void branches cannot occur.
+- KerML: `ControlFunctions::'if'`. Keywords: `if`/`else` gain the `ConditionalExpression` production.
+
+**After:** see B1 (`(if (previous < 0) 0 else previous) + stepUp`); `pickInt` and `pickStatus` are deleted.
+
+**Cost.** Grammar S, validator S, simulator S, formatter S, docs S.
+
+### B4 Numbers and text
+
+**Before** (v2x `AdaptiveV2x::Types` 399–409; caller 1145):
 
 ```text
-// door, DoorEcu::Types (lines 137-148) and WindowLifter.drive (1483-1489)
-operation def pickInt(condition: bool, whenTrue: int, otherwise: int) returns int {
-  if (condition) {
-    return whenTrue;
-  }
-  return otherwise;
-}
-operation def pickStatus(condition: bool, whenTrue: DtcStatus, otherwise: DtcStatus) returns DtcStatus { … }
-…
-var duty: uint = 0;
-if (direction != MotorDirection.stop) {
-  duty = dutyPercent;
-}
-send motor.windowMotor(record MotorCommand { direction = direction; dutyPercent = duty; });
-```
-
-**Recommendation: add** `if (c) a else b` as an expression, reusing `if`/`else`. Static: `c` is `bool`; result type is the common type of `a` and `b` under the existing widening (byte < uint < int < real; integral literals adapt); records, enums and arrays must be the same nominal type/shape (SW2002). Effect is the union of all three operands. Neither branch may contain a suspending call (SW2006, existing rule "suspending calls cannot be embedded"). Precedence: a primary expression whose `else` operand extends as far as possible: `(if (p) 0 else q) + 1` needs parentheses; the formatter keeps them. Runtime: evaluate `c`, then only the selected branch (lazy, like `try` fallback). Guards and initializers may use it when their operands are allowed there. KerML: map to the KerML `if` operator expression (`ControlFunctions::'if'`); inventory kind `element`. Keywords: `if`, `else` gain production `ConditionalExpression`. Notation: Flow shows the text only.
-
-**After.**
-
-```text
-send motor.windowMotor(record MotorCommand {
-  direction = direction;
-  dutyPercent = if (direction == MotorDirection.stop) 0 else dutyPercent;
-});
-```
-
-**Interactions.** B1 example uses it. Short-circuit list grows: `and`, `or`, conditional. Statement `if` unchanged.
-
-**Cost.** Grammar S; validator S; simulator S; formatter S; Ext S (expression completion/hover, Flow labels); docs S.
-
-### B4 Numeric and text library
-
-**Problem.** `Swaml::Math` has real-only `min`/`max`, no square root, no trigonometry, no number/enum to string conversion.
-
-```text
-// v2x, AdaptiveV2x::Types (lines 387-397); door clampInt (149-157)
 operation def squareRoot(v: real) returns real {
   /** Newton iteration; the language library has no square root. */
   if (v <= 0.0) {
@@ -274,9 +381,10 @@ operation def squareRoot(v: real) returns real {
   }
   return x;
 }
+… distanceM = squareRoot(d2); …
 ```
 
-**Recommendation: library-only** in new packages (no overloading exists, so integer variants get distinct names):
+**Recommendation: library-only, in new packages (D5).** `sqrt` is the only new host intrinsic (D6).
 
 ```text
 package Swaml::Numeric {
@@ -284,142 +392,157 @@ package Swaml::Numeric {
   operation def maxInt(a: int, b: int) returns int { if (a > b) { return a; } return b; }
   operation def clampInt(v: int, low: int, high: int) returns int { if (v < low) { return low; } if (v > high) { return high; } return v; }
   operation def clamp(v: real, low: real, high: real) returns real { if (v < low) { return low; } if (v > high) { return high; } return v; }
-  operation def sqrt(v: real) returns real { /** Host intrinsic: IEEE-754 correctly rounded square root; negative input fails. */ }
-  operation def sin(radians: real) returns real { /** Host intrinsic. */ }
-  operation def cos(radians: real) returns real { /** Host intrinsic. */ }
-  operation def atan2(y: real, x: real) returns real { /** Host intrinsic, radians in [-pi, pi]. */ }
-  operation def pi() returns real { return 3.141592653589793; }
+  operation def sqrt(v: real) returns real { /** Host intrinsic: IEEE-754 correctly rounded; a negative argument fails. */ }
 }
 package Swaml::Text {
-  operation def intText(v: int) returns string { /** Host intrinsic: decimal, leading '-' for negatives. */ }
-  operation def realText(v: real, decimals: uint) returns string { /** Host intrinsic: fixed decimals, ties to even; decimals <= 15. */ }
+  operation def intText(v: int) returns string { /** Host intrinsic: decimal, '-' for negatives. */ }
+  operation def realText(v: real, decimals: uint) returns string { /** Host intrinsic: decimals <= 15; nearest decimal of the exact binary value, ties toward positive infinity (as Swaml::Math::round and JavaScript toFixed). */ }
   operation def boolText(v: bool) returns string { if (v) { return "true"; } return "false"; }
 }
 ```
 
-Intrinsics are pure, deterministic per host and explicitly identified, like `floor`/`round`. `sqrt` is exact under IEEE-754; `sin`/`cos`/`atan2` are not correctly rounded on every host, so results may differ in the last bit between hosts; traces record host identity and reference examples never compare trig results for exact equality (decision D6).
+Tier 2:
+- **Trigonometry** (`sin`, `cos`, `atan2`, `pi`) as swa.ml source, with documented range reduction and polynomial coefficients. Only IEEE `+ - * /` are used, so results are bit-identical on every binary64 host. A backend must not contract to fused multiply-add.
+- **Enum conversions** `ordinal(v: enum)`/`literalText(v: enum)`. `enum` is allowed as a parameter type only in `Swaml::*` library operations.
 
-Enum conversion (Tier 2): `ordinal(v)` and `literalText(v)` need a parameter that accepts any enum, which the closed type system does not have. Proposed narrow form: `TypeRef` primitive `'enum'` (already a keyword) allowed only in parameters of `Swaml::*` library intrinsics (SW2002 elsewhere): `operation def ordinal(v: enum) returns uint` in `Swaml::Numeric`, `operation def literalText(v: enum) returns string` in `Swaml::Text`. This replaces the door `Dem.indexOf` ladder with `counters[ordinal(fault)]`.
+**After** (`import Swaml::Numeric;` in `AdaptiveV2x`; `squareRoot` deleted): `… distanceM = sqrt(d2); …`
 
-Views: none. KerML: library operations; intrinsics are `Function`s with host-intrinsic metadata. Keywords: none (Tier 2 adds `enum` to `TypeRef`).
+**Interactions.** The additions must not go into `Swaml::Math`: `DoorEcu` imports both `Swaml::Math` and `DoorEcu::Types`, which already declares `clampInt`.
 
-**After.** `var d: real = sqrt(distanceSquared(a, b));` with `import Swaml::Numeric;`; `"page " + intText(page.alertId)`.
-
-**Interactions.** Must not be added to `Swaml::Math` (D5): `DoorEcu` imports `Swaml::Math` and `DoorEcu::Types`, both would export `clampInt`, and the 2.2 model becomes ambiguous (SW2001).
-
-**Cost.** Library S; simulator S (intrinsics); validator S (intrinsic registry, Tier 2 `enum` param M); Ext S (bundled library reference, completion of new packages); docs S (1.5, library listing).
+**Cost.** Library S, simulator S, validator S, docs S.
 
 ### B5 Logical clock
 
-**Problem.** No read of the current time; models keep counters advanced by periodic entries.
+**Before** (door `ComMain` 774–798; v2x `camCycle` 1013 and `TelemetryAggregator` 1394 use `nowMs = nowMs + 200`):
 
 ```text
-// door, ComStack (lines 613-625)
+operation onMode(current: PowerMode) {
+  powerMode = current;
+  if (current != PowerMode.run) {
+    rxAgeMs = 0;
+  }
+}
 operation rxMainFunction() {
-  /** 20 ms: deadline monitoring, active only while the network is requested (run). */
+  if (fresh) {
+    fresh = false;
+    if (pending.rolling != lastRolling) {
+      …
+      rxAgeMs = 0;
+      …
+      return;
+    }
+    aliveErrors = aliveErrors + 1;
+  }
   if (not rxSeen or not networkActive() or timedOut) {
     return;
   }
   rxAgeMs = rxAgeMs + 20;
   if (rxAgeMs >= rxTimeoutMs) { … }
 }
-// v2x, V2xMessageService.camCycle (855-857): nowMs = nowMs + 100;
 ```
 
-**Recommendation: library-only.**
+**Recommendation: library-only.** `package Swaml::Time { operation def now() returns uint { /** Host intrinsic: logical time in ns since the run epoch. */ } }`
+- Effect class: reads state. Not allowed in initializers or completion guards (B7); allowed elsewhere.
+- Returns the logical time of the evaluating step. Concurrent activations read live time, not the snapshot.
+- Overflow is the existing `ClockRange` violation.
+- SW2011 (A2) must not report a `now()` value as a stale read.
 
-```text
-package Swaml::Time {
-  operation def now() returns uint { /** Host intrinsic: current logical time in nanoseconds since the run epoch. */ }
-}
-```
-
-Effect class: **reads state** (not pure), so it is forbidden in attribute initializers and allowed in guards (which may read state), schedule guards, case scripts and concurrent entries. Runtime: the current logical time of the step that evaluates it; zero-cost steps mean consecutive calls in one step return the same value. A value outside the safe `uint` domain is the existing `ClockRange` violation. Determinism unchanged (logical time). Concurrent activations read live time, not the dispatch snapshot (time is not occurrence state); this is stated explicitly. A target backend maps `now()` to a monotonic counter; precision and epoch are target-binding evidence. Views: none. KerML: library `Function` with intrinsic metadata.
-
-**After.**
+**After** (same component; the mode comes from B14):
 
 ```text
 attribute lastRxNs: uint = 0;
-operation rxVehicleStatus(pdu: VehicleStatusPdu) {
-  lastRxNs = now();
-  …
+operation onMode(current: PowerMode) {
+  if (current == PowerMode.run) {
+    lastRxNs = now();
+  }
 }
 operation rxMainFunction() {
-  if (not rxSeen or timedOut) {
+  if (fresh) {
+    fresh = false;
+    if (pending.rolling != lastRolling) {
+      …
+      lastRxNs = now();
+      …
+      return;
+    }
+    aliveErrors = aliveErrors + 1;
+  }
+  if (not rxSeen or mode.current != PowerMode.run or timedOut) {
     return;
   }
-  if (now() - lastRxNs >= rxTimeoutMs * 1ms) {
-    timedOut = true;
-    …
-  }
+  if (now() - lastRxNs >= rxTimeoutMs * 1ms) { … }
 }
 ```
 
-(`rxMainFunction` loses `networkActive()` through B19.) In tests: `var t0: uint = now(); send …; on receive … { assert now() - t0 <= 150ms; }`.
+The mode-edge handler stays, because the reception age restarts when run is entered (finding 7d). `rxAgeMs`, `powerMode` and `networkActive()` are removed.
 
-**Interactions.** B6 gives the unit (`1ms` is `uint` 1000000). A stale `now()` value captured before a suspension is a legitimate measurement, so SW2011 must not treat it as a stale attribute read (A2). B20 uses it.
-
-**Cost.** Library S; simulator S; validator S (effect class of intrinsic); Ext S; docs S (6.1, library).
+**Cost.** Library S, simulator S, validator S, docs S.
 
 ### B6 Computed durations
 
-**Problem.** `Duration: value=INT unit=…` is a literal everywhere; configurable periods and backoff use loops of fixed waits, and const attributes holding durations are unused.
+**Before** (v2x `hazardLifecycle` 1066–1079 and `UplinkTransfer.backoff` 1589–1606):
 
 ```text
-// door, LockControl: const attribute pulseMs: uint = 250;  … but the timer is a literal
-after 250ms to locked { … }
-// v2x, UplinkTransfer.backoff (1373-1387)
+state Active {
+  /** … The validity timer repeats ownHazardValidityMs as a literal: transition delays cannot name an attribute. */
+  …
+  after 5s to Idle {
+    hazardsExpired = hazardsExpired + 1;
+  }
+}
+…
 interruptible {
   var waited: uint = 0;
   while (waited < delay) {
     wait 250ms;
     waited = waited + 250;
   }
-  backoffsCompleted = backoffsCompleted + 1;
-  publish ctl.backoffElapsed();
-} on receive ctl.backoffAborted() { … }
+  …
 ```
 
-**Recommendation: add.** A `Duration` literal is also an expression of type `uint` with value in nanoseconds (`250ms` = 250000000). Computed durations are a parenthesized `uint` expression at each duration position (section 1):
+**Recommendation: add.** A `Duration` literal in an expression is a `uint` in nanoseconds. Computed positions:
 
-| Position | Evaluation | Allowed effects | Non-positive / unrepresentable |
-| --- | --- | --- | --- |
-| `wait (e)` | when the statement runs | any non-suspending | runtime failure `DurationRange` of the activation |
-| `or after (e)` | when the receive starts waiting | any non-suspending | runtime failure `DurationRange` |
-| state `after (e)` | at the state update, before entry actions | pure or reads state (as guards) | runtime failure of the stateful operation |
-| `on every (e)` / `deadline (e)` | once per occurrence at initialization | pure; reads only literals, const attributes and pure calls | SW2007 (statically evaluated per expanded occurrence); `deadline <= period` checked per occurrence |
+| Position | When evaluated | Allowed |
+| --- | --- | --- |
+| `wait (e)`, `or after (e)` | when the statement starts waiting | any non-suspending expression |
+| state `after (e)` (finding 5) | when the entry actions finish; expiry = state-update time + value | pure or reads state, as for guards |
+| `on every (e)`, `deadline (e)` (finding 4) | once per expanded occurrence, statically | constant sublanguage |
 
-Static: SW2002 for non-`uint`-assignable expressions; SW2007/SW2008 for effect violations; SW2013 extends to statically evaluated values. Runtime traces record the evaluated duration on `wait`, `receiveWait` and `state` events (`timeoutNs`). Determinism unchanged.
+If entry suspended past the computed state-timer value, the timer has already elapsed and is selected after the completion transitions (B7).
 
-Timing view: declared mode keeps an exact release grid because periods/deadlines are evaluated per occurrence at validation time; `wait`/`after` with expressions are drawn as dynamic intervals labelled with the expression (no length) instead of static intervals. Flow labels show `after (expr)`. KerML: durations become `LiteralInteger` with a nanosecond unit annotation; computed durations are `Expression` features. Keywords: none.
+**Constant sublanguage.**
+- **Allowed:** integer and duration literals, const attributes of the owning occurrence (effective value after redefinition), unary `-`, `+ - * / %`, comparisons, `and`/`or`/`not`, the conditional, parentheses.
+- **Not allowed:** calls, mutable state, sampled reads.
+- **Evaluator:** one, `semantic.ts` `constantValue(expression, occurrence)`, used by the validator, `projection.ts`, the simulator and the extension. It replaces `constantNumber`, which today folds only literals and negation.
+- **Trigger identity** of `every (e)`, used for inheritance replacement, duplicate detection and `semantic.ts:42 entryKey`: the normalized expression text (comments and whitespace removed, names canonical). A parenthesized single literal normalizes to its nanoseconds, so `every (20ms)` equals `every 20ms`. The release guard is not part of identity.
+- **Timing projection** becomes per occurrence. At definition level it shows the expression text; at occurrence level, the evaluated nanoseconds.
 
-**After.**
+**Diagnostics.**
+- A non-positive or out-of-range computed duration is one runtime failure code, `DurationRange`. It is checked on the integer value before any `uint` widening, so a negative value is never reported as `Bounds`.
+- Statically evaluated values use SW2007/SW2013.
+- **SW2016** (new warning, finding 14): a computed duration expression that contains no duration literal and no `now()`, because `after (pulseMs)` would mean 250 ns.
+
+**After:**
 
 ```text
-after (pulseMs * 1ms) to locked { … }
-// v2x: the backoff becomes a timer of the session state machine (with B7)
-state Backoff {
-  on entry {
-    enter(SessionState.backoff);
-    backoffs = backoffs + 1;
-  }
-  after (backoffDelayMs(attempts, backoffBaseMs, backoffCapMs) * 1ms) to Connecting { }
-  on receive network.coverage(up) when (not up) to Offline {
-    coverageLosses = coverageLosses + 1;
+state Active {
+  /** Announced on entry and repeated by repeatHazard; the validity timer is ownHazardValidityMs. */
+  …
+  after (ownHazardValidityMs * 1ms) to Idle {
+    hazardsExpired = hazardsExpired + 1;
   }
 }
 ```
 
-**Interactions.** Deadline analysis: entry deadlines remain literal or statically evaluated, so a computed `wait` can exceed its entry deadline only at runtime (existing violation). B18: Task `periodNs` uses the same `uint` nanoseconds. B19: guards are not durations. Units are by convention only (D4).
+The backoff loop is replaced under B7.
 
-**Cost.** Grammar S; validator M (static evaluation per occurrence, effect rules per position); simulator S; formatter S; projection/Timing M (declared grid from evaluated values, dynamic intervals); Ext M (Timing view `diagram-edit-timing.ts`, schedule entry creation form period/deadline fields accept expressions, Flow timer labels); docs S.
+**Cost.** Grammar S, validator M, constant evaluator M, simulator S, formatter S, projection M, docs S.
 
-### B7 Completion, guarded timer and result-driven transitions
+### B7 (with B10) Completion and guarded timer transitions
 
-**Problem.** Transitions fire only on input or `after`; spec 3.6: "There are no transition names, priorities or completion transitions" (removed by the 2.0 transition, `SWAML_2_0_TRANSITION.md` §307: "decisions move into that transition's guards"). A decision that depends on the result of work done in the state cannot be expressed, so v2x splits the session state machine from the worker that makes the request, connected by four events.
+**Before** (v2x `UplinkSessionManager.session` 1470–1481 and 1492–1503, plus the second component `UplinkTransfer.openSession`/`backoff` 1572–1606):
 
 ```text
-// v2x, UplinkSessionManager (1254-1266) + UplinkTransfer.openSession (1357-1368)
 state Connecting {
   on entry {
     enter(SessionState.connecting);
@@ -429,25 +552,58 @@ state Connecting {
     sessionId = id;
     sessionsOpened = sessionsOpened + 1;
   } on receive ctl.refused() to Backoff {
-  } …
+  } on receive network.coverage(up) when(not up) to Offline {
+    coverageLosses = coverageLosses + 1;
+  }
 }
-// in a second component:
+…
+state Backoff {
+  on entry {
+    enter(SessionState.backoff);
+    backoffs = backoffs + 1;
+    publish ctl.backoffRequested(attempts);
+  } on receive ctl.backoffElapsed() to Connecting {
+  } on receive network.coverage(up) when(not up) to Offline {
+    coverageLosses = coverageLosses + 1;
+    publish ctl.backoffAborted();
+  }
+}
+// UplinkTransfer
 operation openSession(attempt: uint) {
   var id: uint = try(cloud.openSession(vehicleId), 0);
-  …
-  if (id > 0) { sessionId = id; publish ctl.opened(id); } else { sessionRefusals = sessionRefusals + 1; publish ctl.refused(); }
+  sessionOpenAttempts = sessionOpenAttempts + 1;
+  lastOpenAttempt = attempt;
+  if (id > 0) {
+    sessionId = id;
+    publish ctl.opened(id);
+  } else {
+    sessionRefusals = sessionRefusals + 1;
+    publish ctl.refused();
+  }
 }
 ```
 
-**Recommendation: add** a guard-only *completion transition* `when (g) to S { … }` and an optional guard on timers `after D when (g) to S { … }`.
+**Recommendation: add** `when (g) to S { … }` (completion) and `after D when (g) to S { … }`. This reverses `SWAML_2_0_TRANSITION.md` §307 for guard-only completion (D3).
 
-Static (SW2008): a completion transition has a guard and a target (no internal completion); guards are pure or read state (existing rule); a final state has none; reachability includes completion edges; a cycle of states connected only by `when (true)` completion transitions is an error. Order within a state stays declaration order per trigger kind.
+**Static (SW2008).**
+- A completion transition has a target and no trigger.
+- Its guard is pure or reads state, and must not call `now()` (finding 6a).
+- A final state has no completion transitions.
+- Reachability includes completion edges.
+- A cycle connected only by `when (true)` is an error.
+- **SW2016 warning:** a completion guard that reads nothing written by the stateful operation's own entry, exit or effect blocks (or their callees), because it cannot change while the machine waits.
 
-Runtime (chapter 6.5 extension). After the entry actions of a state finish, and after every internal reaction (B8), the machine evaluates its completion transitions in declaration order; the first enabled one is taken immediately (exit, effect, state update, entry). Only when none is enabled does it select, as today, the earliest elapsed timer and then queued input. A timer whose guard is false at expiry is consumed for this state entry without a reaction (trace `discardTimer`), and the next timer with equal expiry is tried. Completion guards are not re-evaluated when other activations change attributes; a guard that becomes true later is seen only at the machine's next reaction. Chains of completion transitions run in one logical instant and are bounded by the step budget. Lock: unchanged (the machine holds the lock while reacting; entry may suspend and releases it).
+**Runtime.**
+- After the entry actions finish, and after every internal reaction (B8), completion transitions are evaluated in declaration order. The first enabled one is taken immediately. Otherwise the earliest elapsed timer is selected, then queued input.
+- A timer whose guard is false is consumed for this entry (`discardTimer`), and the next timer with equal expiry is tried.
+- Completion is **not** evaluated after `discardInput` or `discardTimer`.
+- An internal effect that suspends (a request inside `write(t)`, B8) keeps the state timers; on resumption, completion is evaluated first, then elapsed timers, as for entry actions.
+- A chain of completion reactions that enters the same state twice without consuming input or a timer is the contract violation `CompletionLoop`. It is not a step-limit stop, so a case fails rather than ending inconclusive (finding 6b).
 
-Views: Flow draws a completion transition as an edge without trigger labelled `[g]`; timer guards as `after D [g]`. Sequence unchanged. KerML: completion transition maps to a state-machine reaction without trigger (`TransitionUsage` with guard only, in the proposed semantic library). Keywords: `when` gains the completion production; `to` becomes optional (B8).
-
-**After.**
+**After.** One state machine:
+- `UplinkSessionManager` gains `reversed port cloud: CloudApi`, `const attribute vehicleId`, and `sessionOpenAttempts`, `sessionRefusals`, `lastBackoffMs`.
+- `UplinkTransfer` loses `openSession`, `backoffFor` and `backoff` and keeps the upload path.
+- `ctl` loses `openRequested`, `opened`, `refused`, `backoffRequested`, `backoffElapsed`, `backoffAborted`.
 
 ```text
 state Connecting {
@@ -455,6 +611,7 @@ state Connecting {
     enter(SessionState.connecting);
     attempts = attempts + 1;
     sessionId = try(cloud.openSession(vehicleId), 0);
+    sessionOpenAttempts = sessionOpenAttempts + 1;
   }
   when (sessionId > 0) to Connected {
     sessionsOpened = sessionsOpened + 1;
@@ -466,20 +623,43 @@ state Connecting {
     coverageLosses = coverageLosses + 1;
   }
 }
+…
+state Backoff {
+  on entry {
+    enter(SessionState.backoff);
+    backoffs = backoffs + 1;
+    lastBackoffMs = backoffDelayMs(attempts, backoffBaseMs, backoffCapMs);
+  }
+  after (lastBackoffMs * 1ms) to Connecting { }
+  on receive network.coverage(up) when (not up) to Offline {
+    coverageLosses = coverageLosses + 1;
+  }
+}
 ```
 
-The session manager now owns the `cloud` port (or a split of it, B12) and `vehicleId`. `openRequested`, `opened`, `refused`, `backoffRequested`, `backoffElapsed`, `backoffAborted` and the second component's session operations disappear (with B6 Backoff above). A coverage loss during the open request stays queued until entry completes and is handled in the next state; this is stated in the model doc.
+Notes:
+- A coverage loss queued during the open request is taken in the next state (Connected or Backoff), because both handle `network.coverage` (finding 6d).
+- Tests that read `app.uplink.transfer.lastBackoffMs` and `backoffsCompleted` move to `app.uplink.session.lastBackoffMs` and `backoffs`.
+- B10 (door) needs nothing beyond this: an entry action writes an attribute and a completion transition decides on it.
 
-**Interactions.** Ordered nested transitions: completion first, then elapsed timers, then input; each group in declaration order. B8 internal reactions re-trigger completion evaluation, which makes counting-then-tripping state machines direct (B8 after). B10 is covered. B14 sampled reads and B5 `now()` are allowed in completion guards. A completion transition out of a state with a running request in entry cannot interrupt that request (entry completes first, existing rule). Formal semantics table 9.3 "state reaction" gains the completion step.
-
-**Cost.** Grammar S; validator M (forms, reachability, cycle check); simulator M (`machine()` selection loop); formatter S; projection M (Flow state graph); Ext M (Flow transition kinds in `diagram-flow.ts`, transition creation card: trigger kind receive/timer/completion/internal, reorder gestures unchanged); docs M (3.6, 6.5, 9.3, ADR reversing the 2.0 removal).
+**Cost.** Grammar S, validator M, simulator M (`machine()` selection, `CompletionLoop`), formatter S, projection M, docs M (3.6, 6.5, 9.3, ADR 0023).
 
 ### B8 Internal transitions
 
-**Problem.** Every reaction leaves and re-enters its state, restarting timers and re-running entry actions.
+**Before** (cloud `PersistenceWriter.circuit` 1254–1276):
 
 ```text
-// cloud, PersistenceWriter.circuit (1222-1229)
+state Closed {
+  on entry {
+    enter(Breaker.closed);
+  }
+  on receive stream.accepted(t) when (consecutiveFailures >= failureThreshold) to Open {
+    trippingArrivals = trippingArrivals + 1;
+  }
+  on receive stream.accepted(t) to Closed {
+    write(t);
+  }
+}
 state Open {
   /** Arrivals have no transition here and are discarded; a self-transition would restart the cool-down timer. */
   on entry {
@@ -490,9 +670,14 @@ state Open {
 }
 ```
 
-**Recommendation: add.** A transition without `to` is internal: on selection it runs only its effect; no exit, no entry, no state update, timers keep their epoch and generation. A timer transition without `to` fires at most once per state entry. A completion transition requires `to`. Afterwards completion transitions are evaluated (B7). Explicit self transitions keep their 2.2 meaning (exit/entry, timer restart), so existing models are unchanged. Diagnostics SW2008. Trace: `state` event with `internal: true` and the transition source. Views: Flow lists internal transitions inside the state compartment as `trigger / effect`. KerML: reaction with no target state change.
+**Recommendation: add.** A transition without `to` is internal: it runs only its effect, with no exit, entry or state update, and timers keep their epoch.
+- An internal timer fires at most once per entry.
+- A completion transition requires `to`.
+- Completion transitions are evaluated after each internal reaction.
+- Explicit self transitions keep their 2.2 meaning.
+- Trace: a `state` event with `internal: true`.
 
-**After.**
+**After** (same states):
 
 ```text
 state Closed {
@@ -509,423 +694,477 @@ state Open {
     enter(Breaker.open);
   }
   on receive stream.accepted(t) {
-    shed = shed + 1;
+    shedArrivals = shedArrivals + 1;
   }
   after 2s to HalfOpen { }
 }
 ```
 
-The breaker now trips right after the third failed write instead of "on the next arrival", and shed arrivals are counted without restarting the cool-down.
+This is a deliberate behaviour change. The breaker trips right after the third failed write instead of at the next arrival (`trippingArrivals` disappears), and shed arrivals are counted instead of appearing only as discards. The test `'Store outage trips the breaker and recovers'` (2940) updates its expected counters.
 
-**Interactions.** Single input owner unchanged (internal transitions are transitions of the same machine). B9: an internal transition on `m` and a deferral of `m` in the same state are mutually exclusive.
-
-**Cost.** Grammar S (shared with B7); validator S; simulator S; formatter S; projection S; Ext S–M (Flow compartment, creation card "internal" option); docs S.
+**Cost.** Grammar S (shared), validator S, simulator S, docs S.
 
 ### B9 Deferral
 
-**Problem.** An input without a transition in the current state is discarded (`discardInput` reason `inactiveOwner`), so the cloud router keeps its own waiting ring and a busy flag for the escalation desk.
+**Before** (door `LockControl.control` 1924–1944): a lock or unlock request during the 250 ms pulse has no transition and is discarded.
 
 ```text
-// cloud, AlertRouter.page / deskFree (1318-1341)
-operation page(a: Alert) {
-  paged = paged + 1;
-  if (not deskBusy) {
-    deskBusy = true;
-    publish pages.page(a);
+state locking {
+  on entry {
+    send motor.lockMotor(LockDrive.lockPulse);
+  }
+  on exit {
+    send motor.lockMotor(LockDrive.idle);
+  }
+  on receive crash.crashUnlock() to crashUnlocking {
+  }
+  after 250ms to locked { … }
+}
+```
+
+**Recommendation: add** `defer p.m, …;` in a state.
+
+**Static (SW2008).**
+- Each deferred member is owned by this machine's transitions.
+- A state cannot both defer `m` and have a transition on `m` (D8).
+- A final state defers nothing.
+- Some state must handle `m`.
+- **SW2016 warning:** a deferred member whose effective policy has `overflow = reject`, because a full queue fails the sender.
+
+**Runtime.**
+- In a deferring state, input for `m` stays in its connection queue. Capacity, overflow and `maxAge` apply observably.
+- On entering a state that handles retained members, retained input is consumed in **global offer-ordinal order** across all of the machine's queues (finding 8). This is not queue-creation order; `simulator.ts:1125` must change for retained input.
+- On entering a state that neither handles nor defers `m`, retained input is discarded at the next wait (`inactiveOwner`).
+- Trace: one `defer` event per retained message.
+
+**After:**
+
+```text
+state locking {
+  defer requests.request;
+  on entry {
+    send motor.lockMotor(LockDrive.lockPulse);
+  }
+  on exit {
+    send motor.lockMotor(LockDrive.idle);
+  }
+  on receive crash.crashUnlock() to crashUnlocking {
+  }
+  after 250ms to locked { … }
+}
+```
+
+Notes:
+- `unlocking` gets the same `defer requests.request;`.
+- Both routes into `lock.requests`, `lockRequests: RteQueued` and `keyFob: CrossCore` (2274–2275), use `reject`, so SW2016 asks for a decision: keep capacity 8, or move to a `dropOldest` policy.
+- The cloud `AlertRouter` waiting ring is **not** removed by deferral, because the router also drops waiting pages of alerts that resolved meanwhile (`stillOpen`, 1384–1390), which the desk cannot see. Revision 1's claim is withdrawn.
+
+**Cost.** Grammar S, validator S, simulator M, docs S.
+
+### B11 Indexed parts in tests; port arrays; per-index configuration
+
+**Before.** Cloud tests can read `backend.fleet.views[0]` but no twin, so the breaker is tested on a separate top-level `writer` with stubs (2927–2978). The router selects ports by `if` (896–916):
+
+```text
+operation route(t: Telemetry) {
+  if (t.slot == 0) {
+    routed = routed + 1;
+    publish slot0.reading(t);
   } else {
-    if (waitingCount < 4) {
-      waiting = WithAlert(waiting, (waitingHead + waitingCount) % 4, a);
-      waitingCount = waitingCount + 1;
+    if (t.slot == 1) {
+      routed = routed + 1;
+      publish slot1.reading(t);
     } else {
-      droppedPages = droppedPages + 1;
+      unroutable = unroutable + 1;
     }
   }
 }
 ```
 
-(door: an unlock request during the 250 ms lock pulse is discarded in `locking`.)
+**Recommendation.**
+- **(a) Add.** In test inspection paths, a component multiplicity segment takes a literal index, for reads (B2 grammar) and helper calls (`CallExpression: Path`).
+  - A non-literal index on a component segment is SW2010.
+  - Roots stay non-multiple top-level occurrences (ADR 0020); only parts inside the root may be indexed.
+- **(b) Not in 2.3.** Port arrays with literal-index connects plus a runtime-indexed emission (`publish slots[t.slot].reading(t);`, failing `Bounds` out of range) select among statically closed routes, exactly like the `if` ladder. They are not dynamic topology, so they are a clean additive candidate for 2.4 (D12). They stay out of 2.3 to limit scope.
+- **(c) Reject** per-index configuration; use distinct usages.
 
-**Recommendation: add** `defer p.m, …;` inside a state; `defer` is contextual.
-
-Static (SW2008): each endpoint is an input member owned by this stateful operation's transition set; a state cannot both defer `m` and have a transition on `m`; a final state defers nothing; a deferred member must be handled by some transition in the machine (otherwise it could never be consumed).
-
-Runtime: while the machine is in a state that defers `m`, input for `m` stays in its connection queue instead of being discarded. FIFO order per queue is preserved; retained input occupies capacity, so later offers obey the connection's overflow policy and `maxAge` discards at eligibility (all existing, observable). When the machine enters a state with a transition on `m`, it consumes the oldest retained input first; when it enters a state that neither handles nor defers `m`, retained input is discarded at its next wait (`discardInput`, reason `inactiveOwner`) as today. Attributes keep only their latest pending value. Trace: `defer` event once per retained message. Determinism unchanged.
-
-Views: Flow lists `defer m` in the state compartment; Sequence shows the message delivered later (no change to the message identity). KerML: deferred trigger metadata on the state. Keywords: `defer` (contextual, production `Deferral`).
-
-**After.**
+**After (a)** (an existing backend test, 2620 onwards):
 
 ```text
-// EscalationDesk
-state Paging {
-  defer pages.page;
-  on entry { … }
-  …
-}
-state Escalated {
-  defer pages.page;
-  …
-}
-// AlertRouter.page
-operation page(a: Alert) {
-  paged = paged + 1;
-  publish pages.page(a);
-}
+assert backend.twins[0].link == LinkState.offline;
+var view: VehicleView = backend.twins[0].currentView();
+assert view.vehicleId == "TRK-101";
 ```
 
-with `connect paging: PageBacklog (router.pages, desk.pages);` where `PageBacklog` has `capacity = 4; overflow = Overflow.dropNewest;` (drops become observable overflow events instead of a counter). `deskBusy`, `waiting`, `waitingHead`, `waitingCount`, `deskFree`, `WithAlert` go away. Door `state locking { defer requests.request; … }`.
+**Cost.** Grammar S, validator S (`testAccessRoots`), simulator S, docs S (3.7, ADR 0020 amendment).
 
-**Interactions.** A5 (SW2012 on interrupt regions) is a different mechanism; deferral is states only. B8 exclusivity. B13: the member's effective policy governs retained capacity.
+### B12 Boundary port to several children (Tier 2)
 
-**Cost.** Grammar S; validator S; simulator M (do not discard while deferred; consume retained input on state change); formatter S; projection S; Ext S–M (Flow compartment, completion of `defer` endpoints, creation card); docs S.
+**Evidence.** Revision 1 cited cloud `CommandService`. In `cc16c25` its ports are split by multiplicity (`downlink0/1`, `acks0/1`, 1708–1735), which is B11b, not member split. No instance remains in the three models.
 
-### B10 Entry action picks a transition
-
-**Problem.** An entry action cannot choose the next state from its own result.
-
-```text
-// door, ModeManager (1140-1151)
-state sleep {
-  on entry {
-    var stored: bool = try(nvm.writeAll(), false);
-    nvmStored = stored;
-    sleeps = sleeps + 1;
-    announce(PowerMode.sleep);
-  }
-  on receive wake.request(source) to wakeup { lastWake = source; }
-}
-```
-
-**Recommendation: covered by B7** (no separate construct). Entry writes an attribute; completion transitions decide. Entry locals stay invisible to transitions (no capture, unchanged).
-
-**After.**
-
-```text
-state shutdown {
-  on entry {
-    nvmStored = try(nvm.writeAll(), false);
-  }
-  when (nvmStored) to sleep { }
-  when (true) to postRun {
-    writeAllFailures = writeAllFailures + 1;
-  }
-}
-state sleep {
-  on entry {
-    sleeps = sleeps + 1;
-    announce(PowerMode.sleep);
-  }
-  on receive wake.request(source) to wakeup { lastWake = source; }
-}
-```
-
-**Cost.** Included in B7.
-
-### B11 Multiplicity
-
-**Problem.** (a) Tests cannot inspect `twins[0]` (ADR 0020: "intermediate component indexes remain unsupported"); the cloud model adds a separate top-level `writer` to test the breaker. (b) No port arrays/connector loops (spec 1.2, `SWAML_2_0_TRANSITION.md` §41), so the router owns `slot0`/`slot1` and selects by `if`. (c) No per-index configuration.
-
-```text
-// cloud, TelemetryRouter.route (863-875)
-if (t.slot == 0) {
-  routed = routed + 1;
-  publish slot0.reading(t);
-} else {
-  if (t.slot == 1) { routed = routed + 1; publish slot1.reading(t); } else { unroutable = unroutable + 1; }
-}
-```
-
-**Recommendation.** (a) **add**: in test inspection paths a component multiplicity segment may carry a literal index, for reads (`ReferenceExpression`, B2 grammar) and helper calls (`CallExpression` target becomes `Path`). Rules: index literal in range (SW2010); only in test scripts; same ADR 0020 helper restrictions. (b) **reject, keep by design**: dynamic port selection is dynamic topology, which breaks static closure, per-connection queues and per-package analysis (spec §2 "no dynamic topology", ADR 0019). The model keeps one port per partition. (c) **reject**: multiplicity means identical replicas; declare distinct usages when configuration differs (`component puddle: CourtesyLamp { redefines const attribute stepPercent: uint = 10; }`).
-
-**After.**
-
-```text
-test 'Silent vehicle detected offline' of backend {
-  …
-  assert backend.twins[0].link == LinkState.offline;
-  var view: VehicleView = backend.twins[0].currentView();
-  assert view.vehicleId == "TRK-101";
-}
-```
-
-(A call result is not followed by selectors; that would need a further `CallExpression` change and is not proposed.)
-
-**Interactions.** B2 grammar. Case/Sequence views: white-box lifelines may now be indexed parts. The existing reference limit "white-box paths follow single parts" is lifted for tests.
-
-**Cost.** Grammar S; validator S (`testAccessRoots` index); simulator S; Ext S–M (`test-inspection.ts`, `testCanAccess`, completion after `twins[`); docs S (3.7, ADR 0020 amendment).
-
-### B12 Boundary port forwarded to several children (Tier 2)
-
-**Problem.** "Each boundary and child port is forwarded at most once" (spec 2.3), so a service whose members are served by different children needs one boundary port per child.
-
-```text
-// cloud, CommandService (1602-1619)
-port api: CommandApi;
-reversed port directory: VehicleLookup;
-port downlink: CommandDownlink;
-reversed port acks: CommandAcks;
-…
-connect (api, intake.api);
-connect (downlink, tracker.downlink);
-connect (acks, tracker.acks);
-```
-
-**Recommendation: add (member split)** without syntax: a boundary port may be forwarded to several immediate child ports when its members are partitioned among them. Rules (SW2004): every boundary member is supplied by exactly one forwarded child port with preserved direction and compatible payload; every requires member of each child port appears in the boundary; a child port is still forwarded at most once; required attributes/operations still have exactly one peer after resolution. Runtime: alias resolution is per member; no queue or hop added. Fan-out of one member to several children stays rejected (use connections inside). Views: Interconnect draws one forwarding edge per child labelled with its member subset. KerML: per-member alias projection (already per-member in 5.1).
-
-**After.** `port vehicleSide: CommandVehiclePort;` with `connect (vehicleSide, tracker.vehicleSide); connect (vehicleSide, intake.vehicleSide);` where the child port definitions hold disjoint member subsets.
-
-**Interactions.** B13: a member policy names a member of the connection, independent of the split.
-
-**Cost.** Validator M (`connectionRoutes`, closure); simulator S; Ext M (Interconnect edge labels, forwarding creation that offers member subsets); docs S.
+**Recommendation:** keep as a Tier 2 addition without a showcase proof:
+- each boundary member is supplied by exactly one forwarded child port;
+- every required member of each child appears in the boundary;
+- a child port is forwarded at most once;
+- required attributes and operations keep one peer (SW2004).
 
 ### B13 Policy per member
 
-**Problem.** One `qos def` per connection; a bus with event frames and cyclic signals needs different policies per member.
+**Before** (door 163–174 and 2779):
 
 ```text
-// door, DoorEcu::Interfaces (163-174) and the package connection
 qos def BodyCanFrames: Policy {
-  /** Body CAN: event-triggered frames are queued and retransmitted until acknowledged;
-      cyclic frames are attributes and always keep only their latest value. */
+  /**
+   * Body CAN: event-triggered frames are queued and retransmitted until acknowledged;
+   * cyclic frames are attributes and always keep only their latest value.
+   */
   delivery = Delivery.atLeastOnce; ordering = Ordering.fifo; capacity = 8; overflow = Overflow.reject; requestTimeout = 1s; maxLatency = 5ms;
 }
 connect bodyCan: BodyCanFrames (bcm.bus, dcu.canBus);
 ```
 
-**Recommendation: add** an optional body `{ member: Policy; … }` on `connect` (section 1). Static (SW2004/SW2013): forwarding cannot have member policies; each member names a member of the connected port pair present on both sides after compatibility; at most once per member; the effective policy of a member is its member policy, else the connection policy, else `Default`; idempotency obligations are checked per member against its effective policy. Runtime: queue identity is already per connection occurrence, direction and member; the effective policy is looked up per member. Normalized model 7.3 records the effective policy per member route. Views: Interconnect shows member policies in the connection label/tooltip; Grid adds a column. KerML: `MemberPolicy` → `value` binding on the connector's member projection. Keywords: none.
+**Recommendation: add** an optional `connect … { member: Policy; }` body.
+- **Static (SW2004/SW2013):** not on forwarding; the member exists in the connected pair; at most once per member.
+- **Effective policy:** the member policy, else the connection policy, else `Default`. Idempotency is checked per member.
+- **Redefinition:** `redefines connect` replaces the whole connection, including its member policies (whole-member redefinition).
+- **Spec 2.4 wording:** "per-use overrides do not exist" becomes "member policies select named policies per member; field overrides do not exist".
+- **Runtime:** queues are already per member; the policy lookup becomes per member.
 
-**After.**
+**After.** `CanEvent` is a new `qos def` in `DoorEcu::Interfaces` holding the current `BodyCanFrames` values; `BodyCanFrames` becomes the policy for the cyclic frames.
 
 ```text
 connect bodyCan: BodyCanFrames (bcm.bus, dcu.canBus) {
   crash: CanEvent;
   centralLock: CanEvent;
+  comfortClose: CanEvent;
   lockStatus: CanEvent;
-  vehicleStatus: Latest;
+  remoteMirror: CanEvent;
 }
 ```
 
-**Interactions.** B9 retained capacity; B12 independent. A per-member `requestTimeout` applies to operation members.
+**Cost.** Grammar S, validator S–M, simulator S, docs S.
 
-**Cost.** Grammar S; validator S–M; simulator S; formatter S; Ext M (Interconnect labels, connection property editor, creation card field with server completion of member names); docs S.
+### B14 Sampled read of a required attribute
 
-### B14 Synchronous read of a required attribute
-
-**Problem.** A required attribute can only be consumed by its single owner, so every reader caches it through a receive-triggered operation.
+**Before** (door `ComMain` 754–760 and 811–816; the door model's own doc at 444–455 says "swa.ml has no non-activating read of a required attribute"):
 
 ```text
-// door, LockControl (1704-1709, 1718-1723)
-operation setAjar(value: bool) { ajar = value; }
-operation setFeedback(value: bool) { switchLocked = value; }
+operation storeAjar(ajar: bool) {
+  doorAjar = ajar;
+}
+operation storeWindow(status: WindowStatus) {
+  windowState = status;
+}
 …
-on receive door.ajar(value) setAjar(value);
-on receive feedback.lockSwitchLocked(value) setFeedback(value);
+on receive door.ajar(ajar) storeAjar(ajar);
+on receive window.windowStatus(status) storeWindow(status);
 ```
 
-**Recommendation: add** *sampled reads*: inside an operation (not a case script), the value path `p.m`, where `p` is an owned port and `m` a required attribute member from this side, reads the member's sample cell.
+**Recommendation: add.** In an operation, `p.m` reads a sample cell. `p` is an owned port, not a forwarded boundary (SW2005); `m` is a required attribute.
 
 | Aspect | Rule |
 | --- | --- |
-| Cell | Each port occurrence × required attribute member that is sampled anywhere in the component has one sample cell, updated with the delivered value at delivery eligibility (after latency and faults), independent of consumption. |
-| Initial | `requires`/`provides attribute m: T = e;` gives the cell's initial value (pure initializer, assignable; meaningful only for the receiving side). Without it, a read before the first delivery is a runtime failure (`unavailable`), catchable by `try`. |
-| Owners | Sampling is not consumption. The member has either exactly one consuming owner (as today) or none when it is sampled (SW2005 counts sampling as ownership for provenance). |
-| Effects | A sampled read is a state read: allowed in guards, schedule guards (B19), completion guards; concurrent entries read the dispatch snapshot of the cell; serial resumption reads the live cell. |
-| Name resolution | Lexical-first: a live local/parameter wins; component members share one namespace, so an attribute and a port cannot have the same name. |
+| Cell | One per port occurrence × sampled member, updated at delivery eligibility (after latency and faults), independent of consumption. |
+| Initial (D7) | Mandatory: when any component samples a member, its declaration must have `= e` (pure, assignable) (SW2005). Reads never fail, including inside transition, completion and release guards. |
+| Ownership (finding 7b) | Sampling is not ownership. A sampled required attribute may have zero or one consuming owner; an unsampled one keeps exactly one. |
+| Effects | A state read. Concurrent entries read the dispatch snapshot; serial resumption reads live. |
+| Trace | A `deliver` into a cell carries `sample: true`; reads are not traced. |
 
-Runtime trace: `deliver` events into a cell carry `sample: true`; reads are not traced (like attribute reads). Views: Flow shows the read in statement text; Interconnect/Sequence unchanged (the message arrow already exists); Grid lists sampled members. KerML: the cell is a feature of the port occurrence, reads are feature reads. Keywords: none.
+Sampled reads cover level-triggered use only. Edge reactions keep their receive handlers: resetting on a mode change, switching outputs off on entering sleep, detecting wake-up.
 
-**After.**
+**After.** Port definitions gain initial values:
+- `port def DoorState { provides attribute ajar: bool = false; }`
+- `port def WindowStatusPort { provides attribute windowStatus: WindowStatus = record WindowStatus { positionCounts = 250; pinchActive = false; learned = false; }; }`
+
+`storeAjar`, `storeWindow`, `doorAjar`, `windowState` and two schedule entries are removed. In `txMainFunction`:
 
 ```text
-port def ModeState { provides attribute current: PowerMode = PowerMode.startup; }
-…
-on receive requests.request(command) when (command == LockRequest.lock and not door.ajar) to locking { }
-…
-operation checkFeedback(expectLocked: bool) {
-  publish diag.report(FaultId.lockActuator, feedback.lockSwitchLocked != expectLocked);
-}
+send tx.doorStatus(record DoorStatusPdu {
+  ajar = door.ajar;
+  locked = locked;
+  windowCounts = window.windowStatus.positionCounts;
+  pinchActive = window.windowStatus.pinchActive;
+  powerMode = mode.current;
+  alive = txAlive;
+});
 ```
 
-(`port def DoorAjar { provides attribute ajar: bool = false; }`, `port def LockFeedback { provides attribute lockSwitchLocked: bool = false; }`; `setAjar`, `setFeedback`, `ajar`, `switchLocked` and two schedule entries disappear.)
+The mode as a level needs a new port definition; the existing `ModeBroadcast` stays as the edge:
+- `port def ModeState { provides attribute current: PowerMode = PowerMode.startup; }`
+- `ModeManager` gains `port modeState: ModeState` and `send modeState.current(next);` in `announce`.
+- The eight consumers gain `reversed port mode: ModeState` and a connection (the pattern of 2302–2309).
+- They keep their `ModeBroadcast` handlers where they react to edges: `ComMain.onMode`, `LinMaster.onMode` (poll reset), `IoHwAbOutput.onMode` (outputs off), and wake detection in `IoHwAbInput`/`CanInterface`.
 
-**Interactions.** I3 (single input owner) is refined, not weakened: one consumer at most, any number of readers in the owning component. Stale reads (A2): a sampled read before suspension is a state read. B19 uses it for modes. Attribute queue replacement semantics unchanged.
+**Cost.** Grammar S, validator M, simulator M, docs M (2.1, 3.1, 6.4, 9.2).
 
-**Cost.** Grammar S (initial); validator M (resolution, owner rule, effects); simulator M (cells, snapshot); Ext M (completion of `port.member` in expressions and guards, hover, owner diagnostics, Flow labels); docs M (2.1, 3.1, 6.4, 9.2).
+### B15 Reserved member names
 
-### B15 Reserved words as member names
+**Before** (v2x 1452): `attribute sessionState: SessionState = SessionState.offline;`
 
-**Problem.** `view`, `state`, `out` are reserved; names are quoted or bent.
+**Recommendation: add** `view`, `state`, `in`, `out` and `defer` to `Name`. Verified in every name position: attribute, local, parameter, operation, state, initial state, port endpoint, view, and both `for` … `in` positions.
 
-```text
-// v2x, UplinkSessionManager (1236)
-attribute sessionState: SessionState = SessionState.offline;
-```
+**After:** `attribute state: SessionState = SessionState.offline;` The tests at 2322, 2363, 2379 and 2391 then read `app.uplink.session.state`.
 
-**Recommendation: add** `view`, `state`, `in`, `out` (and the new `defer`) to the contextual words (grammar `Name`). Purely additive. Tools still write quoted names only where a basic name is illegal (`names.ts` reserved list shrinks). TextMate keeps highlighting them in keyword positions only where feasible.
+**Cost.** Grammar S, `names.ts` S, docs S.
 
-**After.** `attribute state: SessionState = SessionState.offline;`
+### B16 Association lists; absence assertions
 
-**Cost.** Grammar S; `names.ts` S; parser ambiguity tests S; Ext S (`swaml-name.ts` spelling, TextMate); docs S (1.1).
-
-### B16 Associations per pair; absence assertions
-
-**Problem.** One line per actor/case pair (28–30 lines per model).
+**Before** (cloud 2256–2266):
 
 ```text
-// cloud (2111-2120)
 associate truck to 'Monitor live position';
 associate alderDispatcher to 'Monitor live position';
 associate truck to 'Command a vehicle';
 associate alderDispatcher to 'Command a vehicle';
+associate truck to 'Respond to a critical alert';
+associate pager to 'Respond to a critical alert';
+associate onCall to 'Respond to a critical alert';
+associate alderDispatcher to 'Respond to a critical alert';
+associate truck to 'Run a firmware campaign';
+associate van to 'Run a firmware campaign';
+associate alderDispatcher to 'Run a firmware campaign';
+```
+
+**Recommendation.**
+- **Add** the list form: every listed occurrence is associated with every listed case. Each pair follows SW2010; a duplicate pair, also across statements, is an error.
+- **Keep** absence assertions as `on receive … { fail "…"; } or after D { }`, which is bounded by design.
+
+**After:**
+
+```text
+associate truck, alderDispatcher to 'Monitor live position', 'Command a vehicle', 'Respond to a critical alert', 'Run a firmware campaign';
+associate pager, onCall to 'Respond to a critical alert';
+associate van to 'Run a firmware campaign';
+```
+
+**Cost.** Grammar S, validator S, formatter S, docs S. Extension E1 must fix a data loss (§5.4).
+
+### B17 Operation-level deployment
+
+**Before** (door 2786–2815 and the model's doc at 444–455). Components are split so that each occurrence's deadline-carrying runnables share one task: `IoHwAbInput`/`IoHwAbOutput` and `CanInterface`/`ComMain` are separate for that reason, and receive entries that only copy a value stand for RTE buffer updates.
+
+```text
+deploy ioIn on doorModules[0].core0.isrAdc;
+deploy ioOut on doorModules[0].core0.taskEventHigh;
 …
+deploy canIf on doorModules[0].core1.isrCan;
+deploy comMain on doorModules[0].core1.task20ms;
 ```
 
-**Recommendation.** **Add** the list form (cross product, section 1). Every pair obeys the existing SW2010 rules; a duplicate pair, also across statements, is an error at the later reference. Rename/projection edit each reference. Case view: unchanged edges. KerML: one association link per pair. **Keep** the absence idiom: absence is only decidable within a bounded interval, which `on receive … { fail "…"; } or after D { }` states explicitly.
+**Recommendation: add.** No new syntax; the existing `Path` already allows it.
+- A placement may end at an operation that is the target of at least one effective schedule entry.
+  - It applies to all activations released by those entries.
+  - Callees run in their caller's placement.
+  - It overrides the occurrence placement.
+- **Same Core (finding 3a, SW2009):** all placements of one component occurrence, at component and operation level, resolve to Tasks of one Core (or to Nodes outside any Core). One serial lock therefore never spans Cores until the Tier 2 timed run defines cross-core blocking.
+- **Granularity (D13):** per operation. An operation released both periodically and by an event that needs different Tasks is split with a wrapper operation (`operation pollEvent() { poll(); }`).
 
-**After.** `associate truck, alderDispatcher to 'Monitor live position', 'Command a vehicle', 'Run a firmware campaign';`
-
-**Cost.** Grammar S; validator S; formatter S; Ext S–M (`case-model.ts`, rename, associate creation/removal edits must split a list instead of deleting a line); docs S.
-
-### B17 Runnable-level deployment
-
-**Problem.** Placements target component occurrences; a component whose operations run in different tasks cannot be split.
+**After.** `comMain` keeps its periodic main functions on `task20ms`. The receive entries that would break B18 rule T2 move to event Tasks of the same Core:
 
 ```text
-// door (2384-2406); IoHwAb has a 5 ms task (protect) and event-triggered acquire/distribute
-deploy ioHwAb on doorModules[0].core0.task5ms;
-deploy com on doorModules[0].core1.task20ms;
+deploy comMain on doorModules[0].core1.task20ms;
+deploy comMain.storePdu on doorModules[0].core1.isrCan;
+deploy comMain.storeLock on doorModules[0].core1.taskEventLow;
+deploy comMain.onMode on doorModules[0].core1.taskEventLow;
+deploy linIf on doorModules[0].core0.task20ms;
+deploy linIf.storeResponse on doorModules[0].core0.taskEventHigh;
+deploy linIf.onMode on doorModules[0].core0.taskEventLow;
 ```
 
-**Recommendation: add (semantic only).** A placement path may end at an operation of a component occurrence (`deploy ioHwAb.protect on …;`, existing `Path` grammar). Static (SW2009): the operation is the target of at least one effective schedule entry of that occurrence; the placement applies to every activation released by those entries; called operations run in their caller's activation and placement; an operation placement overrides the occurrence's placement; exact-path uniqueness applies. Runtime: the serial lock stays per component occurrence across tasks (cross-task contention appears as lock gaps, like an AUTOSAR exclusive area); placements are recorded per activation (`release`/`dispatch` events get `placement`). Placement granularity is the operation, not the individual schedule entry (D13). Views: General (deployment) draws operation-to-Node edges; Timing groups lanes by Task (B18). KerML: deployment metadata on the operation occurrence.
+A team may now merge `ioIn` and `ioOut` (both on core0), and `canIf` and `comMain` (both on core1), back into single components. Whether that reads better is decided in the WP9 showcase rewrite; it is not required.
 
-**After.**
+**Cost.** Validator M (placement targets, same Core), simulator S, docs S (4.1).
 
-```text
-deploy ioHwAb on doorModules[0].core0.taskEvent;
-deploy ioHwAb.protect on doorModules[0].core0.task5ms;
-deploy com on doorModules[0].core1.task20ms;
-deploy com.rxVehicleStatus on doorModules[0].core0.taskEvent;
-```
+### B18 Tasks
 
-**Interactions.** B18 gives placement scheduling meaning. Occurrence placement and specificity rules are unchanged for components.
-
-**Cost.** Validator S; simulator S (placement per activation); projection S; Ext M (deployment edges and placement creation that offers operations, Timing grouping); docs S (4.1).
-
-### B18 Task period, priority, preemption, budget
-
-**Problem.** Task attributes are plain const attributes without meaning; the model documents an OS schedule that the run ignores.
+**Before** (door 2667–2744):
 
 ```text
-// door (2297-2312)
 component def OsTask specializes Process {
-  /** An OS task: activation period (0 = event-triggered) and priority (higher wins). */
+  /**
+   * An OS task: period (0 for an event-activated task or interrupt), response bound of an
+   * event task, priority (higher wins) and category. The values document the target
+   * configuration; the reference run does not schedule by them.
+   */
   const attribute periodUs: uint = 0;
+  const attribute responseUs: uint = 0;
   const attribute priority: uint = 0;
+  const attribute category: string = "basic";
 }
 component def SafetyCore specializes Partition {
-  component task5ms: OsTask {
-    redefines const attribute periodUs: uint = 5000;
-    redefines const attribute priority: uint = 30;
+  …
+  component isrAdc: OsTask {
+    redefines const attribute responseUs: uint = 500;
+    redefines const attribute priority: uint = 60;
+    redefines const attribute category: string = "isr2";
   }
   …
-}
+  component task20ms: OsTask {
+    redefines const attribute periodUs: uint = 20000;
+    redefines const attribute priority: uint = 30;
+  }
 ```
 
-**Recommendation.** Tier 1 **library + static meaning + ordering**; Tier 2 **timed profile** (D10).
+**Recommendation.** Tier 1: a source library, static rules, ordering and the binding schema. Tier 2: the timed run.
 
 ```text
 package Swaml::Os {
   import Swaml::Platform;
+  enum TaskKind { basic, extended, isr }
   component def Core specializes Node { }
   component def Task specializes Process {
+    const attribute kind: TaskKind = TaskKind.basic;
     const attribute priority: uint = 0;
-    const attribute periodNs: uint = 0 /** 0: no period constraint (event-triggered or mixed). */;
+    const attribute preemptive: bool = true;
+    const attribute periodNs: uint = 0 /** 0: event-activated. */;
+    const attribute responseNs: uint = 0 /** Response bound of an event-activated task or ISR; 0: none. */;
   }
 }
 ```
 
-Tier 1 static (SW2009): Task priorities are unique among the Tasks of one Core (nearest `Core` ancestor; Tasks without one compete per platform root); every `on every` entry released on a Task with `periodNs > 0` has a period that is a positive multiple of `periodNs`; placements are on Tasks or ordinary Nodes as before. Tier 1 runtime: at equal logical time and phase, pending dispatches and ready continuations of activations placed on Tasks are ordered by descending Task priority, then by the existing insertion ordinal; unplaced activations have priority 0. With zero-cost steps this is the only observable effect; preemption and budgets have no meaning in the zero-cost profile and the documentation says so.
+**Tier 1 static rules (SW2009).** The Tasks of a Core are those below their nearest `Core` ancestor.
 
-Tier 2 (follows): a **target binding** file (not source, per ADR 0016) supplies execution-cost assumptions per operation (and optionally per entry), plus `preemptive` and `budgetNs` per Task. A separate profile `swaml-reference-timed/2.x` runs fixed-priority scheduling per Core with costs: activations consume CPU time, a higher-priority release preempts at statement boundaries on preemptive Tasks, budget overruns and deadline misses are violations. Results are evidence under recorded cost assumptions, never schedulability proof.
+| # | Rule |
+| --- | --- |
+| T1 | Priorities are unique among the Tasks of one Core (D11). |
+| T2 | A Task with `periodNs > 0` receives only `every` entries whose period is a positive multiple of `periodNs`, plus `after` successors of entries on the same Task (finding 3b). Event entries (`receive`, `call`, `start`) go to Tasks with `periodNs = 0`. |
+| T3 | An `isr` Task receives only `receive` entries and their `after` successors, has `periodNs = 0` and is preemptive. |
+| T4 | An activation that may suspend (transitive suspend effect in a wait, request, receive, or a suspending entry/exit/effect) is placed only on an `extended` Task (finding 3c). The idle wait of a stateful operation between reactions does not count: each reaction runs to completion and maps to one activation of a basic task. |
+| T5 | If `responseNs > 0`, every entry placed on the Task that has a deadline has `deadline >= responseNs`. |
+| T6 | Once a deployment places anything on a Task, every schedule entry of the deployed tree must resolve to a Task (complete mapping). |
+| T7 | Same Core per component occurrence (B17). |
 
-Views: General shows Cores/Tasks as Nodes; Timing declared mode groups lanes by Task and orders them by priority; observed mode (Tier 2) shows CPU occupancy per Core. KerML: library definitions.
+**In-task order (finding 3d).** Expressed with existing syntax and specified: the position of an activation in its Task is the order of the `deploy` statements naming that Task in the deployment. A component placement contributes its entries in schedule order.
 
-**After.**
+**Reference run (Tier 1).** Releases, dispatches and ready continuations at equal logical time and phase are ordered by descending Task priority, then in-task position, then the existing insertion ordinal. Unplaced activations have priority 0. With zero-cost steps, `preemptive`, `kind` and `responseNs` have no effect on the run beyond the static rules, and the documentation says so.
+
+**Binding schema (defined in 2.3, WP8).** `spec/binding.schema.json`, `"schema": "swaml-binding/2.3"`:
+
+```text
+{
+  "schema": "swaml-binding/2.3",
+  "deployment": "DoorEcu::'Front left door'",
+  "costs": [ { "operation": "dcu.comMain.rxMainFunction", "wcetNs": 80000, "bcetNs": 20000, "source": "measurement or analysis reference" } ],
+  "budgets": [ { "task": "vehicle.doorModules[0].core1.task20ms", "budgetNs": 500000 } ],
+  "crossCoreLatencyNs": [ { "connection": "dcu.@connect12", "maxNs": 1000000 } ]
+}
+```
+
+`swaml binding check` resolves every identity against the validated model and deployment and reports placed operations that have no cost. It computes no schedule in 2.3.
+
+**Tier 2.** A timed profile `swaml-reference-timed/2.4` uses the binding for:
+- fixed-priority scheduling per Core
+- preemption at statement boundaries
+- budget and deadline violations
+- cross-core blocking semantics
+
+Its results are evidence under the stated assumptions.
+
+**After** (same Cores and Tasks):
 
 ```text
 import Swaml::Os;
 component def SafetyCore specializes Core {
-  component taskEvent: Task { redefines const attribute priority: uint = 40; }
-  component task5ms: Task {
+  /** Core 0: sensing, actuation, window, lock, mode management and supervision. */
+  const attribute clockMhz: uint = 160;
+  component isrAdc: Task {
+    redefines const attribute kind: TaskKind = TaskKind.isr;
+    redefines const attribute responseNs: uint = 500us;
+    redefines const attribute priority: uint = 60;
+  }
+  …
+  component task20ms: Task {
+    redefines const attribute periodNs: uint = 20ms;
     redefines const attribute priority: uint = 30;
-    redefines const attribute periodNs: uint = 5ms;
   }
   …
 }
 ```
 
-**Interactions.** B17 placement; B6 `uint` nanoseconds; B19 guards skip releases on a Task's grid; A4 (per-model simulation options) is needed so the door model can use a 1 ms task without the default 100 000 step limit.
+`OsTask` is deleted, and `taskBackground` becomes `kind = TaskKind.extended`.
 
-**Cost.** Tier 1: library S; validator S; simulator S–M (priority key in the event order); Ext M (Timing lanes by Task, deployment view). Tier 2: simulator L (cost model, per-core scheduler, preemption, profile), binding schema M, Timing observed CPU lanes M, docs M.
+**Cost.** Library S, validator M (T1–T7), simulator M (priority and position keys), binding schema and checker M, docs M.
 
 ### B19 Mode-dependent schedules
 
-**Problem.** Periodic entries keep releasing; each operation checks a cached mode.
+**Before** (door `LinMaster` 873–921 and `ComMain.txMainFunction` 799–803):
 
 ```text
-// door, LinMaster (701-708, 733-735, 741-746)
-operation pollSwitchPanel() {
-  /** 20 ms schedule-table slot: … no headers while asleep. */
+operation slot() {
+  /** 20 ms schedule-table slot; no headers while asleep. */
   if (sleeping) {
     return;
   }
   …
 }
-operation onMode(current: PowerMode) { sleeping = current == PowerMode.sleep; }
+operation onMode(current: PowerMode) {
+  sleeping = current == PowerMode.sleep;
+  if (sleeping) {
+    polls = 0;
+  }
+}
+operation reportDiagnostics() {
+  if (not sleeping) {
+    publish diag.report(FaultId.linNoResponse, missed >= faultAfter);
+  }
+}
 schedule {
-  on every 20ms pollSwitchPanel() deadline 2ms;
-  …
+  on receive bus.response(frame) storeResponse(frame);
   on receive modeIn.changed(current) onMode(current);
+  on every 20ms slot() deadline 2ms;
+  on every 100ms reportDiagnostics() deadline 10ms;
 }
 ```
 
-**Recommendation: add** a release guard `when (g)` on `every`, `receive` and `after` entries (SW2007 on `start` and `call`: a request must be answered by the operation). Static: `g` is `bool`, pure or reads state (attributes, sampled reads, `now()`). Runtime: the guard is evaluated at dispatch, under the serial lock (or in the concurrent snapshot), after argument evaluation. When false: no activation runs, no deadline is armed, no `after` successor is released, a `skip` event names the entry; for `receive` entries the consumed input is discarded (`discardInput`, reason `releaseGuard`). Periodic grids are unchanged (releases stay at kD from the root epoch; a skipped release is not shifted). Trace and Timing: declared mode draws guarded entries with their guard label; observed mode shows skip markers. KerML: guard constraint on the schedule entry trigger.
+**Recommendation: add** `when (g)` on `every`, `receive` and `after` entries; on `start` and `call` entries it is SW2007.
+- **Scope:** component attributes, sampled ports, `now()` and the entry's receive bindings. Dispatch arguments are evaluated first.
+- **Evaluation:** at dispatch, under the serial lock or in the concurrent snapshot.
+- **False guard (finding 2):**
+  - no operation runs, and the deadline armed at release is cancelled;
+  - a `skip` event names the entry;
+  - the skip **counts as a successful whole completion for `after` successors**: they are released and apply their own guards (AUTOSAR mode disabling suppresses one runnable, not its successors);
+  - a `receive` entry's input is consumed and discarded (`releaseGuard`);
+  - the periodic grid is unchanged (D9).
+- **Runtime failure inside a guard:** an uncaught failure of that release. The trace records `failure` with the entry as source; the deadline is cancelled, no successors are released and the lock is released. With D7, sampled reads cannot cause it; arithmetic can.
+- **Identity:** the guard is not part of entry identity.
 
-**After.**
+**After** (`LinMaster` with `reversed port mode: ModeState`; `sleeping` is removed; the edge handler stays for the poll reset):
 
 ```text
-reversed port mode: ModeState;
+operation slot() {
+  /** 20 ms schedule-table slot. */
+  if (polls > 0) {
+    …
+  }
+  …
+}
+operation onMode(current: PowerMode) {
+  if (current == PowerMode.sleep) {
+    polls = 0;
+  }
+}
+operation reportDiagnostics() {
+  publish diag.report(FaultId.linNoResponse, missed >= faultAfter);
+}
 schedule {
-  on every 20ms pollSwitchPanel() when (mode.current != PowerMode.sleep) deadline 2ms;
-  on receive bus.response(response) onResponse(response) deadline 2ms;
-  on receive bus.wakeup() onWakeup();
-  on every 100ms reportDiagnostics() when (mode.current != PowerMode.sleep);
+  on receive bus.response(frame) storeResponse(frame);
+  on receive modeIn.changed(current) onMode(current);
+  on every 20ms slot() when (mode.current != PowerMode.sleep) deadline 2ms;
+  on every 100ms reportDiagnostics() when (mode.current != PowerMode.sleep) deadline 10ms;
 }
 ```
 
-(`sleeping`, `onMode` and the early returns disappear; `onWakeup` tests `mode.current == PowerMode.sleep`.)
+In `ComMain`, `after rxMainFunction txMainFunction() when (mode.current != PowerMode.sleep) deadline 5ms;` replaces the early return. `rxMainFunction` stays unguarded because it accepts frames in every mode (B5). `LinMaster` has no wake handler of its own in `cc16c25`, so wake-up latency is unchanged.
 
-**Interactions.** After chains: a skip releases nothing. Suspension: dispatch waits for the lock as today, so the guard sees the state at dispatch, not at release. Deadlines: none for skipped releases. B14 supplies the mode without a cache. B18 grid per Task unaffected.
+**Cost.** Grammar S, validator S, simulator S (deadline cancel, skip as completion), formatter S, docs S.
 
-**Cost.** Grammar S; validator S; simulator S; formatter S; Ext M (schedule entry creation form guard field with server completion, Timing declared/observed markers); docs S.
+### B20 Latency chains (defer)
 
-### B20 End-to-end latency chain (defer)
+**Before:** the v2x Timing view `'awareness chain'` (2712–2718) and the test `'Awareness rate follows dynamics'`, which compares `generationTimeMs` gaps.
 
-**Problem.** Chains are Timing view selections plus QoS `maxLatency` and script assertions.
+**Recommendation: defer.** A declarative chain needs causal correlation across sampling activations and an analysis level with stated assumptions. With B5 a test can already measure a bounded latency.
 
-```text
-// v2x (2218-2223)
-view 'awareness chain': Timing {
-  include app.vehicleState.onSpeed;
-  include app.v2x.camCycle;
-  include app.security.signDigest;
-  include app.channels[0].transmit;
-}
-```
-
-**Recommendation: defer.** A declarative chain (`stimulus`, `response`, `within D`) needs a causal correlation across activations that the trace does not yet define for local fan-in (periodic sampling breaks message causality) and an analysis level (A) with stated assumptions; done badly it would read as a proof. With B5 the bounded check is expressible now in tests; the Timing view keeps the selection. Sketch for a later edition: package member `chain Name { from p.m; to q.n; within 150ms; }`, checked against observed traces only.
-
-**After (now).**
+**After (now, in the same test):**
 
 ```text
 var t0: uint = now();
@@ -937,111 +1176,161 @@ on receive otherVehicle.cch.frameOut(frame) {
 }
 ```
 
-**Cost.** None in this version.
-
 ### B21 Service discovery (reject)
 
-**Problem.** Adaptive offer/find is dynamic binding of service instances.
+Dynamic topology is outside the language (spec §2, ADR 0019, I1/I5). Instead:
+- Model each binding as a static (optionally `optional`) connection.
+- Expose availability as `provides attribute available: bool = false;`, read with B14 and used in guards (B19).
+- An unconnected optional request already fails `unavailable`.
 
-**Recommendation: reject, keep by design.** Dynamic topology is outside the language (spec §2; closed packages, ADR 0019; static closure and per-connection queues, I1/I5). Model each potential provider binding as a static (optionally `optional`) connection and expose availability as data: `provides attribute available: bool = false;`, read with B14 and used in guards (B19). An unconnected optional request already fails `unavailable`.
-
-## 3. Cross-item interactions (checklist)
+## 3. Cross-item interactions
 
 | Rule | Interaction |
 | --- | --- |
-| In-place assignment vs const/in | Rejected roots (B1). |
-| Snapshots / stale reads | Concurrent entries still never write (B1); sampled reads and guards use the dispatch snapshot (B14, B19); `now()` is live (B5). A2 must make SW2011 flow-sensitive over places and treat `now()` as non-stale. |
-| Computed durations vs deadline analysis | Periods/deadlines statically evaluated per occurrence (exact declared grid); `wait`/`after` expressions are dynamic intervals; runtime deadline violations unchanged (B6). |
-| Guards/completion vs ordered transitions | Completion → elapsed timers → input; declaration order within each (B7). |
-| Internal transitions vs timers | No restart; once per entry for internal timers (B8). |
-| Deferral vs queues | Retained input uses connection capacity/overflow/age (B9, B13). |
-| Runnable deployment vs occurrence placement and Timing | Operation placement overrides; lock per component; Timing lanes per Task (B17, B18). |
-| Mode-dependent schedules vs after chains and suspension | Skip releases no successors; guard at dispatch under lock (B19). |
-| Formatter (A1) | Must support conditional, places, connect bodies, deferrals, guarded entries, association lists before any showcase rewrite is reformatted. |
-| SW2012 (A5) | Unrelated to deferral; states never produce SW2012. |
+| Places vs const/in, out arguments | Roots are rejected as listed; places are not out arguments (B1). |
+| Snapshots, stale reads | Concurrent entries never write; sampled reads and release guards use the snapshot; `now()` is live; SW2011 (A2) tracks places and ignores `now()`. |
+| Computed durations vs deadlines and Timing | Periods and deadlines come from the constant sublanguage per occurrence, so declared grids stay exact. `wait`/`after` expressions are dynamic intervals. State timers are evaluated after entry. |
+| Completion vs ordered transitions | Completion, then elapsed timers, then input, each group in declaration order. No completion after discards. `CompletionLoop` violation. |
+| Internal transitions vs timers | No restart; an internal timer fires once per entry; a suspending internal effect keeps the timers. |
+| Deferral vs queues | Capacity, overflow and age apply; order by offer ordinal; SW2016 on `reject`. |
+| Sampled reads vs owners | Zero or one consumer; mandatory initial value; no sampling of forwarded boundaries. |
+| Release guards vs `after` and suspension | A skip counts as completion for successors; the deadline is cancelled; the guard is evaluated at dispatch. |
+| Operation placement vs occurrence placement and Timing | Operation placement overrides; one Core per occurrence; in-task position from deploy order; Timing lanes per Task. |
+| Formatter (A1) | Must support every new form before a showcase is reformatted. |
 
-## 4. Scope
+## 4. Diagnostics added or extended
 
-### Tier 1 — in 2.3
+| Code | Addition |
+| --- | --- |
+| SW2002 | Places, selectors, conditional typing |
+| SW2004 | Member policies |
+| SW2005 | Sampled-read ownership, mandatory initial value, forwarded boundary |
+| SW2006 | Place roots, suspension in a conditional |
+| SW2007 | Release guards, constant sublanguage, trigger identity |
+| SW2008 | Completion, internal transitions, deferral |
+| SW2009 | Operation placement, same Core, T1–T7 |
+| SW2010 | Association lists, indexed test paths |
+| SW2013 | Policy duration literals, constant durations |
+| SW2016 (new, warning) | Completion guard that reads only external state; deferred member with `reject` overflow; computed duration without a unit |
 
-B1, B2, B3, B4 (numeric/text/time libraries), B5, B6, B7 (+B10), B8, B9, B11a, B13, B14, B15, B16, B17, B18 (library, static rules, priority ordering), B19.
+New runtime codes: `DurationRange`, and `CompletionLoop` (a violation). New trace events: `skip`, `defer`, `discardTimer`, `state.internal`, `deliver.sample`.
 
-Reasoning: these remove every rebuild helper, counter clock, cached mode, second component and unused const duration in the three models, and give the door controller a task/runnable mapping whose periods, priorities and mode gating are validated and visible in the run. Each is small in grammar and local in semantics; none changes the meaning of a valid 2.2 source.
+## 5. Versioning, publication, plan and costs
 
-### Tier 2 — can follow (2.4 or later)
-
-B4 enum pseudo-type (`ordinal`, `literalText`), B12 member-split forwarding, B18 timed profile (cost binding, preemption, budgets), B20 latency chains.
-
-Reasoning: each needs a new concept (an any-enum parameter, per-member alias resolution, a cost model and scheduler, causal chains) with its own review, and each has a usable Tier 1 workaround.
-
-### Rejected
-
-B11b port arrays/connector loops, B11c per-index configuration, B16 absence construct, B21 service discovery.
-
-### Owner decisions
-
-| # | Question | Recommendation | Alternative |
-| --- | --- | --- | --- |
-| D1 | Release these as standard 2.3 (compatible minor)? | Yes, 2.3. | 3.0 if any compatibility break is accepted. |
-| D2 | Implementation package 4.0.0 (AST properties become optional)? | 4.0.0. | 3.2.0, keeping the old properties required by using new property names for every alternative. |
-| D3 | Reintroduce state completion transitions in guard-only form (reverses a 2.0 removal)? | Yes. | Only timer guards and internal transitions; result-driven branching stays two components. |
-| D4 | Durations as `uint` nanoseconds? | Yes (smallest). | A nominal `duration` type with its own arithmetic (safer, more rules and keywords). |
-| D5 | Library additions in new packages (`Swaml::Numeric`, `Swaml::Text`, `Swaml::Time`, `Swaml::Os`)? | Yes, strictly compatible. | Extend `Swaml::Math`/`Swaml::Platform` and accept import ambiguities in existing models (the door model breaks). |
-| D6 | Trigonometry intrinsics with host last-bit variance? | Include `sin`, `cos`, `atan2` with the documented caveat. | `sqrt` only. |
-| D7 | Initial value on attribute port members for sampled reads? | Yes, optional `= e`. | No initializer; every early read uses `try`. |
-| D8 | Deferral disjoint from transitions on the same member? | Yes. | UML-style deferral with guard re-evaluation pool (complex ordering). |
-| D9 | Skipped periodic releases keep the root-epoch grid? | Yes. | Restart phase when the guard becomes true (needs change detection). |
-| D10 | Execution costs live in a target-binding file, not source? | Yes (ADR 0016). | `cost`/`budget` attributes in source. |
-| D11 | Unique Task priorities per Core? | Yes. | Equal priorities with FIFO tie-break. |
-| D12 | Keep port arrays and connector loops out? | Yes. | Plan them for 3.0 with static expansion. |
-| D13 | Placement granularity per operation? | Yes. | Per schedule entry (requires entry names, new syntax). |
-| D14 | Enum pseudo-type in Tier 1? | No, Tier 2. | Tier 1 (removes `Dem.indexOf` now). |
-
-## 5. Versioning and release
+### 5.1 Versions
 
 | Artefact | Value |
 | --- | --- |
-| Standard (`spec/standard.json`) | 2.3 (compatible normative additions; tags show `v2.2` published, no `v2.3`) |
-| Parser/host semantics, profile | 2.3, `swaml-reference/2.3` (Tier 2 timed profile: separate id) |
-| Implementation npm | 4.0.0 (D2), root and lockfile synchronized |
-| Extension | own version per its `docs/VERSIONING.md`; `UPSTREAM.json` pin via `scripts/sync-language.mjs` |
-| ADRs | 0022 expressions and places (B1–B6, B11a, B15, B16); 0023 state reactions (B7–B10, reverses `SWAML_2_0_TRANSITION.md` §307); 0024 ports and policies (B13, B14); 0025 tasks and runnable deployment (B17–B19) |
-| Release notes | `docs/RELEASE_2_3.md`; no migration guide needed |
+| Standard | 2.3 (`v2.2` exists, `v2.3` does not) |
+| Parser/host semantics, profile | 2.3, `swaml-reference/2.3`; Tier 2 timed profile `swaml-reference-timed/2.4` |
+| Implementation | 4.0.0 (§1.3); root and lockfile synchronized |
+| Extension | Own version under its `docs/VERSIONING.md`; pin via `scripts/sync-language.mjs` |
+| ADRs | 0022 expressions and places; 0023 state reactions (reverses §307); 0024 ports, sampled reads and member policies; 0025 tasks, operation placement and binding |
+| Notes | `docs/RELEASE_2_3.md`; no migration guide (compatible) |
 
-Publication gate (docs/VERSIONING.md, PDF_PUBLICATION.md): regenerate `spec/keywords.json`, `spec/notation.json`, `spec/kerml-mapping.json` (new productions: `Selector`, `ConditionalExpression`, `Deferral`, `MemberPolicy`; changed: `Assign`, `ReferenceExpression`, `CallExpression`, `Literal`, `Wait`, `Receive`, `ScheduleEntry`, `Transition`, `State`, `Connect`, `PortMember`, `Association`, `Name`); new notation figures under `docs/notation/2.3/` (completion/internal transition and deferral in Flow, guarded entry and Task lanes in Timing, member policy in Interconnect, runnable placement in General); graphical examples regenerated with `--check`; `npm run docs:build` → `docs/SWAML-2.3-Reference.md`; `SWAML-2.3-Specification.pdf` + manifest + sha256 with every page inspected; showcase site data (`build-showcase-data.mjs`) including the three rewritten showcase models; 2.2 artefacts untouched.
+### 5.2 Publication gate
 
-### Staged implementation plan
+- §1.2 gates 1–3.
+- Regenerated `spec/keywords.json`, `spec/notation.json` and `spec/kerml-mapping.json`:
+  - new productions: `Selector`, `ConditionalExpression`, `Deferral`, `MemberPolicy`;
+  - changed: `PolicySetting`, `Assign`, `ReferenceExpression`, `CallExpression`, `Literal`, `ExpressionStatement`, `Expression`, `Wait`, `Receive`, `ScheduleEntry`, `Transition`, `State`, `Connect`, `PortMember`, `Association`, `Name`.
+- New figures under `docs/notation/2.3/`: Flow (completion, internal, deferral), Timing (guarded entry, Task lanes), Interconnect (member policy), General (operation placement). Graphical examples and notation pass `--check`.
+- `docs/SWAML-2.3-Reference.md` built with `npm run docs:build`.
+- `SWAML-2.3-Specification.pdf` with manifest and sha256; every page inspected.
+- Showcase site data including the three rewritten models.
+- 2.2 artefacts unchanged.
 
-Each package is one draft PR with its adversarial review; order respects dependencies (one at a time, merged before the next).
+### 5.3 Work packages
 
-| WP | Content | Depends | Tests | Showcase proof |
-| --- | --- | --- | --- | --- |
-| 0 | ADRs 0022–0025, chapter drafts, `## Unreleased`; edition bump to 2.3 / 4.0.0 at WP 9 | — | docs check | — |
-| 1 | Places and selectors (B1, B2, B11a), `CallExpression: Path` | — | parse/recovery; mutability, out definite assignment, bounds, trace `place`, copy semantics, test indexed reads | Dem `report`, cloud `findOpen`, twins test |
-| 2 | Conditional expression, contextual words, association lists (B3, B15, B16) | — | ambiguity tests per word/position, lazy branch, typing, list duplicates, rename of list refs | door `drive`, v2x `state`, cloud associations |
-| 3 | Libraries `Swaml::Numeric`, `Swaml::Text`, `Swaml::Time` (B4, B5) | — | intrinsics domains/failures, `now()` effect class, no import ambiguity in 2.2 examples | v2x `sqrt`, ComStack timeout |
-| 4 | Durations as values and computed durations (B6) | 3 | per-position effect rules, static per-occurrence evaluation, `DurationRange`, Timing declared grid | LockControl pulse, v2x backoff timer |
-| 5 | State reactions: completion, timer guard, internal, defer (B7–B10) | 4 | selection order, cycle check, timer non-restart, retained queue/overflow/age, discard on leaving | v2x session machine, breaker, desk/router, ModeManager shutdown, LockControl |
-| 6 | Sampled reads and member policies (B14, B13) | — | cell timing with latency/faults, initial/unavailable, owner rule, snapshots, per-member queues/idempotency | LockControl ajar/feedback, BodyCan |
-| 7 | Schedule guards (B19) | 6 | skip trace, no deadline/after release, receive discard, grid | LinMaster, ComStack, IoHwAb |
-| 8 | Runnable placement and `Swaml::Os` (B17, B18 Tier 1) | 4, 7 | placement validation, override, priority ordering at equal time, period multiples | door deployment |
-| 9 | Edition: inventories, notation, reference book, showcase rewrites, site data, PDF | 1–8 | `npm run check`, figure `--check`, PDF gate | all three models |
-| E1–E3 | Ext: sync, then (E1) text services/completion/creation forms for WP 1–4; (E2) Flow/Sequence for WP 5–6; (E3) Timing/Interconnect/deployment for WP 6–8; `npm run test:creation` | language WP merged | ext `npm run check`, `test:web`, creation suite | showcase views reviewed in the preview editor |
+One draft PR at a time, each with an adversarial review, merged before the next starts.
+
+| WP | Needs | Tests | Showcase proof (fragments at cc16c25) |
+| --- | --- | --- | --- |
+| WP0 ADRs, chapters | — | docs check | — |
+| WP1 places, indexed reads, test indexes | A2 | parse/recovery, roots, out definite assignment, evaluation order (`counters[i] = bump()`), `Bounds`, `place` trace, copies, literal-index rule | `Dem.report`, `AlertRouter.findOpen`, twins test |
+| WP2 conditional, contextual words, association lists | A1 | operand and statement rejection, chains, every word in every name position, list duplicates and rename | `DoorEcu::Types`, v2x `state`, cloud associations |
+| WP3 libraries | A2 | `sqrt`, text intrinsics (ties), `now()` effect class, no import ambiguity across the corpus | v2x `sqrt`, `ComMain` reception age |
+| WP4 durations, `PolicySetting`, constant evaluator | WP3 | §1.2 gates; constant sublanguage; per-occurrence values; trigger identity; `DurationRange`; SW2016 unit warning | v2x hazard validity |
+| WP5 state reactions | WP4 | ordering, discards, `CompletionLoop`, suspending internal effect, deferral order by offer ordinal, SW2016 | v2x session, breaker, `LockControl` |
+| WP6 sampled reads and member policies; completion-guard warning revisited | WP5 | cell timing with latency and faults, mandatory initial value, ownership, forwarded boundary, snapshots, per-member queues | `ComMain` stores, `BodyCan` |
+| WP7 release guards | WP4 (WP6 for the proof) | skip as completion, deadline cancel, receive discard, guard failure, grid | `LinMaster`, `ComMain` |
+| WP8 tasks, placement, binding | WP4, WP7, A4 | T1–T7, same Core, override, priority and position order, binding schema and check | door deployment |
+| WP9 edition | WP1–WP8, A1, A7 | `npm run check`, figures, PDF | three models |
+
+### 5.4 Extension cost (call sites at the pinned extension)
+
+| Package | Work | Call sites | Size |
+| --- | --- | --- | --- |
+| E1: text services, edits, forms (after WP1–WP4) | **Must-fix data loss:** deleting one `associate` pair deletes the whole statement. With lists this silently drops other pairs; edits must rewrite the list. Readers see only the first pair. | delete: `diagram-edits.ts` 598, 620, 463; duplicate check 906; readers: `diagrams.ts` 298, 507, 718; `case-model.ts` 73 | M |
+| | Places: out-parameter detection and edits compare `s.target` to a bare name | `diagram-flow.ts` 96, 169, 194; `statement-edits.ts` 366, 519; `edit-refusals.ts` 397; `diagram-edits.ts` 847, 860 | M |
+| | Call paths with `[n]`; test inspection | `edit-refusals.ts` 397; `test-inspection.ts`; `field-completion.ts` | S |
+| | `Wait.duration` optional; computed waits and timeouts | `statement-edits.ts` 270, 375–376, 504, 506; `behavior-projection.ts` 356, 371, 417, 473; `diagram-flow.ts` 130 | M |
+| | `PolicySetting.value` (the read already falls back) | `diagram-grid.ts` 155 | S |
+| | Completion for `.`/`[` after places, `defer`, `when` and the new libraries; creation forms for guards and computed durations | `field-completion.ts`, `completion.ts`, `diagram-creation-fields.ts`, `creation-draft.tsx`, `diagram-edits.ts` 775–776 | M |
+| E2: Flow/Sequence (after WP5–WP6) | Optional `Transition.target`; completion and internal transitions; deferrals; computed delays | `diagram-edits.ts` 168 (always writes `to`), 673, 874, 947; `diagram-flow.ts` 271; `diagrams.ts` 467, 472, 474, 483; `flow-properties.ts` 23, 53, 66; `behavior-projection.ts` 428; `field-edits.ts` 143–151; `app.tsx` 2971; core `projection.ts` 109 (edge to `…undefined`) | L |
+| | Sampled reads in labels and completion; mode ports | `field-completion.ts`, Flow labels | S |
+| E3: Timing/Interconnect/deployment (after WP4, WP6–WP8) | Computed periods and deadlines: `nanos(n.period!)` and `period.value` throw on expressions; per-occurrence projection | `timing-edits.ts` 48, 150, 154, 218; `timing-projection.ts` 123, 126, 183, 198; `diagram-edits.ts` 931; `field-edits.ts` 73–108; `views/time.tsx` 375, 436, 438, 839; `timing-graphics.ts` 45; core `projection.ts` 98 | L |
+| | Release guards and skip markers (run overlay) | `timing-projection.ts`, `run-overlay.ts`, `run-evidence.ts` | M |
+| | Task lanes, operation placements, member policies on connections | deployment view in `diagrams.ts`, Interconnect labels, `diagram-grid.ts` | M |
+
+Each package runs `npm run check`, `npm run test:web` and `npm run test:creation`; showcase views are reviewed in the preview editor.
 
 ## 6. What still will not be expressible
 
-| Topic | Status after 2.3 |
+| Topic | After 2.3 |
 | --- | --- |
-| Physical execution time, WCET, preemption effects | Zero-cost reference only; Tier 2 timed profile gives assumption-based evidence, never a schedulability proof. |
-| OS configuration (alarms, counters, resources/spinlocks, ISR categories, stack sizes, OS-Applications, timing protection enforcement) | Target binding / configuration tools; swa.ml supplies tasks, priorities, periods, runnable mapping and mode gating as input. |
-| Interrupt service routines and hardware interrupt latency | Interrupt regions are cooperative model cancellation (ADR 0011). |
-| CAN/LIN signal packing (bit position, length, endianness, scaling), PDU layout, E2E profiles, DBC/LDF/ARXML | Out of scope: data are typed records; packing belongs to the communication configuration and code generator. |
-| Fixed-width integers, bitfields, fixed-point arithmetic, overflow-wrapping counters | Not in the value domain (safe 53-bit integers, checked overflow). Wrapping is modelled with `%`. |
-| Memory mapping, sections, NvM block layout, calibration (A2L) | Out of scope. |
-| Code generation, RTE generation | Out of scope for the language; a backend must preserve chapter 6 semantics and report unsupported parts. |
-| Dynamic topology, service discovery, port arrays, dynamic instances | Rejected by design. |
-| Per-schedule-entry placement, per-index configuration | Not expressible (D13, B11c). |
-| Declarative end-to-end latency contracts | Deferred (B20); bounded checks in tests only. |
-| Proof of race freedom, termination, schedulability | Not claimed; runs are bounded evidence. |
+| Response times, schedulability, WCET | Not computed. The binding schema exists; the timed run is Tier 2 and gives assumption-based evidence. |
+| Cross-core blocking, spinlocks, IOC configuration | Excluded by the same-Core rule; cross-core exchange is a connection with a policy. |
+| Interrupt latency; hardware ISR priority vs task priority | Not modelled; interrupt regions remain cooperative. |
+| CAN/LIN packing, PDU layout, E2E profiles, DBC/LDF/ARXML | Target configuration. |
+| Fixed-width integers, bitfields, fixed point, wrapping counters | Not in the value domain; use `%`. |
+| Memory mapping, NvM layout, calibration | Out of scope. |
+| OS configuration format, RTE and code generation | Out of scope for the language; a backend preserves chapter 6 semantics. |
+| Dynamic topology, service discovery, port arrays | Rejected (port arrays: a 2.4 candidate). |
+| Per-entry placement, per-index configuration | Use wrapper operations and distinct usages. |
+| Declarative latency contracts | Deferred; bounded test checks only. |
+| Proofs (races, termination, schedulability) | Not claimed. |
 
-The line: swa.ml 2.3 can describe the door controller's software architecture, its behaviour, its communication policies and its OS-level task/runnable/mode schedule precisely enough that a target generator has no open design decision about *what* runs *when* and *where*. *How* bytes are laid out, how the OS is configured in a vendor format and what code is emitted are target-binding concerns with their own evidence.
+**Where the line is.** After 2.3 the door model fixes a complete, statically checked task and runnable mapping:
+- tasks per Core with kind, priority, preemptability, and period or response bound;
+- each runnable's task and its position in that task;
+- per-entry deadlines;
+- level-triggered mode gating;
+- per-member communication policies.
+
+The model also carries precise behaviour and data semantics, and it runs deterministically in logical zero time with priority ordering.
+
+It does **not** establish that this schedule meets its deadlines on the target. That needs costs (the binding) plus the Tier 2 timed run or external analysis. It also does not say how bytes, OS configuration or code look.
+
+## Appendix A. Review dispositions
+
+| # | Finding (review) | Disposition | What changed |
+| --- | --- | --- | --- |
+| 1 | `PolicySetting` ambiguity changes every 2.2 QoS duration | Accepted (mandatory) | `PolicySetting` reduced to `value=Expression`. Verified: 0 generation and 0 parser warnings; corpus 38/38 identical under N1. Three release gates in §1.2 (corpus AST identity, behaviour identity, warning-free grammar). Validator and `effectiveQos` read `value.duration`. Reordering alone was rejected because it still warns. |
+| 2 | Skip breaks `after` chains; deadline contradiction | Accepted (mandatory) | A skip counts as completion for successors; the deadline is cancelled; guard scope and guard-failure meaning are defined (B19). The `ComMain` rewrite guards `txMainFunction`, not `rxMainFunction`. |
+| 3 | Deployment leaves target decisions open | Accepted (mandatory) | Same-Core rule T7; T2 entry kinds per Task; T4 suspension only on extended Tasks (state-machine idle excluded); `kind`, `preemptive`, `responseNs` in `Swaml::Os` in Tier 1; in-task position from deploy order; binding schema and `swaml binding check` in 2.3; the §0 and §6 closing claims were rewritten. |
+| 4 | Computed periods: identity, evaluator, projection, crashes | Accepted (mandatory) | Constant sublanguage; one evaluator `constantValue` in `semantic.ts`; trigger identity is the normalized text; per-occurrence projection; extension Timing cost raised to L with call sites (§5.4). |
+| 5 | State timer evaluated before entry | Accepted (mandatory) | Evaluated when entry actions finish; expiry = state-update time + value (B6). |
+| 6 | Completion traps | Accepted | `now()` forbidden in completion guards; SW2016 for guards reading only external state; `CompletionLoop` violation; no completion after discards; suspending internal effects specified; v2x note corrected. |
+| 7 | Sampled reads | Accepted | D7 mandatory initial value; the "sampling is not ownership" wording; forwarded boundaries rejected; edge handlers kept, with showcase claims and costs corrected (`ModeState` port, eight consumers). |
+| 8 | Deferral order | Accepted | Global offer-ordinal order for retained input (simulator change named); SW2016 on `reject`; the cloud claim is withdrawn (router `stillOpen`). |
+| 9 | B1/B3 rule gaps | Accepted | Root read after index and right-side evaluation; places are not out arguments; a conditional is never a statement (grammar, verified); whole-expression conditional (grammar, verified). |
+| 10 | D2 rationale, AST claim, extension breakage | Accepted | §1.3 corrected (only two newly optional properties; silent widenings are the reason); D2 alternative restated; breakages listed in §5.4. |
+| 11 | Trigonometry and text rounding | Accepted | D6: `sqrt` is the only intrinsic; trigonometry as source in Tier 2; `realText` ties toward positive infinity, matching `round` and `toFixed`. |
+| 12 | Index forms, multiple roots, port-array rationale | Accepted | Literal-index rule for component segments (SW2010); roots stay non-multiple; port-array rationale and alternative corrected (additive 2.4). |
+| 13 | Work-package prerequisites | Accepted | A1, A2, A4 (and A7) are prerequisites; WP7 → WP6 marked as proof-only; WP6 revisits the WP5 warning; D13 wrapper note. |
+| 14 | Unit lint, negative durations, B13 spec wording | Accepted | SW2016 unit warning; one code `DurationRange`, checked before widening; spec 2.4 wording and the `redefines connect` rule. |
+
+Other changes from re-taking the showcase snippets at `cc16c25`:
+- The B9 example moved to door `LockControl`.
+- B12 now has no instance.
+- B10 needs nothing beyond B7.
+- The B8 rewrite states its intended behaviour change and the test update.
+- The B17/B18 snippets use the split IoHwAb/Com components and the ISR, event and periodic `OsTask` nodes.
+
+## Appendix B. Unresolved
+
+- **SW2016 groups three heuristic warnings under one new code.** The owner may prefer separate codes; stable code allocation is an owner decision.
+- **T4 is my reading of how a state machine maps to basic tasks** (its idle wait does not count as suspension). A target team may want state machines on extended tasks only; that is a one-line rule change.
+- **The instant a sampled cell is updated** ("delivery eligibility") must be reconciled with the simulator's delivery events in WP6. Not prototyped.
+- **Not prototyped:** the runtime and validation rules (B6, B7, B9, B14, B18, B19). Only the grammar and the corpus gate were.
