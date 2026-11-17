@@ -239,6 +239,10 @@ package FleetCloud {
       firmware = f.firmware;
     };
   }
+  operation def Stamped(f: Frame, epoch: uint) returns Envelope {
+    /** A frame as an alder gateway session in slot 0 would submit it. */
+    return record Envelope { frame = f; tenantId = "alder"; slot = 0; epoch = epoch; };
+  }
   operation def Sample(vehicleId: string, sequence: uint, speedKph: real) returns Telemetry {
     /** Normalized telemetry for stage-level tests. */
     return record Telemetry {
@@ -481,12 +485,14 @@ package FleetCloud {
     requires event command(c: Command);
   }
   port def Directory {
-    /** The vehicle registry's request interface. */
+    /** The vehicle registry's request interface, plus the announcement of every new device session. */
     provides operation authenticate(vehicleId: string, deviceKey: string) returns DeviceIdentity;
     provides operation lookup(vehicleId: string) returns DeviceIdentity;
+    provides event sessionOpened(vehicleId: string, epoch: uint);
   }
   port def DeviceAuth {
     provides operation authenticate(vehicleId: string, deviceKey: string) returns DeviceIdentity;
+    provides event sessionOpened(vehicleId: string, epoch: uint);
   }
   port def VehicleLookup {
     provides operation lookup(vehicleId: string) returns DeviceIdentity;
@@ -562,7 +568,8 @@ package FleetCloud {
     provides event deliver(c: Command);
   }
   port def CommandAcks {
-    provides event ack(commandId: uint, executed: bool);
+    /** A vehicle's acknowledgement, relayed only by the session that delivered the command. */
+    provides event ack(commandId: uint, vehicleId: string, executed: bool);
   }
   port def CommandUpdates {
     provides event update(u: CommandUpdate);
@@ -612,7 +619,10 @@ package FleetCloud {
     Terminates one vehicle session. It authenticates the vehicle's key against the registry, stamps each frame with
     the tenant and twin slot, submits it to ingestion with **retry and backoff** and acknowledges it with the outcome.
     It relays heartbeats and commands, and turns the ingestion **backlog** (a latest-value attribute) into throttle
-    requests between a high and a low watermark.
+    requests between a high and a low watermark. A command acknowledgement is relayed only from the authenticated
+    session that was sent that command and only while it is pending there. When the registry announces a newer session
+    of the same vehicle, this session is closed: the vehicle is told so, and it no longer receives commands or relays
+    frames, heartbeats or acknowledgements. Refused sessions, frames and acknowledgements are audited.
     */
     reversed port vehicle: VehicleLink;
     reversed port directory: DeviceAuth;
@@ -620,6 +630,7 @@ package FleetCloud {
     port liveness: Liveness;
     reversed port downlink: CommandDownlink;
     port commandAcks: CommandAcks;
+    port audit: AuditFeed;
     const attribute highWatermark: uint = 6;
     const attribute lowWatermark: uint = 1;
     const attribute normalIntervalMs: uint = 1000;
@@ -634,16 +645,34 @@ package FleetCloud {
     attribute retries: uint = 0;
     attribute backlog: uint = 0;
     attribute throttled: bool = false;
+    attribute pendingCommand: uint = 0 /** The command delivered in this session and not yet acknowledged, 0 when none. */;
+    attribute refusedAcks: uint = 0;
+    attribute closedSessions: uint = 0;
+    attribute opening: bool = false /** A hello on this link is being authenticated; its own announcement must not close it. */;
     operation openSession(claimed: string, deviceKey: string) {
+      opening = true;
       var identity: DeviceIdentity = try(directory.authenticate(claimed, deviceKey), Unknown(claimed));
+      opening = false;
       authenticated = identity.known;
+      pendingCommand = 0;
       if (identity.known) {
         sessionVehicle = identity.vehicleId;
         sessionTenant = identity.tenantId;
         sessionSlot = identity.slot;
         sessionEpoch = identity.epoch;
+      } else {
+        publish audit.logged(Entry(AuditKind.refusal, claimed, "", "device session refused", claimed));
       }
       publish vehicle.welcome(identity.known);
+    }
+    operation closeSuperseded(id: string, epoch: uint) {
+      if (authenticated and not opening and id == sessionVehicle and epoch > sessionEpoch) {
+        authenticated = false;
+        pendingCommand = 0;
+        closedSessions = closedSessions + 1;
+        publish audit.logged(Entry(AuditKind.access, id, sessionTenant, "device session superseded", id));
+        publish vehicle.welcome(false);
+      }
     }
     operation submitWithRetry(e: Envelope) returns IngestOutcome {
       /** Up to three attempts with 50 ms and 150 ms backoff; the idempotent submit makes a retried duplicate harmless. Counts retries and forwarded frames. */
@@ -670,6 +699,7 @@ package FleetCloud {
     operation handleFrame(f: Frame) {
       if (not authenticated or f.vehicleId != sessionVehicle) {
         refused = refused + 1;
+        publish audit.logged(Entry(AuditKind.refusal, f.vehicleId, sessionTenant, "frame refused: no session for this vehicle", f.vehicleId));
         publish vehicle.ack(f.sequence, IngestOutcome.unauthenticated);
         return;
       }
@@ -696,40 +726,66 @@ package FleetCloud {
     }
     operation deliverCommand(c: Command) {
       if (authenticated and c.vehicleId == sessionVehicle) {
+        pendingCommand = c.commandId;
         publish vehicle.command(c);
       }
     }
     operation relayAck(commandId: uint, executed: bool) {
-      publish commandAcks.ack(commandId, executed);
+      if (authenticated and pendingCommand != 0 and commandId == pendingCommand) {
+        pendingCommand = 0;
+        publish commandAcks.ack(commandId, sessionVehicle, executed);
+      } else {
+        refusedAcks = refusedAcks + 1;
+        publish audit.logged(Entry(AuditKind.refusal, sessionVehicle, sessionTenant, "command acknowledgement refused", sessionVehicle));
+      }
     }
     schedule {
       on receive vehicle.hello(claimed, deviceKey) openSession(claimed, deviceKey) deadline 500ms;
       on receive vehicle.frame(f) handleFrame(f) deadline 1s;
       on receive vehicle.heartbeat(id, sequence) forwardBeat(id, sequence) concurrent;
-      on receive vehicle.commandAck(commandId, executed) relayAck(commandId, executed) concurrent;
+      on receive vehicle.commandAck(commandId, executed) relayAck(commandId, executed);
       on receive intake.backlog(level) handleBacklog(level);
-      on receive downlink.deliver(c) deliverCommand(c) concurrent;
+      on receive downlink.deliver(c) deliverCommand(c);
+      on receive directory.sessionOpened(id, epoch) closeSuperseded(id, epoch);
     }
   }
   component def VehicleRegistry {
-    /** The vehicle registry: device keys, tenant ownership, twin slot assignment and session epochs. TRK-099 is decommissioned. */
+    /**
+    The vehicle registry: device keys, tenant ownership, twin slot assignment and session epochs. Every vehicle has its
+    own slot. A session is refused for a decommissioned vehicle (TRK-099), a wrong key, a slot beyond the twin
+    capacity (TRK-303 is registered before its twin exists) or a slot shared with another active vehicle. Every new
+    session is announced so that older sessions of the same vehicle close.
+    */
     port directory: Directory;
     port health: Health;
-    const attribute vehicleIds: string[3] = ["TRK-101", "VAN-202", "TRK-099"];
-    const attribute owners: string[3] = ["alder", "birch", "alder"];
-    const attribute deviceKeys: string[3] = ["key-101", "key-202", "key-099"];
-    const attribute slots: uint[3] = [0, 1, 0];
-    const attribute active: bool[3] = [true, true, false];
+    const attribute twinCapacity: uint = 2;
+    const attribute vehicleIds: string[4] = ["TRK-101", "VAN-202", "TRK-099", "TRK-303"];
+    const attribute owners: string[4] = ["alder", "birch", "alder", "alder"];
+    const attribute deviceKeys: string[4] = ["key-101", "key-202", "key-099", "key-303"];
+    const attribute slots: uint[4] = [0, 1, 2, 3];
+    const attribute active: bool[4] = [true, true, false, true];
     attribute epochs: uint[4] = [0, 0, 0, 0];
     attribute authentications: uint = 0;
     attribute failedAuthentications: uint = 0;
     operation find(vehicle: string) returns int {
-      for (var i: int = 0; i < 3; i = i + 1) {
+      for (var i: int = 0; i < 4; i = i + 1) {
         if (vehicleIds[i] == vehicle) {
           return i;
         }
       }
       return - 1;
+    }
+    operation slotUsable(i: int) returns bool {
+      /** The slot has a twin and no other active vehicle claims it. */
+      if (slots[i] >= twinCapacity) {
+        return false;
+      }
+      for (var j: int = 0; j < 4; j = j + 1) {
+        if (j != i and active[j] and slots[j] == slots[i]) {
+          return false;
+        }
+      }
+      return true;
     }
     operation identity(i: int) returns DeviceIdentity {
       return Known(vehicleIds[i], owners[i], slots[i], epochs[i]);
@@ -737,9 +793,10 @@ package FleetCloud {
     operation authenticate(vehicle: string, deviceKey: string) returns DeviceIdentity {
       var i: int = find(vehicle);
       if (i >= 0) {
-        if (active[i] and deviceKeys[i] == deviceKey) {
+        if (active[i] and deviceKeys[i] == deviceKey and slotUsable(i)) {
           authentications = authentications + 1;
           epochs = WithValue(epochs, i, epochs[i] + 1);
+          publish directory.sessionOpened(vehicleIds[i], epochs[i]);
           return identity(i);
         }
       }
@@ -1595,7 +1652,7 @@ package FleetCloud {
   // ---------------------------------------------------------------------------------------------------------------
 
   component def CommandIntake {
-    /** Accepts operator commands, checks that the vehicle belongs to the operator's tenant, allocates the command id, dispatches it to the tracker of the vehicle's slot and relays the outcomes. With a command in flight for a vehicle, a further command for that vehicle is refused as busy instead of being queued; other vehicles are unaffected. */
+    /** Accepts operator commands, checks that the vehicle belongs to the operator's tenant, allocates the command id, dispatches it to the tracker of the vehicle's slot and relays the outcomes. A vehicle whose slot has no tracker is rejected. With a command in flight for a vehicle, a further command for that vehicle is refused as busy instead of being queued; other vehicles are unaffected. */
     port api: CommandApi;
     reversed port directory: VehicleLookup;
     port dispatch0: CommandDispatch;
@@ -1617,6 +1674,11 @@ package FleetCloud {
       if (not owner.known or owner.tenantId != c.tenantId) {
         rejected = rejected + 1;
         publish audit.logged(Entry(AuditKind.refusal, c.issuedBy, c.tenantId, "command rejected: foreign or unknown vehicle", c.vehicleId));
+        return Outcome(c, CommandStatus.rejected);
+      }
+      if (owner.slot > 1) {
+        rejected = rejected + 1;
+        publish audit.logged(Entry(AuditKind.refusal, c.issuedBy, c.tenantId, "command rejected: vehicle has no command tracker", c.vehicleId));
         return Outcome(c, CommandStatus.rejected);
       }
       if (inFlight[owner.slot] != 0) {
@@ -1687,11 +1749,11 @@ package FleetCloud {
         on entry {
           publish downlink.deliver(current);
         }
-        on receive acks.ack(commandId, executed) when (commandId == current.commandId and executed) to Idle {
+        on receive acks.ack(commandId, vehicleId, executed) when (commandId == current.commandId and vehicleId == current.vehicleId and executed) to Idle {
           delivered = delivered + 1;
           publish updates.update(Outcome(current, CommandStatus.delivered));
         }
-        on receive acks.ack(commandId, executed) when (commandId == current.commandId) to Idle {
+        on receive acks.ack(commandId, vehicleId, executed) when (commandId == current.commandId and vehicleId == current.vehicleId) to Idle {
           refusedByVehicle = refusedByVehicle + 1;
           publish updates.update(Outcome(current, CommandStatus.rejected));
         }
@@ -1763,8 +1825,8 @@ package FleetCloud {
     One dashboard session of the operator API. It binds to the tenant of the operator who logs in, answers
     tenant-scoped queries under a **token-bucket rate limit** (5 queries, one token per second), forwards live
     updates, alerts and command outcomes of that tenant only, and audits every login and every refusal: refused
-    logins, unauthenticated, throttled and forbidden queries, and commands refused for the caller's role. Platform
-    health is shown to authenticated operators only.
+    logins, unauthenticated, throttled and forbidden queries, platform status requests without a login, and commands
+    refused for the caller's role. Platform health is shown to authenticated operators only.
     */
     reversed port console: Console;
     reversed port identity: OperatorAuth;
@@ -1828,6 +1890,7 @@ package FleetCloud {
     }
     operation platformStatus() returns PlatformHealth {
       if (not principal.authenticated) {
+        publish audit.logged(Entry(AuditKind.refusal, "anonymous", "", "platform status refused: not logged in", "console"));
         return Unprobed();
       }
       return platform;
@@ -2020,6 +2083,8 @@ package FleetCloud {
     connect (commands.updates, sessions[1].commandUpdates);
     connect (alerting.feed, sessions[0].alerts);
     connect (alerting.feed, sessions[1].alerts);
+    connect: AuditTrail (gateways[0].audit, audit.entries);
+    connect: AuditTrail (gateways[1].audit, audit.entries);
     connect: AuditTrail (sessions[0].audit, audit.entries);
     connect: AuditTrail (sessions[1].audit, audit.entries);
     connect: AuditTrail (alerting.audit, audit.entries);
@@ -2118,11 +2183,11 @@ package FleetCloud {
     attribute escalateAfterMs: uint = 2000;
   }
   requirement 'Lossless ingestion' {
-    /** Every frame is acknowledged with an outcome once ingestion has decided it: retransmissions within a session are deduplicated, a new session restarts its sequence without loss, and malformed frames are quarantined, never silently dropped. The acknowledgement precedes the durable write; persistence behind the circuit breaker is best effort and outside this requirement. */
+    /** Every frame is acknowledged with an outcome once ingestion has decided it: retransmissions within a session are deduplicated, a new session restarts its sequence without loss, a late frame of an older session is acknowledged as superseded, and malformed frames are quarantined, never silently dropped. The acknowledgement precedes the durable write; persistence behind the circuit breaker is best effort and outside this requirement. */
     attribute silentLosses: uint = 0;
   }
   requirement 'Device authentication' {
-    /** Only active vehicles with a valid device key can submit telemetry. */
+    /** Only an active vehicle with a valid device key and a slot of its own can open a session, a session submits frames only in its own vehicle's name, and only the session that was sent a pending command can acknowledge it. A newer session of the same vehicle closes the older one. */
     attribute unauthenticatedFramesAccepted: uint = 0;
   }
   requirement 'Back-pressure' {
@@ -2149,7 +2214,7 @@ package FleetCloud {
     attribute crossTenantLeaks: uint = 0;
   }
   requirement Auditability {
-    /** Logins, refusals, commands and their outcomes, pages, escalations and acknowledgements are recorded in the append-only audit log. */
+    /** Logins, every access refusal (device sessions, frames and command acknowledgements at the gateway; console logins, queries, platform status and commands at the session; foreign, busy and untracked commands at the intake), superseded device sessions, commands and their outcomes, pages, escalations and acknowledgements are recorded in the append-only audit log. Ingestion outcomes such as duplicates and dead letters are counted, not audited. */
     attribute retentionDays: uint = 400;
   }
   requirement 'Store resilience' {
@@ -2390,7 +2455,7 @@ package FleetCloud {
     assert backend.store.points == 1;
   }
   test 'Device authentication enforced' of backend {
-    /** A decommissioned vehicle and a wrong device key cannot open a session; an authenticated session cannot submit frames in another vehicle's name. */
+    /** A decommissioned vehicle, a wrong device key and a vehicle without twin capacity cannot open a session; an authenticated session cannot submit frames in another vehicle's name. Each refusal is audited. */
     publish truck.link.hello("TRK-099", "key-099");
     on receive truck.link.welcome(accepted) {
       assert not accepted;
@@ -2408,6 +2473,12 @@ package FleetCloud {
       assert not accepted;
     } or after 1s {
       fail "no answer to the wrong key";
+    }
+    publish truck.link.hello("TRK-303", "key-303");
+    on receive truck.link.welcome(accepted) {
+      assert not accepted;
+    } or after 1s {
+      fail "no answer to a vehicle without twin capacity";
     }
     publish truck.link.hello("TRK-101", "key-101");
     on receive truck.link.welcome(accepted) {
@@ -2428,7 +2499,8 @@ package FleetCloud {
       fail "own frame not accepted";
     }
     wait 10ms;
-    assert backend.registry.failedAuthentications == 2 and backend.registry.authentications == 1;
+    assert backend.registry.failedAuthentications == 3 and backend.registry.authentications == 1;
+    assert backend.audit.refusalEntries == 5 and backend.audit.lastEntry.action == "frame refused: no session for this vehicle";
     assert backend.ingestion.acceptedFrames == 1 and backend.router.routed == 1;
     var vanView: VehicleView = backend.fleet.views[1];
     assert vanView.vehicleId == "";
@@ -2670,8 +2742,9 @@ package FleetCloud {
   test 'Command times out' of backend {
     /**
     The truck receives an immobilize command but never acknowledges it. A second command for the same truck is
-    refused as busy while a birch command for the van is accepted. Both commands time out; each tenant sees only its
-    own outcome, and commands, outcomes and the refusal are audited.
+    refused as busy while a birch command for the van is accepted, and a command for TRK-303, which has no tracker, is
+    rejected. Both commands time out; each tenant sees only its own outcome, commands, outcomes and refusals are
+    audited, and once the truck's command has completed it accepts a new one.
     */
     var me: Principal = alderDispatcher.console.login("tok-alder-ana");
     var ben: Principal = birchDispatcher.console.login("tok-birch-ben");
@@ -2694,6 +2767,8 @@ package FleetCloud {
     assert second.status == CommandStatus.busy;
     var other: CommandUpdate = birchDispatcher.console.issueCommand("VAN-202", CommandKind.locate, 0);
     assert other.status == CommandStatus.pending;
+    var untracked: CommandUpdate = alderDispatcher.console.issueCommand("TRK-303", CommandKind.locate, 0);
+    assert untracked.status == CommandStatus.rejected;
     on receive truck.link.command(c) {
       assert c.kind == CommandKind.immobilize and c.ttlMs == 1500;
     } or after 1s {
@@ -2714,9 +2789,11 @@ package FleetCloud {
     } or after 300ms {
     }
     assert backend.commands.intake.timedOut == 2 and backend.commands.intake.delivered == 0;
-    assert backend.commands.intake.busyRefusals == 1 and backend.commands.intake.accepted == 2;
+    assert backend.commands.intake.busyRefusals == 1 and backend.commands.intake.accepted == 2 and backend.commands.intake.rejected == 1;
     assert backend.audit.commandOutcomes == 2 and backend.audit.commandEntries == 4;
-    assert backend.audit.refusalEntries == 1 and backend.audit.accessEntries == 2;
+    assert backend.audit.refusalEntries == 2 and backend.audit.accessEntries == 2;
+    var later: CommandUpdate = alderDispatcher.console.issueCommand("TRK-101", CommandKind.lockDoors, 0);
+    assert later.status == CommandStatus.pending;
   }
   test 'Tenant isolation holds' of backend {
     /** Two tenants' dispatchers see only their own vehicles and alerts; a cross-tenant query and command are refused and audited. */
@@ -2800,7 +2877,7 @@ package FleetCloud {
     var shown: PlatformHealth = alderDispatcher.console.platformStatus();
     assert hidden.probes == 0 and shown.probes >= 1;
     assert backend.access.refusals == 1 and backend.commands.intake.accepted == 0;
-    assert backend.audit.accessEntries == 1 and backend.audit.refusalEntries == 4 and backend.audit.entryCount == 5;
+    assert backend.audit.accessEntries == 1 and backend.audit.refusalEntries == 5 and backend.audit.entryCount == 6;
   }
   associate truck to 'Telemetry stored and visible';
   associate van to 'Telemetry stored and visible';
@@ -2828,6 +2905,194 @@ package FleetCloud {
   associate alderDispatcher to 'Console guards';
   associate birchDispatcher to 'Console guards';
 
+  test 'Superseded session closes' of backend {
+    /** The truck reconnects over a second link: the old session is told it is closed, its frames are refused and its heartbeats no longer keep the twin online, while the new session carries on with a restarted sequence. */
+    var me: Principal = alderDispatcher.console.login("tok-alder-ana");
+    assert me.authenticated;
+    publish alderDispatcher.console.subscribe();
+    publish truck.link.hello("TRK-101", "key-101");
+    on receive truck.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "first session not opened";
+    }
+    publish truck.link.frame(Reading("TRK-101", 5, 2, 10.0, 10.0, 50.0, 85.0, 70.0, true));
+    on receive truck.link.ack(sequence, outcome) {
+      assert outcome == IngestOutcome.accepted;
+    } or after 1s {
+      fail "first session frame not acknowledged";
+    }
+    on receive alderDispatcher.console.vehicleUpdate(v) {
+      assert v.link == LinkState.online;
+    } or after 1s {
+      fail "vehicle not shown online";
+    }
+    publish van.link.hello("TRK-101", "key-101");
+    on receive van.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "second session not opened";
+    }
+    on receive truck.link.welcome(accepted) {
+      assert not accepted;
+    } or after 1s {
+      fail "old session not told it is closed";
+    }
+    publish truck.link.frame(Reading("TRK-101", 6, 2, 10.0, 10.0, 50.0, 85.0, 70.0, true));
+    on receive truck.link.ack(sequence, outcome) {
+      assert sequence == 6 and outcome == IngestOutcome.unauthenticated;
+    } or after 1s {
+      fail "old session frame not refused";
+    }
+    publish truck.link.heartbeat("TRK-101", 7);
+    on receive alderDispatcher.console.vehicleUpdate(v) {
+      fail "old session heartbeat refreshed the twin";
+    } or after 200ms {
+    }
+    publish van.link.frame(Reading("TRK-101", 1, 2, 12.0, 10.0, 52.0, 85.0, 69.0, true));
+    on receive van.link.ack(sequence, outcome) {
+      assert sequence == 1 and outcome == IngestOutcome.accepted;
+    } or after 1s {
+      fail "new session frame not acknowledged";
+    }
+    on receive alderDispatcher.console.vehicleUpdate(v) {
+      assert v.position.xKm == 12.0 and v.lastSequence == 1;
+    } or after 1s {
+      fail "new session data not shown";
+    }
+    assert backend.registry.authentications == 2 and backend.ingestion.acceptedFrames == 2;
+    assert backend.audit.accessEntries == 2 and backend.audit.refusalEntries == 1;
+  }
+  test 'Command acknowledgements are authenticated' of backend {
+    /**
+    Acknowledgements of a pending command are refused from an unauthenticated link, from another tenant's
+    authenticated vehicle and from the truck's own session after it was superseded; the command times out instead of
+    being reported delivered. A second command, after the first completed, reaches only the new session and its
+    genuine acknowledgement is accepted.
+    */
+    var me: Principal = alderDispatcher.console.login("tok-alder-ana");
+    assert me.authenticated;
+    publish truck.link.hello("TRK-101", "key-101");
+    on receive truck.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "truck session not opened";
+    }
+    var issued: CommandUpdate = alderDispatcher.console.issueCommand("TRK-101", CommandKind.immobilize, 0);
+    assert issued.status == CommandStatus.pending;
+    on receive truck.link.command(c) {
+      assert c.commandId == issued.commandId;
+    } or after 1s {
+      fail "command not delivered";
+    }
+    publish van.link.commandAck(issued.commandId, true);
+    publish van.link.hello("VAN-202", "key-202");
+    on receive van.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "van session not opened";
+    }
+    publish van.link.commandAck(issued.commandId, true);
+    publish van.link.hello("TRK-101", "key-101");
+    on receive van.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "truck could not reconnect over the second link";
+    }
+    on receive truck.link.welcome(accepted) {
+      assert not accepted;
+    } or after 1s {
+      fail "old session not closed";
+    }
+    publish truck.link.commandAck(issued.commandId, true);
+    on receive alderDispatcher.console.commandUpdate(u) {
+      assert u.commandId == issued.commandId and u.status == CommandStatus.timedOut;
+    } or after 2s {
+      fail "spoofed command did not time out";
+    }
+    var next: CommandUpdate = alderDispatcher.console.issueCommand("TRK-101", CommandKind.locate, 0);
+    assert next.status == CommandStatus.pending;
+    on receive truck.link.command(c) {
+      fail "superseded session received a command";
+    } or after 100ms {
+    }
+    on receive van.link.command(c) {
+      assert c.commandId == next.commandId;
+      publish van.link.commandAck(c.commandId, true);
+    } or after 1s {
+      fail "new session did not receive the command";
+    }
+    on receive alderDispatcher.console.commandUpdate(u) {
+      assert u.commandId == next.commandId and u.status == CommandStatus.delivered;
+    } or after 1s {
+      fail "genuine acknowledgement not accepted";
+    }
+    assert backend.commands.intake.timedOut == 1 and backend.commands.intake.delivered == 1;
+    assert backend.audit.refusalEntries == 3;
+  }
+  test 'Paging queue follows alert state' of backend {
+    /**
+    The desk is busy with a truck breach while a van overheat and then a truck overheat are queued. The truck overheat
+    clears while queued, which withdraws nothing. When the breach is acknowledged the van overheat is handed over and
+    paged; when it clears, its paging is withdrawn, and the resolved truck overheat is skipped instead of paged.
+    */
+    publish truck.link.hello("TRK-101", "key-101");
+    publish van.link.hello("VAN-202", "key-202");
+    on receive truck.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "truck session not opened";
+    }
+    on receive van.link.welcome(accepted) {
+      assert accepted;
+    } or after 1s {
+      fail "van session not opened";
+    }
+    publish truck.link.frame(Reading("TRK-101", 1, 2, 30.0, 20.0, 60.0, 85.0, 55.0, true));
+    publish truck.link.frame(Reading("TRK-101", 2, 2, 41.2, 20.0, 60.0, 85.0, 55.0, true));
+    on call pager.api.deliver(p) {
+      assert p.alertId == 1;
+      return true;
+    } or after 1s {
+      fail "breach not paged";
+    }
+    publish van.link.frame(Reading("VAN-202", 1, 2, 20.0, 5.0, 40.0, 80.0, 65.0, true));
+    publish van.link.frame(Reading("VAN-202", 2, 2, 20.0, 5.0, 40.0, 110.0, 65.0, true));
+    wait 20ms;
+    publish truck.link.frame(Reading("TRK-101", 3, 2, 41.2, 20.0, 60.0, 110.0, 55.0, true));
+    wait 20ms;
+    assert backend.alerting.router.paged == 3 and backend.alerting.router.waitingCount == 2;
+    publish truck.link.frame(Reading("TRK-101", 4, 2, 41.2, 20.0, 60.0, 90.0, 55.0, true));
+    wait 20ms;
+    assert backend.alerting.router.resolved == 1 and backend.alerting.router.withdrawn == 0;
+    publish onCall.console.acknowledge(1, "dana");
+    on call pager.api.deliver(p) {
+      assert p.alertId == 2 and p.channel == Channel.push;
+      return true;
+    } or after 1s {
+      fail "queued page not handed over";
+    }
+    publish van.link.frame(Reading("VAN-202", 3, 2, 20.0, 5.0, 40.0, 90.0, 65.0, true));
+    wait 20ms;
+    assert backend.alerting.router.withdrawn == 1 and backend.alerting.desk.withdrawals == 1;
+    on call pager.api.deliver(p) {
+      fail "paged an alert that resolved while queued";
+    } or after 1s {
+    }
+    assert not backend.alerting.router.deskBusy and backend.alerting.router.waitingCount == 0;
+    assert backend.alerting.desk.acknowledged == 1 and backend.alerting.desk.escalations == 0;
+  }
+  associate truck to 'Superseded session closes';
+  associate van to 'Superseded session closes';
+  associate alderDispatcher to 'Superseded session closes';
+  associate truck to 'Command acknowledgements are authenticated';
+  associate van to 'Command acknowledgements are authenticated';
+  associate alderDispatcher to 'Command acknowledgements are authenticated';
+  associate truck to 'Paging queue follows alert state';
+  associate van to 'Paging queue follows alert state';
+  associate pager to 'Paging queue follows alert state';
+  associate onCall to 'Paging queue follows alert state';
+
   // ---------------------------------------------------------------------------------------------------------------
   // Intent links
   // ---------------------------------------------------------------------------------------------------------------
@@ -2853,6 +3118,11 @@ package FleetCloud {
   verify 'Lossless ingestion' by 'Duplicate frame dropped';
   verify 'Lossless ingestion' by 'Malformed frame dead-lettered';
   verify 'Device authentication' by 'Device authentication enforced';
+  verify 'Device authentication' by 'Superseded session closes';
+  verify 'Device authentication' by 'Command acknowledgements are authenticated';
+  verify 'Command resolution' by 'Command acknowledgements are authenticated';
+  verify Escalation by 'Paging queue follows alert state';
+  verify Auditability by 'Device authentication enforced';
   verify 'Back-pressure' by 'Burst throttles the vehicle';
   verify 'Offline detection' by 'Silent vehicle detected offline';
   verify 'Alert hysteresis' by 'Alert thresholds use hysteresis';
@@ -3001,6 +3271,10 @@ package FleetCloud::Edge {
     /** Stub: receives forwarded heartbeats. */
     reversed port liveness: Liveness;
   }
+  component def AuditSink {
+    /** Stub: receives the gateway's audit entries. */
+    reversed port entries: AuditFeed;
+  }
   component def CommandStub {
     /** Stub: the command service side of the gateway. */
     port downlink: CommandDownlink;
@@ -3012,12 +3286,14 @@ package FleetCloud::Edge {
   component ingest: IngestionStub;
   component beats: LivenessSink;
   component commands: CommandStub;
+  component auditTrail: AuditSink;
   connect uplink: VehicleUplink (vehicle.link, gateway.vehicle);
   connect deviceAuth: ControlCalls (gateway.directory, directory.directory);
   connect submissions: TelemetryIntake (gateway.intake, ingest.intake);
   connect (gateway.liveness, beats.liveness);
   connect (commands.downlink, gateway.downlink);
   connect (gateway.commandAcks, commands.acks);
+  connect (gateway.audit, auditTrail.entries);
   test 'Gateway retries with backoff' of gateway {
     /** The first submission times out after 200 ms; the retry follows the 50 ms backoff, not earlier, and its success is acknowledged to the vehicle. */
     publish vehicle.link.hello("TRK-101", "key-101");
@@ -3130,7 +3406,55 @@ package FleetCloud::Edge {
     include ingest;
     include beats;
     include commands;
+    include auditTrail;
   }
   view 'retry timing': Timing of 'Gateway retries with backoff';
   view 'retry sequence': Sequence of 'Gateway retries with backoff';
+}
+package FleetCloud::Ingest {
+  /** An isolation package for the ingestion pipeline: its test submits stamped envelopes directly, so a frame of an older session can arrive after the new session's first frame. */
+  import FleetCloud;
+  import Swaml::Views;
+  component def GatewaySide {
+    /** Stub: the gateway end of the intake. */
+    reversed port intake: Intake;
+  }
+  component def StreamSink {
+    reversed port stream: TelemetryStream;
+  }
+  component def QuarantineSink {
+    reversed port letters: DeadLetterFeed;
+  }
+  component def Prober {
+    reversed port health: Health;
+  }
+  component pipeline: IngestionPipeline;
+  component gateway: GatewaySide;
+  component stream: StreamSink;
+  component quarantine: QuarantineSink;
+  component prober: Prober;
+  connect (gateway.intake, pipeline.intake);
+  connect (pipeline.stream, stream.stream);
+  connect (pipeline.deadLetters, quarantine.letters);
+  connect (prober.health, pipeline.health);
+  test 'Late frame of an older session is superseded' of pipeline {
+    /** After session 2 delivered its first frame, a late frame of session 1 is superseded however high its sequence; a retransmission in session 2 is a duplicate and session 3 starts afresh. */
+    var first: IngestOutcome = pipeline.submit(Stamped(Reading("TRK-101", 1, 2, 10.0, 10.0, 50.0, 85.0, 70.0, true), 2));
+    assert first == IngestOutcome.accepted;
+    var late: IngestOutcome = pipeline.submit(Stamped(Reading("TRK-101", 9, 2, 10.0, 10.0, 50.0, 85.0, 70.0, true), 1));
+    assert late == IngestOutcome.superseded;
+    var again: IngestOutcome = pipeline.submit(Stamped(Reading("TRK-101", 1, 2, 10.0, 10.0, 50.0, 85.0, 70.0, true), 2));
+    assert again == IngestOutcome.duplicate;
+    var fresh: IngestOutcome = pipeline.submit(Stamped(Reading("TRK-101", 1, 2, 10.0, 10.0, 50.0, 85.0, 70.0, true), 3));
+    assert fresh == IngestOutcome.accepted;
+    assert pipeline.supersededFrames == 1 and pipeline.duplicateFrames == 1 and pipeline.acceptedFrames == 2;
+  }
+  verify 'Lossless ingestion' by 'Late frame of an older session is superseded';
+  view 'ingestion isolation': Interconnect {
+    include pipeline;
+    include gateway;
+    include stream;
+    include quarantine;
+    include prober;
+  }
 }

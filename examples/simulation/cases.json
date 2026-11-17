@@ -49,10 +49,14 @@
       "FleetCloud::Command times out": "pass",
       "FleetCloud::Tenant isolation holds": "pass",
       "FleetCloud::Console guards": "pass",
+      "FleetCloud::Superseded session closes": "pass",
+      "FleetCloud::Command acknowledgements are authenticated": "pass",
+      "FleetCloud::Paging queue follows alert state": "pass",
       "FleetCloud::Resilience::Store outage trips the breaker and recovers": "pass",
       "FleetCloud::Edge::Gateway retries with backoff": "pass",
       "FleetCloud::Edge::Gateway gives up after three attempts": "pass",
-      "FleetCloud::Edge::Back-pressure watermarks": "pass"
+      "FleetCloud::Edge::Back-pressure watermarks": "pass",
+      "FleetCloud::Ingest::Late frame of an older session is superseded": "pass"
     }
   }
 }
