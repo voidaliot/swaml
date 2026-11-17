@@ -40,14 +40,19 @@
       "FleetCloud::Telemetry stored and visible": "pass",
       "FleetCloud::Duplicate frame dropped": "pass",
       "FleetCloud::Malformed frame dead-lettered": "pass",
-      "FleetCloud::Unknown device rejected": "pass",
+      "FleetCloud::Device authentication enforced": "pass",
       "FleetCloud::Burst throttles the vehicle": "pass",
       "FleetCloud::Unacknowledged breach escalates": "pass",
+      "FleetCloud::Resolved alert stops paging": "pass",
+      "FleetCloud::Alert thresholds use hysteresis": "pass",
       "FleetCloud::Silent vehicle detected offline": "pass",
       "FleetCloud::Command times out": "pass",
       "FleetCloud::Tenant isolation holds": "pass",
       "FleetCloud::Console guards": "pass",
-      "FleetCloud::Resilience::Store outage trips the breaker and recovers": "pass"
+      "FleetCloud::Resilience::Store outage trips the breaker and recovers": "pass",
+      "FleetCloud::Edge::Gateway retries with backoff": "pass",
+      "FleetCloud::Edge::Gateway gives up after three attempts": "pass",
+      "FleetCloud::Edge::Back-pressure watermarks": "pass"
     }
   }
 }
