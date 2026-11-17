@@ -1,6 +1,7 @@
 import { AstUtils, DefaultDocumentBuilder, DefaultDocumentValidator, type LangiumDocument, type AstNode, type BuildOptions, type LinkingError, type ValidationOptions } from 'langium';
 import type { CancellationToken, Diagnostic } from 'vscode-languageserver';
 import { isModel, isPackage } from './generated/ast.js';
+import { formatQualifiedName } from './names.js';
 /** Semantic string paths and negative lookups participate in workspace invalidation. */
 export class SwamlDocumentBuilder extends DefaultDocumentBuilder {
     override async build<T extends AstNode>(documents: LangiumDocument<T>[], options?: BuildOptions, cancelToken?: CancellationToken): Promise<void> {
@@ -19,7 +20,7 @@ export class SwamlDocumentValidator extends DefaultDocumentValidator {
         errors.forEach((error, i) => {
             const d = diagnostics[start + i];
             if (d && error.declarations)
-                d.relatedInformation = error.declarations.filter(n => n.$cstNode).map(n => ({ location: { uri: AstUtils.getDocument(n).uri.toString(), range: n.$cstNode!.range }, message: 'Declaration ' + (AstUtils.getContainerOfType(n, isPackage)?.name ?? '') + '::' + (n as AstNode & { name: string }).name }));
+                d.relatedInformation = error.declarations.filter(n => n.$cstNode).map(n => ({ location: { uri: AstUtils.getDocument(n).uri.toString(), range: n.$cstNode!.range }, message: 'Declaration ' + formatQualifiedName((AstUtils.getContainerOfType(n, isPackage)?.name ?? '') + '::' + (n as AstNode & { name: string }).name) }));
         });
     }
     override async validateDocument(document: LangiumDocument, options?: ValidationOptions, cancelToken?: CancellationToken): Promise<Diagnostic[]> {
