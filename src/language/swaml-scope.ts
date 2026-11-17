@@ -1,4 +1,5 @@
-import { AstUtils, DocumentState, DefaultScopeProvider, MapScope, type AstNode, type ReferenceInfo, type Scope, type LangiumCoreServices } from 'langium';
+import { AstUtils, DocumentState, DefaultLinker, DefaultScopeProvider, MapScope, type AstNode, type AstNodeDescription, type LinkingError, type ReferenceInfo, type Scope, type LangiumCoreServices } from 'langium';
+import { decodeQuotedName, formatName, formatQualifiedName } from './names.js';
 import * as a from './generated/ast.js';
 import { owner } from './semantic.js';
 export { owner } from './semantic.js';
@@ -28,5 +29,30 @@ export class SwamlScopeProvider extends DefaultScopeProvider {
         // They resolve there first; the imported fallback lets validation explain a cross-package reference.
         const local = a.isScenario(context.container) || a.isAssociation(context.container) || a.isVerification(context.container) && context.property === 'test';
         return local ? this.globalScopeCache.get(`local:${key}`, () => scope(pkg.elements.map(node => ({ node, name: node.name })), visible)) : visible;
+    }
+}
+const KIND: Record<string, string> = { DataType: 'datatype', EnumType: 'enum', ComponentDef: 'component def', ComponentUsage: 'component', PortDef: 'port def', Operation: 'operation', QosPolicy: 'qos def', ViewDef: 'view def', Requirement: 'requirement', View: 'view', Deployment: 'deployment' };
+const kindOf = (n: AstNode) => a.isScenario(n) ? (n.kind === 'test' ? 'test' : 'use case') : KIND[n.$type] ?? n.$type;
+/** Explains a short name that the scope leaves unresolved because several visible declarations share it. */
+export class SwamlLinker extends DefaultLinker {
+    constructor(private readonly core: LangiumCoreServices) {
+        super(core);
+    }
+    override createLinkingError(refInfo: ReferenceInfo, targetDescription?: AstNodeDescription): LinkingError & { declarations?: AstNode[] } {
+        const error = super.createLinkingError(refInfo, targetDescription);
+        const text = refInfo.reference.$refText, name = text.startsWith("'") ? decodeQuotedName(text) : text, pkg = owner(refInfo.container, a.isPackage);
+        if (targetDescription || !pkg || text.includes('::'))
+            return error;
+        const packages = this.core.shared.workspace.LangiumDocuments.all.flatMap(d => a.isModel(d.parseResult.value) ? d.parseResult.value.packages : []).toArray();
+        const visible = packages.filter(p => p === pkg || pkg.imports.some(i => i.namespace === p.name));
+        const local = a.isScenario(refInfo.container) || a.isAssociation(refInfo.container) || a.isVerification(refInfo.container) && refInfo.property === 'test';
+        const own = pkg.elements.filter(e => e.name === name);
+        // Local references resolve in their own package first; only an ambiguity there is reported here.
+        const clashing = local && own.length ? own : visible.flatMap(p => p.elements.filter(e => e.name === name));
+        if (clashing.length < 2)
+            return error;
+        const described = clashing.map(e => `${kindOf(e)} ${formatQualifiedName(owner(e, a.isPackage)!.name + '::' + e.name)}${owner(e, a.isPackage) === pkg ? '' : ' (imported)'}`);
+        const alternatives = clashing.map(e => formatQualifiedName(owner(e, a.isPackage)!.name + '::' + e.name)).filter((q, i, all) => all.indexOf(q) === i);
+        return { ...error, declarations: clashing, message: `Ambiguous name ${formatName(name)}: it names ${described.slice(0, -1).join(', ')} and ${described[described.length - 1]}. A short name must name one visible declaration; qualify the reference (${alternatives.join(' or ')}) or rename one declaration.` };
     }
 }
