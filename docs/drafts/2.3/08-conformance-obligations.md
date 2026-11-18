@@ -29,7 +29,7 @@ Existing rows change their text accordingly: V03 (selectors), V09 (conditional e
 | E17 | Sample cells updated at delivery (after latency and faults, before same-instant guards), independent of consumption, read live, with `sample` observations; per-member policies | [WP6] |
 | E18 | Release guards at dispatch, deadline cancellation, skip as completion for successors, `releaseGuard` discard, guard failure, unchanged grid | [WP7] |
 | E19 | Priority and in-task ordering keys; unchanged order without Tasks | [WP8] |
-| E20 | Every 2.2 corpus run, case and showcase test keeps its status, final stores, results and complete trace, ignoring only `profile` and `languageVersion` (gate 2) | [WP1a], rerun by every package and WP9 |
+| E20 | Moved to [chapter 8](../../spec/08-conformance-obligations.md) by WP1a. | [WP1a], rerun by every package and WP9 |
 
 ## 8.3 Analysis, kernel and graphical claims
 

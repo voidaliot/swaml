@@ -1,6 +1,6 @@
 # swa.ml 2.2 reference simulation
 
-The portable interpreter selects **swaml-reference/2.2** and requires linked, validated source. All activation comes from ordinary source schedules/ports/routes, including authored test drivers. [Execution semantics](spec/06-execution-contract.md) is normative; this guide covers the reference host.
+The portable interpreter selects **swaml-reference/2.3** (the unreleased 2.3 candidate; 2.2 models run unchanged) and requires linked, validated source. All activation comes from ordinary source schedules/ports/routes, including authored test drivers. [Execution semantics](spec/06-execution-contract.md) is normative; this guide covers the reference host.
 
 ```sh
 npm ci
@@ -37,7 +37,7 @@ Outcome failure-observed includes caught expression failures as well as failed a
 A use case or test with statements is a script ([behavior](spec/03-behavior.md), [case runs](spec/06-execution-contract.md)). swaml test runs the cases of the supplied sources:
 
 ```text
-swaml test [--language-version 2.2] [--package P] [--case Package::Case|Case] [--json] [--options options.json | --until-ns N] file.swaml [more files...]
+swaml test [--language-version 2.3] [--package P] [--case Package::Case|Case] [--json] [--options options.json | --until-ns N] file.swaml [more files...]
 ```
 
 Each case with statements runs in its own fresh run of its package. The default horizon is 10 s of logical time (untilNs 10000000000); the run stops earlier when the script completes or fails. The script is one serial activation released at 0 ns after every on start entry. Both case kinds may call operations of the exact primary subject, including its own port communication, receive and wait behavior; the actual frame uses the subject's context, releases its lock while suspended and restores the caller context on return or failure. This remains a local call, with no new schedule release or implicit transport timeout. The script also acts at the ports of its associated interface-only occurrences. Input that reaches an actor port before the script waits for it is retained under the connection's policy and attributes keep their latest value. A request to an actor port waits until an on call branch answers it or the caller's request times out; a later branch in the same case cannot run while blocked in a synchronous subject call. A test additionally reads private attributes and calls eligible helpers of explicitly associated same-package roots and single parts. Those extra helper calls cannot communicate or suspend. Associations do not create occurrences or alter the whole-package run.

@@ -1,0 +1,76 @@
+{
+  "width": 920,
+  "height": 390,
+  "elements": [
+    {
+      "kind": "rect",
+      "x": 1,
+      "y": 1,
+      "w": 918,
+      "h": 388,
+      "fill": "#fafafa",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 36,
+      "text": "Owned documentation and lexical notes",
+      "size": 21
+    },
+    {
+      "kind": "line",
+      "x1": 26,
+      "y1": 54,
+      "x2": 894,
+      "y2": 54,
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 70,
+      "y": 115,
+      "w": 775,
+      "h": 200,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 70,
+      "y": 115,
+      "w": 775,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 82,
+      "y": 138,
+      "text": "/** One named routed message reaches the receiver. */",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 82,
+      "y": 173,
+      "text": "Formal doc belongs to one declaration.",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 82,
+      "y": 195,
+      "text": "Ordinary comments remain lexical annotations.",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 82,
+      "y": 217,
+      "text": "Documentation does not create behavior or proof.",
+      "size": 12
+    }
+  ]
+}

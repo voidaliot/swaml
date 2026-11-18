@@ -1,0 +1,144 @@
+{
+  "width": 920,
+  "height": 390,
+  "elements": [
+    {
+      "kind": "rect",
+      "x": 1,
+      "y": 1,
+      "w": 918,
+      "h": 388,
+      "fill": "#fafafa",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 36,
+      "text": "Indexed placement on platform Nodes",
+      "size": 21
+    },
+    {
+      "kind": "line",
+      "x1": 26,
+      "y1": 54,
+      "x2": 894,
+      "y2": 54,
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 40,
+      "y": 110,
+      "w": 300,
+      "h": 195,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 40,
+      "y": 110,
+      "w": 300,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 52,
+      "y": 133,
+      "text": "software Demo",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 52,
+      "y": 168,
+      "text": "workers[0]",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 52,
+      "y": 190,
+      "text": "workers[1]",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 52,
+      "y": 212,
+      "text": "workers[2]",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 540,
+      "y": 110,
+      "w": 335,
+      "h": 195,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 540,
+      "y": 110,
+      "w": 335,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 552,
+      "y": 133,
+      "text": "Vehicle: Platform",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 552,
+      "y": 168,
+      "text": "front: Ecu",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 552,
+      "y": 190,
+      "text": "rear[0]: Ecu",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 552,
+      "y": 212,
+      "text": "rear[1]: Ecu",
+      "size": 12
+    },
+    {
+      "kind": "line",
+      "x1": 340,
+      "y1": 205,
+      "x2": 540,
+      "y2": 205,
+      "dash": true
+    },
+    {
+      "kind": "text",
+      "x": 385.0,
+      "y": 193.0,
+      "text": "deploy on",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 45,
+      "y": 348,
+      "text": "Node targets own only const attributes and child Nodes; placement is separate.",
+      "size": 13
+    }
+  ]
+}

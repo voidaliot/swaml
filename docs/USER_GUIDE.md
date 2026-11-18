@@ -2,7 +2,7 @@
 
 Start with a component, give each persistent value a typed attribute, and write named operations for behavior. Add a schedule to say when those operations run. Add directed ports and explicit connections when behavior crosses component boundaries.
 
-This guide targets the 2.2 host semantics and the unchanged 2.1 concrete grammar. For repository validation use Node.js 26.12.0 from .node-version and npm 10.2.3+, then run npm ci and npm run build. Validate with node out/src/cli/main.js --language-version 2.2 model.swaml. Files are headerless; the host and exact package revision select the edition. The published 2.1 reference remains frozen.
+This guide targets the host of the unreleased 2.3 candidate, which so far accepts exactly the 2.2 language with the unchanged 2.1 concrete grammar. For repository validation use Node.js 26.12.0 from .node-version and npm 10.2.3+, then run npm ci and npm run build. Validate with node out/src/cli/main.js --language-version 2.3 model.swaml. Files are headerless; the host and exact package revision select the edition. The published 2.1 reference remains frozen.
 
 ## A first model
 

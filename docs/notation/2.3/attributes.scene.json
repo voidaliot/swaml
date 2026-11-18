@@ -1,0 +1,129 @@
+{
+  "width": 920,
+  "height": 390,
+  "elements": [
+    {
+      "kind": "rect",
+      "x": 1,
+      "y": 1,
+      "w": 918,
+      "h": 388,
+      "fill": "#fafafa",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 36,
+      "text": "Attributes and lexical locals",
+      "size": 21
+    },
+    {
+      "kind": "line",
+      "x1": 26,
+      "y1": 54,
+      "x2": 894,
+      "y2": 54,
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 60,
+      "y": 115,
+      "w": 360,
+      "h": 185,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 60,
+      "y": 115,
+      "w": 360,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 72,
+      "y": 138,
+      "text": "component Demo",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 72,
+      "y": 173,
+      "text": "attribute sum: int = 0",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 72,
+      "y": 195,
+      "text": "attribute mode: Mode = Mode.idle",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 72,
+      "y": 217,
+      "text": "var values: int[3] = [1, 2, 3]",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 500,
+      "y": 115,
+      "w": 350,
+      "h": 185,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 500,
+      "y": 115,
+      "w": 350,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 512,
+      "y": 138,
+      "text": "copied nominal values",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 512,
+      "y": 173,
+      "text": "datatype Reading",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 512,
+      "y": 195,
+      "text": "value: real; unit: string;",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 512,
+      "y": 217,
+      "text": "enum Mode { idle, active }",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 60,
+      "y": 345,
+      "text": "Types are explicit. Copies never alias another component’s state.",
+      "size": 14
+    }
+  ]
+}

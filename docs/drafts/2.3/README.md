@@ -4,11 +4,13 @@
 
 ## Why separate files
 
-The maintained chapters under `docs/spec/`, `docs/LANGUAGE_SPECIFICATION.md` and the other maintained guides are inputs of the published 2.2 edition. `scripts/build-reference.mjs --check` regenerates `docs/SWAML-2.2-Reference.md` from them and fails on any difference. The published 2.2 book is frozen: `scripts/check-frozen-publications.mjs` requires `docs/SWAML-2.2-Reference.md` to equal the copy embedded in the 2.2 PDF. Unreleased 2.3 text in those chapters would therefore either fail `build-reference.mjs --check` or change the published 2.2 book. (The strict 2.2 PDF checker, which compared every embedded source with the workspace, was the 2.2 release gate; after P0 the 2.2 PDF is checked in archive mode.) The drafts therefore mirror the chapter structure here until the 2.3 candidate is allocated.
+Until WP1a, the maintained chapters under `docs/spec/`, `docs/LANGUAGE_SPECIFICATION.md` and the other maintained guides were inputs of the published 2.2 edition. `scripts/build-reference.mjs --check` regenerates `docs/SWAML-2.2-Reference.md` from them and fails on any difference. The published 2.2 book is frozen: `scripts/check-frozen-publications.mjs` requires `docs/SWAML-2.2-Reference.md` to equal the copy embedded in the 2.2 PDF. Unreleased 2.3 text in those chapters would therefore have failed `build-reference.mjs --check` or changed the published 2.2 book. (The strict 2.2 PDF checker, which compared every embedded source with the workspace, was the 2.2 release gate; after P0 the 2.2 PDF is checked in archive mode.) The drafts therefore mirror the chapter structure here.
+
+WP1a has allocated the candidate. `scripts/build-reference.mjs --check` now regenerates `docs/SWAML-2.3-Reference.md` from the maintained chapters, so they belong to 2.3 and a package edits them directly when it lands a rule. The published 2.2 book is no longer regenerated; `check-frozen-publications.mjs` still compares it, its release notes, figures, notation and trace with the 2.2 manifest. The drafts stay the checklist of the rules that are still open.
 
 ## How a work package uses these drafts
 
-1. Two small PRs come before WP1 ([release draft](../../RELEASE_2_3.md#version-allocation)):
+1. Two small PRs come before WP1 ([release draft](../../RELEASE_2_3.md#version-allocation)); both are done:
    - **P0** switches the 2.2 PDF check to archive mode. It is a tooling change with no language change.
    - **WP1a** allocates the unreleased 2.3 candidate, following [VERSIONING.md](../../VERSIONING.md):
      - `spec/standard.json` 2.3;
@@ -17,9 +19,9 @@ The maintained chapters under `docs/spec/`, `docs/LANGUAGE_SPECIFICATION.md` and
      - `examples/simulation/2.3/hello-trace.json`;
      - the three compatibility gates.
 
-   From then on `npm run docs:build` writes `docs/SWAML-2.3-Reference.md`, and the published 2.2 book is no longer regenerated.
+   From then on `npm run docs:build` writes `docs/SWAML-2.3-Reference.md`, and the published 2.2 book is no longer regenerated. A package that changes a maintained chapter or guide regenerates the 2.3 book with `npm run docs:build`; one that changes `docs/GRAPHICAL_CATALOG.md` inputs, figures or the renderer regenerates the 2.3 figures with the Python builders (never `docs/figures/2.2` or `docs/notation/2.2`); one that changes the Hello run regenerates `examples/simulation/2.3/hello-trace.json` with `node scripts/check-simulations.mjs --write` and reviews it. Every package reruns the compatibility gates in `npm run check`.
 2. Each package moves the rules tagged with its number from these drafts into the maintained chapter named by the file and section, in the same PR as the implementation. It deletes them here, or marks them "moved", so the drafts always show what is still open.
-3. **Fences.** Every swa.ml example in these drafts is a `text` fence, because complete `swaml` fences in documentation are executable fixtures validated against the current (2.2) implementation by `scripts/check-docs.mjs`. When a package lands a form, it turns the examples of that form into complete `swaml` fences in the maintained chapters, or into examples under `examples/`, so that they are validated.
+3. **Fences.** Every swa.ml example in these drafts is a `text` fence, because complete `swaml` fences in documentation are executable fixtures validated against the current implementation by `scripts/check-docs.mjs`. When a package lands a form, it turns the examples of that form into complete `swaml` fences in the maintained chapters, or into examples under `examples/`, so that they are validated.
 4. The package regenerates the inventories it affects (`node scripts/build-inventories.mjs`), because `npm run check` verifies them for every changed production and keyword.
 
 ## Rule identifiers
