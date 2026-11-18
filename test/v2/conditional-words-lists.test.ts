@@ -840,3 +840,32 @@ test('WP2-S02 a conditional with an int and a real branch widens to real before 
     const run = simulate([integral.model], 'Test::Demo', { untilNs: 1000 });
     assert.equal(run.stores.Demo.r, 0, 'integer overflow fails the activation and leaves r unchanged');
 });
+
+test('WP2-S06 WP2-M04 unfinished associate, satisfy and verify lines project, validate and build view candidates without throwing; an unfinished link is left out', async () => {
+    const { viewCandidates } = await import('../../src/language/presentation.js');
+    const { workspace } = await import('./helpers.js');
+    const lines = ['associate ;', 'associate a to ;', 'associate a, to t;', 'associate a to t,;', 'associate a, x to ;', 'satisfy by x;', 'satisfy R by ;', 'satisfy ;', 'verify by t;', 'verify R by ;', 'verify ;'];
+    const valid22 = `package Q {\n  requirement S { }\n  component def D { }\n  component y: D;\n  component w: D;\n  test u of y { }\n  associate w to u;\n  satisfy S by y;\n  verify S by u;\n}\n`;
+    for (const line of lines) {
+        const source = `package P {\n  requirement R { }\n  component def C { }\n  component x: C;\n  component a: C;\n  test t of a { }\n  ${line}\n}\n`;
+        const r = await parse(source);
+        assert.ok(r.errors.length && r.errors.every(e => e.code === 'SW2000' || e.code === 'SW2001'), `${line}: ${JSON.stringify(r.errors.map(e => [e.code, e.message]))}`);
+        const p = projectModel([r.model]);
+        // A complete pair of a list keeps its link; every unfinished link is left out, none points to an undefined end.
+        const kept = /^associate a, to t;|^associate a to t,;/u.test(line) ? [['associate', 'P::a', 'P::t']] : [];
+        assert.deepEqual(p.edges.filter(e => ['associate', 'satisfy', 'verify'].includes(e.kind)).map(e => [e.kind, e.source, e.target]), kept, line);
+        assert.ok(p.edges.every(e => !e.source.includes('undefined') && !e.target.includes('undefined')), line);
+        assert.ok(viewCandidates([r.model]).length > 0, line);
+        semanticIndex([r.model]);
+        // In a workspace next to a valid file, validation and the joint projection keep the valid file's links.
+        const ws = await workspace([source, valid22]);
+        const models = ws.docs.map(d => d.parseResult.value as Model);
+        assert.deepEqual(ws.docs[1].diagnostics?.filter(d => d.severity === 1).map(d => d.code), [], line);
+        const joint = projectModel(models);
+        assert.deepEqual(joint.edges.filter(e => ['associate', 'satisfy', 'verify'].includes(e.kind)).map(e => [e.kind, e.source, e.target]), [...kept, ['associate', 'Q::w', 'Q::u'], ['satisfy', 'Q::y', 'Q::S'], ['verify', 'Q::u', 'Q::S']], line);
+        viewCandidates(models);
+    }
+    // A list with one unfinished entry keeps its complete pairs with their list positions.
+    const partial = projectModel([(await parse('package P {\n  component def C { }\n  component x: C;\n  component a: C;\n  test t of a { }\n  associate a, x, to t;\n}\n')).model]);
+    assert.ok(partial.edges.every(e => !e.target.includes('undefined')));
+});

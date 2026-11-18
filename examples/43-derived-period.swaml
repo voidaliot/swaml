@@ -17,6 +17,27 @@ package DerivedPeriod {
       on every (periodMs * 1ms) sample() deadline (periodMs * 1ms / 2);
     }
   }
+  component def Logger {
+    /** A literal period with a computed deadline: every 20ms, deadline (budgetMs * 1ms). The deadline is the constant value of each usage, the period stays the 2.2 literal. */
+    const attribute budgetMs: uint = 5;
+    attribute entries: uint = 0;
+    attribute busyMs: uint = 0;
+    operation log() {
+      entries = entries + 1;
+      if (busyMs > 0) {
+        wait (busyMs * 1ms);
+      }
+    }
+    operation load(ms: uint) {
+      busyMs = ms;
+    }
+    schedule {
+      on every 20ms log() deadline (budgetMs * 1ms);
+    }
+  }
+  component logger: Logger {
+    redefines const attribute budgetMs: uint = 3;
+  }
   component slow: Sampler;
   component fast: Sampler {
     redefines const attribute periodMs: uint = 10;
@@ -25,6 +46,7 @@ package DerivedPeriod {
     redefines const attribute periodMs: uint = 8;
   }
   associate fast to 'Period per usage', 'Busy within the deadline';
+  associate slow to 'Literal period, computed deadline';
   test 'Period per usage' of slow {
     /** In 100 ms slow samples five times and fast ten times. */
     wait 100ms;
@@ -35,6 +57,12 @@ package DerivedPeriod {
     slow.load(9);
     wait 100ms;
     assert slow.samples == 5 and fast.samples == 10;
+  }
+  test 'Literal period, computed deadline' of logger {
+    /** logger logs every 20 ms; a 2 ms entry meets its redefined 3 ms deadline (5 ms in the definition). */
+    logger.load(2);
+    wait 100ms;
+    assert logger.entries == 5 and slow.samples == 5;
   }
   test 'Deadline per usage' of late {
     /** late runs every 8 ms with a deadline of 4 ms, half its own period. A 5 ms sample released at 8 ms misses it at 12 ms: the run stops with the Deadline violation, so this case fails by design. With the 10 ms deadline of slow it would pass. */

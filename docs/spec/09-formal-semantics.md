@@ -14,6 +14,8 @@ D; Γ ⊢ s ⇒ Γ'
 C —observation→ C'
 ```
 
+The queued messages in Q carry a retained mark (WP5): a message that a deferring state retained, recorded once by `defer` and consumed in offer-ordinal order when a state handles it (chapter 6.5).
+
 Values are bounded primitive scalars, nominal enums/records and fixed copied arrays; void has no inhabitant. Effect ε retains read/write/communication/suspension flags, with pure as empty. Transitive union over an acyclic call graph computes effects. The maximum class is a presentation of these flags rather than permission to erase a write beneath suspension.
 
 ## 9.2 Typing schemas
@@ -29,9 +31,11 @@ Values are bounded primitive scalars, nominal enums/records and fixed copied arr
 | test occurrence access | Resolved own-package executed software root is the subject or an explicit association, followed by single effective parts or part family members with literal indexes in range; reads use its live store under its lock, helper calls outside the exact primary subject neither communicate nor suspend; no ownership transfer or direct attribute assignment |
 | try(e, f) | e:T and f:U assignable to T; lazy f; effect union; no fallback only when T is void |
 | if (c) a else b | c : bool; a : T1, b : T2 with common type T under scalar widening, otherwise identical types; neither void; effect ε(c) ∪ ε(a) ∪ ε(b) without suspension; only the selected branch evaluates; a whole expression, never a statement |
-| now() | result uint, the logical time t of the evaluating step; effect reads state; not in initializers or constant expressions (SW2007, WP4-S05) and, from WP5, not in completion guards; never a stale read |
+| now() | result uint, the logical time t of the evaluating step; effect reads state; not in initializers or constant expressions (SW2007, WP4-S05) and not in completion guards (SW2008, WP5-S03); never a stale read |
 | duration literal | Result uint (nanoseconds), a safe integer; positive in the 2.2 positions |
 | computed duration `(e)` | e integral; in wait and receive timeouts without suspending calls; in state timers pure or reads state; in periods and deadlines in the constant sublanguage, with exact integral `/`, valued per occurrence |
+| completion guard | bool; pure or reads state; no `now()`, directly or through a callee |
+| timer guard | bool; pure or reads state |
 | var x:T=e | Compatible value, fresh live name; Γ extends with mutable x; suspension allowed only when e is whole call/try |
 | x=e | Mutable local/out/attribute, compatible type; attribute write adds write effect; same whole-expression suspension rule |
 | place = e | The root is a mutable local, an assigned out or a non-const attribute; e is assignable to the place type; the effect adds a write of the root; the whole-expression suspension rule applies |
@@ -66,11 +70,15 @@ Scalar type assignability uses widening, with checked integral value conversion 
 | try success/failure | Return e value on success; on RuntimeFault evaluate fallback lazily with existing σ/Q effects retained |
 | interrupt | Match active region; disarm/unwind protected continuation, cancel pending correlation as interrupted, retain activation/deadline/outer ρ and committed effects |
 | state reaction | Select first enabled transition, exit/effect/update/entry, invalidate old timer generation; idle releases lock |
+| completion | After entry or an internal reaction: the first enabled completion transition in order, then exit, effect, update, entry; a revisited state in a completion chain is a `CompletionLoop` violation |
+| guarded timer | At expiry, a false guard consumes the timer generation for this entry (`discardTimer`) |
+| internal reaction | Effect only; M (timer generations) unchanged |
+| retain | A deferred member's message stays in Q, marked retained (`defer` once); it is consumed in offer-ordinal order on entering a handling state |
 | complete | Finish activation and unlock; correlated reply is offered separately; successful whole completion releases after targets fresh |
 | violation | Deadline, activation overflow, step/concurrent resource or clock failure stops the reference run and bypasses try |
 | case script | A fresh package configuration adds one serial script activation after startup releases; direct primary-subject calls borrow its actual serial context, script emissions/requests/receives use actor ports, on call replies to the pending correlation, and script completion or failure stops the run |
 
-At terminal correlation, later replies cannot change R. Inactive interrupt input is discarded observably. Receive statements preserve queued early input. A state's unhandled input leaves its entry time/timer generation intact. Set entry time at the state update, before entry actions. Select an already elapsed timer after entry completes before queued input; earliest expiry then declaration order determines competing timers. Deadline/timeout measurements include suspension and backlog; zero-cost interpreter steps do not supply physical cost evidence.
+At terminal correlation, later replies cannot change R. Inactive interrupt input is discarded observably. Receive statements preserve queued early input. A state's unhandled input leaves its entry time/timer generation intact. Set entry time at the state update, before entry actions. After entry completes, evaluate completion transitions, then select an already elapsed timer, then queued input (retained input first, in offer order); earliest expiry then declaration order determines competing timers. Deadline/timeout measurements include suspension and backlog; zero-cost interpreter steps do not supply physical cost evidence.
 
 ## 9.4 Projection and adequacy
 

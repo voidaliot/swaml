@@ -1,0 +1,75 @@
+package ReactionForms {
+  /** Every 2.3 state reaction form in one machine: completion transitions, internal and external timers with and without guards, literal and computed, internal receive transitions with and without guards, and a deferral of an event and an attribute in one line. defer stays a name elsewhere, here an attribute. */
+  port def Feed {
+    provides event tick(n: uint);
+    provides attribute level: uint;
+    provides event done();
+  }
+  component def Counter {
+    reversed port feed: Feed;
+    attribute total: uint = 0;
+    attribute stepMs: uint = 2;
+    attribute defer: uint = 0;
+    attribute polls: uint = 0;
+    operation run() {
+      initial Warmup;
+      state Warmup {
+        defer feed.tick, feed.level;
+        on entry {
+          defer = defer + 1;
+        }
+        after 1ms {
+          polls = polls + 1;
+        }
+        after (stepMs * 1ms) when (polls > 0) {
+          polls = polls + 10;
+        }
+        after 3ms when (polls > 100) to Done {
+        }
+        after (stepMs * 2ms) when (polls == 11) to Counting {
+        }
+        when (defer > 1) to Done {
+        }
+      }
+      state Counting {
+        on receive feed.tick(n) when (n > 0) {
+          total = total * 10 + n;
+        }
+        on receive feed.tick(n) {
+          polls = polls + 100;
+        }
+        on receive feed.level(v) {
+          total = total * 10 + v;
+        }
+        on receive feed.done() to Done {
+        }
+        when (total > 5000) to Done {
+        }
+      }
+      final state Done {
+      }
+    }
+    schedule {
+      on start run();
+    }
+  }
+  component def Source {
+    port out: Feed;
+  }
+  component counter: Counter;
+  component source: Source;
+  connect: Swaml::Qos::Latest (source.out, counter.feed);
+  associate source to 'Every form';
+  test 'Every form' of counter {
+    /** A level, a tick and a second level arrive during Warmup and are retained; the second level replaces the first (Latest keeps one value), so the level queue is older than the tick queue but holds the later offer. Counting (entered at 4 ms by the guarded computed timer) takes them in offer order, tick then level, folding total = total * 10 + value to 32 (queue order would give 23), then a zero tick, then done. */
+    send source.out.level(1);
+    publish source.out.tick(3);
+    send source.out.level(2);
+    wait 5ms;
+    assert counter.total == 32 and counter.polls == 11;
+    publish source.out.tick(0);
+    publish source.out.done();
+    wait 1ms;
+    assert counter.polls == 111;
+  }
+}

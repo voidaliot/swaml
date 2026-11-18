@@ -4,7 +4,7 @@ import type { LangiumServices } from 'langium/lsp';
 import * as a from './generated/ast.js';
 import { associatedOccurrences, associationOccurrences, associationPairs, associationTargets, isAssociationList, caseRead, conditionalType, caseTarget, isPlace, pathSteps, placeRoot, valueSteps, walkParts, type PartProblem, type Step, testCanAccess, caseCallAccess, caseCallRestriction, allowsSuspendingCall, connectionRoutes, designComponent, interfaceOnly, packageEndpoint, packageOccurrences, expressionTypes, OCCURRENCE_LIMIT, occurrenceCount, workspaceModels, assignable, body, compatibility, constantNumber, direction, effectiveQos, effects, endpoint, entryKey, identity, integral, isExecutable, isNode, localOperation, memberEndpoint, members, nanos, nodes, numeric, occurrences, owner, resolve, schedule, signature, typeKey, type Executable, type Node, type Structure, portMembers } from './semantic.js';
 import { selectView, viewCandidates, type ViewSubject } from './presentation.js';
-import { MESSAGE_SPELLING, decodeQuotedName, formatName, formatQualifiedName, nameProblem } from './names.js';
+import { MESSAGE_SPELLING, decodeQuotedName, formatName, formatPath, formatQualifiedName, nameProblem } from './names.js';
 import { staleWrite, STALE_READ_WORK_LIMIT, type StaleReadBudget, type Summary } from './stale-read.js';
 const EXPRESSION_TYPES = new Set(['ConditionalExpression', 'BinaryExpression', 'UnaryExpression', 'Literal', 'CallExpression', 'TryExpression', 'ReferenceExpression', 'RecordLiteral', 'ArrayLiteral']);
 /** Whether an expression is inside a conditional expression (WP2-S04). */
@@ -12,7 +12,7 @@ const insideConditional = (e: AstNode): boolean => { for (let n = e.$container; 
 /** The name of the attribute, requirement attribute or policy setting whose initializer contains e. */
 const initialized = (e: AstNode): string => { for (let n: AstNode | undefined = e; n; n = n.$container) if (a.isAttribute(n) || a.isPolicySetting(n)) return n.name; return ''; };
 const isExpression = (n: unknown): n is a.Expression => !!n && typeof n === 'object' && EXPRESSION_TYPES.has((n as AstNode).$type);
-import { useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_2_3_URI, container, constantValue, displayText, entryDeadline, entryPeriod, representableDuration, settingDuration, triggerIdentity, type ConstantProblem } from './semantic.js';
+import { attributeAccess, isCompletion, isLiteralTrue, isReactionForm, transitionKind, useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_2_3_URI, container, constantValue, displayText, entryDeadline, entryPeriod, representableDuration, settingDuration, triggerIdentity, type ConstantProblem } from './semantic.js';
 import { ambiguousNameMessage } from './swaml-scope.js';
 type Env = Map<string, {
     type: string;
@@ -40,7 +40,9 @@ export class SwamlValidator {
     private staleSummaries = new Map<Structure, Map<Executable, Summary>>();
     private staleBudget: StaleReadBudget = { work: 0 };
     private staleLimitReported = false;
-    private report(n: AstNode, code: string, message: string, warning = false, extra: { range?: Range; edits?: { range: Range; newText: string }[]; declaration?: AstNode; related?: AstNode[] } = {}): void { const declarationDoc=AstUtils.getDocument(n),currentDoc=AstUtils.getDocument(this.currentModel),foreign=declarationDoc!==currentDoc;
+    /** Errors reported so far, so that a rule can tell whether a node it checks already has one (WP5-D08). */
+    private errorCount = 0;
+    private report(n: AstNode, code: string, message: string, warning = false, extra: { range?: Range; edits?: { range: Range; newText: string }[]; declaration?: AstNode; related?: AstNode[] } = {}): void { if (!warning) this.errorCount++; const declarationDoc=AstUtils.getDocument(n),currentDoc=AstUtils.getDocument(this.currentModel),foreign=declarationDoc!==currentDoc;
         // Inherited members are checked for their definition and every usage; report each finding once.
         const reportKey=[code,message,declarationDoc.uri.toString(),JSON.stringify(extra.range??n.$cstNode?.range)].join('|');if(this.reported.has(reportKey))return;this.reported.add(reportKey);
         const declarationOwner=owner(n,(x):x is Structure=>a.isComponentDef(x)||a.isComponentUsage(x));
@@ -1231,22 +1233,35 @@ export class SwamlValidator {
         this.unique(b.states, op);
         if (!b.states.some(s => s.name === b.initial))
             this.report(op, 'SW2008', 'Unknown initial state.');
+        // Reachability follows receive, timer and completion edges; an internal transition adds none (WP5-S05).
         const reachable = new Set<string>(), visit = (name: string) => { if (reachable.has(name))
             return; reachable.add(name); for (const t of b.states.find(s => s.name === name)?.transitions ?? [])
-            visit(t.target); };
+            if (t.target !== undefined)
+                visit(t.target); };
         visit(b.initial!);
+        const name = (x: string) => formatName(x, MESSAGE_SPELLING), path = (x: string) => formatPath(x, MESSAGE_SPELLING);
+        const handled = new Set(b.states.flatMap(s => s.transitions.flatMap(t => t.endpoint ? [t.endpoint] : []))), erroneousGuards = new Set<a.Transition>();
         for (const state of b.states) {
             if (!reachable.has(state.name))
                 this.report(state, 'SW2008', `Unreachable state ${state.name}.`);
-            if (state.final && (state.transitions.length || state.actions.some(x => x.kind === 'exit')))
+            // A final state has no transitions of any form and no deferrals (WP5-S02, WP5-S07, WP5-S08, WP5-D04).
+            // The 2.2 forms keep their 2.2 message; each new form is reported once, at itself.
+            if (state.final && (state.transitions.some(t => !isReactionForm(t)) || state.actions.some(x => x.kind === 'exit')))
                 this.report(state, 'SW2008', 'Final states have no transitions or exit action.');
+            if (state.final)
+                for (const n of [...state.transitions.filter(isReactionForm), ...state.deferrals])
+                    this.report(n, 'SW2008', `Final state ${name(state.name)} cannot have transitions or deferrals.`);
             for (const kind of ['entry', 'exit'])
                 if (state.actions.filter(x => x.kind === kind).length > 1)
                     this.report(state, 'SW2008', `Duplicate on ${kind} action.`);
             for (const ac of state.actions)
                 this.block(ac.body, env, c, op);
             for (const t of state.transitions) {
-                if (!b.states.some(s => s.name === t.target))
+                const kind = transitionKind(t);
+                // A completion transition needs a target; a receive or timer transition without one is internal (WP5-S02, WP5-S07).
+                if (kind === 'completion' && t.target === undefined)
+                    this.report(t, 'SW2008', 'A completion transition needs a target state.');
+                if (t.target !== undefined && !b.states.some(s => s.name === t.target))
                     this.report(t, 'SW2008', `Unknown state ${t.target}.`);
                 const input = t.endpoint ? this.inputEnv(t, env, c) : env;
                 // A computed state timer is evaluated when the entry actions finish; it is pure or reads state (WP4-S08).
@@ -1260,16 +1275,102 @@ export class SwamlValidator {
                     }
                 }
                 if (t.guard) {
+                    const before = this.errorCount;
                     this.value(t.guard, 'bool', input, c, op);
+                    // Completion and timer guards are new forms: their effect rule is SW2008 with the existing message, and
+                    // a completion guard cannot call now(), directly or through a callee (WP5-S03, WP5-S06, WP5-D02, WP5-D07).
+                    // A receive guard keeps its 2.2 rule (SW2006). An unresolved call in a new form is reported by the call
+                    // rules only (one diagnostic per cause).
+                    const reaction = kind !== 'receive';
                     for (const call of nodes(t.guard).filter(a.isCallExpression)) {
                         const target = this.callTarget(call, c);
+                        if (kind === 'completion' && target && isExecutable(target) && (isClockRead(target) || !!body(target) && attributeAccess([body(target)!], c).clock)) {
+                            this.report(call, 'SW2008', 'A completion guard cannot call now(); it is not re-evaluated as time passes.');
+                            continue;
+                        }
+                        if (reaction && !target)
+                            continue;
                         if (!target || !isExecutable(target) || effects(target, c).writes || effects(target, c).communicates || effects(target, c).suspends)
-                            this.report(t.guard, 'SW2006', 'State guards may only be pure or read state.');
+                            this.report(t.guard, reaction ? 'SW2008' : 'SW2006', 'State guards may only be pure or read state.');
                     }
+                    if (this.errorCount !== before)
+                        erroneousGuards.add(t);
                 }
                 this.block(t.effect, input, c, op);
             }
+            // Deferral (WP5-S08, WP5-S09, WP5-D05, WP5-D06): required events or attributes that this machine owns through
+            // its transitions, at most once per state, never handled by the same state.
+            const deferred = new Set<string>(), handles = new Set(state.transitions.flatMap(t => t.endpoint ? [t.endpoint] : []));
+            for (const d of state.deferrals)
+                d.endpoints.forEach((endpoint, i) => {
+                    const range = GrammarUtils.findNodesForProperty(d.$cstNode, 'endpoints')[i]?.range;
+                    const ep = c && memberEndpoint(c, endpoint), at = range ? { range } : {};
+                    if (deferred.has(endpoint))
+                        this.report(d, 'SW2008', `State ${name(state.name)} defers ${path(endpoint)} twice.`, false, at);
+                    deferred.add(endpoint);
+                    if (!ep || ep.member.kind === 'operation' || direction(ep.port, ep.member) !== 'requires')
+                        this.report(d, 'SW2008', `${path(endpoint)} is not an input of ${name(op.name)}.`, false, at);
+                    else if (!handled.has(endpoint))
+                        this.report(d, 'SW2008', `${path(endpoint)} is deferred, but no state of ${name(op.name)} handles it.`, false, at);
+                    if (handles.has(endpoint))
+                        this.report(d, 'SW2008', `State ${name(state.name)} defers ${path(endpoint)} and also handles it.`, false, at);
+                });
         }
+        this.completionCycles(b, c);
+        this.completionGuards(op, b, c, erroneousGuards);
+    }
+    /**
+     * WP5-S04, WP5-D03: a cycle of states connected only by completion transitions whose guard is the literal true is
+     * an error. The first such transition of a state is the one taken. Reported once per cycle, at the transition that
+     * leaves the cycle's first state in source order, naming the states from there. As in WP5-R07, a cycle with an
+     * entry action, exit action or effect on it that can suspend restarts its chain and is not an error (a retry).
+     */
+    private completionCycles(b: a.OperationBody, c: Structure | undefined): void {
+        const edge = new Map<string, a.Transition | undefined>();
+        for (const s of b.states)
+            edge.set(s.name, s.transitions.find(t => isCompletion(t) && t.target !== undefined && isLiteralTrue(t.guard)));
+        const reported = new Set<string>();
+        for (const start of b.states) {
+            const path: string[] = [start.name];
+            for (let t = edge.get(start.name); t; t = edge.get(t.target!)) {
+                const seen = path.indexOf(t.target!);
+                if (seen < 0) {
+                    path.push(t.target!);
+                    continue;
+                }
+                const cycle = path.slice(seen), key = [...cycle].sort().join('|');
+                const suspends = cycle.some(name => { const s = b.states.find(x => x.name === name)!; return s.actions.some(x => this.canSuspend(x.body, c)) || this.canSuspend(edge.get(name)!.effect, c); });
+                if (!reported.has(key) && !suspends) {
+                    reported.add(key);
+                    const first = b.states.find(s => cycle.includes(s.name))!.name, at = cycle.indexOf(first), ordered = [...cycle.slice(at), ...cycle.slice(0, at), first];
+                    this.report(edge.get(first)!, 'SW2008', `States ${ordered.map(x => formatName(x, MESSAGE_SPELLING)).join(' → ')} form a cycle of when (true) completion transitions.`);
+                }
+                break;
+            }
+        }
+    }
+    /**
+     * WP5-D08 (SW2017): a completion guard that reads no component attribute written by the machine's own entry actions,
+     * exit actions or transition effects, or their transitive callees, cannot change while the machine waits, because
+     * completion guards are evaluated only after the machine's own reactions. A guard that is the literal true never
+     * waits and is not reported, nor is a guard that is constant after folding (`when (1 == 1)`, `when (not false)`), a
+     * guard that already has an error, or the guard of a state that re-enters itself through its own receive or timer
+     * transition (the polling pattern: the guard is evaluated again after each wait). Hook for WP6: guards that read
+     * only sampled cells are confirmed there.
+     */
+    /** Whether running a block can suspend: a wait, a receive, an interrupt region, a request or a call that suspends. */
+    private canSuspend(block: a.Block, c: Structure | undefined): boolean {
+        return nodes(block).some(n => a.isWait(n) || a.isReceive(n) || a.isInterruptible(n) || a.isCallExpression(n) && (n.target.includes('.') || ((t = this.callTarget(n, c)) => !!t && isExecutable(t) && effects(t, c).suspends)()));
+    }
+    private completionGuards(op: Executable, b: a.OperationBody, c: Structure | undefined, erroneous: ReadonlySet<a.Transition>): void {
+        const polls = (s: a.State) => s.transitions.some(t => t.target === s.name && (!!t.endpoint || !!t.delay || !!t.delayValue));
+        const completions = b.states.flatMap(s => s.transitions.filter(t => isCompletion(t) && t.guard && !isLiteralTrue(t.guard) && !erroneous.has(t) && !polls(s) && !(c && !constantValue(t.guard, c).problem)).map(t => ({ s, t })));
+        if (!completions.length)
+            return;
+        const written = attributeAccess(b.states.flatMap(s => [...s.actions.map(x => x.body), ...s.transitions.map(t => t.effect)]), c).writes;
+        for (const { s, t } of completions)
+            if (![...attributeAccess([t.guard!], c).reads].some(x => written.has(x)))
+                this.report(t.guard!, 'SW2017', `Completion guard of ${formatName(s.name, MESSAGE_SPELLING)} reads nothing that ${formatName(op.name, MESSAGE_SPELLING)} writes; it cannot change while the machine waits.`, true);
     }
     private ownership(c: Structure, forwarded: Set<string>): void {
         // An interface-only component needs no implementation: it neither emits nor owns inputs.
@@ -1291,6 +1392,9 @@ export class SwamlValidator {
                     add(n.endpoint, n);
                 if (a.isTransition(n) && n.endpoint)
                     add(n.endpoint, op);
+                // A deferral is part of the machine's single input ownership, never a second owner (WP5-S09).
+                if (a.isDeferral(n))
+                    n.endpoints.forEach(endpoint => add(endpoint, op));
             }
         }
         for (const p of members(c).filter(a.isPortUsage))
@@ -1402,6 +1506,38 @@ export class SwamlValidator {
                 if (count > 1 && portMembers(port).some(m => direction(port, m) === 'requires' && m.kind !== 'event'))
                     this.report(node, 'SW2004', `Port ${path} requires exactly one peer after forwarding.`, false, range);
             }
+        this.deferralOverflow(occ.filter(o => checked.has(o.path.split('.')[0])), links, leaf);
+    }
+    /**
+     * WP5-D09 (SW2018): a deferred event whose effective policy on a route into this occurrence rejects on overflow. A
+     * retained message keeps its queue slot, so a full queue then fails the sender's offer. Attributes keep only their
+     * latest value and never overflow. Reported at the deferred member, once per connection.
+     */
+    private deferralOverflow(occ: ReturnType<typeof connectionRoutes>['occurrences'], links: ReturnType<typeof connectionRoutes>['links'], leaf: (path: string) => string): void {
+        for (const o of occ)
+            for (const op of members(o.structure).filter(isExecutable))
+                for (const state of body(op)?.states ?? []) {
+                    const handled = new Set(body(op)!.states.flatMap(s => s.transitions.flatMap(t => t.endpoint ? [t.endpoint] : []))), own = new Set(state.transitions.flatMap(t => t.endpoint ? [t.endpoint] : []));
+                    const listed = state.deferrals.flatMap(d => d.endpoints);
+                    let position = 0;
+                    for (const d of state.deferrals)
+                        d.endpoints.forEach((endpoint, i) => {
+                            const at = position++, ep = memberEndpoint(o.structure, endpoint);
+                            if (!ep || ep.member.kind !== 'event' || direction(ep.port, ep.member) !== 'requires')
+                                return;
+                            // A deferral that already has an error (WP5-D04 to WP5-D06) gets no warning besides it.
+                            if (state.final || own.has(endpoint) || !handled.has(endpoint) || listed.indexOf(endpoint) !== at)
+                                return;
+                            const port = leaf(`${o.path}.${endpoint.split('.')[0]}`), range = GrammarUtils.findNodesForProperty(d.$cstNode, 'endpoints')[i]?.range;
+                            for (const link of links.filter(l => l.ends.includes(port))) {
+                                if (effectiveQos(link.node).overflow !== 'reject')
+                                    continue;
+                                const policy = link.node.policy?.ref ? formatName(link.node.policy.ref.name, MESSAGE_SPELLING) : 'Default';
+                                const connection = link.node.name !== undefined ? formatName(link.node.name, MESSAGE_SPELLING) : `connect (${formatPath(link.node.source, MESSAGE_SPELLING)}, ${formatPath(link.node.target, MESSAGE_SPELLING)})`;
+                                this.report(d, 'SW2018', `${formatPath(endpoint, MESSAGE_SPELLING)} is deferred in ${formatName(state.name, MESSAGE_SPELLING)}, but policy ${policy} of ${connection} rejects on overflow; a full queue fails the sender. Give ${connection} a policy that drops on overflow (Overflow.dropOldest or Overflow.dropNewest) or a capacity that holds the retained messages.`, true, range ? { range } : {});
+                            }
+                        });
+                }
     }
     /** The case script being validated: its case and, inside on call, the answered result type. */
     private script?: { scenario: a.Scenario; reply?: string };

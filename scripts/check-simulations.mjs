@@ -26,6 +26,9 @@ for (const run of runs) {
         assert.equal(outcome.result, run.expectedResult, `${name}: ${outcome.message}`);
     else
         assert.equal(result.outcome, 'no-failure-observed', JSON.stringify(result.trace.filter(t => t.kind === 'failure' || t.kind === 'violation')));
+    // The verdict message where a case is expected to fail, such as the violation that fails it.
+    if (run.expectedMessage !== undefined)
+        assert.equal(outcome.message, run.expectedMessage, `${name}: verdict message`);
     for (const [component, store] of Object.entries(run.expectedStores)) for (const [key, value] of Object.entries(store)) assert.deepEqual(result.stores[component][key], value, `${name}: ${component}.${key}`);
     for (const [path, node] of Object.entries(run.expectedDeployments ?? {})) assert.equal(result.deployments[path], node, `${name}: deployment of ${path}`);
     // The reasons of caught failures, in trace order, where a run names them (a try cannot tell its reason to the model).

@@ -26,7 +26,7 @@ Each normalized node/constraint retains source declaration URI/range and any inh
 | Connection/forwarding | Endpoint occurrence references, alias provenance, structural member checks, effective policy |
 | Policy | Pinned complete values and declaration/use provenance; no shared runtime queue |
 | Schedule/entry | Trigger identity, effective target, dispatch arguments/bindings, period/deadline (a computed one as its expression text plus per-occurrence values, WP4), concurrent |
-| State/transition | Initial/final, entry/exit/effects, receive bindings/guard or timer (literal or computed delay, WP4), ordered selection |
+| State/transition | Initial/final, entry/exit/effects, receive bindings/guard or timer (literal or computed delay, WP4), transition kind (receive, timer or completion), optional target (internal when absent), timer guard, state deferrals in order (WP5), ordered selection |
 | Deployment | Software/platform roots, Node paths, family/index placements, effective specificity |
 | Requirement/case/view | Immutable attributes/docs, package intent links (associate, satisfy, verify), case kind, subject occurrence and ordered script statements with resolved actor ports, exact normal primary-subject call targets, explicitly associated test access roots and exact inspection/helper targets, ordered selection union; association pairs from list statements with their list positions |
 
@@ -42,7 +42,7 @@ A normalized connection records the two leaf ports, per-member directed routes a
 
 Statements retain ordered operands, scopes, effects and success/failure continuations. Calls are expression nodes with a resolved local/port target, copied in/out/result types and effect flags. Try is a failure-catching node with a lazy fallback, never a rollback boundary. Wait/request/receive creates a suspended continuation plus unlock/readiness/relock; concurrent reads keep the captured dispatch snapshot. Loop limits evaluate once; for in owns one copied collection. Interrupt regions retain armed extent, input ownership, same-activation unwind, request cancellation and inactive/late-input observations.
 
-A schedule entry lowers to a release mechanism and dispatch-time argument evaluation. After edges retain same-owner predecessor operation and completed activation identities, success-only release after unlock, fresh deadline/context and no implicit data forwarding/join. Stateful reactions retain source-order transitions, guards, timer generations and exit/effect/update/entry phases. State bodies do not gain separate executable identities. Final entry completes the operation once.
+A schedule entry lowers to a release mechanism and dispatch-time argument evaluation. After edges retain same-owner predecessor operation and completed activation identities, success-only release after unlock, fresh deadline/context and no implicit data forwarding/join. Stateful reactions retain source-order transitions, guards, timer generations and exit/effect/update/entry phases. WP5-M03: they retain source-order completion, timer and receive groups, internal reactions without a state update, timer guards and the deferral set per state. State bodies do not gain separate executable identities. Final entry completes the operation once.
 
 ## 7.5 Presentation and equivalence
 

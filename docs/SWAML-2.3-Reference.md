@@ -376,6 +376,7 @@ A name is written as a basic name, an ASCII letter or underscore followed by ASC
 | --- | --- |
 | WP2-S01 | **Contextual words.** From 2.3, `view`, `state`, `in` and `out` are contextual: they keep their keyword roles (views, states and `initial`, parameter directions, `for … in`) and are legal names in every name position: attribute, local, parameter, operation, state, initial state, component, port, port member and endpoint, view, enum literal, field, package segment, and both positions of `for (x: T in values)`. `defer` is an ordinary basic name until the work package that introduces the `defer` keyword makes it contextual (WP5-S01). |
 | WP2-M01 | **Edition-aware spelling.** Name services (`formatName`, `formatQualifiedName` and `formatPath` in `src/language/names.ts`) take the workspace edition. For a 2.3 workspace they write a contextual word as a basic name; for a 2.2 or earlier workspace they keep quoting `view`, `state`, `in` and `out`, which are reserved there. A quoted spelling such as 'state' remains valid and denotes the same name. |
+| WP5-S01 | **`defer` is contextual.** `defer` is a keyword only at the start of a state member, where it begins a deferral (chapter 3.6); everywhere else it is a basic name in every name position, as it was in 2.2. Because 2.2 had no such word, `defer` is never reserved in any edition: name services (`formatName`, `formatPath`) write it unquoted for 2.2 and 2.3 workspaces alike, it is not one of `CONTEXTUAL_FROM_2_3` (the words that were reserved in 2.2) but of `KEYWORDS_FROM_2_3` in `src/language/names.ts`, and no 2.2 spelling, message or rename changes. A statement that starts with the name `defer` continues with `=`, `(`, `.` or `[`, never with a name, so it never reads as a deferral. |
 
 The words keep their keyword roles next to their name uses:
 
@@ -794,13 +795,79 @@ In `fast` the poller runs every 4 ms with a 2 ms deadline; in `standard` every 1
 
 ## 3.6 States
 
-A stateful operation is parameterless void and has exactly one on start entry. initial names one owned state. States own at most one on entry and one on exit block plus ordered receive/timer transitions. A receive transition binds payload, optionally tests a pure/read-state bool guard, and names its target with to. after D is relative to the state update, before entry actions begin. Entry actions finish before a transition can run; if entry suspends past a timer expiry, the earliest elapsed timer is selected on resumption before queued input. Timers with equal expiry use declaration order. Evaluate competing enabled transitions in declaration order and take the first. There are no transition names, priorities or completion transitions.
+A stateful operation is parameterless void and has exactly one on start entry. initial names one owned state. States own at most one on entry and one on exit block plus ordered receive/timer transitions. A receive transition binds payload, optionally tests a pure/read-state bool guard, and names its target with to. after D is relative to the state update, before entry actions begin. Entry actions finish before a transition can run; if entry suspends past a timer expiry, the earliest elapsed timer is selected on resumption before queued input. Timers with equal expiry use declaration order. Evaluate competing enabled transitions in declaration order and take the first. There are no transition names or priorities. From 2.3 a state may also own completion transitions `when (g) to S`, guarded timers `after D when (g)`, internal transitions without `to` and deferrals `defer p.m;`, in any order with its actions and transitions (rules below; runtime in chapter 6.5).
 
 A reaction runs exit, transition effect, state update and entry in that order. Timers are invalidated by state exit and stale firings are observable discards. Unhandled input does not reset the current state timer. Every state is graph-reachable from initial; a final state has no outgoing transitions or exit action. Reaching final runs entry and completes the whole operation once. Hierarchical/orthogonal states and physical preemption are outside the language.
 
 | ID | Rule |
 | --- | --- |
 | WP4-S08 | **Computed state timers.** `after (e) to S { … }` takes an integral expression that is pure or reads state (SW2008 `State timers may only be pure or read state.`), in the machine's scope, with the unit warning SW2016. It is evaluated once per state entry, when the entry actions finish, in declaration order with the state's other computed timers; its expiry is the state-update time plus the value, so a timer whose operands the entry actions change uses the new value: `state Backoff { on entry { delayMs = minInt(delayMs * 2, capMs); } after (delayMs * 1ms) to Connecting { } }` waits the doubled delay. If entry suspends past the expiry, the timer has elapsed and is selected on resumption, as for literal timers. Discarded input does not re-evaluate it; re-entering the state does. Timers with equal expiry, literal or computed, keep declaration order. A value that is not a positive representable duration is `DurationRange` and fails the machine's activation (WP4-R01). The [computed backoff](../examples/41-computed-backoff.swaml) and [lock pulse](../examples/42-lock-pulse.swaml) examples show both. |
+| WP5-S02 | **Completion transitions.** `when (g) to S { … }` has no trigger: it is selected after the entry actions of its state finish and after every internal reaction (chapter 6.5, WP5-R01). It requires a target, `A completion transition needs a target state.` (SW2008, WP5-D01). A final state has none (WP5-D04). This reverses the 2.0 exclusion of completion transitions for guard-only completion only (ADR 0023). |
+| WP5-S03 | **Completion guards.** A completion guard is `bool` and pure or reads state; a call that writes, communicates or suspends is SW2008 with the guard-effect message `State guards may only be pure or read state.` (WP5-D02). It does not call `now()`, directly or through a called operation (`isClockRead`): `A completion guard cannot call now(); it is not re-evaluated as time passes.` (SW2008, WP5-D02). |
+| WP5-S04 | **Completion cycles.** A cycle of states connected only by completion transitions whose guard is the literal `true` (parentheses leave no node) is an error, reported once per cycle at the transition that leaves its first state in source order: `States A → B → A form a cycle of when (true) completion transitions.` (SW2008, WP5-D03). Only the first `when (true)` of a state can be taken, so a later one does not form a cycle. A cycle through other guards is a runtime matter (`CompletionLoop`, WP5-R07). As in WP5-R07, a cycle on which an entry action, exit action or effect can suspend (a wait, a receive, an interrupt region, a request, or a call to an operation that does) restarts its chain at every round and is not an error: `state A { on entry { n = n + 1; wait 1ms; } when (true) to A { } }` is a retry. |
+| WP5-S05 | **Reachability.** Graph reachability from `initial` follows receive, timer and completion edges. Internal transitions add no edge. |
+| WP5-S06 | **Timer guards.** `after D when (g) …` takes a `bool` guard that is pure or reads state (SW2008, the guard-effect message, WP5-D07). A receive guard keeps its 2.2 rule and code (SW2006). |
+| WP5-S07 | **Internal transitions.** A receive or timer transition without `to` is internal: `on receive p.m(x) { … }`, `after 2s { … }`. A final state has no transitions of any form: the 2.2 forms keep `Final states have no transitions or exit action.`, and each completion, internal or guarded-timer transition is `Final state {state} cannot have transitions or deferrals.` (SW2008, WP5-D04). |
+| WP5-S08 | **Deferral.** `defer p.m, …;` is a state member that names required events or attributes of the machine's component (`{member} is not an input of {operation}.`). Some state of the machine has a transition on each deferred member (`{member} is deferred, but no state of {operation} handles it.`, WP5-D05). No state both defers a member and has a transition on it (`State {state} defers {member} and also handles it.`), and a state defers a member at most once (`State {state} defers {member} twice.`, WP5-D06). A final state defers nothing (WP5-D04). All are SW2008 and reported at the member. |
+| WP5-S09 | **Deferral and ownership.** A deferral belongs to the machine's single input ownership (SW2005): it counts as the machine, never as a second owner, so a member deferred by a machine and also received by a schedule entry has two owners. |
+| WP5-S10 | **Explicit self transitions.** A transition `to` its own state keeps its 2.2 meaning: exit, effect, state update, entry, with timers restarted. Only a transition without `to` is internal. |
+
+```swaml
+package StateReactions {
+  port def Requests {
+    provides event request(lock: bool);
+  }
+  component def Lock {
+    reversed port requests: Requests;
+    attribute pulses: uint = 0;
+    attribute retries: uint = 0;
+    attribute locked: bool = false;
+    operation control() {
+      initial unlocked;
+      state unlocked {
+        on receive requests.request(lock) when (lock) to locking {
+        }
+      }
+      state locking {
+        /** Requests during the pulse stay queued until a state that handles them. */
+        defer requests.request;
+        on entry {
+          pulses = pulses + 1;
+        }
+        after 250ms when (pulses < 3) to isLocked {
+          locked = true;
+        }
+        after 250ms to failed {
+        }
+      }
+      state isLocked {
+        /** Internal: no exit, no entry, the state is unchanged. */
+        on receive requests.request(lock) when (lock) {
+          retries = retries + 1;
+        }
+        on receive requests.request(lock) when (not lock) to unlocked {
+          locked = false;
+        }
+        when (retries > 2) to failed {
+        }
+      }
+      final state failed {
+      }
+    }
+    schedule {
+      on start control();
+    }
+  }
+  component def Body {
+    port toLock: Requests;
+  }
+  component lock: Lock;
+  component body: Body;
+  connect: Swaml::Qos::Latest (body.toLock, lock.requests);
+}
+```
+
+The [session completion](../examples/44-session-completion.swaml), [lock deferral](../examples/45-lock-deferral.swaml) and [breaker](../examples/46-breaker-internal.swaml) examples compare each form with its 2.2 shape.
 
 ## 3.7 Case scripts
 
@@ -939,6 +1006,7 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | ID | Rule |
 | --- | --- |
 | WP4-M03 | **Timing per occurrence.** The projection (`projectModel`) gives each schedule entry of an occurrence its evaluated `periodNs` and `deadlineNs` from `entryPeriod` and `entryDeadline`, and a computed period or deadline also its display text (`periodExpression`, `deadlineExpression`, from `displayText`: the source spelling in canonical layout, so `deadline (3ms)` shows `3ms`); a definition shows values only for literal periods and deadlines and the text for computed ones, whose values belong to its occurrences. All values come from `entryPeriod` and `entryDeadline`, as in the simulator and the validator. A computed state timer labels its transition `after ({display text})`. Entries with literal periods and deadlines gain no field, so the projections of 2.2 sources are unchanged. |
+| WP5-M01 | **Flow and states.** The projection (`projectModel`) gives a completion transition an edge labelled `when (g)` with `completion: true`, a guarded timer edge its `guard` text, and gives a state node its internal transitions as `reactions` (label, order, guard) without an edge and its deferred members as `deferrals`. An internal transition never produces an edge. These fields appear only for the 2.3 forms. Flow shows completion edges with their guard, internal transitions as reactions of their state and deferrals as state annotations. |
 ## 4.4 Validation groups
 
 | Code | Static group |
@@ -961,8 +1029,10 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | SW2015 | Retired in 2.1 together with the 2.0 case spellings; not reported |
 | SW2016 | Warning (2.3): a computed duration without a time unit, which counts nanoseconds |
 | SW2019 | Warning (2.3): two every entries of one occurrence for the same operation with equal periods but different triggers |
+| SW2017 | Warning (2.3): a completion guard that reads nothing the machine writes, so it cannot change while the machine waits |
+| SW2018 | Warning (2.3): a deferred event whose policy on a route into the occurrence rejects on overflow |
 
-Diagnostics added by 2.3. Message shapes are templates; implementations may add context but keep the leading clause stable. All are errors except WP4-D06 and WP4-D08, which are warnings.
+Diagnostics added by 2.3. Message shapes are templates; implementations may add context but keep the leading clause stable. All are errors except WP4-D06, WP4-D08, WP5-D08 and WP5-D09, which are warnings.
 
 | ID | Code | Condition | Message shape |
 | --- | --- | --- | --- |
@@ -987,6 +1057,15 @@ Diagnostics added by 2.3. Message shapes are templates; implementations may add 
 | WP4-D06 | SW2016, warning | A computed duration expression that contains no duration literal, no `now()` call and no reference to a const attribute of the owner whose initializer, followed through const references, contains a duration literal. A const attribute's initializer can never contain `now()` (WP3-S01) or read another attribute, so only a duration literal in its own initializer counts. | `{expression} has no time unit and counts nanoseconds; multiply by a unit such as 1ms.` `after (pulseMs)` with `pulseMs = 250` warns; `wait (timeoutNs);` with `const attribute timeoutNs: uint = 5ms;` does not. |
 | WP4-D07 | SW2013 | Non-exact or zero-divisor division in a constant duration, per occurrence (WP4-S05) | `{expression} divides {a} by {b} in {occurrence}, which is not an exact integral division.` for `/`; `{expression} takes the remainder of {a} by {b} in {occurrence}, which is not defined for a zero divisor.` for `%` by zero. The expression is the division itself. |
 | WP4-D08 | SW2019, warning | Two effective `every` entries of one occurrence for the same operation whose periods are equal in that occurrence but whose trigger identities (WP4-S07) differ, such as a base `on every 20ms g();` and a specialization's `on every (2 * 10ms) g();`: neither replaces the other, so the operation is released twice per period. Literal periods are identified by their nanoseconds as in 2.2, so one of the two is computed and no 2.2 source gets it. Reported once, at the later entry. | `{entry} and {other entry} have the same period in {occurrence} but different triggers, so neither replaces the other and {operation} is released twice per period; write the same trigger to replace an entry.` |
+| WP5-D01 | SW2008 | Completion transition without target (WP5-S02) | `A completion transition needs a target state.` |
+| WP5-D02 | SW2008 | Completion guard calls `now()`, directly or through a callee, or has a wrong effect (WP5-S03) | `A completion guard cannot call now(); it is not re-evaluated as time passes.` at the call / `State guards may only be pure or read state.` |
+| WP5-D03 | SW2008 | `when (true)` cycle on which no entry action, exit action or effect can suspend (WP5-S04) | `States {A} → {B} → {A} form a cycle of when (true) completion transitions.` |
+| WP5-D04 | SW2008 | Completion, internal or guarded-timer transition or deferral in a final state (WP5-S02, WP5-S07, WP5-S08) | `Final state {state} cannot have transitions or deferrals.` at each; 2.2 forms keep `Final states have no transitions or exit action.` |
+| WP5-D05 | SW2008 | Deferred member not an input, or not handled by any state (WP5-S08, WP5-S09) | `{member} is not an input of {operation}.` / `{member} is deferred, but no state of {operation} handles it.` |
+| WP5-D06 | SW2008 | Defer and handle in one state, or deferred twice (WP5-S08) | `State {state} defers {member} and also handles it.` / `State {state} defers {member} twice.` |
+| WP5-D07 | SW2008 | Timer guard effect (WP5-S06) | `State guards may only be pure or read state.` |
+| WP5-D08 | SW2017, warning | Completion guard that reads no component attribute written by the machine's entry actions, exit actions or effects or their transitive callees. Not reported for a guard that is constant after folding (the literal `true`, `1 == 1`, `not false`, `false`), for a guard that already has an error, or in a state that re-enters itself through its own receive or timer transition (polling: the guard is evaluated again after each wait) | `Completion guard of {state} reads nothing that {operation} writes; it cannot change while the machine waits.` WP6 confirms it for guards that read only sampled cells. |
+| WP5-D09 | SW2018, warning | Deferred event with an effective `reject` overflow on a route into this occurrence (attributes never overflow) | `{member} is deferred in {state}, but policy {policy} of {connection} rejects on overflow; a full queue fails the sender. Give {connection} a policy that drops on overflow (Overflow.dropOldest or Overflow.dropNewest) or a capacity that holds the retained messages.` {connection} is the connection name or `connect (a, b)`. The library default policy rejects on overflow, so a deferral over a connection without a policy is reported: the warning is intended, because the sender's publish fails while the receiver defers. A deferral that already has an error (WP5-D04 to WP5-D06) is not reported. |
 
 Every diagnostic includes a source range and stable code. Machine-readable diagnostics retain declaration identity and occurrence context when resolved. A suggested edit is supplied only for a safe unambiguous correction; tools must revalidate the resulting complete workspace before applying it. Parser recovery may suspend semantic checks on invalid syntax, but the document remains invalid and must not crash the service.
 
@@ -1017,7 +1096,7 @@ Ports map to owned typed features with per-member directional projections. Rever
 | WP2-M02 | `ConditionalExpression`: kind `value`, kernel `ControlFunctions::'if'`, normative `docs/spec/01-structure-and-types.md`. Only the selected branch is evaluated. |
 | WP2-M03 | `Association` keeps its entry. Its semantic text states that a list statement lowers to one reference per occurrence–case pair, with the statement and the list positions as provenance. |
 
-The changed productions `Assign`, `ReferenceExpression` and `CallExpression` (WP1), `Expression` and `ExpressionStatement` (WP2) and `PolicySetting`, `Literal`, `Wait`, `Receive`, `ScheduleEntry` and `Transition` (WP4) keep their mapping entries with updated semantic text in `spec/kerml-mapping.json`.
+The changed productions `Assign`, `ReferenceExpression` and `CallExpression` (WP1), `Expression` and `ExpressionStatement` (WP2) and `PolicySetting`, `Literal`, `Wait`, `Receive`, `ScheduleEntry` and `Transition` (WP4) and `State` and `Transition` (WP5) keep their mapping entries with updated semantic text in `spec/kerml-mapping.json`: a completion transition is a guard-only TransitionUsage without trigger, and an internal transition has no target change. WP5-M02: the new production `Deferral` has kind `lowering`, normative `docs/spec/03-behavior.md`, and lowers to a state-scoped retention constraint on the machine's input projection.
 
 ## 5.2 Required semantic library
 
@@ -1083,6 +1162,24 @@ An event is consumed by its one owner. Input for a receive statement remains que
 
 A state machine waits without the component lock. Each reaction selects the first enabled nested transition for the input/timer, runs exit/effect/state-update/entry, and releases the lock again when idle. The timer epoch is the state update before entry actions, including time spent suspended in entry. Entry completes before timer selection; elapsed timers precede queued input, with earliest expiry first and equal-expiry transitions in source order. Deadline ties still win. State entry owns timer generations; stale timers cannot fire after exit. Unhandled input does not restart a timer. Final entry completes the whole operation once; it can release after dependents.
 
+The rules below define the selection of a stateful activation in 2.3; for a machine without the 2.3 forms they are exactly the 2.2 order above (WP5-R11).
+
+| ID | Rule |
+| --- | --- |
+| WP5-R01 | **Selection order.** After the entry actions of a state finish (and its computed timers are evaluated, WP4-R02), the machine selects in this total order: (1) the first enabled completion transition in declaration order, taken at once (exit, effect, state update, entry); (2) the earliest elapsed armed timer, declaration order on equal expiry; (3) retained input in global offer-ordinal order (WP5-R09); (4) other queued input in the 2.2 order. If nothing is selectable, it waits without the lock. |
+| WP5-R13 | **Input during a chain.** Input queued while entry actions run, or during a chain of completion reactions, stays queued and is selected in whatever state the chain reaches. If that state neither handles nor defers it, it is discarded there (`discardInput`, `inactiveOwner`). |
+| WP5-R02 | **After internal reactions.** The same completion evaluation follows every internal reaction. |
+| WP5-R03 | **No completion after discards.** Completion is not evaluated after `discardInput` (no enabled receive transition) or `discardTimer`: neither changes anything the machine owns. Completion guards are not re-evaluated when other operations change what they read (SW2017, WP5-D08). |
+| WP5-R04 | **Guarded timers.** When a guarded timer is selected, its guard is evaluated. If the guard is false, the timer is consumed for this state entry (`discardTimer`, WP5-T02) and the next timer with the same expiry is tried in declaration order. Later timers stay armed. Re-entering the state arms it again. |
+| WP5-R05 | **Internal reactions.** An internal transition runs only its effect: no exit, no entry, no state update, no `machines` change. The state's timers keep their epoch (the state-update time) and computed timers are not re-evaluated. An internal timer fires at most once per state entry. Its reaction leaves the other timers armed; an already elapsed one, including one with the same expiry, is selected after the completion evaluation that follows the reaction. |
+| WP5-R06 | **Suspended effects.** If an entry action or an internal effect suspends, the timers keep their epoch. On resumption, the machine evaluates completion, then elapsed timers, then input, as after entry actions. |
+| WP5-R07 | **`CompletionLoop`.** A completion chain starts when the stateful activation starts. It restarts at every consumption of input or a timer (internal reactions included) and at every suspension of an entry action, exit action or effect. A completion reaction that enters a state already entered in the current chain is the contract violation `CompletionLoop`, raised when the target state would be entered (after the exit actions and effect). It stops the run and bypasses `try`. A retry state whose entry suspends on a request and re-enters through completion is therefore allowed; a counting loop through completion transitions that never suspends is rejected even when bounded. |
+| WP5-R08 | **Retention.** While the current state defers member `m`, input for `m` stays in its connection queue, and capacity, overflow, ordering and `maxAge` apply to it observably. A retained attribute keeps only its latest value. A message is retained from the first instant at which it is deliverable while the machine's current state defers its member, whether the machine then waits at its selection or runs an entry action, exit action or transition effect of that state (the effect of a transition into a deferring state runs in the state it leaves). It gets exactly one `defer` observation, at that instant (WP5-T03), and stays retained in later states until it is consumed or discarded. Example: `y` is offered at 0 ms and consumed in `A`, which creates its queue; `x` is offered at 1 ms and `y` at 2 ms while the machine is in `state Busy { defer a.x, a.y; on entry { wait 5ms; } when (true) to Both { } }`. Both are retained when they become deliverable, at 1 ms and 2 ms, although `Busy` never waits, and `Both` takes `x` before `y` (WP5-R09), as it does when `Busy` instead waits for `after 5ms to Both { }`. |
+| WP5-R09 | **Retained order.** In a state that handles retained members, retained input precedes other queued input but follows completion transitions and elapsed timers (WP5-R01). It is consumed in global offer-ordinal order across all of the machine's queues: the order in which the messages were queued, not the order in which their queues were created. Input that was never retained follows in the 2.2 order. |
+| WP5-R10 | **Retained discard.** On entering a state that neither handles nor defers `m`, retained input for `m` is discarded at the next wait with reason `inactiveOwner`. |
+| WP5-R11 | **2.2 machines.** A machine without completion transitions, internal transitions, timer guards and deferrals selects and orders exactly as in 2.2, and its trace has no 2.3 observation or field. |
+
+
 ## 6.6 Evidence and resources
 
 Trace ordinals distinguish equal-time observations. Record initialize, release, dispatch, ready, unlock, wait/requestWait/receiveWait, messages/offers/delivery, writes, states, interruption, completion/failure, caught failures, timeout, overflow/discards, late replies and violations. Retain activation/correlation/route identities where applicable. Each observation caused by a statement or schedule entry records its statement identity as source: writes, emissions, asserts, failures and suspensions name the executing statement, a state wait or reaction its state or transition, releases and dispatches the schedule entry, and every message lifecycle observation (offer, delivery, replacement, overflow, drop, retry, age or input discard, interruption, request, reply, timeout, cancellation, late reply) the statement that emitted or requested the message. Messages and correlations keep the identity of the emitting or requesting statement. Final stores are occurrence-indexed and timing projections leave live intervals open. No-failure-observed means only that finite run under its recorded assumptions. Step, backlog and concurrent limits are finite, explicit options. Production timing, real transport guarantees and universal verification remain separate claims.
@@ -1093,6 +1190,10 @@ New and extended observations of 2.3 appear only where new syntax is used, so a 
 | --- | --- | --- |
 | WP1-T01 | `write` (extended) | A place assignment adds `place`, the evaluated place text such as `statuses[2].confirmed`, with decoded names and evaluated indexes. `value` is the new whole root value; `subject` is the root. A whole assignment has no `place`. |
 | WP4-T01 | `wait`, `receiveWait` (extended, computed forms only); `timer` (new) | A wait or receive timeout whose duration is computed adds `durationNs`, the evaluated value. A computed state timer is evaluated when the entry actions finish, after the `state` observation of that entry and the entry's own observations, and records a `timer` observation: `subject` the machine, `state`, `source` the timer transition, `timerNs` the evaluated value and `expiresNs` the expiry time. Literal waits and literal state timers add no field and no `timer` observation. `DurationRange` (WP4-R01) is recorded like every runtime failure; a caught one is a `caught` observation. |
+| WP5-T01 | `state` (extended) | An internal reaction is a `state` observation with `internal: true`, the unchanged `state`, the `activation` and the transition as `source`, recorded before its effect runs. A state entry has no `internal` field. |
+| WP5-T02 | `discardTimer` (new) | A timer consumed because its guard was false: `subject` the machine, `activation`, `state`, `source` the timer transition, `reason: 'guard'`. |
+| WP5-T03 | `defer` (new) | Exactly one per retained message, at its first retention (WP5-R08), whether the machine then waits or runs an action of the deferring state: `subject` the machine, `activation`, `state`, `member` (`port.member`), `source` the message origin and `message` the message identity. Deferred members are events or attributes, so there is no correlation. |
+| WP5-T04 | `violation` (extended) | `code: 'CompletionLoop'` with the machine as `subject` and the completion transition as `source`; the other violations keep the run target as subject and no `source`. |
 
 ## 6.7 Case runs
 
@@ -1105,6 +1206,10 @@ Tests additionally inspect their subject and explicitly associated software root
 Execution stores remain occurrence-local, but the trace records only the observations it emits. Local and white-box calls reuse their caller's activation, and individual reads and call invocations have no separate observation. A borrowed-call failure may be labelled with the case instead of its target. Consumers must retain available declaring-source, subject, activation and correlation context; a shared statement identity alone cannot attribute facts to every instance or invocation. Legal slash names can also produce ambiguous statement identities. Leave such attribution unknown, and never infer that a short-circuited expression or an unobserved return executed merely because its containing statement was reached.
 
 The run stops with status stopped when the script completes or fails, otherwise at the horizon or step limit, or with status quiescent when no event remains while the script waits. The case result is pass when the script completed and the run observed neither an uncaught activation failure nor a contract violation; fail when a failure occurred, decided by the first in trace order with its statement identity, message and time: the script's own (a failed assert, fail or a runtime failure), an uncaught failure of another activation or a contract violation; inconclusive when the run ended before the script completed without a failure, at the horizon, at the step limit or stalled because the script waits while no further event can occur; and no checks for a case without statements, which does not run. A caught expression failure remains trace evidence and does not fail a case, so a passing case may record the failure-observed outcome. Observations of the script name the case identity as subject and carry its statement identities as source. A use case runs the same way as a test. A pass is bounded evidence of one deterministic run under its recorded assumptions, not proof.
+
+| ID | Rule |
+| --- | --- |
+| WP5-R12 | A `CompletionLoop` violation fails a case: it is a contract violation in trace order, like the existing ones, with the verdict message `Contract violation CompletionLoop.`, and never an inconclusive step-limit stop. |
 
 
 ---
@@ -1139,7 +1244,7 @@ Each normalized node/constraint retains source declaration URI/range and any inh
 | Connection/forwarding | Endpoint occurrence references, alias provenance, structural member checks, effective policy |
 | Policy | Pinned complete values and declaration/use provenance; no shared runtime queue |
 | Schedule/entry | Trigger identity, effective target, dispatch arguments/bindings, period/deadline (a computed one as its expression text plus per-occurrence values, WP4), concurrent |
-| State/transition | Initial/final, entry/exit/effects, receive bindings/guard or timer (literal or computed delay, WP4), ordered selection |
+| State/transition | Initial/final, entry/exit/effects, receive bindings/guard or timer (literal or computed delay, WP4), transition kind (receive, timer or completion), optional target (internal when absent), timer guard, state deferrals in order (WP5), ordered selection |
 | Deployment | Software/platform roots, Node paths, family/index placements, effective specificity |
 | Requirement/case/view | Immutable attributes/docs, package intent links (associate, satisfy, verify), case kind, subject occurrence and ordered script statements with resolved actor ports, exact normal primary-subject call targets, explicitly associated test access roots and exact inspection/helper targets, ordered selection union; association pairs from list statements with their list positions |
 
@@ -1155,7 +1260,7 @@ A normalized connection records the two leaf ports, per-member directed routes a
 
 Statements retain ordered operands, scopes, effects and success/failure continuations. Calls are expression nodes with a resolved local/port target, copied in/out/result types and effect flags. Try is a failure-catching node with a lazy fallback, never a rollback boundary. Wait/request/receive creates a suspended continuation plus unlock/readiness/relock; concurrent reads keep the captured dispatch snapshot. Loop limits evaluate once; for in owns one copied collection. Interrupt regions retain armed extent, input ownership, same-activation unwind, request cancellation and inactive/late-input observations.
 
-A schedule entry lowers to a release mechanism and dispatch-time argument evaluation. After edges retain same-owner predecessor operation and completed activation identities, success-only release after unlock, fresh deadline/context and no implicit data forwarding/join. Stateful reactions retain source-order transitions, guards, timer generations and exit/effect/update/entry phases. State bodies do not gain separate executable identities. Final entry completes the operation once.
+A schedule entry lowers to a release mechanism and dispatch-time argument evaluation. After edges retain same-owner predecessor operation and completed activation identities, success-only release after unlock, fresh deadline/context and no implicit data forwarding/join. Stateful reactions retain source-order transitions, guards, timer generations and exit/effect/update/entry phases. WP5-M03: they retain source-order completion, timer and receive groups, internal reactions without a state update, timer guards and the deferral set per state. State bodies do not gain separate executable identities. Final entry completes the operation once.
 
 ## 7.5 Presentation and equivalence
 
@@ -1195,6 +1300,7 @@ Normative chapter of [swa.ml 2.2](LANGUAGE_SPECIFICATION.md). Acceptance levels 
 | V17 | Conditional typing, whole-expression placement, no suspension; contextual words in every name position; association lists without repeated pairs | SW2000/2002/2006/2010 |
 | V18 | `Swaml::Numeric`, `Swaml::Text` and `Swaml::Time` without new ambiguity for 2.2 sources; `now()` reads state and is rejected in initializers; no stale-read warning for `now()` values | SW2001/2006/2011 |
 | V19 | Duration values, policy setting literals, the constant sublanguage per occurrence, trigger identity, unit warning | SW2002/2007/2008/2013/2016/2019 |
+| V20 | Completion transitions, timer guards, internal transitions, deferral, completion-guard and deferral-overflow warnings | SW2005/2008/2017/2018 |
 
 Validation MUST rebuild semantic string paths as well as indexed references after workspace changes/additions/deletions. Negative lookups matter: a newly loaded declaration may make a previously resolved short name ambiguous. Malformed source remains editable and invalid; recovery cannot silently accept a different program. Definite-return analysis may be conservative rather than solving arbitrary conditions. Dynamic numeric/index/termination failures remain runtime obligations.
 
@@ -1217,6 +1323,7 @@ Validation MUST rebuild semantic string paths as well as indexed references afte
 | E13 | Conditional evaluates only the selected branch |
 | E14 | `sqrt` correctly rounded and `Arithmetic` below zero; `intText`; `realText` with ties away from zero, unsigned zero, `Bounds` above 15 decimals and from 1e21; `now()` live logical time in every activation |
 | E15 | Computed waits and timeouts evaluated when they start waiting, with `durationNs`; state timers evaluated after entry with `timer` observations; per-occurrence periods and deadlines; `DurationRange` |
+| E16 | Completion, elapsed-timer and input order; no completion after discards; `discardTimer`; internal reactions keep timers; `CompletionLoop`; retention and offer-ordinal order; one `defer` per retained message |
 | E20 | Every run, use case and test of the 2.2 corpus keeps its status, full final stores, machines, deployments, verdict and message and its complete trace, ignoring only `profile` and `languageVersion` (compatibility gate 2, compared with a fixture recorded with implementation 3.1.0) |
 
 A deterministic reference run may choose one permitted order/delivery outcome. Its tests do not establish all possible traces or real transport reliability. A target implementation identifies additional scheduling/transport assumptions and evidence. Idempotency annotations are checked declarations, not proofs of side-effect behavior.
@@ -1250,6 +1357,8 @@ D; Γ ⊢ s ⇒ Γ'
 C —observation→ C'
 ```
 
+The queued messages in Q carry a retained mark (WP5): a message that a deferring state retained, recorded once by `defer` and consumed in offer-ordinal order when a state handles it (chapter 6.5).
+
 Values are bounded primitive scalars, nominal enums/records and fixed copied arrays; void has no inhabitant. Effect ε retains read/write/communication/suspension flags, with pure as empty. Transitive union over an acyclic call graph computes effects. The maximum class is a presentation of these flags rather than permission to erase a write beneath suspension.
 
 ## 9.2 Typing schemas
@@ -1265,9 +1374,11 @@ Values are bounded primitive scalars, nominal enums/records and fixed copied arr
 | test occurrence access | Resolved own-package executed software root is the subject or an explicit association, followed by single effective parts or part family members with literal indexes in range; reads use its live store under its lock, helper calls outside the exact primary subject neither communicate nor suspend; no ownership transfer or direct attribute assignment |
 | try(e, f) | e:T and f:U assignable to T; lazy f; effect union; no fallback only when T is void |
 | if (c) a else b | c : bool; a : T1, b : T2 with common type T under scalar widening, otherwise identical types; neither void; effect ε(c) ∪ ε(a) ∪ ε(b) without suspension; only the selected branch evaluates; a whole expression, never a statement |
-| now() | result uint, the logical time t of the evaluating step; effect reads state; not in initializers or constant expressions (SW2007, WP4-S05) and, from WP5, not in completion guards; never a stale read |
+| now() | result uint, the logical time t of the evaluating step; effect reads state; not in initializers or constant expressions (SW2007, WP4-S05) and not in completion guards (SW2008, WP5-S03); never a stale read |
 | duration literal | Result uint (nanoseconds), a safe integer; positive in the 2.2 positions |
 | computed duration `(e)` | e integral; in wait and receive timeouts without suspending calls; in state timers pure or reads state; in periods and deadlines in the constant sublanguage, with exact integral `/`, valued per occurrence |
+| completion guard | bool; pure or reads state; no `now()`, directly or through a callee |
+| timer guard | bool; pure or reads state |
 | var x:T=e | Compatible value, fresh live name; Γ extends with mutable x; suspension allowed only when e is whole call/try |
 | x=e | Mutable local/out/attribute, compatible type; attribute write adds write effect; same whole-expression suspension rule |
 | place = e | The root is a mutable local, an assigned out or a non-const attribute; e is assignable to the place type; the effect adds a write of the root; the whole-expression suspension rule applies |
@@ -1302,11 +1413,15 @@ Scalar type assignability uses widening, with checked integral value conversion 
 | try success/failure | Return e value on success; on RuntimeFault evaluate fallback lazily with existing σ/Q effects retained |
 | interrupt | Match active region; disarm/unwind protected continuation, cancel pending correlation as interrupted, retain activation/deadline/outer ρ and committed effects |
 | state reaction | Select first enabled transition, exit/effect/update/entry, invalidate old timer generation; idle releases lock |
+| completion | After entry or an internal reaction: the first enabled completion transition in order, then exit, effect, update, entry; a revisited state in a completion chain is a `CompletionLoop` violation |
+| guarded timer | At expiry, a false guard consumes the timer generation for this entry (`discardTimer`) |
+| internal reaction | Effect only; M (timer generations) unchanged |
+| retain | A deferred member's message stays in Q, marked retained (`defer` once); it is consumed in offer-ordinal order on entering a handling state |
 | complete | Finish activation and unlock; correlated reply is offered separately; successful whole completion releases after targets fresh |
 | violation | Deadline, activation overflow, step/concurrent resource or clock failure stops the reference run and bypasses try |
 | case script | A fresh package configuration adds one serial script activation after startup releases; direct primary-subject calls borrow its actual serial context, script emissions/requests/receives use actor ports, on call replies to the pending correlation, and script completion or failure stops the run |
 
-At terminal correlation, later replies cannot change R. Inactive interrupt input is discarded observably. Receive statements preserve queued early input. A state's unhandled input leaves its entry time/timer generation intact. Set entry time at the state update, before entry actions. Select an already elapsed timer after entry completes before queued input; earliest expiry then declaration order determines competing timers. Deadline/timeout measurements include suspension and backlog; zero-cost interpreter steps do not supply physical cost evidence.
+At terminal correlation, later replies cannot change R. Inactive interrupt input is discarded observably. Receive statements preserve queued early input. A state's unhandled input leaves its entry time/timer generation intact. Set entry time at the state update, before entry actions. After entry completes, evaluate completion transitions, then select an already elapsed timer, then queued input (retained input first, in offer order); earliest expiry then declaration order determines competing timers. Deadline/timeout measurements include suspension and backlog; zero-cost interpreter steps do not supply physical cost evidence.
 
 ## 9.4 Projection and adequacy
 
@@ -1760,9 +1875,9 @@ Compact of selects one subject. Include/recursive/where selects a stable union w
 
 # swa.ml 2.3 keyword reference
 
-Generated from spec/keywords.json and the normative grammar. Examples here are grammar fragments; complete runnable models are in the usage guide and examples. 19 contextual words remain legal names outside their positions. call appears in the on call schedule trigger and in on call branches of case scripts.
+Generated from spec/keywords.json and the normative grammar. Examples here are grammar fragments; complete runnable models are in the usage guide and examples. 20 contextual words remain legal names outside their positions. call appears in the on call schedule trigger and in on call branches of case scripts.
 
-[after](#keyword-after) · [and](#keyword-and) · [assert](#keyword-assert) · [associate](#keyword-associate) · [attribute](#keyword-attribute) · [bool](#keyword-bool) · [by](#keyword-by) · [byte](#keyword-byte) · [call](#keyword-call) · [case](#keyword-case) · [component](#keyword-component) · [concurrent](#keyword-concurrent) · [connect](#keyword-connect) · [const](#keyword-const) · [datatype](#keyword-datatype) · [deadline](#keyword-deadline) · [def](#keyword-def) · [deploy](#keyword-deploy) · [deployment](#keyword-deployment) · [else](#keyword-else) · [entry](#keyword-entry) · [enum](#keyword-enum) · [event](#keyword-event) · [every](#keyword-every) · [exit](#keyword-exit) · [fail](#keyword-fail) · [false](#keyword-false) · [final](#keyword-final) · [for](#keyword-for) · [idempotent](#keyword-idempotent) · [if](#keyword-if) · [import](#keyword-import) · [in](#keyword-in) · [include](#keyword-include) · [initial](#keyword-initial) · [int](#keyword-int) · [interruptible](#keyword-interruptible) · [kind](#keyword-kind) · [ms](#keyword-ms) · [name](#keyword-name) · [not](#keyword-not) · [ns](#keyword-ns) · [of](#keyword-of) · [on](#keyword-on) · [operation](#keyword-operation) · [optional](#keyword-optional) · [or](#keyword-or) · [out](#keyword-out) · [package](#keyword-package) · [path](#keyword-path) · [port](#keyword-port) · [provides](#keyword-provides) · [publish](#keyword-publish) · [qos](#keyword-qos) · [real](#keyword-real) · [receive](#keyword-receive) · [record](#keyword-record) · [recursive](#keyword-recursive) · [redefines](#keyword-redefines) · [requirement](#keyword-requirement) · [requires](#keyword-requires) · [return](#keyword-return) · [returns](#keyword-returns) · [reversed](#keyword-reversed) · [s](#keyword-s) · [satisfy](#keyword-satisfy) · [schedule](#keyword-schedule) · [send](#keyword-send) · [specializes](#keyword-specializes) · [start](#keyword-start) · [state](#keyword-state) · [string](#keyword-string) · [test](#keyword-test) · [times](#keyword-times) · [to](#keyword-to) · [true](#keyword-true) · [try](#keyword-try) · [uint](#keyword-uint) · [until](#keyword-until) · [us](#keyword-us) · [use](#keyword-use) · [var](#keyword-var) · [verify](#keyword-verify) · [view](#keyword-view) · [void](#keyword-void) · [wait](#keyword-wait) · [when](#keyword-when) · [where](#keyword-where) · [while](#keyword-while)
+[after](#keyword-after) · [and](#keyword-and) · [assert](#keyword-assert) · [associate](#keyword-associate) · [attribute](#keyword-attribute) · [bool](#keyword-bool) · [by](#keyword-by) · [byte](#keyword-byte) · [call](#keyword-call) · [case](#keyword-case) · [component](#keyword-component) · [concurrent](#keyword-concurrent) · [connect](#keyword-connect) · [const](#keyword-const) · [datatype](#keyword-datatype) · [deadline](#keyword-deadline) · [def](#keyword-def) · [defer](#keyword-defer) · [deploy](#keyword-deploy) · [deployment](#keyword-deployment) · [else](#keyword-else) · [entry](#keyword-entry) · [enum](#keyword-enum) · [event](#keyword-event) · [every](#keyword-every) · [exit](#keyword-exit) · [fail](#keyword-fail) · [false](#keyword-false) · [final](#keyword-final) · [for](#keyword-for) · [idempotent](#keyword-idempotent) · [if](#keyword-if) · [import](#keyword-import) · [in](#keyword-in) · [include](#keyword-include) · [initial](#keyword-initial) · [int](#keyword-int) · [interruptible](#keyword-interruptible) · [kind](#keyword-kind) · [ms](#keyword-ms) · [name](#keyword-name) · [not](#keyword-not) · [ns](#keyword-ns) · [of](#keyword-of) · [on](#keyword-on) · [operation](#keyword-operation) · [optional](#keyword-optional) · [or](#keyword-or) · [out](#keyword-out) · [package](#keyword-package) · [path](#keyword-path) · [port](#keyword-port) · [provides](#keyword-provides) · [publish](#keyword-publish) · [qos](#keyword-qos) · [real](#keyword-real) · [receive](#keyword-receive) · [record](#keyword-record) · [recursive](#keyword-recursive) · [redefines](#keyword-redefines) · [requirement](#keyword-requirement) · [requires](#keyword-requires) · [return](#keyword-return) · [returns](#keyword-returns) · [reversed](#keyword-reversed) · [s](#keyword-s) · [satisfy](#keyword-satisfy) · [schedule](#keyword-schedule) · [send](#keyword-send) · [specializes](#keyword-specializes) · [start](#keyword-start) · [state](#keyword-state) · [string](#keyword-string) · [test](#keyword-test) · [times](#keyword-times) · [to](#keyword-to) · [true](#keyword-true) · [try](#keyword-try) · [uint](#keyword-uint) · [until](#keyword-until) · [us](#keyword-us) · [use](#keyword-use) · [var](#keyword-var) · [verify](#keyword-verify) · [view](#keyword-view) · [void](#keyword-void) · [wait](#keyword-wait) · [when](#keyword-when) · [where](#keyword-where) · [while](#keyword-while)
 
 ## Keyword: after
 
@@ -1899,6 +2014,14 @@ Used in component definitions and usages; see its grammar contexts and normative
 **Context:** Component definitions and usages. **Grammar:** ComponentDef, PortDef, QosPolicy, Operation, ViewDef. **Name use:** reserved.
 
 [Normative rule](spec/01-structure-and-types.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
+
+## Keyword: defer
+
+Used in ordered state transitions; see its grammar contexts and normative constraints.
+
+**Context:** Ordered state transitions. **Grammar:** Deferral, Name. **Name use:** contextual.
+
+[Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
 ## Keyword: deploy
 
@@ -2487,7 +2610,7 @@ Colon means typed by; returns names results. Dot is containment/member access; :
 
 # swa.ml 2.3 candidate implementation status
 
-**Standard:** 2.3 (unreleased candidate) · **Implementation package:** 4.0.0 · **Selected host semantics:** 2.3 · **Reference profile:** swaml-reference/2.3. The candidate is allocated and work package WP1 has landed: assignment to places such as `statuses[i].confirmed = true;` and `r.f = v;` (indexes, then the right side, then one read-modify-write of the root; `Bounds` leaves the root unchanged; `write` observations gain `place`), member access after an index such as `recent[i].vehicleId`, and literal component indexes in test inspection paths such as `backend.twins[0].link` and `backend.twins[0].currentView()`. Work package WP2 has landed: the whole-expression conditional `if (c) a else b` (typed by the common type of its branches, never a statement, no suspension inside, only the selected branch evaluated), `view`, `state`, `in` and `out` as contextual words in every name position (edition-aware name services write them unquoted for a 2.3 workspace and quoted for 2.2) and association lists `associate a, b to 'X', 'Y';` (one link per pair, a repeated pair is SW2010). Work package WP3 has landed: the library packages `Swaml::Numeric` (`minInt`, `maxInt`, `clampInt`, `clamp`, and `sqrt` as a correctly rounded host intrinsic), `Swaml::Text` (`intText`, `realText` with ties away from zero, no exponent and no negative zero, `boolText`) and `Swaml::Time` (`now()`, the live logical time in nanoseconds, which reads state, is rejected in initializers and is never a stale read), in the separate built-in document `libraries/swaml-2.3.swaml`; a workspace that declares its own package of one of these names uses it and the library package is hidden there, so 2.2 sources keep their meaning. Work package WP4 has landed: a duration literal is a `uint` value in nanoseconds; `wait (e);`, `or after (e)`, state timers `after (e)` (evaluated when the entry actions finish), `on every (e)` and `deadline (e)` take computed durations; a value that is not a positive representable duration is the catchable runtime failure `DurationRange`; periods and deadlines use the constant sublanguage, evaluated per expanded occurrence (redefined const attributes included) by one evaluator, `constantValue`, with exact integral division and trigger identity by canonical text; `PolicySetting` has the single form `name = Expression;`; computed waits and timeouts record `durationNs` and computed state timers a `timer` observation; SW2016 warns on a computed duration without a unit. Otherwise the host accepts exactly the 2.2 language, and the three [compatibility gates](RELEASE_2_3.md#compatibility-gates) compare every corpus AST and every recorded run, case and trace with fixtures recorded from implementation 3.1.0. The published [2.2 reference](SWAML-2.2-Reference.md) and [PDF](../output/pdf/SWAML-2.2-Specification.pdf) record the 2.2 release sources. The published 2.1 [reference book](SWAML-2.1-Reference.md) and [complete PDF](../output/pdf/SWAML-2.1-Specification.pdf), manifest and checksum remain frozen. The strict current-source [publication gate](PDF_PUBLICATION.md) checks the new edition independently of historical publications.
+**Standard:** 2.3 (unreleased candidate) · **Implementation package:** 4.0.0 · **Selected host semantics:** 2.3 · **Reference profile:** swaml-reference/2.3. The candidate is allocated and work package WP1 has landed: assignment to places such as `statuses[i].confirmed = true;` and `r.f = v;` (indexes, then the right side, then one read-modify-write of the root; `Bounds` leaves the root unchanged; `write` observations gain `place`), member access after an index such as `recent[i].vehicleId`, and literal component indexes in test inspection paths such as `backend.twins[0].link` and `backend.twins[0].currentView()`. Work package WP2 has landed: the whole-expression conditional `if (c) a else b` (typed by the common type of its branches, never a statement, no suspension inside, only the selected branch evaluated), `view`, `state`, `in` and `out` as contextual words in every name position (edition-aware name services write them unquoted for a 2.3 workspace and quoted for 2.2) and association lists `associate a, b to 'X', 'Y';` (one link per pair, a repeated pair is SW2010). Work package WP3 has landed: the library packages `Swaml::Numeric` (`minInt`, `maxInt`, `clampInt`, `clamp`, and `sqrt` as a correctly rounded host intrinsic), `Swaml::Text` (`intText`, `realText` with ties away from zero, no exponent and no negative zero, `boolText`) and `Swaml::Time` (`now()`, the live logical time in nanoseconds, which reads state, is rejected in initializers and is never a stale read), in the separate built-in document `libraries/swaml-2.3.swaml`; a workspace that declares its own package of one of these names uses it and the library package is hidden there, so 2.2 sources keep their meaning. Work package WP4 has landed: a duration literal is a `uint` value in nanoseconds; `wait (e);`, `or after (e)`, state timers `after (e)` (evaluated when the entry actions finish), `on every (e)` and `deadline (e)` take computed durations; a value that is not a positive representable duration is the catchable runtime failure `DurationRange`; periods and deadlines use the constant sublanguage, evaluated per expanded occurrence (redefined const attributes included) by one evaluator, `constantValue`, with exact integral division and trigger identity by canonical text; `PolicySetting` has the single form `name = Expression;`; computed waits and timeouts record `durationNs` and computed state timers a `timer` observation; SW2016 warns on a computed duration without a unit. Otherwise the host accepts exactly the 2.2 language, and the three [compatibility gates](RELEASE_2_3.md#compatibility-gates) compare every corpus AST and every recorded run, case and trace with fixtures recorded from implementation 3.1.0. The published [2.2 reference](SWAML-2.2-Reference.md) and [PDF](../output/pdf/SWAML-2.2-Specification.pdf) record the 2.2 release sources. The published 2.1 [reference book](SWAML-2.1-Reference.md) and [complete PDF](../output/pdf/SWAML-2.1-Specification.pdf), manifest and checksum remain frozen. The strict current-source [publication gate](PDF_PUBLICATION.md) checks the new edition independently of historical publications. Work package WP5 has landed: completion transitions, guarded timers, internal transitions and deferral in states (ADR 0023), with `defer` as a contextual word.
 
 The 2.0 core replaced the 1.x grammar, AST, resolver, validator and interpreter; 2.1 adds the package context, executable use cases and tests, package links, run targets and statement identities of [ADR 0019](decisions/0019-package-context.md). It does not accept 1.x or 2.0 source; the [release notes](RELEASE_2_1.md) describe the migration. Published 1.x and 2.0.0 books, PDFs, manifests/checksums and historical figure files remain unchanged. [ADR 0016](decisions/0016-swaml-2-0.md) defines the restart; [conformance obligations](spec/08-conformance-obligations.md) separate syntax, validation, execution, analysis, kernel and graphical claims.
 
@@ -2504,7 +2627,7 @@ The 2.2 edition adds explicit test access to the subject and associated software
 | Ports and routes | Per-member direction/reversal, structural compatibility with variance and individual diagnostics, connection/forwarding, package connections between top-level occurrences, per-package closure, resolved cardinality and ownership/emission provenance with the interface-only exemption |
 | Policies | Versioned complete typed QoS definitions, Default/Latest/Reliable/BestEffort, per-use idempotency; occurrence/direction/member queues and latest attributes |
 | Schedule and runtime | Start/every/receive/call/after entries, inherited entry replacement, dispatch copying, deadlines, lock release/reacquisition, live serial reads and concurrent snapshots; 2.3 (WP4): computed periods and deadlines in the constant sublanguage, evaluated per expanded occurrence by `constantValue` (exact bigint arithmetic, exact integral division, positive safe values checked per occurrence), trigger identity by canonical expression text, per-occurrence Timing projection |
-| Flow and state | Loops and copied iteration, wait/receive, interruption across callees, ordered nested transitions, final completion and queued startup input; 2.3 (WP4): duration literals as `uint` values, computed waits and receive timeouts evaluated when they start waiting (`durationNs`), computed state timers evaluated after the entry actions (`timer` observation), `DurationRange` caught by `try`, SW2016 |
+| Flow and state | Loops and copied iteration, wait/receive, interruption across callees, ordered nested transitions, final completion and queued startup input; 2.3 (WP4): duration literals as `uint` values, computed waits and receive timeouts evaluated when they start waiting (`durationNs`), computed state timers evaluated after the entry actions (`timer` observation), `DurationRange` caught by `try`, SW2016; 2.3 (WP5): completion transitions `when (g) to S` evaluated after entry and after every internal reaction, guarded timers with `discardTimer`, internal transitions without `to` that keep the timer epoch (`state` with `internal: true`), deferral with one `defer` observation per retained message and global offer-ordinal order of retained input, the contract violation `CompletionLoop`, SW2017 and SW2018 |
 | Correlation and adverse behavior | Routed results/out values, failures, timeout ties, terminal cancellation, late-reply suppression, policy overflow, age at eligibility and explicit resource limits |
 | Deployment | Separate software/platform roots, Node-only contents/targets, indexed/family placements and most-specific selection |
 | Requirements/cases/views | Immutable intent; package-owned use case/test with an optional subject that is a top-level occurrence of the same package; case scripts with the environment role of associated interface-only actors, on call replies, normal primary-subject operation calls in both case kinds and tests' private reads/helper calls (SW2010/SW2004/SW2005/SW2006); intent-only cases without statements; package associate, satisfy … by and verify … by links with SW2010 rules; seven library definitions, package/member subjects and stable occurrence unions |
@@ -2826,7 +2949,7 @@ swa.ml 2.2.
 
 The language core is portable TypeScript over Langium 4.4.0 and the normative grammar. Node CLI/server adapters own file access and source hashing. Build with npm run build; validate with node out/src/cli/main.js --json and explicitly load all application dependencies. The host selects parser 2.2; unsupported edition flags are errors.
 
-JSON diagnostics expose stable SW2xxx codes, range, URI and identity metadata. --format applies canonical token-preserving whitespace, printing places and selectors without spaces inside the path, as in statuses[i].confirmed = true; (WP1-M03), conditionals with every parenthesis of the source, as in x = 1 + (if (c) 2 else 3) + 4;, and association lists on one line when they fit in 100 characters, otherwise with one occurrence or case per continuation line; a list that contains a comment is not wrapped (WP2-M05); --check-format checks it without writing. It prints computed durations in parentheses, as in wait (n * 1ms); and on every (periodMs * 1ms) poll() deadline (periodMs * 1ms / 2);, and literal durations without them, as in wait 5ms; (WP4-M08). The LSP exposes full-document formatting. Source repairs must be validated against the complete workspace before application.
+JSON diagnostics expose stable SW2xxx codes, range, URI and identity metadata. --format applies canonical token-preserving whitespace, printing places and selectors without spaces inside the path, as in statuses[i].confirmed = true; (WP1-M03), conditionals with every parenthesis of the source, as in x = 1 + (if (c) 2 else 3) + 4;, and association lists on one line when they fit in 100 characters, otherwise with one occurrence or case per continuation line; a list that contains a comment is not wrapped (WP2-M05); --check-format checks it without writing. It prints computed durations in parentheses, as in wait (n * 1ms); and on every (periodMs * 1ms) poll() deadline (periodMs * 1ms / 2);, and literal durations without them, as in wait 5ms; (WP4-M08). It prints completion transitions, internal transitions, timer guards and defer lines, as in when (sessionId > 0) to Connected {, on receive stream.accepted(t) {, after 250ms when (pulses < 3) to isLocked { and defer requests.request, keys.key;, keeping every state member in source order (WP5-M04). The LSP exposes full-document formatting. Source repairs must be validated against the complete workspace before application.
 
 The simulator requires validated models and records swaml-reference/2.3, sources, options, trace, final stores and deployment. Source digests are added by the CLI. Its finite logical run does not supply production timing or universal verification.
 
@@ -3125,9 +3248,11 @@ ReceiveBranch: kind=('receive'|'call') endpoint=EndpointPath '(' (bindings+=Name
 Interruptible: 'interruptible' body=Block 'on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' handler=Block;
 Fail: 'fail' reason=STRING ';';
 Assert: 'assert' condition=Expression ';';
-State: (final?='final')? 'state' name=Name '{' documentation=Documentation? (actions+=StateAction | transitions+=Transition)* '}';
+State: (final?='final')? 'state' name=Name '{' documentation=Documentation? (actions+=StateAction | transitions+=Transition | deferrals+=Deferral)* '}';
 StateAction: 'on' kind=('entry'|'exit') body=Block;
-Transition: ('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' (delay=Duration | '(' delayValue=Expression ')')) 'to' target=Name effect=Block;
+interface Transition { endpoint?: string; bindings?: string[]; guard?: Expression; delay?: Duration; delayValue?: Expression; target?: string; effect: Block; }
+Transition returns Transition: ('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' (delay=Duration | '(' delayValue=Expression ')') ('when' '(' guard=Expression ')')? | 'when' '(' guard=Expression ')') ('to' target=Name)? effect=Block;
+Deferral: 'defer' endpoints+=MemberPath (',' endpoints+=MemberPath)* ';';
 Deployment: 'deployment' name=Name 'of' root=[ComponentUsage:QualifiedName] 'on' platform=[ComponentUsage:QualifiedName] '{' documentation=Documentation? placements+=Placement* '}';
 Placement: 'deploy' target=Path? 'on' node=Path ';';
 Requirement: 'requirement' name=Name '{' documentation=Documentation? attributes+=Attribute* '}';
@@ -3147,7 +3272,7 @@ FilterAnd returns FilterExpression: FilterPrimary ({infer FilterBinary.left=curr
 FilterPrimary returns FilterExpression: {infer FilterNot} 'not' operand=FilterPrimary | FilterComparison | '(' FilterExpression ')';
 FilterComparison: field=('name'|'kind'|'path') operator=('=='|'!=') value=STRING;
 Duration: value=INT unit=('ns'|'us'|'ms'|'s');
-Name returns string: ID | UNRESTRICTED_NAME | 'reversed' | 'to' | 'times' | 'name' | 'kind' | 'path' | 'use' | 'case' | 'test' | 'associate' | 'by' | 'ns' | 'us' | 'ms' | 's' | 'view' | 'state' | 'in' | 'out';
+Name returns string: ID | UNRESTRICTED_NAME | 'reversed' | 'to' | 'times' | 'name' | 'kind' | 'path' | 'use' | 'case' | 'test' | 'associate' | 'by' | 'ns' | 'us' | 'ms' | 's' | 'defer' | 'view' | 'state' | 'in' | 'out';
 MemberPath returns string: Name '.' Name;
 EndpointPath returns string: Name '.' Name ('.' Name)?;
 Path returns string: QualifiedName ('[' INT ']')? ('.' Name ('[' INT ']')?)*;
@@ -5880,6 +6005,27 @@ package DerivedPeriod {
       on every (periodMs * 1ms) sample() deadline (periodMs * 1ms / 2);
     }
   }
+  component def Logger {
+    /** A literal period with a computed deadline: every 20ms, deadline (budgetMs * 1ms). The deadline is the constant value of each usage, the period stays the 2.2 literal. */
+    const attribute budgetMs: uint = 5;
+    attribute entries: uint = 0;
+    attribute busyMs: uint = 0;
+    operation log() {
+      entries = entries + 1;
+      if (busyMs > 0) {
+        wait (busyMs * 1ms);
+      }
+    }
+    operation load(ms: uint) {
+      busyMs = ms;
+    }
+    schedule {
+      on every 20ms log() deadline (budgetMs * 1ms);
+    }
+  }
+  component logger: Logger {
+    redefines const attribute budgetMs: uint = 3;
+  }
   component slow: Sampler;
   component fast: Sampler {
     redefines const attribute periodMs: uint = 10;
@@ -5888,6 +6034,7 @@ package DerivedPeriod {
     redefines const attribute periodMs: uint = 8;
   }
   associate fast to 'Period per usage', 'Busy within the deadline';
+  associate slow to 'Literal period, computed deadline';
   test 'Period per usage' of slow {
     /** In 100 ms slow samples five times and fast ten times. */
     wait 100ms;
@@ -5899,11 +6046,577 @@ package DerivedPeriod {
     wait 100ms;
     assert slow.samples == 5 and fast.samples == 10;
   }
+  test 'Literal period, computed deadline' of logger {
+    /** logger logs every 20 ms; a 2 ms entry meets its redefined 3 ms deadline (5 ms in the definition). */
+    logger.load(2);
+    wait 100ms;
+    assert logger.entries == 5 and slow.samples == 5;
+  }
   test 'Deadline per usage' of late {
     /** late runs every 8 ms with a deadline of 4 ms, half its own period. A 5 ms sample released at 8 ms misses it at 12 ms: the run stops with the Deadline violation, so this case fails by design. With the 10 ms deadline of slow it would pass. */
     late.load(5);
     wait 20ms;
     assert late.samples >= 1;
+  }
+}
+```
+
+### 44-session-completion.swaml
+
+```swaml
+package SessionCompletion {
+  /** An uplink session in the shape of the V2X model's UplinkSessionManager. In 2.2 a state machine cannot decide on a value its own entry action computed: LegacySession publishes openRequested, a second component, Transfer, performs the request and answers opened or refused, and two control events exist only to return that decision. From 2.3 one machine opens the session in its entry action and decides with completion transitions, when (sessionId > 0) to Connected, which are evaluated after the entry actions finish (chapter 3.6). A coverage loss queued during the request is taken in whatever state the decision reaches. */
+  port def CloudApi {
+    provides operation openSession(vehicle: uint) returns uint;
+  }
+  port def Coverage {
+    provides event coverage(up: bool);
+  }
+  port def Control {
+    provides event openRequested(attempt: uint);
+    requires event opened(id: uint);
+    requires event refused();
+  }
+  component def Cloud {
+    /** Refuses the first two open requests, then grants sessions 101, 102 and so on. */
+    port api: CloudApi;
+    attribute calls: uint = 0;
+    operation open(vehicle: uint) returns uint {
+      calls = calls + 1;
+      wait 2ms;
+      if (calls <= 2) {
+        return 0;
+      }
+      return 98 + calls;
+    }
+    schedule {
+      on call api.openSession(vehicle) open(vehicle);
+    }
+  }
+  component def Session {
+    /** The 2.3 shape: one machine, completion transitions on the result of its own request. */
+    reversed port cloud: CloudApi;
+    reversed port network: Coverage;
+    const attribute vehicleId: uint = 7;
+    attribute sessionId: uint = 0;
+    attribute attempts: uint = 0;
+    attribute backoffs: uint = 0;
+    attribute coverageLosses: uint = 0;
+    operation run() {
+      initial Connecting;
+      state Connecting {
+        on entry {
+          attempts = attempts + 1;
+          sessionId = try(cloud.openSession(vehicleId), 0);
+        }
+        when (sessionId > 0) to Connected {
+        }
+        when (true) to Backoff {
+        }
+        on receive network.coverage(up) when (not up) to Offline {
+          coverageLosses = coverageLosses + 1;
+        }
+      }
+      state Backoff {
+        on entry {
+          backoffs = backoffs + 1;
+        }
+        after 10ms to Connecting {
+        }
+        on receive network.coverage(up) when (not up) to Offline {
+          coverageLosses = coverageLosses + 1;
+        }
+      }
+      state Connected {
+        on receive network.coverage(up) when (not up) to Offline {
+          coverageLosses = coverageLosses + 1;
+          sessionId = 0;
+        }
+      }
+      state Offline {
+        on receive network.coverage(up) when (up) to Connecting {
+        }
+      }
+    }
+    schedule {
+      on start run();
+    }
+  }
+  component def LegacySession {
+    /** The 2.2 shape: the decision returns through two control events from Transfer. */
+    port ctl: Control;
+    reversed port network: Coverage;
+    attribute sessionId: uint = 0;
+    attribute attempts: uint = 0;
+    attribute backoffs: uint = 0;
+    attribute coverageLosses: uint = 0;
+    operation run() {
+      initial Connecting;
+      state Connecting {
+        on entry {
+          attempts = attempts + 1;
+          publish ctl.openRequested(attempts);
+        }
+        on receive ctl.opened(id) to Connected {
+          sessionId = id;
+        }
+        on receive ctl.refused() to Backoff {
+        }
+        on receive network.coverage(up) when (not up) to Offline {
+          coverageLosses = coverageLosses + 1;
+        }
+      }
+      state Backoff {
+        on entry {
+          backoffs = backoffs + 1;
+        }
+        after 10ms to Connecting {
+        }
+        on receive network.coverage(up) when (not up) to Offline {
+          coverageLosses = coverageLosses + 1;
+        }
+      }
+      state Connected {
+        on receive network.coverage(up) when (not up) to Offline {
+          coverageLosses = coverageLosses + 1;
+          sessionId = 0;
+        }
+      }
+      state Offline {
+        on receive network.coverage(up) when (up) to Connecting {
+        }
+      }
+    }
+    schedule {
+      on start run();
+    }
+  }
+  component def Transfer {
+    /** The second component of the 2.2 shape: it performs the request and answers with an event. */
+    reversed port ctl: Control;
+    reversed port cloud: CloudApi;
+    const attribute vehicleId: uint = 7;
+    operation openSession(attempt: uint) {
+      var id: uint = try(cloud.openSession(vehicleId), 0);
+      if (id > 0) {
+        publish ctl.opened(id);
+      } else {
+        publish ctl.refused();
+      }
+    }
+    schedule {
+      on receive ctl.openRequested(attempt) openSession(attempt);
+    }
+  }
+  component def Car {
+    /** Interface-only actor that reports radio coverage to both sessions. */
+    port toSession: Coverage;
+    port toLegacy: Coverage;
+  }
+  component session: Session;
+  component legacy: LegacySession;
+  component transfer: Transfer;
+  component cloud: Cloud;
+  component legacyCloud: Cloud;
+  component car: Car;
+  connect (session.cloud, cloud.api);
+  connect (transfer.cloud, legacyCloud.api);
+  connect (legacy.ctl, transfer.ctl);
+  connect (car.toSession, session.network);
+  connect (car.toLegacy, legacy.network);
+  associate car, legacy, cloud to 'Opens after two refusals', 'Coverage loss during the request';
+  test 'Opens after two refusals' of session {
+    /** Both shapes open session 101 at the third attempt, after two refusals and two backoffs: at 2 + 10 + 2 + 10 + 2 = 26 ms. */
+    wait 30ms;
+    assert session.sessionId == 101 and session.attempts == 3 and session.backoffs == 2;
+    assert legacy.sessionId == 101 and legacy.attempts == 3 and legacy.backoffs == 2;
+    assert cloud.calls == 3;
+  }
+  test 'Coverage loss during the request' of session {
+    /** The coverage loss arrives at 1 ms, while the first request is in flight. The refusal at 2 ms selects Backoff, which handles the queued loss and goes Offline. */
+    wait 1ms;
+    publish car.toSession.coverage(false);
+    wait 5ms;
+    assert session.coverageLosses == 1 and session.backoffs == 1 and session.attempts == 1;
+    publish car.toSession.coverage(true);
+    wait 30ms;
+    assert session.sessionId == 101 and session.attempts == 3;
+  }
+}
+```
+
+### 45-lock-deferral.swaml
+
+```swaml
+package LockDeferral {
+  /** A door lock in the shape of the door model's LockControl. A lock or unlock request that arrives during the 250 ms motor pulse has no transition in 2.2 and is discarded (discardInput, inactiveOwner): DiscardingLock ends unlocked although the last request was lock. From 2.3 the pulse states write defer requests.request; and the request stays in its connection queue until a state that handles it, so DeferringLock ends locked. Retained input keeps its queue slot: with a policy that rejects on overflow a full queue fails the sender, and the validator warns about it (SW2018); these connections use the Queued policy, which drops the oldest request instead. */
+  import Swaml::Qos;
+  qos def Queued: Policy {
+    delivery = Delivery.atMostOnce;
+    ordering = Ordering.fifo;
+    capacity = 8;
+    overflow = Overflow.dropOldest;
+    requestTimeout = 1s;
+  }
+  port def Requests {
+    provides event request(lock: bool);
+  }
+  component def DiscardingLock {
+    /** The 2.2 shape. */
+    reversed port requests: Requests;
+    attribute locked: bool = false;
+    attribute pulses: uint = 0;
+    operation control() {
+      initial unlocked;
+      state unlocked {
+        on receive requests.request(lock) when (lock) to locking {
+        }
+      }
+      state locking {
+        on entry {
+          pulses = pulses + 1;
+        }
+        after 250ms to isLocked {
+          locked = true;
+        }
+      }
+      state isLocked {
+        on receive requests.request(lock) when (not lock) to unlocking {
+        }
+      }
+      state unlocking {
+        on entry {
+          pulses = pulses + 1;
+        }
+        after 250ms to unlocked {
+          locked = false;
+        }
+      }
+    }
+    schedule {
+      on start control();
+    }
+  }
+  component def DeferringLock {
+    /** The 2.3 shape: the pulse states retain requests. */
+    reversed port requests: Requests;
+    attribute locked: bool = false;
+    attribute pulses: uint = 0;
+    operation control() {
+      initial unlocked;
+      state unlocked {
+        on receive requests.request(lock) when (lock) to locking {
+        }
+      }
+      state locking {
+        defer requests.request;
+        on entry {
+          pulses = pulses + 1;
+        }
+        after 250ms to isLocked {
+          locked = true;
+        }
+      }
+      state isLocked {
+        on receive requests.request(lock) when (not lock) to unlocking {
+        }
+      }
+      state unlocking {
+        defer requests.request;
+        on entry {
+          pulses = pulses + 1;
+        }
+        after 250ms to unlocked {
+          locked = false;
+        }
+      }
+    }
+    schedule {
+      on start control();
+    }
+  }
+  component def Body {
+    /** Interface-only actor that sends lock requests to both locks. */
+    port toDiscarding: Requests;
+    port toDeferring: Requests;
+  }
+  component def Fob {
+    /** Interface-only actor: a key fob with its own connection to the deferring lock, so its requests have their own queue. */
+    port toDeferring: Requests;
+  }
+  component discarding: DiscardingLock;
+  component deferring: DeferringLock;
+  component body: Body;
+  component fob: Fob;
+  connect: Queued (body.toDiscarding, discarding.requests);
+  connect: Queued (body.toDeferring, deferring.requests);
+  connect: Queued (fob.toDeferring, deferring.requests);
+  associate body, discarding to 'Requests during the pulse';
+  associate body, fob to 'Request order across the pulse';
+  test 'Requests during the pulse' of deferring {
+    /** lock at 0 ms, then unlock at 100 ms and lock at 200 ms, both during the first pulse. The discarding lock drops both and stays locked after one pulse; the deferring lock takes unlock when the pulse ends at 250 ms, retains lock during the unlocking pulse and takes it at 500 ms, so it pulses three times and ends locked. */
+    publish body.toDiscarding.request(true);
+    publish body.toDeferring.request(true);
+    wait 100ms;
+    publish body.toDiscarding.request(false);
+    publish body.toDeferring.request(false);
+    wait 100ms;
+    publish body.toDiscarding.request(true);
+    publish body.toDeferring.request(true);
+    wait 600ms;
+    assert discarding.locked and discarding.pulses == 1;
+    assert deferring.locked and deferring.pulses == 3;
+  }
+  test 'Request order across the pulse' of deferring {
+    /** Two requests retained during one pulse are taken in offer order across their queues: the fob's unlock, then the body's lock, so the lock ends locked after three pulses. The body's queue is the older one (its first lock request started the pulse), so taking the queues in creation order would discard the lock in isLocked and end unlocked after two pulses. */
+    publish body.toDeferring.request(true);
+    wait 10ms;
+    publish fob.toDeferring.request(false);
+    publish body.toDeferring.request(true);
+    wait 900ms;
+    assert deferring.locked and deferring.pulses == 3;
+  }
+}
+```
+
+### 46-breaker-internal.swaml
+
+```swaml
+package BreakerInternal {
+  /** A persistence circuit breaker in the shape of the cloud model's PersistenceWriter. In 2.2 every transition has a target: SelfBreaker writes an arrival in Closed with a self transition, to Closed, which exits and enters the state again, and trips only at the next arrival after the third failed write. In Open it must leave arrivals unhandled, because a self transition would restart the cool-down timer, so they appear only as discards. From 2.3 a transition without to is internal: it runs only its effect, without exit, entry or state update, and the state's timers keep their epoch. InternalBreaker writes arrivals internally, trips by a completion transition right after the third failed write, and counts the arrivals it sheds while Open without delaying the cool-down. */
+  port def Stream {
+    provides event accepted(t: uint);
+  }
+  port def StoreApi {
+    provides operation put(t: uint) returns bool;
+  }
+  component def Store {
+    /** Answers each put after 1 ms; while down, every put fails. */
+    port api: StoreApi;
+    attribute down: bool = false;
+    attribute puts: uint = 0;
+    operation handle(t: uint) returns bool {
+      puts = puts + 1;
+      wait 1ms;
+      return not down and t >= 0;
+    }
+    operation setDown(value: bool) {
+      down = value;
+    }
+    schedule {
+      on call api.put(t) handle(t);
+    }
+  }
+  component def InternalBreaker {
+    /** The 2.3 shape. */
+    reversed port stream: Stream;
+    reversed port store: StoreApi;
+    const attribute failureThreshold: uint = 3;
+    attribute consecutiveFailures: uint = 0;
+    attribute written: uint = 0;
+    attribute shedArrivals: uint = 0;
+    attribute trips: uint = 0;
+    attribute halfOpenAtNs: uint = 0;
+    operation write(t: uint) {
+      var ok: bool = try(store.put(t), false);
+      if (ok) {
+        consecutiveFailures = 0;
+        written = written + 1;
+      } else {
+        consecutiveFailures = consecutiveFailures + 1;
+      }
+    }
+    operation circuit() {
+      initial Closed;
+      state Closed {
+        on receive stream.accepted(t) {
+          write(t);
+        }
+        when (consecutiveFailures >= failureThreshold) to Open {
+          trips = trips + 1;
+        }
+      }
+      state Open {
+        on receive stream.accepted(t) {
+          shedArrivals = shedArrivals + 1;
+        }
+        after 20ms to HalfOpen {
+          halfOpenAtNs = Swaml::Time::now();
+        }
+      }
+      state HalfOpen {
+        on entry {
+          consecutiveFailures = 0;
+        }
+        on receive stream.accepted(t) to Closed {
+          write(t);
+        }
+      }
+    }
+    schedule {
+      on start circuit();
+    }
+  }
+  component def SelfBreaker {
+    /** The 2.2 shape. */
+    reversed port stream: Stream;
+    reversed port store: StoreApi;
+    const attribute failureThreshold: uint = 3;
+    attribute consecutiveFailures: uint = 0;
+    attribute written: uint = 0;
+    attribute trips: uint = 0;
+    attribute halfOpenAtNs: uint = 0;
+    operation write(t: uint) {
+      var ok: bool = try(store.put(t), false);
+      if (ok) {
+        consecutiveFailures = 0;
+        written = written + 1;
+      } else {
+        consecutiveFailures = consecutiveFailures + 1;
+      }
+    }
+    operation circuit() {
+      initial Closed;
+      state Closed {
+        on receive stream.accepted(t) when (consecutiveFailures >= failureThreshold) to Open {
+          trips = trips + 1;
+        }
+        on receive stream.accepted(t) to Closed {
+          write(t);
+        }
+      }
+      state Open {
+        after 20ms to HalfOpen {
+          halfOpenAtNs = Swaml::Time::now();
+        }
+      }
+      state HalfOpen {
+        on entry {
+          consecutiveFailures = 0;
+        }
+        on receive stream.accepted(t) to Closed {
+          write(t);
+        }
+      }
+    }
+    schedule {
+      on start circuit();
+    }
+  }
+  component def Feed {
+    /** Interface-only actor that delivers arrivals to both breakers. */
+    port toInternal: Stream;
+    port toSelf: Stream;
+  }
+  component internal: InternalBreaker;
+  component selfBreaker: SelfBreaker;
+  component store: Store;
+  component selfStore: Store;
+  component feed: Feed;
+  connect (internal.store, store.api);
+  connect (selfBreaker.store, selfStore.api);
+  connect (feed.toInternal, internal.stream);
+  connect (feed.toSelf, selfBreaker.stream);
+  associate feed, store, selfStore, selfBreaker to 'Store outage trips the breaker and recovers';
+  test 'Store outage trips the breaker and recovers' of internal {
+    /** Both stores are down; arrivals every 5 ms from 0 to 30 ms. The internal breaker trips right after its third failed write, at 11 ms, sheds the four arrivals at 15 to 30 ms while the cool-down keeps its epoch, and is half open at 31 ms. The 2.2 breaker trips only at the fourth arrival, at 15 ms, discards the arrivals while open and is half open at 35 ms. When the store is back, the next arrival closes both. */
+    store.setDown(true);
+    selfStore.setDown(true);
+    for (var i: uint = 0; i <= 6; i = i + 1) {
+      publish feed.toInternal.accepted(i);
+      publish feed.toSelf.accepted(i);
+      wait 5ms;
+    }
+    wait 1ms;
+    assert internal.trips == 1 and internal.shedArrivals == 4 and internal.halfOpenAtNs == 31000000;
+    assert selfBreaker.trips == 1 and selfBreaker.halfOpenAtNs == 35000000;
+    assert store.puts == 3 and selfStore.puts == 3;
+    store.setDown(false);
+    selfStore.setDown(false);
+    publish feed.toInternal.accepted(7);
+    publish feed.toSelf.accepted(7);
+    wait 5ms;
+    assert internal.written == 1 and selfBreaker.written == 1 and internal.consecutiveFailures == 0;
+  }
+}
+```
+
+### 47-reaction-forms.swaml
+
+```swaml
+package ReactionForms {
+  /** Every 2.3 state reaction form in one machine: completion transitions, internal and external timers with and without guards, literal and computed, internal receive transitions with and without guards, and a deferral of an event and an attribute in one line. defer stays a name elsewhere, here an attribute. */
+  port def Feed {
+    provides event tick(n: uint);
+    provides attribute level: uint;
+    provides event done();
+  }
+  component def Counter {
+    reversed port feed: Feed;
+    attribute total: uint = 0;
+    attribute stepMs: uint = 2;
+    attribute defer: uint = 0;
+    attribute polls: uint = 0;
+    operation run() {
+      initial Warmup;
+      state Warmup {
+        defer feed.tick, feed.level;
+        on entry {
+          defer = defer + 1;
+        }
+        after 1ms {
+          polls = polls + 1;
+        }
+        after (stepMs * 1ms) when (polls > 0) {
+          polls = polls + 10;
+        }
+        after 3ms when (polls > 100) to Done {
+        }
+        after (stepMs * 2ms) when (polls == 11) to Counting {
+        }
+        when (defer > 1) to Done {
+        }
+      }
+      state Counting {
+        on receive feed.tick(n) when (n > 0) {
+          total = total * 10 + n;
+        }
+        on receive feed.tick(n) {
+          polls = polls + 100;
+        }
+        on receive feed.level(v) {
+          total = total * 10 + v;
+        }
+        on receive feed.done() to Done {
+        }
+        when (total > 5000) to Done {
+        }
+      }
+      final state Done {
+      }
+    }
+    schedule {
+      on start run();
+    }
+  }
+  component def Source {
+    port out: Feed;
+  }
+  component counter: Counter;
+  component source: Source;
+  connect: Swaml::Qos::Latest (source.out, counter.feed);
+  associate source to 'Every form';
+  test 'Every form' of counter {
+    /** A level, a tick and a second level arrive during Warmup and are retained; the second level replaces the first (Latest keeps one value), so the level queue is older than the tick queue but holds the later offer. Counting (entered at 4 ms by the guarded computed timer) takes them in offer order, tick then level, folding total = total * 10 + value to 32 (queue order would give 23), then a zero tick, then done. */
+    send source.out.level(1);
+    publish source.out.tick(3);
+    send source.out.level(2);
+    wait 5ms;
+    assert counter.total == 32 and counter.polls == 11;
+    publish source.out.tick(0);
+    publish source.out.done();
+    wait 1ms;
+    assert counter.polls == 111;
   }
 }
 ```

@@ -41,9 +41,9 @@ defer p.m, q.n;                                   state member: retain input for
 - Its guard is pure or reads state, and it does not call `now()`.
 - A final state has no completion transitions.
 - Reachability from the initial state includes completion edges.
-- A cycle of states connected only by completion transitions whose guard is the literal `true` (after removing parentheses) is an error.
+- A cycle of states connected only by completion transitions whose guard is the literal `true` (after removing parentheses) is an error, unless an entry action, exit action or effect on the cycle can suspend (a wait, a receive, an interrupt region, a request, or a call to an operation that does). Such a cycle restarts its chain in every round (`CompletionLoop` below), so `state A { on entry { n = n + 1; wait 1ms; } when (true) to A { } }` is a retry, not an error.
 
-**SW2017**, a new stable warning: a completion guard that reads nothing written by the stateful operation's own entry actions, exit actions or transition effects, or by their transitive callees, cannot change while the machine waits. WP5 implements it for component attributes. WP6 confirms that it reports guards reading only sampled cells, which the machine never writes.
+**SW2017**, a new stable warning: a completion guard that reads nothing written by the stateful operation's own entry actions, exit actions or transition effects, or by their transitive callees, cannot change while the machine waits. It is not raised for a guard that is constant after folding (such as `true`, `1 == 1`, `not false` or `false`), for a guard that already has an error, or in a state that re-enters itself through its own receive or timer transition (polling: the guard is evaluated again after each wait). WP5 implements it for component attributes. WP6 confirms that it reports guards reading only sampled cells, which the machine never writes.
 
 **Runtime.**
 - **Selection order.** After the entry actions of a state finish, and after every internal reaction, the completion transitions of the current state are evaluated in declaration order. The first enabled one is taken at once: exit, effect, state update, entry. The total order of candidates in a state is:
@@ -88,8 +88,8 @@ A receive or timer transition without `to` is internal. It runs only its effect:
 **SW2018**, a new stable warning, on the `defer` endpoint: the member's effective policy on some route into this occurrence has `overflow = reject`. A full queue then fails the sender's offer.
 
 **Runtime.**
-- **Retention.** While the current state defers member `m`, input for `m` stays in its connection queue. Capacity, overflow, ordering and `maxAge` apply to it observably. A retained attribute keeps only its latest value, as before.
-- **Evidence.** Each retained message produces exactly one `defer` observation: the first time the machine waits in a deferring state while that message is deliverable. It records the state and the message origin.
+- **Retention.** While the current state defers member `m`, input for `m` stays in its connection queue. Capacity, overflow, ordering and `maxAge` apply to it observably. A retained attribute keeps only its latest value, as before. A message is retained from the first instant at which it is deliverable while the current state defers its member, whether the machine waits at its selection or runs an entry action, exit action or effect of that state; so the order does not depend on whether the deferring state ever waits (an entry action that outlasts the state's timer, or an entry followed by `when (true)`).
+- **Evidence.** Each retained message produces exactly one `defer` observation, at its first retention. It records the state and the message origin.
 - **Consumption order.** In a state that handles retained members, retained input precedes other input, but comes after completion transitions and elapsed timers (the total order above). Retained input is consumed in global offer-ordinal order across all of the machine's queues. Input that was never retained follows in the existing 2.2 order. A machine without deferrals therefore behaves exactly as in 2.2. The interpreter's queue walk (`simulator.ts` `consume()`, which uses queue-creation order) changes for retained input only.
 - **Discard.** On entering a state that neither handles nor defers `m`, retained input for `m` is discarded at the next wait with `discardInput` reason `inactiveOwner`, the 2.2 rule for unhandled input.
 

@@ -46,9 +46,11 @@ ReceiveBranch: kind=('receive'|'call') endpoint=EndpointPath '(' (bindings+=Name
 Interruptible: 'interruptible' body=Block 'on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' handler=Block;
 Fail: 'fail' reason=STRING ';';
 Assert: 'assert' condition=Expression ';';
-State: (final?='final')? 'state' name=Name '{' documentation=Documentation? (actions+=StateAction | transitions+=Transition)* '}';
+State: (final?='final')? 'state' name=Name '{' documentation=Documentation? (actions+=StateAction | transitions+=Transition | deferrals+=Deferral)* '}';
 StateAction: 'on' kind=('entry'|'exit') body=Block;
-Transition: ('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' (delay=Duration | '(' delayValue=Expression ')')) 'to' target=Name effect=Block;
+interface Transition { endpoint?: string; bindings?: string[]; guard?: Expression; delay?: Duration; delayValue?: Expression; target?: string; effect: Block; }
+Transition returns Transition: ('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' (delay=Duration | '(' delayValue=Expression ')') ('when' '(' guard=Expression ')')? | 'when' '(' guard=Expression ')') ('to' target=Name)? effect=Block;
+Deferral: 'defer' endpoints+=MemberPath (',' endpoints+=MemberPath)* ';';
 Deployment: 'deployment' name=Name 'of' root=[ComponentUsage:QualifiedName] 'on' platform=[ComponentUsage:QualifiedName] '{' documentation=Documentation? placements+=Placement* '}';
 Placement: 'deploy' target=Path? 'on' node=Path ';';
 Requirement: 'requirement' name=Name '{' documentation=Documentation? attributes+=Attribute* '}';
@@ -68,7 +70,7 @@ FilterAnd returns FilterExpression: FilterPrimary ({infer FilterBinary.left=curr
 FilterPrimary returns FilterExpression: {infer FilterNot} 'not' operand=FilterPrimary | FilterComparison | '(' FilterExpression ')';
 FilterComparison: field=('name'|'kind'|'path') operator=('=='|'!=') value=STRING;
 Duration: value=INT unit=('ns'|'us'|'ms'|'s');
-Name returns string: ID | UNRESTRICTED_NAME | 'reversed' | 'to' | 'times' | 'name' | 'kind' | 'path' | 'use' | 'case' | 'test' | 'associate' | 'by' | 'ns' | 'us' | 'ms' | 's' | 'view' | 'state' | 'in' | 'out';
+Name returns string: ID | UNRESTRICTED_NAME | 'reversed' | 'to' | 'times' | 'name' | 'kind' | 'path' | 'use' | 'case' | 'test' | 'associate' | 'by' | 'ns' | 'us' | 'ms' | 's' | 'defer' | 'view' | 'state' | 'in' | 'out';
 MemberPath returns string: Name '.' Name;
 EndpointPath returns string: Name '.' Name ('.' Name)?;
 Path returns string: QualifiedName ('[' INT ']')? ('.' Name ('[' INT ']')?)*;

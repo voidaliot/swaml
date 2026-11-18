@@ -206,6 +206,18 @@
       ]
     },
     {
+      "keyword": "defer",
+      "meaning": "Used in ordered state transitions; see its grammar contexts and normative constraints.",
+      "concern": "Ordered state transitions",
+      "normative": "docs/spec/03-behavior.md",
+      "example": "'defer' endpoints+=MemberPath (',' endpoints+=MemberPath)* ';';",
+      "contextual": true,
+      "productions": [
+        "Deferral",
+        "Name"
+      ]
+    },
+    {
       "keyword": "deploy",
       "meaning": "Used in platform nodes and placement; see its grammar contexts and normative constraints.",
       "concern": "Platform Nodes and placement",
@@ -321,7 +333,7 @@
       "meaning": "Used in ordered state transitions; see its grammar contexts and normative constraints.",
       "concern": "Ordered state transitions",
       "normative": "docs/spec/03-behavior.md",
-      "example": "(final?='final')? 'state' name=Name '{' documentation=Documentation? (actions+=StateAction | transitions+=Transition)* '}';",
+      "example": "(final?='final')? 'state' name=Name '{' documentation=Documentation? (actions+=StateAction | transitions+=Transition | deferrals+=Deferral)* '}';",
       "contextual": false,
       "productions": [
         "State"
@@ -830,7 +842,7 @@
       "meaning": "Used in ordered state transitions; see its grammar contexts and normative constraints.",
       "concern": "Ordered state transitions",
       "normative": "docs/spec/03-behavior.md",
-      "example": "(final?='final')? 'state' name=Name '{' documentation=Documentation? (actions+=StateAction | transitions+=Transition)* '}';",
+      "example": "(final?='final')? 'state' name=Name '{' documentation=Documentation? (actions+=StateAction | transitions+=Transition | deferrals+=Deferral)* '}';",
       "contextual": true,
       "productions": [
         "State",
@@ -878,7 +890,7 @@
       "meaning": "Introduces a state transition target or the case of an associate link.",
       "concern": "Ordered state transitions",
       "normative": "docs/spec/03-behavior.md",
-      "example": "('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' (delay=Duration | '(' delayValue=Expression ')')) 'to' target=Name effect=Block;",
+      "example": "('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' (delay=Duration | '(' delayValue=Expression ')') ('when' '(' guard=Expression ')')? | 'when' '(' guard=Expression ')') ('to' target=Name)? effect=Block;",
       "contextual": true,
       "productions": [
         "Transition",
@@ -1016,7 +1028,7 @@
       "meaning": "Used in ordered state transitions; see its grammar contexts and normative constraints.",
       "concern": "Ordered state transitions",
       "normative": "docs/spec/03-behavior.md",
-      "example": "('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' (delay=Duration | '(' delayValue=Expression ')')) 'to' target=Name effect=Block;",
+      "example": "('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' (delay=Duration | '(' delayValue=Expression ')') ('when' '(' guard=Expression ')')? | 'when' '(' guard=Expression ')') ('to' target=Name)? effect=Block;",
       "contextual": false,
       "productions": [
         "Transition"

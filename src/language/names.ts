@@ -1,16 +1,22 @@
 /** Portable name spelling shared by the language core and hosts. No host I/O. */
 import { SWAML_LANGUAGE_VERSION } from './edition.js';
 export const BASIC_NAME = /^[_a-zA-Z]\w*$/;
-/** Grammar words that remain legal names outside their syntactic positions. From 2.3, view, state, in and out are contextual (WP2-S01). */
-export const CONTEXTUAL_KEYWORDS: ReadonlySet<string> = new Set(['associate', 'by', 'case', 'in', 'kind', 'ms', 'name', 'ns', 'out', 'path', 'reversed', 's', 'state', 'test', 'times', 'to', 'us', 'use', 'view']);
+/** Grammar words that remain legal names outside their syntactic positions. From 2.3, view, state, in and out are contextual (WP2-S01), and defer is contextual from its introduction (WP5-S01, WP5-G03). */
+export const CONTEXTUAL_KEYWORDS: ReadonlySet<string> = new Set(['associate', 'by', 'case', 'defer', 'in', 'kind', 'ms', 'name', 'ns', 'out', 'path', 'reversed', 's', 'state', 'test', 'times', 'to', 'us', 'use', 'view']);
 /** Reserved words need a quoted name, for example 'operation'. Checked against the grammar by the test suite. */
 export const RESERVED_WORDS: ReadonlySet<string> = new Set(['after', 'and', 'assert', 'attribute', 'bool', 'byte', 'call', 'component', 'concurrent', 'connect', 'const', 'datatype', 'deadline', 'def', 'deploy', 'deployment', 'else', 'entry', 'enum', 'event', 'every', 'exit', 'fail', 'false', 'final', 'for', 'idempotent', 'if', 'import', 'include', 'initial', 'int', 'interruptible', 'not', 'of', 'on', 'operation', 'optional', 'or', 'package', 'port', 'provides', 'publish', 'qos', 'real', 'receive', 'record', 'recursive', 'redefines', 'requirement', 'requires', 'return', 'returns', 'satisfy', 'schedule', 'send', 'specializes', 'start', 'string', 'true', 'try', 'uint', 'until', 'var', 'verify', 'void', 'wait', 'when', 'where', 'while']);
 /** The words that were reserved in 2.2 and are contextual from 2.3 (WP2-S01). */
 export const CONTEXTUAL_FROM_2_3: ReadonlySet<string> = new Set(['in', 'out', 'state', 'view']);
+/**
+ * The grammar words new in 2.3 that were ordinary names in 2.2 and are contextual from their introduction: defer
+ * (WP5-S01). They are basic names in every edition, so no spelling changes (a 2.2 workspace writes defer unquoted,
+ * as 3.1.0 did), and they are not words of the 2.2 grammar.
+ */
+export const KEYWORDS_FROM_2_3: ReadonlySet<string> = new Set(['defer']);
 /** The reserved words of a 2.2 (or earlier 2.x) workspace, which still quote view, state, in and out (WP2-M01). Checked against the kept 2.2 grammar by the test suite. */
 export const RESERVED_WORDS_2_2: ReadonlySet<string> = new Set([...RESERVED_WORDS, ...CONTEXTUAL_FROM_2_3]);
 /** The contextual words of a 2.2 workspace. */
-export const CONTEXTUAL_KEYWORDS_2_2: ReadonlySet<string> = new Set([...CONTEXTUAL_KEYWORDS].filter(word => !CONTEXTUAL_FROM_2_3.has(word)));
+export const CONTEXTUAL_KEYWORDS_2_2: ReadonlySet<string> = new Set([...CONTEXTUAL_KEYWORDS].filter(word => !CONTEXTUAL_FROM_2_3.has(word) && !KEYWORDS_FROM_2_3.has(word)));
 /**
  * The swa.ml edition a name is spelled for, as MAJOR.MINOR. Name services are edition-aware (WP2-M01): a 2.3
  * workspace writes the contextual words as basic names, an earlier one keeps quoting the words reserved there.
