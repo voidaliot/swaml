@@ -300,6 +300,7 @@ export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
 /** The message of the lexing error that replaces a parse the host stack could not hold (WP2-D05 (c), SW2013). */
 export const PARSER_STACK_MESSAGE = `${BRACKET_NESTING_CLAUSE}: the parser ran out of stack space at this nesting, so this file is not parsed. Reduce the nesting of blocks and brackets.`;
 type ParseResult = { value: unknown; lexerErrors: LexerResult['errors']; parserErrors: unknown[] };
+/** V8's wording ("Maximum call stack size exceeded"), as in every supported Node host; other engines report differently. */
 const isStackOverflow = (error: unknown) => error instanceof RangeError && /call stack/i.test(error.message);
 /**
  * WP2-D05 (c): a parse that overflows the host's stack (nesting below the bracket limits that the host's stack still
@@ -312,7 +313,9 @@ const isStackOverflow = (error: unknown) => error instanceof RangeError && /call
  * the overflow is recorded where the parser first catches it: Chevrotain hands every exception thrown inside a rule
  * to invokeRuleCatch before any of those finally blocks runs above it. An exception counts as an overflow only when it
  * is a stack-overflow RangeError or a stack-overflow RangeError passed through invokeRuleCatch during the same parse;
- * any other exception, such as a failing value converter at any depth, propagates unchanged.
+ * any other exception, such as a failing value converter at any depth, propagates unchanged, after the parser state a
+ * parse leaves behind is cleared, so that the next parse on the same parser starts clean. The overflow test matches
+ * V8's message; the guard needs the Chevrotain wrapper's invokeRuleCatch and fails at service creation without it.
  */
 export function guardParserStack(parser: unknown): void {
     const target = parser as { parse(text: string, options?: unknown): ParseResult; stack?: unknown[]; unorderedGroups?: Map<unknown, unknown>; lexerResult?: unknown; wrapper?: { invokeRuleCatch?: (error: unknown, ...rest: unknown[]) => unknown } };
@@ -321,13 +324,20 @@ export function guardParserStack(parser: unknown): void {
     // the error (no call that could overflow again); the message is tested after the parse has unwound.
     let caught: RangeError | undefined;
     const wrapper = target.wrapper, catcher = wrapper?.invokeRuleCatch;
+    if (!wrapper || typeof catcher !== 'function')
+        throw new Error('swa.ml parser stack guard needs the Chevrotain rule catch of the Langium parser (parser.wrapper.invokeRuleCatch); the parser library changed. Update guardParserStack in src/language/swaml-syntax.ts.');
     // Installed on the instance, called only on an exception: the normal parse gains no frame.
-    if (wrapper && typeof catcher === 'function')
-        wrapper.invokeRuleCatch = function (this: unknown, error: unknown, ...rest: unknown[]) {
-            if (error instanceof RangeError && !caught)
-                caught = error;
-            return catcher.call(this, error, ...rest);
-        };
+    wrapper.invokeRuleCatch = function (this: unknown, error: unknown, ...rest: unknown[]) {
+        if (error instanceof RangeError && !caught)
+            caught = error;
+        return catcher.call(this, error, ...rest);
+    };
+    // An exception unwinds the parser midway; clear the state a parse leaves behind before the next parse.
+    const reset = () => {
+        target.stack?.splice(0);
+        target.unorderedGroups?.clear();
+        target.lexerResult = undefined;
+    };
     target.parse = (text, options) => {
         caught = undefined;
         try {
@@ -335,6 +345,7 @@ export function guardParserStack(parser: unknown): void {
         } catch (error) {
             const overflow = isStackOverflow(error) || isStackOverflow(caught);
             caught = undefined;
+            reset();
             if (!overflow)
                 throw error;
             let depth = 0, deepest = -1, at: Token | undefined;
@@ -345,10 +356,6 @@ export function guardParserStack(parser: unknown): void {
                     at = token;
                 }
             }
-            // The overflow unwound the parser midway; clear the state a parse leaves behind before parsing again.
-            target.stack?.splice(0);
-            target.unorderedGroups?.clear();
-            target.lexerResult = undefined;
             const empty = parse('', options);
             return { ...empty, lexerErrors: [{ offset: at?.startOffset ?? 0, line: at?.startLine ?? 1, column: at?.startColumn ?? 1, length: at?.image.length ?? 0, message: PARSER_STACK_MESSAGE }] };
         }
