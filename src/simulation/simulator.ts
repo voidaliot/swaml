@@ -848,17 +848,10 @@ class Interpreter {
         // WP7-R01: a release guard is evaluated at the first execution step, before the dispatch arguments, in their
         // scope: under the serial lock, or for a concurrent entry on its dispatch snapshot, with sample cells and now()
         // read live. A false guard evaluates no argument (WP7-R02), so a guard may protect its own arguments. A runtime
-        // failure inside it is an uncaught failure of the release with the entry as source (WP7-R06).
+        // failure inside it is an uncaught failure of the release (WP7-R06); its source is the entry (f.at), or the
+        // failing statement of an operation the guard calls, as for the arguments.
         if (f.entry.guard) {
-            let released: Value;
-            try {
-                released = yield* this.evaluate(f.entry.guard, f, env);
-            }
-            catch (e) {
-                if (e instanceof RuntimeFault)
-                    f.at = f.entry;
-                throw e;
-            }
+            const released = yield* this.evaluate(f.entry.guard, f, env);
             if (released.data !== true) {
                 f.skipped = { input: message };
                 return voidValue();

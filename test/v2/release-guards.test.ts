@@ -214,7 +214,7 @@ test('WP7-R04 WP7-T02 a receive entry consumes its input at release; a false gua
     assert.equal(kinds(r.trace, 'deliver').length, 4);
 });
 
-test('WP7-R06 WP7-T02 a failing guard is an uncaught failure of the release with the entry as source: no successor, lock released, grid kept', async () => {
+test('WP7-R06 WP7-T02 a failing guard is an uncaught failure of the release, sourced at the entry or the failing callee statement: no successor, lock released, grid kept', async () => {
     const direct = await runClocked('', 'on every 10ms slot() when (100 % d > 1); after slot next(); on every 10ms toggle();', 31_000_000);
     const failures = kinds(direct.trace, 'failure');
     assert.deepEqual(failures.map(o => [ms(o), o.subject, o.source, o.reason]), [10, 20, 30].map(t => [t, 'c.slot', 'Test::C/schedule/0', 'Arithmetic']));
@@ -223,10 +223,13 @@ test('WP7-R06 WP7-T02 a failing guard is an uncaught failure of the release with
     assert.ok(!direct.trace.some(o => o.kind === 'release' && o.subject === 'c.next'));
     assert.equal(direct.stores.c.toggles, 3, 'the serial lock is released');
     assert.equal(direct.outcome, 'failure-observed');
-    // Through a callee the failure still names the entry, not the callee's statement.
+    // Through a callee the failure names the callee's failing statement, exactly as for an argument that calls it.
     const callee = await runClocked('', 'on every 10ms slot() when (ratio() > 1) deadline 1ms;', 11_000_000);
-    assert.deepEqual(kinds(callee.trace, 'failure').map(o => [o.source, o.reason]), [['Test::C/schedule/0', 'Arithmetic']]);
+    assert.deepEqual(kinds(callee.trace, 'failure').map(o => [o.source, o.reason]), [['Test::C.ratio/1', 'Arithmetic']]);
     assert.equal(callee.status, 'horizon', 'the deadline is cancelled');
+    assert.equal(callee.stores.c.runs, 0);
+    const argument = await runClocked('operation par(n: int) { }', 'on every 10ms par(ratio()) when (true);', 11_000_000);
+    assert.deepEqual(kinds(argument.trace, 'failure').map(o => [o.source, o.reason]), [['Test::C.ratio/1', 'Arithmetic']]);
 });
 
 test('WP7-R01 WP7-R02 the guard is evaluated before the dispatch arguments: a false guard evaluates none, and a guard protects its arguments', async () => {
