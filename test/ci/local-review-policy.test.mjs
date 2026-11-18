@@ -22,9 +22,12 @@ test('current trace evidence has an edition path while the published 2.1 trace s
     assert.equal(published.profile, 'swaml-reference/2.1');
     assert.equal(current.profile, `swaml-reference/${edition}`);
 });
-test('publication checks are deliberate and preserve the frozen 2.1 publication', () => {
+test('publication checks are deliberate and preserve the frozen 2.1 and 2.2 publications', () => {
     assert.match(publication, /workflow_dispatch:/u);
     assert.doesNotMatch(publication, /pull_request:|push:/u);
-    assert.match(publication, /python scripts\/check-spec-pdf-2\.1\.py --archive/u);
-    assert.doesNotMatch(publication, /run: python scripts\/check-spec-pdf-2\.1\.py\s*$/mu);
+    for (const edition of ['2\\.1', '2\\.2']) {
+        assert.match(publication, new RegExp(`python scripts/check-spec-pdf-${edition}\\.py --archive`, 'u'));
+        // No strict current-source run of a published edition, as a one-line run or a block line.
+        assert.doesNotMatch(publication, new RegExp(`check-spec-pdf-${edition}\\.py[ \\t\\r]*$`, 'mu'));
+    }
 });

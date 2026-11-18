@@ -54,7 +54,7 @@ The implementation package becomes 4.0.0 because existing AST properties silentl
 
 Three PRs, in this order, before any language change is reviewed:
 
-1. **P0: archive the 2.2 PDF check.** A tiny standalone tooling PR, needed regardless of 2.3. The strict `scripts/check-spec-pdf-2.2.py` compares the published PDF's embedded sources with the workspace, and those sources include `src/**/*.ts` (`scripts/publication_2_2_sources.py`). `src` already changed on main after `v2.2` (PR 50), so the strict check is stale today. The Publication and compatibility workflow, which runs only on manual dispatch, switches its 2.2 step to `--archive`, as was done for 2.1. `docs/PDF_PUBLICATION.md` says so. There are no pull-request PDF checks to change.
+1. **P0: archive the 2.2 PDF check.** A tiny standalone tooling PR, needed regardless of 2.3. The strict `scripts/check-spec-pdf-2.2.py` compares the published PDF's embedded sources with the workspace, and those sources include `src/**/*.ts` (`scripts/publication_2_2_sources.py`). `src` already changed on main after `v2.2` (PR 50), so the strict check is stale today. The Publication and compatibility workflow, which runs only on manual dispatch, switches its 2.2 step to `--archive`, as was done for 2.1. `docs/PDF_PUBLICATION.md` says so. There are no pull-request PDF checks to change. Done: the workflow runs `check-spec-pdf-2.2.py --archive`, and a CI test keeps both published editions in archive mode.
 2. **WP1a: allocate the 2.3 candidate.** No language change. Prerequisites: P0; the showcase models merged to main as `examples/showcase/*.swaml` (branch `showcase/all`), because gates 1 and 2 include them; and tool fixes A1, A2, A4 and A7 merged, so that the gate-2 fixture records the corrected tools' behaviour. Following [VERSIONING.md](VERSIONING.md):
    - `spec/standard.json` 2.3;
    - the edition module with parser 2.3 and `swaml-reference/2.3`;
@@ -74,7 +74,7 @@ One draft PR at a time, each with an independent adversarial review, merged befo
 | WP | Content | Needs | Showcase proof (fragments at `cc16c25`) |
 | --- | --- | --- | --- |
 | WP0 | ADRs 0022–0025, chapter drafts, this file, changelog | — | — |
-| P0 | 2.2 PDF check to archive mode (tooling only) | — | — |
+| P0 | 2.2 PDF check to archive mode (tooling only); done | — | — |
 | WP1a | Allocate the 2.3 candidate; compatibility gates 1–3 | P0; the showcase models merged to main as `examples/showcase/*.swaml` (branch `showcase/all`); tool fixes A1, A2, A4 and A7 merged | — |
 | WP1 | Places, indexed reads, test indexes | WP1a, A2 | `Dem.report`, `AlertRouter.findOpen`, twins test |
 | WP2 | Conditional, contextual words, association lists | A1 | `DoorEcu::Types`, v2x `state`, cloud associations |

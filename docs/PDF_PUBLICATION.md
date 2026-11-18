@@ -24,11 +24,13 @@ The original scripts/test-publication-archive.py, scripts/check-spec-pdf.py and 
 
 ```sh
 python scripts/build-spec-pdf-2.2.py
-python scripts/check-spec-pdf-2.2.py
+python scripts/check-spec-pdf-2.2.py --archive
 python scripts/test-publication-2-2.py
 ```
 
-The strict 2.2 checker requires every attached source to match the current workspace, including ADRs 0020/0021, examples 30/31, the 2.2 trace and edition-specific figure assets. Run the Publication and compatibility workflow after the same checks pass locally. Render and inspect every new PDF page before publication. Preserve the published 2.1 builder, checker and assets, and check them in archive mode.
+The 2.2 edition is published, and maintained sources it embeds (package.json and files under src among them) changed after v2.2. The Publication and compatibility workflow therefore runs check-spec-pdf-2.2.py --archive, as it does for 2.1. Archive mode verifies the PDF bytes against the manifest and the .sha256 file, every embedded source and figure against its recorded hash, the complete source bundle hash, the recorded versions, bookmarks, links, release-note content, page bounds and text size, without comparing the embedded sources with the workspace. Do not rebuild or edit the published 2.2 PDF, manifest or checksum.
+
+Without --archive the 2.2 checker keeps its strict current-source behavior: every attached source must match the current workspace, including ADRs 0020/0021, examples 30/31, the 2.2 trace and edition-specific figure assets. That mode was the gate for releasing 2.2 and no longer passes on main; the next edition's own strict checker is its release gate. Run the Publication and compatibility workflow after the same checks pass locally. Render and inspect every new PDF page before publication. Preserve the published 2.1 and 2.2 builders, checkers and assets, and check them in archive mode.
 
 ## 2.1 commands
 
@@ -40,7 +42,7 @@ python scripts/test-publication-2-1.py
 
 The 2.1 builder refuses a workspace whose spec/standard.json or edition module selects another standard. Its manifest records release, specificationRevision and languageVersion 2.1, the simulation profile, the separate implementationRevision of the reference implementation package and the publicationDate. It embeds the current maintained sources, including SWAML-2.1-Reference.md, as exact canonical attachments. Unsupported Markdown tokens, comment markers parsed as emphasis, backslash escapes in prose outside code spans, unresolved section links and broken repository links fail the build. The checker verifies the source bundle, both versions, the edition module, bookmarks for every keyword and notation concept, internal link destinations, release-tag repository links, release-note content, page bounds and a minimum text size.
 
-Without --archive the 2.1 checker retains its historical strict current-source behavior; the maintained workspace now uses the strict 2.2 checker. Pull requests run check-spec-pdf-2.1.py --archive, which verifies the published PDF against its own manifest and attachments after the maintained sources move on. When the next edition is prepared, its own strict checker replaces the manual 2.1 step, which then also uses --archive.
+Without --archive the 2.1 checker retains its historical strict current-source behavior. The Publication and compatibility workflow runs check-spec-pdf-2.1.py --archive, which verifies the published PDF against its own manifest and attachments after the maintained sources move on.
 
 ## 2.0 commands
 

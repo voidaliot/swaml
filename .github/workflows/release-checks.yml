@@ -68,10 +68,11 @@ jobs:
           python scripts/check-spec-pdf.py
           python scripts/check-spec-pdf-2.0.py --archive
           python scripts/test-publication-2-1.py
-      - name: Check the current 2.2 publication against exact source
+      # Published 2.1 and 2.2 bytes are checked only against their own embedded
+      # sources; the maintained sources have moved on since each release.
+      - name: Check the published 2.2 edition
         run: |
           python scripts/test-publication-2-2.py
-          python scripts/check-spec-pdf-2.2.py
-      # Published 2.1 bytes are checked only against their own embedded sources.
+          python scripts/check-spec-pdf-2.2.py --archive
       - name: Check the published 2.1 edition
         run: python scripts/check-spec-pdf-2.1.py --archive
