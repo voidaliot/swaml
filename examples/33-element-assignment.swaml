@@ -1,0 +1,158 @@
+package EventMemory {
+  /** A diagnostic event memory written twice, as in the door controller's Dem. The 2.2 shape rebuilds the whole counter array with one selection per slot and replaces a whole status record to change one flag. The 2.3 shape assigns the element and the field directly: counters[index] = counter; and statuses[index].confirmed = true;. A test feeds both memories the same reports and checks that they end in the same state. */
+  enum Fault {
+    voltage, motor, hall
+  }
+  datatype DtcStatus {
+    testFailed: bool;
+    pending: bool;
+    confirmed: bool;
+    occurrences: uint;
+  }
+  port def Reports {
+    provides event report(fault: Fault, failed: bool);
+  }
+  operation def indexOf(fault: Fault) returns uint {
+    if (fault == Fault.voltage) {
+      return 0;
+    }
+    if (fault == Fault.motor) {
+      return 1;
+    }
+    return 2;
+  }
+  operation def clampInt(v: int, low: int, high: int) returns int {
+    if (v < low) {
+      return low;
+    }
+    if (v > high) {
+      return high;
+    }
+    return v;
+  }
+  operation def pickInt(condition: bool, whenTrue: int, otherwise: int) returns int {
+    if (condition) {
+      return whenTrue;
+    }
+    return otherwise;
+  }
+  operation def pickStatus(condition: bool, whenTrue: DtcStatus, otherwise: DtcStatus) returns DtcStatus {
+    if (condition) {
+      return whenTrue;
+    }
+    return otherwise;
+  }
+  component def Memory {
+    /** The counter rules both shapes share: a failed report counts up from zero or above, a passed report counts down from zero or below. */
+    reversed port input: Reports;
+    const attribute stepUp: int = 2;
+    const attribute stepDown: int = 2;
+    const attribute failedThreshold: int = 4;
+    const attribute passedThreshold: int = -4;
+    attribute reports: uint = 0;
+    attribute counters: int[3] = [0, 0, 0];
+    attribute statuses: DtcStatus[3] = [record DtcStatus {
+      testFailed = false;
+      pending = false;
+      confirmed = false;
+      occurrences = 0;
+    }, record DtcStatus {
+      testFailed = false;
+      pending = false;
+      confirmed = false;
+      occurrences = 0;
+    }, record DtcStatus {
+      testFailed = false;
+      pending = false;
+      confirmed = false;
+      occurrences = 0;
+    }];
+    operation next(previous: int, failed: bool) returns int {
+      if (failed) {
+        return clampInt(pickInt(previous < 0, 0, previous) + stepUp, passedThreshold, failedThreshold);
+      }
+      return clampInt(pickInt(previous > 0, 0, previous) - stepDown, passedThreshold, failedThreshold);
+    }
+    operation report(fault: Fault, failed: bool) {
+    }
+    schedule {
+      on receive input.report(fault, failed) report(fault, failed);
+    }
+  }
+  component def Rebuilding specializes Memory {
+    /** The 2.2 shape: every change rebuilds a whole array. */
+    operation withCounter(index: uint, value: int) {
+      counters = [pickInt(index == 0, value, counters[0]), pickInt(index == 1, value, counters[1]), pickInt(index == 2, value, counters[2])];
+    }
+    operation withStatus(index: uint, value: DtcStatus) {
+      statuses = [pickStatus(index == 0, value, statuses[0]), pickStatus(index == 1, value, statuses[1]), pickStatus(index == 2, value, statuses[2])];
+    }
+    redefines operation report(fault: Fault, failed: bool) {
+      reports = reports + 1;
+      var index: uint = indexOf(fault);
+      var previous: int = counters[index];
+      var counter: int = next(previous, failed);
+      if (counter == previous) {
+        return;
+      }
+      withCounter(index, counter);
+      var status: DtcStatus = statuses[index];
+      if (counter >= failedThreshold and not status.testFailed) {
+        withStatus(index, record DtcStatus {
+          testFailed = true; pending = true; confirmed = true; occurrences = status.occurrences + 1;
+        });
+      }
+      if (counter <= 0 and status.testFailed) {
+        withStatus(index, record DtcStatus {
+          testFailed = false; pending = status.pending; confirmed = status.confirmed; occurrences = status.occurrences;
+        });
+      }
+    }
+  }
+  component def Placing specializes Memory {
+    /** The 2.3 shape: the element and the fields are assigned in place. */
+    redefines operation report(fault: Fault, failed: bool) {
+      reports = reports + 1;
+      var index: uint = indexOf(fault);
+      var previous: int = counters[index];
+      var counter: int = next(previous, failed);
+      if (counter == previous) {
+        return;
+      }
+      counters[index] = counter;
+      if (counter >= failedThreshold and not statuses[index].testFailed) {
+        statuses[index].testFailed = true;
+        statuses[index].pending = true;
+        statuses[index].confirmed = true;
+        statuses[index].occurrences = statuses[index].occurrences + 1;
+      }
+      if (counter <= 0 and statuses[index].testFailed) {
+        statuses[index].testFailed = false;
+      }
+    }
+  }
+  component rebuilt: Rebuilding;
+  component placed: Placing;
+  component monitor {
+    port output: Reports;
+  }
+  connect (monitor.output, rebuilt.input);
+  connect (monitor.output, placed.input);
+  test 'Same memory either way' of placed {
+    /** Two failed voltage reports confirm the fault, one failed motor report leaves it pending, and three passed voltage reports heal the voltage counter. */
+    publish monitor.output.report(Fault.voltage, true);
+    publish monitor.output.report(Fault.voltage, true);
+    publish monitor.output.report(Fault.motor, true);
+    wait 1ms;
+    assert placed.counters[0] == 4 and placed.statuses[0].confirmed and placed.statuses[0].occurrences == 1;
+    assert placed.counters[1] == 2 and not placed.statuses[1].testFailed;
+    publish monitor.output.report(Fault.voltage, false);
+    publish monitor.output.report(Fault.voltage, false);
+    publish monitor.output.report(Fault.voltage, false);
+    wait 1ms;
+    assert placed.counters[0] == -4 and not placed.statuses[0].testFailed and placed.statuses[0].confirmed;
+    assert rebuilt.reports == placed.reports and rebuilt.counters == placed.counters and rebuilt.statuses == placed.statuses;
+  }
+  associate monitor to 'Same memory either way';
+  associate rebuilt to 'Same memory either way';
+}
