@@ -304,14 +304,54 @@ export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
     };
     strategy.buildLookaheadForOptional = options => {
         const base = inner.buildLookaheadForOptional.call(strategy, options);
-        // PROD_TYPE.REPETITION: the statements of a block, an operation body or a case.
-        if (options.prodType !== 1 || !startsWith(production(options.rule, 'Repetition', options.prodOccurrence), 'Statement'))
+        // The statements of a block, an operation body or a case. This Chevrotain version names production types by
+        // string ('Repetition'); the WP1 name guess below tests the numeric PROD_TYPE.REPETITION and so never applies.
+        // It is kept as it is, so that recovery outside reaction blocks stays exactly as before WP5.
+        const prodType = options.prodType as unknown;
+        if (prodType !== 1 && prodType !== 'Repetition' || !startsWith(production(options.rule, 'Repetition', options.prodOccurrence), 'Statement'))
             return base;
+        const guessName = prodType === 1;
         return function (this: Lookahead) {
-            return base.call(this) || nameToken(this.LA(1).tokenType);
+            if (stateMemberStart(this))
+                return false;
+            return base.call(this) || guessName && nameToken(this.LA(1).tokenType);
         };
     };
     return strategy;
+}
+/**
+ * Recovery of an unclosed reaction block (WP5-G01, WP5-G02). The block of a transition or state action that is still
+ * being typed ends where the next state member clearly starts, so that the following transitions and deferrals of the
+ * state are kept, as in 2.2, instead of becoming statements of the block: on receive p.m(…) followed by to or when (a
+ * receive statement continues with a block), and defer followed by a name (a statement that starts with the name
+ * defer continues with =, (, . or [). The parser then reports the missing } and inserts it. after and when cannot
+ * start a statement and end the block already. An internal transition after an unclosed block, on receive p.m(…) {,
+ * reads as a receive statement of that block, as the same text after an unclosed 2.2 block does. Valid sources never
+ * reach this case: their blocks are closed before the next member.
+ */
+function stateMemberStart(parser: Lookahead): boolean {
+    const first = parser.LA(1);
+    let member = false;
+    if (first.tokenType.name === 'defer')
+        member = nameToken(parser.LA(2).tokenType);
+    else if (first.tokenType.name === 'on' && parser.LA(2).tokenType.name === 'receive') {
+        for (let i = 3, depth = 0; ; i++) {
+            const token = parser.LA(i);
+            if (token.tokenType.name === 'EOF' || [';', '{', '}'].includes(token.image))
+                break;
+            depth += token.image === '(' ? 1 : token.image === ')' ? -1 : 0;
+            if (depth < 0)
+                break;
+            if (depth === 0 && token.image === ')') {
+                member = ['to', 'when'].includes(parser.LA(i + 1).tokenType.name);
+                break;
+            }
+        }
+    }
+    if (!member)
+        return false;
+    const stack = (parser as Lookahead & { getHumanReadableRuleStack?: () => string[] }).getHumanReadableRuleStack?.() ?? [];
+    return stack.some(rule => ['Transition', 'StateAction'].includes(ruleName(rule) ?? ''));
 }
 
 /** The message of the lexing error that replaces a parse the host stack could not hold (WP2-D05 (c), SW2013). */

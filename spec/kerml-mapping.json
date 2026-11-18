@@ -411,7 +411,7 @@
       "kernel": [
         "Feature"
       ],
-      "semantic": "State: preserve ordered state transitions, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "semantic": "State: a named state of a stateful operation with entry and exit actions, ordered transitions and deferrals in source order (WP5-G02); it preserves ownership, order, occurrence identity and source provenance.",
       "normative": "docs/spec/03-behavior.md"
     },
     {
@@ -429,7 +429,16 @@
       "kernel": [
         "Feature"
       ],
-      "semantic": "Transition: an ordered receive or timer transition of a state; a timer is a literal or a computed integral duration evaluated once per state entry when the entry actions finish (WP4-S08). It preserves order, occurrence identity and source provenance.",
+      "semantic": "Transition: an ordered receive, timer or completion transition of a state. A completion transition is a guard-only TransitionUsage without trigger; a receive or timer transition without a target is internal and has no target change (WP5-G01, WP5-S07); a timer is a literal or a computed integral duration evaluated once per state entry when the entry actions finish (WP4-S08) and may carry a guard. It preserves order, occurrence identity and source provenance.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "Deferral",
+      "kind": "lowering",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "Deferral: lowers to a state-scoped retention constraint on the input projection of the machine: input for the named required members stays in its connection queues while the state is current (WP5-S08, WP5-R08). It preserves ownership, order, occurrence identity and source provenance.",
       "normative": "docs/spec/03-behavior.md"
     },
     {

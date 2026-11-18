@@ -461,7 +461,7 @@ export function staleWrite(op: Executable, ctx: StaleReadContext): { write?: Ast
         const actions = (state: a.State | undefined, kind: 'entry' | 'exit') => state?.actions.filter(x => x.kind === kind) ?? [];
         const run = (list: a.StateAction[], flow: Flow) => list.reduce((f, x) => analysis.block(x.body, f), flow);
         run(actions(b.states.find(x => x.name === b.initial), 'entry'), parameters());
-        // One reaction: the guard selects the transition, then exit, effect and the target's entry run.
+        // One reaction: the guard selects the transition, then exit, effect and the target's entry run (internal: the effect only).
         for (const state of b.states)
             for (const t of state.transitions) {
                 if (analysis.found)
@@ -470,8 +470,10 @@ export function staleWrite(op: Executable, ctx: StaleReadContext): { write?: Ast
                 t.bindings.forEach(n => flow.locals.set(n, none()));
                 const guard = analysis.expression(t.guard, flow), inner = flow.copy();
                 inner.guards.push(guard);
-                const target = b.states.find(x => x.name === t.target);
-                run(actions(target, 'entry'), analysis.block(t.effect, run(actions(state, 'exit'), inner)));
+                // An internal reaction runs only its effect: no exit and no entry (WP5-R05). A completion reaction is one
+                // reaction like the others; its guard is evaluated after the entry actions without a suspension between.
+                const target = b.states.find(x => x.name === t.target), internal = t.target === undefined;
+                run(internal ? [] : actions(target, 'entry'), analysis.block(t.effect, internal ? inner : run(actions(state, 'exit'), inner)));
             }
         return { write: analysis.found };
     }

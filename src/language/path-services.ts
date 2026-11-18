@@ -114,8 +114,8 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
             return parent.fields.find(n => n.name === name) as Node;
         return undefined;
     };
-    const pathRefs = (n: AstNode, p: string, path: string, start?: Node, offset = 0) => {
-        const cst = property(n, p);
+    const pathRefs = (n: AstNode, p: string, path: string, start?: Node, offset = 0, index?: number) => {
+        const cst = property(n, p, index);
         if (!cst)
             return;
         const parts = path.split('.');
@@ -209,6 +209,9 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
                 // A case script names occurrence.port.member from a top-level occurrence of its package.
                 else if (script)
                     scriptRefs(n, 'endpoint', n.endpoint!, script);
+            // Each deferred member is a port.member path of the machine's component (WP5-G02).
+            if (a.isDeferral(n) && c)
+                n.endpoints.forEach((endpoint, i) => pathRefs(n, 'endpoints', endpoint, c as Node, 0, i));
             if (a.isScheduleEntry(n) && c) {
                 add(n, property(n, 'operation'), symbol(members(c).filter(isExecutable).find(x => x.name === n.operation)));
                 if (n.predecessor)

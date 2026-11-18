@@ -1005,3 +1005,64 @@ export function caseRead(s: a.Scenario, e: a.ReferenceExpression): CaseRead | un
     const attribute = members(walked.structure).filter(a.isAttribute).find(x => x.name === step.field);
     return attribute && { kind: 'attribute', path: walked.path, structure: walked.structure, attribute, steps: steps.slice(walked.next + 1) };
 }
+// ---------------------------------------------------------------- state reactions (WP5)
+/** The kind of a transition (WP5-G01): a receive or timer transition has a trigger, a completion transition only a guard. */
+export function transitionKind(t: a.Transition): 'receive' | 'timer' | 'completion' {
+    return t.endpoint ? 'receive' : t.delay || t.delayValue ? 'timer' : 'completion';
+}
+/** A completion transition, when (g) to S (WP5-S02). */
+export const isCompletion = (t: a.Transition): boolean => transitionKind(t) === 'completion';
+/** An internal transition: a receive or timer transition without to (WP5-S07). It runs only its effect. */
+export const isInternal = (t: a.Transition): boolean => !t.target && transitionKind(t) !== 'completion';
+/** Whether a transition uses a form new in 2.3 (WP5): completion, internal or a guarded timer. */
+export const isReactionForm = (t: a.Transition): boolean => transitionKind(t) === 'completion' || !t.target || !!t.guard && transitionKind(t) === 'timer';
+/** The deferred members of a state, in source order (WP5-G02). */
+export const stateDeferrals = (s: a.State): string[] => s.deferrals.flatMap(d => d.endpoints);
+/** A guard that is the literal true; parentheses leave no node in the AST (WP5-S04). */
+export const isLiteralTrue = (e: a.Expression | undefined): boolean => !!e && a.isLiteral(e) && e.boolean === 'true';
+/**
+ * Component attributes that a group of nodes reads and writes, through the bodies of its transitive local callees
+ * (WP5-D08): an attribute reference reads, an assignment to a place or root writes, and an attribute passed as an
+ * out argument of a local or port call is written. clock is true when the group or a callee calls
+ * Swaml::Time::now (WP5-S03).
+ */
+export type AttributeAccess = { reads: Set<string>; writes: Set<string>; clock: boolean };
+export function attributeAccess(roots: readonly AstNode[], c: Structure | undefined): AttributeAccess {
+    const result: AttributeAccess = { reads: new Set(), writes: new Set(), clock: false }, seen = new Set<Executable>();
+    const attributes = new Set(c ? members(c).filter(a.isAttribute).map(x => x.name) : []);
+    // Only the nodes whose nearest executable is home count; nested operations are walked only when called.
+    const walk = (root: AstNode, home: AstNode | undefined) => {
+        for (const n of nodes(root)) {
+            if (isExecutable(n) || owner(n, isExecutable) !== home)
+                continue;
+            if (a.isReferenceExpression(n) && attributes.has(n.path.split('.')[0]))
+                result.reads.add(n.path.split('.')[0]);
+            if (a.isAssign(n) && attributes.has(placeRoot(n.target)))
+                result.writes.add(placeRoot(n.target));
+            if (!a.isCallExpression(n))
+                continue;
+            const outs = (parameters: readonly a.Argument[] | undefined) => parameters?.forEach((p, i) => { const arg = n.args[i]; if (p.direction === 'out' && a.isReferenceExpression(arg) && attributes.has(arg.path))
+                result.writes.add(arg.path); });
+            if (n.target.includes('.')) {
+                outs(c && memberEndpoint(c, n.target)?.member.parameters);
+                continue;
+            }
+            const model = AstUtils.getDocument(n).parseResult.value as a.Model;
+            const target = localOperation(n, n.target, c) ?? resolve(n, n.target, workspaceModels.get(model) ?? [model]);
+            if (!target || !isExecutable(target))
+                continue;
+            outs(signature(target)?.parameters);
+            if (isClockRead(target))
+                result.clock = true;
+            else if (!seen.has(target)) {
+                seen.add(target);
+                const b = body(target);
+                if (b)
+                    walk(b, target.body ? target : signature(target));
+            }
+        }
+    };
+    for (const root of roots)
+        walk(root, owner(root, isExecutable));
+    return result;
+}

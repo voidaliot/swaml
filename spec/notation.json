@@ -529,7 +529,8 @@
       "productions": [
         "State",
         "StateAction",
-        "Transition"
+        "Transition",
+        "Deferral"
       ],
       "keywords": [
         "initial",
@@ -540,7 +541,8 @@
         "when",
         "to",
         "after",
-        "on"
+        "on",
+        "defer"
       ],
       "drawing": "docs/notation/2.3/states.svg",
       "scene": "docs/notation/2.3/states.scene.json",
@@ -1191,6 +1193,13 @@
         "rationale": "Owned semantic projection preserves this production."
       },
       {
+        "production": "Deferral",
+        "concepts": [
+          "states"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
         "production": "Deployment",
         "concepts": [
           "deployment"
@@ -1667,6 +1676,13 @@
           "components"
         ],
         "rationale": "Shown in the source caption/compartment for component definitions and usages."
+      },
+      {
+        "term": "defer",
+        "concepts": [
+          "states"
+        ],
+        "rationale": "Shown in the source caption/compartment for ordered state transitions."
       },
       {
         "term": "deploy",
