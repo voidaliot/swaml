@@ -148,11 +148,12 @@ async function recordAst() {
 
 /**
  * Name resolution and validity of one source, as gate 1 records them: every cross-reference with its
- * position, its owner property, its text and the identity of its target (type, the path of names, or of
- * owner properties for unnamed nodes, from the model root, and the defining document when it is another
+ * position, its owner property, its text and the identity of its target (type, the JSON array of names, or
+ * of owner properties for unnamed nodes, from the model root, and the defining document when it is another
  * one, or 'unresolved'); every diagnostic with severity, code, range and message; and the inferred type of
- * every typed expression, keyed by offset and node type. The source is linked and validated alone, with
- * the built-in library, as the example gate loads it.
+ * every typed expression, keyed by its source offset, length and node type (nested expressions of the same
+ * type can start at one offset, so the length is part of the key). The source is linked and validated
+ * alone, with the built-in library, as the example gate loads it.
  */
 export async function analyser() {
     const { AstUtils, EmptyFileSystem } = await import('langium');
@@ -169,7 +170,7 @@ export async function analyser() {
             for (let x = node; x?.$container; x = x.$container)
                 parts.unshift(typeof x.name === 'string' ? x.name : `${x.$containerProperty}[${x.$containerIndex ?? ''}]`);
             const uri = AstUtils.getDocument(node).uri.toString();
-            return `${node.$type} ${parts.join('/')}${uri === self ? '' : ' @' + uri}`;
+            return `${node.$type} ${JSON.stringify(parts)}${uri === self ? '' : ' @' + uri}`;
         };
         const references = [], types = {};
         for (const node of AstUtils.streamAst(document.parseResult.value)) {
@@ -178,17 +179,56 @@ export async function analyser() {
                 references.push(`${reference.$refNode ? at(reference.$refNode.range) : '?'} ${ref.container.$type}.${ref.property} ${reference.$refText} -> ${resolvedNode ? target(resolvedNode) : 'unresolved'}`);
             }
             const type = expressionTypes.get(node);
-            if (type !== undefined && node.$cstNode)
-                types[`${node.$cstNode.offset} ${node.$type}`] = type;
+            if (type !== undefined && node.$cstNode) {
+                const key = `${node.$cstNode.offset}:${node.$cstNode.length} ${node.$type}`;
+                if (key in types)
+                    throw Error(`${path}: two typed expressions share the key ${key}`);
+                types[key] = type;
+            }
         }
         const diagnostics = (document.diagnostics ?? []).map(d => `${['', 'error', 'warning', 'information', 'hint'][d.severity ?? 1]} ${d.code ?? '-'} ${at(d.range)}-${d.range.end.line + 1}:${d.range.end.character + 1} ${d.message}`);
         return { references, diagnostics, types };
     };
 }
 
-/** Differences of references, diagnostics and expression types; expressions that 3.1.0 did not type are not compared. */
-function resolutionDifferences(expected, actual, limit = 30) {
-    const out = [];
+/**
+ * Amendments (test/fixtures/compatibility-2-2/amendments.json) are the only reviewed way to change a
+ * recorded gate-1 expectation: a diagnostic string or an expression type of one file, when a 2.3 rule
+ * changes it deliberately. Each names the file, the kind, the exact recorded value, the exact new value,
+ * the rule or ADR that justifies it and a reason. References are never amended: a 2.2 name keeps its
+ * target. Behaviour (gate 2) is never amended either: no 2.3 rule changes the result or trace of a 2.2
+ * source, and a changed source is handled by the kept recorded bytes under sources/.
+ */
+export const AMENDMENT_RULE = /^(?:WP(?:\d+|1a)-[GSRDTLM]\d{2}|ADR 00\d\d)$/u;
+export function amendmentProblems(amendments, files) {
+    const problems = [], seen = new Set();
+    for (const [i, a] of amendments.entries()) {
+        const at = `amendment ${i + 1} (${a.file ?? '?'})`;
+        if (!['diagnostic', 'type'].includes(a.kind))
+            problems.push(`${at}: kind must be diagnostic or type; references and behaviour are never amended`);
+        if (!AMENDMENT_RULE.test(a.rule ?? ''))
+            problems.push(`${at}: needs the rule identifier (WPn-Kxx) or ADR (ADR 00nn) that justifies it`);
+        if (typeof a.reason !== 'string' || !a.reason.trim())
+            problems.push(`${at}: needs a reason`);
+        if (typeof a.recorded !== 'string' || typeof a.current !== 'string' || a.recorded === a.current)
+            problems.push(`${at}: needs different recorded and current strings`);
+        const id = JSON.stringify([a.file, a.kind, a.key ?? null, a.recorded]);
+        if (seen.has(id))
+            problems.push(`${at}: duplicate of an earlier amendment`);
+        seen.add(id);
+        const file = files[a.file];
+        const stale = !file || (a.kind === 'diagnostic' ? !file.diagnostics.includes(a.recorded) : a.kind === 'type' ? file.types[a.key] !== a.recorded : false);
+        if (stale)
+            problems.push(`${at}: stale; the recorded ${a.kind} ${a.kind === 'type' ? `at ${a.key} ` : ''}is not ${JSON.stringify(a.recorded)}`);
+    }
+    return problems;
+}
+
+/** Differences of references, diagnostics and expression types after the file's amendments; unused amendments fail. */
+export function resolutionDifferences(path, recorded, actual, amendments = [], limit = 30) {
+    const out = [], mine = amendments.filter(a => a.file === path);
+    const expected = { references: recorded.references, diagnostics: recorded.diagnostics.map(d => mine.find(a => a.kind === 'diagnostic' && a.recorded === d)?.current ?? d),
+        types: { ...recorded.types, ...Object.fromEntries(mine.filter(a => a.kind === 'type').map(a => [a.key, a.current])) } };
     const list = (label, e, a) => {
         const missing = e.filter(x => !a.includes(x)), extra = a.filter(x => !e.includes(x));
         out.push(...missing.slice(0, limit).map(x => `${label} expected, absent: ${x}`), ...extra.slice(0, limit).map(x => `${label} not in 3.1.0: ${x}`));
@@ -199,9 +239,19 @@ function resolutionDifferences(expected, actual, limit = 30) {
     list('diagnostic', expected.diagnostics, actual.diagnostics);
     for (const [key, type] of Object.entries(expected.types))
         if (actual.types[key] !== type && out.length < 3 * limit)
-            out.push(`expression type at offset ${key}: expected ${type}, actual ${actual.types[key] ?? 'none'}`);
+            out.push(`expression type at ${key}: expected ${type}, actual ${actual.types[key] ?? 'none'}`);
+    for (const a of mine)
+        if (a.kind === 'diagnostic' ? !actual.diagnostics.includes(a.current) : actual.types[a.key] !== a.current)
+            out.push(`unused amendment: the current ${a.kind} ${JSON.stringify(a.current)} is not produced`);
     return out;
 }
+
+/** The fixture body with one line per file. */
+function perFileJson(fixture, files) {
+    const head = JSON.stringify({ ...fixture, files: '@' }, null, 2);
+    return head.replace('"files": "@"', '"files": {\n' + Object.entries(files).map(([p, f]) => `    ${JSON.stringify(p)}: ${JSON.stringify(f)}`).join(',\n') + '\n  }') + '\n';
+}
+const scriptIdentity = () => `scripts/compatibility-2-2.mjs sha256 ${sourceSha256(read('scripts/compatibility-2-2.mjs'))}`;
 
 /** Records resolution.json from the 3.1.0 implementation, once: references, diagnostics and types of every corpus file. */
 async function recordResolution() {
@@ -210,30 +260,103 @@ async function recordResolution() {
         const text = read(path), parsed = current(text);
         files[path] = { sourceSha256: sourceSha256(text), ...(parsed.errors ? { skipped: '2.2 parse errors: ' + parsed.errors.slice(0, 3).join('; ') } : { astSha256: sha256(canonicalJson(parsed.ast)) }), ...await analyse(path, text) };
     }
-    const fixture = { rule: 'WP1a-M01 (resolution and validity)', recordedWith: { ...identity, script: `scripts/compatibility-2-2.mjs sha256 ${sourceSha256(read('scripts/compatibility-2-2.mjs'))}` },
-        format: 'Per corpus file: source and AST digests as in ast.json; references as "line:column Owner.property text -> TargetType path[ @document]"; diagnostics as "severity code start-end message"; types as {"offset NodeType": inferred type}.',
-        files };
-    const head = JSON.stringify({ ...fixture, files: '@' }, null, 2);
-    const body = '{\n' + Object.entries(files).map(([p, f]) => `    ${JSON.stringify(p)}: ${JSON.stringify(f)}`).join(',\n') + '\n  }';
-    writeFileSync(fixturePath('resolution.json'), head.replace('"files": "@"', '"files": ' + body) + '\n');
+    const fixture = { rule: 'WP1a-M01 (resolution and validity)', recordedWith: { ...identity, script: scriptIdentity() },
+        format: 'Per corpus file: source and AST digests as in ast.json; references as "line:column Owner.property text -> TargetType [names][ @document]"; diagnostics as "severity code start-end message"; types as {"offset:length NodeType": inferred type}.' };
+    writeFileSync(fixturePath('resolution.json'), perFileJson(fixture, files));
     const total = key => Object.values(files).reduce((n, f) => n + (Array.isArray(f[key]) ? f[key].length : Object.keys(f[key]).length), 0);
     return `Recorded gate 1 resolution: ${Object.keys(files).length} files, ${total('references')} references, ${total('diagnostics')} diagnostics, ${total('types')} typed expressions.`;
 }
 
 /**
+ * The view semantics of one source: the projection of the whole model (projectModel, which the seven views
+ * draw from), every view candidate (viewCandidates) and the selection of every declared view (selectView,
+ * view filters included). Stored as digests plus a short digest per node, edge, candidate and view, so a
+ * mismatch names what changed.
+ */
+export async function projector() {
+    const { EmptyFileSystem } = await import('langium');
+    const { parseHelper } = await import('langium/test');
+    const { createSwamlServices, selectView, viewCandidates } = await import('../out/src/language/swaml-module.js');
+    const { projectModel } = await import('../out/src/language/projection.js');
+    const { isView } = await import('../out/src/language/generated/ast.js');
+    const short = value => sha256(canonicalJson(value)).slice(0, 16);
+    return async (path, text) => {
+        const { Swaml } = createSwamlServices(EmptyFileSystem);
+        const document = await parseHelper(Swaml)(text, { documentUri: `file:///${path}`, validation: true });
+        if (document.parseResult.parserErrors.length || document.parseResult.lexerErrors.length)
+            return { skipped: 'parse errors' };
+        const model = document.parseResult.value, out = {};
+        try {
+            const { languageVersion: _ignored, ...projection } = projectModel([model]);
+            const candidates = viewCandidates([model]).map(c => `${c.kind} ${c.path} ${c.definition}`);
+            const views = Object.fromEntries(model.packages.flatMap(p => p.elements.filter(isView).map(v => [`${p.name}::${v.name}`, selectView(v, [model]).map(s => s.path)])));
+            out.projectionSha256 = sha256(canonicalJson(projection));
+            // Grouped by kind and top-level owner, so a mismatch names the group and its count without storing every id.
+            const groups = items => { const g = {}; for (const x of items) (g[`${x.kind} ${x.id.split('.')[0]}`] ??= []).push(x); return Object.fromEntries(Object.entries(g).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([k, v]) => [k, `${v.length} ${short(v)}`])); };
+            out.nodes = groups(projection.nodes);
+            out.edges = groups(projection.edges);
+            out.candidates = short(candidates);
+            out.candidateCount = candidates.length;
+            out.views = views;
+        }
+        catch (error) {
+            out.error = String(error instanceof Error ? error.message : error);
+        }
+        return out;
+    };
+}
+
+function projectionDifferences(expected, actual, limit = 30) {
+    const out = [];
+    for (const key of ['skipped', 'error', 'candidates', 'candidateCount'])
+        if (canonicalJson(expected[key]) !== canonicalJson(actual[key]))
+            out.push(`${key}: expected ${JSON.stringify(expected[key])}, actual ${JSON.stringify(actual[key])}`);
+    for (const kind of ['nodes', 'edges']) {
+        const e = expected[kind] ?? {}, a = actual[kind] ?? {};
+        for (const id of [...new Set([...Object.keys(e), ...Object.keys(a)])].filter(id => e[id] !== a[id]).slice(0, limit))
+            out.push(`${kind.slice(0, -1)} group ${id}: expected ${e[id] ?? 'absent'}, actual ${a[id] ?? 'absent'} (count and digest)`);
+    }
+    for (const view of [...new Set([...Object.keys(expected.views ?? {}), ...Object.keys(actual.views ?? {})])])
+        if (canonicalJson(expected.views?.[view]) !== canonicalJson(actual.views?.[view]))
+            out.push(`view ${view}: expected ${JSON.stringify(expected.views?.[view])}, actual ${JSON.stringify(actual.views?.[view])}`);
+    if (!out.length && expected.projectionSha256 !== actual.projectionSha256)
+        out.push(`projection: expected sha256 ${expected.projectionSha256}, actual ${actual.projectionSha256} (node and edge order or a top-level field differs)`);
+    return out;
+}
+
+/** Records projection.json from the 3.1.0 implementation, once. */
+async function recordProjection() {
+    const identity = recordingIdentity(), project = await projector(), files = {};
+    for (const path of corpus()) {
+        const text = read(path);
+        files[path] = { sourceSha256: sourceSha256(text), ...await project(path, text) };
+    }
+    const fixture = { rule: 'WP1a-M01 (view projections)', recordedWith: { ...identity, script: scriptIdentity() },
+        format: 'Per corpus file: SHA-256 of projectModel without languageVersion (canonical JSON); per group of projection nodes and of edges (kind and top-level owner) their count and the first 16 hex digits of their digest; the digest and count of viewCandidates as "kind path definition"; and the selected paths of every declared view.' };
+    writeFileSync(fixturePath('projection.json'), perFileJson(fixture, files));
+    return `Recorded gate 1 projections: ${Object.keys(files).length} files, ${Object.values(files).reduce((n, f) => n + Object.keys(f.nodes ?? {}).length, 0)} nodes, ${Object.values(files).reduce((n, f) => n + Object.keys(f.views ?? {}).length, 0)} declared views.`;
+}
+
+/**
  * Gate 1. Every recorded file's recorded source must parse with the current grammar and with the kept
  * 2.2 grammar to its recorded AST digest; every current corpus file that parses with the 2.2 grammar
- * must parse to the same AST with the current grammar. Returns the report and its failures.
+ * must parse to the same AST with the current grammar. Each recorded source also keeps its references,
+ * diagnostics and expression types (after amendments) and its view projections. Returns the report and
+ * its failures.
  */
 export async function checkAst() {
     const fixture = JSON.parse(readFileSync(fixturePath('ast.json'), 'utf8'));
-    // resolution.json, recorded once later from the same 3.1.0 commit, adds files that ast.json does not hold.
-    const resolution = existsSync(fixturePath('resolution.json')) ? JSON.parse(readFileSync(fixturePath('resolution.json'), 'utf8')) : undefined;
+    // resolution.json and projection.json, recorded once later from the same 3.1.0 commit, add files that ast.json does not hold.
+    const optional = name => existsSync(fixturePath(name)) ? JSON.parse(readFileSync(fixturePath(name), 'utf8')) : undefined;
+    const resolution = optional('resolution.json'), projection = optional('projection.json'), amendments = optional('amendments.json')?.amendments ?? [];
     const recordedFiles = { ...Object.fromEntries(Object.entries(resolution?.files ?? {}).map(([p, f]) => [p, { sourceSha256: f.sourceSha256, ...(f.skipped ? { skipped: f.skipped } : { astSha256: f.astSha256 }) }])), ...fixture.files };
     const { grammarSha256, v22, current } = await parsers();
     const failures = [], skipped = new Map(), compared = new Set(), identical = new Set();
     if (grammarSha256 !== fixture.grammarSha256)
         failures.push(`The kept 2.2 grammar changed: sha256 ${grammarSha256}, recorded ${fixture.grammarSha256}. The 2.2 grammar fixture is never edited.`);
+    for (const [path, f] of Object.entries(fixture.files))
+        if (resolution?.files[path] && canonicalJson([f.sourceSha256, f.astSha256 ?? null, !!f.skipped]) !== canonicalJson([resolution.files[path].sourceSha256, resolution.files[path].astSha256 ?? null, !!resolution.files[path].skipped]))
+            failures.push(`${path}: ast.json and resolution.json record different source or AST digests`);
     // label names the bytes compared: the workspace path, or the kept copy of a recorded source.
     const compare = (path, label, text, recorded) => {
         const old = v22(text), now = current(text), before = failures.length;
@@ -269,26 +392,45 @@ export async function checkAst() {
         if (recordedFiles[path]?.sourceSha256 !== sourceSha256(text))
             compare(path, path, text, undefined);
     }
-    let resolved = 0;
-    if (!resolution)
-        failures.push(`Missing ${fixtureDirectory}/resolution.json, the recorded references, diagnostics and expression types.`);
-    else {
-        if (resolution.recordedWith.commit !== fixture.recordedWith.commit)
-            failures.push(`resolution.json was recorded at ${resolution.recordedWith.commit}, ast.json at ${fixture.recordedWith.commit}; both must name the same 3.1.0 commit.`);
+    let resolved = 0, projected = 0;
+    for (const [name, data] of [['resolution.json', resolution], ['projection.json', projection]]) {
+        if (!data)
+            failures.push(`Missing ${fixtureDirectory}/${name}.`);
+        else if (data.recordedWith.commit !== fixture.recordedWith.commit)
+            failures.push(`${name} was recorded at ${data.recordedWith.commit}, ast.json at ${fixture.recordedWith.commit}; both must name the same 3.1.0 commit.`);
+    }
+    if (resolution) {
+        failures.push(...amendmentProblems(amendments, resolution.files));
         const analyse = await analyser();
         for (const [path, recorded] of Object.entries(resolution.files)) {
             const source = recordedSource(path, recorded.sourceSha256);
             if (!source)
                 continue; // already reported as a missing recorded source
-            const differences = resolutionDifferences(recorded, await analyse(path, source.text));
+            const differences = resolutionDifferences(path, recorded, await analyse(path, source.text), amendments);
             if (differences.length)
                 failures.push(`${source.from}: name resolution or validation differs from 3.1.0:\n    ${differences.join('\n    ')}`);
             else
                 resolved++;
         }
     }
+    if (projection) {
+        const project = await projector();
+        for (const [path, recorded] of Object.entries(projection.files)) {
+            const source = recordedSource(path, recorded.sourceSha256);
+            if (!source) {
+                if (!recordedFiles[path])
+                    failures.push(missingSource(path, recorded.sourceSha256));
+                continue;
+            }
+            const differences = projectionDifferences(recorded, await project(path, source.text));
+            if (differences.length)
+                failures.push(`${source.from}: view projections differ from 3.1.0:\n    ${differences.join('\n    ')}`);
+            else
+                projected++;
+        }
+    }
     const report = `Gate 1 (AST identity under N1): ${identical.size} sources identical to 2.2, ${skipped.size} skipped with 2.2 parse errors`
-        + (skipped.size ? ` (${[...skipped.keys()].join(', ')})` : '') + `; ${resolved} sources keep the recorded references, diagnostics and expression types; ${failures.length} differences.`;
+        + (skipped.size ? ` (${[...skipped.keys()].join(', ')})` : '') + `; ${resolved} sources keep the recorded references, diagnostics and expression types (${amendments.length} amendments); ${projected} keep their view projections; ${failures.length} differences.`;
     return { report, failures, compared: [...compared], skipped: [...skipped.keys()] };
 }
 
@@ -587,13 +729,14 @@ else if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.me
         throw Error('Usage: node scripts/compatibility-2-2.mjs ast|runs [--record | --write-traces <dir>]');
     if (record) {
         // Each fixture file is recorded once, with the 3.1.0 implementation; a gate never passes by re-recording.
-        // The second file of each gate (resolution.json, behaviour-supplement.json) was added later from the same commit.
+        // The later files (resolution.json, projection.json, behaviour-supplement.json) were added in the WP1a review from the same commit.
         const version = JSON.parse(read('package.json')).version;
-        const [first, second] = gate === 'ast' ? ['ast.json', 'resolution.json'] : ['behaviour.json', 'behaviour-supplement.json'];
-        const next = [first, second].find(f => !existsSync(fixturePath(f)));
+        const order = gate === 'ast' ? ['ast.json', 'resolution.json', 'projection.json'] : ['behaviour.json', 'behaviour-supplement.json'];
+        const next = order.find(f => !existsSync(fixturePath(f)));
         if (!next || version !== '3.1.0')
             throw Error(`The 2.2 compatibility fixtures are recorded once with implementation 3.1.0 (this is ${version}); they are never re-recorded.`);
-        console.log(next === 'ast.json' ? await recordAst() : next === 'resolution.json' ? await recordResolution() : next === 'behaviour.json' ? await recordRuns() : await recordRunsSupplement());
+        const recorders = { 'ast.json': recordAst, 'resolution.json': recordResolution, 'projection.json': recordProjection, 'behaviour.json': recordRuns, 'behaviour-supplement.json': recordRunsSupplement };
+        console.log(await recorders[next]());
     }
     else {
         const { report, failures } = gate === 'ast' ? await checkAst() : await checkRuns({ writeTraces: traces });

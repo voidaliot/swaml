@@ -4108,7 +4108,8 @@ package SubjectCalls {
 
 ```swaml
 package Calibration {
-  /** A calibration bench. A probe reports raw byte counts, a calibrator converts them through out parameters, and two bench variants redefine parts of the bench. Out values are copied back only after a whole successful return: an interrupted conversion leaves its target unchanged. */
+  /** A calibration bench. A probe reports raw byte counts, and a calibrator converts them through out parameters. Out values are copied back only after a whole successful return: an interrupted conversion leaves its target unchanged. Three bench variants redefine parts of the bench, and a test checks each. Some members are deliberately named with words that are keywords elsewhere (reversed, to, by, case, test, use, name, path, ns, us, ms): in 2.2 they stay ordinary names outside their keyword positions. */
+  import Swaml::Qos;
   import Swaml::Views;
   enum Unit {
     ns, us, ms, s
@@ -4135,11 +4136,13 @@ package Calibration {
   component def Probe {
     port reading: Counts;
     attribute reversed: bool = false;
+    // Two counts at 1 ms; a reversed probe aborts the conversion of the count it caused at 3.5 ms.
     operation emit() {
       wait 1ms;
       publish reading.sample(200, 2);
+      publish reading.sample(100, 1);
       if (reversed) {
-        wait 500us;
+        wait 2500us;
         publish reading.abort("reversed wiring", 7);
       }
     }
@@ -4148,6 +4151,7 @@ package Calibration {
     }
   }
   component def ReversedProbe specializes Probe {
+    // A port redefinition keeps the port type (SW2003), so it changes no behaviour.
     redefines port reading: Counts /** The same counts, wired in reverse. */;
     redefines attribute reversed: bool = true;
   }
@@ -4178,7 +4182,9 @@ package Calibration {
       half(raw, gain);
       unit = Unit.ms;
     }
+    // Takes one queued input at 3 ms: the oldest count, or a hold that arrived first.
     operation listen() {
+      wait 3ms;
       on receive input.sample(raw, times) {
         last = raw;
         use = use + times;
@@ -4195,6 +4201,7 @@ package Calibration {
         }
       } or receive control.hold(code) {
         path = "held";
+        use = code;
       }
     }
     schedule {
@@ -4205,13 +4212,14 @@ package Calibration {
   component def Client {
     reversed port api: Service;
     port control: Control;
+    attribute holdFirst: bool = false;
     attribute gain: real = 0.0;
     attribute unit: Unit = Unit.s;
     operation ask() {
+      if (holdFirst) {
+        publish control.hold(9);
+      }
       api.calibrate(102, gain, unit);
-    }
-    operation hold() {
-      publish control.hold(1);
     }
     schedule {
       on start ask();
@@ -4221,20 +4229,25 @@ package Calibration {
     component probe: Probe;
     component calibrator: Calibrator;
     component client: Client;
-    connect counts (probe.reading, calibrator.input) /** Raw counts. */;
+    connect counts (probe.reading, calibrator.input) /** Raw counts, queued in order. */;
     connect (client.control, calibrator.control);
     connect service (calibrator.api, client.api);
   }
   component Demo: Bench;
   component Reversed: Bench {
     redefines component probe: ReversedProbe;
-    redefines connect counts(probe.reading, calibrator.input) /** The same route, redefined for the reversed probe. */;
+    redefines connect counts: Latest(probe.reading, calibrator.input) /** Keeps only the newest count. */;
   }
   component Scaled: Bench {
     redefines component calibrator: Calibrator {
       redefines operation scale: Scale {
         value = raw / 100.0;
       }
+    }
+  }
+  component Held: Bench {
+    redefines component client: Client {
+      redefines attribute holdFirst: bool = true;
     }
   }
   view audit: General {
@@ -4247,12 +4260,17 @@ package Calibration {
   }
   test 'Interrupted conversion copies nothing back' of Reversed {
     wait 5ms;
+    assert Reversed.calibrator.last == 100 and Reversed.calibrator.use == 1;
     assert Reversed.calibrator.test == 0.0 and Reversed.calibrator.path == "reversed wiring";
     assert Reversed.calibrator.approval.case == 7 and Reversed.calibrator.approval.to == "reversed wiring";
   }
   test 'Redefined scaling' of Scaled {
     wait 5ms;
     assert Scaled.calibrator.test == 2.0;
+  }
+  test 'A hold arrives first' of Held {
+    wait 5ms;
+    assert Held.calibrator.path == "held" and Held.calibrator.use == 9 and Held.calibrator.test == 0.0;
   }
 }
 ```

@@ -40,7 +40,8 @@
     "examples/32-calibration-bench.swaml": {
       "Calibration::Converted through out parameters": "pass",
       "Calibration::Interrupted conversion copies nothing back": "pass",
-      "Calibration::Redefined scaling": "pass"
+      "Calibration::Redefined scaling": "pass",
+      "Calibration::A hold arrives first": "pass"
     },
     "examples/notation/catalog.swaml": {
       "Notation::Startup": "pass"
