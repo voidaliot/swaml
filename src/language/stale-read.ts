@@ -65,7 +65,7 @@ class Flow {
 }
 
 /** One write of a followed operation, in terms of its parameters (LABEL + index) and the caller's conditions (GUARD). */
-type Rec = { value: Value, guards: Value[], target?: string, own: boolean };
+type Rec = { value: Value, guards: Value[], targets: string[] };
 /** What a call to an operation means to its callers, independent of the call site. */
 export type Summary = { records: Rec[], returned: Value, outs: Value[] };
 /** Work shared by every analysis of one validation pass of one document. */
@@ -109,20 +109,46 @@ function isStaleWrite(value: Value, guards: readonly Value[], target?: string): 
     const covers = (g: Value, wanted: Set<string>) => wanted.size > 0 && [...wanted].every(k => g.fresh.has(k));
     return value.stale.size > 0 || guards.some((g, i) => g.stale.size > 0 && !guards.slice(i).some(inner => covers(inner, g.stale) || covers(inner, depends)));
 }
+/** The rule for one write of several attributes (written under the same value and conditions): any of them. */
+const isStaleWriteOf = (value: Value, guards: readonly Value[], targets: Iterable<string>) => [...targets].some(t => isStaleWrite(value, guards, t || undefined));
 /**
- * Records that differ only in the attributes their value read fresh are merged by joining those: a larger
- * set can only make a re-check harder, so the merge is conservative and keeps summaries small.
+ * Writes are recorded by their stale reads and conditions, with the set of attributes written that way, so a
+ * summary grows with distinct conditions rather than with the number of attributes. Records that differ only
+ * in the attributes their value read fresh are merged by joining those: a larger set can only make a
+ * re-check harder, so the merge is conservative.
  */
-const recordKey = (r: { value: Value, guards: Value[], target?: string }) => [...r.value.stale].sort().join(',') + '/' + r.guards.map(key).join(';') + '/' + (r.target ?? '');
-/** Distinct writes a summary may hold; more is reported as a reference validation limit. */
-const RECORD_LIMIT = 256;
+const recordKey = (value: Value, guards: readonly Value[]) => [...value.stale].sort().join(',') + '/' + guards.map(key).join(';');
+/**
+ * Records a summary keeps separately. Beyond this, the records that depend on the call site are merged into
+ * one conservative record: its value carries every stale and fresh input of every merged condition, so every
+ * call site that any merged record would warn about is still warned about, possibly with extra warnings.
+ */
+const RECORD_LIMIT = 64;
+function collapse(records: Rec[]): Rec[] {
+    if (records.length <= RECORD_LIMIT)
+        return records;
+    const value = none(), targets = new Set<string>();
+    let callerAged = false;
+    for (const r of records) {
+        r.targets.forEach(t => targets.add(t));
+        const parts = [r.value, ...r.guards.filter(g => !g.fresh.has(GUARD) && !g.stale.has(GUARD))];
+        for (const p of parts) {
+            p.fresh.forEach(k => value.fresh.add(k));
+            p.stale.forEach(k => value.stale.add(k));
+        }
+        callerAged ||= r.guards.some(g => g.stale.has(GUARD));
+        // A stale condition of the callee becomes a stale input, so the merged record never misses it.
+        r.guards.forEach(g => g.stale.forEach(k => k !== GUARD && value.stale.add(k)));
+    }
+    return [{ value, guards: [callerAged ? { fresh: new Set(), stale: new Set([GUARD]) } : { fresh: new Set([GUARD]), stale: new Set() }], targets: [...targets] }];
+}
 
 class Analysis {
     found?: AstNode;
     /** Values returned by an operation being summarised. */
     returned?: Value;
     /** The writes of an operation being summarised; undefined when its own writes are checked directly. */
-    private readonly records?: Map<string, Rec>;
+    private readonly records?: Map<string, { value: Value, guards: Value[], targets: Set<string> }>;
     /** Flows at each suspension inside the protected bodies of the enclosing interrupt regions. */
     private readonly collectors: Flow[][] = [];
     private suspensions = 0;
@@ -137,14 +163,18 @@ class Analysis {
         for (const c of this.collectors)
             c.push(flow.copy());
     }
-    private write(node: AstNode, value: Value, guards: readonly Value[], target?: string): void {
+    private write(node: AstNode, value: Value, guards: readonly Value[], targets: Iterable<string> = ['']): void {
         if (this.records) {
-            const r = { value, guards: [...guards], target, own: false }, k = recordKey(r), known = this.records.get(k);
-            this.records.set(k, known ? { ...known, value: join(known.value, value) } : r);
-            if (this.records.size > RECORD_LIMIT)
-                throw new WorkLimit();
+            const k = recordKey(value, guards), known = this.records.get(k);
+            if (known) {
+                known.value = join(known.value, value);
+                for (const t of targets)
+                    known.targets.add(t);
+            }
+            else
+                this.records.set(k, { value, guards: [...guards], targets: new Set(targets) });
         }
-        else if (!this.found && isStaleWrite(value, guards, target))
+        else if (!this.found && isStaleWriteOf(value, guards, targets))
             this.found = node;
     }
     private sequence(values: a.Expression[], flow: Flow): Value[] {
@@ -206,8 +236,7 @@ class Analysis {
             if (summary) {
                 // The callee's own findings are reported at the callee; the others depend on this call site.
                 for (const r of summary.records)
-                    if (!r.own)
-                        this.write(call, instantiate(r.value, args), instantiateGuards(r.guards, args, flow.guards), r.target);
+                    this.write(call, instantiate(r.value, args), instantiateGuards(r.guards, args, flow.guards), r.targets);
                 returned = instantiate(summary.returned, args);
                 outs = summary.outs.map(v => instantiate(v, args));
             }
@@ -228,7 +257,7 @@ class Analysis {
                 return;
             const name = arg.path.split('.')[0];
             if (this.ctx.attributes.has(name))
-                this.write(call, outs[i] ?? none(), flow.guards, name);
+                this.write(call, outs[i] ?? none(), flow.guards, [name]);
             else
                 flow.locals.set(name, outs[i] ?? none());
         });
@@ -249,7 +278,11 @@ class Analysis {
             callee.returned = none();
             let f = new Flow(new Map(parameters.map((p, i) => [p.name, { fresh: new Set([LABEL + i]), stale: new Set<string>() }])), [{ fresh: new Set([GUARD]), stale: new Set() }]);
             f = callee.statements(b.statements, f);
-            const records = [...callee.records!.values()].map(r => ({ ...r, own: isStaleWrite(instantiate(r.value, []), instantiateGuards(r.guards, [], []), r.target) }));
+            // A target the callee reports by itself (with neutral inputs) is its own finding and is left out.
+            const records = collapse([...callee.records!.values()].map(r => {
+                const neutral = instantiate(r.value, []), guards = instantiateGuards(r.guards, [], []);
+                return { value: r.value, guards: r.guards, targets: [...r.targets].filter(t => !isStaleWrite(neutral, guards, t || undefined)) };
+            }).filter(r => r.targets.length));
             const summary: Summary = { records, returned: callee.returned, outs: parameters.map(p => f.locals.get(p.name) ?? none()) };
             this.ctx.summaries.set(target, summary);
             return summary;
@@ -300,7 +333,7 @@ class Analysis {
         else if (a.isAssign(s)) {
             const v = this.expression(s.value, flow);
             if (this.ctx.attributes.has(s.target))
-                this.write(s, v, flow.guards, s.target);
+                this.write(s, v, flow.guards, [s.target]);
             else
                 flow.locals.set(s.target, v);
         }

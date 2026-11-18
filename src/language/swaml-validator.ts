@@ -27,6 +27,8 @@ export class SwamlValidator {
         return selectView(view, this.models, this.viewSubjects.get('subjects', () => viewCandidates(this.models)));
     }
     private reported = new Set<string>();
+    /** Statement visits of the stale-read analysis per document; a reference validation limit (tests may lower it). */
+    static staleReadWorkLimit = STALE_READ_WORK_LIMIT;
     /** SW2011 summaries and work of one validation pass. */
     private staleSummaries = new Map<Structure, Map<Executable, Summary>>();
     private staleBudget: StaleReadBudget = { work: 0 };
@@ -51,7 +53,7 @@ export class SwamlValidator {
             workspaceModels.set(item, this.models);
         useEffectCache(this.models);
         this.staleSummaries = new Map();
-        this.staleBudget = { work: 0 };
+        this.staleBudget = { work: 0, limit: SwamlValidator.staleReadWorkLimit };
         this.staleLimitReported = false;
         this.checkExpressionDepth(model);
         if (model.$cstNode)
@@ -306,13 +308,14 @@ export class SwamlValidator {
         if (sig.parameters.some(p => p.direction === 'out')) this.outFlow(op,c);
         if (c && effects(op, c).writes && effects(op, c).suspends) {
             const summaries = this.staleSummaries.get(c) ?? this.staleSummaries.set(c, new Map()).get(c)!;
-            const result = this.staleBudget.work > STALE_READ_WORK_LIMIT ? { limit: true } : staleWrite(op, { attributes: new Set(members(c).filter(a.isAttribute).map(x => x.name)), target: call => this.callTarget(call, c), effects: x => effects(x, c), summaries, budget: this.staleBudget });
+            const limit = SwamlValidator.staleReadWorkLimit;
+            const result = this.staleBudget.work > limit ? { limit: true } : staleWrite(op, { attributes: new Set(members(c).filter(a.isAttribute).map(x => x.name)), target: call => this.callTarget(call, c), effects: x => effects(x, c), summaries, budget: this.staleBudget });
             if (result.write)
                 this.report(result.write, 'SW2011', 'A read before suspension may influence this write. Recheck live attributes after resuming.', true);
             if (result.limit && !this.staleLimitReported) {
                 // A reference resource boundary, not a stale read: stop the analysis and say so once per document.
                 this.staleLimitReported = true;
-                this.report(op, 'SW2013', `Stale-read analysis exceeds the reference validation limit of ${STALE_READ_WORK_LIMIT} steps per document; SW2011 is not checked for this and the remaining operations of this document.`, true);
+                this.report(op, 'SW2013', `The stale-read analysis of this document reached the reference validation limit of ${limit} statement visits at operation ${op.name}; SW2011 is not checked for ${op.name} or for the operations validated after it in this document. Other validation is unaffected.`, true, this.at(op, 'name'));
             }
         }
     }

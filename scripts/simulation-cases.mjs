@@ -24,6 +24,8 @@ export function checkCasesFile(cases, models) {
         if (!models.includes(model))
             throw new Error(`cases.json modelOptions names ${model}, which is not a complete example`);
         checkOptions(options, `cases.json modelOptions for ${model}`, true);
+        if (typeof cases.notes?.[model] !== 'string' || !cases.notes[model].trim())
+            throw new Error(`cases.json modelOptions for ${model} needs a notes string saying why`);
     }
     for (const model of Object.keys(cases.examples ?? {}))
         if (!models.includes(model))

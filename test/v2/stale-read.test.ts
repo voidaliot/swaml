@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parse, valid } from './helpers.js';
 import { staleWrite } from '../../src/language/stale-read.js';
+import { SwamlValidator } from '../../src/language/swaml-validator.js';
 import { isComponentUsage, isOperation } from '../../src/language/generated/ast.js';
 
 const wrap = (members: string, extra = '') => `package Test { ${extra} component Demo { ${members} } }`;
@@ -179,4 +180,41 @@ test('the stale-read work limit stops the analysis without claiming a stale read
     const ctx = (limit?: number) => ({ attributes: new Set(['n']), target: () => undefined, effects: () => ({ reads: true, writes: true, communicates: false, suspends: true }), summaries: new Map(), budget: { work: 0, limit } });
     assert.deepEqual(staleWrite(f, ctx(2)), { limit: true });
     assert.equal((staleWrite(f, ctx()).write as { target?: string } | undefined)?.target, 'n');
+});
+
+test('SW2011 keeps every real finding when a helper writes many attributes under many conditions', async () => {
+    const attributes = (count: number) => Array.from({ length: count }, (_, i) => `attribute q${i}: int = 0; `).join('');
+    // One helper assigning 300 attributes: a summary per condition, not per attribute.
+    const reset = Array.from({ length: 300 }, (_, i) => `q${i} = 0;`).join(' ');
+    assert.deepEqual(await stale(`attribute n: int = 1; ${attributes(300)} operation reset() { ${reset} } operation f() { var k: int = n; wait 1ms; reset(); n = k; } operation g() { var k: int = n; wait 1ms; n = k; } schedule { on start f(); on start g(); }`), ['n = k;', 'n = k;']);
+    // A decoder writing every attribute in each of its branches.
+    const decoder = (count: number, branches: number, value: string) => {
+        const writes = (b: number) => Array.from({ length: count }, (_, i) => `q${i} = ${value === 'v' ? 'v' : b};`).join(' ');
+        let body = writes(branches - 1);
+        for (let b = branches - 2; b >= 0; b--)
+            body = `if (mode == ${b}) { ${writes(b)} } else { ${body} }`;
+        return body;
+    };
+    for (const [count, branches] of [[100, 9], [257, 1], [4, 80]])
+        assert.deepEqual(await stale(`attribute mode: int = 0; attribute n: int = 1; ${attributes(count)} operation decode() { ${decoder(count, branches, 'b')} } operation f() { var k: int = n; wait 1ms; decode(); n = k; } schedule { on start f(); }`), ['n = k;'], `${count} attributes, ${branches} branches`);
+    // Beyond the records a summary keeps apart (80 conditions), a write the call site makes stale is still found.
+    assert.deepEqual(await stale(`attribute mode: int = 0; attribute n: int = 1; ${attributes(4)} operation decode(v: int) { wait 1ms; ${decoder(4, 80, 'v')} } operation f() { decode(n); } schedule { on start f(); }`), ['decode(n)']);
+});
+
+test('the stale-read work limit is reported once as SW2013 at the operation name, not as a stale read', async () => {
+    const saved = SwamlValidator.staleReadWorkLimit;
+    SwamlValidator.staleReadWorkLimit = 3;
+    try {
+        const r = await valid(wrap('attribute n: int = 1; operation f() { var k: int = n; wait 1ms; var a: int = 0; var b: int = 0; n = k; } operation g() { var k: int = n; wait 1ms; n = k; } schedule { on start f(); on start g(); }'));
+        const limits = r.warnings.filter(w => w.code === 'SW2013');
+        assert.equal(limits.length, 1);
+        assert.equal(r.doc.textDocument.getText(limits[0].range), 'f');
+        assert.match(String(limits[0].message), /reference validation limit of 3 statement visits at operation f; SW2011 is not checked for f or for the operations validated after it in this document\. Other validation is unaffected\./);
+        assert.deepEqual(r.warnings.filter(w => w.code === 'SW2011'), []);
+    }
+    finally {
+        SwamlValidator.staleReadWorkLimit = saved;
+    }
+    // At the normal limit the same document gets both stale reads and no limit.
+    assert.deepEqual(await stale('attribute n: int = 1; operation f() { var k: int = n; wait 1ms; var a: int = 0; var b: int = 0; n = k; } operation g() { var k: int = n; wait 1ms; n = k; } schedule { on start f(); on start g(); }'), ['n = k;', 'n = k;']);
 });
