@@ -22,8 +22,8 @@ Each normalized node/constraint retains source declaration URI/range and any inh
 | Component definition/usage | Base, effective members, explicit replacements, anonymous usage specialization, multiplicity |
 | Attribute/local/parameter | Owner/scope, explicit type, const/in/out, initializer, copied-cell lifetime |
 | Operation | Signature, effective whole body, nested ownership without captures, inferred effect flags/class |
-| Port/member | Definition or inline members, direction, reversal, optionality, payload/signature, idempotency |
-| Connection/forwarding | Endpoint occurrence references, alias provenance, structural member checks, effective policy |
+| Port/member | Definition or inline members, direction, reversal, optionality, payload/signature, idempotency, initial value of attribute members, sampled members per port (WP6) |
+| Connection/forwarding | Endpoint occurrence references, alias provenance, structural member checks, effective policy, member policies with the effective policy per member route (WP6) |
 | Policy | Pinned complete values and declaration/use provenance; no shared runtime queue |
 | Schedule/entry | Trigger identity, effective target, dispatch arguments/bindings, period/deadline (a computed one as its expression text plus per-occurrence values, WP4), concurrent |
 | State/transition | Initial/final, entry/exit/effects, receive bindings/guard or timer (literal or computed delay, WP4), transition kind (receive, timer or completion), optional target (internal when absent), timer guard, state deferrals in order (WP5), ordered selection |
@@ -37,6 +37,10 @@ Expansion creates every literal multiplicity occurrence independently and keeps 
 Each port occurrence has per-member projections with effective provides/requires direction. Resolve forwarding to leaf port identities, retaining the full boundary chain without queue/storage/hop. Every resolved input projection references its unique owner and every provided attribute/event its emission sites. Outgoing operation projection is a request rather than an emission declaration.
 
 A normalized connection records the two leaf ports, per-member directed routes and complete policy. Queue identity is connection occurrence, source/destination direction and member; requests/replies retain correlation separately. Attribute pending values use latest replacement, not event overflow rules. Extra provides remain contract members without fabricated peer requirements. Structural checks preserve each failed/matched member and nominal payload identity.
+
+| ID | Rule |
+| --- | --- |
+| WP6-M04 | A normalized connection records the effective policy of each member route, and the member-policy declaration where one applies. Every sampled member of a port occurrence records its sample cell with its initial value, and its zero or one consuming owner. The reference API exposes them as `memberQos`, `memberPolicy` and `sampledMembers` (`semantic.ts`) and as `ProjectionEdge.memberPolicies`, `ProjectionNode.sampled` and the `initial` text of port members in `projectModel`. |
 
 ## 7.4 Executable lowering
 

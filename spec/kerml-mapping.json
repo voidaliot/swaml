@@ -147,7 +147,7 @@
       "source": "PortMember",
       "kind": "grouping",
       "kernel": [],
-      "semantic": "PortMember: preserve directed port members, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "semantic": "PortMember: a directed attribute, event or operation member of a port. An attribute member with an initial value maps the initial value as the feature default value (WP6-S02); a sampled read p.m lowers to a read of a per-port-occurrence sample feature, not a transfer step (WP6-M03). It preserves direction, order, types and source provenance.",
       "normative": "docs/spec/02-communication.md"
     },
     {
@@ -156,7 +156,16 @@
       "kernel": [
         "Connector"
       ],
-      "semantic": "Connect: preserve policy-bearing connection, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "semantic": "Connect: a connector between two ports with an optional connection policy and an optional body of member policies, each selecting the effective policy of one member route (WP6-S05, WP6-S07); it preserves ownership, order, occurrence identity and source provenance.",
+      "normative": "docs/spec/02-communication.md"
+    },
+    {
+      "source": "MemberPolicy",
+      "kind": "reference",
+      "kernel": [
+        "Connector"
+      ],
+      "semantic": "MemberPolicy: references the effective policy of one member route of the owning connector (WP6-M02). It preserves order and source provenance.",
       "normative": "docs/spec/02-communication.md"
     },
     {

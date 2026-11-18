@@ -21,8 +21,8 @@ Productions that several packages touch are written here in their final form. A 
 | WP5-G01 | **Applied in WP5** to `src/language/swaml.langium`. `Transition: ( 'on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? \| 'after' (delay=Duration \| '(' delayValue=Expression ')') ('when' '(' guard=Expression ')')? \| 'when' '(' guard=Expression ')' ) ('to' target=Name)? effect=Block;` |
 | WP5-G02 | **Applied in WP5.** `State: (final?='final')? 'state' name=Name '{' documentation=Documentation? (actions+=StateAction \| transitions+=Transition \| deferrals+=Deferral)* '}';` with `Deferral: 'defer' endpoints+=MemberPath (',' endpoints+=MemberPath)* ';';` |
 | WP5-G03 | **Applied in WP5.** `Name` gains `'defer'` (contextual from its introduction; a basic name in every edition, `KEYWORDS_FROM_2_3` in `src/language/names.ts`). An unclosed reaction block ends where the next state member clearly starts (`on receive p.m(…) to`/`when`, `defer` and a name), so the following transitions and deferrals are kept (`stateMemberStart` in `src/language/swaml-syntax.ts`). |
-| WP6-G01 | `PortMember: … kind=('attribute'\|'event'\|'operation') name=Name (':' type=TypeRef ('=' initial=Expression)? \| '(' … ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';` |
-| WP6-G02 | `Connect: (redefines?='redefines')? 'connect' (name=Name)? (':' policy=[QosPolicy:QualifiedName])? '(' source=Path ',' target=Path ')' (documentation=Documentation? ';' \| '{' documentation=Documentation? memberPolicies+=MemberPolicy+ '}');` with `MemberPolicy: member=Name ':' policy=[QosPolicy:QualifiedName] documentation=Documentation? ';';` |
+| WP6-G01 | **Applied in WP6** to `src/language/swaml.langium`. `PortMember: … kind=('attribute'\|'event'\|'operation') name=Name (':' type=TypeRef ('=' initial=Expression)? \| '(' … ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';` |
+| WP6-G02 | **Applied in WP6.** `Connect: … '(' source=Path ',' target=Path ')' (documentation=Documentation? ';' \| '{' documentation=Documentation? memberPolicies+=MemberPolicy+ '}');` with `MemberPolicy: member=Name ':' policy=[QosPolicy:QualifiedName] documentation=Documentation? ';';` |
 | WP7-G01 | `ScheduleEntry` gains `('when' '(' guard=Expression ')')?` after the operation call and before `deadline`. |
 
 The `Name` production after WP2 and WP5:
@@ -67,7 +67,7 @@ The formatter must print every new form before a showcase model is reformatted (
 | WP2-M05 | **Applied in WP2** (`src/language/formatter.ts`, [tooling guide](../../TOOLING.md)). Prints conditionals and never drops or adds parentheses that change the parse. Prints association lists on one line when they fit, otherwise one occurrence or case per continuation line. A list longer than 100 characters, indentation included, breaks after each comma and before `to`; a list that contains a comment keeps the token-preserving one-line layout and is not wrapped. |
 | WP4-M08 | **Applied in WP4** (`src/language/formatter.ts`, [tooling guide](../../TOOLING.md)). Prints computed durations in parentheses (`wait (n * 1ms);`) and literal durations without them. |
 | WP5-M04 | **Applied in WP5** (`src/language/formatter.ts`, [tooling guide](../../TOOLING.md)). Prints completion transitions, internal transitions, timer guards and `defer` lines, keeping every state member in source order. |
-| WP6-M05 | Prints member-policy bodies with one member per line and attribute initial values. |
+| WP6-M05 | **Applied in WP6** (`src/language/formatter.ts`, unchanged: the token printer already prints member-policy bodies with one member per line and attribute initial values; tested in `test/v2/sampled-reads.test.ts`). |
 | WP7-M03 | Prints a release guard between the operation call and `deadline`. |
 
 ## AST consequences

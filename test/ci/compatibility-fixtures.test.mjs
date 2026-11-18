@@ -81,12 +81,15 @@ const EXTENDED = {
     // The WP5 set: 2.2 state machines in every 2.2 shape and defer as an ordinary name (WP5-G01 to WP5-G03, WP5-R11).
     'models-wp5.json': '2e45a30d2a39eeffd04a9cacbb4fb3c042183de3d57599e82206f764e0e71e9f',
     'recorded-wp5.json': 'a2c43a5e5d95f8c1baaab798978cd5685623d974ed99d24d00d6a920a466383a',
+    // The WP6 set: p.m references to port members and connection policies in every 2.2 shape (WP6-G01, WP6-G02, WP6-S01).
+    'models-wp6.json': '5668a837d964baff599ca15d6546da1c9340254c2ecc6d9a051f882317777672',
+    'recorded-wp6.json': '37eb26c1ac5a837cf51d9e680c0e1def27bbef6be49f888f99c4015971d001f9',
 };
 test('the extended 2.2 fixture keeps its pinned bytes and names the 3.1.0 recording commit', () => {
     const extended = name => readFileSync(new URL(`../../test/fixtures/compatibility-2-2-extended/${name}`, import.meta.url), 'utf8').replaceAll('\r\n', '\n');
     for (const [name, digest] of Object.entries(EXTENDED))
         assert.equal(createHash('sha256').update(extended(name), 'utf8').digest('hex'), digest, `${name} changed; the extended fixture is recorded once and never edited`);
-    for (const name of ['recorded.json', 'recorded-wp2.json', 'recorded-wp2b.json', 'recorded-wp3.json', 'recorded-wp3b.json', 'recorded-wp4.json', 'recorded-wp5.json']) {
+    for (const name of ['recorded.json', 'recorded-wp2.json', 'recorded-wp2b.json', 'recorded-wp3.json', 'recorded-wp3b.json', 'recorded-wp4.json', 'recorded-wp5.json', 'recorded-wp6.json']) {
         const { recordedWith } = JSON.parse(extended(name));
         assert.deepEqual([recordedWith.commit, recordedWith.implementation, recordedWith.languageVersion, recordedWith.profile], [RECORDED, '3.1.0', '2.2', 'swaml-reference/2.2'], name);
     }

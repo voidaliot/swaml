@@ -1,0 +1,80 @@
+{
+ "description": "Valid and invalid 2.2 sources outside the gate-1 corpus for WP6: references p.m to members of owned ports, forwarded boundaries, child ports, provided attributes and events in operation bodies, guards and initializers (2.2: unknown local values), locals, parameters and bindings named like ports, required attributes with zero or two owners, connection policies on events, latest attributes and requests, atLeastOnce idempotency on component and package connections, a redefined connection, attribute delivery with latency, faults and maxAge, and case scripts that receive at actor ports and read occurrence.port.member. In 2.3 a port whose attribute members declare initial values opts in to sampled reads and a connection may carry member policies (WP6-G01, WP6-G02); none of these sources uses them, so their diagnostics, ASTs and runs must stay as recorded. Each parses with the kept 2.2 grammar. Their diagnostics (with related information), normalized ASTs and runs are recorded once from implementation 3.1.0 in recorded-wp6.json and compared by scripts/compatibility-2-2-extended.mjs.",
+ "models": [
+  {
+   "name": "s1 p.m of a required attribute of an owned port in an operation body, unowned: unknown local value and owner errors",
+   "text": "package S1 {\n  port def Door { provides attribute ajar: bool; provides attribute count: int; }\n  component def Sensor { port tx: Door; attribute n: int = 0; operation tick() { n = n + 1; send tx.ajar(n % 2 == 1); send tx.count(n); } schedule { on every 10ms tick(); } }\n  component def Reader { reversed port door: Door; attribute seen: bool = false; attribute total: int = 0; operation read() { seen = door.ajar; total = total + door.count; } schedule { on every 10ms read(); } }\n  component s: Sensor;\n  component r: Reader;\n  connect (s.tx, r.door);\n}"
+  },
+  {
+   "name": "s2 p.m of an owned attribute that also has a receive owner",
+   "text": "package S2 {\n  port def Door { provides attribute ajar: bool; provides attribute count: int; }\n  component def Sensor { port tx: Door; attribute n: int = 0; operation tick() { n = n + 1; send tx.ajar(n % 2 == 1); send tx.count(n); } schedule { on every 10ms tick(); } }\n  component def Reader { reversed port door: Door; attribute seen: bool = false; attribute got: int = 0; operation take(v: int) { got = v; } operation look(v: bool) { seen = door.ajar; } schedule { on receive door.count(v) take(v); on receive door.ajar(v) look(v); } }\n  component s: Sensor;\n  component r: Reader;\n  connect (s.tx, r.door);\n}"
+  },
+  {
+   "name": "s3 p.m in a receive guard and in state guards",
+   "text": "package S3 {\n  port def Door { provides attribute ajar: bool; provides attribute count: int; }\n  component def Sensor { port tx: Door; attribute n: int = 0; operation tick() { n = n + 1; send tx.ajar(n % 2 == 1); send tx.count(n); } schedule { on every 10ms tick(); } }\n  component def Reader { reversed port door: Door; attribute k: int = 0; operation m() { initial A; state A { on receive door.count(v) when (door.ajar) to B { k = v; } after 5ms to B { } } state B { on receive door.ajar(v) to A { } } } schedule { on start m(); } }\n  component s: Sensor;\n  component r: Reader;\n  connect (s.tx, r.door);\n}"
+  },
+  {
+   "name": "s4 p.m in attribute initializers, a const attribute and a local initializer",
+   "text": "package S4 {\n  port def Door { provides attribute ajar: bool; provides attribute count: int; }\n  component def Sensor { port tx: Door; attribute n: int = 0; operation tick() { n = n + 1; send tx.ajar(n % 2 == 1); send tx.count(n); } schedule { on every 10ms tick(); } }\n  component def Reader { reversed port door: Door; attribute x: bool = door.ajar; const attribute y: int = door.count; operation read(v: int) { var z: bool = door.ajar; } schedule { on receive door.count(v) read(v); on receive door.ajar(v) read(1); } }\n  component s: Sensor;\n  component r: Reader;\n  connect (s.tx, r.door);\n}"
+  },
+  {
+   "name": "s5 p.m of a forwarded boundary and of a child port",
+   "text": "package S5 {\n  port def Door { provides attribute ajar: bool; provides attribute count: int; }\n  component def Sensor { port tx: Door; attribute n: int = 0; operation tick() { n = n + 1; send tx.ajar(n % 2 == 1); send tx.count(n); } schedule { on every 10ms tick(); } }\n  component def Leaf { reversed port p: Door; attribute k: int = 0; operation take(v: int) { k = v; } operation look(v: bool) { } schedule { on receive p.count(v) take(v); on receive p.ajar(v) look(v); } }\n  component def Box { reversed port p: Door; component leaf: Leaf; attribute a: bool = false; attribute b: int = 0; connect (p, leaf.p); operation r() { a = p.ajar; b = leaf.p.count; } schedule { on every 10ms r(); } }\n  component s: Sensor;\n  component b: Box;\n  connect (s.tx, b.p);\n}"
+  },
+  {
+   "name": "s6 p.m of a provided attribute and of an event member of an owned port",
+   "text": "package S6 {\n  port def Mixed { provides attribute level: int; provides event ping(n: int); }\n  component def C { port tx: Mixed; attribute k: int = 0; operation t() { send tx.level(1); publish tx.ping(2); k = tx.level; k = tx.ping; } schedule { on every 1ms t(); } }\n  component c: C;\n}"
+  },
+  {
+   "name": "s7 a local, a parameter and a binding named like a port, with fields (valid, runs)",
+   "target": "S7",
+   "text": "package S7 {\n  datatype Pos { ajar: bool; count: int; }\n  port def Door { provides attribute ajar: bool; provides attribute count: int; }\n  component def Sensor { port tx: Door; attribute n: int = 0; operation tick() { n = n + 1; send tx.ajar(true); send tx.count(n); } schedule { on every 10ms tick(); } }\n  component def Reader { reversed port door: Door; attribute total: int = 0; attribute seen: bool = false;\n    operation f(door: Pos) returns int { return door.count; }\n    operation take(v: int) { var p: Pos = record Pos { ajar = true; count = v; }; total = total + f(p); }\n    operation look(v: bool) { seen = v; }\n    schedule { on receive door.count(v) take(v); on receive door.ajar(v) look(v); } }\n  component s: Sensor;\n  component r: Reader;\n  connect (s.tx, r.door);\n}"
+  },
+  {
+   "name": "s8 required attributes with no owner and with two owners",
+   "text": "package S8 {\n  port def Door { provides attribute ajar: bool; provides attribute count: int; }\n  component def Sensor { port tx: Door; attribute n: int = 0; operation tick() { n = n + 1; send tx.ajar(n % 2 == 1); send tx.count(n); } schedule { on every 10ms tick(); } }\n  component def Reader { reversed port door: Door; attribute k: int = 0; operation a(v: int) { k = v; } operation b(v: int) { k = v + 1; } schedule { on receive door.count(v) a(v); on receive door.count(v) b(v); } }\n  component s: Sensor;\n  component r: Reader;\n  connect (s.tx, r.door);\n}"
+  },
+  {
+   "name": "s9 atLeastOnce connection with a non-idempotent and an idempotent provided operation",
+   "text": "package S9 {\n  import Swaml::Qos;\n  qos def Tight: Policy { delivery = Delivery.atMostOnce; ordering = Ordering.fifo; capacity = 1; overflow = Overflow.dropOldest; requestTimeout = 5ms; }\n  qos def Sure: Policy { delivery = Delivery.atLeastOnce; ordering = Ordering.fifo; capacity = 4; overflow = Overflow.dropOldest; requestTimeout = 1s; }\n  port def Api { provides operation get() returns int; provides idempotent operation peek() returns int; }\n  component def Server { port api: Api; operation get() returns int { return 1; } operation peek() returns int { return 2; } schedule { on call api.get() get(); on call api.peek() peek(); } }\n  component def Client { reversed port api: Api; attribute k: int = 0; operation t() { k = api.peek(); } schedule { on start t(); } }\n  component sv: Server;\n  component cl: Client;\n  connect: Sure (cl.api, sv.api);\n}"
+  },
+  {
+   "name": "s10 one connection policy for an event queue, a latest attribute and a request timeout (runs)",
+   "target": "S10",
+   "text": "package S10 {\n  import Swaml::Qos;\n  qos def Tight: Policy { delivery = Delivery.atMostOnce; ordering = Ordering.fifo; capacity = 1; overflow = Overflow.dropOldest; requestTimeout = 5ms; }\n  qos def Sure: Policy { delivery = Delivery.atLeastOnce; ordering = Ordering.fifo; capacity = 4; overflow = Overflow.dropOldest; requestTimeout = 1s; }\n  port def Bus { provides event frame(n: int); provides attribute level: int; requires operation ask() returns int; }\n  component def Bcm { port bus: Bus; attribute n: int = 0; attribute answer: int = 0; operation t() { publish bus.frame(1); publish bus.frame(2); publish bus.frame(3); send bus.level(1); send bus.level(2); answer = try(bus.ask(), -1); } schedule { on start t(); } }\n  component def Dcu { reversed port bus: Bus; attribute frames: int = 0; attribute last: int = 0; attribute lv: int = 0;\n    operation m() { initial A; state A { on receive bus.frame(n) to B { frames = frames + 1; last = n; } on receive bus.level(v) to A { lv = v; } } state B { after 2ms to A { } } }\n    operation ask() returns int { wait 10ms; return 7; }\n    schedule { on start m(); on call bus.ask() ask(); } }\n  component bcm: Bcm;\n  component dcu: Dcu;\n  connect link: Tight (bcm.bus, dcu.bus);\n}"
+  },
+  {
+   "name": "s11 a redefined connection with another policy (runs)",
+   "target": "S11",
+   "text": "package S11 {\n  import Swaml::Qos;\n  qos def Tight: Policy { delivery = Delivery.atMostOnce; ordering = Ordering.fifo; capacity = 1; overflow = Overflow.dropOldest; requestTimeout = 5ms; }\n  qos def Sure: Policy { delivery = Delivery.atLeastOnce; ordering = Ordering.fifo; capacity = 4; overflow = Overflow.dropOldest; requestTimeout = 1s; }\n  port def Bus { provides event frame(n: int); }\n  component def Bcm { port bus: Bus; operation t() { publish bus.frame(1); publish bus.frame(2); publish bus.frame(3); } schedule { on start t(); } }\n  component def Dcu { reversed port bus: Bus; attribute frames: int = 0; operation m() { initial A; state A { on receive bus.frame(n) to B { frames = frames + 1; } } state B { after 1ms to A { } } } schedule { on start m(); } }\n  component def Base { component bcm: Bcm; component dcu: Dcu; connect link: Tight (bcm.bus, dcu.bus); }\n  component def Wide specializes Base { redefines connect link: Sure (bcm.bus, dcu.bus); }\n  component a: Base;\n  component b: Wide;\n  component c: Base { redefines connect link: Sure (bcm.bus, dcu.bus); }\n}"
+  },
+  {
+   "name": "s12 attribute delivery with latency and faults: replaced, dropped, duplicated and aged values (runs)",
+   "target": "S12",
+   "text": "package S12 {\n  import Swaml::Qos;\n  qos def Aged: Policy { delivery = Delivery.bestEffort; ordering = Ordering.fifo; capacity = 4; overflow = Overflow.dropOldest; requestTimeout = 1s; maxAge = 2ms; }\n  port def Door { provides attribute count: int; }\n  component def Sensor { port tx: Door; attribute n: int = 0; operation tick() { n = n + 1; send tx.count(n); send tx.count(n + 100); } schedule { on every 10ms tick(); } }\n  component def Reader { reversed port door: Door; attribute got: int = 0; attribute seen: int = 0; operation take(v: int) { got = v; seen = seen + 1; } schedule { on receive door.count(v) take(v); } }\n  component s: Sensor;\n  component r: Reader;\n  component s2: Sensor;\n  component r2: Reader;\n  connect (s.tx, r.door);\n  connect: Aged (s2.tx, r2.door);\n}"
+  },
+  {
+   "name": "s13 a case script that reads occurrence.port.member and receives it",
+   "tests": [
+    "S13::Reads"
+   ],
+   "text": "package S13 {\n  port def Door { provides attribute ajar: bool; }\n  component def Sensor { port tx: Door; operation tick() { send tx.ajar(true); } schedule { on every 10ms tick(); } }\n  component def Probe { reversed port watch: Door; }\n  component sensor: Sensor;\n  component probe: Probe;\n  connect (sensor.tx, probe.watch);\n  associate probe to 'Reads';\n  test 'Reads' of sensor { on receive probe.watch.ajar(v) { assert v; } or after 20ms { fail \"no value\"; } assert probe.watch.ajar; }\n}"
+  },
+  {
+   "name": "s14 a package connection with a policy, and atLeastOnce at package level",
+   "text": "package S14 {\n  import Swaml::Qos;\n  qos def Tight: Policy { delivery = Delivery.atMostOnce; ordering = Ordering.fifo; capacity = 1; overflow = Overflow.dropOldest; requestTimeout = 5ms; }\n  qos def Sure: Policy { delivery = Delivery.atLeastOnce; ordering = Ordering.fifo; capacity = 4; overflow = Overflow.dropOldest; requestTimeout = 1s; }\n  port def Api { provides operation get() returns int; provides event e(n: int); }\n  component def Server { port api: Api; operation get() returns int { return 1; } operation t() { publish api.e(1); } schedule { on call api.get() get(); on start t(); } }\n  component def Client { reversed port api: Api; attribute k: int = 0; operation take(n: int) { var x: int = api.get(); k = n + x; } schedule { on receive api.e(n) take(n); } }\n  component sv: Server;\n  component cl: Client;\n  connect pk: Sure (cl.api, sv.api);\n}"
+  },
+  {
+   "name": "s15 a case script that receives on a port with a policy and test reads of the subject (runs)",
+   "tests": [
+    "S15::Burst"
+   ],
+   "text": "package S15 {\n  import Swaml::Qos;\n  qos def Tight: Policy { delivery = Delivery.atMostOnce; ordering = Ordering.fifo; capacity = 1; overflow = Overflow.dropOldest; requestTimeout = 5ms; }\n  qos def Sure: Policy { delivery = Delivery.atLeastOnce; ordering = Ordering.fifo; capacity = 4; overflow = Overflow.dropOldest; requestTimeout = 1s; }\n  port def Bus { provides event frame(n: int); }\n  component def Dcu { reversed port bus: Bus; attribute frames: int = 0; attribute last: int = 0; operation m() { initial A; state A { on receive bus.frame(n) to B { frames = frames + 1; last = n; } } state B { after 2ms to A { } } } schedule { on start m(); } }\n  component def Bcm { port bus: Bus; }\n  component dcu: Dcu;\n  component bcm: Bcm;\n  connect: Tight (bcm.bus, dcu.bus);\n  associate bcm to 'Burst';\n  test 'Burst' of dcu { publish bcm.bus.frame(1); publish bcm.bus.frame(2); publish bcm.bus.frame(3); wait 10ms; assert dcu.frames == 2 and dcu.last == 3; }\n}"
+  },
+  {
+   "name": "s16 completion-like guards in 2.2: a self-polling timer machine reading another operation's attribute (runs)",
+   "target": "S16",
+   "text": "package S16 {\n  component def M { attribute n: int = 0; attribute done: bool = false; operation bump() { n = n + 1; } operation m() { initial A; state A { after 1ms to A { } on entry { if (n > 3) { done = true; } } } } schedule { on start m(); on every 2ms bump(); } }\n  component m: M;\n}"
+  }
+ ]
+}

@@ -11,7 +11,7 @@
 | V18 | Moved to [chapter 8.1](../../spec/08-conformance-obligations.md#81-static-obligations) in WP3. | | [WP3] |
 | V19 | Moved to [chapter 8.1](../../spec/08-conformance-obligations.md#81-static-obligations) in WP4. | | [WP4] |
 | V20 | Moved to [chapter 8.1](../../spec/08-conformance-obligations.md#81-static-obligations) in WP5. | | [WP5] |
-| V21 | Sampled-read ports and positions, mandatory initial values, zero-or-one owners of sampled members, member policies | SW2004/2005/2006/2013 | [WP6] |
+| V21 | Moved to [chapter 8.1](../../spec/08-conformance-obligations.md#81-static-obligations) in WP6. | | [WP6] |
 | V22 | Release guards on allowed entries with read-only effects and their scope | SW2007 | [WP7] |
 | V23 | Operation placement, same Core, T1–T6 | SW2009 | [WP8] |
 
@@ -26,7 +26,7 @@ Existing rows change their text accordingly: V03 (selectors, done in WP1), V09 (
 | E14 | Moved to [chapter 8.2](../../spec/08-conformance-obligations.md#82-runtime-obligations) in WP3. | [WP3] |
 | E15 | Moved to [chapter 8.2](../../spec/08-conformance-obligations.md#82-runtime-obligations) in WP4. | [WP4] |
 | E16 | Moved to [chapter 8.2](../../spec/08-conformance-obligations.md#82-runtime-obligations) in WP5. | [WP5] |
-| E17 | Sample cells updated at delivery (after latency and faults, before same-instant guards), independent of consumption, read live, with `sample` observations; per-member policies | [WP6] |
+| E17 | Moved to [chapter 8.2](../../spec/08-conformance-obligations.md#82-runtime-obligations) in WP6. | [WP6] |
 | E18 | Release guards at dispatch, deadline cancellation, skip as completion for successors, `releaseGuard` discard, guard failure, unchanged grid | [WP7] |
 | E19 | Priority and in-task ordering keys; unchanged order without Tasks | [WP8] |
 | E20 | Moved to [chapter 8](../../spec/08-conformance-obligations.md) by WP1a. | [WP1a], rerun by every package and WP9 |

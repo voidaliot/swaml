@@ -425,7 +425,7 @@ A literal positive multiplicity [n] on a child creates n separate occurrences. P
 
 attribute declares component-owned mutable state; const attribute fixes its value per occurrence. Both are explicitly typed and may be redefined with a different compatible initializer in a usage. Initializers are pure and cannot read mutable state. Requirements own immutable typed attributes regardless of the const spelling.
 
-var declares an activation/block local. in is the default parameter direction and is immutable; out parameters are mutable with success-only copy-back. Live names cannot shadow another live local, parameter or attribute. A nested operation sees its own parameters, its nested operations and the owning component's attributes, never enclosing parameters or locals. Local data access never traverses child components or ports.
+var declares an activation/block local. in is the default parameter direction and is immutable; out parameters are mutable with success-only copy-back. Live names cannot shadow another live local, parameter or attribute. A nested operation sees its own parameters, its nested operations and the owning component's attributes, never enclosing parameters or locals. Local data access never traverses child components or ports, except a sampled read `p.m` of an owned port (chapter 2.6, WP6-S01).
 
 | ID | Rule |
 | --- | --- |
@@ -571,7 +571,13 @@ A port def owns named provides/requires attribute, event and operation members. 
 
 A component uses port p: Definition; or an inline port body. reversed flips every member direction. optional is a prefix that waives that port's closure requirement; it does not waive required ports elsewhere on a forwarding chain. A provided attribute/event is emitted by this side; a provided operation is implemented by this side. Requires means the opposite.
 
-Every provided attribute/event MUST have syntactic operation emission provenance. Every required attribute/event and provided operation MUST have exactly one owner: a schedule entry, one stateful operation's transition set, one receive statement or one interrupt region. Multiple alternative transitions in that one stateful operation are one owner. A forwarded boundary is never also locally handled or emitted. An interface-only component (section 1.2) is exempt from these provenance and owner rules.
+Every provided attribute/event MUST have syntactic operation emission provenance. Every required event and provided operation, and every required attribute that is not sampled (section 2.6), MUST have exactly one owner: a schedule entry, one stateful operation's transition set, one receive statement or one interrupt region. Multiple alternative transitions in that one stateful operation are one owner. A sampled required attribute has zero or one consuming owner; sampling is not ownership. A forwarded boundary is never also locally handled or emitted. An interface-only component (section 1.2) is exempt from these provenance and owner rules.
+
+| ID | Rule |
+| --- | --- |
+| WP6-S02 | **Initial value.** An attribute member may declare an initial value, `provides attribute ajar: bool = false;` (grammar WP6-G01). The expression is pure (SW2006) and assignable to the member type (SW2002), with the attribute-initializer messages (WP6-D04); it is checked once where the member is declared. Event and operation members have none (grammar). |
+| WP6-S03 | **Mandatory when sampled.** A member is sampled only when its declaration in the sampling port's definition, the one the port has in the executing occurrence after redefinition, has an initial value (WP6-S01), so a read of a member without one keeps its 2.2 diagnostics. A port redefinition (`redefines port`, in a specialization or a usage) that removes the initial value of a member that inherited behaviour samples is SW2004 `Sampled attribute {member} of {portDefinition} needs an initial value: inherited {operation} samples {port}.{member}.` at the redefinition, and one that changes its type (which a forwarding-compatible redefinition may widen) is SW2004 `… must keep type {type}: …` (WP6-D02), because the inherited read was typed with the base's member; a redefinition may change the value, and the cell then starts with the value of the port the occurrence has. The provider side's initial value, if any, has no runtime meaning in 2.3. |
+| WP6-S04 | **Ownership.** A sampled required attribute has zero or one consuming owner; sampling is not ownership. Two owners keep the SW2005 message `{port}.{member} needs exactly one input owner.`; a sampled member with no owner is not reported (WP6-D03). A member is sampled by a component when one of its executables or schedule-entry arguments contains a sampled read of it (`sampledMembers`). |
 
 All input stimuli, including operator/test drivers, are ordinary typed emissions from validated source operations or case scripts through routes; a case script emits only at the ports of its associated interface-only occurrences. Hidden harness releases and destination injection are forbidden. An unconnected optional request fails unavailable. An optional unconnected event/attribute emission has no recipient and remains observable.
 
@@ -585,6 +591,11 @@ Forwarding compares a boundary and immediate child's port in the same direction.
 
 connect (a, b); joins owned ports or ports of immediate children. A child with multiplicity requires a literal index. Name and policy are optional: connect link: Reliable (a, b);. Endpoints are unordered.
 
+| ID | Rule |
+| --- | --- |
+| WP6-S05 | **Member policies.** A connection may end in a body of member policies instead of `;` (grammar WP6-G02), `connect bodyCan: Cyclic (bcm.bus, dcu.canBus) { crash: CanEvent; }`. Each names a member present, by name, in both connected ports, and so routed by this connection, at most once per connection. A body on a derived forwarding is an error. Package connections may carry member policies. All are SW2004 (WP6-D06): `Member policies are not allowed on forwarding {connection}.`, `{member} is not a member of both ports of {connection}.`, `{member} has two policies in {connection}.`, where `{connection}` is the connection's name or `connect ({source}, {target})`. [Example 49](../examples/49-body-can-member-policies.swaml) queues event frames and keeps only the newest cyclic frame on one connection. |
+| WP6-S06 | **Redefinition.** `redefines connect` replaces the whole inherited connection, including all its member policies; nothing is merged. |
+
 A connect may also be a package member. Each end of a package connection is occurrence.port, where occurrence is a top-level component occurrence declared in the same package; a nested path, a definition or an imported occurrence is an error (SW2004). A package connection is always a connection, never forwarding, and follows the same compatibility, duplicate, policy and idempotence rules. It cannot redefine.
 
 Boundary-to-child endpoints derive forwarding when same-direction compatibility holds. Forwarding has no queue or policy; a policy is an error. Each boundary and child port is forwarded at most once. Other endpoints derive a connection using opposite-direction compatibility. Invalid endpoints report the applicable compatibility failures. Self connections and duplicate endpoint pairs, including duplicates after forwarding resolution, are errors.
@@ -593,7 +604,11 @@ Closure is checked per package. Every nonoptional port of every occurrence of th
 
 ## 2.4 Versioned policies and queues
 
-A named qos def is typed by Swaml::Qos::Policy and supplies complete valid delivery, ordering, capacity, overflow and requestTimeout fields, plus optional maxLatency/maxAge. Values use the typed Delivery, Ordering and Overflow enums. Inline policies and per-use overrides do not exist. Each effective use is checked, including inherited connections and idempotency obligations.
+A named qos def is typed by Swaml::Qos::Policy and supplies complete valid delivery, ordering, capacity, overflow and requestTimeout fields, plus optional maxLatency/maxAge. Values use the typed Delivery, Ordering and Overflow enums. Member policies select a named policy per member; inline policies and field overrides do not exist. Each effective use is checked, including inherited connections and idempotency obligations.
+
+| ID | Rule |
+| --- | --- |
+| WP6-S07 | **Effective policy of a member route.** The effective policy of a member route is its member policy, else the connection policy, else `Swaml::Qos::Default` (`memberQos` in `semantic.ts`). Every completeness and idempotency check (SW2013) applies per member route (WP6-D07): an `atLeastOnce` member policy needs an idempotent provided operation, and a member policy that is not `atLeastOnce` lifts the obligation of an `atLeastOnce` connection policy for that member. A member policy names a `qos def`, whose completeness is checked at the definition. The deferral warning SW2018 (WP5-D09) uses the effective policy of the deferred member's route. |
 
 | ID | Rule |
 | --- | --- |
@@ -606,9 +621,34 @@ Policy buffering applies to events and requests. Attribute members keep only the
 
 ## 2.5 Requests, replies and failure
 
-A required operation is called as p.member(args). Its timeout comes from the route policy. Each request has a unique correlation and its response returns on the same member/route in reverse. Successful result and out values are copied back together; failure copies neither. Timeout, unavailable, rejected, transport and remoteFailure are failure reasons recorded as Swaml::Calls::CallFailure values or local runtime kinds in evidence. The model cannot inspect the reason.
+A required operation is called as p.member(args). Its timeout comes from the effective policy of its member route (WP6-S07). Each request has a unique correlation and its response returns on the same member/route in reverse. Successful result and out values are copied back together; failure copies neither. Timeout, unavailable, rejected, transport and remoteFailure are failure reasons recorded as Swaml::Calls::CallFailure values or local runtime kinds in evidence. The model cannot inspect the reason.
 
 A request suspends and releases the caller's serial lock. Timeout and reply at the same timestamp resolve as timeout; terminal correlations never reopen. Late replies are suppressed observably. Interruption cancels the local request continuation and correlation; the server continues and its committed effects remain. The interrupted terminal is not a catchable failure. try catches expression failures and supplies a compatible lazy fallback; bare calls propagate failure to the activation.
+
+## 2.6 Sampled reads
+
+An attribute member opts in to sampling when it declares an initial value. A component reads the latest value delivered to such a required attribute without a receive handler, as `door.ajar`, where `door` is the port and `ajar` the member ([example 48](../examples/48-door-status-sampling.swaml)):
+
+```text
+port def DoorState { provides attribute ajar: bool = false; }
+component def ComMain {
+  reversed port door: DoorState;
+  operation txMain() { publish tx.status(record StatusPdu { ajar = door.ajar; }); }
+}
+```
+
+| ID | Rule |
+| --- | --- |
+| WP6-S01 | **Form.** In an operation body, in a transition, completion or timer guard, or in an argument of a schedule entry of the owning component (evaluated at dispatch, in the activation's first segment, WP6-R03), `p.m` is a sampled read when `p` is an owned port of the executing component, its member `m`, in the definition the port has in the executing occurrence after redefinition, is an attribute that declares an initial value (the member opts in to sampling), and no local, parameter, loop variable or binding named `p` is visible at the read, by the scope rules of chapter 1.3 (a local of another branch, of a later statement or of a nested operation does not hide the port; `localVisible` in `semantic.ts`). `m` must be required after reversal (SW2006 `{port}.{member} is not a required attribute of an owned port.`, WP6-D05). Fields, an index and selectors may follow the member. The value is the member's type and the effect class is *reads state*. A reference `p.m` to a member that declares no initial value keeps its 2.2 meaning and diagnostics (SW2002 `Unknown local value p.m; …`), also when another member of the same port opts in, so no 2.2 source changes (owner decision A of WP6). |
+| WP6-S08 | **Forbidden ports and positions.** Sampling a forwarded boundary port is SW2005 `{port}.{member} cannot be sampled: {port} is a forwarded boundary.` (WP6-D01). `p.m` on a child's port remains an error with its 2.2 diagnostic (SW2002). A sampled read is not allowed in an attribute initializer (SW2006 `A sampled read is not allowed in an initializer.`) or in the constant sublanguage of chapter 3.5 (SW2007 `A sampled read is not allowed in a constant duration.`, WP6-D05). A member's initial value is checked without a component, so a reference in it is unknown (SW2002). Case scripts do not sample (WP6-S09). |
+| WP6-R01 | **Cell.** Each port occurrence holds one sample cell per sampled member, initialized to the member's initial value before startup work is released. A read never fails. |
+| WP6-R02 | **Update instant.** A cell takes a value at the instant the value is delivered to the port: the message's delivery time after the route's latency and fault delay. This is independent of whether a receive owner consumes it, and of a newer value replacing it in the owner's pending queue. A dropped offer, and a value older than the route's `maxAge` at delivery (observed as `discardAge`), does not update the cell. Each duplicate copy updates it at its own delivery instant. A cell never goes back to an older value: a value whose offer precedes the offer of the value the cell holds, delivered later because of a fault delay or a longer latency, updates nothing and produces no observation (no `sample` and no other kind; its `offer` is the last observation of that value), so the cell agrees with the newest value offered among those delivered, as an owner's pending queue keeps the newest offer (owner decision B of WP6). Within one logical instant, events run in the deterministic event order (time, phase, insertion ordinal). An activation sees the cell updates ordered before its reading step in that order. A delivery produced later in the same instant, for example by a zero-latency send from an activation that runs in that instant, is seen only by reads ordered after it. Worked example: at t = 20 ms a periodic `producer.tick` sends `level.value(v)` over a zero-latency connection, and a periodic `consumer.slot()` of another component, whose body first tests `if (level.value > 0)`, is released at the same instant. If the consumer's first step is ordered before the producer's step, its test reads the previous value; the new value is delivered later in the same instant and is seen by the next activation that reads it after that delivery, at the latest the release at t = 40 ms (the rest of this activation keeps the value it read, WP6-R03). If the producer's step and the delivery come first, the test reads the new value. |
+| WP6-R03 | **Live reads, stable within a segment.** Every activation, serial or concurrent, reads the live cell: cells are not part of a concurrent dispatch snapshot. The first read of a cell in an activation segment, after the activation starts or resumes, copies the live cell, and later reads of that cell until the next suspension see that copy, although the steps of activations of other occurrences interleave with them. So a guard and the body of one activation, and the schedule-entry arguments evaluated at dispatch, see the same value unless the body suspends in between, and a read after a suspension sees the newer value. |
+| WP6-R04 | **No consumer.** A sampled member without a consuming owner has no pending-value queue and no `deliver` or `replaceAttribute` observation. Its cell is the only store, and its offers and drops remain observable. |
+
+Sampled reads serve level-triggered use. Edge reactions, such as resetting on a mode change, switching outputs off on entering sleep or detecting wake-up, keep receive handlers. Completion guards are not re-evaluated when a cell is updated (WP5-R03); a completion guard that reads only cells gets SW2017 (WP5-D08).
+
+B21 (service discovery) is rejected. A team models each binding as a static, optionally `optional`, connection, exposes availability as `provides attribute available: bool = false;` and samples it.
 
 
 ---
@@ -736,7 +776,11 @@ package ComputedWaits {
 
 ## 3.4 Suspension and locks
 
-Every component occurrence has one serial lock. Serial dispatch evaluates/copies schedule arguments under this lock. wait, requests, receive and idle state-machine waits release it. Resumption reacquires it and reads live attributes. Other activations may run and modify state while a serial activation is suspended. Activation locals remain its own copies. Concurrent entries overlap and read the dispatch snapshot throughout, including after resumption, and never write state.
+Every component occurrence has one serial lock. Serial dispatch evaluates/copies schedule arguments under this lock. wait, requests, receive and idle state-machine waits release it. Resumption reacquires it and reads live attributes. Other activations may run and modify state while a serial activation is suspended. Activation locals remain its own copies. Concurrent entries overlap and read attributes from the dispatch snapshot throughout, including after resumption; they read sample cells and `now()` live; they never write state (WP6-R07).
+
+| ID | Rule |
+| --- | --- |
+| WP6-R07 | **Concurrent reads (amends 3.4).** Concurrent entries read attributes from the dispatch snapshot throughout, including after resumption; they read sample cells (chapter 2.6) and `now()` live; they never write state. Each cell read copies the whole value atomically, so a record is never observed half-updated. The 2.2 snapshot guarantee is unaffected, because 2.2 models have no cells. |
 
 | ID | Rule |
 | --- | --- |
@@ -871,7 +915,7 @@ The [session completion](../examples/44-session-completion.swaml), [lock deferra
 
 ## 3.7 Case scripts
 
-A use case or test whose body holds statements after its optional documentation is a case script ([ADR 0019](decisions/0019-package-context.md)). Its statements are the statement language of section 3.3: var, assignment to places rooted in its own locals or on call out bindings (WP1-S05), send, publish, calls, on receive … or receive … or after D, wait, if, while, until, for, for in, assert, fail and return. A case owns no nested operations, states, schedule entries or interrupt regions. A case with statements needs of; a case without statements records intent only.
+A use case or test whose body holds statements after its optional documentation is a case script ([ADR 0019](decisions/0019-package-context.md)). Its statements are the statement language of section 3.3: var, assignment to places rooted in its own locals or on call out bindings (WP1-S05), send, publish, calls, on receive … or receive … or after D, wait, if, while, until, for, for in, assert, fail and return. A case owns no nested operations, states, schedule entries or interrupt regions. A case with statements needs of; a case without statements records intent only. Case scripts do not sample ports; they keep `on receive` at actor ports (WP6-S09): `occurrence.port.member` on a port that opts in to sampling is SW2010 `A case script cannot sample {port}.{member}; use on receive.` (WP6-D08).
 
 A script is the environment of its subject. Its endpoints are occurrence.port.member, where occurrence is a top-level component occurrence of the case's package that is not the subject, is associated with the case by associate occurrence to Case; and is interface-only. send and publish emit a provided attribute or event of that actor port; on receive waits for a required attribute or event of it; a call such as customer.panel.withdraw(200) requests a required operation and suspends like any request. on call occurrence.port.op(bindings) { … } is a further branch of on … or …, allowed only in case scripts, that answers a request for a provided operation of the actor port. Inside it return v; is the reply exactly like the result of a served operation: out bindings are mutable and their values return with the reply, a non-void branch returns or fails on every path, and a failure inside the branch replies with a remote failure and fails the case. Any other return ends the case and has no value. Operations keep port.member endpoints and serve requests through schedule on call entries.
 
@@ -998,7 +1042,7 @@ The 2.0 and ADR 0018 case forms are removed rather than deprecated: verification
 
 Swaml::Views provides General, Interconnect, Case, Sequence, Grid, Flow and Timing. A view is typed by a definition, uses compact of subject or one or more include clauses, and owns optional documentation. Include may expand recursive descendants and apply a restricted Boolean where filter over name, kind and path, string comparisons, and/or/not. Filters never call operations or execute behavior. Selection is a union of occurrence identities in first-selection order; duplicates are removed stably.
 
-General and Grid select named semantic elements except views. Interconnect selects components. Case selects packages, cases and components; Sequence selects operations, cases, components and packages. A selected package contributes its cases. Case draws each selected case inside the boundary of its subject occurrence, its associated occurrences outside it, and the satisfy and verify intent links of the package. Flow and Timing select operations, use cases and tests. Paths preserve definition/occurrence identity and explicit multiplicity indexes. Browser is navigation rather than an eighth view kind. General Box in box and Tree layouts retain exactly the same selected identities and topology; layout/collapse/geometry stay in presentation sidecars.
+General and Grid select named semantic elements except views. Interconnect selects components; it labels member policies on their connection (WP6-M01: `ProjectionEdge.memberPolicies`, each with the member, the named policy and the effective policy of the member route). Case selects packages, cases and components; Sequence selects operations, cases, components and packages. A selected package contributes its cases. Case draws each selected case inside the boundary of its subject occurrence, its associated occurrences outside it, and the satisfy and verify intent links of the package. Flow and Timing select operations, use cases and tests. Paths preserve definition/occurrence identity and explicit multiplicity indexes. Browser is navigation rather than an eighth view kind. General Box in box and Tree layouts retain exactly the same selected identities and topology; layout/collapse/geometry stay in presentation sidecars.
 
 Flow covers statements, nested operation calls, loops, receive, interruption and function-owned states. Timing has declared and observed modes. Declared shows schedule release grid, causes, deadlines, static wait intervals and permitted concurrent overlap. Observed adds an identified trace, serial lock gaps, message latency, activation phases, terminal markers and open intervals; WCET/budget bars identify their target-binding/evidence source. A missing trace never produces fabricated observation. Views introduce no execution semantics.
 
@@ -1029,10 +1073,10 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | SW2015 | Retired in 2.1 together with the 2.0 case spellings; not reported |
 | SW2016 | Warning (2.3): a computed duration without a time unit, which counts nanoseconds |
 | SW2019 | Warning (2.3): two every entries of one occurrence for the same operation with equal periods but different triggers |
-| SW2017 | Warning (2.3): a completion guard that reads nothing the machine writes, so it cannot change while the machine waits |
+| SW2017 | Warning (2.3): a completion guard that reads nothing the machine writes, so it cannot change while the machine waits, or that folds to false, so its transition is never taken |
 | SW2018 | Warning (2.3): a deferred event whose policy on a route into the occurrence rejects on overflow |
 
-Diagnostics added by 2.3. Message shapes are templates; implementations may add context but keep the leading clause stable. All are errors except WP4-D06, WP4-D08, WP5-D08 and WP5-D09, which are warnings.
+Diagnostics added by 2.3. Message shapes are templates; implementations may add context but keep the leading clause stable. All are errors except WP4-D06, WP4-D08, WP5-D08, WP5-D09, WP6-D09 and WP6-D10, which are warnings. A diagnostic of WP6 applies only to a reference `p.m` of a member that opts in to sampling (an attribute member with an initial value, 2.3 syntax), to behaviour inherited with such a reference or to a member-policy body, so every 2.2 source keeps its diagnostics.
 
 | ID | Code | Condition | Message shape |
 | --- | --- | --- | --- |
@@ -1064,8 +1108,18 @@ Diagnostics added by 2.3. Message shapes are templates; implementations may add 
 | WP5-D05 | SW2008 | Deferred member not an input, or not handled by any state (WP5-S08, WP5-S09) | `{member} is not an input of {operation}.` / `{member} is deferred, but no state of {operation} handles it.` |
 | WP5-D06 | SW2008 | Defer and handle in one state, or deferred twice (WP5-S08) | `State {state} defers {member} and also handles it.` / `State {state} defers {member} twice.` |
 | WP5-D07 | SW2008 | Timer guard effect (WP5-S06) | `State guards may only be pure or read state.` |
-| WP5-D08 | SW2017, warning | Completion guard that reads no component attribute written by the machine's entry actions, exit actions or effects or their transitive callees. Not reported for a guard that is constant after folding (the literal `true`, `1 == 1`, `not false`, `false`), for a guard that already has an error, or in a state that re-enters itself through its own receive or timer transition (polling: the guard is evaluated again after each wait) | `Completion guard of {state} reads nothing that {operation} writes; it cannot change while the machine waits.` WP6 confirms it for guards that read only sampled cells. |
-| WP5-D09 | SW2018, warning | Deferred event with an effective `reject` overflow on a route into this occurrence (attributes never overflow) | `{member} is deferred in {state}, but policy {policy} of {connection} rejects on overflow; a full queue fails the sender. Give {connection} a policy that drops on overflow (Overflow.dropOldest or Overflow.dropNewest) or a capacity that holds the retained messages.` {connection} is the connection name or `connect (a, b)`. The library default policy rejects on overflow, so a deferral over a connection without a policy is reported: the warning is intended, because the sender's publish fails while the receiver defers. A deferral that already has an error (WP5-D04 to WP5-D06) is not reported. |
+| WP5-D08 | SW2017, warning | Completion guard that reads no component attribute written by the machine's entry actions, exit actions or effects or their transitive callees; a sample cell (chapter 2.6) is not such an attribute, because completion is not re-evaluated when a cell is updated (WP5-R03; confirmed in WP6). Not reported for a guard that folds to true (the literal `true`, `1 == 1`, `not false`), for a guard that folds to false (WP6-D10 reports it), for a guard that already has an error, or in a polling state as WP6-D09 narrows it | `Completion guard of {state} reads nothing that {operation} writes; it cannot change while the machine waits.`, followed by ` Completion is not re-evaluated when a sample cell is updated.` when the guard reads a sample cell. |
+| WP6-D01 | SW2005 | Sampling a forwarded boundary (WP6-S08) | `{port}.{member} cannot be sampled: {port} is a forwarded boundary.` |
+| WP6-D02 | SW2004 | Port redefinition that removes the initial value, or changes the type, of a member that inherited behaviour samples (WP6-S03), at the redefinition, once per member | `Sampled attribute {member} of {portDefinition} needs an initial value: inherited {operation} samples {port}.{member}.` / `Sampled attribute {member} of {portDefinition} must keep type {type}: inherited {operation} samples {port}.{member}.` (`an inherited schedule entry` for a read in a schedule-entry argument) |
+| WP6-D03 | SW2005 | Ownership of sampled and unsampled members (WP6-S04) | The existing owner messages; a sampled member with no owner is not reported. |
+| WP6-D04 | SW2002, SW2006 | Initial value typing and purity (WP6-S02) | The existing initializer messages. |
+| WP6-D05 | SW2006, SW2007 | `p.m` of a member that opts in to sampling, but not a required attribute, or in a forbidden position (WP6-S01, WP6-S08) | `{port}.{member} is not a required attribute of an owned port.` / `A sampled read is not allowed in an initializer.` (SW2006) / `A sampled read is not allowed in a constant duration.` (SW2007) |
+| WP6-D06 | SW2004 | Member policy on forwarding, unknown member or repeated member (WP6-S05) | `Member policies are not allowed on forwarding {connection}.` / `{member} is not a member of both ports of {connection}.` / `{member} has two policies in {connection}.` |
+| WP6-D07 | SW2013 | Member policy completeness or idempotency per member route (WP6-S07) | The existing policy messages, naming the member. |
+| WP6-D08 | SW2010 | Sampled read in a case script (WP6-S09) | `A case script cannot sample {port}.{member}; use on receive.` |
+| WP6-D09 | SW2017, warning | The polling exemption of WP5-D08, narrowed (WP5 review N2; a separate, revocable change while the owner reviews WP5-R03). A state polls when it has a self receive or timer transition, or an internal receive transition (an internal timer fires once per entry), whose guard is absent or does not fold to false; the exemption then applies only to a guard that reads an attribute that some executable of the component writes, or a sample cell. A self transition whose guard reads its input, such as `when (v > 100)`, still exempts the state, because whether it can be true is not decided statically | The WP5-D08 message. |
+| WP6-D10 | SW2017, warning | Completion guard that folds to false in its definition (WP5 review N3, owner decision). Not reported when the guard names a const attribute of its component that an attribute redefinition in a specialization or usage of that component replaces (the same declaration, not only the same name), so that it may fold differently per occurrence | `Completion guard of {state} is always false; the transition is never taken.` |
+| WP5-D09 | SW2018, warning | Deferred event with an effective `reject` overflow on a route into this occurrence (attributes never overflow) | `{member} is deferred in {state}, but policy {policy} of {connection} rejects on overflow; a full queue fails the sender. Give {connection} a policy that drops on overflow (Overflow.dropOldest or Overflow.dropNewest) or a capacity that holds the retained messages.` {connection} is the connection name or `connect (a, b)`. When a member policy is the rejecting effective policy (WP6-S07), {policy} names it and the advice reads `Give {member} of {connection} a member policy that drops on overflow …`; a connection without member policies, every 2.2 source included, keeps the message above. The library default policy rejects on overflow, so a deferral over a connection without a policy is reported: the warning is intended, because the sender's publish fails while the receiver defers. A deferral that already has an error (WP5-D04 to WP5-D06) is not reported. |
 
 Every diagnostic includes a source range and stable code. Machine-readable diagnostics retain declaration identity and occurrence context when resolved. A suggested edit is supplied only for a safe unambiguous correction; tools must revalidate the resulting complete workspace before applying it. Parser recovery may suspend semantic checks on invalid syntax, but the document remains invalid and must not crash the service.
 
@@ -1094,6 +1148,8 @@ Ports map to owned typed features with per-member directional projections. Rever
 | --- | --- |
 | WP1-M02 | `Selector`: kind `value`, normative `docs/spec/01-structure-and-types.md`. A place assignment lowers to a whole-value write of its root with one replaced feature value. It never becomes a reference feature. |
 | WP2-M02 | `ConditionalExpression`: kind `value`, kernel `ControlFunctions::'if'`, normative `docs/spec/01-structure-and-types.md`. Only the selected branch is evaluated. |
+| WP6-M02 | `MemberPolicy`: kind `reference`, normative `docs/spec/02-communication.md`. It references the effective policy of one member route of the owning connector. |
+| WP6-M03 | `PortMember` with an initial value maps the initial value as the feature's default value. Sampled reads lower to a read of a per-port-occurrence sample feature. They are not a transfer step. `Connect` records its member policies. |
 | WP2-M03 | `Association` keeps its entry. Its semantic text states that a list statement lowers to one reference per occurrence–case pair, with the statement and the list positions as provenance. |
 
 The changed productions `Assign`, `ReferenceExpression` and `CallExpression` (WP1), `Expression` and `ExpressionStatement` (WP2) and `PolicySetting`, `Literal`, `Wait`, `Receive`, `ScheduleEntry` and `Transition` (WP4) and `State` and `Transition` (WP5) keep their mapping entries with updated semantic text in `spec/kerml-mapping.json`: a completion transition is a guard-only TransitionUsage without trigger, and an internal transition has no target change. WP5-M02: the new production `Deferral` has kind `lowering`, normative `docs/spec/03-behavior.md`, and lowers to a state-scoped retention constraint on the machine's input projection.
@@ -1155,6 +1211,12 @@ A local failure unwinds frames to the nearest try or fails the activation. Try f
 Resolve boundary aliases before routing; forwarding adds neither queue nor latency. Each connection occurrence/direction/member owns a queue. Bare connections use the pinned Default. Check outgoing arguments against the emitting/requesting port member before routing, even when the peer accepts a wider domain. Request out cells initialize in the provider domain; successful replies convert at caller copy-back. Attribute queues replace the pending value; event/request queues obey capacity, delivery, ordering, overflow and optional age/latency assumptions. A reference run chooses insertion order for unordered queues. Fanout proceeds in route order and may partially commit before rejection.
 
 A required request creates a unique pending correlation and suspends the caller. Result/out values and failure return through the same route in reverse. Timeout uses requestTimeout. First terminal transition is immutable; timeout wins equal-time delivery; late replies are traced and suppressed. AtLeastOnce may redeliver and requires an idempotent declaration. The reference fault model records offer-indexed drop, duplicate, transport and additional latency; retries/redelivery assumptions must be inspectable. Each duplicate copy independently obeys queue capacity and overflow; attribute copies preserve the single latest pending value. Accepted input comes only from validated source emissions; no destination injection exists.
+
+| ID | Rule |
+| --- | --- |
+| WP6-R05 | **Per-member policy.** Each member route uses its effective policy (member policy, else connection policy, else `Default`; WP6-S07) for capacity, overflow, ordering, delivery, request timeout, latency and age. Queues remain per connection occurrence, direction and member. |
+| WP6-R06 | **Sample cells.** Sample cells follow WP6-R01 to WP6-R04 (chapter 2.6). Updating a cell never consumes input and never releases work. A cell update is part of its delivery event and takes its place in the instant's event order like every other event. |
+| WP6-T01 | `sample` (new): a cell update, with `subject` the port occurrence and member (`Demo.r.door.ajar`), `targetPort`, `member`, the copied `value`, the message identity `message` and `source` the emitting statement. `deliver` keeps meaning consumption by an owner, so a member that is both sampled and consumed produces one `sample` and one `deliver`. Reads are not observed. |
 
 ## 6.5 Input ownership and interruption
 
@@ -1240,8 +1302,8 @@ Each normalized node/constraint retains source declaration URI/range and any inh
 | Component definition/usage | Base, effective members, explicit replacements, anonymous usage specialization, multiplicity |
 | Attribute/local/parameter | Owner/scope, explicit type, const/in/out, initializer, copied-cell lifetime |
 | Operation | Signature, effective whole body, nested ownership without captures, inferred effect flags/class |
-| Port/member | Definition or inline members, direction, reversal, optionality, payload/signature, idempotency |
-| Connection/forwarding | Endpoint occurrence references, alias provenance, structural member checks, effective policy |
+| Port/member | Definition or inline members, direction, reversal, optionality, payload/signature, idempotency, initial value of attribute members, sampled members per port (WP6) |
+| Connection/forwarding | Endpoint occurrence references, alias provenance, structural member checks, effective policy, member policies with the effective policy per member route (WP6) |
 | Policy | Pinned complete values and declaration/use provenance; no shared runtime queue |
 | Schedule/entry | Trigger identity, effective target, dispatch arguments/bindings, period/deadline (a computed one as its expression text plus per-occurrence values, WP4), concurrent |
 | State/transition | Initial/final, entry/exit/effects, receive bindings/guard or timer (literal or computed delay, WP4), transition kind (receive, timer or completion), optional target (internal when absent), timer guard, state deferrals in order (WP5), ordered selection |
@@ -1255,6 +1317,10 @@ Expansion creates every literal multiplicity occurrence independently and keeps 
 Each port occurrence has per-member projections with effective provides/requires direction. Resolve forwarding to leaf port identities, retaining the full boundary chain without queue/storage/hop. Every resolved input projection references its unique owner and every provided attribute/event its emission sites. Outgoing operation projection is a request rather than an emission declaration.
 
 A normalized connection records the two leaf ports, per-member directed routes and complete policy. Queue identity is connection occurrence, source/destination direction and member; requests/replies retain correlation separately. Attribute pending values use latest replacement, not event overflow rules. Extra provides remain contract members without fabricated peer requirements. Structural checks preserve each failed/matched member and nominal payload identity.
+
+| ID | Rule |
+| --- | --- |
+| WP6-M04 | A normalized connection records the effective policy of each member route, and the member-policy declaration where one applies. Every sampled member of a port occurrence records its sample cell with its initial value, and its zero or one consuming owner. The reference API exposes them as `memberQos`, `memberPolicy` and `sampledMembers` (`semantic.ts`) and as `ProjectionEdge.memberPolicies`, `ProjectionNode.sampled` and the `initial` text of port members in `projectModel`. |
 
 ## 7.4 Executable lowering
 
@@ -1301,6 +1367,7 @@ Normative chapter of [swa.ml 2.2](LANGUAGE_SPECIFICATION.md). Acceptance levels 
 | V18 | `Swaml::Numeric`, `Swaml::Text` and `Swaml::Time` without new ambiguity for 2.2 sources; `now()` reads state and is rejected in initializers; no stale-read warning for `now()` values | SW2001/2006/2011 |
 | V19 | Duration values, policy setting literals, the constant sublanguage per occurrence, trigger identity, unit warning | SW2002/2007/2008/2013/2016/2019 |
 | V20 | Completion transitions, timer guards, internal transitions, deferral, completion-guard and deferral-overflow warnings | SW2005/2008/2017/2018 |
+| V21 | Sampled-read ports and positions, mandatory initial values, zero-or-one owners of sampled members, member policies, dead completion guards | SW2004/2005/2006/2007/2010/2013/2017 |
 
 Validation MUST rebuild semantic string paths as well as indexed references after workspace changes/additions/deletions. Negative lookups matter: a newly loaded declaration may make a previously resolved short name ambiguous. Malformed source remains editable and invalid; recovery cannot silently accept a different program. Definite-return analysis may be conservative rather than solving arbitrary conditions. Dynamic numeric/index/termination failures remain runtime obligations.
 
@@ -1324,6 +1391,7 @@ Validation MUST rebuild semantic string paths as well as indexed references afte
 | E14 | `sqrt` correctly rounded and `Arithmetic` below zero; `intText`; `realText` with ties away from zero, unsigned zero, `Bounds` above 15 decimals and from 1e21; `now()` live logical time in every activation |
 | E15 | Computed waits and timeouts evaluated when they start waiting, with `durationNs`; state timers evaluated after entry with `timer` observations; per-occurrence periods and deadlines; `DurationRange` |
 | E16 | Completion, elapsed-timer and input order; no completion after discards; `discardTimer`; internal reactions keep timers; `CompletionLoop`; retention and offer-ordinal order; one `defer` per retained message |
+| E17 | Sample cells updated at delivery (after latency and faults, ordered within the instant by the event order), independent of consumption, read live and stable within an activation segment, with `sample` observations; per-member policies |
 | E20 | Every run, use case and test of the 2.2 corpus keeps its status, full final stores, machines, deployments, verdict and message and its complete trace, ignoring only `profile` and `languageVersion` (compatibility gate 2, compared with a fixture recorded with implementation 3.1.0) |
 
 A deterministic reference run may choose one permitted order/delivery outcome. Its tests do not establish all possible traces or real transport reliability. A target implementation identifies additional scheduling/transport assumptions and evidence. Idempotency annotations are checked declarations, not proofs of side-effect behavior.
@@ -1357,7 +1425,7 @@ D; Γ ⊢ s ⇒ Γ'
 C —observation→ C'
 ```
 
-The queued messages in Q carry a retained mark (WP5): a message that a deferring state retained, recorded once by `defer` and consumed in offer-ordinal order when a state handles it (chapter 6.5).
+The configuration also holds sample cells S, per port occurrence and sampled member (WP6), initialized to the member's initial value. The queued messages in Q carry a retained mark (WP5): a message that a deferring state retained, recorded once by `defer` and consumed in offer-ordinal order when a state handles it (chapter 6.5).
 
 Values are bounded primitive scalars, nominal enums/records and fixed copied arrays; void has no inhabitant. Effect ε retains read/write/communication/suspension flags, with pure as empty. Transitive union over an acyclic call graph computes effects. The maximum class is a presentation of these flags rather than permission to erase a write beneath suspension.
 
@@ -1378,6 +1446,7 @@ Values are bounded primitive scalars, nominal enums/records and fixed copied arr
 | duration literal | Result uint (nanoseconds), a safe integer; positive in the 2.2 positions |
 | computed duration `(e)` | e integral; in wait and receive timeouts without suspending calls; in state timers pure or reads state; in periods and deadlines in the constant sublanguage, with exact integral `/`, valued per occurrence |
 | completion guard | bool; pure or reads state; no `now()`, directly or through a callee |
+| `p.m` sampled | p an owned, non-forwarded port; m a required attribute that declares an initial value in the definition p has in the occurrence; result the member type; effect reads state (WP6) |
 | timer guard | bool; pure or reads state |
 | var x:T=e | Compatible value, fresh live name; Γ extends with mutable x; suspension allowed only when e is whole call/try |
 | x=e | Mutable local/out/attribute, compatible type; attribute write adds write effect; same whole-expression suspension rule |
@@ -1417,6 +1486,7 @@ Scalar type assignability uses widening, with checked integral value conversion 
 | guarded timer | At expiry, a false guard consumes the timer generation for this entry (`discardTimer`) |
 | internal reaction | Effect only; M (timer generations) unchanged |
 | retain | A deferred member's message stays in Q, marked retained (`defer` once); it is consumed in offer-ordinal order on entering a handling state |
+| sample | At the delivery event of a value whose offer is not older than the offer of the value S[p, m] holds, S[p, m] := value, with a `sample` observation; a read sees the updates ordered before it in the event order (time, phase, insertion ordinal), and one activation sees one value of a cell between two suspensions (WP6) |
 | complete | Finish activation and unlock; correlated reply is offered separately; successful whole completion releases after targets fresh |
 | violation | Deadline, activation overflow, step/concurrent resource or clock failure stops the reference run and bypasses try |
 | case script | A fresh package configuration adds one serial script activation after startup releases; direct primary-subject calls borrow its actual serial context, script emissions/requests/receives use actor ports, on call replies to the pending correlation, and script completion or failure stops the run |
@@ -3218,8 +3288,9 @@ ComponentMember: ComponentUsage | PortUsage | Attribute | Operation | OperationU
 Attribute: (redefines?='redefines')? (constant?='const')? 'attribute' name=Name ':' type=TypeRef '=' value=Expression documentation=Documentation? ';';
 PortDef: 'port' 'def' name=Name '{' documentation=Documentation? members+=PortMember* '}';
 PortUsage: (redefines?='redefines')? (optional?='optional')? (reversed?='reversed')? 'port' name=Name (':' definition=[PortDef:QualifiedName] documentation=Documentation? ';' | '{' documentation=Documentation? members+=PortMember* '}');
-PortMember: direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';
-Connect: (redefines?='redefines')? 'connect' (name=Name)? (':' policy=[QosPolicy:QualifiedName])? '(' source=Path ',' target=Path ')' documentation=Documentation? ';';
+PortMember: direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef ('=' initial=Expression)? | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';
+Connect: (redefines?='redefines')? 'connect' (name=Name)? (':' policy=[QosPolicy:QualifiedName])? '(' source=Path ',' target=Path ')' (documentation=Documentation? ';' | '{' documentation=Documentation? memberPolicies+=MemberPolicy+ '}');
+MemberPolicy: member=Name ':' policy=[QosPolicy:QualifiedName] documentation=Documentation? ';';
 QosPolicy: 'qos' 'def' name=Name (':' base=QualifiedName)? '{' documentation=Documentation? settings+=PolicySetting* '}';
 PolicySetting: name=Name '=' value=Expression ';';
 Operation: (redefines?='redefines')? 'operation' (definition?='def')? name=Name '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)? body=OperationBody;
@@ -6617,6 +6688,208 @@ package ReactionForms {
     publish source.out.done();
     wait 1ms;
     assert counter.polls == 111;
+  }
+}
+```
+
+### 48-door-status-sampling.swaml
+
+```swaml
+package DoorStatus {
+  /** A transmit task in the shape of the door model's ComMain. In 2.2 it needs a store handler per required attribute (StoringCom: a receive entry and an attribute copy for each value it sends). From 2.3 an attribute member that declares an initial value is sampled: door.ajar reads the latest value delivered to the port without a handler (SamplingCom). The cell holds the initial value until the first delivery, takes each delivered value at its delivery instant whether or not an owner consumes it, and is read live, also after a suspension. */
+  datatype StatusPdu {
+    ajar: bool;
+    window: int;
+  }
+  port def DoorState {
+    provides attribute ajar: bool = false;
+    provides attribute window: int = -1;
+  }
+  port def StatusFrames {
+    provides event status(pdu: StatusPdu);
+  }
+  component def StoringCom {
+    /** The 2.2 shape: one stored copy and one handler per sent value. */
+    reversed port door: DoorState;
+    port tx: StatusFrames;
+    attribute ajarCopy: bool = false;
+    attribute windowCopy: int = -1;
+    attribute frames: uint = 0;
+    operation storeAjar(v: bool) {
+      ajarCopy = v;
+    }
+    operation storeWindow(v: int) {
+      windowCopy = v;
+    }
+    operation txMain() {
+      publish tx.status(record StatusPdu { ajar = ajarCopy; window = windowCopy; });
+      frames = frames + 1;
+    }
+    schedule {
+      on receive door.ajar(v) storeAjar(v);
+      on receive door.window(v) storeWindow(v);
+      on every 10ms txMain();
+    }
+  }
+  component def SamplingCom {
+    /** The 2.3 shape: ajar is sampled only; window is sampled and also consumed by a handler that counts its changes. */
+    reversed port door: DoorState;
+    port tx: StatusFrames;
+    attribute sentAjar: bool = false;
+    attribute sentWindow: int = 0;
+    attribute frames: uint = 0;
+    attribute windowChanges: uint = 0;
+    attribute settled: int = 0;
+    operation onWindow(v: int) {
+      windowChanges = windowChanges + 1;
+    }
+    operation txMain() {
+      sentAjar = door.ajar;
+      sentWindow = door.window;
+      publish tx.status(record StatusPdu { ajar = door.ajar; window = door.window; });
+      frames = frames + 1;
+    }
+    operation settle() {
+      /** Reads the window position, waits, and reads it again: the second read sees a value delivered during the wait. */
+      var before: int = door.window;
+      wait 4ms;
+      settled = door.window - before;
+    }
+    schedule {
+      on receive door.window(v) onWindow(v);
+      on every 10ms txMain();
+      on every 20ms settle();
+    }
+  }
+  component def Sensors {
+    /** Interface-only actor for the door sensors. */
+    port toStoring: DoorState;
+    port toSampling: DoorState;
+  }
+  component def Gateway {
+    /** Interface-only actor that receives the status frames. */
+    reversed port fromStoring: StatusFrames;
+    reversed port fromSampling: StatusFrames;
+  }
+  component storing: StoringCom;
+  component sampling: SamplingCom;
+  component sensors: Sensors;
+  component gateway: Gateway;
+  connect (sensors.toStoring, storing.door);
+  connect (sensors.toSampling, sampling.door);
+  connect (storing.tx, gateway.fromStoring);
+  connect (sampling.tx, gateway.fromSampling);
+  associate sensors, gateway to 'Initial values before the first delivery', 'Latest value at each frame', 'Live read after a wait';
+  test 'Initial values before the first delivery' of sampling {
+    /** Nothing is sent: the 10 ms frame carries the declared initial values, false and -1 (not the zero value 0). */
+    wait 15ms;
+    assert sampling.frames == 1 and not sampling.sentAjar and sampling.sentWindow == -1;
+  }
+  test 'Latest value at each frame' of sampling {
+    /** The door opens at 2 ms and the window moves to 30 and then 60 before the 10 ms frame; the frame carries the latest values. Only window is consumed, so ajar has no pending value and no deliver observation, and both window values are counted. At 11 ms the door closes; the 20 ms frame carries false. */
+    wait 2ms;
+    send sensors.toSampling.ajar(true);
+    send sensors.toSampling.window(30);
+    send sensors.toSampling.window(60);
+    wait 9ms;
+    assert sampling.frames == 1 and sampling.sentAjar and sampling.sentWindow == 60;
+    send sensors.toSampling.ajar(false);
+    wait 9ms;
+    assert sampling.frames == 2 and not sampling.sentAjar and sampling.sentWindow == 60 and sampling.windowChanges == 2;
+  }
+  test 'Live read after a wait' of sampling {
+    /** settle reads the window at 20 ms, waits 4 ms and reads again. A value delivered at 22 ms is seen by the second read: settled is the difference 50 - 10. */
+    wait 5ms;
+    send sensors.toSampling.window(10);
+    wait 17ms;
+    send sensors.toSampling.window(50);
+    wait 8ms;
+    assert sampling.settled == 40;
+  }
+}
+```
+
+### 49-body-can-member-policies.swaml
+
+```swaml
+package BodyCan {
+  /** A body CAN link in the shape of the door model's BodyCanFrames. Event-triggered frames (crash) must be queued and kept in order, while a cyclic frame (lockStatus) only needs its latest value. In 2.2 one connection has one policy, so either cyclic frames pile up or crash frames are lost. From 2.3 a connection names a policy per member: connect bodyCan: Cyclic (bcm.bus, dcu.canBus) { crash: CanEvent; } queues crash frames with CanEvent and keeps only the newest lockStatus frame with Cyclic. The effective policy of a member route is its member policy, else the connection policy, else Swaml::Qos::Default. */
+  import Swaml::Qos;
+  qos def CanEvent: Policy {
+    delivery = Delivery.atMostOnce;
+    ordering = Ordering.fifo;
+    capacity = 8;
+    overflow = Overflow.dropOldest;
+    requestTimeout = 1s;
+  }
+  qos def Cyclic: Policy {
+    delivery = Delivery.atMostOnce;
+    ordering = Ordering.fifo;
+    capacity = 1;
+    overflow = Overflow.dropOldest;
+    requestTimeout = 1s;
+  }
+  port def BodyCanFrames {
+    provides event crash(severity: int);
+    provides event lockStatus(locked: bool);
+  }
+  component def DoorEcu {
+    /** Takes one frame, then stays busy for 5 ms and retains the frames that arrive meanwhile in their connection queues, where each member route's policy applies. */
+    reversed port canBus: BodyCanFrames;
+    attribute crashes: uint = 0;
+    attribute crashOrder: int = 0;
+    attribute statuses: uint = 0;
+    attribute locked: bool = false;
+    operation run() {
+      initial idle;
+      state idle {
+        on receive canBus.crash(severity) to busy {
+          crashes = crashes + 1;
+          crashOrder = crashOrder * 10 + severity;
+        }
+        on receive canBus.lockStatus(v) to busy {
+          statuses = statuses + 1;
+          locked = v;
+        }
+      }
+      state busy {
+        defer canBus.crash, canBus.lockStatus;
+        after 5ms to idle {
+        }
+      }
+    }
+    schedule {
+      on start run();
+    }
+  }
+  component def Bcm {
+    /** Interface-only actor: the body control module. */
+    port bus: BodyCanFrames;
+    port plainBus: BodyCanFrames;
+  }
+  component dcu: DoorEcu;
+  component plain: DoorEcu;
+  component bcm: Bcm;
+  connect bodyCan: Cyclic (bcm.bus, dcu.canBus) {
+    crash: CanEvent;
+  }
+  connect plainCan: Cyclic (bcm.plainBus, plain.canBus);
+  associate bcm, plain to 'Per-member policies on one connection';
+  test 'Per-member policies on one connection' of dcu {
+    /** Three crash frames and three lock status frames in one burst. dcu takes the first status frame at once; while it is busy its status queue keeps only the newest of the two others (Cyclic, capacity 1, dropOldest) and its crash queue keeps every crash frame (CanEvent): two status frames, the last one true, and three crashes in the order 1, 2, 3. plain has the one policy Cyclic for both members, so it loses crash frames too: it handles crash 1 and then only crash 3. */
+    publish bcm.bus.lockStatus(true);
+    publish bcm.bus.lockStatus(false);
+    publish bcm.bus.lockStatus(true);
+    publish bcm.bus.crash(1);
+    publish bcm.bus.crash(2);
+    publish bcm.bus.crash(3);
+    publish bcm.plainBus.crash(1);
+    publish bcm.plainBus.crash(2);
+    publish bcm.plainBus.crash(3);
+    wait 100ms;
+    assert dcu.statuses == 2 and dcu.locked;
+    assert dcu.crashes == 3 and dcu.crashOrder == 123;
+    assert plain.crashes == 2 and plain.crashOrder == 13;
   }
 }
 ```

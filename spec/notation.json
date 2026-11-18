@@ -229,6 +229,7 @@
       ],
       "productions": [
         "Connect",
+        "MemberPolicy",
         "QosPolicy",
         "PolicySetting"
       ],
@@ -970,6 +971,13 @@
       },
       {
         "production": "Connect",
+        "concepts": [
+          "connection"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "MemberPolicy",
         "concepts": [
           "connection"
         ],

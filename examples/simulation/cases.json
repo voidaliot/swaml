@@ -108,6 +108,14 @@
     "examples/47-reaction-forms.swaml": {
       "ReactionForms::Every form": "pass"
     },
+    "examples/48-door-status-sampling.swaml": {
+      "DoorStatus::Initial values before the first delivery": "pass",
+      "DoorStatus::Latest value at each frame": "pass",
+      "DoorStatus::Live read after a wait": "pass"
+    },
+    "examples/49-body-can-member-policies.swaml": {
+      "BodyCan::Per-member policies on one connection": "pass"
+    },
     "examples/notation/catalog.swaml": {
       "Notation::Startup": "pass"
     },

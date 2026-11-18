@@ -2,7 +2,7 @@ import { AstUtils, type AstNode } from 'langium';
 import type { Range } from 'vscode-languageserver';
 import * as a from './generated/ast.js';
 import { SWAML_LANGUAGE_VERSION } from './edition.js';
-import { isCompletion, isInternal, stateDeferrals, entryDeadline, entryPeriod, displayText, associationPairs, body, isAssociationList, direction, effectiveQos, identity, isExecutable, members, nanos, owner, portMembers, schedule, signature, typeKey, type Node } from './semantic.js';
+import { memberQos, sampledMembers, isCompletion, isInternal, stateDeferrals, entryDeadline, entryPeriod, displayText, associationPairs, body, isAssociationList, direction, effectiveQos, identity, isExecutable, members, nanos, owner, portMembers, schedule, signature, typeKey, type Node } from './semantic.js';
 import { documentationText, viewCandidates, type ViewSubject } from './presentation.js';
 export interface ProjectionNode {
     id: string;
@@ -32,8 +32,12 @@ export interface ProjectionNode {
                 direction: string;
             }[];
             idempotent: boolean;
+            /** The display text of an attribute member's initial value (WP6-S02); absent without one. */
+            initial?: string;
         }[];
     }[];
+    /** The members a component samples, as sorted port.member strings (WP6-M04); absent when it samples none. */
+    sampled?: string[];
     schedule?: {
         trigger: string;
         target: string;
@@ -50,6 +54,11 @@ export interface ProjectionNode {
     reactions?: { label: string; order: number; guard?: string }[];
     /** A state's deferred members in source order (WP5-M01); absent when the state defers nothing. */
     deferrals?: string[];
+}
+/** Interconnect labels of a connection's member policies (WP6-M01); an unfinished one without a member or policy name is left out. */
+function memberPolicyLabels(c: a.Connect): Pick<ProjectionEdge, 'memberPolicies'> {
+    const complete = c.memberPolicies.filter(mp => !!mp.member && !!(mp.policy?.ref?.name ?? mp.policy?.$refText));
+    return complete.length ? { memberPolicies: complete.map(mp => ({ member: mp.member, policy: mp.policy.ref?.name ?? mp.policy.$refText, qos: memberQos(c, mp.member) })) } : {};
 }
 /** The label of a state transition: its trigger, or for a completion transition its guard (WP5-M01). */
 function transitionLabel(t: a.Transition): string {
@@ -69,6 +78,8 @@ export interface ProjectionEdge {
     completion?: true;
     /** The guard text of a guarded timer transition (WP5-M01); absent otherwise. */
     guard?: string;
+    /** The member policies of a connection with each member route's effective policy (WP6-M01); absent without them. */
+    memberPolicies?: { member: string; policy: string; qos: ReturnType<typeof effectiveQos> }[];
 }
 export interface Projection {
     languageVersion: typeof SWAML_LANGUAGE_VERSION;
@@ -115,11 +126,14 @@ export function projectModel(models: readonly a.Model[]): Projection {
             // Computed periods and deadlines are values of an occurrence: a usage shows the evaluated nanoseconds and the
             // expression text, a definition the expression text only (WP4-M03).
             const occurrence = a.isComponentUsage(n);
-            p.ports = members(n).filter(a.isPortUsage).map(port => ({ name: port.name, optional: port.optional, reversed: port.reversed, members: portMembers(port).map(m => ({ name: m.name, kind: m.kind, direction: direction(port, m), type: typeKey(m.type ?? m.result), parameters: m.parameters.map(x => ({ name: x.name, type: typeKey(x.type), direction: x.direction ?? 'in' })), idempotent: m.idempotent })) }));
+            p.ports = members(n).filter(a.isPortUsage).map(port => ({ name: port.name, optional: port.optional, reversed: port.reversed, members: portMembers(port).map(m => ({ name: m.name, kind: m.kind, direction: direction(port, m), type: typeKey(m.type ?? m.result), parameters: m.parameters.map(x => ({ name: x.name, type: typeKey(x.type), direction: x.direction ?? 'in' })), idempotent: m.idempotent, ...(m.initial ? { initial: displayText(m.initial) } : {}) })) }));
+            const sampled = [...sampledMembers(n)].sort();
+            if (sampled.length)
+                p.sampled = sampled;
             p.schedule = schedule(n).map(e => ({ trigger: e.kind + (e.endpoint ? ' ' + e.endpoint : e.predecessor ? ' ' + e.predecessor : ''), target: e.operation, periodNs: entryPeriod(e, occurrence ? n : undefined), deadlineNs: entryDeadline(e, occurrence ? n : undefined), concurrent: e.concurrent, code: e.$cstNode!.text, ...(e.periodValue ? { periodExpression: displayText(e.periodValue) } : {}), ...(e.deadlineValue ? { deadlineExpression: displayText(e.deadlineValue) } : {}) }));
             for (const c of members(n).filter(a.isConnect)) {
                 const forward = c.source.split('.').length !== c.target.split('.').length;
-                addEdge(forward ? 'forwarding' : 'connection', id + '.' + c.source, id + '.' + c.target, c.name ?? 'Default', forward ? {} : { policy: effectiveQos(c) });
+                addEdge(forward ? 'forwarding' : 'connection', id + '.' + c.source, id + '.' + c.target, c.name ?? 'Default', forward ? {} : { policy: effectiveQos(c), ...memberPolicyLabels(c) });
             }
             for (const e of schedule(n))
                 if (e.kind === 'after')
@@ -144,7 +158,7 @@ export function projectModel(models: readonly a.Model[]): Projection {
         if (a.isPackage(n)) {
             // Package connections join ports of top-level occurrences; links record intent in the package.
             for (const c of n.connections)
-                addEdge('connection', id + '::' + c.source, id + '::' + c.target, c.name ?? 'Default', { policy: effectiveQos(c) });
+                addEdge('connection', id + '::' + c.source, id + '::' + c.target, c.name ?? 'Default', { policy: effectiveQos(c), ...memberPolicyLabels(c) });
             // Every occurrence–case pair of a list statement is one link with its list positions (WP2-S06, WP2-M04).
             for (const x of n.associations)
                 for (const pair of associationPairs(x))

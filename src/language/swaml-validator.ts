@@ -10,9 +10,9 @@ const EXPRESSION_TYPES = new Set(['ConditionalExpression', 'BinaryExpression', '
 /** Whether an expression is inside a conditional expression (WP2-S04). */
 const insideConditional = (e: AstNode): boolean => { for (let n = e.$container; n && (isExpression(n) || a.isFieldValue(n) || a.isSelector(n)); n = n.$container) if (a.isConditionalExpression(n)) return true; return false; };
 /** The name of the attribute, requirement attribute or policy setting whose initializer contains e. */
-const initialized = (e: AstNode): string => { for (let n: AstNode | undefined = e; n; n = n.$container) if (a.isAttribute(n) || a.isPolicySetting(n)) return n.name; return ''; };
+const initialized = (e: AstNode): string => { for (let n: AstNode | undefined = e; n; n = n.$container) if (a.isAttribute(n) || a.isPolicySetting(n) || a.isPortMember(n)) return n.name; return ''; };
 const isExpression = (n: unknown): n is a.Expression => !!n && typeof n === 'object' && EXPRESSION_TYPES.has((n as AstNode).$type);
-import { attributeAccess, isCompletion, isLiteralTrue, isReactionForm, transitionKind, useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_2_3_URI, container, constantValue, displayText, entryDeadline, entryPeriod, representableDuration, settingDuration, triggerIdentity, type ConstantProblem } from './semantic.js';
+import { forwardedPorts, isSampledMember, memberPolicy, memberQos, optsIn, sampledMembers, sampledReadForm, sampledReads, attributeAccess, isCompletion, isLiteralTrue, isReactionForm, transitionKind, useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_2_3_URI, container, constantValue, displayText, entryDeadline, entryPeriod, representableDuration, settingDuration, triggerIdentity, type ConstantProblem } from './semantic.js';
 import { ambiguousNameMessage } from './swaml-scope.js';
 type Env = Map<string, {
     type: string;
@@ -219,6 +219,7 @@ export class SwamlValidator {
             const forward = l.child !== r.child, boundary = l.child ? r : l, child = l.child ? l : r;
             for (const issue of compatibility(forward ? boundary.port : l.port, forward ? child.port : r.port, forward))
                 this.report(link, 'SW2004', `${forward ? 'Forwarding' : 'Connection'}: ${issue}.`);
+            this.memberPolicies(link, forward, [l.port, r.port]);
             if (forward) {
                 if (link.policy)
                     this.report(link, 'SW2004', 'Forwarding cannot have a policy.');
@@ -231,11 +232,11 @@ export class SwamlValidator {
             else {
                 for (const path of [link.source, link.target])
                     counts.set(path, (counts.get(path) ?? 0) + 1);
-                if (effectiveQos(link).delivery === 'atLeastOnce')
-                    for (const ep of [l, r])
-                        for (const m of portMembers(ep.port))
-                            if (m.kind === 'operation' && direction(ep.port, m) === 'provides' && !m.idempotent)
-                                this.report(link, 'SW2013', `atLeastOnce requires idempotent provided operation ${ep.path}.${m.name}.`);
+                // Per member route (WP6-S07, WP6-D07): without member policies every member has the connection's policy.
+                for (const ep of [l, r])
+                    for (const m of portMembers(ep.port))
+                        if (m.kind === 'operation' && direction(ep.port, m) === 'provides' && !m.idempotent && memberQos(link, m.name).delivery === 'atLeastOnce')
+                            this.report(link, 'SW2013', `atLeastOnce requires idempotent provided operation ${ep.path}.${m.name}.`);
             }
         }
         for (const [path, count] of counts) {
@@ -243,8 +244,9 @@ export class SwamlValidator {
             if (count > 1 && portMembers(ep.port).some(m => direction(ep.port, m) === 'requires' && m.kind !== 'event'))
                 this.report(ep.port, 'SW2004', `${path} requires attributes or operations and needs one peer.`);
         }
-        this.schedules(c);
-        this.ownership(c, forwarded);
+        const sampledInherited = this.inheritedSamples(c);
+        this.schedules(c, sampledInherited.explained);
+        this.ownership(c, forwarded, sampledInherited.paths);
         if (a.isPackage(c.$container) && a.isComponentUsage(c) && occurrenceCount(c) > OCCURRENCE_LIMIT)
             this.report(c, 'SW2013', 'Expanded root exceeds the reference validation limit of ' + OCCURRENCE_LIMIT + ' component occurrences.');
     }
@@ -256,6 +258,36 @@ export class SwamlValidator {
             if (m.kind !== 'operation' && (m.idempotent || m.result || m.parameters.some(p => p.direction === 'out')))
                 this.report(m, 'SW2004', 'Only operations have out parameters, results or idempotent.');
             this.unique(m.parameters, m);
+            // WP6-S02, WP6-D04: an initial value is pure and assignable to the member type (the initializer messages),
+            // checked where the members are declared rather than once per typed port usage.
+            if (m.initial && m.kind === 'attribute' && m.type && (a.isPortDef(n) || a.isPortUsage(n) && !n.definition))
+                this.value(m.initial, typeKey(m.type), new Map());
+        }
+    }
+    /** The connection as diagnostics name it: its name, or connect (source, target). */
+    private connectionText(link: a.Connect): string {
+        return link.name !== undefined ? formatName(link.name, MESSAGE_SPELLING) : `connect (${formatPath(link.source, MESSAGE_SPELLING)}, ${formatPath(link.target, MESSAGE_SPELLING)})`;
+    }
+    /**
+     * WP6-S05, WP6-D06 (SW2004): member policies are not allowed on a forwarding; each names a member present, by name,
+     * in both connected ports, at most once. Completeness of the named policy is the policy's own SW2013 (WP6-D07).
+     */
+    private memberPolicies(link: a.Connect, forward: boolean, ports: [a.PortUsage, a.PortUsage]): void {
+        if (!link.memberPolicies.length)
+            return;
+        if (forward) {
+            this.report(link, 'SW2004', `Member policies are not allowed on forwarding ${this.connectionText(link)}.`, false, this.at(link.memberPolicies[0], 'member'));
+            return;
+        }
+        const seen = new Set<string>();
+        // An unfinished member policy in another document of the workspace (this one would not be validated) is skipped.
+        for (const mp of link.memberPolicies.filter(x => x.member !== undefined)) {
+            const at = this.at(mp, 'member');
+            if (seen.has(mp.member))
+                this.report(mp, 'SW2004', `${formatName(mp.member, MESSAGE_SPELLING)} has two policies in ${this.connectionText(link)}.`, false, at);
+            else if (!ports.every(p => portMembers(p).some(m => m.name === mp.member)))
+                this.report(mp, 'SW2004', `${formatName(mp.member, MESSAGE_SPELLING)} is not a member of both ports of ${this.connectionText(link)}.`, false, at);
+            seen.add(mp.member);
         }
     }
     private policy(q: a.QosPolicy): void {
@@ -520,6 +552,94 @@ export class SwamlValidator {
                     this.report(e, 'SW2006', 'Attribute initializers must be pure.');
             }
     }
+    /**
+     * A sampled read p.m (WP6-S01, WP6-S08) in component c: the member type, '?' after reporting an error, or undefined
+     * when the reference is not the 2.3 form, because member m of the owned port p declares no initial value (optsIn),
+     * so that every 2.2 source keeps its 2.2 diagnostics. Errors: not a required attribute (SW2006, WP6-D05), a
+     * forwarded boundary (SW2005, WP6-D01) and an initializer (SW2006, WP6-D05). In the constant sublanguage (period
+     * and deadline expressions) the constant check reports it (SW2007, WP6-D05).
+     */
+    private sampledRead(e: a.ReferenceExpression, c: Structure, op: Executable | undefined): string | undefined {
+        const form = sampledReadForm(e, c);
+        if (!form)
+            return undefined;
+        const text = formatPath(form.port.name + '.' + form.member.name, MESSAGE_SPELLING);
+        if (!isSampledMember(form.port, form.member)) {
+            this.report(e, 'SW2006', `${text} is not a required attribute of an owned port.`);
+            return '?';
+        }
+        if (forwardedPorts(c).has(form.port.name)) {
+            this.report(e, 'SW2005', `${text} cannot be sampled: ${formatName(form.port.name, MESSAGE_SPELLING)} is a forwarded boundary.`);
+            return '?';
+        }
+        if (!op && !this.constantDivision) {
+            this.report(e, 'SW2006', 'A sampled read is not allowed in an initializer.');
+            return '?';
+        }
+        return typeKey(form.member.type);
+    }
+    /** occurrence.port.member in a case script, of a member of a package occurrence's port that opts in to sampling (WP6-S09). */
+    private scriptSample(e: a.ReferenceExpression): string | undefined {
+        const parts = e.path.split('.'), p = owner(this.script!.scenario, a.isPackage);
+        if (parts.length < 3 || parts[0].includes('::') || !p)
+            return undefined;
+        const occurrence = packageOccurrences(p).find(o => o.name === parts[0]), port = occurrence && members(occurrence).filter(a.isPortUsage).find(x => x.name === parts[1]);
+        return port && optsIn(portMembers(port).find(m => m.name === parts[2])) ? formatPath(parts[1] + '.' + parts[2], MESSAGE_SPELLING) : undefined;
+    }
+    /**
+     * WP6-S03 (WP6-D02) and WP6-S08 (WP6-D01) for inherited behaviour: a sampled read of an inherited executable or
+     * schedule entry, valid where it is declared, stays a sampled read of c. A port redefinition of c that removes the
+     * initial value of a member it samples is SW2004 at the redefinition; a forwarding of c that makes its port a
+     * forwarded boundary is SW2005 at the forwarding; each is reported once per member. Returns the port.member paths
+     * that a base of c samples in behaviour c inherits: they keep the ownership rule of sampled members (WP6-S04), so a
+     * read that one of these errors already explains is not also reported as a member without an owner. Also returns
+     * the inherited schedule entries with such a read: their arguments, checked where they are declared, are not typed
+     * again in c, so the valid base gets no unknown-value error for a read the error at c explains (review V1).
+     */
+    private inheritedSamples(c: Structure): { paths: Set<string>, explained: Set<a.ScheduleEntry> } {
+        const paths = new Set<string>(), reported = new Set<string>(), seen = new Set<AstNode>(), reads = new Map<a.ScheduleEntry, string[]>(), broken = new Set<string>();
+        if (this.baseCycle(c, new Set()))
+            return { paths, explained: new Set() };
+        const executables = members(c).filter(isExecutable), entries = new Set(schedule(c)), forwarded = forwardedPorts(c);
+        for (let base = a.isComponentDef(c) ? c.specializes?.ref : c.definition?.ref; base; base = base.specializes?.ref)
+            for (const read of sampledReads(base)) {
+                // Only reads that c inherits: from an executable or schedule entry that c does not replace.
+                const entry = owner(read.node, a.isScheduleEntry), site = entry ? undefined : executables.find(x => { const b = body(x); return !!b && AstUtils.hasContainerOfType(read.node, n => n === b); });
+                if (seen.has(read.node) || (entry ? !entries.has(entry) : !site))
+                    continue;
+                seen.add(read.node);
+                const path = read.port.name + '.' + read.member.name, text = formatPath(path, MESSAGE_SPELLING);
+                paths.add(path);
+                if (entry)
+                    reads.set(entry, [...reads.get(entry) ?? [], path]);
+                if (reported.has(path))
+                    continue;
+                const who = entry ? 'an inherited schedule entry' : `inherited ${formatName(site!.name, MESSAGE_SPELLING)}`;
+                const port = members(c).filter(a.isPortUsage).find(x => x.name === read.port.name);
+                const member = port && portMembers(port).find(m => m.name === read.member.name);
+                const definition = port && formatName(port.definition?.ref?.name ?? port.name, MESSAGE_SPELLING);
+                // A read the effective port no longer samples as typed; its error is at the redefinition, here or in a base of c.
+                if (member && (!optsIn(member) || typeKey(member.type) !== typeKey(read.member.type)))
+                    broken.add(path);
+                if (port && c.members.includes(port) && member && !optsIn(member)) {
+                    this.report(port, 'SW2004', `Sampled attribute ${formatName(member.name, MESSAGE_SPELLING)} of ${definition} needs an initial value: ${who} samples ${text}.`);
+                    reported.add(path);
+                }
+                // The inherited read was typed with the base's member type; a redefinition may not change it.
+                else if (port && c.members.includes(port) && member && typeKey(member.type) !== typeKey(read.member.type)) {
+                    this.report(port, 'SW2004', `Sampled attribute ${formatName(member.name, MESSAGE_SPELLING)} of ${definition} must keep type ${typeKey(read.member.type)}: ${who} samples ${text}.`);
+                    reported.add(path);
+                }
+                const link = forwarded.has(read.port.name) ? c.members.filter(a.isConnect).find(l => l.source === read.port.name || l.target === read.port.name) : undefined;
+                if (link && !reported.has(path)) {
+                    this.report(link, 'SW2005', `${text} cannot be sampled: ${formatName(read.port.name, MESSAGE_SPELLING)} is a forwarded boundary; ${who} samples it.`);
+                    reported.add(path);
+                }
+                if (reported.has(path))
+                    broken.add(path);
+            }
+        return { paths, explained: new Set([...reads].filter(([, p]) => p.some(x => broken.has(x))).map(([entry]) => entry)) };
+    }
     /** Expressions nested deeper than this are reported instead of inferred, so validation cannot exhaust the stack. */
     private static readonly EXPRESSION_DEPTH_LIMIT = 1000;
     private readonly tooDeep = new Set<AstNode>();
@@ -565,8 +685,23 @@ export class SwamlValidator {
                 if (a.isEnumType(en) && fields.length === 1 && en.literals.includes(fields[0]))
                     // An enum literal has no fields or elements, so selectors after it are reported (WP1-D04).
                     return selected ? this.select(identity(en), steps.slice(1), env, c, op, e) : identity(en);
+                // WP6-S01: p.m on an owned port that opts in to sampling reads its sample cell; fields and selectors follow.
+                const sampled = !this.script && c ? this.sampledRead(e, c, op) : undefined;
+                if (sampled === '?')
+                    return '?';
+                if (sampled !== undefined) {
+                    t = sampled as string;
+                    fields = path.slice(1);
+                    steps = valueSteps(e).slice(1);
+                }
+                // WP6-S09, WP6-D08: a case script does not sample; it keeps on receive at actor ports.
+                const scriptSample = this.script && this.scriptSample(e);
+                if (scriptSample) {
+                    this.report(e, 'SW2010', `A case script cannot sample ${scriptSample}; use on receive.`);
+                    return '?';
+                }
                 // A test may read attributes of its subject and of parts inside it, indexing part families with literals (WP1-S06).
-                const read = this.script && caseRead(this.script.scenario, e);
+                const read = sampled === undefined && this.script ? caseRead(this.script.scenario, e) : undefined;
                 if (read?.kind === 'problem') {
                     if (this.script!.scenario.kind === 'test')
                         this.partProblem(e, 'path', read.problem);
@@ -583,7 +718,7 @@ export class SwamlValidator {
                     fields = read.steps.flatMap(x => x.field !== undefined ? [x.field] : []);
                     steps = read.steps;
                 }
-                else {
+                else if (!sampled) {
                     this.report(e, 'SW2002', this.script ? (selected
                         // A 2.3 read names the whole path; a 2.2 read keeps its 2.2 message (review F3, F5).
                         ? `Unknown value ${this.placeText(e)}${this.failingSegment(e, steps)}; a case reads its locals and bindings, and a test may also read attributes of its subject, explicitly associated software components and their parts (a part family member by a literal index, as in twins[0]).`
@@ -591,6 +726,8 @@ export class SwamlValidator {
                     return '?';
                 }
             }
+            if (t === undefined)
+                return '?';
             if (selected)
                 return this.select(t, steps, env, c, op, e);
             for (const field of fields) {
@@ -792,11 +929,16 @@ export class SwamlValidator {
             this.report(e, 'SW2002', `A duration must be integral, found ${t}.`);
         const result = constantValue(e, c);
         if (result.problem)
-            this.constantProblem(e, result.problem);
+            this.constantProblem(e, result.problem, c);
         this.unitWarning(e, c);
     }
     /** Reports a membership problem of a period or deadline expression (WP4-D03); value problems are per occurrence. */
-    private constantProblem(e: a.Expression, problem: ConstantProblem): boolean {
+    private constantProblem(e: a.Expression, problem: ConstantProblem, c?: Structure): boolean {
+        // A sampled read is state that changes without a write (WP6-S08, WP6-D05).
+        if (problem.kind === 'value' && c && a.isReferenceExpression(problem.node) && sampledReadForm(problem.node, c)) {
+            this.report(e, 'SW2007', 'A sampled read is not allowed in a constant duration.');
+            return true;
+        }
         const category = problem.kind === 'call' ? problem.clock ? 'now()' : 'calls' : problem.kind === 'state' ? 'mutable state' : problem.kind === 'value' ? 'values other than integers, durations and booleans' : problem.kind === 'cycle' ? 'cyclic const attributes' : undefined;
         if (category)
             this.report(e, 'SW2007', `${displayText(e)} is not a constant duration: ${category} are not allowed.`);
@@ -832,7 +974,7 @@ export class SwamlValidator {
                         return undefined;
                     }
                     if (result.problem) {
-                        once(expression, 'member', () => this.constantProblem(expression, result.problem));
+                        once(expression, 'member', () => this.constantProblem(expression, result.problem, occurrence.structure));
                         return undefined;
                     }
                     if (typeof result.value !== 'bigint')
@@ -1157,7 +1299,7 @@ export class SwamlValidator {
         return result;
     }
     private terminates(b: a.Block | a.OperationBody): boolean { return b.statements.some(s => a.isReturn(s) || a.isFail(s) || a.isIf(s) && !!s.otherwise && this.terminates(s.then) && this.terminates(s.otherwise) || a.isInterruptible(s) && this.terminates(s.body) && this.terminates(s.handler) || a.isUntil(s) && this.terminates(s.body) && (!s.limit||(constantNumber(s.limit)??0)>0) || a.isForEach(s) && /\[[1-9]\d*\]$/.test(expressionTypes.get(s.collection)??'') && this.terminates(s.body)); }
-    private schedules(c: Structure): void {
+    private schedules(c: Structure, explained: ReadonlySet<a.ScheduleEntry>): void {
         const entries = schedule(c), keys = new Set<string>();
         for (const e of c.members.filter(a.isSchedule).flatMap(s => s.entries)) {
             // Computed periods and deadlines where they are written: typing, membership and the unit (WP4-S04, WP4-S05).
@@ -1177,7 +1319,8 @@ export class SwamlValidator {
                 continue;
             }
             const env = e.endpoint ? this.inputEnv(e, this.env(c), c, e.kind === 'call') : this.env(c);
-            this.arguments(e, sig.parameters, e.args, env, c, op);
+            if (!explained.has(e))
+                this.arguments(e, sig.parameters, e.args, env, c, op);
             if (e.kind !== 'call' && (typeKey(sig.result) !== 'void' || sig.parameters.some(p => p.direction === 'out')))
                 this.report(e, 'SW2007', 'Only on call entries may bind results/out parameters.');
             if (e.kind === 'call') {
@@ -1363,16 +1506,49 @@ export class SwamlValidator {
         return nodes(block).some(n => a.isWait(n) || a.isReceive(n) || a.isInterruptible(n) || a.isCallExpression(n) && (n.target.includes('.') || ((t = this.callTarget(n, c)) => !!t && isExecutable(t) && effects(t, c).suspends)()));
     }
     private completionGuards(op: Executable, b: a.OperationBody, c: Structure | undefined, erroneous: ReadonlySet<a.Transition>): void {
-        const polls = (s: a.State) => s.transitions.some(t => t.target === s.name && (!!t.endpoint || !!t.delay || !!t.delayValue));
-        const completions = b.states.flatMap(s => s.transitions.filter(t => isCompletion(t) && t.guard && !isLiteralTrue(t.guard) && !erroneous.has(t) && !polls(s) && !(c && !constantValue(t.guard, c).problem)).map(t => ({ s, t })));
+        // WP6-D09 (WP5 review N2): a state polls when a reaction that can fire re-evaluates its completion guards: a self
+        // receive or timer transition, or an internal receive transition (an internal timer fires once per entry),
+        // whose guard is absent or does not fold to false.
+        const canFire = (t: a.Transition) => !t.guard || !c || constantValue(t.guard, c).value !== false;
+        const polls = (s: a.State) => s.transitions.some(t => canFire(t) && (t.target === s.name && (!!t.endpoint || !!t.delay || !!t.delayValue) || t.target === undefined && !!t.endpoint));
+        const candidates = b.states.flatMap(s => s.transitions.filter(t => isCompletion(t) && t.guard && !isLiteralTrue(t.guard) && !erroneous.has(t)).map(t => ({ s, t })));
+        // WP6-D10 (SW2017): a guard that folds to false in its definition is dead: the transition is never taken. A
+        // guard that reads a const attribute some usage redefines folds per occurrence and is left alone.
+        for (const { s, t } of candidates)
+            if (c && constantValue(t.guard!, c).value === false && !this.redefinedConstant(t.guard!, c))
+                this.report(t.guard!, 'SW2017', `Completion guard of ${formatName(s.name, MESSAGE_SPELLING)} is always false; the transition is never taken.`, true);
+        const completions = candidates.filter(({ t }) => !(c && !constantValue(t.guard!, c).problem));
         if (!completions.length)
             return;
         const written = attributeAccess(b.states.flatMap(s => [...s.actions.map(x => x.body), ...s.transitions.map(t => t.effect)]), c).writes;
-        for (const { s, t } of completions)
-            if (![...attributeAccess([t.guard!], c).reads].some(x => written.has(x)))
-                this.report(t.guard!, 'SW2017', `Completion guard of ${formatName(s.name, MESSAGE_SPELLING)} reads nothing that ${formatName(op.name, MESSAGE_SPELLING)} writes; it cannot change while the machine waits.`, true);
+        // Polling helps only a guard that reads something that can change between two evaluations: an attribute that
+        // some executable of the component writes, or a sample cell (WP6-D09).
+        const writtenAnywhere = c ? attributeAccess(members(c).filter(isExecutable).flatMap(x => body(x) ? [body(x)!] : []), c).writes : new Set<string>();
+        for (const { s, t } of completions) {
+            const access = attributeAccess([t.guard!], c);
+            if (polls(s) && (access.cells.size || [...access.reads].some(x => writtenAnywhere.has(x))))
+                continue;
+            // A sample cell changes without a write, but completion is not re-evaluated on a cell update (WP5-R03, C14):
+            // a guard that reads only cells and nothing the machine writes still cannot change while the machine waits.
+            if (![...access.reads].some(x => written.has(x)))
+                this.report(t.guard!, 'SW2017', `Completion guard of ${formatName(s.name, MESSAGE_SPELLING)} reads nothing that ${formatName(op.name, MESSAGE_SPELLING)} writes; it cannot change while the machine waits.${access.cells.size ? ' Completion is not re-evaluated when a sample cell is updated.' : ''}`, true);
+        }
     }
-    private ownership(c: Structure, forwarded: Set<string>): void {
+    /**
+     * Whether an expression names a const attribute of c that an attribute redefinition in a specialization or usage
+     * replaces: the redefinition's base has that very declaration among its members (WP6-D10, review N1).
+     */
+    private redefinedConstant(e: a.Expression, c: Structure): boolean {
+        const names = new Set(nodes(e).filter(a.isReferenceExpression).map(r => r.path.split('.')[0]));
+        const constants = new Set<AstNode>(members(c).filter(a.isAttribute).filter(x => x.constant && names.has(x.name)));
+        return constants.size > 0 && this.models.some(m => nodes(m).some(n => {
+            if (!a.isAttribute(n) || !n.redefines || !names.has(n.name))
+                return false;
+            const s = container(n), base = s && (a.isComponentDef(s) ? s.specializes?.ref : s.definition?.ref);
+            return !!base && members(base).some(x => constants.has(x));
+        }));
+    }
+    private ownership(c: Structure, forwarded: Set<string>, inheritedSampled: ReadonlySet<string>): void {
         // An interface-only component needs no implementation: it neither emits nor owns inputs.
         if (interfaceOnly(c))
             return;
@@ -1397,6 +1573,8 @@ export class SwamlValidator {
                     n.endpoints.forEach(endpoint => add(endpoint, op));
             }
         }
+        // WP6-S04, WP6-D03: sampling is not ownership; a sampled required attribute has zero or one consuming owner.
+        const sampled = new Set([...sampledMembers(c), ...inheritedSampled]);
         for (const p of members(c).filter(a.isPortUsage))
             for (const m of portMembers(p)) {
                 const path = `${p.name}.${m.name}`, input = direction(p, m) === (m.kind === 'operation' ? 'provides' : 'requires');
@@ -1405,7 +1583,7 @@ export class SwamlValidator {
                         this.report(p, 'SW2005', `Forwarded port ${p.name} cannot be locally handled/emitted.`);
                     continue;
                 }
-                if (input && owners.get(path)?.size !== 1)
+                if (input && (sampled.has(path) ? (owners.get(path)?.size ?? 0) > 1 : owners.get(path)?.size !== 1))
                     this.report(p, 'SW2005', `${path} needs exactly one input owner.`);
                 if (!input && m.kind !== 'operation' && !emitted.has(path))
                     this.report(p, 'SW2005', `${path} needs an emitting operation.`);
@@ -1475,11 +1653,11 @@ export class SwamlValidator {
             pairs.add(pair);
             for (const issue of compatibility(ends[0].port, ends[1].port))
                 this.report(link, 'SW2004', `Connection: ${issue}.`);
-            if (effectiveQos(link).delivery === 'atLeastOnce')
-                for (const ep of ends)
-                    for (const m of portMembers(ep!.port))
-                        if (m.kind === 'operation' && direction(ep!.port, m) === 'provides' && !m.idempotent)
-                            this.report(link, 'SW2013', `atLeastOnce requires idempotent provided operation ${ep!.path}.${m.name}.`);
+            this.memberPolicies(link, false, [ends[0].port, ends[1].port]);
+            for (const ep of ends)
+                for (const m of portMembers(ep!.port))
+                    if (m.kind === 'operation' && direction(ep!.port, m) === 'provides' && !m.idempotent && memberQos(link, m.name).delivery === 'atLeastOnce')
+                        this.report(link, 'SW2013', `atLeastOnce requires idempotent provided operation ${ep!.path}.${m.name}.`);
         }
         // Closure is per package: each required port of every occurrence needs a peer, either inside
         // its component or, for a port of a top-level occurrence, through a package connection.
@@ -1530,11 +1708,13 @@ export class SwamlValidator {
                                 return;
                             const port = leaf(`${o.path}.${endpoint.split('.')[0]}`), range = GrammarUtils.findNodesForProperty(d.$cstNode, 'endpoints')[i]?.range;
                             for (const link of links.filter(l => l.ends.includes(port))) {
-                                if (effectiveQos(link.node).overflow !== 'reject')
+                                const member = endpoint.split('.')[1], own = memberPolicy(link.node, member)?.policy?.ref;
+                                if (memberQos(link.node, member).overflow !== 'reject')
                                     continue;
-                                const policy = link.node.policy?.ref ? formatName(link.node.policy.ref.name, MESSAGE_SPELLING) : 'Default';
+                                // The effective policy of the member route names the member policy where one applies (WP6-S07).
+                                const named = own ?? link.node.policy?.ref, policy = named ? formatName(named.name, MESSAGE_SPELLING) : 'Default';
                                 const connection = link.node.name !== undefined ? formatName(link.node.name, MESSAGE_SPELLING) : `connect (${formatPath(link.node.source, MESSAGE_SPELLING)}, ${formatPath(link.node.target, MESSAGE_SPELLING)})`;
-                                this.report(d, 'SW2018', `${formatPath(endpoint, MESSAGE_SPELLING)} is deferred in ${formatName(state.name, MESSAGE_SPELLING)}, but policy ${policy} of ${connection} rejects on overflow; a full queue fails the sender. Give ${connection} a policy that drops on overflow (Overflow.dropOldest or Overflow.dropNewest) or a capacity that holds the retained messages.`, true, range ? { range } : {});
+                                this.report(d, 'SW2018', `${formatPath(endpoint, MESSAGE_SPELLING)} is deferred in ${formatName(state.name, MESSAGE_SPELLING)}, but policy ${policy} of ${connection} rejects on overflow; a full queue fails the sender. ${own ? `Give ${formatName(member, MESSAGE_SPELLING)} of ${connection} a member policy` : `Give ${connection} a policy`} that drops on overflow (Overflow.dropOldest or Overflow.dropNewest) or a capacity that holds the retained messages.`, true, range ? { range } : {});
                             }
                         });
                 }

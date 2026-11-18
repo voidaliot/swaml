@@ -14,6 +14,8 @@ Ports map to owned typed features with per-member directional projections. Rever
 | --- | --- |
 | WP1-M02 | `Selector`: kind `value`, normative `docs/spec/01-structure-and-types.md`. A place assignment lowers to a whole-value write of its root with one replaced feature value. It never becomes a reference feature. |
 | WP2-M02 | `ConditionalExpression`: kind `value`, kernel `ControlFunctions::'if'`, normative `docs/spec/01-structure-and-types.md`. Only the selected branch is evaluated. |
+| WP6-M02 | `MemberPolicy`: kind `reference`, normative `docs/spec/02-communication.md`. It references the effective policy of one member route of the owning connector. |
+| WP6-M03 | `PortMember` with an initial value maps the initial value as the feature's default value. Sampled reads lower to a read of a per-port-occurrence sample feature. They are not a transfer step. `Connect` records its member policies. |
 | WP2-M03 | `Association` keeps its entry. Its semantic text states that a list statement lowers to one reference per occurrence–case pair, with the statement and the list positions as provenance. |
 
 The changed productions `Assign`, `ReferenceExpression` and `CallExpression` (WP1), `Expression` and `ExpressionStatement` (WP2) and `PolicySetting`, `Literal`, `Wait`, `Receive`, `ScheduleEntry` and `Transition` (WP4) and `State` and `Transition` (WP5) keep their mapping entries with updated semantic text in `spec/kerml-mapping.json`: a completion transition is a guard-only TransitionUsage without trigger, and an internal transition has no target change. WP5-M02: the new production `Deferral` has kind `lowering`, normative `docs/spec/03-behavior.md`, and lowers to a state-scoped retention constraint on the machine's input projection.

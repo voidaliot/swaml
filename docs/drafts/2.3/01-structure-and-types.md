@@ -18,7 +18,7 @@ No rule changes. The sentence "Connector loops and port arrays do not exist" sta
 
 | ID | Rule |
 | --- | --- |
-| WP1-S01 | The places sentence moved to [chapter 1.3](../../spec/01-structure-and-types.md#13-state-and-lexical-values) in WP1. Still open, with WP6-S01: the sentence "Local data access never traverses child components or ports" gains "except a sampled read `p.m` of an owned port (chapter 2.6)". |
+| WP1-S01 | The places sentence moved to [chapter 1.3](../../spec/01-structure-and-types.md#13-state-and-lexical-values) in WP1; the sampled-read clause applied with WP6-S01 in WP6. |
 
 ## 1.4 Value domains
 

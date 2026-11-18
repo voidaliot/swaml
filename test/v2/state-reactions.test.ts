@@ -348,7 +348,7 @@ test("WP5-S09 a deferral belongs to the machine's single input ownership (SW2005
     assert.deepEqual(only.filter(e => ['SW2005', 'SW2008'].includes(e[0])), [['SW2008', 'a.y is deferred, but no state of run handles it.']]);
 });
 
-test('WP5-D08 SW2017 warns on a completion guard that reads nothing the machine writes; WP6 confirms it for sampled cells (hook)', async () => {
+test('WP5-D08 SW2017 warns on a completion guard that reads nothing the machine writes; WP6 confirms it for sampled cells (test/v2/sampled-reads.test.ts)', async () => {
     const message = 'Completion guard of A reads nothing that run writes; it cannot change while the machine waits.';
     const extra = 'operation tick() { n = n + 1; } operation set() { ok = true; } operation flag() returns bool { return ok; }';
     const warn = (body: string) => warnings(machine(body, extra).replace('schedule { on start run(); }', 'schedule { on start run(); on every 1ms tick(); }'));
@@ -360,10 +360,12 @@ test('WP5-D08 SW2017 warns on a completion guard that reads nothing the machine 
     assert.deepEqual(await warn('state A { on receive a.x(v) { log = v; } when (log > 2) to B { } } final state B { }'), []);
     assert.deepEqual(await warn('state A { on exit { ok = true; } after 1ms to C { } when (flag()) to B { } } state C { after 1ms to A { } } final state B { }'), []);
     assert.deepEqual(await warn('state A { on entry { set(); } when (flag()) to B { } } final state B { }'), []);
-    // A literal true never waits and is not reported (review L1): nor is a guard that is constant after folding, true or false.
+    // A literal true never waits and is not reported (review L1): nor is a guard that folds to true. A guard that folds
+    // to false is dead and gets the WP6-D10 wording instead (WP5 review N3, owner decision).
     assert.deepEqual(await warn('state A { when (true) to B { } } final state B { }'), []);
-    for (const guard of ['1 == 1', 'not false', 'false', '(2 > 1) and not (1 == 2)'])
+    for (const guard of ['1 == 1', 'not false', '(2 > 1) and not (1 == 2)'])
         assert.deepEqual(await warn(`state A { when (${guard}) to B { } after 1ms to B { } } final state B { }`), [], guard);
+    assert.deepEqual(await warn('state A { when (false) to B { } after 1ms to B { } } final state B { }'), [['SW2017', 'Completion guard of A is always false; the transition is never taken.']]);
     // A guard that already has an error gets no SW2017 besides it: a writing callee, now() through a callee, a request.
     const faulty = 'operation bump() returns bool { n = n + 1; return true; } operation late() returns bool { return Swaml::Time::now() > 1ms; } optional port srv { requires operation ask() returns bool; }';
     for (const guard of ['bump()', 'late()', 'srv.ask()']) {
@@ -374,6 +376,22 @@ test('WP5-D08 SW2017 warns on a completion guard that reads nothing the machine 
     // guard again after each wait, so it is not reported; a timer to another state still is (above).
     assert.deepEqual(await warn('state A { after 20ms to A { } when (n > 2) to B { } } final state B { }'), []);
     assert.deepEqual(await warn('state A { on receive a.go() to A { } when (n > 2) to B { } } final state B { }'), []);
+    assert.deepEqual(await warn('state A { after 20ms { } when (n > 2) to B { } } final state B { }'), [['SW2017', message]]);
+});
+
+test('WP6-D09 SW2017 polling exemption: only a self or internal receive, or a self timer, that can fire, for a guard on something that changes (WP5 review N2)', async () => {
+    const message = 'Completion guard of A reads nothing that run writes; it cannot change while the machine waits.';
+    const extra = 'attribute q: int = 0; operation tick() { n = n + 1; }';
+    const warn = (body: string) => warnings(machine(body, extra).replace('schedule { on start run(); }', 'schedule { on start run(); on every 1ms tick(); }'));
+    // V23: an internal receive re-evaluates completion after each reaction (WP5-R02): polling, no warning.
+    assert.deepEqual(await warn('state A { on receive a.x(v) { } when (n > 2) to B { } } final state B { }'), []);
+    // V26: a self transition that can never fire does not poll.
+    assert.deepEqual(await warn('state A { on receive a.x(v) when (false) to A { } when (n > 2) to B { } } final state B { }'), [['SW2017', message]]);
+    // V22: polling cannot help a guard on an attribute that nothing writes.
+    assert.deepEqual(await warn('state A { after 20ms to A { } when (q > 0) to B { } } final state B { }'), [['SW2017', message]]);
+    // V23c stays exempt: whether a guard that reads the input can be true is not decided statically.
+    assert.deepEqual(await warn('state A { on receive a.x(v) when (v > 100) to A { } when (n > 2) to B { } } final state B { }'), []);
+    // An internal timer fires once per entry and does not poll.
     assert.deepEqual(await warn('state A { after 20ms { } when (n > 2) to B { } } final state B { }'), [['SW2017', message]]);
 });
 
