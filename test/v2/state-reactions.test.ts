@@ -220,6 +220,10 @@ package After { }`;
 // A line before the next transition of the same state, for an internal transition followed by one that starts with a name
 // position: the next state member after a transition body is always a keyword (on, after, when, defer) or }.
 const stateNext = (line: string) => state(line).replace('after 1ms to B { }', 'on receive p.m(v) to B { x = v; }');
+// A line at the end of a state, before the next state or a final state (review L5: since WP2 made state contextual, an
+// unclosed block there read state B { as statements and lost B; 2.2 ended the block at the keyword state).
+const stateEnd = (line: string) => state(line).replace('        after 1ms to B { }\n', '');
+const stateEndFinal = (line: string) => stateEnd(line).replace('      state B { after 2ms to C { } }\n', '');
 const keptItems = (m: Model) => ({
     packages: m.packages.map(p => p.name),
     elements: m.packages.flatMap(p => p.elements.map(e => (e as { name?: string }).name)).filter(n => ['D', 'Demo', 'P'].includes(n ?? '')),
@@ -239,6 +243,9 @@ const recovery: [(line: string) => string, [string, string][]][] = [
         ['after 5ms {', 'after 5ms to B {'], ['after 5ms', 'after 5ms to'],
         ['defer', 'after'], ['defer p.', 'on receive p.'], ['defer p.m', 'on receive p.m'], ['defer p.m,', 'on receive p.m('], ['defer p.m, ;', 'on receive p.m(, );'], ['defer ;', 'after ;'], ['defer p;', 'on receive p;']]],
     [stateNext, [['on receive p.m(v) {', 'on receive p.m(v) to B {'], ['after 5ms { x = 1;', 'after 5ms to B { x = 1;'], ['defer p.m', 'on receive p.m'], ['when (x > 0)', 'on receive p.m(v) when (x > 0)']]],
+    [stateEnd, [['on entry { on receive p.m(v) {', 'on entry { on receive p.m(v) {'], ['on entry { on receive p.m(v) { } or after 2ms {', 'on entry { on receive p.m(v) { } or after 2ms {'], ['on entry { x = 1;', 'on entry { x = 1;'],
+        ['after 5ms to B { x = 1;', 'after 5ms to B { x = 1;'], ['on receive p.m(v) to B {', 'on receive p.m(v) to B {'], ['on exit { if (x > 0) {', 'on exit { if (x > 0) {']]],
+    [stateEndFinal, [['on entry { on receive p.m(v) {', 'on entry { on receive p.m(v) {'], ['on entry { x = 1;', 'on entry { x = 1;'], ['after 5ms to C { x = 1;', 'after 5ms to C { x = 1;']]],
     [statement, [['defer', 'x'], ['defer =', 'x ='], ['defer.;', 'x.;'], ['defer p.m;', 'x p.m;'], ['defer = 1', 'x = 1'], ['when (x > 0) to B { }', 'when (x > 0) to B { }']]],
     [member, [['defer', 'x'], ['defer p.m;', 'x p.m;'], ['attribute defer: int =', 'attribute x2: int ='], ['when (x > 0) to B { }', 'when (x > 0) to B { }']]],
 ];
@@ -266,6 +273,14 @@ test('WP5-G01 WP5-G02 WP5-G03 an unfinished or malformed reaction keeps every fo
                 assert.ok(kept.operations.includes('other') && kept.elements.includes('Demo'), line);
         }
     assert.deepEqual(misplaced.length, 2, misplaced.join('; '));
+});
+
+test('WP5-G01 WP5-G03 a block that the next state member ends is reported as missing its }, not as a reserved word', async () => {
+    const hint = 'The block before it is not closed: add } before this state member.';
+    for (const [line, at] of [['on receive p.m(v) to B { x = 1;\n        on receive p.m(v) to B { }', 'on'], ['on entry { x = 1;\n        defer p.m;', 'defer']]) {
+        const messages = (await parse(state(line))).errors.map(e => e.message);
+        assert.deepEqual(messages, ["Expecting token of type '}' but found `" + at + "`. " + hint], line);
+    }
 });
 
 // ---------------------------------------------------------------- static rules

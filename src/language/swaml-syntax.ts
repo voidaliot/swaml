@@ -174,11 +174,41 @@ function computedDurationHint(actual: Token | undefined, previous: Token | undef
         ? `Expecting a duration expression after ${keyword} (, such as ${keyword} (n * 1ms), but found \`${actual.image}\`.`
         : undefined;
 }
+/**
+ * WP5: a block that the member-start recovery ended (stateMemberStart) at on receive p.m(…) to or when, or at defer
+ * followed by a name, is missing its }. The message says so instead of calling on a reserved word. 2.2 never reports a
+ * missing } at these tokens: it reads on receive p.m(…) as a receive statement and defer as a name, so no 2.2 message
+ * changes.
+ */
+const MISSING_BRACE_HINT = ' The block before it is not closed: add } before this state member.';
+function memberAfterUnclosedBlock(actual: Token | undefined): boolean {
+    const index = actual ? tokens.findIndex(t => t.startOffset === actual.startOffset) : -1;
+    if (index < 0)
+        return false;
+    const at = (i: number) => tokens[index + i];
+    if (actual!.tokenType?.name === 'defer')
+        return nameToken(at(1)?.tokenType);
+    if (actual!.tokenType?.name !== 'on' || at(1)?.tokenType?.name !== 'receive')
+        return false;
+    for (let i = 2, depth = 0; at(i); i++) {
+        const text = at(i).image;
+        if ([';', '{', '}'].includes(text))
+            return false;
+        depth += text === '(' ? 1 : text === ')' ? -1 : 0;
+        if (depth < 0)
+            return false;
+        if (depth === 0 && text === ')')
+            return ['to', 'when'].includes(at(i + 1)?.tokenType?.name ?? '');
+    }
+    return false;
+}
 export class SwamlParserErrorMessageProvider extends LangiumParserErrorMessageProvider {
     override buildMismatchTokenMessage(options: Parameters<LangiumParserErrorMessageProvider['buildMismatchTokenMessage']>[0]): string {
         const expectsName = nameToken(options.expected);
         if (ruleName(options.ruleName) === 'Block' && options.expected.name === '{' && conditionalStatement(options.actual, options.previous))
             return CONDITIONAL_STATEMENT_MESSAGE;
+        if (options.expected.name === '}' && memberAfterUnclosedBlock(options.actual))
+            return super.buildMismatchTokenMessage(options) + MISSING_BRACE_HINT;
         return (expectsName ? `Expecting a name but found \`${options.actual.image}\`.` : super.buildMismatchTokenMessage(options)) + hint(options.actual, options.previous, expectsName);
     }
     override buildNoViableAltMessage(options: Parameters<LangiumParserErrorMessageProvider['buildNoViableAltMessage']>[0]): string {
@@ -242,10 +272,12 @@ const startsWith = (p: Production | undefined, name: string) => p?.definition?.[
  * Statement recovery (WP1). An assignment and an expression statement share a value path prefix of any
  * length (statuses[i].confirmed), so the adaptive lookahead finds no viable alternative while such a
  * statement is still being typed, and a statement list would end there, dropping the rest of its
- * component. When the adaptive prediction fails for a statement that starts with a name, this guess
- * keeps the list going: an assignment when the statement is a place (names joined by . or :: and
- * bracketed indexes) followed by =, otherwise an expression statement; the statement's own error recovery then reports the error and
- * resynchronizes. Valid sources never reach the guess, so their parse is unchanged.
+ * component. When the adaptive prediction of the Statement alternation fails for a statement that starts
+ * with a name, its hook keeps the list going: an assignment when the statement is a place (names joined by
+ * . or :: and bracketed indexes) followed by =, otherwise an expression statement; the statement's own error
+ * recovery then reports the error and resynchronizes. The hook on the optional statement repetition only ends
+ * an unclosed reaction block at the next state member (WP5, stateMemberStart). Valid sources never reach
+ * either case, so their parse is unchanged.
  */
 export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
     const strategy = Object.create(inner) as LookaheadStrategy;
@@ -304,19 +336,17 @@ export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
     };
     strategy.buildLookaheadForOptional = options => {
         const base = inner.buildLookaheadForOptional.call(strategy, options);
-        // The statements of a block, an operation body or a case. This Chevrotain version names production types by
-        // string ('Repetition'); the WP1 name guess below tests the numeric PROD_TYPE.REPETITION and so never applies.
-        // It is kept as it is, so that recovery outside reaction blocks stays exactly as before WP5.
+        // The statements of a block, an operation body or a case (Chevrotain names the production type 'Repetition').
         const prodType = options.prodType as unknown;
-        if (prodType !== 1 && prodType !== 'Repetition' || !startsWith(production(options.rule, 'Repetition', options.prodOccurrence), 'Statement'))
+        if (prodType !== 'Repetition' || !startsWith(production(options.rule, 'Repetition', options.prodOccurrence), 'Statement'))
             return base;
-        const guessName = prodType === 1;
         return function (this: Lookahead) {
-            // Only on and defer can start a state member that ends an unclosed reaction block; other tokens add no call.
+            // Only on, defer, state and final can start a state member that ends an unclosed reaction block; other
+            // tokens add no call.
             const first = this.LA(1).tokenType.name;
-            if ((first === 'on' || first === 'defer') && stateMemberStart(this))
+            if ((first === 'on' || first === 'defer' || first === 'state' || first === 'final') && stateMemberStart(this))
                 return false;
-            return base.call(this) || guessName && nameToken(this.LA(1).tokenType);
+            return base.call(this);
         };
     };
     return strategy;
@@ -326,7 +356,9 @@ export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
  * being typed ends where the next state member clearly starts, so that the following transitions and deferrals of the
  * state are kept, as in 2.2, instead of becoming statements of the block: on receive p.m(…) followed by to or when (a
  * receive statement continues with a block), and defer followed by a name (a statement that starts with the name
- * defer continues with =, (, . or [). The parser then reports the missing } and inserts it. after and when cannot
+ * defer continues with =, (, . or [). The block also ends at the next state, state <name> { or final, where 2.2 ended
+ * it because state was a keyword (a statement that starts with the name state continues otherwise, and final is
+ * reserved). The parser then reports the missing } and inserts it. after and when cannot
  * start a statement and end the block already. An internal transition after an unclosed block, on receive p.m(…) {,
  * reads as a receive statement of that block, as the same text after an unclosed 2.2 block does. Valid sources never
  * reach this case: their blocks are closed before the next member.
@@ -336,6 +368,10 @@ function stateMemberStart(parser: Lookahead): boolean {
     let member = false;
     if (first.tokenType.name === 'defer')
         member = nameToken(parser.LA(2).tokenType);
+    else if (first.tokenType.name === 'final')
+        member = true;
+    else if (first.tokenType.name === 'state')
+        member = nameToken(parser.LA(2).tokenType) && parser.LA(3).image === '{';
     else if (first.tokenType.name === 'on' && parser.LA(2).tokenType.name === 'receive') {
         for (let i = 3, depth = 0; ; i++) {
             const token = parser.LA(i);
