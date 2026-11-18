@@ -35,10 +35,10 @@ Selector: '.' field=Name | '[' index=Expression ']';
 ExpressionStatement: expression=OrExpression ';';
 Send: kind=('send'|'publish') endpoint=EndpointPath '(' (args+=Expression (',' args+=Expression)*)? ')' ';';
 Return: 'return' value=Expression? ';';
-If: 'if' '(' condition=Expression ')' then=Block ('else' otherwise=ElseBody)?;
 // 2.3 (SIF-G01): else if. An ElseIf holds the one If written after else, as a one-statement list, so every block walker runs
-// it as 2.2 runs else { if … }; its statement identity names it by the segment if (…/otherwise/if), not by an index.
-ElseBody: Block | ElseIf;
+// it as 2.2 runs else { if … }, and its If has the identity of that statement (…/otherwise/0). The alternation stays inside
+// If, without a rule of its own, so a 2.2 else block costs the parser no extra rule call per nesting level (WP2-D05).
+If: 'if' '(' condition=Expression ')' then=Block ('else' (otherwise=Block | otherwise=ElseIf))?;
 ElseIf: statements+=If;
 While: 'while' '(' condition=Expression (',' limit=Expression 'times')? ')' body=Block;
 Until: 'until' '(' condition=Expression (',' limit=Expression 'times')? ')' body=Block;

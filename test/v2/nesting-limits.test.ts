@@ -2,7 +2,8 @@
 // server builds it: the parse runs inside DocumentBuilder.update, then the document is validated.
 import nodeTest from 'node:test';
 import assert from 'node:assert/strict';
-import { EmptyFileSystem, TextDocument, URI, type LangiumDocument } from 'langium';
+import { AstUtils, EmptyFileSystem, TextDocument, URI, type LangiumDocument } from 'langium';
+import { statementIdentity } from '../../src/language/semantic.js';
 import { createSwamlServices } from '../../src/language/swaml-module.js';
 import { BRACKET_NESTING_CLAUSE, BRACKET_NESTING_LIMIT, BRACKET_NESTING_MESSAGE, PARSER_STACK_MESSAGE, SwamlValueConverter, UNCLOSED_NESTING_LIMIT, guardParserStack } from '../../src/language/swaml-syntax.js';
 import type { Model } from '../../src/language/generated/ast.js';
@@ -85,6 +86,31 @@ const MEASURED_3_1_0: Record<string, number> = {
     'parentheses around a record literal': 147, 'indexes inside calls': 64, 'array literals inside calls': 61, 'record literals inside calls': 62, 'calls inside indexes': 64,
 };
 const VALID_FORMS = new Set(['parentheses', 'indexes', 'calls', 'record literals', 'calls around a record literal', 'parentheses around a record literal', 'indexes inside calls', 'record literals inside calls', 'calls inside indexes']);
+
+// SIF-G01 (review F1): else blocks that each hold an if, the 2.2 spelling of a decision chain, and the 2.3 else if chain.
+// These are blocks, not brackets, so the bracket limit does not stop them. Measured through the document builder on
+// Node.js 26.12.0 in a fresh process (docs/RELEASE_2_3.md, WP2-D05), 3.1.0 parses about 290 nested else { if … } levels;
+// this parser parses about 303 (about 291 inside this test file's process) and about 520 links of an else if chain. With
+// the else alternation in a rule of its own, one more rule call per level, it parsed about 261 (about 250 here).
+const ELSE_NESTING = 270;
+test('SIF-G01 nested else { if … } and an else if chain parse and validate at 270 levels, with the same statement identities (review F1)', async () => {
+    const shared = current();
+    const nested = file(`${'if (x == 0) { x = 1; } else { '.repeat(ELSE_NESTING)}x = 2;${' }'.repeat(ELSE_NESTING)}`);
+    const chained = file(`${'if (x == 0) { x = 1; } else '.repeat(ELSE_NESTING)}{ x = 2; }`);
+    const identities: string[][] = [];
+    for (const text of [nested, chained]) {
+        const doc = await built(shared, text);
+        assert.equal(syntaxErrors(doc), 0, JSON.stringify(doc.parseResult.lexerErrors.map(e => e.message)));
+        assert.deepEqual(errors(doc).map(e => e.message), []);
+        assert.deepEqual(members(doc), ['a', 'x', 'r', 'f', 'g', 'g2', 'k', 'run', 'later']);
+        assert.deepEqual(packages(doc), ['P', 'After']);
+        identities.push(AstUtils.streamAst(doc.parseResult.value).filter(n => n.$containerProperty === 'statements').map(n => statementIdentity(n)!).toArray());
+    }
+    // Every operation's statements: f, g, g2 and k return (4), run has its if chain (2 per level, the last else's
+    // assignment and x = 1) and later one; the two spellings name every statement alike.
+    assert.equal(identities[0].length, 4 + 2 * ELSE_NESTING + 2 + 1);
+    assert.deepEqual(identities[1], identities[0]);
+});
 
 test('WP2-D05 the limits: the bracket limit is above every depth 3.1.0 parses, and both messages start with the SW2013 clause', () => {
     assert.ok(Object.values(MEASURED_3_1_0).every(depth => depth > 0 && depth < BRACKET_NESTING_LIMIT), JSON.stringify(MEASURED_3_1_0));
