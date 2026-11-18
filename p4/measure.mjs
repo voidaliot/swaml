@@ -7,7 +7,7 @@ import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const root = 'E:/t/sw-p4';
+const root = process.env.P4_ROOT ?? 'E:/t/sw-p4';
 const [outDir, sourceRoot, resultFile] = process.argv.slice(2);
 const base = pathToFileURL(outDir + '/').href;
 const { EmptyFileSystem } = await import('langium');
