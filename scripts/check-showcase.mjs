@@ -1,3 +1,4 @@
+import {existsSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {readFile} from 'node:fs/promises';
@@ -11,3 +12,8 @@ const root=new URL('../',import.meta.url);execFileSync(process.execPath,[fileURL
 const source=await readFile(new URL('examples/02-realtime-controller.swaml',root),'utf8'),{Swaml}=createSwamlServices(EmptyFileSystem),doc=await parseHelper(Swaml)(source,{validation:true});assert.deepEqual(doc.diagnostics?.filter(d=>d.severity===1)??[],[]);
 assert.deepEqual(doc.parseResult.value.packages[0].elements.filter(isView).map(v=>v.definition.ref.name).sort(),['General','Interconnect','Case','Sequence','Grid','Flow','Timing'].sort());
 const data=JSON.parse(await readFile(new URL('showcase/src/generated/model.json',root),'utf8'));assert.equal(data.run.profile,REFERENCE_PROFILE);assert.equal(data.run.stores['Demo.heater'].power,.25);assert.equal(data.projection.nodes.filter(n=>n.kind==='component'&&/^Control::Demo\.[^.]+$/.test(n.id)).length,3);console.log(data.edition+' site model, seven view definitions and observed final store checked.');
+// The site links only to a published PDF: the edition's own when it is released, otherwise the latest published one.
+const pdf=edition=>new URL(`output/pdf/SWAML-${edition}-Specification.pdf`,root);
+assert.equal(data.status,existsSync(pdf(data.edition))?'released':'unreleased candidate','site status follows the publication of its edition');
+assert.ok(existsSync(pdf(data.publishedEdition)),`site links to a missing PDF for ${data.publishedEdition}`);
+if(data.status==='released')assert.equal(data.publishedEdition,data.edition);

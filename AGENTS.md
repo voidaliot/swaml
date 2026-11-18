@@ -1,4 +1,6 @@
-# Instructions for agents working on the swa.ml 2.2
+# Instructions for agents working on swa.ml
+
+swa.ml 2.2 is the current published edition; the repository prepares the unreleased 2.3 candidate, which so far accepts exactly the 2.2 language ([2.3 release draft](docs/RELEASE_2_3.md)).
 
 Read docs/LANGUAGE_SPECIFICATION.md, the affected normative chapter, docs/IMPLEMENTATION_STATUS.md, docs/spec/06-execution-contract.md through 09-formal-semantics.md, docs/decisions/0016-swaml-2-0.md, docs/decisions/0019-package-context.md and CONTRIBUTING.md before changing meaning.
 
