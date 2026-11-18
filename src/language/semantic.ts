@@ -471,13 +471,14 @@ export function effectiveQos(c?: a.Connect | a.QosPolicy): Policy {
     return result;
 }
 /** The member policy of a connection for one member, if any (WP6-S05). */
-export function memberPolicy(c: a.Connect, member: string): a.MemberPolicy | undefined { return c.memberPolicies.find(p => p.member === member); }
+export function memberPolicy(c: a.Connect, member: string): a.MemberPolicy | undefined { return c.memberPolicies.find(p => p.member !== undefined && p.member === member); }
 /**
  * The effective policy of one member route (WP6-S07, WP6-R05): its member policy, else the connection policy, else
  * Swaml::Qos::Default. A connection without member policies gives every member its effectiveQos, as in 2.2.
  */
 export function memberQos(c: a.Connect, member: string): Policy {
-    const policy = memberPolicy(c, member)?.policy.ref;
+    // An unfinished member policy, such as { e: ; } while typing, has no policy reference (review F4).
+    const policy = memberPolicy(c, member)?.policy?.ref;
     return policy ? effectiveQos(policy) : effectiveQos(c);
 }
 /**

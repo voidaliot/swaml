@@ -279,7 +279,8 @@ export class SwamlValidator {
             return;
         }
         const seen = new Set<string>();
-        for (const mp of link.memberPolicies) {
+        // An unfinished member policy in another document of the workspace (this one would not be validated) is skipped.
+        for (const mp of link.memberPolicies.filter(x => x.member !== undefined)) {
             const at = this.at(mp, 'member');
             if (seen.has(mp.member))
                 this.report(mp, 'SW2004', `${formatName(mp.member, MESSAGE_SPELLING)} has two policies in ${this.connectionText(link)}.`, false, at);
@@ -1681,7 +1682,7 @@ export class SwamlValidator {
                                 return;
                             const port = leaf(`${o.path}.${endpoint.split('.')[0]}`), range = GrammarUtils.findNodesForProperty(d.$cstNode, 'endpoints')[i]?.range;
                             for (const link of links.filter(l => l.ends.includes(port))) {
-                                const member = endpoint.split('.')[1], own = memberPolicy(link.node, member)?.policy.ref;
+                                const member = endpoint.split('.')[1], own = memberPolicy(link.node, member)?.policy?.ref;
                                 if (memberQos(link.node, member).overflow !== 'reject')
                                     continue;
                                 // The effective policy of the member route names the member policy where one applies (WP6-S07).

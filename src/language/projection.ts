@@ -55,9 +55,10 @@ export interface ProjectionNode {
     /** A state's deferred members in source order (WP5-M01); absent when the state defers nothing. */
     deferrals?: string[];
 }
-/** Interconnect labels of a connection's member policies (WP6-M01). */
+/** Interconnect labels of a connection's member policies (WP6-M01); an unfinished one without a member or policy name is left out. */
 function memberPolicyLabels(c: a.Connect): Pick<ProjectionEdge, 'memberPolicies'> {
-    return c.memberPolicies.length ? { memberPolicies: c.memberPolicies.map(mp => ({ member: mp.member, policy: mp.policy.ref?.name ?? mp.policy.$refText, qos: memberQos(c, mp.member) })) } : {};
+    const complete = c.memberPolicies.filter(mp => !!mp.member && !!(mp.policy?.ref?.name ?? mp.policy?.$refText));
+    return complete.length ? { memberPolicies: complete.map(mp => ({ member: mp.member, policy: mp.policy.ref?.name ?? mp.policy.$refText, qos: memberQos(c, mp.member) })) } : {};
 }
 /** The label of a state transition: its trigger, or for a completion transition its guard (WP5-M01). */
 function transitionLabel(t: a.Transition): string {

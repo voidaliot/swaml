@@ -212,7 +212,8 @@ type Route = {
 type SampleCell = { value: Value; type: string; consumed: boolean; offer: number };
 /** The member policies of a connection as effective policies per member (WP6-R05); none for a 2.2 connection. */
 function routeMembers(l: a.Connect): { members?: Map<string, Policy> } {
-    return l.memberPolicies.length ? { members: new Map(l.memberPolicies.map(mp => [mp.member, memberQos(l, mp.member)] as const)) } : {};
+    const complete = l.memberPolicies.filter(mp => mp.member !== undefined && mp.policy?.ref);
+    return complete.length ? { members: new Map(complete.map(mp => [mp.member, memberQos(l, mp.member)] as const)) } : {};
 }
 type Message = {
     id: string;

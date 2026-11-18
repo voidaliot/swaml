@@ -56,6 +56,38 @@ test('WP6-G01 WP6-G02 initial values and member-policy bodies parse with their A
     assert.ok((await parse('package Test { port def P { provides event e() = 1; } }')).doc.parseResult.parserErrors.length);
 });
 
+test('WP6-G02 an unfinished member policy projects, validates, indexes and builds view candidates without throwing, alone and beside a valid file (review F4)', async () => {
+    const { viewCandidates } = await import('../../src/language/presentation.js');
+    const { semanticIndex } = await import('../../src/language/path-services.js');
+    const { workspace } = await import('./helpers.js');
+    const source = (link: string) => `package Test {
+  import Swaml::Qos;
+  qos def Fast: Policy { delivery = Delivery.atMostOnce; ordering = Ordering.fifo; capacity = 2; overflow = Overflow.dropOldest; requestTimeout = 1s; }
+  port def P { provides event e(n: int); provides attribute a: int = 0; }
+  component def S { port out: P; operation tick() { publish out.e(1); send out.a(1); } schedule { on every 1ms tick(); } }
+  component def R { reversed port p: P; attribute k: int = 0; operation handle(n: int) { k = n + p.a; } schedule { on receive p.e(n) handle(n); } }
+  component def Box { component s: S; component r: R; ${link} }
+  component Demo { component s: S; component r: R; ${link} }
+}`;
+    // The valid file specializes the unfinished file's Box, so its validation walks the inherited connection.
+    const other = 'package V { import Test; component def D specializes Box { } component def W { attribute b: int = 0; } }';
+    for (const body of ['{ e: ; }', '{ : Fast; }', '{ e }', '{ e', '{ e: Fast;', '{ e Fast; }', '{ }', '{ /** d */ }', '{ e: Fast; a: ; }']) {
+        const link = `connect (s.out, r.p) ${body}`, r = await parse(source(link));
+        assert.ok(r.errors.length && r.errors.every(e => e.code === 'SW2000'), `${body}: ${JSON.stringify(r.errors.map(e => [e.code, e.message]))}`);
+        // An unfinished member policy is left out of the labels; a complete one beside it is kept.
+        const labels = projectModel([r.model]).edges.flatMap(e => (e.memberPolicies ?? []).map(m => [m.member, m.policy]));
+        assert.ok(labels.every(([member, policy]) => member === 'e' && policy === 'Fast'), `${body}: ${JSON.stringify(labels)}`);
+        assert.ok(viewCandidates([r.model]).length > 0, body);
+        semanticIndex([r.model]);
+        assert.throws(() => simulate([r.model], 'Test::Demo', { untilNs: 1000000 }), (e: Error) => !(e instanceof TypeError), body);
+        const ws = await workspace([source(link), other]), models = ws.docs.map(d => d.parseResult.value as Model);
+        assert.deepEqual(ws.docs[1].diagnostics?.filter(d => d.severity === 1).map(d => d.code), [], body);
+        projectModel(models);
+        viewCandidates(models);
+        semanticIndex(models);
+    }
+});
+
 test('WP6-S02 WP6-D04 an initial value is assignable to the member type and pure (the initializer messages)', async () => {
     assert.deepEqual(await errors('package Test { port def P { provides attribute a: bool = 3; } }'), [['SW2002', 'Expected bool, received int.']]);
     assert.deepEqual(await errors('package Test { operation def f() returns int { return 1; } port def P { provides attribute a: int = f() + 1; } }'), []);
