@@ -28,6 +28,9 @@ for (const run of runs) {
         assert.equal(result.outcome, 'no-failure-observed', JSON.stringify(result.trace.filter(t => t.kind === 'failure' || t.kind === 'violation')));
     for (const [component, store] of Object.entries(run.expectedStores)) for (const [key, value] of Object.entries(store)) assert.deepEqual(result.stores[component][key], value, `${name}: ${component}.${key}`);
     for (const [path, node] of Object.entries(run.expectedDeployments ?? {})) assert.equal(result.deployments[path], node, `${name}: deployment of ${path}`);
+    // The reasons of caught failures, in trace order, where a run names them (a try cannot tell its reason to the model).
+    if (run.expectedCaught)
+        assert.deepEqual(result.trace.filter(t => t.kind === 'caught').map(t => t.reason), run.expectedCaught, `${name}: caught failure reasons`);
     assert.deepEqual(outcome, execute(), 'Reproducibility');
     if (run.target === 'Hello::Demo') {
         const directory = new URL(`examples/simulation/${edition}/`, root), path = new URL('hello-trace.json', directory);

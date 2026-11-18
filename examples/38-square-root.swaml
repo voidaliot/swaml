@@ -47,18 +47,30 @@ package HazardDistance {
   component relevance: Relevance;
   test 'Same distance for a 3-4-5 triangle' of relevance {
     /** Small exact squares: both shapes agree. */
-    relevance.locate(record Position { eastM = 100.0; northM = 200.0; }, record Position { eastM = 400.0; northM = 600.0; });
+    relevance.locate(record Position {
+      eastM = 100.0; northM = 200.0;
+    }, record Position {
+      eastM = 400.0; northM = 600.0;
+    });
     assert relevance.newtonM == 500.0 and relevance.sqrtM == 500.0 and relevance.relevant;
   }
   test 'Correctly rounded' of relevance {
     /** sqrt(2) is the double nearest the exact root; 24 Newton steps end one unit in the last place away. */
-    relevance.locate(record Position { eastM = 0.0; northM = 0.0; }, record Position { eastM = 1.0; northM = 1.0; });
+    relevance.locate(record Position {
+      eastM = 0.0; northM = 0.0;
+    }, record Position {
+      eastM = 1.0; northM = 1.0;
+    });
     assert relevance.sqrtM == 1.4142135623730951 and relevance.sqrtM * relevance.sqrtM != 2.0;
     assert relevance.newtonM != relevance.sqrtM;
   }
   test 'Far hazard' of relevance {
     /** At 3,000 km the fixed Newton loop has not converged; sqrt is exact and the hazard is not relevant. */
-    relevance.locate(record Position { eastM = 0.0; northM = 0.0; }, record Position { eastM = 0.0; northM = 3000000.0; });
+    relevance.locate(record Position {
+      eastM = 0.0; northM = 0.0;
+    }, record Position {
+      eastM = 0.0; northM = 3000000.0;
+    });
     assert relevance.sqrtM == 3000000.0 and not relevance.relevant;
     assert relevance.newtonM > 3000080.0;
   }
