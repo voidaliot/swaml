@@ -1,0 +1,30 @@
+{
+  "rule": "WP3-L04 (review F1): 2.2 sources that declare their own Swaml::Numeric, Swaml::Text or Swaml::Time",
+  "recordedWith": {
+    "implementation": "3.1.0",
+    "commit": "213f583b14bf9808429b04f7252732a118015576",
+    "languageVersion": "2.2",
+    "profile": "swaml-reference/2.2",
+    "node": "v26.12.0",
+    "models": "models-wp3b.json sha256 1c9da30556381e6f8e808a4689e3d8fc47d523f19bee991ecb91234741ff87a9"
+  },
+  "options": {
+    "untilNs": 100000000
+  },
+  "files": {
+    "v1 user Swaml::Numeric with sqrt, used by import (review a1)": {"sourceSha256":"17e771be48777e8e4770e8b3f41399ab64dff2bd3bc812e1e435a52ce897a30c","diagnostics":[],"astSha256":"f1ff8a1b9666a0c64c3cfc3111e3eaaffe2a7016852988169f65cab0fee44578","run":{"status":"quiescent","stores":{"Demo":{"r":4}},"traceLength":6,"traceSha256":"2d82d562e627d940e313f7beb7ff1209c17a10d1a8ab781236dfc04c7b713f90"}},
+    "v2 user Swaml::Time with now (review a2)": {"sourceSha256":"969efaf57ab7d5d88874d19d52f476201b979bae5569796bf7dbae6359fcedbd","diagnostics":[],"astSha256":"c8e08604577b872c03acc13216c7da27559bb0b6c04bee058e324d9d40506ea6","run":{"status":"quiescent","stores":{"Demo":{"t":7}},"traceLength":6,"traceSha256":"393000584c5adf978d5a4d4b834b5c5d22339f6c1789a0cbb2d14bd73b586015"}},
+    "v3 empty user Swaml::Text (review a3)": {"sourceSha256":"e1af1cfeed58652865e8a7a221ce3eb1d6af3725d1104fe36293abeaeb394df1","diagnostics":[],"astSha256":"6460dd02c8b2b00f309a46cfd8fc521eb88d2c9635cc994cfdd9f3f2ff4df480"},
+    "v4 qualified user Swaml::Text::intText without import (review a4)": {"sourceSha256":"d5af6c864c226d5dc4c0d35f99ceea56823683e64b6a01b68b63920045ddd4d7","diagnostics":[],"astSha256":"96e792eefc762b19e003071d96a9417e54109a06994d97ee7418e4cbf3744fcc","run":{"status":"quiescent","stores":{"Demo":{"s":"x"}},"traceLength":6,"traceSha256":"2d6884a340456ce8d2c632c71e12b94ae14c489e70343c604edd2edcf9c84799"}},
+    "v5 user package Swaml::Numeric::Extra (review a9)": {"sourceSha256":"85ffca43151e810f244feba39d88e33718cb5905d0fe49104bf2101032f8b50c","diagnostics":[],"astSha256":"ae91349286a21e02462d81e67e1e0544493b7567ab9c38465de9e953264b1002","run":{"status":"quiescent","stores":{"Demo":{"x":1}},"traceLength":1,"traceSha256":"8e2941c88f7a8745ce471b0530d963485370940245a3bbc5c85625336ee2a147"}},
+    "v6 user Swaml::Numeric with every Numeric name, a test": {"sourceSha256":"2a732bd4e39d574393eb3163c24dc77e3fafe529495736e170c6fb2c45e58daf","diagnostics":[],"astSha256":"64ee1c24b4bd8b7bc6c84f4227390e5b890dff81891188ac801453fb56742f52","cases":{"App::Own numerics":{"result":"pass","message":null,"stores":{"demo":{"k":5051,"r":-1}},"traceSha256":"31da04de9616523239c88e2e97b4296d0d22d43c6fd33ceac3de29e56ab9a545"}}},
+    "v7 user Swaml::Text with every Text name": {"sourceSha256":"125535903808dba4b8ee669938c9a8b9a8520891ff7b842547a275cdd62ab28a","diagnostics":[],"astSha256":"f309a0e21c51464f7aa39e28534f81067b629eac286c0d67e29a5b20c9d0fbcf","run":{"status":"quiescent","stores":{"Demo":{"s":"intrealbool"}},"traceLength":6,"traceSha256":"505ba0cac1da7ba22d76c1fb8baf1c387a006629a64078a16da11411cc41831a"}},
+    "v8 user Swaml::Time now in an initializer and a guard, qualified": {"sourceSha256":"e59e2b45536213fac4ea0c20cd33996344b490bdf10163219653d34f58f7cb10","diagnostics":[],"astSha256":"2d7f5898842e5a390eea5e74d6ed4b729934c1d61bb8d6f265bb3b266f5d5bbf","run":{"status":"quiescent","stores":{"env":{},"Demo":{"t":4,"u":5,"seen":10}},"traceLength":19,"traceSha256":"21302bdb078071fc5e865b2c42beb3820c8b73800b61d61cdc4324dc93cc9a36"}},
+    "v9 user intrinsic names with empty bodies are return-path errors": {"sourceSha256":"05eec7a84eff4c4e0651e42a45c4eb61937c19eb9301e783f81f94d11f9898c8","diagnostics":["error SW2006 2:3-2:51 A non-void operation must return or fail on every path.","error SW2006 5:3-5:39 A non-void operation must return or fail on every path.","error SW2006 8:3-8:47 A non-void operation must return or fail on every path."],"astSha256":"b423e9b45958d0707cdb5a7054327e7df0f81a8429fae23f65f4992a883807a0"},
+    "v10 user Swaml::Numeric declared twice": {"sourceSha256":"0cef1d6c754a4cbe5358171b36918562f996f46e723bf82e391beb9c2cd8633d","diagnostics":["error SW2001 1:1-1:82 Duplicate package Swaml::Numeric.","error SW2001 2:1-2:27 Duplicate package Swaml::Numeric."],"astSha256":"218ad224c01e159e0fbb2dcb7af64d525c290f7470a4d48fef1b6d42ffff2b9d"},
+    "v11 two user packages declaring sqrt, one named Swaml::Numeric": {"sourceSha256":"08cd810a8b9f17fd361d5022c6a2d7381748fc28a62cdae55025f5b1867977fb","diagnostics":["error SW2006 6:67-6:76 Unknown operation sqrt; remote calls require an owned port."],"astSha256":"5795694f4959ed1201428e48b132bc8de82a43a371bd9ed2f8ca6636b15669b1"},
+    "v12 user Swaml::Time with a component def and type references": {"sourceSha256":"6bfac95000ab25569a04aa86231d77b03a6fb226a06e0f11cb2459ad658297f0","diagnostics":[],"astSha256":"0967ae99b95989b1340c39d101ea7ee49a0c44d6eb33c1a4a86ac5bfc8b26cb5","run":{"status":"quiescent","stores":{"Demo":{"u":"us","last":{"ns":0}},"Demo.clock":{"stamp":{"ns":3}}},"traceLength":2,"traceSha256":"3092fa165116585b13cda27e1a9dda7d1fda8f883e0d0cf4b9f2e340c4ee32d3"}},
+    "v13 operation usage of a user Swaml::Numeric::sqrt": {"sourceSha256":"0eef557a3e7b6c3b482d8addf2d336b1aad1a2f93b572d91add55c2a3d6b6c72","diagnostics":[],"astSha256":"b90efd34e015c8455a9c33a3f5ff28595ccfd3240d6b80e95ece93be1ba20c71","run":{"status":"quiescent","stores":{"Demo":{"r":6}},"traceLength":6,"traceSha256":"63574f3d60ac60591dfb8bcc3f87da28fe8562a4a3639f43e611085768bc4350"}},
+    "v14 user Swaml::Time and a stale read through a component now": {"sourceSha256":"50d3c8274743abc919a7f9a7a24349b4f0062393fb02ee69a73e519ad338bbdb","diagnostics":["warning SW2011 7:61-7:70 A read before suspension may influence this write. Recheck live attributes after resuming."],"astSha256":"42ed220d4366565e0cde647445238c2dc46574450448c5f6fdfb4192b375497a","run":{"status":"horizon","stores":{"Demo":{"clock":200,"last":1}},"traceLength":1009,"traceSha256":"da0a773ce0bf8e2e9c6f4a64662645a9570edcce16eece5b106f7e38989bbcce"}}
+  }
+}
