@@ -823,11 +823,12 @@ class Interpreter {
             w.active = false;
         this.unlock(f);
         // A false release guard (WP7-R02, WP7-T01, WP7-T02): skip names the entry, then a receive entry's input is discarded.
+        // Both name the operation occurrence, as complete and an activation's noEnabledTransition discard do.
         const skipped = !failure ? f.skipped : undefined;
         if (skipped) {
             this.log('skip', this.label(f), { activation: f.id, source: this.source(f.entry) });
             if (skipped.input)
-                this.log('discardInput', f.entry.endpoint!, { activation: f.id, source: skipped.input.origin, message: skipped.input.id, reason: 'releaseGuard' });
+                this.log('discardInput', this.label(f), { activation: f.id, source: skipped.input.origin, message: skipped.input.id, reason: 'releaseGuard' });
         }
         else
             this.log(failure ? 'failure' : 'complete', this.label(f), { activation: f.id, source: failure ? this.source(f.at) : undefined, value: value ? plain(value) : undefined, reason: failure, message: failure && message !== failure ? message : undefined });

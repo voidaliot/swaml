@@ -284,7 +284,8 @@ test('WP7-R04 WP7-T02 a receive entry consumes its input at release; a false gua
     assert.equal(discards.length, 2);
     for (const d of discards) {
         assert.deepEqual(Object.keys(d).sort(), ['activation', 'kind', 'message', 'ordinal', 'reason', 'source', 'subject', 'timeNs']);
-        assert.deepEqual([d.subject, d.reason, d.source], ['inp.go', 'releaseGuard', 'Test::Src.tick/1']);
+        // The subject is the operation occurrence, as for the skip and a machine's noEnabledTransition discard (review F8).
+        assert.deepEqual([d.subject, d.reason, d.source], ['Demo.c.take', 'releaseGuard', 'Test::Src.tick/1']);
         // The discarded message is the one delivered to this release, and the discard directly follows its skip.
         const deliver = r.trace.find(o => o.kind === 'deliver' && o.message === d.message)!;
         const skip = r.trace.find(o => o.kind === 'skip' && o.activation === d.activation)!;
