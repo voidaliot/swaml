@@ -201,9 +201,15 @@ test('WP1-S03 WP1-D04 a literal index outside the extent is a static error at ev
 test('WP1-S04 WP1-D03 a place is not an out argument; out arguments stay bare names', async () => {
     const op = (argument: string) => wrap(`attribute fleet: Fleet = ${fleet}; attribute n: int = 0; operation put(out v: int) { v = 1; } operation f() { put(${argument}); } schedule { on start f(); }`);
     await valid(op('n'));
-    for (const [argument, place] of [['fleet.count', 'fleet.count'], ['fleet.logs[0].statuses[1].occurrences', 'fleet.logs[0].statuses[1].occurrences']]) {
+    for (const [argument, message] of [
+        ['fleet.logs[0].statuses[1].occurrences', 'An out argument must be a name; fleet.logs[0].statuses[1].occurrences is a place.'],
+        ['fleet.logs[1].tag', 'An out argument must be a name; fleet.logs[1].tag is a place.'],
+        // 2.2 forms keep the 2.2 message (review F3).
+        ['fleet.count', 'An out argument needs a mutable compatible local, out parameter or attribute.'],
+        ['fleet.logs[0]', 'An out argument needs a mutable compatible local, out parameter or attribute.'],
+    ]) {
         const found = await errors(op(argument));
-        assert.ok(found.some(([code, m]) => code === 'SW2006' && m === `An out argument must be a name; ${place} is a place.`), JSON.stringify(found));
+        assert.ok(found.some(([code, m]) => code === 'SW2006' && m === message), argument + ' ' + JSON.stringify(found));
     }
 });
 

@@ -540,7 +540,10 @@ export class SwamlValidator {
                     steps = read.steps;
                 }
                 else {
-                    this.report(e, 'SW2002', this.script ? `Unknown value ${e.path}; a case reads its locals and bindings, and a test may also read attributes of its subject, explicitly associated software components and their parts (a part family member with a literal index, as in twins[0]).` : `Unknown local value ${e.path}; nested operations never capture enclosing locals and component attributes are private.`);
+                    this.report(e, 'SW2002', this.script ? (selected
+                        // A 2.3 read names the whole path; a 2.2 read keeps its 2.2 message (review F3, F5).
+                        ? `Unknown value ${this.placeText(e)}${this.failingSegment(e, steps)}; a case reads its locals and bindings, and a test may also read attributes of its subject, explicitly associated software components and their parts, a part family member by a literal index as in twins[0].`
+                        : `Unknown value ${e.path}; a case reads its locals and bindings, and a test may also read attributes of its subject, explicitly associated software components and their single parts.`) : `Unknown local value ${e.path}; nested operations never capture enclosing locals and component attributes are private.`);
                     return '?';
                 }
             }
@@ -632,7 +635,7 @@ export class SwamlValidator {
                 const restriction = caseCallRestriction(this.script!.scenario, scripted.path, scripted.operation, scripted.structure);
                 if (restriction === 'scope')
                     this.report(e, 'SW2010', this.script!.scenario.kind === 'test'
-                        ? `A test may call its primary subject, or eligible helpers of its single parts and explicitly associated software components; ${scripted.path} is not accessible.`
+                        ? `A test may call its primary subject, or eligible helpers of its ${scripted.path.includes('[') ? 'parts (a part family member by a literal index)' : 'single parts'} and explicitly associated software components; ${scripted.path} is not accessible.`
                         : `A use case may call operations of its primary subject only; ${scripted.path} is not that subject. Use associated actor ports to interact with other components.`, false, this.at(e, 'target'));
                 if (restriction === 'effects')
                     this.report(e, 'SW2006', `A test's private helper calls neither communicate nor suspend; ${e.target} does. Use a primary-subject operation or an actor port for that behavior.`, false, this.at(e, 'target'));
@@ -687,7 +690,8 @@ export class SwamlValidator {
         params.forEach((p, i) => { const v = args[i]; if (!v)
             return; if (p.direction === 'out') {
             // A place is not an out argument in 2.3 (WP1-S04); out arguments stay bare names.
-            if (a.isReferenceExpression(v) && env.has(placeRoot(v.path)) && (v.path.includes('.') || v.index || (v.selectors ?? []).length))
+            // A 2.2 form (r.f, a[i]) keeps the 2.2 message.
+            if (a.isReferenceExpression(v) && env.has(placeRoot(v.path)) && (v.selectors ?? []).length)
                 this.report(v, 'SW2006', `An out argument must be a name; ${this.placeText(v)} is a place.`);
             else if (!a.isReferenceExpression(v) || v.path.includes('.') || v.index || !env.get(v.path)?.mutable || !assignable(typeKey(p.type), env.get(v.path)?.type ?? '?'))
                 this.report(v, 'SW2006', 'An out argument needs a mutable compatible local, out parameter or attribute.');
@@ -881,14 +885,27 @@ export class SwamlValidator {
                 continue;
             }
             if (n !== undefined && (n < 0 || n >= Number(match[2])))
-                this.report(index, 'SW2002', `Index ${n} is outside ${t}.`);
+                this.report(index, 'SW2002', `Index ${index.$cstNode?.text.replace(/\s+/g, '') ?? n} is outside ${t}.`);
             t = match[1];
         }
         return t;
     }
+    /** The first segment of a 2.3 test read that names no attribute or part, for the unknown-value message (review F5). */
+    private failingSegment(e: a.ReferenceExpression, steps: readonly Step[]): string {
+        const head = placeRoot(e.path), p = this.script && owner(this.script.scenario, a.isPackage), occurrence = p && packageOccurrences(p).find(o => o.name === head);
+        if (!occurrence)
+            return '';
+        const walked = walkParts(occurrence, head, steps), step = steps[walked.next];
+        if (step?.field === undefined)
+            return '';
+        const family = members(walked.structure).filter(a.isComponentUsage).find(x => x.name === step.field && x.size !== undefined);
+        return family ? `: ${walked.path}.${step.field} is a part family and takes a literal index` : `: ${walked.path} has no attribute or part ${step.field}`;
+    }
     /** A component index of a test path (WP1-S06): literal (SW2010), inside the multiplicity (SW2002), and only on a part family. */
     private partProblem(n: AstNode, property: string, problem: PartProblem): void {
-        const index = typeof problem.index === 'number' ? String(problem.index) : problem.index.$cstNode?.text ?? '?', node = typeof problem.index === 'number' ? n : problem.index, range = typeof problem.index === 'number' ? this.at(n, property) : {};
+        // A literal of a call path is printed as written, so a huge index is not rounded (review F5).
+        const written = typeof problem.index === 'number' ? [...(GrammarUtils.findNodeForProperty(n.$cstNode, property)?.text ?? '').matchAll(/\[\s*(\d+)\s*\]/gu)].map(m => m[1]).find(x => Number(x) === problem.index) : undefined;
+        const index = typeof problem.index === 'number' ? written ?? String(problem.index) : problem.index.$cstNode?.text ?? '?', node = typeof problem.index === 'number' ? n : problem.index, range = typeof problem.index === 'number' ? this.at(n, property) : {};
         if (problem.problem === 'literal')
             this.report(node, 'SW2010', `Component index in ${problem.path}[${index}] must be a literal.`, false, range);
         else if (problem.problem === 'range')
@@ -1211,7 +1228,7 @@ export class SwamlValidator {
         if (s.kind !== 'test')
             this.report(n, 'SW2010', `Private attribute access belongs to tests. A use case calls its primary subject or interacts through associated actor ports; it cannot ${what} ${path}.`, false, this.at(n, property));
         else if (!testCanAccess(s, path))
-            this.report(n, 'SW2010', `A test may ${what} only its subject, explicitly associated software components and their parts; ${path} is not an accessible occurrence. Associate its top-level software component with ${formatName(s.name)}.`, false, this.at(n, property));
+            this.report(n, 'SW2010', `A test may ${what} only its subject, explicitly associated software components and their ${path.includes('[') ? 'parts, a part family member by a literal index' : 'single parts'}; ${path} is not an accessible occurrence. Associate its top-level software component with ${formatName(s.name)}.`, false, this.at(n, property));
     }
     /** Cases, associations, satisfy and verify claims are package members that record intent. */
     private links(p: a.Package): void {

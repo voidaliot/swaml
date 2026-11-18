@@ -57,3 +57,17 @@ test('the recording commit is the 3.1.0 implementation of 2.2', t => {
         return t.diagnostic('Shallow clone: the ancestry of the recording commit is not checked');
     assert.doesNotThrow(() => git('merge-base', '--is-ancestor', RECORDED, 'HEAD'), `${RECORDED} is an ancestor of HEAD`);
 });
+
+// The extended 2.2 fixture (WP1 review F3): further 2.2 sources outside the corpus and their results,
+// recorded once from the same 3.1.0 commit by scripts/compatibility-2-2-extended.mjs record. Pinned separately.
+const EXTENDED = {
+    'models.json': '172d127679a46949bf291bcee1ec3d2ccd630ed603cdb111eb3a2b3e6a837c22',
+    'recorded.json': 'a213675d17998ffed2f8240320994a9e21c3e9f218a31df526cfac721b7d717a',
+};
+test('the extended 2.2 fixture keeps its pinned bytes and names the 3.1.0 recording commit', () => {
+    const extended = name => readFileSync(new URL(`../../test/fixtures/compatibility-2-2-extended/${name}`, import.meta.url), 'utf8').replaceAll('\r\n', '\n');
+    for (const [name, digest] of Object.entries(EXTENDED))
+        assert.equal(createHash('sha256').update(extended(name), 'utf8').digest('hex'), digest, `${name} changed; the extended fixture is recorded once and never edited`);
+    const { recordedWith } = JSON.parse(extended('recorded.json'));
+    assert.deepEqual([recordedWith.commit, recordedWith.implementation, recordedWith.languageVersion, recordedWith.profile], [RECORDED, '3.1.0', '2.2', 'swaml-reference/2.2']);
+});
