@@ -328,7 +328,7 @@ class Analysis {
         for (const s of list) {
             current = this.statement(s, current);
             // An if whose only branch returns or fails guards the rest of the block with its condition.
-            if (a.isIf(s) && !s.otherwise && terminates(s.then))
+            if (a.isIf(s) && !s.otherwise && terminates(s.then as a.Block))
                 current.guards = [...current.guards, this.conditions.get(s) ?? none()];
         }
         current.guards = current.guards.slice(0, depth);
@@ -380,8 +380,8 @@ class Analysis {
         else if (a.isIf(s)) {
             const c = this.expression(s.condition, flow);
             this.conditions.set(s, c);
-            const then = this.guarded(c, flow, inner => this.block(s.then, inner));
-            const otherwise = this.guarded(c, flow, inner => this.block(s.otherwise, inner));
+            const then = this.guarded(c, flow, inner => this.block(s.then as a.Block, inner));
+            const otherwise = this.guarded(c, flow, inner => this.block(s.otherwise as a.Block | undefined, inner));
             then.merge(otherwise);
             return then;
         }
@@ -473,7 +473,7 @@ export function staleWrite(op: Executable, ctx: StaleReadContext): { write?: Ast
                 // An internal reaction runs only its effect: no exit and no entry (WP5-R05). A completion reaction is one
                 // reaction like the others; its guard is evaluated after the entry actions without a suspension between.
                 const target = b.states.find(x => x.name === t.target), internal = t.target === undefined;
-                run(internal ? [] : actions(target, 'entry'), analysis.block(t.effect, internal ? inner : run(actions(state, 'exit'), inner)));
+                run(internal ? [] : actions(target, 'entry'), analysis.block(t.effect as a.Block, internal ? inner : run(actions(state, 'exit'), inner)));
             }
         return { write: analysis.found };
     }

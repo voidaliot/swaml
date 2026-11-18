@@ -463,7 +463,7 @@ export class SwamlValidator {
                 }
                 else if (a.isIf(stmt)) {
                     read(stmt.condition, assigned);
-                    const merged = join([flow(stmt.then, assigned), stmt.otherwise ? flow(stmt.otherwise, assigned) : assigned]);
+                    const merged = join([flow(stmt.then as a.Block, assigned), stmt.otherwise ? flow(stmt.otherwise as a.Block, assigned) : assigned]);
                     if (!merged)
                         return undefined;
                     assigned = merged;
@@ -1088,9 +1088,9 @@ export class SwamlValidator {
             }
             else if (a.isIf(s)) {
                 this.value(s.condition, 'bool', env, c, op);
-                this.block(s.then, env, c, op);
+                this.block(s.then as a.Block, env, c, op);
                 if (s.otherwise)
-                    this.block(s.otherwise, env, c, op);
+                    this.block(s.otherwise as a.Block, env, c, op);
             }
             else if (a.isWhile(s) || a.isUntil(s)) {
                 this.value(s.condition, 'bool', env, c, op);
@@ -1175,8 +1175,8 @@ export class SwamlValidator {
             }
             else if (a.isStateStep(s))
                 this.stateStep(s, env, c, op);
-            else if (a.isJump(s))
-                this.jumpRule(s, s.target, op);
+            else if (a.isJump(s) || a.isExit(s))
+                this.jumpRule(s, a.isJump(s) ? s.target : undefined, op);
             else if (a.isInterruptible(s) && this.script)
                 this.report(s, 'SW2006', 'Case scripts have no interrupt regions; wait with on receive or after D instead.');
             else if (a.isInterruptible(s)) {
@@ -1304,7 +1304,7 @@ export class SwamlValidator {
             this.report(n, 'SW2001', `Input ${name} shadows a live name.`); result.set(name, { type: types[i] ?? '?', mutable: operation && ep.member.parameters[i]?.direction === 'out' }); });
         return result;
     }
-    private terminates(b: a.Block | a.OperationBody): boolean { return b.statements.some(s => a.isReturn(s) || a.isFail(s) || a.isIf(s) && !!s.otherwise && this.terminates(s.then) && this.terminates(s.otherwise) || a.isInterruptible(s) && this.terminates(s.body) && this.terminates(s.handler) || a.isUntil(s) && this.terminates(s.body) && (!s.limit||(constantNumber(s.limit)??0)>0) || a.isForEach(s) && /\[[1-9]\d*\]$/.test(expressionTypes.get(s.collection)??'') && this.terminates(s.body)); }
+    private terminates(b: a.Block | a.OperationBody): boolean { return b.statements.some(s => a.isReturn(s) || a.isFail(s) || a.isIf(s) && !!s.otherwise && this.terminates(s.then as a.Block) && this.terminates(s.otherwise as a.Block) || a.isInterruptible(s) && this.terminates(s.body) && this.terminates(s.handler) || a.isUntil(s) && this.terminates(s.body) && (!s.limit||(constantNumber(s.limit)??0)>0) || a.isForEach(s) && /\[[1-9]\d*\]$/.test(expressionTypes.get(s.collection)??'') && this.terminates(s.body)); }
     private schedules(c: Structure, explained: ReadonlySet<a.ScheduleEntry>): void {
         const entries = schedule(c), keys = new Set<string>();
         for (const e of c.members.filter(a.isSchedule).flatMap(s => s.entries)) {
@@ -1375,129 +1375,89 @@ export class SwamlValidator {
             if (isStateful(op) && !entries.some(e => e.operation === op.name))
                 this.report(op, 'SW2008', 'A stateful operation needs an on start entry.');
     }
-    // ---- PROTOTYPE P1: stage 1 states in the flow (proposal revision 2, owner spelling stay / exit / to S) ----
-    /** The statement lists that contain n, innermost first, up to the operation body (SIF-S07). */
-    private enclosingLists(n: AstNode): { list: readonly a.Statement[]; child: AstNode }[] {
-        const out: { list: readonly a.Statement[]; child: AstNode }[] = [];
+    // ---- PROTOTYPE P1r/P5: states in the flow, revision 4 (minimal checks for the prototype, not the full SIF rule set) ----
+    /** The statement lists that contain n, innermost first, up to the operation body. A state's braces count as a list. */
+    private enclosingLists(n: AstNode): { list: readonly AstNode[]; child: AstNode }[] {
+        const out: { list: readonly AstNode[]; child: AstNode }[] = [];
         for (let child: AstNode = n, p = n.$container; p && !isExecutable(p); child = p, p = p.$container) {
-            if ((a.isBlock(p) || a.isOperationBody(p)) && child.$containerProperty === 'statements')
+            if ((a.isBlock(p) || a.isOperationBody(p) || a.isStateStep(p)) && child.$containerProperty === 'statements')
                 out.push({ list: p.statements, child });
         }
         return out;
     }
-    /** SIF-S07, SIF-D04: a jump names a state of the same operation in its own statement list or an enclosing one; a forward jump over a used declaration is an error. */
-    private jumpRule(n: AstNode, target: string | undefined, op: Executable | undefined): void {
+    /** SIF-S04, SIF-S06: a leave stands inside a state, not in entry/exit blocks or loops; a jump names a reachable state. */
+    private jumpRule(n: a.Exit | a.Jump, target: string | undefined, op: Executable | undefined): void {
         if (!op || this.script) {
-            this.report(n, 'SW2008', 'Jumps belong to stateful operations.');
+            this.report(n, 'SW2008', 'exit; and to S; belong to states.');
             return;
         }
-        // A jump inside a state block: allowed only in a leaving trigger's block (at any depth), never in entry, exit or stay blocks.
+        let inState = false;
         for (let p: AstNode | undefined = n.$container; p && !isExecutable(p); p = p.$container) {
-            if (a.isStateAction(p) || a.isTransition(p) && p.stay)
-                this.report(n, 'SW2008', 'to is not allowed in entry, exit or stay blocks.');
-            if (a.isTransition(p))
+            if (a.isStateAction(p) || a.isWhile(p) || a.isUntil(p) || a.isFor(p) || a.isForEach(p) || a.isInterruptible(p)) {
+                this.report(n, 'SW2008', 'exit; and to S; may not stand in on entry, on exit, a loop body or an interrupt region (SIF-S04).');
+                return;
+            }
+            if (a.isStateStep(p)) {
+                inState = true;
                 break;
+            }
         }
-        const lists = this.enclosingLists(n);
-        const found = lists.find(l => l.list.some(x => a.isStateStep(x) && x.name === target));
-        if (!found) {
-            this.report(n, 'SW2008', `to ${target}: no state ${target} in this statement list or an enclosing one.`);
+        if (!inState) {
+            this.report(n, 'SW2008', 'exit; and to S; stand only inside a state (SIF-S04).');
             return;
         }
-        const from = found.list.indexOf(found.child as a.Statement), to = found.list.findIndex(x => a.isStateStep(x) && x.name === target);
-        if (to > from) {
-            const skipped = found.list.slice(from + 1, to).filter(a.isLocalVariable);
-            const used = found.list.slice(to).flatMap(x => nodes(x)).filter(a.isReferenceExpression).map(r => r.path.split('.')[0]);
-            for (const v of skipped)
-                if (used.includes(v.name))
-                    this.report(n, 'SW2008', `to ${target} skips the declaration of ${v.name}, which ${target} uses. Declare ${v.name} before the jump.`);
-        }
-        if (a.isJump(n)) {
-            const list = lists[0].list, i = list.indexOf(n);
-            const targets = new Set<string | undefined>([...flowStates(op).flatMap(x => x.transitions.map(t => t.target)), ...nodes(body(op)!).filter(a.isJump).map(j => j.target)]);
-            const next = list[i + 1];
-            if (next && !(a.isStateStep(next) && targets.has(next.name)))
-                this.report(n, 'SW2008', 'After to, only a state that is a jump target may follow in the same list.');
-        }
+        if (!a.isJump(n))
+            return;
+        // SIF-S06: a state of a list containing the jump or an enclosing list, or inside parents standing directly in one.
+        const within = (s: AstNode): boolean => a.isStateStep(s) && (s.name === target || s.statements.some(within));
+        if (!this.enclosingLists(n).some(l => l.list.some(within)))
+            this.report(n, 'SW2008', `to ${target}: no state ${target} in this list, an enclosing one, or a parent standing in one (SIF-S06).`);
     }
     private stateStep(s: a.StateStep, env: Env, c: Structure | undefined, op: Executable | undefined): void {
         if (!op || this.script) {
-            this.report(s, 'SW2008', 'Case scripts contain no states (D13).');
+            this.report(s, 'SW2008', 'Case scripts contain no states.');
             return;
         }
+        const actions = s.statements.filter(a.isStateAction);
         for (const kind of ['entry', 'exit'])
-            if (s.actions.filter(x => x.kind === kind).length > 1)
-                this.report(s, 'SW2008', `Duplicate on ${kind} action.`);
-        const forbidden = (b: a.Block | undefined, what: string) => { for (const n of b ? nodes(b) : []) if (a.isStateStep(n) || a.isReceive(n) || a.isReturn(n)) this.report(n, 'SW2008', `${what} contain no state, receive or return statement.`); };
-        for (const ac of s.actions) {
-            forbidden(ac.body, 'Entry and exit actions');
-            this.block(ac.body, env, c, op);
-        }
-        // SIF-S06: the on receive triggers are contiguous.
-        const kinds = s.transitions.map(t => t.endpoint ? 'r' : 't').join('');
-        if (/r+t+r/.test(kinds))
-            this.report(s, 'SW2008', `The on receive triggers of state ${s.name} must be written together.`);
-        for (const t of s.transitions) {
-            const input = t.endpoint ? this.inputEnv(t, env, c) : env;
-            if (t.delayValue)
-                this.computedDuration(t.delayValue, env, c, op);
-            if (t.guard) {
-                this.value(t.guard, 'bool', input, c, op);
-                for (const call of nodes(t.guard).filter(a.isCallExpression)) {
-                    const target = this.callTarget(call, c);
-                    if (!t.endpoint)
-                        this.report(t.guard, 'SW2008', 'A timer guard reads only constants, locals and attributes this operation assigns (SIF-S05).');
-                    else if (!target || !isExecutable(target) || effects(target, c).writes || effects(target, c).communicates || effects(target, c).suspends)
-                        this.report(t.guard, 'SW2006', 'State guards may only be pure or read state.');
-                }
+            if (actions.filter(x => x.kind === kind).length > 1)
+                this.report(s, 'SW2008', `Duplicate on ${kind} action (SIF-S02).`);
+        // SIF-S03: items first, inner states last.
+        const firstState = s.statements.findIndex(a.isStateStep);
+        if (firstState >= 0 && s.statements.slice(firstState).some(x => !a.isStateStep(x)))
+            this.report(s, 'SW2008', `After the first inner state of ${s.name} only states may follow (SIF-S03).`);
+        const forbidden = (b: AstNode | undefined, what: string) => { for (const n of b ? nodes(b) : []) if (a.isStateStep(n) || a.isReceive(n) || a.isReturn(n)) this.report(n, 'SW2008', `${what} contain no state, receive or return statement.`); };
+        const items: a.Statement[] = [];
+        for (const item of s.statements) {
+            if (a.isStateAction(item)) {
+                forbidden(item.body, 'Entry and exit actions');
+                this.block(item.body, env, c, op);
             }
-            if (t.stay && (!t.effect || !t.effect.statements.length))
-                this.report(t, 'SW2008', 'A stay reaction has a non-empty block; to drop an input, write ignore (SIF-S03).');
-            forbidden(t.effect, 'Trigger blocks');
-            if (t.effect)
-                this.block(t.effect, input, c, op);
-            if (t.target !== undefined)
-                this.jumpRule(t, t.target, op);
+            else if (a.isTransition(item)) {
+                const input = item.endpoint ? this.inputEnv(item as a.Transition & { bindings: string[] }, env, c) : env;
+                if (item.delayValue)
+                    this.computedDuration(item.delayValue, env, c, op);
+                forbidden(item.effect, 'Event line blocks');
+                this.block(item.effect as a.Block, input, c, op);
+            }
+            else if (a.isStateStep(item))
+                this.stateStep(item, env, c, op);
+            else
+                items.push(item as a.Statement);
         }
-        for (const d of s.dispositions)
-            for (const ep of d.endpoints)
-                if (s.transitions.some(t => t.endpoint === ep))
-                    this.report(d, 'SW2008', `State ${s.name} handles ${ep} and cannot also ${d.kind} it.`);
+        // Statements standing in the state: checked as one list (their locals end with the look).
+        if (items.length)
+            this.block({ $type: 'Block', statements: items } as unknown as a.Block, env, c, op);
     }
-    /** SIF-S01 (parameterless void), SIF-S02, SIF-S09, SIF-D01 for an operation with state statements. */
+    /** SIF-S01 (parameterless void), SIF-S02 (unique names), no plain receive statements in an operation with states. */
     private flowOperation(op: Executable, b: a.OperationBody, c: Structure | undefined): void {
         const sig = signature(op)!, states = flowStates(op);
         if (sig.parameters.length || typeKey(sig.result) !== 'void')
-            this.report(op, 'SW2008', 'A stateful operation is parameterless void.');
+            this.report(op, 'SW2008', 'An operation with states is parameterless void (SIF-S01).');
         this.unique(states, op);
-        const waiting: { handled: Set<string> }[] = [];
-        const handledAll = new Set<string>();
-        for (const n of nodes(b)) {
-            if (a.isStateStep(n) && n.transitions.length)
-                waiting.push({ handled: new Set(n.transitions.flatMap(t => t.endpoint ? [t.endpoint] : [])) });
+        for (const n of nodes(b))
             if (a.isReceive(n))
-                waiting.push({ handled: new Set(n.branches.map(x => x.endpoint)) });
-        }
-        waiting.forEach(w => w.handled.forEach(x => handledAll.add(x)));
-        for (const r of b.reactions) {
-            const input = this.inputEnv(r, this.env(c), c);
-            if (r.guard)
-                this.value(r.guard, 'bool', input, c, op);
-            if (r.effect)
-                this.block(r.effect, input, c, op);
-            if (!r.endpoint || r.leave || r.target !== undefined)
-                this.report(r, 'SW2008', 'An operation-level reaction is an on receive reaction that stays.');
-            else
-                handledAll.add(r.endpoint);
-        }
-        const declared = new Set([...b.dispositions.flatMap(d => d.endpoints), ...b.reactions.flatMap(r => r.endpoint ? [r.endpoint] : [])]);
-        for (const d of b.dispositions)
-            for (const ep of d.endpoints)
-                if (!handledAll.has(ep))
-                    this.report(d, 'SW2008', `${ep} is not handled at any waiting point of ${op.name} (SIF-S09).`);
-        for (const m of handledAll)
-            if (!declared.has(m) && waiting.some(w => !w.handled.has(m)))
-                this.report(op, 'SW2008', `${m} is not handled by every waiting point of ${op.name}; it is kept where it is not handled.`, true);
+                this.report(n, 'SW2008', 'An operation with states contains no plain receive statement; write a state with an event line (SIF-S01).');
     }
     private states(op: Executable, c: Structure | undefined, env: Env): void {
         const b = body(op)!, sig = signature(op)!;
@@ -1569,7 +1529,7 @@ export class SwamlValidator {
                     if (this.errorCount !== before)
                         erroneousGuards.add(t);
                 }
-                this.block(t.effect!, input, c, op);
+                this.block(t.effect! as a.Block, input, c, op);
             }
             // Deferral (WP5-S08, WP5-S09, WP5-D05, WP5-D06): required events or attributes that this machine owns through
             // its transitions, at most once per state, never handled by the same state.
@@ -1612,7 +1572,7 @@ export class SwamlValidator {
                     continue;
                 }
                 const cycle = path.slice(seen), key = [...cycle].sort().join('|');
-                const suspends = cycle.some(name => { const s = b.states.find(x => x.name === name)!; return s.actions.some(x => this.canSuspend(x.body, c)) || this.canSuspend(edge.get(name)!.effect!, c); });
+                const suspends = cycle.some(name => { const s = b.states.find(x => x.name === name)!; return s.actions.some(x => this.canSuspend(x.body, c)) || this.canSuspend(edge.get(name)!.effect! as a.Block, c); });
                 if (!reported.has(key) && !suspends) {
                     reported.add(key);
                     const first = b.states.find(s => cycle.includes(s.name))!.name, at = cycle.indexOf(first), ordered = [...cycle.slice(at), ...cycle.slice(0, at), first];

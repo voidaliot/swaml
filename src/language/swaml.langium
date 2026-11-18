@@ -24,15 +24,23 @@ PolicySetting: name=Name '=' value=Expression ';';
 Operation: (redefines?='redefines')? 'operation' (definition?='def')? name=Name '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)? body=OperationBody;
 OperationUsage: (redefines?='redefines')? 'operation' name=Name ':' definition=[Operation:QualifiedName] (documentation=Documentation? ';' | body=OperationBody);
 Executable: Operation | OperationUsage;
-OperationBody: '{' documentation=Documentation? operations+=Executable* ('initial' initial=Name ';' states+=State+ | (dispositions+=Disposition | 'otherwise' reactions+=Trigger)* statements+=Statement*) '}';
+OperationBody: '{' documentation=Documentation? operations+=Executable* ('initial' initial=Name ';' states+=State+ | statements+=Statement*) '}';
 Schedule: 'schedule' '{' entries+=ScheduleEntry* '}';
 ScheduleEntry: ('on' (kind='start' | kind='every' (period=Duration | '(' periodValue=Expression ')') | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' (deadline=Duration | '(' deadlineValue=Expression ')'))? (concurrent?='concurrent')? ';';
-Block: '{' statements+=Statement* '}';
-Statement: LocalVariable | Assign | Send | ExpressionStatement | Return | If | While | Until | For | ForEach | Wait | Receive | Interruptible | Fail | Assert | StateStep | Jump;
-// PROTOTYPE P1 (states in the flow, stage 1, owner spelling: stay / exit / to S at every trigger head).
-StateStep: 'state' name=Name '{' documentation=Documentation? (actions+=StateAction | dispositions+=Disposition | transitions+=Trigger)* '}';
-Disposition: kind=('keep'|'ignore') endpoints+=MemberPath (',' endpoints+=MemberPath)* ';';
-Trigger returns Transition: ('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' (delay=Duration | '(' delayValue=Expression ')') ('when' '(' guard=Expression ')')?) (stay?='stay' effect=Block | leave?='exit' (';' | effect=Block) | 'to' target=Name (';' | effect=Block) | effect=Block);
+Block: braced?='{' statements+=Statement* '}';
+// PROTOTYPE P1r (revision 4, decision O1): a body that is only exit; or to S; may drop its braces. Both forms build a Block.
+Body: Block | ShortBody;
+ShortBody: statements+=Leave;
+ElseBody: Block | ShortBody | ElseIf;
+ElseIf: statements+=If;
+Statement: LocalVariable | Assign | Send | ExpressionStatement | Return | If | While | Until | For | ForEach | Wait | Receive | Interruptible | Fail | Assert | StateStep | Leave;
+// PROTOTYPE P1r/P5 (states in the flow, revision 4): a state holds on entry/on exit, event lines and statements, then
+// inner states (SIF-S03 is checked by the validator). Every item sits in `statements`, so items have statement identities.
+StateStep: 'state' name=Name '{' documentation=Documentation? statements+=StateMember* '}';
+StateMember: StateAction | EventLine | LocalVariable | Assign | Send | ExpressionStatement | Return | If | While | Until | For | ForEach | Wait | Interruptible | Fail | Assert | StateStep | Leave;
+EventLine returns Transition: ('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' | 'after' (delay=Duration | '(' delayValue=Expression ')')) effect=Body;
+Leave: Exit | Jump;
+Exit: {infer Exit} 'exit' ';';
 Jump: 'to' target=Name ';';
 LocalVariable: 'var' name=Name ':' type=TypeRef '=' value=Expression ';';
 Assign: target=ValuePath ('[' index=Expression ']' selectors+=Selector*)? '=' value=Expression ';';
@@ -40,7 +48,7 @@ Selector: '.' field=Name | '[' index=Expression ']';
 ExpressionStatement: expression=OrExpression ';';
 Send: kind=('send'|'publish') endpoint=EndpointPath '(' (args+=Expression (',' args+=Expression)*)? ')' ';';
 Return: 'return' value=Expression? ';';
-If: 'if' '(' condition=Expression ')' then=Block ('else' otherwise=Block)?;
+If: 'if' '(' condition=Expression ')' then=Body ('else' otherwise=ElseBody)?;
 While: 'while' '(' condition=Expression (',' limit=Expression 'times')? ')' body=Block;
 Until: 'until' '(' condition=Expression (',' limit=Expression 'times')? ')' body=Block;
 For: 'for' '(' initializer=LocalVariable condition=Expression ';' update=ForUpdate ')' body=Block;
@@ -54,7 +62,7 @@ Fail: 'fail' reason=STRING ';';
 Assert: 'assert' condition=Expression ';';
 State: (final?='final')? 'state' name=Name '{' documentation=Documentation? (actions+=StateAction | transitions+=Transition | deferrals+=Deferral)* '}';
 StateAction: 'on' kind=('entry'|'exit') body=Block;
-interface Transition { endpoint?: string; bindings?: string[]; guard?: Expression; delay?: Duration; delayValue?: Expression; target?: string; effect?: Block; stay?: boolean; leave?: boolean; }
+interface Transition { endpoint?: string; bindings?: string[]; guard?: Expression; delay?: Duration; delayValue?: Expression; target?: string; effect?: Body; }
 Transition returns Transition: ('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' (delay=Duration | '(' delayValue=Expression ')') ('when' '(' guard=Expression ')')? | 'when' '(' guard=Expression ')') ('to' target=Name)? effect=Block;
 Deferral: 'defer' endpoints+=MemberPath (',' endpoints+=MemberPath)* ';';
 Deployment: 'deployment' name=Name 'of' root=[ComponentUsage:QualifiedName] 'on' platform=[ComponentUsage:QualifiedName] '{' documentation=Documentation? placements+=Placement* '}';
@@ -76,7 +84,7 @@ FilterAnd returns FilterExpression: FilterPrimary ({infer FilterBinary.left=curr
 FilterPrimary returns FilterExpression: {infer FilterNot} 'not' operand=FilterPrimary | FilterComparison | '(' FilterExpression ')';
 FilterComparison: field=('name'|'kind'|'path') operator=('=='|'!=') value=STRING;
 Duration: value=INT unit=('ns'|'us'|'ms'|'s');
-Name returns string: ID | UNRESTRICTED_NAME | 'reversed' | 'to' | 'times' | 'name' | 'kind' | 'path' | 'use' | 'case' | 'test' | 'associate' | 'by' | 'ns' | 'us' | 'ms' | 's' | 'defer' | 'view' | 'state' | 'in' | 'out' | 'keep' | 'ignore' | 'stay' | 'otherwise';
+Name returns string: ID | UNRESTRICTED_NAME | 'reversed' | 'to' | 'times' | 'name' | 'kind' | 'path' | 'use' | 'case' | 'test' | 'associate' | 'by' | 'ns' | 'us' | 'ms' | 's' | 'defer' | 'view' | 'state' | 'in' | 'out';
 MemberPath returns string: Name '.' Name;
 EndpointPath returns string: Name '.' Name ('.' Name)?;
 Path returns string: QualifiedName ('[' INT ']')? ('.' Name ('[' INT ']')?)*;
