@@ -6,7 +6,8 @@
 // single associations), models-wp2b.json (WP2 review: diagnostics that spell a quoted contextual word, compared
 // with their related information) and models-wp3.json (WP3-L04: the names of the 2.3 library packages, with
 // related information), models-wp3b.json (WP3 review F1: own packages named like the 2.3 library packages) and
-// models-wp4.json (WP4: durations in every 2.2 position, policy settings and names that look like units). For each set, recorded.json or recorded-wp2.json holds, recorded once from the 3.1.0
+// models-wp4.json (WP4: durations in every 2.2 position, policy settings and names that look like units) and
+// models-wp5.json (WP5: 2.2 state machines in every 2.2 shape, defer as an ordinary name). For each set, recorded.json or recorded-wp2.json holds, recorded once from the 3.1.0
 // implementation at 213f583, every diagnostic (severity, code, range, message), the digest of the normalized
 // AST and, for runnable models, the run or case results with their trace digests. The current implementation
 // must reproduce all of it. A run that threw a host error in 3.1.0 is not compared and is listed.
@@ -41,6 +42,9 @@ export const SETS = [
     // Durations become expression values and PolicySetting has one form (WP4-G01, WP4-G02); these 2.2 sources use
     // every position a duration can have in 2.2.
     { models: 'models-wp4.json', recorded: 'recorded-wp4.json', rule: 'WP4-G01, WP4-G02: 2.2 sources with durations in every 2.2 position, policy settings and names that look like units', related: true },
+    // States gain completion, internal and guarded-timer transitions and deferrals, and defer becomes a contextual word
+    // (WP5-G01 to WP5-G03); these 2.2 machines must keep the 2.2 reaction order (WP5-R11) and defer stays a name.
+    { models: 'models-wp5.json', recorded: 'recorded-wp5.json', rule: 'WP5-G01 to WP5-G03, WP5-R11: 2.2 state machines in every 2.2 shape and defer as an ordinary name', related: true },
 ];
 const strip = trace => trace.map(({ profile: _p, languageVersion: _l, ...rest }) => rest);
 const at = r => `${r.start.line + 1}:${r.start.character + 1}-${r.end.line + 1}:${r.end.character + 1}`;
