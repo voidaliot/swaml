@@ -1687,7 +1687,8 @@ export class SwamlValidator {
             return;
         if (!isNode(platform))
             this.report(d, 'SW2009', 'The platform root must specialize Swaml::Platform::Node.');
-        const software = occurrences(root), targets = occurrences(platform), seen = new Set<string>(), plan = deploymentPlan(d);
+        const software = occurrences(root), targets = new Map(occurrences(platform).map(o => [o.path, o])), seen = new Set<string>(), plan = deploymentPlan(d);
+        const known = plan ? undefined : new Set(software.flatMap(o => { const family = /^(.*)\[\d+\]$/u.exec(o.path)?.[1]; return family !== undefined ? [o.path, family] : [o.path]; }));
         d.placements.forEach((p, i) => {
             const path = p.target ? `${root.name}.${p.target}` : root.name;
             // WP8-D09: exact paths, operation paths included, are unique within one deployment.
@@ -1700,18 +1701,22 @@ export class SwamlValidator {
             // occurrence nor a released operation keeps its 2.2 message (owner decision WP8-A).
             if (placed?.unreleased && plan!.coreRule)
                 this.report(p, 'SW2009', `${pathText(placed.path)} names operation ${formatName(placed.unreleased.operation, MESSAGE_SPELLING)}, which no schedule entry of ${pathText(placed.unreleased.occurrence)} releases.`);
-            else if (placed ? placed.kind === 'unknown' : !software.some(o => o.path === path || p.target && o.path.startsWith(`${path}[`)))
+            else if (placed ? placed.kind === 'unknown' : !known!.has(path))
                 this.report(p, 'SW2009', `Unknown software occurrence ${path}.`);
-            const target = targets.find(o => o.path === `${platform.name}.${p.node}`);
+            const target = targets.get(`${platform.name}.${p.node}`);
             if (!target || !isNode(target.structure))
                 this.report(p, 'SW2009', `Target ${p.node} must be a Node occurrence.`);
+            // WP8-D12: without a Swaml::Os Task an operation placement changes no run and no task rule but T7.
+            else if (placed?.kind === 'operation' && !plan!.taskRules && !plan!.rootTask)
+                this.report(p, 'SW2021', `Operation placement ${pathText(placed.path)} on ${pathText(target.path)} has no effect on a platform without a Swaml::Os task: the run records and orders occurrence placements only.`, true);
         });
         if (plan)
             this.taskRules(plan);
     }
     /**
-     * The static task rules of a deployment on a Swaml::Os platform (WP8-S04 to WP8-S10): T1 to T6 when the platform
-     * contains a Task, T7 when it contains a Core or a Task. A platform with neither keeps its 2.2 meaning. Findings
+     * The static task rules of a deployment on a Swaml::Os platform (WP8-S04 to WP8-S10, WP8-D13): T1 to T5 for the
+     * Tasks of the platform and the entries on them, T6 for the entries of occurrences deployed in a Core that has
+     * Tasks, T7 when the platform contains a Core or a Task. A platform with neither keeps its 2.2 meaning. Findings
      * about a Task are reported at the platform reference, findings about entries at the deploy statement that
      * places them, unplaced entries (T6) at the deployed root; each message is reported once per range.
      */
@@ -1725,11 +1730,16 @@ export class SwamlValidator {
             }
         };
         const platformRange = this.at(d, 'platform'), task = (t: OsTask) => pathText(t.path);
+        // WP8-D13: a Task needs a Core or Node above it; the root of a platform cannot be one.
+        if (plan.rootTask) {
+            once(d, `The platform root ${pathText(plan.platform.name)} is a Swaml::Os task; a task runs on a core or node, so declare the task inside a Node or Core platform and deploy on it.`, platformRange);
+            return;
+        }
         if (plan.taskRules) {
             for (const t of plan.tasks) {
                 // WP8-D11: every Task attribute is a constant of its type in that occurrence.
                 for (const p of t.problems)
-                    once(d, `${p.attribute} of task ${task(t)} must be a constant ${p.attribute === 'kind' ? 'TaskKind literal' : p.attribute === 'preemptive' ? 'bool' : 'uint'} value.`, platformRange);
+                    once(d, `${p.attribute} of task ${task(t)} must be a constant ${p.attribute === 'kind' ? 'TaskKind literal' : p.attribute === 'preemptive' ? 'bool' : 'uint'} value${p.tooLarge ? ` up to ${Number.MAX_SAFE_INTEGER}` : ''}.`, platformRange);
                 // T3 (WP8-D04): an isr Task has periodNs = 0 and is preemptive.
                 if (t.kind === 'isr' && t.periodNs !== undefined && t.periodNs !== 0n)
                     once(d, `ISR task ${task(t)} must have periodNs = 0.`, platformRange);
@@ -1737,47 +1747,43 @@ export class SwamlValidator {
                     once(d, `ISR task ${task(t)} must be preemptive.`, platformRange);
             }
             // T1 (WP8-D02): unique priorities among the Tasks of one Core.
+            const family = (path: string) => /^(.*)\[\d+\]$/u.exec(path)?.[1];
             for (const [i, t] of plan.tasks.entries()) {
                 const other = plan.tasks.slice(0, i).find(x => x.core === t.core && x.priority !== undefined && x.priority === t.priority);
                 if (other)
-                    once(d, `Tasks ${task(other)} and ${task(t)} of ${coreText(plan, t.core)} share priority ${t.priority}.`, platformRange);
+                    once(d, `Tasks ${task(other)} and ${task(t)} of ${coreText(plan, t.core)} share priority ${t.priority}${family(other.path) !== undefined && family(other.path) === family(t.path) ? `; the members of a task family share their definition's priority, so declare the tasks of one core separately` : ''}.`, platformRange);
             }
-            const multiple = (e: EntryPlacement) => { const period = entryPeriod(e.entry, e.occurrence.structure); return period !== undefined && BigInt(period) % e.task!.periodNs! === 0n; };
-            const allowed = (e: EntryPlacement, seen = new Set<EntryPlacement>()): boolean => {
-                // An after successor follows its predecessor's entries, which must be on the same Task and allowed there.
-                if (e.entry.kind !== 'after')
-                    return e.task!.kind === 'isr' ? e.entry.kind === 'receive' : e.task!.periodNs ? e.entry.kind === 'every' && multiple(e) : true;
-                seen.add(e);
-                const before = predecessors(plan, e);
-                return before.length > 0 && before.every(p => p.task === e.task && (seen.has(p) || allowed(p, seen)));
-            };
             for (const e of plan.entries) {
                 const at = e.placement?.node, what = `${entryLabel(e.entry)} of ${pathText(e.occurrence.path)}`;
                 if (!e.task) {
-                    once(d, this.unplacedMessage(plan, e), this.at(d, 'root'));
+                    // T6 (WP8-D07): only an occurrence deployed in a Core that has Tasks, or an entry placed in one, needs a Task.
+                    const core = [plan.occurrenceCore.get(e.occurrence), e.core].find(c => c !== undefined && plan.taskedCores.has(c));
+                    if (core !== undefined)
+                        once(d, this.unplacedMessage(plan, e, core), this.at(d, 'root'));
                     continue;
                 }
                 const t = e.task;
                 if (!at || t.problems.length)
                     continue;
-                // T2 (WP8-D03) and T3 (WP8-D04): entry kinds per Task.
-                if (!allowed(e)) {
-                    const other = e.entry.kind === 'after' ? predecessors(plan, e).find(p => p.task !== t) : undefined;
-                    if (t.kind === 'isr')
-                        once(at, `ISR task ${task(t)} accepts only receive entries and their after successors; ${what} is not one.`);
-                    else if (other?.task)
-                        once(at, `${what} cannot run on ${t.periodNs ? 'periodic ' : ''}task ${task(t)}: its predecessor runs on ${task(other.task)}.`);
-                    else if (e.entry.kind === 'every')
-                        once(at, `${what} cannot run on periodic task ${task(t)}: its period ${durationText(entryPeriod(e.entry, e.occurrence.structure) ?? 0)} is not a multiple of ${durationText(t.periodNs!)}.`);
-                    else if (e.entry.kind !== 'after')
-                        once(at, `${what} cannot run on periodic task ${task(t)}: event entries need a task with periodNs = 0.`);
+                // T2 (WP8-D03) and T3 (WP8-D04): entry kinds per Task. An after successor runs on its predecessor's Task, on
+                // every Task kind; a successor whose predecessor is not on a Task is left to T6.
+                const before = predecessors(plan, e);
+                if (e.entry.kind === 'after') {
+                    const other = before.every(p => p.task) ? before.find(p => p.task !== t) : undefined;
+                    if (other?.task)
+                        once(at, `${what} cannot run on task ${task(t)}: its predecessor runs on ${task(other.task)}, and an after successor runs on the task of its predecessor.`);
                 }
+                else if (t.kind === 'isr' && e.entry.kind !== 'receive')
+                    once(at, `ISR task ${task(t)} accepts only receive entries and their after successors; ${what} is not one.`);
+                else if (t.kind !== 'isr' && t.periodNs && e.entry.kind === 'every' && !this.periodFits(e, t))
+                    once(at, `${what} cannot run on periodic task ${task(t)}: its period ${durationText(entryPeriod(e.entry, e.occurrence.structure) ?? 0)} is not a multiple of ${durationText(t.periodNs)}.`);
+                else if (t.kind !== 'isr' && t.periodNs && e.entry.kind !== 'every')
+                    once(at, `${what} cannot run on periodic task ${task(t)}: event entries need a task with periodNs = 0.`);
                 // T4 (WP8-D05): an activation that may suspend runs on an extended Task.
-                const op = members(e.occurrence.structure).filter(isExecutable).find(x => x.name === e.entry.operation);
-                const site = op && t.kind !== 'extended' ? suspendSite(op, e.occurrence.structure) : undefined;
+                const site = t.kind !== 'extended' ? this.suspends(e) : undefined;
                 if (site)
                     once(at, `${what} may suspend in ${statementText(site)} and needs an extended task; ${task(t)} is ${t.kind}.`);
-                // T5 (WP8-D06): an explicit deadline is not shorter than the Task's response bound.
+                // T5 (WP8-D06): an explicit deadline is not shorter than the Task's response bound; an implicit one is not checked.
                 const deadline = e.entry.deadline || e.entry.deadlineValue ? entryDeadline(e.entry, e.occurrence.structure) : undefined;
                 if (t.responseNs && deadline !== undefined && BigInt(deadline) < t.responseNs)
                     once(at, `Deadline ${durationText(deadline)} of ${what} is shorter than the response bound ${durationText(t.responseNs)} of ${task(t)}.`);
@@ -1792,16 +1798,51 @@ export class SwamlValidator {
                     once(second.placement!.node, `${pathText(o.path)} runs on ${coreText(plan, reached[0].core!)} and ${coreText(plan, second.core!)}; all its operations must run on one core.`);
             }
     }
-    /** T6 (WP8-D07): an entry that is not on a Task, with an example deploy line for a Task that already hosts its occurrence or an ancestor, or the platform's first Task. */
-    private unplacedMessage(plan: DeploymentPlan, e: EntryPlacement): string {
+    /** T2: the evaluated period of an every entry is a positive multiple of a periodic Task's period. */
+    private periodFits(e: EntryPlacement, t: OsTask): boolean {
+        const period = entryPeriod(e.entry, e.occurrence.structure);
+        return period !== undefined && !!t.periodNs && BigInt(period) % t.periodNs === 0n;
+    }
+    /** T4: where an activation of the entry's operation may suspend, if anywhere. */
+    private suspends(e: EntryPlacement): AstNode | undefined {
+        const op = members(e.occurrence.structure).filter(isExecutable).find(x => x.name === e.entry.operation);
+        return op ? suspendSite(op, e.occurrence.structure) : undefined;
+    }
+    /** T2 to T4 for an entry that is not an after successor on Task t (the after rule is the predecessor's Task). */
+    private accepts(e: EntryPlacement, t: OsTask): boolean {
+        if (t.problems.length)
+            return false;
+        const kind = t.kind === 'isr' ? e.entry.kind === 'receive' : t.periodNs ? e.entry.kind === 'every' && this.periodFits(e, t) : true;
+        return kind && (t.kind === 'extended' || !this.suspends(e));
+    }
+    /**
+     * T6 (WP8-D07): an entry that is not on a Task although its occurrence (or its own placement) is in Core core,
+     * which has Tasks. The example deploy line names a Task of that Core that accepts the entry under T2 to T4: the
+     * Task that already hosts an entry of the occurrence or of its nearest ancestor, else the first such Task of the
+     * Core in declaration rank; an after successor names its predecessor's Task. Without such a Task the message says so.
+     */
+    private unplacedMessage(plan: DeploymentPlan, e: EntryPlacement, core: string): string {
+        const relative = e.occurrence.path === plan.root.name ? '' : e.occurrence.path.slice(plan.root.name.length + 1);
+        const operation = formatName(e.entry.operation, MESSAGE_SPELLING), occurrence = pathText(e.occurrence.path), where = coreText(plan, core);
+        const head = `${entryLabel(e.entry)} of ${occurrence} is not placed on a task of ${where}`;
+        const example = (t: OsTask) => `${head}; place ${operation} or ${occurrence} on a task, for example: deploy ${relative ? pathText(relative) + '.' : ''}${operation} on ${pathText(t.path.slice(plan.platform.name.length + 1))};`;
+        const suspends = !!this.suspends(e);
+        if (e.entry.kind === 'after') {
+            const before = predecessors(plan, e), host = before[0]?.task;
+            const predecessor = formatName(e.entry.predecessor ?? '', MESSAGE_SPELLING);
+            if (host && host.core === core && before.every(p => p.task === host) && !host.problems.length && (host.kind === 'extended' || !suspends))
+                return example(host);
+            return `${head}; an after successor runs on the task of its predecessor, so place ${predecessor} on a task of ${where}${suspends ? ' of kind extended' : ''} and ${operation} with it.`;
+        }
+        const candidates = plan.tasks.filter(t => t.core === core && this.accepts(e, t));
         let host: OsTask | undefined;
         for (let o: Occurrence | undefined = e.occurrence; o && !host; o = o.parent !== undefined ? plan.occurrenceAt.get(o.parent) : undefined)
-            host = plan.byOccurrence.get(o)?.find(x => x.task)?.task;
-        host ??= plan.tasks[0];
-        const relative = e.occurrence.path === plan.root.name ? '' : e.occurrence.path.slice(plan.root.name.length + 1);
-        const operation = formatName(e.entry.operation, MESSAGE_SPELLING);
-        const deploy = `deploy ${relative ? pathText(relative) + '.' : ''}${operation} on ${pathText(host.path.slice(plan.platform.name.length + 1))};`;
-        return `${entryLabel(e.entry)} of ${pathText(e.occurrence.path)} is not placed on a task of ${pathText(plan.platform.name)}; place ${operation} or ${pathText(e.occurrence.path)} on a task, for example: ${deploy}`;
+            host = plan.byOccurrence.get(o)?.map(x => x.task).find(t => t && candidates.includes(t));
+        host ??= candidates[0];
+        if (host)
+            return example(host);
+        const need = e.entry.kind === 'every' ? `a task that is no ISR, with periodNs = 0 or a period that divides ${durationText(entryPeriod(e.entry, e.occurrence.structure) ?? 0)}` : e.entry.kind === 'receive' ? 'a task with periodNs = 0' : 'a task with periodNs = 0 that is no ISR';
+        return `${head}; ${where} has no task that accepts it (it needs ${need}${suspends ? ', of kind extended' : ''}), so add one and place ${operation} or ${occurrence} on it.`;
     }
     private view(v: a.View): void {
         const kind = v.definition.ref?.name;

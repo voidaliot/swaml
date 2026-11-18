@@ -36,7 +36,7 @@ export interface OsTask {
     periodNs?: bigint;
     responseNs?: bigint;
     /** Attributes whose effective value is not a constant of the right kind (WP8-D11). */
-    problems: { attribute: string; node?: AstNode }[];
+    problems: { attribute: string; node?: AstNode; tooLarge?: boolean }[];
 }
 export interface PlacementInfo {
     node: a.Placement;
@@ -66,6 +66,7 @@ export interface EntryPlacement {
     /** The effective placement (WP8-S02), if any. */
     placement?: PlacementInfo;
     task?: OsTask;
+    /** The Core its placement reaches (WP8-S03); undefined when unplaced or on a Node outside every Core. */
     core?: string;
     /** The in-task position, 0-based (WP8-M01), for an entry on a Task. */
     position?: number;
@@ -76,29 +77,43 @@ export interface DeploymentPlan {
     platform: a.ComponentUsage;
     software: Occurrence[];
     platformOccurrences: Occurrence[];
+    /** The Swaml::Os Task occurrences of the platform below its root, in declaration rank. */
     tasks: OsTask[];
-    /** T1 to T6 apply (WP8-S04): the platform tree contains a Swaml::Os Task. */
+    /** The platform root itself is a Swaml::Os Task (WP8-D13); no task rule applies then. */
+    rootTask: boolean;
+    /** Some Task lies in the platform tree below its root, so T1 to T6 can apply (WP8-S04). */
     taskRules: boolean;
     /** T7 applies: the platform tree contains a Swaml::Os Core or Task. */
     coreRule: boolean;
+    /** The Cores that own at least one Task (explicit Core paths, or the platform root path for the implicit Core). */
+    taskedCores: Set<string>;
+    /** The Core of the platform root: the root itself when it is a Core, the implicit Core when there is one, else undefined. */
+    rootCore?: string;
     placements: PlacementInfo[];
+    /** Computed on first use: a deployment on a platform without Swaml::Os needs only its placements. */
     entries: EntryPlacement[];
     /** The entries of each software occurrence, in schedule order. */
     byOccurrence: Map<Occurrence, EntryPlacement[]>;
+    /**
+     * The Core each software occurrence is deployed in (WP8-S04): the Core of its effective occurrence placement; for
+     * an occurrence without one, the first Core its operation placements reach in schedule order; otherwise the Core
+     * of the platform root. Undefined on a Node outside every Core.
+     */
+    occurrenceCore: Map<Occurrence, string | undefined>;
     /** Software occurrences by path. */
     occurrenceAt: Map<string, Occurrence>;
 }
 const plans = new WeakMap<a.Deployment, { key: unknown; plan: DeploymentPlan | undefined }>();
-/** A family path covers its indexed members; a path covers itself. */
-const covers = (prefix: string, path: string) => path === prefix || path.startsWith(prefix + '[') && /^\[\d+\]$/u.test(path.slice(prefix.length));
-/** A path is within a placement's subtree: itself, a family member, or a descendant of either. */
-const within = (prefix: string, path: string) => path === prefix || path.startsWith(prefix + '.') || path.startsWith(prefix + '[');
+/** The multiplicity family path of an indexed path (a.b[2] gives a.b), or undefined. */
+const familyOf = (path: string): string | undefined => { const m = /^(.*)\[\d+\]$/u.exec(path); return m ? m[1] : undefined; };
 /**
- * The placement plan of one deployment (WP8-S01 to WP8-S03, WP8-M01): each deploy statement resolved to an
+ * The placement plan of one deployment (WP8-S01 to WP8-S04, WP8-M01): each deploy statement resolved to an
  * occurrence or operation placement, every Swaml::Os Task of the platform with its Core and attributes, and the
  * effective placement, Task, Core and in-task position of every effective schedule entry of the deployed tree.
  * Undefined when the root or platform does not resolve or exceeds the occurrence limit. Computed once per
- * deployment and workspace state (the deployment node, its root and platform references and the models).
+ * deployment and workspace state (the deployment node, its root and platform references and the models), in time
+ * linear in occurrences, entries and placements (each lookup walks the occurrence's ancestors); the entries are
+ * computed only when first read.
  */
 export function deploymentPlan(d: a.Deployment): DeploymentPlan | undefined {
     const model = AstUtils.getDocument(d).parseResult.value as a.Model;
@@ -123,51 +138,101 @@ function computePlan(d: a.Deployment): DeploymentPlan | undefined {
                 return p;
         return undefined;
     };
-    const tasks: OsTask[] = platformOccurrences.filter(o => roles.get(o.path) === 'Task').map((o, rank) => {
+    // WP8-D13: the platform root is never a Task; a Task needs a Core or Node above it.
+    const rootTask = roles.get(platform.name) === 'Task';
+    const tasks: OsTask[] = rootTask ? [] : platformOccurrences.filter(o => roles.get(o.path) === 'Task').map((o, rank) => {
         const core = nearest(o.parent, 'Core');
         return { path: o.path, occurrence: o, core: core ?? platform.name, implicitCore: !core, rank, problems: [], ...taskAttributes(o.structure) };
     });
     for (const t of tasks)
         t.problems = taskProblems(t);
     const taskAt = new Map(tasks.map(t => [t.path, t]));
+    const implicit = tasks.some(t => t.implicitCore);
+    const taskedCores = new Set(tasks.map(t => t.core));
+    // WP8-S03: the Core of a placement target: its Task's Core, else its nearest Core, else the implicit Core when the
+    // platform has one (it spans the platform tree outside the explicit Cores), else none.
+    const coreOf = (target: Occurrence) => {
+        const taskPath = nearest(target.path, 'Task'), task = taskPath ? taskAt.get(taskPath) : undefined;
+        return task ? task.core : nearest(target.path, 'Core') ?? (implicit ? platform.name : undefined);
+    };
+    const rootCore = rootTask ? undefined : coreOf(byPath.get(platform.name)!);
+    const softwareAt = new Map(software.map(o => [o.path, o]));
+    const families = new Map<string, Occurrence[]>();
+    for (const o of software) {
+        const family = familyOf(o.path);
+        if (family !== undefined)
+            (families.get(family) ?? families.set(family, []).get(family)!).push(o);
+    }
+    // A path names an occurrence, or a multiplicity family when the family is its last occurrence segment (WP8-S02).
+    const owners = (path: string): Occurrence[] => { const o = softwareAt.get(path); return o ? [o] : families.get(path) ?? []; };
     const placements: PlacementInfo[] = (d.placements ?? []).map((p, index) => {
         const path = p.target ? `${root.name}.${p.target}` : root.name;
         const target = p.node !== undefined ? byPath.get(`${platform.name}.${p.node}`) : undefined;
-        const taskPath = target && nearest(target.path, 'Task'), task = taskPath ? taskAt.get(taskPath) : undefined;
-        const core = task ? task.core : target && nearest(target.path, 'Core');
-        const info: PlacementInfo = { node: p, index, path, kind: 'unknown', target, task, core };
-        if (!p.target || software.some(o => covers(path, o.path)))
+        const taskPath = target && !rootTask ? nearest(target.path, 'Task') : undefined, task = taskPath ? taskAt.get(taskPath) : undefined;
+        const info: PlacementInfo = { node: p, index, path, kind: 'unknown', target, task, core: target && !rootTask ? coreOf(target) : undefined };
+        if (!p.target || owners(path).length)
             return { ...info, kind: 'occurrence' };
         const dot = path.lastIndexOf('.'), prefix = path.slice(0, dot), operation = path.slice(dot + 1);
-        const owners = dot > 0 && !operation.includes('[') ? software.filter(o => covers(prefix, o.path)) : [];
-        if (!owners.length)
+        const addressed = dot > 0 && !operation.includes('[') ? owners(prefix) : [];
+        if (!addressed.length)
             return info;
         // Every member of a family has the same structure, so one member decides whether an entry releases the operation.
-        if (schedule(owners[0].structure).some(e => e.operation === operation))
+        if (schedule(addressed[0].structure).some(e => e.operation === operation))
             return { ...info, kind: 'operation', prefix, operation };
-        if (members(owners[0].structure).some(m => isExecutable(m) && m.name === operation))
+        if (members(addressed[0].structure).some(m => isExecutable(m) && m.name === operation))
             return { ...info, unreleased: { occurrence: prefix, operation } };
         return info;
     });
-    const entries: EntryPlacement[] = [];
-    software.forEach((o, occurrenceIndex) => schedule(o.structure).forEach((entry, scheduleIndex) => {
-        // WP8-S02: an operation placement overrides every occurrence placement; an indexed path overrides its family.
-        const byOperation = placements.filter(p => p.kind === 'operation' && p.operation === entry.operation && covers(p.prefix!, o.path));
-        const byOccurrence = placements.filter(p => p.kind === 'occurrence' && within(p.path, o.path));
-        const longest = (list: PlacementInfo[]) => list.reduce<PlacementInfo | undefined>((best, p) => !best || (p.prefix ?? p.path).length > (best.prefix ?? best.path).length ? p : best, undefined);
-        const placement = longest(byOperation) ?? longest(byOccurrence);
-        entries.push({ occurrence: o, entry, occurrenceIndex, scheduleIndex, placement, task: placement?.task, core: placement?.core });
-    }));
+    let derived: Pick<DeploymentPlan, 'entries' | 'byOccurrence' | 'occurrenceCore'> | undefined;
+    const derive = () => derived ??= planEntries(software, softwareAt, placements, rootCore);
+    const taskRules = tasks.length > 0, coreRule = !rootTask && (taskRules || [...roles.values()].includes('Core'));
+    return {
+        deployment: d, root, platform, software, platformOccurrences, tasks, rootTask, taskRules, coreRule, taskedCores, rootCore, placements,
+        get entries() { return derive().entries; }, get byOccurrence() { return derive().byOccurrence; }, get occurrenceCore() { return derive().occurrenceCore; },
+        occurrenceAt: softwareAt,
+    };
+}
+/** The entries of a plan (WP8-S02, WP8-M01) and the Core of each occurrence (WP8-S04), from indexes of the placements by path. */
+function planEntries(software: Occurrence[], softwareAt: Map<string, Occurrence>, placements: PlacementInfo[], rootCore: string | undefined): Pick<DeploymentPlan, 'entries' | 'byOccurrence' | 'occurrenceCore'> {
+    // The first placement of each exact path; a duplicate is an error (WP8-D09) and the first one wins.
+    const byOperation = new Map<string, PlacementInfo>(), byPath = new Map<string, PlacementInfo>();
+    for (const p of placements) {
+        if (p.kind === 'operation' && !byOperation.has(`${p.prefix}\u0000${p.operation}`))
+            byOperation.set(`${p.prefix}\u0000${p.operation}`, p);
+        if (p.kind === 'occurrence' && !byPath.has(p.path))
+            byPath.set(p.path, p);
+    }
+    // The most specific occurrence placement: the occurrence, its family, then each ancestor and its family.
+    const occurrencePlacement = new Map<string, PlacementInfo | undefined>();
+    const ofOccurrence = (path: string): PlacementInfo | undefined => {
+        if (occurrencePlacement.has(path))
+            return occurrencePlacement.get(path);
+        const family = familyOf(path), parent = softwareAt.get(path)?.parent;
+        const found = byPath.get(path) ?? (family !== undefined ? byPath.get(family) : undefined) ?? (parent !== undefined ? ofOccurrence(parent) : undefined);
+        occurrencePlacement.set(path, found);
+        return found;
+    };
+    const entries: EntryPlacement[] = [], byOccurrence = new Map<Occurrence, EntryPlacement[]>(), occurrenceCore = new Map<Occurrence, string | undefined>();
+    software.forEach((o, occurrenceIndex) => {
+        const family = familyOf(o.path), own: EntryPlacement[] = [], occurrence = ofOccurrence(o.path);
+        schedule(o.structure).forEach((entry, scheduleIndex) => {
+            // WP8-S02: an operation placement overrides every occurrence placement; an indexed path overrides its family.
+            const placement = byOperation.get(`${o.path}\u0000${entry.operation}`) ?? (family !== undefined ? byOperation.get(`${family}\u0000${entry.operation}`) : undefined) ?? occurrence;
+            own.push({ occurrence: o, entry, occurrenceIndex, scheduleIndex, placement, task: placement?.task, core: placement?.core });
+        });
+        entries.push(...own);
+        byOccurrence.set(o, own);
+        occurrenceCore.set(o, occurrence ? occurrence.core : own.find(e => e.core !== undefined)?.core ?? rootCore);
+    });
     // WP8-M01: deploy statement order, then the deployed tree depth-first, then schedule order.
-    for (const t of tasks)
-        entries.filter(e => e.task === t)
-            .sort((x, y) => x.placement!.index - y.placement!.index || x.occurrenceIndex - y.occurrenceIndex || x.scheduleIndex - y.scheduleIndex)
-            .forEach((e, position) => e.position = position);
-    const taskRules = tasks.length > 0, coreRule = taskRules || [...roles.values()].includes('Core');
-    const byOccurrence = new Map<Occurrence, EntryPlacement[]>();
+    const onTask = new Map<OsTask, EntryPlacement[]>();
     for (const e of entries)
-        (byOccurrence.get(e.occurrence) ?? byOccurrence.set(e.occurrence, []).get(e.occurrence)!).push(e);
-    return { deployment: d, root, platform, software, platformOccurrences, tasks, taskRules, coreRule, placements, entries, byOccurrence, occurrenceAt: new Map(software.map(o => [o.path, o])) };
+        if (e.task)
+            (onTask.get(e.task) ?? onTask.set(e.task, []).get(e.task)!).push(e);
+    for (const list of onTask.values())
+        list.sort((x, y) => x.placement!.index - y.placement!.index || x.occurrenceIndex - y.occurrenceIndex || x.scheduleIndex - y.scheduleIndex)
+            .forEach((e, position) => e.position = position);
+    return { entries, byOccurrence, occurrenceCore };
 }
 /** The entries of the same occurrence whose completion releases an after entry (its predecessor operation's entries). */
 export function predecessors(plan: DeploymentPlan, e: EntryPlacement): EntryPlacement[] {
@@ -201,7 +266,9 @@ function taskKind(e: a.Expression, s: Structure, seen: Set<a.Attribute>): TaskKi
 }
 function taskProblems(t: OsTask): OsTask['problems'] {
     const attribute = (name: string) => members(t.occurrence.structure).filter(a.isAttribute).find(x => x.name === name);
-    return TASK_ATTRIBUTES.filter(name => t[name] === undefined).map(name => ({ attribute: name, node: attribute(name) }));
+    // A uint constant above 2^53 - 1 is a constant of its type but outside the range a run can order by (WP8-D11).
+    const tooLarge = (x: a.Attribute | undefined) => { const v = x?.constant && x.value ? constantValue(x.value, t.occurrence.structure).value : undefined; return typeof v === 'bigint' && v > BigInt(Number.MAX_SAFE_INTEGER); };
+    return TASK_ATTRIBUTES.filter(name => t[name] === undefined).map(name => { const node = attribute(name); return tooLarge(node) ? { attribute: name, node, tooLarge: true } : { attribute: name, node }; });
 }
 /** A duration in nanoseconds in its largest exact unit: 20ms, 500us, 7ns. */
 export function durationText(ns: bigint | number): string {

@@ -42,7 +42,7 @@ deployment 'Front left door' of dcu on vehicle {
 | WP8-M02 | Moved to [chapter 4.1](../../spec/04-systems-and-conformance.md#41-deployment) in WP8. |
 | WP8-M03 | Moved to [chapter 4.1](../../spec/04-systems-and-conformance.md#41-deployment) in WP8. |
 
-The tables of `Swaml::Os` (WP8-L01) are in chapter 1.5. The run-order rule is in chapter 6.1 (WP8-R01). WP8 moved all its rules and added WP8-D11 in [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups).
+The tables of `Swaml::Os` (WP8-L01) are in chapter 1.5. The run-order rule is in chapter 6.1 (WP8-R01). WP8 moved all its rules and added WP8-D11, and in its review WP8-D12 and WP8-D13, in [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups).
 
 ## 4.2 Requirements, cases and package links
 

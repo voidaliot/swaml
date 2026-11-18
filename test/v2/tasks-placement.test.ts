@@ -164,18 +164,30 @@ test('WP8-S03 and WP8-S10 Core grouping: nearest Core, the implicit Core of the 
     assert.deepEqual(await errors(source('deploy x on cpu0.a; deploy x.q on cpu0.b; deploy y on loose;')), []);
     assert.deepEqual(await errors(source('deploy x on cpu0.a; deploy x.q on cpu1.b; deploy y on loose;')), ['Demo.x runs on hw.cpu0 and hw.cpu1; all its operations must run on one core.']);
     assert.deepEqual(await errors(source('deploy x on cpu0.a; deploy x.q on loose; deploy y on loose;')), ['Demo.x runs on hw.cpu0 and the implicit core of hw; all its operations must run on one core.']);
-    // A placement on a Node outside any Core does not count for T7; T6 still requires a Task.
-    assert.deepEqual(await errors(source('deploy x on cpu0.a; deploy x.q on bare; deploy y on loose;')), ['on every 10ms q of Demo.x is not placed on a task of hw; place q or Demo.x on a task, for example: deploy x.q on cpu0.a;']);
+    // The implicit Core of hw (its Task loose has no Core ancestor) spans the platform outside cpu0 and cpu1, so a Node
+    // there reaches it for T7; T6 requires a Task of the occurrence's Core cpu0.
+    assert.deepEqual(await errors(source('deploy x on cpu0.a; deploy x.q on bare; deploy y on loose;')), ['on every 10ms q of Demo.x is not placed on a task of hw.cpu0; place q or Demo.x on a task, for example: deploy x.q on cpu0.a;', 'Demo.x runs on hw.cpu0 and the implicit core of hw; all its operations must run on one core.']);
     // A placement on a Core (not a Task) reaches it.
-    assert.deepEqual(await errors(source('deploy x on cpu0.a; deploy x.q on cpu1; deploy y on loose;')), ['on every 10ms q of Demo.x is not placed on a task of hw; place q or Demo.x on a task, for example: deploy x.q on cpu0.a;', 'Demo.x runs on hw.cpu0 and hw.cpu1; all its operations must run on one core.']);
+    assert.deepEqual(await errors(source('deploy x on cpu0.a; deploy x.q on cpu1; deploy y on loose;')), ['on every 10ms q of Demo.x is not placed on a task of hw.cpu0; place q or Demo.x on a task, for example: deploy x.q on cpu0.a;', 'Demo.x runs on hw.cpu0 and hw.cpu1; all its operations must run on one core.']);
+    // Without an implicit Core a Node outside every Core reaches none: T7 ignores it, and an occurrence deployed there is
+    // outside T6 (decision 2, review F2), while an entry of an occurrence of cpu0 placed there still needs a Task of cpu0.
+    const explicit = (deploys: string) => source(deploys).replace(task('loose', { priority: 1 }), '');
+    assert.deepEqual(await errors(explicit('deploy x on cpu0.a; deploy x.q on bare; deploy y on bare;')), ['on every 10ms q of Demo.x is not placed on a task of hw.cpu0; place q or Demo.x on a task, for example: deploy x.q on cpu0.a;']);
+    assert.deepEqual(await errors(explicit('deploy x on cpu0.a; deploy y on bare;')), []);
+    // An occurrence without any placement is in the Core of the platform root: none here, so it is outside T6; with an
+    // operation placement on a Task its Core is that Task's Core, and its other entries need a Task there.
+    assert.deepEqual(await errors(explicit('deploy x on cpu0.a;')), []);
+    assert.deepEqual(await errors(explicit('deploy x.p on cpu1.a;')), ['on every 10ms q of Demo.x is not placed on a task of hw.cpu1; place q or Demo.x on a task, for example: deploy x.q on cpu1.a;']);
 });
 
-test('WP8-S04 activation: T1 to T6 with a Task anywhere in the platform, T7 with only a Core, nothing without either', async () => {
+test('WP8-S04 activation: T1 to T5 on Tasks, T6 per Core that has Tasks, T7 with only a Core, nothing without either', async () => {
     const source = (board: string, deploys: string) => ONE('on every 10ms a(); on every 10ms b();')(board, deploys).replace('component s: Src; ', '').replace('connect (s.out, x.inp);', '').replace('reversed port inp: P;', '');
-    // Re-pointing every placement to a Core cannot switch off T6.
+    // Re-pointing every placement to a Core that has Tasks cannot switch off T6.
     assert.deepEqual(await errors(source(`component cpu: Core { ${task('t')} }`, 'deploy x on cpu;')), [
-        'on every 10ms a of Demo.x is not placed on a task of hw; place a or Demo.x on a task, for example: deploy x.a on cpu.t;',
-        'on every 10ms b of Demo.x is not placed on a task of hw; place b or Demo.x on a task, for example: deploy x.b on cpu.t;']);
+        'on every 10ms a of Demo.x is not placed on a task of hw.cpu; place a or Demo.x on a task, for example: deploy x.a on cpu.t;',
+        'on every 10ms b of Demo.x is not placed on a task of hw.cpu; place b or Demo.x on a task, for example: deploy x.b on cpu.t;']);
+    // A Node outside every Core of a platform whose Tasks are all in Cores is outside T6 (decision 2, review F2).
+    assert.deepEqual(await errors(source(`component cpu: Core { ${task('t')} } component lin: Process;`, 'deploy x on lin;')), []);
     // With Cores and no Task only T7 applies.
     assert.deepEqual(await errors(source('component c0: Core { } component c1: Core { }', 'deploy x on c0; deploy x.b on c1;')), ['Demo.x runs on hw.c0 and hw.c1; all its operations must run on one core.']);
     assert.deepEqual(await errors(source('component c0: Core { } component n: Process;', 'deploy x on c0; deploy x.b on n;')), []);
@@ -205,7 +217,12 @@ test('WP8-D03 T2: periodic tasks take every entries of a multiple period and aft
     assert.deepEqual(await errors(source('on every 20ms a(); after a b(); on every 10ms c(); on receive inp.e(v) take(v);', 'deploy x on t10; deploy x.take on events;')), []);
     assert.deepEqual(await errors(source('on every 15ms a(); on receive inp.e(v) take(v);', 'deploy x on t10; deploy x.take on events;')), ['on every 15ms a of Demo.x cannot run on periodic task hw.t10: its period 15ms is not a multiple of 10ms.']);
     assert.deepEqual(await errors(source('on every 10ms a(); on receive inp.e(v) take(v); on start c();', 'deploy x on t10;')), ['on receive inp.e take of Demo.x cannot run on periodic task hw.t10: event entries need a task with periodNs = 0.', 'on start c of Demo.x cannot run on periodic task hw.t10: event entries need a task with periodNs = 0.']);
-    assert.deepEqual(await errors(source('on every 10ms a(); after a b(); on receive inp.e(v) take(v);', 'deploy x on t10; deploy x.a on t5; deploy x.take on events;')), ['after a b of Demo.x cannot run on periodic task hw.t10: its predecessor runs on hw.t5.']);
+    assert.deepEqual(await errors(source('on every 10ms a(); after a b(); on receive inp.e(v) take(v);', 'deploy x on t10; deploy x.a on t5; deploy x.take on events;')), ['after a b of Demo.x cannot run on task hw.t10: its predecessor runs on hw.t5, and an after successor runs on the task of its predecessor.']);
+    // Review F4: an after successor runs on its predecessor's Task on every Task kind, an event Task included, and a
+    // successor whose predecessor is not on a Task is left to T6 (one error for one omission).
+    assert.deepEqual(await errors(source('on every 10ms a(); after a b(); on receive inp.e(v) take(v);', 'deploy x on t10; deploy x.b on events; deploy x.take on events;')), ['after a b of Demo.x cannot run on task hw.events: its predecessor runs on hw.t10, and an after successor runs on the task of its predecessor.']);
+    assert.deepEqual(await errors(source('on every 10ms a(); after a b(); on receive inp.e(v) take(v);', 'deploy x.b on t10; deploy x.take on events;')), [
+        'on every 10ms a of Demo.x is not placed on a task of the implicit core of hw; place a or Demo.x on a task, for example: deploy x.a on t10;']);
     // An every entry on an event task, and an after successor of a receive entry on it, are allowed.
     assert.deepEqual(await errors(source('on every 7ms a(); on receive inp.e(v) take(v); after take b();', 'deploy x on events;')), []);
     // A computed period is evaluated per occurrence.
@@ -250,17 +267,127 @@ test('WP8-D06 T5: an explicit deadline is not shorter than the task response bou
 test('WP8-D07 T6: every entry of the deployed tree is on a task; the example names a task of the occurrence or the first task', async () => {
     const board = `${task('first', { priority: 1 })} ${task('second', { priority: 2, periodNs: '10ms' })}`;
     assert.deepEqual(await errors(ONE('on every 10ms a(); on every 10ms b(); on receive inp.e(v) take(v);')(board, 'deploy s on second; deploy x.a on second; deploy x.take on first;')), [
-        'on every 10ms b of Demo.x is not placed on a task of hw; place b or Demo.x on a task, for example: deploy x.b on second;']);
+        'on every 10ms b of Demo.x is not placed on a task of the implicit core of hw; place b or Demo.x on a task, for example: deploy x.b on second;']);
     assert.deepEqual(await errors(ONE('on receive inp.e(v) take(v);')(board, 'deploy s on second;')), [
-        'on receive inp.e take of Demo.x is not placed on a task of hw; place take or Demo.x on a task, for example: deploy x.take on first;']);
+        'on receive inp.e take of Demo.x is not placed on a task of the implicit core of hw; place take or Demo.x on a task, for example: deploy x.take on first;']);
     // Quoted names keep the 2.2 spelling in the message and the example.
     assert.deepEqual(await errors(ONE('on receive inp.e(v) take(v);')(board, `deploy s on second;`).replaceAll(' x: C;', " 'door x': C;").replace('x.inp', "'door x'.inp")), [
-        "on receive inp.e take of Demo.'door x' is not placed on a task of hw; place take or Demo.'door x' on a task, for example: deploy 'door x'.take on first;"]);
+        "on receive inp.e take of Demo.'door x' is not placed on a task of the implicit core of hw; place take or Demo.'door x' on a task, for example: deploy 'door x'.take on first;"]);
+});
+
+test('WP8-D07 T6 (review F2): the example names a Task of the occurrence\'s own Core that accepts the entry under T2 to T4, or says the Core has none', async () => {
+    const source = (schedule: string, boards: string, deploys: string, members = '') => `package Test {
+  import Swaml::Platform;
+  import Swaml::Os;
+  port def P { provides event e(n: int); }
+  component def C { reversed port inp: P; attribute log: int = 0; operation a() { log = 1; } operation w() { wait 1ms; } operation take(v: int) { log = v; } ${members} schedule { ${schedule} } }
+  component def Src { port out: P; operation tick() { publish out.e(1); } schedule { on every 10ms tick(); } }
+  component def Board specializes Node { ${boards} }
+  component Demo { component s: Src; component x: C; connect (s.out, x.inp); }
+  component hw: Board;
+  deployment D of Demo on hw { deploy s on c0.p10; ${deploys} }
+}`;
+    const cores = `component c0: Core { ${task('irq', { kind: 'isr', priority: 9 })} ${task('p10', { priority: 5, periodNs: '10ms' })} ${task('ev', { priority: 3 })} ${task('ext', { kind: 'extended', priority: 2 })} } component c1: Core { ${task('far', { priority: 1 })} }`;
+    // An every entry is never suggested an ISR (T3), even the ISR that hosts the occurrence's other entry: p10.
+    assert.deepEqual(await errors(source('on every 20ms a(); on receive inp.e(v) take(v);', cores, 'deploy x.take on c0.irq;')), [
+        'on every 20ms a of Demo.x is not placed on a task of hw.c0; place a or Demo.x on a task, for example: deploy x.a on c0.p10;']);
+    // A period that p10 does not divide gets the event Task, a suspending operation the extended one (T2, T4).
+    assert.deepEqual(await errors(source('on every 15ms a(); on start w(); on receive inp.e(v) take(v);', cores, 'deploy x.take on c0.irq;')), [
+        'on every 15ms a of Demo.x is not placed on a task of hw.c0; place a or Demo.x on a task, for example: deploy x.a on c0.ev;',
+        'on start w of Demo.x is not placed on a task of hw.c0; place w or Demo.x on a task, for example: deploy x.w on c0.ext;']);
+    // Never a Task of another Core, even when that Task is the first of the platform.
+    const farFirst = `component c1: Core { ${task('far', { priority: 1 })} } component c0: Core { ${task('ev', { priority: 3 })} }`;
+    assert.deepEqual(await errors(source('on every 20ms a(); on receive inp.e(v) take(v);', farFirst, 'deploy x on c0;').replace('deploy s on c0.p10;', 'deploy s on c0.ev;')), [
+        'on every 20ms a of Demo.x is not placed on a task of hw.c0; place a or Demo.x on a task, for example: deploy x.a on c0.ev;',
+        'on receive inp.e take of Demo.x is not placed on a task of hw.c0; place take or Demo.x on a task, for example: deploy x.take on c0.ev;']);
+    // A Core without a Task that accepts the entry says so instead of suggesting one that breaks another rule.
+    const isrOnly = `component c0: Core { ${task('irq', { kind: 'isr', priority: 9 })} ${task('p10', { priority: 5, periodNs: '10ms' })} }`;
+    assert.deepEqual(await errors(source('on start w(); on receive inp.e(v) take(v);', isrOnly, 'deploy x.take on c0.irq;')), [
+        'on start w of Demo.x is not placed on a task of hw.c0; hw.c0 has no task that accepts it (it needs a task with periodNs = 0 that is no ISR, of kind extended), so add one and place w or Demo.x on it.']);
+    // An after successor names its predecessor's Task, or asks to place the predecessor first.
+    assert.deepEqual(await errors(source('on receive inp.e(v) take(v); after take a();', cores, 'deploy x.take on c0.ev;')), [
+        'after take a of Demo.x is not placed on a task of hw.c0; place a or Demo.x on a task, for example: deploy x.a on c0.ev;']);
+});
+
+test('WP8-D07 T6 (review F2): a platform mixes OS Cores with a plain LIN Node, as the door showcase does', async () => {
+    const r = await valid(readFileSync(new URL('examples/52-door-deployment.swaml', root), 'utf8'));
+    const plans = r.model.packages[0].elements.filter(a.isDeployment).map(d => deploymentPlan(d)!);
+    const panel = plans.find(p => p.root.name === 'switchPanel')!;
+    assert.ok(panel && panel.taskRules && panel.entries.length > 0 && panel.entries.every(e => !e.task && e.core === undefined));
 });
 
 test('WP8-D11 task attributes must be constants of their type', async () => {
     const source = ONE('on every 10ms a();')(`component t: Task { redefines const attribute priority: uint = Swaml::Math::length("ab"); }`, 'deploy s on t; deploy x on t;').replace('component s: Src;', '').replace('connect (s.out, x.inp);', '').replace('reversed port inp: P;', '').replace('deploy s on t; ', '');
     assert.deepEqual(await errors(source.replace('import Swaml::Os;', 'import Swaml::Os;\n  import Swaml::Math;')), ['priority of task hw.t must be a constant uint value.']);
+    // Review F8 (X6): a uint constant above 2^53 - 1 is a constant of its type but outside the range a run orders by.
+    const big = (value: string) => ONE('on every 10ms a();')(`component t: Task { redefines const attribute priority: uint = ${value}; }`, 'deploy x on t;').replace('component s: Src;', '').replace('connect (s.out, x.inp);', '').replace('reversed port inp: P;', '');
+    assert.deepEqual(await errors(big('9007199254740991 + 1')), ['priority of task hw.t must be a constant uint value up to 9007199254740991.']);
+    assert.deepEqual(await errors(big('9007199254740991')), []);
+});
+
+test('WP8-D13 (review F3) a platform root that is a Task is an error at the platform reference, never an empty example', async () => {
+    const source = `package Test {
+  import Swaml::Platform;
+  import Swaml::Os;
+  component def C { attribute n: int = 0; operation f() { n = n + 1; } schedule { on every 10ms f(); } }
+  component def Ecu specializes Task { }
+  component app: C;
+  component ecu: Ecu;
+  deployment D of app on ecu { }
+}`;
+    const r = await parse(source);
+    assert.deepEqual(r.errors.map(e => e.message), ['The platform root ecu is a Swaml::Os task; a task runs on a core or node, so declare the task inside a Node or Core platform and deploy on it.']);
+    assert.equal(r.doc.textDocument.getText(r.errors[0].range), 'ecu');
+    // The run has no keys then.
+    const plan = deploymentPlan(r.model.packages[0].elements.find(a.isDeployment)!)!;
+    assert.ok(plan.rootTask && !plan.taskRules && !plan.coreRule && plan.tasks.length === 0);
+});
+
+test('WP8-D12 (review F9, F10) an operation placement on a platform without a Task is valid and gets a warning with a fixed leading text', async () => {
+    const source = (board: string) => `package Test {
+  import Swaml::Platform;
+  import Swaml::Os;
+  component def App { attribute n: int = 0; operation a() { n = 1; } operation b() { n = 2; } schedule { on every 10ms a(); on every 10ms b(); } }
+  component def Ecu specializes Platform { ${board} }
+  component app: App;
+  component ecu: Ecu;
+  deployment D of app on ecu { deploy on n1; deploy b on n2; }
+}`;
+    const plain = await parse(source('component n1: Node; component n2: Node;'));
+    assert.deepEqual([plain.errors.length, plain.warnings.map(w => [w.code, w.message])], [0, [['SW2021', 'Operation placement app.b on ecu.n2 has no effect on a platform without a Swaml::Os task: the run records and orders occurrence placements only.']]]);
+    // With Cores only, T7 still uses it; with a Task the placement has its effect and no warning.
+    const cores = await parse(source('component n1: Core { } component n2: Core { }'));
+    assert.deepEqual(cores.warnings.map(w => w.code), ['SW2021']);
+    assert.deepEqual(cores.errors.map(e => e.message), ['app runs on ecu.n1 and ecu.n2; all its operations must run on one core.']);
+    const tasked = await parse(source(`${task('n1', { priority: 1 })} ${task('n2', { priority: 2 })}`));
+    assert.deepEqual([tasked.errors.length, tasked.warnings.length], [0, 0]);
+});
+
+test('WP8-D02 (review F12) a Task family on one Core fails T1 with a message that says to declare the Tasks separately', async () => {
+    const source = ONE('on every 10ms a();')('component ts: Task[2];', 'deploy x on ts[0];').replace('component s: Src;', '').replace('connect (s.out, x.inp);', '').replace('reversed port inp: P;', '');
+    assert.deepEqual(await errors(source), ["Tasks hw.ts[0] and hw.ts[1] of the implicit core of hw share priority 0; the members of a task family share their definition's priority, so declare the tasks of one core separately."]);
+});
+
+test('WP8-S02 (review F8 X1, F14) a family path is the last occurrence segment; it never claims a child of an element', async () => {
+    const source = (deploys: string) => `package Test {
+  import Swaml::Platform;
+  import Swaml::Os;
+  component def Leaf { attribute n: int = 0; operation a() { n = n + 1; } schedule { on every 10ms a(); } component child: Kid; }
+  component def Kid { attribute n: int = 0; operation a() { n = n + 2; } schedule { on every 10ms a(); } }
+  component def Mid { component leaf: Leaf; }
+  component Demo { component leaves: Leaf[2]; component mids: Mid[2]; }
+  component def Board specializes Node { ${task('t', { priority: 1 })} ${task('u', { priority: 2 })} }
+  component hw: Board;
+  deployment D of Demo on hw { ${deploys} }
+}`;
+    const r = await valid(source('deploy on t; deploy leaves.a on u;'));
+    const plan = deploymentPlan(r.model.packages[0].elements.find(a.isDeployment)!)!;
+    assert.deepEqual(plan.entries.filter(e => e.task?.path === 'hw.u').map(e => e.occurrence.path), ['Demo.leaves[0]', 'Demo.leaves[1]']);
+    assert.ok(plan.entries.filter(e => e.occurrence.path.includes('.child')).every(e => e.task?.path === 'hw.t'));
+    // A path that continues below a family without an index names no occurrence (2.2), so each index is written.
+    assert.deepEqual(await errors(source('deploy on t; deploy mids.leaf.a on u;')), ['Unknown software occurrence Demo.mids.leaf.a.']);
+    assert.deepEqual(await errors(source('deploy on t; deploy mids.leaf on u;')), ['Unknown software occurrence Demo.mids.leaf.']);
+    assert.deepEqual(await errors(source('deploy on t; deploy mids[0].leaf.a on u; deploy mids[1].leaf on u;')), []);
 });
 
 test('WP8-M01 in-task position: deploy order, then the tree depth-first, then effective schedule order with replacements in place', async () => {
