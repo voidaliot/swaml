@@ -233,6 +233,9 @@ test('WP6-S01 WP6-S04 a local hides the port only where it is visible: another b
         const r = simulate([model], 'Test::Demo', { untilNs: 25000000 });
         assert.deepEqual([(r.stores['Demo.r'] as Record<string, number>).got, r.trace.filter(o => o.kind === 'failure').length], [1, 0], owner);
     }
+    // A local declared later in the same block does not hide the port at an earlier read.
+    const later = await valid(shadowing('operation read() { got = door.count; var door: int = 3; total = door; } operation peek() { seen = door.ajar; } schedule { on every 10ms read(); on every 10ms peek(); }'));
+    assert.deepEqual([...sampledMembers(readerOf(later.model))].sort(), ['door.ajar', 'door.count']);
     // A parameter of a nested operation hides nothing in the enclosing operation.
     const nested = await valid(shadowing('operation read() { operation inner(door: int) { } got = door.count; seen = door.ajar; } schedule { on every 10ms read(); }'));
     assert.deepEqual([...sampledMembers(readerOf(nested.model))].sort(), ['door.ajar', 'door.count']);
