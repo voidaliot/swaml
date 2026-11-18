@@ -329,8 +329,9 @@ test('WP3-L04 no corpus model becomes ambiguous or names a 2.3 library package',
         const r = await parse(text);
         for (const d of r.doc.diagnostics ?? [])
             assert.doesNotMatch(String(d.message), /Swaml::(Numeric|Text|Time)|Ambiguous name/u, `${file}: ${String(d.message)}`);
-        // The 2.3 examples of WP3 (38 to 40) and WP4 (41 to 43) import the libraries they demonstrate.
-        if (!/examples\/3[89]-|examples\/4[0-3]-/u.test(file))
+        // The 2.3 examples of WP3 (38 to 40) and WP4 (41 to 43) import the libraries they demonstrate; those of WP7 (50, 51)
+        // record release times with now().
+        if (!/examples\/3[89]-|examples\/4[0-3]-|examples\/5[01]-/u.test(file))
             assert.doesNotMatch(text, /import Swaml::(Numeric|Text|Time);/u, file);
     }
 });
