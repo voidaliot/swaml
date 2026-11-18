@@ -1,181 +1,223 @@
 # swa.ml: states as steps of the flow
 
-**Status:** design proposal for owner review, **revision 3**, 18 November 2026. Not normative. Nothing here changes the grammar, validator, simulator, standard version or a published artefact. All new syntax is in `text` fences because no parser accepts it. "Measured" numbers come from revision 1's prototypes, the design review's prototypes and the interpreter prototype P1 (flat states, waiting mode, the drop default). Parent states, conditions and periodic machines are not prototyped yet: everything about them is argued.
+**Status:** design proposal for owner review, **revision 4**, 18 November 2026. Not normative. Nothing here changes the grammar, validator, simulator, standard version or a published artefact. New syntax is in `text` fences because no parser accepts it. "Measured" means measured by the interpreter prototype P1 (flat states, waiting mode, the drop rule) or by revision 1's prototypes; section 6 says which of those numbers still apply to this revision. Parents, values that are re-checked and periodic machines are not prototyped: everything about them is argued, and section 10 lists the prototypes that must exist before implementation is approved.
 
 **Bases:**
-- **Language:** main `adc0740` (2.3 candidate with WP1 to WP6 merged) and branch `v2.3/wp7-release-guards` (`28db1b3`, read for how schedule entries and release guards behave).
-- **Owner direction (binding):** a state is an ordinary step of a flow, usable wherever a statement is; no `states { }` container, no `initial`; written order is the real priority, the input lines of one state forming one group in arrival order; plain steps between states; restricted jumps `to S;`; structured text; cues from Stateflow; the drawing shows nothing that repeats context. Since revision 2: one final release; every line says at its head whether it leaves; parent states; exits that apply in every state; conditions that are re-checked; periodic machines without a new keyword; an input that a state does not handle is dropped, as in 2.2; **the smallest possible set of words, and simplicity before expressiveness**: fewest words, fewest rules, no special case a reader must know.
-- **Review:** the adversarial design review of revision 1, kept outside the repository at `E:\t\review-states-design.md` (B1 to B8, I1 to I11).
-- **Drawing prototype P2:** `E:\GitHub\swaml-vsc-ext\.temp\kept\states-p2\` (drawings and hand-migrated texts of nine machines).
-- **Interpreter prototype P1:** branch `prototype/states-in-flow-p1` (`f5b94fb`, worktree `E:\t\sw-p1`); summary and evidence in `E:\GitHub\swaml-vsc-ext\.temp\kept\states-p1\REPORT.md`.
-- **Reading samples:** [STATES_IN_FLOW_READING_SAMPLES.md](STATES_IN_FLOW_READING_SAMPLES.md), rewritten for revision 3, with three new samples.
+- **Language:** main `1d5ef7e` (2.3 candidate, WP1 to WP6 merged) and branch `v2.3/wp7-release-guards` (schedule entries and release guards).
+- **Owner direction (binding), in the order given:**
+  1. A state is an ordinary step of a flow, usable wherever a statement is; no container, no `initial`. Simplicity outranks expressiveness; a really minimal set of keywords; nothing in a model may exist only to satisfy a rule.
+  2. A message a state does not handle is dropped; nothing is written for it. Remembering something is done with a variable.
+  3. One word for conditions: `if`. `when` leaves the language. All conditions have the same meaning.
+  4. `to S` may name a state inside a parent directly; entry actions run outermost first. Jumps into `if` branches and loop bodies stay forbidden.
+  5. Outside a state, a false `if` without `else` is skipped, as today; inside states the same, with the braces deciding what is looked at again.
+  6. One final release with flat states, parents, an exit that applies to several states (the parent mechanism), conditions that are re-checked (reading only things that come from somewhere), and machines released `on every N` through the schedule with no new keyword.
+  7. Drawing: a decision is an empty diamond with the conditions on the outgoing lines; no extra information on diagrams.
+  8. **Confirmed for this revision:** "`if` never waits. The state waits, and looks at what is inside its braces again each time something happens to it."
+  9. **Short form:** a single statement without braces may be considered wherever a block is expected, if it does not add effort (evaluated in 1.3).
+- **Design review of revision 3:** `E:\t\review-states-design-r3.md` (blocking B1 to B7, important I1 to I11), outside the repository.
+- **Interpreter prototype P1:** branch `prototype/states-in-flow-p1` (`f5b94fb`, worktree `E:\t\sw-p1`); summary in `E:\GitHub\swaml-vsc-ext\.temp\kept\states-p1\REPORT.md`.
+- **Drawing prototype P2:** `E:\GitHub\swaml-vsc-ext\.temp\kept\states-p2\` (drawings of nine migrated machines, revision 2 spelling).
+- **Reading samples:** [STATES_IN_FLOW_READING_SAMPLES.md](STATES_IN_FLOW_READING_SAMPLES.md), rewritten for this revision.
 
 ## The whole thing in ten sentences
 
-1. A state is a statement: the flow reaches it, runs its `on entry` block, and waits.
-2. The lines of a state say what it reacts to: an input `on receive m(x)`, a timer `after D`, or a condition `if (c)`; an input or timer line may add a condition `if (g)`.
-3. A line that ends in a block reacts and the state keeps waiting; a line that says `exit` leaves for the next statement; a line that says `to S` leaves for state `S`; leaving runs `on exit`, then the line's block.
-4. The lines are tried in written order and the first one that is ready is taken; the `on receive` lines of a state count as one line served in arrival order; a timer that expires at the instant a message arrives comes first.
-5. Input that the current state does not mention is dropped while the state waits; input that arrives while the operation is busy waits for the next state that waits.
-6. An `if` in the flow is checked when the flow gets there; an `if` on a line of a state is checked whenever the state chooses, which is on arrival, after a reaction, and whenever an input, a timer or a change of a value it reads could make a line ready.
-7. A state may contain states after its lines: its lines then apply in every state inside and are tried before theirs, and the input and timer lines at the top of the operation apply in every state of the operation.
-8. Between states is ordinary flow, and `to S;` goes back or skips to a state in the same statement list or an enclosing one, never into one.
-9. Released `on start`, the operation waits for its lines; released `on every P`, each release takes at most one line and returns, keeping its state, and `if (true) { … }` written last is what a state does at a release where nothing else is ready.
-10. Only an operation that a component owns directly, without parameters or result, released by exactly one `on start` or `on every` entry and never called, may contain states.
+1. A state is a step of the flow: the flow reaches it, runs its `on entry`, and the state waits until something inside its braces leaves; a state with nothing inside to look at does not wait.
+2. Inside its braces a state holds `on entry` and `on exit` blocks, event lines (`on receive p.m(x) { … }` and `after D { … }`), ordinary statements, and, at the end, inner states.
+3. `if` means the same everywhere: check now and skip when false; it never waits. What waits is the state.
+4. A state looks at its contents when it is reached and each time something happens to it: a message that one of its lines or a parent's line names arrives, its timer or a parent's timer runs out, someone else writes a value its statements read, or, in a machine released `on every P`, a release comes.
+5. A look goes through the contents in written order, the parents' contents first: it runs the event line of what happened and every statement, and it stops at the first `exit;` or `to S;` it runs.
+6. A look sees one message, in the order of delivery; a message that no line of the state or its parents names is dropped while the state waits.
+7. `exit;` leaves the state and goes on with what is written after it; `to S;` goes to state `S`, also straight into a state inside a parent, never into an `if` branch or a loop.
+8. Leaving runs in the order of the text: the statements written before `exit;` or `to S;`, then `on exit` of every state left, innermost first, then `on entry` of every state entered, outermost first.
+9. A parent is a state whose braces end with inner states: its lines and statements apply in every state inside it; inner states follow each other only through `exit;` and `to S;`.
+10. Released `on start`, the operation runs once; released `on every P`, it is one machine that keeps its place, locals and loops between releases, looks once per release and never reaches its end; only an operation without parameters that a component owns directly, with exactly one such entry and never called, may contain states.
 
-## Changes since revision 2
+## Changes since revision 3
 
-| Topic | Revision 2 | Revision 3 | Where |
-| --- | --- | --- | --- |
-| Scope | Stage 1 flat states; conditions, periodic machines and parents later | **One final release** (expected name 3.0) contains everything, ordered into implementation packages. The unreleased WP5 state forms are replaced in place and never ship. | 10 |
-| Words | `stay`, `keep`, `ignore`, `until` added | **No word added; three removed** (`initial`, `final`, `when`). The state words are `state`, `on entry`, `on exit`, `on receive`, `after`, `if`, `exit`, `to`. | 1.2, 4.6 |
-| Conditions and guards | `when (g)` guards, conditions sketched | **One word, `if`**, for guards (`on receive m(x) if (g) exit;`), condition lines (`if (c) to S;`) and the decision in the flow. The 2.2 guard `when (g)` is respelled by the migrator. | 1.1, 3.5 |
-| Leaving or staying | `stay { … }` at the head; bare `;` or block leaves | A line with only a block **reacts and stays**. A line leaves only when its head says `exit` or `to S`. A bare `;` is an error. | 1.1 |
-| One-exit state | `state X { … } until <trigger>;` | Gone: `after 250ms exit;` inside the state. | 1.1 |
-| Unhandled input | `keep`/`ignore`, mandatory check | **Dropped while the state waits**, as in 2.2; nothing is written. No keep feature: a model that must remember an input stores it in a reaction. | 1.3, 3.8 |
-| Jumps | at the head or at the end of a block | **Only at a line head**, plus the statement `to S;` at the end of a statement list of the flow (an `if` branch included). A block never jumps. | 1.9, 3.7 |
-| Parent states (B8) | open problems | **Solved:** a state whose lines are followed by a `state` is a parent; its lines apply inside and are tried first; exits run innermost first. | 1.5, 3.6 |
-| Operation-level lines | none | The operation is the outermost parent: input and timer lines at its top apply in all its states. | 1.6 |
-| Conditions (B5) | open problems | **Solved:** level semantics, the same rule for waiting and periodic machines; wakes at writes and sample-cell updates; `StateLoop` for a condition reaction that repeats without anything changing. | 3.5 |
-| Periodic machines (I7) | `stepped` sketched | **No keyword:** the schedule entry decides. One line per release; `if (true) { … }` written last is the per-step action. | 1.8, 3.9 |
-| Which operations (B2) | `on start` only | One `on start` **or** one `on every` entry; other entry kinds are errors with a message; no plain receive statement in an operation with states. | 3.1 |
-| When input is dropped | at every selection | **Only while a state waits** (P1: dropping at every selection changes fixture r5). | 3.8 |
-| Taking queued input | not stated | **A state takes input only by waiting for it**; input that is already queued ends that wait in zero time, as in 2.2 (P1: 0 differences). | 3.4 |
-| Named step or dead end | not stated | Decided by the text: a state waits iff it has a line other than `on entry`/`on exit`. A 2.2 non-final state without transitions has no counterpart; the migrator refuses it. | 1.1, 7 |
-| Flow View | numbers out of sequence; `dropped` lines; condition inside the decision | Numbers in written order along the edge; one lane per target; nothing drawn for dropped input; **empty diamond, every condition `[c]` on a line**; compact boxes; parent boxes; operation frame kept. | 2.1 |
-| One rule, two spellings | not addressed | One logical exit is spelled one way in every state that has it. | 2.9 |
-| WP5/WP6 diagnostics | retargeted later | SIF-D11 (condition nothing can change) and SIF-D12 (condition always false) replace them now. | 4.4 |
-| Trace reasons | `ignored`, `guard` | The 2.2 reasons: `inactiveOwner` for unhandled input, `noEnabledTransition` when no guard holds. | 3.11 |
-| Measurement | migrated sources not run | **P1:** 0 verdicts and 1 final store change on 263 results (r10, delivery order); everything else identical, order-sensitive digests included. | 6 |
+### Review findings
 
-## 0. Summary
+| Finding (review r3) | Revision 4 | Where |
+| --- | --- | --- |
+| **B1** per-event choice; sample 7 Q4 wrong | A look sees **one message**, in delivery order, at every level. Queued and freshly delivered messages behave the same, so the answer no longer depends on invisible insertion ordinals. Sample 7 Q4 corrected: the manager passes through `running` for zero time. | 3.4, samples 7 |
+| **B2** outer reaction starves inner lines | A look **runs every present event line and every statement** and stops only at a leave. A query answered on a parent no longer suppresses pinch detection or travel counting; a suspending reaction no longer holds a pulse timer (timers that ran out meanwhile are looked at first when the state waits again). | 3.3, 3.4 |
+| **B3** periodic mode not an execution model | **One persistent activation** per occurrence whose place, locals and loop state live between releases; one look per release; **reaching the end is an error**; SIF-D01 checks the sustained rate, not a burst. | 3.8 |
+| **B4** two block orders for one arrow | **Text order is the real order**: statements before the leave, then `on exit` innermost first. Forced anyway by the block form (a leave inside an `if` is only known when it runs). The migrator copies a 2.2 `on exit` into the leaving blocks where 2.2 ran it first. | 3.6, 7 |
+| **B5** parent lines do not guard plain flow inside the parent | No plain flow between inner states exists. What remains: a parent's lines are not looked at while an `on entry`, `on exit` or line block of a state inside it is suspended. Stated as run to completion, as in 2.2. | 3.7, 5 |
+| **B6** named step inside a parent passes through | A state waits when it **or an enclosing parent** has something to look at. | 3.2 |
+| **B7** rule artefacts (`selecting`, `start`, dummy first state, two lock flags, `if (true)`, operation-level look-alike) | All gone: direct jumps into parents; parents hold no flow; the lock uses one variable; per-step work is written plainly in the state; there are no operation-level lines. | 1.4 to 1.11 |
+| **I1** measurement covers less than claimed | Section 6 lists what P1 still covers and what must be rerun (block form, text-order exits with copied exit actions, re-pick after the zero-time wait). | 6 |
+| **I2** `if` on a timer reads as "check once" | It now **is** "check once": `after 10s { if (requested) { exit; } }` checks at 10 s. Timers are moments; a condition from a time on is a parent timer plus an inner state (traffic light). | 1.10, 3.4 |
+| **I3** same text, different meaning by run mode | Same meaning, different moments: a statement runs at every look in both modes. The operation frame shows the release (`· every 10ms`) in place of the constant signature. A bare action in an `on start` machine is warned (SIF-D08). | 2.1, 3.8 |
+| **I4** StateLoop definition, borrowed calls, D11 false positive | StateLoop is checked at looks, configuration defined, known misses listed; borrowed calls wake at every unlock; revision 3's D11 is folded into SIF-D10. | 3.5, 3.9 |
+| **I5** outer first | Kept (parents first) and now harmless: with one message per look, outer first only orders lines on the same message, timers and statements. Shielding a substate is a guarded parent line. | 3.7 |
+| **I6** input rule | Unchanged in substance (drop while waiting). SIF-D01 covers periodic machines; waiting machines rely on the 2.2 overflow checks. | 3.10 |
+| **I7** fall-through into a sibling | `exit;` from an inner state goes to the next inner state by definition; nothing falls out of a parent unseen. | 3.6 |
+| **I8** operation-level line looks like a plain receive | **No operation-level lines.** The operation body is flow; plain receive statements stay forbidden in operations with states. | 3.1 |
+| **I9** two `if`s by position | One `if`. What differs is the place: inside a state's braces it is looked at again because the state looks again. | 1.1 |
+| **I10** drawing | Release in the header, no `«state»`, no `step:` prefix, no `■`; one arrow per leave; a decision only where an event has two or more leaves. Back-jump stubs versus lanes stay a P2b question. | 2.1 |
+| **I11** scope versus the door controller | `MirrorHeater.tick` fits as a periodic machine (1.9). | 1.9 |
+
+### Owner decisions
+
+| Decision | Handled in |
+| --- | --- |
+| 1, a state is a step; nothing for a rule | 1.1; the window lifter (1.6) and lock (1.5) have no artefact left; named steps are the one remaining special case (5). |
+| 2, unhandled message dropped; remember with a variable | 3.10; the lock's single variable (1.5, 1.12). |
+| 3, one `if`, `when` removed | 1.1, 4.6; guards are `if` inside the line's block. |
+| 4, `to S` into a parent; entries outermost first | 3.6. |
+| 5 and 8, `if` never waits; the state looks again | 1.1, 3.3. Where it does not hold: section 5. |
+| 6, one release with everything | 10 (prototype order and cuts). |
+| 7, empty diamonds, no extra information | 2.1. |
+| 9, short form | 1.3: recommended in its narrowest form only; owner decision O1. |
+
+## 0. Summary: the lock controller
 
 ```text
 operation control() {
-  on receive status.query() { publish status.report(locked, pulses); }
-  on receive power.off() to report;
-  var unlockNext: bool = false;
-  var lockNext: bool = false;
-  state unlocked {
-    on receive requests.request(lock) if (lock) exit;
+  var wanted: bool = false;                  // the latest request: true = lock
+  state powered {
+    on receive status.query() { publish status.report(locked, pulses); }
+    on receive requests.request(lock) { wanted = lock; }
+    on receive power.off() { exit; }
+    state unlocked {
+      on entry { locked = false; }
+      if (wanted) { exit; }
+    }
+    state locking {
+      on entry { pulses = pulses + 1; send motor.lockMotor(LockDrive.lockPulse); }
+      on exit { send motor.lockMotor(LockDrive.idle); }
+      after 250ms { exit; }
+    }
+    state isLocked {
+      on entry { locked = true; }
+      if (not wanted) { exit; }
+    }
+    state unlocking {
+      on entry { pulses = pulses + 1; send motor.lockMotor(LockDrive.unlockPulse); }
+      on exit { send motor.lockMotor(LockDrive.idle); }
+      after 250ms { to unlocked; }
+    }
   }
-  state locking {
-    on entry { pulses = pulses + 1; unlockNext = false; send motor.lockMotor(LockDrive.lockPulse); }
-    on exit { send motor.lockMotor(LockDrive.idle); }
-    after 250ms exit;
-    on receive requests.request(lock) { unlockNext = not lock; }
-  }
-  locked = true;
-  if (unlockNext) {
-    to unlocking;
-  }
-  state isLocked {
-    on receive requests.request(lock) if (not lock) exit;
-  }
-  state unlocking {
-    on entry { pulses = pulses + 1; lockNext = false; send motor.lockMotor(LockDrive.unlockPulse); }
-    on exit { send motor.lockMotor(LockDrive.idle); }
-    after 250ms exit;
-    on receive requests.request(lock) { lockNext = lock; }
-  }
-  locked = false;
-  if (lockNext) {
-    to locking;
-  }
-  to unlocked;
-  state report {
-    on entry { reportShutdown(); }
-  }
+  reportShutdown();
 }
 ```
 
-**Impact on 2.2 sources.** Every 2.2 machine is rewritten by the migrator without added lines (2.2 dropped unhandled input too). **Measured by P1** on 263 executed results (115 from 2.2 machines), with the migrated sources run by a native interpreter of the flat rules: **0 verdicts and 1 final store change** (extended fixture r10: several queued inputs are served in delivery order, where 2.2 walked its queues in creation order). Everything else is identical, order-sensitive trace digests included. That is the one behaviour change of the migration.
+- **One variable remembers.** Every request, in every state, sets `wanted`; the line is written once, on the parent. The states only ask `if (wanted)`.
+- **Nothing starves.** A query during a pulse is answered at once (its own look), and the pulse timer still ends the pulse at 250 ms (its own look).
+- **`if` never waits; the state does.** `unlocked` waits; each time a message arrives, it looks again and `if (wanted)` is checked again.
+- **Power-off** leaves whatever state is current (its exit sets the motor idle) and `powered`; the flow goes on with `reportShutdown()` and the operation ends.
 
-**Open owner decisions:** section 11. The important ones: outer level first (recommended), level semantics for conditions (recommended), arrival ends a periodic step (recommended), no condition lines at the operation level (recommended).
+**Impact on 2.2 sources.** Every 2.2 machine is rewritten by the migrator, one line per event, guards as `if` chains (7). P1 measured the flat rules at **0 verdicts and 1 final store** (fixture r10: delivery order). The rules of this revision that P1 did not implement (block form, text-order exits with copied exit actions, re-pick after a zero-time wait) are equivalent on paper and must be rerun (6).
+
+**Open owner decisions:** six, in section 11.
 
 ## 1. How it looks: text
 
-### 1.1 A state and its lines
+### 1.1 A state and what is inside its braces
 
 ```text
 state name {
   /** documentation */
-  on entry { … }                               // when the flow reaches the state
-  on exit { … }                                // on every way out
-  on receive p.m(x) [if (g)] { … }             // reaction: runs, the state stays
-  after D [if (g)] { … }
-  if (c) { … }
-  on receive p.m(x) [if (g)] exit;             // leaves, continues with the next statement
-  on receive p.m(x) [if (g)] exit { … }        // leaves, runs the block after the exit actions
-  on receive p.m(x) [if (g)] to S;             // leaves for state S
-  on receive p.m(x) [if (g)] to S { … }
-  after D [if (g)] exit;  …                    // the same heads for timers
-  if (c) exit;  if (c) to S;  …                // and for conditions
-  state inner { … }                            // optional: from the first inner state on,
-  …                                            // the body is the parent's inner flow (1.5)
+  on entry { … }                     // once, when the state is reached
+  on exit { … }                      // once, on every way out
+  on receive p.m(x) { … }            // an event line: runs at the look that sees m
+  after D { … }                      // an event line: runs at the look when D has passed since arrival
+  if (c) { … } else { … }            // a statement: runs at every look
+  …                                  // any other statement: also runs at every look
+  state inner { … }                  // optional, last: the state is a parent
 }
 ```
 
-**The head says what happens.**
-- **A block alone:** a reaction. No exit, no entry, the timers keep their start. It is listed inside the state box in Flow View, never drawn as an arrow. `on receive m(x) { }` takes an input and does nothing, which is also what happens to an input that is not mentioned.
-- **`exit`:** the state is left: its `on exit`, then the line's block, then the next statement. `exit` is the word of `on exit`; `next` or `leave` would add a word, so revision 3 uses `exit`.
-- **`to S`:** the state is left the same way and the flow continues at state `S`.
-- **A bare `;`** after an event is an error: `on receive m(x);` must say `{ }`, `exit;` or `to S;`.
+**The braces are what waits.** A state waits; whenever something happens to it, it looks at its contents again, in written order. An `if` inside the braces is therefore checked at every look, and an `if` anywhere else (in the flow, in a block) is checked when the flow gets there. There is one `if`; the place decides how often it is reached.
 
-**`if` in two positions.** On a line of a state, `if (c)` is checked whenever the state chooses, for as long as the state is active. In the flow, `if (c) { … } else { … }` is the ordinary decision, checked once when the flow gets there. The position is unambiguous: a state body holds lines up to its first inner `state`, and only flow after it (4.1).
+**Leaving is a statement.** `exit;` and `to S;` are ordinary statements. Inside a state they may stand as the last statement of an event line's block, of an `if` or `else` block inside a state (at any depth of `if`), or directly in the state's braces. They may not stand in `on entry`, `on exit`, a loop body or the flow outside states. A block that runs `exit;` or `to S;` leaves; any other block stays. A guard is an `if` inside the block:
 
-**Order when a state is left:** its `on exit`, then the line's block (its bindings are in scope), then the target or the next statement. This is the 2.2 order exit, effect, entry (measured: putting the block first changes 1 verdict and 2 final stores of the corpus).
+```text
+on receive requests.request(lock) {
+  if (lock) { exit; }                // an unlock request is taken and nothing happens
+}
+```
 
-**Whether a state waits is decided by its own text.** A state waits exactly when it has at least one line other than `on entry` and `on exit`.
-- **A state without such lines** does not wait: entry, exit, next statement. It is a named step: a jump target, a migrated 2.2 final state, the start of a parent's inner flow. It does not wait even inside a parent that has lines.
-- **A state with only reactions** waits and never leaves by itself. When no enclosing level has a leaving line either, SIF-D19 warns that the operation stays there for good. This is the only way to wait forever, and it is visible.
-- **A 2.2 state without transitions that is not final** (a dead end: it waits forever and drops its inputs) has no direct counterpart; the migrator refuses it and names the state (7, P1 defect D5).
+**Guards and chains.** Several 2.2 transitions on one member become one line with an `if / else if` chain in declaration order. Each event is written once per state; two lines on the same member in one state are allowed and both run, in written order (no rule is needed to forbid it).
 
-### 1.2 The words
+**What the state says about waiting.**
+- **A state with something to look at** (an event line or a statement, in it or in an enclosing parent) waits until a look leaves.
+- **A state with nothing to look at** (only `on entry`/`on exit`, and no enclosing parent has lines or statements) does not wait: entry, exit, next statement. It is a named step: a jump target, a migrated 2.2 final state, the owner's `state4`.
+- **A state that can wait but never leave** is allowed and warned (SIF-D10).
 
-| Words for states, reactions and conditions | 2.2 | 2.3 candidate (WP5) | Revision 2 | Revision 3 |
-| --- | --- | --- | --- | --- |
-| `state`, `on`, `entry`, `exit`, `receive`, `after`, `to`, `if` | yes | yes | yes | **the whole list** |
-| `when` | yes (guards) | yes (guards, completion) | yes | **removed**: guards and conditions are `if` |
-| `initial`, `final` | yes | yes | removed | removed |
-| `defer` | no | yes | removed | removed (never shipped) |
-| `stay`, `keep`, `ignore` | no | no | added | **not added** |
-| `until` after a state | no (loop word only) | no | added | **not added**; `until` stays a loop word |
-| `during`, `stepped` | no | no | reserved | **not added** |
+### 1.2 One look, by hand
 
-Section 4.6 lists the complete keyword set of the behaviour language before and after.
+`closing` from the anti-pinch example (1.8), waiting mode:
 
-### 1.3 The lock controller
+```text
+state closing {
+  on entry { drive(MotorDirection.up); }
+  if (sense.current > pinchLimit) { pinchReversals = pinchReversals + 1; to reversing; }
+  on receive requests.request(c) { if (c == WindowRequest.halt) { to idle; } }
+  after 8s { to idle; }
+}
+```
 
-Section 0 is the full lock controller. How to read it:
-- **Operation-level lines.** The two lines above the first statement apply in every state. A status query is answered wherever the lock is, also during a pulse. A power-off ends whatever state is current, the pulses included (their exit actions set the motor idle), and the flow continues at `report`.
-- **Dropped by default.** In `unlocked`, an unlock request does not satisfy `if (lock)`: it is taken and dropped (`discardInput`, reason `noEnabledTransition`). Nothing else is mentioned in `unlocked`, so nothing else is kept there.
-- **Remembering a request during a pulse.** There is no keep feature. A pulse state takes requests with a reaction and stores what matters in a local: `on receive requests.request(lock) { unlockNext = not lock; }`. The last request wins. After the pulse, plain flow decides: `if (unlockNext) { to unlocking; }`.
-- **Plain flow between states.** `locked = true;` runs after the exit action set the motor idle.
-- **Back and skip.** `to unlocked;` closes the cycle, `to locking` in the `if` restarts a pulse, and the operation-level power-off skips to `report`, a named step: `reportShutdown()` runs and the operation ends.
+| What happens | The look |
+| --- | --- |
+| Arrival | The pinch `if` is checked. No message is present on arrival, no timer has run out. |
+| A request arrives | The pinch `if` is checked (current value), then the request line runs; a halt leaves. |
+| A new current value is delivered to `sense.current` | The pinch `if` is checked with the new value. The request line does not run (no request is present). |
+| 8 s after arrival | The pinch `if` is checked, then the timer line leaves. |
 
-The 2.2 shape (`DiscardingLock`: requests during a pulse are lost, queries and power-off too) is the same text without the operation-level lines, without the pulse reactions and without the two `if` statements, with the query and power-off lines written in `unlocked` and `isLocked`.
+### 1.3 The short form (owner question)
+
+**The question.** May a single statement stand without braces wherever a block is expected, as in C: `after 250ms exit;`, `on receive power.off() to report;`, `if (c) to reversing;`, `if (x > 3) y = 1; else y = 2;`? The owner's condition: only if it adds no effort.
+
+**The general rule (every block may be one statement): not recommended.** What it costs:
+
+| Area | Cost of the general rule |
+| --- | --- |
+| Grammar | Every block position becomes `Block | Statement`. The dangling `else` (`if (a) if (b) x(); else y();`) becomes ambiguous; Langium's ALL(*) parser binds it to the nearest `if`, as C does, but the grammar build must be checked for ambiguity reports, and every `if` test gains the nested case. |
+| Silent meaning changes in half-typed sources | Inside a state, `on receive m(x)` with its block not yet typed, followed by the next item `if (fault) { to safe; }`, parses as **one line**: the condition becomes the message's guard, and `fault` is no longer checked at every look. No error is reported. The same for `after 2s` followed by any statement. With braces required this is a syntax error. This is the decisive cost: it hides a behaviour change exactly in the position this design adds. |
+| Parser recovery | More valid parses of broken text means fewer, later error messages while typing. |
+| Formatter | Must keep the author's form, or normalise, for every block position, and handle comments between the head and the statement. |
+| Validation messages | Messages that point at "the block of …" must handle the missing block (ranges, quick fixes). |
+| Statement identities (diagrams, traces) | Safe if the parser always builds a block node with a `braced` flag; identities are then the same with or without braces. Needed in every position. |
+| Flow View edits | Every edit that adds a statement to a body must add braces when the body is a single unbraced statement. One helper, but every creation path must use it and be tested. |
+| 2.2 compatibility | A superset: every 2.2 source parses as before, the migrated corpus has braces everywhere, and the measurement gates cannot change. No cost here. |
+
+**The narrow rule: recommended (owner decision O1).** A body that consists of **only `exit;` or only `to S;`** may be written without braces, after an event line head, after `if (…)` and after `else`:
+
+```text
+after 250ms exit;                    // same as  after 250ms { exit; }
+on receive power.off() exit;         // same as  on receive power.off() { exit; }
+if (wanted) exit;                    // same as  if (wanted) { exit; }
+if (sense.current > pinchLimit) to reversing;
+```
+
+- **No ambiguity:** a short body is never an `if`, so there is no dangling `else`.
+- **Half-typed sources:** `on receive m(x)` followed by `if (…)` is still a syntax error. Only a following bare `exit;` or `to S;` could be absorbed, which changes "leave on arrival" into "leave on m"; the formatter's join onto one line makes it visible.
+- **Cost:** two grammar alternatives (event line body, `if`/`else` body), the `braced` flag, one formatter rule (keep the author's form), one edit helper (adding a statement adds braces). Small, but not zero; hence an owner decision.
+- **No rule depends on the form.** Both forms build the same block; diagrams, traces, identities and every rule of section 3 see a block.
+
+The examples below use braces; the short form is shown once per construct here and in the reading samples.
 
 ### 1.4 The owner's picture
 
-Start dot, `state0`, a decision with two branches to `state2` and `state1`, a merge, an operation step, `state4`, final marker.
+Start, `state0`, a decision with two branches to `state2` and `state1`, a merge, an operation step, `state4`, end.
 
 ```text
 operation run() {
   var ok: bool = false;
   state state0 {
     on entry { send lamp.set(Lamp.waiting); }
-    on receive cmd.go(v) exit { ok = v; }
+    on receive cmd.go(v) { ok = v; exit; }
   }
   if (ok) {
     state state2 {
       on entry { send lamp.set(Lamp.go); }
-      after 10ms exit;
+      after 10ms { exit; }
     }
   } else {
     state state1 {
       on entry { send lamp.set(Lamp.retry); }
-      on receive cmd.retry() exit;
+      on receive cmd.retry() { exit; }
     }
   }
   process();
@@ -185,154 +227,166 @@ operation run() {
 }
 ```
 
-A `retry` that arrives while `state0` waits is dropped: `state0` does not handle it. `state4` has no lines: it is a named step, and the operation ends after it.
+The `if` between the states is checked once, when the flow gets there. `state4` has nothing to look at, so it does not wait: `report()` runs and the operation ends.
 
-### 1.5 Parent states: the door window lifter
+### 1.5 The lock controller
 
-The 2.2 `WindowLifter.control()` of the door showcase has six states and 41 transitions, 33 of them back to `idle` (P2 drew it 2214 × 1982 px; P1's migrator writes it as 4 `exit` and 37 `to` lines). The same machine with two parent states:
+Section 0 is the full text. Reading it with the ten sentences:
+- **Parent lines first.** At a look of `unlocked` caused by a request, `powered`'s request line sets `wanted`, then `unlocked`'s `if (wanted)` is checked with the new value: the request is acted on in the same look.
+- **During a pulse,** `locking` has only a timer. A request at 100 ms is taken by `powered`'s line (it sets `wanted`), and `locking` keeps pulsing. At 250 ms the timer leaves; `isLocked` is reached, its entry sets `locked = true`, and its arrival look checks `if (not wanted)`: an unlock request that came during the pulse starts the unlock pulse at once.
+- **`locked`** is set by the entries of `isLocked` and `unlocked`, so it says what the lock is, not what was requested.
+- **No decision, no second flag, no `to` in the flow.** The one back jump is `to unlocked` at the end of the unlock pulse.
+- **Power-off** is a line of the parent: `unlocking`'s exit sets the motor idle, `powered` is left, `reportShutdown()` runs, and the operation ends; later messages are discarded.
+
+**What is lost against 2.3's `defer`** (which never ships): `defer` replayed every deferred request in order. Lock, unlock, lock during one pulse would replay three requests; `wanted` keeps only the last. Section 1.12 states this precisely.
+
+### 1.6 Parents and direct jumps: the door window lifter
+
+The 2.2 `WindowLifter.control()` of the door showcase has six states and 41 transitions, 33 of them back to `idle`.
 
 ```text
 operation control() {
-  var start: WindowRequest = WindowRequest.manualUp;
   state idle {
     on entry { drive(MotorDirection.stop); }
-    on receive requests.request(command) if (command == WindowRequest.autoUp and oneTouchAllowed()) exit {
-      start = WindowRequest.autoUp;
-      oneTouchCloses = oneTouchCloses + 1;
-    }
-    on receive requests.request(command) if ((command == WindowRequest.manualUp or command == WindowRequest.autoUp) and motionAllowed()) exit {
-      start = WindowRequest.manualUp;
-    }
-    on receive requests.request(command) if (command == WindowRequest.autoDown and oneTouchAllowed()) exit {
-      start = WindowRequest.autoDown;
-    }
-    on receive requests.request(command) if ((command == WindowRequest.manualDown or command == WindowRequest.autoDown) and motionAllowed()) exit {
-      start = WindowRequest.manualDown;
+    on receive requests.request(command) {
+      if (command == WindowRequest.autoUp and oneTouchAllowed()) {
+        oneTouchCloses = oneTouchCloses + 1;
+        to autoUp;
+      } else if ((command == WindowRequest.manualUp or command == WindowRequest.autoUp) and motionAllowed()) {
+        to manualUp;
+      } else if (command == WindowRequest.autoDown and oneTouchAllowed()) {
+        to autoDown;
+      } else if ((command == WindowRequest.manualDown or command == WindowRequest.autoDown) and motionAllowed()) {
+        to manualDown;
+      }
     }
   }
   state moving {
     /** Stops that apply to every movement, the pinch reversal included. */
-    on receive supervision.sensorFault() to idle;
-    on receive supervision.motionStalled() to idle { stalledStops = stalledStops + 1; }
+    on receive supervision.sensorFault() { to idle; }
+    on receive supervision.motionStalled() { stalledStops = stalledStops + 1; to idle; }
     state driven {
       /** Movements requested by the switch; a withdrawn motion permission stops them, not the reversal. */
-      on receive permissionIn.motionInhibited() to idle { inhibitedStops = inhibitedStops + 1; }
-      state selecting { }
-      if (start == WindowRequest.autoUp) {
-        to autoUp;
-      } else if (start == WindowRequest.manualDown) {
-        to manualDown;
-      } else if (start == WindowRequest.autoDown) {
-        to autoDown;
-      }
+      on receive permissionIn.motionInhibited() { inhibitedStops = inhibitedStops + 1; to idle; }
       state manualUp {
         on entry { drive(MotorDirection.up); }
-        after 8s to idle { runTimeouts = runTimeouts + 1; }
-        on receive supervision.pinchDetected() to reversing { pinchReversals = pinchReversals + 1; }
-        on receive supervision.obstructed() to idle { obstructionStops = obstructionStops + 1; }
-        on receive supervision.endPosition(closed) if (closed) to idle;
-        on receive requests.request(command) if (command == WindowRequest.autoUp and oneTouchAllowed()) exit {
-          oneTouchCloses = oneTouchCloses + 1;
+        after 8s { runTimeouts = runTimeouts + 1; to idle; }
+        on receive supervision.pinchDetected() { pinchReversals = pinchReversals + 1; to reversing; }
+        on receive supervision.obstructed() { obstructionStops = obstructionStops + 1; to idle; }
+        on receive supervision.endPosition(closed) { if (closed) { to idle; } }
+        on receive requests.request(command) {
+          if (command == WindowRequest.autoUp and oneTouchAllowed()) {
+            oneTouchCloses = oneTouchCloses + 1;
+            to autoUp;
+          } else if (command != WindowRequest.manualUp and command != WindowRequest.autoUp) {
+            to idle;
+          }
         }
-        on receive requests.request(command) if (command != WindowRequest.manualUp and command != WindowRequest.autoUp) to idle;
       }
       state autoUp {
         /** One-touch close: continues after the switch is released; a down request stops it. */
         on entry { drive(MotorDirection.up); }
-        after 8s to idle { runTimeouts = runTimeouts + 1; }
-        on receive supervision.pinchDetected() to reversing { pinchReversals = pinchReversals + 1; }
-        on receive supervision.endPosition(closed) if (closed) to idle;
-        on receive requests.request(command) if (command == WindowRequest.manualDown or command == WindowRequest.autoDown) to idle;
+        after 8s { runTimeouts = runTimeouts + 1; to idle; }
+        on receive supervision.pinchDetected() { pinchReversals = pinchReversals + 1; to reversing; }
+        on receive supervision.endPosition(closed) { if (closed) { to idle; } }
+        on receive requests.request(command) {
+          if (command == WindowRequest.manualDown or command == WindowRequest.autoDown) { to idle; }
+        }
       }
       state manualDown {
         on entry { drive(MotorDirection.down); }
-        after 8s to idle { runTimeouts = runTimeouts + 1; }
-        on receive supervision.obstructed() to idle { obstructionStops = obstructionStops + 1; }
-        on receive supervision.endPosition(closed) if (not closed) to idle;
-        on receive requests.request(command) if (command == WindowRequest.autoDown and oneTouchAllowed()) exit;
-        on receive requests.request(command) if (command != WindowRequest.manualDown and command != WindowRequest.autoDown) to idle;
+        after 8s { runTimeouts = runTimeouts + 1; to idle; }
+        on receive supervision.obstructed() { obstructionStops = obstructionStops + 1; to idle; }
+        on receive supervision.endPosition(closed) { if (not closed) { to idle; } }
+        on receive requests.request(command) {
+          if (command == WindowRequest.autoDown and oneTouchAllowed()) {
+            to autoDown;
+          } else if (command != WindowRequest.manualDown and command != WindowRequest.autoDown) {
+            to idle;
+          }
+        }
       }
       state autoDown {
         on entry { drive(MotorDirection.down); }
-        after 8s to idle { runTimeouts = runTimeouts + 1; }
-        on receive supervision.obstructed() to idle { obstructionStops = obstructionStops + 1; }
-        on receive supervision.endPosition(closed) if (not closed) to idle;
-        on receive requests.request(command) if (command == WindowRequest.manualUp or command == WindowRequest.autoUp) to idle;
+        after 8s { runTimeouts = runTimeouts + 1; to idle; }
+        on receive supervision.obstructed() { obstructionStops = obstructionStops + 1; to idle; }
+        on receive supervision.endPosition(closed) { if (not closed) { to idle; } }
+        on receive requests.request(command) {
+          if (command == WindowRequest.manualUp or command == WindowRequest.autoUp) { to idle; }
+        }
       }
     }
     state reversing {
       /** Pinch reversal: switch requests and a withdrawn motion permission are dropped here. */
       on entry { drive(MotorDirection.down); }
-      after 1600ms to idle { runTimeouts = runTimeouts + 1; }
-      on receive supervision.reversalComplete() to idle;
-      on receive supervision.endPosition(closed) if (not closed) to idle;
-      on receive supervision.obstructed() to idle { obstructionStops = obstructionStops + 1; }
+      after 1600ms { runTimeouts = runTimeouts + 1; to idle; }
+      on receive supervision.reversalComplete() { to idle; }
+      on receive supervision.endPosition(closed) { if (not closed) { to idle; } }
+      on receive supervision.obstructed() { obstructionStops = obstructionStops + 1; to idle; }
     }
   }
 }
 ```
 
 How to read it:
-- **`moving`** holds the two stops that the 2.2 machine repeats in all five moving states; **`driven`** the stop it repeats in the four switch-driven states but not in `reversing`. The 2.2 machine also leaves out `obstructed` in `autoUp`, so `obstructed` stays in the four states that have it: two overlapping groups cannot both be parents.
-- **Entering a parent.** `idle` leaves with `exit` into `moving`, whose inner flow starts with `driven`, whose inner flow starts with the named step `selecting` and a decision on `start`. A parent is entered only at its top (single entry); the decision chooses the substate, as a Stateflow default transition into a junction does. A parent's inner flow starts with a state, so the decision follows the named step.
-- **Leaving.** `to idle` from a substate leaves `driven` and `moving` (exit actions innermost first; these parents have none), then runs the block, then enters `idle`. The ways out of `moving` and `driven` are written once and drawn once.
-- **Inputs.** Every input that a state, its parents and the operation do not mention is dropped there while it waits, exactly as the 2.2 machine dropped it: `obstructed` in `autoUp`, `motionInhibited` and switch requests in `reversing`, supervision events in `idle`.
-- **Not a migration.** The behaviour is the 2.2 behaviour except at a selection where several lines are ready at once: a parent's stop is tried before the substate's timer and inputs (3.4). The migrator never introduces parents (7).
+- **Direct entry.** `to autoUp` from `idle` enters `moving`, then `driven` (their entries, outermost first; they have none), then `autoUp`. No `start` variable, no `selecting` state, no decision inside the parent.
+- **Written once.** `sensorFault` and `motionStalled` are on `moving` (all five moving states had them); `motionInhibited` on `driven` (the four switch-driven states). `obstructed` is missing from 2.2's `autoUp`, so it stays in the four states that have it.
+- **Behaviour.** Equal to 2.2 by construction: no member is named on two levels, a look sees one message, and the 8 s limit stays per state. Revision 3's contested choices between a parent line and a substate's queued input no longer exist. Only the trace gains `state` observations for `moving` and `driven` (P5 must confirm this, 10).
 
-**Exit count.**
+**Arrow count.**
 
-| | 2.2 and flat migration | With parents |
+| Version | Arrows | Notes |
 | --- | --- | --- |
-| Leaving arrows | 41 | **30** (idle 4, `moving` 2, `driven` 1, manualUp 6, autoUp 4, manualDown 5, autoDown 4, reversing 4) |
-| Arrows to `idle` | 33 | **22**, drawn in one shared lane |
-| Decision lines into substates | 0 | 4 (three jumps and the `[else]` line to `manualUp`) |
+| 2.2, and the flat migration | 41 | 33 to `idle` |
+| Revision 3 with parents | 30, plus 4 decision lines and the `selecting` state | 22 to `idle` |
+| Review of revision 3 | 26 (stated) | I cannot reproduce 26: the review's own sketch keeps `idle`'s four lines. 30 minus the four decision lines is 30, because revision 3 counted those separately. |
+| **Revision 4** | **30 leaves**, drawn as **25 arrows from box edges** plus **2 diamonds** (`idle`'s request with 4 lines, `manualUp`'s and `manualDown`'s requests with 2 lines each) | idle 4, `moving` 2, `driven` 1, manualUp 6, autoUp 4, manualDown 5, autoDown 4, reversing 4; 22 to `idle`, in one lane |
 
-If the 8 s run-time limit is meant per movement rather than per state, `after 8s to idle { … }` moves to `driven`: 27 arrows, 19 to `idle`. That changes behaviour (the 8 s would no longer restart from `manualUp` to `autoUp`), so it is the owner's choice for the showcase, not something a tool may do.
+If the 8 s limit is meant per movement rather than per state, `after 8s { … to idle; }` moves to `driven`: 27 leaves. That changes behaviour (the limit no longer restarts from `manualUp` to `autoUp`), so it is the owner's choice for the showcase, not the migrator's.
 
-### 1.6 An exit that applies in every state: the mode manager
+### 1.7 An exit for several states: the mode manager
 
-The operation is the outermost parent: an input or timer line written at the top of the operation applies in all its states. It is an input like any other, here the port member `ecu.shutdown`; it is written once and drawn once, on the operation frame.
+The shutdown is a line of a parent around all states. There are no operation-level lines.
 
 ```text
 operation modes() {
-  on receive ecu.shutdown() exit { send status.mode(Mode.off); }
-  while (true) {
+  state system {
+    on receive ecu.shutdown() { exit; }
     state off {
       on entry { send status.mode(Mode.off); }
-      on receive key.ignitionOn() exit;
+      on receive key.ignitionOn() { exit; }
     }
     state powered {
-      on receive key.ignitionOff() exit;
+      on receive key.ignitionOff() { to off; }
       state standby {
         on entry { send status.mode(Mode.standby); }
-        on receive cmd.go() exit;
-        on receive diag.enter() to diagnostic;
+        on receive cmd.go() { exit; }
+        on receive diag.enter() { to diagnostic; }
       }
       state running {
         on entry { send status.mode(Mode.running); send drive.enable(true); }
         on exit { send drive.enable(false); }
-        on receive cmd.halt() to standby;
-        on receive diag.enter() exit;
+        on receive cmd.halt() { to standby; }
+        on receive diag.enter() { exit; }
       }
       state diagnostic {
         on entry { send status.mode(Mode.diagnostic); }
-        on receive diag.leave() to standby;
+        on receive diag.leave() { to standby; }
       }
     }
   }
+  send status.mode(Mode.off);
 }
 ```
 
-- **`ecu.shutdown`** in `running`: `running`'s exit disables the drive, `powered` is left (no exit action), the block reports off, and the operation ends: `exit` at the operation level continues after the operation's last statement. Later input of its members is discarded (`inactiveOwner`).
-- **`key.ignitionOff`** is written once on `powered` (the flat sample writes it three times). `exit` leaves `powered`; the loop starts again at `off`.
-- **Dropped commands.** `cmd.go` arriving while `off` waits is dropped.
-- **Member names** avoid the reserved words `on`, `start` and `exit` (P1: revision 2's `pwr.on`, `cmd.start` and `diag.exit` do not parse).
+- **Shutdown** in `running`: `running`'s exit disables the drive, `powered` and `system` are left, then the flow goes on: `send status.mode(Mode.off)`, and the operation ends.
+- **Ignition off** is written once, on `powered`: `to off` leaves the inner state and `powered`, and enters `off`.
+- **Cycle:** `to off` closes it; no `while` is needed inside a parent.
+- **Short form, once:** `on receive ecu.shutdown() exit;`.
 
-### 1.7 Conditions
+### 1.8 Re-checked conditions: anti-pinch
 
-A condition line `if (c)` is ready whenever `c` holds when the state chooses. `c` may read the component's attributes, whoever writes them, the sampled port members of WP6, the operation's locals and constants; it may call operations that are pure or read state; it may not read `now()` (3.5).
-
-**Anti-pinch from a sampled port member.** The motor current arrives as an attribute member with an initial value, so `sense.current` is a sampled read (WP6-S01), re-checked at every delivery of a new value.
+**On a sampled port member.** The motor current arrives as an attribute member with an initial value, so `sense.current` is a sampled read (WP6-S01). Each delivery of a new value is something that happens to `closing`: it looks again.
 
 ```text
 port def MotorSense {
@@ -346,17 +400,17 @@ component def Lifter {
   operation control() {
     state idle {
       on entry { drive(MotorDirection.stop); }
-      on receive requests.request(c) if (c == WindowRequest.autoUp) exit;
+      on receive requests.request(c) { if (c == WindowRequest.autoUp) { exit; } }
     }
     state closing {
       on entry { drive(MotorDirection.up); }
-      if (sense.current > pinchLimit) to reversing { pinchReversals = pinchReversals + 1; }
-      on receive requests.request(c) if (c == WindowRequest.halt) to idle;
-      after 8s to idle;
+      if (sense.current > pinchLimit) { pinchReversals = pinchReversals + 1; to reversing; }
+      on receive requests.request(c) { if (c == WindowRequest.halt) { to idle; } }
+      after 8s { to idle; }
     }
     state reversing {
       on entry { drive(MotorDirection.down); }
-      after 400ms to idle;
+      after 400ms { to idle; }
     }
   }
   schedule {
@@ -365,7 +419,9 @@ component def Lifter {
 }
 ```
 
-**The same condition on an attribute written by a periodic operation.** A filter runs every millisecond and writes `motorCurrent`; the machine reads it. In the owner's words the value "must come from somewhere": here a port, read by the filter.
+Short form, once: `if (sense.current > pinchLimit) to reversing;` (without the counter).
+
+**On an attribute written by a periodic filter.** The value "comes from somewhere": a port read by `filter()` every millisecond.
 
 ```text
 component def Lifter {
@@ -378,7 +434,7 @@ component def Lifter {
     …
     state closing {
       on entry { drive(MotorDirection.up); }
-      if (motorCurrent > pinchLimit) to reversing { pinchReversals = pinchReversals + 1; }
+      if (motorCurrent > pinchLimit) { pinchReversals = pinchReversals + 1; to reversing; }
       …
     }
     …
@@ -390,13 +446,13 @@ component def Lifter {
 }
 ```
 
-- **When it is checked.** On arrival in `closing`, after a reaction, and whenever `filter()` has written `motorCurrent` and unlocked (a wake, 3.5).
-- **Written order.** The condition is written before the input lines, so when the current is too high and a halt request is queued at the same choice, the reversal wins. Written after them, the halt would win.
+- **When it is checked:** on arrival, at every request or timer look, and each time `filter()` has written `motorCurrent` and unlocked: a write by another activation is something that happens to `closing` (3.5).
+- **Written order:** the condition is written first, so a halt that arrives while the current is already too high still sees the reversal first.
 - **What a condition does not see:** a value that rises above the limit and falls back within one run of the writer. A condition looks at values, not changes; a pulse that must not be missed is an event.
 
-### 1.8 A periodic machine: the window controller every 10 ms
+### 1.9 A periodic machine: the window controller every 10 ms
 
-The schedule entry decides how an operation with states runs. Released `on every 10ms`, the operation takes one step per release and returns, keeping its state per occurrence: the AUTOSAR classic runnable style.
+The schedule entry decides how the operation runs. Released `on every 10ms`, the operation is one machine that keeps its place between releases and looks once per release. Per-step work is simply written in the state.
 
 ```text
 component def WindowController {
@@ -409,25 +465,25 @@ component def WindowController {
   operation step() {
     state idle {
       on entry { send motor.drive(MotorDirection.stop); }
-      if (switch.position == SwitchPos.up and travel < fullTravel) exit;
-      if (switch.position == SwitchPos.down and travel > 0) to opening;
+      if (switch.position == SwitchPos.up and travel < fullTravel) { exit; }
+      if (switch.position == SwitchPos.down and travel > 0) { to opening; }
     }
     state closing {
       on entry { send motor.drive(MotorDirection.up); }
-      if (sense.current > pinchLimit) to reversing;
-      if (switch.position != SwitchPos.up or travel >= fullTravel) to idle;
-      after 8s to idle;
-      if (true) { travel = travel + 1; }         // per-step action: ready when nothing above is
+      if (sense.current > pinchLimit) { to reversing; }
+      if (switch.position != SwitchPos.up or travel >= fullTravel) { to idle; }
+      after 8s { to idle; }
+      travel = travel + 1;
     }
     state opening {
       on entry { send motor.drive(MotorDirection.down); }
-      if (switch.position != SwitchPos.down or travel == 0) to idle;
-      if (true) { travel = travel - 1; }
+      if (switch.position != SwitchPos.down or travel == 0) { to idle; }
+      travel = travel - 1;
     }
     state reversing {
       on entry { send motor.drive(MotorDirection.down); }
-      after 400ms to idle;
-      if (true) { if (travel > 0) { travel = travel - 1; } }
+      after 400ms { to idle; }
+      if (travel > 0) { travel = travel - 1; }
     }
   }
   schedule {
@@ -436,113 +492,155 @@ component def WindowController {
 }
 ```
 
-How one step works (3.9):
-- **The first release** (at 10 ms) runs the flow from the first statement until it reaches a waiting state: `idle`'s entry stops the motor, and the step returns.
-- **Every later release** makes one choice in the current state. A leaving line runs exit actions, its block, the flow and the next state's entry actions, then the step returns. A reaction runs its block and the step returns. If nothing is ready, nothing runs.
-- **The per-step action** is `if (true) { … }` written last: an ordinary condition that always holds, so by written order it is taken exactly when nothing before it is ready. No new word and no new rule.
-- **The step that arrives** does not run the per-step action: arriving in `closing` at 50 ms starts the motor; `travel` counts from 60 ms.
-- **`after 8s`** counts in time from the arrival and is checked at each release, so it is quantised up to the period.
-- **Nothing wakes a periodic machine** between releases; its conditions are checked at each step.
-- **A release guard** (WP7) on the entry skips whole steps: no choice, no per-step action, state and timer starts unchanged.
+How it runs (3.8):
+- **The first release** (10 ms) starts the machine: `idle`'s entry stops the motor, and `idle`'s arrival look checks its conditions.
+- **Every later release** is one look at the current state. A look that leaves reaches the next state in the same release: its entry runs and its arrival look runs, so `travel` counts from the release that starts the motor.
+- **Per-step work** (`travel = travel + 1;`) is written after the conditions, so it does not run in a look that leaves. Written first, it would.
+- **`after 8s`** runs at the first release at or after 8 s from arrival (rounded up to the period, SIF-D12 warns when 8 s is not a multiple).
+- **Nothing happens between releases:** no message, timer or value change causes a look; all are seen at the next release.
+- **The end** cannot be reached: every way out of every state is `to` or `exit;` to the next state. A periodic machine that could reach its end is an error (SIF-D04).
 
-### 1.9 Going back and skipping
+**The door showcase's `MirrorHeater.tick`** (`on every 100ms`, off/heating with a 10-minute limit) becomes:
 
-- **Restricted jump.** `to S` names a state `S` in the statement list that contains the jump (for a line: the list that contains its state), or in a list that encloses it, in the same operation. It never enters a branch, a loop body, a parent or another operation.
-- **Where it is written:** at a line head, or as the statement `to S;` at the end of a statement list of the flow: the operation body, a parent's inner flow, or a branch or loop body there (`if (c) { to S; }`; P1 needed this for the rewritten completion transitions). Never in an entry, exit or line block: a block never jumps. A choice between targets is several lines with conditions, in written order.
-- **After a jump,** in the same list only a state that is itself a jump target may follow.
-- **Structured loops remain.** A cycle of states is often a `while (true) { … }` (mode manager, traffic light, connection manager, debounce in the reading samples). A jump out of a loop ends the loop.
+```text
+operation tick() {
+  while (true) {
+    state off {
+      if (requested) { exit; }
+    }
+    state heating {
+      on entry { send drive.heaterPercent(heaterPercent); }
+      on exit { send drive.heaterPercent(0); }
+      if (not requested) { exit; }
+      after 600s { requested = false; exit; }
+    }
+  }
+}
+```
+
+### 1.10 A traffic light
+
+```text
+operation cycle() {
+  var requested: bool = false;
+  while (true) {
+    state green {
+      on entry { send lamps.set(Light.green); }
+      on receive ped.button() { requested = true; }
+      after 60s { exit; }
+      state minimum {
+        after 10s { exit; }
+      }
+      state extended {
+        if (requested) { exit; }
+      }
+    }
+    state yellow {
+      on entry { send lamps.set(Light.yellow); }
+      after 3s { exit; }
+    }
+    state red {
+      on entry { send lamps.set(Light.red); }
+      after 2s { exit; }
+    }
+    if (requested) {
+      state walk {
+        on entry { send walkSign.set(true); }
+        on exit { send walkSign.set(false); }
+        after 15s { exit; }
+      }
+      requested = false;
+    }
+  }
+}
+```
+
+- **A timer is a moment.** "Green at least 10 s, then as soon as someone has pressed, at most 60 s" is a parent `green` with two inner states: `minimum` ends at 10 s, `extended` leaves as soon as `requested` holds (also on arrival). The 60 s timer is on the parent, so it counts from the start of green.
+- **`exit;` from `extended`,** the last inner state, leaves `green` too; the flow goes on with `yellow`.
+- **A press outside green** is dropped: only `green` names the button.
+
+### 1.11 A connection manager with retry and backoff
+
+```text
+operation manage() {
+  while (true) {
+    var attempt: uint = 0;
+    var backoffMs: uint = 10;
+    var up: bool = false;
+    while (attempt < 5 and not up) {
+      attempt = attempt + 1;
+      publish link.hello(attempt);
+      state awaiting {
+        on receive link.ack(id) { if (id == attempt) { up = true; exit; } }
+        after (backoffMs * 1ms) {
+          if (backoffMs < 1000) { backoffMs = backoffMs * 2; }
+          exit;
+        }
+      }
+    }
+    if (up) {
+      state connected {
+        on entry { publish status.connected(true); }
+        on exit { publish status.connected(false); }
+        on receive link.down() { exit; }
+      }
+    } else {
+      state cooldown {
+        after 30s { exit; }
+      }
+    }
+  }
+}
+```
+
+States stand in loops and branches like any statement. A late `ack` with a stale id is taken, nothing runs, and it is recorded as `discardInput` reason `noEnabledTransition`.
+
+### 1.12 Remembering requests
+
+- **The rule:** a state takes what one of its lines (or a parent's) names; everything else is dropped while it waits.
+- **Remembering is a variable written by a line** that applies where the request may come: a parent line (lock, 1.5) or a line in the busy state.
+- **What it keeps is what it stores.** `wanted = lock` keeps the last request. 2.3's `defer` (never shipped) replayed every deferred request in order. With lock, unlock, lock during one pulse, `defer` gives up to three more pulses; the variable gives none (the lock is already locked). A model that must keep every request writes a counter or an array, explicitly.
+- **The smallest honest version** is one variable and one condition in each state that acts on it, as in section 0.
+
+### 1.13 Jumps
+
+- `to S` names a state `S` of the same operation that is in the statement list containing the state where the jump is written, or in an enclosing list, or inside parents that stand directly in one of those lists (owner decision 4). Every construct between the list and `S` must be a parent: never an `if` branch or a loop body.
+- Leaving and entering: 3.6. `to P`, where `P` is a parent, enters `P` at its first inner state.
+- A jump out of a loop ends the loop; locals of the lists left end; a backward jump that passes a declaration runs it again. A forward jump over a declaration that is used at or after the target is an error.
 
 ## 2. How it looks: Flow View
 
 ### 2.1 Drawing rules
 
-These rules hold for every flow, with or without states, unless the row says otherwise.
-
 | Element | Drawing |
 | --- | --- |
-| Operation | The grey operation frame Flow View draws today: header `«operation» name : () returns void`, then one line per operation-level reaction (`status.query() : publish …`). It is the operation, not a states container, and it stays. |
-| Decision | A plain **empty diamond**. Every condition is written `[c]` on an outgoing line, never inside: `if (ok) { … } else { … }` is one diamond with lines `[ok]` and `[else]`. `if / else if / else` is one diamond with one labelled line per branch in written order, `[else]` last; a missing `else` is an `[else]` line to the merge. A loop test is a diamond with `[c]` into the body and `[else]` out. No "yes/no", no hexagon. |
+| Operation | The grey operation frame Flow View draws today. Its header names the operation and **how it is released**: `«operation» control · on start`, `«operation» step · every 10ms`. The release replaces `: () returns void`, which is the same for every operation with states. |
+| Decision | An **empty diamond**; every condition `[c]` is written on an outgoing line, never inside. `if / else if / else` is one diamond with one labelled line per branch in written order, `[else]` last; a missing `else` is an `[else]` line to the merge. |
 | Merge | A small empty diamond. |
 | Plain step, call | Unchanged Flow View nodes. |
-| State | A rounded box with a heavier outline and `«state»`, name at the top. Below a thin rule: `entry: …`, `exit: …` (first statement, ellipsis, full text on hover), then one line per reaction (`2 query() : publish …`, numbered when the state also has leaving lines). An empty reaction is one muted line, `request(c) { }`. |
-| Parent state | The same rounded box, name and lines at the top, its inner flow drawn inside on a lightly tinted area below the lines. The incoming line enters at the top edge and continues to the first inner state; no inner start dot. The end of the inner flow leaves through the bottom edge. Its leaving lines are arrows from its bottom edge, like any state's. |
-| Leaving line | One arrow from the bottom edge, labelled `number event [condition]`: `1 after 250ms`, `2a request(lock) [lock]`, and a condition line simply `[sense.current > pinchLimit]`. Numbers are written order; the input lines share one number with a letter each. A state with one leaving line draws it without a number. |
-| Operation-level leaving line | One arrow from a small square on the left border of the operation frame (to a target state: along the left gutter; `exit`: to the final marker), labelled as above. Drawn once, never one arrow per state. |
-| Exit order along the edge | **Exits leave the bottom edge in number order, left to right.** Below the box each line turns towards its target in an exit band, one lane high per line; lines may cross inside the band, drawn with a line hop and never under a label. |
-| Shared lanes | **One lane per target state and gutter side.** Arrows to the same target join the lane with a junction dot; the lane ends in one arrowhead on the target's top edge. Back jumps use the left gutter, skips the right; lanes are nested by span. |
-| Line block | Ordinary step nodes on the arrow, outside the box (they run after the exit actions). |
-| `exit` and `to` the next statement | Both drawn straight down into the merge below the box: the drawing never shows which spelling was used. |
-| Labels | `port.member(bindings)`; the port is dropped only when every member the operation handles comes through the same port. Enum qualifiers are dropped in conditions when the type makes them unambiguous (`[command == autoUp]`). A label wraps at 28 characters, the condition on its own line. |
-| Compact box | A state with **more than three** leaving arrows lists its leaving lines inside the box (`2c obstructed() → idle`) and draws only the numbers on the arrows. |
-| Box width | The content width (name, entry, exit, reaction lines), at least 160 px and at least 24 px per leaving arrow; never widened for labels: labels go in staggered rows below the edge, or the box is compact. |
-| Per-step action | The `if (true)` reaction is the box's last line: `step: travel = travel + 1`. |
-| End of the operation | The final marker. |
+| State | A rounded box with a heavier outline, name at the top. Below a thin rule: `entry: …`, `exit: …`, then one line per thing that stays: an event line that does not leave (`query() : publish …`), a statement (`travel = travel + 1`, `if (travel > 0) …`). |
+| Parent | The same rounded box, its lines at the top, its inner states drawn inside on a lightly tinted area. An arrow into an inner state crosses the border. |
+| Leave | **One arrow per `exit;` or `to S;`**, from the bottom edge, labelled with what leads to it: the event and the conditions on the way, `after 250ms`, `request(lock) [lock]`, `[sense.current > pinchLimit]`. The statements before the leave are written after a slash: `pinchDetected() / pinchReversals + 1`. |
+| Event with several leaves | One arrow from the edge with the event label, into an empty diamond, with one `[c]` line per leave. A single leave draws its condition in the label, without a diamond. |
+| Numbers | Written order of the leaves, 1, 2, 3, along the bottom edge from left to right. A state with one leave draws no number. |
+| `exit;` and `to` the next state | Both drawn straight down; the drawing never shows which spelling was used. |
+| Shared lanes | One lane per target state and gutter side; arrows to one target join it with a junction dot; back jumps on the left gutter, skips on the right. |
+| Compact box | A state with more than three leaves lists them inside the box (`3 obstructed() → idle`) and draws only numbers on the arrows (owner decision DN of revision 3, still to be tried in P2b against back-jump stubs). |
+| End | The final marker; it never appears in a periodic operation (its end is unreachable). |
 
-**Not drawn:** dropped input (nothing is written for it, so nothing is drawn); the run mode (Timing shows it); a timer that has fired; the phase rule "timer before same-instant delivery" (hover on a timer label says it); self-loops (a reaction is a line in the box; a line that re-enters its own state is a back arrow to its own top edge).
+**Not drawn:** dropped input (nothing is written for it); a timer that has run out; the order "statements before exit actions" (it is the text order, and hover on an arrow says it); `«state»`; the `step:` prefix; the `■` square.
 
-### 2.2 The lock controller (section 0)
+### 2.2 The owner's picture
 
 ```text
- «operation» control : () returns void
-   status.query() : publish status.report(locked, pulses)
- ■ power.off() ─────────────────────────────────────────────────────┐ (frame border)
-               ●                                                    │
-       [ var unlockNext = false ]  [ var lockNext = false ]         │
-      ┌───────►┤                                                    │
-      │  ╭─────▼─────────────────────╮                              │
-      │  │ unlocked                  │                              │
-      │  ╰─────┬─────────────────────╯                              │
-      │        │ requests.request(lock) [lock]                      │
-      │┌──────►┤                                                    │
-      ││ ╭─────▼────────────────────────────────────╮               │
-      ││ │ locking                                  │               │
-      ││ │ entry: pulses = pulses + 1; …            │               │
-      ││ │ exit:  send motor.lockMotor(idle)        │               │
-      ││ │ 2 requests.request(lock) : unlockNext = …│               │
-      ││ ╰─────┬────────────────────────────────────╯               │
-      ││       │ 1 after 250ms                                      │
-      ││ [ locked = true ]                                          │
-      ││       ◇                                                    │
-      ││       ├──[unlockNext]──────────┐                           │
-      ││       │ [else]                 │                           │
-      ││ ╭─────▼───────────────────╮    │                           │
-      ││ │ isLocked                │    │                           │
-      ││ ╰─────┬───────────────────╯    │                           │
-      ││       │ requests.request(lock) [not lock]                  │
-      ││       ⋄◄───────────────────────┘                           │
-      ││ ╭─────▼────────────────────────────────────╮               │
-      ││ │ unlocking                                │               │
-      ││ │ entry: pulses = pulses + 1; …            │               │
-      ││ │ exit:  send motor.lockMotor(idle)        │               │
-      ││ │ 2 requests.request(lock) : lockNext = …  │               │
-      ││ ╰─────┬────────────────────────────────────╯               │
-      ││       │ 1 after 250ms                                      │
-      ││ [ locked = false ]                                         │
-      ││       ◇                                                    │
-      │└──[lockNext]                                                │
-      │        │ [else]                                             │
-      └────────┘ to unlocked                                        │
-         ╭──────────────────────────╮                               │
-         │ report                   │◄──────────────────────────────┘
-         │ entry: reportShutdown()  │
-         ╰─────┬────────────────────╯
-               ◉
-```
-
-The query reaction and the power-off exit appear once, in the frame. The pulse boxes show the stored request as a reaction line. Nothing says "dropped".
-
-### 2.3 The owner's picture (section 1.4)
-
-```text
- «operation» run : () returns void
+ «operation» run · on start
                  ●
           [ var ok = false ]
        ╭─────────▼──────────╮
        │ state0             │
        │ entry: send …      │
        ╰─────────┬──────────╯
-                 │ go(v)
-             [ ok = v ]
+                 │ go(v) / ok = v
                  ◇
           [ok] ╱   ╲ [else]
    ╭─────────▼──╮ ╭──▼──────────╮
@@ -551,7 +649,6 @@ The query reaction and the power-off exit appear once, in the frame. The pulse b
    ╰─────┬──────╯ ╰──────┬──────╯
          │ after 10ms    │ retry()
          └──────►⋄◄──────┘
-                 │
            [ process() ]
        ╭─────────▼──────────╮
        │ state4             │
@@ -560,662 +657,714 @@ The query reaction and the power-off exit appear once, in the frame. The pulse b
                  ◉
 ```
 
-Both members come through port `cmd`, so the labels drop the port.
-
-### 2.4 The window lifter with parents (section 1.5)
-
-Schematic: labels shortened, compact boxes list their exits inside.
+### 2.3 The lock controller
 
 ```text
- «operation» control : () returns void
+ «operation» control · on start
+               ●
+        [ var wanted = false ]
+  ╭────────────▼────────────── powered ─────────────────────────╮
+  │ status.query() : publish status.report(locked, pulses)       │
+  │ requests.request(lock) : wanted = lock                       │
+  │  ┌────────►┤                                                 │
+  │  │ ╭───────▼───────────────╮                                 │
+  │  │ │ unlocked              │                                 │
+  │  │ │ entry: locked = false │                                 │
+  │  │ ╰───────┬───────────────╯                                 │
+  │  │         │ [wanted]                                        │
+  │  │ ╭───────▼─────────────────────────╮                       │
+  │  │ │ locking                         │                       │
+  │  │ │ entry: pulses = pulses + 1; …   │                       │
+  │  │ │ exit:  send motor.lockMotor(idle)│                      │
+  │  │ ╰───────┬─────────────────────────╯                       │
+  │  │         │ after 250ms                                     │
+  │  │ ╭───────▼───────────────╮                                 │
+  │  │ │ isLocked              │                                 │
+  │  │ │ entry: locked = true  │                                 │
+  │  │ ╰───────┬───────────────╯                                 │
+  │  │         │ [not wanted]                                    │
+  │  │ ╭───────▼─────────────────────────╮                       │
+  │  │ │ unlocking                       │                       │
+  │  │ │ entry: pulses = pulses + 1; …   │                       │
+  │  │ │ exit:  send motor.lockMotor(idle)│                      │
+  │  │ ╰───────┬─────────────────────────╯                       │
+  │  └─────────┘ after 250ms                                     │
+  ╰────────────┬─────────────────────────────────────────────────╯
+               │ power.off()
+       [ reportShutdown() ]
+               ◉
+```
+
+The query and request lines appear once, in the parent. Six arrows, one back jump.
+
+### 2.4 The window lifter
+
+Schematic, labels shortened; compact boxes list their leaves inside.
+
+```text
+ «operation» control · on start
                           ●
-             [ var start = manualUp ]
-   ┌─────────────────────►┤        (one lane: the 22 arrows to idle join it)
-   │  ╭───────────────────▼────────────────────────────────────╮
-   │  │ idle                       entry: drive(stop)          │
-   │  │ 1a request(command) [autoUp and oneTouchAllowed()]     │
-   │  │ 1b request(command) [(manualUp or autoUp) and …]       │
-   │  │ 1c request(command) [autoDown and oneTouchAllowed()]   │
-   │  │ 1d request(command) [(manualDown or autoDown) and …]   │
-   │  ╰────┬───────────┬───────────┬───────────┬──────────────╯
-   │       │1a         │1b         │1c         │1d
-   │  [start = autoUp] [start =    [start =    [start =
-   │  [oneTouch… + 1]   manualUp]   autoDown]   manualDown]
-   │       └──────────►⋄◄──────────┴───────────┘
-   │  ╭────────────────▼──── moving ──────────────────────────────╮
-   │  │ ╭──────────────▼──── driven ────────────────────────────╮ │
-   │  │ │          ╭───▼──────╮                                 │ │
-   │  │ │          │selecting │                                 │ │
-   │  │ │          ╰───┬──────╯                                 │ │
-   │  │ │              ◇                                        │ │
-   │  │ │ [start == autoUp] [start == manualDown]               │ │
-   │  │ │ [start == autoDown] [else]                            │ │
-   │  │ │  manualUp ▸ autoUp ▸ manualDown ▸ autoDown (compact)  │ │
-   │  │ │  pinch arrows → reversing (right gutter, one lane)    │ │
-   │  │ ╰───┬───────────────────────────────────────────────────╯ │
-   │  │     │ motionInhibited() → idle                            │
-   │  │ ╭───▼──────────────── reversing ────────────────────────╮ │
-   │  │ │ entry: drive(down)   (4 exits → idle)                 │ │
-   │  │ ╰───────────────────────────────────────────────────────╯ │
-   │  ╰──┬─────────────────────┬──────────────────────────────────╯
-   │     │1a sensorFault()     │1b motionStalled()
-   │     │               [ stalledStops + 1 ]
-   └─────┴─────────────────────┘
+   ┌─────────────────────►┤   (one lane: the 22 arrows to idle join it)
+   │  ╭───────────────────▼──────────────╮
+   │  │ idle          entry: drive(stop) │
+   │  ╰───────────────────┬──────────────╯
+   │                      │ request(command)
+   │                      ◇
+   │  [autoUp and oneTouch…] / oneTouchCloses + 1 ──► autoUp
+   │  [(manualUp or autoUp) and motion…] ──────────► manualUp
+   │  [autoDown and oneTouch…] ────────────────────► autoDown
+   │  [(manualDown or autoDown) and motion…] ──────► manualDown
+   │  ╭─────────────────────────── moving ─────────────────────────╮
+   │  │ ╭───────────────────────── driven ───────────────────────╮ │
+   │  │ │ manualUp (6) ▸ autoUp (4) ▸ manualDown (5) ▸ autoDown (4) │ │
+   │  │ │ (compact boxes; pinch arrows → reversing, right lane)   │ │
+   │  │ ╰───┬─────────────────────────────────────────────────────╯ │
+   │  │     │ motionInhibited() / inhibitedStops + 1 → idle          │
+   │  │ ╭───────────────────────── reversing ────────────────────╮ │
+   │  │ │ entry: drive(down)   (4 leaves → idle)                 │ │
+   │  │ ╰─────────────────────────────────────────────────────────╯ │
+   │  ╰──┬──────────────────────┬────────────────────────────────╯
+   │     │1 sensorFault()       │2 motionStalled() / stalledStops + 1
+   └─────┴──────────────────────┘
 ```
 
-- **Parent exits** leave the parent's bottom edge once; P2 drew `sensorFault` and `motionStalled` ten times.
-- **Lanes:** all 22 arrows to `idle` join one left-gutter lane; the two pinch arrows join one right-gutter lane into `reversing`.
+`idle`'s four arrows end on the top edges of the inner states, crossing the borders of `moving` and `driven`.
 
-### 2.5 The mode manager (section 1.6)
+### 2.5 The mode manager
 
 ```text
- «operation» modes : () returns void
- ■ ecu.shutdown() ──────────────────────────────────────────┐
-                ●                                           │
-   ┌───────────►┤  ◇ [true] into the loop                   │
-   │  ╭─────────▼──────────────────╮                        │
-   │  │ off                        │                        │
-   │  │ entry: send mode(off)      │                        │
-   │  ╰─────────┬──────────────────╯                        │
-   │            │ key.ignitionOn()                          │
-   │  ╭─────────▼───────────── powered ─────────────────╮   │
-   │  │  ┌─────►┤                                       │   │
-   │  │  │ ╭────▼──────────────╮                        │   │
-   │  │  │ │ standby           │                        │   │
-   │  │  │ ╰──┬──────────┬─────╯                        │   │
-   │  │  │    │1a cmd.go │1b diag.enter() ─────────┐    │   │
-   │  │  │ ╭──▼───────────────╮                    │    │   │
-   │  │  │ │ running          │                    │    │   │
-   │  │  │ │ exit: enable(f…) │                    │    │   │
-   │  │  │ ╰──┬──────────┬────╯                    │    │   │
-   │  │  ├────┘1a halt   │1b diag.enter()          │    │   │
-   │  │  │ ╭─────────────▼────╮◄───────────────────┘    │   │
-   │  │  │ │ diagnostic       │                         │   │
-   │  │  │ ╰──┬───────────────╯                         │   │
-   │  │  └────┘ diag.leave()                            │   │
-   │  ╰──┬──────────────────────────────────────────────╯   │
-   │     │ key.ignitionOff()                                │
-   └─────┘                                                  ▼
-                                              [ send status.mode(off) ]
-                                                            ◉
+ «operation» modes · on start
+                ●
+  ╭─────────────▼─────────────────── system ──────────────────╮
+  │  ┌─────────►┤                                             │
+  │  │ ╭────────▼─────────────────╮                           │
+  │  │ │ off                      │                           │
+  │  │ │ entry: send mode(off)    │                           │
+  │  │ ╰────────┬─────────────────╯                           │
+  │  │          │ key.ignitionOn()                            │
+  │  │ ╭────────▼──────────────── powered ──────────────────╮ │
+  │  │ │  ┌─────►┤                                         │ │
+  │  │ │  │ ╭────▼──────────────╮                          │ │
+  │  │ │  │ │ standby           │                          │ │
+  │  │ │  │ ╰──┬──────────┬─────╯                          │ │
+  │  │ │  │    │1 cmd.go  │2 diag.enter() ──────────┐      │ │
+  │  │ │  │ ╭──▼───────────────╮                     │      │ │
+  │  │ │  │ │ running          │                     │      │ │
+  │  │ │  │ │ exit: enable(f…) │                     │      │ │
+  │  │ │  │ ╰──┬──────────┬────╯                     │      │ │
+  │  │ │  ├────┘1 halt    │2 diag.enter()            │      │ │
+  │  │ │  │ ╭─────────────▼────╮◄────────────────────┘      │ │
+  │  │ │  │ │ diagnostic       │                            │ │
+  │  │ │  │ ╰──┬───────────────╯                            │ │
+  │  │ │  └────┘ diag.leave()                               │ │
+  │  │ ╰──┬───────────────────────────────────────────────╯ │
+  │  └────┘ key.ignitionOff()                               │
+  ╰───────┬─────────────────────────────────────────────────╯
+          │ ecu.shutdown()
+  [ send status.mode(off) ]
+          ◉
 ```
 
-The operation-level exit leaves the frame's border once and ends at the final marker with its block on the way.
-
-### 2.6 The periodic controller (section 1.8)
+### 2.6 Anti-pinch
 
 ```text
- «operation» step : () returns void          (Timing: on every 10ms, deadline 2ms)
+ «operation» control · on start
+             ●
+   ┌────────►┤
+   │ ╭───────▼───────────────────╮
+   │ │ idle                      │
+   │ │ entry: drive(stop)        │
+   │ ╰───────┬───────────────────╯
+   │         │ request(c) [c == autoUp]
+   │ ╭───────▼───────────────────╮
+   │ │ closing                   │
+   │ │ entry: drive(up)          │
+   │ ╰───┬────────────┬──────┬───╯
+   │     │1 [sense.   │2     │3 after 8s
+   │     │ current >  │request(c)
+   │     │ pinchLimit]│[c == halt]
+   │     │ / pinchReversals + 1
+   ├─────┼────────────┴──────┘
+   │ ╭───▼───────────────────────╮
+   │ │ reversing                 │
+   │ │ entry: drive(down)        │
+   │ ╰───┬───────────────────────╯
+   └─────┘ after 400ms
+```
+
+The filtered variant is the same drawing with `[motorCurrent > pinchLimit]`.
+
+### 2.7 The 10 ms window controller
+
+```text
+ «operation» step · every 10ms
              ●
    ┌────────►┤
    │ ╭───────▼───────────────────────────╮
    │ │ idle                              │
    │ │ entry: send motor.drive(stop)     │
    │ ╰───┬────────────────────┬──────────╯
-   │     │1 [switch.position  │2 [switch.position == down
-   │     │   == up and …]     │    and travel > 0] ──────────────┐
-   │ ╭───▼───────────────────────────────╮                       │
-   │ │ closing                           │                       │
-   │ │ entry: send motor.drive(up)       │                       │
-   │ │ step: travel = travel + 1         │                       │
-   │ ╰───┬──────────────┬───────────┬────╯                       │
-   │     │1 [sense.     │2 [switch… │3 after 8s                  │
-   │     │ current > …] │  or …]    │                            │
-   │     │              └───────────┴──► idle (left lane)        │
-   │     └──► reversing (right lane)                             │
-   │ ╭───────────────────────────────────╮◄──────────────────────┘
+   │     │1 [position == up   │2 [position == down
+   │     │   and travel < …]  │   and travel > 0] ──────────────┐
+   │ ╭───▼───────────────────────────────╮                      │
+   │ │ closing                           │                      │
+   │ │ entry: send motor.drive(up)       │                      │
+   │ │ travel = travel + 1               │                      │
+   │ ╰───┬──────────────┬───────────┬────╯                      │
+   │     │1 [sense.     │2 [position│3 after 8s                 │
+   │     │ current > …] │ != up or …]                           │
+   │     │              └───────────┴──► idle (left lane)       │
+   │     └──► reversing (right lane)                            │
+   │ ╭───────────────────────────────────╮◄─────────────────────┘
    │ │ opening                           │
-   │ │ step: travel = travel - 1         │
+   │ │ travel = travel - 1               │
    │ ╰───┬───────────────────────────────╯
-   ├─────┘ [switch.position != down or travel == 0]
+   ├─────┘ [position != down or travel == 0]
    │ ╭───────────────────────────────────╮
    │ │ reversing                         │
-   │ │ step: if (travel > 0) …           │
+   │ │ if (travel > 0) travel = …        │
    │ ╰───┬───────────────────────────────╯
    └─────┘ after 400ms
 ```
 
-A periodic machine is drawn like a waiting one; Timing shows the run mode.
+No end marker: a periodic machine never ends.
 
-### 2.7 Sequence and Timing
+### 2.8 The traffic light
 
-- **Sequence:** a state is a state invariant on the operation's lifeline where the flow waits; a parent is an invariant region around its substates' invariants. Leaving lines are the messages that end an invariant; reactions are messages that do not; a condition that is taken is a guard note `[c]` on the invariant's end.
-- **Timing, waiting machines:** a state is an interval on the component's track from arrival to exit; parents are a band above their substates; between states the track shows plain flow.
-- **Timing, periodic machines:** the release grid as ticks (a skipped release, WP7, as a hollow tick); the state band changes only at ticks; the step that took a line is marked on its tick.
+```text
+ «operation» cycle · on start
+            ●
+   [ var requested = false ]
+  ┌────────►◇ [true]
+  │ ╭───────▼──────────────── green ────────────────╮
+  │ │ entry: send lamps.set(green)                  │
+  │ │ ped.button() : requested = true               │
+  │ │ ╭────────────╮                                │
+  │ │ │ minimum    │                                │
+  │ │ ╰─────┬──────╯                                │
+  │ │       │ after 10s                             │
+  │ │ ╭─────▼──────╮                                │
+  │ │ │ extended   │                                │
+  │ │ ╰─────┬──────╯                                │
+  │ ╰───────┼──────────────┬────────────────────────╯
+  │         │ [requested]  │ after 60s
+  │         ⋄◄─────────────┘
+  │ ╭───────▼──────╮  ╭──────────────╮
+  │ │ yellow  3 s  │─►│ red  2 s     │  (each: after … )
+  │ ╰──────────────╯  ╰──────┬───────╯
+  │                          ◇
+  │           [requested] ╱     ╲ [else]
+  │ ╭────────▼─────────╮          │
+  │ │ walk             │          │
+  │ │ entry/exit: …    │          │
+  │ ╰────────┬─────────╯          │
+  │          │ after 15s          │
+  │ [ requested = false ]         │
+  │          └──────►⋄◄───────────┘
+  └──────────────────┘
+```
 
-### 2.8 Editing gestures
+### 2.9 The connection manager
 
-Every gesture is one whole-workspace edit, validated before it is applied, with a dry-run preview (`swaml/previewEdit`) that lists every line number and fall-through target that changes.
+```text
+ «operation» manage · on start
+            ●
+  ┌────────►◇ [true]
+  │ [ attempt = 0; backoffMs = 10; up = false ]
+  │ ┌──────►◇ [attempt < 5 and not up]
+  │ │ [ attempt = attempt + 1 ]
+  │ │ [ publish link.hello(attempt) ]
+  │ │ ╭─────▼───────────────────────╮
+  │ │ │ awaiting                    │
+  │ │ ╰─────┬─────────────────┬─────╯
+  │ │       │1 ack(id)        │2 after (backoffMs * 1ms)
+  │ │       │ [id == attempt] │ / if (backoffMs < 1000) …
+  │ │       │ / up = true     │
+  │ │       ⋄◄────────────────┘
+  │ └───────┘
+  │         │ [else] (loop ends)
+  │         ◇
+  │    [up] ╱ ╲ [else]
+  │ ╭────▼──────────────╮  ╭───▼──────────╮
+  │ │ connected         │  │ cooldown     │
+  │ │ entry/exit: …     │  ╰───┬──────────╯
+  │ ╰────┬──────────────╯      │ after 30s
+  │      │ link.down()         │
+  │      └──────►⋄◄────────────┘
+  └──────────────┘
+```
 
-| Gesture | Text edit | How order stays honest |
-| --- | --- | --- |
-| Add a state as a step (creation card: name, first leaving line) | Inserts `state X { <event> exit; }` at the drop position. | The preview names the statement whose fall-through target changes. |
-| Add an exit | Appends a leaving line after the last line of its kind (an input at the end of the input lines). | The preview shows the new number and renumbered arrows. |
-| Add a reaction (box "+ reaction") | Writes `on receive m(x) { }`, `after D { }` or `if (c) { }`. | The preview shows its number. |
-| Retarget an exit (drag its end) | Rewrites the head: `to S`, or `exit` when dropped on the merge below the box. Illegal targets are refused with SIF-D04's message. | Only that head changes. |
-| Reorder lines | Moves the line; the input lines move as one unit. | The preview says "priority change: 2 ↔ 3". |
-| Move a state | Moves the statement; every line whose fall-through target would change gets an explicit `to`. | Behaviour unchanged by construction. |
-| Delete a state | Removes it; incoming jumps are retargeted to a state the user picks, or the edit is refused. | The preview lists retargeted arrows. |
-| Group into a parent (consecutive states of one list) | Wraps them in `state P { … }`. Refused when a jump from outside targets a state other than the first (it would enter the parent); the card offers a named step and a decision at the top instead. | Grouping alone changes no behaviour apart from the `state` observation of `P`; the preview says so. |
-| Move a common exit to the parent | Replaces the identical line (event, condition, head, block) in every substate by one line on the parent; offered only when every substate has it. | The preview says that the line is now tried before the substates' own lines. |
-| Add a per-step action (periodic machines only) | Writes `if (true) { }` as the state's last line. | Refused in an `on start` operation (SIF-D13). |
-| Unwrap a named step | Back to plain steps; offered only when the state is no jump target. | — |
+### 2.10 Editing gestures
 
-### 2.9 One logical exit, one spelling
+Every gesture is one whole-workspace edit, validated before it is applied, with a dry-run preview (`swaml/previewEdit`) that lists every number and target that changes.
 
-P2 found the same rule written two ways: `on receive crash.crashUnlock() to crashUnlocking;` in four lock states but `… exit;` in the state that happens to precede `crashUnlocking`.
-
-**Rule.** A *logical exit* is a set of leaving lines in one operation with the same event, condition, block text and target state. When a logical exit occurs in two or more states and at least one of them needs `to T`, every occurrence is written `to T`, also where `T` is the next statement. `to T` to the next statement is legal and drawn exactly as `exit`, so the drawing does not change.
-- **Migrator:** applies the rule (7, step 4).
-- **Formatter:** never changes a head; it offers the code action "spell like the other states" on an `exit` that belongs to a logical exit spelled `to T` elsewhere.
-- **No diagnostic:** both spellings are correct.
+| Gesture | Text edit |
+| --- | --- |
+| Add a state as a step | Inserts `state X { <event> { exit; } }` at the drop position; the preview names the statement whose successor changes. |
+| Add a leave | Adds `to S;` (or `exit;`) at the end of an event line's block, or a new event line; inside an existing chain, as a new `else if` branch. |
+| Add a staying line or statement (box "+") | Writes `on receive m(x) { }`, `after D { }` or a statement. |
+| Retarget a leave (drag its end) | Rewrites that one `to S;`/`exit;`. Illegal targets are refused with SIF-D03's message. |
+| Reorder | Moves an item; the preview says which numbers change. |
+| Move or delete a state | Keeps behaviour by writing explicit `to` where a successor would change, or refuses. |
+| Group into a parent | Wraps consecutive states of one list in `state P { … }`; refused when plain flow stands between them. |
+| Move a common line to the parent | Replaces an identical event line (text equal) in every inner state by one line on the parent; offered only when every inner state has it. |
+| Short form (if O1 is adopted) | An edit that adds a statement to a body written without braces writes the braces. |
 
 ## 3. Meaning: rules of the execution contract
 
-The meaning is defined natively by the rules below, as additions to chapter 6 of the specification.
-
-**Simplicity checks applied.** For each rule the simpler alternative was tried first; the rule below is the simplest found that is sound and keeps 2.2 results:
-- one way to leave (a head word), one way to stay (no head word), no keep, no ignore;
-- one word for conditions, one condition semantics (level) for both run modes;
-- one priority order (outer level first, then written order) with no per-member exception;
-- one input rule for an operation with states (drop while waiting) and no other waiting point in it (no plain receive statements);
-- the per-step action is an ordinary condition, not a construct;
-- taking input is always a wait, also when the input is already there (no exception for queued input).
+The meaning is defined natively, as additions to chapter 6 of the specification.
 
 **Terms.**
-- An **operation with states** is an operation whose body contains a state statement.
-- The **levels** of a state S are: the operation (level 0), each parent that encloses S from the outermost inwards, and S itself.
-- A **waiting state** is a state without inner flow that has at least one line other than `on entry`/`on exit`. A state without such lines and without inner flow is a **named step**. A state with inner flow is a **parent**.
-- A member is **owned** by the operation when some `on receive` line of the operation, at any level, names it. A member is **handled** at waiting state S when some level of S has an `on receive` line on it.
-- A **choice** (selection) of a waiting state S takes at most one line among the lines of all levels of S.
+- An **operation with states** is an operation whose body contains a state.
+- **Items** of a state: its `on entry` and `on exit` blocks, event lines and statements, in written order, before its inner states.
+- The **levels** of a state S: each parent that encloses S, outermost first, then S.
+- S **has something to look at** when some level of S has an event line or a statement.
+- A member is **named** at S when some level of S has an `on receive` line on it. A member is **owned** by the operation when some line of the operation names it.
+- A **look** at S is one pass over the items of S's levels (3.3).
 
-### 3.1 Which operations may contain states (B2)
+### 3.1 Which operations may contain states (SIF-S01)
 
-**Rule SIF-S01.** An operation with states:
+An operation with states:
 - is directly owned by a component definition, has no parameters and returns `void`;
-- has exactly one effective schedule entry in every occurrence of its component, which is either `on start` (the operation **waits**) or `on every P`, with or without `deadline` and a WP7 release guard, never `concurrent` (the operation is **periodic**);
+- has exactly one effective schedule entry in every occurrence of its component: `on start` (**waiting** machine) or `on every P`, with or without `deadline` and a WP7 release guard, never `concurrent` (**periodic** machine);
 - is never called: not by an operation, a helper, a guard, a schedule argument or a case script;
-- contains no interrupt region and no plain receive statement; its callees contain no states (follows from "never called").
+- contains no interrupt region and no plain receive statement.
 
-Case scripts contain no states; they drive an operation with states only through actor ports, as in 2.2.
-
-**Other entry kinds are errors with a message** (SIF-D15):
-- `on receive x(…) op();`: "`op` contains states, so it keeps its state between releases and can only be released by one `on start` or one `on every` entry. To react to `x`, write `on receive x(…)` as a line in its states."
-- `after pred op();`: "… To start after `pred`, release `op` on start and wait in its first state for a condition that `pred` sets."
-- `on call p.m(…) op();`: "… An operation with states cannot answer calls; answer in a plain operation and let it set an attribute that a condition reads."
+Case scripts contain no states. Other entry kinds are errors with a message (SIF-D11):
+- `on receive x(…) op();`: "`op` contains states, so it keeps its place between releases and can only be released by one `on start` or one `on every` entry. To react to `x`, write `on receive x(…) { … }` in its states."
+- `after pred op();`: "… To start after `pred`, release `op` on start and let its first state wait for a value that `pred` sets."
+- `on call p.m(…) op();`: "… An operation with states cannot answer calls; answer in a plain operation and let it set an attribute that a state reads."
 - No entry, two entries, `concurrent`: "… needs exactly one `on start` or one `on every` entry, not concurrent."
 
-**Why not wider.** A called operation with states needs per-activation state identity in the trace subject, `machines`, Timing, Flow View overlays and a rule for several activations waiting on one member (review B2). Parents cover reuse inside one operation. In the last release nothing is widened that is not fully defined.
+**Why no plain receive statement.** It is the only construct with another input rule (exclusive ownership, input kept after the operation ends). A one-line state replaces it: `state waitGo { on receive cmd.go(v) { ok = v; exit; } }`. Plain operations keep their receive statements.
 
-**Why no plain receive statements.** In an operation with states, `on receive m(x) { … }` at the top of a body is a reaction that stays (1.1); in the flow it would mean "wait once and continue", with another input rule. One construct per meaning: a one-exit state replaces it (`state waitGo { on receive cmd.go(v) exit { … } }`). Plain operations keep their receive statements unchanged.
-
-**Consequences.** There is exactly one current state chain per occurrence, so `machines["c.op"]`, the trace subject and the Timing track stay well defined. An operation with states may be the predecessor of `after` dependents: they are released when it completes (waiting) or after each step (periodic).
+**Consequence.** There is one current state per occurrence and operation, so `machines["c.op"]`, the trace subject and the Timing track stay well defined.
 
 ### 3.2 Reaching a state (SIF-R01)
 
-When the flow reaches a state statement X at time t:
-1. record a `state` observation (subject `c.op`, `state` the name, `source` the statement, `trigger` the line that led here when there was one);
+When the flow, a leave or a jump reaches state X at time t:
+1. record a `state` observation (`source` the state, `trigger` the line or statement that led here, if any);
 2. set X's timer start to t;
-3. run `on entry` (it may suspend; input arriving meanwhile stays queued);
+3. run X's `on entry` (it may suspend; input arriving meanwhile stays queued);
 4. evaluate X's computed `after` durations once (WP4-R02);
-5. then, by kind of X:
-   - **parent:** continue with the first statement of its inner flow (always a state);
-   - **named step:** run `on exit`, continue with the next statement;
-   - **waiting state, waiting mode:** make a choice (3.4);
-   - **waiting state, periodic mode:** end the step (3.9).
+5. then:
+   - **X is a parent:** reach its first inner state;
+   - **X has nothing to look at:** run its `on exit`, continue with the next statement (a named step);
+   - **otherwise:** make the **arrival look** (3.3); if it does not leave, X waits (3.4) in a waiting machine, or the release ends in a periodic machine.
 
-### 3.3 Leaving and staying, across levels (SIF-R05, SIF-R06)
+Entering parents on the way to a target (direct entry, 3.6) runs steps 1 to 4 for each parent, outermost first, without step 5.
 
-| Case | What runs, in order |
+### 3.3 The look (SIF-R02, SIF-R03)
+
+A look at S goes through the levels of S, outermost first; within a level, through its items in written order, skipping `on entry` and `on exit`:
+- an **event line runs** when its event is present at this look (below); its bindings hold the message's payload in its block;
+- a **statement runs**, always;
+- the look **ends at the first `exit;` or `to S;` it runs** (leaving, 3.6), or after the last item of S.
+
+**What is present at a look:**
+- **At most one message:** the message whose delivery caused the look, or, for a zero-time look at the start of a wait, the first-delivered queued message of a member named at S. Every event line on its member, at any level, runs, in walk order.
+- **Every timer** of a level of S that has run out since that level's arrival and has not been present at an earlier look. A timer is present at one look per arrival of its level.
+- **At the arrival look:** no message; timers that ran out while `on entry` was suspended.
+- **At a look caused by a value change (wake):** no message, no new timer.
+
+**Statements are not events.** A statement does not need anything to be present: it runs at every look. `if (c) { … }` in a state is checked at every look.
+
+**What a look writes it sees afterwards, not before.** A statement sees the values as they are when it runs, including what earlier items of this look wrote. Writes made by the look itself never cause another look (3.5); a statement written before the item that writes what it reads sees the change only at the next look (SIF-D09 warns).
+
+**A look runs to completion** (SIF-R14). It holds the component lock, except while a block suspends (`wait`, a request, a suspending call). During that suspension nothing else of the operation is looked at; what happens meanwhile is seen at later looks.
+
+### 3.4 When a waiting machine looks (SIF-R04, SIF-R05; B1, B2)
+
+After the arrival look and after any look that did not leave, S **waits**. When it begins to wait, in this order:
+1. **Timers that ran out** and have not been present: one look now, in zero time, with all of them present.
+2. Otherwise, **queued messages of owned members not named at S** are dropped, in delivery order (`discardInput`, reason `inactiveOwner`).
+3. Otherwise, if a **message of a member named at S is queued**, the wait ends in zero time (the component lock is released; the wait end is an event of the same instant, phase 2, next insertion ordinal), and at that event a look is made with the **first-delivered such message at that moment** (it is picked again, so a delivery that replaced or overflowed a queue meanwhile is respected).
+4. Otherwise S waits without the lock until one of:
+   - **a timer of a level of S runs out** (phase 1): a look with it;
+   - **a message of a member named at S is delivered** (phase 2): a look with it;
+   - **a delivery of an owned member not named at S**: dropped on arrival (`inactiveOwner`), no look;
+   - **a wake** (3.5): a look with nothing present.
+
+**Consequences.**
+- **One message per look, in delivery order** (B1). Three messages delivered at one instant, or three messages queued while the operation was busy, give three looks in delivery order, each of them at the level structure current at that moment. Parents first orders only the lines that run at one look.
+- **Timer before same-instant delivery** (2.2): a timer that runs out at t is looked at in phase 1, before deliveries at t.
+- **No starvation** (B2): a look runs every present line and statement; the next look after a suspended block begins with the timers that ran out meanwhile.
+- **Input arriving while the operation is busy** (plain flow, blocks, entry and exit actions, suspended calls) stays queued and is decided by the next state that waits: looked at if named there, dropped otherwise (P1: drop only while waiting).
+
+### 3.5 Values that are re-checked: wakes (SIF-R06)
+
+**What statements in a state may read (SIF-S05).** Attributes of the executing occurrence, whoever writes them; sampled port members (WP6-S01); locals visible at the statement; constants; calls of operations that are pure or read state. Not `now()` (time wakes nothing; use `after`), not a non-sampled port member. An event line's block may also read its bindings, and anything a block may read in 2.2.
+
+**Read set.** Per effective occurrence: the attributes and sample cells (port occurrence, member) read by the statements standing in the levels of S, directly or through called operations, after specialization and redefinition, with the scope rules (a local or binding hides an attribute of the same name). Locals are not in the read set: only the machine writes them.
+
+**The read set must be exact.** In revision 3 an extra wake was harmless, because every condition was false again. Here a look also runs statements that act (`travel = travel + 1`, `if (alarm) { publish … }`), so an extra look changes behaviour. The read set is therefore defined by names, statically, and the wake by **writes, not changes**: an assignment of an equal value still wakes.
+
+**Wakes, waiting machines only.** A waiting state S makes a look with nothing present when, at time t:
+- **another activation of the same occurrence wrote an attribute in S's read set**, at the end of that activation's segment (its unlock at suspension, completion or failure). Case-script calls of the subject's operations and white-box helper calls, which run in the script's activation (6.7), wake at every unlock of the call, at its suspensions as well as at its return;
+- **a sample cell in S's read set is updated** (WP6-R02), at its delivery event.
+
+Writes by the machine itself never wake it. Periodic machines are never woken: they read the values at each release.
+
+### 3.6 Leaving, jumps and entering (SIF-R07, SIF-R08; B4)
+
+**Leaving runs in the order of the text.** When a look runs `exit;` or `to T;` written at level L of S (L is S or a parent of S):
+1. the statements written before it in the same block have already run;
+2. **`on exit` of every state left, innermost first**: S, each parent up to and including the states the leave goes out of;
+3. the **target is reached**, entering every parent on the way outermost first (3.2), then the target itself.
+
+**What `exit;` goes on with.** `exit;` at level L leaves L. If L is an inner state and not the last of its parent, the next inner state is reached. If it is the last, the parent is left too, as by `exit;` written on the parent, and so on outwards. If L stands in a statement list of the flow, the next statement runs.
+
+**What `to T;` leaves and enters.** All states from S up to (not including) the innermost statement list that contains both the jump and T's outermost enclosing parent (or T itself) are left, innermost first; then T's enclosing parents below that list are entered, outermost first; then T. `to P`, P a parent, enters P and reaches its first inner state.
+
+**One order for one arrow** (B4). `exit;` from the last inner state of P and `to N;` with N the statement after P now run the same steps in the same order: block, inner `on exit`, P's `on exit`, N. Section 2.9 of revision 3 ("one logical exit, one spelling") is no longer a rule; the spellings are equivalent.
+
+**Unwinding** (SIF-R08). A jump ends every block, loop and parent between it and the list that contains the target. A loop ended this way does not run its condition, update or remaining iterations; its counter and locals end. Locals live from their declaration to the end of their statement list; a backward jump that passes a declaration runs it again; locals declared before the target keep their values.
+
+**Leaving adds no scheduling point** (P1 defect D3): steps 2 and 3 run in the segment of the look, unless an exit or entry action suspends.
+
+### 3.7 Parents (SIF-R09; B5, B6)
+
+- **Shape:** a parent's braces hold its items, then its inner states only. There is no plain flow between inner states.
+- **Order:** the parent's items are looked at before the inner state's, at every look (parents first, Stateflow's order). A parent line on a member that an inner state also names runs first; if it leaves, the inner line does not run.
+- **Shielding:** a parent that must not leave in one inner state guards its own line: `on receive key.ignitionOff() { if (not flashing) { exit; } }`, while the inner state `flashing` remembers it: `on receive key.ignitionOff() { offPending = true; }`.
+- **Timers of a parent** count from the parent's arrival, keep running while its inner states change, and are present at one look per parent arrival.
+- **A state inside a parent with something to look at waits** (B6), even if it has no items itself.
+- **What parents do not guard** (B5): a parent's lines are looked at only at looks. While an `on entry`, `on exit` or block of a state inside it is suspended, nothing is looked at; a fault delivered meanwhile is looked at when the state waits again. This is 2.2's run to completion. A step that must be interruptible is written as its own state.
+
+### 3.8 Periodic machines (SIF-R10, SIF-R11; B3)
+
+**One persistent activation.** An operation with states released by one `on every P` entry is one activation per occurrence, created at the first release and never completed:
+- Its **place** (the statement path, the levels), **locals**, **loop state** (iteration, `n times` counters, `for in` snapshots) and **timer starts** live between releases, exactly as in a waiting machine that waits.
+- **Between releases it waits** in its current state, like a waiting machine, except that nothing but the next release ends the wait. The 2.2 waiting frame therefore also drops: unhandled deliveries are dropped on arrival and unhandled queued messages when the wait begins (no frame-less mechanism is needed).
+- **Trace:** one activation identity for the life of the machine; each release records its `release` (or WP7 `skip`) observation and its deadline; observations of a release's look name the activation and that release.
+
+**A release:**
+1. **The first release** runs the flow from the first statement to the first state that waits, including entries and the arrival look.
+2. **Every later release** makes one look at the current state with what is present (3.3): timers that ran out since the last look, the first-delivered queued message of a named member (one per release), the current values of attributes and sample cells (first read in the segment, WP6-R03).
+3. **A look that leaves** reaches the next state in the same release, with its entry and its arrival look, until a state waits.
+
+**Rules:**
+- **Timers** count in time from their level's arrival and are present at the first release at or after it (rounded up to the period; SIF-D12).
+- **Input:** at most one message per release; named messages queue under their route policy. A rejecting route into a periodic machine can make the sender fail when messages arrive faster than one per period on average, or while a release guard is false: SIF-D01 warns for every rejecting route that delivers a member named in a periodic machine.
+- **Deadline** per release (default the period) covers its look and the states reached in that release. A release that comes while the previous look is suspended waits for it (2.2 backlog rule); its deadline is measured from its release time.
+- **Release guards** (WP7): a false guard is a `skip`: no look; place, timers and queues unchanged; timers keep counting in time.
+- **The end is unreachable** (SIF-S07, SIF-D04): a periodic operation with states may not reach the end of its body, contain `return`, or `exit;` from a state after which the end is reachable. It runs for as long as its component. This removes revision 3's "completion restarts at the top" and gives the end marker one meaning.
+- **`concurrent`** is rejected (SIF-S01).
+- **`after` successors** are released after each release's look (a `skip` counts, WP7-R03).
+
+**Same text, both modes.** A statement in a state runs at every look in both modes. A waiting machine looks at irregular moments (messages, timers, wakes), a periodic one at every release. The frame header shows which (2.1); a bare action in a waiting machine is warned (SIF-D08).
+
+### 3.9 Looking forever in zero time: `StateLoop` (SIF-R13)
+
+**Where it can happen.**
+- A chain of arrivals whose arrival looks leave at once (`state a { if (ready) { to b; } } state b { if (ready) { to a; } }`).
+- Two waiting machines of one occurrence that wake each other (A: `if (n == 0) { n = 1; }`, B: `if (n == 1) { n = 0; }`).
+- Not inside one state alone: a look never causes another look of its own state, and a waiting state's next look needs something to happen.
+
+**Rule.** The contract violation **`StateLoop`** is raised at a look of state S when the **configuration** of the occurrence equals its configuration at an earlier look of S in the same instant, with only this occurrence's own activity between the two looks (no delivery from another occurrence, no reply, no timer of another occurrence). The configuration is: the occurrence's attributes and sample cells; its input queues by member, payload and order (not by message identity); for each of its activations, its place, locals, loop state and timer starts. An equal configuration with nothing external in between repeats forever, so the rule never stops a loop that would end. It stops the run and bypasses `try`, like the other contract violations.
+
+**Allowed (bounded):** a drain by re-arrival `state draining { if (backlog > 0) { take(); to draining; } … }`; a retry counter; a four-step handshake between two machines of one occurrence.
+
+**Stopped:** the arrival ping-pong above; the wake ping-pong `n = 1 - n`.
+
+**Known misses** (they end at the step limit, like a plain `while (true)`): loops whose configuration grows (`n = n + 1`); loops whose looks make zero-latency requests to another occurrence (each reply is external).
+
+**Cost.** Hashing is needed only from the second look of one state in one instant; P4 measures it on the door showcase.
+
+**Static check** (SIF-D06): a cycle of states whose arrival looks leave without any condition (`exit;` or `to` standing directly in the braces) is an error.
+
+### 3.10 Inputs (SIF-R05)
+
+| Where | What happens to a message |
 | --- | --- |
-| Reaction (any level) | `state` observation with `stay: true` and the line as `source` (an empty reaction records only its `discardInput`, 3.8); the block. No exit, no entry, every timer keeps its start; a reaction timer that fired is disarmed for the rest of its level's entry. Then a new choice (waiting mode) or the end of the step (periodic mode). |
-| `exit` of a waiting state S, next statement in the same list | S's timers invalidated, S's `on exit`, the block, the next statement. |
-| `exit` of S, the last statement of parent P's inner flow | S's `on exit`, the block; the inner flow has ended, so P is left as a named step is: P's `on exit`, then P's next statement. |
-| `to T` from S, T in the same list | S's `on exit`, the block, T's arrival. |
-| `to T` from S, T outside one or more parents | `on exit` of S and of every parent left, innermost first; the block (in the scope where the line is written); the locals of the lists left end; T's arrival. |
-| Line of parent P with `exit` | `on exit` of the current waiting state and of every parent up to and including P, innermost first; the block; P's next statement. |
-| Line of P with `to T` | The same exits; the block; T's arrival. `to P` re-enters P: its entry runs again and its inner flow restarts at its first state. |
-| Operation-level `exit` | Every active `on exit`, innermost first; the block; the operation completes. |
-| Operation-level `to T` (T in the operation body) | Every active `on exit`, innermost first; the block; T's arrival. |
-| Statement `to T;` in P's inner flow, T outside P | The parents left run their `on exit`, innermost first; T's arrival. |
-| `return;` in P's inner flow | The active parents run their `on exit`, innermost first; the operation completes. |
-| End of the operation body | The operation completes. |
+| Plain operation | Unchanged 2.2: a receive statement owns its members; input stays queued, also after the operation ended. |
+| Operation with states, busy (plain flow, blocks, entry, exit, suspended call) | Stays queued under its route policy. |
+| A state begins to wait | Queued messages of owned members not named at it are dropped (`inactiveOwner`); named ones are looked at one by one in zero time (3.4). |
+| A state waits | A delivered message of a named member causes a look; one of an owned member not named is dropped on arrival (`inactiveOwner`). |
+| Taken by a look, and no statement ran in its lines except `if` tests that were false | Recorded `discardInput`, reason `noEnabledTransition` (the 2.2 case "no guard holds"). |
+| Waiting machine after it completed | Queued and later messages of its members are discarded (`inactiveOwner`), as after a 2.2 final state. |
+| Periodic machine between releases | It waits: the two rows above apply; named messages wait for the next release, one per release. |
 
-- **Leaving adds no scheduling point** (P1 defect D3). Exit actions, the block and the next statement or target run in the same segment, without releasing the lock, unless a block suspends.
-- **Blocks** may suspend (`wait`, requests, suspending calls), as 2.2 entry actions and effects do; input that arrives meanwhile stays queued. Blocks contain no state statement, receive statement, `to` or `return`.
-- **Parent lines do not preempt.** They are tried only when a waiting state inside chooses. While the inner flow runs plain steps, blocks or a suspended call, nothing is tried; a parent timer that expires meanwhile is ready at the next choice. If the inner flow reaches its end first, the parent is left without taking it. A step that must be interruptible is written as a state.
+Members that no line of the operation names are untouched. Requests and calls never reach a state: `on receive` names events and attributes only, and an operation with states has no `on call` entry.
 
-### 3.4 Choosing (SIF-R02 to SIF-R04; B1, B4, B8)
+### 3.11 Trace (SIF-T01 to SIF-T06)
 
-A choice of waiting state S at time t **walks the levels, the operation first, then each parent from the outermost inwards, then S**; within a level, its lines in written order, the level's `on receive` lines forming **one input group** at the position of the first of them (they are written contiguously, SIF-S06). The first ready entry is taken:
-- **A timer** `after D [if (g)]` of level L is ready when it is armed (a reaction timer that fired is disarmed for the rest of L's entry), t ≥ L's timer start + D, and g, if present, holds now.
-- **A condition** `if (c)` is ready when c holds now.
-- **The input group of level L** is ready when a queued message exists whose member's **first handling level** (the outermost level of S with an `on receive` line on it) is L. The message served is the one **delivered first** among those (smallest delivery event: time, phase, insertion ordinal), each queue's head given by its ordering policy. Every line on that member is tried in walk order (L first, then the inner levels, each in written order), binding the payload and evaluating its condition; the first whose condition holds is taken. If none holds, the message is consumed with `discardInput` reason `noEnabledTransition` (the 2.2 reason; for an attribute member the latest value is lost, so read attributes as sampled reads when it must survive) and the group is examined again.
-
-If nothing is ready, S waits without the component lock (waiting mode) or the step ends (periodic mode).
-
-**A choice is made at the event that ends a wait** (SIF-R03, SIF-R04). While a state waits, the first event that makes one of its lines ready ends the wait, and the choice (a full walk) is made at that event; the state no longer waits after it, and messages delivered later stay queued for the next wait.
-
-**Taking input is always a wait** (P1 clarification AY). When a walk outside a wait (on arrival, after a reaction) would take the input group, the state waits for the input, as a 2.2 machine does: since the message is already queued, the wait ends in zero time, at a wait-end event of the same instant (phase 2, next insertion ordinal), and the choice is made at that event. The activation releases the component lock meanwhile, so work of that instant ordered before the wait-end event runs in between: for example a newer delivery that overflows a capacity-1 `dropOldest` route. (The exact ordinal of the wait-end event is to be confirmed against P1's implementation of AY.) Measured by P1: without this, fixture wp6 s11's route stops overflowing (19 order-only trace differences), and on a rejecting route a verdict could change; with it, 0 differences. The simpler-looking alternative, taking queued input without releasing the lock, is an exception for "input already there" and changes 2.2 results; it is rejected.
-
-**When choices happen within an instant** (SIF-R04; B1). The contract orders the events of one instant by phase, then insertion ordinal: deadlines and request timeouts (phase 0), receive timeouts and state timers (phase 1), deliveries, sample-cell updates, wait ends and releases (phase 2), dispatch and continuation (phase 4). A waiting state chooses at the **event that first makes one of its lines ready**: its timer at phase 1, a delivery of a handled member or a cell update at phase 2, an attribute-write wake at the writer's unlock in phase 4. The choice is a full walk, so it may take an earlier-written line that is also ready, for example a guarded timer whose guard now holds at another timer's expiry (P1 defect D8). Consequences:
-- a timer that expires at t is taken before a message delivered at t and before a condition that becomes true at t (the 2.2 rule "receive timeout wins a tie with delivery", extended);
-- written order decides wherever several lines are ready at one choice: on arrival, after a reaction, and at an event that makes two lines ready.
-
-**Why the outer level first** (owner decision DA, recommended):
-- **It is what the parent says.** "What is written on the parent applies to everything inside": a parent's stop or an operation-level shutdown cannot be overridden by a substate by accident. A substate line on the same member as an unguarded parent line is dead (SIF-D06 warns); with a guarded parent line, the substate gets the messages the parent's condition rejects.
-- **It is safe.** A fault condition on a parent wins over a stale input queued for the substate (B4).
-- **It is Stateflow's rule** (outer transitions are tested before inner ones), and the drawing reads that way: a frame's arrows come before anything inside the frame.
-- **The cost:** a substate cannot shield itself from a parent's line. Where the 2.2 machine has an exception (`obstructed` not handled in `autoUp`), the line stays in the states that have it, or the parents are split (1.5).
-- **Alternatives rejected for simplicity:** inner first (UML) lets substate input beat a parent's safety condition and makes the frame's arrows not the first; "outer first, but inner first per member" needs a second rule.
-
-**Delivery order** (B4): with message `a` offered at 0 with 5 ms latency and `b` offered at 1 ms without latency, `b` is delivered first and served first. Within one queue, its ordering policy decides. This is the one measured change against 2.2 (r10, section 6).
-
-### 3.5 Conditions (SIF-R13 to SIF-R16; B5)
-
-**One rule for both run modes:** *a condition line is ready when its condition holds at the moment the state chooses.* What differs between the modes is only when a state chooses: a waiting machine chooses on arrival, after a reaction and at every event that can make a line ready (3.4); a periodic machine chooses once per release.
-
-**Why level and not "fires once each time it becomes true" (edge).** The edge rule is not needed for any case, and it breaks two:
-
-| Case | Level (chosen) | Edge (rejected) |
-| --- | --- | --- |
-| Drain loop `if (backlog > 0) { take(); }` | Takes one item per choice and chooses again at once until `backlog == 0`. | Takes one item, then waits for a new rising edge that never comes while items remain. |
-| Condition already true on arrival (`if (fault) to safe;`) | Taken at the arrival choice, before queued input written after it. | Not taken until `fault` falls and rises again: unsafe. |
-| Value that becomes true and false again between two choices | Missed: a condition looks at values; a pulse that must not be missed is an event. | Also missed unless latched, which adds hidden state. |
-| `if (alarm) { publish siren.on(); }` (the one case that suggests edge) | The block does not change `alarm`, so the line would repeat at once: a static warning (SIF-D14) and `StateLoop` at run time. Written as intended with a state (`if (alarm) to sounding;`) or a flag (`if (alarm and not sounded) { … sounded = true; }`). | Publishes once per rising edge. |
-
-The alarm case is the only one where edge would save a line; it is not worth a second meaning for `if`.
-
-**What a condition may read (SIF-S05).** A `bool` expression that is pure or reads state: attributes of the executing occurrence, whoever writes them; sampled port members (WP6-S01); locals visible at the line; constants; calls of operations that are pure or read state. Not `now()`, not a non-sampled port member, not an input binding. The same holds for the condition of a timer line; the condition of an input line may also read its bindings. (Revision 2's narrower timer-guard rule is gone: P1 showed that without wakes a guarded timer on an attribute written by another operation never fires.)
-
-**Read set (static, per effective occurrence).** The attributes of the occurrence and the sample cells (port occurrence, member) that the condition reads, directly or through called operations, resolved in the occurrence after specialization and redefinition. Names follow the scope rules (a local or binding with an attribute's or a port's name hides it, `localVisible`). Locals are not in the read set: only the operation itself writes them, and each of its writes is followed by a choice or the end of a step. An implementation may over-approximate the read set: an extra wake finds every condition false again (each was false at the state's last choice and evaluation is pure).
-
-**Wakes (SIF-R14).** A waiting state with a condition (on a condition line or a timer line) at some level chooses again when, at time t:
-- **an attribute in a read set is written by another activation of the same occurrence**, at the end of that activation's segment (its unlock at suspension, completion or failure). Case-script calls of the subject's operations and white-box helper calls, which run in the script's activation (6.7), end their segment for this rule when the call returns to the script: a test that calls `setTemp(40)` wakes `if (temp > 30) …`;
-- **a sample cell in a read set is updated** (WP6-R02), at its delivery event.
-
-**The zero-time loop rule (SIF-R15), replacing `CompletionLoop`.** A condition line that is taken is a step that takes no time. The contract violation **`StateLoop`** is raised when a condition line is taken in a configuration equal to the configuration at an earlier take of the same line in the same instant, with nothing but this occurrence's own steps processed between the two takes. The configuration is the occurrence's attributes, sample cells and input queues and, for each of its activations, its position (statement and level chain), locals and timer arming. Equal configurations with nothing external in between repeat forever, so the rule never stops a loop that would end. It stops the run and bypasses `try`, like the other contract violations.
-- **Allowed:** `if (backlog > 0) { take(); }`, a retry counter `if (tries < 3) to connect { tries = tries + 1; }`, a four-step handshake between two operations of one occurrence.
-- **Stopped:** `if (alarm) { publish siren.on(); }`, the toggling ping-pong `n = 1 - n` between two operations.
-- **Not stopped:** loops that change the configuration every time (a counter that grows). They end at the step limit, like a plain `while (true)` loop.
-
-**Periodic machines** check conditions once per step; nothing wakes them and `StateLoop` cannot occur.
-
-### 3.6 Parents (SIF-R11, SIF-R12; B8)
-
-- **A parent** is a state whose lines are followed by a state statement: from that state on, the body is its inner flow. An inner flow therefore starts with a state; a decision on which substate to start with follows a named step (1.5).
-- **Classification is static.** A parent line's head says whether it leaves (`exit`, `to`) or stays (block only), so nothing must run before the decision. Since parent lines are tried only when a waiting state inside chooses, no inner segment is ever cancelled half-way.
-- **Order:** outer level first, written order within a level (3.4).
-- **Entry:** a parent is entered only at its top; no jump enters it from outside; `to P` targets the parent itself.
-- **Timers of a parent** count from the parent's arrival and keep running while its substates change.
-- **Leaving:** exits run innermost first, then the block, then the target (3.3).
-- **Inputs:** a member handled at any level of S is handled at S; every other owned member is dropped while S waits (3.8).
-- **Plain steps and locals of the inner flow:** a parent line is taken only while a substate waits, so no plain step is interrupted. Locals declared in a list that is left end after the block; loops in it end.
-- **Periodic machines:** a step walks the same levels; at most one line of any level is taken. A per-step action belongs to a state without inner flow: `if (true) { … }` on a parent would be taken before anything inside it (SIF-D13).
-- **Nesting depth:** no limit. Flow View indents each level; three levels are sketched here.
-
-### 3.7 Jumps and locals (SIF-R07; I6)
-
-- **Unwinding.** `to S` ends every block, loop and parent between the jump and the statement list that contains S. A loop ended this way (`while`, `until`, `for`, `for in`, with or without `n times`) does not run its condition, update or remaining iterations; its limit counter and locals end. Parents run their exit actions (3.3).
-- **Locals.** A local lives from its declaration to the end of its statement list. A backward jump that passes a declaration again re-runs it. Locals declared before the target keep their values.
-- **A forward jump over a declaration** is an error (SIF-D04) when the local is used at or after the target.
-- **Single entry, structured exits.** No construct (state, parent, loop, branch) is entered except at its top. A construct has one normal exit, its bottom; a restricted jump leaves enclosing constructs by unwinding, as `return` does in structured languages.
-
-### 3.8 Inputs (SIF-R08; B6)
-
-There is no keep feature and no word for one. An operation with states drops what its current state does not handle, as a 2.2 machine does, and only while that state waits (P1 clarification DW).
-
-| Where | What happens to input |
-| --- | --- |
-| Plain operation (no state) | Unchanged 2.2: a receive statement exclusively owns its members; input received before it waits stays queued, also after the operation ended. |
-| Interrupt region (plain operations only) | Unchanged 2.2: discarded and observed while the region is inactive. |
-| Operation with states, while it runs plain steps, entry, exit or line blocks, or a suspended call | Every message stays queued under its route policy (capacity, overflow, ordering, `maxAge`). Nothing is consumed. |
-| Operation with states, **when a waiting state S begins to wait** (a choice found nothing ready, or the walk reached the input group and the state waits for it, zero time included) | Queued messages of owned members not handled at S are consumed in delivery order (`discardInput`, reason `inactiveOwner`, the 2.2 reason). |
-| Operation with states, **while S waits** | A delivered message of an owned member not handled at S is consumed on arrival (`inactiveOwner`); one of a handled member ends the wait and the choice is made. From that event on S no longer waits, and later messages stay queued. |
-| Operation with states, a choice that takes a timer or a condition at once | Nothing is dropped: the queued input stays for the next state that waits. |
-| Operation with states after it completed (waiting mode) | Queued messages of its members are discarded and later deliveries are discarded on arrival (`inactiveOwner`), as after a 2.2 final state. |
-| Periodic operation | Between steps, the current waiting state waits: at the end of each step it drops queued unhandled messages, and unhandled deliveries are dropped on arrival. Handled messages stay queued for the next step's choice. A skipped release (WP7) changes nothing. A periodic operation never completes for good (3.9). |
-
-- **Why only while waiting (measured).** In fixture r5, state A's entry waits 5 ms; A's 2 ms timer has elapsed when the entry ends; messages `y` and `go` arrived meanwhile and are handled by the next state B. 2.2 takes the timer at once and keeps `y` and `go` for B. Dropping at every choice would drop them: P1 measured that this changes r5's final store.
-- **A message that arrives in plain flow** is decided by the next state that waits: taken if handled there at any level, otherwise dropped. There is no other kind of waiting point in an operation with states (3.1).
-- **Members the operation does not own** (no `on receive` line names them) are untouched.
-- **Remembering an input** that arrives while the operation is busy is written explicitly: a reaction that stores what matters, and ordinary flow that acts on it (1.3). It keeps what the reaction stores (in the lock controller only the latest request); a model that must keep several writes a counter or an array.
-- **An empty reaction** `on receive m(x) { }` consumes the message within the choice and records `discardInput` with reason `inactiveOwner` and `source` the line; since its block is empty it needs no other observation.
-- **Requests and calls never reach a state.** `on receive` lines take events and attributes only; requests are answered by `on call` entries, which an operation with states cannot have (3.1). No dropped input leaves a sender waiting for a reply, so no hint for it is needed.
-
-### 3.9 Periodic machines (SIF-R17 to SIF-R22; I7)
-
-An operation with states released by one `on every P` entry is **periodic**. Each release whose guard (if any) holds is one **step**, a fresh activation with its own deadline:
-1. **No position** (the first release, or the operation completed in the previous step): run from the first statement until the flow reaches a waiting state (after the entry actions of every level entered) or the end of the operation. Return.
-2. **Otherwise** make one choice at the current waiting state (3.4). A reaction runs its block; a leaving line runs exits, block and flow until the next waiting state's arrival or the end of the operation. Return. If nothing is ready, return.
-
-What follows:
-- **One line per step.** A reaction ends the step; the next choice is at the next release.
-- **The per-step action** is `if (true) { … }` written last; it is ready exactly when nothing before it is (no separate case in the rule).
-- **Arrival ends the step.** Entry actions run in the step that takes the line, so an actuator command in `on entry` has no one-period latency (review I7). The step that arrives does not run the per-step action; SIF-D17 warns when a per-step action sends a member that the state's entry actions do not.
-- **The first release** is at P (the 2.2 grid releases every P at kP, k ≥ 1). Plain steps before the first state run in it.
-- **Timers** count in time from the arrival of their level and are checked at steps: `after D` is taken at the first step at or after arrival + D, so with arrival at a release the delay is rounded up to a multiple of P (SIF-D16 warns when D is not a multiple).
-- **Input** delivered before the step's choice (earlier instants, or the release instant at a smaller phase or ordinal) is visible; at most one message is taken per step; handled messages wait for later steps under the route policy (SIF-D02 covers a rejecting route that can overflow within one period).
-- **Conditions** are checked at each choice, reading live sample cells (first read in the segment, WP6-R03) and attributes.
-- **Deadline** per release (default the period) covers its step. A step that suspends may miss it; the next release waits for the serial lock and is released on the grid, its deadline measured from release (2.2 backlog rule).
-- **`concurrent`** is rejected: a concurrent activation reads a snapshot and may overlap the previous step, which writes the position.
-- **Release guards** (WP7): a false guard is a `skip`: no choice, no per-step action; state, timer starts and queues unchanged; timers keep counting in time, so an `after` that became due is taken at the next step that runs. A skip counts as a completion for `after` successors (WP7-R03).
-- **Completion:** a step that reaches the end of the operation (or `return;`, or an operation-level `exit`) completes and clears the position; the next release starts again at the first statement, as a plain `on every` operation does. Input of its members is not discarded as `inactiveOwner` after such a completion; it waits for the next step.
-- **`after` successors** are released after each step. **`machines["c.op"]`** is the current waiting state between steps.
-
-**Other entry kinds** are errors (3.1). A step per received message would duplicate the input group with a second, invisible queue; a step per predecessor completion would make a machine whose rate is another operation's, which a condition on an attribute expresses without a special case.
-
-### 3.10 Run to completion, determinism, termination (SIF-R09)
-
-- **Between choices** no other line of the operation is taken; input arriving meanwhile waits. The component lock is released only where 2.2 releases it: while a state waits (including the zero-time wait for queued input, 3.4) and while a block or step suspends. Other activations of the component may run then.
-- **Determinism.** A choice depends only on levels, written order, delivery order, the phase rule and condition values. No choice depends on queue creation or container iteration order.
-- **Termination.** A reaction consumes one message, fires one timer once per entry, or takes one condition; timers are positive. A cycle of jumps that passes no waiting state and nothing that can suspend is a static error (SIF-D07). A zero-time condition loop is `StateLoop` when the configuration repeats (3.5); otherwise it ends at the step limit.
-
-### 3.11 Trace and results (SIF-T01 to SIF-T06)
-
-- **`state`** at each arrival, `source` the state statement, with `trigger` the line that led there (absent after plain flow); with `stay: true` and `source` the line for a reaction with a non-empty block.
-- **`discardInput`** keeps the 2.2 reasons: `inactiveOwner` for an owned member not handled while a state waits (also for an empty reaction, with `source` the line) and after completion; `noEnabledTransition` when no condition holds. WP7's `releaseGuard` is unchanged.
-- **`violation`** with `code: 'StateLoop'`, subject the operation, `source` the condition line; it fails a case like the other contract violations.
-- **No** `defer`, `discardTimer` or `CompletionLoop` (they never ship).
-- **Unchanged:** `receiveWait` when a state waits, `timer` for computed durations (WP4-T01), deliveries, writes, `skip` (WP7).
-- **Wakes** add no observation.
-- **`machines["c.op"]`** is the name of the innermost state last entered (names are unique within an operation, SIF-S02).
+- **`state`** at each arrival, also for each parent entered (outermost first), `source` the state, `trigger` the leave that led there.
+- **`state` with `stay: true`** when a look that had a message or a timer present ran a statement of its line and did not leave (`source` the line). Looks caused by arrival, wakes or releases add no observation of their own.
+- **`discardInput`** with the 2.2 reasons `inactiveOwner` and `noEnabledTransition` (3.10).
+- **`violation`** `StateLoop`, subject the operation, `source` the state.
+- **Periodic:** one activation per machine; `release` and `skip` per release.
+- **Never:** `defer`, `discardTimer`, `CompletionLoop`.
+- **`machines["c.op"]`** is the innermost current state.
 
 ## 4. Rules
 
-IDs: SIF (states in flow). G grammar, S static, R runtime, D diagnostic, T trace.
+IDs: SIF (states in flow). G grammar, S static, R runtime, D diagnostic, T trace. Revision 4 renumbers; 4.7 lists what was deleted.
 
 ### 4.1 Grammar delta (SIF-G01, text only)
 
 ```text
-OperationBody: '{' Documentation? Executable* OperationLine* Statement* '}';
-OperationLine: ReceiveEvent Head | TimerEvent Head;      // the operation level has no if lines (DK)
-State:     'state' Name '{' Documentation? Line* (State Statement*)? '}';
-Line:      'on' ('entry' | 'exit') Block
-         | (ReceiveEvent | TimerEvent | ConditionEvent) Head;
-ReceiveEvent:   'on' 'receive' MemberPath '(' (Name (',' Name)*)? ')' Condition?;
-TimerEvent:     'after' (Duration | '(' Expression ')') Condition?;
-ConditionEvent: Condition;
-Condition: 'if' '(' Expression ')';
-Head:      Block                                   // reaction: the state stays
-         | 'exit' (';' | Block)                    // leave, continue with the next statement
-         | 'to' Name (';' | Block);                // leave for state Name
-Statement: … | State | Jump;                       // If unchanged: the decision in the flow
-Jump:      'to' Name ';';
-Removed:   the 'initial' Name ';' State+ body alternative, 'final', Transition, Deferral ('defer'),
-           and 'when' in every position (receive branch guards are respelled 'if').
+State:      'state' Name '{' Documentation? StateItem* State* '}';
+StateItem:  'on' 'entry' Block
+          | 'on' 'exit' Block
+          | EventLine
+          | Statement;
+EventLine:  'on' 'receive' MemberPath '(' (Name (',' Name)*)? ')' Body
+          | 'after' (Duration | '(' Expression ')') Body;
+Body:       Block
+          | Leave;                                  // short form (decision O1): exit; or to S; without braces
+If:         'if' '(' Expression ')' Body ('else' (If | Body))?;
+Statement:  … | State | Leave;                      // If, loops and the rest unchanged
+Leave:      'exit' ';' | 'to' Name ';';
+Removed:    the 'initial' Name ';' State+ body, 'final', Transition with its 'to' head and 'when' guard,
+            completion 'when (g) to S', Deferral ('defer'), and 'when' in every position.
 ```
 
 **Parse notes.**
-- **A state body has lines, then optionally an inner flow that starts with `state`.** Inside a state body, an `if` before the first inner state is always a line; after it, always the flow decision. The parser never has to guess.
-- **At the operation level** an `if` is always the flow decision; operation-level lines are input and timer lines only (decision DK). `after` cannot start a statement, so an `after` line is unambiguous. `on receive m(x) { … }` before the first statement has the same tokens as a 2.2 receive statement: the parser produces one node kind for both, and it is a line exactly when the operation contains a state (SIF-S11); in a plain operation it stays a receive statement with its 2.2 meaning.
-- **Guards in plain receive statements** are respelled from `when (g)` to `if (g)` by the migrator (`on receive m(x) if (g) { … } or …`); their meaning is unchanged.
+- Inside a state's braces, items come first, inner states last: after the first inner state only states may follow (SIF-S03). The parser never guesses: `on entry`, `on exit`, `on receive`, `after` start their items; everything else is a statement.
+- `after` cannot start a statement elsewhere; `on receive` inside a state's braces is always an event line (plain receive statements are forbidden in operations with states).
+- Without O1, `Body` is `Block` only.
+- **Plain receive statements** in plain operations keep their meaning; their 2.2 branch guard `when (g)` is respelled `if (g)` in the same position by the migrator, so that `when` leaves the language. Its meaning (which branch takes a message) is unchanged; SIF-1 must state it in the new wording.
 
 ### 4.2 Static rules
 
 | ID | Rule |
 | --- | --- |
-| SIF-S01 | Which operations may contain states (3.1). Case scripts contain no states. |
+| SIF-S01 | Which operations may contain states (3.1); case scripts contain no states. |
 | SIF-S02 | A state has at most one `on entry` and one `on exit`. State names are unique within an operation. |
-| SIF-S03 | A line head is a block, `exit` or `to S`; a bare `;` after an event is an error: "say what `{event}` does: `{ }` to take it and stay, `exit;` to leave, `to S;` to go to S". |
-| SIF-S04 | Several lines on one member, several timers and several conditions are allowed at one level; each line has its own bindings. |
-| SIF-S05 | Conditions are `bool` and pure or read state; they read attributes, sampled members, visible locals, constants, and (input lines only) their bindings; not `now()`. |
-| SIF-S06 | The `on receive` lines of one level are written contiguously. Quick-fix: move them together, previewed as a priority change. |
-| SIF-S07 | `to S`: S is a state of the same operation in the statement list that contains the jump (for a line: the list that contains its state; for an operation-level line: the operation body), or in an enclosing list; never inside a branch, loop body or parent that does not contain the jump. A line of parent P may target P. The statement `to S;` ends a statement list of the flow (an `if` branch or loop body included); after `to` or `return`, only a state that is a jump target may follow. |
-| SIF-S08 | Entry, exit and line blocks contain no state, receive statement, `to` or `return`. |
-| SIF-S09 | A parent's inner flow starts with a state (grammar). |
-| SIF-S10 | Lines are written before the inner flow of their state, and before the first statement of the operation body. |
-| SIF-S11 | Operation-level lines are allowed only in an operation that contains a state; they are input and timer lines. |
-| SIF-S12 | An operation with states contains no plain receive statement and no interrupt region. |
+| SIF-S03 | A state's braces hold items, then inner states only. |
+| SIF-S04 | `exit;` and `to S;` stand only inside a state: as the last statement of an event line's block, of an `if` or `else` block nested in such a block or standing in the state's braces, or directly in the state's braces. Not in `on entry`, `on exit`, loop bodies or the flow outside states. |
+| SIF-S05 | What statements standing in a state may read (3.5): not `now()`, not a non-sampled port member. |
+| SIF-S06 | Jump targets (1.13): a state in a list containing the jump's state or an enclosing list, or inside parents standing directly in such a list; never through an `if` branch or loop body; never over a declaration used at or after the target. |
+| SIF-S07 | A periodic operation with states cannot reach its end and contains no `return`. |
+| SIF-S08 | An event line's bindings are visible in its block only. |
+| SIF-S09 | (O1 only) A body without braces is exactly `exit;` or `to S;`. |
 
 ### 4.3 Runtime rules
 
 | ID | Rule |
 | --- | --- |
-| SIF-R01 | Reaching a state: observation, timer start, entry, computed timers, then by kind (3.2). |
-| SIF-R02 | Choice: walk the levels outer first, written order within a level, input lines as one group; the first ready entry is taken (3.4). |
-| SIF-R03 | Input: first-delivered message among members whose first handling level the group is; its lines in walk order; none holds: consumed (`noEnabledTransition`). Taking input is a wait, zero time when the input is queued; the walk is made again on resumption. |
-| SIF-R04 | Phase: a waiting state chooses at the event that first makes a line ready (timer phase 1; delivery and cell update phase 2; write wake phase 4). |
-| SIF-R05 | Reaction: block, no exit or entry, timer starts unchanged, a fired reaction timer disarmed for its level's entry; then a new choice (waiting) or the end of the step (periodic). |
-| SIF-R06 | Leaving: exits innermost first up to the level left, the block, then the target or the next statement, in the same segment (3.3). |
-| SIF-R07 | Jumps: unwinding of blocks, loops and parents; locals re-initialised on backward passes (3.7). |
-| SIF-R08 | Inputs: dropped only while a state waits; the regimes of 3.8. |
-| SIF-R09 | Run to completion between choices; the lock is released only while waiting or suspended (3.10). |
-| SIF-R10 | `machines` holds the innermost state last entered. |
-| SIF-R11 | Parents: entered at the top, inner flow from its first state, timers from the parent's arrival, lines tried only when a state inside chooses (3.6). |
-| SIF-R12 | Completion (waiting mode): end of the body, `return` or operation-level `exit` completes the operation once; then the last regime of 3.8; `after` dependents are released. |
-| SIF-R13 | Conditions: ready when they hold at the choice (level), in both run modes. |
-| SIF-R14 | Wakes: an attribute write by another activation of the occurrence (at its segment end; a borrowed script or helper call at its return) or a cell update in a read set makes the waiting state choose. |
-| SIF-R15 | `StateLoop`: a condition line taken twice in an equal configuration in one instant with only this occurrence's steps between. |
-| SIF-R16 | A false condition on a timer line consumes nothing; it is checked again at the next choice. |
-| SIF-R17 | Periodic step: no position → flow to the first waiting state; otherwise one choice, at most one line, flow to the next arrival (3.9). |
-| SIF-R18 | Periodic timers: measured in time from the level's arrival, checked at steps. |
-| SIF-R19 | Periodic input: visible when delivered before the step's choice; at most one taken per step; unhandled input dropped while the state waits between steps. |
-| SIF-R20 | Periodic deadline, backlog and release guard: per release; a skip makes no choice. |
-| SIF-R21 | Periodic completion clears the position; the next release starts at the first statement. |
-| SIF-R22 | Periodic operations are never concurrent; steps of one occurrence never overlap. |
+| SIF-R01 | Reaching a state: observation, timer start, entry, computed timers, then parent, named step or arrival look (3.2). |
+| SIF-R02 | A look: levels outermost first, items in written order; present event lines and every statement run; ends at the first leave (3.3). |
+| SIF-R03 | Present: at most one message; every timer that ran out and was not present before, once per arrival of its level (3.3). |
+| SIF-R04 | Waiting: on beginning to wait, timers first, then drop, then queued named messages one by one in zero time with re-pick; then timer (phase 1), delivery (phase 2) and wake looks (3.4). |
+| SIF-R05 | Inputs: dropped only while a state waits; the regimes of 3.10. |
+| SIF-R06 | Wakes (waiting machines): writes of the read set by another activation of the occurrence at its unlock (borrowed calls at every unlock) and sample-cell updates (3.5). |
+| SIF-R07 | Leaving in text order: block, `on exit` innermost first, entries outermost first, target (3.6). |
+| SIF-R08 | Unwinding of blocks, loops and parents; locals (3.6). |
+| SIF-R09 | Parents: entered at their first inner state or directly; their items first at every look; their timers per parent arrival (3.7). |
+| SIF-R10 | Periodic: one persistent activation; first release runs to the first waiting state; later releases make one look (3.8). |
+| SIF-R11 | Periodic timers, input, deadline, backlog and release guards (3.8). |
+| SIF-R12 | Waiting completion: the end of the body or `return` completes the operation once; then its members' input is discarded; `after` dependents are released. |
+| SIF-R13 | `StateLoop` on an equal configuration at a look of the same state in one instant with only own activity between (3.9). |
+| SIF-R14 | A look runs to completion holding the lock, except while a block suspends; leaving adds no scheduling point. |
 
 ### 4.4 Diagnostics
 
 | ID | Code | Rule and message shape |
 | --- | --- | --- |
-| SIF-D02 | SW2018, warning | Periodic machine: an event member whose effective route policy rejects on overflow and whose queue can receive more messages in one period than its capacity: `{member} can arrive faster than {op} takes it (one per {period}); its queue can fill and make the sender fail.` |
-| SIF-D03 | warning | An `on receive` line on a member that no connection delivers to this occurrence. |
-| SIF-D04 | SW2008 | Jump rule violations (SIF-S07), including a forward jump over a used declaration: `` `to c` skips the declaration of `x`, which `c` uses. Declare `x` before the jump. `` |
-| SIF-D05 | warning | Waiting mode, in an operation that contains a back jump or a loop around states: a leaving line whose fall-through path reaches the end of the operation without passing another waiting state: `{state} can fall through to the end of {op}; afterwards its inputs are discarded. Jump back, or end on purpose with return;.` |
-| SIF-D06 | warning | Dead line: a line after an unguarded line on the same member at the same or an outer level (walk order); an unguarded leaving timer after an unguarded leaving timer of smaller or equal constant duration at the same level; any line after `if (true)` at the same level. |
-| SIF-D07 | SW2008 | A cycle of jumps and fall-through that passes no waiting state and nothing that can suspend. |
-| SIF-D08 | warning | Unreachable statement or state. |
-| SIF-D11 | SW2017, warning | Condition that nothing can change while its state waits: its read set has no attribute that another executable of the component or a case script can write, no sample cell, and no reaction of its levels writes a local it reads: `if ({c}) in {state} reads nothing that can change while {state} waits; it is only checked when {state} is reached.` Not reported for a condition that folds to true or false, or in a periodic machine. |
-| SIF-D12 | SW2017, warning | Condition that folds to false in its definition (WP6-D10's exemption for redefined constants kept): `if ({c}) in {state} is always false; it is never taken.` |
-| SIF-D13 | SW2008 | `if (true)` with a block head in an operation released `on start` (a certain `StateLoop`), or on a parent: `if (true) { … } is a per-step action; it needs an on every release and belongs to a state without inner flow.` |
-| SIF-D14 | warning | Waiting mode: a condition reaction whose block writes nothing its condition reads: `if ({c}) { … } in {state} does not change {c}; it repeats at once and stops with StateLoop.` |
-| SIF-D15 | SW2008 | Operation-kind violations of SIF-S01, with the messages of 3.1. |
-| SIF-D16 | warning | Periodic machine: `after D` whose constant value is not a multiple of the period: `after {D} in {state} is checked every {P}; it is taken after {rounded}.` |
-| SIF-D17 | warning | Periodic machine: a per-step action that sends or publishes a member that the state's entry actions do not: `The step that reaches {state} does not run its per-step action; {member} is first sent one period later. Send it in on entry too.` |
-| SIF-D18 | warning | A parent whose lines can never be taken, because nothing inside it waits. |
-| SIF-D19 | warning | A waiting state that no line of any of its levels can leave: `{op} stays in {state} for good once it gets there.` |
+| SIF-D01 | SW2018, warning | A member named in a periodic machine is delivered over a route that rejects on overflow: `{member} is taken one per release by {op}; a faster sender, or a false release guard, fills its queue and makes the sender fail.` |
+| SIF-D02 | warning | An `on receive` line on a member that no connection delivers to this occurrence. |
+| SIF-D03 | SW2008 | Leave and jump violations (SIF-S04, SIF-S06), e.g. `` `to c` skips the declaration of `x`, which `c` uses. Declare `x` before the jump. `` |
+| SIF-D04 | SW2008 | Periodic end reachable (SIF-S07): `{op} runs every {P} and keeps its place; it must not reach its end. Loop with while (true) or jump back with to.` |
+| SIF-D05 | warning | Waiting machine whose body contains a loop or back jump around states, where a leave reaches the end of the operation: `{state} can fall through to the end of {op}; afterwards its inputs are discarded.` |
+| SIF-D06 | SW2008 | A cycle of states whose arrival looks leave without a condition. |
+| SIF-D07 | warning | Unreachable item, statement or state (after an unconditional leave, after the first inner state, a target nothing reaches). |
+| SIF-D08 | warning | Waiting machine: a statement standing in a state that runs at every look without leaving and without changing what decides whether it runs (a bare action, or an `if` whose block writes nothing its condition reads): `{statement} in {state} runs again at every look (arrival, each message, timer or change it reads). To run it once, move it into on entry; to stop, add exit;.` |
+| SIF-D09 | warning | A statement reads a value that an item written after it in the same look (same or inner level) writes: `{statement} in {state} is checked before {item} writes {value}; it sees the new value only at the next look. Move it after {item}.` |
+| SIF-D10 | warning | A state that waits for good: no level has a leave, or every leave depends only on values nothing can write while it waits and no event line can leave: `{op} stays in {state} for good once it gets there.` |
+| SIF-D11 | SW2008 | Operation-kind violations of SIF-S01 with the messages of 3.1. |
+| SIF-D12 | warning | Periodic: `after D` whose constant value is not a multiple of the period: `after {D} in {state} is looked at every {P}; it is taken after {rounded}.` |
+| SIF-D13 | SW2008 | (O1 only) A body without braces that is not `exit;` or `to S;`: `Only exit; or to S; may stand without braces; write { … }.` |
+| SIF-D14 | SW2006 | A statement standing in a state reads `now()` or a non-sampled port member (SIF-S05): `{statement} in {state} reads {what}, which wakes nothing; use after D, or a sampled member.` |
 
-Revision 2's SIF-D01 (mandatory dispositions), SIF-D09 (stale kept input) and SIF-D10 (redundant override) are withdrawn with `keep` and `ignore`. No other input diagnostic is needed: unhandled input is dropped as in 2.2, and requests cannot reach a state (3.8).
+All diagnostics are evaluated per effective occurrence, since a redefinition can change the schedule entry (review I4).
 
 ### 4.5 Trace
 
 | ID | Observation |
 | --- | --- |
-| SIF-T01 | `state` at arrival (`source` the state statement, `trigger` when entered by a line). |
-| SIF-T02 | `state` with `stay: true` for a reaction with a non-empty block (`source` the line). |
-| SIF-T03 | `discardInput` with the 2.2 reasons `inactiveOwner` (unhandled while waiting, empty reaction, after completion) and `noEnabledTransition` (no condition holds). |
-| SIF-T04 | `violation` `StateLoop` (subject the operation, `source` the condition line). |
-| SIF-T05 | `timer` (WP4-T01) for computed durations, `subject` the operation. |
+| SIF-T01 | `state` at each arrival and parent entry (`source`, `trigger`). |
+| SIF-T02 | `state` with `stay: true` for a look with a message or timer whose line ran a statement and did not leave. |
+| SIF-T03 | `discardInput` with the 2.2 reasons `inactiveOwner` and `noEnabledTransition`. |
+| SIF-T04 | `violation` `StateLoop`. |
+| SIF-T05 | Periodic: one activation; `release`/`skip` per release; `timer` (WP4-T01) for computed durations. |
 | SIF-T06 | No `defer`, `discardTimer` or `CompletionLoop`. |
 
-### 4.6 The keyword set of the behaviour language
+### 4.6 Keywords of the behaviour language, before and after
 
-Words of operations, flow, states and schedules; types, structure, requirements and views are unchanged and not listed.
+Words of operations, flow, states and schedules; types, structure, requirements and views are unchanged.
 
 | Word | 2.2 | 2.3 candidate (main + WP7) | 3.0 (this proposal) |
 | --- | --- | --- | --- |
 | `operation`, `returns`, `var`, `const`, `return` | yes | yes | yes |
-| `if`, `else`, `while`, `until`, `for`, `in`, `times` | yes | yes | yes (`if` also for conditions and guards) |
+| `if`, `else`, `while`, `until`, `for`, `in`, `times` | yes | yes | yes (`if` is also every guard) |
 | `wait`, `on`, `receive`, `or`, `after`, `send`, `publish` | yes | yes | yes |
 | `try`, `assert`, `fail`, `interruptible` | yes | yes | yes |
 | `true`, `false`, `not`, `and` | yes | yes | yes |
 | `schedule`, `start`, `every`, `call`, `deadline`, `concurrent` | yes | yes | yes |
-| `state`, `entry`, `exit`, `to` | yes | yes | yes (`exit` and `to` also as line heads) |
-| `when` | yes (guards) | yes (guards, completion, WP7 release guards) | **removed** (respelled `if`; the WP7 release guard follows in its own change, 8) |
+| `state`, `entry`, `exit`, `to` | yes | yes | yes (`exit;` and `to S;` are statements) |
+| `when` | yes (guards) | yes (guards, completion, release guards) | **removed** (respelled `if`) |
 | `initial`, `final` | yes | yes | **removed** |
 | `defer` | no | yes (WP5) | **never ships** |
-| `stay`, `keep`, `ignore`, `during`, `stepped` | no | no | **not added** |
+| anything new | | | **none** |
 
-Net change against 2.2: three words fewer (`initial`, `final`, `when`), none added.
+Net change against 2.2: three words fewer, none added.
 
-## 5. Checks against surprises
+### 4.7 Deleted with this revision
 
-- **Operation ends where a cycle was meant:** SIF-D05.
-- **Unreachable states, dead lines, parents that never act, states that never leave:** SIF-D08, D06, D18, D19.
-- **Operation that can end where 2.2 could not:** the migrator checks "end reachable iff a final state was reachable" and refuses otherwise (7).
-- **Reordering is never silent:** the formatter never reorders; every Flow View move previews changed numbers and targets, and a state move writes jumps to keep behaviour (2.8).
-- **A parent line that wins a tie:** shown by the drawing (frame arrows first) and by the preview of "move a common exit to the parent".
-- **The same receive text in two kinds of operation:** `on receive m(x) { … }` at the top of a plain operation waits once; at the top of an operation with states it reacts in every state. Flow View draws the second in the operation frame; hover says "applies in every state of `op`". This is a reading risk (13).
-- **`if` on a line and `if` in the flow** look alike and mean "check now" versus "check while the state is active". The position decides (4.1) and the drawing shows the difference: a line's `[c]` leaves a state box, a decision's `[c]` leaves a diamond.
-- **An input that the author expected to wait** is dropped: the reading samples ask about it on purpose; the lock controller shows the store-and-act pattern.
+| Revision 3 | Why it is gone |
+| --- | --- |
+| Line heads `exit`/`to S` with an optional block; the bare-`;` error (S03) | One form: a block; leaving is a statement. |
+| Guards on event heads `on receive m(x) if (g)`, `after D if (g)`; SIF-R16 (a false timer guard consumes nothing) | Guards are `if` inside the block; a timer is a moment. |
+| Condition lines as a line kind, `if (true) { … }` per-step action, SIF-D13, SIF-D17 (arrival step trap) | Statements in a state run at every look; per-step work is written plainly; the arrival look runs it. |
+| The input group, "first handling level", contiguous receive lines (S06), "first ready entry is taken" | One message per look; every present line runs. |
+| Choice made at the first event that makes a line ready (R04) | Per-event looks, which need no "ready" notion. |
+| A fired staying timer "disarmed for the rest of its level's entry" (R05) | A timer is present at one look per arrival by definition. |
+| Operation-level lines, SIF-S11, the shared receive node, the `■` frame exit | Exits for several states are parent lines. |
+| "A parent's inner flow starts with a state"; plain flow inside parents; SIF-S09, SIF-S10; SIF-D18 | Parents hold items and states only. |
+| "After a jump only a jump target may follow" (S07 part); flow-level `to S;` | Leaves stand only in states; SIF-D07 covers unreachable code. |
+| "One logical exit, one spelling" (2.9) and its migrator step | The spellings are equivalent once leaving runs in text order. |
+| Periodic completion restarting at the top (R21, DE) | The end of a periodic machine is unreachable. |
+| SIF-D06 dead lines, SIF-D11 (nothing can change), SIF-D12 (always false), SIF-D14 (old), SIF-D19 | Replaced by SIF-D07, D08, D09, D10; constant conditions are ordinary lints. |
+| StateLoop "at a condition take" | StateLoop at looks. |
 
-## 6. Compatibility: measured and argued
+## 5. Where the model does not hold, and what surprised me
 
-**Measured by P1** (native interpreter of the flat rules with the drop default and no added lines, and the migrator; 263 executed results, 129 from models with a machine, 115 of them 2.2 forms; deterministic across runs):
+The model ("`if` never waits; the state looks again each time something happens to it") is complete for every example in this document. These are the places where it needs a second sentence, or where a reader will be surprised.
 
-| Interpreter | Verdicts | Final stores | Other differences |
-| --- | --- | --- | --- |
-| Rules as written in revision 2 | 0 | 2 (fixtures r5, r10) | 27 count-only, 17 order-only |
-| + taking input is a wait (AY) | 0 | 2 | 19 order-only |
-| + drop only while waiting (DW) | 0 | 1 (r10) | 28 count-only |
-| **+ both: revision 3** | **0** | **1 (r10)** | **none: 266 of 267 identical** |
+1. **A look does not look again after its own writes.** A statement written before the line that changes what it reads sees the change only at the next look. Making the state look again after its own writes would restore zero-time loops inside one state (the alarm `if (alarm) { publish … }` would repeat forever) and bring `StateLoop` into every state. Written order is the rule; SIF-D09 points at the wrong order.
+2. **Timers are moments, not conditions.** `after 10s { if (requested) { exit; } }` checks once, at 10 s. "From 10 s on, as soon as requested" needs a parent timer and an inner state (traffic light, 1.10). This is honest (2.2 timers are moments too) and costs one inner state; the alternative ("`after D` is present at every look from D on") would make `after 1s { send x(); }` repeat at every later look.
+3. **Extra looks are not harmless.** Because statements act at every look, what causes a look is behaviour. Read sets must be exact and wakes counted by writes, not by changes (3.5). Revision 3 could over-approximate; this revision cannot. This is the main risk of P4.
+4. **The same text runs at different moments by mode.** `travel = travel + 1;` in a state counts releases in a periodic machine and counts events in a waiting machine. The meaning is the same ("at every look"), the moments differ. SIF-D08 warns about the waiting case; the frame header shows the mode.
+5. **Leaving runs in text order,** so a line's statements run before the state's `on exit`. That is what the text says, and it is forced by the block form, but readers trained on UML expect exit actions first. The migrator copies 2.2 exit actions to keep 2.2 results (7). The drawing cannot show this order; hover says it.
+6. **One message per look removes revision 3's priority puzzle,** but parents first then only orders lines on the same message, timers and statements. Three messages delivered at one instant are handled one after another in delivery order: sample 7 Q4 now passes through `running` for zero time, which an actuator trace shows.
+7. **The periodic arrival look** runs a state's per-step work in the release that reaches it. Stateflow does not (its `during` actions skip the entering step). The model is uniform across modes; Stateflow readers will be surprised once.
+8. **Named steps** remain the one special case: a state with nothing to look at does not wait. Without it, the owner's `state4` would wait for ever.
+9. **"`if (something)` waits for something"** holds only when the `if` stands in a state's braces and its block leaves: `state s { if (something) { exit; } }`. In `on entry`, `on exit`, a line's block or the flow, an `if` is checked once. The reader can see which: the enclosing braces.
+10. **Surprise in the right direction:** with one message per look, the window lifter with parents behaves exactly as the 2.2 machine (no member is named on two levels), where revision 3 changed contested choices.
+11. **The read set of a statement that calls a helper** includes what the helper reads; a helper that reads many attributes makes a state look often. The diagnostic SIF-D08 covers acting statements; looks that only test conditions are cheap.
 
-- **r10 is the one real semantic change:** several queued inputs are served in delivery order, where 2.2 walked its queues in creation order (`m.log` 13254 becomes 12345).
-- **Keep by default, for the record** (rejected): 9 verdicts and 8 stores change; five door cases fail because a periodic event fills a rejecting queue while a state does not take it.
-- **Corpus migrated by P1:** 53 machines, 153 states in 40 files; 47 migrated. 251 transitions: 94 became `exit` (37 %), 157 `to S` (33 self, 104 backward, 20 forward). Door WindowLifter: 4 `exit`, 37 `to`. Not migrated: 3 machines with completion transitions (examples 44, 46, 47), 2 with `defer` only (45, 49), 1 invalid fixture.
+## 6. Compatibility: what is measured and what must be rerun
 
-**Measured earlier (revision 1, review):**
+**P1** (native interpreter of flat waiting states with the drop rule and the migrator; 263 executed results, 115 from 2.2 machines) measured **0 verdicts and 1 final store** (r10, delivery order), all other results identical with order-sensitive digests.
 
-| Axis | 2.2 | 3.0 | Measured cost of the rejected alternative |
-| --- | --- | --- | --- |
-| Exit actions against line block | exit, effect, entry | same | block first: 1 verdict, 2 stores, 11 trace order |
-| Timer against same-instant delivery | timer wins | same (phase 1) | delivery wins (upper bound): 0 verdicts, 1 store, 52 traces |
-| Elapsed timer against earlier input | elapsed timer first | written order, migrator writes timers first: same | "first ready": 1 of 11 such selections (extended r5) |
-| Written order among inputs | queue walk | delivery order (above) | written order: 1 verdict, 3 stores (example 32) |
+| Part of P1's result | Still applies to revision 4? |
+| --- | --- |
+| Drop only while waiting (DW); r5 parity | **Yes.** Same rule (3.4 step 2). |
+| Delivery order across members (the r10 change) | **Yes.** One message per look in delivery order. |
+| Timer before same-instant delivery | **Yes.** Phase 1 looks. |
+| Zero-time wait for queued input (AY) | **Partly.** P1 took the message it had picked before the wait; revision 4 picks again at the wait end. **Rerun** with re-pick, and the capacity-1 `dropOldest` overflow case. |
+| Migrated text: heads `exit`/`to S` with blocks; several lines per member | **No.** Revision 4 writes one line per member with an `if` chain and leaves as statements. Equivalent on paper (a look sees one message; the chain is in declaration order); **rerun** with the new migrator. |
+| Exit, effect, entry order | **No.** Revision 4 runs the block before `on exit`; P1 ran 2.2's order. Revision 1 measured "block first" without copying exit actions at 1 verdict and 2 stores. **Rerun** with the migrator copying exit actions (7 step 4); expected 0. |
+| Named steps for finals, dead-timer removal, refusal of dead ends | **Yes.** |
+| Reason names `ignored`/`guard` | Names only: mapped to `inactiveOwner`/`noEnabledTransition`. |
+| Keep-by-default rejected (9 verdicts, 8 stores) | **Yes**, for the record. |
+| Corpus statistics (53 machines, 47 migrated, 251 transitions) | **Yes** for counts; the `exit`/`to` split changes nothing in behaviour. |
 
-**Argued, not measured:**
-- **Parents, conditions and periodic machines** have no 2.2 counterpart; their rules need prototypes P4 to P6 (10).
-- **Respelling `when` to `if`** in guards is textual; P1's corpus run used `when` and is unaffected in meaning.
-- **Traces:** statement identities change and `state` gains `trigger`; reasons keep their 2.2 names. Gate 2 (trace digests) cannot hold across the edition; it is replaced by a migrated-corpus gate on verdicts, final stores, per-kind counts and per-component order-sensitive digests after mapping identities with the migrator's identity map, which the extension's run overlays also need.
+**Not measured at all:** parents, wakes and re-checked statements, periodic machines, `StateLoop`, direct entry, the short form. Section 10 orders the prototypes.
 
-## 7. Migration recipe (B7, A5)
+**Gate 2 (trace digests)** cannot hold across the edition: identities change and parents add `state` observations. It is replaced by a migrated-corpus gate on verdicts, final stores, per-kind counts and per-component order-sensitive digests after mapping identities with the migrator's identity map, which the extension's run overlays also need.
 
-Input: a 2.2 machine (`initial I; state …` body) in operation O, and every 2.2 guard. There is no other input: the WP5 forms never ship (8).
+## 7. Migration from 2.2 machines
 
-1. **Check the frame.** O satisfies SIF-S01 (2.2 enforces the `on start` rule).
-2. **Choose the state order** to maximise fall-through (A5). The initial state first, final states last in source order; for the others, the order that maximises the number of states whose next state is a target of one of their transitions; exhaustive up to 9 non-final states, greedy beyond; ties go to source order.
-3. **Write each state.** Entry and exit unchanged; **timers first**, sorted by literal duration ascending, stable on declaration order; then the `on receive` transitions in declaration order. Each transition keeps its text with its head: `… to T { e }` stays (normalised to `… to T;` when `e` is empty); when T is the next state in the chosen order, `… exit;` or `… exit { e }`, unless step 4 says otherwise; a self transition stays `to S`. Each line keeps its own binding names; nothing is merged or renamed. `when (g)` becomes `if (g)`.
-4. **One logical exit, one spelling** (2.9).
-5. **Dead timers.** An unguarded timer whose literal duration is greater than or equal to that of an earlier-sorted unguarded timer of the same state was never taken in 2.2; it is removed and reported (models-wp4 d3).
-6. **Inputs.** Nothing is written: 2.2 dropped unhandled input while waiting, and so does 3.0.
-7. **Final states.** Each final state F becomes a named step `state F { on entry { … } }`. With several finals, `return;` follows every final step except the last statement of the body, so `to ok` never falls into `failed`.
-8. **Dead ends.** A non-final 2.2 state without transitions is refused with a message naming it (1.1); the author decides (SIF-D19 shows the explicit way to stay for good).
-9. **End of operation.** The migrator verifies "end reachable iff a final state was reachable" and refuses otherwise.
-10. **No parents.** The migrator never introduces a parent: a parent changes the priority at contested choices and its timers count across substates, so equivalence would have to be proved choice by choice. Flow View offers "move a common exit to the parent" as an explicit edit (2.8); a showcase rewrite with parents is a design change, recorded as such.
-11. **Guards everywhere.** Every `when (g)` guard of plain receive statements is respelled `if (g)`.
-12. **Report.** Removed dead timers, refused dead ends, the r10-style contested-order risk, and the identity map.
+Input: a 2.2 machine (`initial I; state …`) in operation O, and every 2.2 `when` guard. The WP5 forms never ship and need no migration.
 
-**The WP5 forms and examples 44 to 47 (and 49).** The forms are replaced in place on the 2.3 branch and never ship. The examples are rewritten by hand:
-- **Completion transitions (44, 46, 47).** P1 rewrote all four without condition lines (a named step followed by `if (…) { to S; }`, or `while (c) { state S { … } }`), and their cases pass with identical stores. With condition lines they are shorter: `if (sessionId > 0) to Connected;` and `if (true) exit;` written before the input lines, as WP5 put completion first.
-- **Deferral (45, 47, 49).** `defer` has no successor under the drop default. The deferring state takes the input with a reaction that stores it and the flow acts on it afterwards (1.3). This keeps only what the reaction stores, in the lock pattern the latest request; not measured.
-- **Internal transitions (46):** reactions. **Guarded timers (47):** `after D if (g) …`, which no longer consumes the timer when `g` is false; expectations rewritten.
+1. **Frame.** O satisfies SIF-S01 (2.2 enforces the `on start` rule).
+2. **State order** to maximise fall-through: initial first, finals last in source order, otherwise the order that maximises states whose next state is a target of theirs (exhaustive up to 9, greedy beyond, ties by source order).
+3. **Each state:** `on entry` unchanged; timer transitions first, sorted by literal duration, stable on declaration order, each `after D { effect; to T; }`; then **one `on receive` line per member**, in order of first declaration, whose block is the member's transitions as an `if / else if` chain in declaration order: `on receive m(x) when (g) to T { e }` becomes `if (g) { e; to T; }`, an unguarded transition becomes the final `else { e; to T; }` (or the whole block when it is the only one). Transitions after an unguarded one on the same member were never taken in 2.2 and are removed and reported. Bindings: transitions on one member with different binding names are renamed to the first transition's names inside their branches (a rename map is reported); a name that would be captured is refused and reported.
+4. **Exit actions** (B4): a state whose `on exit` is not empty and that has a leaving transition with a non-empty effect loses its `on exit`; its statements are written at the start of **every** leaving block of that state (before the effect). This is exact: a flat 2.2 state is left only by its own transitions. Other states keep `on exit`.
+5. **`to T` to the next state** is written `exit;`, everything else `to T;` (behaviour is the same, 3.6).
+6. **Dead timers:** an unguarded timer whose duration is not smaller than an earlier-sorted one's was never taken; removed and reported.
+7. **Inputs:** nothing is written: 2.2 dropped unhandled input while waiting, and so does 3.0.
+8. **Final states** become named steps `state F { on entry { … } }`; with several finals, `return;` follows each final step except the last statement.
+9. **Dead ends:** a non-final 2.2 state without transitions waits for ever and drops input; written with only its entry it would become a named step and pass through. The migrator refuses it and names it; the author decides (SIF-D10 shows a state that waits for good).
+10. **End:** the migrator verifies "end reachable iff a final state was reachable".
+11. **No parents:** the migrator never introduces parents; "move a common line to the parent" is an explicit Flow View edit (2.10). The window lifter in 1.6 is a showcase rewrite.
+12. **Guards elsewhere:** `when (g)` in plain receive statements is respelled `if (g)`; release guards follow in WP7b.
+13. **Report:** removed transitions and timers, renamed bindings, copied exit actions, refusals, the identity map.
 
-## 8. WP5, WP6, WP7, WP8 and WP9
+**What happens to the measured selection order.** 2.2 evaluated competing enabled transitions in declaration order and took the first; the chain does the same, in declaration order. Between members, a 2.2 state saw one message at a time too, so the order of lines between members does not matter. The one difference P1 found remains (r10: delivery order).
 
-**WP5 (merged in #59, unreleased):** chapter 3.6 WP5-S02 to S10, 6.5 WP5-R01 to R13, WP5-T01 to T04, ADR 0023, examples 44 to 47, `test/v2/state-reactions.test.ts`, SW2017 and SW2018 as defined there, and `CompletionLoop` are replaced in place. P1 estimates the removal at 2,500 to 3,000 deleted and about 300 edited lines in about 50 files; the hard dependency is WP6 (S01, S07 with SW2018, D09, D10). The runtime ideas carry over: the timer start at the state update; internal reactions as reactions; completion transitions as condition lines.
+**What happens to "no enabled transition" discards.** A message whose chain has no `else` and whose conditions are all false is taken, nothing runs, and `discardInput` reason `noEnabledTransition` is recorded: the 2.2 observation.
 
-**WP6 (merged):** WP6-S01's guard positions become: conditions of input lines, of timer lines and condition lines, all allowing sampled reads. WP6-R02 cell updates are wakes (3.5). WP6-S07's per-member effective policy is what SIF-D02 checks. WP6-D09 and D10 are replaced by SIF-D11 and SIF-D12; the polling exemption disappears because a reaction no longer polls.
+**Order of exit, effect, entry.** Kept by step 4: copied exit actions, then the effect, then `to T` (which runs no `on exit` any more), then the target's entry.
 
-**WP7 (branch `v2.3/wp7-release-guards`):** release guards apply to the `on every` entry of a periodic machine with WP7's meaning: a false guard skips the step (3.9). A guard on `on start` stays an error. **Spelling follow-up (not designed here):** the release guard `… when (awake)` would be respelled `… if (awake)` in a separate change, so that `when` leaves the language entirely.
+**WP5 examples 44 to 47 and 49** are rewritten by hand: completion transitions become `if (g) { to S; }` standing in the state (checked at every look, which is what WP5's completion wanted, without `CompletionLoop`); internal transitions become staying lines; guarded timers become `after D { if (g) { … } }`, which checks once, and the expectations are rewritten where that differs; deferral becomes a variable written by a line, and the cases state that only the last request is kept (1.12).
 
-**WP8 (placement, `Swaml::Os`, ordering keys):** a periodic machine is one runnable per occurrence whose state persists across releases; each step is a release of a periodic operation. A waiting machine maps to an event-driven task that blocks at its waiting states. The binding check reads the run mode from the schedule entry.
+## 8. WP5 to WP9
 
-**WP9 (edition, notation, figures, showcase rewrites):** the showcase machines go through the migrator; a use of parents in a showcase is a deliberate design rewrite listed with its contested-choice differences (1.5). Notation figures: state box, parent box, operation-level exit, empty decision diamonds with `[c]` lines, compact box, periodic Timing.
+- **WP5** (merged, unreleased): its state forms, rules (chapter 3.6 WP5-S02 to S10, 6.5 WP5-R01 to R13, WP5-T01 to T04), ADR 0023, examples 44 to 47, `test/v2/state-reactions.test.ts`, SW2017/SW2018 as defined there and `CompletionLoop` are replaced in place and never ship. P1 estimates 2,500 to 3,000 deleted and about 300 edited lines in about 50 files.
+- **WP6** (merged): sampled reads are read by statements in states; cell updates are wakes (3.5). WP6-D09/D10 are replaced by SIF-D10 and SIF-D14.
+- **WP7** (branch): a release guard on the `on every` entry of a periodic machine skips the release's look (3.8). Its spelling `when (g)` is respelled `if (g)` in a separate change (WP7b) so that `when` leaves the language.
+- **WP8** (placement): a periodic machine is one runnable per occurrence that keeps its state; a waiting machine maps to an event-driven task.
+- **WP9** (edition, notation, figures, showcases): the showcases go through the migrator; parents in the window lifter are a recorded design rewrite. Figures: state box, parent box, direct entry across a border, empty diamonds with `[c]` lines, the release in the frame header, periodic Timing.
 
 ## 9. Consequences for the VS Code extension
 
-- **Flow View drawing:** state and parent boxes, numbered exits in written order, exit bands with line hops, shared lanes per target, operation-frame lines and border exits, compact boxes, and empty decision diamonds with `[c]` lines for every flow (a change for flows without states too).
-- **Flow View edits:** the gestures of 2.8 with dry-run previews; creation cards for states, parents, condition lines and per-step actions; field completion for members, legal jump targets and condition expressions.
-- **Sequence:** state invariants and parent regions on the operation's lifeline.
-- **Timing:** nested state bands; for periodic machines the release grid with skipped releases and the steps that took a line.
-- **State view:** the 2.2 projection is retired; if kept, the view becomes a filter of Flow View that shows only states, parents and their arrows.
-- **Migration command** "Migrate to swa.ml 3.0": one validated whole-workspace edit, the report of 7 step 12, the identity map for run evidence.
-- **Dual-edition parsing** until users migrate.
-- **Run overlays:** identities remapped through the identity map; `StateLoop` violations and `trigger` fields.
+- **Flow View drawing:** state and parent boxes, one arrow per leave, diamonds for events with several leaves, numbers in written order, lanes per target, compact boxes, the release in the frame header, empty decision diamonds with `[c]` lines for every flow.
+- **Flow View edits:** 2.10, with dry-run previews; creation cards for states, parents, event lines and statements in a state; field completion for members, legal jump targets and conditions.
+- **Sequence:** a state is a state invariant on the operation's lifeline; a parent an invariant region.
+- **Timing:** nested state bands; for periodic machines the release grid with skips.
+- **Migration command** with the report of 7 step 13 and the identity map; dual-edition parsing until users migrate.
+- **Run overlays:** identities through the identity map; `StateLoop` and `trigger`.
 
-## 10. Plan: implementation packages in dependency order
+## 10. Prototypes required before implementation is approved
 
-All packages belong to the one release.
+All extend P1 in a copy; P1 stays the flat reference. In build order:
 
-| # | Package | Content | Needs first |
+| # | Prototype | Must build | Must measure or show |
 | --- | --- | --- | --- |
-| SIF-0 | Prototypes and review | **P1 done** for flat waiting states (6). **P4 conditions:** wakes, read sets per occurrence with redefinition and white-box tests, `StateLoop` by configuration hashing and its cost, the drain, handshake, alarm and ping-pong cases. **P5 parents:** the window lifter and the mode manager, choice across levels, exit order, the lifter's contested-choice differences against 2.2. **P6 periodic:** the window controller with Timing, release guards and quantisation. **P2b drawings:** parent boxes, border exits, compact boxes, numbers in order with exit bands, `[c]` decision lines. **P3b** the rewritten reading samples with the owner. | Owner decisions of 11 |
-| SIF-1 | Grammar, AST, formatter, names | 4.1; shared receive node; `when` respelled `if`; removal of `initial`, `final`, `defer`, Transition; formatter prints every form (A1) | P1 |
-| SIF-2 | Static rules, flat | SIF-S01 to S12 for flat states, D04 to D08, D15, D19 | SIF-1 |
-| SIF-3 | Runtime, flat waiting mode, migrator | SIF-R01 to R10, R12, trace; the migrator and the migrated-corpus gate; WP5 replaced in place; examples 44 to 47 and 49 rewritten | SIF-2 (P1 is the reference) |
-| SIF-4 | Parents | SIF-R11, levels in the choice, D06 across levels, D18 | SIF-3, P5 |
-| SIF-5 | Conditions | SIF-R13 to R16, read sets, wakes, `StateLoop`, D11 to D14; WP6-D09/D10 replaced | SIF-3, P4 |
-| SIF-6 | Periodic machines | SIF-R17 to R22, D02, D16, D17, WP7 interplay, Timing data | SIF-5, P6 |
-| SIF-7 | Specification and examples | chapters 3.6 and 6.5, an ADR superseding 0023, reference book, keyword inventory, new examples (parent, condition, periodic), figures | SIF-4 to SIF-6 |
-| X-1 | Extension: dual edition, migration command | | SIF-3 |
-| X-2 | Extension: Flow View drawing and edits | | SIF-4, P2b |
-| X-3 | Extension: Sequence, Timing, overlays | | SIF-6 |
-| WP7b | Release guard respelled `if` | | SIF-1 |
-| WP8, WP9 | as in the 2.3 plan, on top of the above | | SIF-7 |
+| 1 | **P1r**, flat rerun | The look of 3.3 for flat states (one message, all present lines, statements), the new migrator (one line per member, `if` chains, copied exit actions, leaves as statements), re-pick after the zero-time wait; a Langium spike of the short form (O1) | 0 verdicts and 1 store again on the 263 results, or every difference listed; the capacity-1 `dropOldest` case; the grammar spike reports no ambiguity and the same identities with and without braces |
+| 2 | **P5**, parents and direct entry | Levels, parents first, direct entry, B6's waiting rule, text-order leaving across parents | The window lifter of 1.6 against 2.2 (expected: identical apart from `state` observations); the mode manager with sample 7 Q4; the lock controller of section 0 against sample 1; the traffic light; the B2 counterexamples (suspending parent reaction, parent query during a pulse); the shielding pattern |
+| 3 | **P4**, values and wakes | Exact read sets per effective occurrence (redefinition, helpers, white-box and borrowed calls with suspension), wakes by write, `StateLoop` by configuration hashing | Anti-pinch on a sampled member and on a filtered attribute; drain, handshake, alarm, both ping-pongs, the two known misses; the cost of hashing on the door showcase; SIF-D08, D09, D10 on the corpus without false positives in migrated machines |
+| 4 | **P6**, periodic machines | One persistent activation, release looks, arrival looks within a release, timers by time, one message per release, release guards, SIF-D01, SIF-D04 | The 10 ms window controller (sample 9), `MirrorHeater.tick`, the traffic light and connection manager released `on every 100ms`, deadline and backlog with a suspending look |
+| 5 | **P2b**, drawings | All eight sketches of section 2 | The lifter with lanes versus back-jump stubs; arrows crossing parent borders; diamonds after event lines; the release header |
+| 6 | **P3b**, reading test | The rewritten reading samples, with the owner | Samples 2 (timer as a moment), 7 Q4, 9 Q2 (arrival look) |
 
-Each package gets its own adversarial review before merge.
+**What to cut first if something cannot be made sound,** in this order:
+1. **Wakes by other activations' writes** (keep sample-cell updates, which are deliveries). The owner loses re-checking an attribute written by another operation at the moment it is written, in waiting machines; such a condition is still checked at every other look and at every release of a periodic machine. Removes the exact-read-set risk (section 5, point 3).
+2. **Periodic machines.** The owner loses AUTOSAR-runnable machines (`MirrorHeater.tick` stays flag code). Smaller than in revision 3, because a periodic machine is now a waiting machine whose looks come from releases, but the persistent activation, backlog and guards are unprototyped.
+3. **Parents** last, if at all. The owner loses written-once exits (the window lifter back to 41 arrows, the lock's request line written in every state). They are the most conventional part and P5 expects no behaviour change on the corpus.
 
-## 11. Owner decisions
+## 11. Open decisions for the owner
 
-| # | Decision | Recommended answer |
+| # | Question (yes or no) | Recommendation |
 | --- | --- | --- |
-| DA | Order of levels at a choice | **Outer first** (operation, parents, state), written order within a level, as Stateflow. Alternative: inner first (UML). |
-| DB | Condition semantics | **Level**, one rule for both run modes (3.5). Edge would only save a flag in the alarm case. |
-| DC | Zero-time loop rule | **`StateLoop` on a repeated configuration** in one instant; other loops end at the step limit. Alternative: a fixed number of condition takes per instant (arbitrary, rejects bounded loops). |
-| DD | Periodic step | **Arrival ends the step**; one line per step; `if (true) { … }` written last is the per-step action. |
-| DE | Periodic completion | **The next release starts again at the first statement.** Alternative: the machine stays completed. |
-| DF | Entry kinds | **`on start` or `on every` only**; `on receive`, `after`, `on call` are errors with a message. |
-| DG | Plain receive statements in an operation with states | **Not allowed**; a one-exit state replaces them. |
-| DH | Jump into a parent | **Not allowed**; enter at the top, start with a named step and decide (1.5). |
-| DI | Named step | **A state without lines never waits**, also inside a parent with lines; a 2.2 dead end is refused by the migrator. |
-| DJ | Taking queued input | **A wait of zero time, as 2.2** (P1: 0 differences). Alternative: no lock release, which changes 19 traces and can change a verdict on a rejecting route. |
-| DK | Condition lines at the operation level | **None**: at the operation level `if` is always the flow decision; operation-wide conditions go on a parent around the states. Alternative: allow them before the first statement, at the price of an `if` that changes meaning when a state is added to the operation. |
-| DL | Window lifter showcase | Parents as in 1.5, the 8 s limit per state (2.2 behaviour apart from contested choices). Alternative: 8 s per movement on `driven` (27 arrows). |
-| DM | Label rule for ports | **`port.member`**, the port dropped only when every handled member comes through one port. |
-| DN | Compact boxes | **More than three leaving arrows.** |
-| D2 | Leaving word | **`exit`**, the 2.2 word (adopted). |
-| D11 | 2.2 machine syntax in 3.0 | Removed, automatic migrator (P1 measured). |
-| D12 | Interrupt regions | Keep their 2.2 discard; not allowed in operations with states. |
-| D13 | States in case scripts | No; scripts cannot call operations with states. |
+| O1 | May a body that is only `exit;` or `to S;` be written without braces (`after 250ms exit;`, `if (wanted) exit;`), and nothing else? | **Yes.** The general C rule hides a behaviour change in half-typed text inside states (1.3). |
+| O2 | Does a timer happen once per arrival (so "from 10 s on, as soon as requested" is written with a parent and an inner state)? | **Yes.** It is how 2.2 timers behave and it never repeats by surprise. |
+| O3 | When a machine released every 10 ms reaches a new state, does that state already do its every-release work in the same release? | **Yes.** One rule for both modes: reaching a state is a look. |
+| O4 | When a state is left, do the statements written before `exit;` or `to S;` run before the state's `on exit`? | **Yes.** It is the text order; the migrator keeps 2.2 results by copying exit actions. |
+| O5 | Is it an error if a machine released every 10 ms could reach its end? | **Yes.** It then always runs for as long as its component, and the end marker has one meaning. |
+| O6 | In a machine released on start, is a plain action standing in a state (not under an `if` that changes what it tests) only a warning? | **Yes.** It runs at every look by the one rule; the warning catches the likely mistake without a second rule. |
 
-Decided and no longer open: restricted `to` (D1); a false input condition consumes the input, a false timer condition does not (D3); drop by default, no keep (D4); written order with the input group (D5); exit, block, target (D6); conditions, periodic machines and parents in the release (D7 to D9); WP5 forms never ship (D10); named steps (D14); which operations (D15); the phase rule (D16); one word `if` for conditions; decisions drawn as empty diamonds with `[c]` lines.
+Decided by the owner and no longer open: states as steps (1); drop and remember with a variable (2); one `if` (3); direct entry into parents (4); `if` never waits, the state looks again (5, 8); scope of the one release (6); empty diamonds (7). Decided here without asking: one message per look in delivery order (B1, option a, measured); parents first; named steps; no operation-level lines; no plain receive statements in operations with states.
 
 ## 12. Stateflow cues
 
 | Cue | Decision |
 | --- | --- |
-| States and flow-chart logic in one chart; junctions are control flow | **adopt**: states are steps, decisions are `if`, merges are merge nodes |
-| Numbered transition order is the priority | **adopt**, with the input lines sharing one number |
-| entry, exit, on event | **adopt**: `on entry`, `on exit`, reactions listed in the box |
-| `during` | **adopt as a condition**: `if (true) { … }` written last, periodic machines only |
-| Conditions in brackets on transitions | **adopt**: `[c]` on every line, out of a state or a diamond |
-| Transition action after exit, before entry | **adopt**: the line's block |
-| Condition actions before exit | **reject**: work done while staying is a reaction |
-| Default transition | **adapt**: the flow's arrival; into a parent, its first state, with a decision after a named step for a choice |
-| Temporal `after` | **adopt**: relative to the level's arrival, rounded to the step in periodic machines |
-| Conditions evaluated at each chart execution | **adopt**: at each step in periodic machines; at choices and wakes in waiting machines |
-| Hierarchy, outer transitions first | **adopt** |
-| Inner transitions of a parent to its own substates | **reject**: a parent is re-entered at its top (`to P`) |
+| States and flow-chart logic in one chart | **adopt**: states are steps, decisions are `if` |
+| entry, exit, on event | **adopt**: `on entry`, `on exit`, event lines |
+| `during` | **adopt without a word**: statements in a state run at every look |
+| Outer transitions tested first | **adopt**: parents first |
+| Conditions in brackets on transitions | **adopt**: `[c]` on every arrow and diamond line |
+| Transition action after exit | **reject**: text order, block first |
+| Condition actions before exit | **adopt in effect**: statements before the leave |
+| Default transition | **adapt**: arrival by flow; into a parent, its first inner state or a direct entry |
+| `after` relative to state entry, at chart steps | **adopt** |
+| Entering step runs no `during` | **reject**: the arrival look runs the state's statements (O3) |
 | Parallel states, history junction | **reject** |
 
 ## 13. Risks
 
-- **One final release.** A wrong rule cannot be fixed later. Every runtime package has a prototype before it; parents, conditions and periodic machines are argued only.
-- **`StateLoop` by configuration** must hash the occurrence's stores at each condition take; cost and exactness need P4.
-- **Wake completeness.** Read sets through redefinition and helpers, and wakes from borrowed script and helper calls, are easy to get wrong; a missed wake silently stalls a case.
-- **Outer-first surprises.** A parent line wins ties against a substate's own timer; readers trained on UML expect the inverse.
-- **Two `if`s and two receive meanings by position.** `if` on a line versus in the flow, and `on receive m(x) { … }` at the top of a plain operation versus one with states. The position rules are exact and the drawing differs, but a reader moving text between positions can be surprised.
-- **Dropped by default** loses input that an author expected to wait; the store-and-act pattern is explicit but longer, and keeps only what it stores.
-- **Periodic quantisation and the arrival step** are classic off-by-one-period sources; SIF-D16 and SIF-D17 cover the common ones.
-- **Text order is behaviour.** Every refactoring tool must treat state order, line order and level as meaningful.
-- **Gutter layout** with nested parents is unproven beyond sketches (P2b).
-- **Extension cost** (dual-edition parsing, migration command, Flow View for every flow because of the decision rule, overlays, State view retirement) is substantial and not estimated here.
-
-## Appendix A. Measurement method
-
-Revision 1, in `E:\t\design-scratch\base` (a copy at `02e92c8`, nothing committed): `measure.mjs <out> <result>` runs every run of `examples/simulation/runs.json`, every case of every example and showcase model, and every run and case of the extended 2.2 sets, recording verdict, stores, status, per-kind counts and the trace digest; `patch.mjs` builds the variants; `compare.mjs` and `static.mjs` compare and count.
-
-Design review, in `E:\t\rv-states-scratch\`: baseline reproduced (253 results); `keep`, `eff` and `dropops` reproduced; `patch-tie.mjs` moves the receive timeout from phase 1 to phase 3 (`tieflow`: 0 verdicts, 0 stores, 7 traces; `tieall`: 0 verdicts, 1 store, 52 traces).
-
-P1, in `E:\t\sw-p1` on Node 26.12.0: `npm run build`; `P1_MODE=none node p1/migrate.mjs <out>`; `node p1/measure.mjs <outDir> <sourceRoot> <result.json>` for `out-base` and `out` (variants `P1_ARRIVAL_YIELD=1`, `P1_DISPOSE_ON_WAIT=1`); `node p1/compare.mjs base.json variant.json <identity-map.json>`.
+- **One final release.** A wrong rule cannot be fixed later; every runtime part has a prototype before its package (10).
+- **Exact read sets and wakes** (section 5, point 3): a missed wake stalls a case silently; an extra wake acts twice.
+- **`StateLoop` by configuration** needs hashing and an exact configuration definition (P4).
+- **Text order of leaving** differs from UML; the drawing cannot show it.
+- **Statements run at every look**: authors who expect "once" will write into `on entry` after one warning.
+- **Dropped by default** loses input an author expected to wait; the variable pattern is explicit and keeps only what it stores.
+- **Periodic quantisation** (SIF-D12) and one message per release (SIF-D01).
+- **Text order is behaviour.** Every refactoring tool must treat item order and level as meaningful.
+- **Plain receive guards** respelled `if` need their meaning restated in SIF-1 (4.1).
+- **Extension cost** (dual-edition parsing, migration command, Flow View for every flow, overlays, State view retirement) is substantial and not estimated here.
