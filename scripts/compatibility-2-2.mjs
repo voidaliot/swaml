@@ -520,7 +520,7 @@ function caseSummary(result) {
     return run ? { fields: without(fields, IGNORED), ...runSummary(run) } : { fields: without(fields, IGNORED) };
 }
 
-async function loader() {
+export async function loader() {
     const { EmptyFileSystem } = await import('langium');
     const { parseHelper } = await import('langium/test');
     const { createSwamlServices } = await import('../out/src/language/swaml-module.js');
@@ -557,7 +557,7 @@ async function currentSubjects() {
 }
 
 /** Runs one subject and yields [id, summary, trace] for each result. */
-async function* execute(subject, text, load) {
+export async function* execute(subject, text, load) {
     const { runCase, eachTest, simulate } = await import('../out/src/simulation/simulator.js');
     const models = await load(subject.model, text);
     if (subject.tests) {
@@ -624,7 +624,7 @@ function summaryDifferences(expected, actual) {
 }
 
 /** A run entry is its own subject; the case entries of one model run together, as swaml test runs them. */
-function subjectsOf(entries) {
+export function subjectsOf(entries) {
     const subjects = new Map();
     for (const entry of entries) {
         const key = entry.kind === 'run' ? entry.id : `cases of ${entry.model}`;
