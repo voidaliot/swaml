@@ -81,24 +81,25 @@ export function randomModel(seed) {
         }
         else if (listen === 'machine') {
             line(2, 'operation listen() {');
-            line(3, 'initial Idle;');
+            // States in the flow: Idle leaves to Busy (the next state) on a level and restarts itself on its timer.
             line(3, 'state Idle {');
-            line(4, 'on receive feed.level(v) to Busy {');
+            line(4, 'on receive feed.level(v) {');
             line(5, 'seen = v;');
+            line(5, 'exit;');
             line(4, '}');
-            line(4, `after ${r.int(3, 20)}ms to Idle {`);
+            line(4, `after ${r.int(3, 20)}ms {`);
             line(5, 'seen = 0;');
+            line(5, 'to Idle;');
             line(4, '}');
             line(3, '}');
             line(3, 'state Busy {');
             line(4, 'on entry {');
             line(5, 'got = got + 1;');
             line(4, '}');
-            line(4, `after ${ms()} to ${done ? 'Done' : 'Idle'} {`);
-            line(4, '}');
+            line(4, `after ${ms()} ${done ? 'exit' : 'to Idle'};`);
             line(3, '}');
             if (done) {
-                line(3, 'final state Done {');
+                line(3, 'state Done {');
                 line(3, '}');
             }
             line(2, '}');

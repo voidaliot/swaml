@@ -96,7 +96,7 @@ test('formatting generated large models keeps every comment and documentation on
 
 test('layout: array literals, unary minus, closing braces, guards and leaf documentation', async () => {
     const formatted = await assertCanonical(largeModel(1), 'layout');
-    for (const line of ['attribute last: int = -0 /** Leaf documentation 0. */;', 'attribute values: int[3] = [1, -2, 3];', 'right = -(2 + 0);', 'return [last, -last, 0];', 'left: int /** Left value. */;', 'provides event message(value: int) /** Trailing member documentation. */;', '} on receive input.message(value) {', 'on receive control.message(v) when (v > 0) to On {', 'on exit {', '// A line comment before an attribute 0.', 'last = values[0] + (pair.left);'])
+    for (const line of ['attribute last: int = -0 /** Leaf documentation 0. */;', 'attribute values: int[3] = [1, -2, 3];', 'right = -(2 + 0);', 'return [last, -last, 0];', 'left: int /** Left value. */;', 'provides event message(value: int) /** Trailing member documentation. */;', '} on receive input.message(value) {', 'on receive control.message(v) {', 'if (v > 0) {', 'on exit {', '// A line comment before an attribute 0.', 'last = values[0] + (pair.left);'])
         assert.ok(formatted.split('\n').some(l => l.trim() === line), line + '\n' + formatted);
     assert.ok(!/^\s*;\s*$/m.test(formatted), 'no lone semicolon');
     assert.ok(!/} on (exit|receive control)/.test(formatted), 'state actions and transitions start their own lines');

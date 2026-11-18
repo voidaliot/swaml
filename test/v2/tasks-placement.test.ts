@@ -266,7 +266,7 @@ test('WP8-D04 T3: an isr task has periodNs = 0, is preemptive and takes receive 
     assert.deepEqual(await errors(source({}, 'on receive inp.e(v) take(v); on every 10ms a(); on start b();')), ['ISR task hw.irq accepts only receive entries and their after successors; on every 10ms a of Demo.x is not one.', 'ISR task hw.irq accepts only receive entries and their after successors; on start b of Demo.x is not one.']);
 });
 
-test('WP8-D05 T4: an activation that may suspend needs an extended task; a machine whose reactions run to completion may use a basic one', async () => {
+test('WP8-D05 T4: an activation that may suspend needs an extended task; so does a waiting machine (SIF, proposal 9)', async () => {
     const board = `${task('basicT', { priority: 1 })} ${task('ext', { kind: 'extended', priority: 2 })} ${task('irq', { kind: 'isr', priority: 3 })} ${fast}`;
     const source = (members: string, schedule: string, deploys: string) => model(schedule, 'component x: C; connect (s.out, x.inp);', board, `deploy s on fast; ${deploys}`).replace('operation helper() { }', `operation helper() { } ${members}`);
     assert.deepEqual(await errors(source('', 'on start w(); on receive inp.e(v) take(v);', 'deploy x on basicT;')), ['on start w of Demo.x may suspend in wait 1ms and needs an extended task; hw.basicT is basic.']);
@@ -278,11 +278,14 @@ test('WP8-D05 T4: an activation that may suspend needs an extended task; a machi
         'on start viaHelper of Demo.x may suspend in w() and needs an extended task; hw.basicT is basic.']);
     // An isr task is not extended either.
     assert.deepEqual(await errors(source('', 'on receive inp.e(v) w();', 'deploy x on irq;')), ['on receive inp.e w of Demo.x may suspend in wait 1ms and needs an extended task; hw.irq is isr.']);
-    // A machine: the idle wait between reactions does not count; a suspending entry action, exit action or effect does.
-    const machine = (entry: string, effect: string) => `operation m() { initial idle; state idle { on receive inp.e(v) to busy { ${effect} } } state busy { on entry { ${entry} } after 5ms to idle { } } }`;
-    assert.deepEqual(await errors(source(machine('log = 1;', 'log = v;'), 'on start m();', 'deploy x on basicT;')), []);
-    assert.deepEqual(await errors(source(machine('wait 1ms;', 'log = v;'), 'on start m();', 'deploy x on basicT;')), ['on start m of Demo.x may suspend in wait 1ms and needs an extended task; hw.basicT is basic.']);
-    assert.deepEqual(await errors(source(machine('log = 1;', 'w();'), 'on start m();', 'deploy x on basicT;')), ['on start m of Demo.x may suspend in w() and needs an extended task; hw.basicT is basic.']);
+    // A machine: 2.2 did not count the idle wait between reactions. A waiting machine with states in the flow waits in its
+    // states, so it needs an extended task like any activation that may suspend (proposal 9, WP8 T4).
+    const machine = (entry: string, effect: string) => `operation m() { state idle { on receive inp.e(v) { ${effect} exit; } } state busy { on entry { ${entry} } after 5ms to idle; } }`;
+    assert.deepEqual(await errors(source(machine('log = 1;', 'log = v;'), 'on start m();', 'deploy x on basicT;')), ['on start m of Demo.x may suspend in state idle { on receive inp.e(v) { log = v; exit; } } and needs an extended task; hw.basicT is basic.']);
+    assert.deepEqual(await errors(source(machine('log = 1;', 'log = v;'), 'on start m();', 'deploy x on ext;')), []);
+    // A suspending entry action or line adds nothing: the message names the first place that may suspend, the waiting state.
+    for (const [entry, effect] of [['wait 1ms;', 'log = v;'], ['log = 1;', 'w();']])
+        assert.deepEqual(await errors(source(machine(entry, effect), 'on start m();', 'deploy x on basicT;')), [`on start m of Demo.x may suspend in state idle { on receive inp.e(v) { ${effect} exit; } } and needs an extended task; hw.basicT is basic.`]);
 });
 
 test('WP8-D06 T5: an explicit deadline is not shorter than the task response bound; implicit deadlines are not checked', async () => {

@@ -101,7 +101,7 @@ test('WP6-S02 WP6-D04 an initial value is assignable to the member type and pure
 test('WP6-S01 a sampled read in an operation body, a receive guard, a completion guard, a timer guard and a computed wait is valid', async () => {
     await valid(door(reads));
     await valid(door('operation read() { var c: int = door.count; got = c; } operation take(v: int) { got = v; } schedule { on every 10ms read(); }'));
-    await valid(door('operation m() { initial A; state A { after 1ms when (door.ajar) to B { } when (door.count > 2) to B { } } final state B { } } schedule { on start m(); }'));
+    await valid(door('operation m() { state A { after 1ms { if (door.ajar) exit; } if (door.count > 2) exit; } state B { } } schedule { on start m(); }'));
     await valid(door('operation m() { wait (door.count * 1ms); got = 1; } schedule { on start m(); }'));
     // A record member: fields after the member; an array member: an index after it.
     await valid(`package Test {
@@ -338,54 +338,24 @@ test('WP6-S06 redefines connect replaces the whole connection with its member po
   port def P { provides event e(n: int); provides event f(n: int); }
   component def S { port out: P; operation t() { publish out.e(1); publish out.e(2); publish out.e(3); publish out.f(1); publish out.f(2); publish out.f(3); } schedule { on start t(); } }
   component def R { reversed port p: P; attribute es: int = 0; attribute fs: int = 0;
-    operation m() { initial idle; state idle { on receive p.e(n) to busy { es = es + 1; } on receive p.f(n) to busy { fs = fs + 1; } } state busy { defer p.e, p.f; after 1ms to idle { } } }
+    operation m() { while (true) { state idle { on receive p.e(n) { es = es + 1; exit; } on receive p.f(n) { fs = fs + 1; exit; } } wait 1ms; } }
     schedule { on start m(); } }
   component def Base { component s: S; component r: R; connect link: One (s.out, r.p) { e: Many; } }
   component Demo: Base { ${redefined} }
 }`;
     const stores = async (redefined: string) => (await run(source(redefined), 50000000)).stores['Demo.r'];
-    // e1 is taken at once; e2, e3, f1, f2 and f3 wait while the machine is busy. A capacity of 1 keeps only the newest.
+    // e1 is taken at once; e2, e3, f1, f2 and f3 stay queued while the machine is busy in its wait (SIF-R06; 2.2 and
+    // WP5 kept them with a deferral in a waiting state, which drops them under SIF-R05). A capacity of 1 keeps only the newest.
     assert.deepEqual(await stores(''), { es: 3, fs: 1 }, 'inherited: e queues with Many, f keeps one with One');
     assert.deepEqual(await stores('redefines connect link: One (s.out, r.p) { f: Many; }'), { es: 2, fs: 3 }, 'the redefinition replaces e: Many');
     assert.deepEqual(await stores('redefines connect link: One (s.out, r.p);'), { es: 2, fs: 1 }, 'no member policy is inherited');
 });
 
-test('WP6-S07 SW2018 uses the effective policy of the deferred member route', async () => {
-    const machine = (connect: string) => policies('', connect).replace('schedule { on receive p.e(n) handle(n); on call p.get() get(); } }', 'operation m() { initial A; state A { on receive p.e(n) to B { k = n; } } state B { defer p.e; after 1ms to A { } } } schedule { on start m(); on call p.get() get(); } }').replace('operation handle(n: int) { k = n; } ', '');
-    assert.deepEqual(await warnings(machine('connect (s.out, r.p) { e: Fast; }')), []);
-    const rejecting = (connect: string) => warnings(machine(connect).replace('overflow = Overflow.dropOldest; requestTimeout = 1s; }\n  port', 'overflow = Overflow.reject; requestTimeout = 1s; }\n  port'));
-    // The advice names the member policy where the fix belongs (review F8); the connection-level advice is unchanged.
-    assert.deepEqual(await rejecting('connect: Fast (s.out, r.p) { e: Sure; get: Fast; }'),
-        [['SW2018', "p.e is deferred in B, but policy Sure of connect (s.'out', r.p) rejects on overflow; a full queue fails the sender. Give e of connect (s.'out', r.p) a member policy that drops on overflow (Overflow.dropOldest or Overflow.dropNewest) or a capacity that holds the retained messages."]]);
-    assert.deepEqual(await rejecting('connect link: Sure (s.out, r.p) { get: Fast; }'),
-        [['SW2018', 'p.e is deferred in B, but policy Sure of link rejects on overflow; a full queue fails the sender. Give link a policy that drops on overflow (Overflow.dropOldest or Overflow.dropNewest) or a capacity that holds the retained messages.']]);
-});
-
-test('WP6-D10 (SW2017) a completion guard that folds to false is dead; a redefined const is left alone', async () => {
-    const m = (guard: string, extra = '') => door(`const attribute k: int = 0; operation m() { initial A; state A { when (${guard}) to B { } after 1ms to B { } } final state B { } } schedule { on start m(); on every 10ms read(); } operation read() { seen = door.ajar; total = door.count; }`, undefined, extra);
-    const dead = 'Completion guard of A is always false; the transition is never taken.';
-    for (const guard of ['false', '1 == 2', 'not true', 'k > 0'])
-        assert.deepEqual(await warnings(m(guard)), [['SW2017', dead]], guard);
-    assert.deepEqual(await warnings(m('k == 0')), []);
-    for (const redefined of ['component def Other specializes Reader { redefines const attribute k: int = 5; }', 'component def Holder { component s: Sensor; component other: Reader { redefines const attribute k: int = 5; } connect (s.out, other.door); }']) {
-        const r = await parse(m('k > 0', redefined));
-        assert.deepEqual([r.errors.length, r.warnings.map(w => w.code)], [0, []], redefined);
-    }
-    // A redefinition of another component's const of the same name does not hide the warning (review N1).
-    const unrelated = await parse(m('k > 0', 'component def K { const attribute k: int = 1; } component def L specializes K { redefines const attribute k: int = 3; }'));
-    assert.deepEqual([unrelated.errors.length, unrelated.warnings.map(w => [w.code, w.message])], [0, [['SW2017', dead]]]);
-});
-
-test('WP5-D08 WP6 SW2017 confirmed for sampled cells: completion is not re-evaluated on a cell update', async () => {
-    const m = (state: string) => door(`attribute steps: int = 0; operation m() { initial A; ${state} final state B { } } schedule { on start m(); on every 10ms read(); } operation read() { seen = door.ajar; total = door.count; }`);
-    const cells = 'Completion guard of A reads nothing that m writes; it cannot change while the machine waits. Completion is not re-evaluated when a sample cell is updated.';
-    assert.deepEqual(await warnings(m('state A { when (door.count == 2) to B { } }')), [['SW2017', cells]]);
-    assert.deepEqual(await warnings(m('state A { on entry { steps = steps + 1; } when (door.count == 2 or steps > 3) to B { } }')), []);
-    // The cell becomes 2 at 20 ms, but the machine never re-evaluates the guard: the run stays in A.
-    const r = await run(m('state A { when (door.count == 2) to B { } }'), 50000000);
-    assert.ok(samples(r.trace as Observation[]).some(x => x[1] === 'count' && x[2] === 2));
-    assert.match(JSON.stringify(r.machines), /"state":"A"/);
-});
+// SIF (proposal 4.4, 4.8, 7.3): three WP5/WP6 tests left with the forms they checked. 'WP6-S07 SW2018 uses the effective
+// policy of the deferred member route': deferral never ships; SIF-D06 (SW2018) warns for periodic machines (package 5).
+// 'WP6-D10 (SW2017) a completion guard that folds to false is dead': completion transitions are gone and SIF has no
+// warning for a dead condition. 'WP5-D08 WP6 SW2017 confirmed for sampled cells': under SIF-R07 a sample-cell update in
+// a waiting state's read set makes it look again (wakes, package 4), so the warning and the stuck run are gone.
 
 const timed = (sender: string, reader: string, options = {}, untilNs = 40000000) => run(door(reader).replace("operation tick() { n = n + 1; send out.ajar(n % 2 == 1); send out.count(n); } schedule { on every 10ms tick(); }", sender), untilNs, options);
 
@@ -489,7 +459,7 @@ test('WP6-R04 a consumed sampled member gives one sample and one deliver per val
 });
 
 test('WP6-R05 each member route uses its effective policy: capacity, overflow and request timeout per member', async () => {
-    const source = (body: string) => policies('', `connect: Fast (s.out, r.p) ${body}`).replace('schedule { on receive p.e(n) handle(n); on call p.get() get(); } }', 'operation m() { initial A; state A { on receive p.e(n) to B { k = k + 1; } } state B { defer p.e; after 5ms to A { } } } schedule { on start m(); on call p.get() get(); } }').replace('operation handle(n: int) { k = n; } ', '').replace('operation t() { publish out.e(1); } schedule { on every 1ms t(); }', 'operation t() { publish out.e(1); publish out.e(2); publish out.e(3); publish out.e(4); var x: int = try(out.get(), 0); } schedule { on start t(); }');
+    const source = (body: string) => policies('', `connect: Fast (s.out, r.p) ${body}`).replace('schedule { on receive p.e(n) handle(n); on call p.get() get(); } }', 'operation m() { while (true) { state A { on receive p.e(n) { k = k + 1; exit; } } wait 5ms; } } schedule { on start m(); on call p.get() get(); } }').replace('operation handle(n: int) { k = n; } ', '').replace('operation t() { publish out.e(1); } schedule { on every 1ms t(); }', 'operation t() { publish out.e(1); publish out.e(2); publish out.e(3); publish out.e(4); var x: int = try(out.get(), 0); } schedule { on start t(); }');
     const fast = await run(source(';'), 30000000), many = await run(source('{ e: Sure; get: Sure; }').replace('requires operation get() returns int;', 'requires idempotent operation get() returns int;').replace('provides event e(n: int); requires', 'provides event e(n: int); requires'), 30000000);
     assert.equal((fast.stores['Demo.r'] as Record<string, number>).k, 3, 'Fast: capacity 2 keeps two retained events');
     assert.equal(kinds(fast.trace as Observation[], 'overflow').length, 1);

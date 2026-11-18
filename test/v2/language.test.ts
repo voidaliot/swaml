@@ -34,11 +34,13 @@ for (const [name, source, code] of [
     ['after cycle', wrap('operation f() { } operation g() { } schedule { on start f(); after f g(); after g f(); }'), 'SW2007'],
     ['after unscheduled', wrap('operation f() { } operation g() { } schedule { after f g(); }'), 'SW2007'],
     ['concurrent writes', wrap('attribute n: int = 0; operation helper() { n = 1; } operation f() { helper(); } schedule { on start f() concurrent; }'), 'SW2006'],
-    ['stateful concurrent', wrap('operation f() { initial A; state A { after 1ms to B { } } final state B { } } schedule { on start f() concurrent; }'), 'SW2006'],
-    ['state signature', wrap('operation f(x: int) { initial A; final state A { } } schedule { on start f(0); }'), 'SW2008'],
-    ['state reachability', wrap('operation f() { initial A; final state A { } state B { } } schedule { on start f(); }'), 'SW2008'],
-    ['final transition', wrap('operation f() { initial A; final state A { after 1ms to A { } } } schedule { on start f(); }'), 'SW2008'],
-    ['state periodic', wrap('operation f() { initial A; final state A { } } schedule { on every 1ms f(); }'), 'SW2008'],
+    // SIF-S01 (SIF-D01): an operation with states is never concurrent; SW2008 (2.2 reported SW2006).
+    ['stateful concurrent', wrap('operation f() { state A { after 1ms exit; } state B { } } schedule { on start f() concurrent; }'), 'SW2008'],
+    ['state signature', wrap('operation f(x: int) { state A { } } schedule { on start f(0); }'), 'SW2008'],
+    // SIF (proposal 4.8): 'state reachability' and 'final transition' have no counterpart: a state is a step of the
+    // flow (unreachable code keeps the ordinary checks) and no state is final.
+    // Until periodic machines run (SIF-R14, package 5), on every with states is rejected.
+    ['state periodic', wrap('operation f() { state A { } } schedule { on every 1ms f(); }'), 'SW2008'],
     ['implicit override', 'package Test { component def C { attribute x: int = 0; } component Demo: C { attribute x: int = 2; } }', 'SW2003'],
     ['changed override type', 'package Test { component def C { attribute x: int = 0; } component Demo: C { redefines attribute x: bool = false; } }', 'SW2003'],
     ['inheritance cycle', 'package Test { component def A specializes B { } component def B specializes A { } }', 'SW2003'],

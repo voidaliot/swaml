@@ -616,9 +616,8 @@ test('WP3-S01 now() is allowed in every other expression: statements, receive an
     operation watch() { var t: uint = now(); }
     operation arg(v: uint) { }
     operation machine() {
-      initial Idle;
-      state Idle { on receive q.e(v) when (now() >= v) to Done { last = now(); } }
-      final state Done { }
+      state Idle { on receive q.e(v) { if (now() >= v) { last = now(); exit; } } }
+      state Done { }
     }
     schedule { on receive p.e(v) h(v); on every 1ms watch() concurrent; on every 2ms arg(now()); on start machine(); }
   }
@@ -630,23 +629,8 @@ test('WP3-S01 now() is allowed in every other expression: statements, receive an
   test 'T' of demo { assert now() >= 0; }
 }`);
 });
-test('WP3-S01 hook for WP5-S03: now() in a completion guard is rejected (SW2008), directly or through a helper; the check uses isClockRead', async () => {
-    const machine = (guard: string) => wrap(`attribute n: uint = 0;
-      operation late() returns bool { return now() > 5ms; }
-      operation now2() returns uint { return n; }
-      operation run() {
-        initial A;
-        state A { on entry { n = n + 1; } when (${guard}) to B { } after 1ms to B { } }
-        final state B { }
-      }
-      schedule { on start run(); }`);
-    const message = 'A completion guard cannot call now(); it is not re-evaluated as time passes.';
-    assert.deepEqual(await errors(machine('now() > 5ms')), [['SW2008', message]]);
-    assert.deepEqual(await errors(machine('Swaml::Time::now() > n')), [['SW2008', message]]);
-    assert.deepEqual(await errors(machine('late()')), [['SW2008', message]]);
-    // A user operation that reads state and is not the clock is allowed; a receive guard keeps now() (WP3-S01).
-    assert.deepEqual(await errors(machine('now2() > 1')), []);
-});
+// SIF (proposal 4.4, 4.8): 'WP3-S01 hook for WP5-S03', now() in a completion guard, left with completion transitions; its
+// successor is SIF-D04 (a statement standing in a state that reads now()), which is not implemented yet.
 test('WP3-S01 hook for WP4-S05: now() is not in the constant sublanguage (SW2007); the check uses isClockRead', async () => {
     const source = (period: string) => wrap(`attribute n: uint = 0; operation tick() { n = n + 1; } schedule { on every (${period}) tick(); }`);
     assert.deepEqual((await parse(source('now() + 1ms'))).errors.map(e => [e.code, e.message]), [['SW2007', 'now() + 1ms is not a constant duration: now() are not allowed.']]);

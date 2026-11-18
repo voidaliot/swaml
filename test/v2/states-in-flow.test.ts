@@ -285,6 +285,51 @@ test('SIF-R12 an if test in a state\'s braces is not a scheduling step: other ac
     assert.deepEqual(await order(tests), await order(''));
 });
 
+// The flow-state counterparts of WP5's internal transitions, guarded timers and completion (test/v2/state-reactions.test.ts).
+
+test('SIF-R02 SIF-R03 a line that does not leave keeps the state and its timers; an if after it sees its write (WP5-R02, WP5-R05)', async () => {
+    // Kills: a staying line restarting the timers; an if in the braces not checked again after a line.
+    const s = machine('run() { state s { on receive p.m(v) { x = x + v; } if (x >= 3) exit; after 5ms { y = x; exit; } } }');
+    const kept = await drive(s, 'wait 1ms; publish p.m(1); wait 3ms; publish p.m(1);');
+    // m at 1 ms and 4 ms stay (x = 2); the timer counted from the arrival at 0 leaves at 5 ms.
+    assert.deepEqual([kept.store.x, kept.store.y], [2, 2]);
+    assert.equal(kept.trace.find(o => o.kind === 'complete' && o.subject === 'c.run')?.timeNs, 5e6);
+    const left = await drive(s, 'wait 1ms; publish p.m(1); wait 1ms; publish p.m(2);');
+    assert.deepEqual([left.store.x, left.store.y], [3, 0]);
+    assert.equal(left.trace.find(o => o.kind === 'complete' && o.subject === 'c.run')?.timeNs, 2e6);
+    // A computed timer is evaluated at the arrival only: a line that changes what it reads does not move it (WP4-R02).
+    const computed = await drive(machine('run() { state s { after (x * 1ms + 2ms) { y = 1; exit; } on receive p.m(v) { x = x + v; } } }'), 'wait 1ms; publish p.m(5);');
+    assert.deepEqual([computed.trace.filter(o => o.kind === 'timer').length, computed.trace.find(o => o.kind === 'complete' && o.subject === 'c.run')?.timeNs], [1, 2e6]);
+});
+
+test('SIF-R03 SIF-R09 a timer is a moment: an if in its block that is false consumes it for this arrival; equal timers run in written order (WP5-R04)', async () => {
+    // Kills: a timer present again after a false test; equal timers out of written order.
+    const equal = await drive(machine('run() { state s { after 1ms { if (y > 0) to b; } after 1ms { x = 1; exit; } } return; state b { on entry { x = 2; } } }'), '');
+    assert.equal(equal.store.x, 1);
+    const once = await drive(machine('run() { state s { on receive p.n() { y = 1; } after 1ms { if (y > 0) exit; } after 3ms { x = x + 1; to s; } } }'), 'wait 2ms; publish p.n();', 5e6);
+    // The 1 ms timer was false at 1 ms and is not looked at again in this arrival; to s at 3 ms arrives again, and at 4 ms y is 1.
+    assert.deepEqual([once.store.x, once.trace.find(o => o.kind === 'complete' && o.subject === 'c.run')?.timeNs], [1, 4e6]);
+});
+
+test('SIF-R05 SIF-R12 a look suspended in its line holds the state: when it begins to wait, a timer that ran out comes before input queued meanwhile (WP5-R06)', async () => {
+    // Kills: queued input taken before an elapsed timer when a suspended look ends.
+    const s = machine('run() { state s { on receive p.m(v) { wait 3ms; x = v; } after 2ms { y = 1; exit; } on receive p.n() { z = 1; exit; } } }');
+    const { store, lines } = await drive(s, 'publish p.m(1); wait 1ms; publish p.n();');
+    assert.deepEqual([store.x, store.y, store.z], [1, 1, 0]);
+    assert.ok(lines.includes('3ms discard p.n (inactiveOwner)'), lines.join('\n'));
+});
+
+test('SIF-R01 SIF-R05 input queued during an entry is looked at by the first state that waits, after states whose arrival look leaves (WP5-R13)', async () => {
+    // Kills: input dropped or taken while the flow passes states that leave at their arrival look.
+    const chain = (end: string) => machine(`run() { state a { on entry { wait 1ms; y = 1; } if (y == 1) exit; } state b { on entry { y = 2; } if (y == 2) exit; } ${end} }`);
+    const taken = await drive(chain('state c { on receive p.m(v) { x = v; exit; } }'), 'publish p.m(7);');
+    assert.equal(taken.store.x, 7);
+    // A first waiting state that does not name it drops it when it begins to wait.
+    const dropped = await drive(chain('state c { after 1ms exit; } state d { on receive p.m(v) { x = v; exit; } }'), 'publish p.m(7);');
+    assert.equal(dropped.store.x, 0);
+    assert.ok(dropped.lines.includes('1ms discard p.m (inactiveOwner)'), dropped.lines.join('\n'));
+});
+
 test('SIF-R04 a look reads values as they are when it runs; what earlier items of the look wrote is seen by later items', async () => {
     const s = machine('run() { state s { var seen: uint = x; on receive p.m(v) { x = v + seen; } if (x > 10) exit; } }');
     const { store } = await drive(s, 'publish p.m(4); wait 1ms; publish p.m(20);');

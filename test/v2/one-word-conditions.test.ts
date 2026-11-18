@@ -57,9 +57,9 @@ test('SIF-G01 a release guard is written if (g); when (g) on a schedule entry is
     }
     // An if that follows neither keeps its message.
     assert.ok((await parse(late('if (awake) if (awake)'))).errors.every(d => !String(d.message).includes('A release guard is written')));
-    // when keeps its 2.2 meaning in state machines: a guarded receive transition still parses and validates.
+    // SIF (proposal 4.7): when leaves the language with 2.2 transitions; a guard in a state is an if in its event line.
     await valid(`package Test { port def P { provides event e(v: int); } component def C { reversed port p: P; attribute k: int = 0;
-      operation m() { initial A; state A { on receive p.e(v) when (v > 0) to B { k = v; } } final state B { } }
+      operation m() { state A { on receive p.e(v) { if (v > 0) { k = v; exit; } } } state B { } }
       schedule { on start m(); } } component def S { port p: P; } component Demo { component s: S; component c: C; connect (s.p, c.p); } }`);
 });
 

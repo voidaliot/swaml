@@ -93,7 +93,7 @@ test('F13 each duplicate delivery obeys capacity and overflow policy', async () 
 
 test('state timers start before suspended entry, with source-order ties and final completion', async () => {
     for (const wait of [1, 3]) {
-        const r=await run(wrap(`attribute n:int=0;operation machine(){initial A;state A{on entry{wait ${wait}ms;}after 2ms to B{n=1;}after 2ms to C{n=2;}}final state B{on entry{n=n+10;}}final state C{}}operation done(){n=n+100;}schedule{on start machine();after machine done();}`));
+        const r=await run(wrap(`attribute n:int=0;operation machine(){state A{on entry{wait ${wait}ms;}after 2ms{n=1;exit;}after 2ms{n=2;to C;}}state B{on entry{n=n+10;}}return;state C{}}operation done(){n=n+100;}schedule{on start machine();after machine done();}`));
         assert.equal(r.stores.Demo.n,111);
         assert.equal(r.trace.find(e=>e.kind==='state'&&e.state==='B')!.timeNs,Math.max(wait,2)*1000000);
         assert.equal(r.trace.filter(e=>e.kind==='complete'&&e.subject==='Demo.machine').length,1);
@@ -101,7 +101,7 @@ test('state timers start before suspended entry, with source-order ties and fina
 });
 
 test('elapsed state timer precedes input queued during entry; deadline wins equal time', async () => {
-    const source = `package Test{port def P{provides event pulse();}component def Source{port p:P;operation boot(){wait 1ms;publish p.pulse();}schedule{on start boot();}}component def Sink{reversed port p:P;attribute n:int=0;operation machine(){initial A;state A{on entry{wait 3ms;}on receive p.pulse() to C{n=2;}after 2ms to B{n=1;}}final state B{}final state C{}}schedule{on start machine();}}component Demo{component a:Source;component b:Sink;connect(a.p,b.p);}}`;
+    const source = `package Test{port def P{provides event pulse();}component def Source{port p:P;operation boot(){wait 1ms;publish p.pulse();}schedule{on start boot();}}component def Sink{reversed port p:P;attribute n:int=0;operation machine(){state A{on entry{wait 3ms;}on receive p.pulse(){n=2;to C;}after 2ms{n=1;exit;}}state B{}return;state C{}}schedule{on start machine();}}component Demo{component a:Source;component b:Sink;connect(a.p,b.p);}}`;
     assert.equal((await run(source)).stores['Demo.b'].n,1);
     const deadline=await run(source.replace('on start machine();','on start machine() deadline 3ms;'));
     assert.equal(deadline.status,'violation');
