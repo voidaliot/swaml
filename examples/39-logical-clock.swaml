@@ -1,0 +1,84 @@
+package ReceptionAge {
+  /** A reception timeout in the shape of the door model's ComMain. The 2.2 shape counts the age of the last frame with rxAgeMs = rxAgeMs + 20, which is right only while the main function runs every 20 ms. The 2.3 shape stores the logical time of the last frame, lastRxNs = now(), and compares now() - lastRxNs with the timeout in nanoseconds, so it does not depend on the period. now() is the logical time of the evaluating step in nanoseconds since the run epoch; it reads state and is therefore not allowed in attribute initializers. */
+  import Swaml::Time;
+  port def Bus {
+    provides event frame(rolling: uint);
+  }
+  component def ComCore {
+    /** The reception logic, without its period. */
+    reversed port bus: Bus;
+    const attribute rxTimeoutMs: uint = 100;
+    attribute rxAgeMs: uint = 0;
+    attribute lastRxNs: uint = 0;
+    attribute timedOutByTicks: bool = false;
+    attribute timedOutByClock: bool = false;
+    attribute frames: uint = 0;
+    operation onFrame(rolling: uint) {
+      frames = frames + 1;
+      rxAgeMs = 0;
+      lastRxNs = now();
+      timedOutByTicks = false;
+      timedOutByClock = false;
+    }
+    operation rxMainFunction() {
+      // 2.2 shape: a counter that assumes the 20 ms period.
+      rxAgeMs = rxAgeMs + 20;
+      if (rxAgeMs >= rxTimeoutMs) {
+        timedOutByTicks = true;
+      }
+      // 2.3 shape: the age is now() - lastRxNs.
+      if (now() - lastRxNs >= rxTimeoutMs * 1000000) {
+        timedOutByClock = true;
+      }
+    }
+    operation ageNs() returns uint {
+      return now() - lastRxNs;
+    }
+    schedule {
+      on receive bus.frame(rolling) onFrame(rolling);
+    }
+  }
+  component def ComMain20 specializes ComCore {
+    /** The period the counter was written for. */
+    schedule {
+      on every 20ms rxMainFunction();
+    }
+  }
+  component def ComMain10 specializes ComCore {
+    /** The same logic every 10 ms: the counter now runs twice as fast. */
+    schedule {
+      on every 10ms rxMainFunction();
+    }
+  }
+  component def Gateway {
+    /** Interface-only actor that sends frames to both receivers. */
+    port toSlow: Bus;
+    port toFast: Bus;
+  }
+  component slow: ComMain20;
+  component fast: ComMain10;
+  component gateway: Gateway;
+  connect (gateway.toSlow, slow.bus);
+  connect (gateway.toFast, fast.bus);
+  associate gateway to 'Timeout at 20 ms', 'Timeout at 10 ms';
+  test 'Timeout at 20 ms' of slow {
+    /** With its own period both shapes agree: no timeout at 90 ms, a timeout at 100 ms. */
+    wait 90ms;
+    assert not slow.timedOutByTicks and not slow.timedOutByClock;
+    wait 10ms;
+    assert slow.timedOutByTicks and slow.timedOutByClock;
+  }
+  test 'Timeout at 10 ms' of fast {
+    /** At 50 ms the counter claims 100 ms; the clock age is 50 ms. A frame at 60 ms restarts both. */
+    wait 50ms;
+    assert fast.timedOutByTicks and not fast.timedOutByClock;
+    var age: uint = fast.ageNs();
+    assert age == 50000000 and now() == 50000000;
+    wait 10ms;
+    publish gateway.toFast.frame(1);
+    wait 90ms;
+    assert fast.frames == 1 and fast.lastRxNs == 60000000 and not fast.timedOutByClock;
+    wait 10ms;
+    assert fast.timedOutByClock and now() - fast.lastRxNs == 100000000;
+  }
+}

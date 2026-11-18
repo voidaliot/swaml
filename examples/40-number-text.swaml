@@ -1,0 +1,65 @@
+package DiagnosticText {
+  /** Diagnostic labels with numbers. In 2.2 a number could not become text, so a label named one of a fixed set of values through a selection helper. In 2.3 Swaml::Text writes intText(v) in decimal, realText(v, decimals) rounded to exactly decimals fraction digits (ties away from zero, no exponent and no negative zero; more than 15 decimals or a magnitude of at least 1e21 is the runtime failure Bounds) and boolText(v). */
+  import Swaml::Math;
+  import Swaml::Text;
+  operation def levelName(level: int) returns string {
+    /** The 2.2 shape: only the listed values have text. */
+    if (level == 0) {
+      return "0";
+    }
+    if (level == 1) {
+      return "1";
+    }
+    if (level == 2) {
+      return "2";
+    }
+    return "many";
+  }
+  component def Monitor {
+    attribute legacy: string = "";
+    attribute label: string = "";
+    attribute tooPrecise: uint = 0;
+    operation legacyReport(code: int, level: int) {
+      legacy = concat("DTC level ", levelName(level));
+    }
+    operation report(code: int, voltage: real, latched: bool) {
+      label = "DTC " + intText(code) + " at " + realText(voltage, 2) + " V, latched " + boolText(latched);
+    }
+    operation precise(v: real, decimals: uint) returns string {
+      return try(realText(v, decimals), "?");
+    }
+    operation tooPreciseCount(v: real) {
+      var text: string = precise(v, 16);
+      if (text == "?") {
+        tooPrecise = tooPrecise + 1;
+      }
+    }
+  }
+  component monitor: Monitor;
+  test 'Labels' of monitor {
+    /** A level of 7 has no 2.2 text; the 2.3 label writes every value. */
+    monitor.legacyReport(4711, 7);
+    assert monitor.legacy == "DTC level many";
+    monitor.report(4711, 11.996, true);
+    assert monitor.label == "DTC 4711 at 12.00 V, latched true";
+    monitor.report(-12, -0.004, false);
+    assert monitor.label == "DTC -12 at 0.00 V, latched false";
+  }
+  test 'Rounding' of monitor {
+    /** Ties away from zero (unlike Swaml::Math::round, which rounds -2.5 to -2), no negative zero, exact binary values. */
+    var a: string = monitor.precise(-2.5, 0);
+    var b: string = monitor.precise(-0.0001, 2);
+    var c: string = monitor.precise(0.125, 2);
+    var d: string = monitor.precise(1.005, 2);
+    assert a == "-3" and b == "0.00" and c == "0.13" and d == "1.00" and round(-2.5) == -2;
+    var e: string = monitor.precise(999999999999999868928.0, 1);
+    assert e == "999999999999999868928.0";
+  }
+  test 'Bounds' of monitor {
+    /** More than 15 decimals or a magnitude of at least 1e21 is the runtime failure Bounds. */
+    monitor.tooPreciseCount(1.0);
+    var big: string = monitor.precise(1000000000000000000000.0, 0);
+    var fifteen: string = monitor.precise(0.1, 15);
+    assert monitor.tooPrecise == 1 and big == "?" and fifteen == "0.100000000000000";
+  }
+}

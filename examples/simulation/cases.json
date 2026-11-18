@@ -63,6 +63,21 @@
       "FleetCases::Command a vehicle": "pass",
       "FleetCases::Positions and archive": "pass"
     },
+    "examples/38-square-root.swaml": {
+      "HazardDistance::Same distance for a 3-4-5 triangle": "pass",
+      "HazardDistance::Correctly rounded": "pass",
+      "HazardDistance::Far hazard": "pass",
+      "HazardDistance::Negative argument fails": "pass"
+    },
+    "examples/39-logical-clock.swaml": {
+      "ReceptionAge::Timeout at 20 ms": "pass",
+      "ReceptionAge::Timeout at 10 ms": "pass"
+    },
+    "examples/40-number-text.swaml": {
+      "DiagnosticText::Labels": "pass",
+      "DiagnosticText::Rounding": "pass",
+      "DiagnosticText::Bounds": "pass"
+    },
     "examples/notation/catalog.swaml": {
       "Notation::Startup": "pass"
     },
