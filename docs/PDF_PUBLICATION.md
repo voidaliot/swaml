@@ -20,27 +20,37 @@ The site is the existing showcase project. Build the validated source/trace data
 
 The original scripts/test-publication-archive.py, scripts/check-spec-pdf.py and scripts/rebuild-archived-pdf.py retain historical responsibilities. They do not assert a 2.0 PDF exists or validate the new language. Their source pin and archived assets must remain unchanged unless a separately reviewed historical correction is explicitly requested.
 
+## Frozen publications
+
+node scripts/check-frozen-publications.mjs runs in npm run check and source CI (test/ci/frozen-publications.test.mjs). It pins the SHA-256 of the PDF, .manifest.json and .sha256 file of every published edition under output/pdf (0.1.0, 1.0.0, 1.1.0, 1.1.1, 1.2.0, 1.2.1, 1.3.0, 1.3.1, 2.0.0, 2.1 and 2.2), so a rebuilt or edited publication fails even when its manifest and checksum agree with it. Source CI fetches the release tags, and the test compares the pins with the files at each release tag (v1.2.0 for 0.1.0 to 1.1.1, which that release rebuilt), so a pin cannot be edited silently; without tags that comparison is skipped with a notice.
+
+The check also requires each frozen workspace copy to equal the hash its edition's manifest records: for 2.2 the reference book, RELEASE_2_2.md, every file under docs/figures/2.2, docs/notation/2.2 and examples/simulation/2.2, and every script the 2.2 PDF embeds (its builder, checker, source inventory, archive verifier, publication test, requirements and the shared notation, figure, reference and version scripts); for 2.1 the reference book, RELEASE_2_1.md, examples/simulation/hello-trace.json, every file under docs/figures/2.0 and docs/notation/2.0 and the 2.1 publication scripts; for 2.0.0 the frozen reference under history/2.0.0 and pdf-requirements.txt; for 1.x the reference books and release and migration notes. A file added to a frozen directory fails as well. Every companion or script that a manifest lists and that changed after its release is a named exception in the script, with the commit that changed it. PDF, PNG and TTF files are compared byte for byte, every other file after CRLF is normalized to LF, as the builders hashed them. Maintained sources (docs/spec, the guides, src, examples and inventories) are not frozen. A new edition adds its pins when it is published; a later edition that needs to change a frozen script adds a new X.Y file, or moves the entry from the edition's files to its exceptions with the commit and reason and lowers its count, in a reviewed change.
+
 ## 2.2 commands
 
 ```sh
-python scripts/build-spec-pdf-2.2.py
-python scripts/check-spec-pdf-2.2.py
+python scripts/check-spec-pdf-2.2.py --archive
 python scripts/test-publication-2-2.py
 ```
 
-The strict 2.2 checker requires every attached source to match the current workspace, including ADRs 0020/0021, examples 30/31, the 2.2 trace and edition-specific figure assets. Run the Publication and compatibility workflow after the same checks pass locally. Render and inspect every new PDF page before publication. Preserve the published 2.1 builder, checker and assets, and check them in archive mode.
+scripts/build-spec-pdf-2.2.py is the historical release builder of the published edition. Do not run it: it would regenerate the PDF, manifest and checksum from the current sources, which the frozen-publication check rejects.
+
+The 2.2 edition is published, and maintained sources it embeds (package.json and files under src among them) changed after v2.2. The Publication and compatibility workflow therefore runs check-spec-pdf-2.2.py --archive, as it does for 2.1. Archive mode verifies the PDF bytes against the manifest and the .sha256 file, every embedded source and figure against its recorded hash, the complete source bundle hash, the recorded versions, bookmarks, links, release-note content, page bounds and text size, without comparing the embedded sources with the workspace. The frozen-publication check compares the edition-specific workspace copies. Do not rebuild or edit the published 2.2 PDF, manifest or checksum.
+
+Without --archive the 2.2 checker keeps its strict current-source behavior: every attached source must match the current workspace, including ADRs 0020/0021, examples 30/31, the 2.2 trace and edition-specific figure assets. That mode was the gate for releasing 2.2 and no longer passes on main; the next edition's own strict checker is its release gate. Run the Publication and compatibility workflow after the same checks pass locally. Render and inspect every new PDF page before publication. Preserve the published 2.1 and 2.2 builders, checkers and assets, and check them in archive mode.
 
 ## 2.1 commands
 
 ```sh
-python scripts/build-spec-pdf-2.1.py
-python scripts/check-spec-pdf-2.1.py
+python scripts/check-spec-pdf-2.1.py --archive
 python scripts/test-publication-2-1.py
 ```
 
+scripts/build-spec-pdf-2.1.py is the historical release builder of the published edition. Do not run it.
+
 The 2.1 builder refuses a workspace whose spec/standard.json or edition module selects another standard. Its manifest records release, specificationRevision and languageVersion 2.1, the simulation profile, the separate implementationRevision of the reference implementation package and the publicationDate. It embeds the current maintained sources, including SWAML-2.1-Reference.md, as exact canonical attachments. Unsupported Markdown tokens, comment markers parsed as emphasis, backslash escapes in prose outside code spans, unresolved section links and broken repository links fail the build. The checker verifies the source bundle, both versions, the edition module, bookmarks for every keyword and notation concept, internal link destinations, release-tag repository links, release-note content, page bounds and a minimum text size.
 
-Without --archive the 2.1 checker retains its historical strict current-source behavior; the maintained workspace now uses the strict 2.2 checker. Pull requests run check-spec-pdf-2.1.py --archive, which verifies the published PDF against its own manifest and attachments after the maintained sources move on. When the next edition is prepared, its own strict checker replaces the manual 2.1 step, which then also uses --archive.
+Without --archive the 2.1 checker retains its historical strict current-source behavior. The Publication and compatibility workflow runs check-spec-pdf-2.1.py --archive, which verifies the published PDF against its own manifest and attachments after the maintained sources move on.
 
 ## 2.0 commands
 
@@ -56,9 +66,10 @@ runs the Node 24 and Windows compatibility checks. Routine language CI keeps the
 semantic tests and production website build; it does not rebuild a frozen 1.x book.
 
 ```sh
-python scripts/build-spec-pdf-2.0.py
-python scripts/check-spec-pdf-2.0.py
+python scripts/check-spec-pdf-2.0.py --archive
 ```
+
+scripts/build-spec-pdf-2.0.py is the historical release builder of the published 2.0.0 edition. Do not run it.
 
 The new builder embeds exact canonical repository LF text and binary assets, records their hashes and a bundle hash, identifies the source base commit and dependency versions, and uses the bundled DejaVu fonts. PNG reproducibility checks compare pixel bytes independently of platform compression, while SVG and scene JSON remain byte-exact.
 
