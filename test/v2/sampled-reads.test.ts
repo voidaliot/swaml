@@ -157,6 +157,16 @@ test('WP6-S03 WP6-D02 a port redefinition that removes the initial value of a me
         'component Demo { component s: Sensor22; component r: Derived; connect (s.out, r.door); }', ''));
     const r = simulate([changed.model], 'Test::Demo', { untilNs: 5000000 });
     assert.deepEqual([r.stores['Demo.r'], r.trace.filter(o => o.kind === 'failure')], [{ seen: false, got: false, first: true }, []]);
+    // A forwarding-compatible redefinition may widen int to real; the inherited read was typed int, so it would fail at run time.
+    const widened = `package Test {
+  port def DI { provides attribute count: int = 7; }
+  port def DR { provides attribute count: real = 7.5; }
+  component def Sensor { port out: DR; operation tick() { send out.count(2.5); } schedule { on every 10ms tick(); } }
+  component def Base { reversed port door: DI; attribute total: int = 0; operation read() { total = door.count + 1; } schedule { on every 10ms read(); } }
+  component def Derived specializes Base { redefines reversed port door: DR; }
+  component Demo { component s: Sensor; component r: Derived; connect (s.out, r.door); }
+}`;
+    assert.deepEqual(await errors(widened), [['SW2004', 'Sampled attribute count of DR must keep type int: inherited read samples door.count.']]);
     // A derived forwarding of the inherited port is SW2005 at the forwarding (WP6-D01).
     assert.deepEqual(await errors(redefined('component def Derived specializes Base { component leaf: Leaf; connect (door, leaf.p); } ' +
         'component Demo { component s: Sensor22; component r: Derived; connect (s.out, r.door); }', '')),

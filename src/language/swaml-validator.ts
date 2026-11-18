@@ -612,8 +612,14 @@ export class SwamlValidator {
                 const who = entry ? 'an inherited schedule entry' : `inherited ${formatName(site!.name, MESSAGE_SPELLING)}`;
                 const port = members(c).filter(a.isPortUsage).find(x => x.name === read.port.name);
                 const member = port && portMembers(port).find(m => m.name === read.member.name);
+                const definition = port && formatName(port.definition?.ref?.name ?? port.name, MESSAGE_SPELLING);
                 if (port && c.members.includes(port) && member && !optsIn(member)) {
-                    this.report(port, 'SW2004', `Sampled attribute ${formatName(member.name, MESSAGE_SPELLING)} of ${formatName(port.definition?.ref?.name ?? port.name, MESSAGE_SPELLING)} needs an initial value: ${who} samples ${text}.`);
+                    this.report(port, 'SW2004', `Sampled attribute ${formatName(member.name, MESSAGE_SPELLING)} of ${definition} needs an initial value: ${who} samples ${text}.`);
+                    reported.add(path);
+                }
+                // The inherited read was typed with the base's member type; a redefinition may not change it.
+                else if (port && c.members.includes(port) && member && typeKey(member.type) !== typeKey(read.member.type)) {
+                    this.report(port, 'SW2004', `Sampled attribute ${formatName(member.name, MESSAGE_SPELLING)} of ${definition} must keep type ${typeKey(read.member.type)}: ${who} samples ${text}.`);
                     reported.add(path);
                 }
                 const link = forwarded.has(read.port.name) ? c.members.filter(a.isConnect).find(l => l.source === read.port.name || l.target === read.port.name) : undefined;
