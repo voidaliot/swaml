@@ -368,3 +368,18 @@ test('WP7 determinism: repeated runs give identical traces', async () => {
     const first = JSON.stringify(simulate([m], 'Test::Demo', { untilNs: 100_000_000 })), second = JSON.stringify(simulate([m], 'Test::Demo', { untilNs: 100_000_000 }));
     assert.equal(first, second);
 });
+
+test('WP7-S02 WP6-D02 an inherited guard that samples: a port redefinition dropping the initial value is reported once, at the redefinition', async () => {
+    const source = (derived: string) => `package Test {
+  port def D23 { provides attribute ajar: bool = false; }
+  port def D22 { provides attribute ajar: bool; }
+  component def Sensor22 { port out: D22; operation tick() { send out.ajar(true); } schedule { on every 10ms tick(); } }
+  component def SA { reversed port door: D23; attribute runs: uint = 0; operation take() { runs = runs + 1; } schedule { on every 10ms take() when (not door.ajar); } }
+  ${derived}
+  component Demo { component s: Sensor22; component r: SAD; connect (s.out, r.door); }
+}`;
+    assert.deepEqual(await errors(source('component def SAD specializes SA { redefines reversed port door: D22; }')),
+        [['SW2004', 'Sampled attribute ajar of D22 needs an initial value: an inherited schedule entry samples door.ajar.']]);
+    // A derived entry that replaces the guarded one no longer samples, so the redefinition is valid and the member keeps one owner.
+    assert.deepEqual(await errors(source('component def SAD specializes SA { redefines reversed port door: D22; operation got(v: bool) { } schedule { on every 10ms take(); on receive door.ajar(v) got(v); } }')), []);
+});
