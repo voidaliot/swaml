@@ -553,7 +553,7 @@ export function sampledReads(c: Structure): SampledRead[] {
     if (known)
         return known;
     const result: SampledRead[] = [];
-    const roots: AstNode[] = [...members(c).filter(isExecutable).flatMap(op => body(op) ? [body(op)!] : []), ...schedule(c).flatMap(e => e.args)];
+    const roots: AstNode[] = [...members(c).filter(isExecutable).flatMap(op => body(op) ? [body(op)!] : []), ...schedule(c).flatMap(e => e.args), ...schedule(c).flatMap(e => e.guard ? [e.guard] : [])];
     for (const root of roots)
         for (const n of nodes(root))
             if (a.isReferenceExpression(n)) {
@@ -578,7 +578,7 @@ export function localVisible(n: AstNode, name: string): boolean {
             return (signature(p)?.parameters ?? []).some(x => x.name === name);
         if (a.isScheduleEntry(p))
             return p.bindings.includes(name);
-        if (a.isBlock(p) || a.isOperationBody(p) || a.isScenario(p)) {
+        if (a.isBlock(p) || a.isOperationBody(p) || a.isScenario(p) || a.isStateStep(p)) {
             const index = child.$containerProperty === 'statements' ? child.$containerIndex ?? 0 : 0;
             if (p.statements.slice(0, index).some(s => a.isLocalVariable(s) && s.name === name))
                 return true;

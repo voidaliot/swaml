@@ -1362,7 +1362,8 @@ export class SwamlValidator {
                     this.report(e, 'SW2007', 'after targets are parameterless void flow operations.');
                 graph.set(e.predecessor!, [...(graph.get(e.predecessor!) ?? []), op.name]);
             }
-            if (isStateful(op) && (entries.filter(x => x.operation === op.name).length !== 1 || e.kind !== 'start'))
+            // PROTOTYPE P6: an operation with states in the flow may be released by one on start or one on every entry (SIF-S01).
+            if (isStateful(op) && (entries.filter(x => x.operation === op.name).length !== 1 || !(e.kind === 'start' || e.kind === 'every' && flowStates(op).length > 0)))
                 this.report(e, 'SW2008', 'A stateful operation needs exactly one on start entry.');
         }
         const cyclic = (name: string, seen: Set<string>): boolean => seen.has(name) || (graph.get(name) ?? []).some(x => cyclic(x, new Set([...seen, name])));

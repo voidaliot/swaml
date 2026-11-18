@@ -1,7 +1,7 @@
 import { AstUtils, DocumentState, type AstNode } from 'langium';
 import * as a from '../language/generated/ast.js';
 import { SWAML_REFERENCE_PROFILE } from '../language/edition.js';
-import { flowStates, isStateful, inputEndpoints, memberQos, sampledMembers, sampledReadForm, LIBRARY_2_3_URI, isCompletion, isInternal, stateDeferrals, libraryIntrinsic, type LibraryIntrinsic, caseRead, caseTarget, isPlace, placeRoot, valueSteps, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, entryPeriod, entryDeadline, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
+import { localVisible, flowStates, isStateful, inputEndpoints, memberQos, sampledMembers, sampledReadForm, LIBRARY_2_3_URI, isCompletion, isInternal, stateDeferrals, libraryIntrinsic, type LibraryIntrinsic, caseRead, caseTarget, isPlace, placeRoot, valueSteps, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, entryPeriod, entryDeadline, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
 import { binary, bind, checked, ContractViolation, copy, intText, plain, realText, RuntimeFault, scalar, squareRoot, voidValue, widen, type Environment, type Value } from './values.js';
 export { projectOperationTiming } from './timing.js';
 export interface SimulationOptions {
@@ -83,6 +83,8 @@ export interface SimulationResult {
         live: boolean;
     }>;
     deployments: Record<string, string | null>;
+    /** PROTOTYPE P4/P6 counters (not part of the contract). */
+    prototype?: PrototypeStats;
 }
 type Reply = {
     value?: Value;
@@ -92,6 +94,8 @@ type Reply = {
     branch?: a.ReceiveBranch | a.Transition;
     /** PROTOTYPE: a wake (P4) of a waiting state. */
     wake?: boolean;
+    /** PROTOTYPE P6: a release of a periodic machine that waits for it. */
+    release?: boolean;
 };
 type Yield = {
     kind: 'step';
@@ -115,6 +119,8 @@ type Yield = {
     flow?: { named: Set<string> };
     /** PROTOTYPE P1r: the zero-time wait that ends at an event of the same instant, which picks the message again (SIF-R04). */
     zero?: boolean;
+    /** PROTOTYPE P6: a periodic machine waits for its next release; nothing else ends this wait. */
+    periodic?: boolean;
     /** The evaluated value of a computed receive timeout, recorded on its receiveWait observation (WP4-T01). */
     durationNs?: number;
 };
@@ -152,6 +158,10 @@ type Component = {
     structure: Structure;
     store: Environment;
     lock?: Frame;
+    /** PROTOTYPE P4: counts what happened to this occurrence from outside (deliveries from other occurrences, replies, case calls): StateLoop. */
+    external?: number;
+    /** PROTOTYPE P4: StateLoop records of the current instant: looks per state, configurations seen per state. */
+    loops?: { time: number; looks: Map<a.StateStep, number>; seen: Map<a.StateStep, Map<string, number>> };
 };
 type Frame = {
     id: string;
@@ -193,6 +203,18 @@ type Frame = {
     flowTrigger?: AstNode;
     /** PROTOTYPE P1r: statements run in the current event line's block (an if whose test is false does not count). */
     lineWork?: number;
+    /** PROTOTYPE P4: attributes written in this segment, per occurrence written (a case call writes its subject), and whether some write changed the value. */
+    dirty?: Map<Component, Map<string, boolean>>;
+    /** PROTOTYPE P4: the current state levels of an operation with states and the locals of the list holding its outer state. */
+    flow?: { levels: FlowLevel[]; local: Environment };
+    /** PROTOTYPE P4: a value in the read set was written while the machine was busy; it looks again when it begins to wait. */
+    wakePending?: boolean;
+    /** PROTOTYPE P4: iteration counters of the loops being run (configuration of StateLoop). */
+    loops?: Map<AstNode, number>;
+    /** PROTOTYPE P4: a case script frame running a call of its subject's operation (its writes are external to the subject). */
+    borrowed?: boolean;
+    /** PROTOTYPE P6: the persistent activation of a machine released on every: releases issued, releases ended, backlog. */
+    periodic?: { seq: number; done: number; backlog: number[] };
 };
 type FlowLevel = { state: a.StateStep; entered: number; delays: Map<a.Transition, number>; presented: Set<a.Transition> };
 /** PROTOTYPE P1r: exit; or to S; run by a look (SIF-R07). */
@@ -205,7 +227,17 @@ type Watch = {
     active: boolean;
 };
 /** PROTOTYPE P1r measurement variant: pick the queued message in the same pump as the zero-time wait (P1's AY), not at a new event. */
-const P4_IMMEDIATE_PICK = !!process.env.P4_IMMEDIATE_PICK, P4_NO_LINE_IF_STEP = !!process.env.P4_NO_LINE_IF_STEP;
+const P4_IMMEDIATE_PICK = !!process.env.P4_IMMEDIATE_PICK;
+/** ADOPTED after P5 (default): a false guard if in an event line is no scheduling step. P4_LINE_IF_STEP=1 restores the old variant. */
+const P4_NO_LINE_IF_STEP = !process.env.P4_LINE_IF_STEP;
+/**
+ * PROTOTYPE P4/P6 variants: P6_NO_WAKES (no wakes at all), P6_NO_PENDING_WAKE (a write while the machine is busy is lost),
+ * P6_NO_STATELOOP, P6_HASH_FIRST (configuration from the first look of a state in an instant, not the second),
+ * P6_SAMPLE_AT_TRIGGER (a look sees the sample cells as they were when what caused it happened, not when it runs).
+ */
+const P6_NO_WAKES = !!process.env.P6_NO_WAKES, P6_NO_PENDING_WAKE = !!process.env.P6_NO_PENDING_WAKE, P6_NO_STATELOOP = !!process.env.P6_NO_STATELOOP, P6_HASH_FIRST = !!process.env.P6_HASH_FIRST, P6_SAMPLE_AT_TRIGGER = !!process.env.P6_SAMPLE_AT_TRIGGER;
+/** PROTOTYPE P4/P6 counters, reported on the result as prototype. */
+export type PrototypeStats = { looks: number; arrivalLooks: number; messageLooks: number; timerLooks: number; wakeLooks: number; releaseLooks: number; wakes: number; sameValueWakes: number; pendingWakes: number; configs: number; configNs: number; configChars: number; skips: number; releases: number };
 /** PROTOTYPE: a jump out of every active state, unwinding to the statement list that contains its target (SIF-R07, SIF-R08). */
 class JumpSignal {
     constructor(public target: string, public node: AstNode) { }
@@ -507,6 +539,10 @@ class Interpreter {
     private offers = 0;
     /** PROTOTYPE P1: the insertion ordinal of the event being run, which orders deliveries within an instant. */
     private eventOrder = 0;
+    /** PROTOTYPE P4/P6 counters. */
+    private stats: PrototypeStats = { looks: 0, arrivalLooks: 0, messageLooks: 0, timerLooks: 0, wakeLooks: 0, releaseLooks: 0, wakes: 0, sameValueWakes: 0, pendingWakes: 0, configs: 0, configNs: 0, configChars: 0, skips: 0, releases: 0 };
+    /** PROTOTYPE P6: the persistent activation of each machine released on every, by operation label. */
+    private periodicFrames = new Map<string, Frame>();
     /** Queued copies so far: the global offer ordinal of retained input (WP5-R09). */
     private ordinals = 0;
     /** Whether any message has been retained by a deferral in this run; until then consume() is the 2.2 walk (WP5-R11). */
@@ -582,7 +618,15 @@ class Interpreter {
         value: Value;
     } { const c = local.get(name) ?? f.c.store.get(name); if (!c)
         throw new RuntimeFault('Type', `Unknown value ${name}`); return c; }
-    private assign(f: Frame, local: Environment, name: string, value: Value, site?: AstNode): void { const c = this.cell(f, local, name); c.value = widen(value, c.type); this.log('write', `${f.c.path}.${name}`, { activation: f.id, source: this.source(site ?? f.at), scope: local.has(name) ? 'local' : 'attribute', value: plain(c.value) }); }
+    /** PROTOTYPE P4: an attribute write of this segment, kept until the segment ends (unlock), with whether it changed the value. */
+    private noteWrite(f: Frame, local: Environment, name: string, changed: boolean): void {
+        if (local.has(name) || !f.c.store.has(name))
+            return;
+        const m = (f.dirty ??= new Map()).get(f.c) ?? new Map<string, boolean>();
+        m.set(name, (m.get(name) ?? false) || changed);
+        f.dirty.set(f.c, m);
+    }
+    private assign(f: Frame, local: Environment, name: string, value: Value, site?: AstNode): void { const c = this.cell(f, local, name); const old = JSON.stringify(plain(c.value)); c.value = widen(value, c.type); this.noteWrite(f, local, name, old !== JSON.stringify(plain(c.value))); this.log('write', `${f.c.path}.${name}`, { activation: f.id, source: this.source(site ?? f.at), scope: local.has(name) ? 'local' : 'attribute', value: plain(c.value) }); }
     /**
      * A place assignment (WP1-R01 to WP1-R03): the target's index expressions left to right, then the right
      * side, then the root cell is read live, every index is checked against the value read and the root is
@@ -619,6 +663,7 @@ class Interpreter {
             (parent!.data as Value[])[key] = replaced;
         else
             (parent!.data as Record<string, Value>)[key!] = replaced;
+        this.noteWrite(f, local, root, JSON.stringify(plain(cell.value)) !== JSON.stringify(plain(next)));
         cell.value = next;
         this.log('write', `${f.c.path}.${root}`, { activation: f.id, source: this.source(f.at), scope: local.has(root) ? 'local' : 'attribute', value: plain(next), place });
         return voidValue();
@@ -709,7 +754,7 @@ class Interpreter {
             else
                 throw e;
         }
-        return { profile: REFERENCE_PROFILE, target: { kind: this.target.kind, identity: this.target.identity }, options: copy(this.options), outcome: this.stop || this.trace.some(t => t.kind === 'failure'||t.kind==='caught') ? 'failure-observed' : 'no-failure-observed', status: this.stop ?? (this.ended ? 'stopped' : this.script ? this.pending ? 'horizon' : 'quiescent' : this.events.size || this.frames.size ? 'horizon' : 'quiescent'), timeNs: this.time, steps: this.steps, sources: this.models.map(m => ({ uri: AstUtils.getDocument(m).uri.toString(), text: AstUtils.getDocument(m).textDocument.getText() })), trace: this.trace, stores: Object.fromEntries([...this.components].map(([path, c]) => [path, Object.fromEntries([...c.store].map(([n, v]) => [n, plain(v.value)]))])), machines: this.machines, deployments: this.deployments };
+        return { profile: REFERENCE_PROFILE, target: { kind: this.target.kind, identity: this.target.identity }, options: copy(this.options), outcome: this.stop || this.trace.some(t => t.kind === 'failure'||t.kind==='caught') ? 'failure-observed' : 'no-failure-observed', status: this.stop ?? (this.ended ? 'stopped' : this.script ? this.pending ? 'horizon' : 'quiescent' : this.events.size || this.frames.size ? 'horizon' : 'quiescent'), timeNs: this.time, steps: this.steps, sources: this.models.map(m => ({ uri: AstUtils.getDocument(m).uri.toString(), text: AstUtils.getDocument(m).textDocument.getText() })), trace: this.trace, stores: Object.fromEntries([...this.components].map(([path, c]) => [path, Object.fromEntries([...c.store].map(([n, v]) => [n, plain(v.value)]))])), machines: this.machines, deployments: this.deployments, prototype: this.stats };
     }
     /** Applies the one deployment of a top-level occurrence, if it has one, to that occurrence's tree. */
     private place(root: a.ComponentUsage): void {
@@ -731,14 +776,47 @@ class Interpreter {
         if (this.unstarted >= this.options.maxPending)
             throw new ContractViolation('ActivationOverflow');
         const op = members(c.structure).filter(isExecutable).find(x => x.name === entry.operation)!;
+        // PROTOTYPE P6 (WP7 with the if spelling): a release guard that is false skips the release; nothing else happens.
+        if (entry.guard) {
+            const fake = { c, entry, snapshot: new Map(), id: 'guard' } as unknown as Frame;
+            if (!this.sync(this.evaluate(entry.guard, fake, new Map())).data) {
+                this.stats.skips++;
+                this.log('skip', `${c.path}.${op.name}`, { source: this.source(entry), cause: entry.kind });
+                return;
+            }
+        }
+        const deadline = entry.deadlineValue || entry.periodValue ? this.computedDeadline(c, entry) : entryDeadline(entry, c.structure);
+        // PROTOTYPE P6 (SIF-R10, SIF-R11): one persistent activation per occurrence; later releases resume it (one look each).
+        const periodicKey = `${c.path}.${op.name}`, persistent = entry.kind === 'every' && flowStates(op).length > 0;
+        const existing = persistent ? this.periodicFrames.get(periodicKey) : undefined;
+        if (existing && !existing.done) {
+            const p = existing.periodic!, seq = ++p.seq;
+            this.stats.releases++;
+            this.log('release', periodicKey, { activation: existing.id, source: this.source(entry), cause: entry.kind, release: seq });
+            if (deadline)
+                this.at(this.time + deadline, 0, () => { if (!existing.done && p.done < seq)
+                    throw new ContractViolation('Deadline', existing.id); }, () => !existing.done && p.done < seq);
+            if (existing.waiting?.kind === 'receive' && existing.waiting.periodic && !p.backlog.length)
+                this.resume(existing, { release: true });
+            else
+                p.backlog.push(seq);
+            return;
+        }
         const f: Frame = { id: this.id('a'), c, op, entry, released: this.time, iterator: undefined!, snapshot: new Map(), done: false, suspended: false, started: false, token: 0, watches: [], correlation: message?.correlation, at: entry };
+        if (persistent) {
+            f.periodic = { seq: 1, done: 0, backlog: [] };
+            this.periodicFrames.set(periodicKey, f);
+            this.stats.releases++;
+        }
         f.iterator = this.activate(f, message);
         this.frames.add(f);
         this.unstarted++;
-        this.log('release', `${c.path}.${op.name}`, { activation: f.id, source: this.source(entry), cause: entry.kind, predecessorActivation: predecessor?.id });
+        this.log('release', `${c.path}.${op.name}`, { activation: f.id, source: this.source(entry), cause: entry.kind, predecessorActivation: predecessor?.id, ...(persistent ? { release: 1 } : {}) });
         // One precedence everywhere (entryDeadline): an explicit deadline, literal or computed, then the period (WP4-S04).
-        const deadline = entry.deadlineValue || entry.periodValue ? this.computedDeadline(c, entry) : entryDeadline(entry, c.structure);
-        if (deadline)
+        if (deadline && persistent)
+            this.at(this.time + deadline, 0, () => { if (!f.done && f.periodic!.done < 1)
+                throw new ContractViolation('Deadline', f.id); }, () => !f.done && f.periodic!.done < 1);
+        else if (deadline)
             this.at(this.time + deadline, 0, () => { if (!f.done)
                 throw new ContractViolation('Deadline', f.id); }, () => !f.done);
     }
@@ -779,12 +857,15 @@ class Interpreter {
     private concurrent(c: Component): number { let n = 0; for (const x of this.frames)
         if (x.c === c && x.entry.concurrent && x.started)
             n++; return n; }
-    private unlock(f: Frame): void { if (f.c.lock === f) {
+    private unlock(f: Frame): void { this.flushWrites(f); if (f.c.lock === f) {
         f.c.lock = undefined;
         this.log('unlock', f.c.path, { activation: f.id });
     } }
     private resume(f: Frame, reply?: Reply): void { if (f.done)
-        return; f.token++; f.waiting = undefined; f.suspended = false; f.reply = reply; this.log('ready', this.label(f), { activation: f.id }); }
+        return; if (P6_SAMPLE_AT_TRIGGER && f.flow && f.waiting?.kind === 'receive' && f.waiting.flow) {
+        // Variant: the look sees the sample cells as they are at the event that ends the wait.
+        f.sampled = new Map([...this.cells].filter(([k]) => k.startsWith(`${f.c.path}.`)).map(([k, v]) => [k, copy([v.value])[0]]));
+    } f.token++; f.waiting = undefined; f.suspended = false; f.reply = reply; this.log('ready', this.label(f), { activation: f.id }); }
     private drive(f: Frame): void {
         if (f.done)
             return;
@@ -842,6 +923,14 @@ class Interpreter {
                     this.resume(f, {}); }, () => f.token === token && !f.done);
             if (y.kind === 'request')
                 this.request(f, y);
+            // PROTOTYPE P6: waiting for the next release ends the current release; a release that came meanwhile resumes at once.
+            if (y.kind === 'receive' && y.periodic) {
+                f.periodic!.done++;
+                if (f.periodic!.backlog.length) {
+                    f.periodic!.backlog.shift();
+                    this.resume(f, { release: true });
+                }
+            }
         }
         catch (e) {
             if (!(e instanceof RuntimeFault))
@@ -881,6 +970,14 @@ class Interpreter {
             args.push(yield* this.evaluate(e, f, env));
         const sig = signature(f.op)!;
         const outNames = f.entry.args.map((arg, i) => sig.parameters[i]?.direction === 'out' && a.isReferenceExpression(arg) ? arg.path : undefined);
+        // PROTOTYPE P6 (owner decision): a periodic machine that reaches its end has no state; the next release runs it from the top.
+        while (f.periodic) {
+            yield* this.call(f.op, args, f, env, outNames);
+            f.flow = undefined;
+            this.machines[this.label(f)] = { state: '', live: true };
+            this.log('periodicEnd', this.label(f), { activation: f.id, release: f.periodic.seq - f.periodic.backlog.length });
+            yield { kind: 'receive', branches: [], flow: { named: new Set() }, periodic: true };
+        }
         const result = yield* this.call(f.op, args, f, env, outNames);
         if (f.entry.kind === 'call')
             (f as Frame & {
@@ -1051,6 +1148,7 @@ class Interpreter {
                 f.op = scripted.operation;
                 f.script = undefined;
                 f.watches = [];
+                f.borrowed = true;
                 let completed = false, result: Value, outputs: Value[] | undefined;
                 try {
                     result = yield* this.call(scripted.operation, args, f);
@@ -1060,6 +1158,7 @@ class Interpreter {
                 finally {
                     const failedAt = f.at;
                     this.unlock(f);
+                    f.borrowed = false;
                     Object.assign(f, saved);
                     // A failure keeps its actual callee statement; a successful
                     // return and all out writes belong to the restored caller.
@@ -1162,6 +1261,9 @@ class Interpreter {
                 const limit = s.limit ? widen(yield* this.evaluate(s.limit, f, local), 'uint').data as number : Infinity;
                 for (let i = 0; i < limit; i++) {
                     this.fuel();
+                    // StateLoop configuration: only a bounded loop's counter is state (a while (true) iteration count is not observable).
+                    if (s.limit)
+                        (f.loops ??= new Map()).set(s, i);
                     // The body moves f.at; a condition belongs to the loop statement again.
                     f.at = s;
                     if (a.isWhile(s) && !(yield* this.evaluate(s.condition, f, local)).data)
@@ -1171,6 +1273,7 @@ class Interpreter {
                     if (a.isUntil(s) && (yield* this.evaluate(s.condition, f, local)).data)
                         break;
                 }
+                f.loops?.delete(s);
             }
             else if (a.isFor(s)) {
                 const loop = new Map(local);
@@ -1185,11 +1288,13 @@ class Interpreter {
             }
             else if (a.isForEach(s)) {
                 const values = copy((yield* this.evaluate(s.collection, f, local)).data as Value[]);
-                for (const v of values) {
+                for (const [i, v] of values.entries()) {
+                    (f.loops ??= new Map()).set(s, i);
                     const loop = new Map(local);
                     bind(loop, s.variable.name, typeKey(s.variable.type), v);
                     yield* this.block(s.body, f, loop);
                 }
+                f.loops?.delete(s);
             }
             else if (a.isWait(s) && s.delay) {
                 // A computed wait is evaluated when the statement starts waiting (WP4-S03, WP4-R02).
@@ -1339,7 +1444,7 @@ class Interpreter {
     }
     /** The entry point for P4: a write or sample-cell update in a waiting state's read set makes a look with nothing present. */
     wakeFlow(f: Frame): void {
-        if (!f.done && f.waiting?.kind === 'receive' && f.waiting.flow && !f.waiting.zero)
+        if (!f.done && f.waiting?.kind === 'receive' && f.waiting.flow && !f.waiting.zero && !f.waiting.periodic)
             this.resume(f, { wake: true });
     }
     /** SIF-R01: reaching the states of path in order (parents on the way get steps 1 to 4), then a parent's first inner state. */
@@ -1479,20 +1584,36 @@ class Interpreter {
      * SIF-R04: when a state begins to wait: timers that ran out first (a look now); then queued input of owned members not
      * named here is dropped in delivery order; then a queued named message ends the wait in zero time and is picked again at
      * that event; otherwise the state waits for a timer (phase 1), a named delivery (phase 2) or a wake.
+     * PROTOTYPE P4: a wake that came while the machine was busy (wakePending) also ends the wait in zero time.
+     * PROTOTYPE P6: a periodic machine waits for its next release only; at the release, queued input of owned members not
+     * named at the current state is dropped, then the first-delivered named message is taken (one per release).
      */
-    private *wait(levels: FlowLevel[], f: Frame): Generator<Yield, { input?: Message; timers: boolean }, Reply | undefined> {
+    private *wait(levels: FlowLevel[], f: Frame): Generator<Yield, { input?: Message; timers: boolean; cause: string }, Reply | undefined> {
+        if (f.periodic) {
+            const named = this.namedAt(levels);
+            f.at = levels.at(-1)!.state;
+            yield { kind: 'receive', branches: [], flow: { named }, periodic: true };
+            this.dropUnnamed(f, named);
+            const owned = this.owned(f.op), h = this.flowHeads(f).find(x => owned.has(x.endpointName) && named.has(x.endpointName));
+            return { input: h ? this.take(h.queue, h.m, h.endpointName, f.c) : undefined, timers: true, cause: 'release' };
+        }
         while (true) {
             if (this.timersDue(levels))
-                return { timers: true };
+                return { timers: true, cause: 'timer' };
             // Step 2 (drop the queued input of owned members not named here) is done right after this yield releases the lock:
             // by drive() for the zero-time wait, by consume() for the ordinary wait (the 2.2 trace order: unlock, receiveWait,
             // then the discards). Nothing else runs in between, so the behaviour is that of dropping before the wait.
             const named = this.namedAt(levels);
             f.at = levels.at(-1)!.state;
-            if (this.flowHeads(f).some(x => named.has(x.endpointName))) {
+            const pending = !!f.wakePending && !P6_NO_PENDING_WAKE;
+            if (this.flowHeads(f).some(x => named.has(x.endpointName)) || pending) {
                 const reply: Reply | undefined = yield { kind: 'receive', branches: [], flow: { named }, zero: true };
                 if (reply?.input)
-                    return { input: reply.input, timers: true };
+                    return { input: reply.input, timers: true, cause: 'message' };
+                if (f.wakePending && !P6_NO_PENDING_WAKE) {
+                    this.log('wake', this.label(f), { activation: f.id, state: levels.at(-1)!.state.name, pending: true });
+                    return { timers: false, cause: 'wake' };
+                }
                 continue;
             }
             let expires: number | undefined;
@@ -1504,10 +1625,10 @@ class Interpreter {
                 throw new ContractViolation('ClockRange');
             const reply: Reply | undefined = yield { kind: 'receive', branches: [], timeout: expires === undefined ? undefined : Math.max(0, expires - this.time), flow: { named } };
             if (reply?.input)
-                return { input: reply.input, timers: true };
+                return { input: reply.input, timers: true, cause: 'message' };
             if (reply?.wake)
-                return { timers: false };
-            return { timers: true };
+                return { timers: false, cause: 'wake' };
+            return { timers: true, cause: 'timer' };
         }
     }
     /** A state standing in a statement list: reached by the flow or by a jump into it or into a state inside it (SIF-R01). */
@@ -1515,23 +1636,180 @@ class Interpreter {
         const key = this.label(f), target = f.flowTarget, trigger = f.flowTrigger;
         f.flowTarget = f.flowTrigger = undefined;
         const levels: FlowLevel[] = [];
-        yield* this.enter(levels, target && target !== top.name ? [top, ...this.pathInside(top, target)!] : [top], f, local, key, trigger);
-        let present: { input?: Message; timers: boolean } = { timers: true };
-        while (true) {
-            let left: { node: a.Exit | a.Jump | undefined; level: number } | undefined;
-            // A state with nothing to look at at any level is a named step: it leaves as by exit; (SIF-R01 step 5).
-            if (!this.hasSomething(levels))
-                left = { node: undefined, level: levels.length - 1 };
-            else
-                left = yield* this.look(levels, f, local, key, present);
-            if (left) {
-                if (yield* this.leave(levels, left.level, left.node, f, local, key))
-                    return voidValue();
-                present = { timers: true };
-                continue;
+        f.flow = { levels, local };
+        try {
+            yield* this.enter(levels, target && target !== top.name ? [top, ...this.pathInside(top, target)!] : [top], f, local, key, trigger);
+            let present: { input?: Message; timers: boolean; cause: string } = { timers: true, cause: 'arrival' };
+            while (true) {
+                let left: { node: a.Exit | a.Jump | undefined; level: number } | undefined;
+                // A state with nothing to look at at any level is a named step: it leaves as by exit; (SIF-R01 step 5).
+                if (!this.hasSomething(levels))
+                    left = { node: undefined, level: levels.length - 1 };
+                else {
+                    this.countLook(present.cause);
+                    f.wakePending = false;
+                    this.checkLoop(f, levels);
+                    left = yield* this.look(levels, f, local, key, present);
+                }
+                if (left) {
+                    if (yield* this.leave(levels, left.level, left.node, f, local, key))
+                        return voidValue();
+                    present = { timers: true, cause: 'arrival' };
+                    continue;
+                }
+                present = yield* this.wait(levels, f);
             }
-            present = yield* this.wait(levels, f);
         }
+        finally {
+            if (f.flow?.levels === levels)
+                f.flow = undefined;
+        }
+    }
+    private countLook(cause: string): void {
+        this.stats.looks++;
+        if (cause === 'arrival') this.stats.arrivalLooks++;
+        else if (cause === 'message') this.stats.messageLooks++;
+        else if (cause === 'timer') this.stats.timerLooks++;
+        else if (cause === 'wake') this.stats.wakeLooks++;
+        else if (cause === 'release') this.stats.releaseLooks++;
+    }
+    // ---- PROTOTYPE P4: read sets, wakes (SIF-R06) and StateLoop (SIF-R13) ----
+    private readSets = new Map<a.StateStep, Map<Structure, { attributes: Set<string>; cells: Set<string> }>>();
+    /**
+     * The read set of one state for one effective occurrence: attributes and sample cells (port|member) read by the
+     * statements standing in its braces (not event lines, not on entry/on exit), directly or through called operations of
+     * the occurrence (localOperation resolves redefinitions), with scopes (a visible local, parameter or binding hides an
+     * attribute or port of the same name).
+     */
+    private stateReads(s: a.StateStep, structure: Structure): { attributes: Set<string>; cells: Set<string> } {
+        const known = this.readSets.get(s)?.get(structure);
+        if (known)
+            return known;
+        const result = { attributes: new Set<string>(), cells: new Set<string>() }, visited = new Set<AstNode>();
+        const attributes = new Set(members(structure).filter(a.isAttribute).map(x => x.name));
+        const visit = (root: AstNode) => {
+            for (const n of AstUtils.streamAst(root)) {
+                if (a.isReferenceExpression(n)) {
+                    const head = n.path.split('.')[0];
+                    if (localVisible(n, head))
+                        continue;
+                    if (attributes.has(head)) {
+                        result.attributes.add(head);
+                        continue;
+                    }
+                    const sampled = sampledReadForm(n, structure);
+                    if (sampled)
+                        result.cells.add(`${sampled.port.name}|${sampled.member.name}`);
+                }
+                else if (a.isCallExpression(n) && !n.target.includes('.')) {
+                    const op = localOperation(n, n.target, structure);
+                    if (op && isExecutable(op) && body(op) && !visited.has(op)) {
+                        visited.add(op);
+                        visit(body(op)!);
+                    }
+                }
+            }
+        };
+        for (const item of this.stateItems(s))
+            if (!a.isStateAction(item) && !a.isTransition(item))
+                visit(item);
+        (this.readSets.get(s) ?? this.readSets.set(s, new Map()).get(s)!).set(structure, result);
+        return result;
+    }
+    /** The read set of the current state of f (its levels). */
+    private readSet(f: Frame): { attributes: Set<string>; cells: Set<string> } {
+        const out = { attributes: new Set<string>(), cells: new Set<string>() };
+        for (const l of f.flow?.levels ?? []) {
+            const r = this.stateReads(l.state, f.c.structure);
+            r.attributes.forEach(x => out.attributes.add(x));
+            r.cells.forEach(x => out.cells.add(`${f.c.path}.${x}`));
+        }
+        return out;
+    }
+    /** A machine of c that waits (wake now) or is busy (wake pending), other than the writer. */
+    private wakeOrPend(g: Frame, why: Record<string, unknown>, sameValue: boolean): void {
+        if (g.waiting?.kind === 'receive' && g.waiting.flow && !g.waiting.zero && !g.waiting.periodic && g.suspended) {
+            this.stats.wakes++;
+            if (sameValue)
+                this.stats.sameValueWakes++;
+            this.log('wake', this.label(g), { activation: g.id, state: g.flow!.levels.at(-1)?.state.name, ...why });
+            this.resume(g, { wake: true });
+        }
+        else if (!g.wakePending) {
+            this.stats.pendingWakes++;
+            g.wakePending = true;
+        }
+    }
+    /** SIF-R06: at the end of a segment, the attributes it wrote wake the waiting machines of that occurrence that read them. */
+    private flushWrites(f: Frame): void {
+        const dirty = f.dirty;
+        if (!dirty)
+            return;
+        f.dirty = undefined;
+        for (const [c, names] of dirty) {
+            if (f.borrowed || f.script)
+                c.external = (c.external ?? 0) + 1;
+            if (P6_NO_WAKES)
+                continue;
+            for (const g of this.frames) {
+                if (g === f || g.done || g.c !== c || !g.flow || g.periodic || g.script)
+                    continue;
+                const reads = this.readSet(g).attributes, hit = [...names].filter(([n]) => reads.has(n));
+                if (hit.length)
+                    this.wakeOrPend(g, { writer: f.id, attributes: hit.map(([n]) => n) }, hit.every(([, changed]) => !changed));
+            }
+        }
+    }
+    /** SIF-R06: a sample-cell update wakes the waiting machines of the port's occurrence whose read set holds the cell. */
+    private cellUpdated(key: string, portPath: string): void {
+        const c = this.ports.get(portPath)?.c;
+        if (!c || P6_NO_WAKES)
+            return;
+        for (const g of this.frames)
+            if (!g.done && g.c === c && g.flow && !g.periodic && !g.script && this.readSet(g).cells.has(key))
+                this.wakeOrPend(g, { cell: key.replace('|', '.') }, false);
+    }
+    /** StateLoop: a delivery from another occurrence (or another occurrence's sample) is external activity of the target. */
+    private noteExternal(m: Message): void {
+        const target = this.ports.get(m.target)?.c, source = this.ports.get(m.source)?.c;
+        if (target && source !== target)
+            target.external = (target.external ?? 0) + 1;
+    }
+    /** The configuration of an occurrence (SIF-R13): attributes, sample cells, input queues by member, payload and order, activations. */
+    private configuration(c: Component): string {
+        const queues: unknown[] = [];
+        for (const [k, q] of this.queues)
+            if (q.length && this.ports.get(q[0].target)?.c === c)
+                queues.push([k.replace(/^[^|]*\|[^|]*\|/, ''), q.map(m => [m.member, m.args.map(plain), !!(m as Message & { ready?: boolean }).ready])]);
+        const frames: unknown[] = [];
+        for (const g of this.frames)
+            if (!g.done && g.c === c)
+                frames.push([g.op?.name, this.source(g.at), g.waiting?.kind, g.flow?.levels.map(l => [l.state.name, l.entered, [...l.presented].map(x => this.source(x))]), g.flow ? [...g.flow.local].map(([n, v]) => [n, plain(v.value)]) : undefined, g.loops ? [...g.loops].map(([n, i]) => [this.source(n), i]) : undefined, !!g.wakePending, g.periodic?.backlog.length]);
+        return JSON.stringify([[...c.store].map(([n, v]) => [n, plain(v.value)]), [...this.cells].filter(([k]) => k.startsWith(`${c.path}.`)).map(([k, v]) => [k, plain(v.value)]), queues, frames]);
+    }
+    /**
+     * SIF-R13: StateLoop at a look of S when the configuration of the occurrence equals its configuration at an earlier look of
+     * S in the same instant with no external activity between. Configurations are taken from the second look of S in an
+     * instant (P6_HASH_FIRST: from the first), so a loop is found one cycle later than the first repetition.
+     */
+    private checkLoop(f: Frame, levels: FlowLevel[]): void {
+        if (P6_NO_STATELOOP)
+            return;
+        const c = f.c, s = levels.at(-1)!.state;
+        if (!c.loops || c.loops.time !== this.time)
+            c.loops = { time: this.time, looks: new Map(), seen: new Map() };
+        const n = (c.loops.looks.get(s) ?? 0) + 1;
+        c.loops.looks.set(s, n);
+        if (n < 2 && !P6_HASH_FIRST)
+            return;
+        const t0 = performance.now(), config = this.configuration(c);
+        this.stats.configs++;
+        this.stats.configChars += config.length;
+        this.stats.configNs += Math.round((performance.now() - t0) * 1e6);
+        const seen = c.loops.seen.get(s) ?? c.loops.seen.set(s, new Map()).get(s)!;
+        if (seen.get(config) === (c.external ?? 0))
+            throw new ContractViolation('StateLoop', 'StateLoop', { subject: this.label(f), source: this.source(s) });
+        seen.set(config, c.external ?? 0);
     }
 
     /**
@@ -1819,6 +2097,8 @@ class Interpreter {
                         cell.value = widen(copy(m.args)[0], cell.type);
                         cell.offer = offer;
                         this.log('sample', `${m.target}.${m.member}`, { source: m.origin, message: m.id, targetPort: m.target, member: m.member, value: plain(cell.value) });
+                        this.noteExternal(m);
+                        this.cellUpdated(`${m.target}|${m.member}`, m.target);
                     }
                 }
                 if (!queue!.includes(m))
@@ -1830,6 +2110,8 @@ class Interpreter {
                 }
                 (m as Message & { ready: boolean }).ready = true;
                 m.delivered = [this.time, this.eventOrder];
+                if (!cell)
+                    this.noteExternal(m);
             });
         }
     }
@@ -1838,7 +2120,7 @@ class Interpreter {
         // a delivery of an owned member it does not name is dropped on arrival. Busy machines leave their input queued.
         for (const f of this.frames) {
             const w = f.waiting;
-            if (f.done || f.script || w?.kind !== 'receive' || !w.flow || w.zero)
+            if (f.done || f.script || w?.kind !== 'receive' || !w.flow || w.zero || w.periodic)
                 continue;
             const owned = this.owned(f.op);
             for (let h = this.flowHeads(f).find(x => owned.has(x.endpointName)); h; h = this.flowHeads(f).find(x => owned.has(x.endpointName))) {
@@ -1873,6 +2155,7 @@ class Interpreter {
                         continue;
                     }
                     c.state = m.response?.failure ? 'failed' : 'succeeded';
+                    c.frame.c.external = (c.frame.c.external ?? 0) + 1;
                     this.log('reply', m.route.id, { source: c.origin, correlation: c.id, state: c.state });
                     this.resume(c.frame, m.response);
                     continue;
@@ -1932,6 +2215,9 @@ class Interpreter {
                 if (flowOwner) {
                     // Kept while the machine runs (decided by its next waiting state); discarded after it completed (SIF-R12).
                     if (this.findFrame(f => f.c === c && f.op === flowOwner && !f.done))
+                        break;
+                    // PROTOTYPE P6: a periodic machine lives as long as its component; input before its first release waits for it.
+                    if (!this.periodicFrames.has(`${c.path}.${flowOwner.name}`) && schedule(c.structure).some(e => e.kind === 'every' && e.operation === flowOwner.name))
                         break;
                     remove();
                     this.log('discardInput', endpointName, { source: m.origin, reason: 'inactiveOwner' });
