@@ -14,14 +14,15 @@ Normative chapter of [swa.ml 2.2](../LANGUAGE_SPECIFICATION.md). Acceptance leve
 | V06 | Immediate-child indexed routes, derived forwarding/connection, policy-free unique aliases, no duplicate resolved routes, package connections between top-level occurrences of one package, per-package closure/cardinality | SW2004 |
 | V07 | Every required event/attribute and provided operation has one input owner; provided event/attribute emission provenance; interface-only components are exempt | SW2005 |
 | V08 | Operation signatures, no nested captures, typed calls/out/result, acyclic graph, return paths, pure initializers | SW2002/2006 |
-| V09 | Transitive effect inference, read-only guards, non-writing concurrent entries, suspension only in allowed whole expressions | SW2006 |
+| V09 | Transitive effect inference, read-only guards, non-writing concurrent entries, suspension only in allowed whole expressions and never in a conditional | SW2006 |
 | V10 | One schedule, unique effective identities, matching trigger/binding signatures, same-owner acyclic after, fresh void targets and period/deadline rules | SW2007 |
 | V11 | Stateful parameterless void signature, exactly one start entry, reachable states, ordered transitions and final restrictions | SW2008 |
 | V12 | Typed complete policies, effective-use idempotency, positive safe time/capacity domains | SW2013 |
 | V13 | Node-only target content, root/occurrence/index placement resolution, unique exact paths and at most one deployment per top-level occurrence | SW2009 |
-| V14 | Immutable requirements, case subjects in the same package, legal associate/satisfy/verify links, case script environment role and white-box access, seven library view kinds/subjects and stable selection union | SW2010 |
+| V14 | Immutable requirements, case subjects in the same package, legal associate/satisfy/verify links, case script environment role and white-box access, seven library view kinds/subjects and stable selection union, association lists by pair | SW2010 |
 | V15 | Stale-read and inactive interrupt-input warnings without a race-freedom claim | SW2011/2012 |
 | V16 | Place roots, selector typing, `out` roots, no places as out arguments, literal component indexes in test paths | SW2002/2006/2010 |
+| V17 | Conditional typing, whole-expression placement, no suspension; contextual words in every name position; association lists without repeated pairs | SW2000/2002/2006/2010 |
 
 Validation MUST rebuild semantic string paths as well as indexed references after workspace changes/additions/deletions. Negative lookups matter: a newly loaded declaration may make a previously resolved short name ambiguous. Malformed source remains editable and invalid; recovery cannot silently accept a different program. Definite-return analysis may be conservative rather than solving arbitrary conditions. Dynamic numeric/index/termination failures remain runtime obligations.
 
@@ -41,6 +42,7 @@ Validation MUST rebuild semantic string paths as well as indexed references afte
 | E10 | Run/source/target/profile/option provenance, package and isolated component targets, trace ordinals with statement sources, occurrence stores and open observed timing intervals |
 | E11 | Fresh package run per case script, release after startup entries, retained early actor input, on call replies, normal primary-subject calls with actual context/lock suspension and restoration, test inspection/helper access under its serial lock, stop on script completion or failure and pass/fail/inconclusive/no checks results with statement identities |
 | E12 | Place evaluation order, kept right-side writes, `Bounds` with unchanged root, `write.place` |
+| E13 | Conditional evaluates only the selected branch |
 | E20 | Every run, use case and test of the 2.2 corpus keeps its status, full final stores, machines, deployments, verdict and message and its complete trace, ignoring only `profile` and `languageVersion` (compatibility gate 2, compared with a fixture recorded with implementation 3.1.0) |
 
 A deterministic reference run may choose one permitted order/delivery outcome. Its tests do not establish all possible traces or real transport reliability. A target implementation identifies additional scheduling/transport assumptions and evidence. Idempotency annotations are checked declarations, not proofs of side-effect behavior.

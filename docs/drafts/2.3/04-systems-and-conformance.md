@@ -48,7 +48,7 @@ The tables of `Swaml::Os` (WP8-L01) are in chapter 1.5. The run-order rule is in
 
 | ID | Rule |
 | --- | --- |
-| WP2-S06 | **Association lists.** `associate a, b to 'X', 'Y';` associates every listed occurrence with every listed case. Each pair follows the existing rules (SW2010). A pair repeated within one statement or across statements is an error, reported at the later reference (SW2010). |
+| WP2-S06 | Moved to [chapter 4.2](../../spec/04-systems-and-conformance.md#42-requirements-cases-and-package-links) in WP2. |
 
 ## 4.3 Views
 
@@ -81,10 +81,10 @@ Diagnostics added or extended by 2.3. Message shapes are templates in the existi
 | WP1-D05 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP1. | |
 | WP1-D06 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP1. | |
 | WP1-D07 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP1. | |
-| WP2-D01 | SW2002 | Conditional condition or branch types (WP2-S02) | `Condition must be bool, found {type}.` / `Conditional branches have no common type: {type1} and {type2}.` |
-| WP2-D02 | SW2006 | Suspending call in a conditional (WP2-S04) | `A suspending call cannot appear in a conditional expression.` |
-| WP2-D03 | SW2010 | Repeated association pair (WP2-S06) | `{occurrence} is already associated with {case}.` |
-| WP2-D04 | SW2000 | Conditional in statement position (WP2-G02) | The syntax message explains it: `A conditional expression is not a statement; use an if block.` |
+| WP2-D01 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP2. | |
+| WP2-D02 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP2. | |
+| WP2-D03 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP2. | |
+| WP2-D04 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP2. | |
 | WP3-D01 | SW2006 | `now()` in an initializer (WP3-S01) | The existing purity message, naming `now()`: `Initializer of {attribute} must be pure; now() reads state.` |
 | WP4-D01 | SW2013 | Policy setting value (WP4-S02) | `{setting} must be a duration literal such as 1s.` / `{setting} is not a duration setting.` |
 | WP4-D02 | SW2002 | Non-integral computed duration (WP4-S01, WP4-S03, WP4-S04, WP4-S08) | `A duration must be integral, found {type}.` |

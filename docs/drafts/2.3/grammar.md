@@ -11,9 +11,9 @@ Productions that several packages touch are written here in their final form. A 
 | WP1-G01 | **Applied in WP1** to `src/language/swaml.langium`. `Assign: target=ValuePath ('[' index=Expression ']' selectors+=Selector*)? '=' value=Expression ';';` with the new `Selector: '.' field=Name \| '[' index=Expression ']';`. `ForUpdate infers Assign: target=Name '=' value=Expression;` is unchanged. |
 | WP1-G02 | **Applied in WP1.** `ReferenceExpression: path=ValuePath ('[' index=Expression ']' selectors+=Selector*)?;` |
 | WP1-G03 | **Applied in WP1.** `CallExpression: target=Path '(' (args+=Expression (',' args+=Expression)*)? ')';` (was `ValuePath`; `Path` admits literal indexes only). |
-| WP2-G01 | `Expression returns Expression: ConditionalExpression \| OrExpression;` with `ConditionalExpression: 'if' '(' condition=Expression ')' then=Expression 'else' otherwise=Expression;`. The declared `type Expression` union gains `ConditionalExpression`. `PrimaryExpression` is unchanged, so `'(' Expression ')'` admits a parenthesized conditional as an operand. |
-| WP2-G02 | `ExpressionStatement: expression=OrExpression ';';` (was `Expression`): a conditional is never a statement. |
-| WP2-G03 | `Association: 'associate' occurrence=[ComponentUsage:Name] (',' moreOccurrences+=[ComponentUsage:Name])* 'to' target=[Scenario:Name] (',' moreTargets+=[Scenario:Name])* ';';` and `Name` gains `'view' \| 'state' \| 'in' \| 'out'`. |
+| WP2-G01 | **Applied in WP2.** `Expression returns Expression: ConditionalExpression \| OrExpression;` with `ConditionalExpression: 'if' '(' condition=Expression ')' then=Expression 'else' otherwise=Expression;`. The declared `type Expression` union gains `ConditionalExpression`. `PrimaryExpression` is unchanged, so `'(' Expression ')'` admits a parenthesized conditional as an operand. |
+| WP2-G02 | **Applied in WP2.** `ExpressionStatement: expression=OrExpression ';';` (was `Expression`): a conditional is never a statement. |
+| WP2-G03 | **Applied in WP2.** `Association: 'associate' occurrence=[ComponentUsage:Name] (',' moreOccurrences+=[ComponentUsage:Name])* 'to' target=[Scenario:Name] (',' moreTargets+=[Scenario:Name])* ';';` and `Name` gains `'view' \| 'state' \| 'in' \| 'out'`. |
 | WP4-G01 | `PolicySetting: name=Name '=' value=Expression ';';`: one alternative, so a 2.2 duration setting is now `Literal{duration}` (normalization N1 of gate 1). |
 | WP4-G02 | `Literal: {infer Literal} (number=Numeric \| text=STRING \| boolean=('true'\|'false') \| duration=Duration);` |
 | WP4-G03 | `Wait: 'wait' (duration=Duration \| '(' delay=Expression ')') ';';` and `Receive: … ('or' 'after' (timeout=Duration \| '(' timeoutValue=Expression ')') timeoutBody=Block)?;` |
@@ -64,7 +64,7 @@ The formatter must print every new form before a showcase model is reformatted (
 | ID | Rule |
 | --- | --- |
 | WP1-M03 | **Applied in WP1** (`src/language/formatter.ts`, [tooling guide](../../TOOLING.md)). Prints places and selectors without spaces inside the path (`statuses[i].confirmed`). |
-| WP2-M05 | Prints conditionals and never drops or adds parentheses that change the parse. Prints association lists on one line when they fit, otherwise one occurrence or case per continuation line. |
+| WP2-M05 | **Applied in WP2** (`src/language/formatter.ts`, [tooling guide](../../TOOLING.md)). Prints conditionals and never drops or adds parentheses that change the parse. Prints association lists on one line when they fit, otherwise one occurrence or case per continuation line. A list longer than 100 characters, indentation included, breaks after each comma and before `to`. |
 | WP4-M08 | Prints computed durations in parentheses (`wait (n * 1ms);`) and literal durations without them. |
 | WP5-M04 | Prints completion transitions, internal transitions, timer guards and `defer` lines, keeping every state member in source order. |
 | WP6-M05 | Prints member-policy bodies with one member per line and attribute initial values. |

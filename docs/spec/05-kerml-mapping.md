@@ -13,8 +13,10 @@ Ports map to owned typed features with per-member directional projections. Rever
 | ID | Rule |
 | --- | --- |
 | WP1-M02 | `Selector`: kind `value`, normative `docs/spec/01-structure-and-types.md`. A place assignment lowers to a whole-value write of its root with one replaced feature value. It never becomes a reference feature. |
+| WP2-M02 | `ConditionalExpression`: kind `value`, kernel `ControlFunctions::'if'`, normative `docs/spec/01-structure-and-types.md`. Only the selected branch is evaluated. |
+| WP2-M03 | `Association` keeps its entry. Its semantic text states that a list statement lowers to one reference per occurrence–case pair, with the statement and the list positions as provenance. |
 
-The changed productions `Assign`, `ReferenceExpression` and `CallExpression` keep their mapping entries with updated semantic text in `spec/kerml-mapping.json`.
+The changed productions `Assign`, `ReferenceExpression` and `CallExpression` (WP1) and `Expression` and `ExpressionStatement` (WP2) keep their mapping entries with updated semantic text in `spec/kerml-mapping.json`.
 
 ## 5.2 Required semantic library
 
