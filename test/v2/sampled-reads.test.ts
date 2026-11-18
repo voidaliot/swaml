@@ -349,6 +349,25 @@ test('WP6-R02 latency, drops, duplicates, fault delays and maxAge update the cel
     assert.deepEqual(samples(late.trace as Observation[]).filter(x => x[1] === 'count'), [[10000000, 'count', 1], [30000000, 'count', 3]]);
 });
 
+test('WP6-R02 a cell never goes back: a value offered before the one it holds does not update it (owner decision B, review F7)', async () => {
+    const source = `package Test {
+  import Swaml::Qos;
+  qos def Once: Policy { delivery = Delivery.atMostOnce; ordering = Ordering.fifo; capacity = 4; overflow = Overflow.dropOldest; requestTimeout = 1s; }
+  port def Door { provides attribute count: int = 7; }
+  component def Sensor { port out: Door; attribute n: int = 0; operation tick() { n = n + 1; send out.count(n); } schedule { on every 10ms tick(); } }
+  component def Reader { reversed port door: Door; attribute total: int = 0; attribute got: int = 0; attribute late: int = 0;
+    operation take(v: int) { got = v; total = door.count; } operation look() { late = door.count; } schedule { on receive door.count(v) take(v); on every 27ms look(); } }
+  component Demo { component s: Sensor; component r: Reader; connect: Once (s.out, r.door); }
+}`;
+    // Offer 1 (count 1) is delayed by 15 ms to 25 ms, after offer 2 (count 2) was delivered at 20 ms; the owner consumed 2.
+    const r = await run(source, 30000000, { faults: [{ offer: 1, kind: 'duplicate', delayNs: 15000000 }] });
+    assert.deepEqual(samples(r.trace as Observation[]), [[20000000, 'count', 2], [30000000, 'count', 3]]);
+    assert.deepEqual(r.stores['Demo.r'], { total: 3, got: 3, late: 2 }, 'at 27 ms the cell still holds the value the owner consumed');
+    // A delayed value that nothing newer overtook still updates the cell at its delivery instant.
+    const alone = await run(source, 18000000, { faults: [{ offer: 1, kind: 'duplicate', delayNs: 5000000 }] });
+    assert.deepEqual(samples(alone.trace as Observation[]), [[15000000, 'count', 1]]);
+});
+
 test('WP6-R02 within an instant a read sees the updates ordered before it: the worked example in both orders', async () => {
     const source = (first: string) => `package Test {
   port def Level { provides attribute value: int = 0; }

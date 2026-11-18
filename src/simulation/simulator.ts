@@ -204,8 +204,12 @@ type Route = {
     /** The effective policy of each member that has a member policy (WP6-R05); other members use policy. */
     members?: Map<string, Policy>;
 };
-/** A sample cell of one port occurrence and sampled member (WP6-R01): the latest delivered value. */
-type SampleCell = { value: Value; type: string; consumed: boolean };
+/**
+ * A sample cell of one port occurrence and sampled member (WP6-R01): the latest delivered value, and offer the offer
+ * number of the message that carried it (0 for the initial value). A delivery of an older offer leaves it unchanged
+ * (WP6-R02, owner decision B of WP6).
+ */
+type SampleCell = { value: Value; type: string; consumed: boolean; offer: number };
 /** The member policies of a connection as effective policies per member (WP6-R05); none for a 2.2 connection. */
 function routeMembers(l: a.Connect): { members?: Map<string, Policy> } {
     return l.memberPolicies.length ? { members: new Map(l.memberPolicies.map(mp => [mp.member, memberQos(l, mp.member)] as const)) } : {};
@@ -1374,7 +1378,7 @@ class Interpreter {
             if (!ep?.member.initial || !ep.member.type)
                 continue;
             const type = typeKey(ep.member.type);
-            this.cells.set(`${c.path}.${port}|${member}`, { value: widen(this.sync(this.evaluate(ep.member.initial, f, new Map())), type), type, consumed: owned.has(path) });
+            this.cells.set(`${c.path}.${port}|${member}`, { value: widen(this.sync(this.evaluate(ep.member.initial, f, new Map())), type), type, consumed: owned.has(path), offer: 0 });
         }
     }
     private offer(message: Message): void {
@@ -1441,8 +1445,13 @@ class Interpreter {
                         this.log('discardAge', route.id, { source: m.origin, message: m.id });
                         return;
                     }
-                    cell.value = widen(copy(m.args)[0], cell.type);
-                    this.log('sample', `${m.target}.${m.member}`, { source: m.origin, message: m.id, targetPort: m.target, member: m.member, value: plain(cell.value) });
+                    // A cell never goes back: a value offered before the one it holds, delivered later because of a
+                    // fault delay, does not update it and is not a sample (WP6-R02). Copies of one offer all update it.
+                    if (offer >= cell.offer) {
+                        cell.value = widen(copy(m.args)[0], cell.type);
+                        cell.offer = offer;
+                        this.log('sample', `${m.target}.${m.member}`, { source: m.origin, message: m.id, targetPort: m.target, member: m.member, value: plain(cell.value) });
+                    }
                 }
                 if (!queue!.includes(m))
                     return;
