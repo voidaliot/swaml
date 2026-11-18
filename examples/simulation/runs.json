@@ -324,5 +324,18 @@
       }
     },
     "expectedCaught": ["DurationRange", "DurationRange"]
+  },
+  {
+    "model": "examples/43-derived-period.swaml",
+    "case": "DerivedPeriod::Deadline per usage",
+    "options": "examples/simulation/43-derived-period.json",
+    "expectedResult": "fail",
+    "expectedMessage": "Contract violation Deadline.",
+    "expectedStores": {
+      "late": {
+        "samples": 1,
+        "busyMs": 5
+      }
+    }
   }
 ]

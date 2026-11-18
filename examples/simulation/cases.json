@@ -91,7 +91,19 @@
     "examples/43-derived-period.swaml": {
       "DerivedPeriod::Period per usage": "pass",
       "DerivedPeriod::Busy within the deadline": "pass",
+      "DerivedPeriod::Literal period, computed deadline": "pass",
       "DerivedPeriod::Deadline per usage": "fail"
+    },
+    "examples/44-session-completion.swaml": {
+      "SessionCompletion::Opens after two refusals": "pass",
+      "SessionCompletion::Coverage loss during the request": "pass"
+    },
+    "examples/45-lock-deferral.swaml": {
+      "LockDeferral::Requests during the pulse": "pass",
+      "LockDeferral::Request order across the pulse": "pass"
+    },
+    "examples/46-breaker-internal.swaml": {
+      "BreakerInternal::Store outage trips the breaker and recovers": "pass"
     },
     "examples/notation/catalog.swaml": {
       "Notation::Startup": "pass"
