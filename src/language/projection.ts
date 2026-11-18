@@ -2,7 +2,7 @@ import { AstUtils, type AstNode } from 'langium';
 import type { Range } from 'vscode-languageserver';
 import * as a from './generated/ast.js';
 import { SWAML_LANGUAGE_VERSION } from './edition.js';
-import { body, direction, effectiveQos, identity, isExecutable, members, nanos, owner, portMembers, schedule, signature, typeKey, type Node } from './semantic.js';
+import { associationPairs, body, isAssociationList, direction, effectiveQos, identity, isExecutable, members, nanos, owner, portMembers, schedule, signature, typeKey, type Node } from './semantic.js';
 import { documentationText, viewCandidates, type ViewSubject } from './presentation.js';
 export interface ProjectionNode {
     id: string;
@@ -51,6 +51,8 @@ export interface ProjectionEdge {
     label: string;
     policy?: ReturnType<typeof effectiveQos>;
     order?: number;
+    /** For a link of an association list (2.3), the positions of its occurrence and case in their lists; absent for a single 2.2 statement. */
+    pair?: { occurrence: number; case: number };
 }
 export interface Projection {
     languageVersion: typeof SWAML_LANGUAGE_VERSION;
@@ -114,9 +116,11 @@ export function projectModel(models: readonly a.Model[]): Projection {
             // Package connections join ports of top-level occurrences; links record intent in the package.
             for (const c of n.connections)
                 addEdge('connection', id + '::' + c.source, id + '::' + c.target, c.name ?? 'Default', { policy: effectiveQos(c) });
+            // Every occurrence–case pair of a list statement is one link with its list positions (WP2-S06, WP2-M04).
             for (const x of n.associations)
-                if (x.occurrence.ref && x.target.ref)
-                    addEdge('associate', identity(x.occurrence.ref), identity(x.target.ref), 'associate');
+                for (const pair of associationPairs(x))
+                    if (pair.occurrence.ref && pair.target.ref)
+                        addEdge('associate', identity(pair.occurrence.ref), identity(pair.target.ref), 'associate', isAssociationList(x) ? { pair: { occurrence: pair.occurrenceIndex, case: pair.targetIndex } } : {});
             for (const x of n.satisfactions)
                 if (x.requirement.ref)
                     addEdge('satisfy', id + '::' + x.design, identity(x.requirement.ref), 'satisfy');

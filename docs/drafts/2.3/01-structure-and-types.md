@@ -6,9 +6,9 @@
 
 | ID | Rule |
 | --- | --- |
-| WP2-S01 | `view`, `state`, `in` and `out` join the contextual words: they remain legal names outside their syntactic positions, in every name position (attribute, local, parameter, operation, state, initial state, port endpoint, view, and both positions of `for (x: T in values)`). The sentence listing contextual words becomes: "The contextual words associate, by, case, defer, in, kind, name, out, path, reversed, state, test, times, to, use and view and the duration units ns, us, ms and s remain legal names outside their syntactic positions." |
+| WP2-S01 | Moved to [chapter 1.1](../../spec/01-structure-and-types.md#11-names-and-documentation) in WP2. `defer` joins the list of contextual words with WP5-S01 and WP5-G03, which introduce the keyword. |
 | WP5-S01 | `defer` is a contextual word from its introduction (ADR 0023). |
-| WP2-M01 | Name services (`src/language/names.ts` `formatName`/`formatPath`) are edition-aware. For a 2.3 workspace they write a contextual word as a basic name; for a 2.2 workspace they keep quoting `view`, `state`, `in`, `out` and `defer`, which are reserved there. A quoted spelling such as `'state'` remains valid and denotes the same name. The example `'state'` in this section is replaced by a word that stays reserved, such as `'operation'`. |
+| WP2-M01 | Moved to [chapter 1.1](../../spec/01-structure-and-types.md#11-names-and-documentation) in WP2. |
 
 ## 1.2 Components and occurrences
 
@@ -28,8 +28,8 @@ WP1 replaced "In-place field/index assignment and reference values are absent." 
 | --- | --- |
 | WP1-S02 | Moved to [chapter 1.4](../../spec/01-structure-and-types.md#14-value-domains) in WP1. |
 | WP1-S03 | Moved to [chapter 1.4](../../spec/01-structure-and-types.md#14-value-domains) in WP1. |
-| WP2-S02 | **Conditional typing.** `if (c) a else b` requires `c: bool`. Its type is the common type of `a` and `b` under scalar widening (byte → uint → int → real). Records, enums and arrays must be identical types. The conditional is not a known literal, so initializing a smaller integral domain from it follows the general computed-assignment rule. |
-| WP2-S03 | **Conditional precedence.** The conditional is a whole expression; as an operand it is parenthesized. Within it, `else` extends to the end of the expression. |
+| WP2-S02 | Moved to [chapter 1.4](../../spec/01-structure-and-types.md#14-value-domains) in WP2. |
+| WP2-S03 | Moved to [chapter 1.4](../../spec/01-structure-and-types.md#14-value-domains) in WP2. |
 | WP4-S01 | **Duration literals as values.** A duration literal in an expression is a `uint` value in nanoseconds (`1us` = 1000). Its value is representable or the literal is a static error. Computed durations (chapter 3) are integral expressions; `real` is rejected. |
 
 ```text

@@ -16,6 +16,49 @@ A case is written use case Name of subject { … } or test Name of subject { …
 
 associate Occurrence to Case; records that a top-level component occurrence of the same package takes part in a use case or test of the same package. The occurrence is not the case's subject and each pair is associated at most once. In a use case, associated occurrences are its actors. In a test, an associated software occurrence also establishes an explicit white-box participant reference; it may have its own behavior, and its single parts and literally indexed members of its part families may be read or called under section 3.7. Neither kind of case owns those components. Interface-only participants act as actor port proxies; they communicate with the subject only through ports and package connections, and a case script acts through the ports of the interface-only ones.
 
+| ID | Rule |
+| --- | --- |
+| WP2-S06 | **Association lists.** `associate a, b to 'X', 'Y';` associates every listed occurrence with every listed case: its pairs are each listed occurrence with each listed case, occurrences in list order and, for each, the cases in list order. Each pair follows the rules above (SW2010), reported at its listed reference. A pair repeated within one statement or across statements is an error at the later reference (SW2010, WP2-D03): the repeated occurrence or case of a list, otherwise the occurrence of the later pair. A repeat between two single-pair statements keeps its 2.2 message `Duplicate associate {occurrence} to {case}.` at the later statement. |
+
+```swaml
+package Fleet {
+  port def Telemetry {
+    provides event position(km: int);
+  }
+  component def Vehicle {
+    port uplink: Telemetry;
+  }
+  component def Backend {
+    reversed port truckIn: Telemetry;
+    reversed port vanIn: Telemetry;
+    attribute positions: uint = 0;
+    operation track(km: int) {
+      positions = positions + 1;
+    }
+    schedule {
+      on receive truckIn.position(km) track(km);
+      on receive vanIn.position(km) track(km);
+    }
+  }
+  component truck: Vehicle;
+  component van: Vehicle;
+  component backend: Backend;
+  connect (truck.uplink, backend.truckIn);
+  connect (van.uplink, backend.vanIn);
+  use case 'Monitor live position' of backend {
+    publish truck.uplink.position(12);
+    publish van.uplink.position(40);
+    wait 1ms;
+  }
+  test 'Positions counted' of backend {
+    publish van.uplink.position(41);
+    wait 1ms;
+    assert backend.positions == 1;
+  }
+  associate truck, van to 'Monitor live position', 'Positions counted';
+}
+```
+
 satisfy Requirement by design; claims that a component satisfies a requirement. design is a component definition or a top-level component occurrence declared in this package, optionally followed by nested parts such as Workbench.editor or cells[1]; a literal index is within the multiplicity. The claim is written in the package that declares the head of the design path; the requirement may be imported. Each requirement and design pair is claimed at most once.
 
 verify Requirement by Test; claims that a test of this package verifies a requirement. A use case never verifies. The relation is many-to-many; each requirement and test pair is written at most once; the requirement may be imported.
@@ -47,7 +90,7 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | SW2010 | Requirement/case/view references, case subjects, associate, satisfy and verify links, the environment role and white-box access of case scripts |
 | SW2011 | Conservative stale-read warning |
 | SW2012 | Inactive interrupt-input discard warning |
-| SW2013 | Complete typed policies and representable positive durations |
+| SW2013 | Complete typed policies and representable positive durations; the reference resource limits: expression nesting in the validator, the work of the stale-read analysis, expanded component occurrences per top-level occurrence and the parser's bracket nesting and stack (WP2-D05) |
 | SW2014 | Canonical formatting differs, only in explicit formatting-check mode |
 | SW2015 | Retired in 2.1 together with the 2.0 case spellings; not reported |
 
@@ -62,6 +105,11 @@ Diagnostics added by 2.3. Message shapes are templates; implementations may add 
 | WP1-D05 | SW2010 | Non-literal component index in a test path (WP1-S06) | `Component index in {path} must be a literal.` |
 | WP1-D06 | SW2002 | Literal component index outside multiplicity (WP1-S06) | `Index {n} is outside the multiplicity {m} of {child}.` An index on a single part is `{part} is a single part and takes no index.` |
 | WP1-D07 | SW2006 | Indexed call path outside a test (WP1-S08) | `{path}: an indexed call path is allowed only in a test.` |
+| WP2-D01 | SW2002 | Conditional condition or branch types (WP2-S02) | `Condition must be bool, found {type}.` / `Conditional branches have no common type: {type1} and {type2}.` A void branch has the existing message `Void completion is not an expression value.` |
+| WP2-D02 | SW2006 | Suspending call in a conditional (WP2-S04) | `A suspending call cannot appear in a conditional expression.` A suspending call outside conditionals keeps its 2.2 message. |
+| WP2-D03 | SW2010 | Repeated association pair (WP2-S06) | `{occurrence} is already associated with {case}.` A repeat between two single-pair statements keeps the 2.2 message `Duplicate associate {occurrence} to {case}.` |
+| WP2-D04 | SW2000 | Conditional in statement position (WP2-G02) | The syntax message explains it: `A conditional expression is not a statement; use an if block.` An unparenthesized conditional operand adds to the parser's message: `A conditional expression is a whole expression; as an operand it is written in parentheses, as in (if (c) a else b).` |
+| WP2-D05 | SW2013 | Bracket nesting beyond the reference parser's resource limits; not a language rule. A *statement* is the run of tokens between two `;`, `{` or `}` that occur while no bracket is open. Within it, an open bracket is a `(` or `[`, the `{` of a record literal, or any other `{` while a bracket is open; `)`, `]` and `}` close the innermost open bracket of their kind. The statement ends at the next `;`, `{` or `}` with no bracket open, or *unbalanced* at a `)`, `]` or `}` that does not match the innermost open bracket, at a `;` while a `(` other than the parenthesis of a `for` statement or a `[` is innermost, or at the end of the file. (a) More than 200 brackets open at once in a statement, at the first bracket beyond 200; the limit is above every depth the 2.2 reference implementation parses. (b) A statement that ends unbalanced after more than 32 brackets were open at once, at its first token. In (a) and (b) the tokens of the statement, from its first token to its end (an ending `;` included, an ending bracket or brace not), are not parsed; the rest of the file is. (c) A parse that the host's stack cannot hold despite (a) and (b), such as deeply nested unclosed blocks, at the first most deeply nested token; the file is not parsed. Brackets inside strings, comments and quoted names are not brackets. | `Bracket nesting exceeds the reference parser limit of 200 levels; this statement is not parsed.` / `Bracket nesting exceeds the reference parser limit of 32 levels for a statement that leaves brackets unclosed; this statement is not parsed.` / `Bracket nesting exceeds the reference parser limit: the parser ran out of stack space at this nesting, so this file is not parsed.` Each adds what to do. |
 
 Every diagnostic includes a source range and stable code. Machine-readable diagnostics retain declaration identity and occurrence context when resolved. A suggested edit is supplied only for a safe unambiguous correction; tools must revalidate the resulting complete workspace before applying it. Parser recovery may suspend semantic checks on invalid syntax, but the document remains invalid and must not crash the service.
 

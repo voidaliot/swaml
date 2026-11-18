@@ -2,7 +2,7 @@
 
 **Software Architecture Modeling Language.** Readable source for software structure, typed communication and executable behavior.
 
-swa.ml 2.2 is the current published edition; the repository prepares the unreleased 2.3 candidate, which so far accepts the 2.2 language plus work package WP1, places such as `statuses[i].confirmed = true;`, member access after an index and literal component indexes in test paths ([2.3 release draft](docs/RELEASE_2_3.md)). The current host selects 2.3 (`--language-version 2.3`); the published 2.2 host is implementation 3.1.0.
+swa.ml 2.2 is the current published edition; the repository prepares the unreleased 2.3 candidate, which so far accepts the 2.2 language plus work packages WP1, places such as `statuses[i].confirmed = true;`, member access after an index and literal component indexes in test paths, and WP2, the whole-expression conditional `if (c) a else b`, `view`, `state`, `in` and `out` as contextual words and association lists such as `associate truck, van to 'Monitor', 'Command';` ([2.3 release draft](docs/RELEASE_2_3.md)). The current host selects 2.3 (`--language-version 2.3`); the published 2.2 host is implementation 3.1.0.
 
 swa.ml 2.2 uses the same concrete syntax as 2.1 and adds normal primary-subject calls in both use cases and tests, plus explicit associated-component access for tests. It retains one component concept, one operation concept and the package execution context. Hosts select an edition and an exact implementation revision. All published books, PDFs, manifests, checksums and figures retain their original bytes. See the [2.2 release notes](docs/RELEASE_2_2.md) and [complete 2.2 reference](docs/SWAML-2.2-Reference.md).
 

@@ -42,7 +42,7 @@ Unreleased draft reference for the 2.3 candidate. Its chapters are the maintaine
 
 # swa.ml 2.2 language specification
 
-**Edition:** 2.3 (unreleased candidate) · **Parser:** 2.3 · **Reference profile:** swaml-reference/2.3 · **Status:** allocated draft; nothing in it is published. The candidate accepts the 2.2 language plus the rules of the work packages landed so far, which the maintained chapters carry (WP1: places, selector reads and literal component indexes in test paths; [2.3 release draft](RELEASE_2_3.md)); the published 2.2 edition (10 November 2026), its [reference](SWAML-2.2-Reference.md) and the published 2.1 edition and their artifacts are unchanged. [2.2 release notes](RELEASE_2_2.md) describe syntax-preserving associated-component test access and normal primary-subject calls from both case kinds. [Release notes](RELEASE_2_1.md) describe the changes and the migration from 2.0; the published 2.0 edition remains under its legacy v2.0.0 tag.
+**Edition:** 2.3 (unreleased candidate) · **Parser:** 2.3 · **Reference profile:** swaml-reference/2.3 · **Status:** allocated draft; nothing in it is published. The candidate accepts the 2.2 language plus the rules of the work packages landed so far, which the maintained chapters carry (WP1: places, selector reads and literal component indexes in test paths; WP2: the whole-expression conditional, contextual words and association lists; [2.3 release draft](RELEASE_2_3.md)); the published 2.2 edition (10 November 2026), its [reference](SWAML-2.2-Reference.md) and the published 2.1 edition and their artifacts are unchanged. [2.2 release notes](RELEASE_2_2.md) describe syntax-preserving associated-component test access and normal primary-subject calls from both case kinds. [Release notes](RELEASE_2_1.md) describe the changes and the migration from 2.0; the published 2.0 edition remains under its legacy v2.0.0 tag.
 
 swa.ml is the Software Architecture Modeling Language: a textual language for explicit software structure, communication and executable behavior. [ADR 0016](decisions/0016-swaml-2-0.md) accepts the clean restart; [ADR 0019](decisions/0019-package-context.md) adds the package context and executable cases of 2.1. The language has one component concept and one operation concept. It does not accept 1.x source. Published books and PDFs retain their original bytes.
 
@@ -266,7 +266,7 @@ A case body may continue after its documentation with statements acting through 
 
 Subject calls are sequential. An event emitted by the subject can stay queued for a later actor receive, as in the [subject-call example](../examples/31-case-subject-calls.swaml). If the subject instead waits for a reply from an actor, a later reply branch in the same blocked case cannot run. Give that actor independent behavior, or start the subject with an actor event before handling its reply. Stateful operations retain their on-start-only lifecycle. Suspended calls use a whole initializer, assignment or statement; immediate calls may still appear in expressions.
 
-swaml test runs every case in its own fresh whole-package run and reports pass, fail, inconclusive or no checks; [the executable cases example](../examples/29-executable-cases.swaml) adds an isolation package with a bank stub, and [the associated-component example](../examples/30-associated-integration.swaml) checks several implemented peers. Names containing spaces, letters outside ASCII or reserved words are written in single quotes, for example use case 'Withdraw cash' or attribute 'state': int = 0;.
+swaml test runs every case in its own fresh whole-package run and reports pass, fail, inconclusive or no checks; [the executable cases example](../examples/29-executable-cases.swaml) adds an isolation package with a bank stub, and [the associated-component example](../examples/30-associated-integration.swaml) checks several implemented peers. Names containing spaces, letters outside ASCII or reserved words are written in single quotes, for example use case 'Withdraw cash' or attribute 'record': int = 0;. From 2.3, view, state, in and out are contextual words, so attribute state: SessionState = SessionState.offline; needs no quotes ([the contextual words example](../examples/36-contextual-words.swaml)). One associate statement may list several occurrences and cases, associate truck, van to 'Monitor live position', 'Command a vehicle';, and associates each listed occurrence with each listed case ([the association list example](../examples/37-association-lists.swaml)); a value chosen by a condition is written x = if (c) a else b; ([the conditional example](../examples/35-conditional-expression.swaml)).
 
 Import Swaml::Views and type views by General, Interconnect, Case, Sequence, Grid, Flow or Timing. Compact of selects a subject; include/recursive/where builds a stable union. Filter kinds are component and operation for the structural/executable families. Browser navigates ownership; Flow combines statements/states; Timing separates declared schedule/deadline information from identified observed traces. Presentation layout belongs in sidecars, not language source.
 
@@ -320,7 +320,7 @@ Write operations with explicit parameter/result types. Use return for values, ex
 
 Put activation in one schedule. Use on start/every/receive/call or after same-owner operation. Select complete policy definitions where Default is unsuitable. Keep remote calls as whole initializer/assignment/statement forms, optionally in try. Recheck live attributes after suspension; use concurrent only when the transitive operation graph cannot write. Copy-back of out parameters occurs only on success.
 
-Multiplicity is literal and paths are indexed explicitly. Deployment targets are platform Node occurrences. Requirements express intent. A case without statements records intent; a case with statements drives its primary subject through normal operation calls or associated interface-only actor ports and runs with swaml test, as bounded evidence rather than proof. A package is a closed context: declare top-level component occurrences, join their ports with package connections, connect (customer.panel, atm.panel);, and write use case Name of subject { … } or test Name of subject { … } as package members, where the subject is a top-level occurrence of the same package. Write script-driven external systems and stubs as interface-only components (ports only) and associate them with associate customer to Name;. Script endpoints use occurrence.port.member, and on call bank.link.authorize(amount) { return true; } answers a stub request. Private reads and direct helper calls on parts/peers remain test-only; a normal primary-subject call works in either case kind. Claims are package links: satisfy Requirement by design; and verify Requirement by Test;. Quote names that contain spaces, letters outside ASCII or reserved words, such as 'Withdraw cash'. View definitions select existing identities, with geometry separate.
+Multiplicity is literal and paths are indexed explicitly. Deployment targets are platform Node occurrences. Requirements express intent. A case without statements records intent; a case with statements drives its primary subject through normal operation calls or associated interface-only actor ports and runs with swaml test, as bounded evidence rather than proof. A package is a closed context: declare top-level component occurrences, join their ports with package connections, connect (customer.panel, atm.panel);, and write use case Name of subject { … } or test Name of subject { … } as package members, where the subject is a top-level occurrence of the same package. Write script-driven external systems and stubs as interface-only components (ports only) and associate them with associate customer to Name;. Script endpoints use occurrence.port.member, and on call bank.link.authorize(amount) { return true; } answers a stub request. Private reads and direct helper calls on parts/peers remain test-only; a normal primary-subject call works in either case kind. Claims are package links: satisfy Requirement by design; and verify Requirement by Test;. Quote names that contain spaces, letters outside ASCII or reserved words, such as 'Withdraw cash'; from 2.3, view, state, in and out are contextual and need no quotes. One associate statement may list occurrences and cases, associate truck, van to 'A', 'B';, which associates every pair; never repeat a pair. Select a value with the whole-expression conditional x = if (c) a else b;, parenthesized as an operand, never as a statement. View definitions select existing identities, with geometry separate.
 
 ## Validate–fix loop
 
@@ -364,11 +364,47 @@ Normative chapter of [swa.ml 2.2](LANGUAGE_SPECIFICATION.md).
 
 ## 1.1 Names and documentation
 
-Files contain packages without a version header. Package names may contain several :: segments; packages do not nest. import P; exposes P's top-level declarations and requires that package in the loaded workspace. Qualified references are unambiguous; ambiguous short imports are errors independent of load order. Names are unique in their scope; a package's elements and named package connections share one namespace. No overloads or implicit imports exist. The contextual words associate, by, case, kind, name, path, reversed, test, times, to and use and the duration units ns, us, ms and s remain legal names outside their syntactic positions. Other literal words in the grammar are reserved.
+Files contain packages without a version header. Package names may contain several :: segments; packages do not nest. import P; exposes P's top-level declarations and requires that package in the loaded workspace. Qualified references are unambiguous; ambiguous short imports are errors independent of load order. Names are unique in their scope; a package's elements and named package connections share one namespace. No overloads or implicit imports exist. The contextual words associate, by, case, in, kind, name, out, path, reversed, state, test, times, to, use and view and the duration units ns, us, ms and s remain legal names outside their syntactic positions. Other literal words in the grammar are reserved.
 
 A package is a closed context. It owns definitions, top-level component occurrences, package connections between those occurrences, use cases, tests and the associate, satisfy and verify links that record intent about them. Definitions, requirements and other declarations may be imported; occurrences are never connected, made a case subject or associated across packages.
 
-A name is written as a basic name, an ASCII letter or underscore followed by ASCII letters, digits or underscores, or as a quoted name between single quotes, such as 'Withdraw cash', 'Bestellübersicht' or 'state'. Inside quotes, `\'` writes a quote and `\\` a backslash; other escapes, line breaks and control characters are invalid. The name is the quoted content: 'Pump' and Pump are the same name, and a quoted reserved word is an ordinary name. A quoted name is not empty, contains no '.', ':', '[' or ']', which delimit paths, and separates words by single spaces without leading or trailing space (SW2001). Tools write a basic name whenever one is legal and quote otherwise. Qualified names and paths combine spellings, as in Shop::'Order Service'.port; a string literal holding a path, such as a view filter value, contains the unquoted names.
+A name is written as a basic name, an ASCII letter or underscore followed by ASCII letters, digits or underscores, or as a quoted name between single quotes, such as 'Withdraw cash', 'Bestellübersicht' or 'operation'. Inside quotes, `\'` writes a quote and `\\` a backslash; other escapes, line breaks and control characters are invalid. The name is the quoted content: 'Pump' and Pump are the same name, and a quoted reserved word is an ordinary name. A quoted name is not empty, contains no '.', ':', '[' or ']', which delimit paths, and separates words by single spaces without leading or trailing space (SW2001). Tools write a basic name whenever one is legal and quote otherwise. Qualified names and paths combine spellings, as in Shop::'Order Service'.port; a string literal holding a path, such as a view filter value, contains the unquoted names.
+
+| ID | Rule |
+| --- | --- |
+| WP2-S01 | **Contextual words.** From 2.3, `view`, `state`, `in` and `out` are contextual: they keep their keyword roles (views, states and `initial`, parameter directions, `for … in`) and are legal names in every name position: attribute, local, parameter, operation, state, initial state, component, port, port member and endpoint, view, enum literal, field, package segment, and both positions of `for (x: T in values)`. `defer` is an ordinary basic name until the work package that introduces the `defer` keyword makes it contextual (WP5-S01). |
+| WP2-M01 | **Edition-aware spelling.** Name services (`formatName`, `formatQualifiedName` and `formatPath` in `src/language/names.ts`) take the workspace edition. For a 2.3 workspace they write a contextual word as a basic name; for a 2.2 or earlier workspace they keep quoting `view`, `state`, `in` and `out`, which are reserved there. A quoted spelling such as 'state' remains valid and denotes the same name. |
+
+The words keep their keyword roles next to their name uses:
+
+```swaml
+package Uplink {
+  enum Mode {
+    offline, online
+  }
+  port def Link {
+    provides event coverage(in: bool);
+  }
+  operation def count(in values: bool[3], out out: uint) {
+    out = 0;
+    for (in: bool in values) {
+      out = out + (if (in) 1 else 0);
+    }
+  }
+  component def Session {
+    reversed port in: Link;
+    attribute state: Mode = Mode.offline;
+    attribute view: bool[3] = [false, false, false];
+    operation track(covered: bool) {
+      state = if (covered) Mode.online else Mode.offline;
+      view[0] = covered;
+    }
+    schedule {
+      on receive in.coverage(in) track(in);
+    }
+  }
+}
+```
 
 Strings use double quotes and the portable escapes for quote, backslash, newline, carriage return and tab. Ordinary `//` and `/* */` comments are lexical annotations. Each declaration owns at most one formal `/** */` doc, first inside its body or immediately before the semicolon of a leaf. Documentation and comments do not execute.
 
@@ -435,6 +471,29 @@ package Values {
 ```
 
 Scalar widening is byte to uint to int to real. Known integral literals may initialize smaller integral domains if in range. General computed integral assignments are range-checked by the backend where permitted by the type rule; real never implicitly narrows. Integral arithmetic yields int; slash or a real operand yields real. Integer operations are exact within the safe domain and overflow fails. Division/remainder by zero and non-finite reals fail. Equality is recursive and type-compatible; ordering is numeric. Only and/or short-circuit. The grammar defines precedence.
+
+| ID | Rule |
+| --- | --- |
+| WP2-S02 | **Conditional typing.** `if (c) a else b` requires `c: bool`. Its type is the common type of `a` and `b` under scalar widening (byte → uint → int → real). bool, string, records, enums and arrays must be identical types, so an array branch neither widens its elements nor changes its extent. A void branch is rejected (`Void completion is not an expression value.`). All are SW2002 (WP2-D01). The conditional is not a known literal, so initializing a smaller integral domain from it follows the general computed-assignment rule and is range-checked at run time. The branches are typed on their own, without the destination type: `b = if (c) [1, 2] else [3, 4];` with `b: byte[2]` is rejected (the branches are `int[2]`), and `b = if (c) 300 else b;` with `b: byte` is valid and fails at run time when it selects 300. |
+| WP2-S03 | **Conditional precedence.** The conditional is a whole expression (grammar WP2-G01): the right side of an assignment or declaration, an argument, a return value, an assertion, a guard, an index or a parenthesized operand. As an operand it is parenthesized, as in `(if (p) 0 else q) + 1`; an unparenthesized operand is a syntax error. Within it, `else` extends to the end of the expression, so `assert if (p) a else b == 3;` reads `if (p) a else (b == 3)`, and `if (a) 1 else if (b) 2 else 3` chains. Member access needs a value path, so `(if (c) r1 else r2).f` is not a read; index the selection instead, as in `rs[if (c) 0 else 1].f`. |
+
+Only the selected branch is evaluated (WP2-R01). A debounce counter selects values in place of selection helpers:
+
+```swaml
+package Debounce {
+  operation def clampInt(value: int, low: int, high: int) returns int {
+    return if (value < low) low else if (value > high) high else value;
+  }
+  component def Counter {
+    const attribute stepUp: int = 3;
+    attribute counter: int = 0;
+    operation report(failed: bool) {
+      var previous: int = counter;
+      counter = if (failed) clampInt((if (previous < 0) 0 else previous) + stepUp, -4, 6) else clampInt((if (previous > 0) 0 else previous) - 1, -4, 6);
+    }
+  }
+}
+```
 
 ## 1.5 Reuse and library boundaries
 
@@ -514,6 +573,10 @@ Effects are inferred transitively through the acyclic call graph: pure, reads st
 
 Suspending calls may be the whole var initializer, assignment right side or expression statement, optionally wrapped in try; these must be ordinary statement values, not for-header initializers or updates. Evaluate the call before the loop when its result is needed there. Suspending calls cannot be embedded in arithmetic, call arguments, return values or predicates. Other expressions can have nonsuspending effects. Arguments evaluate left to right; only and/or short-circuit. Declarations and source order do not select overloads or change resolution.
 
+| ID | Rule |
+| --- | --- |
+| WP2-S04 | **Conditional effects.** The effect of a conditional is the union of its condition and both branches, whichever branch a run selects; a concurrent entry therefore cannot write through either branch. No suspending call may appear anywhere in a conditional, including inside try, a record or array literal or a nested conditional (SW2006, WP2-D02); store the result of a suspending call first. Outside conditionals the whole-expression suspension rule is unchanged. |
+
 ## 3.2 Failure
 
 Runtime failures unwind the current expression/frame/activation without rolling back committed effects. try(e, fallback) catches all runtime expression failures from valid source, including arithmetic, ranges, indexes, assert/fail in called operations and remote failures. Fallback is assignable to the expression type and evaluated only on failure. Nested try is valid. Void try(e) explicitly ignores failure; a void fallback can run recovery behavior.
@@ -534,6 +597,7 @@ interruptible { body } on receive p.m(bindings) { handler } arms an unnamed regi
 | WP1-S07 | **`out` roots.** An `out` parameter used as a place root must be definitely assigned before the assignment (SW2006, WP1-D02). In a case script, an `on call` out binding must be assigned as a whole before it is used as a place root or read with selectors (SW2006, WP1-D02); an empty reply and the 2.2 read forms keep their 2.2 rules. |
 | WP1-R01 | **Place evaluation order.** Evaluate the target's index expressions left to right, then the right side, then read the root cell, check every index against the value read, and write the root with exactly one place replaced. Writes performed by the right side are kept. |
 | WP1-R02 | **Place failure.** An index outside its extent at runtime is the runtime failure `Bounds`; the root is unchanged. |
+| WP2-S05 | **No conditional statement.** A conditional is never a statement (grammar WP2-G02): `if (c) g() else h();` is a syntax error whose message explains it (WP2-D04), so a void branch cannot occur. The `if` statement keeps its block form. |
 
 ```swaml
 package Places {
@@ -667,6 +731,49 @@ A case is written use case Name of subject { … } or test Name of subject { …
 
 associate Occurrence to Case; records that a top-level component occurrence of the same package takes part in a use case or test of the same package. The occurrence is not the case's subject and each pair is associated at most once. In a use case, associated occurrences are its actors. In a test, an associated software occurrence also establishes an explicit white-box participant reference; it may have its own behavior, and its single parts and literally indexed members of its part families may be read or called under section 3.7. Neither kind of case owns those components. Interface-only participants act as actor port proxies; they communicate with the subject only through ports and package connections, and a case script acts through the ports of the interface-only ones.
 
+| ID | Rule |
+| --- | --- |
+| WP2-S06 | **Association lists.** `associate a, b to 'X', 'Y';` associates every listed occurrence with every listed case: its pairs are each listed occurrence with each listed case, occurrences in list order and, for each, the cases in list order. Each pair follows the rules above (SW2010), reported at its listed reference. A pair repeated within one statement or across statements is an error at the later reference (SW2010, WP2-D03): the repeated occurrence or case of a list, otherwise the occurrence of the later pair. A repeat between two single-pair statements keeps its 2.2 message `Duplicate associate {occurrence} to {case}.` at the later statement. |
+
+```swaml
+package Fleet {
+  port def Telemetry {
+    provides event position(km: int);
+  }
+  component def Vehicle {
+    port uplink: Telemetry;
+  }
+  component def Backend {
+    reversed port truckIn: Telemetry;
+    reversed port vanIn: Telemetry;
+    attribute positions: uint = 0;
+    operation track(km: int) {
+      positions = positions + 1;
+    }
+    schedule {
+      on receive truckIn.position(km) track(km);
+      on receive vanIn.position(km) track(km);
+    }
+  }
+  component truck: Vehicle;
+  component van: Vehicle;
+  component backend: Backend;
+  connect (truck.uplink, backend.truckIn);
+  connect (van.uplink, backend.vanIn);
+  use case 'Monitor live position' of backend {
+    publish truck.uplink.position(12);
+    publish van.uplink.position(40);
+    wait 1ms;
+  }
+  test 'Positions counted' of backend {
+    publish van.uplink.position(41);
+    wait 1ms;
+    assert backend.positions == 1;
+  }
+  associate truck, van to 'Monitor live position', 'Positions counted';
+}
+```
+
 satisfy Requirement by design; claims that a component satisfies a requirement. design is a component definition or a top-level component occurrence declared in this package, optionally followed by nested parts such as Workbench.editor or cells[1]; a literal index is within the multiplicity. The claim is written in the package that declares the head of the design path; the requirement may be imported. Each requirement and design pair is claimed at most once.
 
 verify Requirement by Test; claims that a test of this package verifies a requirement. A use case never verifies. The relation is many-to-many; each requirement and test pair is written at most once; the requirement may be imported.
@@ -698,7 +805,7 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | SW2010 | Requirement/case/view references, case subjects, associate, satisfy and verify links, the environment role and white-box access of case scripts |
 | SW2011 | Conservative stale-read warning |
 | SW2012 | Inactive interrupt-input discard warning |
-| SW2013 | Complete typed policies and representable positive durations |
+| SW2013 | Complete typed policies and representable positive durations; the reference resource limits: expression nesting in the validator, the work of the stale-read analysis, expanded component occurrences per top-level occurrence and the parser's bracket nesting and stack (WP2-D05) |
 | SW2014 | Canonical formatting differs, only in explicit formatting-check mode |
 | SW2015 | Retired in 2.1 together with the 2.0 case spellings; not reported |
 
@@ -713,6 +820,11 @@ Diagnostics added by 2.3. Message shapes are templates; implementations may add 
 | WP1-D05 | SW2010 | Non-literal component index in a test path (WP1-S06) | `Component index in {path} must be a literal.` |
 | WP1-D06 | SW2002 | Literal component index outside multiplicity (WP1-S06) | `Index {n} is outside the multiplicity {m} of {child}.` An index on a single part is `{part} is a single part and takes no index.` |
 | WP1-D07 | SW2006 | Indexed call path outside a test (WP1-S08) | `{path}: an indexed call path is allowed only in a test.` |
+| WP2-D01 | SW2002 | Conditional condition or branch types (WP2-S02) | `Condition must be bool, found {type}.` / `Conditional branches have no common type: {type1} and {type2}.` A void branch has the existing message `Void completion is not an expression value.` |
+| WP2-D02 | SW2006 | Suspending call in a conditional (WP2-S04) | `A suspending call cannot appear in a conditional expression.` A suspending call outside conditionals keeps its 2.2 message. |
+| WP2-D03 | SW2010 | Repeated association pair (WP2-S06) | `{occurrence} is already associated with {case}.` A repeat between two single-pair statements keeps the 2.2 message `Duplicate associate {occurrence} to {case}.` |
+| WP2-D04 | SW2000 | Conditional in statement position (WP2-G02) | The syntax message explains it: `A conditional expression is not a statement; use an if block.` An unparenthesized conditional operand adds to the parser's message: `A conditional expression is a whole expression; as an operand it is written in parentheses, as in (if (c) a else b).` |
+| WP2-D05 | SW2013 | Bracket nesting beyond the reference parser's resource limits; not a language rule. A *statement* is the run of tokens between two `;`, `{` or `}` that occur while no bracket is open. Within it, an open bracket is a `(` or `[`, the `{` of a record literal, or any other `{` while a bracket is open; `)`, `]` and `}` close the innermost open bracket of their kind. The statement ends at the next `;`, `{` or `}` with no bracket open, or *unbalanced* at a `)`, `]` or `}` that does not match the innermost open bracket, at a `;` while a `(` other than the parenthesis of a `for` statement or a `[` is innermost, or at the end of the file. (a) More than 200 brackets open at once in a statement, at the first bracket beyond 200; the limit is above every depth the 2.2 reference implementation parses. (b) A statement that ends unbalanced after more than 32 brackets were open at once, at its first token. In (a) and (b) the tokens of the statement, from its first token to its end (an ending `;` included, an ending bracket or brace not), are not parsed; the rest of the file is. (c) A parse that the host's stack cannot hold despite (a) and (b), such as deeply nested unclosed blocks, at the first most deeply nested token; the file is not parsed. Brackets inside strings, comments and quoted names are not brackets. | `Bracket nesting exceeds the reference parser limit of 200 levels; this statement is not parsed.` / `Bracket nesting exceeds the reference parser limit of 32 levels for a statement that leaves brackets unclosed; this statement is not parsed.` / `Bracket nesting exceeds the reference parser limit: the parser ran out of stack space at this nesting, so this file is not parsed.` Each adds what to do. |
 
 Every diagnostic includes a source range and stable code. Machine-readable diagnostics retain declaration identity and occurrence context when resolved. A suggested edit is supplied only for a safe unambiguous correction; tools must revalidate the resulting complete workspace before applying it. Parser recovery may suspend semantic checks on invalid syntax, but the document remains invalid and must not crash the service.
 
@@ -740,8 +852,10 @@ Ports map to owned typed features with per-member directional projections. Rever
 | ID | Rule |
 | --- | --- |
 | WP1-M02 | `Selector`: kind `value`, normative `docs/spec/01-structure-and-types.md`. A place assignment lowers to a whole-value write of its root with one replaced feature value. It never becomes a reference feature. |
+| WP2-M02 | `ConditionalExpression`: kind `value`, kernel `ControlFunctions::'if'`, normative `docs/spec/01-structure-and-types.md`. Only the selected branch is evaluated. |
+| WP2-M03 | `Association` keeps its entry. Its semantic text states that a list statement lowers to one reference per occurrence–case pair, with the statement and the list positions as provenance. |
 
-The changed productions `Assign`, `ReferenceExpression` and `CallExpression` keep their mapping entries with updated semantic text in `spec/kerml-mapping.json`.
+The changed productions `Assign`, `ReferenceExpression` and `CallExpression` (WP1) and `Expression` and `ExpressionStatement` (WP2) keep their mapping entries with updated semantic text in `spec/kerml-mapping.json`.
 
 ## 5.2 Required semantic library
 
@@ -784,6 +898,7 @@ Evaluation is left to right with and/or short-circuit. Payloads, records, arrays
 
 | ID | Rule |
 | --- | --- |
+| WP2-R01 | **Conditional.** Evaluate the condition, then only the selected branch; the value takes the conditional's common type. A failure in the selected branch fails like any expression; the other branch is never evaluated. |
 | WP1-R04 | **Places and reads.** Place assignment follows WP1-R01 to WP1-R03 (section 3.3). Selector reads evaluate index expressions left to right and return a copy; a dynamic index outside its extent is `Bounds`. A read takes the value of its root before evaluating any of its index expressions, then evaluates, checks and applies each index and field in turn, as 2.2 reads do; a place evaluates all its indexes, then the right side, and reads and writes its root last (WP1-R01). Selecting a field or element of an out value that was never assigned (an unanswered `on call` out binding copied back to its caller, a 2.2 case) is the runtime failure `Type`. |
 
 A local failure unwinds frames to the nearest try or fails the activation. Try fallback is lazy and type-compatible; prior state writes/emissions remain committed. Out values copy back only on successful return. Interrupt transfers and deadline/resource/activation violations are outside try. Resource failure is explicit evidence; no silently dropped activation is reported as successful execution.
@@ -837,6 +952,10 @@ A declaration identity is package plus owned-name path. An occurrence identity i
 
 Each normalized node/constraint retains source declaration URI/range and any inherited/replacement provenance. A persistent editor identity map is separate, preserving renames/moves atomically with source references and sidecars. Same-type multiplicity occurrences never share stores, queues or activation identity.
 
+| ID | Rule |
+| --- | --- |
+| WP2-M04 | **Association pairs.** Each occurrence–case pair of an association list is one normalized link. Its provenance is the statement plus the positions of the occurrence and the case in their lists. Deleting one pair in a tool rewrites the list and keeps the other pairs. The reference projection (`projectModel`) gives each link of a list statement its positions as `pair: { occurrence, case }`; a single 2.2 statement has none. |
+
 ## 7.2 Families
 
 | Family | Required content |
@@ -852,7 +971,7 @@ Each normalized node/constraint retains source declaration URI/range and any inh
 | Schedule/entry | Trigger identity, effective target, dispatch arguments/bindings, period/deadline, concurrent |
 | State/transition | Initial/final, entry/exit/effects, receive bindings/guard or timer, ordered selection |
 | Deployment | Software/platform roots, Node paths, family/index placements, effective specificity |
-| Requirement/case/view | Immutable attributes/docs, package intent links (associate, satisfy, verify), case kind, subject occurrence and ordered script statements with resolved actor ports, exact normal primary-subject call targets, explicitly associated test access roots and exact inspection/helper targets, ordered selection union |
+| Requirement/case/view | Immutable attributes/docs, package intent links (associate, satisfy, verify), case kind, subject occurrence and ordered script statements with resolved actor ports, exact normal primary-subject call targets, explicitly associated test access roots and exact inspection/helper targets, ordered selection union; association pairs from list statements with their list positions |
 
 Expansion creates every literal multiplicity occurrence independently and keeps the definition reference. Inheritance produces an ordered effective set; replacement points to its inherited declaration. Late-bound local calls use that occurrence's effective operation name with the preserved signature. An operation usage retains the definition signature and either inherited or replacement body; no partial merge is inferred.
 
@@ -895,14 +1014,15 @@ Normative chapter of [swa.ml 2.2](LANGUAGE_SPECIFICATION.md). Acceptance levels 
 | V06 | Immediate-child indexed routes, derived forwarding/connection, policy-free unique aliases, no duplicate resolved routes, package connections between top-level occurrences of one package, per-package closure/cardinality | SW2004 |
 | V07 | Every required event/attribute and provided operation has one input owner; provided event/attribute emission provenance; interface-only components are exempt | SW2005 |
 | V08 | Operation signatures, no nested captures, typed calls/out/result, acyclic graph, return paths, pure initializers | SW2002/2006 |
-| V09 | Transitive effect inference, read-only guards, non-writing concurrent entries, suspension only in allowed whole expressions | SW2006 |
+| V09 | Transitive effect inference, read-only guards, non-writing concurrent entries, suspension only in allowed whole expressions and never in a conditional | SW2006 |
 | V10 | One schedule, unique effective identities, matching trigger/binding signatures, same-owner acyclic after, fresh void targets and period/deadline rules | SW2007 |
 | V11 | Stateful parameterless void signature, exactly one start entry, reachable states, ordered transitions and final restrictions | SW2008 |
 | V12 | Typed complete policies, effective-use idempotency, positive safe time/capacity domains | SW2013 |
 | V13 | Node-only target content, root/occurrence/index placement resolution, unique exact paths and at most one deployment per top-level occurrence | SW2009 |
-| V14 | Immutable requirements, case subjects in the same package, legal associate/satisfy/verify links, case script environment role and white-box access, seven library view kinds/subjects and stable selection union | SW2010 |
+| V14 | Immutable requirements, case subjects in the same package, legal associate/satisfy/verify links, case script environment role and white-box access, seven library view kinds/subjects and stable selection union, association lists by pair | SW2010 |
 | V15 | Stale-read and inactive interrupt-input warnings without a race-freedom claim | SW2011/2012 |
 | V16 | Place roots, selector typing, `out` roots, no places as out arguments, literal component indexes in test paths | SW2002/2006/2010 |
+| V17 | Conditional typing, whole-expression placement, no suspension; contextual words in every name position; association lists without repeated pairs | SW2000/2002/2006/2010 |
 
 Validation MUST rebuild semantic string paths as well as indexed references after workspace changes/additions/deletions. Negative lookups matter: a newly loaded declaration may make a previously resolved short name ambiguous. Malformed source remains editable and invalid; recovery cannot silently accept a different program. Definite-return analysis may be conservative rather than solving arbitrary conditions. Dynamic numeric/index/termination failures remain runtime obligations.
 
@@ -922,6 +1042,7 @@ Validation MUST rebuild semantic string paths as well as indexed references afte
 | E10 | Run/source/target/profile/option provenance, package and isolated component targets, trace ordinals with statement sources, occurrence stores and open observed timing intervals |
 | E11 | Fresh package run per case script, release after startup entries, retained early actor input, on call replies, normal primary-subject calls with actual context/lock suspension and restoration, test inspection/helper access under its serial lock, stop on script completion or failure and pass/fail/inconclusive/no checks results with statement identities |
 | E12 | Place evaluation order, kept right-side writes, `Bounds` with unchanged root, `write.place` |
+| E13 | Conditional evaluates only the selected branch |
 | E20 | Every run, use case and test of the 2.2 corpus keeps its status, full final stores, machines, deployments, verdict and message and its complete trace, ignoring only `profile` and `languageVersion` (compatibility gate 2, compared with a fixture recorded with implementation 3.1.0) |
 
 A deterministic reference run may choose one permitted order/delivery outcome. Its tests do not establish all possible traces or real transport reliability. A target implementation identifies additional scheduling/transport assumptions and evidence. Idempotency annotations are checked declarations, not proofs of side-effect behavior.
@@ -969,6 +1090,7 @@ Values are bounded primitive scalars, nominal enums/records and fixed copied arr
 | case subject call | Exact primary software subject; copied typed arguments/results, actual serial operation context and normal effects; suspension releases/reacquires its lock, caller context restores on return/failure; local activation semantics, no implicit route or schedule release |
 | test occurrence access | Resolved own-package executed software root is the subject or an explicit association, followed by single effective parts or part family members with literal indexes in range; reads use its live store under its lock, helper calls outside the exact primary subject neither communicate nor suspend; no ownership transfer or direct attribute assignment |
 | try(e, f) | e:T and f:U assignable to T; lazy f; effect union; no fallback only when T is void |
+| if (c) a else b | c : bool; a : T1, b : T2 with common type T under scalar widening, otherwise identical types; neither void; effect ε(c) ∪ ε(a) ∪ ε(b) without suspension; only the selected branch evaluates; a whole expression, never a statement |
 | var x:T=e | Compatible value, fresh live name; Γ extends with mutable x; suspension allowed only when e is whole call/try |
 | x=e | Mutable local/out/attribute, compatible type; attribute write adds write effect; same whole-expression suspension rule |
 | place = e | The root is a mutable local, an assigned out or a non-const attribute; e is assignable to the place type; the effect adds a write of the root; the whole-expression suspension rule applies |
@@ -1460,7 +1582,7 @@ Compact of selects one subject. Include/recursive/where selects a stable union w
 
 # swa.ml 2.3 keyword reference
 
-Generated from spec/keywords.json and the normative grammar. Examples here are grammar fragments; complete runnable models are in the usage guide and examples. 15 contextual words remain legal names outside their positions. call appears in the on call schedule trigger and in on call branches of case scripts.
+Generated from spec/keywords.json and the normative grammar. Examples here are grammar fragments; complete runnable models are in the usage guide and examples. 19 contextual words remain legal names outside their positions. call appears in the on call schedule trigger and in on call branches of case scripts.
 
 [after](#keyword-after) · [and](#keyword-and) · [assert](#keyword-assert) · [associate](#keyword-associate) · [attribute](#keyword-attribute) · [bool](#keyword-bool) · [by](#keyword-by) · [byte](#keyword-byte) · [call](#keyword-call) · [case](#keyword-case) · [component](#keyword-component) · [concurrent](#keyword-concurrent) · [connect](#keyword-connect) · [const](#keyword-const) · [datatype](#keyword-datatype) · [deadline](#keyword-deadline) · [def](#keyword-def) · [deploy](#keyword-deploy) · [deployment](#keyword-deployment) · [else](#keyword-else) · [entry](#keyword-entry) · [enum](#keyword-enum) · [event](#keyword-event) · [every](#keyword-every) · [exit](#keyword-exit) · [fail](#keyword-fail) · [false](#keyword-false) · [final](#keyword-final) · [for](#keyword-for) · [idempotent](#keyword-idempotent) · [if](#keyword-if) · [import](#keyword-import) · [in](#keyword-in) · [include](#keyword-include) · [initial](#keyword-initial) · [int](#keyword-int) · [interruptible](#keyword-interruptible) · [kind](#keyword-kind) · [ms](#keyword-ms) · [name](#keyword-name) · [not](#keyword-not) · [ns](#keyword-ns) · [of](#keyword-of) · [on](#keyword-on) · [operation](#keyword-operation) · [optional](#keyword-optional) · [or](#keyword-or) · [out](#keyword-out) · [package](#keyword-package) · [path](#keyword-path) · [port](#keyword-port) · [provides](#keyword-provides) · [publish](#keyword-publish) · [qos](#keyword-qos) · [real](#keyword-real) · [receive](#keyword-receive) · [record](#keyword-record) · [recursive](#keyword-recursive) · [redefines](#keyword-redefines) · [requirement](#keyword-requirement) · [requires](#keyword-requires) · [return](#keyword-return) · [returns](#keyword-returns) · [reversed](#keyword-reversed) · [s](#keyword-s) · [satisfy](#keyword-satisfy) · [schedule](#keyword-schedule) · [send](#keyword-send) · [specializes](#keyword-specializes) · [start](#keyword-start) · [state](#keyword-state) · [string](#keyword-string) · [test](#keyword-test) · [times](#keyword-times) · [to](#keyword-to) · [true](#keyword-true) · [try](#keyword-try) · [uint](#keyword-uint) · [until](#keyword-until) · [us](#keyword-us) · [use](#keyword-use) · [var](#keyword-var) · [verify](#keyword-verify) · [view](#keyword-view) · [void](#keyword-void) · [wait](#keyword-wait) · [when](#keyword-when) · [where](#keyword-where) · [while](#keyword-while)
 
@@ -1476,7 +1598,7 @@ Introduces a state timer, receive timeout or success schedule dependency.
 
 Used in typed expressions and operators; see its grammar contexts and normative constraints.
 
-**Context:** Typed expressions and operators. **Grammar:** FilterAnd, AndExpression. **Name use:** reserved.
+**Context:** Typed expressions and operators. **Grammar:** FilterAnd, Expression, AndExpression. **Name use:** reserved.
 
 [Normative rule](spec/01-structure-and-types.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -1620,7 +1742,7 @@ Places software root occurrences on platform Node occurrences.
 
 Used in statements and decisions; see its grammar contexts and normative constraints.
 
-**Context:** Statements and decisions. **Grammar:** If. **Name use:** reserved.
+**Context:** Statements and decisions. **Grammar:** If, ConditionalExpression. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -1708,7 +1830,7 @@ Used in directed port members; see its grammar contexts and normative constraint
 
 Used in statements and decisions; see its grammar contexts and normative constraints.
 
-**Context:** Statements and decisions. **Grammar:** If. **Name use:** reserved.
+**Context:** Statements and decisions. **Grammar:** If, ConditionalExpression. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -1724,7 +1846,7 @@ Used in packages and imports; see its grammar contexts and normative constraints
 
 Used in attributes and lexical locals; see its grammar contexts and normative constraints.
 
-**Context:** Attributes and lexical locals. **Grammar:** Argument, ForEach. **Name use:** reserved.
+**Context:** Attributes and lexical locals. **Grammar:** Argument, ForEach, Name. **Name use:** contextual.
 
 [Normative rule](spec/01-structure-and-types.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -1836,7 +1958,7 @@ Used in directed port members; see its grammar contexts and normative constraint
 
 Used in suspending wait and receive; see its grammar contexts and normative constraints.
 
-**Context:** Suspending wait and receive. **Grammar:** Receive, FilterOr, OrExpression. **Name use:** reserved.
+**Context:** Suspending wait and receive. **Grammar:** Receive, FilterOr, Expression, OrExpression. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -1844,7 +1966,7 @@ Used in suspending wait and receive; see its grammar contexts and normative cons
 
 Used in attributes and lexical locals; see its grammar contexts and normative constraints.
 
-**Context:** Attributes and lexical locals. **Grammar:** Argument. **Name use:** reserved.
+**Context:** Attributes and lexical locals. **Grammar:** Argument, Name. **Name use:** contextual.
 
 [Normative rule](spec/01-structure-and-types.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -2028,7 +2150,7 @@ Used in schedule entry and successful chaining; see its grammar contexts and nor
 
 Used in ordered state transitions; see its grammar contexts and normative constraints.
 
-**Context:** Ordered state transitions. **Grammar:** State. **Name use:** reserved.
+**Context:** Ordered state transitions. **Grammar:** State, Name. **Name use:** contextual.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -2132,7 +2254,7 @@ Records the intent that a test of the package verifies a requirement; many-to-ma
 
 Used in seven library view definitions; see its grammar contexts and normative constraints.
 
-**Context:** Seven library view definitions. **Grammar:** ViewDef, View. **Name use:** reserved.
+**Context:** Seven library view definitions. **Grammar:** ViewDef, View, Name. **Name use:** contextual.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -2187,7 +2309,7 @@ Colon means typed by; returns names results. Dot is containment/member access; :
 
 # swa.ml 2.3 candidate implementation status
 
-**Standard:** 2.3 (unreleased candidate) · **Implementation package:** 4.0.0 · **Selected host semantics:** 2.3 · **Reference profile:** swaml-reference/2.3. The candidate is allocated and work package WP1 has landed: assignment to places such as `statuses[i].confirmed = true;` and `r.f = v;` (indexes, then the right side, then one read-modify-write of the root; `Bounds` leaves the root unchanged; `write` observations gain `place`), member access after an index such as `recent[i].vehicleId`, and literal component indexes in test inspection paths such as `backend.twins[0].link` and `backend.twins[0].currentView()`. Otherwise the host accepts exactly the 2.2 language, and the three [compatibility gates](RELEASE_2_3.md#compatibility-gates) compare every corpus AST and every recorded run, case and trace with fixtures recorded from implementation 3.1.0. The published [2.2 reference](SWAML-2.2-Reference.md) and [PDF](../output/pdf/SWAML-2.2-Specification.pdf) record the 2.2 release sources. The published 2.1 [reference book](SWAML-2.1-Reference.md) and [complete PDF](../output/pdf/SWAML-2.1-Specification.pdf), manifest and checksum remain frozen. The strict current-source [publication gate](PDF_PUBLICATION.md) checks the new edition independently of historical publications.
+**Standard:** 2.3 (unreleased candidate) · **Implementation package:** 4.0.0 · **Selected host semantics:** 2.3 · **Reference profile:** swaml-reference/2.3. The candidate is allocated and work package WP1 has landed: assignment to places such as `statuses[i].confirmed = true;` and `r.f = v;` (indexes, then the right side, then one read-modify-write of the root; `Bounds` leaves the root unchanged; `write` observations gain `place`), member access after an index such as `recent[i].vehicleId`, and literal component indexes in test inspection paths such as `backend.twins[0].link` and `backend.twins[0].currentView()`. Work package WP2 has landed: the whole-expression conditional `if (c) a else b` (typed by the common type of its branches, never a statement, no suspension inside, only the selected branch evaluated), `view`, `state`, `in` and `out` as contextual words in every name position (edition-aware name services write them unquoted for a 2.3 workspace and quoted for 2.2) and association lists `associate a, b to 'X', 'Y';` (one link per pair, a repeated pair is SW2010). Otherwise the host accepts exactly the 2.2 language, and the three [compatibility gates](RELEASE_2_3.md#compatibility-gates) compare every corpus AST and every recorded run, case and trace with fixtures recorded from implementation 3.1.0. The published [2.2 reference](SWAML-2.2-Reference.md) and [PDF](../output/pdf/SWAML-2.2-Specification.pdf) record the 2.2 release sources. The published 2.1 [reference book](SWAML-2.1-Reference.md) and [complete PDF](../output/pdf/SWAML-2.1-Specification.pdf), manifest and checksum remain frozen. The strict current-source [publication gate](PDF_PUBLICATION.md) checks the new edition independently of historical publications.
 
 The 2.0 core replaced the 1.x grammar, AST, resolver, validator and interpreter; 2.1 adds the package context, executable use cases and tests, package links, run targets and statement identities of [ADR 0019](decisions/0019-package-context.md). It does not accept 1.x or 2.0 source; the [release notes](RELEASE_2_1.md) describe the migration. Published 1.x and 2.0.0 books, PDFs, manifests/checksums and historical figure files remain unchanged. [ADR 0016](decisions/0016-swaml-2-0.md) defines the restart; [conformance obligations](spec/08-conformance-obligations.md) separate syntax, validation, execution, analysis, kernel and graphical claims.
 
@@ -2198,7 +2320,7 @@ The 2.2 edition adds explicit test access to the subject and associated software
 | Capability | Implemented evidence and boundary |
 | --- | --- |
 | Syntax and recovery | Normative Langium grammar, generated AST/TextMate, quoted names with naming hints for spaces, reserved words, double quotes, non-ASCII letters and misplaced docs, malformed input and retired-syntax rejection tests |
-| Components and values | Single specialization, whole redefinition, usage bodies, typed roots, indexed multiplicity, private copied stores, nominal records/enums/arrays and checked domains; 2.3 (WP1): places with record field and array element selectors, rooted in mutable locals, out parameters (after definite assignment) and non-const attributes, evaluated indexes first, then the right side, then one read-modify-write under the serial lock with `Bounds` leaving the root unchanged and a `write.place` trace field; selector reads after an index; SW2011 treats a place write as a write of its root. Places are not out arguments |
+| Components and values | Single specialization, whole redefinition, usage bodies, typed roots, indexed multiplicity, private copied stores, nominal records/enums/arrays and checked domains; 2.3 (WP1): places with record field and array element selectors, rooted in mutable locals, out parameters (after definite assignment) and non-const attributes, evaluated indexes first, then the right side, then one read-modify-write under the serial lock with `Bounds` leaving the root unchanged and a `write.place` trace field; selector reads after an index; SW2011 treats a place write as a write of its root. Places are not out arguments; 2.3 (WP2): the whole-expression conditional with branch typing under scalar widening and only the selected branch evaluated, view, state, in and out as contextual names, and association lists by pair |
 | Operations | Definitions/usages, explicit returns, nested no-capture scope, expression calls, in/out, success-only copy-back, definite out assignment and acyclic calls |
 | Effects and failures | Transitive write/read/communication/suspension flags, pure initializers, read-only guards, non-writing concurrency, lazy try and allowed suspension placement |
 | Ports and routes | Per-member direction/reversal, structural compatibility with variance and individual diagnostics, connection/forwarding, package connections between top-level occurrences, per-package closure, resolved cardinality and ownership/emission provenance with the interface-only exemption |
@@ -2218,9 +2340,9 @@ The unit suite exercises observable positive/negative language behavior, malform
 
 ## Deliberate implementation limits
 
-The stale-read analysis behind warning SW2011 visits at most 200,000 statements per document, followed calls included. When a document reaches that work limit, the validator reports one SW2013 warning at the operation where the analysis stopped, and SW2011 is not checked for that operation or for the operations validated after it in the document; other validation is unaffected. An expression nested more than 1,000 levels deep (for example a sum of more than 1,000 terms) is reported with the SW2013 error instead of a stack overflow and is neither type-checked nor run; local variables avoid the limit. Sources nested several thousand levels deep still exceed the stack of the Langium parser itself. Both are reference resource boundaries, not language rules.
+The stale-read analysis behind warning SW2011 visits at most 200,000 statements per document, followed calls included. When a document reaches that work limit, the validator reports one SW2013 warning at the operation where the analysis stopped, and SW2011 is not checked for that operation or for the operations validated after it in the document; other validation is unaffected. An expression nested more than 1,000 levels deep (for example a sum of more than 1,000 terms) is reported with the SW2013 error instead of a stack overflow and is neither type-checked nor run; local variables avoid the limit. Bracket nesting exceeds the stack of the Langium parser itself much earlier. The binary chains of the expression grammar are written into one rule, so a nesting level costs three parser rule calls instead of the nine of 3.1.0. On Node.js 26.12.0 with the default stack, through the document builder, bracket nesting therefore parses deeper than in 3.1.0 for every form: in a fresh process, for example, 228 parentheses (3.1.0: 148), 205 indexes `a[a[…]]` (122), 236 calls (126) and 246 nested record literals (132); the [release draft](RELEASE_2_3.md#parser-nesting-wp2-d05) lists every form. Nested blocks take the same parser calls per level as in 3.1.0, and their deepest nesting varies with the state of the JavaScript engine by about 5% in either version (compatibility exception X1 in the [release draft](RELEASE_2_3.md#parser-nesting-wp2-d05)). To fail fast instead of overflowing the stack or exhausting memory, the lexer applies the parser nesting limits of WP2-D05 (SW2013, chapter 4.4): a statement with more than 200 brackets open at once (counting the braces of record literals and any brace inside brackets) or one that ends with brackets unclosed after more than 32 were open is reported (`Bracket nesting exceeds the reference parser limit of … levels`) and not parsed, and the rest of the file is parsed as usual. Without the limits, 800 unclosed `a[` overflowed the stack and 1,200 unclosed `f(record R { v =` exhausted memory after 35 s in 3.1.0; now each takes milliseconds. A statement left unclosed is bounded where its brackets stop matching (a `}` of the enclosing block, or a `;` while a parenthesis is innermost); unclosed parentheses and braces that keep pairing up with the brackets of the following members extend it, at worst to the end of the file. A parse that still overflows the stack within the limits, such as about 180 unclosed blocks or array literals nested about 175 to 200 levels deep in a fresh process, reports SW2013 (`Bracket nesting exceeds the reference parser limit: the parser ran out of stack space …`) for its file, which is then not parsed, instead of throwing; other documents are unaffected. These are reference resource boundaries, not language rules.
 
-The reference validator expands at most 10000 component occurrences per top-level occurrence and reports SW2013 above that host limit; closure is not checked for a top-level occurrence that exceeds it. This is a reference resource boundary, not a new mathematical language multiplicity restriction. The reference simulator runs a package target (all top-level software occurrences with their package connections and deployments) or one top-level component alone with its ports open, and records statement identities as trace sources. A case script runs in one deterministic order; a pass is evidence of that run only. Script endpoints reach only top-level actors without multiplicity, white-box paths follow single parts (no indexed parts) and helper calls outside the exact primary subject cannot communicate or suspend. Normal primary-subject calls in both case kinds may use the subject's own ports and wait. An unassigned out binding of on call replies with its zero value. Stale-read analysis is conservative and may warn after a safe recheck. Definite-return/out assignment is conservative. Formatter range/on-type operations are not implemented. A rename that introduces an error, changes any indexed reference binding, or cannot preserve selected view identities is refused; persistent editor sidecar identity/native undo belongs to the editor integration.
+The reference validator expands at most 10000 component occurrences per top-level occurrence and reports SW2013 above that host limit; closure is not checked for a top-level occurrence that exceeds it. This is a reference resource boundary, not a new mathematical language multiplicity restriction. The reference simulator runs a package target (all top-level software occurrences with their package connections and deployments) or one top-level component alone with its ports open, and records statement identities as trace sources. A case script runs in one deterministic order; a pass is evidence of that run only. Script endpoints reach only top-level actors without multiplicity, white-box paths follow single parts and, from 2.3, part family members by a literal index and helper calls outside the exact primary subject cannot communicate or suspend. Normal primary-subject calls in both case kinds may use the subject's own ports and wait. An unassigned out binding of on call replies with its zero value. Stale-read analysis is conservative and may warn after a safe recheck. Definite-return/out assignment is conservative. Formatter range/on-type operations are not implemented. A rename that introduces an error, changes any indexed reference binding, or cannot preserve selected view identities is refused; persistent editor sidecar identity/native undo belongs to the editor integration.
 
 Math abs/min/max/concat are ordinary source; floor/round/trunc/length are explicitly documented host intrinsics with checked semantics. The interpreter uses zero physical CPU cost and one deterministic permitted order, with finite resources and recorded fault assumptions. It does not implement a production scheduler, real network reliability protocol or universal analysis.
 
@@ -2526,7 +2648,7 @@ swa.ml 2.2.
 
 The language core is portable TypeScript over Langium 4.4.0 and the normative grammar. Node CLI/server adapters own file access and source hashing. Build with npm run build; validate with node out/src/cli/main.js --json and explicitly load all application dependencies. The host selects parser 2.2; unsupported edition flags are errors.
 
-JSON diagnostics expose stable SW2xxx codes, range, URI and identity metadata. --format applies canonical token-preserving whitespace, printing places and selectors without spaces inside the path, as in statuses[i].confirmed = true; (WP1-M03); --check-format checks it without writing. The LSP exposes full-document formatting. Source repairs must be validated against the complete workspace before application.
+JSON diagnostics expose stable SW2xxx codes, range, URI and identity metadata. --format applies canonical token-preserving whitespace, printing places and selectors without spaces inside the path, as in statuses[i].confirmed = true; (WP1-M03), conditionals with every parenthesis of the source, as in x = 1 + (if (c) 2 else 3) + 4;, and association lists on one line when they fit in 100 characters, otherwise with one occurrence or case per continuation line; a list that contains a comment is not wrapped (WP2-M05); --check-format checks it without writing. The LSP exposes full-document formatting. Source repairs must be validated against the complete workspace before application.
 
 The simulator requires validated models and records swaml-reference/2.3, sources, options, trace, final stores and deployment. Source digests are added by the CLI. Its finite logical run does not supply production timing or universal verification.
 
@@ -2810,7 +2932,7 @@ Statement: LocalVariable | Assign | Send | ExpressionStatement | Return | If | W
 LocalVariable: 'var' name=Name ':' type=TypeRef '=' value=Expression ';';
 Assign: target=ValuePath ('[' index=Expression ']' selectors+=Selector*)? '=' value=Expression ';';
 Selector: '.' field=Name | '[' index=Expression ']';
-ExpressionStatement: expression=Expression ';';
+ExpressionStatement: expression=OrExpression ';';
 Send: kind=('send'|'publish') endpoint=EndpointPath '(' (args+=Expression (',' args+=Expression)*)? ')' ';';
 Return: 'return' value=Expression? ';';
 If: 'if' '(' condition=Expression ')' then=Block ('else' otherwise=Block)?;
@@ -2834,7 +2956,7 @@ Requirement: 'requirement' name=Name '{' documentation=Documentation? attributes
 Documentation: text=DOC_COMMENT;
 Satisfaction: 'satisfy' requirement=[Requirement:QualifiedName] 'by' design=Path ';';
 Verification: 'verify' requirement=[Requirement:QualifiedName] 'by' test=[Scenario:Name] ';';
-Association: 'associate' occurrence=[ComponentUsage:Name] 'to' target=[Scenario:Name] ';';
+Association: 'associate' occurrence=[ComponentUsage:Name] (',' moreOccurrences+=[ComponentUsage:Name])* 'to' target=[Scenario:Name] (',' moreTargets+=[Scenario:Name])* ';';
 Scenario: kind=CaseKind name=Name ('of' subject=[ComponentUsage:Name])? '{' documentation=Documentation? statements+=Statement* '}';
 CaseKind returns string: 'use' 'case' | 'test';
 ViewDef: 'view' 'def' name=Name documentation=Documentation? ';';
@@ -2847,14 +2969,21 @@ FilterAnd returns FilterExpression: FilterPrimary ({infer FilterBinary.left=curr
 FilterPrimary returns FilterExpression: {infer FilterNot} 'not' operand=FilterPrimary | FilterComparison | '(' FilterExpression ')';
 FilterComparison: field=('name'|'kind'|'path') operator=('=='|'!=') value=STRING;
 Duration: value=INT unit=('ns'|'us'|'ms'|'s');
-Name returns string: ID | UNRESTRICTED_NAME | 'reversed' | 'to' | 'times' | 'name' | 'kind' | 'path' | 'use' | 'case' | 'test' | 'associate' | 'by' | 'ns' | 'us' | 'ms' | 's';
+Name returns string: ID | UNRESTRICTED_NAME | 'reversed' | 'to' | 'times' | 'name' | 'kind' | 'path' | 'use' | 'case' | 'test' | 'associate' | 'by' | 'ns' | 'us' | 'ms' | 's' | 'view' | 'state' | 'in' | 'out';
 MemberPath returns string: Name '.' Name;
 EndpointPath returns string: Name '.' Name ('.' Name)?;
 Path returns string: QualifiedName ('[' INT ']')? ('.' Name ('[' INT ']')?)*;
 QualifiedName returns string: Name ('::' Name)*;
 ValuePath returns string: QualifiedName ('.' Name)*;
-type Expression = BinaryExpression | UnaryExpression | Literal | CallExpression | TryExpression | ReferenceExpression | RecordLiteral | ArrayLiteral;
-Expression returns Expression: OrExpression;
+type Expression = ConditionalExpression | BinaryExpression | UnaryExpression | Literal | CallExpression | TryExpression | ReferenceExpression | RecordLiteral | ArrayLiteral;
+// Expression is ConditionalExpression | OrExpression (WP2-G01). The binary chains of OrExpression down to
+// MultiplicativeExpression are written out here rather than called, one loop per precedence level from the highest:
+// each loop extends the expression so far as its left operand and takes its right operands from the next higher level,
+// which builds the same tree as the called rules. A nesting level then costs three rule calls instead of nine, so valid
+// nesting parses deeper than in 2.2 although the alternation adds a parser frame (WP2-D05). The rule stays on one line
+// for the inventories (scripts/build-inventories.mjs reads productions line by line).
+Expression returns Expression: ConditionalExpression | UnaryExpression ({infer BinaryExpression.left=current} operator=('*'|'/'|'%') right=UnaryExpression)* ({infer BinaryExpression.left=current} operator=('+'|'-') right=MultiplicativeExpression)* ({infer BinaryExpression.left=current} operator=('<'|'<='|'>'|'>=') right=AdditiveExpression)* ({infer BinaryExpression.left=current} operator=('=='|'!=') right=RelationalExpression)* ({infer BinaryExpression.left=current} operator='and' right=EqualityExpression)* ({infer BinaryExpression.left=current} operator='or' right=AndExpression)*;
+ConditionalExpression: 'if' '(' condition=Expression ')' then=Expression 'else' otherwise=Expression;
 OrExpression returns Expression: AndExpression ({infer BinaryExpression.left=current} operator='or' right=AndExpression)*;
 AndExpression returns Expression: EqualityExpression ({infer BinaryExpression.left=current} operator='and' right=EqualityExpression)*;
 EqualityExpression returns Expression: RelationalExpression ({infer BinaryExpression.left=current} operator=('=='|'!=') right=RelationalExpression)*;
@@ -4725,5 +4854,321 @@ package FleetBackend {
     assert shown.vehicleId == "TRK-101" and shown.speed == 72;
     assert backend.twins[0].latest.speed == 72 and backend.twins[1].link == LinkState.offline and backend.twins[1].latest.vehicleId == "";
   }
+}
+```
+
+### 35-conditional-expression.swaml
+
+```swaml
+package FaultDebounce {
+  /** A fault-memory debounce in the shape of the door model's DoorEcu::Types helpers. The 2.2 shape selects values through helper operations pickInt and pickStatus, which evaluate every argument; the 2.3 shape writes the whole-expression conditional if (c) a else b, which evaluates its condition and then only the selected branch. As an operand a conditional is parenthesized, as in clampInt((if (previous < 0) 0 else previous) + stepUp, …). */
+  datatype DtcStatus {
+    testFailed: bool;
+    confirmed: bool;
+    occurrences: uint;
+  }
+  operation def pickInt(condition: bool, whenTrue: int, otherwise: int) returns int {
+    /** The 2.2 selection helper. */
+    if (condition) {
+      return whenTrue;
+    }
+    return otherwise;
+  }
+  operation def pickStatus(condition: bool, whenTrue: DtcStatus, otherwise: DtcStatus) returns DtcStatus {
+    if (condition) {
+      return whenTrue;
+    }
+    return otherwise;
+  }
+  operation def clampInt(value: int, low: int, high: int) returns int {
+    return if (value < low) low else if (value > high) high else value;
+  }
+  component def Dem {
+    /** Debounce counters per fault. failedThreshold and passedThreshold bound each counter. */
+    const attribute stepUp: int = 3;
+    const attribute stepDown: int = 1;
+    const attribute failedThreshold: int = 6;
+    const attribute passedThreshold: int = -4;
+    attribute helperCounters: int[2] = [0, 0];
+    attribute counters: int[2] = [0, 0];
+    attribute statuses: DtcStatus[2] = [record DtcStatus {
+      testFailed = false;
+      confirmed = false;
+      occurrences = 0;
+    }, record DtcStatus {
+      testFailed = false;
+      confirmed = false;
+      occurrences = 0;
+    }];
+    attribute helperStatuses: DtcStatus[2] = [record DtcStatus {
+      testFailed = false;
+      confirmed = false;
+      occurrences = 0;
+    }, record DtcStatus {
+      testFailed = false;
+      confirmed = false;
+      occurrences = 0;
+    }];
+    operation reportByHelper(index: uint, failed: bool) {
+      /** The 2.2 shape: pickInt evaluates both candidates. */
+      var previous: int = helperCounters[index];
+      var counter: int = 0;
+      if (failed) {
+        counter = clampInt(pickInt(previous < 0, 0, previous) + stepUp, passedThreshold, failedThreshold);
+      } else {
+        counter = clampInt(pickInt(previous > 0, 0, previous) - stepDown, passedThreshold, failedThreshold);
+      }
+      helperCounters[index] = counter;
+      var status: DtcStatus = helperStatuses[index];
+      helperStatuses[index] = pickStatus(counter >= failedThreshold and not status.testFailed, record DtcStatus {
+        testFailed = true; confirmed = true; occurrences = status.occurrences + 1;
+      }, status);
+    }
+    operation report(index: uint, failed: bool) {
+      /** The 2.3 shape: a conditional per value. */
+      var previous: int = counters[index];
+      counters[index] = if (failed) clampInt((if (previous < 0) 0 else previous) + stepUp, passedThreshold, failedThreshold) else clampInt((if (previous > 0) 0 else previous) - stepDown, passedThreshold, failedThreshold);
+      var status: DtcStatus = statuses[index];
+      statuses[index] = if (counters[index] >= failedThreshold and not status.testFailed) record DtcStatus {
+        testFailed = true;
+        confirmed = true;
+        occurrences = status.occurrences + 1;
+      } else status;
+    }
+    operation readiness(index: uint) returns string {
+      return if (statuses[index].confirmed) "failed" else if (counters[index] < 0) "passed" else "pending";
+    }
+  }
+  component def Probe {
+    /** Records which branch of a conditional was evaluated. */
+    attribute evaluatedThen: uint = 0;
+    attribute evaluatedOtherwise: uint = 0;
+    attribute lastValue: real = 0.0;
+    operation thenValue() returns int {
+      evaluatedThen = evaluatedThen + 1;
+      return 1;
+    }
+    operation otherwiseValue() returns real {
+      evaluatedOtherwise = evaluatedOtherwise + 1;
+      return 2.5;
+    }
+    operation select(choose: bool) {
+      /** int and real branches have the common type real. */
+      lastValue = if (choose) thenValue() else otherwiseValue();
+    }
+  }
+  component dem: Dem;
+  component probe: Probe;
+  test 'Same counters either way' of dem {
+    /** Both shapes reach the same counters and statuses through failures, passes and a confirmation. */
+    dem.report(0, true);
+    dem.reportByHelper(0, true);
+    dem.report(0, true);
+    dem.reportByHelper(0, true);
+    dem.report(1, false);
+    dem.reportByHelper(1, false);
+    dem.report(1, true);
+    dem.reportByHelper(1, true);
+    assert dem.counters[0] == 6 and dem.counters[1] == 3;
+    assert dem.counters[0] == dem.helperCounters[0] and dem.counters[1] == dem.helperCounters[1];
+    assert dem.statuses[0].confirmed and dem.statuses[0].occurrences == 1 and not dem.statuses[1].confirmed;
+    assert dem.statuses[0] == dem.helperStatuses[0] and dem.statuses[1] == dem.helperStatuses[1];
+    var text: string = dem.readiness(0);
+    assert text == "failed";
+    dem.report(1, false);
+    text = dem.readiness(1);
+    assert text == "passed" and dem.counters[1] == -1;
+  }
+  test 'Only the selected branch runs' of probe {
+    /** The condition is evaluated, then only the selected branch: each side-effecting branch counts its own evaluations. */
+    probe.select(true);
+    assert probe.evaluatedThen == 1 and probe.evaluatedOtherwise == 0 and probe.lastValue == 1.0;
+    probe.select(false);
+    probe.select(false);
+    assert probe.evaluatedThen == 1 and probe.evaluatedOtherwise == 2 and probe.lastValue == 2.5;
+  }
+}
+```
+
+### 36-contextual-words.swaml
+
+```swaml
+package UplinkSession {
+  /** A cloud uplink session in the shape of the V2X model's UplinkSessionManager. In 2.2 the words view, state, in and out were reserved, so the session state was an attribute named sessionState or a quoted 'state'. From 2.3 they are contextual: they keep their keyword roles (state machines, views, parameter directions, for … in) and are also ordinary names, here an attribute state, a port in, a member state, parameters in and out and a view named view. 'state' and state are the same name. */
+  import Swaml::Views;
+  enum SessionState {
+    offline, connecting, connected
+  }
+  port def Link {
+    /** The cellular link reports coverage and the state of the session it carries. */
+    provides event coverage(in: bool);
+    requires attribute state: SessionState;
+  }
+  operation def next(state: SessionState, in: bool) returns SessionState {
+    return if (not in) SessionState.offline else if (state == SessionState.offline) SessionState.connecting else SessionState.connected;
+  }
+  operation def count(in values: bool[3], out out: uint) {
+    out = 0;
+    for (in: bool in values) {
+      out = out + (if (in) 1 else 0);
+    }
+  }
+  component def Modem {
+    /** Reports coverage and keeps the latest session state it receives. */
+    port out: Link;
+    attribute state: SessionState = SessionState.offline;
+    operation run() {
+      publish out.coverage(true);
+      wait 10ms;
+      publish out.coverage(false);
+    }
+    operation keep(value: SessionState) {
+      state = value;
+    }
+    schedule {
+      on start run();
+      on receive out.state(value) keep(value);
+    }
+  }
+  component def SessionManager {
+    /** The session state machine; its attribute is named state. */
+    reversed port in: Link;
+    attribute state: SessionState = SessionState.offline;
+    attribute changes: uint = 0;
+    attribute covered: uint = 0;
+    attribute view: bool[3] = [false, false, false];
+    operation enter(target: SessionState) {
+      'state' = target;
+      changes = changes + 1;
+      view[if (changes > 2) 2 else changes] = state != SessionState.offline;
+      send in.state(state);
+    }
+    operation session() {
+      initial idle;
+      state idle {
+        on receive in.coverage(in) when (in) to working {
+          enter(next(state, in));
+        }
+      }
+      state working {
+        on receive in.coverage(in) to idle {
+          enter(next(state, in));
+          count(view, covered);
+        }
+      }
+    }
+    schedule {
+      on start session();
+    }
+  }
+  component def Telematics {
+    /** The boundary port in forwards to the session's port in. */
+    reversed port in: Link;
+    component session: SessionManager;
+    connect (in, session.in);
+  }
+  component modem: Modem;
+  component app: Telematics;
+  connect (modem.out, app.in);
+  view view: General of app.session;
+  view state: General {
+    include app recursive where name == "state" or name == "in";
+  }
+  test 'Session state is a plain name' of app {
+    /** A test reads the attribute state of a part, unquoted and quoted. */
+    wait 5ms;
+    assert app.session.state == SessionState.connecting and app.session.'state' == app.session.state;
+    wait 20ms;
+    assert app.session.state == SessionState.offline and app.session.changes == 2;
+    assert app.session.view[1] and not app.session.view[2] and app.session.covered == 1;
+    assert modem.state == SessionState.offline;
+  }
+  associate modem to 'Session state is a plain name';
+}
+```
+
+### 37-association-lists.swaml
+
+```swaml
+package FleetCases {
+  /** Grouped associations in the shape of the cloud model's use cases and tests. In 2.2 each pair needed its own statement: associate truck to 'Monitor live position'; associate van to 'Monitor live position'; associate truck to 'Command a vehicle'; and so on. From 2.3 one statement lists occurrences and cases, associate truck, van to 'Monitor live position', 'Command a vehicle';, and associates every listed occurrence with every listed case. A pair repeated in one statement or across statements is an error. */
+  port def Telemetry {
+    provides event position(vehicle: string, km: int);
+  }
+  port def Commands {
+    requires event command(vehicle: string, code: int);
+  }
+  component def Vehicle {
+    /** An actor: interface-only, so a case acts through its ports. */
+    port uplink: Telemetry;
+    port downlink: Commands;
+  }
+  component def Backend {
+    reversed port truckIn: Telemetry;
+    reversed port vanIn: Telemetry;
+    reversed port truckOut: Commands;
+    reversed port vanOut: Commands;
+    attribute positions: uint = 0;
+    attribute lastKm: int = 0;
+    attribute commands: uint = 0;
+    operation track(vehicle: string, km: int) {
+      positions = positions + 1;
+      lastKm = km;
+    }
+    operation commandTruck(code: int) {
+      commands = commands + 1;
+      publish truckOut.command("truck", code);
+    }
+    operation commandVan(code: int) {
+      commands = commands + 1;
+      publish vanOut.command("van", code);
+    }
+    schedule {
+      on receive truckIn.position(vehicle, km) track(vehicle, km);
+      on receive vanIn.position(vehicle, km) track(vehicle, km);
+    }
+  }
+  component def Archive {
+    /** A separate software component that a test inspects. */
+    attribute stored: uint = 0;
+    operation store() {
+      stored = stored + 1;
+    }
+    schedule {
+      on start store();
+    }
+  }
+  component truck: Vehicle;
+  component van: Vehicle;
+  component backend: Backend;
+  component archive: Archive;
+  connect (truck.uplink, backend.truckIn);
+  connect (van.uplink, backend.vanIn);
+  connect (backend.truckOut, truck.downlink);
+  connect (backend.vanOut, van.downlink);
+  use case 'Monitor live position' of backend {
+    publish truck.uplink.position("truck", 12);
+    publish van.uplink.position("van", 40);
+    wait 1ms;
+  }
+  test 'Command a vehicle' of backend {
+    /** Uses the second listed occurrence with the second listed case of the first list. */
+    backend.commandVan(7);
+    on receive van.downlink.command(vehicle, code) {
+      assert vehicle == "van" and code == 7;
+    }
+    publish van.uplink.position("van", 41);
+    wait 1ms;
+    assert backend.commands == 1 and backend.lastKm == 41;
+  }
+  test 'Positions and archive' of backend {
+    /** Uses the truck and inspects the archive, both associated by the second list. */
+    publish truck.uplink.position("truck", 5);
+    publish truck.uplink.position("truck", 6);
+    wait 1ms;
+    assert backend.positions == 2 and backend.lastKm == 6 and archive.stored == 1;
+  }
+  associate truck, van to 'Monitor live position', 'Command a vehicle';
+  associate truck, archive to 'Positions and archive';
 }
 ```

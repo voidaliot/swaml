@@ -1,7 +1,9 @@
 import { CstUtils, DefaultLexer, DefaultLexerErrorMessageProvider, DefaultTokenBuilder, type LangiumCoreServices, type LeafCstNode, type LangiumDocument, type Lexer } from 'langium';
 import type { Formatter } from 'langium/lsp';
 import type { TextEdit } from 'vscode-languageserver';
-import { isArrayLiteral, isInterruptible, isUnaryExpression } from './generated/ast.js';
+import { isArrayLiteral, isAssociation, isInterruptible, isUnaryExpression, type Association } from './generated/ast.js';
+/** Whether an associate statement uses the list form (2.3). */
+const isAssociationListNode = (n: unknown): boolean => isAssociation(n) && ((n as Association).moreOccurrences.length > 0 || (n as Association).moreTargets.length > 0);
 import { SwamlGrammar } from './generated/grammar.js';
 import { SwamlLanguageMetaData } from './generated/module.js';
 
@@ -55,14 +57,42 @@ class Printer {
         this.lines.push('  '.repeat(Math.max(0, this.indent)) + text);
     }
     text(eol: string): string { this.flush(); return this.lines.length ? this.lines.join(eol) + eol : ''; }
+    /** Writes finished lines, the first at the current indentation and the others one level deeper. */
+    continued(lines: string[]): void {
+        this.line = '';
+        lines.forEach((text, i) => this.lines.push('  '.repeat(Math.max(0, this.indent) + (i ? 1 : 0)) + text));
+    }
+}
+
+/** An association list longer than this, indentation included, prints one occurrence or case per continuation line (WP2-M05). */
+export const ASSOCIATION_LINE_WIDTH = 100;
+/**
+ * The continuation lines of an association list (WP2-M05): associate and the first occurrence, then each further
+ * occurrence, then to with the first case, then each further case, each line ending at its comma.
+ */
+function associationLines(tokens: readonly LeafCstNode[]): string[] {
+    const lines: string[] = [];
+    let line = '';
+    for (const token of tokens) {
+        if (token.text === 'to' && !line.endsWith(',')) {
+            lines.push(line);
+            line = '';
+        }
+        line += token.text === ',' || token.text === ';' || !line ? token.text : ' ' + token.text;
+        if (token.text === ',') {
+            lines.push(line);
+            line = '';
+        }
+    }
+    return [...lines, line];
 }
 
 /** Tokens after which an opening parenthesis is spaced rather than attached as a call. */
-const SPACED_BEFORE_PARENTHESIS = ['if', 'when', 'while', 'until', 'for', 'connect', 'or', '=', '==', '!=', '<', '<=', '>', '>=', '+', '-', '*', '/', '%', 'and', 'return', 'not'];
+const SPACED_BEFORE_PARENTHESIS = ['if', 'else', 'when', 'while', 'until', 'for', 'connect', 'or', '=', '==', '!=', '<', '<=', '>', '>=', '+', '-', '*', '/', '%', 'and', 'return', 'not'];
 
 function canonical(tokens: LeafCstNode[], eol: string): string {
     const p = new Printer();
-    let parens = 0, previous = '', glue = false;
+    let parens = 0, previous = '', glue = false, association = -1;
     for (let i = 0; i < tokens.length; i++) {
         const token = tokens[i], text = canonicalText(token, eol), following = tokens[i + 1], next = following?.text;
         if (isComment(token)) {
@@ -79,6 +109,8 @@ function canonical(tokens: LeafCstNode[], eol: string): string {
             glue = false;
             continue;
         }
+        if (text === 'associate' && isAssociation(token.astNode) && !p.line.trim())
+            association = i;
         if (text === '{') {
             p.space();
             p.append('{');
@@ -96,13 +128,19 @@ function canonical(tokens: LeafCstNode[], eol: string): string {
         }
         else if (text === ';') {
             p.attach(';');
-            if (parens)
+            // An association list that does not fit prints one occurrence or case per continuation line (WP2-M05).
+            const listed = association >= 0 && isAssociation(token.astNode) && token.astNode === tokens[association].astNode ? tokens.slice(association, i + 1) : undefined;
+            association = -1;
+            if (listed && !listed.some(isComment) && (isAssociationListNode(token.astNode)) && 2 * Math.max(0, p.indent) + p.line.trim().length > ASSOCIATION_LINE_WIDTH)
+                p.continued(associationLines(listed));
+            else if (parens)
                 p.space();
             else
                 p.flush();
         }
         else if (text === '(') {
-            if (!glue && (SPACED_BEFORE_PARENTHESIS.includes(previous) || p.line.trimStart().startsWith('connect ')))
+            // A parenthesized branch of a conditional is spaced after its condition: if (c) (a + b) else (a - b).
+            if (!glue && (SPACED_BEFORE_PARENTHESIS.includes(previous) || previous === ')' || p.line.trimStart().startsWith('connect ')))
                 p.space();
             p.append('(');
             parens++;

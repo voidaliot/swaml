@@ -782,6 +782,7 @@
         "UnaryExpression",
         "PrimaryExpression",
         "BinaryExpression",
+        "ConditionalExpression",
         "ReferenceExpression",
         "Selector",
         "ValuePath",
@@ -1359,6 +1360,13 @@
       },
       {
         "production": "Expression",
+        "concepts": [
+          "expressions"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "ConditionalExpression",
         "concepts": [
           "expressions"
         ],

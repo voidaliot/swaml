@@ -8,6 +8,10 @@ A declaration identity is package plus owned-name path. An occurrence identity i
 
 Each normalized node/constraint retains source declaration URI/range and any inherited/replacement provenance. A persistent editor identity map is separate, preserving renames/moves atomically with source references and sidecars. Same-type multiplicity occurrences never share stores, queues or activation identity.
 
+| ID | Rule |
+| --- | --- |
+| WP2-M04 | **Association pairs.** Each occurrence–case pair of an association list is one normalized link. Its provenance is the statement plus the positions of the occurrence and the case in their lists. Deleting one pair in a tool rewrites the list and keeps the other pairs. The reference projection (`projectModel`) gives each link of a list statement its positions as `pair: { occurrence, case }`; a single 2.2 statement has none. |
+
 ## 7.2 Families
 
 | Family | Required content |
@@ -23,7 +27,7 @@ Each normalized node/constraint retains source declaration URI/range and any inh
 | Schedule/entry | Trigger identity, effective target, dispatch arguments/bindings, period/deadline, concurrent |
 | State/transition | Initial/final, entry/exit/effects, receive bindings/guard or timer, ordered selection |
 | Deployment | Software/platform roots, Node paths, family/index placements, effective specificity |
-| Requirement/case/view | Immutable attributes/docs, package intent links (associate, satisfy, verify), case kind, subject occurrence and ordered script statements with resolved actor ports, exact normal primary-subject call targets, explicitly associated test access roots and exact inspection/helper targets, ordered selection union |
+| Requirement/case/view | Immutable attributes/docs, package intent links (associate, satisfy, verify), case kind, subject occurrence and ordered script statements with resolved actor ports, exact normal primary-subject call targets, explicitly associated test access roots and exact inspection/helper targets, ordered selection union; association pairs from list statements with their list positions |
 
 Expansion creates every literal multiplicity occurrence independently and keeps the definition reference. Inheritance produces an ordered effective set; replacement points to its inherited declaration. Late-bound local calls use that occurrence's effective operation name with the preserved signature. An operation usage retains the definition signature and either inherited or replacement body; no partial merge is inferred.
 

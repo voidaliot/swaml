@@ -6,7 +6,7 @@
 
 | ID | Rule |
 | --- | --- |
-| WP2-M04 | **Association pairs.** Each occurrence–case pair of an association list is one normalized link. Its provenance is the statement plus the positions of the occurrence and the case in their lists. Deleting one pair in a tool rewrites the list and keeps the other pairs. |
+| WP2-M04 | Moved to [chapter 7.1](../../spec/07-normalized-model.md#71-identity-and-provenance) in WP2. |
 | WP4-M04 | **Entry identity.** A schedule entry keeps the identity `Component/schedule/N`. Its trigger identity for replacement and duplicates is the normalized form of WP4-S07. |
 | WP8-M06 | **Placement identity.** An operation placement is identified by its deployment and exact path, like an occurrence placement. |
 
@@ -16,13 +16,13 @@ The family table gains the following content:
 
 | Family | Additional required content | Package |
 | --- | --- | --- |
-| Statement/expression | Places with root, ordered selectors and index expressions; conditional with condition and both branches | WP1, WP2 |
+| Statement/expression | Places with root, ordered selectors and index expressions; conditional with condition and both branches | WP1, WP2 (applied) |
 | Schedule/entry | Period and deadline as expression text plus per-occurrence values; release guard | WP4, WP7 |
 | State/transition | Transition kind (receive, timer or completion), optional target (internal when absent), timer guard, computed delay; state deferrals in order | WP4, WP5 |
 | Port/member | Initial value of attribute members; sampled members per port | WP6 |
 | Connection/forwarding | Member policies with their effective policy per member route | WP6 |
 | Deployment | Operation placements, effective placement per entry, Task, Core and in-task position | WP8 |
-| Requirement/case/view | Association pairs from list statements | WP2 |
+| Requirement/case/view | Moved to [chapter 7.2](../../spec/07-normalized-model.md#72-families) in WP2. | WP2 |
 
 ## 7.3 Routes and queues
 

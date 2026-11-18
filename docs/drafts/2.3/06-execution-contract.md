@@ -28,7 +28,7 @@ Release guards (new paragraph after the `after` paragraph):
 | ID | Rule |
 | --- | --- |
 | WP1-R04 | Moved to [chapter 6.3](../../spec/06-execution-contract.md#63-values-flow-and-failure) in WP1. |
-| WP2-R01 | **Conditional.** Evaluate the condition, then only the selected branch. |
+| WP2-R01 | Moved to [chapter 6.3](../../spec/06-execution-contract.md#63-values-flow-and-failure) in WP2. |
 
 ## 6.4 Communication
 

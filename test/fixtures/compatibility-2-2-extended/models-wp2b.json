@@ -1,0 +1,75 @@
+{
+ "description": "Valid and invalid 2.2 sources outside the gate-1 corpus whose diagnostics spell a quoted contextual word (view, state, in, out): association and test-access hints of SW2010, ambiguity messages of SW2001 with their related information, and other messages naming such names (WP2 review H1). Each parses with the kept 2.2 grammar. Their diagnostics (with related information), normalized ASTs and runs are recorded once from implementation 3.1.0 in recorded-wp2b.json and compared by scripts/compatibility-2-2-extended.mjs.",
+ "models": [
+  {
+   "name": "m1 assoc hint names state and view",
+   "text": "package Test {\n  port def P { provides event e(v: int); }\n  component def Env { port p: P; }\n  component def Sys { reversed port p: P; attribute n: int = 0; operation h(v: int) { n = v; } schedule { on receive p.e(v) h(v); } }\n  component sys: Sys;\n  component 'in': Env;\n  connect ('in'.p, sys.p);\n  use case 'state' of sys {\n    publish 'in'.p.e(1);\n  }\n}"
+  },
+  {
+   "name": "m2 test access hint names view",
+   "text": "package Test {\n  component def C { attribute x: int = 0; }\n  component sys: C;\n  component other: C;\n  test 'view' of sys {\n    assert other.x == 0;\n  }\n}"
+  },
+  {
+   "name": "m3 ambiguous state",
+   "text": "package A { component def 'state' { } }\npackage B { component def 'state' { } }\npackage Test {\n  import A;\n  import B;\n  component x: 'state';\n}"
+  },
+  {
+   "name": "m4 ambiguous local out",
+   "text": "package Test {\n  component def C { }\n  component 'out': C;\n  use case 'out' { }\n  associate 'out' to 'out';\n}"
+  },
+  {
+   "name": "m6 unknown value in",
+   "text": "package Test {\n  component def C { attribute 'in': int = 0; operation run() { 'in' = 'out' + 1; } schedule { on start run(); } }\n  component Demo: C;\n}"
+  },
+  {
+   "name": "m7 duplicate member state",
+   "text": "package Test {\n  component def C { attribute 'state': int = 0; attribute 'state': int = 1; }\n  component Demo: C;\n}"
+  },
+  {
+   "name": "m8 test assoc hint with part path state",
+   "text": "package Test {\n  component def Inner { attribute v: int = 0; }\n  component def C { component 'state': Inner; }\n  component sys: C;\n  component 'view': C;\n  test T of sys {\n    assert 'view'.'state'.v == 0;\n  }\n}"
+  },
+  {
+   "name": "m9 use case private access out",
+   "text": "package Test {\n  component def C { attribute 'out': int = 0; }\n  component sys: C;\n  use case U of sys {\n    assert sys.'out' == 0;\n  }\n}"
+  },
+  {
+   "name": "m10 type error names state",
+   "text": "package Test {\n  datatype 'state' { v: int; }\n  component def C { attribute s: 'state' = record 'state' { v = 1; }; attribute n: int = 0; operation run() { n = s; } schedule { on start run(); } }\n  component Demo: C;\n}"
+  },
+  {
+   "name": "x1 assoc hint for a test, view actor of out subject",
+   "tests": [
+    "Test::view"
+   ],
+   "text": "package Test {\n  port def P { provides event e(v: int); }\n  component def Env { port p: P; }\n  component def Sys { reversed port p: P; attribute n: int = 0; operation h(v: int) { n = v; } schedule { on receive p.e(v) h(v); } }\n  component 'out': Sys;\n  component 'view': Env;\n  connect ('view'.p, 'out'.p);\n  test 'view' of 'out' {\n    publish 'view'.p.e(2);\n    wait 1ms;\n    assert 'out'.n == 2;\n  }\n}"
+  },
+  {
+   "name": "x2 test call hint names in and state",
+   "text": "package Test {\n  component def C { attribute x: int = 0; operation 'state'() returns int { return x; } }\n  component sys: C;\n  component 'in': C;\n  test 'state' of sys {\n    var v: int = 'in'.'state'();\n    assert v == 0;\n  }\n}"
+  },
+  {
+   "name": "x3 test read hint through a part named in",
+   "text": "package Test {\n  component def Inner { attribute v: int = 0; }\n  component def C { component 'in': Inner; }\n  component sys: C;\n  component 'out': C;\n  test 'in' of sys {\n    assert 'out'.'in'.v == 0;\n  }\n}"
+  },
+  {
+   "name": "x4 ambiguous in and view across imports, qualified advice",
+   "text": "package 'view' { component def 'in' { } datatype 'out' { v: int; } }\npackage 'state' { component def 'in' { } datatype 'out' { v: int; } }\npackage Test {\n  import 'view';\n  import 'state';\n  component x: 'in';\n  component def C { attribute o: 'out' = record 'view'::'out' { v = 1; }; }\n}"
+  },
+  {
+   "name": "x5 ambiguous local view element and case",
+   "text": "package Test {\n  import Swaml::Views;\n  component def C { }\n  component 'view': C;\n  test 'view' { }\n  verify R by 'view';\n  requirement R { }\n}"
+  },
+  {
+   "name": "x6 ambiguous state across own package and import",
+   "text": "package Lib { component def 'state' { } }\npackage Test {\n  import Lib;\n  component def 'state' { }\n  component s: 'state';\n}"
+  },
+  {
+   "name": "x7 valid quoted words everywhere with an association hint free run",
+   "tests": [
+    "Test::in"
+   ],
+   "text": "package Test {\n  port def 'view' { provides event 'state'(v: int); }\n  component def Env { port 'out': 'view'; }\n  component def Sys { reversed port 'in': 'view'; attribute 'state': int = 0; operation h(v: int) { 'state' = v; } schedule { on receive 'in'.'state'(v) h(v); } }\n  component sys: Sys;\n  component 'out': Env;\n  connect ('out'.'out', sys.'in');\n  test 'in' of sys {\n    publish 'out'.'out'.'state'(3);\n    wait 1ms;\n    assert sys.'state' == 3;\n  }\n  associate 'out' to 'in';\n}"
+  }
+ ]
+}

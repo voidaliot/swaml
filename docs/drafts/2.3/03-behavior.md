@@ -7,7 +7,7 @@
 | ID | Rule |
 | --- | --- |
 | WP1-S04 | Moved to [chapter 3.1](../../spec/03-behavior.md#31-operations-and-effects) in WP1. |
-| WP2-S04 | **Conditional effects.** The effect of a conditional is the union of its condition and both branches. No suspending call may appear anywhere in a conditional (SW2006); the whole-expression suspension rule is unchanged. |
+| WP2-S04 | Moved to [chapter 3.1](../../spec/03-behavior.md#31-operations-and-effects) in WP2. |
 | WP3-S01 | **`now()` effect.** `now()` has the effect class *reads state*. It is therefore rejected in attribute and member initializers (SW2006). It is rejected in completion guards (WP5-S03) and in the constant sublanguage (WP4-S05). |
 | WP3-S02 | **Stale reads.** The stale-read warning (SW2011, after tool fix A2) never reports a value obtained from `now()`. |
 
@@ -25,7 +25,7 @@
 | WP1-S07 | Moved to [chapter 3.3](../../spec/03-behavior.md#33-statements-and-scopes) in WP1. |
 | WP1-R01 | Moved to [chapter 3.3](../../spec/03-behavior.md#33-statements-and-scopes) in WP1. |
 | WP1-R02 | Moved to [chapter 3.3](../../spec/03-behavior.md#33-statements-and-scopes) in WP1. |
-| WP2-S05 | **No conditional statement.** A conditional is never a statement (grammar WP2-G02). The `if` statement keeps its block form. |
+| WP2-S05 | Moved to [chapter 3.3](../../spec/03-behavior.md#33-statements-and-scopes) in WP2. |
 | WP4-S03 | **Computed waits.** `wait (e);` and `or after (e) { … }` take an integral, non-suspending expression (SW2002, SW2006), evaluated when the statement starts waiting. |
 
 ```text

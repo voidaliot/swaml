@@ -16,7 +16,7 @@ C = (D, O, σ, S, Q, A, M, R, L, B, t)
 | --- | --- | --- |
 | `x[i].f…` / `x[i][j]…` | Moved to [chapter 9.2](../../spec/09-formal-semantics.md#92-typing-schemas) in WP1. | [WP1] |
 | `place = e` | Moved to [chapter 9.2](../../spec/09-formal-semantics.md#92-typing-schemas) in WP1. | [WP1] |
-| `if (c) a else b` | c : bool; a : T1, b : T2 with common type T; effect ε(c) ∪ ε(a) ∪ ε(b) without suspension; not a statement | [WP2] |
+| `if (c) a else b` | Moved to [chapter 9.2](../../spec/09-formal-semantics.md#92-typing-schemas) in WP2. | [WP2] |
 | `now()` | Result uint; effect reads state; not in initializers, completion guards or constant expressions | [WP3] |
 | duration literal | Result uint (nanoseconds), representable | [WP4] |
 | computed duration `(e)` | e integral; dynamic positions non-suspending (wait, timeout) or read-only (state timer); static positions in the constant sublanguage | [WP4] |

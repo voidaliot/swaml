@@ -1,7 +1,8 @@
 import { AstUtils, DefaultDocumentBuilder, DefaultDocumentValidator, type LangiumDocument, type AstNode, type BuildOptions, type LinkingError, type ValidationOptions } from 'langium';
 import type { CancellationToken, Diagnostic } from 'vscode-languageserver';
 import { isModel, isPackage } from './generated/ast.js';
-import { formatQualifiedName } from './names.js';
+import { MESSAGE_SPELLING, formatQualifiedName } from './names.js';
+import { BRACKET_NESTING_CLAUSE } from './swaml-syntax.js';
 /** Semantic string paths and negative lookups participate in workspace invalidation. */
 export class SwamlDocumentBuilder extends DefaultDocumentBuilder {
     override async build<T extends AstNode>(documents: LangiumDocument<T>[], options?: BuildOptions, cancelToken?: CancellationToken): Promise<void> {
@@ -20,7 +21,7 @@ export class SwamlDocumentValidator extends DefaultDocumentValidator {
         errors.forEach((error, i) => {
             const d = diagnostics[start + i];
             if (d && error.declarations)
-                d.relatedInformation = error.declarations.filter(n => n.$cstNode).map(n => ({ location: { uri: AstUtils.getDocument(n).uri.toString(), range: n.$cstNode!.range }, message: 'Declaration ' + formatQualifiedName((AstUtils.getContainerOfType(n, isPackage)?.name ?? '') + '::' + (n as AstNode & { name: string }).name) }));
+                d.relatedInformation = error.declarations.filter(n => n.$cstNode).map(n => ({ location: { uri: AstUtils.getDocument(n).uri.toString(), range: n.$cstNode!.range }, message: 'Declaration ' + formatQualifiedName((AstUtils.getContainerOfType(n, isPackage)?.name ?? '') + '::' + (n as AstNode & { name: string }).name, MESSAGE_SPELLING) }));
         });
     }
     override async validateDocument(document: LangiumDocument, options?: ValidationOptions, cancelToken?: CancellationToken): Promise<Diagnostic[]> {
@@ -29,6 +30,7 @@ export class SwamlDocumentValidator extends DefaultDocumentValidator {
             if (d.code !== undefined)
                 return d;
             const code = d.data?.code === 'linking-error' ? 'SW2001'
+                : d.data?.code === 'lexing-error' && String(d.message).startsWith(BRACKET_NESTING_CLAUSE) ? 'SW2013'
                 : ['lexing-error', 'parsing-error'].includes(d.data?.code) ? 'SW2000' : undefined;
             return code ? { ...d, code } : d;
         });

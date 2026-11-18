@@ -1,0 +1,92 @@
+package UplinkSession {
+  /** A cloud uplink session in the shape of the V2X model's UplinkSessionManager. In 2.2 the words view, state, in and out were reserved, so the session state was an attribute named sessionState or a quoted 'state'. From 2.3 they are contextual: they keep their keyword roles (state machines, views, parameter directions, for … in) and are also ordinary names, here an attribute state, a port in, a member state, parameters in and out and a view named view. 'state' and state are the same name. */
+  import Swaml::Views;
+  enum SessionState {
+    offline, connecting, connected
+  }
+  port def Link {
+    /** The cellular link reports coverage and the state of the session it carries. */
+    provides event coverage(in: bool);
+    requires attribute state: SessionState;
+  }
+  operation def next(state: SessionState, in: bool) returns SessionState {
+    return if (not in) SessionState.offline else if (state == SessionState.offline) SessionState.connecting else SessionState.connected;
+  }
+  operation def count(in values: bool[3], out out: uint) {
+    out = 0;
+    for (in: bool in values) {
+      out = out + (if (in) 1 else 0);
+    }
+  }
+  component def Modem {
+    /** Reports coverage and keeps the latest session state it receives. */
+    port out: Link;
+    attribute state: SessionState = SessionState.offline;
+    operation run() {
+      publish out.coverage(true);
+      wait 10ms;
+      publish out.coverage(false);
+    }
+    operation keep(value: SessionState) {
+      state = value;
+    }
+    schedule {
+      on start run();
+      on receive out.state(value) keep(value);
+    }
+  }
+  component def SessionManager {
+    /** The session state machine; its attribute is named state. */
+    reversed port in: Link;
+    attribute state: SessionState = SessionState.offline;
+    attribute changes: uint = 0;
+    attribute covered: uint = 0;
+    attribute view: bool[3] = [false, false, false];
+    operation enter(target: SessionState) {
+      'state' = target;
+      changes = changes + 1;
+      view[if (changes > 2) 2 else changes] = state != SessionState.offline;
+      send in.state(state);
+    }
+    operation session() {
+      initial idle;
+      state idle {
+        on receive in.coverage(in) when (in) to working {
+          enter(next(state, in));
+        }
+      }
+      state working {
+        on receive in.coverage(in) to idle {
+          enter(next(state, in));
+          count(view, covered);
+        }
+      }
+    }
+    schedule {
+      on start session();
+    }
+  }
+  component def Telematics {
+    /** The boundary port in forwards to the session's port in. */
+    reversed port in: Link;
+    component session: SessionManager;
+    connect (in, session.in);
+  }
+  component modem: Modem;
+  component app: Telematics;
+  connect (modem.out, app.in);
+  view view: General of app.session;
+  view state: General {
+    include app recursive where name == "state" or name == "in";
+  }
+  test 'Session state is a plain name' of app {
+    /** A test reads the attribute state of a part, unquoted and quoted. */
+    wait 5ms;
+    assert app.session.state == SessionState.connecting and app.session.'state' == app.session.state;
+    wait 20ms;
+    assert app.session.state == SessionState.offline and app.session.changes == 2;
+    assert app.session.view[1] and not app.session.view[2] and app.session.covered == 1;
+    assert modem.state == SessionState.offline;
+  }
+  associate modem to 'Session state is a plain name';
+}

@@ -1,5 +1,5 @@
 import { DefaultLexer, DefaultLexerErrorMessageProvider, DefaultValueConverter, LangiumParserErrorMessageProvider, type CstNode, type GrammarAST, type LexerResult, type TokenizeOptions, type ValueType } from 'langium';
-import { CONTEXTUAL_KEYWORDS, RESERVED_WORDS, decodeQuotedName, formatName } from './names.js';
+import { CONTEXTUAL_KEYWORDS, RESERVED_WORDS, decodeQuotedName, quoteName } from './names.js';
 type Token = Parameters<LangiumParserErrorMessageProvider['buildMismatchTokenMessage']>[0]['actual'];
 type TokenKind = Token['tokenType'];
 /** Decodes quoted names and normalizes the two-word use case keyword to useCase. */
@@ -15,9 +15,134 @@ export class SwamlValueConverter extends DefaultValueConverter {
 // Characters skipped by the current tokenization. Parsing follows tokenization
 // synchronously, so hints never mistake a skipped character for a space.
 const skipped = new Set<number>();
+// The tokens of the current tokenization, so that a syntax message can look past the failing token.
+let tokens: readonly Token[] = [];
+/** WP2-D05 (a): open bracket nesting a statement may reach; above every depth the 2.2 reference implementation parses. */
+export const BRACKET_NESTING_LIMIT = 200;
+/** WP2-D05 (b): open bracket nesting a statement that ends unbalanced may reach before its recovery is bounded. */
+export const UNCLOSED_NESTING_LIMIT = 32;
+/** The start of the message of the lexing error that stops a statement at the bracket nesting limit (SW2013). */
+export const BRACKET_NESTING_MESSAGE = `Bracket nesting exceeds the reference parser limit of ${BRACKET_NESTING_LIMIT} levels`;
+/** The leading clause shared by every parser nesting stop, which the document validator reports as SW2013. */
+export const BRACKET_NESTING_CLAUSE = 'Bracket nesting exceeds the reference parser limit';
 export class SwamlLexer extends DefaultLexer {
-    override tokenize(text: string, options?: TokenizeOptions): LexerResult { skipped.clear(); return super.tokenize(text, options); }
+    override tokenize(text: string, options?: TokenizeOptions): LexerResult {
+        skipped.clear();
+        const result = super.tokenize(text, options);
+        guardNesting(result);
+        tokens = result.tokens;
+        return result;
+    }
 }
+/**
+ * WP2-D05: the reference parser's bracket nesting limits (SW2013). The guard scans the tokens of every statement or
+ * declaration: the tokens between two ;, { or } that appear while no bracket is open. Within it, an open bracket
+ * is a ( or [, a { that opens a record literal (after record and a qualified name), and any other { while a
+ * bracket is open; ) ] } close the innermost one when it is of their kind. The statement ends at the next ;, { or
+ * } with no bracket open, or, unbalanced, at a ) ] } that does not match the innermost open bracket, at a ; while
+ * a ( or [ other than the parenthesis of a for statement is innermost, or at the end of the file.
+ * (a) Open nesting deeper than BRACKET_NESTING_LIMIT anywhere in a statement stops it at the first bracket beyond
+ *     the limit. The limit is above every depth the 2.2 reference implementation parses (WP2-D05).
+ * (b) A statement that ends unbalanced and whose open nesting exceeded UNCLOSED_NESTING_LIMIT is stopped at its
+ *     first token, because the parser's recovery from unclosed brackets costs superlinear time and stack.
+ * A stopped statement's tokens, from its first token to its end (including an ending ;, excluding an ending
+ * bracket or brace), are not parsed and one lexing error is reported for it; the tokens after it are parsed as
+ * usual. A statement that never ends unbalanced and never returns to depth 0 extends to the end of the file.
+ */
+function guardNesting(result: LexerResult): void {
+    const all = result.tokens, dropped: [number, number][] = [], open: string[] = [];
+    let start = 0, deepest = 0, over = -1, record = false;
+    const finish = (to: number, unclosed: boolean) => {
+        const limit = over >= 0 ? BRACKET_NESTING_LIMIT : unclosed && deepest > UNCLOSED_NESTING_LIMIT ? UNCLOSED_NESTING_LIMIT : 0;
+        if (limit) {
+            const token = all[over >= 0 ? over : start];
+            result.errors.push({ offset: token.startOffset, line: token.startLine, column: token.startColumn, length: token.image.length, message: over >= 0
+                ? `${BRACKET_NESTING_MESSAGE}; this statement is not parsed. Split the expression into local variables.`
+                : `${BRACKET_NESTING_CLAUSE} of ${UNCLOSED_NESTING_LIMIT} levels for a statement that leaves brackets unclosed; this statement is not parsed. Close the brackets.` });
+            dropped.push([start, to]);
+        }
+        open.length = deepest = 0;
+        over = -1;
+    };
+    for (let i = 0; i < all.length; i++) {
+        const text = all[i].image;
+        if (text.length !== 1 || !'([{}]);'.includes(text)) {
+            // A record literal's brace follows record and a qualified name.
+            record = text === 'record' ? all[i].tokenType.name === 'record' : record && (text === '::' || nameToken(all[i].tokenType));
+            continue;
+        }
+        const recordBrace = text === '{' && record, top = open[open.length - 1];
+        record = false;
+        if (text === '(' || text === '[' || recordBrace || text === '{' && top) {
+            open.push(text === '(' && all[i - 1]?.image === 'for' ? 'for' : text);
+            if (open.length > deepest)
+                deepest = open.length;
+            if (open.length > BRACKET_NESTING_LIMIT && over < 0)
+                over = i;
+        } else if (!top) {
+            if (text === ';' || text === '{' || text === '}') {
+                finish(text === ';' ? i + 1 : i, false);
+                start = i + 1;
+            }
+        } else if (text === ')' || text === ']' || text === '}') {
+            if (top === (text === ')' ? '(' : text === ']' ? '[' : '{') || text === ')' && top === 'for')
+                open.pop();
+            else {
+                finish(i, true);
+                start = i + 1;
+            }
+        } else if (text === ';' && (top === '(' || top === '[')) {
+            finish(i + 1, true);
+            start = i + 1;
+        }
+    }
+    finish(all.length, open.length > 0);
+    if (dropped.length) {
+        const kept: typeof all = [];
+        for (let i = 0, range = 0; i < all.length; i++) {
+            while (range < dropped.length && i >= dropped[range][1])
+                range++;
+            if (range === dropped.length || i < dropped[range][0])
+                kept.push(all[i]);
+        }
+        result.tokens = kept;
+    }
+}
+/** WP2-D04: the message for if (c) a else b in statement position, where the if statement needs a block. */
+export const CONDITIONAL_STATEMENT_MESSAGE = 'A conditional expression is not a statement; use an if block.';
+/**
+ * Whether the if statement whose block is missing at actual has the shape of a conditional expression
+ * (WP2-G02, WP2-D04): an else follows at nesting depth 0 before the next ;, { or }.
+ */
+function conditionalStatement(actual: Token, previous: Token | undefined): boolean {
+    const at = tokens.findIndex(t => t.startOffset === actual.startOffset);
+    if (previous?.image !== ')' || at < 1)
+        return false;
+    // The block is the then block of an if statement: if ( … ) precedes it.
+    let open = at - 1;
+    for (let depth = 0; open >= 0; open--) {
+        depth += tokens[open].image === ')' ? 1 : tokens[open].image === '(' ? -1 : 0;
+        if (depth === 0)
+            break;
+    }
+    if (tokens[open - 1]?.image !== 'if')
+        return false;
+    let depth = 0;
+    for (let i = at; i < tokens.length; i++) {
+        const text = tokens[i].image;
+        if (depth === 0 && [';', '{', '}'].includes(text))
+            return false;
+        if (depth === 0 && text === 'else')
+            return true;
+        depth += ['(', '['].includes(text) ? 1 : [')', ']'].includes(text) ? -1 : 0;
+        if (depth < 0)
+            return false;
+    }
+    return false;
+}
+/** Expression rules in which a conditional can only be an operand (WP2-S03). */
+const OPERAND_RULES = new Set(['OrExpression', 'AndExpression', 'EqualityExpression', 'RelationalExpression', 'AdditiveExpression', 'MultiplicativeExpression', 'UnaryExpression', 'PrimaryExpression']);
+const OPERAND_HINT = ' A conditional expression is a whole expression; as an operand it is written in parentheses, as in (if (c) a else b).';
 const nameToken = (type: TokenKind | undefined) => !!type && (type.name === 'ID' || type.name === 'UNRESTRICTED_NAME' || CONTEXTUAL_KEYWORDS.has(type.name));
 const shown = (token: Token) => token.tokenType?.name === 'UNRESTRICTED_NAME' ? decodeQuotedName(token.image) : token.image;
 /** Explains the common naming and documentation mistakes after the parser's own message. */
@@ -28,7 +153,7 @@ function hint(actual: Token | undefined, previous: Token | undefined, expectsNam
     if (type === 'DOC_COMMENT')
         return ' A /** */ documentation comment belongs first inside the braces of its declaration, or immediately before the semicolon of a leaf declaration.';
     if (expectsName && type === 'STRING')
-        return ` Names use single quotes, for example ${formatName(actual.image.slice(1, -1).replace(/[.:[\]]/g, ' ').trim() || 'name')}.`;
+        return ` Names use single quotes, for example ${quoteName(actual.image.slice(1, -1).replace(/[.:[\]]/g, ' ').trim() || 'name')}.`;
     if (RESERVED_WORDS.has(actual.image))
         return ` '${actual.image}' is a reserved word. ${expectsName ? 'Write' : 'If it is meant as a name, write'} it as a quoted name ('${actual.image}') or choose another name.`;
     if (!expectsName && nameToken(actual.tokenType) && nameToken(previous?.tokenType) && (previous!.endOffset ?? previous!.startOffset) + 1 < actual.startOffset && ![...skipped].some(offset => offset > previous!.startOffset && offset < actual.startOffset))
@@ -38,10 +163,14 @@ function hint(actual: Token | undefined, previous: Token | undefined, expectsNam
 export class SwamlParserErrorMessageProvider extends LangiumParserErrorMessageProvider {
     override buildMismatchTokenMessage(options: Parameters<LangiumParserErrorMessageProvider['buildMismatchTokenMessage']>[0]): string {
         const expectsName = nameToken(options.expected);
+        if (ruleName(options.ruleName) === 'Block' && options.expected.name === '{' && conditionalStatement(options.actual, options.previous))
+            return CONDITIONAL_STATEMENT_MESSAGE;
         return (expectsName ? `Expecting a name but found \`${options.actual.image}\`.` : super.buildMismatchTokenMessage(options)) + hint(options.actual, options.previous, expectsName);
     }
     override buildNoViableAltMessage(options: Parameters<LangiumParserErrorMessageProvider['buildNoViableAltMessage']>[0]): string {
         const first = options.expectedPathsPerAlt.flatMap(alternative => alternative.map(path => path[0])), expectsName = first.length > 0 && first.every(nameToken), actual = options.actual[0];
+        if (actual?.image === 'if' && OPERAND_RULES.has(ruleName(options.ruleName) ?? ''))
+            return super.buildNoViableAltMessage(options) + OPERAND_HINT;
         return (expectsName && actual ? `Expecting a name but found \`${actual.image}\`.` : super.buildNoViableAltMessage(options)) + hint(actual, options.previous, expectsName);
     }
     override buildEarlyExitMessage(options: Parameters<LangiumParserErrorMessageProvider['buildEarlyExitMessage']>[0]): string {
@@ -83,7 +212,9 @@ function production(rule: Decision['rule'], kind: string, occurrence: number): P
         const p = stack.pop()!;
         if (p.constructor.name === kind && (p.idx ?? 0) === occurrence)
             return p;
-        stack.push(...(p.definition ?? []));
+        // A NonTerminal's definition is the called rule's: stay within this rule.
+        if (p.constructor.name !== 'NonTerminal')
+            stack.push(...(p.definition ?? []));
     }
     return undefined;
 }
@@ -103,6 +234,27 @@ export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
     const strategy = Object.create(inner) as LookaheadStrategy;
     strategy.buildLookaheadForAlternation = options => {
         const base = inner.buildLookaheadForAlternation.call(strategy, options);
+        if (ruleName(options.rule.name) === 'Expression') {
+            // A conditional's branch never starts with {: if (…) { is an if statement (WP2 review H2). An
+            // incomplete line typed above an if statement then fails at if, as in 2.2, and the statement list
+            // resynchronises instead of losing the rest of the component. Valid sources never reach this case.
+            const choices = production(options.rule, 'Alternation', options.prodOccurrence)?.definition ?? [];
+            const conditional = choices.findIndex(x => startsWith(x, 'ConditionalExpression')), operator = choices.findIndex((_, i) => i !== conditional);
+            if (conditional >= 0 && operator >= 0)
+                return function (this: Lookahead, alternatives?: unknown) {
+                    const predicted = base.call(this, alternatives);
+                    if (predicted !== conditional || this.LA(2).image !== '(')
+                        return predicted;
+                    for (let i = 3, depth = 1; ; i++) {
+                        const token = this.LA(i);
+                        if (token.tokenType.name === 'EOF')
+                            return predicted;
+                        depth += token.image === '(' ? 1 : token.image === ')' ? -1 : 0;
+                        if (depth === 0)
+                            return this.LA(i + 1).image === '{' ? operator : predicted;
+                    }
+                };
+        }
         const alternatives = ruleName(options.rule.name) === 'Statement' ? production(options.rule, 'Alternation', options.prodOccurrence)?.definition ?? [] : [];
         const assign = alternatives.findIndex(x => startsWith(x, 'Assign')), expression = alternatives.findIndex(x => startsWith(x, 'ExpressionStatement'));
         if (assign < 0 || expression < 0)
@@ -143,4 +295,78 @@ export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
         };
     };
     return strategy;
+}
+
+/** The message of the lexing error that replaces a parse the host stack could not hold (WP2-D05 (c), SW2013). */
+export const PARSER_STACK_MESSAGE = `${BRACKET_NESTING_CLAUSE}: the parser ran out of stack space at this nesting, so this file is not parsed. Reduce the nesting of blocks and brackets.`;
+type ParseResult = { value: unknown; lexerErrors: LexerResult['errors']; parserErrors: unknown[] };
+const isStackOverflow = (error: unknown) => error instanceof RangeError && /call stack/i.test(error.message);
+/**
+ * WP2-D05 (c): a parse that overflows the host's stack (nesting below the bracket limits that the host's stack still
+ * cannot hold, such as deeply nested unclosed blocks) yields the parse of an empty file and one lexing error at the
+ * first most deeply nested token, instead of a host exception. The document then reports SW2013 and the rest of
+ * the workspace is unaffected.
+ *
+ * An overflow unwinds the parser through its finally blocks, which can replace the RangeError on the way out, with a
+ * TypeError when the AST stack runs empty or a RangeError ("Invalid array length") when the rule stack index does. So
+ * the overflow is recorded where the parser first catches it: Chevrotain hands every exception thrown inside a rule
+ * to invokeRuleCatch before any of those finally blocks runs above it. An exception counts as an overflow only when it
+ * is a stack-overflow RangeError or a stack-overflow RangeError passed through invokeRuleCatch during the same parse;
+ * any other exception, such as a failing value converter at any depth, propagates unchanged.
+ */
+export function guardParserStack(parser: unknown): void {
+    const target = parser as { parse(text: string, options?: unknown): ParseResult; stack?: unknown[]; unorderedGroups?: Map<unknown, unknown>; lexerResult?: unknown; wrapper?: { invokeRuleCatch?: (error: unknown, ...rest: unknown[]) => unknown } };
+    const parse = target.parse.bind(target);
+    // The first RangeError the parser caught in this parse. The hook runs near the end of the stack, so it only stores
+    // the error (no call that could overflow again); the message is tested after the parse has unwound.
+    let caught: RangeError | undefined;
+    const wrapper = target.wrapper, catcher = wrapper?.invokeRuleCatch;
+    // Installed on the instance, called only on an exception: the normal parse gains no frame.
+    if (wrapper && typeof catcher === 'function')
+        wrapper.invokeRuleCatch = function (this: unknown, error: unknown, ...rest: unknown[]) {
+            if (error instanceof RangeError && !caught)
+                caught = error;
+            return catcher.call(this, error, ...rest);
+        };
+    target.parse = (text, options) => {
+        caught = undefined;
+        try {
+            return parse(text, options);
+        } catch (error) {
+            const overflow = isStackOverflow(error) || isStackOverflow(caught);
+            caught = undefined;
+            if (!overflow)
+                throw error;
+            let depth = 0, deepest = -1, at: Token | undefined;
+            for (const token of tokens) {
+                depth = Math.max(0, depth + (['(', '[', '{'].includes(token.image) ? 1 : [')', ']', '}'].includes(token.image) ? -1 : 0));
+                if (depth > deepest) {
+                    deepest = depth;
+                    at = token;
+                }
+            }
+            // The overflow unwound the parser midway; clear the state a parse leaves behind before parsing again.
+            target.stack?.splice(0);
+            target.unorderedGroups?.clear();
+            target.lexerResult = undefined;
+            const empty = parse('', options);
+            return { ...empty, lexerErrors: [{ offset: at?.startOffset ?? 0, line: at?.startLine ?? 1, column: at?.startColumn ?? 1, length: at?.image.length ?? 0, message: PARSER_STACK_MESSAGE }] };
+        }
+    };
+}
+/** Marks a lookahead strategy wrapped by recoverStatements, so that a test can see the wrapper in place. */
+export const RECOVERS_STATEMENTS: unique symbol = Symbol('swaml.recoverStatements');
+/**
+ * Installs statement recovery on a prepared, not yet finalized Langium parser. It relies on an internal of the
+ * parser library (the Chevrotain wrapper's lookahead strategy); when a library upgrade moves it, this fails
+ * with a clear message instead of silently parsing without recovery.
+ */
+export function applyStatementRecovery(parser: unknown): void {
+    const wrapper = (parser as { wrapper?: { lookaheadStrategy?: Partial<LookaheadStrategy> } }).wrapper;
+    const inner = wrapper?.lookaheadStrategy;
+    if (!wrapper || typeof inner?.buildLookaheadForAlternation !== 'function' || typeof inner.buildLookaheadForOptional !== 'function')
+        throw new Error('swa.ml statement recovery needs the Chevrotain lookahead strategy of the Langium parser (parser.wrapper.lookaheadStrategy with buildLookaheadForAlternation and buildLookaheadForOptional); the parser library changed. Update recoverStatements in src/language/swaml-syntax.ts.');
+    const strategy = recoverStatements(inner as LookaheadStrategy);
+    Object.defineProperty(strategy, RECOVERS_STATEMENTS, { value: true });
+    wrapper.lookaheadStrategy = strategy;
 }

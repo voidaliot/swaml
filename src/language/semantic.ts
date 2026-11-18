@@ -1,4 +1,4 @@
-import { AstUtils, type AstNode } from 'langium';
+import { AstUtils, type AstNode, type Reference } from 'langium';
 import * as a from './generated/ast.js';
 /** Shared semantic algorithms have no filesystem or host dependencies. */
 export type Node = AstNode & {
@@ -82,6 +82,19 @@ export function assignable(from: string, to: string, literal?: number): boolean 
         return integral(from) && literal !== undefined && integral(to) && Number.isSafeInteger(literal) && (to === 'int' || literal >= 0 && (to !== 'byte' || literal <= 255));
     }
     return false;
+}
+/**
+ * The type of a conditional expression (WP2-S02): the common type of its branches under scalar widening
+ * byte, uint, int, real; any other types (bool, string, records, enums, arrays) must be identical. Undefined
+ * when the branches have no common type. An unknown branch type ('?') yields the other branch's type.
+ */
+export function conditionalType(then: string, otherwise: string): string | undefined {
+    if (then === '?' || then === otherwise)
+        return otherwise;
+    if (otherwise === '?')
+        return then;
+    const order = ['byte', 'uint', 'int', 'real'];
+    return numeric(then) && numeric(otherwise) ? order[Math.max(order.indexOf(then), order.indexOf(otherwise))] : undefined;
 }
 export function constantNumber(e?: a.Expression): number | undefined {
     if (a.isLiteral(e))
@@ -499,10 +512,32 @@ export function resolveStatement(models: readonly a.Model[], source: string): As
     }
     return undefined;
 }
+/** One occurrence–case pair of an associate statement with the positions of both references in their lists (WP2-M04). */
+export interface AssociationPair {
+    statement: a.Association;
+    occurrence: Reference<a.ComponentUsage>;
+    target: Reference<a.Scenario>;
+    occurrenceIndex: number;
+    targetIndex: number;
+}
+/** The listed occurrences of an associate statement in source order (associate a, b to …). */
+export const associationOccurrences = (x: a.Association): Reference<a.ComponentUsage>[] => [x.occurrence, ...(x.moreOccurrences ?? [])];
+/** The listed cases of an associate statement in source order (… to 'X', 'Y';). */
+export const associationTargets = (x: a.Association): Reference<a.Scenario>[] => [x.target, ...(x.moreTargets ?? [])];
+/** Whether an associate statement uses the 2.3 list form (WP2-G03) rather than the single 2.2 pair. */
+export const isAssociationList = (x: a.Association): boolean => (x.moreOccurrences ?? []).length > 0 || (x.moreTargets ?? []).length > 0;
+/**
+ * Every occurrence–case pair of an associate statement (WP2-S06): each listed occurrence with each listed case,
+ * occurrences in list order, and for each of them the cases in list order. A single 2.2 statement has one pair.
+ */
+export function associationPairs(x: a.Association): AssociationPair[] {
+    const targets = associationTargets(x);
+    return associationOccurrences(x).flatMap((occurrence, occurrenceIndex) => targets.map((target, targetIndex) => ({ statement: x, occurrence, target, occurrenceIndex, targetIndex })));
+}
 /** The top-level occurrences associated with a case by associate links of its package. */
 export function associatedOccurrences(s: a.Scenario): a.ComponentUsage[] {
     const p = owner(s, a.isPackage);
-    return p ? [...new Set(p.associations.filter(x => x.target.ref === s).flatMap(x => x.occurrence.ref ? [x.occurrence.ref] : []))] : [];
+    return p ? [...new Set(p.associations.flatMap(associationPairs).filter(x => x.target.ref === s).flatMap(x => x.occurrence.ref ? [x.occurrence.ref] : []))] : [];
 }
 /** Existing software occurrence roots a test may inspect or call directly.
  * Association is a reference, never containment or an execution-root selection.

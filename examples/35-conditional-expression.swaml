@@ -1,0 +1,128 @@
+package FaultDebounce {
+  /** A fault-memory debounce in the shape of the door model's DoorEcu::Types helpers. The 2.2 shape selects values through helper operations pickInt and pickStatus, which evaluate every argument; the 2.3 shape writes the whole-expression conditional if (c) a else b, which evaluates its condition and then only the selected branch. As an operand a conditional is parenthesized, as in clampInt((if (previous < 0) 0 else previous) + stepUp, …). */
+  datatype DtcStatus {
+    testFailed: bool;
+    confirmed: bool;
+    occurrences: uint;
+  }
+  operation def pickInt(condition: bool, whenTrue: int, otherwise: int) returns int {
+    /** The 2.2 selection helper. */
+    if (condition) {
+      return whenTrue;
+    }
+    return otherwise;
+  }
+  operation def pickStatus(condition: bool, whenTrue: DtcStatus, otherwise: DtcStatus) returns DtcStatus {
+    if (condition) {
+      return whenTrue;
+    }
+    return otherwise;
+  }
+  operation def clampInt(value: int, low: int, high: int) returns int {
+    return if (value < low) low else if (value > high) high else value;
+  }
+  component def Dem {
+    /** Debounce counters per fault. failedThreshold and passedThreshold bound each counter. */
+    const attribute stepUp: int = 3;
+    const attribute stepDown: int = 1;
+    const attribute failedThreshold: int = 6;
+    const attribute passedThreshold: int = -4;
+    attribute helperCounters: int[2] = [0, 0];
+    attribute counters: int[2] = [0, 0];
+    attribute statuses: DtcStatus[2] = [record DtcStatus {
+      testFailed = false;
+      confirmed = false;
+      occurrences = 0;
+    }, record DtcStatus {
+      testFailed = false;
+      confirmed = false;
+      occurrences = 0;
+    }];
+    attribute helperStatuses: DtcStatus[2] = [record DtcStatus {
+      testFailed = false;
+      confirmed = false;
+      occurrences = 0;
+    }, record DtcStatus {
+      testFailed = false;
+      confirmed = false;
+      occurrences = 0;
+    }];
+    operation reportByHelper(index: uint, failed: bool) {
+      /** The 2.2 shape: pickInt evaluates both candidates. */
+      var previous: int = helperCounters[index];
+      var counter: int = 0;
+      if (failed) {
+        counter = clampInt(pickInt(previous < 0, 0, previous) + stepUp, passedThreshold, failedThreshold);
+      } else {
+        counter = clampInt(pickInt(previous > 0, 0, previous) - stepDown, passedThreshold, failedThreshold);
+      }
+      helperCounters[index] = counter;
+      var status: DtcStatus = helperStatuses[index];
+      helperStatuses[index] = pickStatus(counter >= failedThreshold and not status.testFailed, record DtcStatus {
+        testFailed = true; confirmed = true; occurrences = status.occurrences + 1;
+      }, status);
+    }
+    operation report(index: uint, failed: bool) {
+      /** The 2.3 shape: a conditional per value. */
+      var previous: int = counters[index];
+      counters[index] = if (failed) clampInt((if (previous < 0) 0 else previous) + stepUp, passedThreshold, failedThreshold) else clampInt((if (previous > 0) 0 else previous) - stepDown, passedThreshold, failedThreshold);
+      var status: DtcStatus = statuses[index];
+      statuses[index] = if (counters[index] >= failedThreshold and not status.testFailed) record DtcStatus {
+        testFailed = true;
+        confirmed = true;
+        occurrences = status.occurrences + 1;
+      } else status;
+    }
+    operation readiness(index: uint) returns string {
+      return if (statuses[index].confirmed) "failed" else if (counters[index] < 0) "passed" else "pending";
+    }
+  }
+  component def Probe {
+    /** Records which branch of a conditional was evaluated. */
+    attribute evaluatedThen: uint = 0;
+    attribute evaluatedOtherwise: uint = 0;
+    attribute lastValue: real = 0.0;
+    operation thenValue() returns int {
+      evaluatedThen = evaluatedThen + 1;
+      return 1;
+    }
+    operation otherwiseValue() returns real {
+      evaluatedOtherwise = evaluatedOtherwise + 1;
+      return 2.5;
+    }
+    operation select(choose: bool) {
+      /** int and real branches have the common type real. */
+      lastValue = if (choose) thenValue() else otherwiseValue();
+    }
+  }
+  component dem: Dem;
+  component probe: Probe;
+  test 'Same counters either way' of dem {
+    /** Both shapes reach the same counters and statuses through failures, passes and a confirmation. */
+    dem.report(0, true);
+    dem.reportByHelper(0, true);
+    dem.report(0, true);
+    dem.reportByHelper(0, true);
+    dem.report(1, false);
+    dem.reportByHelper(1, false);
+    dem.report(1, true);
+    dem.reportByHelper(1, true);
+    assert dem.counters[0] == 6 and dem.counters[1] == 3;
+    assert dem.counters[0] == dem.helperCounters[0] and dem.counters[1] == dem.helperCounters[1];
+    assert dem.statuses[0].confirmed and dem.statuses[0].occurrences == 1 and not dem.statuses[1].confirmed;
+    assert dem.statuses[0] == dem.helperStatuses[0] and dem.statuses[1] == dem.helperStatuses[1];
+    var text: string = dem.readiness(0);
+    assert text == "failed";
+    dem.report(1, false);
+    text = dem.readiness(1);
+    assert text == "passed" and dem.counters[1] == -1;
+  }
+  test 'Only the selected branch runs' of probe {
+    /** The condition is evaluated, then only the selected branch: each side-effecting branch counts its own evaluations. */
+    probe.select(true);
+    assert probe.evaluatedThen == 1 and probe.evaluatedOtherwise == 0 and probe.lastValue == 1.0;
+    probe.select(false);
+    probe.select(false);
+    assert probe.evaluatedThen == 1 and probe.evaluatedOtherwise == 2 and probe.lastValue == 2.5;
+  }
+}
