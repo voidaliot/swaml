@@ -63,11 +63,16 @@ test('the recording commit is the 3.1.0 implementation of 2.2', t => {
 const EXTENDED = {
     'models.json': '172d127679a46949bf291bcee1ec3d2ccd630ed603cdb111eb3a2b3e6a837c22',
     'recorded.json': 'a213675d17998ffed2f8240320994a9e21c3e9f218a31df526cfac721b7d717a',
+    // The WP2 set: 2.2 sources with view, state, in and out in their keyword roles next to names.
+    'models-wp2.json': '6bc9bde970d7818bc235bd24f003e54ffd8d0a83c9ff96c11c2c0ea58d7d9a17',
+    'recorded-wp2.json': 'ade2b5c1e8423bbb8be26c59e459ffa6a8cfb6d0add2f6e3cb48b1e6418d84be',
 };
 test('the extended 2.2 fixture keeps its pinned bytes and names the 3.1.0 recording commit', () => {
     const extended = name => readFileSync(new URL(`../../test/fixtures/compatibility-2-2-extended/${name}`, import.meta.url), 'utf8').replaceAll('\r\n', '\n');
     for (const [name, digest] of Object.entries(EXTENDED))
         assert.equal(createHash('sha256').update(extended(name), 'utf8').digest('hex'), digest, `${name} changed; the extended fixture is recorded once and never edited`);
-    const { recordedWith } = JSON.parse(extended('recorded.json'));
-    assert.deepEqual([recordedWith.commit, recordedWith.implementation, recordedWith.languageVersion, recordedWith.profile], [RECORDED, '3.1.0', '2.2', 'swaml-reference/2.2']);
+    for (const name of ['recorded.json', 'recorded-wp2.json']) {
+        const { recordedWith } = JSON.parse(extended(name));
+        assert.deepEqual([recordedWith.commit, recordedWith.implementation, recordedWith.languageVersion, recordedWith.profile], [RECORDED, '3.1.0', '2.2', 'swaml-reference/2.2'], name);
+    }
 });

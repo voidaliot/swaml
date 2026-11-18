@@ -1,0 +1,98 @@
+{
+ "description": "Valid and invalid 2.2 sources outside the gate-1 corpus that use view, state, in and out in their keyword roles next to names (unquoted names starting with the words, quoted names that are the words), if statements, and single associations (WP2). Each parses with the kept 2.2 grammar. Their diagnostics, normalized ASTs and runs are recorded once from implementation 3.1.0 in recorded-wp2.json and compared by scripts/compatibility-2-2-extended.mjs.",
+ "models": [
+  {
+   "name": "ctx: in and out directions next to names that start with the words",
+   "target": "Test::Demo",
+   "text": "package Test {\n  /** in and out as parameter directions next to names that start with the words. */\n  port def Api {\n    provides operation convert(in input: int, out output: int);\n  }\n  operation def scale(in inner: int, out outer: int) {\n    outer = inner * 2;\n  }\n  operation def swap(in 'in': int, out 'out': int) {\n    'out' = 'in' + 100;\n  }\n  component def Converter {\n    port api: Api;\n    attribute inbox: int = 0;\n    operation convert(in input: int, out output: int) {\n      output = input + 10;\n      inbox = input;\n    }\n    schedule { on call api.convert(input, output) convert(input, output); }\n  }\n  component def Client {\n    reversed port api: Api;\n    attribute instate: int = 0;\n    attribute outcome: int = 0;\n    attribute viewport: bool = false;\n    attribute states: int = 0;\n    operation run() {\n      var outer: int = 0;\n      scale(3, outer);\n      var in_x: int = 0;\n      swap(outer, in_x);\n      instate = in_x + outer;\n      var received: int = 0;\n      api.convert(5, received);\n      outcome = received;\n      viewport = outcome > 0;\n      for (input: int in [1, 2, 3]) {\n        states = states + input;\n      }\n    }\n    schedule { on start run(); }\n  }\n  component Demo {\n    component client: Client;\n    component converter: Converter;\n    connect (client.api, converter.api);\n  }\n}"
+  },
+  {
+   "name": "ctx: state keyword next to quoted state names and a quoted state attribute",
+   "target": "Test::Demo",
+   "text": "package Test {\n  /** state as the state keyword next to quoted and unquoted names of states, attributes and transitions. */\n  port def Door {\n    provides event opened(level: int);\n    provides attribute 'state': int;\n  }\n  component def Panel {\n    port door: Door;\n    operation run() {\n      publish door.opened(1);\n      wait 1ms;\n      publish door.opened(2);\n      send door.'state'(7);\n    }\n    schedule { on start run(); }\n  }\n  component def Lock {\n    reversed port door: Door;\n    attribute 'state': int = 0;\n    attribute stateCount: int = 0;\n    attribute latest: int = 0;\n    operation machine() {\n      initial locked;\n      state locked {\n        on entry { 'state' = 1; stateCount = stateCount + 1; }\n        on receive door.opened(level) when (level > 0) to unlocked { 'state' = level; }\n      }\n      state unlocked {\n        on entry { stateCount = stateCount + 1; }\n        on receive door.opened(level) to 'final state' { 'state' = 'state' + level; }\n      }\n      final state 'final state' {\n        on entry { stateCount = stateCount + 1; }\n      }\n    }\n    operation keep(value: int) { latest = value; }\n    schedule { on start machine(); on receive door.'state'(value) keep(value); }\n  }\n  component Demo {\n    component panel: Panel;\n    component lock: Lock;\n    connect (panel.door, lock.door);\n  }\n}"
+  },
+  {
+   "name": "ctx: view keyword next to quoted view names and filter operands",
+   "text": "package Test {\n  /** view as the view keyword next to quoted view names and filter operands that spell the words. */\n  import Swaml::Views;\n  component def Part {\n    attribute 'in': int = 1;\n    attribute 'out': int = 2;\n  }\n  component Demo {\n    component 'state': Part;\n    component 'view': Part;\n    component inner: Part;\n  }\n  view 'view': General of Demo;\n  view 'state': General {\n    include Demo recursive where name == \"state\" or name == \"view\";\n  }\n  view 'in': General {\n    include Demo recursive where not (path == \"Test::Demo.inner\") and kind != \"port\";\n  }\n  view viewer: General of Demo.'view';\n}"
+  },
+  {
+   "name": "ctx: for-each loops with quoted element names and collections",
+   "target": "Test::Demo",
+   "text": "package Test {\n  /** for-each loops whose element names and collections are quoted contextual words. */\n  enum Mode { 'in', 'out', 'view', 'state' }\n  datatype Pair { 'in': int; 'out': int; 'view': Mode; }\n  component def Loop {\n    attribute 'in': int[3] = [1, 2, 3];\n    attribute total: int = 0;\n    attribute pairs: Pair[2] = [record Pair { 'in' = 1; 'out' = 2; 'view' = Mode.'in'; }, record Pair { 'in' = 3; 'out' = 4; 'view' = Mode.'state'; }];\n    attribute mode: Mode = Mode.'out';\n    operation run() {\n      for ('out': int in 'in') {\n        total = total + 'out';\n      }\n      for (p: Pair in pairs) {\n        total = total + p.'in' * 10 + p.'out' * 100;\n        if (p.'view' == Mode.'state') {\n          mode = p.'view';\n        }\n      }\n      for (index: int in ['in'[0], 'in'[2]]) {\n        total = total + index;\n      }\n    }\n    schedule { on start run(); }\n  }\n  component Demo: Loop;\n}"
+  },
+  {
+   "name": "ctx: package, datatype and operation names of quoted contextual words",
+   "target": "state::view::Demo",
+   "text": "package 'state'::'view' {\n  /** Package names and qualified references made of quoted contextual words. */\n  datatype 'in' { 'out': int; }\n  operation def 'state'(value: 'in') returns int {\n    return value.'out' + 1;\n  }\n  component def 'out' {\n    attribute 'view': 'in' = record 'in' { 'out' = 4; };\n    attribute result: int = 0;\n    operation run() {\n      result = 'state'::'view'::'state'('view');\n    }\n    schedule { on start run(); }\n  }\n  component Demo: 'out';\n}"
+  },
+  {
+   "name": "ctx: if statements with else blocks and parenthesized conditions",
+   "target": "Test::Demo",
+   "text": "package Test {\n  /** if statements with else blocks, nested if in else, parenthesized conditions and calls next to them. */\n  component def Branches {\n    attribute a: int = 0;\n    attribute b: int = 0;\n    attribute calls: int = 0;\n    operation count() returns bool {\n      calls = calls + 1;\n      return true;\n    }\n    operation run() {\n      if ((a == 0)) {\n        a = 1;\n      } else {\n        a = 2;\n      }\n      if (a > 5) {\n        b = 1;\n      } else {\n        if (a > 0) {\n          b = 2;\n        } else {\n          b = 3;\n        }\n      }\n      var ok: bool = count();\n      if (ok and (b == 2 or calls > 9)) {\n        b = b + 10;\n      }\n      if (not ok) {\n        b = -1;\n      }\n    }\n    schedule { on start run(); }\n  }\n  component Demo: Branches;\n}"
+  },
+  {
+   "name": "assoc: single associations with a repeat in two spellings",
+   "tests": [
+    "Shop::Totals add up"
+   ],
+   "text": "package Shop {\n  /** Single associations, including a repeat with the same spelling and one with another spelling of the same occurrence. */\n  port def Till { provides event paid(amount: int); }\n  component def Register {\n    reversed port till: Till;\n    attribute total: int = 0;\n    operation take(amount: int) { total = total + amount; }\n    schedule { on receive till.paid(amount) take(amount); }\n  }\n  component def Customer { port till: Till; }\n  component register: Register;\n  component customer: Customer;\n  component other: Customer;\n  connect (customer.till, register.till);\n  use case 'Pay at till' of register {\n    publish customer.till.paid(5);\n    wait 1ms;\n  }\n  test 'Totals add up' of register {\n    publish customer.till.paid(5);\n    wait 1ms;\n    assert register.total == 5;\n  }\n  associate customer to 'Pay at till';\n  associate customer to 'Pay at till';\n  associate customer to 'Totals add up';\n  associate 'customer' to 'Totals add up';\n  associate other to 'Pay at till';\n}"
+  },
+  {
+   "name": "assoc: valid single associations with two spellings",
+   "tests": [
+    "Shop::Totals add up",
+    "Shop::Pay at till"
+   ],
+   "text": "package Shop {\n  /** Valid single associations; the second spells the occurrence quoted. */\n  port def Till { provides event paid(amount: int); }\n  component def Register {\n    reversed port till: Till;\n    attribute total: int = 0;\n    operation take(amount: int) { total = total + amount; }\n    schedule { on receive till.paid(amount) take(amount); }\n  }\n  component def Customer { port till: Till; }\n  component register: Register;\n  component customer: Customer;\n  connect (customer.till, register.till);\n  use case 'Pay at till' of register {\n    publish customer.till.paid(5);\n    wait 1ms;\n  }\n  test 'Totals add up' of register {\n    publish customer.till.paid(5);\n    wait 1ms;\n    assert register.total == 5;\n  }\n  associate customer to 'Pay at till';\n  associate 'customer' to 'Totals add up';\n}"
+  },
+  {
+   "name": "assoc: invalid single associations: subject and other packages",
+   "text": "package Shop {\n  /** Invalid single associations: the subject, a case of another package and an occurrence of another package. */\n  component def Customer { }\n  component register: Customer;\n  component customer: Customer;\n  use case Pay of register { }\n  associate register to Pay;\n  associate customer to Pay;\n}\npackage Other {\n  import Shop;\n  component def C { }\n  component elsewhere: C;\n  use case Local of elsewhere { }\n  associate customer to Local;\n  associate elsewhere to Pay;\n}"
+  },
+  {
+   "name": "assoc: duplicate single association and an unknown case",
+   "text": "package Test {\n  /** Duplicate single associations with the same spelling report the 2.2 message; an unknown case is unresolved. */\n  component def C { }\n  component a: C;\n  component b: C;\n  use case X of a { }\n  use case Y of a { }\n  associate b to X;\n  associate b to Y;\n  associate b to X;\n  associate b to Z;\n}"
+  },
+  {
+   "name": "types: type errors next to if statements",
+   "text": "package Test {\n  /** Type errors next to if statements keep their 2.2 messages. */\n  component def Bad {\n    attribute a: int = 0;\n    operation g() returns int { return 1; }\n    operation run() {\n      if (a) {\n        a = 1;\n      } else {\n        a = 2;\n      }\n      if (g() + 1) {\n        a = 3;\n      }\n      var b: bool = 1;\n      a = true;\n    }\n    schedule { on start run(); }\n  }\n  component Demo: Bad;\n}"
+  },
+  {
+   "name": "susp: suspending calls in expressions and if conditions",
+   "text": "package Test {\n  /** Suspending calls in expressions keep the 2.2 message. */\n  port def Api { provides operation get() returns int; }\n  component def Server {\n    port api: Api;\n    operation get() returns int { return 3; }\n    schedule { on call api.get() get(); }\n  }\n  component def Client {\n    reversed port api: Api;\n    attribute x: int = 0;\n    operation run() {\n      x = api.get() + 1;\n      if (api.get() > 0) {\n        x = 2;\n      }\n      var y: int = api.get();\n      x = y;\n    }\n    schedule { on start run(); }\n  }\n  component Demo {\n    component client: Client;\n    component server: Server;\n    connect (client.api, server.api);\n  }\n}"
+  },
+  {
+   "name": "ports: quoted contextual-word ports and members with publish, send and calls",
+   "target": "Test::Demo",
+   "text": "package Test {\n  /** Ports, members and endpoints with quoted contextual words, used by publish, send, calls and receive. */\n  port def 'view' {\n    provides event 'state'(value: int);\n    provides operation 'in'(value: int) returns int;\n    provides attribute 'out': int;\n  }\n  component def Provider {\n    port 'in': 'view';\n    attribute served: int = 0;\n    operation answer(value: int) returns int { served = served + 1; return value * 3; }\n    operation run() {\n      publish 'in'.'state'(4);\n      send 'in'.'out'(9);\n    }\n    schedule { on start run(); on call 'in'.'in'(value) answer(value); }\n  }\n  component def Consumer {\n    reversed port 'out': 'view';\n    attribute got: int = 0;\n    attribute level: int = 0;\n    attribute reply: int = 0;\n    operation take(value: int) { got = value; }\n    operation keep(value: int) { level = value; }\n    operation ask() { reply = 'out'.'in'(5); }\n    schedule { on receive 'out'.'state'(value) take(value); on receive 'out'.'out'(value) keep(value); on start ask(); }\n  }\n  component Demo {\n    component provider: Provider;\n    component consumer: Consumer;\n    connect (provider.'in', consumer.'out');\n  }\n}"
+  },
+  {
+   "name": "tests: a test reads quoted contextual-word attributes",
+   "tests": [
+    "Test::Reads the state"
+   ],
+   "text": "package Test {\n  /** A test reads quoted contextual-word attributes of its subject and an associated root. */\n  component def Session {\n    attribute 'state': int = 0;\n    attribute 'view': bool = false;\n    operation run() { 'state' = 2; 'view' = true; }\n    operation 'in'() returns int { return 'state' + 1; }\n    schedule { on start run(); }\n  }\n  component def App { component 'out': Session; }\n  component app: App;\n  component helper: Session;\n  test 'Reads the state' of app {\n    wait 1ms;\n    assert app.'out'.'state' == 2 and app.'out'.'view';\n    var 'in': int = app.'out'.'in'();\n    assert 'in' == 3;\n    assert helper.'state' == 2;\n  }\n  associate helper to 'Reads the state';\n}"
+  },
+  {
+   "name": "tests: on call out bindings with in and out directions",
+   "tests": [
+    "Test::Lookup answers"
+   ],
+   "text": "package Test {\n  /** A test with on call out bindings of an operation with in and out parameters. */\n  port def Desk { requires operation lookup(in key: int, out value: int); provides event viewed(key: int); }\n  component def Clerk {\n    port desk: Desk;\n    attribute outValue: int = 0;\n    operation run() {\n      var v: int = 0;\n      desk.lookup(4, v);\n      outValue = v;\n      publish desk.viewed(v);\n    }\n    schedule { on start run(); }\n  }\n  component def Archive { reversed port desk: Desk; }\n  component clerk: Clerk;\n  component archive: Archive;\n  connect (clerk.desk, archive.desk);\n  test 'Lookup answers' of clerk {\n    on call archive.desk.lookup(key, value) {\n      value = key * 2;\n    }\n    on receive archive.desk.viewed(key) {\n      assert key == 8;\n    }\n    assert clerk.outValue == 8;\n  }\n  associate archive to 'Lookup answers';\n}"
+  },
+  {
+   "name": "stale: stale write across waits in if branches",
+   "target": "Test::Demo",
+   "text": "package Test {\n  /** Stale reads and writes across waits in if branches keep the 2.2 SW2011 findings. */\n  component def Timed {\n    attribute level: int = 0;\n    attribute stored: int = 0;\n    operation bump() { level = level + 1; }\n    operation run() {\n      var copy: int = level;\n      if (copy > 0) {\n        wait 1ms;\n      } else {\n        wait 2ms;\n      }\n      level = copy + 1;\n      stored = level;\n    }\n    schedule { on start run(); on every 1ms bump(); }\n  }\n  component Demo: Timed;\n}"
+  },
+  {
+   "name": "names: ambiguous quoted reserved word reported with its spelling",
+   "text": "package A {\n  component def 'operation' { }\n  component def inbound { }\n}\npackage B {\n  component def 'operation' { }\n  component def inbound { }\n}\npackage Test {\n  import A;\n  import B;\n  component x: 'operation';\n  component y: inbound;\n}"
+  },
+  {
+   "name": "names: identifiers that start with the contextual words",
+   "target": "Test::Demo",
+   "text": "package Test {\n  /** Basic names that begin with view, state, in, out and if stay names. */\n  enum states { inbound, outbound, viewing }\n  datatype views { input: int; output: int; ifValue: int; elsewhere: bool; }\n  component def outer {\n    attribute instance: views = record views { input = 1; output = 2; ifValue = 3; elsewhere = true; };\n    attribute stateNow: states = states.inbound;\n    attribute inner_out: int = 0;\n    operation viewAll(inValue: int, outValue: int) returns int { return inValue + outValue; }\n    operation run() {\n      inner_out = viewAll(instance.input, instance.output) + instance.ifValue;\n      if (instance.elsewhere) {\n        stateNow = states.viewing;\n      }\n    }\n    schedule { on start run(); }\n  }\n  component Demo: outer;\n}"
+  }
+ ]
+}
