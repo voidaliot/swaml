@@ -17,14 +17,13 @@ export class SwamlValueConverter extends DefaultValueConverter {
 const skipped = new Set<number>();
 // The tokens of the current tokenization, so that a syntax message can look past the failing token.
 let tokens: readonly Token[] = [];
-/**
- * Bracket nesting the reference parser accepts. Valid nesting overflows the parser stack between about 115
- * (indexes) and 135 (parentheses) levels; unclosed brackets make recovery slow and, far deeper, exhaust memory.
- */
-export const BRACKET_NESTING_LIMIT = 140;
-/** The start of the message of the lexing error that stops a file at the bracket nesting limit (SW2013). */
+/** WP2-D05 (a): open bracket nesting a statement may reach; above every depth the 2.2 reference implementation parses. */
+export const BRACKET_NESTING_LIMIT = 200;
+/** WP2-D05 (b): open bracket nesting a statement that ends unbalanced may reach before its recovery is bounded. */
+export const UNCLOSED_NESTING_LIMIT = 32;
+/** The start of the message of the lexing error that stops a statement at the bracket nesting limit (SW2013). */
 export const BRACKET_NESTING_MESSAGE = `Bracket nesting exceeds the reference parser limit of ${BRACKET_NESTING_LIMIT} levels`;
-/** The leading clause shared by both nesting limits. */
+/** The leading clause shared by every parser nesting stop, which the document validator reports as SW2013. */
 export const BRACKET_NESTING_CLAUSE = 'Bracket nesting exceeds the reference parser limit';
 export class SwamlLexer extends DefaultLexer {
     override tokenize(text: string, options?: TokenizeOptions): LexerResult {
@@ -35,37 +34,78 @@ export class SwamlLexer extends DefaultLexer {
         return result;
     }
 }
-/** Unclosed bracket nesting the reference parser accepts in one statement before it stops (WP2 review M3). */
-export const UNCLOSED_NESTING_LIMIT = 64;
 /**
- * Fails fast on deep bracket nesting within one statement (the tokens between ;, { and }): beyond
- * BRACKET_NESTING_LIMIT, or beyond UNCLOSED_NESTING_LIMIT when the statement leaves brackets unclosed. The tokens
- * from the start of that statement on are dropped and a lexing error is reported (SW2013), so the parser neither
- * overflows its stack nor spends superlinear recovery work and memory on unclosed brackets. Balanced nesting up to
- * the parser's own stack limit is unaffected.
+ * WP2-D05: the reference parser's bracket nesting limits (SW2013). The guard scans the tokens of every statement or
+ * declaration: the tokens between two ;, { or } that appear while no bracket is open. Within it, an open bracket
+ * is a ( or [, a { that opens a record literal (after record and a qualified name), and any other { while a
+ * bracket is open; ) ] } close the innermost one when it is of their kind. The statement ends at the next ;, { or
+ * } with no bracket open, or, unbalanced, at a ) ] } that does not match the innermost open bracket, at a ; while
+ * a ( or [ other than the parenthesis of a for statement is innermost, or at the end of the file.
+ * (a) Open nesting deeper than BRACKET_NESTING_LIMIT anywhere in a statement stops it at the first bracket beyond
+ *     the limit. The limit is above every depth the 2.2 reference implementation parses (WP2-D05).
+ * (b) A statement that ends unbalanced and whose open nesting exceeded UNCLOSED_NESTING_LIMIT is stopped at its
+ *     first token, because the parser's recovery from unclosed brackets costs superlinear time and stack.
+ * A stopped statement's tokens, from its first token to its end (including an ending ;, excluding an ending
+ * bracket or brace), are not parsed and one lexing error is reported for it; the tokens after it are parsed as
+ * usual. A statement that never ends unbalanced and never returns to depth 0 extends to the end of the file.
  */
 function guardNesting(result: LexerResult): void {
-    let depth = 0, deepest = 0, start = 0;
-    const stop = (at: number, limit: number) => {
-        const token = result.tokens[at];
-        result.errors.push({ offset: token.startOffset, line: token.startLine, column: token.startColumn, length: token.image.length, message: `${BRACKET_NESTING_MESSAGE.replace(String(BRACKET_NESTING_LIMIT), String(limit))}; the rest of the file is not parsed. Close the brackets or split the expression into local variables.` });
-        result.tokens.splice(start);
+    const all = result.tokens, dropped: [number, number][] = [], open: string[] = [];
+    let start = 0, deepest = 0, over = -1, record = false;
+    const finish = (to: number, unclosed: boolean) => {
+        const limit = over >= 0 ? BRACKET_NESTING_LIMIT : unclosed && deepest > UNCLOSED_NESTING_LIMIT ? UNCLOSED_NESTING_LIMIT : 0;
+        if (limit) {
+            const token = all[over >= 0 ? over : start];
+            result.errors.push({ offset: token.startOffset, line: token.startLine, column: token.startColumn, length: token.image.length, message: over >= 0
+                ? `${BRACKET_NESTING_MESSAGE}; this statement is not parsed. Split the expression into local variables.`
+                : `${BRACKET_NESTING_CLAUSE} of ${UNCLOSED_NESTING_LIMIT} levels for a statement that leaves brackets unclosed; this statement is not parsed. Close the brackets.` });
+            dropped.push([start, to]);
+        }
+        open.length = deepest = 0;
+        over = -1;
     };
-    for (let i = 0; i <= result.tokens.length; i++) {
-        const text = result.tokens[i]?.image;
-        if (text === undefined || text === ';' || text === '{' || text === '}') {
-            if (depth > 0 && deepest > UNCLOSED_NESTING_LIMIT)
-                return stop(start, UNCLOSED_NESTING_LIMIT);
-            depth = deepest = 0;
-            start = i + 1;
+    for (let i = 0; i < all.length; i++) {
+        const text = all[i].image;
+        if (text.length !== 1 || !'([{}]);'.includes(text)) {
+            // A record literal's brace follows record and a qualified name.
+            record = text === 'record' ? all[i].tokenType.name === 'record' : record && (text === '::' || nameToken(all[i].tokenType));
             continue;
         }
-        if (text === '(' || text === '[')
-            deepest = Math.max(deepest, ++depth);
-        else if ((text === ')' || text === ']') && depth > 0)
-            depth--;
-        if (depth > BRACKET_NESTING_LIMIT)
-            return stop(i, BRACKET_NESTING_LIMIT);
+        const recordBrace = text === '{' && record, top = open[open.length - 1];
+        record = false;
+        if (text === '(' || text === '[' || recordBrace || text === '{' && top) {
+            open.push(text === '(' && all[i - 1]?.image === 'for' ? 'for' : text);
+            if (open.length > deepest)
+                deepest = open.length;
+            if (open.length > BRACKET_NESTING_LIMIT && over < 0)
+                over = i;
+        } else if (!top) {
+            if (text === ';' || text === '{' || text === '}') {
+                finish(text === ';' ? i + 1 : i, false);
+                start = i + 1;
+            }
+        } else if (text === ')' || text === ']' || text === '}') {
+            if (top === (text === ')' ? '(' : text === ']' ? '[' : '{') || text === ')' && top === 'for')
+                open.pop();
+            else {
+                finish(i, true);
+                start = i + 1;
+            }
+        } else if (text === ';' && (top === '(' || top === '[')) {
+            finish(i + 1, true);
+            start = i + 1;
+        }
+    }
+    finish(all.length, open.length > 0);
+    if (dropped.length) {
+        const kept: typeof all = [];
+        for (let i = 0, range = 0; i < all.length; i++) {
+            while (range < dropped.length && i >= dropped[range][1])
+                range++;
+            if (range === dropped.length || i < dropped[range][0])
+                kept.push(all[i]);
+        }
+        result.tokens = kept;
     }
 }
 /** WP2-D04: the message for if (c) a else b in statement position, where the if statement needs a block. */
@@ -172,7 +212,9 @@ function production(rule: Decision['rule'], kind: string, occurrence: number): P
         const p = stack.pop()!;
         if (p.constructor.name === kind && (p.idx ?? 0) === occurrence)
             return p;
-        stack.push(...(p.definition ?? []));
+        // A NonTerminal's definition is the called rule's: stay within this rule.
+        if (p.constructor.name !== 'NonTerminal')
+            stack.push(...(p.definition ?? []));
     }
     return undefined;
 }
@@ -255,6 +297,53 @@ export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
     return strategy;
 }
 
+/** The message of the lexing error that replaces a parse the host stack could not hold (WP2-D05 (c), SW2013). */
+export const PARSER_STACK_MESSAGE = `${BRACKET_NESTING_CLAUSE}: the parser ran out of stack space at this nesting, so this file is not parsed. Reduce the nesting of blocks and brackets.`;
+type ParseResult = { value: unknown; lexerErrors: LexerResult['errors']; parserErrors: unknown[] };
+/**
+ * Parser rule nesting beyond which an exception out of a parse counts as stack exhaustion (WP2-D05 (c)). An overflow
+ * unwinds the parser through its finally blocks, which can replace the RangeError with a TypeError or another
+ * RangeError; the rule nesting the parse reached shows the cause. On Node.js 26 with the default stack an overflow
+ * needs several hundred rule levels (about 240 for unclosed indexes, 700 for parentheses, 1,500 for blocks in a fresh
+ * process); the sources in this repository reach at most 35.
+ */
+const STACK_EXHAUSTION_RULE_DEPTH = 200;
+/**
+ * WP2-D05 (c): a parse that overflows the host's stack (nesting below the bracket limits that the host's stack still
+ * cannot hold, such as deeply nested unclosed blocks) yields the parse of an empty file and one lexing error at the
+ * first most deeply nested token, instead of a host exception. The document then reports SW2013 and the rest of
+ * the workspace is unaffected. Other exceptions propagate.
+ */
+export function guardParserStack(parser: unknown): void {
+    const target = parser as { parse(text: string, options?: unknown): ParseResult; stack?: unknown[]; unorderedGroups?: Map<unknown, unknown>; lexerResult?: unknown; wrapper?: { RULE_STACK?: unknown } };
+    const parse = target.parse.bind(target);
+    // The Chevrotain wrapper keeps its rule stack array allocated across parses; emptied, its length is the parse's deepest rule nesting.
+    const ruleStack = () => Array.isArray(target.wrapper?.RULE_STACK) ? target.wrapper.RULE_STACK as unknown[] : undefined;
+    target.parse = (text, options) => {
+        ruleStack()?.splice(0);
+        try {
+            return parse(text, options);
+        } catch (error) {
+            const overflow = error instanceof RangeError && /call stack/i.test(error.message);
+            if (!overflow && (ruleStack()?.length ?? 0) <= STACK_EXHAUSTION_RULE_DEPTH)
+                throw error;
+            let depth = 0, deepest = -1, at: Token | undefined;
+            for (const token of tokens) {
+                depth = Math.max(0, depth + (['(', '[', '{'].includes(token.image) ? 1 : [')', ']', '}'].includes(token.image) ? -1 : 0));
+                if (depth > deepest) {
+                    deepest = depth;
+                    at = token;
+                }
+            }
+            // The overflow unwound the parser midway; clear the state a parse leaves behind before parsing again.
+            target.stack?.splice(0);
+            target.unorderedGroups?.clear();
+            target.lexerResult = undefined;
+            const empty = parse('', options);
+            return { ...empty, lexerErrors: [{ offset: at?.startOffset ?? 0, line: at?.startLine ?? 1, column: at?.startColumn ?? 1, length: at?.image.length ?? 0, message: PARSER_STACK_MESSAGE }] };
+        }
+    };
+}
 /** Marks a lookahead strategy wrapped by recoverStatements, so that a test can see the wrapper in place. */
 export const RECOVERS_STATEMENTS: unique symbol = Symbol('swaml.recoverStatements');
 /**

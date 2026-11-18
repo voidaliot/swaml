@@ -16,7 +16,7 @@ Introduces a state timer, receive timeout or success schedule dependency.
 
 Used in typed expressions and operators; see its grammar contexts and normative constraints.
 
-**Context:** Typed expressions and operators. **Grammar:** FilterAnd, AndExpression. **Name use:** reserved.
+**Context:** Typed expressions and operators. **Grammar:** FilterAnd, Expression, AndExpression. **Name use:** reserved.
 
 [Normative rule](spec/01-structure-and-types.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 

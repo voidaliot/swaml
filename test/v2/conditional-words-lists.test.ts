@@ -13,7 +13,7 @@ import { semanticIndex } from '../../src/language/path-services.js';
 import { projectModel } from '../../src/language/projection.js';
 import { associatedOccurrences, associationPairs, expressionTypes } from '../../src/language/semantic.js';
 import { CONTEXTUAL_KEYWORDS, CONTEXTUAL_KEYWORDS_2_2, MESSAGE_SPELLING, RESERVED_WORDS, RESERVED_WORDS_2_2, formatName, formatPath, formatQualifiedName, isBasicName, namesFor, reservedWords } from '../../src/language/names.js';
-import { BRACKET_NESTING_LIMIT, CONDITIONAL_STATEMENT_MESSAGE, RECOVERS_STATEMENTS, SwamlValueConverter, UNCLOSED_NESTING_LIMIT, applyStatementRecovery } from '../../src/language/swaml-syntax.js';
+import { CONDITIONAL_STATEMENT_MESSAGE, RECOVERS_STATEMENTS, SwamlValueConverter, applyStatementRecovery } from '../../src/language/swaml-syntax.js';
 import { runCase, simulate } from '../../src/simulation/simulator.js';
 import { SwamlGrammar } from '../../src/language/generated/grammar.js';
 import type { Model } from '../../src/language/generated/ast.js';
@@ -824,34 +824,7 @@ test('WP2-G01 a generated 5,000-line file with an incomplete line in every third
     assert.ok(performance.now() - started < 20000, 'parsed within 20 s');
 });
 
-test('deep or unclosed bracket nesting fails fast with SW2013 instead of exhausting the stack or memory (review M3)', async () => {
-    for (const depth of [800, 5000]) {
-        const started = performance.now(), r = await parse(`package P { component def D { attribute a: int[2] = [0, 0]; operation f() {\n${'a['.repeat(depth)}\n} operation g() { } } }`);
-        assert.ok(performance.now() - started < 5000, `${depth} unclosed brackets within 5 s`);
-        assert.ok(r.doc.diagnostics!.some(d => d.code === 'SW2013' && String(d.message).startsWith('Bracket nesting exceeds the reference parser limit')), JSON.stringify(r.doc.diagnostics?.map(d => d.message)));
-    }
-    const balanced = await parse(`package P { component def D { attribute a: int[2] = [0, 0]; operation f() { var x: int = ${'('.repeat(BRACKET_NESTING_LIMIT + 1)}1${')'.repeat(BRACKET_NESTING_LIMIT + 1)}; } } }`);
-    assert.ok(balanced.doc.diagnostics!.some(d => d.code === 'SW2013'));
-    // Unclosed nesting up to the limit still recovers; a valid file is untouched.
-    const shallow = await parse(`package P { component def D { attribute a: int[2] = [0, 0]; operation f() {\n${'a['.repeat(UNCLOSED_NESTING_LIMIT)}\n} operation g() { } } }`);
-    assert.ok(!shallow.doc.diagnostics!.some(d => d.code === 'SW2013'));
-    assert.ok(AstUtils.streamAllContents(shallow.model).some(n => a.isOperation(n) && n.name === 'g'));
-});
-
-test('valid index and parenthesis nesting parses at least as deep as under the kept 2.2 grammar (review L1)', async () => {
-    const old = await kept22(), { Swaml } = createSwamlServices(EmptyFileSystem);
-    const source = (open: string, close: string, depth: number) => `package P { component def D { attribute a: int[2] = [0, 0]; operation f() { var x: int = ${open.repeat(depth)}0${close.repeat(depth)}; } } }`;
-    const parses = (parser: { parse(text: string): { parserErrors: unknown[] } }, text: string) => { try { return parser.parse(text).parserErrors.length === 0; } catch { return false; } };
-    for (const [open, close] of [['a[', ']'], ['(', ')']]) {
-        // The deepest nesting the 2.2 parser accepts on this stack, found by bisection, parses now too.
-        let low = 10, high = 400;
-        while (high - low > 1) {
-            const mid = (low + high) >> 1;
-            if (parses(old as never, source(open, close, mid))) low = mid; else high = mid;
-        }
-        assert.ok(parses(Swaml.parser.LangiumParser, source(open, close, low)), `${open}: 2.2 parses depth ${low}`);
-    }
-});
+// The parser nesting limits (review M3, L1, N1–N3) are tested in nesting-limits.test.ts (WP2-D05).
 
 test('WP2-S02 branch types unify without the expected type (review L3)', async () => {
     // Each branch is typed on its own: int[2] branches do not become byte[2], and a literal branch is not range-checked against the destination.

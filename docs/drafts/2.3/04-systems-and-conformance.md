@@ -85,6 +85,7 @@ Diagnostics added or extended by 2.3. Message shapes are templates in the existi
 | WP2-D02 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP2. | |
 | WP2-D03 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP2. | |
 | WP2-D04 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP2. | |
+| WP2-D05 | — | Added and moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP2 (review of the conditional's parser limits). | |
 | WP3-D01 | SW2006 | `now()` in an initializer (WP3-S01) | The existing purity message, naming `now()`: `Initializer of {attribute} must be pure; now() reads state.` |
 | WP4-D01 | SW2013 | Policy setting value (WP4-S02) | `{setting} must be a duration literal such as 1s.` / `{setting} is not a duration setting.` |
 | WP4-D02 | SW2002 | Non-integral computed duration (WP4-S01, WP4-S03, WP4-S04, WP4-S08) | `A duration must be integral, found {type}.` |

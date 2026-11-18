@@ -25,6 +25,7 @@
       "contextual": false,
       "productions": [
         "FilterAnd",
+        "Expression",
         "AndExpression"
       ]
     },

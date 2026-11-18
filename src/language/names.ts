@@ -19,8 +19,9 @@ export const CONTEXTUAL_KEYWORDS_2_2: ReadonlySet<string> = new Set([...CONTEXTU
 export type NameEdition = string;
 /**
  * The spelling of names inside diagnostic messages: the 2.2 quoting, which is valid source in every 2.x edition, so a
- * 2.2 source keeps its 2.2 messages byte for byte (WP2 review H1). Diagnostics on any source spell names this way
- * unless a name can only be written in 2.3.
+ * 2.2 source keeps its 2.2 messages byte for byte (WP2 review H1). Every name has a 2.2 spelling (a contextual word
+ * such as state is quoted, 'state', and both spellings are the same name), so diagnostics on every source, 2.3
+ * sources included, spell every name this way.
  */
 export const MESSAGE_SPELLING: NameEdition = '2.2';
 // A non-string edition is the default: the name functions stay safe as callbacks, as in names.map(formatName) (WP2 review M1).

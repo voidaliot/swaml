@@ -75,9 +75,13 @@ Path returns string: QualifiedName ('[' INT ']')? ('.' Name ('[' INT ']')?)*;
 QualifiedName returns string: Name ('::' Name)*;
 ValuePath returns string: QualifiedName ('.' Name)*;
 type Expression = ConditionalExpression | BinaryExpression | UnaryExpression | Literal | CallExpression | TryExpression | ReferenceExpression | RecordLiteral | ArrayLiteral;
-// Expression is ConditionalExpression | OrExpression (WP2-G01). The or-chain is written out here rather than called,
-// so that the alternation costs no extra parser frame per nesting level (valid index nesting stays as deep as in 2.2).
-Expression returns Expression: ConditionalExpression | AndExpression ({infer BinaryExpression.left=current} operator='or' right=AndExpression)*;
+// Expression is ConditionalExpression | OrExpression (WP2-G01). The binary chains of OrExpression down to
+// MultiplicativeExpression are written out here rather than called, one loop per precedence level from the highest:
+// each loop extends the expression so far as its left operand and takes its right operands from the next higher level,
+// which builds the same tree as the called rules. A nesting level then costs three rule calls instead of nine, so valid
+// nesting parses deeper than in 2.2 although the alternation adds a parser frame (WP2-D05). The rule stays on one line
+// for the inventories (scripts/build-inventories.mjs reads productions line by line).
+Expression returns Expression: ConditionalExpression | UnaryExpression ({infer BinaryExpression.left=current} operator=('*'|'/'|'%') right=UnaryExpression)* ({infer BinaryExpression.left=current} operator=('+'|'-') right=MultiplicativeExpression)* ({infer BinaryExpression.left=current} operator=('<'|'<='|'>'|'>=') right=AdditiveExpression)* ({infer BinaryExpression.left=current} operator=('=='|'!=') right=RelationalExpression)* ({infer BinaryExpression.left=current} operator='and' right=EqualityExpression)* ({infer BinaryExpression.left=current} operator='or' right=AndExpression)*;
 ConditionalExpression: 'if' '(' condition=Expression ')' then=Expression 'else' otherwise=Expression;
 OrExpression returns Expression: AndExpression ({infer BinaryExpression.left=current} operator='or' right=AndExpression)*;
 AndExpression returns Expression: EqualityExpression ({infer BinaryExpression.left=current} operator='and' right=EqualityExpression)*;
