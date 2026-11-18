@@ -60,8 +60,8 @@ package ComMainGating {
     }
     schedule {
       on every 20ms rxMainFunction() deadline 2ms;
-      after rxMainFunction txMainFunction() when (mode.current != PowerMode.sleep) deadline 5ms;
-      on every 100ms reportDiagnostics() when (networkActive()) deadline 10ms;
+      after rxMainFunction txMainFunction() if (mode.current != PowerMode.sleep) deadline 5ms;
+      on every 100ms reportDiagnostics() if (networkActive()) deadline 10ms;
     }
   }
   component def Ecu {

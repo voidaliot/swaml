@@ -49,6 +49,7 @@ interruptible { body } on receive p.m(bindings) { handler } arms an unnamed regi
 | WP1-R01 | **Place evaluation order.** Evaluate the target's index expressions left to right, then the right side, then read the root cell, check every index against the value read, and write the root with exactly one place replaced. Writes performed by the right side are kept. |
 | WP1-R02 | **Place failure.** An index outside its extent at runtime is the runtime failure `Bounds`; the root is unchanged. |
 | WP2-S05 | **No conditional statement.** A conditional is never a statement (grammar WP2-G02): `if (c) g() else h();` is a syntax error whose message explains it (WP2-D04), so a void branch cannot occur. The `if` statement keeps its block form. |
+| SIF-G01 | **Else if (2.3).** The `else` of an `if` statement is followed by a block or by another `if` statement: `if (a) { … } else if (b) { … } else { … }`. `else if (b) { … }` means exactly `else { if (b) { … } }`: the same typing, scopes, definite assignment, returns, stale reads, effects and runs. A chain nests to the right, and a final `else` belongs to the last `if`. A token after `else` that starts neither a block nor an `if` is the 2.2 error at the missing `{`. The `if` of an `else if` and its statements have the identities of the same statements written `else { if … }` (`…/otherwise/0/…`, chapter 7), so rewriting one spelling as the other keeps every identity. The 2.2 grammar rejects `else if`, so no 2.2 source changes. |
 
 ```swaml
 package Places {
@@ -180,13 +181,13 @@ package CyclePeriods {
 
 In `fast` the poller runs every 4 ms with a 2 ms deadline; in `standard` every 10 ms with a 5 ms deadline.
 
-**Release guards (2.3).** `when (g)` after the operation call of an `every`, `receive` or `after` entry gates each release: a false guard skips it (chapter 6.2, WP7-R01 to WP7-R07). The [LIN master](../../examples/50-lin-master-mode-gating.swaml) and [ComMain](../../examples/51-com-main-release-guard.swaml) examples gate their periodic work by a sampled power mode instead of returning early from every release. A skip counts as a completion for `after` successors (WP7-R03) but has none of the skipped operation's effects, so a successor that depends on them must test the same condition in its own guard, as example 51 does; the validator does not detect a successor that relies on a skipped predecessor.
+**Release guards (2.3).** `if (g)` after the operation call of an `every`, `receive` or `after` entry gates each release: a false guard skips it (chapter 6.2, WP7-R01 to WP7-R07). The [LIN master](../../examples/50-lin-master-mode-gating.swaml) and [ComMain](../../examples/51-com-main-release-guard.swaml) examples gate their periodic work by a sampled power mode instead of returning early from every release. A skip counts as a completion for `after` successors (WP7-R03) but has none of the skipped operation's effects, so a successor that depends on them must test the same condition in its own guard, as example 51 does; the validator does not detect a successor that relies on a skipped predecessor.
 
 | ID | Rule |
 | --- | --- |
-| WP7-S01 | **Release guards.** `when (g)` may follow the operation call of an `every`, `receive` or `after` entry, before `deadline` and `concurrent` (WP7-G01). On a `start` or `call` entry it is an error (SW2007 `A release guard is allowed only on every, receive and after entries.`, WP7-D01), reported once, at the guard where the entry is written; such a guard is not typed. A guard that folds to false is a warning (SW2020, WP7-D03): the entry never runs its operation. |
+| WP7-S01 | **Release guards.** `if (g)` may follow the operation call of an `every`, `receive` or `after` entry, before `deadline` and `concurrent` (WP7-G01, spelled `if` by SIF-G01; `when` after the call is a syntax error). On a `start` or `call` entry it is an error (SW2007 `A release guard is allowed only on every, receive and after entries.`, WP7-D01), reported once, at the guard where the entry is written; such a guard is not typed. A guard that folds to false is a warning (SW2020, WP7-D03): the entry never runs its operation. |
 | WP7-S02 | **Guard effects and scope.** A release guard is `bool` (SW2007 `Release guard must be bool, found {type}.`) and pure or reads state: a call of an operation that writes or communicates is SW2007 `Release guard must be pure or read state.`, at the call; an unresolved, remote or suspending call is reported by the call rules only (WP7-D02). Its scope is the scope of the entry's arguments: the component's attributes, its sampled ports (WP6-S01; a sampled read in a guard is a sampled read of the component for WP6-S03 and WP6-S04), `now()` and the entry's receive bindings, which hide a port of the same name. The operation's parameters are not in scope; a name outside the scope keeps its unresolved-name message (SW2002). Like the arguments, the guard of an inherited entry is typed in every effective structure, so a redefined helper that writes is reported before any run; a guard whose own document has syntax errors is typed nowhere until its syntax is fixed: the validation of a document with syntax errors reports only those errors, and a structure in another document that inherits the entry skips the guard, so a valid file that specializes it gets no error for the unfinished guard. |
-| WP7-S03 | **Identity.** A release guard is not part of entry identity, so two entries that differ only in their guard are duplicates (SW2007 `Duplicate (trigger, operation) entry.`), and an entry of a specialization or usage with the same trigger and operation replaces an inherited entry together with its guard; a replacement without a guard removes it, which is a warning (SW2020, WP7-D04) unless the inherited guard folds to true: write `when (true)` to remove a guard deliberately. |
+| WP7-S03 | **Identity.** A release guard is not part of entry identity, so two entries that differ only in their guard are duplicates (SW2007 `Duplicate (trigger, operation) entry.`), and an entry of a specialization or usage with the same trigger and operation replaces an inherited entry together with its guard; a replacement without a guard removes it, which is a warning (SW2020, WP7-D04) unless the inherited guard folds to true: write `if (true)` to remove a guard deliberately. |
 
 ```swaml
 package ReleaseGuards {
@@ -212,7 +213,7 @@ package ReleaseGuards {
       checkpoints = checkpoints + 1;
     }
     schedule {
-      on every 20ms slot() when (mode.current != PowerMode.sleep) deadline 2ms;
+      on every 20ms slot() if (mode.current != PowerMode.sleep) deadline 2ms;
       after slot checkpoint();
     }
   }

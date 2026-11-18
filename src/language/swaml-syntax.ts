@@ -202,11 +202,33 @@ function memberAfterUnclosedBlock(actual: Token | undefined): boolean {
     }
     return false;
 }
+/**
+ * SIF-G01: a release guard is written if (g); the WP7 candidate spelling when (g) is not accepted. The parser's message
+ * keeps its fixed leading text and explains the spelling instead of calling when a reserved word. A guard written after
+ * deadline or concurrent gets the same explanation instead of calling if a reserved word.
+ */
+const RELEASE_GUARD_HINT = ' A release guard is written if (condition) after the call, as in f() if (ready) deadline 2ms.';
+/** Whether the if at actual follows the deadline or concurrent of its own schedule entry: a guard written too late (review F2). */
+function guardAfterModifier(actual: Token): boolean {
+    if (actual.tokenType?.name !== 'if')
+        return false;
+    for (let i = tokens.findIndex(t => t.startOffset === actual.startOffset) - 1, depth = 0; i >= 0; i--) {
+        const text = tokens[i].image;
+        depth += text === ')' ? 1 : text === '(' ? -1 : 0;
+        if (depth < 0 || depth === 0 && [';', '{', '}'].includes(text))
+            return false;
+        if (depth === 0 && ['deadline', 'concurrent'].includes(tokens[i].tokenType?.name ?? ''))
+            return true;
+    }
+    return false;
+}
 export class SwamlParserErrorMessageProvider extends LangiumParserErrorMessageProvider {
     override buildMismatchTokenMessage(options: Parameters<LangiumParserErrorMessageProvider['buildMismatchTokenMessage']>[0]): string {
         const expectsName = nameToken(options.expected);
         if (ruleName(options.ruleName) === 'Block' && options.expected.name === '{' && conditionalStatement(options.actual, options.previous))
             return CONDITIONAL_STATEMENT_MESSAGE;
+        if (ruleName(options.ruleName) === 'ScheduleEntry' && (options.actual.tokenType?.name === 'when' || guardAfterModifier(options.actual)))
+            return super.buildMismatchTokenMessage(options) + RELEASE_GUARD_HINT;
         if (options.expected.name === '}' && memberAfterUnclosedBlock(options.actual))
             return super.buildMismatchTokenMessage(options) + MISSING_BRACE_HINT;
         return (expectsName ? `Expecting a name but found \`${options.actual.image}\`.` : super.buildMismatchTokenMessage(options)) + hint(options.actual, options.previous, expectsName);
@@ -276,8 +298,9 @@ const startsWith = (p: Production | undefined, name: string) => p?.definition?.[
  * with a name, its hook keeps the list going: an assignment when the statement is a place (names joined by
  * . or :: and bracketed indexes) followed by =, otherwise an expression statement; the statement's own error
  * recovery then reports the error and resynchronizes. The hook on the optional statement repetition only ends
- * an unclosed reaction block at the next state member (WP5, stateMemberStart). Valid sources never reach
- * either case, so their parse is unchanged.
+ * an unclosed reaction block at the next state member (WP5, stateMemberStart). After else, a token that starts
+ * neither a block nor an if predicts the block, so the missing { is reported and recovered as in 2.2 (SIF-G01).
+ * Valid sources never reach these cases, so their parse is unchanged.
  */
 export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
     const strategy = Object.create(inner) as LookaheadStrategy;
@@ -302,6 +325,17 @@ export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
                         if (depth === 0)
                             return this.LA(i + 1).image === '{' ? operator : predicted;
                     }
+                };
+        }
+        if (ruleName(options.rule.name) === 'If') {
+            // SIF-G01: else is followed by a block or, from 2.3, by an if. Anything else predicts the block, so the
+            // block's { is reported and recovered exactly as by the 2.2 parser, whose else took a block only, instead
+            // of a list of both alternatives that would also recover differently. Valid sources never reach this case.
+            const choices = production(options.rule, 'Alternation', options.prodOccurrence)?.definition ?? [];
+            const block = choices.findIndex(x => startsWith(x, 'Block'));
+            if (block >= 0 && choices.some(x => startsWith(x, 'ElseIf')))
+                return function (this: Lookahead, choices?: unknown) {
+                    return base.call(this, choices) ?? block;
                 };
         }
         const alternatives = ruleName(options.rule.name) === 'Statement' ? production(options.rule, 'Alternation', options.prodOccurrence)?.definition ?? [] : [];

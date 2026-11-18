@@ -856,6 +856,9 @@ const statementOwner = (n: AstNode) => isExecutable(n) || a.isScenario(n);
  * executable's body: a statement contributes its index in the enclosing statement list, and every
  * other step contributes its slot name, followed by an index for list slots (then, otherwise, body,
  * branches/N, timeoutBody, handler, initializer, update, states/N, actions/N, transitions/N, effect).
+ * The If of an else if (SIF-G01) is the one statement of its ElseIf and has the identity it has in the 2.2 form
+ * else { if … }, for example Shop::Desk.serve/2/otherwise/0/then/0 in both spellings, so rewriting one spelling as the
+ * other keeps every identity.
  * A state is itself identified as <executable>/states/N and a transition, including its guard, as
  * <executable>/states/N/transitions/M. A schedule entry is written <component identity>/schedule/N with N counting the entries the
  * component declares. Identities follow source structure, so an edit that reorders statements

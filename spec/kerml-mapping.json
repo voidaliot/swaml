@@ -235,7 +235,7 @@
       "kernel": [
         "Feature"
       ],
-      "semantic": "ScheduleEntry: a release trigger and its operation; a period or deadline is a literal or an expression of the constant sublanguage with one value per expanded occurrence (WP4-S04 to WP4-S07). An every, receive or after entry may carry a release guard, which lowers to a guard evaluated at the first step of the activation, before its arguments; a false guard is a skip that evaluates no argument, runs no operation and counts as completion for after successors (WP7-S01, WP7-M02). The guard is not part of trigger identity. It preserves entry order, trigger identity, occurrence identity and source provenance.",
+      "semantic": "ScheduleEntry: a release trigger and its operation; a period or deadline is a literal or an expression of the constant sublanguage with one value per expanded occurrence (WP4-S04 to WP4-S07). An every, receive or after entry may carry a release guard, written if (g) after the call (SIF-G01), which lowers to a guard evaluated at the first step of the activation, before its arguments; a false guard is a skip that evaluates no argument, runs no operation and counts as completion for after successors (WP7-S01, WP7-M02). The guard is not part of trigger identity. It preserves entry order, trigger identity, occurrence identity and source provenance.",
       "normative": "docs/spec/03-behavior.md"
     },
     {
@@ -312,7 +312,16 @@
       "kernel": [
         "Feature"
       ],
-      "semantic": "If: preserve statements and decisions, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "semantic": "If: a decision statement that runs its then block when its bool condition holds and otherwise its else block or, written else if, another if statement (SIF-G01); it preserves statement order, types, occurrence identity and source provenance.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "ElseIf",
+      "kind": "element",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "ElseIf: the one if statement written directly after else (SIF-G01). It lowers exactly as an else block holding that statement, so else if (c) and else { if (c) } have one meaning; its if has the statement identity of the if in else { if (c) }, so rewriting one spelling as the other keeps every identity. It preserves order, occurrence identity and source provenance.",
       "normative": "docs/spec/03-behavior.md"
     },
     {

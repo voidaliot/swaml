@@ -1,5 +1,5 @@
 package LinMasterGating {
-  /** A LIN master in the shape of the door model's LinMaster. In 2.2 it keeps a sleeping flag and returns early from every 20 ms slot, so the Timing view shows activations that do nothing. From 2.3 a release guard, when (g), gates the release: while the sampled power mode is sleep no slot runs and no header is sent, the deadline armed at the release is cancelled, and the skip counts as a completion, so the alive checkpoint after each slot still runs. A response that arrives while asleep is consumed and discarded by the guarded receive entry. Periodic releases stay on the 20 ms grid. */
+  /** A LIN master in the shape of the door model's LinMaster. In 2.2 it keeps a sleeping flag and returns early from every 20 ms slot, so the Timing view shows activations that do nothing. From 2.3 a release guard, if (g), gates the release: while the sampled power mode is sleep no slot runs and no header is sent, the deadline armed at the release is cancelled, and the skip counts as a completion, so the alive checkpoint after each slot still runs. A response that arrives while asleep is consumed and discarded by the guarded receive entry. Periodic releases stay on the 20 ms grid. */
   import Swaml::Time;
   enum PowerMode {
     startup,
@@ -60,8 +60,8 @@ package LinMasterGating {
       checkpoints = checkpoints + 1;
     }
     schedule {
-      on receive bus.response(frame) storeResponse(frame) when (mode.current != PowerMode.sleep);
-      on every 20ms slot() when (mode.current != PowerMode.sleep) deadline 2ms;
+      on receive bus.response(frame) storeResponse(frame) if (mode.current != PowerMode.sleep);
+      on every 20ms slot() if (mode.current != PowerMode.sleep) deadline 2ms;
       after slot checkpoint();
     }
   }

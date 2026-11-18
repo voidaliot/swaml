@@ -1216,7 +1216,7 @@ class Interpreter {
             throw x;
         }
     }
-    private *block(b: a.Block | a.OperationBody | a.Scenario, f: Frame, parent: Environment): Iterator {
+    private *block(b: a.Block | a.ElseIf | a.OperationBody | a.Scenario, f: Frame, parent: Environment): Iterator {
         const local = new Map(parent);
         for (const s of b.statements) {
             this.fuel();

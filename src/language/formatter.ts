@@ -91,6 +91,16 @@ function associationLines(tokens: readonly LeafCstNode[]): string[] {
 // wait, after, every and deadline precede the parentheses of a computed duration (WP4-M08).
 const SPACED_BEFORE_PARENTHESIS = ['if', 'else', 'when', 'while', 'until', 'for', 'connect', 'wait', 'after', 'every', 'deadline', 'or', '=', '==', '!=', '<', '<=', '>', '>=', '+', '-', '*', '/', '%', 'and', 'return', 'not'];
 
+/** Whether the comment at index i stands between else and if, with only comments around it. */
+function betweenElseAndIf(tokens: readonly LeafCstNode[], i: number): boolean {
+    let before = i - 1, after = i + 1;
+    while (before >= 0 && isComment(tokens[before]))
+        before--;
+    while (after < tokens.length && isComment(tokens[after]))
+        after++;
+    return tokens[before]?.text === 'else' && tokens[after]?.text === 'if';
+}
+
 function canonical(tokens: LeafCstNode[], eol: string): string {
     const p = new Printer();
     let parens = 0, previous = '', glue = false, association = -1;
@@ -102,6 +112,15 @@ function canonical(tokens: LeafCstNode[], eol: string): string {
                 p.space();
                 p.append(text);
                 previous = text;
+            }
+            else if (betweenElseAndIf(tokens, i) && !/[\r\n]/.test(text)) {
+                // SIF-G01: else if stays on one line; a comment between the two words stays on it too, and a line
+                // comment ends that line, so if starts the next one.
+                p.space();
+                p.append(text);
+                if (token.tokenType.name === 'SL_COMMENT')
+                    p.flush();
+                previous = 'else';
             }
             else {
                 p.standalone(text);
