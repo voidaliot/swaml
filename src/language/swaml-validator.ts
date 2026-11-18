@@ -1498,7 +1498,7 @@ export class SwamlValidator {
         // WP6-D10 (SW2017): a guard that folds to false in its definition is dead: the transition is never taken. A
         // guard that reads a const attribute some usage redefines folds per occurrence and is left alone.
         for (const { s, t } of candidates)
-            if (c && constantValue(t.guard!, c).value === false && !this.redefinedConstant(t.guard!))
+            if (c && constantValue(t.guard!, c).value === false && !this.redefinedConstant(t.guard!, c))
                 this.report(t.guard!, 'SW2017', `Completion guard of ${formatName(s.name, MESSAGE_SPELLING)} is always false; the transition is never taken.`, true);
         const completions = candidates.filter(({ t }) => !(c && !constantValue(t.guard!, c).problem));
         if (!completions.length)
@@ -1517,10 +1517,19 @@ export class SwamlValidator {
                 this.report(t.guard!, 'SW2017', `Completion guard of ${formatName(s.name, MESSAGE_SPELLING)} reads nothing that ${formatName(op.name, MESSAGE_SPELLING)} writes; it cannot change while the machine waits.${access.cells.size ? ' Completion is not re-evaluated when a sample cell is updated.' : ''}`, true);
         }
     }
-    /** Whether an expression names a const attribute that some attribute redefinition in the workspace replaces. */
-    private redefinedConstant(e: a.Expression): boolean {
+    /**
+     * Whether an expression names a const attribute of c that an attribute redefinition in a specialization or usage
+     * replaces: the redefinition's base has that very declaration among its members (WP6-D10, review N1).
+     */
+    private redefinedConstant(e: a.Expression, c: Structure): boolean {
         const names = new Set(nodes(e).filter(a.isReferenceExpression).map(r => r.path.split('.')[0]));
-        return names.size > 0 && this.models.some(m => nodes(m).some(n => a.isAttribute(n) && n.redefines && names.has(n.name)));
+        const constants = new Set<AstNode>(members(c).filter(a.isAttribute).filter(x => x.constant && names.has(x.name)));
+        return constants.size > 0 && this.models.some(m => nodes(m).some(n => {
+            if (!a.isAttribute(n) || !n.redefines || !names.has(n.name))
+                return false;
+            const s = container(n), base = s && (a.isComponentDef(s) ? s.specializes?.ref : s.definition?.ref);
+            return !!base && members(base).some(x => constants.has(x));
+        }));
     }
     private ownership(c: Structure, forwarded: Set<string>, inheritedSampled: ReadonlySet<string>): void {
         // An interface-only component needs no implementation: it neither emits nor owns inputs.

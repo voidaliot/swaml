@@ -337,7 +337,13 @@ test('WP6-D10 (SW2017) a completion guard that folds to false is dead; a redefin
     for (const guard of ['false', '1 == 2', 'not true', 'k > 0'])
         assert.deepEqual(await warnings(m(guard)), [['SW2017', dead]], guard);
     assert.deepEqual(await warnings(m('k == 0')), []);
-    assert.deepEqual(await warnings(m('k > 0', 'component def Other: Reader { redefines const attribute k: int = 5; }')), []);
+    for (const redefined of ['component def Other specializes Reader { redefines const attribute k: int = 5; }', 'component def Holder { component s: Sensor; component other: Reader { redefines const attribute k: int = 5; } connect (s.out, other.door); }']) {
+        const r = await parse(m('k > 0', redefined));
+        assert.deepEqual([r.errors.length, r.warnings.map(w => w.code)], [0, []], redefined);
+    }
+    // A redefinition of another component's const of the same name does not hide the warning (review N1).
+    const unrelated = await parse(m('k > 0', 'component def K { const attribute k: int = 1; } component def L specializes K { redefines const attribute k: int = 3; }'));
+    assert.deepEqual([unrelated.errors.length, unrelated.warnings.map(w => [w.code, w.message])], [0, [['SW2017', dead]]]);
 });
 
 test('WP5-D08 WP6 SW2017 confirmed for sampled cells: completion is not re-evaluated on a cell update', async () => {
