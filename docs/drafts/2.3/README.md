@@ -4,7 +4,7 @@
 
 ## Why separate files
 
-The maintained chapters under `docs/spec/`, `docs/LANGUAGE_SPECIFICATION.md` and the other maintained guides are inputs of the published 2.2 edition. `scripts/build-reference.mjs --check` regenerates `docs/SWAML-2.2-Reference.md` from them and fails on any difference. The strict 2.2 PDF checker (`scripts/check-spec-pdf-2.2.py`, `scripts/publication_2_2_sources.py`) also requires every embedded source, including `docs/spec/*.md` and `src/**/*.ts`, to match the workspace. Unreleased 2.3 text in those files would either fail the gate or change the published 2.2 book. The drafts therefore mirror the chapter structure here until the 2.3 candidate is allocated.
+The maintained chapters under `docs/spec/`, `docs/LANGUAGE_SPECIFICATION.md` and the other maintained guides are inputs of the published 2.2 edition. `scripts/build-reference.mjs --check` regenerates `docs/SWAML-2.2-Reference.md` from them and fails on any difference. The published 2.2 book is frozen: `scripts/check-frozen-publications.mjs` requires `docs/SWAML-2.2-Reference.md` to equal the copy embedded in the 2.2 PDF. Unreleased 2.3 text in those chapters would therefore either fail `build-reference.mjs --check` or change the published 2.2 book. (The strict 2.2 PDF checker, which compared every embedded source with the workspace, was the 2.2 release gate; after P0 the 2.2 PDF is checked in archive mode.) The drafts therefore mirror the chapter structure here until the 2.3 candidate is allocated.
 
 ## How a work package uses these drafts
 

@@ -20,25 +20,31 @@ The site is the existing showcase project. Build the validated source/trace data
 
 The original scripts/test-publication-archive.py, scripts/check-spec-pdf.py and scripts/rebuild-archived-pdf.py retain historical responsibilities. They do not assert a 2.0 PDF exists or validate the new language. Their source pin and archived assets must remain unchanged unless a separately reviewed historical correction is explicitly requested.
 
+## Frozen publications
+
+node scripts/check-frozen-publications.mjs runs in npm run check and source CI (test/ci/frozen-publications.test.mjs). It pins the SHA-256 of the PDF, .manifest.json and .sha256 file of every published edition under output/pdf (0.1.0, 1.0.0, 1.1.0, 1.1.1, 1.2.0, 1.2.1, 1.3.0, 1.3.1, 2.0.0, 2.1 and 2.2), so a rebuilt or edited publication fails even when its manifest and checksum agree with it. It also requires each edition-specific workspace copy to equal the hash its edition's manifest records: for 2.2 the reference book, RELEASE_2_2.md and every file under docs/figures/2.2, docs/notation/2.2 and examples/simulation/2.2; for 2.1 the reference book, RELEASE_2_1.md, examples/simulation/hello-trace.json and every file under docs/figures/2.0 and docs/notation/2.0; for 2.0.0 the frozen reference under history/2.0.0. A file added to one of those directories fails as well. PDF, PNG and TTF files are compared byte for byte, every other file after CRLF is normalized to LF, as the builders hashed them. Maintained sources (docs/spec, the guides, src, scripts, examples and inventories) are not frozen: later editions edit them, and the published PDF keeps their released bytes. A new edition adds its pins when it is published.
+
 ## 2.2 commands
 
 ```sh
-python scripts/build-spec-pdf-2.2.py
 python scripts/check-spec-pdf-2.2.py --archive
 python scripts/test-publication-2-2.py
 ```
 
-The 2.2 edition is published, and maintained sources it embeds (package.json and files under src among them) changed after v2.2. The Publication and compatibility workflow therefore runs check-spec-pdf-2.2.py --archive, as it does for 2.1. Archive mode verifies the PDF bytes against the manifest and the .sha256 file, every embedded source and figure against its recorded hash, the complete source bundle hash, the recorded versions, bookmarks, links, release-note content, page bounds and text size, without comparing the embedded sources with the workspace. Do not rebuild or edit the published 2.2 PDF, manifest or checksum.
+scripts/build-spec-pdf-2.2.py is the historical release builder of the published edition. Do not run it: it would regenerate the PDF, manifest and checksum from the current sources, which the frozen-publication check rejects.
+
+The 2.2 edition is published, and maintained sources it embeds (package.json and files under src among them) changed after v2.2. The Publication and compatibility workflow therefore runs check-spec-pdf-2.2.py --archive, as it does for 2.1. Archive mode verifies the PDF bytes against the manifest and the .sha256 file, every embedded source and figure against its recorded hash, the complete source bundle hash, the recorded versions, bookmarks, links, release-note content, page bounds and text size, without comparing the embedded sources with the workspace. The frozen-publication check compares the edition-specific workspace copies. Do not rebuild or edit the published 2.2 PDF, manifest or checksum.
 
 Without --archive the 2.2 checker keeps its strict current-source behavior: every attached source must match the current workspace, including ADRs 0020/0021, examples 30/31, the 2.2 trace and edition-specific figure assets. That mode was the gate for releasing 2.2 and no longer passes on main; the next edition's own strict checker is its release gate. Run the Publication and compatibility workflow after the same checks pass locally. Render and inspect every new PDF page before publication. Preserve the published 2.1 and 2.2 builders, checkers and assets, and check them in archive mode.
 
 ## 2.1 commands
 
 ```sh
-python scripts/build-spec-pdf-2.1.py
-python scripts/check-spec-pdf-2.1.py
+python scripts/check-spec-pdf-2.1.py --archive
 python scripts/test-publication-2-1.py
 ```
+
+scripts/build-spec-pdf-2.1.py is the historical release builder of the published edition. Do not run it.
 
 The 2.1 builder refuses a workspace whose spec/standard.json or edition module selects another standard. Its manifest records release, specificationRevision and languageVersion 2.1, the simulation profile, the separate implementationRevision of the reference implementation package and the publicationDate. It embeds the current maintained sources, including SWAML-2.1-Reference.md, as exact canonical attachments. Unsupported Markdown tokens, comment markers parsed as emphasis, backslash escapes in prose outside code spans, unresolved section links and broken repository links fail the build. The checker verifies the source bundle, both versions, the edition module, bookmarks for every keyword and notation concept, internal link destinations, release-tag repository links, release-note content, page bounds and a minimum text size.
 

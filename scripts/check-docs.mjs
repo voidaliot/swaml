@@ -18,4 +18,4 @@ const grammar=await readFile(resolve(root,'src/language/swaml.langium'),'utf8'),
 const inventory=JSON.parse(await readFile(resolve(root,'spec/kerml-mapping.json'),'utf8'));if(inventory.languageVersion!==await readStandardVersion())throw Error('Mapping edition mismatch');
 const seen=new Set();for(const e of inventory.mapping){if(!productions.has(e.source)||seen.has(e.source)||!e.semantic||!e.normative?.startsWith('docs/spec/')||!Array.isArray(e.kernel)||!['element','grouping','reference','value','lowering','lexical'].includes(e.kind))throw Error('Invalid mapping '+e.source);await stat(resolve(root,e.normative));seen.add(e.source);}
 if([...productions].some(p=>!seen.has(p)))throw Error('Missing grammar mapping');
-console.log(`Documentation: ${links} local links, ${snippets} executable ${inventory.languageVersion} fences, ${seen.size} grammar/type families. Historical editions preserved.`);
+console.log(`Documentation: ${links} local links, ${snippets} executable ${inventory.languageVersion} fences, ${seen.size} grammar/type families. Published editions are checked by check-frozen-publications.mjs.`);
