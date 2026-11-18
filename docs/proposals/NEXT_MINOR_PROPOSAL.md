@@ -1118,7 +1118,7 @@ schedule {
 ```
 
 **Recommendation: add** `when (g)` on `every`, `receive` and `after` entries; on `start` and `call` entries it is SW2007.
-- **Scope:** component attributes, sampled ports, `now()` and the entry's receive bindings. Dispatch arguments are evaluated first.
+- **Scope:** component attributes, sampled ports, `now()` and the entry's receive bindings. Dispatch arguments are evaluated first. *Superseded by ADR 0025 and WP7-R01 (owner decision E in the WP7 review): the guard is evaluated first, and the arguments only when it is true.*
 - **Evaluation:** at dispatch, under the serial lock or in the concurrent snapshot.
 - **False guard (finding 2):**
   - no operation runs, and the deadline armed at release is cancelled;
@@ -1126,7 +1126,7 @@ schedule {
   - the skip **counts as a successful whole completion for `after` successors**: they are released and apply their own guards (AUTOSAR mode disabling suppresses one runnable, not its successors);
   - a `receive` entry's input is consumed and discarded (`releaseGuard`);
   - the periodic grid is unchanged (D9).
-- **Runtime failure inside a guard:** an uncaught failure of that release. The trace records `failure` with the entry as source; the deadline is cancelled, no successors are released and the lock is released. With D7, sampled reads cannot cause it; arithmetic can.
+- **Runtime failure inside a guard:** an uncaught failure of that release. The trace records `failure` with the entry as source (*superseded by ADR 0025 and WP7-R06, owner decision H in the WP7 review: the entry when the guard's own expression fails, the failing statement when the failure happens inside an operation the guard calls*); the deadline is cancelled, no successors are released and the lock is released. With D7, sampled reads cannot cause it; arithmetic can.
 - **Identity:** the guard is not part of entry identity.
 
 **After** (`LinMaster` with `reversed port mode: ModeState`; `sleeping` is removed; the edge handler stays for the poll reset):

@@ -150,7 +150,7 @@ test('WP7-D04 (SW2020) a replacing entry without a guard that drops an inherited
   component def Deeper specializes Derived { }
   component Demo { component d: Deeper; component u: Base { ${usage} } }
 }`;
-    const drops = (entry: string, op: string, guard: string, from = 'Base') => `${entry} replaces the inherited entry of ${from} without its release guard when (${guard}), so it runs ${op} whatever the guard says; repeat the guard, or write when (true) to remove it deliberately.`;
+    const drops = (entry: string, op: string, guard: string, from = 'Base') => `Replacing entry ${entry} drops the inherited release guard when (${guard}) of ${from}, so it runs ${op} whatever the guard says; repeat the guard, or write when (true) to remove it deliberately.`;
     // Written only to relax the deadline, the derived entry also removes the mode gate.
     assert.deepEqual(await guardWarnings(source('schedule { on every 10ms slot() deadline 5ms; on receive inp.go(v) take(v); after slot next(); }')), [
         [drops('on every 10ms slot', 'slot', 'awake'), 'on every 10ms slot() deadline 5ms;'],
@@ -178,6 +178,48 @@ test('WP7-D04 (SW2020) a replacing entry without a guard that drops an inherited
     for (const [guard, expected] of [['when (awake)', [drops('on every 10ms slot', 'slot', 'awake')]], ['when (awake and', []]] as const) {
         const both = await workspace([base(guard), derived]);
         assert.deepEqual((both.docs[1].diagnostics ?? []).map(x => [x.code, x.message]), expected.map(m => ['SW2020', m]), guard);
+    }
+    // The inherited guard folds in the replacing component (review V2): a base guard that is false in the base but
+    // true after the derived const redefinition constrains nothing there, and the reverse is reported.
+    const folds = (value: string, redefined: string) => `package Test {
+  component def Base { const attribute flag: bool = ${value}; attribute runs: uint = 0; operation slot() { runs = runs + 1; } schedule { on every 10ms slot() when (flag); } }
+  component def Derived specializes Base { redefines const attribute flag: bool = ${redefined}; schedule { on every 10ms slot(); } }
+}`;
+    assert.deepEqual(await guardWarnings(folds('false', 'true')), []);
+    assert.deepEqual(await guardWarnings(folds('true', 'false')), [[drops('on every 10ms slot', 'slot', 'flag'), 'on every 10ms slot();']]);
+});
+
+test('WP7-D04 (SW2020) a part redefinition whose replacing entry drops a usage-level release guard is reported (review V1)', async () => {
+    const source = (sys2: string, sys3 = '') => `package Test {
+  component def Base { attribute ready: bool = false; attribute runs: uint = 0; operation slot() { runs = runs + 1; } schedule { on every 10ms slot(); } }
+  component def Sys { component c: Base { schedule { on every 10ms slot() when (ready); } } }
+  component def Sys2 specializes Sys { ${sys2} }
+  component def Sys3 specializes Sys2 { ${sys3} }
+  component top: Sys3;
+}`;
+    const drops = 'Replacing entry on every 10ms slot drops the inherited release guard when (ready) of c, so it runs slot whatever the guard says; repeat the guard, or write when (true) to remove it deliberately.';
+    const replacing = 'redefines component c: Base { schedule { on every 10ms slot(); } }';
+    // The reviewer's reproduction: the redefinition replaces the usage, its guarded entry included, and slot runs.
+    assert.deepEqual(await guardWarnings(source(replacing)), [[drops, 'on every 10ms slot();']]);
+    const { model: m } = await valid(source(replacing));
+    assert.equal(simulate([m], 'Test::top', { untilNs: 21_000_000 }).stores['top.c'].runs, 2);
+    const warning = (await parse(source(replacing))).warnings.find(w => w.code === 'SW2020')!;
+    assert.deepEqual(warning.relatedInformation?.map(x => x.location.range.start.line), [source(replacing).split('\n').findIndex(l => l.includes('component def Sys {'))]);
+    // Two levels: Sys3 redefines the part that Sys2 only inherits, or that Sys2 redefined keeping the guard.
+    assert.deepEqual(await guardWarnings(source('', replacing)), [[drops, 'on every 10ms slot();']]);
+    assert.deepEqual(await guardWarnings(source('redefines component c: Base { schedule { on every 10ms slot() when (ready); } }', replacing)), [[drops, 'on every 10ms slot();']]);
+    // A usage redefines the part too.
+    assert.deepEqual(await guardWarnings(source('').replace('component top: Sys3;', `component top: Sys3; component other: Sys { ${replacing} }`)), [[drops, 'on every 10ms slot();']]);
+    // Once dropped, a further replacement drops nothing; a replacement with a guard and a redefinition without an
+    // entry (which replaces the usage's entries with its definition's, outside WP7-D04) are not reported.
+    assert.deepEqual(await guardWarnings(source(replacing, replacing)), [[drops, 'on every 10ms slot();']]);
+    for (const sys2 of ['redefines component c: Base { schedule { on every 10ms slot() when (true); } }', 'redefines component c: Base;', 'redefines component c: Base { }'])
+        assert.deepEqual(await guardWarnings(source(sys2)), [], sys2);
+    // Half-typed sources never throw and report no SW2020.
+    for (const cut of ['redefines component c: Base { schedule { on every 10ms slot()', 'redefines component c: Base { schedule { on every', 'redefines component : Base { schedule { on every 10ms slot(); } }', 'redefines component c: Base { schedule { on every 10ms slot(); }']) {
+        const r = await parse(source(cut));
+        assert.ok(r.errors.length, cut);
+        assert.deepEqual(r.warnings.filter(w => w.code === 'SW2020'), [], cut);
     }
 });
 

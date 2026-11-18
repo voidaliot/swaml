@@ -1407,8 +1407,10 @@ export class SwamlValidator {
      * SW2020 (warnings) on an entry where it is written in c. WP7-D03: its release guard folds to false in c, so the
      * entry never runs its operation; a guard that names a const attribute some specialization or usage redefines (the
      * same declaration) folds per occurrence and is left alone, as for WP6-D10. WP7-D04: an entry without a guard
-     * replaces an inherited entry that has one (WP7-S03), which silently drops a safety condition; a replacement with
-     * any guard, when (true) included, states its own condition and is not reported.
+     * replaces an inherited entry that has one (WP7-S03), from c's base or, for a part redefinition, from the usage it
+     * redefines, which silently drops a safety condition; a replacement with any guard, when (true) included, states its
+     * own condition and is not reported. The two messages start with fixed texts, `Release guard when (` and
+     * `Replacing entry `, so a consumer tells them apart without a second code.
      */
     private guardWarnings(e: a.ScheduleEntry, c: Structure): void {
         if (e.kind === 'start' || e.kind === 'call')
@@ -1419,17 +1421,31 @@ export class SwamlValidator {
             return;
         }
         const base = a.isComponentDef(c) ? c.specializes?.ref : c.definition?.ref, key = entryKey(e);
-        const inherited = base && schedule(base).find(x => entryKey(x) === key);
+        // The entries c replaces: those of its base and, for a part redefinition, those of the usage it redefines
+        // (the effective schedule of that usage, which a redefinition replaces as a whole; review V1).
+        const replaced = this.redefinedUsage(c);
+        const inherited = [base, replaced].flatMap(s => s ? [schedule(s).find(x => entryKey(x) === key)] : []).find(x => x?.guard);
         // An inherited guard in a document that does not parse is not reported elsewhere (as in releaseGuard).
         const document = inherited?.guard && AstUtils.getDocument(inherited.guard).parseResult;
         if (!inherited?.guard || !document || document.parserErrors.length || document.lexerErrors.length)
             return;
-        // An inherited guard that folds to true (when (true)) constrains nothing, so dropping it changes nothing.
+        // An inherited guard that folds to true (when (true)) in c constrains nothing, so dropping it changes nothing.
+        // The fold is evaluated in c, the replacing structure, where a const redefinition may change its value.
         if (constantValue(inherited.guard, c).value === true)
             return;
         const declared = container(inherited);
         const where = declared ? formatName(declared.name, MESSAGE_SPELLING) : 'its base';
-        this.report(e, 'SW2020', `${this.guardEntryText(e)} replaces the inherited entry of ${where} without its release guard when (${displayText(inherited.guard, MESSAGE_SPELLING)}), so it runs ${formatName(e.operation, MESSAGE_SPELLING)} whatever the guard says; repeat the guard, or write when (true) to remove it deliberately.`, true, { related: [inherited] });
+        this.report(e, 'SW2020', `Replacing entry ${this.guardEntryText(e)} drops the inherited release guard when (${displayText(inherited.guard, MESSAGE_SPELLING)}) of ${where}, so it runs ${formatName(e.operation, MESSAGE_SPELLING)} whatever the guard says; repeat the guard, or write when (true) to remove it deliberately.`, true, { related: [inherited] });
+    }
+    /** The usage a `redefines component` usage replaces: the member of that name in its owner's base, if any. */
+    private redefinedUsage(c: Structure): a.ComponentUsage | undefined {
+        if (!a.isComponentUsage(c) || !c.redefines || !c.name)
+            return undefined;
+        const owner = c.$container;
+        const base = a.isComponentDef(owner) ? owner.specializes?.ref : a.isComponentUsage(owner) ? owner.definition?.ref : undefined;
+        if (!base || this.baseCycle(base, new Set()))
+            return undefined;
+        return members(base).find((m): m is a.ComponentUsage => a.isComponentUsage(m) && m.name === c.name);
     }
     /** An entry's trigger and operation for a message, with names spelled as in 2.2 (on every 10ms slot, after a b). */
     private guardEntryText(e: a.ScheduleEntry): string {
