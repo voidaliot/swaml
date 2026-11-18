@@ -73,8 +73,8 @@ export function flowStates(op: Executable): a.StateStep[] {
     visit(b);
     return out;
 }
-/** An operation with states (SIF-S01): a 2.2 machine (initial …) or an operation whose body contains a state statement. */
-export function isStateful(op: Executable): boolean { return !!body(op)?.states.length || flowStates(op).length > 0; }
+/** An operation with states (SIF-S01): an operation whose body contains a state statement. */
+export function isStateful(op: Executable): boolean { return flowStates(op).length > 0; }
 /** A state's inner states: the states standing in its braces (SIF-S03). */
 export const innerStates = (s: a.StateStep): a.StateStep[] => s.statements.filter(a.isStateStep);
 /** A state's items: everything in its braces before (and, in an invalid text, between) its inner states (SIF-S03). */
@@ -211,7 +211,7 @@ export function nanos(d: a.Duration): number { return d.value * ({ ns: 1, us: 10
  */
 export function settingDuration(s: a.PolicySetting): a.Duration | undefined { return a.isLiteral(s.value) ? s.value.duration : undefined; }
 /** The keywords that the grammar also accepts as names (rule Name). */
-const NAME_WORDS = new Set(['reversed', 'to', 'times', 'name', 'kind', 'path', 'use', 'case', 'test', 'associate', 'by', 'ns', 'us', 'ms', 's', 'defer', 'view', 'state', 'in', 'out']);
+const NAME_WORDS = new Set(['reversed', 'to', 'times', 'name', 'kind', 'path', 'use', 'case', 'test', 'associate', 'by', 'ns', 'us', 'ms', 's', 'view', 'state', 'in', 'out']);
 /**
  * The canonical display text of an expression (WP4-S07): its tokens without comments or layout, integers in decimal
  * and names in canonical spelling, one space between tokens except none after ( [ . :: and none before ) ] , . ::,
@@ -608,20 +608,18 @@ export function localVisible(n: AstNode, name: string): boolean {
         }
         else if (a.isFor(p) ? child !== p.initializer && p.initializer.name === name : a.isForEach(p) && child === p.body && p.variable.name === name)
             return true;
-        else if ((a.isReceiveBranch(p) && child === p.body || a.isInterruptible(p) && child === p.handler || a.isTransition(p) && child !== p.delayValue || a.isEventLine(p) && child === p.body) && (p.bindings ?? []).includes(name))
+        else if ((a.isReceiveBranch(p) && child === p.body || a.isInterruptible(p) && child === p.handler || a.isEventLine(p) && child === p.body) && (p.bindings ?? []).includes(name))
             return true;
     }
     return false;
 }
-/** The endpoints c consumes input from: receive and call entries, receive branches, interrupt handlers, transitions and deferrals. */
+/** The endpoints c consumes input from: receive and call entries, receive branches, interrupt handlers and event lines. */
 export function inputEndpoints(c: Structure): Set<string> {
     const result = new Set<string>(schedule(c).flatMap(e => e.endpoint ? [e.endpoint] : []));
     for (const op of members(c).filter(isExecutable))
         for (const n of body(op) ? nodes(body(op)!) : []) {
-            if ((a.isReceiveBranch(n) || a.isInterruptible(n) || a.isTransition(n) || a.isEventLine(n)) && n.endpoint)
+            if ((a.isReceiveBranch(n) || a.isInterruptible(n) || a.isEventLine(n)) && n.endpoint)
                 result.add(n.endpoint);
-            if (a.isDeferral(n))
-                n.endpoints.forEach(x => result.add(x));
         }
     return result;
 }
@@ -695,7 +693,7 @@ function effectsOf(op: Executable, c: Structure | undefined, seen: Set<Executabl
         }
         if (a.isSend(n))
             result.communicates = true;
-        if (a.isWait(n) || a.isReceive(n) || a.isTransition(n) || a.isInterruptible(n) || a.isStateStep(n))
+        if (a.isWait(n) || a.isReceive(n) || a.isInterruptible(n) || a.isStateStep(n))
             result.suspends = true;
         if (a.isCallExpression(n)) {
             if (n.target.includes('.')) {
@@ -872,8 +870,7 @@ export function runTarget(models: readonly a.Model[], name: string): RunTarget {
         throw new Error(`Unknown run target ${name}; select a package or Package::component, a top-level software component occurrence.`);
     return matches[0];
 }
-// States and transitions have identities of their own, for state waits, reactions and guards.
-const statementSlot = (n: AstNode) => n.$containerProperty === 'statements' || a.isState(n) || a.isTransition(n) || a.isFor(n.$container) && (n.$containerProperty === 'initializer' || n.$containerProperty === 'update');
+const statementSlot = (n: AstNode) => n.$containerProperty === 'statements' || a.isFor(n.$container) && (n.$containerProperty === 'initializer' || n.$containerProperty === 'update');
 const statementOwner = (n: AstNode) => isExecutable(n) || a.isScenario(n);
 /**
  * Stable source identity of the statement or schedule entry that contains a node.
@@ -1168,26 +1165,12 @@ export function caseRead(s: a.Scenario, e: a.ReferenceExpression): CaseRead | un
     const attribute = members(walked.structure).filter(a.isAttribute).find(x => x.name === step.field);
     return attribute && { kind: 'attribute', path: walked.path, structure: walked.structure, attribute, steps: steps.slice(walked.next + 1) };
 }
-// ---------------------------------------------------------------- state reactions (WP5)
-/** The kind of a transition (WP5-G01): a receive or timer transition has a trigger, a completion transition only a guard. */
-export function transitionKind(t: a.Transition): 'receive' | 'timer' | 'completion' {
-    return t.endpoint ? 'receive' : t.delay || t.delayValue ? 'timer' : 'completion';
-}
-/** A completion transition, when (g) to S (WP5-S02). */
-export const isCompletion = (t: a.Transition): boolean => transitionKind(t) === 'completion';
-/** An internal transition: a receive or timer transition without to (WP5-S07). It runs only its effect. */
-export const isInternal = (t: a.Transition): boolean => !t.target && transitionKind(t) !== 'completion';
-/** Whether a transition uses a form new in 2.3 (WP5): completion, internal or a guarded timer. */
-export const isReactionForm = (t: a.Transition): boolean => transitionKind(t) === 'completion' || !t.target || !!t.guard && transitionKind(t) === 'timer';
-/** The deferred members of a state, in source order (WP5-G02). */
-export const stateDeferrals = (s: a.State): string[] => s.deferrals.flatMap(d => d.endpoints);
-/** A guard that is the literal true; parentheses leave no node in the AST (WP5-S04). */
-export const isLiteralTrue = (e: a.Expression | undefined): boolean => !!e && a.isLiteral(e) && e.boolean === 'true';
+// ---------------------------------------------------------------- read sets
 /**
  * Component attributes that a group of nodes reads and writes, through the bodies of its transitive local callees
- * (WP5-D08): an attribute reference reads, an assignment to a place or root writes, and an attribute passed as an
+ * (the read sets of SIF-R07): an attribute reference reads, an assignment to a place or root writes, and an attribute passed as an
  * out argument of a local or port call is written. clock is true when the group or a callee calls
- * Swaml::Time::now (WP5-S03).
+ * Swaml::Time::now.
  */
 export type AttributeAccess = { reads: Set<string>; writes: Set<string>; clock: boolean; cells: Set<string> };
 export function attributeAccess(roots: readonly AstNode[], c: Structure | undefined): AttributeAccess {

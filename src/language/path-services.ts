@@ -46,7 +46,7 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
                 make(n, 'name', n.name, undefined, n.type);
             if (a.isEnumType(n))
                 n.literals.forEach((v, i) => make(n, 'literals', v, i));
-            if (a.isScheduleEntry(n) || a.isReceiveBranch(n) || a.isInterruptible(n) || a.isTransition(n) || a.isEventLine(n))
+            if (a.isScheduleEntry(n) || a.isReceiveBranch(n) || a.isInterruptible(n) || a.isEventLine(n))
                 n.bindings.forEach((v, i) => { const c = container(n), script = owner(n, a.isScenario), scripted = script && n.endpoint ? caseTarget(script, n.endpoint) : undefined, ep = scripted?.kind === 'port' ? scripted : c && n.endpoint && memberEndpoint(c, n.endpoint); make(n, 'bindings', v, i, ep ? ep.member.kind === 'attribute' ? ep.member.type : ep.member.parameters[i]?.type : undefined); });
         }
     const add = (n: AstNode, cst: CstNode | undefined, target: SemanticSymbol | undefined, start = 0, length?: number, logical?: string) => { if (!cst || !target)
@@ -83,7 +83,7 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
                 if (local)
                     return symbol(local);
             }
-            if ((a.isScheduleEntry(p) || a.isReceiveBranch(p) || a.isTransition(p) || a.isInterruptible(p) && isWithin(origin, p.handler) || a.isEventLine(p) && !!p.body && isWithin(origin, p.body)) && p.bindings.includes(name))
+            if ((a.isScheduleEntry(p) || a.isReceiveBranch(p) || a.isInterruptible(p) && isWithin(origin, p.handler) || a.isEventLine(p) && !!p.body && isWithin(origin, p.body)) && p.bindings.includes(name))
                 return symbol(p, 'bindings', p.bindings.indexOf(name));
             if (a.isForEach(p) && isWithin(origin, p.body) && p.variable.name === name)
                 return symbol(p.variable);
@@ -104,7 +104,7 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
         if (a.isComponentDef(parent) || a.isComponentUsage(parent))
             return members(parent).find(m => (m as Node).name === name) as Node;
         if (isExecutable(parent))
-            return [...(body(parent)?.operations ?? []), ...(body(parent)?.states ?? []), ...(signature(parent)?.parameters ?? [])].find(n => n.name === name) as Node;
+            return [...(body(parent)?.operations ?? []), ...flowStates(parent), ...(signature(parent)?.parameters ?? [])].find(n => n.name === name) as Node;
         if (a.isPortUsage(parent))
             return (parent.definition?.ref?.members ?? parent.members).find(n => n.name === name) as Node;
         if (a.isPortDef(parent))
@@ -219,15 +219,12 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
                     for (const port of ports)
                         add(mp, property(mp, 'member'), symbol(port && portMembers(port).find(m => m.name === mp.member))); });
             }
-            if (a.isSend(n) || a.isReceiveBranch(n) || a.isInterruptible(n) || (a.isTransition(n) || a.isEventLine(n)) && n.endpoint || a.isScheduleEntry(n) && n.endpoint)
+            if (a.isSend(n) || a.isReceiveBranch(n) || a.isInterruptible(n) || a.isEventLine(n) && n.endpoint || a.isScheduleEntry(n) && n.endpoint)
                 if (c)
                     pathRefs(n, 'endpoint', n.endpoint!, c as Node);
                 // A case script names occurrence.port.member from a top-level occurrence of its package.
                 else if (script)
                     scriptRefs(n, 'endpoint', n.endpoint!, script);
-            // Each deferred member is a port.member path of the machine's component (WP5-G02).
-            if (a.isDeferral(n) && c)
-                n.endpoints.forEach((endpoint, i) => pathRefs(n, 'endpoints', endpoint, c as Node, 0, i));
             if (a.isScheduleEntry(n) && c) {
                 add(n, property(n, 'operation'), symbol(members(c).filter(isExecutable).find(x => x.name === n.operation)));
                 if (n.predecessor)
@@ -306,12 +303,6 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
             }
             if (a.isFieldValue(n) && a.isRecordLiteral(n.$container))
                 add(n, property(n, 'name'), symbol(n.$container.type.ref?.fields.find(f => f.name === n.name)));
-            if (a.isOperationBody(n) && n.initial)
-                add(n, property(n, 'initial'), symbol(n.states.find(s => s.name === n.initial)));
-            if (a.isTransition(n)) {
-                const b = owner(n, a.isOperationBody);
-                add(n, property(n, 'target'), symbol(b?.states.find(s => s.name === n.target)));
-            }
             // to S names a state of the same operation; state names are unique there (SIF-S02, SIF-S06).
             if (a.isJump(n)) {
                 const op = owner(n, isExecutable);

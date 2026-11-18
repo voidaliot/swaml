@@ -177,10 +177,9 @@ function computedDurationHint(actual: Token | undefined, previous: Token | undef
         : undefined;
 }
 /**
- * WP5: a block that the member-start recovery ended (stateMemberStart) at on receive p.m(…) to or when, or at defer
- * followed by a name, is missing its }. The message says so instead of calling on a reserved word. 2.2 never reports a
- * missing } at these tokens: it reads on receive p.m(…) as a receive statement and defer as a name, so no 2.2 message
- * changes.
+ * A block that the member-start recovery ended (stateMemberStart) at on receive p.m(…) to is missing its }. The
+ * message says so instead of calling on a reserved word. 2.2 never reports a missing } at these tokens: it reads
+ * on receive p.m(…) as a receive statement, so no 2.2 message changes.
  */
 const MISSING_BRACE_HINT = ' The block before it is not closed: add } before this state member.';
 function memberAfterUnclosedBlock(actual: Token | undefined): boolean {
@@ -188,8 +187,6 @@ function memberAfterUnclosedBlock(actual: Token | undefined): boolean {
     if (index < 0)
         return false;
     const at = (i: number) => tokens[index + i];
-    if (actual!.tokenType?.name === 'defer')
-        return nameToken(at(1)?.tokenType);
     if (actual!.tokenType?.name !== 'on' || at(1)?.tokenType?.name !== 'receive')
         return false;
     for (let i = 2, depth = 0; at(i); i++) {
@@ -200,13 +197,13 @@ function memberAfterUnclosedBlock(actual: Token | undefined): boolean {
         if (depth < 0)
             return false;
         if (depth === 0 && text === ')')
-            return ['to', 'when'].includes(at(i + 1)?.tokenType?.name ?? '');
+            return at(i + 1)?.tokenType?.name === 'to';
     }
     return false;
 }
 /**
- * SIF-G01: a release guard is written if (g); the WP7 candidate spelling when (g) is not accepted. The parser's message
- * keeps its fixed leading text and explains the spelling instead of calling when a reserved word. A guard written after
+ * SIF-G01: a release guard is written if (g); the WP7 candidate spelling when (g) is not accepted (when is no word of
+ * 2.3). The parser's message keeps its fixed leading text and explains the spelling. A guard written after
  * deadline or concurrent gets the same explanation instead of calling if a reserved word.
  */
 const RELEASE_GUARD_HINT = ' A release guard is written if (condition) after the call, as in f() if (ready) deadline 2ms.';
@@ -229,7 +226,7 @@ export class SwamlParserErrorMessageProvider extends LangiumParserErrorMessagePr
         const expectsName = nameToken(options.expected);
         if (ruleName(options.ruleName) === 'Block' && options.expected.name === '{' && conditionalStatement(options.actual, options.previous))
             return CONDITIONAL_STATEMENT_MESSAGE;
-        if (ruleName(options.ruleName) === 'ScheduleEntry' && (options.actual.tokenType?.name === 'when' || guardAfterModifier(options.actual)))
+        if (ruleName(options.ruleName) === 'ScheduleEntry' && (options.actual.image === 'when' || guardAfterModifier(options.actual)))
             return super.buildMismatchTokenMessage(options) + RELEASE_GUARD_HINT;
         if (options.expected.name === '}' && memberAfterUnclosedBlock(options.actual))
             return super.buildMismatchTokenMessage(options) + MISSING_BRACE_HINT;
@@ -385,10 +382,9 @@ export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
         if (prodType !== 'Repetition' || !startsWith(production(options.rule, 'Repetition', options.prodOccurrence), 'Statement'))
             return base;
         return function (this: Lookahead) {
-            // Only on, defer, state and final can start a state member that ends an unclosed reaction block; other
-            // tokens add no call.
+            // Only on and state can start a state member that ends an unclosed entry or exit block; other tokens add no call.
             const first = this.LA(1).tokenType.name;
-            if ((first === 'on' || first === 'defer' || first === 'state' || first === 'final') && stateMemberStart(this))
+            if ((first === 'on' || first === 'state') && stateMemberStart(this))
                 return false;
             return base.call(this);
         };
@@ -396,25 +392,17 @@ export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
     return strategy;
 }
 /**
- * Recovery of an unclosed reaction block (WP5-G01, WP5-G02). The block of a transition or state action that is still
- * being typed ends where the next state member clearly starts, so that the following transitions and deferrals of the
- * state are kept, as in 2.2, instead of becoming statements of the block: on receive p.m(…) followed by to or when (a
- * receive statement continues with a block), and defer followed by a name (a statement that starts with the name
- * defer continues with =, (, . or [). The block also ends at the next state, state <name> { or final, where 2.2 ended
- * it because state was a keyword (a statement that starts with the name state continues otherwise, and final is
- * reserved). The parser then reports the missing } and inserts it. after and when cannot
- * start a statement and end the block already. An internal transition after an unclosed block, on receive p.m(…) {,
- * reads as a receive statement of that block, as the same text after an unclosed 2.2 block does. Valid sources never
- * reach this case: their blocks are closed before the next member.
+ * Recovery of an unclosed on entry or on exit block of a state. The block that is still being typed ends where the next
+ * item of the state clearly starts, so that the following event lines and states are kept instead of becoming
+ * statements of the block: on receive p.m(…) followed by to (a short event line; a receive statement continues with a
+ * block or or), and state <name> {. The parser then reports the missing } and inserts it. An event line with a block
+ * after an unclosed block, on receive p.m(…) {, reads as a receive statement of that block. Valid sources never reach
+ * this case: their blocks are closed before the next item.
  */
 function stateMemberStart(parser: Lookahead): boolean {
     const first = parser.LA(1);
     let member = false;
-    if (first.tokenType.name === 'defer')
-        member = nameToken(parser.LA(2).tokenType);
-    else if (first.tokenType.name === 'final')
-        member = true;
-    else if (first.tokenType.name === 'state')
+    if (first.tokenType.name === 'state')
         member = nameToken(parser.LA(2).tokenType) && parser.LA(3).image === '{';
     else if (first.tokenType.name === 'on' && parser.LA(2).tokenType.name === 'receive') {
         for (let i = 3, depth = 0; ; i++) {
@@ -425,7 +413,7 @@ function stateMemberStart(parser: Lookahead): boolean {
             if (depth < 0)
                 break;
             if (depth === 0 && token.image === ')') {
-                member = ['to', 'when'].includes(parser.LA(i + 1).tokenType.name);
+                member = parser.LA(i + 1).tokenType.name === 'to';
                 break;
             }
         }
@@ -433,7 +421,7 @@ function stateMemberStart(parser: Lookahead): boolean {
     if (!member)
         return false;
     const stack = (parser as Lookahead & { getHumanReadableRuleStack?: () => string[] }).getHumanReadableRuleStack?.() ?? [];
-    return stack.some(rule => ['Transition', 'StateAction'].includes(ruleName(rule) ?? ''));
+    return stack.some(rule => ruleName(rule) === 'StateAction');
 }
 
 /** The message of the lexing error that replaces a parse the host stack could not hold (WP2-D05 (c), SW2013). */

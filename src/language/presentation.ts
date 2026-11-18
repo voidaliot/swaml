@@ -34,8 +34,6 @@ export function viewCandidates(models: readonly a.Model[]): ViewSubject[] {
         if (isExecutable(n)) {
             for (const op of body(n)?.operations ?? [])
                 add(op as Node, `${path}.${op.name}`);
-            for (const state of body(n)?.states ?? [])
-                add(state as Node, `${path}.${state.name}`);
             // States in the flow are named in their operation, parents and inner states alike (names are unique there, SIF-S02).
             for (const state of flowStates(n))
                 if (state.name !== undefined)

@@ -85,7 +85,7 @@ test('WP3-M01 the packages are the versioned source libraries/swaml-2.3.swaml, a
     for (const [name, intrinsic] of Object.entries(LIBRARY_INTRINSICS)) {
         const op = libraryOperations().get(name)!;
         assert.equal(libraryIntrinsic(op), intrinsic, name);
-        assert.equal(op.body.statements.length + op.body.operations.length + op.body.states.length, 0, `${name} has no statements`);
+        assert.equal(op.body.statements.length + op.body.operations.length, 0, `${name} has no statements`);
         assert.match(op.body.documentation?.text ?? '', /Host intrinsic/u, `${name} documents its host semantics`);
     }
 });

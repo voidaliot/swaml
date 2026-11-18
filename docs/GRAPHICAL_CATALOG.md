@@ -168,7 +168,7 @@ swa.ml 2.3; States::Demo.lamp.
 
 ![States as steps of the flow](notation/2.3/states.svg)
 
-**Source:** [States::Demo.lamp](../examples/04-stateful-function.swaml). **Grammar:** State, StateAction, Transition, Deferral, StateStep, StateMember, EventLine, ShortBody, Leave, Exit, Jump.
+**Source:** [States::Demo.lamp](../examples/04-stateful-function.swaml). **Grammar:** StateAction, StateStep, StateMember, EventLine, ShortBody, Leave, Exit, Jump.
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 

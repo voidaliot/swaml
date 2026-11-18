@@ -10,7 +10,9 @@ async function walk(dir){const entries=await readdir(dir,{withFileTypes:true});r
 let snippets=0,links=0;const current=[];
 for(const file of (await walk(root)).filter(f=>f.endsWith('.md'))){const text=await readFile(file,'utf8');for(const m of text.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)){let path=m[1].split('#')[0].replace(/^<|>$/g,'');if(!path||/^[a-z]+:/i.test(path))continue;await stat(resolve(dirname(file),decodeURIComponent(path))).catch(()=>{throw Error(`Broken local link in ${file}: ${path}`)});links++;}
  const path=file.slice(root.length+1).replaceAll('\\','/');
- if(/(?:^docs\/(?:SWAML-1\.|MIGRATION_|RELEASE_|REVIEW_|SPECIFICATION_AUDIT)|^docs\/decisions\/(?!0016)|^showcase\/history)/.test(path))continue;
+ // Published edition references (1.x, 2.1, 2.2) hold 2.2-or-older text pinned by check-frozen-publications.mjs; 2.3 no
+ // longer parses their state machines (states in the flow), so their fences are not executed here.
+ if(/(?:^docs\/(?:SWAML-1\.|SWAML-2\.[012]-|MIGRATION_|RELEASE_|REVIEW_|SPECIFICATION_AUDIT)|^docs\/decisions\/(?!0016)|^showcase\/history)/.test(path))continue;
  current.push(path);
  for(const m of text.matchAll(/```swaml\r?\n([\s\S]*?)```/g)){const {Swaml}=createSwamlServices(EmptyFileSystem);const doc=await parseHelper(Swaml)(m[1],{validation:true});const errors=doc.diagnostics?.filter(d=>d.severity===1)??[];if(errors.length)throw Error(`Invalid complete SWAML fence in ${path}: ${JSON.stringify(errors)}`);snippets++;}
 }

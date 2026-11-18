@@ -2,7 +2,7 @@ import { AstUtils, DocumentState, type AstNode } from 'langium';
 import * as a from '../language/generated/ast.js';
 import { SWAML_REFERENCE_PROFILE } from '../language/edition.js';
 import { deploymentPlan } from '../language/placement.js';
-import { flowStates, innerStates, stateItems, inputEndpoints, memberQos, sampledMembers, sampledReadForm, LIBRARY_2_3_URI, isCompletion, isInternal, stateDeferrals, libraryIntrinsic, type LibraryIntrinsic, caseRead, caseTarget, isPlace, placeRoot, valueSteps, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, entryPeriod, entryDeadline, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
+import { flowStates, innerStates, stateItems, inputEndpoints, memberQos, sampledMembers, sampledReadForm, LIBRARY_2_3_URI, libraryIntrinsic, type LibraryIntrinsic, caseRead, caseTarget, isPlace, placeRoot, valueSteps, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, entryPeriod, entryDeadline, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
 import { binary, bind, checked, ContractViolation, copy, intText, plain, realText, RuntimeFault, scalar, squareRoot, voidValue, widen, type Environment, type Value } from './values.js';
 export { projectOperationTiming } from './timing.js';
 export interface SimulationOptions {
@@ -90,7 +90,7 @@ type Reply = {
     out?: Value[];
     failure?: string;
     input?: Message;
-    branch?: a.ReceiveBranch | a.Transition;
+    branch?: a.ReceiveBranch;
 };
 type Yield = {
     kind: 'step';
@@ -106,10 +106,8 @@ type Yield = {
     args: Value[];
 } | {
     kind: 'receive';
-    branches: (a.ReceiveBranch | a.Transition)[];
+    branches: a.ReceiveBranch[];
     timeout?: number;
-    /** The state of a stateful activation waiting at its selection (not inside an action), whose retained input it consumes (WP5-R09). */
-    machine?: a.State;
     /** A state of an operation with states waits (SIF-R05); named: the members its levels name. */
     flow?: { named: Set<string> };
     /** The zero-time wait of SIF-R05 step 3: it ends at an event of the same instant, which picks the message again. */
@@ -135,7 +133,7 @@ function inDuration(e: a.Expression): boolean {
     while (root.$container && a.isExpression(root.$container))
         root = root.$container;
     const p = root.$containerProperty;
-    return a.isWait(root.$container) && p === 'delay' || a.isReceive(root.$container) && p === 'timeoutValue' || (a.isTransition(root.$container) || a.isEventLine(root.$container)) && p === 'delayValue';
+    return a.isWait(root.$container) && p === 'delay' || a.isReceive(root.$container) && p === 'timeoutValue' || a.isEventLine(root.$container) && p === 'delayValue';
 }
 type Iterator = Generator<Yield, Value, Reply | undefined>;
 /**
@@ -178,10 +176,6 @@ type Frame = {
     failure?: { code: string; message: string };
     /** Current operation's parameter values, retained only for successful out copy-back. */
     out?: Value[];
-    /** How often the activation suspended; a stateful activation restarts its completion chain on a change (WP5-R07). */
-    suspensions?: number;
-    /** The current state of a stateful activation, whose deferrals retain input (WP5-R08). */
-    machineState?: a.State;
     /**
      * Sample-cell values this activation has read since it last started or resumed (WP6-R03): activations of other
      * occurrences interleave by step, so a delivery between two reads of one segment must not change what it sees.
@@ -266,10 +260,7 @@ type Message = {
     correlation?: Correlation;
     kind: 'event' | 'attribute' | 'request' | 'reply';
     response?: Reply;
-    /** The global offer ordinal of this queued copy, which orders retained input across queues (WP5-R09). */
-    ordinal?: number;
-    /** Set when the message was first retained by a deferring state and its defer observation recorded (WP5-T03). */
-    retained?: boolean;
+
     /** The delivery ordinal: messages delivered earlier have smaller ones (SIF-R03 delivery order). */
     delivered?: number;
 };
@@ -558,10 +549,6 @@ class Interpreter {
     private offers = 0;
     /** Delivery events so far: the delivery order of queued input (SIF-R03, SIF-R05). */
     private deliveries = 0;
-    /** Queued copies so far: the global offer ordinal of retained input (WP5-R09). */
-    private ordinals = 0;
-    /** Whether any message has been retained by a deferral in this run; until then consume() is the 2.2 walk (WP5-R11). */
-    private retaining = false;
     private stop?: 'violation' | 'limit';
     private options: Required<SimulationOptions>;
     constructor(private models: a.Model[], private target: RunTarget, options: SimulationOptions, private script?: a.Scenario) {
@@ -602,7 +589,7 @@ class Interpreter {
         return { c: this.components.get(occurrence)!, local: rest.join('.') };
     }
     /** Whether a waiting branch takes a message that reached port.member of component c. */
-    private listens(f: Frame, b: a.ReceiveBranch | a.Transition, c: Component, endpoint: string, kind: Message['kind']): boolean {
+    private listens(f: Frame, b: a.ReceiveBranch, c: Component, endpoint: string, kind: Message['kind']): boolean {
         if (f.script)
             return a.isReceiveBranch(b) && b.endpoint === `${c.path}.${endpoint}` && (b.kind === 'call') === (kind === 'request');
         return f.c === c && b.endpoint === endpoint;
@@ -764,7 +751,7 @@ class Interpreter {
             }
             else if (e instanceof ContractViolation) {
                 this.stop = e.code === 'StepLimit' ? 'limit' : 'violation';
-                // CompletionLoop names its machine and completion transition (WP5-T04); the other violations are unchanged.
+                // A violation with details names its own subject and source; the others name the run target.
                 // An ActivationOverflow of a run with Tasks also says which limit and which Core (WP8-R02); runs without
                 // Tasks record the 2.2 observation.
                 this.log('violation', e.details?.subject ?? this.target.identity, { code: e.code, ...(e.details?.source !== undefined ? { source: e.details.source } : {}), ...(e.code === 'ActivationOverflow' && e.message !== e.code ? { message: e.message } : {}) });
@@ -941,7 +928,6 @@ class Interpreter {
             const y = step.value;
             if (y.kind === 'step')
                 return;
-            f.suspensions = (f.suspensions ?? 0) + 1;
             // A read after a suspension sees the newer value (WP6-R03).
             f.sampled = undefined;
             f.waiting = y;
@@ -1067,10 +1053,7 @@ class Interpreter {
             const host = libraryIntrinsic(op);
             if (host)
                 return this.libraryIntrinsic(host, args);
-            if (body(op)?.states.length)
-                yield* this.machine(op, f, local);
-            else
-                yield* this.block(body(op)!, f, local);
+            yield* this.block(body(op)!, f, local);
         }
         catch (e) {
             if (!(e instanceof ReturnValue))
@@ -1703,129 +1686,6 @@ class Interpreter {
             present = yield* this.wait(levels, f);
         }
     }
-    /**
-     * A stateful activation (chapter 6.5). On entering a state: state update, entry actions, computed timers (WP4-R02),
-     * then selection in the total order of WP5-R01: (1) the first enabled completion transition in declaration order,
-     * (2) the earliest elapsed armed timer, declaration order on equal expiry, (3) retained input in global offer-ordinal
-     * order and (4) other queued input in the 2.2 order (both through the receive wait and consume()). Completion is
-     * evaluated after the entry actions and after every internal reaction (WP5-R02), never after discardInput or
-     * discardTimer (WP5-R03). A machine without completion, internal or guarded-timer transitions and without
-     * deferrals selects exactly as in 2.2 (WP5-R11).
-     */
-    private *machine(op: Executable, f: Frame, local: Environment): Iterator {
-        const b = body(op)!;
-        let state = b.states.find(s => s.name === b.initial)!;
-        const key = `${f.c.path}.${op.name}`;
-        // WP5-R07: the states entered in the current completion chain. The chain starts with the activation and restarts
-        // at every input or timer consumption and at every suspension of an entry action, exit action or effect.
-        const chain = new Set<a.State>();
-        let via: a.Transition | undefined;
-        const suspensions = () => f.suspensions ?? 0;
-        while (true) {
-            if (via && isCompletion(via) && chain.has(state))
-                throw new ContractViolation('CompletionLoop', 'CompletionLoop', { subject: key, source: this.source(via) });
-            chain.add(state);
-            const entered = this.time;
-            this.machines[key] = { state: state.name, live: !state.final };
-            f.at = state;
-            f.machineState = state;
-            this.log('state', key, { state: state.name, activation: f.id, source: this.source(state) });
-            const beforeEntry = suspensions();
-            for (const action of state.actions.filter(x => x.kind === 'entry'))
-                yield* this.block(action.body, f, local);
-            if (suspensions() !== beforeEntry)
-                chain.clear();
-            if (state.final)
-                return voidValue();
-            // Computed timers are evaluated once per state entry, when the entry actions finish, in declaration order;
-            // each expires at the state-update time plus its value and records a timer observation (WP4-S08, WP4-R02, WP4-T01).
-            // Internal reactions never re-evaluate them (WP5-R05).
-            const delays = new Map<a.Transition, number>();
-            for (const t of state.transitions.filter(x => !!x.delayValue)) {
-                f.at = t;
-                const value = durationValue(yield* this.evaluate(t.delayValue!, f, local));
-                delays.set(t, value);
-                this.log('timer', key, { state: state.name, source: this.source(t), timerNs: value, expiresNs: entered + value });
-            }
-            const delayOf = (t: a.Transition) => t.delay ? nanos(t.delay) : delays.get(t)!;
-            // The timers still armed in this state entry: an internal timer fires at most once and a timer whose guard was
-            // false is consumed for this entry; the others keep their epoch (WP5-R04, WP5-R05).
-            const armed = new Set(state.transitions.filter(t => !!t.delay || !!t.delayValue));
-            const completions = state.transitions.filter(isCompletion);
-            let selected: a.Transition | undefined, input: Message | undefined, completion = true;
-            while (!selected) {
-                if (completion)
-                    for (const t of completions) {
-                        f.at = t;
-                        if ((yield* this.evaluate(t.guard!, f, new Map(local))).data) {
-                            selected = t;
-                            break;
-                        }
-                    }
-                completion = true;
-                if (selected)
-                    break;
-                const timers = state.transitions.filter(t => armed.has(t)).sort((x, y) => delayOf(x) - delayOf(y));
-                const expires = timers[0] ? entered + delayOf(timers[0]) : undefined;
-                if (expires !== undefined && !Number.isSafeInteger(expires))
-                    throw new ContractViolation('ClockRange');
-                const delay = expires === undefined ? undefined : Math.max(0, expires - this.time);
-                // Entry actions move f.at; the wait and its selection belong to the state.
-                f.at = state;
-                // Entry may suspend past expiry. Select the elapsed timer before queued input.
-                const reply: Reply | undefined = delay === 0 ? undefined : yield { kind: 'receive', branches: state.transitions, timeout: delay, machine: state };
-                input = reply?.input;
-                const choices = input ? state.transitions.filter(t => t.endpoint === input!.member) : timers.filter(t => delayOf(t) === delayOf(timers[0]));
-                for (const t of choices) {
-                    const scope = new Map(local);
-                    if (input)
-                        this.bindInputs(scope, t.bindings, input);
-                    f.at = t;
-                    if (!t.guard || (yield* this.evaluate(t.guard, f, scope)).data) {
-                        selected = t;
-                        break;
-                    }
-                    // A false timer guard consumes the timer for this entry; the next equal expiry is tried (WP5-R04, WP5-T02).
-                    if (!input) {
-                        armed.delete(t);
-                        this.log('discardTimer', key, { activation: f.id, state: state.name, source: this.source(t), reason: 'guard' });
-                    }
-                }
-                if (!selected) {
-                    if (input)
-                        this.log('discardInput', key, { activation: f.id, source: input?.origin ?? this.source(state), reason: 'noEnabledTransition' });
-                    completion = false;
-                    continue;
-                }
-                if (isCompletion(selected))
-                    break;
-                // Every input or timer consumption restarts the completion chain (WP5-R07).
-                chain.clear();
-                if (!isInternal(selected))
-                    break;
-                // An internal reaction runs only its effect: no exit, entry or state update, and the timers keep their epoch;
-                // an internal timer fires once per entry (WP5-R05, WP5-T01). Completion follows it (WP5-R02).
-                armed.delete(selected);
-                this.log('state', key, { state: state.name, activation: f.id, source: this.source(selected), internal: true });
-                const scope = new Map(local);
-                if (input)
-                    this.bindInputs(scope, selected.bindings, input);
-                yield* this.block(selected.effect, f, scope);
-                selected = input = undefined;
-            }
-            const beforeReaction = suspensions();
-            for (const action of state.actions.filter(x => x.kind === 'exit'))
-                yield* this.block(action.body, f, local);
-            const scope = new Map(local);
-            if (input)
-                this.bindInputs(scope, selected.bindings, input);
-            yield* this.block(selected.effect, f, scope);
-            if (suspensions() !== beforeReaction)
-                chain.clear();
-            via = selected;
-            state = b.states.find(s => s.name === selected!.target)!;
-        }
-    }
     /** A script's on call branch answers a request at an actor port; return inside it is the reply. */
     private *answer(branch: a.ReceiveBranch, input: Message, f: Frame, scope: Environment): Iterator {
         const t = caseTarget(f.script!, branch.endpoint), result = t?.kind === 'port' ? typeKey(t.member.result) : 'void';
@@ -1965,7 +1825,6 @@ class Interpreter {
             if (i && !admit())
                 break;
             const m = i ? { ...message, id: this.id('m'), args: copy(message.args) } : message;
-            m.ordinal = ++this.ordinals;
             if (queued)
                 queue.push(m);
             const latency = this.options.latencyNs + (fault?.delayNs ?? 0);
@@ -2018,8 +1877,6 @@ class Interpreter {
                 this.log('discardInput', h.endpointName, { source: m.origin, reason: 'inactiveOwner' });
             }
         }
-        if (this.retaining)
-            this.consumeRetained();
         for (const queue of this.queues.values()) {
             while (queue.length) {
                 const m = queue[0];
@@ -2105,25 +1962,7 @@ class Interpreter {
                     this.log('discardInput', endpointName, { source: m.origin, reason: 'inactiveOwner' });
                     continue;
                 }
-                const stateOwner = members(c.structure).filter(isExecutable).find(op => body(op)?.states.length && nodes(body(op)!).some(n => a.isTransition(n) && n.endpoint === endpointName));
-                const stateFrame = stateOwner && this.findFrame(f => f.c === c && f.op === stateOwner && !f.done);
-                // While the current state defers the member, its input stays queued and is retained (WP5-R08): from the
-                // first instant at which it is deliverable while the machine waits at its selection in that state or runs
-                // an entry, exit or effect action of it. Each message is recorded once, on first retention (WP5-T03).
-                if (stateFrame?.machineState && stateDeferrals(stateFrame.machineState).includes(endpointName)) {
-                    for (const x of queue) {
-                        if (!(x as Message & { ready?: boolean }).ready)
-                            break;
-                        if (x.retained)
-                            continue;
-                        x.retained = this.retaining = true;
-                        this.log('defer', `${c.path}.${stateOwner!.name}`, { activation: stateFrame.id, state: stateFrame.machineState.name, member: endpointName, source: x.origin, message: x.id });
-                    }
-                    break;
-                }
-                if (stateFrame && stateFrame.waiting?.kind !== 'receive')
-                    break;
-                const inactive = !!stateOwner || members(c.structure).filter(isExecutable).some(op => body(op) && nodes(body(op)!).some(n => a.isInterruptible(n) && n.endpoint === endpointName));
+                const inactive = members(c.structure).filter(isExecutable).some(op => body(op) && nodes(body(op)!).some(n => a.isInterruptible(n) && n.endpoint === endpointName));
                 if (inactive) {
                     remove();
                     this.log('discardInput', endpointName, { source: m.origin, reason: 'inactiveOwner' });
@@ -2131,48 +1970,6 @@ class Interpreter {
                 }
                 break;
             }
-        }
-    }
-    /**
-     * WP5-R09: retained input precedes other queued input. Among the ready queue heads that were retained, the one with
-     * the lowest global offer ordinal whose machine waits at its selection in a state that handles the member is
-     * delivered first, across all of the machine's queues; repeated until none is deliverable. A retained head older
-     * than its maxAge is discarded first (WP5-R08). Input that was never retained follows in the 2.2 walk.
-     */
-    private consumeRetained(): void {
-        while (true) {
-            let best: { queue: Message[]; m: Message; frame: Frame; endpointName: string; c: Component } | undefined, aged = false;
-            for (const queue of this.queues.values()) {
-                const m = queue[0];
-                if (!m?.retained || !(m as Message & { ready?: boolean }).ready)
-                    continue;
-                if (this.policyOf(m.route, m.member).maxAge !== undefined && this.time - m.emitted > this.policyOf(m.route, m.member).maxAge!) {
-                    queue.shift();
-                    this.log('discardAge', m.route.id, { source: m.origin, message: m.id });
-                    aged = true;
-                    break;
-                }
-                const destination = this.ports.get(m.target);
-                if (!destination)
-                    continue;
-                const { c, p } = destination, endpointName = `${p.name}.${m.member}`;
-                const frame = this.findFrame(f => !f.done && f.c === c && f.waiting?.kind === 'receive' && !!f.waiting.machine && f.waiting.machine.transitions.some(t => t.endpoint === endpointName));
-                if (frame && (!best || m.ordinal! < best.m.ordinal!))
-                    best = { queue, m, frame, endpointName, c };
-            }
-            if (aged)
-                continue;
-            if (!best)
-                return;
-            const { queue, m, frame, endpointName, c } = best, ep = memberEndpoint(c.structure, endpointName);
-            queue.shift();
-            this.log('deliver', m.route.id, { source: m.origin, message: m.id, correlation: m.correlation?.id, targetPort: m.target });
-            if (ep) {
-                const types = ep.member.kind === 'attribute' ? [typeKey(ep.member.type)] : ep.member.parameters.map(p => typeKey(p.type));
-                m.args = m.args.map((v, i) => widen(v, types[i]));
-            }
-            const branch = (frame.waiting as Extract<Yield, { kind: 'receive' }>).branches.find(b => this.listens(frame, b, c, endpointName, m.kind))!;
-            this.resume(frame, { input: { ...m, member: endpointName }, branch });
         }
     }
 }

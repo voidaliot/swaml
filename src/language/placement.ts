@@ -324,7 +324,7 @@ export function suspendSite(op: Executable, c: Structure | undefined, seen = new
         return undefined;
     const own = op.body ? op : signature(op);
     for (const n of nodes(b)) {
-        if (owner(n, isExecutable) !== own || a.isTransition(n) || owner(n, a.isTransition) && !owner(n, a.isBlock))
+        if (owner(n, isExecutable) !== own)
             continue;
         // A waiting machine waits between looks inside its activation, a suspension in T4's sense (states in the flow, 9).
         if (a.isWait(n) || a.isReceive(n) || a.isStateStep(n))

@@ -1,6 +1,6 @@
 import type { AstNode } from 'langium';
 import * as a from './generated/ast.js';
-import { body, isClockRead, isExecutable, isPlace, placeRoot, signature, type Effect, type Executable } from './semantic.js';
+import { body, isClockRead, isStateful, isExecutable, isPlace, placeRoot, signature, type Effect, type Executable } from './semantic.js';
 /** The index expressions of a value reference or place, left to right: the first index, then each selector index. */
 const indexExpressions = (n: a.ReferenceExpression | a.Assign): a.Expression[] => [...(n.index ? [n.index] : []), ...(n.selectors ?? []).flatMap(x => x.index ? [x.index] : [])];
 
@@ -24,9 +24,8 @@ const indexExpressions = (n: a.ReferenceExpression | a.Assign): a.Expression[] =
  * reports by itself (with neutral inputs) stays the helper's finding; every other write of the helper that
  * this call site makes stale is reported at the call, so both are reported. Loops run to a fixed point over
  * the finite domain of attribute sets. The work per document is capped; past the cap the analysis stops and
- * the caller reports a reference validation limit instead of a stale read. One state machine reaction runs the source state's
- * exit action, the transition effect and the target state's entry action under the transition's guard; the
- * initial state's entry action runs on its own. Nested operations are analysed on their own.
+ * the caller reports a reference validation limit instead of a stale read. States are statements of the flow (see
+ * statement). Nested operations are analysed on their own.
  */
 export interface StaleReadContext {
     readonly attributes: ReadonlySet<string>;
@@ -283,7 +282,7 @@ class Analysis {
     /** The call-site independent summary of target, computed once per validation pass and component. */
     private summary(target: Executable, effect: Effect): Summary | undefined {
         const b = body(target);
-        if (!(effect.reads || effect.writes) || !b || b.states.length || this.active.has(target))
+        if (!(effect.reads || effect.writes) || !b || isStateful(target) || this.active.has(target))
             return undefined;
         const cached = this.ctx.summaries.get(target);
         if (cached)
@@ -482,27 +481,7 @@ export function staleWrite(op: Executable, ctx: StaleReadContext): { write?: Ast
     const analysis = new Analysis(ctx, new Set([op]));
     const parameters = () => new Flow(new Map((signature(op)?.parameters ?? []).map(p => [p.name, none()])));
     try {
-        if (!b.states.length) {
-            analysis.statements(b.statements, parameters());
-            return { write: analysis.found };
-        }
-        const actions = (state: a.State | undefined, kind: 'entry' | 'exit') => state?.actions.filter(x => x.kind === kind) ?? [];
-        const run = (list: a.StateAction[], flow: Flow) => list.reduce((f, x) => analysis.block(x.body, f), flow);
-        run(actions(b.states.find(x => x.name === b.initial), 'entry'), parameters());
-        // One reaction: the guard selects the transition, then exit, effect and the target's entry run (internal: the effect only).
-        for (const state of b.states)
-            for (const t of state.transitions) {
-                if (analysis.found)
-                    return { write: analysis.found };
-                const flow = parameters();
-                t.bindings.forEach(n => flow.locals.set(n, none()));
-                const guard = analysis.expression(t.guard, flow), inner = flow.copy();
-                inner.guards.push(guard);
-                // An internal reaction runs only its effect: no exit and no entry (WP5-R05). A completion reaction is one
-                // reaction like the others; its guard is evaluated after the entry actions without a suspension between.
-                const target = b.states.find(x => x.name === t.target), internal = t.target === undefined;
-                run(internal ? [] : actions(target, 'entry'), analysis.block(t.effect, internal ? inner : run(actions(state, 'exit'), inner)));
-            }
+        analysis.statements(b.statements, parameters());
         return { write: analysis.found };
     }
     catch (error) {
