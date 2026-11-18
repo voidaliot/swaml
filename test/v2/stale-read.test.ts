@@ -218,3 +218,49 @@ test('the stale-read work limit is reported once as SW2013 at the operation name
     // At the normal limit the same document gets both stale reads and no limit.
     assert.deepEqual(await stale('attribute n: int = 1; operation f() { var k: int = n; wait 1ms; var a: int = 0; var b: int = 0; n = k; } operation g() { var k: int = n; wait 1ms; n = k; } schedule { on start f(); on start g(); }'), ['n = k;', 'n = k;']);
 });
+
+test('SW2011 judges a helper\'s own findings per write before merging writes into one record', async () => {
+    const attributes = 'attribute n: int = 1; attribute m: int = 0; attribute s: int = 0; attribute x: int = 0; attribute y: int = 0;';
+    const helper = (writes: string) => `operation h(v: int) { if (s > 0) { wait 1ms; if (x > 0 and n > 0) { if (v > 0 and y > 0 and m > 0) { ${writes} } } } }`;
+    // m = v + y writes the argument, read from n before the helper's wait: a stale read at the call.
+    assert.deepEqual(await stale(`${attributes} ${helper('n = x + v; m = v + y;')} operation f() { wait 1ms; h(n); } schedule { on start f(); }`), ['h(n)']);
+    assert.deepEqual(await stale(`${attributes} ${helper('m = v + y;')} operation f() { wait 1ms; h(n); } schedule { on start f(); }`), ['h(n)']);
+});
+
+test('merged SW2011 summaries report every operation that unmerged summaries report', async () => {
+    let seed = 20261118;
+    const random = (n: number) => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed % n; };
+    const pick = <T>(xs: T[]) => xs[random(xs.length)];
+    const names = ['n', 'm', 's', 'x', 'y'];
+    const term = () => pick([...names, 'v', 'v', '1']);
+    const expression = () => Array.from({ length: 1 + random(3) }, term).join(' + ');
+    const statements = (depth: number): string => Array.from({ length: 1 + random(4) }, () => {
+        const kind = random(depth > 2 ? 3 : 5);
+        return kind === 0 ? 'wait 1ms;' : kind < 3 ? `${pick(names)} = ${expression()};` : `if (${term()} > 0 and ${term()} > 0) { ${statements(depth + 1)} }`;
+    }).join(' ');
+    let compared = 0;
+    for (let i = 0; i < 250; i++) {
+        const source = `package Test { component Demo { ${names.map(n => `attribute ${n}: int = 0;`).join(' ')}\n`
+            + `operation h(v: int) { ${statements(0)} }\n`
+            + `operation g(v: int) { ${statements(0)} h(${expression()}); }\n`
+            + `operation f() { ${random(2) ? `var k: int = ${pick(names)};` : 'var k: int = 0;'} ${random(2) ? 'wait 1ms;' : ''} g(${pick(['k', 'n', '0', 'x + y'])}); ${random(2) ? `h(k);` : ''} }\n`
+            + `schedule { on start f(); } } }`;
+        const lines = async (unmerged: boolean) => {
+            SwamlValidator.staleReadUnmerged = unmerged;
+            try {
+                const r = await parse(source);
+                return r.errors.length ? undefined : new Set(r.warnings.filter(w => w.code === 'SW2011').map(w => w.range.start.line));
+            }
+            finally {
+                SwamlValidator.staleReadUnmerged = false;
+            }
+        };
+        const merged = await lines(false), reference = await lines(true);
+        if (!merged || !reference)
+            continue;
+        compared++;
+        for (const line of reference)
+            assert.ok(merged.has(line), `model ${i}: the merged analysis misses a warning in line ${line + 1}\n${source}`);
+    }
+    assert.ok(compared > 200, `${compared} valid models compared`);
+});

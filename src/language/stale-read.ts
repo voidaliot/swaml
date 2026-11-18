@@ -32,6 +32,8 @@ export interface StaleReadContext {
     effects(op: Executable): Effect;
     /** Summaries of the component's operations, shared by every operation of one validation pass. */
     readonly summaries: Map<Executable, Summary>;
+    /** Keeps every write of a summary apart (no merging, no cap): the reference the merged analysis is tested against. */
+    readonly unmerged?: boolean;
     readonly budget: StaleReadBudget;
 }
 
@@ -165,14 +167,21 @@ class Analysis {
     }
     private write(node: AstNode, value: Value, guards: readonly Value[], targets: Iterable<string> = ['']): void {
         if (this.records) {
-            const k = recordKey(value, guards), known = this.records.get(k);
+            // Own findings are decided per write on its own value and conditions before any merge: a target the
+            // operation reports by itself (with neutral inputs) is its own finding and is left out, so a joined
+            // value can only add warnings at call sites, never hide one.
+            const neutral = instantiate(value, []), neutralGuards = instantiateGuards(guards, [], []);
+            const kept = [...targets].filter(t => !isStaleWrite(neutral, neutralGuards, t || undefined));
+            if (!kept.length)
+                return;
+            const k = this.ctx.unmerged ? String(this.records.size) : recordKey(value, guards), known = this.records.get(k);
             if (known) {
                 known.value = join(known.value, value);
-                for (const t of targets)
+                for (const t of kept)
                     known.targets.add(t);
             }
             else
-                this.records.set(k, { value, guards: [...guards], targets: new Set(targets) });
+                this.records.set(k, { value, guards: [...guards], targets: new Set(kept) });
         }
         else if (!this.found && isStaleWriteOf(value, guards, targets))
             this.found = node;
@@ -279,10 +288,8 @@ class Analysis {
             let f = new Flow(new Map(parameters.map((p, i) => [p.name, { fresh: new Set([LABEL + i]), stale: new Set<string>() }])), [{ fresh: new Set([GUARD]), stale: new Set() }]);
             f = callee.statements(b.statements, f);
             // A target the callee reports by itself (with neutral inputs) is its own finding and is left out.
-            const records = collapse([...callee.records!.values()].map(r => {
-                const neutral = instantiate(r.value, []), guards = instantiateGuards(r.guards, [], []);
-                return { value: r.value, guards: r.guards, targets: [...r.targets].filter(t => !isStaleWrite(neutral, guards, t || undefined)) };
-            }).filter(r => r.targets.length));
+            const all = [...callee.records!.values()].map(r => ({ value: r.value, guards: r.guards, targets: [...r.targets] }));
+            const records = this.ctx.unmerged ? all : collapse(all);
             const summary: Summary = { records, returned: callee.returned, outs: parameters.map(p => f.locals.get(p.name) ?? none()) };
             this.ctx.summaries.set(target, summary);
             return summary;

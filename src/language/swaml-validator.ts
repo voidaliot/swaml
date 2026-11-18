@@ -29,6 +29,8 @@ export class SwamlValidator {
     private reported = new Set<string>();
     /** Statement visits of the stale-read analysis per document; a reference validation limit (tests may lower it). */
     static staleReadWorkLimit = STALE_READ_WORK_LIMIT;
+    /** Test-only: analyse SW2011 without merging summary records, as the reference for the merged analysis. */
+    static staleReadUnmerged = false;
     /** SW2011 summaries and work of one validation pass. */
     private staleSummaries = new Map<Structure, Map<Executable, Summary>>();
     private staleBudget: StaleReadBudget = { work: 0 };
@@ -309,7 +311,7 @@ export class SwamlValidator {
         if (c && effects(op, c).writes && effects(op, c).suspends) {
             const summaries = this.staleSummaries.get(c) ?? this.staleSummaries.set(c, new Map()).get(c)!;
             const limit = SwamlValidator.staleReadWorkLimit;
-            const result = this.staleBudget.work > limit ? { limit: true } : staleWrite(op, { attributes: new Set(members(c).filter(a.isAttribute).map(x => x.name)), target: call => this.callTarget(call, c), effects: x => effects(x, c), summaries, budget: this.staleBudget });
+            const result = this.staleBudget.work > limit ? { limit: true } : staleWrite(op, { attributes: new Set(members(c).filter(a.isAttribute).map(x => x.name)), target: call => this.callTarget(call, c), effects: x => effects(x, c), summaries, budget: this.staleBudget, unmerged: SwamlValidator.staleReadUnmerged });
             if (result.write)
                 this.report(result.write, 'SW2011', 'A read before suspension may influence this write. Recheck live attributes after resuming.', true);
             if (result.limit && !this.staleLimitReported) {
