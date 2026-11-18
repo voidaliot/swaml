@@ -8,7 +8,13 @@ import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 const args = process.argv.slice(2);
 const detailAt = args.indexOf('--detail'), detail = detailAt >= 0 ? args[detailAt + 1] : undefined;
-const [aFile, bFile, mapFile] = args.filter((x, i) => !x.startsWith('--') && (detailAt < 0 || i !== detailAt + 1));
+const opt = name => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
+// P5 options: --drop-source-prefix P drops source fields starting with P on both sides (hand-written text has other
+// identities); --drop-states a,b drops the state observations of these states on side b (the parents of P5).
+const dropPrefix = opt('--drop-source-prefix'), dropStates = new Set((opt('--drop-states') ?? '').split(',').filter(Boolean));
+const valued = new Set(['--detail', '--drop-source-prefix', '--drop-states'].map(o => args.indexOf(o) + 1).filter(i => i > 0));
+const [aFile, bFile, mapFile] = args.filter((x, i) => !x.startsWith('--') && !valued.has(i));
+let dropped = 0;
 const A = JSON.parse(readFileSync(aFile, 'utf8')), B = JSON.parse(readFileSync(bFile, 'utf8'));
 const maps = mapFile ? JSON.parse(readFileSync(mapFile, 'utf8')).reverse ?? {} : {};
 // The map of the source a result belongs to: ext/<fixture>/<model name> or an examples/ path.
@@ -27,6 +33,7 @@ function norm(e, side) {
   if (x.kind === 'discardInput' && (x.reason === 'inactiveOwner' || x.reason === 'ignored')) x.reason = 'unhandled';
   if (x.internal) { delete x.internal; x.stay = true; }
   if (side === 'b') x.source = mapId(x.source);
+  if (dropPrefix && typeof x.source === 'string' && x.source.startsWith(dropPrefix)) delete x.source;
   delete x.trigger;
   return JSON.stringify(Object.keys(x).sort().reduce((o, k) => (o[k] = x[k], o), {}));
 }
@@ -35,6 +42,7 @@ function digests(r, side) {
   const per = {}, kinds = {};
   for (const e of r.trace ?? []) {
     if (e.kind === 'discardTimer') continue;
+    if (side === 'b' && e.kind === 'state' && dropStates.has(e.state)) { dropped++; continue; }
     const n = norm(e, side), k = JSON.parse(n).kind;
     kinds[k] = (kinds[k] ?? 0) + 1;
     (per[component(e)] ??= []).push(n);
@@ -70,3 +78,4 @@ for (const id of Object.keys(A)) {
   }
 }
 for (const [k, v] of Object.entries(rows)) { if (k === 'same') { console.log(`## identical after normalisation: ${v}`); continue; } console.log(`## ${k}: ${v.length}`); for (const r of v) console.log('  ' + r); }
+if (dropStates.size) console.log(`## state observations of ${[...dropStates].join(', ')} dropped from side b: ${dropped}`);
