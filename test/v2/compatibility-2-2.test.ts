@@ -22,7 +22,7 @@ test('gate 1: every repository .swaml file keeps its 2.2 AST under N1', async t 
 // Amendments are the only reviewed way to change one recorded gate-1 expectation. Each failure mode fails.
 type Recorded = { references: string[]; diagnostics: string[]; types: Record<string, string> };
 type Amendment = { file?: string; kind?: string; key?: string; recorded?: string; current?: string; rule?: string; reason?: string };
-interface Amend { amendmentProblems(a: Amendment[], files: Record<string, Recorded>): string[]; resolutionDifferences(path: string, recorded: Recorded, actual: Recorded, a: Amendment[]): string[] }
+interface Amend { amendmentProblems(a: Amendment[], files: Record<string, Recorded>, known?: unknown): string[]; resolutionDifferences(path: string, recorded: Recorded, actual: Recorded, a: Amendment[]): string[] }
 const recorded: Recorded = { references: ['1:1 X.y A -> B'], diagnostics: ['warning SW2011 3:5-3:9 A read before suspension.'], types: { '10:5 BinaryExpression': 'int' } };
 const amend = async () => await import(new URL('../../../scripts/compatibility-2-2.mjs', import.meta.url).href) as Amend;
 const reword: Amendment = { file: 'm.swaml', kind: 'diagnostic', recorded: recorded.diagnostics[0], current: 'warning SW2011 3:5-3:9 A read made before a suspension.', rule: 'WP4-D06', reason: 'reworded' };
@@ -47,4 +47,36 @@ test('gate 1 amendments: stale, unused, duplicate, unjustified and reference ame
     assert.match(amendmentProblems([{ ...reword, kind: 'reference', recorded: recorded.references[0] }], files).join(), /never amended/u);
     assert.match(amendmentProblems([{ ...reword, file: 'other.swaml' }], files).join(), /stale/u);
     assert.match(resolutionDifferences('m.swaml', recorded, recorded, [reword]).join(), /unused amendment/u);
+});
+
+test('gate 1 amendments: a 2.2 source never gains an error or a new diagnostic and keeps its known types', async () => {
+    const { amendmentProblems, resolutionDifferences } = await amend();
+    const files = { 'm.swaml': recorded };
+    const problem = (a: Amendment) => amendmentProblems([{ ...reword, ...a }], files).join('\n');
+    assert.match(problem({ current: 'error SW2011 3:5-3:9 A read before suspension.' }), /only the message/u);
+    assert.match(problem({ current: 'hint SW9999 1:1-1:1 Anything.' }), /only the message/u);
+    assert.match(problem({ current: 'warning SW2011 4:5-4:9 A read before suspension.' }), /only the message/u);
+    assert.match(problem({ rule: 'WP4-D99' }), /neither/u);
+    assert.match(problem({ rule: 'ADR 0099' }), /neither/u);
+    assert.match(problem({ rule: 'WP1a-M01' }), /cannot justify/u);
+    const typed: Amendment = { file: 'm.swaml', kind: 'type', key: '10:5 BinaryExpression', recorded: 'int', rule: 'ADR 0022', reason: 'promotion' };
+    assert.match(amendmentProblems([{ ...typed, current: '?' }], files).join(), /known type/u);
+    assert.match(amendmentProblems([{ ...typed, current: 'unknown' }], files).join(), /known type/u);
+    // A cited rule may retire a warning, never an error.
+    const removal: Amendment = { ...reword, current: null as unknown as string };
+    assert.deepEqual(amendmentProblems([removal], files), []);
+    assert.deepEqual(resolutionDifferences('m.swaml', recorded, { ...recorded, diagnostics: [] }, [removal]), []);
+    assert.match(resolutionDifferences('m.swaml', recorded, recorded, [removal]).join(), /still produced/u);
+    const withError = { ...recorded, diagnostics: ['error SW2005 2:1-2:4 Needs one owner.'] };
+    assert.match(amendmentProblems([{ ...removal, recorded: withError.diagnostics[0] }], { 'm.swaml': withError }).join(), /only a warning/u);
+    // A new diagnostic is never amendable: it fails as a difference whatever the amendments say.
+    assert.match(resolutionDifferences('m.swaml', recorded, { ...recorded, diagnostics: [...recorded.diagnostics, 'warning SW2016 5:1-5:2 New.'] }, []).join(), /not in 3\.1\.0/u);
+});
+
+test('gate 1 amendments: the rule index finds the 2.3 draft rules and the ADRs', async () => {
+    const { knownRules } = await import(new URL('../../../scripts/compatibility-2-2.mjs', import.meta.url).href) as { knownRules(): { rules: Set<string>; adrs: Set<string> } };
+    const { rules, adrs } = knownRules();
+    assert.ok(rules.has('WP4-D06') && rules.has('WP8-S08') && adrs.has('ADR 0022') && adrs.has('ADR 0025'));
+    assert.ok(!rules.has('WP4-D99') && !adrs.has('ADR 0099'));
+    assert.equal(rules.size, 208, 'every WPn-Kxx row of the drafts (the draft index counts 208)');
 });

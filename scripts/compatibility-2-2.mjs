@@ -6,6 +6,7 @@
 //   node scripts/compatibility-2-2.mjs ast             gate 1 (also run by test/v2/compatibility-2-2.test.ts)
 //   node scripts/compatibility-2-2.mjs runs            gate 2 (run by npm run check)
 //   node scripts/compatibility-2-2.mjs runs --write-traces <dir>   also writes every actual trace
+//   node scripts/compatibility-2-2.mjs ast --write-projections <dir>   also writes every actual view projection
 //   node scripts/compatibility-2-2.mjs ast|runs --record           records a fixture; only on the recorded implementation
 //
 // Gate 1 parses every repository .swaml file with the 2.2 grammar kept as swaml-2.2.langium and with the
@@ -193,25 +194,60 @@ export async function analyser() {
 
 /**
  * Amendments (test/fixtures/compatibility-2-2/amendments.json) are the only reviewed way to change a
- * recorded gate-1 expectation: a diagnostic string or an expression type of one file, when a 2.3 rule
- * changes it deliberately. Each names the file, the kind, the exact recorded value, the exact new value,
- * the rule or ADR that justifies it and a reason. References are never amended: a 2.2 name keeps its
- * target. Behaviour (gate 2) is never amended either: no 2.3 rule changes the result or trace of a 2.2
- * source, and a changed source is handled by the kept recorded bytes under sources/.
+ * recorded gate-1 expectation of one file, when a 2.3 rule changes it deliberately:
+ * - a diagnostic's message, keeping its severity, code and range;
+ * - the removal of a warning (current: null) that a cited rule retires;
+ * - an expression type, to another known type.
+ * Each names the file, the kind, the exact recorded value, the exact new value, the rule that requires the
+ * change (a WPn-Kxx identifier defined in the 2.3 drafts or maintained chapters, never WP1a, or an ADR that
+ * exists under docs/decisions) and a reason. A 2.2 source never gains an error or any new diagnostic, never
+ * loses an error and never changes a diagnostic's severity, code or range: none of this is amendable.
+ * References are never amended: a 2.2 name keeps its target. Behaviour (gate 2) is never amended either: no
+ * 2.3 rule changes the result or trace of a 2.2 source, and a changed source keeps its recorded bytes under
+ * sources/.
  */
-export const AMENDMENT_RULE = /^(?:WP(?:\d+|1a)-[GSRDTLM]\d{2}|ADR 00\d\d)$/u;
-export function amendmentProblems(amendments, files) {
+const DIAGNOSTIC = /^(error|warning|information|hint) (\S+) (\d+:\d+-\d+:\d+) (.*)$/su;
+/**
+ * The rule identifiers and ADRs an amendment may cite: every WPn-Kxx identifier at the start of a table row
+ * of the 2.3 drafts, the maintained chapters or the specification (where rules move as packages land them),
+ * and every ADR number with a file under docs/decisions.
+ */
+export function knownRules(base = root) {
+    const rules = new Set(), adrs = new Set();
+    const markdown = directory => existsSync(join(base, ...directory.split('/'))) ? readdirSync(join(base, ...directory.split('/'))).filter(f => f.endsWith('.md')).map(f => `${directory}/${f}`) : [];
+    for (const path of [...markdown('docs/drafts/2.3'), ...markdown('docs/spec'), 'docs/LANGUAGE_SPECIFICATION.md'])
+        for (const match of readFileSync(join(base, ...path.split('/')), 'utf8').matchAll(/^\| (WP\d+[a-z]?-[GSRDTLM]\d{2}) \|/gmu))
+            rules.add(match[1]);
+    for (const file of readdirSync(join(base, 'docs', 'decisions')))
+        if (/^\d{4}-.*\.md$/u.test(file))
+            adrs.add(`ADR ${file.slice(0, 4)}`);
+    return { rules, adrs };
+}
+export function amendmentProblems(amendments, files, known = knownRules()) {
     const problems = [], seen = new Set();
     for (const [i, a] of amendments.entries()) {
         const at = `amendment ${i + 1} (${a.file ?? '?'})`;
         if (!['diagnostic', 'type'].includes(a.kind))
             problems.push(`${at}: kind must be diagnostic or type; references and behaviour are never amended`);
-        if (!AMENDMENT_RULE.test(a.rule ?? ''))
-            problems.push(`${at}: needs the rule identifier (WPn-Kxx) or ADR (ADR 00nn) that justifies it`);
+        if (/^WP1a-/u.test(a.rule ?? ''))
+            problems.push(`${at}: WP1a rules define the gates and cannot justify an amendment`);
+        else if (!known.rules.has(a.rule) && !known.adrs.has(a.rule))
+            problems.push(`${at}: needs the rule identifier (WPn-Kxx) defined in the 2.3 drafts or chapters, or an existing ADR (ADR 00nn), that requires it; ${JSON.stringify(a.rule ?? null)} is neither`);
         if (typeof a.reason !== 'string' || !a.reason.trim())
             problems.push(`${at}: needs a reason`);
-        if (typeof a.recorded !== 'string' || typeof a.current !== 'string' || a.recorded === a.current)
-            problems.push(`${at}: needs different recorded and current strings`);
+        if (typeof a.recorded !== 'string' || a.recorded === a.current || !(typeof a.current === 'string' || a.current === null && a.kind === 'diagnostic'))
+            problems.push(`${at}: needs a recorded string and a different current string${a.kind === 'diagnostic' ? ' (or null to remove a warning)' : ''}`);
+        else if (a.kind === 'diagnostic') {
+            const old = DIAGNOSTIC.exec(a.recorded), now = a.current === null ? null : DIAGNOSTIC.exec(a.current);
+            if (!old || a.current !== null && !now)
+                problems.push(`${at}: diagnostics are "severity code range message"`);
+            else if (a.current === null && old[1] !== 'warning')
+                problems.push(`${at}: only a warning may be removed; an error stays an error`);
+            else if (now && (now[1] !== old[1] || now[2] !== old[2] || now[3] !== old[3]))
+                problems.push(`${at}: only the message of a diagnostic may change; severity, code and range stay as recorded`);
+        }
+        else if (a.kind === 'type' && (!a.current.trim() || /\?|unknown/u.test(a.current)))
+            problems.push(`${at}: the new type must be a known type, not ${JSON.stringify(a.current)}`);
         const id = JSON.stringify([a.file, a.kind, a.key ?? null, a.recorded]);
         if (seen.has(id))
             problems.push(`${at}: duplicate of an earlier amendment`);
@@ -227,7 +263,8 @@ export function amendmentProblems(amendments, files) {
 /** Differences of references, diagnostics and expression types after the file's amendments; unused amendments fail. */
 export function resolutionDifferences(path, recorded, actual, amendments = [], limit = 30) {
     const out = [], mine = amendments.filter(a => a.file === path);
-    const expected = { references: recorded.references, diagnostics: recorded.diagnostics.map(d => mine.find(a => a.kind === 'diagnostic' && a.recorded === d)?.current ?? d),
+    const amended = d => { const a = mine.find(x => x.kind === 'diagnostic' && x.recorded === d); return a ? a.current : d; };
+    const expected = { references: recorded.references, diagnostics: recorded.diagnostics.map(amended).filter(d => d !== null),
         types: { ...recorded.types, ...Object.fromEntries(mine.filter(a => a.kind === 'type').map(a => [a.key, a.current])) } };
     const list = (label, e, a) => {
         const missing = e.filter(x => !a.includes(x)), extra = a.filter(x => !e.includes(x));
@@ -240,9 +277,11 @@ export function resolutionDifferences(path, recorded, actual, amendments = [], l
     for (const [key, type] of Object.entries(expected.types))
         if (actual.types[key] !== type && out.length < 3 * limit)
             out.push(`expression type at ${key}: expected ${type}, actual ${actual.types[key] ?? 'none'}`);
-    for (const a of mine)
-        if (a.kind === 'diagnostic' ? !actual.diagnostics.includes(a.current) : actual.types[a.key] !== a.current)
-            out.push(`unused amendment: the current ${a.kind} ${JSON.stringify(a.current)} is not produced`);
+    for (const a of mine) {
+        const unused = a.kind === 'type' ? actual.types[a.key] !== a.current : a.current === null ? actual.diagnostics.includes(a.recorded) : !actual.diagnostics.includes(a.current);
+        if (unused)
+            out.push(`unused amendment: ${a.current === null ? `the removed diagnostic ${JSON.stringify(a.recorded)} is still produced` : `the current ${a.kind} ${JSON.stringify(a.current)} is not produced`}`);
+    }
     return out;
 }
 
@@ -270,10 +309,12 @@ async function recordResolution() {
 /**
  * The view semantics of one source: the projection of the whole model (projectModel, which the seven views
  * draw from), every view candidate (viewCandidates) and the selection of every declared view (selectView,
- * view filters included). Stored as digests plus a short digest per node, edge, candidate and view, so a
- * mismatch names what changed.
+ * view filters included). Stored as the digest of the whole projection, per group of nodes and of edges
+ * (kind and top-level owner) their count and a short digest, the digest and count of the candidates, and
+ * the selected paths of every view, so a mismatch names the group or view that changed. With full, the
+ * result also carries the actual projection, candidates and views (not recorded) for a readable diff.
  */
-export async function projector() {
+export async function projector({ full = false } = {}) {
     const { EmptyFileSystem } = await import('langium');
     const { parseHelper } = await import('langium/test');
     const { createSwamlServices, selectView, viewCandidates } = await import('../out/src/language/swaml-module.js');
@@ -298,6 +339,8 @@ export async function projector() {
             out.candidates = short(candidates);
             out.candidateCount = candidates.length;
             out.views = views;
+            if (full)
+                Object.defineProperty(out, 'full', { value: { projection, candidates, views }, enumerable: false });
         }
         catch (error) {
             out.error = String(error instanceof Error ? error.message : error);
@@ -334,7 +377,7 @@ async function recordProjection() {
     const fixture = { rule: 'WP1a-M01 (view projections)', recordedWith: { ...identity, script: scriptIdentity() },
         format: 'Per corpus file: SHA-256 of projectModel without languageVersion (canonical JSON); per group of projection nodes and of edges (kind and top-level owner) their count and the first 16 hex digits of their digest; the digest and count of viewCandidates as "kind path definition"; and the selected paths of every declared view.' };
     writeFileSync(fixturePath('projection.json'), perFileJson(fixture, files));
-    return `Recorded gate 1 projections: ${Object.keys(files).length} files, ${Object.values(files).reduce((n, f) => n + Object.keys(f.nodes ?? {}).length, 0)} nodes, ${Object.values(files).reduce((n, f) => n + Object.keys(f.views ?? {}).length, 0)} declared views.`;
+    return `Recorded gate 1 projections: ${Object.keys(files).length} files, ${Object.values(files).reduce((n, f) => n + Object.keys(f.nodes ?? {}).length, 0)} node groups, ${Object.values(files).reduce((n, f) => n + Object.keys(f.views ?? {}).length, 0)} declared views.`;
 }
 
 /**
@@ -344,7 +387,7 @@ async function recordProjection() {
  * diagnostics and expression types (after amendments) and its view projections. Returns the report and
  * its failures.
  */
-export async function checkAst() {
+export async function checkAst({ writeProjections } = {}) {
     const fixture = JSON.parse(readFileSync(fixturePath('ast.json'), 'utf8'));
     // resolution.json and projection.json, recorded once later from the same 3.1.0 commit, add files that ast.json does not hold.
     const optional = name => existsSync(fixturePath(name)) ? JSON.parse(readFileSync(fixturePath(name), 'utf8')) : undefined;
@@ -414,7 +457,13 @@ export async function checkAst() {
         }
     }
     if (projection) {
-        const project = await projector();
+        const project = await projector({ full: true }), projectionDirectory = writeProjections ?? join(root, 'out', 'compatibility-2-2', 'projections');
+        const writeProjection = (path, actual) => {
+            const file = join(projectionDirectory, path.replace(/[^\w.-]+/g, '_') + '.projection.json');
+            mkdirSync(dirname(file), { recursive: true });
+            writeFileSync(file, JSON.stringify(actual.full ?? actual, null, 1) + '\n');
+            return file;
+        };
         for (const [path, recorded] of Object.entries(projection.files)) {
             const source = recordedSource(path, recorded.sourceSha256);
             if (!source) {
@@ -422,9 +471,11 @@ export async function checkAst() {
                     failures.push(missingSource(path, recorded.sourceSha256));
                 continue;
             }
-            const differences = projectionDifferences(recorded, await project(path, source.text));
+            const actual = await project(path, source.text), differences = projectionDifferences(recorded, actual);
+            if (writeProjections)
+                writeProjection(path, actual);
             if (differences.length)
-                failures.push(`${source.from}: view projections differ from 3.1.0:\n    ${differences.join('\n    ')}`);
+                failures.push(`${source.from}: view projections differ from 3.1.0:\n    ${differences.join('\n    ')}\n    actual projection written to ${writeProjection(path, actual)}; write the 3.1.0 projection with --write-projections in a worktree of 213f583 to diff it`);
             else
                 projected++;
         }
@@ -725,6 +776,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
 else if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
     const [gate, ...flags] = process.argv.slice(2), record = flags.includes('--record');
     const traces = flags.includes('--write-traces') ? resolve(flags[flags.indexOf('--write-traces') + 1] ?? '') : undefined;
+    const projections = flags.includes('--write-projections') ? resolve(flags[flags.indexOf('--write-projections') + 1] ?? '') : undefined;
     if (gate !== 'ast' && gate !== 'runs')
         throw Error('Usage: node scripts/compatibility-2-2.mjs ast|runs [--record | --write-traces <dir>]');
     if (record) {
@@ -739,7 +791,7 @@ else if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.me
         console.log(await recorders[next]());
     }
     else {
-        const { report, failures } = gate === 'ast' ? await checkAst() : await checkRuns({ writeTraces: traces });
+        const { report, failures } = gate === 'ast' ? await checkAst({ writeProjections: projections }) : await checkRuns({ writeTraces: traces });
         for (const failure of failures)
             console.error(failure);
         console.log(report);
