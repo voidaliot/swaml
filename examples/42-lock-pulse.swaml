@@ -1,0 +1,96 @@
+package LockPulse {
+  /** A door lock actuator in the shape of the door model's LockControl. The pulse length is a calibration attribute, pulseMs. In 2.2 a state timer takes a literal only, so the locking state repeats the calibration as after 250ms and ignores a recalibration. From 2.3 the timer is after (pulseMs * 1ms): it is evaluated when the entry actions of the state finish, and each pulse uses the current calibration. Without the unit, after (pulseMs) would count nanoseconds; the validator warns about it (SW2016). */
+  import Swaml::Time;
+  port def Request {
+    provides event lock();
+  }
+  component def LiteralLock {
+    /** The 2.2 shape. */
+    reversed port requests: Request;
+    attribute pulseMs: uint = 250;
+    attribute pulses: uint = 0;
+    attribute pulseEndNs: uint = 0;
+    operation calibrate(ms: uint) {
+      pulseMs = ms;
+    }
+    operation control() {
+      initial unlocked;
+      state unlocked {
+        on receive requests.lock() to locking {
+        }
+      }
+      state locking {
+        on entry {
+          pulses = pulses + 1;
+        }
+        after 250ms to locked {
+          pulseEndNs = now();
+        }
+      }
+      state locked {
+        on receive requests.lock() to locking {
+        }
+      }
+    }
+    schedule {
+      on start control();
+    }
+  }
+  component def ComputedLock {
+    /** The 2.3 shape: the pulse follows the calibration. */
+    reversed port requests: Request;
+    attribute pulseMs: uint = 250;
+    attribute pulses: uint = 0;
+    attribute pulseEndNs: uint = 0;
+    operation calibrate(ms: uint) {
+      pulseMs = ms;
+    }
+    operation control() {
+      initial unlocked;
+      state unlocked {
+        on receive requests.lock() to locking {
+        }
+      }
+      state locking {
+        on entry {
+          pulses = pulses + 1;
+        }
+        after (pulseMs * 1ms) to locked {
+          pulseEndNs = now();
+        }
+      }
+      state locked {
+        on receive requests.lock() to locking {
+        }
+      }
+    }
+    schedule {
+      on start control();
+    }
+  }
+  component def Body {
+    /** Interface-only actor that requests locking. */
+    port toLiteral: Request;
+    port toComputed: Request;
+  }
+  component literal: LiteralLock;
+  component computed: ComputedLock;
+  component body: Body;
+  connect (body.toLiteral, literal.requests);
+  connect (body.toComputed, computed.requests);
+  associate body, literal to 'Recalibrated pulse';
+  test 'Recalibrated pulse' of computed {
+    /** Both locks pulse 250 ms; after recalibration to 400 ms only the computed timer follows. */
+    publish body.toLiteral.lock();
+    publish body.toComputed.lock();
+    wait 300ms;
+    assert literal.pulseEndNs == 250000000 and computed.pulseEndNs == 250000000;
+    computed.calibrate(400);
+    literal.calibrate(400);
+    publish body.toLiteral.lock();
+    publish body.toComputed.lock();
+    wait 500ms;
+    assert literal.pulses == 2 and computed.pulses == 2;
+    assert literal.pulseEndNs == 550000000 and computed.pulseEndNs == 700000000;
+  }
+}

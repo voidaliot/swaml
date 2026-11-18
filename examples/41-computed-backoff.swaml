@@ -1,0 +1,109 @@
+package Backoff {
+  /** Retry backoff in the shapes of the V2X uplink and the cloud gateway. In 2.2 a wait takes a literal only, so the uplink waits out a computed delay in a loop of 250 ms steps, which rounds every delay up to the next multiple of 250 ms, and the gateway keeps a fixed table of delays. From 2.3 a duration literal is a uint value in nanoseconds and wait (e), or after (e) and state timers after (e) take a computed integral delay: the backoff doubles up to a cap and is waited exactly. A delay that is not positive is the runtime failure DurationRange, which try catches like any runtime failure. */
+  import Swaml::Numeric;
+  import Swaml::Time;
+  component def CountedUplink {
+    /** The 2.2 shape: a delay in milliseconds waited in 250 ms steps. */
+    attribute waitedMs: uint = 0;
+    attribute backoffs: uint = 0;
+    operation backoff(delayMs: uint) {
+      var waited: uint = 0;
+      while (waited < delayMs) {
+        wait 250ms;
+        waited = waited + 250;
+      }
+      waitedMs = waited;
+      backoffs = backoffs + 1;
+    }
+  }
+  component def ComputedUplink {
+    /** The 2.3 shape: the delay doubles from firstMs up to capMs and is waited exactly. */
+    const attribute firstMs: uint = 100;
+    const attribute capMs: uint = 1000;
+    attribute delayMs: uint = 0;
+    attribute backoffs: uint = 0;
+    attribute lastWakeNs: uint = 0;
+    operation backoff() {
+      delayMs = if (delayMs == 0) firstMs else minInt(delayMs * 2, capMs);
+      wait (delayMs * 1ms);
+      lastWakeNs = now();
+      backoffs = backoffs + 1;
+    }
+    operation pause(millis: int) returns bool {
+      /** Waits millis milliseconds; a delay that is not positive fails with DurationRange. */
+      wait (millis * 1ms);
+      return true;
+    }
+  }
+  component def Session {
+    /** A connection machine whose Backoff state doubles the delay on entry and then waits it: the timer is evaluated when the entry actions finish, so it waits the new delay. */
+    const attribute capMs: uint = 400;
+    attribute delayMs: uint = 50;
+    attribute attempts: uint = 0;
+    attribute connectedAt: uint = 0;
+    operation run() {
+      initial Connecting;
+      state Connecting {
+        on entry {
+          attempts = attempts + 1;
+        }
+        after 10ms to Backoff {
+        }
+      }
+      state Backoff {
+        on entry {
+          delayMs = minInt(delayMs * 2, capMs);
+        }
+        after (delayMs * 1ms) to Retry {
+        }
+      }
+      state Retry {
+        on entry {
+          connectedAt = now();
+        }
+        after 5ms to Connecting {
+        }
+      }
+    }
+    schedule {
+      on start run();
+    }
+  }
+  component counted: CountedUplink;
+  component computed: ComputedUplink;
+  component session: Session;
+  test 'Counted loop rounds up' of counted {
+    /** The 2.2 loop waits 500 ms for a 300 ms delay. */
+    counted.backoff(300);
+    assert counted.waitedMs == 500 and now() == 500000000;
+  }
+  test 'Computed wait is exact' of computed {
+    /** The computed backoff waits 100, 200, 400, 800 and then the 1000 ms cap. */
+    computed.backoff();
+    assert now() == 100000000;
+    computed.backoff();
+    computed.backoff();
+    computed.backoff();
+    assert computed.delayMs == 800 and now() == 1500000000;
+    computed.backoff();
+    assert computed.delayMs == 1000 and computed.lastWakeNs == 2500000000 and computed.backoffs == 5;
+  }
+  test 'A delay that is not positive fails' of computed {
+    /** pause(0) and pause(-5) fail with DurationRange before waiting; try catches it and time does not advance. */
+    var ok: bool = try(computed.pause(0), false);
+    assert not ok and now() == 0;
+    ok = try(computed.pause(-5), false);
+    assert not ok and now() == 0;
+    ok = try(computed.pause(3), false);
+    assert ok and now() == 3000000;
+  }
+  test 'Backoff timer uses the new delay' of session {
+    /** Each Backoff entry doubles the delay first: 100 ms, then 200 ms, then the 400 ms cap. */
+    wait 112ms;
+    assert session.attempts == 1 and session.delayMs == 100 and session.connectedAt == 110000000;
+    wait 215ms;
+    assert session.attempts == 2 and session.delayMs == 200 and session.connectedAt == 325000000;
+    wait 415ms;
+    assert session.attempts == 3 and session.delayMs == 400 and session.connectedAt == 740000000;
+  }
+}
