@@ -25,12 +25,13 @@ export function projectOperationTiming(result: SimulationResult): {
             intervals.push(next);
             open.set(id, next);
         }
-        if (['complete', 'failure'].includes(e.kind)) {
+        // A skipped release (WP7-T01) ends its activation like a completion.
+        if (['complete', 'failure', 'skip'].includes(e.kind)) {
             const previous = open.get(id);
             if (previous)
                 previous.endNs = e.timeNs;
             open.delete(id);
         }
     }
-    return { profile: result.profile, intervals, markers: result.trace.filter(e => ['complete', 'failure', 'interrupt', 'timeout'].includes(e.kind)) };
+    return { profile: result.profile, intervals, markers: result.trace.filter(e => ['complete', 'failure', 'interrupt', 'timeout', 'skip'].includes(e.kind)) };
 }

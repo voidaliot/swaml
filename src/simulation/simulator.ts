@@ -182,6 +182,12 @@ type Frame = {
      * occurrences interleave by step, so a delivery between two reads of one segment must not change what it sees.
      */
     sampled?: Map<string, Value>;
+    /**
+     * Set when the release guard was false (WP7-R02): the activation ends as a skip, not a completion, and still counts
+     * as a successful whole completion for after successors (WP7-R03). A receive entry's consumed input is kept here to
+     * be discarded with reason releaseGuard (WP7-R04).
+     */
+    skipped?: { input?: Message };
 };
 type Watch = {
     node: a.Interruptible;
@@ -816,11 +822,20 @@ class Interpreter {
         for (const w of f.watches)
             w.active = false;
         this.unlock(f);
-        this.log(failure ? 'failure' : 'complete', this.label(f), { activation: f.id, source: failure ? this.source(f.at) : undefined, value: value ? plain(value) : undefined, reason: failure, message: failure && message !== failure ? message : undefined });
+        // A false release guard (WP7-R02, WP7-T01, WP7-T02): skip names the entry, then a receive entry's input is discarded.
+        const skipped = !failure ? f.skipped : undefined;
+        if (skipped) {
+            this.log('skip', this.label(f), { activation: f.id, source: this.source(f.entry) });
+            if (skipped.input)
+                this.log('discardInput', f.entry.endpoint!, { activation: f.id, source: skipped.input.origin, message: skipped.input.id, reason: 'releaseGuard' });
+        }
+        else
+            this.log(failure ? 'failure' : 'complete', this.label(f), { activation: f.id, source: failure ? this.source(f.at) : undefined, value: value ? plain(value) : undefined, reason: failure, message: failure && message !== failure ? message : undefined });
         if (f.correlation)
             this.respond(f.correlation, { value, failure: failure ? 'remoteFailure' : undefined, out: (f as Frame & {
                     out?: Value[];
                 }).out });
+        // A skip counts as a successful whole completion for after successors (WP7-R03); a failure releases none (WP7-R06).
         if (!failure && !f.script)
             for (const e of schedule(f.c.structure))
                 if (e.kind === 'after' && e.predecessor === f.op.name)
@@ -833,6 +848,24 @@ class Interpreter {
         const args: Value[] = [];
         for (const e of f.entry.args)
             args.push(yield* this.evaluate(e, f, env));
+        // WP7-R01: a release guard is evaluated at the first execution step, after the dispatch arguments, in their
+        // scope: under the serial lock, or for a concurrent entry on its dispatch snapshot, with sample cells and now()
+        // read live. A runtime failure inside it is an uncaught failure of the release with the entry as source (WP7-R06).
+        if (f.entry.guard) {
+            let released: Value;
+            try {
+                released = yield* this.evaluate(f.entry.guard, f, env);
+            }
+            catch (e) {
+                if (e instanceof RuntimeFault)
+                    f.at = f.entry;
+                throw e;
+            }
+            if (released.data !== true) {
+                f.skipped = { input: message };
+                return voidValue();
+            }
+        }
         const sig = signature(f.op)!;
         const outNames = f.entry.args.map((arg, i) => sig.parameters[i]?.direction === 'out' && a.isReferenceExpression(arg) ? arg.path : undefined);
         const result = yield* this.call(f.op, args, f, env, outNames);

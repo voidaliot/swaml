@@ -1306,6 +1306,10 @@ export class SwamlValidator {
             for (const expression of [e.periodValue, e.deadlineValue])
                 if (expression)
                     this.constantDuration(expression, c);
+            // A release guard belongs to every, receive and after entries (WP7-S01, WP7-D01); reported once, where written.
+            if (e.guard && (e.kind === 'start' || e.kind === 'call'))
+                this.report(e.guard, 'SW2007', 'A release guard is allowed only on every, receive and after entries.');
+            // The guard is not part of entry identity (WP7-S03): entries that differ only in their guard are duplicates.
             const k = entryKey(e);
             if (keys.has(k))
                 this.report(e, 'SW2007', 'Duplicate (trigger, operation) entry.');
@@ -1319,8 +1323,11 @@ export class SwamlValidator {
                 continue;
             }
             const env = e.endpoint ? this.inputEnv(e, this.env(c), c, e.kind === 'call') : this.env(c);
-            if (!explained.has(e))
+            if (!explained.has(e)) {
                 this.arguments(e, sig.parameters, e.args, env, c, op);
+                if (e.guard && e.kind !== 'start' && e.kind !== 'call')
+                    this.releaseGuard(e.guard, env, c, op);
+            }
             if (e.kind !== 'call' && (typeKey(sig.result) !== 'void' || sig.parameters.some(p => p.direction === 'out')))
                 this.report(e, 'SW2007', 'Only on call entries may bind results/out parameters.');
             if (e.kind === 'call') {
@@ -1368,6 +1375,31 @@ export class SwamlValidator {
         for (const op of ops)
             if (body(op)?.states.length && !entries.some(e => e.operation === op.name))
                 this.report(op, 'SW2008', 'A stateful operation needs an on start entry.');
+    }
+    /**
+     * A release guard (WP7-S02, WP7-D02): bool, pure or reading state, typed in the scope of the entry's arguments, the
+     * component's attributes, its sampled ports, now() and the entry's receive bindings, never the operation's
+     * parameters (an unresolved name keeps its existing message). A call that writes or communicates is reported here;
+     * an unresolved, remote or suspending call is reported by the call rules only (one diagnostic per cause). Like the
+     * arguments, an inherited entry's guard is typed in every effective structure, so a derived definition that
+     * redefines an attribute the guard reads gets a deterministic result before any run.
+     */
+    private releaseGuard(guard: a.Expression, env: Env, c: Structure, op: Executable): void {
+        // An inherited guard from a document that does not parse is not typed in another one: its own document reports
+        // only the syntax errors, and a valid file that specializes it gets no error for the unfinished guard.
+        const declared = AstUtils.getDocument(guard).parseResult;
+        if (declared.parserErrors.length || declared.lexerErrors.length)
+            return;
+        const type = this.infer(guard, env, c, op);
+        if (type !== 'bool' && type !== '?')
+            this.report(guard, 'SW2007', `Release guard must be bool, found ${type}.`);
+        for (const call of nodes(guard).filter(a.isCallExpression)) {
+            const target = this.callTarget(call, c);
+            if (!target || !isExecutable(target) || effects(target, c).suspends)
+                continue;
+            if (effects(target, c).writes || effects(target, c).communicates)
+                this.report(call, 'SW2007', 'Release guard must be pure or read state.');
+        }
     }
     private states(op: Executable, c: Structure | undefined, env: Env): void {
         const b = body(op)!, sig = signature(op)!;

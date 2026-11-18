@@ -525,7 +525,8 @@ export function forwardedPorts(c: Structure): Set<string> {
 }
 /**
  * The members c samples, as port.member (WP6-S01, WP6-S04, WP6-M04): every sampled read of a required attribute, with
- * an initial value, of an owned port, in the executables of c and in the arguments of its schedule entries.
+ * an initial value, of an owned port, in the executables of c and in the arguments and release guards of its schedule
+ * entries.
  */
 export function sampledMembers(c: Structure): Set<string> {
     return new Set(sampledReads(c).map(r => r.port.name + '.' + r.member.name));
@@ -533,15 +534,16 @@ export function sampledMembers(c: Structure): Set<string> {
 export type SampledRead = { node: a.ReferenceExpression; port: a.PortUsage; member: a.PortMember };
 /**
  * The sampled reads of required attributes in c (see sampledMembers), each with its port and member, in source order:
- * the bodies of its executables (nested operations included) and the arguments of its schedule entries, which are
- * evaluated at dispatch in the activation's first segment (WP6-R03). Cached for one validation pass.
+ * the bodies of its executables (nested operations included) and the arguments and release guards of its schedule
+ * entries, which are evaluated at dispatch in the activation's first segment (WP6-R03, WP7-R01). Cached for one
+ * validation pass.
  */
 export function sampledReads(c: Structure): SampledRead[] {
     const cache = effectCache?.reads, known = cache?.get(c);
     if (known)
         return known;
     const result: SampledRead[] = [];
-    const roots: AstNode[] = [...members(c).filter(isExecutable).flatMap(op => body(op) ? [body(op)!] : []), ...schedule(c).flatMap(e => e.args)];
+    const roots: AstNode[] = [...members(c).filter(isExecutable).flatMap(op => body(op) ? [body(op)!] : []), ...schedule(c).flatMap(e => e.guard ? [...e.args, e.guard] : e.args)];
     for (const root of roots)
         for (const n of nodes(root))
             if (a.isReferenceExpression(n)) {
@@ -556,7 +558,7 @@ export function sampledReads(c: Structure): SampledRead[] {
  * Whether a local, parameter, loop variable or input binding named name is visible at node n (chapter 1.3, WP6-S01),
  * by the scope rules the validator types with: parameters of the nearest executable (a nested operation captures no
  * enclosing local), locals declared earlier in an enclosing block, a for local in its condition, update and body, a
- * for-in element in its body, the bindings of a receive or call schedule entry in its arguments, of a receive branch
+ * for-in element in its body, the bindings of a receive or call schedule entry in its arguments and release guard, of a receive branch
  * in its body, of an interrupt region in its handler and of a receive transition in its guard and effect.
  */
 export function localVisible(n: AstNode, name: string): boolean {
