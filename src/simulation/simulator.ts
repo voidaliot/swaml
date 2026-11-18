@@ -107,6 +107,14 @@ type Yield = {
     timeout?: number;
 };
 type Iterator = Generator<Yield, Value, Reply | undefined>;
+/**
+ * An out value that was never assigned (an unanswered on call out binding, copied back to its caller) is a
+ * placeholder without fields or elements; selecting into it is the runtime failure Type, not a host error.
+ */
+function unassigned(v: Value | undefined, path: string): asserts v is Value {
+    if (!v || v.data === null || typeof v.data !== 'object')
+        throw new RuntimeFault('Type', `${path} has no assigned value to select from`);
+}
 type Component = {
     path: string;
     structure: Structure;
@@ -495,14 +503,13 @@ class Interpreter {
         for (const step of steps) {
             parent = current;
             if (step.field !== undefined) {
-                // An unassigned out binding of a case holds a placeholder zero; a field write fills in a zero record.
-                if (current.data === null || typeof current.data !== 'object')
-                    current.data = this.zeroRecord(current.type).data;
+                unassigned(current, place);
                 key = step.field;
                 current = (current.data as Record<string, Value>)[step.field];
                 place += '.' + step.field;
                 continue;
             }
+            unassigned(current, place);
             const index = indexes[i++], array = current.data as Value[];
             if (!Number.isSafeInteger(index) || index < 0 || index >= array.length)
                 throw new RuntimeFault('Bounds');
@@ -776,13 +783,6 @@ class Interpreter {
                 this.assign(f, caller, outNames[i]!, local.get(p.name)!.value); });
         return result;
     }
-    /** A record of zero fields, for a place write into a placeholder zero record. */
-    private zeroRecord(type: string): Value {
-        const d = this.models.flatMap(m => m.packages.flatMap(p => p.elements)).find((x): x is a.DataType => a.isDataType(x) && identity(x) === type);
-        if (!d)
-            throw new RuntimeFault('Type', `${type} is not a record`);
-        return { type, data: Object.fromEntries(d.fields.map(x => { const t = typeKey(x.type), z = this.zero(t); return [x.name, z.data === 0 && this.models.some(m => m.packages.some(p => p.elements.some(e => a.isDataType(e) && identity(e) === t))) ? this.zeroRecord(t) : z]; })) };
-    }
     private zero(type: string): Value { if (type === 'bool')
         return scalar(type, false); if (type === 'string')
         return scalar(type, ''); if (type === 'void')
@@ -815,6 +815,7 @@ class Interpreter {
             }
             // Selectors apply left to right; each index is evaluated, checked and applied in turn (WP1-R04).
             for (const step of steps) {
+                unassigned(value, e.path);
                 if (step.field !== undefined) {
                     value = (value.data as Record<string, Value>)[step.field];
                     continue;

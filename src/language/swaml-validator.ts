@@ -321,15 +321,25 @@ export class SwamlValidator {
             }
         }
     }
-    private outFlow(op: Executable, c?: Structure): void {
-        const outs = signature(op)!.parameters.filter(p => p.direction === 'out').map(p => p.name), check = (at: AstNode, assigned: Set<string>) => { for (const name of outs)
+    /**
+     * Definite assignment of out parameters, or of the out bindings of an on call branch of a case script
+     * (binding). For a binding only the 2.3 checks apply (WP1-S07): a place write, and a read with
+     * selectors, need the whole binding assigned first; 2.2 reads and replies keep their 2.2 rules.
+     */
+    private outFlow(op: Executable | undefined, c?: Structure, binding?: { outs: string[]; body: a.Block }): void {
+        const outs = binding ? binding.outs : signature(op!)!.parameters.filter(p => p.direction === 'out').map(p => p.name), check = (at: AstNode, assigned: Set<string>) => { if (binding) return; for (const name of outs)
             if (!assigned.has(name))
                 this.report(at, 'SW2006', 'Out parameter ' + name + ' must be assigned before successful return.'); };
+        const what = binding ? 'Out binding' : 'Out parameter';
         const read = (e: a.Expression | undefined, assigned: Set<string>): void => {
             if (!e)
                 return;
-            if (a.isReferenceExpression(e) && outs.includes(e.path.split('.')[0]) && !assigned.has(e.path.split('.')[0]))
-                this.report(e, 'SW2006', 'Out parameter is read before assignment.');
+            if (a.isReferenceExpression(e) && outs.includes(e.path.split('.')[0]) && !assigned.has(e.path.split('.')[0])) {
+                if (!binding)
+                    this.report(e, 'SW2006', 'Out parameter is read before assignment.');
+                else if ((e.selectors ?? []).length)
+                    this.report(e, 'SW2006', `${what} ${e.path.split('.')[0]} must be assigned before ${this.placeText(e)} is read.`);
+            }
             if (a.isCallExpression(e)) {
                 const target = this.callTarget(e, c), params = target ? (isExecutable(target) ? signature(target)?.parameters : target.parameters) : [];
                 e.args.forEach((arg, i) => { if (params?.[i]?.direction !== 'out')
@@ -378,7 +388,7 @@ export class SwamlValidator {
                     read(stmt.value, assigned);
                     const root = placeRoot(stmt.target);
                     if (outs.includes(root) && !assigned.has(root))
-                        this.report(stmt, 'SW2006', `Out parameter ${root} must be assigned before ${this.placeText(stmt)} is assigned.`, false, this.at(stmt, 'target'));
+                        this.report(stmt, 'SW2006', `${what} ${root} must be assigned before ${this.placeText(stmt)} is assigned.`, false, this.at(stmt, 'target'));
                 }
                 else if (a.isAssign(stmt)) {
                     read(stmt.value, assigned);
@@ -438,8 +448,8 @@ export class SwamlValidator {
             }
             return assigned;
         };
-        const end = flow(body(op)!, new Set());
-        if (end)
+        const end = flow(binding ? binding.body : body(op!)!, new Set());
+        if (end && op)
             check(op, end);
     }
     private callTarget(call: a.CallExpression, c?: Structure): Executable | a.PortMember | undefined {
@@ -790,6 +800,10 @@ export class SwamlValidator {
                     const answered = caseTarget(this.script.scenario, br.endpoint), saved = this.script.reply, result = answered?.kind === 'port' ? typeKey(answered.member.result) : '?';
                     this.script.reply = result;
                     this.block(br.body, input, c, op);
+                    // An on call out binding is a place root only after a whole assignment (WP1-S07).
+                    const outs = answered?.kind === 'port' ? answered.member.parameters.flatMap((p, i) => p.direction === 'out' && br.bindings[i] ? [br.bindings[i]] : []) : [];
+                    if (outs.length)
+                        this.outFlow(undefined, c, { outs, body: br.body });
                     this.script.reply = saved;
                     if (result !== 'void' && result !== '?' && !this.terminates(br.body))
                         this.report(br, 'SW2006', `An on call branch for ${br.endpoint} must return a ${result} reply or fail on every path.`);

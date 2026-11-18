@@ -392,7 +392,7 @@ test('case scripts assign places rooted in their own locals and on call out bind
   test Sampled of unit {
     var readings: Reading[2] = [record Reading { value = 1; flags = [false, false]; }, record Reading { value = 2; flags = [false, false]; }];
     readings[1].flags[1] = true;
-    on call sensor.probe.sample(r) { r.value = readings[1].value + 40; r.flags[1] = readings[1].flags[1]; }
+    on call sensor.probe.sample(r) { r = readings[0]; r.value = readings[1].value + 40; r.flags[1] = readings[1].flags[1]; }
     wait 1ms;
     assert unit.last == 142;
   }
@@ -403,6 +403,44 @@ test('case scripts assign places rooted in their own locals and on call out bind
     assert.equal(result.result, 'pass', result.message);
     const place = writes(result.run!.trace).filter(w => w.place).map(w => [w.subject, w.place]);
     assert.deepEqual(place, [['Bench::Sampled.readings', 'readings[1].flags[1]'], ['Bench::Sampled.r', 'r.value'], ['Bench::Sampled.r', 'r.flags[1]']]);
+    // WP1-S07 WP1-D02: an on call out binding is a place root, or read with selectors, only after a whole assignment.
+    for (const [body, message] of [
+        ['r.value = 5;', 'Out binding r must be assigned before r.value is assigned.'],
+        ['r.value = r.value + 1;', 'Out binding r must be assigned before r.value is assigned.'],
+        ['if (true) { r = readings[0]; } r.flags[0] = true;', 'Out binding r must be assigned before r.flags[0] is assigned.'],
+    ]) {
+        const found = (await parse(source.replace('{ r = readings[0]; r.value = readings[1].value + 40; r.flags[1] = readings[1].flags[1]; }', `{ ${body} }`))).errors.map(e => [e.code, e.message]);
+        assert.ok(found.some(([code, m]) => code === 'SW2006' && m === message), body + ' ' + JSON.stringify(found));
+    }
+    // 2.2 forms keep their 2.2 rules: an empty handler and a 2.2 read of an unassigned binding stay valid.
+    for (const body of ['', 'var v: int = r.value; r = readings[0];'])
+        await valid(source.replace('{ r = readings[0]; r.value = readings[1].value + 40; r.flags[1] = readings[1].flags[1]; }', `{ ${body} }`));
+});
+
+test('an unassigned out value read through a field is the runtime failure Type, not a host error (review F2)', async () => {
+    // A 2.2 source: the handler leaves its out binding unassigned and the caller reads a field of the reply.
+    const source = `package Bench {
+  datatype Reading { value: int; flags: bool[2]; }
+  port def Probe { provides operation sample(out r: Reading); }
+  component def Unit { reversed port probe: Probe; attribute last: int = 0;
+    operation poll() { var r: Reading = record Reading { value = 0; flags = [false, false]; }; probe.sample(r); last = r.value; }
+    schedule { on start poll(); } }
+  component def Sensor { port probe: Probe; }
+  component unit: Unit;
+  component sensor: Sensor;
+  connect (unit.probe, sensor.probe);
+  test Unanswered of unit {
+    on call sensor.probe.sample(r) { }
+    wait 1ms;
+    assert unit.last == 0;
+  }
+  associate sensor to Unanswered;
+}`;
+    const r = await valid(source);
+    const result = runCase([r.model], 'Bench::Unanswered', { untilNs: 2000000 });
+    const failure = result.run!.trace.find(t => t.kind === 'failure') as unknown as { subject: string; reason: string } | undefined;
+    assert.deepEqual([failure?.subject, failure?.reason], ['unit.poll', 'Type']);
+    assert.equal(result.run!.stores.unit.last, 0);
 });
 
 // ---------------------------------------------------------------- tools
