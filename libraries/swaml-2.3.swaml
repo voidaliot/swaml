@@ -17,7 +17,7 @@ package Swaml::Time {
   operation def now() returns uint { /** Host intrinsic: the logical time of the evaluating step in nanoseconds since the run epoch; reads state. */ }
 }
 package Swaml::Os {
-  /** Cores and operating-system tasks of a deployment platform (swa.ml 2.3). The values are design decisions checked statically (T1 to T7); costs and budgets belong to a target binding. With zero-cost steps a run orders equal-time work by priority and in-task position only; kind, preemptive and responseNs have no runtime effect. */
+  /** Cores and operating-system tasks of a deployment platform (swa.ml 2.3). The values are design decisions checked statically (T1 to T7); costs and budgets belong to a target binding. With zero-cost steps a run orders equal-time work by priority and in-task position, but never preempts: an activation runs on its Core until it waits or ends before the next one of that Core starts. Preemption and response times belong to the target and its binding; kind, preemptive and responseNs have no runtime effect. */
   import Swaml::Platform;
   enum TaskKind {
     basic,

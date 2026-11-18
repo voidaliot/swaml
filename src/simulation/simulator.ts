@@ -264,7 +264,7 @@ type Event = {
  * The ordering key of an activation on a Swaml::Os Task (WP8-R01): its Task's priority, the Task's declaration
  * rank on the platform and the entry's in-task position (WP8-M01).
  */
-export type RunKey = { priority: number; rank: number; position: number; task: string };
+export type RunKey = { priority: number; rank: number; position: number; task: string; core: string };
 /**
  * WP8-R01: at equal time and phase, descending Task priority (unplaced at priority 0), then activations on a Task
  * before unplaced ones of equal priority, then, on the same Task, in-task position; then the insertion ordinal. Two
@@ -511,6 +511,15 @@ class Interpreter {
     /** WP8-R01: the ordering key of each entry on a Swaml::Os Task, per component occurrence. */
     private keys = new Map<Component, Map<a.ScheduleEntry, RunKey>>();
     private tasked = false;
+    /**
+     * WP8-R02: with Tasks, the not completed activations in dispatch-scan order (ascending keys, release order among
+     * equal keys), kept sorted on release instead of sorting at every pump. Without Tasks the scan uses frames.
+     */
+    private ordered: Frame[] = [];
+    /** WP8-R02: the activation that runs on each Core (RunKey.core) from its dispatch or resumption to its next wait or end. */
+    private running = new Map<string, Frame>();
+    /** WP8-R01: entries already numbered on each Task by the deployments applied so far (platform identity|Task path). */
+    private taskEntries = new Map<string, number>();
     private time = 0;
     private steps = 0;
     private serial = 0;
@@ -536,7 +545,7 @@ class Interpreter {
         const s = this.script!, c: Component = { path: identity(s), structure: s.subject!.ref!, store: new Map() };
         const f: Frame = { id: this.id('a'), c, op: undefined!, entry: { concurrent: false } as a.ScheduleEntry, released: this.time, iterator: undefined!, snapshot: new Map(), done: false, suspended: false, started: false, token: 0, watches: [], script: s, at: s };
         f.iterator = this.scriptBody(f);
-        this.frames.add(f);
+        this.addFrame(f);
         this.unstarted++;
         this.caseFrame = f;
         this.log('release', c.path, { activation: f.id, cause: 'case' });
@@ -743,17 +752,24 @@ class Interpreter {
             this.deployments[path] = matches[0] ? `${identity(d.platform.ref!)}.${matches[0].node}` : null;
         }
         // WP8-R01: entries on Swaml::Os Tasks take their Task's priority and their in-task position. A platform without
-        // Tasks adds no key, so the run keeps its 2.2 order.
+        // Tasks adds no key, so the run keeps its 2.2 order. When two deployments place work on one Task, the entries of
+        // the deployment applied later (the run applies its roots in declaration order) follow those applied earlier.
         const plan = deploymentPlan(d);
-        if (plan?.taskRules)
-            for (const e of plan.entries) {
-                const c = this.components.get(e.occurrence.path);
-                if (!c || !e.task || e.position === undefined)
-                    continue;
-                this.tasked = true;
-                const forComponent = this.keys.get(c) ?? this.keys.set(c, new Map()).get(c)!;
-                forComponent.set(e.entry, { priority: Number(e.task.priority ?? 0n), rank: e.task.rank, position: e.position, task: e.task.path });
-            }
+        if (!plan?.taskRules)
+            return;
+        const platform = identity(d.platform.ref!), counts = new Map<string, number>();
+        for (const e of plan.entries) {
+            const c = this.components.get(e.occurrence.path);
+            if (!c || !e.task || e.position === undefined)
+                continue;
+            this.tasked = true;
+            const id = `${platform}|${e.task.path}`, offset = this.taskEntries.get(id) ?? 0;
+            counts.set(id, Math.max(counts.get(id) ?? 0, e.position + 1));
+            const forComponent = this.keys.get(c) ?? this.keys.set(c, new Map()).get(c)!;
+            forComponent.set(e.entry, { priority: Number(e.task.priority ?? 0n), rank: e.task.rank, position: offset + e.position, task: e.task.path, core: `${platform}|${e.task.core}` });
+        }
+        for (const [id, n] of counts)
+            this.taskEntries.set(id, (this.taskEntries.get(id) ?? 0) + n);
     }
     private sync(g: Iterator): Value { let r = g.next(); while (!r.done && r.value.kind === 'step')
         r = g.next(); if (!r.done)
@@ -767,7 +783,7 @@ class Interpreter {
         if (key)
             f.key = key;
         f.iterator = this.activate(f, message);
-        this.frames.add(f);
+        this.addFrame(f);
         this.unstarted++;
         // The Task of an activation on a Swaml::Os Task, for Task lanes (WP8-M04); absent otherwise.
         this.log('release', `${c.path}.${op.name}`, { activation: f.id, source: this.source(entry), cause: entry.kind, predecessorActivation: predecessor?.id, ...(key ? { task: key.task } : {}) });
@@ -785,14 +801,42 @@ class Interpreter {
             known.set(entry, entryDeadline(entry, c.structure));
         return known.get(entry);
     }
+    /** Adds a released activation; with Tasks also to the key-ordered scan, after every activation of an equal or lower key. */
+    private addFrame(f: Frame): void {
+        this.frames.add(f);
+        if (!this.tasked)
+            return;
+        const list = this.ordered;
+        let lo = 0, hi = list.length;
+        while (lo < hi) {
+            const mid = (lo + hi) >> 1;
+            if (compareKeys(list[mid].key, f.key) <= 0)
+                lo = mid + 1;
+            else
+                hi = mid;
+        }
+        list.splice(lo, 0, f);
+    }
+    /** WP8-R02: the Core of an activation on a Task is free again when that activation waits or ends. */
+    private leaveCore(f: Frame): void {
+        if (f.key && this.running.get(f.key.core) === f)
+            this.running.delete(f.key.core);
+    }
     private pump(): void {
         this.consume();
         // WP8-R01: dispatches and ready continuations follow the ordering keys; without Tasks, the release order.
-        for (const f of this.tasked ? [...this.frames].sort((x, y) => compareKeys(x.key, y.key)) : this.frames) {
+        // WP8-R02: an activation on a Task holds its Core from dispatch or resumption to its next wait or end, so no other
+        // activation of that Core is dispatched or continued in between, whatever its key (no preemption).
+        for (const f of this.tasked ? this.ordered : this.frames) {
             if (f.done || f.suspended || (f as Frame & {
                 queued?: boolean;
             }).queued || (!f.entry.concurrent || !f.started) && f.c.lock && f.c.lock !== f)
                 continue;
+            const holder = f.key && this.running.get(f.key.core);
+            if (holder && holder !== f)
+                continue;
+            if (f.key)
+                this.running.set(f.key.core, f);
             if (f.entry.concurrent && !f.started && this.concurrent(f.c) >= this.options.maxConcurrent)
                 throw new ContractViolation('ConcurrentOverflow');
             if (!f.started) {
@@ -850,6 +894,7 @@ class Interpreter {
             f.waiting = y;
             f.suspended = true;
             this.unlock(f);
+            this.leaveCore(f);
             const token = ++f.token;
             // A computed wait or receive timeout records its evaluated value; literal ones add nothing (WP4-T01).
             this.log(y.kind === 'request' ? 'requestWait' : y.kind === 'receive' ? 'receiveWait' : 'wait', this.label(f), { activation: f.id, source: this.source(f.at), ...(y.kind !== 'request' && y.durationNs !== undefined ? { durationNs: y.durationNs } : {}) });
@@ -872,6 +917,12 @@ class Interpreter {
         f.done = true;
         if (this.frames.delete(f) && !f.started)
             this.unstarted--;
+        if (this.tasked) {
+            const i = this.ordered.indexOf(f);
+            if (i >= 0)
+                this.ordered.splice(i, 1);
+            this.leaveCore(f);
+        }
         if (failure)
             f.failure = { code: failure, message: message ?? failure };
         f.suspended = false;

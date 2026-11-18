@@ -285,11 +285,11 @@ test('WP8-R01 equal-time releases and dispatches follow priority, then placed be
     const plain = await runOf(ONE()('component n: Process;', 'deploy on n;'), 10000000);
     assert.equal(plain.stores['Demo.x'].log, 1231);
     const tasked = await runOf(ONE()(`${slow} ${fast} ${events}`, 'deploy s on slow; deploy x.b on slow; deploy x on slow; deploy x.c on fast; deploy x.take on events;'), 10000000);
-    // c (priority 5) first; then slow in deploy order (s, b, a) except that take, released by s's event at the same
-    // instant with the events task's priority 3, overtakes a, which still waits for the lock.
-    assert.equal(tasked.stores['Demo.x'].log, 3211);
+    // c (priority 5) first; then slow in deploy order (s, b, a). take, released by s's event while s runs on the same
+    // (implicit) Core, waits until s ends (no preemption, WP8-R02); then its priority 3 puts it before b and a.
+    assert.equal(tasked.stores['Demo.x'].log, 3121);
     assert.deepEqual(kinds(tasked.trace, 'release').filter(o => o.timeNs === 10000000).map(o => [o.subject, o.task]), [['Demo.x.c', 'hw.fast'], ['Demo.s.tick', 'hw.slow'], ['Demo.x.b', 'hw.slow'], ['Demo.x.a', 'hw.slow'], ['Demo.x.take', 'hw.events']]);
-    assert.deepEqual(kinds(tasked.trace, 'dispatch').filter(o => o.timeNs === 10000000).map(o => o.subject), ['Demo.x.c', 'Demo.s.tick', 'Demo.x.b', 'Demo.x.take', 'Demo.x.a']);
+    assert.deepEqual(kinds(tasked.trace, 'dispatch').filter(o => o.timeNs === 10000000).map(o => o.subject), ['Demo.x.c', 'Demo.s.tick', 'Demo.x.take', 'Demo.x.b', 'Demo.x.a']);
     // Placed before unplaced at equal priority: in a package run, the root without a deployment is unplaced, so the
     // deployed root's entry on a priority-0 task is released first although the other root is declared first.
     const pkg = await valid(`package Test {
@@ -355,6 +355,92 @@ test('WP8-R02 kind, preemptive and responseNs do not change a run; Timing groups
     // Without tasks no interval has a lane and no release has a task.
     const plain = await runOf(ONE()('component n: Process;', 'deploy on n;'));
     assert.ok(projectOperationTiming(plain).intervals.every(i => !('task' in i)) && kinds(plain.trace, 'release').every(o => !('task' in o)));
+});
+
+test('WP8-R02 (review F1) no preemption: a dispatched activation runs until it waits or ends before anything else of its Core', async () => {
+    // The reviewer's model: L (priority 1, non-preemptive) publishes to H (priority 9) and then to C; H publishes to C.
+    const preempt = (tasks: string, deploys: string) => `package Test {
+  import Swaml::Platform;
+  import Swaml::Os;
+  port def P { provides event e(n: int); }
+  component def L { port toH: P; port toC: P; operation l() { publish toH.e(1); publish toC.e(3); } schedule { on every 10ms l(); } }
+  component def H { reversed port inp: P; port toC: P; operation h(v: int) { publish toC.e(2); } schedule { on receive inp.e(v) h(v); } }
+  component def C { reversed port a: P; reversed port b: P; attribute log: int = 0;
+    operation fromL(v: int) { log = log * 10 + v; } operation fromH(v: int) { log = log * 10 + v; }
+    schedule { on receive a.e(v) fromL(v); on receive b.e(v) fromH(v); } }
+  component def App { component lo: L; component hi: H; component c: C; connect (lo.toH, hi.inp); connect (lo.toC, c.a); connect (hi.toC, c.b); }
+  component def Ecu specializes Node { ${tasks} }
+  component app: App;
+  component ecu: Ecu;
+  deployment D of app on ecu { ${deploys} }
+}`;
+    const run = async (source: string) => { const r = await valid(source); return simulate([r.model], 'Test::app', { untilNs: 10000000 }); };
+    const publishes = (r: { trace: Observation[] }) => kinds(r.trace, 'publish').map(o => o.subject);
+    const oneCore = (low: TaskSpec, high: TaskSpec) => preempt(`${task('low', { priority: 1, periodNs: '10ms', ...low })} ${task('high', { priority: 9, ...high })} ${task('sink', { priority: 50 })}`, 'deploy lo on low; deploy hi on high; deploy c on sink;');
+    // On plain Nodes (2.2 order) L runs to completion first: log 32.
+    const nodes = await run(preempt('component n1: Process; component n2: Process; component n3: Process;', 'deploy lo on n1; deploy hi on n2; deploy c on n3;'));
+    assert.equal(nodes.stores['app.c'].log, 32);
+    // On Tasks of one Core the same holds whatever the priorities and preemptive say: H (priority 9), released by L's
+    // first publish, is dispatched only after L ends; then C's first activation (priority 50) before H.
+    const tasked = await run(oneCore({ preemptive: false }, { kind: 'basic', preemptive: true }));
+    assert.equal(tasked.stores['app.c'].log, 32);
+    assert.deepEqual(publishes(tasked), ['app.lo.toH.e', 'app.lo.toC.e', 'app.hi.toC.e']);
+    assert.deepEqual(kinds(tasked.trace, 'dispatch').map(o => o.subject), ['app.lo.l', 'app.c.fromL', 'app.hi.h', 'app.c.fromH']);
+    // Swapped priorities: the low-priority H is still not dispatched inside L.
+    const swapped = await run(preempt(`${task('low', { priority: 9, periodNs: '10ms' })} ${task('high', { priority: 1 })} ${task('sink', { priority: 50 })}`, 'deploy lo on low; deploy hi on high; deploy c on sink;'));
+    assert.equal(swapped.stores['app.c'].log, 32);
+    assert.deepEqual(kinds(swapped.trace, 'dispatch').map(o => o.subject), ['app.lo.l', 'app.c.fromL', 'app.hi.h', 'app.c.fromH']);
+    // kind, preemptive and responseNs change nothing (WP8-R02).
+    const digest = (r: { trace: unknown[] }) => createHash('sha256').update(JSON.stringify(r.trace).replace(/file:[^"]*/gu, '')).digest('hex');
+    const other = await run(oneCore({ preemptive: true, kind: 'extended', responseNs: '1ms' }, { kind: 'extended', preemptive: false }));
+    assert.equal(digest(other), digest(tasked));
+    // Different Cores are independent: H and C on another Core are dispatched as soon as they are released and, with
+    // higher keys, their statements run before L's next one at that instant, so C sees H first: log 23.
+    const twoCores = await run(preempt(`component k0: Core { ${task('low', { priority: 1, periodNs: '10ms' })} } component k1: Core { ${task('high', { priority: 9 })} ${task('sink', { priority: 50 })} }`, 'deploy lo on k0.low; deploy hi on k1.high; deploy c on k1.sink;'));
+    assert.equal(twoCores.stores['app.c'].log, 23);
+    assert.deepEqual(kinds(twoCores.trace, 'dispatch').map(o => o.subject), ['app.lo.l', 'app.hi.h', 'app.c.fromH', 'app.c.fromL']);
+});
+
+test('WP8-R02 a waiting activation frees its Core; a resumed one waits for the Core like a dispatch', async () => {
+    const source = (board: string, deploys: string) => `package Test {
+  import Swaml::Platform;
+  import Swaml::Os;
+  port def P { provides event e(n: int); }
+  component def H { reversed port inp: P; port toC: P; operation h() { on receive inp.e(v) { publish toC.e(2); } } schedule { on start h(); } }
+  component def L { port toH: P; port toC: P; operation l() { publish toH.e(1); publish toC.e(3); } schedule { on every 10ms l(); } }
+  component def C { reversed port a: P; reversed port b: P; attribute log: int = 0;
+    operation fromL(v: int) { log = log * 10 + v; } operation fromH(v: int) { log = log * 10 + v; }
+    schedule { on receive a.e(v) fromL(v); on receive b.e(v) fromH(v); } }
+  component Demo { component hi: H; component lo: L; component c: C; connect (lo.toH, hi.inp); connect (lo.toC, c.a); connect (hi.toC, c.b); }
+  component def Board specializes Node { ${board} }
+  component hw: Board;
+  deployment D of Demo on hw { ${deploys} }
+}`;
+    // H (extended, priority 9) waits in a receive statement from 0; L's first publish at 10 ms resumes it while L runs on
+    // the same Core, so H continues only after L ends: C logs 3 before 2.
+    const one = await runOf(source(`${task('ext', { kind: 'extended', priority: 9 })} ${task('low', { priority: 1, periodNs: '10ms' })} ${task('sink', { priority: 50 })}`, 'deploy hi on ext; deploy lo on low; deploy c on sink;'));
+    assert.equal(one.stores['Demo.c'].log, 32);
+    // With H and C on another Core, H's continuation and C run at once, before L's second publish: 23.
+    const two = await runOf(source(`component k0: Core { ${task('low', { priority: 1, periodNs: '10ms' })} } component k1: Core { ${task('ext', { kind: 'extended', priority: 9 })} ${task('sink', { priority: 50 })} }`, 'deploy hi on k1.ext; deploy lo on k0.low; deploy c on k1.sink;'));
+    assert.equal(two.stores['Demo.c'].log, 23);
+});
+
+test('WP8-R01 (review F12) entries of two deployments on one Task follow the roots in declaration order, then in-task position', async () => {
+    const pkg = await valid(`package Test {
+  import Swaml::Platform;
+  import Swaml::Os;
+  component def K { attribute n: int = 0; operation p() { n = n + 1; } operation q() { n = n + 2; } schedule { on every 10ms p(); on every 10ms q(); } }
+  component def Z { attribute n: int = 0; operation z() { n = n + 1; } schedule { on every 10ms z(); } }
+  component first: K;
+  component second: Z;
+  component def Board specializes Node { ${task('t', { priority: 1 })} }
+  component hw: Board;
+  deployment D2 of second on hw { deploy on t; }
+  deployment D1 of first on hw { deploy on t; }
+}`);
+    const run = simulate([pkg.model], 'Test', { untilNs: 10000000 });
+    // Positions per deployment would be p 0, q 1, z 0 and give p, z, q.
+    assert.deepEqual(kinds(run.trace, 'dispatch').map(o => o.subject), ['first.p', 'first.q', 'second.z']);
 });
 
 test('WP8-M06 operation placements are references: rename of the operation and occurrence updates the deploy path', async () => {
