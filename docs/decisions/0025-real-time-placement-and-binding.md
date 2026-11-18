@@ -176,7 +176,7 @@ It computes no schedule in 2.3.
 - **Plan cost (review F5).** The plan indexes placements by path and walks each occurrence's ancestors once, so it is linear in occurrences, entries and placements; on a platform without `Swaml::Os` the validator reads only the placement kinds and the entries are never computed.
 - **Binding.** `spec/binding.schema.json` and the checker's `BINDING_SHAPE` (every property with its type and range) are kept equal by a unit test; no schema library is added. The schema id is `swaml-binding/1`; a root-level finding has the pointer `""` in text and JSON. Findings are `error|finding {pointer} {identity}: {reason}.`; exit codes 0, 1 and 2 as in the release draft.
 - **Proof.** Example 52 is the door deployment: ComMain's main functions on the 20 ms task of core 1 and its receive entries on the CAN interrupt and an event task of the same Core, rxMainFunction first by deploy order, a higher-priority 10 ms supervision and NvM on the extended background task. Its cases fail when the deploy order or the priorities are swapped, and the obvious misplacements (a receive entry on the 20 ms task, NvM on a basic task, ComMain across Cores, equal priorities, a deadline below a response bound) are rejected.
-- **Open.** The General view does not yet draw operation placements: the language projection has no deployment projection, and the drawing belongs to the consuming tools (WP8-M04, second sentence).
+- **Open.** The General view does not yet draw operation placements: the language projection has no deployment projection, and the drawing belongs to the consuming tools (WP8-M04, second sentence, now marked as a consumer obligation; the release draft lists what the extension must do, review F7).
 
 ## Alternatives rejected
 
