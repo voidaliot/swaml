@@ -947,8 +947,14 @@ class Interpreter {
         // A skip counts as a successful whole completion for after successors (WP7-R03); a failure releases none (WP7-R06).
         if (!failure && !f.script)
             for (const e of schedule(f.c.structure))
-                if (e.kind === 'after' && e.predecessor === f.op.name)
-                    this.at(this.time, 2, () => this.release(f.c, e, undefined, f), undefined, this.keyOf(f.c, e));
+                if (e.kind === 'after' && e.predecessor === f.op.name) {
+                    // WP8-R02: with Tasks a successor is released in its predecessor's completion step (OSEK chaining),
+                    // so that it competes for the freed Core with the work already released at this instant.
+                    if (this.tasked)
+                        this.release(f.c, e, undefined, f);
+                    else
+                        this.at(this.time, 2, () => this.release(f.c, e, undefined, f), undefined, this.keyOf(f.c, e));
+                }
     }
     private *activate(f: Frame, message?: Message): Iterator {
         const env: Environment = new Map();

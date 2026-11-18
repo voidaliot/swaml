@@ -4,7 +4,7 @@ import nodeTest from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { EmptyFileSystem } from 'langium';
+import { EmptyFileSystem, URI } from 'langium';
 import { parseHelper } from 'langium/test';
 import { createSwamlServices } from '../../src/language/swaml-module.js';
 import { formatDocument } from '../../src/language/formatter.js';
@@ -380,6 +380,11 @@ test('WP8-S02 (review F8 X1, F14) a family path is the last occurrence segment; 
   component hw: Board;
   deployment D of Demo on hw { ${deploys} }
 }`;
+    // An indexed occurrence path overrides its family path, whatever the deploy order (review mutation M4).
+    for (const deploys of ['deploy on t; deploy leaves[1] on u; deploy leaves on t;', 'deploy on t; deploy leaves on t; deploy leaves[1] on u;']) {
+        const indexed = deploymentPlan((await valid(source(deploys))).model.packages[0].elements.find(a.isDeployment)!)!;
+        assert.deepEqual([...new Set(indexed.entries.filter(e => e.task?.path === 'hw.u').map(e => e.occurrence.path))], ['Demo.leaves[1]', 'Demo.leaves[1].child'], deploys);
+    }
     const r = await valid(source('deploy on t; deploy leaves.a on u;'));
     const plan = deploymentPlan(r.model.packages[0].elements.find(a.isDeployment)!)!;
     assert.deepEqual(plan.entries.filter(e => e.task?.path === 'hw.u').map(e => e.occurrence.path), ['Demo.leaves[0]', 'Demo.leaves[1]']);
@@ -436,6 +441,10 @@ test('WP8-R01 equal-time releases and dispatches follow priority, then placed be
     // although b's release was scheduled first. Without the delivery key b would run first (221).
     const latent = await valid(ONE('on every 10ms b(); on receive inp.e(v) take(v);')(`${slow} ${task('ev', { priority: 3 })}`, 'deploy s on slow; deploy x on slow; deploy x.take on ev;'));
     assert.equal(simulate([latent.model], 'Test::Demo', { untilNs: 20000000, latencyNs: 10000000 }).stores['Demo.x'].log, 212);
+    // With the source on another Core nothing else takes x's Core first, so only the delivery key puts take before b
+    // (review mutation M9: with the Core lock the same-Core variant above no longer depends on it).
+    const remote = await valid(ONE('on every 10ms b(); on receive inp.e(v) take(v);')(`component k0: Core { ${slow} ${task('ev', { priority: 3 })} } component k1: Core { ${task('src', { priority: 1, periodNs: '10ms' })} }`, 'deploy s on k1.src; deploy x on k0.slow; deploy x.take on k0.ev;'));
+    assert.equal(simulate([remote.model], 'Test::Demo', { untilNs: 20000000, latencyNs: 10000000 }).stores['Demo.x'].log, 212);
 });
 
 test('WP8-R01 equal priority on different Cores follows the task declaration rank; ready continuations keep their keys', async () => {
@@ -570,6 +579,53 @@ test('WP8-R01 (review F12) entries of two deployments on one Task follow the roo
     assert.deepEqual(kinds(run.trace, 'dispatch').map(o => o.subject), ['first.p', 'first.q', 'second.z']);
 });
 
+test('WP8-R01 (review F8 X7 to X10) start releases, after releases, request expiries and receive timeouts carry their keys', async () => {
+    const pkg = (types: string, demo: string, board: string, deploys: string) => `package Test {
+  import Swaml::Platform;
+  import Swaml::Os;
+  import Swaml::Qos;
+  port def P { provides event e(n: int); }
+  port def R { requires operation ask() returns int; }
+  ${types}
+  component Demo { ${demo} }
+  component def Board specializes Node { ${board} }
+  component hw: Board;
+  deployment D of Demo on hw { ${deploys} }
+}`;
+    // X7: two on start entries; the priority-9 one is released and runs first although declared second.
+    const starts = await runOf(pkg(`component def A { port o: P; operation s() { publish o.e(1); } schedule { on start s(); } }
+  component def B { port o: P; operation s() { publish o.e(2); } schedule { on start s(); } }
+  component def C { reversed port a: P; reversed port b: P; attribute log: int = 0; operation fa(v: int) { log = log * 10 + v; } operation fb(v: int) { log = log * 10 + v; } schedule { on receive a.e(v) fa(v); on receive b.e(v) fb(v); } }`,
+    'component x: A; component y: B; component c: C; connect (x.o, c.a); connect (y.o, c.b);', `${task('lo', { priority: 1 })} ${task('hi', { priority: 9 })} ${task('sink', { priority: 50 })}`, 'deploy x on lo; deploy y on hi; deploy c on sink;'), 1000000);
+    assert.deepEqual(kinds(starts.trace, 'release').slice(0, 2).map(o => o.subject), ['Demo.y.s', 'Demo.x.s']);
+    assert.equal(starts.stores['Demo.c'].log, 21);
+    // X8: at 20 ms the after successor b (priority 9) and the delivery of a's 10 ms publish (latency 10 ms, take on a
+    // priority-5 task) are both released when a ends; b's key puts it first although the delivery was scheduled earlier.
+    const chain = await valid(pkg(`component def X { port out: P; attribute n: int = 0; operation a() { publish out.e(1); } operation b() { n = n + 1; } schedule { on every 10ms a(); after a b(); } }
+  component def Y { reversed port inp: P; attribute n: int = 0; operation take(v: int) { n = n + v; } schedule { on receive inp.e(v) take(v); } }`,
+    'component x: X; component y: Y; connect (x.out, y.inp);', `${task('hi', { priority: 9 })} ${task('mid', { priority: 5 })}`, 'deploy x on hi; deploy y on mid;'));
+    const chained = simulate([chain.model], 'Test::Demo', { untilNs: 20000000, latencyNs: 10000000 });
+    assert.deepEqual(kinds(chained.trace, 'dispatch').filter(o => o.timeNs === 20000000).map(o => o.subject), ['Demo.x.a', 'Demo.x.b', 'Demo.y.take']);
+    // X9: two requests expire at 10 ms; the low requester asked first (at 0, timeout 10 ms), the high one at 5 ms
+    // (timeout 5 ms). The expiry of the priority-9 request comes first.
+    const requests = await runOf(pkg(`qos def Long: Policy { delivery = Delivery.atMostOnce; ordering = Ordering.fifo; capacity = 2; overflow = Overflow.reject; requestTimeout = 10ms; }
+  qos def Short: Policy { delivery = Delivery.atMostOnce; ordering = Ordering.fifo; capacity = 2; overflow = Overflow.reject; requestTimeout = 5ms; }
+  component def Server { reversed port api: R; operation ask() returns int { wait 20ms; return 1; } schedule { on call api.ask() ask(); } }
+  component def Low { port req: R; attribute v: int = 0; operation go() { v = req.ask(); } schedule { on start go(); } }
+  component def High { port req: R; attribute v: int = 0; operation go() { wait 5ms; v = req.ask(); } schedule { on start go(); } }`,
+    'component low: Low; component high: High; component s1: Server; component s2: Server; connect l1: Long (low.req, s1.api); connect l2: Short (high.req, s2.api);',
+    `${task('lo', { kind: 'extended', priority: 1 })} ${task('hi', { kind: 'extended', priority: 9 })} ${task('srv', { kind: 'extended', priority: 3 })}`, 'deploy low on lo; deploy high on hi; deploy s1 on srv; deploy s2 on srv;'), 10000000);
+    assert.equal(kinds(requests.trace, 'timeout').filter(o => o.timeNs === 10000000).length, 2);
+    assert.deepEqual(kinds(requests.trace, 'ready').filter(o => o.timeNs === 10000000).map(o => o.subject), ['Demo.high.go', 'Demo.low.go']);
+    // X10: two receive statements time out at 10 ms, the low one waiting since 0, the high one since 5 ms.
+    const timeouts = await runOf(pkg(`component def Low { reversed port inp: P; attribute log: int = 0; operation go() { on receive inp.e(v) { log = v; } or after 10ms { log = 1; } } schedule { on start go(); } }
+  component def High { reversed port inp: P; attribute log: int = 0; operation go() { wait 5ms; on receive inp.e(v) { log = v; } or after 5ms { log = 2; } } schedule { on start go(); } }
+  component def Src { port a: P; port b: P; }`,
+    'component low: Low; component high: High; component src: Src; connect (src.a, low.inp); connect (src.b, high.inp);', `${task('lo', { kind: 'extended', priority: 1 })} ${task('hi', { kind: 'extended', priority: 9 })}`, 'deploy low on lo; deploy high on hi; deploy src on lo;'), 10000000);
+    assert.deepEqual(kinds(timeouts.trace, 'ready').filter(o => o.timeNs === 10000000).map(o => o.subject), ['Demo.high.go', 'Demo.low.go']);
+    assert.deepEqual(kinds(timeouts.trace, 'write').filter(o => o.timeNs === 10000000).map(o => o.subject), ['Demo.high.log', 'Demo.low.log']);
+});
+
 test('WP8-M06 operation placements are references: rename of the operation and occurrence updates the deploy path', async () => {
     const source = ONE('on every 10ms a(); on receive inp.e(v) take(v);')(`${slow} ${events}`, 'deploy s on slow; deploy x on slow; deploy x.take on events;');
     const r = await valid(source);
@@ -633,4 +689,34 @@ test('WP8 determinism: repeated runs of the door deployment give the same trace'
             digests.add(`${c.result}:${createHash('sha256').update(JSON.stringify(c.run?.trace ?? []).replace(/file:[^"]*/gu, '')).digest('hex')}`);
     }
     assert.equal(digests.size, 3);
+});
+
+test('WP8 (review F5) the plan is linear in entries and placements; a 2.2-shaped deployment validates without entry work', async () => {
+    const synth = (k: number, tasks: boolean) => `package Synth {
+  import Swaml::Platform;
+  import Swaml::Os;
+  component def Leaf { attribute n: int = 0; operation a() { n = n + 1; } operation b() { n = n + 2; } operation c() { n = n + 3; }
+    schedule { on every 10ms a(); on every 20ms b(); on every 40ms c(); } }
+  component def App { component leaves: Leaf[${k}]; }
+  component def Ecu specializes Node { ${tasks ? `${task('t10', { priority: 3, periodNs: '10ms' })} ${task('t20', { priority: 2, periodNs: '20ms' })} ${task('t40', { priority: 1, periodNs: '40ms' })}` : 'component t10: Process;'} }
+  component app: App;
+  component ecu: Ecu;
+  deployment D of app on ecu {
+${Array.from({ length: k }, (_, i) => tasks ? `deploy leaves[${i}].a on t10; deploy leaves[${i}].b on t20; deploy leaves[${i}].c on t40;` : `deploy leaves[${i}] on t10;`).join('\n')}
+  }
+}`;
+    // 12000 entries and 12000 operation placements: the first WP8 plan filtered every placement for every entry
+    // (about 3 * 10^8 path comparisons, seconds); indexed by path it takes milliseconds. The budget is generous.
+    const s = createSwamlServices(EmptyFileSystem);
+    const doc = s.shared.workspace.LangiumDocumentFactory.fromString(synth(4000, true), URI.parse('memory:///synth.swaml'));
+    s.shared.workspace.LangiumDocuments.addDocument(doc);
+    await s.shared.workspace.DocumentBuilder.build([doc], { validation: false });
+    const d = (doc.parseResult.value as Model).packages[0].elements.find(a.isDeployment)!;
+    const started = performance.now(), plan = deploymentPlan(d)!;
+    assert.equal(plan.entries.filter(e => e.task).length, 12000);
+    assert.ok(performance.now() - started < 1500, `plan of 12000 entries took ${Math.round(performance.now() - started)} ms`);
+    // A 2.2-shaped deployment of 4000 deploy lines on a plain Node: the first WP8 validator took seconds (quadratic).
+    const t0 = performance.now(), plain = await parse(synth(4000, false).replace('import Swaml::Os;', ''));
+    assert.equal(plain.errors.length, 0);
+    assert.ok(performance.now() - t0 < 4000, `validation of 4000 deploy lines took ${Math.round(performance.now() - t0)} ms`);
 });
