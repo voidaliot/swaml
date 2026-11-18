@@ -1,182 +1,156 @@
 # swa.ml: states as steps of the flow
 
-**Status:** design proposal for owner review, revision 1, 18 November 2026. Not normative. Nothing here changes the grammar, validator, simulator, standard version or a published artefact. All new syntax below is in `text` fences because no parser accepts it.
+**Status:** design proposal for owner review, **revision 2**, 18 November 2026. Not normative. Nothing here changes the grammar, validator, simulator, standard version or a published artefact. All new syntax is in `text` fences because no parser accepts it. Nothing in revision 2 has been prototyped: every "measured" number below comes from revision 1's prototypes or from the design review's prototypes, and every other expectation is marked as argued.
 
 **Bases:**
-- **Language:** main `02e92c8` (2.3 candidate with WP1 to WP5 merged; WP6 under review on `v2.3/wp6-sampled-reads`).
-- **Owner direction (relayed, three rounds):** only option 1, "states can be put anywhere in a flow". A state is an ordinary step of the flow, a step that lasts. There is no `states { }` container, no `initial` and no separate transition list. Decisions between states are ordinary `if`. Stateflow is a source of concepts and of drawing conventions, not a notation to copy. The look comes first.
-- **Measurements:** throwaway prototypes in `E:\t\design-scratch\base` (not committed), run on Node 26.12.0 over 253 runs and cases: the 138 gate-2 runs and cases, the cases of the 2.3 examples 33 to 47 and the runs and cases of the seven extended 2.2 fixture sets. Appendix A lists the method.
+- **Language:** main `adc0740` (2.3 candidate with WP1 to WP6 merged). WP6 sampled reads are read where they matter (guards, section 3.3).
+- **Owner direction (binding):** a state is an ordinary step of a flow, mixed with plain steps, calls and decisions; no `states { }` container, no `initial`, no transition list. The owner approved the revised look: leaving or staying is visible at the head of each trigger line, written order is the real priority, `keep`/`ignore` once per operation with per-state overrides, `state X { … } until <trigger>;` for the one-exit state, plain flow between states, restricted jumps `to S;`. Stateflow is a source of concepts; the text stays structured. Safety comes before compatibility: this is swa.ml 3.0 with an automatic migration.
+- **Review:** the adversarial design review of revision 1 (blocking defects B1 to B8, issues I1 to I11, alternatives A1 to A7, decisions D1 to D16, prototypes P1 to P3), kept outside the repository at `E:\t\review-states-design.md`.
+- **Reading samples:** [STATES_IN_FLOW_READING_SAMPLES.md](STATES_IN_FLOW_READING_SAMPLES.md) (prototype P3).
 
-The fallback, states and flows fully separated, is recorded in one sentence as the owner asked: it would keep the 2.2 machine body as the only place for states, forbid states in flows, and would still have to decide whether the merged WP5 forms stay.
+## Changes since revision 1
+
+| Finding | Where it is now | How |
+| --- | --- | --- |
+| B1 tie phase undefined, D16 | 3.4, D16 | One phase rule: a waiting state selects at the event that first makes a trigger ready; timer expiry precedes same-instant delivery (2.2 contract kept). Measured cost of the alternative given. |
+| B2 single activation dropped, D15 | 3.1, D15 | 2.2 rule kept for stage 1: an operation with a state is directly component-owned, parameterless void, released only by its one `on start` entry, never called, no interrupt region. |
+| B3 translation not writable | 3 (intro), 3.10 | Meaning is defined natively as execution-contract rules (SIF-R01 to SIF-R12). Plain-flow equivalences are kept only where they hold, with the cases where they do not. "Derived purely by translation" is dropped. |
+| B4 first ready against drawn numbers | 3.3 | Written order is the priority among triggers ready at one selection; the inputs form one group served in delivery order, drawn `2a`, `2b`. Differing latencies and offer ordinals are settled. |
+| B5 condition triggers | 9.1 (stage 2) | Out of stage 1. Open problems listed as work for stage 2's own design revision. |
+| B6 "one input rule everywhere" | 3.7 | Claim dropped. Four regimes stated exactly; the disposition check covers every waiting point of an operation with states. |
+| B7 migration recipe | 7 | Recipe rewritten: several finals, dead equal timers, per-trigger bindings (no merge, no rename), timer-first written order, exit-then-block order, state order chosen for fall-through (A5). |
+| B8 parent states | 9.3 (stage 4) | Out of stage 1; open problems listed. |
+| I1 fall-through surprises | 5.1, 2.7 | Checks SIF-D05 to SIF-D08; Flow View moves never change behaviour silently. |
+| I2 stay invisible at the head | 1.1 | `stay` and `to S` are written at the head; a leaving trigger without actions is one line ending in `;`. |
+| I3 false timer guard consumes | 3.3 | `after D when (g)` is ready when D has elapsed and g holds. No timer is consumed by a guard. Stage 1 restricts what g may read so that no wake is needed. |
+| I4 mandatory dispositions ripple | 1.7 | One operation-level `keep`/`ignore` line; a state writes a line only where it differs. |
+| I5 stale kept commands | 5.2 | SIF-D09 warns on a kept event without `maxAge`; every sample says what a kept input means. |
+| I6 jump holes | 3.6 | Forward jump over a used declaration is an error; backward jumps re-run declarations; leaving loops, `until`, `n times` defined; `interruptible` cannot occur (3.1). |
+| I7 stepped operations | 9.2 (stage 3) | Out of stage 1; open problems listed. |
+| I8 WP5 removal cost | 8, D10 | Presented as an open decision with both costs. |
+| I9 stage 1 too large | 0, 4 | Stage 1 is flat states, `on receive`, `after`, `stay`, `to`, `until`, dispositions, priority. |
+| I10 extension cost | 2.7, 10 | Listed per gesture and in the plan. |
+| I11 interleaving unmeasured | 6 | The review's tie measurement is quoted; the stage 1 phase rule keeps the 2.2 interleaving. |
+| Notes: `machines`, attribute discards, unreachable states, summary claims | 3.9, 3.3, 5.1, 0 and 6 | Stated. The summary no longer says "zero by construction". |
+| A1, A2, A4, A6, A7 | 1, 3 | Adopted. A3 adopted in a restricted stage 1 form (3.3), fully with stage 2. A5 is the migrator's ordering step. |
 
 ## 0. Summary
 
-**The idea.** A state is a statement. The flow reaches it, runs its entry actions and then waits until one of its triggers is ready. The trigger's block runs, the state is left (exit actions) and the flow continues with the next statement. Decisions between states are `if`. Loops between states are `while` or a restricted jump `to S;`. A state that contains steps and states is a parent state. A periodically called operation can execute its states one step per call (`stepped`).
+**The idea.** A state is a statement. The flow reaches it, runs its entry actions and waits until one of its triggers is ready. A **staying** trigger runs its block inside the state and the state waits again. A **leaving** trigger ends the state: exit actions, the trigger's own block, then the flow goes on with the next statement or, with `to S`, at state `S`. Between two states is plain flow: assignments, calls, decisions, loops.
 
 ```text
 operation control() {
+  keep requests.request, status.query, power.off;
   state unlocked {
-    on receive requests.request(lock) when (lock) { }
-  }
-  state locking {
-    on entry { send motor.lockMotor(LockDrive.lockPulse); }
-    on exit { send motor.lockMotor(LockDrive.idle); }
-    keep requests.request;
-    after 250ms { locked = true; }
-  }
-  state isLocked {
-    on receive requests.request(lock) when (not lock) { }
-  }
-  state unlocking {
-    on entry { send motor.lockMotor(LockDrive.unlockPulse); }
-    on exit { send motor.lockMotor(LockDrive.idle); }
-    keep requests.request;
-    after 250ms { locked = false; to unlocked; }
-  }
-}
-```
-
-**Meaning in one paragraph.** The flow's control position is the state. Everything is defined by translation to the flow language. The translation needs three generalisations of the receive statement, which plain flows gain too:
-- **G1:** an input member is owned by one operation, which may wait for it at several points.
-- **G2:** a waiting point takes the trigger that became ready first, with ties broken by the written order.
-- **G3:** a waiting point may wait for a condition, `or when (c)`, which is re-evaluated when what it reads changes.
-
-One input rule holds everywhere: input stays queued until a waiting point takes it. In a state, every input of the operation must be listed explicitly: handled, `keep` or `ignore`. The validator checks this and offers a quick-fix, so no input is lost or kept silently.
-
-**Measured impact on 2.2 sources.**
-
-| Change if applied to 2.2 machines without migration | Verdicts changed | Final stores changed | Trace only |
-| --- | --- | --- | --- |
-| Keep unhandled input by default | 8 (5 door cases fail on a rejecting queue) | 7 | 21 |
-| Drop input for a flow receive that is not yet waiting | 4 (operations), 19 (with case scripts) | 2 to 4 | 0 to 10 |
-| Trigger block before exit actions (effect, exit, entry) | 1 | 2 | 11 |
-| Inputs taken in written order | 1 (example 32) | 3 | 0 |
-| Inputs taken in arrival order | 0 | 1 (pinning fixture r10) | 0 |
-| Earliest ready first instead of "elapsed timer first" | 1 selection of 11, fixture r5 only | – | – |
-
-The chosen design takes the safe row of each axis:
-- keep at runtime, but explicit `keep`/`ignore` in every state, which the migration writes as `ignore` where 2.2 discarded;
-- the 2.2 effect position kept as a transition action `to S { … }` after exit;
-- arrival order.
-
-With the automatic migration, the expected change in verdicts and stores of the corpus is zero by construction. The trace changes in source identities and in two observation kinds. This expectation is not prototyped; section 9.4 says what remains to verify.
-
-The 2.2 machine syntax is replaced, so this is an incompatible edition. **Recommendation:** release 2.3 as the compatible minor without the WP5 state surface, and make states as steps the content of swa.ml 3.0, in three stages (section 12).
-
-## 1. How it looks: text
-
-### 1.1 What a state contains
-
-```text
-state name {
-  /** documentation */
-  on entry { … }            // runs when the flow reaches the state
-  on exit { … }             // runs whenever the state is left
-  during { … }              // a parent state's inner steps (waiting mode) or a per-call action (stepped mode)
-  keep p.m, q.n;            // inputs that stay queued while in this state
-  ignore r.k;               // inputs taken and dropped while in this state
-  on receive p.m(x) [when (g)] { … }     // triggers, in the written order
-  after D [when (g)] { … }
-  when (c) { … }
-}
-```
-
-**What makes the flow leave the state.**
-- **A trigger block that ends.** The state is left: exit actions run, then the flow continues with the next statement. This is the default.
-- **`stay;` at the end of a trigger block.** The state is not left: no exit, no entry, and the timers keep their start. This is the "on event" action of a state.
-- **`to S;` at the end of a trigger block.** The state is left, and the flow continues at state `S` (section 1.3).
-- **A false guard on the trigger (`when (g)`).** Condition not met: the input or timer is consumed and the state keeps waiting. `on receive m(x) when (g) { B }` means exactly `on receive m(x) { if (not g) { stay; } B }`.
-- **A condition trigger `when (c)` that is false.** The state keeps waiting. It is evaluated again when `c` can have changed (section 6).
-
-**A state without triggers** does not wait. It is a named step: entry actions, then exit actions, then the next statement. It can be a jump target and a box in the diagram. 2.2 final states with entry actions migrate to such steps.
-
-### 1.2 Candidate spellings for leaving
-
-Three spellings were compared on the lock controller with a shutdown: `unlocked`, `locking`, `isLocked`, `unlocking`, back to `unlocked`, and from `isLocked` on `power.off` to a report step and the end of the operation.
-
-**Candidate A: trigger blocks continue, structured loops only.**
-
-```text
-operation control() {
-  var running: bool = true;
-  while (running) {
-    state unlocked {
-      ignore power.off;
-      on receive requests.request(lock) when (lock) { }
-    }
-    state locking {
-      on entry { pulses = pulses + 1; send motor.lockMotor(LockDrive.lockPulse); }
-      on exit { send motor.lockMotor(LockDrive.idle); }
-      keep requests.request; ignore power.off;
-      after 250ms { locked = true; }
-    }
-    state isLocked {
-      on receive requests.request(lock) when (not lock) { }
-      on receive power.off() { running = false; }
-    }
-    if (running) {
-      state unlocking {
-        on entry { pulses = pulses + 1; send motor.lockMotor(LockDrive.unlockPulse); }
-        on exit { send motor.lockMotor(LockDrive.idle); }
-        keep requests.request; ignore power.off;
-        after 250ms { locked = false; }
-      }
-    }
-  }
-  reportShutdown();
-}
-```
-
-- **For:** no new control construct; every arrow is a loop or a branch.
-- **Against:** every second exit needs a flag and an `if`. With three exits from one state this becomes unreadable, and the diagram shows the flag tests instead of the arrows.
-
-**Candidate B (recommended): trigger blocks continue, plus a restricted jump `to S;`.**
-
-```text
-operation control() {
-  state unlocked {
-    ignore power.off;
-    on receive requests.request(lock) when (lock) { }
+    on receive status.query() stay { publish status.report(locked, pulses); }
+    on receive requests.request(lock) when (lock);
+    on receive power.off() to report;
   }
   state locking {
     on entry { pulses = pulses + 1; send motor.lockMotor(LockDrive.lockPulse); }
     on exit { send motor.lockMotor(LockDrive.idle); }
-    keep requests.request; ignore power.off;
-    after 250ms { locked = true; }
-  }
+  } until after 250ms;
+  locked = true;
   state isLocked {
-    on receive requests.request(lock) when (not lock) { }
-    on receive power.off() { to report; }
+    on receive status.query() stay { publish status.report(locked, pulses); }
+    on receive requests.request(lock) when (not lock);
+    on receive power.off() to report;
   }
   state unlocking {
     on entry { pulses = pulses + 1; send motor.lockMotor(LockDrive.unlockPulse); }
     on exit { send motor.lockMotor(LockDrive.idle); }
-    keep requests.request; ignore power.off;
-    after 250ms { locked = false; to unlocked; }
-  }
+  } until after 250ms;
+  locked = false;
+  to unlocked;
   state report {
     on entry { reportShutdown(); }
   }
 }
 ```
 
-The normal cycle reads top to bottom. The back arrow is `to unlocked`, and the skip is `to report`. `report` has no triggers: it is a step, and the operation ends after it.
+**Stage 1** (the content of 3.0) is flat states with `on receive` and `after` triggers, `stay`, `to`, `until`, operation-level `keep`/`ignore` with per-state overrides, and one priority rule. Condition triggers, stepped operations and parent states are later stages (section 9), each with its own design revision.
 
-**Candidate C: `state X { … } until trigger;`.** The leaving trigger is written after the block, and the block holds entry, exit and the staying reactions. It reads well for one exit. With two exits it needs `until on receive a … or on receive b …` and still a way to tell them apart afterwards, so it falls back to A or B. Rejected.
+**The priority rule in one paragraph.** A state chooses at a *selection*. A selection happens when the flow arrives (after entry), after a staying block, and while it waits at the first event that makes a trigger ready: a timer expiry or a delivery for a member it handles. At a selection, the first ready trigger in written order is taken. All `on receive` triggers of a state form one group at the position of the first of them; within the group, the oldest delivered message is served first. Within one logical instant a timer expiry comes before a delivery (the 2.2 contract rule "receive timeout wins a tie with delivery", kept).
 
-**Recommendation: B.** Structured loops stay available, and a model may mix both. The jump rule keeps the safety properties (section 7):
-- `to S;` is the last statement of a trigger block (tail position, also at the end of an `if`/`else` branch inside it);
-- `S` is a state statement in the same statement list as the jumping state, or in a statement list that encloses it, in the same operation;
-- never into a branch, a loop body, a parent's inner steps or another operation.
+**Which operations may hold states (stage 1).** The 2.2 rule: directly component-owned, parameterless void, released only by its one `on start` entry, never called, no interrupt region. So every operation with states has exactly one activation.
 
-### 1.3 Transition actions
+**Measured and argued impact on 2.2 sources.** Every 2.2 machine is rewritten by the migrator. Measured on the 253-result corpus (revision 1 and review prototypes): each runtime choice that stage 1 makes is the 2.2 behaviour on the axes that were measured, except the order among several queued inputs at one selection, where arrival order (measured with the offer ordinal, close to stage 1's delivery order) changes one final store (extended fixture r10, built to pin the 2.2 queue walk). The migrated sources themselves have **not** been run: the expectation "no other verdict or store changes" is argued and must be measured by prototype P1 before stage 1 is approved. Traces change (statement identities, `keep` for `defer`, discard reasons).
 
-`to S { action }` runs `action` after the exit actions of the state being left and before the entry actions of `S`. This is Stateflow's transition action and the 2.2 position of a transition effect. Statements before `to` in the trigger block are condition actions: they run while still in the state.
+**Open decisions** (section 11): D10, whether the WP5 state forms ship in 2.3, is open; the other recommended answers are in the table.
 
-- **The 2.2 order (exit, effect, entry)** is therefore written `on receive m(x) when (g) { to S { effect } }`, and the migration produces exactly this.
-- **If the effect ran before the exit actions** (trigger block, exit, entry), 1 verdict and 2 final stores of the corpus would change (section 9.2).
+## 1. How it looks: text
 
-### 1.4 A state inside a branch, decisions between states
+### 1.1 A state and its triggers
+
+```text
+state name {
+  /** documentation */
+  on entry { … }                               // when the flow reaches the state
+  on exit { … }                                // on every way out
+  keep p.m;                                    // only where it differs from the operation default
+  ignore q.n;
+  on receive p.m(x) [when (g)] stay { … }      // staying reaction: the state does not end
+  after D [when (g)] stay { … }
+  on receive p.m(x) [when (g)];                // leaving, no actions: continue after the state
+  on receive p.m(x) [when (g)] { … }           // leaving with actions; may end in to S;
+  on receive p.m(x) [when (g)] to S;           // leaving to S
+  on receive p.m(x) [when (g)] to S { … }      // leaving to S with actions
+  after D [when (g)] …                         // same four leaving forms
+}
+
+state name { … } until <trigger>;              // the one leaving trigger, written after the box
+```
+
+**The head says what happens.**
+- **`stay`** at the head: a staying reaction. No exit, no entry, the timers keep their start. It is listed inside the state box in Flow View, never drawn as an arrow.
+- **Anything else** is leaving. A leaving trigger with no actions is one line that ends in `;`. With actions it keeps its block. The jump may be written at the head (`to report;`) or as the last statement of the block (`{ log(); to report; }`); both mean the same.
+- **`until <trigger>`** after the box is the state's only leaving trigger. Such a state may still have entry, exit, dispositions and staying reactions inside.
+
+**Order of what runs when a state is left:** the state's `on exit`, then the trigger's own block (its bindings are in scope), then either the jump target or the next statement. This is the 2.2 order "exit, effect, entry" (measured: putting the block before the exit actions changes 1 verdict and 2 final stores of the corpus). Statements written after the state, such as `locked = true;`, run after that and belong to every way out that falls through.
+
+**A state without triggers** (no trigger inside, no `until`) does not wait: entry, exit, next statement. It is a named step, used as a jump target and for migrated 2.2 final states. A state with only staying reactions never leaves; nothing after it is reachable except by a jump.
+
+### 1.2 The lock controller in full
+
+Section 0 is the full lock controller. How to read it:
+- **Operation default.** `keep requests.request, status.query, power.off;` says that a request, a query or a power-off that a state does not handle waits in its queue for the next state that does. Both pulse states handle nothing, so everything that arrives during a pulse is served right after it.
+- **Staying reaction.** `on receive status.query() stay { … }` answers a query without leaving `unlocked` or `isLocked`. The pulse states do not answer; the query waits for the end of the pulse (kept).
+- **One-exit states.** `locking` and `unlocking` end only by their timer: `} until after 250ms;`.
+- **Plain flow between states.** `locked = true;` is an ordinary step after `locking`. It runs after the motor has been set idle by the exit action.
+- **Back arrow and skip.** `to unlocked;` after `locked = false;` closes the cycle. `to report` (at the head of the power-off triggers) skips forward to the last state, which is a named step: `reportShutdown()` runs and the operation ends.
+- **Guards.** `when (lock)` in `unlocked`: an unlock request that arrives while unlocked is taken and dropped (`discardInput` reason `guard`), as in 2.2.
+- **2.2 `DiscardingLock` variant.** The same text with `ignore requests.request;` written inside `locking` and `unlocking` (a per-state override).
+
+### 1.3 The owner's picture
+
+Start dot, `state0`, a decision with yes/no branches to `state2` and `state1`, a merge, an operation step, `state4`, final marker.
+
+```text
+operation run() {
+  ignore cmd.go, cmd.retry;
+  var ok: bool = false;
+  state state0 {
+    on entry { send lamp.set(Lamp.waiting); }
+  } until on receive cmd.go(v) { ok = v; }
+  if (ok) {
+    state state2 {
+      on entry { send lamp.set(Lamp.go); }
+    } until after 10ms;
+  } else {
+    state state1 {
+      on entry { send lamp.set(Lamp.retry); }
+    } until on receive cmd.retry();
+  }
+  process();
+  state state4 {
+    on entry { report(); }
+  }
+}
+```
+
+The decision is an ordinary `if` on a local set in the `until` block. `state4` has no triggers: it is a named step, and the operation ends after it.
+
+### 1.4 A state inside a branch
 
 ```text
 operation openDoor() {
@@ -185,8 +159,7 @@ operation openDoor() {
     state unlatching {
       on entry { send latch.release(true); }
       on exit { send latch.release(false); }
-      ignore handle.pulled;
-      on receive latch.opened() { }
+      on receive latch.opened();
       after 200ms { faults = faults + 1; }
     }
   } else {
@@ -194,791 +167,621 @@ operation openDoor() {
   }
   publish status.doorReleased(supplyOk);
 }
-```
-
-The state is one step of the `then` branch. Leaving it continues after the `if`. Nothing jumps into or out of the branch.
-
-### 1.5 A parent state with substates
-
-```text
-operation drive() {
-  state active {
-    on entry { powerUp(); }
-    on exit { powerDown(); }
-    on receive power.off() { to stopped; }           // applies in every substate
-    during {
-      state idle {
-        on receive cmd.move(target) { goal = target; }
-      }
-      state moving {
-        keep cmd.move;
-        on receive sensor.arrived() { }
-        after 5s { faults = faults + 1; }
-      }
-    }
-  }
-  state stopped {
-    on entry { report(); }
-  }
-}
-```
-
-- **Running the inner steps.** `during { … }` holds the parent's inner steps. While they run, the parent's triggers are armed as well.
-- **Parent triggers win.** A parent trigger that is ready is taken before the inner state's triggers. If it leaves, the inner flow is cancelled like an interrupted region: the innermost exit actions run first, then the parent's exit actions.
-- **Inner steps that end.** When the inner steps end, the parent is left and the flow continues after it.
-
-Here `moving` falls through to the end of `during`. So the parent `active` is left and the flow continues with `stopped`. A model that wants to return to `idle` writes `to idle` in `moving`; that jump stays inside `during`.
-
-### 1.6 A periodically called operation (stepped)
-
-```text
-stepped operation windowStep() {
-  state idle {
-    when (switchUp and motionAllowed()) { }
-    during { drive(MotorDirection.stop); }
-  }
-  state closing {
-    when (not switchUp or position >= closedCounts) { to idle; }
-    after 4s { faults = faults + 1; to idle; }
-    during { drive(MotorDirection.up); }
-  }
-}
 schedule {
-  on every 10ms windowStep() deadline 2ms;
+  on start openDoor();
 }
 ```
 
-A `stepped` operation never waits inside an activation. Each call resumes at the state reached by the previous call, evaluates its triggers once in the written order, and either:
-- takes the first ready trigger, runs its block and continues the flow up to the next state (entry actions only); or
-- runs `during` and returns.
+The state is one step of the `then` branch; both of its leaving triggers continue after the `if`. Nothing jumps into or out of the branch.
 
-Reaching the end of the operation completes the cycle, and the next call starts at the first statement. This is the AUTOSAR classic runnable with a mode variable, without the hand-written `if (mode == …)` chain.
+### 1.5 A state with several exits
+
+```text
+state unlatching {
+  on entry { send latch.release(true); attempts = attempts + 1; }
+  on exit { send latch.release(false); }
+  on receive handle.pulled() stay { publish status.busy(); }
+  on receive latch.opened();
+  on receive power.off() to shutdown;
+  after 200ms when (attempts < 3) to unlatching { faults = faults + 1; }
+  after 200ms to giveUp;
+}
+```
+
+- **Numbers.** The inputs form group 1 (`1a` pulled, staying; `1b` opened; `1c` power-off). The guarded timer is 2, the plain timer 3.
+- **Exits.** `opened` falls through to the next statement. `power.off` skips to `shutdown`. At 200 ms the guarded timer is ready while fewer than three attempts were made and re-enters `unlatching` (exit, block, entry, a new 200 ms); otherwise timer 3 leaves for `giveUp`. Two unguarded timers with the same duration would make the second dead (SIF-D06).
+
+### 1.6 Going back and skipping
+
+- **Restricted jump.** `to S;` names a state `S` in the same statement list or in a list that encloses it, in the same operation. It never enters a branch, a loop body or another operation.
+- **Where it is written.** At the head or as the last statement of a leaving trigger's block, or as the last statement of a statement list of the operation body (as `to unlocked;` in section 0). Never in entry, exit or staying blocks.
+- **After a jump.** In the same list, only a state that is itself a jump target may follow a `to` statement (`report` in section 0).
+- **Structured loops remain.** A cycle of states is often a `while (true) { … }` (traffic light, debounce, connection manager in the reading samples). A jump out of a loop ends the loop.
+
+### 1.7 Inputs: one default per operation, overrides per state
+
+A variant of the lock controller that honours power-off only where a state handles it and drops requests during the lock pulse:
+
+```text
+operation control() {
+  keep requests.request, status.query;        // the operation default: dispositions are written first
+  ignore power.off;
+  …
+  state locking {
+    ignore requests.request;                    // override: this state drops requests
+    …
+  }
+}
+```
+
+- **Required.** Every input member the operation handles somewhere and does not handle at every waiting point needs an operation-level `keep` or `ignore` (SIF-D01, quick-fixes for both).
+- **Overrides.** A state writes `keep` or `ignore` only where it differs from the default. Writing the default again is a warning (SIF-D10).
+- **Plain receive statements** in such an operation apply the operation default to members they do not list.
+- **Flow View** shows the default once in the operation header and an override as a muted line in the box.
 
 ## 2. How it looks: Flow View
 
 ### 2.1 Drawing rules
 
-These rules extend the existing Flow View of an operation. They add no new container and no dashed frame.
-
 | Element | Drawing |
 | --- | --- |
-| State | Rounded step box in the same column as plain steps. Name at the top. Below a thin rule, one line each for `entry: …`, `during: …`, `exit: …` (first statement, ellipsis if longer, full text on hover). `keep` and `ignore` lines in a smaller muted font at the bottom. |
-| Plain step (call, assignment, send) | Unchanged: a rectangular step node. |
-| Arrival into a state | The ordinary incoming flow arrow. The first state of an operation has the start dot before it (Stateflow's default transition). There is no separate initial marker. |
-| Trigger leaving the state | One outgoing arrow per trigger, from the bottom or right edge of the box, labelled `n: trigger [guard]` (`1: request(lock) [lock]`, `2: after 250ms`, `3: [temp > 30]` for a condition trigger). `n` is the written order. |
-| Trigger block | If it has statements, they are drawn as ordinary flow nodes on that arrow, before it reaches its destination. Condition actions come before an `if`; the transition action of `to S { … }` is drawn as a step node labelled with a `/` prefix after the point where the arrow leaves the box. |
-| Decision inside a trigger block | The existing decision diamond on the arrow; its branches are numbered in written order, `else` last. |
-| Fall-through | The arrows of every trigger that ends without `to` join at the existing merge node below the box, and the flow continues to the next statement. |
-| `stay;` | A loop arrow that leaves and re-enters the same box edge, labelled with its trigger. It is drawn inside the box's margin, not as a re-entry. |
-| `to S;` back | A back arrow routed on the left gutter, upwards, ending on the top edge of `S`. |
-| `to S;` forward | A skip arrow routed on the right gutter, downwards, ending on the top edge of `S`. |
-| End of the operation | The existing final marker. Reaching it continues nothing; in a parent's `during`, the bottom of the inner flow leaves the parent. |
-| Parent state | A larger rounded box. Its entry and exit lines are at the top. The `during` steps are drawn inside it as an ordinary nested flow, with its own start dot. Parent triggers leave from the outer box edge with their numbers. |
-| Stepped operation | The same drawing. The header shows `stepped · every 10ms`, and the start dot is labelled `each call resumes here`. |
+| Operation header | The name, and one muted line each for the default `keep` and `ignore` members. |
+| State | A rounded box in the flow column, name at the top. Below a thin rule: `entry: …` and `exit: …` (first statement, ellipsis, full text on hover), then one line per staying reaction, `1a query() stay: publish …`, then the override dispositions in a muted font, then, when an input trigger has a guard, the muted line `other request(…): dropped`. |
+| Plain step, call, decision, merge, loop | Unchanged Flow View nodes, also between two states. |
+| First state | The start dot and the ordinary incoming arrow. There is no initial marker. |
+| Leaving trigger | One arrow per leaving trigger from the bottom edge, labelled with its number and trigger: `1b request(lock) [lock]`, `2: after 250ms`. Numbers are the written order with the input group sharing one number and a letter per input trigger in written order. A state with one trigger draws it without a number. |
+| Trigger block | Ordinary step nodes on that arrow, outside the box (they run after exit). A decision inside the block is the usual diamond on the arrow. |
+| `until` | The single arrow out of the box, labelled `until after 250ms`, numbered only when the box lists staying reactions. |
+| Fall-through | The arrows of every leaving trigger without a jump join at a merge node below the box, then the flow continues to the next statement. |
+| Back jump | Routed on the left gutter, upwards, ending on the top edge of the target box. |
+| Skip | Routed on the right gutter, downwards, ending on the top edge of the target box. |
+| End of the operation | The final marker. |
 
-### 2.2 The lock controller (candidate B)
+**Not drawn as an arrow:** staying reactions (lines in the box), dispositions (header and muted box lines), inputs dropped by a false guard (the `dropped` line), a staying timer that has fired, and the operation default. No self-loop is ever drawn for a staying reaction; a leaving trigger that re-enters its own state (`to unlatching`) is a back arrow to the box's own top edge.
 
-```text
-        ●
-        │
-  ╭─────▼──────────────────╮
-  │ unlocked               │◄────────────────────────┐
-  │ ignore power.off       │                         │
-  ╰─────┬──────────────────╯                         │
-        │ 1: request(lock) [lock]                    │
-  ╭─────▼──────────────────────────╮                 │
-  │ locking                        │                 │
-  │ entry: pulses = pulses + 1; …  │                 │
-  │ exit: send motor.lockMotor(…)  │                 │
-  │ keep requests.request          │                 │
-  │ ignore power.off               │                 │
-  ╰─────┬──────────────────────────╯                 │
-        │ 1: after 250ms                             │
-     [ locked = true ]                               │
-        │                                            │
-  ╭─────▼──────────────────╮  2: off()               │
-  │ isLocked               ├──────────────────────┐  │
-  ╰─────┬──────────────────╯                      │  │
-        │ 1: request(lock) [not lock]             │  │
-  ╭─────▼──────────────────────────╮              │  │
-  │ unlocking                      │              │  │
-  │ entry: pulses = pulses + 1; …  │              │  │
-  │ exit: send motor.lockMotor(…)  │              │  │
-  │ keep requests.request          │              │  │
-  ╰─────┬──────────────────────────╯              │  │
-        │ 1: after 250ms                          │  │
-     [ locked = false ]── to unlocked ────────────┼──┘   (back arrow, left gutter in the real layout)
-                                                  │
-  ╭───────────────────────╮◄──────────────────────┘      (skip arrow, right gutter)
-  │ report                │
-  │ entry: reportShutdown │
-  ╰─────┬─────────────────╯
-        ◉
-```
-
-Order numbers restart per state. `isLocked` has two outgoing arrows, 1 and 2. A tie between them at one instant (both inputs ready at once) is decided by the number (section 5.2).
-
-### 2.3 A state inside a branch (section 1.4)
+### 2.2 The lock controller (section 0)
 
 ```text
-        ●
-        │
-   [ checkSupply() ]
-        │
-        ◇ supplyOk
-   yes ╱ ╲ no
-      ╱   ╲
-╭────▼─────────────╮   [ report(lowSupply) ]
-│ unlatching       │          │
-│ entry: send …    │          │
-│ exit: send …     │          │
-│ ignore handle…   │          │
-╰──┬────────┬──────╯          │
-   │1:      │2: after 200ms   │
-   │opened()│                 │
-   │   [ faults = faults + 1 ]│
-   ◆◄───────┘                 │   ◆ merge of the two triggers
-   └──────────►◆◄─────────────┘   ◆ merge of the branches
+ control()    keep: requests.request, status.query, power.off
+               ●
                │
-   [ publish status.doorReleased(supplyOk) ]
-               │
+      ┌───────►┤
+      │  ╭─────▼────────────────────────────────╮
+      │  │ unlocked                             │
+      │  │ 1a status.query() stay: publish …    │
+      │  │ other request(…): dropped            │
+      │  ╰─────┬──────────────────────────┬─────╯
+      │        │ 1b request(lock) [lock]  │ 1c power.off()
+      │        │                          └────────────────────────┐
+      │  ╭─────▼────────────────────────────────╮                  │
+      │  │ locking                              │                  │
+      │  │ entry: pulses = pulses + 1; send …   │                  │
+      │  │ exit:  send motor.lockMotor(idle)    │                  │
+      │  ╰─────┬────────────────────────────────╯                  │
+      │        │ until after 250ms                                 │
+      │  ┌─────▼──────────┐                                        │
+      │  │ locked = true  │                                        │
+      │  └─────┬──────────┘                                        │
+      │  ╭─────▼────────────────────────────────╮                  │
+      │  │ isLocked                             │                  │
+      │  │ 1a status.query() stay: publish …    │                  │
+      │  │ other request(…): dropped            │                  │
+      │  ╰─────┬──────────────────────────┬─────╯                  │
+      │        │ 1b request(lock)         │ 1c power.off()         │
+      │        │    [not lock]            └───────────────────────►┤
+      │  ╭─────▼────────────────────────────────╮                  │
+      │  │ unlocking                            │                  │
+      │  │ entry: pulses = pulses + 1; send …   │                  │
+      │  │ exit:  send motor.lockMotor(idle)    │                  │
+      │  ╰─────┬────────────────────────────────╯                  │
+      │        │ until after 250ms                                 │
+      │  ┌─────▼──────────┐                                        │
+      │  │ locked = false │                                        │
+      │  └─────┬──────────┘                                        │
+      └────────┘ to unlocked                                       │
+         ╭──────────────────────────╮                              │
+         │ report                   │◄─────────────────────────────┘
+         │ entry: reportShutdown()  │
+         ╰─────┬────────────────────╯
                ◉
 ```
 
-### 2.4 A parent state with two substates and a parent-level transition (section 1.5)
+### 2.3 The owner's picture (section 1.3)
 
 ```text
-        ●
-        │
-╭───────▼───────────────────────────────────────────╮
-│ active                                            │  2: …
-│ entry: powerUp();   exit: powerDown();            │
-│                                                   │
-│      ●                                            │
-│      │                                            │
-│  ╭───▼──────────╮                                 │
-│  │ idle         │                                 │
-│  ╰───┬──────────╯                                 │
-│      │ 1: move(target)                            │
-│   [ goal = target ]                               │
-│  ╭───▼──────────────╮                             │
-│  │ moving           │                             │
-│  │ keep cmd.move    │                             │
-│  ╰───┬─────────┬────╯                             │
-│      │1:       │2: after 5s                       │
-│      │arrived()│ [ faults = faults + 1 ]          │
-│      ◆◄────────┘                                  │
-│      ◉   (end of inner steps: leaves active)      │
-╰──────┬───────────────────────┬────────────────────╯
-       │ (inner steps ended)   │ 1: off()   (parent trigger, from the outer edge)
-       ◆◄──────────────────────┘
-       │
-╭──────▼───────────╮
-│ stopped          │
-│ entry: report(); │
-╰──────┬───────────╯
-       ◉
+ run()    ignore: cmd.go, cmd.retry
+                 ●
+                 │
+       ╭─────────▼──────────╮
+       │ state0             │
+       │ entry: send …      │
+       ╰─────────┬──────────╯
+                 │ until go(v)
+          ┌──────▼──────┐
+          │ ok = v      │
+          └──────┬──────┘
+                 ◇ ok
+           yes ╱   ╲ no
+   ╭─────────▼──╮ ╭──▼──────────╮
+   │ state2     │ │ state1      │
+   │ entry: …   │ │ entry: …    │
+   ╰─────┬──────╯ ╰──────┬──────╯
+         │ until         │ until retry()
+         │ after 10ms    │
+         └──────►◆◄──────┘
+                 │
+          ┌──────▼──────┐
+          │ process()   │
+          └──────┬──────┘
+       ╭─────────▼──────────╮
+       │ state4             │
+       │ entry: report()    │
+       ╰─────────┬──────────╯
+                 ◉
 ```
 
-The parent's trigger arrow leaves the outer box edge with its own number. While any substate is active, the parent's triggers are evaluated first.
+### 2.4 A state inside a branch (section 1.4)
 
-### 2.5 Sequence and Timing
+```text
+                 ●
+                 │
+          [ checkSupply() ]
+                 │
+                 ◇ supplyOk
+           yes ╱   ╲ no
+ ╭──────────▼──────────╮   [ report(lowSupply) ]
+ │ unlatching          │            │
+ │ entry: send …       │            │
+ │ exit:  send …       │            │
+ ╰──┬───────────┬──────╯            │
+    │ 1: opened()│ 2: after 200ms   │
+    │       [ faults = faults + 1 ] │
+    ◆◄──────────┘                   │
+    └────────────►◆◄────────────────┘
+                  │
+   [ publish status.doorReleased(supplyOk) ]
+                  │
+                  ◉
+```
 
-- **Sequence:** a state is a state invariant on the operation's lifeline (a rounded label across the lifeline at the point where the flow waits). Triggers are the incoming messages that end it, and `stay` reactions are messages that do not end it.
-- **Timing:** a state is an interval on the component's track, from entry to exit, and the trace already carries `state` observations.
+### 2.5 A state with several exits (section 1.5)
 
-## 3. Worked examples and expected traces
+```text
+                 │
+       ┌────────►┤
+       │ ╭───────▼──────────────────────────────────╮
+       │ │ unlatching                               │
+       │ │ entry: send …; attempts = attempts + 1   │
+       │ │ exit:  send latch.release(false)         │
+       │ │ 1a handle.pulled() stay: publish …       │
+       │ ╰───┬──────────┬──────────────┬──────────┬─╯
+       │     │          │              │          │
+       │     │1b        │1c            │2         │3
+       │     │opened()  │power.off()   │after     │after 200ms
+       │     │          │              │200ms     │
+       │     │          │              │[attempts │
+       │     │          │              │ < 3]     │
+       │     │          │   ┌──────────▼──────┐   │
+       │     │          │   │ faults = … + 1  │   │
+       │     │          │   └──────────┬──────┘   │
+       └─────┼──────────┼──────────────┘          │
+             │          └──► shutdown             └──► giveUp
+             ▼               (skip, right gutter)      (skip, right gutter)
+      (next statement)
+```
 
-Times are logical. Only the observations that matter are listed; the trace also keeps its 2.2 waits, deliveries and writes.
+`2` re-enters `unlatching`: a back arrow to the box's own top edge, not a self-loop.
 
-### E1. The door lock of example 45, with and without requests during the pulse
+### 2.6 Sequence and Timing
 
-The lock of section 0 has `keep requests.request` in both pulse states. An `ignore` variant writes `ignore requests.request` there instead. The body sends `lock` at 0 ms, `unlock` at 100 ms and `lock` at 200 ms.
+- **Sequence:** a state is a state invariant on the operation's lifeline at the point where the flow waits. Leaving triggers are the messages that end it; staying reactions are messages that do not end it.
+- **Timing:** a state is an interval on the component's track from arrival to exit. Between two states the track shows plain flow (no state).
 
-| Time | `keep` (expected = WP5 `DeferringLock`) | `ignore` (expected = 2.2 `DiscardingLock`) |
+### 2.7 Editing gestures
+
+Every gesture is one whole-workspace edit, validated before it is applied, with a dry-run preview (`swaml/previewEdit`). The preview lists every trigger number and every fall-through target that changes, so text order never changes behaviour silently.
+
+| Gesture | Text edit | How order stays honest |
 | --- | --- | --- |
-| 0 | `unlocked` takes `request(true)`; enters `locking`, pulses 1 | same |
-| 100 | `keep` observation for `request(false)`, queued | `discardInput` reason `ignored` |
-| 200 | `keep` observation for `request(true)` | `discardInput` reason `ignored` |
-| 250 | `after 250ms`: `locked = true`, exit (motor idle), `isLocked`; takes `request(false)` (arrived first), enters `unlocking`, pulses 2 | `locked = true`, `isLocked`, waits |
-| 500 | `locked = false`, `to unlocked`; takes `request(true)`, `locking`, pulses 3 | – |
-| 750 | `locked = true`, `isLocked` | – |
-| End | `locked`, pulses 3 | `locked`, pulses 1 |
+| Add a state as a step (creation card: name, first leaving trigger) | Inserts `state X { } until <trigger>;` at the drop position, and the operation-level disposition lines the new member needs (SIF-D01) in the same edit. | Inserting a step changes the fall-through target of the statement before it only when that was a state; the preview names it. |
+| Add an exit to a state | Appends a leaving trigger after the last trigger of its kind: an input trigger at the end of the input group, a timer after the last timer. An `until` state is rewritten to the inner form, its `until` trigger becoming the last inner trigger. | The preview shows the new number and every renumbered arrow. |
+| Turn an exit into a jump (drag the arrow end onto a state) | Writes `to S` at the head of the trigger, or replaces the existing target. Dragging onto the merge node below the box removes the jump (fall-through). Illegal targets (inside a branch or loop body, another operation) are refused with SIF-D04's message. | Only the dragged trigger changes. |
+| Reorder exits (drag a number, Move up/down) | Moves the trigger line. The input group moves as one unit; a move that would split it is refused (SIF-S06). | The preview says "priority change: 2 ↔ 3". |
+| Add a staying reaction (box "+ reaction") | Writes `on receive m(x) stay { }` at the end of the input group, or `after D stay { }` where the user places it. Removes a now redundant state override. | The preview shows its number. |
+| Move a state (drag the box) | Moves the statement. Every trigger whose fall-through target would change gets an explicit `to`, and jumps that become fall-through to the next statement are removed. | By construction the behaviour is unchanged; an explicit "move and change the flow" option exists and its preview lists every changed target. |
+| Delete a state | Removes it; incoming jumps are retargeted to a state the user picks, or the edit is refused. | The preview lists retargeted arrows. |
+| Convert a plain step into a state and back | Wraps the step as the entry action of `state X { } until …;`; unwraps a trigger-less state. | Unwrap is offered only for a trigger-less state that is not a jump target. |
 
-The second test of example 45 (`fob` unlock and body lock queued in one pulse) also passes: the two kept requests are taken in arrival order, the order WP5-R09 introduced.
+The formatter never reorders statements or triggers. It only normalises an empty leaving block `{ }` to `;`.
 
-### E2. Retry with timeout
+## 3. Stage 1 meaning: rules of the execution contract
 
-```text
-operation connect() {
-  var attempt: uint = 0;
-  while (attempt < 3 and not connected) {
-    attempt = attempt + 1;
-    publish link.hello(attempt);
-    state awaitingAck {
-      ignore link.noise;
-      on receive link.ack(id) when (id == attempt) { connected = true; }
-      after (backoffMs * 1ms) { backoffMs = backoffMs * 2; }
-    }
-  }
-  if (not connected) { fail "no ack"; }
-}
-```
+The meaning of states is defined natively by the rules below (SIF-R01 to SIF-R12), as additions to chapter 6 of the specification. Section 3.10 lists the plain-flow equivalences that really hold, as explanations only.
 
-- **Peer acks only the third hello (after 1 ms):**
-  - 0: `hello(1)`, `awaitingAck`;
-  - 10: `after` (10 ms), `backoffMs = 20`, exit, loop; `hello(2)`;
-  - 30: `after` (20 ms), `backoffMs = 40`; `hello(3)`;
-  - 31: `ack(3)`, `connected = true`, exit; the loop ends.
-- **Stale ack:** an `ack(1)` that arrives at 12 ms (during the second attempt) is consumed by the false guard, and the state stays. The trace shows `discardInput` reason `guard` (section 8), and the 20 ms timer keeps its start at 10 ms.
-- **Old form:** the 2.2 machine needed three states and a counter, or an `on receive … or after` statement without a guard.
+The terms:
+- A **stateful operation** is an operation whose body contains a state statement (3.1).
+- A **waiting point** of a stateful operation is a state with at least one trigger, or a plain receive statement.
+- A member is **handled** by a state when the state has at least one `on receive` trigger on it (inside or as `until`).
+- A state's **disposition** for a member it does not handle is its override, else the operation default.
 
-### E3. Initialisation steps, then states, then continuation
+### 3.1 Which operations may contain states (B2, D15)
 
-```text
-operation session() {
-  loadConfig();
-  sessionId = try(cloud.openSession(vehicleId), 0);
-  if (sessionId == 0) {
-    state backoff {
-      keep network.coverage;
-      after 10ms { }
-    }
-    sessionId = try(cloud.openSession(vehicleId), 0);
-  }
-  state connected {
-    on receive network.coverage(up) when (not up) { sessionId = 0; }
-  }
-  publish ctl.sessionClosed(sessionId);
-}
-```
+The 2.2 single-activation rule is kept for stage 1 (SIF-S01):
+- a stateful operation is directly component-owned and parameterless void;
+- its only schedule entry is exactly one `on start` entry (no `every`, `on receive`, `after` dependent or `concurrent` entry);
+- it is not called by any operation, case script or helper;
+- it contains no interrupt region;
+- its states are statements of its own body, never of a callee (a callee with a state would itself be a stateful operation that is called).
 
-The cloud refuses the first request after 2 ms and grants 101 after another 2 ms; coverage is lost at 1 ms.
-- 0: `loadConfig`, request.
-- 2: the request answers 0.
-- 2 to 12: `backoff`. The coverage loss from 1 ms is kept.
-- 12: the second request; 14: `sessionId = 101`.
-- 14: `connected` takes the kept loss, which arrived at 1 ms: `sessionId = 0`, exit.
-- 14: `sessionClosed(0)`, and the operation completes.
+Consequences:
+- **One activation.** There is exactly one activation per occurrence, so `machines["c.op"]`, the trace subject and the Timing track stay well defined.
+- **Case scripts** contain no states (D13) and cannot call a stateful operation. They drive it only through actor ports, as in 2.2.
+- **A stateful operation may still be a predecessor** of `after` dependents: they are released when it completes, as after a 2.2 final state.
+- **Within the operation, a member may be handled at several waiting points** (states and plain receive statements). The operation is its single owner (SW2005 unchanged in spirit: no other schedule entry, region or operation may own it).
 
-The "decision after entry" of WP5 (example 44) is a plain request followed by `if`: no completion transition is needed, because a request is already a step.
+### 3.2 Reaching a state (SIF-R01)
 
-### E4. A state inside a branch
+When the flow reaches a state statement at time t:
+1. record a `state` observation (subject `c.op`, `state` name, `source` the state statement);
+2. set the state's timer start to t (the state-update time);
+3. run `on entry` (it may suspend; input arriving meanwhile stays queued);
+4. evaluate computed `after` durations once (WP4-R02);
+5. make an **arrival selection** (3.3).
 
-This is section 1.4.
-- **`supplyOk` and `opened()` at 50 ms:** `unlatching` from 0 to 50 ms; exit sends `release(false)`; `doorReleased(true)` at 50 ms.
-- **`supplyOk`, no `opened()`:** at 200 ms `faults = 1`; exit; `doorReleased(true)`.
-- **Not `supplyOk`:** `report`, then `doorReleased(false)` at 0 ms; the state is never entered.
+A state without triggers runs steps 1 and 3, then `on exit`, then continues with the next statement.
 
-### E5. A nested state with an interruptible shutdown
+### 3.3 Selection (SIF-R02, SIF-R03; B4, I3)
 
-This is section 1.5 with a move at 0 ms and `power.off` at 30 ms, while `moving` waits for `arrived`.
-- 0: `active` entry (`powerUp`), `idle`, takes `move`, `moving`.
-- 30: parent trigger 1, `off()`, is ready. The inner flow is cancelled at its waiting point: `moving` has no exit, then `active` exit (`powerDown`), then `to stopped`, `report`, end.
-- **`arrived()` and `off()` both ready at 30 ms:** the parent trigger wins (outer first), and `arrived` stays queued. The operation then completes, so the queued input is discarded as `inactiveOwner` at the next delivery attempt, as in 2.2 after a final state.
+A selection of state S at time t does, in order:
+1. **Dispositions.** Every queued message of a member that S ignores is consumed in delivery order with `discardInput` reason `ignored`. Every queued message of a member that S keeps stays; it gets one `keep` observation the first time any waiting point keeps it.
+2. **Written order.** S's triggers are walked in written order, the `until` trigger last. All `on receive` triggers form **one input group** placed at the position of the first of them (SIF-S06 requires them to be contiguous). The first ready entry is taken:
+   - **A timer** `after D [when (g)]` is ready when it is armed (a staying timer that fired is disarmed for the rest of this entry), t ≥ timer start + D, and g, if present, evaluates true now.
+   - **The input group** is ready when a handled member has a queued message. The message served is the one **delivered first**: smallest delivery event (time, phase, insertion ordinal) among the heads of S's handled queues, each queue's head being given by its ordering policy. The triggers on that message's member are tried in written order, binding the payload and evaluating the guard; the first whose guard holds is taken. If none holds, the message is consumed with `discardInput` reason `guard` and the group is examined again.
+3. **Nothing ready.** S waits without the component lock. A timer event is scheduled at the earliest expiry later than t among the armed timers whose guard holds now (a timer guard cannot change while S waits, SIF-S05).
 
-The same shape works with an `interruptible` around a plain sequence of states, when the cancellation should not run the parent's exit actions:
+What "delivered first" settles (B4):
+- **Differing route latencies.** Message `a` offered at 0 with 5 ms latency and message `b` offered at 1 ms with no latency: `b` is delivered at 1 ms, `a` at 5 ms, so `b` is served first. The offer ordinal plays no role. (Revision 1's measured "arrival order" variant used the offer ordinal; the two differ only across routes with different latencies or fault delays. P1 measures delivery order.)
+- **Within one queue**, the queue's ordering policy decides, as today.
+- **A timer written before the input group** wins over queued input when both are ready at one selection. A timer written after it loses. This is the drawn number.
+- **An attribute member** keeps only its latest value in its queue; a false guard consumes that value. Read attributes as sampled reads (WP6) when the latest value must survive.
 
-```text
-interruptible {
-  state idle { on receive cmd.move(target) { goal = target; } }
-  state moving { keep cmd.move; on receive sensor.arrived() { } }
-} on receive power.off() {
-  report();
-}
-```
+Guards (SIF-S05):
+- **An input guard** may read anything a 2.3 transition guard may read, sampled reads included (WP6-S01). It is evaluated at the selection.
+- **A timer guard** may read only constants, the operation's locals, and component attributes that only this operation's own body assigns (not its callees). It may not call `now()` and may not contain a sampled read. So nothing can change it while the state waits: it changes only through the operation's own staying blocks and entry actions, which are always followed by a selection. Example: `on receive ped.button() stay { requested = true; }` and `after 10s when (requested);` make green last at least 10 s and end as soon as a request is present (reading samples, traffic light). Wider timer guards come with condition wakes in stage 2.
 
-Here the handler runs after the cancelled inner state's exit action, and no parent exit exists.
+### 3.4 When selections happen within an instant (SIF-R04; B1, D16)
 
-### E6. Condition triggers fed by a periodic operation and by a sampled read
+The contract orders the events of one logical instant by phase, then insertion ordinal: deadline and request timeouts (phase 0), receive timeouts and state timers (phase 1), deliveries, wait ends and releases (phase 2), then dispatch and continuation of ready activations (phase 4).
 
-```text
-component def Heater {
-  reversed port door: DoorState;          // WP6: provides attribute ajar: bool = false (sampled)
-  attribute temp: real = 20.0;
-  attribute alarms: uint = 0;
-  operation sample() { temp = temp + 4.0; }
-  operation guard() {
-    state watching {
-      when (temp > 30.0) { alarms = alarms + 1; }
-      when (door.ajar) { stay; }           // first arrow: count nothing, keep watching
-    }
-    state cooling {
-      after 1s { temp = 20.0; to watching; }
-    }
-  }
-  schedule {
-    on start guard();
-    on every 10ms sample();
-  }
-}
-```
+**Rule.** A waiting state makes its selection at the **event that first makes one of its triggers ready**: its timer expiry at phase 1, or the delivery of a handled member at phase 2. The selection is fixed when it is made; the chosen block runs when the activation next holds the lock. Events later in the same instant, including deliveries of that instant after a phase-1 timer, are not part of that selection and wait for the next one. Arrival selections and selections after a staying block happen when the operation's flow gets there.
 
-- **Wake by an attribute write:** `sample` writes `temp` at 10, 20 and 30 ms. At each unlock of `sample` the waiting `guard` is woken, because `temp` is in the read set of its condition. At 30 ms (`temp = 32`) condition 1 is ready, `alarms = 1`, and the flow goes to `cooling`.
-- **Wake by a cell update:** the door sensor sends `ajar = true` at 15 ms. The cell update wakes `guard`, condition 2 is true, and the `stay` block runs. Condition 2 is then disarmed until an evaluation sees `ajar == false`, so it does not fire again at the 20 ms wake.
-- **Ties:** if both became ready at one wake, number 1 would win.
+**Consequences.**
+- **Timer against same-instant delivery.** A timer that expires at t is taken before a message delivered at t, whatever the written order. This is the 2.2 contract rule "Receive timeout wins a tie with delivery", applied identically to plain receive timeouts and state timers. It is the only rule that the drawn numbers do not show; Flow View's hover on a timer label says it.
+- **Where written order decides:** at an arrival selection (input queued while the operation ran other steps or a suspended entry, against timers that elapsed meanwhile), after a staying block, among timers with the same expiry, and among the triggers of one member.
+- **Revision 1's example** (`after 20ms` against a condition written by an `every` operation at 20 ms) is a stage 2 question (9.1).
 
-### E7. A state written as a plain flow, and as a state
+**Measured consequence of the alternative** (evaluate the selection after the same-instant deliveries, so that written order decides exact ties): the design review moved the receive timeout from phase 1 to phase 3. Plain receives only: 0 verdicts, 0 final stores, 7 traces change. Plain receives and machine timers: 0 verdicts, **1 final store** (door "Lock and unlock": `dcu.comMain.framesSent` 8→9, `dcu.linIf.received` true→false), 52 traces. The emulation let input win the tie and also moved the timeout after unrelated phase-2 work, so it is an upper bound. The recommended rule changes nothing on this axis.
 
-```text
-// plain flow (2.3 receive statement plus G1 to G3)
-var leave: bool = false;
-startPulse();
-var t0: uint = now();
-while (not leave) {
-  // requests.request is not listed, so it stays queued (flow rule)
-  on receive power.off() { }                       // taken and dropped; the loop waits again
-  or after (t0 + 250ms - now()) { locked = true; leave = true; }
-}
-stopPulse();
-```
+### 3.5 Leaving and staying (SIF-R05, SIF-R06)
 
-```text
-// state
-state locking {
-  on entry { startPulse(); }
-  on exit { stopPulse(); }
-  keep requests.request;
-  ignore power.off;
-  after 250ms { locked = true; }
-}
-```
+- **Staying.** The trigger's block runs (bindings in scope); no exit, no entry, the timer start is unchanged; a staying timer is disarmed for the rest of this entry. Then a new selection. A `state` observation with `stay: true` and the trigger as `source` is recorded before the block.
+- **Leaving.** The state's timers are invalidated, `on exit` runs, then the trigger's block. If a `to S` executed (at the head or as the block's last statement), the flow continues at S (3.6); otherwise at the statement after the state.
+- **Blocks may suspend** (`wait`, requests, suspending calls), as 2.2 entry actions and effects do. A suspension releases the lock; input that arrives meanwhile stays queued for the next selection.
+- **What blocks may not contain:** state statements and receive statements (in any state block); `to` (in entry, exit and staying blocks); `return` (in any state block).
 
-Both have the same observable behaviour: the timer counts from the pulse start, `power.off` is taken and dropped without leaving, requests stay queued, and the exit action runs once. The plain form is exactly the translation of the state (section 4.2), so they mean the same; the state form is what the validator can check (dispositions) and what Flow View draws as one box. (The plain flow needs G1 to G3 only when the same member is also listed elsewhere in the operation.)
+### 3.6 Jumps and locals (SIF-R07; I6)
 
-### E8. Stepped operation (section 1.6)
+- **Unwinding.** `to S` ends every block between the jump and the statement list that contains S. A loop that is ended this way (`while`, `until`, `for`, `for in`, with or without `n times`) does not run its condition, update or remaining iterations; its limit counter and locals end. An `if` branch simply ends.
+- **Locals.** A local lives from its declaration to the end of its statement list. A backward jump that passes a declaration again re-runs it: the local gets its initial value again, exactly as a loop body's declaration does on each iteration. Locals declared before the target keep their values.
+- **Forward jumps over a declaration** are an error (SIF-D04) when the local is used at or after the target: `` `to c` skips the declaration of `x`, which `c` uses. Declare `x` before the jump. ``
+- **`interruptible`** cannot occur in a stateful operation (3.1), so no jump leaves a region in stage 1.
+- **`return;`** is allowed in a stateful operation as the last statement of a list of the operation body (not in state blocks). It ends the operation; the migrator uses it between several final steps (7).
 
-`switchUp` becomes true at 25 ms, and the window is closed after 70 ms of driving.
-- **Calls at 10 and 20 ms:** `idle`; no trigger; `during` stops the motor.
-- **30 ms:** trigger 1 of `idle` is ready, and the flow reaches `closing` (entry only). The call ends.
-- **40 to 90 ms:** `closing`; `during` drives up.
-- **100 ms:** `position >= closedCounts`, `to idle` (entry only). The call ends.
+### 3.7 Inputs: the four regimes (SIF-R08; B6)
 
-One trigger is taken per call; zero-time loops are impossible by construction. The trace has one `state` observation per state entered and no wait observations.
+The claim "one input rule everywhere" is dropped. Stage 1 has exactly these regimes:
 
-## 4. Meaning by translation
+| Where | What happens to input |
+| --- | --- |
+| Plain operation (no state) | Unchanged 2.2: a receive statement exclusively owns its members, input received before it waits stays queued, also after the operation ended. |
+| Interrupt region (plain operations only) | Unchanged 2.2: discarded and observed while the region is inactive. |
+| Stateful operation, from its start until it completes | Queued under its policy (capacity, overflow, ordering, `maxAge`). At each selection of a waiting point, its disposition applies (3.3 step 1). While a waiting point waits, a delivered message of an ignored member is consumed at once (`ignored`), of a kept member stays (`keep`), of a handled member starts a selection. During `wait`, requests, suspended blocks and plain steps, nothing is consumed. |
+| Stateful operation after it completed | Queued messages of its members are discarded, and later deliveries are discarded on arrival, with `discardInput` reason `inactiveOwner`, as after a 2.2 final state. |
 
-### 4.1 The three generalisations of the flow language
+**The disposition check (SIF-D01) covers** every waiting point of a stateful operation (states and plain receive statements) and every member the operation owns. A plain receive statement applies the operation default to the members it does not list; it has no override.
 
-They apply to plain flows too and are the only additions to the flow core:
+### 3.8 Run to completion, determinism, termination (SIF-R09)
 
-- **G1. Ownership per operation.** An input member is owned by exactly one schedule entry, interrupt region or operation (today: one receive branch). Several waiting points of the same operation may list it. This makes the plain-flow form of E7 possible. For 2.2 it only turns some SW2005 errors into valid sources.
-- **G2. Ready order.** When a waiting point starts waiting or is woken, it takes the trigger that became ready first:
-  - an input when it was offered (global offer ordinal);
-  - a timer at its expiry;
-  - a condition at the evaluation that found it true.
+- **Run to completion.** From a selection until the flow reaches the next selection, no other trigger of the operation is selected. Input arriving meanwhile waits. Other activations of the component may run while the operation is suspended, as in 2.2.
+- **Determinism.** Selection depends only on written order, delivery order, the phase rule and guard values. No choice depends on queue creation or container iteration order.
+- **Termination.** A staying reaction consumes one message or fires one timer once per entry; timers are positive. A cycle of jumps that passes no waiting point and no possible suspension is a static error (SIF-D07); otherwise a zero-time loop is a plain `while (true) { }` and ends at the step limit. Stage 1 needs no `StateLoop` violation.
 
-  Ties at one instant go to the written order. It is one rule for receive statements, states and case scripts.
-- **G3. Condition branches.** `on receive … or when (c) { … }` is a branch that becomes ready when `c` is true at an evaluation (section 6).
+### 3.9 Trace and results (SIF-R10, SIF-T01 to SIF-T04)
 
-### 4.2 One state, no jump
+- **`state`** at each arrival, with the state statement as `source`; with `stay: true` for a staying reaction, `source` the trigger.
+- **`keep`** (respelled WP5 `defer`): once per message, the first time a waiting point keeps it.
+- **`discardInput`** with reasons `ignored`, `guard` and `inactiveOwner` (2.2's `noEnabledTransition` becomes `guard`).
+- **No `discardTimer`**: a timer guard no longer consumes a timer.
+- **Unchanged:** `receiveWait` when a waiting point waits, `timer` for computed durations (WP4-T01), deliveries, writes.
+- **`machines["c.op"]`** is the name of the last state entered. State names are unique within an operation (SIF-S02), so the name identifies the statement. Between two states it keeps the last name; Timing draws the gap as plain flow.
 
-A state statement
+### 3.10 Equivalences with plain flow (explanatory only, B3)
+
+These hold up to the `state` and `keep` observations and statement identities:
+- `state S { on entry { EN } on exit { EX } } until on receive p.m(x) { B }`, in an operation where every other owned member is kept and `EN` does not suspend, behaves as `EN; on receive p.m(x) { EX; B }`.
+- A state with several `on receive` triggers on different members, no timers and no guards, every other member kept, behaves as the plain receive statement with the same branches, **except** that among several queued messages the state serves the one delivered first, while a 2.2 receive statement walks its queues in creation order.
+
+They do **not** hold, and no plain-flow spelling with the 2.3 constructs exists, when:
+- a timer is involved: the state counts from arrival (before entry), a timer that elapsed during entry is ready at once, and a remaining duration of zero is invalid for `or after` (`DurationRange`); `wait D` ends at phase 2, a state timer at phase 1;
+- a state ignores a member (a receive statement keeps everything it does not list);
+- a state has staying reactions (needs a loop, remaining-time arithmetic and a fired-once flag per timer);
+- jumps cross loops or declarations (a dispatch loop changes local scopes and re-initialisation).
+
+## 4. Stage 1 rules
+
+IDs: SIF (states in flow). G grammar, S static, R runtime, D diagnostic, T trace.
+
+### 4.1 Grammar delta (SIF-G01, text only)
 
 ```text
-state S { on entry { EN } on exit { EX } keep K; ignore I;
-          on receive m(x) when (g) { B1 } after D { B2 } when (c) { B3 } }
+OperationBody: '{' Documentation? Executable* Disposition* Statement* '}';
+Statement: … | State | Jump;                       // Return unchanged, newly allowed in stateful operations
+State: 'state' Name '{' Documentation? (StateAction | Disposition | Trigger)* '}'
+       ('until' until=LeavingTrigger)?;
+StateAction: 'on' ('entry' | 'exit') Block;         // unchanged spelling
+Disposition: ('keep' | 'ignore') MemberPath (',' MemberPath)* ';';
+Trigger: Event ('stay' Block | LeavingTail);
+LeavingTrigger: Event LeavingTail;
+Event: 'on' 'receive' MemberPath '(' (Name (',' Name)*)? ')' Guard?
+     | 'after' (Duration | '(' Expression ')') Guard?;
+Guard: 'when' '(' Expression ')';
+LeavingTail: ';' | Block | 'to' Name (';' | Block);
+Jump: 'to' Name ';';
+Removed: the 'initial' Name ';' State+ body alternative, 'final', Transition, Deferral ('defer').
 ```
 
-means, with fresh hidden locals `leave`, `t0` and `stayed`:
+Lexical notes: `keep`, `ignore` and `stay` are contextual. After a state's `}`, `until` followed by `on` or `after` belongs to the state; `until (` starts the existing `until` loop.
 
-```text
-EN
-var t0: uint = now();            // the state-update time; timers count from here
-var leave: bool = false;
-while (not leave) {              // the waiting point
-  on receive m(x) { if (g) { B1'; } }        // B1' sets leave = true unless it ends in stay
-  or receive i(_) { }                        // one empty branch per ignored member of I
-  or when (c) { B3'; }
-  or after (t0 + D - now()) { B2'; }          // only while D has not fired in this entry; elapsed: ready at once
-}
-EX
-```
-
-Here `B'` is `B` with its tail rewritten: an ending without `stay` sets `leave = true`, and `stay;` becomes nothing. Members in `K` are simply not listed, so they stay queued: that is the flow rule. A timer that fired with `stay` is not armed again in this entry, which is the WP5 internal-timer rule. All runtime rules follow from this text plus G2:
-- the timer start is the state update;
-- elapsed timers and queued input compete by ready time;
-- a false guard consumes the input and loops;
-- run to completion holds because the receive statement takes nothing while its branch runs.
-
-### 4.3 Jumps
-
-A statement list that contains `to` targets is rewritten into a dispatch loop with a hidden position local (the structured-program construction):
-
-```text
-var pc: Pos = Pos.first;
-while (pc != Pos.end) {
-  if (pc == Pos.s1) { <s1 and the plain steps up to the next state>; pc = <next> }
-  else if (pc == Pos.s2) { … }
-}
-```
-
-`to S` sets `pc` to `S` after the exit actions and the transition action. A jump to a state in an enclosing list also sets that list's `pc` and makes every list in between end:
-- a loop in between gains `and pc == Pos.none` in its condition;
-- a `for` in loop is rewritten to an indexed `while`.
-
-The jump is in tail position, so no statement after it can run, and no `break` is needed.
-
-### 4.4 Parent states
-
-`state P { …; on receive t(x) { BT } …; during { INNER } }` means:
-- the inner flow `INNER`, in which every waiting point additionally lists `P`'s triggers first, in their own written order (outer first);
-- a leaving parent trigger cancels the inner flow as a matched interrupt region does today (chapter 3.3);
-- a staying one runs at the inner waiting point and loops.
-
-When `INNER` ends, `P` is left. While the inner flow is suspended outside a state (in a `wait` or a request), only leaving parent triggers cancel it, exactly like an armed `interruptible`. Staying parent triggers wait until the next inner waiting point, so run to completion is kept.
-
-### 4.5 Stepped operations
-
-A `stepped` operation is translated like section 4.3, with `pc` kept in a hidden occurrence attribute instead of a local. Each waiting point becomes "evaluate the triggers once; if none is ready, run `during` and return". After a trigger, the flow runs until the next state's entry actions, then returns. A guard or condition is evaluated once per call, so no re-evaluation rule is needed.
-
-## 5. Input, order and queues
-
-### 5.1 One input rule
-
-Input stays in its connection queue until a waiting point takes it. This is the 2.2 flow rule, unchanged.
-
-To make the choice visible in states, the validator requires, for every state of an operation and every input member the operation owns (G1), exactly one of: a trigger on it, `keep` or `ignore`.
-- **Error:** `State {state} does not say what happens to {member}: add a trigger, keep {member}; or ignore {member};` (SIF-D01).
-- **Quick-fixes:** both lines. On migrated 2.2 machines the fix is `ignore`, which is the 2.2 discard.
-
-Plain receive statements need no list. Their waiting point is visible, and anything not listed is kept by the flow rule; Flow View shows the kept members on the wait node.
-
-**The queue bound.** A kept event occupies its connection queue, under its policy (capacity, overflow, ordering, `maxAge`); an attribute keeps one value.
-- SIF-D02 (warning, today SW2018) reports `keep` of a member whose route rejects on overflow.
-- SIF-D03 (warning) reports a kept member that no waiting point reachable after the state handles: the input would be kept until the queue drops it.
-
-The measurement shows why this must be explicit. Keeping by default without the list made five door cases fail because a periodic CAN signal (`vehicle.signals`) that only `unlocked` handles filled a rejecting queue (section 9.2).
-
-### 5.2 Order
-
-G2 is the only selection rule: first ready, ties by written order. Diagram numbers are the written order.
-- **Inputs among themselves:** arrival order. The measured alternative, written order among inputs, broke example 32 ("A hold arrives first"), which is the reason for this choice.
-- **Timers and conditions:** these also compete by ready time. A timer that elapsed while entry actions were suspended competes with input by when each became ready.
-- **What this replaces:** the WP5-R01 table (completion, then elapsed timers, then retained input, then other input).
-
-## 6. Condition triggers
-
-This section answers the five conditions of the WP6 review (`review-wp6.md`, end) and the WP6 author's points.
-
-1. **The wake set.** A waiting point with condition branches is woken by exactly two kinds of change:
-   - a write, by another activation of the same occurrence, to an attribute in the condition's read set (`attributeAccess`, transitively through callees);
-   - a delivery that updates a sampled cell in that set (WP6-R02).
-
-   The wake happens when the writing activation releases the lock: at its completion (`finish`) or suspension. The cell update wakes at its delivery. Unrelated writes wake nothing and add no observation. The waiting operation's own trigger blocks need no wake, because the waiting point is evaluated when the block ends.
-2. **The phase.** A wake is queued like a resumption, at the dispatch phase of the current instant with the next insertion ordinal. Timer expiries (phase 1) and deliveries (phase 2) of the same instant are therefore already ready when the woken waiting point evaluates. All of them have the same ready time, so the written order decides. Example: `after 20ms` written before `when (n > 2)`, with `n` set at 20 ms by `on every 10ms` → the timer is taken. With the two lines swapped, the condition is taken.
-3. **2.2 traces.** 2.2 sources have no condition branches, so the hook never fires for them. Gate 2 and models-wp5 stay at zero differences for this rule.
-4. **Livelock and twice-true conditions.**
-   - **Edge rule:** after a condition trigger fires and the state stays, the trigger is disarmed until an evaluation sees it false.
-   - **Coalescing:** changes between two evaluations coalesce, so a condition that goes true, false and true again inside one activation's locked segment is observed once. This is the same rule as attribute replacement, and it is stated, not hidden.
-   - **Two wakes in one instant:** two separate wakes are two evaluations, and a disarmed trigger fires again only after one of them saw it false.
-   - **Leaving conditions:** a condition trigger that leaves is not disarmed. Zero-time loops through leaving conditions are caught by `StateLoop` (section 7).
-5. **The warnings.** SW2017 (WP5-D08) is retired. It is replaced by SIF-D04, a warning for a condition whose read set contains nothing that any scheduled activation writes and no sampled cell, so that no wake can ever come. WP6-D09 is dropped. WP6-D10 (a condition that is always false) moves to condition triggers as a dead-trigger warning. `now()` stays forbidden in conditions (use `after`).
-
-## 7. Safety properties
-
-- **Single entry, structured exits.**
-  - Every block is still entered only at its top. `to` never targets a statement inside a branch, a loop body or a parent's `during`.
-  - Exits from nested blocks go only to states of enclosing lists (labelled-break discipline), and only from tail position.
-  - The control-flow graph between waiting points is structured. The graph between states can be any graph, which is what a state graph is. Every segment between two waiting points is a structured, branching segment, and that is the unit a deadline or WCET analysis needs.
-- **Determinism.** Selection is G2: ready time, then written order. Events keep the 6.1 order (time, phase, ordinal). Wakes have a fixed phase (section 6). No choice depends on queue creation or container iteration order.
-- **Run to completion.** A trigger block, including the exit actions, the transition action and the entry actions up to the next waiting point, runs before any other trigger of that state or of the next state is considered. Input arriving meanwhile, even during a request inside the block, waits for the next waiting point. This is derived from the receive statement, which takes input only while it waits.
-- **No zero-time livelock.**
-  - **Inputs:** they are consumed, so their reactions are bounded by queues.
-  - **Timers:** they are positive and fire once per entry.
-  - **Staying conditions:** disarmed by the edge rule.
-  - **Leaving cycles:** a cycle of states connected only by `when (true)` with no possible suspension is a static error (SIF-D05, today WP5-D03). At run time, `StateLoop` (today `CompletionLoop`, same chain rule: restart at each consumption and suspension) stops the run and fails a case. This is the one runtime check that is not derived from the translation. Without it, the loop would end at the step limit as an inconclusive run, which is what a plain `while (true) { }` does.
-  - **Stepped operations:** one trigger per call, so no loop is possible.
-- **Bounded queues.** These are the connection policies, plus SIF-D02 and SIF-D03.
-- **Analysable schedule.**
-  - A waiting operation is one activation. A state wait releases the component lock, like a receive, and resumption reacquires it.
-  - The activation's deadline, if any, covers the whole flow, as for any suspending flow today. A state in an `on every` operation therefore has to finish within the period, and the validator warns (SIF-D06) because this is rarely intended. Use `stepped`.
-  - A `stepped` operation never suspends: it is placeable on a basic Task (WP8 T-rules). Each call is one bounded segment.
-- **Trace.** States keep the 2.2 `state` observation at each entry, now with the statement identity of the state as `source`. A taken trigger is visible through its existing observations (`deliver`, timer expiry, `write`). New observations:
-  - `keep`, once per kept message (today `defer`);
-  - `discardInput` with reason `ignored` or `guard`;
-  - `wake` (subject the waiting operation, `source` the write or delivery that woke it), only for condition branches;
-  - `violation` `StateLoop`.
-
-## 8. Rules
-
-IDs use the prefix SIF (states in flow). G = grammar, S = static, R = runtime, D = diagnostic, T = trace.
-
-### 8.1 Grammar delta (text only, not applied)
-
-```text
-Statement: … | State | Jump | Stay;
-State: 'state' name=Name '{' documentation=Documentation?
-         (actions+=StateAction | triggers+=Trigger | dispositions+=Disposition | during=During)* '}';
-StateAction: 'on' kind=('entry'|'exit') body=Block;               // unchanged spelling
-During: 'during' body=Block;                                       // 'during' contextual
-Trigger: ( 'on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')?
-         | 'after' (delay=Duration | '(' delayValue=Expression ')') ('when' '(' guard=Expression ')')?
-         | 'when' '(' condition=Expression ')' ) body=Block;
-Disposition: kind=('keep'|'ignore') endpoints+=MemberPath (',' endpoints+=MemberPath)* ';';   // contextual words
-Jump: 'to' target=Name (action=Block | ';');
-Stay: 'stay' ';';                                                  // contextual
-Receive: 'on' branches+=ReceiveBranch ('or' branches+=ReceiveBranch)*
-         ('or' 'when' '(' condition=Expression ')' conditionBody=Block)*
-         ('or' 'after' (timeout=Duration | '(' timeoutValue=Expression ')') timeoutBody=Block)?;
-Operation modifier: 'stepped' before 'operation' (contextual).
-Removed: OperationBody's 'initial' Name ';' State+ alternative; Transition; Deferral.
-```
-
-### 8.2 Static rules
+### 4.2 Static rules
 
 | ID | Rule |
 | --- | --- |
-| SIF-S01 | A state is a statement of an operation body or of a block in it. Not in case scripts or concurrent entries (stage 1). |
-| SIF-S02 | A state has at most one `on entry`, one `on exit` and one `during`. A `during` in a waiting operation contains at least one state. |
-| SIF-S03 | Guards and conditions are `bool` and pure or read state. Conditions do not call `now()`. |
-| SIF-S04 | At most one `on receive` trigger per member per state, and at most one `after` per literal duration. Alternatives on one trigger are `if`/`else if` in its block. |
-| SIF-S05 | `to S` is in tail position of a trigger block. `S` is a state in the same statement list or an enclosing one of the same operation, not inside a branch, loop body or `during` that does not contain the jump. `to` never appears in entry, exit or `during` blocks or outside a trigger block. |
-| SIF-S06 | `stay;` is in tail position of a trigger block. |
-| SIF-S07 | Every state lists every input member of its operation once: trigger, `keep` or `ignore` (SIF-D01). |
-| SIF-S08 | G1: each input member has one owner (schedule entry, interrupt region or operation). An operation may list it at several waiting points. |
-| SIF-S09 | A `stepped` operation is parameterless void, contains at least one state, and has no `wait`, receive statement, request, suspending call or interrupt region. Its states may use `during` as a per-call action. |
-| SIF-S10 | A state without triggers is a named step. It has no `during` and no dispositions. |
+| SIF-S01 | Stateful operations (3.1): directly component-owned, parameterless void, exactly one `on start` entry and no other entry, never called, no interrupt region. Case scripts and concurrent entries contain no states. |
+| SIF-S02 | A state has at most one `on entry` and one `on exit`. State names are unique within an operation. |
+| SIF-S03 | A state with `until` has no leaving trigger inside. A staying reaction has a non-empty block (to drop an input, write `ignore`). |
+| SIF-S04 | Several triggers on one member, and several timers, are allowed; each trigger has its own bindings. |
+| SIF-S05 | Guards are `bool` and pure or read state. Input guards: as 2.3 transition guards (sampled reads allowed). Timer guards: only constants, locals, and attributes assigned only in the operation's own body; no `now()`, no sampled read. |
+| SIF-S06 | The `on receive` triggers of a state are written contiguously (counting `until` as the last trigger). Quick-fix: move them together, which the preview shows as a priority change. |
+| SIF-S07 | `to S`: S is a state of the same operation in the jump's statement list or an enclosing one, not inside a branch, loop body or block that does not contain the jump. `to` appears only at a leaving trigger's head, as the last statement of a block inside a leaving trigger's block (at any depth, for example an `if` branch), or as the last statement of a statement list of the operation body outside state blocks. After `to` or `return` in the same list, only a state that is a jump target may follow. |
+| SIF-S08 | State blocks contain no state or receive statement; entry, exit and staying blocks contain no `to`; no state block contains `return`. |
+| SIF-S09 | Dispositions are written first in the operation body or inside a state; a member named in a disposition is owned by the operation and handled at some waiting point of it. |
 
-### 8.3 Runtime rules
+### 4.3 Runtime rules
 
 | ID | Rule |
 | --- | --- |
-| SIF-R01 | Reaching a state: record `state`, run entry, set the timer start to the state-update time (before entry), evaluate computed timers once (WP4-R02), then wait. |
-| SIF-R02 | Selection (G2): the trigger that became ready first; ties by written order; inputs by global offer ordinal. |
-| SIF-R03 | Leaving by block end: block, exit, next statement. By `to S`: block, exit actions of every state being left (innermost first), transition action, `S`. |
-| SIF-R04 | `stay`: no exit, no entry, timers keep their start, a fired timer is not re-armed in this entry, and a fired condition is disarmed until seen false. |
-| SIF-R05 | Input: kept members stay queued (one `keep` observation each); ignored members are consumed with `discardInput ignored`; a false guard consumes with `discardInput guard`. |
-| SIF-R06 | Condition wakes as in section 6. |
-| SIF-R07 | `StateLoop` violation as `CompletionLoop` (WP5-R07), for leaving condition triggers. |
-| SIF-R08 | Parent states: outer triggers first; a leaving parent trigger cancels the inner flow like a matched interrupt region; inner steps that end leave the parent. |
-| SIF-R09 | Stepped: one evaluation per call; at most one trigger per call; the flow then runs to the next state's entry; the position persists per occurrence; the end of the operation restarts at the first statement next call. |
-| SIF-R10 | Locks: state waits release the serial lock; blocks run under it except during their own suspensions. |
+| SIF-R01 | Reaching a state (3.2). |
+| SIF-R02 | Selection: dispositions, then written order with the input group, timers ready when elapsed, armed and guarded true (3.3). |
+| SIF-R03 | Input group: the message delivered first among handled queue heads; its member's triggers in written order; no true guard: consumed with `guard` and retried. |
+| SIF-R04 | Phase: a waiting state selects at the event that first makes a trigger ready (timer phase 1, delivery phase 2); the selection is fixed; later events wait (3.4). |
+| SIF-R05 | Staying: block, no exit or entry, timer start unchanged, a fired staying timer disarmed for this entry, new selection. |
+| SIF-R06 | Leaving: timers invalidated, `on exit`, the trigger's block, then the jump target or the next statement. |
+| SIF-R07 | Jumps: unwinding of blocks and loops, locals re-initialised on backward passes (3.6). |
+| SIF-R08 | Inputs: the four regimes (3.7). |
+| SIF-R09 | Run to completion between selections; a waiting state releases the component lock; resumption reacquires it. |
+| SIF-R10 | `machines` holds the last state entered. |
+| SIF-R11 | Plain receive statements in a stateful operation: selection as SIF-R03 among their branches, their timeout at phase 1, the operation default for unlisted members. |
+| SIF-R12 | Completion: reaching the end of the body or `return` completes the operation once; then SIF-R08's last regime; `after` dependents are released. |
 
-### 8.4 Diagnostics
+### 4.4 Diagnostics
 
-| ID | Code | Rule |
+| ID | Code | Rule and message shape |
 | --- | --- | --- |
-| SIF-D01 | SW2008 | Missing disposition (with keep/ignore quick-fixes) |
-| SIF-D02 | warning (SW2018 respelled) | `keep` of a member whose route rejects on overflow |
-| SIF-D03 | warning | Kept member not handled by any reachable later waiting point |
-| SIF-D04 | warning (replaces SW2017) | Condition that no wake can ever change |
-| SIF-D05 | SW2008 | Cycle of `when (true)` leaving triggers on which nothing can suspend |
-| SIF-D06 | warning | State in an `every`-released, non-stepped operation |
-| SIF-D07 | SW2008 | Jump rule violations (SIF-S05, S06) |
+| SIF-D01 | SW2008 | Missing operation default: `{member} is not handled by every waiting point of {op}: add keep {member}; or ignore {member}; at the top of {op}.` Quick-fixes for both. |
+| SIF-D02 | SW2018, warning | A kept event whose effective route policy rejects on overflow (WP6-S07 per member route). |
+| SIF-D03 | warning | A kept member that no waiting point reachable from the keeping point handles. |
+| SIF-D04 | SW2008 | Jump rule violations (SIF-S07), including a forward jump over a used declaration. |
+| SIF-D05 | warning | In an operation that contains a back jump or a loop around states, a leaving trigger of a waiting state whose fall-through path reaches the end of the operation without passing another waiting point: `{state} can fall through to the end of {op}; afterwards its inputs are discarded. Jump back, or end on purpose with return;.` |
+| SIF-D06 | warning | Dead trigger: an unguarded leaving timer after an unguarded leaving timer of smaller or equal constant duration; a leaving trigger after an unguarded leaving trigger on the same member. |
+| SIF-D07 | SW2008 | A cycle of jumps and fall-through that passes no waiting point and nothing that can suspend. |
+| SIF-D08 | warning | Unreachable statement or state (not reached by fall-through and not a jump target). |
+| SIF-D09 | warning | An event member kept at a waiting point that has no leaving timer (so it may be kept for an unbounded time), whose effective route policy has no `maxAge`; once per member and operation (5.2). |
+| SIF-D10 | warning | A state disposition equal to the operation default. |
 
-### 8.5 Trace
+### 4.5 Trace
 
 | ID | Observation |
 | --- | --- |
-| SIF-T01 | `state` (2.2 kind), at entry; `source` is the state statement |
-| SIF-T02 | `keep` (replaces `defer`), first keep of each message |
-| SIF-T03 | `discardInput` with reasons `ignored` and `guard` (2.2 reasons `inactiveOwner` and `noEnabledTransition` remain for non-state owners and after the operation ended) |
-| SIF-T04 | `wake`, for condition branches only |
-| SIF-T05 | `violation` `StateLoop` |
+| SIF-T01 | `state` at arrival (`source` the state statement); `state` with `stay: true` for a staying reaction (`source` the trigger). |
+| SIF-T02 | `keep` (replaces `defer`), once per message. |
+| SIF-T03 | `discardInput` with reasons `ignored`, `guard`, `inactiveOwner`. |
+| SIF-T04 | No `discardTimer`; `timer` (WP4-T01) for computed durations, `subject` the operation. |
 
-## 9. Compatibility (measured)
+## 5. Checks against surprises
 
-### 9.1 What is measured and how
+### 5.1 Fall-through and text order (I1)
 
-Prototype patches of the built 2.3 simulator (`out/src/simulation/simulator.js`), each applied alone. Every run and case of the corpus, the showcase models and the extended 2.2 fixtures was rerun and compared with the unpatched build: verdict, final stores, status and trace digest. The unpatched build was rerun twice with byte-identical results. Total: 253 results.
+- **Operation ends where a cycle was meant:** SIF-D05. Deleting `to unlocked;` from the lock controller makes `unlocking` fall into `report`, which is a named step, and the operation ends: the warning names `unlocking`.
+- **Unreachable states:** SIF-D08 (for example a state after one whose every leaving trigger jumps, which is no jump target).
+- **Operation that can end where 2.2 could not:** the migrator checks that the migrated operation's end is reachable exactly when the 2.2 machine had a reachable final state, and refuses to write the edit otherwise (7).
+- **Dead triggers:** SIF-D06.
+- **Reordering is never silent:** the formatter does not reorder; every Flow View move or reorder previews its changed numbers and targets, and a state move writes jumps to keep behaviour (2.7).
+- **A leaving block whose `if` jumps on one path only** is drawn as a decision on the arrow with one branch to the target and one to the merge, so the fall-through path is visible.
 
-| Group | Results |
-| --- | --- |
-| Gate-2 fixture (runs.json, 2.2 examples, three showcase models) | 138 |
-| Cases of the 2.3 examples 33 to 47 | about 30 |
-| Runs and cases of the extended 2.2 sets (models, wp2 to wp5) | the rest |
+### 5.2 Stale kept input (I5)
 
-### 9.2 Results per behaviour axis
+A `keep` turns an old command into a new action when a state lasts long. SIF-D09 warns once per operation for each event member that is kept at a waiting point without a leaving timer and whose effective route policy has no `maxAge`, with a quick-fix to select a member policy that has one. A keep bounded by the keeping state's own timer, as in the lock controller's 250 ms pulses, is not reported. Every reading sample says what a kept input means. Attribute members are not reported: they keep only the latest value.
 
-| Axis | 2.2 behaviour | Measured change if redefined | Where |
+## 6. Compatibility: measured and argued
+
+**Measured** (prototype patches of the 2.3 simulator over 253 runs and cases; revision 1 Appendix A, and the design review's reproduction and tie variants):
+
+| Axis | 2.2 behaviour | Stage 1 choice | Measured |
 | --- | --- | --- | --- |
-| Unhandled input in a state | discarded while waiting (`inactiveOwner`) | **keep by default:** 8 verdicts, 7 stores, 21 trace-only | Verdicts: door ×5 (`rxVehicleStatus failed: rejected`, a periodic signal kept in states that do not handle it fills a rejecting queue), cloud breaker test, examples 45 (its 2.2-shaped lock) and 46 (its 2.2-shaped breaker). Stores: door "Courtesy light afterglow", extended r1, r3, r5, r6, r7, r10. |
-| Input for a flow receive not yet waiting | kept | **drop unless waiting:** operations 4 verdicts, 2 stores; with case scripts 19 verdicts, 4 stores, 10 trace-only | Example 32 ×4, example 21, extended d2; scripts: examples 31, 37, nine cloud and three v2x showcase tests |
-| Exit action versus transition effect | exit, effect, entry | **effect first:** 1 verdict, 2 stores, 11 trace order | v2x "Repetition outlived by cancellation"; door "Lock and unlock"; extended r5 |
-| Several queued inputs at one selection | queue-creation walk | **written order:** 1 verdict, 3 stores (example 32 ×4); **arrival order:** 1 store (extended r10, built to pin the 2.2 walk) | Contested selections: flows 4 of 50, scripts 0 of 279, machines 6 of 554 |
-| Elapsed timer and earlier input | elapsed timer first | **first ready:** 1 of 11 elapsed-timer selections changes | Extended r5 only |
-| Several transitions on one member | declaration order | none after migration to `if`/`else if` in the same order | 10 such states |
-| Final state entry, timer start, timer invalidation, input during entry, lock release | as 2.2 | none by translation | – |
+| Unhandled input in a state | discarded while waiting | migrator writes `ignore`: same as 2.2 | the rejected alternative, keep by default: 8 verdicts, 7 stores, 21 trace-only |
+| Exit actions against transition block | exit, effect, entry | exit, block, then target: same as 2.2 | the rejected alternative, block first: 1 verdict, 2 stores, 11 trace order |
+| Timer against same-instant delivery | timer wins | timer wins (phase 1): same as 2.2 | the rejected alternative, delivery wins (upper bound): 0 verdicts, 1 store, 52 traces |
+| Several queued inputs at one selection (machines; 6 of 554 selections are contested) | queue-creation walk | delivery order: **differs** | the nearest measured variant, offer-ordinal order: 1 store (extended r10); written order among inputs, rejected: 1 verdict, 3 stores (example 32) |
+| Elapsed timer against earlier input | elapsed timer first | written order, migrator writes timers first: same as 2.2 | the rejected alternative, "first ready": 1 of 11 such selections (extended r5) |
 
-**Static census** of 204 parsed files (corpus, showcase, extended sets):
+**Argued, not measured:**
+- Migrated sources reproduce 2.2 verdicts and final stores except r10. This needs P1: a native stage 1 interpreter and the migrator, then the 253-result comparison on the migrated sources.
+- Delivery order and offer-ordinal order agree on the corpus except across routes with different latencies; P1 measures delivery order.
+- `ignore` consumes at the same instants as the 2.2 discard: while waiting at delivery, otherwise at the next selection (the 2.2 simulator also leaves input queued while the machine is busy). Interaction with `maxAge` and overflow therefore matches.
+- Plain operations are unchanged, so revision 1's "drop input for a flow receive that is not yet waiting" axis (4 to 19 verdicts) no longer applies.
 
-| Count | Value |
-| --- | --- |
-| Machines | 47 |
-| States | 142 |
-| Transitions | 274 |
-| States that need a disposition line | 65 (122 state-member pairs) |
-| States with an exit action and a non-empty effect | 7 |
-| Self transitions | 33 |
-| States with one trigger written twice | 10 |
-| States with several timers | 6 |
-| Final states with entry actions | 3 |
-| States using WP5 forms | 5 |
-| States using `defer` | 3 |
+**Static census** (204 parsed files, revision 1): 47 machines, 142 states, 274 transitions, 33 self transitions, 10 states with one member on several transitions, 6 states with several timers, 3 final states with entry actions, 5 states with WP5 forms, 3 with `defer`, 65 states (122 state-member pairs) that need a disposition. With the operation default, the migration writes at most one `ignore` line per machine plus 3 `keep` overrides (argued from the census; not counted per machine).
 
-Per showcase model (state-member pairs needing a disposition):
+**Traces:** `source` identities become statement paths, `defer` becomes `keep`, discard reasons change. Gate 2 (trace digests) cannot hold across the edition. It is replaced by a migrated-corpus gate on verdicts, final stores, per-kind counts and per-component order-sensitive digests after mapping identities and renamed kinds; the migrator writes the identity map (old state and transition identity to new statement identity) that the extension's run overlays and recorded fixtures need.
 
-| Model | Machines | Pairs |
+## 7. Migration recipe (B7, A5)
+
+Input: a 2.2 machine (`initial I; state …` body) or a 2.3 machine with WP5 forms, in operation O.
+
+1. **Check the frame.** O already satisfies SIF-S01 (2.2 enforces it).
+2. **Choose the state order** to maximise fall-through, A5. The initial state is first. Final states are last, in source order. For the others, choose the order that maximises the number of states whose textually next state is a target of one of their transitions; exhaustive for up to 9 non-final states, greedy beyond (follow the first-declared transition to an unplaced state); ties go to the order closest to source order.
+3. **Write each state.** For state S: entry and exit unchanged; then **timers first**, sorted by literal duration ascending, stable on declaration order (this keeps "elapsed timers before queued input, earliest first, equal expiry in declaration order"); then the `on receive` transitions in declaration order (keeps "first enabled transition per member in declaration order"). Each transition `… when (g) to T { e }` becomes:
+   - `… when (g);` or `… when (g) { e }` when T is the next state in the chosen order;
+   - `… when (g) to T;` or `… when (g) to T { e }` otherwise, including `T == S` (2.2 self transitions exit and re-enter; so does `to S`).
+   Each trigger keeps its own binding names; several transitions on one member stay several triggers, so nothing is merged or renamed.
+4. **Use `until`** when S has exactly one transition and no WP5 internal transition: `state S { … } until <trigger>;`.
+5. **Dead timers.** Every unguarded timer whose literal duration is greater than or equal to that of an earlier-sorted unguarded timer of the same state was never taken in 2.2 (all 2.2 timers leave); it is removed and reported (models-wp4 d3: `after 2000us to ns` after `after 2ms to us`).
+6. **Dispositions.** Operation level: `ignore` every member that some state does not handle. WP5 `defer m` in S: the override `keep m;` in S.
+7. **Final states.** Each final state F becomes a trigger-less named step `state F { on entry { … } }` (keeps the `state` observation at final entry). With several finals, `return;` follows every final step except the last statement of the body, so `to ok` never falls into `failed`.
+8. **End of operation.** A machine without a reachable final state must not have a reachable end after migration: by construction every transition targets a state, and the last state's transitions are jumps. The migrator verifies "end reachable iff final reachable" and refuses otherwise.
+9. **WP5 forms**, if 2.3 ships them (D10):
+   - internal transitions: staying triggers `… stay { e }`;
+   - guarded timers: `after D when (g) …`. A false guard no longer consumes the timer; the guard must satisfy SIF-S05, otherwise the migrator reports the timer (it needs stage 2);
+   - completion transitions `when (g) to S`: stage 1 has no condition trigger. They cannot be migrated until stage 2, or until stage 1 includes the restricted selection-time `when (g)` of 9.1 (an open part of D10).
+10. **Report.** Removed dead timers, WP5 notes, the r10-style contested-order risk, and the identity map.
+
+## 8. WP5 and WP6
+
+**What stage 1 replaces of the merged WP5 (PR #59):** chapter 3.6 WP5-S02 to S10, 6.5 WP5-R01 to R13, WP5-T01 to T04, ADR 0023, examples 44 to 47, `test/v2/state-reactions.test.ts`, SW2017 and SW2018, `CompletionLoop`. The runtime ideas carry over: timer start at the state update, retention as `keep` with one observation, internal reactions as `stay`.
+
+**WP6 (merged on main `adc0740`):**
+- WP6-S01's guard positions become: input guards (sampled reads allowed), timer guards (no sampled read in stage 1), conditions (stage 2).
+- WP6-S07's per-member effective policy is what SIF-D02 and SIF-D09 check.
+- WP6-D09 (narrowed polling exemption) and WP6-D10 (always-false completion guard) target completion guards, which stage 1 does not have; they are retargeted to stage 2 conditions.
+- WP6-R02 cells are unchanged; in stage 2 they feed condition wakes.
+
+**Open decision D10: do the WP5 state forms ship in 2.3?** Not decided.
+
+| | Remove WP5 forms from 2.3 | Ship them in 2.3 |
 | --- | --- | --- |
-| door | 4 | 43 |
-| v2x | 3 | 24 |
-| cloud | 4 | 10 |
-| examples 04, 36, 41 | 1 each | 0 |
-| examples 42, 44, 45, 46, 47 | 1 to 2 each | 2, 6, 2, 1 and 1 |
+| Work now | Revert #59 and rework WP6 parts that reference it (S01 guard positions, S07's SW2018 wording, D09, D10, the formal-semantics retention marks, `state-reactions.test.ts`) | None |
+| 2.3 users | No door deferral proof (example 45), no completion transitions, no internal transitions in 2.3 | Have them |
+| 3.0 migration | Only 2.2 forms | Also WP5 forms: completion transitions need stage 2 conditions or a restricted stage 1 `when (g)` evaluated at selections (the WP5-R03 meaning) |
+| Edition story | 2.3 compatible minor, no state forms that 3.0 replaces | 2.3 publishes forms that 3.0 removes a release later |
 
-### 9.3 What option 1 changes for 2.2 sources
+Recommendation, for the owner to decide: ship 2.3 **without** the WP5 state forms only if 3.0 is planned soon after; otherwise ship them and add the restricted selection-time `when (g)` to stage 1 so that the migrator covers every published form.
 
-Option 1 redefines states. The 2.2 body form (`initial X; state …` as the whole body) and the `Transition` syntax are removed, and every 2.2 machine must be rewritten. With the migration of section 9.4:
-- **Sources:** all 47 machines change text.
-- **Disposition lines:** 65 states gain one; the migration writes `ignore` to keep 2.2 discards.
-- **Expected results:** verdicts and final stores unchanged by construction, except the two extended fixtures r5 and r10, which pin the 2.2 queue walk and the elapsed-timer-first rule.
-- **Traces:** they change in `source` identities (new statement paths), `discardInput` reasons (`ignored`, `guard`), and `keep` replacing `defer`. Gate 2 (trace digests) cannot hold. It would be replaced by a migrated-corpus gate on verdicts, stores and per-kind counts.
-- **The promise:** "2.3 is a compatible minor after 2.2" cannot hold for a release that contains option 1, so option 1 is an incompatible edition, **3.0**.
+## 9. Later stages
 
-### 9.4 Migration recipe (and what a tool can do)
+Each later stage gets its own design revision, adversarial review and prototype. Stage 1 reserves the spellings below so that nothing in it has to change.
 
-Mechanical and complete for 2.2 and WP5 machines:
-1. **The body.** Write the states as state statements in source order, the initial state first.
-2. **Transitions.** Each transition `on receive m(x) when (g) to T { e }` becomes the trigger `on receive m(x) when (g) { to T { e } }`. Several transitions on one member merge into one trigger, `if (g1) { to A { e1 } } else if (g2) { to B { e2 } } else { stay; }`, in declaration order. 2.2 timers become `after D [when (g)] { to T { e } }`, ordered by literal duration and then declaration order.
-3. **Dispositions.** For each state, write `ignore` for every member of the machine it does not handle, and `keep` for every WP5 `defer`.
-4. **Final states.** A final state becomes a trigger-less state placed last; `to F` stays. A final state without entry actions becomes the end of the operation: the last state jumps to it, which is a step.
-5. **WP5 forms:**
-   - completion `when (g) to S { e }` becomes `when (g) { to S { e } }`;
-   - internal transitions become triggers ending in `stay`;
-   - guarded timers keep their guard.
+### 9.1 Stage 2: condition triggers
 
-   The completion semantics change from "evaluated after entry and after internal reactions" to "re-evaluated on wakes", which is a deliberate change for the 5 WP5 states (examples 44, 46, 47).
-6. **Stepped candidates.** These are not migrated automatically. 2.2 has no polled machines; periodic mode logic is plain flow and stays as it is.
+**Sketch.** `when (c);`, `when (c) { … }`, `when (c) to S;` and `when (c) stay { … }` as triggers, in written order like timers. A condition written before the input group wins over queued input (B4: `when (fault) to safe;` written first is taken before a stale `move`). Timer guards are widened to anything a condition may read.
 
-A tool can do steps 1 to 5 exactly (it is a syntax transformation on the AST plus the member census) and report the two semantic notes (r5/r10-style contested orders cannot be found statically; completion re-evaluation). To verify the claim of zero result changes, implement the migrator in stage 1 before the parser change and run the full 253-result comparison on the migrated sources with a translation-based prototype. **This has not been done in this proposal.**
+**Forward compatibility.** The grammar's `Event` gains one alternative; the priority rule already places any non-input trigger by written order; the restricted timer guards of stage 1 are a subset.
 
-## 10. What happens to WP5 and WP6
+**Open problems for stage 2's design revision (B5):**
+- level or edge semantics, the same in waiting and stepped mode; the drain loop (`when (backlog > 0) stay { take(); }`) must be writable;
+- the zero-time livelock between two operations of one occurrence (ping-pong on `n % 2`), and a bound (one wake per write epoch, or `StateLoop` across activations);
+- wakes from case-script calls and white-box helpers, which reuse the caller's activation;
+- read sets per effective occurrence (redefined operations), through callees and sampled cells;
+- the phase of a wake within the instant (extension of D16), and revision 1's `after 20ms` against `when (n > 2)` example;
+- WP6-D09 and D10 retargeted; SW2017 retired.
 
-Option 1 replaces the state surface, so every WP5 form is respelled; none survives as written.
+### 9.2 Stage 3: stepped operations
 
-| Form | Fate | Cost |
-| --- | --- | --- |
-| `initial` + `state` body, `Transition` | removed; migrated (section 9.4) | parser, validator, simulator `machine()`, formatter, projection, all examples with states, three showcase models |
-| Completion `when (g) to S` | respelled `when (g) { to S; }`; re-evaluated on wakes (section 6) | examples 44 and 47 rewritten; ADR 0023 superseded |
-| Internal transitions | respelled: trigger ending in `stay;` | example 46 rewritten |
-| Guarded timers | kept on `after D when (g)` | none beyond respelling |
-| `defer p.m;` | respelled `keep p.m;`, and every state must say keep or ignore | example 45; WP5-D05/D06 replaced by SIF-D01/D03 |
-| WP5 selection rules R01 to R13 | replaced by G2 and the translation | spec 6.5 rewritten; WP5 extended fixtures r1 to r10 re-recorded |
-| `CompletionLoop` | renamed `StateLoop`, same chain rule | trace consumers |
-| SW2017 (WP5-D08) | retired; replaced by SIF-D04 | |
-| SW2018 (WP5-D09) | kept as SIF-D02 with `keep` wording | |
-| WP6-D09 (narrowed polling exemption) | dropped | the separable commit `01c23d9` is not merged |
-| WP6-D10 (always-false guard) | re-targeted to condition triggers | message text |
-| WP6 sampled reads and member policies | unchanged; cells feed condition wakes | WP6-R02 gains the wake hook |
+**Sketch.** `stepped operation step() { state … }` released `on every`. Each call resumes at the current state, makes one selection with conditions evaluated once, takes at most one trigger and runs the flow to the next state's entry, or runs the state's per-call action and returns.
 
-If 2.3 ships without the WP5 surface (recommended), these respellings cost nothing in a published edition. The WP5 runtime ideas carry over:
-- offer-ordinal order of retained input (now G2 for all inputs);
-- timer start at the state update;
-- the loop chain.
+**Open problems for stage 3's design revision (I7):**
+- one-period actuator latency (E8 of revision 1) and the entry-versus-per-call-action rule, with a lint;
+- whether the first call evaluates triggers when later entries do not;
+- the timer base (entry call time or logical entry time) and quantisation to the period;
+- several schedule entries sharing one position; `concurrent` rejected;
+- the per-call action's keyword (`during` is reserved for stage 4).
 
-## 11. Other work packages and the editor
+### 9.3 Stage 4: parent states
 
-- **WP7 (release guards):** unaffected. A skipped call of a `stepped` operation is no step, and its position does not move.
-- **WP8 (tasks, placement):**
-  - T-rule "a state machine sits on a basic Task only if none of its reactions can suspend" becomes "a `stepped` operation may sit on a basic Task; a waiting operation with states needs an extended Task";
-  - the in-task order and priority keys are unchanged.
-- **WP9 (edition):**
-  - new notation figures for the drawings of section 2;
-  - showcase rewrites through the migrator;
-  - reference book and PDF of 3.0;
-  - inventories with the productions `Trigger`, `Disposition`, `Jump`, `Stay`, `During` and the changed `State` and `Receive`.
-- **Flow View:** section 2. A state is a node kind of the operation flow, not a separate state diagram. The layout needs left-gutter back arrows and right-gutter skip arrows across nesting levels; the existing decision and merge nodes are reused.
-- **Sequence:** state invariants on the lifeline; triggers as messages; `stay` reactions do not end the invariant.
-- **Edit operations (`diagram-edits.ts`), each validated as a whole workspace:**
-  - insert a state step (creation card: name, first trigger), with the quick-fix dispositions written in the same edit;
-  - add, reorder (renumbers by moving text) and delete a trigger;
-  - set or clear a guard;
-  - drag an arrow end to a state, which writes or removes `to S` (refused targets per SIF-S05);
-  - make a trigger stay;
-  - add `keep` or `ignore` from the missing-disposition marker;
-  - convert a plain step into a state (wraps it as the entry action) and back;
-  - wrap a selection of steps into a parent's `during`;
-  - delete a state (re-links the fall-through and removes jumps to it, or offers to retarget them).
+**Sketch.** `state P { …; during { inner steps and states } }`, parent triggers armed during the inner steps, outer first.
 
-## 12. Recommendation and staged plan
+**Open problems for stage 4's design revision (B8):**
+- whether a parent trigger leaves cannot be decided before its block runs; with stage 1's head spelling (`stay` versus leaving) it is decided by the head, which removes the contradiction but must be checked against run to completion of the inner segment;
+- exit order (inner exits, parent exit, trigger block) for a parent trigger;
+- dispositions in substates for members an ancestor handles ("handled by an ancestor" exemption; SIF-D06 for an inner trigger shadowed by a parent trigger);
+- `during` in stepped operations (hierarchical periodic charts);
+- Flow View layout of nested boxes with gutters.
 
-**Recommendation:** adopt option 1 as swa.ml 3.0, with candidate B (fall-through plus restricted `to`), keep-at-runtime with mandatory dispositions, G2 ready order, transition actions and condition wakes. Ship 2.3 as the compatible minor without the WP5 state surface.
+## 10. Edition and staged plan
 
-1. **Stage 0 (2.3, now).** Remove the WP5 state forms from the 2.3 candidate before release (completion, internal, guarded timers, `defer`, SW2017/2018, `CompletionLoop`). Keep WP1 to WP4, WP6 without D09/D10, WP7 and WP8. Write ADR 0026 "states as steps" superseding ADR 0023. 2.3 stays a compatible minor.
-2. **Stage 1 (3.0 core, coherent on its own).**
-   - flat states as statements, triggers, `keep`/`ignore`, `stay`, `to` within one statement list and enclosing lists;
-   - G1 to G3, condition wakes, `StateLoop`;
-   - the migrator and the migrated-corpus gate;
-   - Flow View boxes, numbered arrows, back and skip arrows.
+**Edition.** States as steps replace the 2.2 machine syntax: swa.ml **3.0**, with the migrator as an extension command that writes one validated whole-workspace edit, and no alias parser.
 
-   This already replaces every 2.2 and WP5 machine.
-3. **Stage 2.** `stepped` operations (door-style periodic logic, basic Tasks).
-4. **Stage 3.** Parent states (`during` with inner states, outer-first triggers) and their nested drawing.
+1. **Before approval of stage 1 (prototypes):**
+   - P1: native stage 1 interpreter plus migrator in scratch, rerun of the 253-result comparison on migrated sources (verdicts, stores, per-kind counts, order digests per component), with delivery order;
+   - P2: Flow View drawings of three migrated showcase machines, door's largest included;
+   - P3: the reading samples (done in this revision, for the owner).
+2. **2.3:** per D10.
+3. **Stage 1 (3.0 core):** section 4, the migrator, the migrated-corpus gate, Flow View boxes, numbered arrows, gutters and the gestures of 2.7. Extension work: dual-edition parsing, the migration command, retiring the State view's 2.2 projection, run-overlay identity remapping, Sequence state invariants.
+4. **Stage 2:** condition triggers. **Stage 3:** stepped operations. **Stage 4:** parent states.
 
-Each stage is one work package with the usual adversarial review. Stage 1 must first prototype the translation and the migrator and rerun the 253-result comparison.
-
-## 13. Owner decisions
+## 11. Owner decisions
 
 | # | Decision | Recommended answer |
 | --- | --- | --- |
-| D1 | Jumps: structured loops only (A) or restricted `to S;` (B) | B: tail position, same or enclosing statement list, never into a block |
-| D2 | What a trigger block does when it ends | Leave the state and continue with the next statement |
-| D3 | Staying | `stay;` at the end of the block; a false guard on the trigger also stays |
-| D4 | Input rule | Kept until a waiting point takes it, with mandatory `keep`/`ignore` per state and the migration writing `ignore` for 2.2 discards |
-| D5 | Order among ready triggers | First ready, ties by written order; inputs by arrival; diagram numbers = written order |
-| D6 | Position of a 2.2 effect | `to S { action }` after exit (exact 2.2 order); statements before `to` run in the state |
-| D7 | Conditions | Re-evaluated on wakes (writes by other activations, cell updates), with the edge rule; no `now()` |
-| D8 | Periodic charts | `stepped` operations, one trigger per call, no super-step |
-| D9 | Hierarchy | Parent states with `during { … }`, outer triggers first, in stage 3; parallel (AND) states and history out of scope |
-| D10 | Edition | 3.0 for states as steps; 2.3 released without the WP5 state surface |
-| D11 | 2.2 machine syntax in 3.0 | Removed, with an automatic migrator; no alias parser (repository rule) |
-| D12 | Interrupt regions | Keep their 2.2 discard while inactive; they cancel, they are not states |
-| D13 | States in case scripts | Not in stage 1 |
-| D14 | Trigger-less states | Allowed as named steps (jump targets, migrated finals) |
+| D1 | Jumps | Restricted `to S;` (SIF-S07) plus structured loops; forward jumps over used declarations rejected |
+| D2 | Leaving or staying | Visible at the head: `stay` for staying, everything else leaves; `;` for a leaving trigger without actions (approved look) |
+| D3 | False input guard | The input is consumed and dropped (`guard`), as in 2.2, and drawn as a muted `dropped` line. A false timer guard consumes nothing |
+| D4 | Input rule | Kept or ignored by an operation default, overrides per state, mandatory where a member is not handled everywhere |
+| D5 | Priority | Written order among triggers ready at one selection; one input group in delivery order (approved look) |
+| D6 | Order when leaving | Exit actions, then the trigger's block, then the target (2.2 order) |
+| D7 | Conditions | Stage 2, with its own design revision |
+| D8 | Periodic charts | Stage 3 |
+| D9 | Hierarchy | Stage 4; parallel states and history out of scope |
+| D10 | WP5 state forms in 2.3 | **Open.** See section 8 for both costs and the conditional recommendation |
+| D11 | 2.2 machine syntax in 3.0 | Removed, automatic migrator, after P1 |
+| D12 | Interrupt regions | Keep their 2.2 discard; not allowed in stateful operations |
+| D13 | States in case scripts | No; scripts cannot call stateful operations |
+| D14 | Trigger-less states | Named steps (jump targets, migrated finals), with SIF-D08 |
+| D15 | Which operations may contain states | The 2.2 single-activation rule (SIF-S01) for stage 1; relax later only with per-activation state identity in trace, `machines`, Timing and Flow View |
+| D16 | Same-instant phase of a waiting state | Selection at the first event that makes a trigger ready; timer (phase 1) before delivery (phase 2), as the 2.2 contract. Alternative: postpone the selection after same-instant deliveries so that written order decides exact ties (measured upper bound: 1 store, 52 traces) |
 
-## 14. Stateflow cues
+## 12. Stateflow cues
 
-| Cue | Decision | Why |
-| --- | --- | --- |
-| States and flow-chart logic in one chart; junctions are control flow | **adopt** | This is the design: states are steps, decisions are `if`, merges are the existing merge nodes. |
-| Explicit, numbered transition order | **adapt** | Numbers are the written order and decide ties at one instant and the evaluation order of conditions. Inputs are taken in arrival order, because written order among inputs broke example 32. |
-| entry, during, exit, on event | **adapt** | entry and exit as 2.2. "on event" is a trigger ending in `stay`. `during` is the parent's inner steps in waiting mode and the per-call action in stepped mode. |
-| Hierarchy: substates, parent transitions apply in all substates, inner transitions | **adapt** | Parent state with `during`, outer triggers first, `to` within the inner list. Stage 3. |
-| Parallel (AND) states | **reject** | Concurrency belongs to schedule entries and components with explicit ports. |
-| Default transition | **adapt** | The flow's arrival is the default transition; the start dot is drawn before the first state. |
-| History junction | **reject** | Store a value and decide with `if`; a stepped operation already persists its position. |
-| Temporal `after` | **adopt** | Relative to the state update, once per entry. |
-| `every`, `at`, `before`, `temporalCount` | **reject for now** | `stay` plus `after` with re-entry (`to S`) covers periodic actions; a schedule `on every` is clearer. |
-| Conditions evaluated at every chart execution | **adapt** | Stepped: per call. Waiting: on wakes (section 6), which removes stale guards without polling. |
-| Events (not queued) versus messages (queued) | **adapt** | swa.ml events and requests are queued like messages, with explicit keep or ignore. Attributes and sampled cells are data. There are no unqueued broadcast events. |
-| Condition actions and transition actions | **adopt** | Statements before `to` and the `to S { … }` block. |
-| Super-step, run to completion, loop guard | **adapt** | Run to completion per trigger block; no super-step in stepped mode; `StateLoop` in waiting mode. |
-| Graphical notation | **cue only** | Rounded boxes, numbered arrows, junction diamonds; the textual form stays primary and structured. |
+| Cue | Decision |
+| --- | --- |
+| States and flow-chart logic in one chart; junctions are control flow | **adopt**: states are steps, decisions are `if`, merges are merge nodes |
+| Numbered transition order is the priority | **adopt**, with the input group sharing one number |
+| entry, exit, on event | **adopt**: `on entry`, `on exit`, staying reactions listed in the box |
+| Transition action after exit, before entry | **adopt**: the trigger block |
+| Condition actions before exit | **reject**: work done while staying is a staying reaction |
+| Default transition | **adapt**: the flow's arrival |
+| Temporal `after` | **adopt**: relative to arrival, once per entry |
+| Conditions evaluated at each chart execution | **later** (stages 2 and 3) |
+| Hierarchy | **later** (stage 4) |
+| Parallel states, history junction | **reject** |
 
-## 15. Risks not closed
+## 13. Risks
 
-- **The migrator is not prototyped.** "Zero result changes after migration" is argued by construction, not measured. In particular, the 2.2 discard of input that arrives during entry and is then unhandled must map exactly onto `ignore` at the next waiting point. The prototype shows the mechanism (WP5 retention), not the migrated text.
-- **The translation is not prototyped.** The trace-level claims (one `state` per entry, the step interleaving at equal times) depend on implementing states natively with the same step points as today's `machine()`. A literal desugaring would add steps and change same-instant interleaving.
-- **Condition wakes:** the read-set computation must follow callees and sampled cells exactly (the WP6 review findings F2, F3 and F6 on `sampledMembers` and shadowing apply). Performance with many waiting conditions is unmeasured.
-- **G1** lets two activations of one operation wait for the same member. 2.2 already allows this for one receive statement (the oldest activation is served); the rule should be stated, not inherited.
-- **Jumps to enclosing lists** require loop-condition rewriting in the translation, and `for in` must become an indexed loop. A tool that reasons on the source must treat `to` as a labelled exit.
-- **`during` has two meanings** (inner steps, per-call action). If the owner finds this confusing, use `steps { }` for the parent form.
-- **Flow View layout** of back and skip arrows across nested parents is unproven at showcase size (door: 4 machines, up to 9 states each).
-- **Schedule:** 3.0 lands after 2.3. Until then, the showcase keeps its 2.2 machines, and the WP5 proofs (v2x session, cloud breaker, door deferral) wait.
-- **Unmeasured rows:** dispositions written by the migrator interact with `maxAge` and overflow exactly as 2.2 discards only if `ignore` is taken at the same instant the 2.2 discard happened. Equal-time ordering with other components' steps was not checked.
+- **Nothing is prototyped in revision 2.** The stage 1 rules are written to be implementable, but P1 has to show that the migrated corpus keeps verdicts and stores.
+- **The phase rule is one rule the numbers do not show** (timer before same-instant delivery). If the owner finds this unacceptable, D16's alternative costs the measured upper bound above.
+- **Timer guard restriction** may reject WP5-style guards that read attributes written by other operations; those wait for stage 2.
+- **Gutter layout** of back arrows and skips is unproven at showcase size (P2). A machine with many crossing jumps may read worse in one column than a 2D state diagram; a layout mode for such operations may be needed.
+- **Text order is behaviour.** The gestures of 2.7 and the checks of 5.1 contain it, but every refactoring tool must treat state order and trigger order as meaningful.
+- **Repeated reactions in flat machines** (the same power-off trigger in every state) are noise until stage 4; the reading samples show where.
+- **Extension cost** (dual-edition parsing, migration command, overlays, State view retirement) is substantial and is not estimated here.
 
 ## Appendix A. Measurement method
 
-All in `E:\t\design-scratch\base`, a copy of this worktree at `02e92c8` with a junction to its `node_modules`; nothing is committed.
+Revision 1, in `E:\t\design-scratch\base` (a copy at `02e92c8`, nothing committed):
 
 | File | Purpose |
 | --- | --- |
-| `measure.mjs <out> <result>` | Runs every run of `examples/simulation/runs.json`, every case of every example and showcase model with its case options, and every run and case of `test/fixtures/compatibility-2-2-extended/models*.json`. Records verdict, stores, status, per-kind counts and the trace digest. |
-| `patch.mjs` | Writes variant builds: `out-keep` (unhandled machine input treated as deferred), `out-dropops` and `out-dropall` (input for a flow or script receive that is not waiting is discarded), `out-eff` (effect before exit) and combinations. |
-| `out-order`, `out-arrival` | Contested waiting points take the lowest written branch, or the lowest offer ordinal. |
-| `out-probe*` | Count contested selections and elapsed-timer selections with an earlier input. |
-| `compare.mjs`, `static.mjs` | Compare two result files; census of machines. |
-| Results | `E:\t\design-scratch\r-*.json`, summary `E:\t\design-scratch\cmp.txt`. |
+| `measure.mjs <out> <result>` | Runs every run of `examples/simulation/runs.json`, every case of every example and showcase model, and every run and case of `test/fixtures/compatibility-2-2-extended/models*.json`. Records verdict, stores, status, per-kind counts and the trace digest. |
+| `patch.mjs` | Variant builds: `out-keep`, `out-dropops`, `out-dropall`, `out-eff`, `out-order`, `out-arrival`, probes. |
+| `compare.mjs`, `static.mjs` | Comparison and machine census. |
 
-The baseline rerun is byte-identical. The gate-2 script on the same copy reports 138 of 138 runs and cases with 0 differences.
+Design review, in `E:\t\rv-states-scratch\`: baseline reproduced (253 results, identical to revision 1); `keep`, `eff` and `dropops` reproduced exactly; `patch-tie.mjs` moves the receive timeout from phase 1 to phase 3 for plain receives (`tieflow`: 0 verdicts, 0 stores, 7 traces) or also for machine timers (`tieall`: 0 verdicts, 1 store, 52 traces).
