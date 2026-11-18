@@ -212,7 +212,7 @@ export type ConstantProblem =
     | { kind: 'call'; node: a.CallExpression | a.TryExpression; clock: boolean }
     /** A name that is not a const attribute of the occurrence: mutable attributes, locals, parameters, receive bindings. */
     | { kind: 'state'; node: a.ReferenceExpression }
-    /** A value other than an integer, duration or boolean: real, string, array and record literals, enum literals, record fields. */
+    /** A value other than an integer, duration or boolean: array and record literals, enum literals, fields of const attributes. */
     | { kind: 'value'; node: a.Expression }
     /** A const attribute whose effective initializer refers back to itself. */
     | { kind: 'cycle'; node: a.ReferenceExpression; attribute: a.Attribute }
@@ -245,8 +245,9 @@ function constantAttribute(e: a.ReferenceExpression, occurrence: Structure): a.A
     return found?.constant ? found : undefined;
 }
 function constantMembership(e: a.Expression, occurrence: Structure, visiting: Set<a.Attribute>): ConstantProblem | undefined {
+    // Literals of other types (real, string) are left to the type rules (SW2002), which report them once.
     if (a.isLiteral(e))
-        return e.text !== undefined || e.number !== undefined && e.$cstNode?.text.includes('.') ? { kind: 'value', node: e } : undefined;
+        return undefined;
     if (a.isReferenceExpression(e)) {
         const attribute = constantAttribute(e, occurrence);
         if (!attribute) {

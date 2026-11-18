@@ -329,7 +329,8 @@ test('WP3-L04 no corpus model becomes ambiguous or names a 2.3 library package',
         const r = await parse(text);
         for (const d of r.doc.diagnostics ?? [])
             assert.doesNotMatch(String(d.message), /Swaml::(Numeric|Text|Time)|Ambiguous name/u, `${file}: ${String(d.message)}`);
-        if (!/examples\/3[89]-|examples\/40-/u.test(file))
+        // The 2.3 examples of WP3 (38 to 40) and WP4 (41 to 43) import the libraries they demonstrate.
+        if (!/examples\/3[89]-|examples\/4[0-3]-/u.test(file))
             assert.doesNotMatch(text, /import Swaml::(Numeric|Text|Time);/u, file);
     }
 });
@@ -629,7 +630,11 @@ test('WP3-S01 now() is allowed in every other expression: statements, receive an
 }`);
 });
 nodeTest.todo('WP3-S01 hook for WP5-S03: now() in a completion guard is rejected (SW2008); completion guards arrive with WP5, which checks isClockRead');
-nodeTest.todo('WP3-S01 hook for WP4-S05: now() is not in the constant sublanguage (SW2007); computed periods and deadlines arrive with WP4, which checks isClockRead');
+test('WP3-S01 hook for WP4-S05: now() is not in the constant sublanguage (SW2007); the check uses isClockRead', async () => {
+    const source = (period: string) => wrap(`attribute n: uint = 0; operation tick() { n = n + 1; } schedule { on every (${period}) tick(); }`);
+    assert.deepEqual((await parse(source('now() + 1ms'))).errors.map(e => [e.code, e.message]), [['SW2007', 'now() + 1ms is not a constant duration: now() are not allowed.']]);
+    assert.deepEqual((await parse(source('Swaml::Time::now() + 1ms'))).errors.map(e => [e.code, e.message]), [['SW2007', 'Swaml::Time::now() + 1ms is not a constant duration: now() are not allowed.']]);
+});
 test('WP3-S02 SW2011 never reports a value obtained from now(), directly, through a helper or in a condition', async () => {
     const component = (op: string) => wrap(`attribute clock: uint = 0; attribute last: uint = 0; attribute flag: bool = false;
       operation stamp() returns uint { return now(); }
