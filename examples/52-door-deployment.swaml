@@ -1,5 +1,5 @@
 package DoorDeployment {
-  /** The task mapping of the door model, in its shape, with Swaml::Os. Two Cores carry the door module's tasks. ComMain keeps its periodic main functions on the 20 ms task of core 1, while its receive entries run on the CAN interrupt and the low event task of the same Core (operation placement, T2, T7). The deploy order fixes the in-task position: rxMainFunction runs before txMainFunction in every 20 ms slot although the schedule lists it second. The 10 ms supervision task has the higher priority, so at a shared instant it observes the state before the 20 ms functions. NvM writes suspend and run on the extended background task (T4). The switch panel, a LIN slave, runs on a plain Node of the same platform outside every Core: the task rules apply per Core, so its entries need no Task. Each placement is checked statically; with zero-cost steps the run orders equal-time work by priority and in-task position only. */
+  /** The task mapping of the door model, in its shape, with Swaml::Os. Two Cores carry the door module's tasks. ComMain keeps its periodic main functions on the 20 ms task of core 1, while its receive entries run on the CAN interrupt and the low event task of the same Core (operation placement, T2, T7). The deploy order fixes the in-task position: rxMainFunction runs before txMainFunction in every 20 ms slot although the schedule lists it second. The 10 ms supervision task has the higher priority, so at a shared instant it observes the state before the 20 ms functions. NvM writes suspend and run on the extended background task (T4). The switch panel, a LIN slave, runs on a plain Node of the same platform with no OS Core below it, so its entries need no Task; a component left on the door module by the root placement would need one, because the door module has OS Cores below it. Each placement is checked statically; with zero-cost steps the run orders equal-time work by priority and in-task position only. */
   import Swaml::Platform;
   import Swaml::Os;
   enum PowerMode {
@@ -201,7 +201,7 @@ package DoorDeployment {
     deploy ecuMode on doorModules[0].core0.taskEventLow;
   }
   deployment 'Switch panel' of switchPanel on vehicle {
-    /** A plain Node outside every Core: outside the task rules (T6 applies per Core), as in the door showcase. */
+    /** A plain Node with no Core below it: outside the task rules (WP8-S04), as in the door showcase. */
     deploy on switchPanelNode;
   }
   associate bcm to 'A request is transmitted in the next slot', 'Supervision sees the state before the slot', 'Shutdown stores through the background task';

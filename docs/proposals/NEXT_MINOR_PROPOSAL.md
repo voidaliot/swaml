@@ -1039,7 +1039,7 @@ package Swaml::Os {
 
 **Reference run (Tier 1).** Releases, dispatches and ready continuations at equal logical time and phase are ordered by descending Task priority, then in-task position, then the existing insertion ordinal. Unplaced activations have priority 0. With zero-cost steps, `preemptive`, `kind` and `responseNs` have no effect on the run beyond the static rules, and the documentation says so.
 
-**Binding schema (defined in 2.3, WP8).** `spec/binding.schema.json`, `"schema": "swaml-binding/2.3"`:
+**Binding schema (defined in 2.3, WP8).** `spec/binding.schema.json`, `"schema": "swaml-binding/2.3"` (superseded: the schema shipped as `swaml-binding/1`, versioned independently of the language edition after the WP8 review, F6; this proposal keeps its original spelling as history):
 
 ```text
 {
