@@ -1,0 +1,106 @@
+package TaskOrder {
+  /** Equal-time order on Swaml::Os Tasks of one ECU without a declared Core (one implicit Core). FastFilter inherits Filter's schedule, replaces its smooth entry with a tighter deadline and adds an audit and two after successors. The 5 ms task has the higher priority, so audit runs first at every shared instant; on the 10 ms task the deploy order puts smooth before report although the schedule lists report first, and check, released when smooth completes, follows by its in-task position. The edge interrupt stores the input and its after successor flags it on the ISR task. Filter, deployed as a whole, keeps its schedule order. */
+  import Swaml::Platform;
+  import Swaml::Os;
+  port def Edges {
+    provides event edge(n: uint);
+  }
+  component def Filter {
+    reversed port input: Edges;
+    attribute raw: uint = 0;
+    attribute filtered: uint = 0;
+    attribute order: uint = 0;
+    operation capture(n: uint) {
+      raw = n;
+    }
+    operation report() {
+      order = order * 10 + 3;
+    }
+    operation smooth() {
+      filtered = raw;
+      order = order * 10 + 2;
+    }
+    schedule {
+      on receive input.edge(n) capture(n);
+      on every 10ms report();
+      on every 10ms smooth() deadline 10ms;
+    }
+  }
+  component def FastFilter specializes Filter {
+    attribute flagged: uint = 0;
+    operation audit() {
+      order = order * 10 + 5;
+    }
+    operation check() {
+      order = order * 10 + 4;
+    }
+    operation flag() {
+      flagged = flagged + 1;
+    }
+    schedule {
+      on every 10ms smooth() deadline 4ms;
+      on every 10ms audit();
+      after smooth check();
+      after capture flag();
+    }
+  }
+  component def App {
+    reversed port a: Edges;
+    reversed port b: Edges;
+    component left: FastFilter;
+    component right: Filter;
+    connect (a, left.input);
+    connect (b, right.input);
+  }
+  component def Ecu specializes Node {
+    /** Tasks without a Core ancestor: one implicit Core of the platform root. */
+    component edgeIsr: Task {
+      redefines const attribute kind: TaskKind = TaskKind.isr;
+      redefines const attribute priority: uint = 50;
+    }
+    component task5ms: Task {
+      redefines const attribute periodNs: uint = 5ms;
+      redefines const attribute priority: uint = 30;
+    }
+    component task10ms: Task {
+      redefines const attribute periodNs: uint = 10ms;
+      redefines const attribute priority: uint = 20;
+      redefines const attribute responseNs: uint = 4ms;
+    }
+  }
+  component def Sensor {
+    /** Interface-only actor that sends the edges. */
+    port a: Edges;
+    port b: Edges;
+  }
+  component app: App;
+  component sensor: Sensor;
+  component ecu: Ecu;
+  connect (sensor.a, app.a);
+  connect (sensor.b, app.b);
+  deployment Filters of app on ecu {
+    deploy left.capture on edgeIsr;
+    deploy left.flag on edgeIsr;
+    deploy left.smooth on task10ms;
+    deploy left on task10ms;
+    deploy left.audit on task5ms;
+    deploy right on task10ms;
+    deploy right.capture on edgeIsr;
+  }
+  associate sensor to 'Priority first, then deploy order', 'The interrupt stores the edge and flags it';
+  test 'Priority first, then deploy order' of app {
+    /** Each 10 ms instant runs audit (5 ms task), then smooth, report and check on the 10 ms task: check is released when smooth completes and takes its in-task position after report. */
+    wait 25ms;
+    assert app.left.order == 52345234;
+    assert app.right.order == 3232;
+  }
+  test 'The interrupt stores the edge and flags it' of app {
+    /** smooth at 10 ms copies the edge stored at 5 ms. */
+    wait 5ms;
+    publish sensor.a.edge(8);
+    publish sensor.b.edge(6);
+    wait 10ms;
+    assert app.left.raw == 8 and app.left.flagged == 1 and app.left.filtered == 8;
+    assert app.right.filtered == 6;
+  }
+}
