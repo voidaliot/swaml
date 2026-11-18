@@ -129,6 +129,9 @@ test('WP1-S02 WP1-D04 selector typing: fields of records, integral indexes of ar
         const found = await errors(op(statement));
         assert.ok(found.some(([code, m]) => code === 'SW2002' && m === message), statement + ' ' + JSON.stringify(found));
     }
+    // An enum literal has no fields or elements.
+    const enumRead = await errors(wrap('attribute out1: bool = false; operation f() { out1 = Mode.up[0].x == Mode.up; } schedule { on start f(); }').replace('package Test {', 'package Test { enum Mode { up, down }'));
+    assert.ok(enumRead.some(([code, m]) => code === 'SW2002' && m === 'Test::Mode is not an array and cannot be indexed.'), JSON.stringify(enumRead));
 });
 
 test('WP1-S03 WP1-D04 a literal index outside the extent is a static error at every selector position', async () => {

@@ -509,7 +509,8 @@ export class SwamlValidator {
             if (!t) {
                 const en = resolve(e, head, this.models);
                 if (a.isEnumType(en) && fields.length === 1 && en.literals.includes(fields[0]))
-                    return identity(en);
+                    // An enum literal has no fields or elements, so selectors after it are reported (WP1-D04).
+                    return selected ? this.select(identity(en), steps.slice(1), env, c, op, e) : identity(en);
                 // A test may read attributes of its subject and of parts inside it, indexing part families with literals (WP1-S06).
                 const read = this.script && caseRead(this.script.scenario, e);
                 if (read?.kind === 'problem') {
