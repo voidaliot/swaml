@@ -312,7 +312,9 @@ export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
             return base;
         const guessName = prodType === 1;
         return function (this: Lookahead) {
-            if (stateMemberStart(this))
+            // Only on and defer can start a state member that ends an unclosed reaction block; other tokens add no call.
+            const first = this.LA(1).tokenType.name;
+            if ((first === 'on' || first === 'defer') && stateMemberStart(this))
                 return false;
             return base.call(this) || guessName && nameToken(this.LA(1).tokenType);
         };
