@@ -55,6 +55,11 @@ export interface PlacementInfo {
     task?: OsTask;
     /** The Core the target reaches (WP8-S10): explicit, or the implicit Core of a Task without a Core ancestor. */
     core?: string;
+    /**
+     * A target in no Core whose subtree contains a Core that has Tasks (an ECU Node with OS Cores): the target's
+     * platform path. Its entries are in the task rules and need a Task of one of those Cores (WP8-S04, T6).
+     */
+    region?: string;
 }
 export interface EntryPlacement {
     occurrence: Occurrence;
@@ -68,6 +73,8 @@ export interface EntryPlacement {
     task?: OsTask;
     /** The Core its placement reaches (WP8-S03); undefined when unplaced or on a Node outside every Core. */
     core?: string;
+    /** The Node with tasked Cores below it that its placement targets when that target is in no Core (WP8-S04). */
+    region?: string;
     /** The in-task position, 0-based (WP8-M01), for an entry on a Task. */
     position?: number;
 }
@@ -89,6 +96,8 @@ export interface DeploymentPlan {
     taskedCores: Set<string>;
     /** The Core of the platform root: the root itself when it is a Core, the implicit Core when there is one, else undefined. */
     rootCore?: string;
+    /** The platform root path when it is in no Core and Cores with Tasks lie below it (WP8-S04): unplaced software is in the task rules. */
+    rootRegion?: string;
     placements: PlacementInfo[];
     /** Computed on first use: a deployment on a platform without Swaml::Os needs only its placements. */
     entries: EntryPlacement[];
@@ -100,6 +109,12 @@ export interface DeploymentPlan {
      * of the platform root. Undefined on a Node outside every Core.
      */
     occurrenceCore: Map<Occurrence, string | undefined>;
+    /**
+     * For an occurrence in no Core (WP8-S04): the Node it is deployed on (its effective occurrence placement target, or
+     * the platform root without one) when Cores with Tasks lie below that Node. Undefined on a Node without tasked Cores
+     * below it, which keeps the 2.2 meaning.
+     */
+    occurrenceRegion: Map<Occurrence, string | undefined>;
     /** Software occurrences by path. */
     occurrenceAt: Map<string, Occurrence>;
 }
@@ -156,6 +171,9 @@ function computePlan(d: a.Deployment): DeploymentPlan | undefined {
         return task ? task.core : nearest(target.path, 'Core') ?? (implicit ? platform.name : undefined);
     };
     const rootCore = rootTask ? undefined : coreOf(byPath.get(platform.name)!);
+    // WP8-S04: a target in no Core that contains a Core with Tasks (an ECU Node) is not outside the task rules.
+    const regionOf = (target: Occurrence) => !rootTask && coreOf(target) === undefined && [...taskedCores].some(c => c.startsWith(`${target.path}.`) || c.startsWith(`${target.path}[`)) ? target.path : undefined;
+    const rootRegion = rootTask ? undefined : regionOf(byPath.get(platform.name)!);
     const softwareAt = new Map(software.map(o => [o.path, o]));
     const families = new Map<string, Occurrence[]>();
     for (const o of software) {
@@ -169,7 +187,7 @@ function computePlan(d: a.Deployment): DeploymentPlan | undefined {
         const path = p.target ? `${root.name}.${p.target}` : root.name;
         const target = p.node !== undefined ? byPath.get(`${platform.name}.${p.node}`) : undefined;
         const taskPath = target && !rootTask ? nearest(target.path, 'Task') : undefined, task = taskPath ? taskAt.get(taskPath) : undefined;
-        const info: PlacementInfo = { node: p, index, path, kind: 'unknown', target, task, core: target && !rootTask ? coreOf(target) : undefined };
+        const info: PlacementInfo = { node: p, index, path, kind: 'unknown', target, task, core: target && !rootTask ? coreOf(target) : undefined, region: target ? regionOf(target) : undefined };
         if (!p.target || owners(path).length)
             return { ...info, kind: 'occurrence' };
         const dot = path.lastIndexOf('.'), prefix = path.slice(0, dot), operation = path.slice(dot + 1);
@@ -183,17 +201,17 @@ function computePlan(d: a.Deployment): DeploymentPlan | undefined {
             return { ...info, unreleased: { occurrence: prefix, operation } };
         return info;
     });
-    let derived: Pick<DeploymentPlan, 'entries' | 'byOccurrence' | 'occurrenceCore'> | undefined;
-    const derive = () => derived ??= planEntries(software, softwareAt, placements, rootCore);
+    let derived: Pick<DeploymentPlan, 'entries' | 'byOccurrence' | 'occurrenceCore' | 'occurrenceRegion'> | undefined;
+    const derive = () => derived ??= planEntries(software, softwareAt, placements, rootCore, rootRegion);
     const taskRules = tasks.length > 0, coreRule = !rootTask && (taskRules || [...roles.values()].includes('Core'));
     return {
-        deployment: d, root, platform, software, platformOccurrences, tasks, rootTask, taskRules, coreRule, taskedCores, rootCore, placements,
-        get entries() { return derive().entries; }, get byOccurrence() { return derive().byOccurrence; }, get occurrenceCore() { return derive().occurrenceCore; },
+        deployment: d, root, platform, software, platformOccurrences, tasks, rootTask, taskRules, coreRule, taskedCores, rootCore, rootRegion, placements,
+        get entries() { return derive().entries; }, get byOccurrence() { return derive().byOccurrence; }, get occurrenceCore() { return derive().occurrenceCore; }, get occurrenceRegion() { return derive().occurrenceRegion; },
         occurrenceAt: softwareAt,
     };
 }
 /** The entries of a plan (WP8-S02, WP8-M01) and the Core of each occurrence (WP8-S04), from indexes of the placements by path. */
-function planEntries(software: Occurrence[], softwareAt: Map<string, Occurrence>, placements: PlacementInfo[], rootCore: string | undefined): Pick<DeploymentPlan, 'entries' | 'byOccurrence' | 'occurrenceCore'> {
+function planEntries(software: Occurrence[], softwareAt: Map<string, Occurrence>, placements: PlacementInfo[], rootCore: string | undefined, rootRegion: string | undefined): Pick<DeploymentPlan, 'entries' | 'byOccurrence' | 'occurrenceCore' | 'occurrenceRegion'> {
     // The first placement of each exact path; a duplicate is an error (WP8-D09) and the first one wins.
     const byOperation = new Map<string, PlacementInfo>(), byPath = new Map<string, PlacementInfo>();
     for (const p of placements) {
@@ -212,17 +230,19 @@ function planEntries(software: Occurrence[], softwareAt: Map<string, Occurrence>
         occurrencePlacement.set(path, found);
         return found;
     };
-    const entries: EntryPlacement[] = [], byOccurrence = new Map<Occurrence, EntryPlacement[]>(), occurrenceCore = new Map<Occurrence, string | undefined>();
+    const entries: EntryPlacement[] = [], byOccurrence = new Map<Occurrence, EntryPlacement[]>(), occurrenceCore = new Map<Occurrence, string | undefined>(), occurrenceRegion = new Map<Occurrence, string | undefined>();
     software.forEach((o, occurrenceIndex) => {
         const family = familyOf(o.path), own: EntryPlacement[] = [], occurrence = ofOccurrence(o.path);
         schedule(o.structure).forEach((entry, scheduleIndex) => {
             // WP8-S02: an operation placement overrides every occurrence placement; an indexed path overrides its family.
             const placement = byOperation.get(`${o.path}\u0000${entry.operation}`) ?? (family !== undefined ? byOperation.get(`${family}\u0000${entry.operation}`) : undefined) ?? occurrence;
-            own.push({ occurrence: o, entry, occurrenceIndex, scheduleIndex, placement, task: placement?.task, core: placement?.core });
+            own.push({ occurrence: o, entry, occurrenceIndex, scheduleIndex, placement, task: placement?.task, core: placement?.core, region: placement?.region });
         });
         entries.push(...own);
         byOccurrence.set(o, own);
-        occurrenceCore.set(o, occurrence ? occurrence.core : own.find(e => e.core !== undefined)?.core ?? rootCore);
+        const core = occurrence ? occurrence.core : own.find(e => e.core !== undefined)?.core ?? rootCore;
+        occurrenceCore.set(o, core);
+        occurrenceRegion.set(o, core !== undefined ? undefined : occurrence ? occurrence.region : rootRegion);
     });
     // WP8-M01: deploy statement order, then the deployed tree depth-first, then schedule order.
     const onTask = new Map<OsTask, EntryPlacement[]>();
@@ -232,7 +252,7 @@ function planEntries(software: Occurrence[], softwareAt: Map<string, Occurrence>
     for (const list of onTask.values())
         list.sort((x, y) => x.placement!.index - y.placement!.index || x.occurrenceIndex - y.occurrenceIndex || x.scheduleIndex - y.scheduleIndex)
             .forEach((e, position) => e.position = position);
-    return { entries, byOccurrence, occurrenceCore };
+    return { entries, byOccurrence, occurrenceCore, occurrenceRegion };
 }
 /** The entries of the same occurrence whose completion releases an after entry (its predecessor operation's entries). */
 export function predecessors(plan: DeploymentPlan, e: EntryPlacement): EntryPlacement[] {

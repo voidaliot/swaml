@@ -732,7 +732,9 @@ class Interpreter {
             else if (e instanceof ContractViolation) {
                 this.stop = e.code === 'StepLimit' ? 'limit' : 'violation';
                 // CompletionLoop names its machine and completion transition (WP5-T04); the other violations are unchanged.
-                this.log('violation', e.details?.subject ?? this.target.identity, { code: e.code, ...(e.details?.source !== undefined ? { source: e.details.source } : {}) });
+                // An ActivationOverflow of a run with Tasks also says which limit and which Core (WP8-R02); runs without
+                // Tasks record the 2.2 observation.
+                this.log('violation', e.details?.subject ?? this.target.identity, { code: e.code, ...(e.details?.source !== undefined ? { source: e.details.source } : {}), ...(e.code === 'ActivationOverflow' && e.message !== e.code ? { message: e.message } : {}) });
             }
             else
                 throw e;
@@ -776,7 +778,7 @@ class Interpreter {
         throw new Error('A pure expression suspended.'); return r.value; }
     private release(c: Component, entry: a.ScheduleEntry, message?: Message, predecessor?: Frame): void {
         if (this.unstarted >= this.options.maxPending)
-            throw new ContractViolation('ActivationOverflow');
+            throw new ContractViolation('ActivationOverflow', this.tasked ? this.overflowMessage() : undefined);
         const op = members(c.structure).filter(isExecutable).find(x => x.name === entry.operation)!;
         const f: Frame = { id: this.id('a'), c, op, entry, released: this.time, iterator: undefined!, snapshot: new Map(), done: false, suspended: false, started: false, token: 0, watches: [], correlation: message?.correlation, at: entry };
         const key = this.keyOf(c, entry);
@@ -792,6 +794,24 @@ class Interpreter {
         if (deadline)
             this.at(this.time + deadline, 0, () => { if (!f.done)
                 throw new ContractViolation('Deadline', f.id); }, () => !f.done);
+    }
+    /**
+     * WP8-R02: with Tasks a Core holds back every release of an instant until the running activation waits or ends, so
+     * the pending activations of one Core can reach the run option maxPending; the violation says which Core.
+     */
+    private overflowMessage(): string {
+        const byCore = new Map<string, number>();
+        let unkeyed = 0;
+        for (const f of this.frames)
+            if (!f.started) {
+                if (f.key)
+                    byCore.set(f.key.core, (byCore.get(f.key.core) ?? 0) + 1);
+                else
+                    unkeyed++;
+            }
+        const [core, n] = [...byCore].sort((x, y) => y[1] - x[1] || (x[0] < y[0] ? -1 : 1))[0] ?? ['', 0];
+        const where = core ? `; ${n} of them wait for core ${core.slice(core.indexOf('|') + 1)} of ${core.slice(0, core.indexOf('|'))}${unkeyed ? ` and ${unkeyed} are not on a task` : ''}` : '';
+        return `ActivationOverflow: ${this.unstarted} activations are pending at ${this.time}ns, the limit set by the run option maxPending = ${this.options.maxPending}${where}.`;
     }
     /** Computed deadlines and periods are constant per occurrence (WP4-S04, WP4-R02); each is evaluated once. */
     private readonly deadlines = new Map<Component, Map<a.ScheduleEntry, number | undefined>>();
@@ -948,9 +968,10 @@ class Interpreter {
         if (!failure && !f.script)
             for (const e of schedule(f.c.structure))
                 if (e.kind === 'after' && e.predecessor === f.op.name) {
-                    // WP8-R02: with Tasks a successor is released in its predecessor's completion step (OSEK chaining),
-                    // so that it competes for the freed Core with the work already released at this instant.
-                    if (this.tasked)
+                    // WP8-R02: a successor of an activation on a Task is released in its predecessor's completion step
+                    // (OSEK chaining), so that it competes for the freed Core with the work already released at this
+                    // instant. A predecessor not on a Task keeps the 2.2 release, also in a run that has Tasks.
+                    if (f.key)
                         this.release(f.c, e, undefined, f);
                     else
                         this.at(this.time, 2, () => this.release(f.c, e, undefined, f), undefined, this.keyOf(f.c, e));

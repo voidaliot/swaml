@@ -85,6 +85,9 @@ test('WP8-M03 schema errors: version, unknown and missing properties, types and 
     assert.deepEqual(await errorsOf([]), ['error "": must be an object, found an array.']);
     assert.deepEqual(await errorsOf({ ...VALID, budgets: [{ task: 'vehicle.doorModules[0].core1.task20ms', budgetNs: 1.5 }, 'x'] }), [
         'error /budgets/0/budgetNs: must be an integer from 0 to 9007199254740991.', 'error /budgets/1: must be an object, found string.']);
+    // Review verification N18: the maximum is checked too; 2^53 - 1 is the largest accepted value.
+    assert.deepEqual(await errorsOf({ ...VALID, budgets: [{ task: 'vehicle.doorModules[0].core1.task20ms', budgetNs: 9007199254740992 }], crossCoreLatencyNs: [{ connection: 'bodyCan', maxNs: 9007199254740991 }] }), [
+        'error /budgets/0/budgetNs: must be an integer from 0 to 9007199254740991.']);
 });
 
 test('WP8-M03 identity errors: deployment, operation, task, connection, duplicates and bcetNs above wcetNs', async () => {
