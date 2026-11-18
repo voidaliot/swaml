@@ -148,6 +148,13 @@ test('SIF-G01 the validator treats else if as else { if … }: typing, returns, 
     const missing = await diagnostics(returning('if (k > 0) { return 1; } else if (k < 0) { return 2; }'));
     assert.ok(missing.length > 0);
     assert.deepEqual(missing, await diagnostics(returning('if (k > 0) { return 1; } else { if (k < 0) { return 2; } }')));
+    // Definite assignment of out parameters: every path of if / else if / else assigns v, so it is assigned at the end;
+    // without the final else both forms report v as not definitely assigned.
+    const outs = (body: string) => `package Test { component def C { operation g(k: int, out v: int) { ${body} } } }`;
+    assert.deepEqual(await diagnostics(outs('if (k > 0) { v = 1; } else if (k < 0) { v = 2; } else { v = 3; }')), []);
+    const unassigned = await diagnostics(outs('if (k > 0) { v = 1; } else if (k < 0) { v = 2; }'));
+    assert.ok(unassigned.length > 0);
+    assert.deepEqual(unassigned, await diagnostics(outs('if (k > 0) { v = 1; } else { if (k < 0) { v = 2; } }')));
     // Effects: a helper that writes in an else if branch is not pure, so a release guard may not call it.
     const guard = (body: string) => `package Test { component def C { attribute k: int = 0; operation w() returns bool { if (k > 0) { return true; } ${body} return false; } operation f() { } schedule { on every 10ms f() if (w()); } } component Demo: C; }`;
     assert.deepEqual((await diagnostics(guard('else if (k < 0) { k = 1; }'))), (await diagnostics(guard('else { if (k < 0) { k = 1; } }'))));
