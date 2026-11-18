@@ -12,8 +12,8 @@ import { formatDocument, verifyFormatting, ASSOCIATION_LINE_WIDTH } from '../../
 import { semanticIndex } from '../../src/language/path-services.js';
 import { projectModel } from '../../src/language/projection.js';
 import { associatedOccurrences, associationPairs, expressionTypes } from '../../src/language/semantic.js';
-import { CONTEXTUAL_KEYWORDS, CONTEXTUAL_KEYWORDS_2_2, RESERVED_WORDS, RESERVED_WORDS_2_2, formatName, formatPath, formatQualifiedName, isBasicName, reservedWords } from '../../src/language/names.js';
-import { CONDITIONAL_STATEMENT_MESSAGE, RECOVERS_STATEMENTS, SwamlValueConverter, applyStatementRecovery } from '../../src/language/swaml-syntax.js';
+import { CONTEXTUAL_KEYWORDS, CONTEXTUAL_KEYWORDS_2_2, MESSAGE_SPELLING, RESERVED_WORDS, RESERVED_WORDS_2_2, formatName, formatPath, formatQualifiedName, isBasicName, namesFor, reservedWords } from '../../src/language/names.js';
+import { BRACKET_NESTING_LIMIT, CONDITIONAL_STATEMENT_MESSAGE, RECOVERS_STATEMENTS, SwamlValueConverter, UNCLOSED_NESTING_LIMIT, applyStatementRecovery } from '../../src/language/swaml-syntax.js';
 import { runCase, simulate } from '../../src/simulation/simulator.js';
 import { SwamlGrammar } from '../../src/language/generated/grammar.js';
 import type { Model } from '../../src/language/generated/ast.js';
@@ -727,4 +727,143 @@ test('WP2-M02 WP2-M03 the KerML inventory maps the conditional to ControlFunctio
     for (const word of ['view', 'state', 'in', 'out'])
         assert.equal(keywords.find(k => k.keyword === word)!.contextual, true, word);
     assert.ok(keywords.find(k => k.keyword === 'if')!.productions.includes('ConditionalExpression'));
+});
+
+// ---------------------------------------------------------------- review fixes (WP2 review H1, H2, M1, M3, L1, L2, L3, L6)
+
+test('WP2-M01 diagnostics on 2.2 sources keep the 2.2 quoting of view, state, in and out (review H1)', async () => {
+    const hint = await errors(`package Test {
+  port def P { provides event e(v: int); }
+  component def Env { port p: P; }
+  component def Sys { reversed port p: P; attribute n: int = 0; operation h(v: int) { n = v; } schedule { on receive p.e(v) h(v); } }
+  component sys: Sys;
+  component 'in': Env;
+  connect ('in'.p, sys.p);
+  use case 'state' of sys {
+    publish 'in'.p.e(1);
+  }
+}`);
+    assert.ok(hint.some(([, m]) => m === "in takes part in state only when associated: write associate 'in' to 'state'; in package Test."), JSON.stringify(hint));
+    const ambiguous = await parse(`package A { component def 'state' { } }
+package B { component def 'state' { } }
+package Test { import A; import B; component x: 'state'; }`);
+    const d = ambiguous.errors.find(e => e.code === 'SW2001')!;
+    assert.match(String(d.message), /^Ambiguous name 'state': it names component def A::'state' \(imported\)/);
+    assert.deepEqual(d.relatedInformation?.map(r => r.message), ["Declaration A::'state'", "Declaration B::'state'"]);
+});
+
+test('WP2-M01 the name functions are safe as callbacks and have edition-bound variants (review M1)', () => {
+    assert.deepEqual(['in', 'x', 'state', 'operation'].map(formatName), ['in', 'x', 'state', "'operation'"]);
+    assert.deepEqual(['a.b', 'state.in'].map(formatPath), ['a.b', 'state.in']);
+    assert.deepEqual(['view::state'].map(formatQualifiedName), ['view::state']);
+    assert.deepEqual(['in', 'x'].map(isBasicName), [true, true]);
+    const old = namesFor('2.2');
+    assert.deepEqual(['in', 'x', 'state'].map(old.formatName), ["'in'", 'x', "'state'"]);
+    assert.deepEqual(['P::in.state'].map(old.formatPath), ["P::'in'.'state'"]);
+    assert.equal(old.reservedWords, RESERVED_WORDS_2_2);
+    assert.equal(MESSAGE_SPELLING, '2.2');
+});
+
+test('the string-name hint always quotes its example (review L2)', async () => {
+    assert.match((await syntax('package Test { component def "state" { } }')).join('\n'), /Names use single quotes, for example 'state'\./);
+    assert.match((await syntax('package Test { component def "Pump" { } }')).join('\n'), /for example 'Pump'\./);
+});
+
+// An incomplete line typed directly above another statement: the conditional never takes if (…) { as its start.
+const above = (line: string, next: string) => `package P {
+  component def D {
+    attribute n: int = 0;
+    attribute xs: int[2] = [0, 0];
+    operation foo(v: int) returns int { return v; }
+    operation a() {
+      n = 1;
+      ${line}
+      ${next}
+      n = 9;
+    }
+    operation b() {
+      n = 2;
+    }
+    schedule { on start a(); }
+  }
+  component Demo: D;
+}
+package After { }`;
+test('WP2-G01 an incomplete line above an if, while, for, try or return statement keeps the rest of the component (review H2)', async () => {
+    const old = await kept22(), { Swaml } = createSwamlServices(EmptyFileSystem);
+    const lines = ['n =', 'var y: int =', 'return', 'assert', 'foo(', 'xs[', 'n = foo(1,', 'n = xs[0] +', 'n = if (n > 0) 1', 'n = (', 'xs[0] ='];
+    const nexts = ['if (n > 0) {\n        n = 3;\n      }', 'if (n > 0) {\n        n = 3;\n      } else {\n        n = 4;\n      }', 'while (n > 0) {\n        n = n - 1;\n      }', 'for (var i: int = 0; i < 2; i = i + 1) {\n        n = i;\n      }', 'n = try(foo(1), 0);', 'return;'];
+    for (const line of lines)
+        for (const next of nexts) {
+            const text = above(line, next), now = Swaml.parser.LangiumParser.parse(text), before = old.parse(text);
+            const model = now.value as Model, d = model.packages[0]?.elements.find((e): e is a.ComponentDef => a.isComponentDef(e) && e.name === 'D');
+            const label = `${line} / ${next.split('\n')[0]}`;
+            assert.ok(d, label);
+            assert.deepEqual(d.members.map(m => a.isSchedule(m) ? 'schedule' : (m as { name: string }).name), ['n', 'xs', 'foo', 'a', 'b', 'schedule'], label);
+            assert.ok(model.packages[0].elements.some(e => a.isComponentUsage(e) && e.name === 'Demo'), label);
+            assert.deepEqual(model.packages.map(p => p.name), ['P', 'After'], label);
+            assert.ok(now.parserErrors.length <= Math.max(1, before.parserErrors.length), `${label}: ${now.parserErrors.length} errors, 2.2 had ${before.parserErrors.length}`);
+        }
+});
+
+test('WP2-G01 a generated 5,000-line file with an incomplete line in every third line keeps all 250 operations (review H2)', () => {
+    const { Swaml } = createSwamlServices(EmptyFileSystem);
+    const bad = ['n =', 'var y: int =', 'return', 'assert', 'foo(', 'xs[', 'xs[0].'], good = ['if (n > 0) { n = 2; }', 'n = 1;', 'while (n > 3) { n = n - 1; }', 'xs[0] = n;', 'if (n > 1) { n = 0; } else { n = 1; }', 'n = foo(n);'];
+    const ops: string[] = [];
+    for (let o = 0; o < 250; o++) {
+        const lines: string[] = [];
+        for (let l = 0; l < 18; l++)
+            lines.push(l % 3 === 1 ? bad[(o + l) % bad.length] : good[(l + (l % 3 === 2 ? 0 : 1)) % good.length]);
+        ops.push(`    operation op${o}() {\n      ${lines.join('\n      ')}\n      if (n > 0) {\n        n = 0;\n      }\n    }`);
+    }
+    const text = `package P {\n  component def D {\n    attribute n: int = 0;\n    attribute xs: int[2] = [0, 0];\n    operation foo(v: int) returns int { return v; }\n${ops.join('\n')}\n    schedule { on start op0(); }\n  }\n  component Demo: D;\n}\n`;
+    assert.ok(text.split('\n').length > 5000);
+    const started = performance.now(), parsed = Swaml.parser.LangiumParser.parse(text), d = (parsed.value as Model).packages[0].elements.find(a.isComponentDef)!;
+    assert.equal(d.members.filter(m => a.isOperation(m) && m.name.startsWith('op')).length, 250);
+    assert.ok(d.members.some(a.isSchedule));
+    assert.ok(performance.now() - started < 20000, 'parsed within 20 s');
+});
+
+test('deep or unclosed bracket nesting fails fast with SW2013 instead of exhausting the stack or memory (review M3)', async () => {
+    for (const depth of [800, 5000]) {
+        const started = performance.now(), r = await parse(`package P { component def D { attribute a: int[2] = [0, 0]; operation f() {\n${'a['.repeat(depth)}\n} operation g() { } } }`);
+        assert.ok(performance.now() - started < 5000, `${depth} unclosed brackets within 5 s`);
+        assert.ok(r.doc.diagnostics!.some(d => d.code === 'SW2013' && String(d.message).startsWith('Bracket nesting exceeds the reference parser limit')), JSON.stringify(r.doc.diagnostics?.map(d => d.message)));
+    }
+    const balanced = await parse(`package P { component def D { attribute a: int[2] = [0, 0]; operation f() { var x: int = ${'('.repeat(BRACKET_NESTING_LIMIT + 1)}1${')'.repeat(BRACKET_NESTING_LIMIT + 1)}; } } }`);
+    assert.ok(balanced.doc.diagnostics!.some(d => d.code === 'SW2013'));
+    // Unclosed nesting up to the limit still recovers; a valid file is untouched.
+    const shallow = await parse(`package P { component def D { attribute a: int[2] = [0, 0]; operation f() {\n${'a['.repeat(UNCLOSED_NESTING_LIMIT)}\n} operation g() { } } }`);
+    assert.ok(!shallow.doc.diagnostics!.some(d => d.code === 'SW2013'));
+    assert.ok(AstUtils.streamAllContents(shallow.model).some(n => a.isOperation(n) && n.name === 'g'));
+});
+
+test('valid index and parenthesis nesting parses at least as deep as under the kept 2.2 grammar (review L1)', async () => {
+    const old = await kept22(), { Swaml } = createSwamlServices(EmptyFileSystem);
+    const source = (open: string, close: string, depth: number) => `package P { component def D { attribute a: int[2] = [0, 0]; operation f() { var x: int = ${open.repeat(depth)}0${close.repeat(depth)}; } } }`;
+    const parses = (parser: { parse(text: string): { parserErrors: unknown[] } }, text: string) => { try { return parser.parse(text).parserErrors.length === 0; } catch { return false; } };
+    for (const [open, close] of [['a[', ']'], ['(', ')']]) {
+        // The deepest nesting the 2.2 parser accepts on this stack, found by bisection, parses now too.
+        let low = 10, high = 400;
+        while (high - low > 1) {
+            const mid = (low + high) >> 1;
+            if (parses(old as never, source(open, close, mid))) low = mid; else high = mid;
+        }
+        assert.ok(parses(Swaml.parser.LangiumParser, source(open, close, low)), `${open}: 2.2 parses depth ${low}`);
+    }
+});
+
+test('WP2-S02 branch types unify without the expected type (review L3)', async () => {
+    // Each branch is typed on its own: int[2] branches do not become byte[2], and a literal branch is not range-checked against the destination.
+    assert.ok((await errors(wrap('attribute b: byte[2] = [0, 0]; operation f(c: bool) { b = if (c) [1, 2] else [3, 4]; }'))).some(([code, m]) => code === 'SW2002' && m === 'Expected byte[2], received int[2].'));
+    await valid(wrap('attribute b: byte[2] = [0, 0]; operation f() { b = [1, 2]; }'));
+    await valid(wrap('attribute b: byte = 0; operation f(c: bool) { b = if (c) 300 else b; }'));
+});
+
+test('WP2-S02 a conditional with an int and a real branch widens to real before the arithmetic (review L6)', async () => {
+    const widened = await valid(wrap('attribute r: real = 0.0; operation f(c: bool) { r = (if (c) 9007199254740991 else 0.5) + 1; } schedule { on start f(true); }'));
+    assert.equal(simulate([widened.model], 'Test::Demo', { untilNs: 1000 }).stores.Demo.r, 9007199254740992);
+    const integral = await valid(wrap('attribute r: real = 0.0; operation f(c: bool) { r = (if (c) 9007199254740991 else 0) + 1; } schedule { on start f(true); }'));
+    const run = simulate([integral.model], 'Test::Demo', { untilNs: 1000 });
+    assert.equal(run.stores.Demo.r, 0, 'integer overflow fails the activation and leaves r unchanged');
 });

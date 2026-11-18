@@ -75,7 +75,9 @@ Path returns string: QualifiedName ('[' INT ']')? ('.' Name ('[' INT ']')?)*;
 QualifiedName returns string: Name ('::' Name)*;
 ValuePath returns string: QualifiedName ('.' Name)*;
 type Expression = ConditionalExpression | BinaryExpression | UnaryExpression | Literal | CallExpression | TryExpression | ReferenceExpression | RecordLiteral | ArrayLiteral;
-Expression returns Expression: ConditionalExpression | OrExpression;
+// Expression is ConditionalExpression | OrExpression (WP2-G01). The or-chain is written out here rather than called,
+// so that the alternation costs no extra parser frame per nesting level (valid index nesting stays as deep as in 2.2).
+Expression returns Expression: ConditionalExpression | AndExpression ({infer BinaryExpression.left=current} operator='or' right=AndExpression)*;
 ConditionalExpression: 'if' '(' condition=Expression ')' then=Expression 'else' otherwise=Expression;
 OrExpression returns Expression: AndExpression ({infer BinaryExpression.left=current} operator='or' right=AndExpression)*;
 AndExpression returns Expression: EqualityExpression ({infer BinaryExpression.left=current} operator='and' right=EqualityExpression)*;

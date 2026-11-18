@@ -376,7 +376,7 @@ Used in directed port members; see its grammar contexts and normative constraint
 
 Used in suspending wait and receive; see its grammar contexts and normative constraints.
 
-**Context:** Suspending wait and receive. **Grammar:** Receive, FilterOr, OrExpression. **Name use:** reserved.
+**Context:** Suspending wait and receive. **Grammar:** Receive, FilterOr, Expression, OrExpression. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 

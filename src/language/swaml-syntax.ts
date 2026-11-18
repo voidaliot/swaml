@@ -1,5 +1,5 @@
 import { DefaultLexer, DefaultLexerErrorMessageProvider, DefaultValueConverter, LangiumParserErrorMessageProvider, type CstNode, type GrammarAST, type LexerResult, type TokenizeOptions, type ValueType } from 'langium';
-import { CONTEXTUAL_KEYWORDS, RESERVED_WORDS, decodeQuotedName, formatName } from './names.js';
+import { CONTEXTUAL_KEYWORDS, RESERVED_WORDS, decodeQuotedName, quoteName } from './names.js';
 type Token = Parameters<LangiumParserErrorMessageProvider['buildMismatchTokenMessage']>[0]['actual'];
 type TokenKind = Token['tokenType'];
 /** Decodes quoted names and normalizes the two-word use case keyword to useCase. */
@@ -17,8 +17,56 @@ export class SwamlValueConverter extends DefaultValueConverter {
 const skipped = new Set<number>();
 // The tokens of the current tokenization, so that a syntax message can look past the failing token.
 let tokens: readonly Token[] = [];
+/**
+ * Bracket nesting the reference parser accepts. Valid nesting overflows the parser stack between about 115
+ * (indexes) and 135 (parentheses) levels; unclosed brackets make recovery slow and, far deeper, exhaust memory.
+ */
+export const BRACKET_NESTING_LIMIT = 140;
+/** The start of the message of the lexing error that stops a file at the bracket nesting limit (SW2013). */
+export const BRACKET_NESTING_MESSAGE = `Bracket nesting exceeds the reference parser limit of ${BRACKET_NESTING_LIMIT} levels`;
+/** The leading clause shared by both nesting limits. */
+export const BRACKET_NESTING_CLAUSE = 'Bracket nesting exceeds the reference parser limit';
 export class SwamlLexer extends DefaultLexer {
-    override tokenize(text: string, options?: TokenizeOptions): LexerResult { skipped.clear(); const result = super.tokenize(text, options); tokens = result.tokens; return result; }
+    override tokenize(text: string, options?: TokenizeOptions): LexerResult {
+        skipped.clear();
+        const result = super.tokenize(text, options);
+        guardNesting(result);
+        tokens = result.tokens;
+        return result;
+    }
+}
+/** Unclosed bracket nesting the reference parser accepts in one statement before it stops (WP2 review M3). */
+export const UNCLOSED_NESTING_LIMIT = 64;
+/**
+ * Fails fast on deep bracket nesting within one statement (the tokens between ;, { and }): beyond
+ * BRACKET_NESTING_LIMIT, or beyond UNCLOSED_NESTING_LIMIT when the statement leaves brackets unclosed. The tokens
+ * from the start of that statement on are dropped and a lexing error is reported (SW2013), so the parser neither
+ * overflows its stack nor spends superlinear recovery work and memory on unclosed brackets. Balanced nesting up to
+ * the parser's own stack limit is unaffected.
+ */
+function guardNesting(result: LexerResult): void {
+    let depth = 0, deepest = 0, start = 0;
+    const stop = (at: number, limit: number) => {
+        const token = result.tokens[at];
+        result.errors.push({ offset: token.startOffset, line: token.startLine, column: token.startColumn, length: token.image.length, message: `${BRACKET_NESTING_MESSAGE.replace(String(BRACKET_NESTING_LIMIT), String(limit))}; the rest of the file is not parsed. Close the brackets or split the expression into local variables.` });
+        result.tokens.splice(start);
+    };
+    for (let i = 0; i <= result.tokens.length; i++) {
+        const text = result.tokens[i]?.image;
+        if (text === undefined || text === ';' || text === '{' || text === '}') {
+            if (depth > 0 && deepest > UNCLOSED_NESTING_LIMIT)
+                return stop(start, UNCLOSED_NESTING_LIMIT);
+            depth = deepest = 0;
+            start = i + 1;
+            continue;
+        }
+        if (text === '(' || text === '[')
+            deepest = Math.max(deepest, ++depth);
+        else if ((text === ')' || text === ']') && depth > 0)
+            depth--;
+        if (depth > BRACKET_NESTING_LIMIT)
+            return stop(i, BRACKET_NESTING_LIMIT);
+    }
 }
 /** WP2-D04: the message for if (c) a else b in statement position, where the if statement needs a block. */
 export const CONDITIONAL_STATEMENT_MESSAGE = 'A conditional expression is not a statement; use an if block.';
@@ -65,7 +113,7 @@ function hint(actual: Token | undefined, previous: Token | undefined, expectsNam
     if (type === 'DOC_COMMENT')
         return ' A /** */ documentation comment belongs first inside the braces of its declaration, or immediately before the semicolon of a leaf declaration.';
     if (expectsName && type === 'STRING')
-        return ` Names use single quotes, for example ${formatName(actual.image.slice(1, -1).replace(/[.:[\]]/g, ' ').trim() || 'name')}.`;
+        return ` Names use single quotes, for example ${quoteName(actual.image.slice(1, -1).replace(/[.:[\]]/g, ' ').trim() || 'name')}.`;
     if (RESERVED_WORDS.has(actual.image))
         return ` '${actual.image}' is a reserved word. ${expectsName ? 'Write' : 'If it is meant as a name, write'} it as a quoted name ('${actual.image}') or choose another name.`;
     if (!expectsName && nameToken(actual.tokenType) && nameToken(previous?.tokenType) && (previous!.endOffset ?? previous!.startOffset) + 1 < actual.startOffset && ![...skipped].some(offset => offset > previous!.startOffset && offset < actual.startOffset))
@@ -144,6 +192,27 @@ export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
     const strategy = Object.create(inner) as LookaheadStrategy;
     strategy.buildLookaheadForAlternation = options => {
         const base = inner.buildLookaheadForAlternation.call(strategy, options);
+        if (ruleName(options.rule.name) === 'Expression') {
+            // A conditional's branch never starts with {: if (…) { is an if statement (WP2 review H2). An
+            // incomplete line typed above an if statement then fails at if, as in 2.2, and the statement list
+            // resynchronises instead of losing the rest of the component. Valid sources never reach this case.
+            const choices = production(options.rule, 'Alternation', options.prodOccurrence)?.definition ?? [];
+            const conditional = choices.findIndex(x => startsWith(x, 'ConditionalExpression')), operator = choices.findIndex((_, i) => i !== conditional);
+            if (conditional >= 0 && operator >= 0)
+                return function (this: Lookahead, alternatives?: unknown) {
+                    const predicted = base.call(this, alternatives);
+                    if (predicted !== conditional || this.LA(2).image !== '(')
+                        return predicted;
+                    for (let i = 3, depth = 1; ; i++) {
+                        const token = this.LA(i);
+                        if (token.tokenType.name === 'EOF')
+                            return predicted;
+                        depth += token.image === '(' ? 1 : token.image === ')' ? -1 : 0;
+                        if (depth === 0)
+                            return this.LA(i + 1).image === '{' ? operator : predicted;
+                    }
+                };
+        }
         const alternatives = ruleName(options.rule.name) === 'Statement' ? production(options.rule, 'Alternation', options.prodOccurrence)?.definition ?? [] : [];
         const assign = alternatives.findIndex(x => startsWith(x, 'Assign')), expression = alternatives.findIndex(x => startsWith(x, 'ExpressionStatement'));
         if (assign < 0 || expression < 0)

@@ -4,7 +4,7 @@ import type { LangiumServices } from 'langium/lsp';
 import * as a from './generated/ast.js';
 import { associatedOccurrences, associationOccurrences, associationPairs, associationTargets, isAssociationList, caseRead, conditionalType, caseTarget, isPlace, pathSteps, placeRoot, valueSteps, walkParts, type PartProblem, type Step, testCanAccess, caseCallAccess, caseCallRestriction, allowsSuspendingCall, connectionRoutes, designComponent, interfaceOnly, packageEndpoint, packageOccurrences, expressionTypes, OCCURRENCE_LIMIT, occurrenceCount, workspaceModels, assignable, body, compatibility, constantNumber, direction, effectiveQos, effects, endpoint, entryKey, identity, integral, isExecutable, isNode, localOperation, memberEndpoint, members, nanos, nodes, numeric, occurrences, owner, resolve, schedule, signature, typeKey, type Executable, type Node, type Structure, portMembers } from './semantic.js';
 import { selectView, viewCandidates, type ViewSubject } from './presentation.js';
-import { decodeQuotedName, formatName, nameProblem } from './names.js';
+import { MESSAGE_SPELLING, decodeQuotedName, formatName, nameProblem } from './names.js';
 import { staleWrite, STALE_READ_WORK_LIMIT, type StaleReadBudget, type Summary } from './stale-read.js';
 const EXPRESSION_TYPES = new Set(['ConditionalExpression', 'BinaryExpression', 'UnaryExpression', 'Literal', 'CallExpression', 'TryExpression', 'ReferenceExpression', 'RecordLiteral', 'ArrayLiteral']);
 /** Whether an expression is inside a conditional expression (WP2-S04). */
@@ -1243,7 +1243,7 @@ export class SwamlValidator {
             return undefined;
         }
         if (!associatedOccurrences(s).includes(o))
-            this.report(n, 'SW2010', `${o.name} takes part in ${s.name} only when associated: write associate ${formatName(o.name)} to ${formatName(s.name)}; in package ${p.name}.`, false, range);
+            this.report(n, 'SW2010', `${o.name} takes part in ${s.name} only when associated: write associate ${formatName(o.name, MESSAGE_SPELLING)} to ${formatName(s.name, MESSAGE_SPELLING)}; in package ${p.name}.`, false, range);
         if (!interfaceOnly(o))
             this.report(n, 'SW2010', `A case acts only as interface-only components (ports without operations, schedule entries or parts); ${o.name} has behavior of its own.`, false, range);
         if (!kinds.includes(t.member.kind) || direction(t.port, t.member) !== expected) {
@@ -1258,7 +1258,7 @@ export class SwamlValidator {
         if (s.kind !== 'test')
             this.report(n, 'SW2010', `Private attribute access belongs to tests. A use case calls its primary subject or interacts through associated actor ports; it cannot ${what} ${path}.`, false, this.at(n, property));
         else if (!testCanAccess(s, path))
-            this.report(n, 'SW2010', `A test may ${what} only its subject, explicitly associated software components and their ${path.includes('[') ? 'parts (a part family member by a literal index)' : 'single parts'}; ${path} is not an accessible occurrence. Associate its top-level software component with ${formatName(s.name)}.`, false, this.at(n, property));
+            this.report(n, 'SW2010', `A test may ${what} only its subject, explicitly associated software components and their ${path.includes('[') ? 'parts (a part family member by a literal index)' : 'single parts'}; ${path} is not an accessible occurrence. Associate its top-level software component with ${formatName(s.name, MESSAGE_SPELLING)}.`, false, this.at(n, property));
     }
     /** Cases, associations, satisfy and verify claims are package members that record intent. */
     private links(p: a.Package): void {

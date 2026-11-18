@@ -3,7 +3,8 @@
 // corpus only. test/fixtures/compatibility-2-2-extended/ holds further valid and invalid 2.2 sources in
 // separately pinned sets, each source parsing with the kept 2.2 grammar: models.json (WP1 review F3) and
 // models-wp2.json (WP2: view, state, in and out in their keyword roles next to names, if statements and
-// single associations). For each set, recorded.json or recorded-wp2.json holds, recorded once from the 3.1.0
+// single associations) and models-wp2b.json (WP2 review: diagnostics that spell a quoted contextual word, compared
+// with their related information). For each set, recorded.json or recorded-wp2.json holds, recorded once from the 3.1.0
 // implementation at 213f583, every diagnostic (severity, code, range, message), the digest of the normalized
 // AST and, for runnable models, the run or case results with their trace digests. The current implementation
 // must reproduce all of it. A run that threw a host error in 3.1.0 is not compared and is listed.
@@ -29,6 +30,8 @@ const sha256 = text => createHash('sha256').update(text, 'utf8').digest('hex');
 export const SETS = [
     { models: 'models.json', recorded: 'recorded.json', rule: 'WP1 review F3: extended 2.2 sources outside the gate-1 corpus' },
     { models: 'models-wp2.json', recorded: 'recorded-wp2.json', rule: 'WP2: 2.2 sources with view, state, in and out in their keyword roles next to names, if statements and single associations' },
+    // Diagnostics here also carry their related information, which spells names too (WP2 review H1).
+    { models: 'models-wp2b.json', recorded: 'recorded-wp2b.json', rule: 'WP2 review H1: 2.2 sources whose diagnostics spell a quoted contextual word', related: true },
 ];
 const strip = trace => trace.map(({ profile: _p, languageVersion: _l, ...rest }) => rest);
 const at = r => `${r.start.line + 1}:${r.start.character + 1}-${r.end.line + 1}:${r.end.character + 1}`;
@@ -47,7 +50,7 @@ async function analyse(buildRoot, set) {
         // its documents file:///1.swaml, file:///2.swaml and so on; that URI is given explicitly, so that a
         // set's results do not depend on the sets analysed before it in the same process.
         const document = await parseHelper(Swaml)(m.text, { validation: true, documentUri: `file:///${index + 1}.swaml` });
-        const diagnostics = (document.diagnostics ?? []).map(d => `${['', 'error', 'warning', 'information', 'hint'][d.severity ?? 1]} ${d.code ?? '-'} ${at(d.range)} ${d.message}`);
+        const diagnostics = (document.diagnostics ?? []).map(d => `${['', 'error', 'warning', 'information', 'hint'][d.severity ?? 1]} ${d.code ?? '-'} ${at(d.range)} ${d.message}${set.related && d.relatedInformation?.length ? ' | related: ' + d.relatedInformation.map(r => r.message).join(' / ') : ''}`);
         const result = { sourceSha256: sourceSha256(m.text), diagnostics, astSha256: sha256(canonicalJson(normalizeAst(document.parseResult.value))) };
         const valid = !diagnostics.some(d => d.startsWith('error '));
         const attempt = run => { try { return run(); } catch (error) { return { threw: `${error?.constructor?.name}: ${error?.message}` }; } };

@@ -1,5 +1,5 @@
 import { AstUtils, DocumentState, DefaultLinker, DefaultScopeProvider, MapScope, type AstNode, type AstNodeDescription, type LinkingError, type ReferenceInfo, type Scope, type LangiumCoreServices } from 'langium';
-import { decodeQuotedName, formatName, formatQualifiedName } from './names.js';
+import { MESSAGE_SPELLING, decodeQuotedName, formatName, formatQualifiedName } from './names.js';
 import * as a from './generated/ast.js';
 import { owner } from './semantic.js';
 export { owner } from './semantic.js';
@@ -67,12 +67,12 @@ export class SwamlLinker extends DefaultLinker {
         const clashing = local && own.length ? own : [...new Set(visible.flatMap(named))];
         if (clashing.length < 2)
             return error;
-        const qualified = (e: AstNode) => formatQualifiedName(owner(e, a.isPackage)!.name + '::' + (e as AstNode & { name: string }).name);
+        const qualified = (e: AstNode) => formatQualifiedName(owner(e, a.isPackage)!.name + '::' + (e as AstNode & { name: string }).name, MESSAGE_SPELLING);
         const described = clashing.map(e => `${kindOf(e)} ${qualified(e)}${owner(e, a.isPackage) === pkg ? '' : ' (imported)'}`);
         // Only suggest a qualified name that resolves: unique in its package and of the expected kind.
         const type = this.reflection.getReferenceType(refInfo);
         const alternatives = clashing.filter(e => named(owner(e, a.isPackage)!.name).length === 1 && this.reflection.isSubtype(e.$type, type)).map(qualified);
         const advice = alternatives.length ? `qualify the reference (${alternatives.join(' or ')}) or rename one declaration` : 'rename one declaration';
-        return { ...error, declarations: clashing, message: `Ambiguous name ${formatName(name)}: it names ${described.slice(0, -1).join(', ')} and ${described[described.length - 1]}. A short name must name one visible declaration; ${advice}.` };
+        return { ...error, declarations: clashing, message: `Ambiguous name ${formatName(name, MESSAGE_SPELLING)}: it names ${described.slice(0, -1).join(', ')} and ${described[described.length - 1]}. A short name must name one visible declaration; ${advice}.` };
     }
 }

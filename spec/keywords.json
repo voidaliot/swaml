@@ -553,6 +553,7 @@
       "productions": [
         "Receive",
         "FilterOr",
+        "Expression",
         "OrExpression"
       ]
     },

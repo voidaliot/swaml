@@ -17,19 +17,35 @@ export const CONTEXTUAL_KEYWORDS_2_2: ReadonlySet<string> = new Set([...CONTEXTU
  * The default is the edition this host selects.
  */
 export type NameEdition = string;
-const before2_3 = (edition: NameEdition) => { const [major, minor] = edition.split('.').map(Number); return major < 2 || major === 2 && minor < 3; };
+/**
+ * The spelling of names inside diagnostic messages: the 2.2 quoting, which is valid source in every 2.x edition, so a
+ * 2.2 source keeps its 2.2 messages byte for byte (WP2 review H1). Diagnostics on any source spell names this way
+ * unless a name can only be written in 2.3.
+ */
+export const MESSAGE_SPELLING: NameEdition = '2.2';
+// A non-string edition is the default: the name functions stay safe as callbacks, as in names.map(formatName) (WP2 review M1).
+const editionOf = (edition: unknown): NameEdition => typeof edition === 'string' ? edition : SWAML_LANGUAGE_VERSION;
+const before2_3 = (edition: unknown) => { const [major, minor] = editionOf(edition).split('.').map(Number); return major < 2 || major === 2 && minor < 3; };
 /** The words that need quotes in a workspace of the given edition. */
-export function reservedWords(edition: NameEdition = SWAML_LANGUAGE_VERSION): ReadonlySet<string> { return before2_3(edition) ? RESERVED_WORDS_2_2 : RESERVED_WORDS; }
+export function reservedWords(edition: NameEdition | number = SWAML_LANGUAGE_VERSION): ReadonlySet<string> { return before2_3(edition) ? RESERVED_WORDS_2_2 : RESERVED_WORDS; }
 /** True when a name can be written without quotes in a workspace of the given edition. */
-export function isBasicName(name: string, edition: NameEdition = SWAML_LANGUAGE_VERSION): boolean { return BASIC_NAME.test(name) && !reservedWords(edition).has(name); }
+export function isBasicName(name: string, edition: NameEdition | number = SWAML_LANGUAGE_VERSION): boolean { return BASIC_NAME.test(name) && !reservedWords(edition).has(name); }
 /** Source spelling of one name: basic when possible, otherwise single-quoted with escapes. */
-export function formatName(name: string, edition: NameEdition = SWAML_LANGUAGE_VERSION): string { return isBasicName(name, edition) ? name : `'${name.replace(/[\\']/g, c => '\\' + c)}'`; }
+export function formatName(name: string, edition: NameEdition | number = SWAML_LANGUAGE_VERSION): string { return isBasicName(name, edition) ? name : `'${name.replace(/[\\']/g, c => '\\' + c)}'`; }
 /** Source spelling of a package or qualified name such as Shop::'Order Service'. */
-export function formatQualifiedName(name: string, edition: NameEdition = SWAML_LANGUAGE_VERSION): string { return name.split('::').map(part => formatName(part, edition)).join('::'); }
+export function formatQualifiedName(name: string, edition: NameEdition | number = SWAML_LANGUAGE_VERSION): string { const e = editionOf(edition); return name.split('::').map(part => formatName(part, e)).join('::'); }
+/** A name in single quotes with escapes, whatever its spelling, for example 'Pump'. */
+export function quoteName(name: string): string { return `'${name.replace(/[\\']/g, c => '\\' + c)}'`; }
 /** Source spelling of an occurrence or member path; literal indexes stay unquoted. */
-export function formatPath(path: string, edition: NameEdition = SWAML_LANGUAGE_VERSION): string {
+export function formatPath(path: string, edition: NameEdition | number = SWAML_LANGUAGE_VERSION): string {
+    edition = editionOf(edition);
     const colon = path.lastIndexOf('::'), head = colon < 0 ? '' : formatQualifiedName(path.slice(0, colon), edition) + '::';
     return head + path.slice(colon < 0 ? 0 : colon + 2).split('.').map(part => { const [, name, index] = /^(.*?)((?:\[\d+\])?)$/.exec(part)!; return formatName(name, edition) + index; }).join('.');
+}
+/** Name services bound to one edition, for hosts that pass them as callbacks: namesFor('2.2').formatName. */
+export function namesFor(edition: NameEdition) {
+    const e = editionOf(edition);
+    return { isBasicName: (name: string) => isBasicName(name, e), formatName: (name: string) => formatName(name, e), formatQualifiedName: (name: string) => formatQualifiedName(name, e), formatPath: (path: string) => formatPath(path, e), reservedWords: reservedWords(e) };
 }
 /** Decodes one quoted name token, for example 'Order Service' or 'it\'s'. */
 export function decodeQuotedName(token: string): string { return token.slice(1, -1).replace(/\\(['\\])/g, '$1'); }
