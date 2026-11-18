@@ -41,9 +41,9 @@ defer p.m, q.n;                                   state member: retain input for
 - Its guard is pure or reads state, and it does not call `now()`.
 - A final state has no completion transitions.
 - Reachability from the initial state includes completion edges.
-- A cycle of states connected only by completion transitions whose guard is the literal `true` (after removing parentheses) is an error.
+- A cycle of states connected only by completion transitions whose guard is the literal `true` (after removing parentheses) is an error, unless an entry action, exit action or effect on the cycle can suspend (a wait, a receive, an interrupt region, a request, or a call to an operation that does). Such a cycle restarts its chain in every round (`CompletionLoop` below), so `state A { on entry { n = n + 1; wait 1ms; } when (true) to A { } }` is a retry, not an error.
 
-**SW2017**, a new stable warning: a completion guard that reads nothing written by the stateful operation's own entry actions, exit actions or transition effects, or by their transitive callees, cannot change while the machine waits. WP5 implements it for component attributes. WP6 confirms that it reports guards reading only sampled cells, which the machine never writes.
+**SW2017**, a new stable warning: a completion guard that reads nothing written by the stateful operation's own entry actions, exit actions or transition effects, or by their transitive callees, cannot change while the machine waits. It is not raised for a guard that is constant after folding (such as `true`, `1 == 1`, `not false` or `false`), for a guard that already has an error, or in a state that re-enters itself through its own receive or timer transition (polling: the guard is evaluated again after each wait). WP5 implements it for component attributes. WP6 confirms that it reports guards reading only sampled cells, which the machine never writes.
 
 **Runtime.**
 - **Selection order.** After the entry actions of a state finish, and after every internal reaction, the completion transitions of the current state are evaluated in declaration order. The first enabled one is taken at once: exit, effect, state update, entry. The total order of candidates in a state is:
