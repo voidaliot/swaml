@@ -1406,7 +1406,9 @@ export class SwamlValidator {
     /**
      * SW2020 (warnings) on an entry where it is written in c. WP7-D03: its release guard folds to false in c, so the
      * entry never runs its operation; a guard that names a const attribute some specialization or usage redefines (the
-     * same declaration) folds per occurrence and is left alone, as for WP6-D10.
+     * same declaration) folds per occurrence and is left alone, as for WP6-D10. WP7-D04: an entry without a guard
+     * replaces an inherited entry that has one (WP7-S03), which silently drops a safety condition; a replacement with
+     * any guard, when (true) included, states its own condition and is not reported.
      */
     private guardWarnings(e: a.ScheduleEntry, c: Structure): void {
         if (e.kind === 'start' || e.kind === 'call')
@@ -1416,6 +1418,18 @@ export class SwamlValidator {
                 this.report(e.guard, 'SW2020', `Release guard when (${displayText(e.guard, MESSAGE_SPELLING)}) of ${this.guardEntryText(e)} is always false; the entry never runs ${formatName(e.operation, MESSAGE_SPELLING)}.`, true);
             return;
         }
+        const base = a.isComponentDef(c) ? c.specializes?.ref : c.definition?.ref, key = entryKey(e);
+        const inherited = base && schedule(base).find(x => entryKey(x) === key);
+        // An inherited guard in a document that does not parse is not reported elsewhere (as in releaseGuard).
+        const document = inherited?.guard && AstUtils.getDocument(inherited.guard).parseResult;
+        if (!inherited?.guard || !document || document.parserErrors.length || document.lexerErrors.length)
+            return;
+        // An inherited guard that folds to true (when (true)) constrains nothing, so dropping it changes nothing.
+        if (constantValue(inherited.guard, c).value === true)
+            return;
+        const declared = container(inherited);
+        const where = declared ? formatName(declared.name, MESSAGE_SPELLING) : 'its base';
+        this.report(e, 'SW2020', `${this.guardEntryText(e)} replaces the inherited entry of ${where} without its release guard when (${displayText(inherited.guard, MESSAGE_SPELLING)}), so it runs ${formatName(e.operation, MESSAGE_SPELLING)} whatever the guard says; repeat the guard, or write when (true) to remove it deliberately.`, true, { related: [inherited] });
     }
     /** An entry's trigger and operation for a message, with names spelled as in 2.2 (on every 10ms slot, after a b). */
     private guardEntryText(e: a.ScheduleEntry): string {

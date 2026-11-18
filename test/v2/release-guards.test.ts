@@ -130,6 +130,48 @@ test('WP7-D03 (SW2020) a release guard that folds to false is reported at the gu
     assert.deepEqual((await parse(model('', 'on start next() when (false);'))).warnings.filter(w => w.code === 'SW2020'), []);
 });
 
+test('WP7-D04 (SW2020) a replacing entry without a guard that drops an inherited release guard is reported at the replacing entry', async () => {
+    const source = (derived: string, usage = '') => `package Test {
+  port def M { provides event go(n: int); }
+  component def Base { optional reversed port inp: M; attribute awake: bool = false; attribute runs: uint = 0; attribute got: int = 0;
+    operation slot() { runs = runs + 1; } operation take(v: int) { got = v; } operation next() { }
+    schedule { on every 10ms slot() when (awake); on receive inp.go(v) take(v) when (v > 0 and awake); after slot next() when (not awake); }
+  }
+  component def Derived specializes Base { ${derived} }
+  component def Deeper specializes Derived { }
+  component Demo { component d: Deeper; component u: Base { ${usage} } }
+}`;
+    const drops = (entry: string, op: string, guard: string, from = 'Base') => `${entry} replaces the inherited entry of ${from} without its release guard when (${guard}), so it runs ${op} whatever the guard says; repeat the guard, or write when (true) to remove it deliberately.`;
+    // Written only to relax the deadline, the derived entry also removes the mode gate.
+    assert.deepEqual(await guardWarnings(source('schedule { on every 10ms slot() deadline 5ms; on receive inp.go(v) take(v); after slot next(); }')), [
+        [drops('on every 10ms slot', 'slot', 'awake'), 'on every 10ms slot() deadline 5ms;'],
+        [drops('on receive inp.go take', 'take', 'v > 0 and awake'), 'on receive inp.go(v) take(v);'],
+        [drops('after slot next', 'next', 'not awake'), 'after slot next();'],
+    ]);
+    // At the usage level too; the related information points at the inherited entry.
+    const usage = await parse(source('', 'schedule { on every 10ms slot(); }'));
+    const warning = usage.warnings.find(w => w.code === 'SW2020')!;
+    assert.equal(warning.message, drops('on every 10ms slot', 'slot', 'awake'));
+    const baseLine = source('').split('\n').findIndex(l => l.includes('schedule { on every 10ms slot() when (awake);'));
+    assert.deepEqual(warning.relatedInformation?.map(x => [x.message, x.location.range.start.line]), [['Declaration Test::Base', baseLine]]);
+    // A replacement with any guard states its own condition, when (true) included; other triggers and new entries are not replacements.
+    for (const derived of ['schedule { on every 10ms slot() when (true); }', 'schedule { on every 10ms slot() when (not awake) deadline 5ms; }', 'schedule { on every 20ms slot(); }', ''])
+        assert.deepEqual(await guardWarnings(source(derived)), [], derived);
+    // The base is the effective schedule: a replacement two levels down names the definition that wrote the guard; an
+    // inherited guard that folds to true constrains nothing, so dropping it is not reported.
+    const twice = (derived: string) => source(derived).replace('component def Deeper specializes Derived { }', 'component def Deeper specializes Derived { schedule { on every 10ms slot(); } }');
+    assert.deepEqual(await guardWarnings(twice('')), [[drops('on every 10ms slot', 'slot', 'awake'), 'on every 10ms slot();']]);
+    assert.deepEqual(await guardWarnings(twice('schedule { on every 10ms slot() when (true); }')), []);
+    assert.deepEqual(await guardWarnings(twice('schedule { on every 10ms slot() when (runs >= 0 or awake); }')), [[drops('on every 10ms slot', 'slot', 'runs >= 0 or awake', 'Derived'), 'on every 10ms slot();']]);
+    // Across documents the warning is in the replacing document; an unfinished base guard is not reported elsewhere.
+    const base = (guard: string) => `package B { component def Base { attribute awake: bool = false; operation slot() { } schedule { on every 10ms slot() ${guard}; } } }`;
+    const derived = 'package V { import B; component def D specializes Base { schedule { on every 10ms slot(); } } }';
+    for (const [guard, expected] of [['when (awake)', [drops('on every 10ms slot', 'slot', 'awake')]], ['when (awake and', []]] as const) {
+        const both = await workspace([base(guard), derived]);
+        assert.deepEqual((both.docs[1].diagnostics ?? []).map(x => [x.code, x.message]), expected.map(m => ['SW2020', m]), guard);
+    }
+});
+
 test('WP7-S03 the guard is not part of entry identity: duplicates, and a derived entry replaces the guarded base entry', async () => {
     assert.deepEqual(await errors(model('', 'on every 10ms slot() when (awake); on every 10ms slot();')), [['SW2007', 'Duplicate (trigger, operation) entry.']]);
     assert.deepEqual(await errors(model('', 'on every 10ms slot() when (awake); on every 10ms slot() when (not awake);')), [['SW2007', 'Duplicate (trigger, operation) entry.']]);
