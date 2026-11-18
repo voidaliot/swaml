@@ -379,6 +379,22 @@ test('WP5-D08 SW2017 warns on a completion guard that reads nothing the machine 
     assert.deepEqual(await warn('state A { after 20ms { } when (n > 2) to B { } } final state B { }'), [['SW2017', message]]);
 });
 
+test('WP6-D09 SW2017 polling exemption: only a self or internal receive, or a self timer, that can fire, for a guard on something that changes (WP5 review N2)', async () => {
+    const message = 'Completion guard of A reads nothing that run writes; it cannot change while the machine waits.';
+    const extra = 'attribute q: int = 0; operation tick() { n = n + 1; }';
+    const warn = (body: string) => warnings(machine(body, extra).replace('schedule { on start run(); }', 'schedule { on start run(); on every 1ms tick(); }'));
+    // V23: an internal receive re-evaluates completion after each reaction (WP5-R02): polling, no warning.
+    assert.deepEqual(await warn('state A { on receive a.x(v) { } when (n > 2) to B { } } final state B { }'), []);
+    // V26: a self transition that can never fire does not poll.
+    assert.deepEqual(await warn('state A { on receive a.x(v) when (false) to A { } when (n > 2) to B { } } final state B { }'), [['SW2017', message]]);
+    // V22: polling cannot help a guard on an attribute that nothing writes.
+    assert.deepEqual(await warn('state A { after 20ms to A { } when (q > 0) to B { } } final state B { }'), [['SW2017', message]]);
+    // V23c stays exempt: whether a guard that reads the input can be true is not decided statically.
+    assert.deepEqual(await warn('state A { on receive a.x(v) when (v > 100) to A { } when (n > 2) to B { } } final state B { }'), []);
+    // An internal timer fires once per entry and does not poll.
+    assert.deepEqual(await warn('state A { after 20ms { } when (n > 2) to B { } } final state B { }'), [['SW2017', message]]);
+});
+
 test('WP5-D09 SW2018 warns on a deferred event whose route into the occurrence rejects on overflow, once per connection', async () => {
     const source = (policy: string, member = 'a.x') => machine(`state A { defer ${member}; on receive a.go() to H { } } state H { on receive a.x(v) to A { } on receive a.y(v) to A { } }`, '', 'operation emit() { }', policy);
     const advice = (connection: string) => ` Give ${connection} a policy that drops on overflow (Overflow.dropOldest or Overflow.dropNewest) or a capacity that holds the retained messages.`;

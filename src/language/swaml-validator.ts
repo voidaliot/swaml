@@ -1452,19 +1452,28 @@ export class SwamlValidator {
         return nodes(block).some(n => a.isWait(n) || a.isReceive(n) || a.isInterruptible(n) || a.isCallExpression(n) && (n.target.includes('.') || ((t = this.callTarget(n, c)) => !!t && isExecutable(t) && effects(t, c).suspends)()));
     }
     private completionGuards(op: Executable, b: a.OperationBody, c: Structure | undefined, erroneous: ReadonlySet<a.Transition>): void {
-        const polls = (s: a.State) => s.transitions.some(t => t.target === s.name && (!!t.endpoint || !!t.delay || !!t.delayValue));
+        // WP6-D09 (WP5 review N2): a state polls when a reaction that can fire re-evaluates its completion guards: a self
+        // receive or timer transition, or an internal receive transition (an internal timer fires once per entry),
+        // whose guard is absent or does not fold to false.
+        const canFire = (t: a.Transition) => !t.guard || !c || constantValue(t.guard, c).value !== false;
+        const polls = (s: a.State) => s.transitions.some(t => canFire(t) && (t.target === s.name && (!!t.endpoint || !!t.delay || !!t.delayValue) || t.target === undefined && !!t.endpoint));
         const candidates = b.states.flatMap(s => s.transitions.filter(t => isCompletion(t) && t.guard && !isLiteralTrue(t.guard) && !erroneous.has(t)).map(t => ({ s, t })));
         // WP6-D10 (SW2017): a guard that folds to false in its definition is dead: the transition is never taken. A
         // guard that reads a const attribute some usage redefines folds per occurrence and is left alone.
         for (const { s, t } of candidates)
             if (c && constantValue(t.guard!, c).value === false && !this.redefinedConstant(t.guard!))
                 this.report(t.guard!, 'SW2017', `Completion guard of ${formatName(s.name, MESSAGE_SPELLING)} is always false; the transition is never taken.`, true);
-        const completions = candidates.filter(({ s, t }) => !polls(s) && !(c && !constantValue(t.guard!, c).problem));
+        const completions = candidates.filter(({ t }) => !(c && !constantValue(t.guard!, c).problem));
         if (!completions.length)
             return;
         const written = attributeAccess(b.states.flatMap(s => [...s.actions.map(x => x.body), ...s.transitions.map(t => t.effect)]), c).writes;
+        // Polling helps only a guard that reads something that can change between two evaluations: an attribute that
+        // some executable of the component writes, or a sample cell (WP6-D09).
+        const writtenAnywhere = c ? attributeAccess(members(c).filter(isExecutable).flatMap(x => body(x) ? [body(x)!] : []), c).writes : new Set<string>();
         for (const { s, t } of completions) {
             const access = attributeAccess([t.guard!], c);
+            if (polls(s) && (access.cells.size || [...access.reads].some(x => writtenAnywhere.has(x))))
+                continue;
             // A sample cell changes without a write, but completion is not re-evaluated on a cell update (WP5-R03, C14):
             // a guard that reads only cells and nothing the machine writes still cannot change while the machine waits.
             if (![...access.reads].some(x => written.has(x)))
