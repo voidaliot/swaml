@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://swa.ml/schema/swaml-binding/2.3",
+  "title": "swa.ml target binding 2.3",
+  "description": "Target assumptions for one deployment of a swa.ml 2.3 model (WP8-M02): execution costs per operation occurrence, budgets per Swaml::Os Task occurrence and cross-core latencies per connection occurrence. Identities use the canonical spelling of the normalized model: operations as the occurrence path from the deployed root plus the operation name (dcu.comMain.rxMainFunction), Tasks as platform occurrence paths (vehicle.doorModules[0].core1.task20ms) and connections as the route identities of runs and traces (owner.name or owner.@connectN for a component connection, name or @packageN for a package connection). `swaml binding check` resolves them against the validated model (WP8-M03). A binding is static resolution of target assumptions; it is neither an analysis claim nor schedulability evidence (WP8-M05).",
+  "type": "object",
+  "required": ["schema", "deployment"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "swaml-binding/2.3", "description": "The schema identity and version." },
+    "deployment": { "type": "string", "minLength": 1, "description": "The deployment's qualified identity in canonical spelling, for example DoorEcu::'Front left door'." },
+    "costs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["operation", "wcetNs", "source"],
+        "additionalProperties": false,
+        "properties": {
+          "operation": { "type": "string", "minLength": 1, "description": "Occurrence path from the deployed root plus the operation name." },
+          "wcetNs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991, "description": "Worst-case execution time in nanoseconds." },
+          "bcetNs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991, "description": "Best-case execution time in nanoseconds; at most wcetNs." },
+          "source": { "type": "string", "minLength": 1, "description": "A reference to the measurement or analysis that supplies the cost." }
+        }
+      }
+    },
+    "budgets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["task", "budgetNs"],
+        "additionalProperties": false,
+        "properties": {
+          "task": { "type": "string", "minLength": 1, "description": "Platform occurrence path of a Swaml::Os Task." },
+          "budgetNs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991, "description": "Execution budget of the Task in nanoseconds." }
+        }
+      }
+    },
+    "crossCoreLatencyNs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["connection", "maxNs"],
+        "additionalProperties": false,
+        "properties": {
+          "connection": { "type": "string", "minLength": 1, "description": "Route identity of a connection occurrence." },
+          "maxNs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991, "description": "Largest cross-core transfer latency in nanoseconds." }
+        }
+      }
+    }
+  }
+}
