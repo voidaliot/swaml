@@ -51,7 +51,9 @@ const wp1Semantic={
 // Productions WP2 adds or changes (docs/spec/05-kerml-mapping.md, WP2-M02 and WP2-M03).
 const wp2Semantic={
  ConditionalExpression:"ConditionalExpression: a whole-expression conditional if (c) a else b (WP2-M02) that evaluates its bool condition and then only the selected branch; its type is the common type of both branches. It lowers to the kernel function ControlFunctions::'if' and preserves types, order, occurrence identity and source provenance.",
- Association:'Association: an associate statement records that top-level occurrences of the package take part in use cases or tests other than as their subject. A list statement lowers to one reference per occurrence–case pair, each with the statement and the positions of its occurrence and case in their lists as provenance (WP2-M03); ownership, order and occurrence identity are preserved.'
+ Association:'Association: an associate statement records that top-level occurrences of the package take part in use cases or tests other than as their subject. A list statement lowers to one reference per occurrence–case pair, each with the statement and the positions of its occurrence and case in their lists as provenance (WP2-M03); ownership, order and occurrence identity are preserved.',
+ Expression:'Expression: a whole expression, a conditional or an operator expression (WP2-G01); it preserves typed expressions and operators, types, order, occurrence identity and source provenance as defined in its normative chapter.',
+ ExpressionStatement:'ExpressionStatement: an operator expression used as a statement, never a conditional (WP2-G02); it preserves expression calls and copied out values, types, order, occurrence identity and source provenance.'
 };
 const kernelOverride={ConditionalExpression:["ControlFunctions::'if'"]};
 const ruleGroup=new Map(),keyGroup=new Map();for(const g of groups){for(const r of g[2])ruleGroup.set(r,g);for(const k of g[3])keyGroup.set(k,g);}
