@@ -171,6 +171,19 @@ test('WP6-S03 WP6-D02 a port redefinition that removes the initial value of a me
     assert.deepEqual(await errors(redefined('component def Derived specializes Base { component leaf: Leaf; connect (door, leaf.p); } ' +
         'component Demo { component s: Sensor22; component r: Derived; connect (s.out, r.door); }', '')),
         [['SW2005', 'door.ajar cannot be sampled: door is a forwarded boundary; inherited read samples it.']]);
+    // A derived component that redefines the reading operations inherits no read of them: only the reads it still inherits count (review V2).
+    assert.deepEqual(await errors(redefined('component def Derived specializes Base { redefines reversed port door: D22; redefines operation read() { seen = true; } redefines operation begin() { first = true; } } ' +
+        'component Demo { component s: Sensor22; component r: Derived; connect (s.out, r.door); }')), []);
+    // An inherited schedule entry's argument is checked where it is declared: only the SW2004 at the redefinition, no SW2002 in the valid base (review V1).
+    const scheduled = `package Test {
+  port def D23 { provides attribute ajar: bool = false; }
+  port def D22 { provides attribute ajar: bool; }
+  component def Sensor22 { port out: D22; operation tick() { send out.ajar(true); } schedule { on every 10ms tick(); } }
+  component def SA { reversed port door: D23; attribute seen: bool = false; operation take(v: bool) { seen = v; } schedule { on every 10ms take(door.ajar); } }
+  component def SAD specializes SA { redefines reversed port door: D22; }
+  component Demo { component s: Sensor22; component r: SAD; connect (s.out, r.door); }
+}`;
+    assert.deepEqual(await errors(scheduled), [['SW2004', 'Sampled attribute ajar of D22 needs an initial value: an inherited schedule entry samples door.ajar.']]);
 });
 
 test('WP6-S08 WP6-D01 WP6-D05 forbidden ports, members and positions', async () => {
@@ -236,6 +249,10 @@ test('WP6-S01 WP6-S04 a local hides the port only where it is visible: another b
     // A local declared later in the same block does not hide the port at an earlier read.
     const later = await valid(shadowing('operation read() { got = door.count; var door: int = 3; total = door; } operation peek() { seen = door.ajar; } schedule { on every 10ms read(); on every 10ms peek(); }'));
     assert.deepEqual([...sampledMembers(readerOf(later.model))].sort(), ['door.ajar', 'door.count']);
+    // A for local named like the port does not hide it in its own initializer, only in the condition, update and body (review V2).
+    const loop = await valid(shadowing('operation read() { for (var door: int = door.count; door < 9; door = door + 1) { total = door; } seen = door.ajar; } schedule { on every 10ms read(); }'));
+    assert.deepEqual([...sampledMembers(readerOf(loop.model))].sort(), ['door.ajar', 'door.count']);
+    assert.deepEqual(kinds(simulate([loop.model], 'Test::Demo', { untilNs: 5000000 }).trace, 'failure'), []);
     // A parameter of a nested operation hides nothing in the enclosing operation.
     const nested = await valid(shadowing('operation read() { operation inner(door: int) { } got = door.count; seen = door.ajar; } schedule { on every 10ms read(); }'));
     assert.deepEqual([...sampledMembers(readerOf(nested.model))].sort(), ['door.ajar', 'door.count']);

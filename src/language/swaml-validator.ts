@@ -244,8 +244,9 @@ export class SwamlValidator {
             if (count > 1 && portMembers(ep.port).some(m => direction(ep.port, m) === 'requires' && m.kind !== 'event'))
                 this.report(ep.port, 'SW2004', `${path} requires attributes or operations and needs one peer.`);
         }
-        this.schedules(c);
-        this.ownership(c, forwarded, this.inheritedSamples(c));
+        const sampledInherited = this.inheritedSamples(c);
+        this.schedules(c, sampledInherited.explained);
+        this.ownership(c, forwarded, sampledInherited.paths);
         if (a.isPackage(c.$container) && a.isComponentUsage(c) && occurrenceCount(c) > OCCURRENCE_LIMIT)
             this.report(c, 'SW2013', 'Expanded root exceeds the reference validation limit of ' + OCCURRENCE_LIMIT + ' component occurrences.');
     }
@@ -591,12 +592,14 @@ export class SwamlValidator {
      * initial value of a member it samples is SW2004 at the redefinition; a forwarding of c that makes its port a
      * forwarded boundary is SW2005 at the forwarding; each is reported once per member. Returns the port.member paths
      * that a base of c samples in behaviour c inherits: they keep the ownership rule of sampled members (WP6-S04), so a
-     * read that one of these errors already explains is not also reported as a member without an owner.
+     * read that one of these errors already explains is not also reported as a member without an owner. Also returns
+     * the inherited schedule entries with such a read: their arguments, checked where they are declared, are not typed
+     * again in c, so the valid base gets no unknown-value error for a read the error at c explains (review V1).
      */
-    private inheritedSamples(c: Structure): Set<string> {
-        const paths = new Set<string>(), reported = new Set<string>(), seen = new Set<AstNode>();
+    private inheritedSamples(c: Structure): { paths: Set<string>, explained: Set<a.ScheduleEntry> } {
+        const paths = new Set<string>(), reported = new Set<string>(), seen = new Set<AstNode>(), reads = new Map<a.ScheduleEntry, string[]>(), broken = new Set<string>();
         if (this.baseCycle(c, new Set()))
-            return paths;
+            return { paths, explained: new Set() };
         const executables = members(c).filter(isExecutable), entries = new Set(schedule(c)), forwarded = forwardedPorts(c);
         for (let base = a.isComponentDef(c) ? c.specializes?.ref : c.definition?.ref; base; base = base.specializes?.ref)
             for (const read of sampledReads(base)) {
@@ -607,12 +610,17 @@ export class SwamlValidator {
                 seen.add(read.node);
                 const path = read.port.name + '.' + read.member.name, text = formatPath(path, MESSAGE_SPELLING);
                 paths.add(path);
+                if (entry)
+                    reads.set(entry, [...reads.get(entry) ?? [], path]);
                 if (reported.has(path))
                     continue;
                 const who = entry ? 'an inherited schedule entry' : `inherited ${formatName(site!.name, MESSAGE_SPELLING)}`;
                 const port = members(c).filter(a.isPortUsage).find(x => x.name === read.port.name);
                 const member = port && portMembers(port).find(m => m.name === read.member.name);
                 const definition = port && formatName(port.definition?.ref?.name ?? port.name, MESSAGE_SPELLING);
+                // A read the effective port no longer samples as typed; its error is at the redefinition, here or in a base of c.
+                if (member && (!optsIn(member) || typeKey(member.type) !== typeKey(read.member.type)))
+                    broken.add(path);
                 if (port && c.members.includes(port) && member && !optsIn(member)) {
                     this.report(port, 'SW2004', `Sampled attribute ${formatName(member.name, MESSAGE_SPELLING)} of ${definition} needs an initial value: ${who} samples ${text}.`);
                     reported.add(path);
@@ -627,8 +635,10 @@ export class SwamlValidator {
                     this.report(link, 'SW2005', `${text} cannot be sampled: ${formatName(read.port.name, MESSAGE_SPELLING)} is a forwarded boundary; ${who} samples it.`);
                     reported.add(path);
                 }
+                if (reported.has(path))
+                    broken.add(path);
             }
-        return paths;
+        return { paths, explained: new Set([...reads].filter(([, p]) => p.some(x => broken.has(x))).map(([entry]) => entry)) };
     }
     /** Expressions nested deeper than this are reported instead of inferred, so validation cannot exhaust the stack. */
     private static readonly EXPRESSION_DEPTH_LIMIT = 1000;
@@ -1289,7 +1299,7 @@ export class SwamlValidator {
         return result;
     }
     private terminates(b: a.Block | a.OperationBody): boolean { return b.statements.some(s => a.isReturn(s) || a.isFail(s) || a.isIf(s) && !!s.otherwise && this.terminates(s.then) && this.terminates(s.otherwise) || a.isInterruptible(s) && this.terminates(s.body) && this.terminates(s.handler) || a.isUntil(s) && this.terminates(s.body) && (!s.limit||(constantNumber(s.limit)??0)>0) || a.isForEach(s) && /\[[1-9]\d*\]$/.test(expressionTypes.get(s.collection)??'') && this.terminates(s.body)); }
-    private schedules(c: Structure): void {
+    private schedules(c: Structure, explained: ReadonlySet<a.ScheduleEntry>): void {
         const entries = schedule(c), keys = new Set<string>();
         for (const e of c.members.filter(a.isSchedule).flatMap(s => s.entries)) {
             // Computed periods and deadlines where they are written: typing, membership and the unit (WP4-S04, WP4-S05).
@@ -1309,7 +1319,8 @@ export class SwamlValidator {
                 continue;
             }
             const env = e.endpoint ? this.inputEnv(e, this.env(c), c, e.kind === 'call') : this.env(c);
-            this.arguments(e, sig.parameters, e.args, env, c, op);
+            if (!explained.has(e))
+                this.arguments(e, sig.parameters, e.args, env, c, op);
             if (e.kind !== 'call' && (typeKey(sig.result) !== 'void' || sig.parameters.some(p => p.direction === 'out')))
                 this.report(e, 'SW2007', 'Only on call entries may bind results/out parameters.');
             if (e.kind === 'call') {
