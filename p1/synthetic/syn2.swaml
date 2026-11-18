@@ -1,0 +1,36 @@
+package Syn {
+  port def In { requires event m(v: int); requires event k(); }
+  component def M {
+    port p: In;
+    attribute x: int = 0;
+    attribute y: int = 0;
+    attribute log: int = 0;
+    operation run() {
+      initial A;
+      state A {
+        on entry { log = log * 10 + 1; }
+        on exit { log = log * 10 + 2; }
+        on receive p.m(pos) when (pos > 0) to B { y = pos; log = log * 10 + 3; }
+        on receive p.m(neg) when (neg < 0) to C { x = neg; }
+        on receive p.m(z) to A { log = log * 10 + 4; }
+        after 5ms to Ok { }
+        after 5ms to Bad { }
+      }
+      state B {
+        on entry { log = log * 10 + 5; }
+        on receive p.k() to Ok { }
+        after 3ms to A { }
+      }
+      state C {
+        on receive p.k() to Bad { }
+      }
+      final state Ok { on entry { log = log * 10 + 7; } }
+      final state Bad { on entry { log = log * 10 + 8; } }
+    }
+    schedule { on start run(); }
+  }
+  component def S { reversed port p: In; operation all() { publish p.m(0); publish p.k(); } operation emit() { publish p.m(-2); wait 1ms; publish p.k(); } schedule { on start emit(); } }
+  component m: M;
+  component s: S;
+  connect (s.p, m.p);
+}

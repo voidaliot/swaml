@@ -26,7 +26,7 @@ function walk(dir) {
   }
   return o;
 }
-const sources = walk('examples/').map(p => ({ id: p, out: p, text: readFileSync(join(root, p), 'utf8') }));
+const sources = [...walk('examples/'), ...walk('p1/synthetic/')].map(p => ({ id: p, out: p, text: readFileSync(join(root, p), 'utf8') }));
 const extDir = 'test/fixtures/compatibility-2-2-extended/';
 for (const f of readdirSync(join(root, extDir)).filter(f => f.startsWith('models')).sort())
   JSON.parse(readFileSync(join(root, extDir, f), 'utf8')).models.forEach((m, i) => sources.push({ id: `ext/${f}/${m.name}`, out: `ext/${f}/${i}.swaml`, text: m.text, ext: true }));
@@ -70,6 +70,9 @@ function chooseOrder(states, initial) {
 
 function migrateMachine(src, doc, op, b) {
   const opId = sem.identity(op), m = { file: src.id, operation: opId, states: b.states.length, finals: b.states.filter(s => s.final).length, transitions: 0, fallThrough: 0, until: 0, jumps: 0, selfJumps: 0, backJumps: 0, longestBackJump: 0, stays: 0, deadTimers: [], stateOverrides: 0, operationLines: 0, notes: [], blocked: [] };
+  const forms = new Set();
+  for (const s of b.states) { if ((s.deferrals ?? []).length) forms.add('defer'); for (const t of s.transitions) { const k = kind(t); if (k === 'completion') forms.add('completion'); else if (isInternal(t)) forms.add('internal'); if (k === 'timer' && t.guard) forms.add('guardedTimer'); if (t.delayValue) forms.add('computedTimer'); } }
+  m.forms = [...forms];
   for (const s of b.states) for (const t of s.transitions)
     if (kind(t) === 'completion') m.blocked.push({ state: s.name, guard: t.guard ? cstText(t.guard) : '', target: t.target, effect: t.effect ? cstText(t.effect) : '', text: cstText(t).replace(/\s+/g, ' ') });
   // A non-final state with no transition waits forever in 2.2; stage 1 would read it as a named step that falls through.
@@ -187,9 +190,9 @@ for (const src of sources) {
   }
   if (!fileRow.machines) continue;
   // A file with a machine that cannot be migrated is left unmigrated as a whole (its comparison is then trivially equal).
-  fileRow.status = fileRow.blocked.length ? 'not migrated' : 'migrated';
+  fileRow.status = !fileRow.blocked.length ? 'migrated' : fileRow.migrated ? 'partially migrated' : 'not migrated';
   report.files.push(fileRow);
-  if (fileRow.blocked.length) continue;
+  if (!fileRow.migrated) continue;
   for (const e of edits) Object.assign(identityMap, e.map);
   let text = src.text;
   for (const e of edits.sort((x, y) => y.start - x.start)) text = text.slice(0, e.start) + e.text + text.slice(e.end);
