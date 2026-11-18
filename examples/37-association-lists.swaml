@@ -1,0 +1,81 @@
+package FleetCases {
+  /** Grouped associations in the shape of the cloud model's use cases and tests. In 2.2 each pair needed its own statement: associate truck to 'Monitor live position'; associate van to 'Monitor live position'; associate truck to 'Command a vehicle'; and so on. From 2.3 one statement lists occurrences and cases, associate truck, van to 'Monitor live position', 'Command a vehicle';, and associates every listed occurrence with every listed case. A pair repeated in one statement or across statements is an error. */
+  port def Telemetry {
+    provides event position(vehicle: string, km: int);
+  }
+  port def Commands {
+    requires event command(vehicle: string, code: int);
+  }
+  component def Vehicle {
+    /** An actor: interface-only, so a case acts through its ports. */
+    port uplink: Telemetry;
+    port downlink: Commands;
+  }
+  component def Backend {
+    reversed port truckIn: Telemetry;
+    reversed port vanIn: Telemetry;
+    reversed port truckOut: Commands;
+    reversed port vanOut: Commands;
+    attribute positions: uint = 0;
+    attribute lastKm: int = 0;
+    attribute commands: uint = 0;
+    operation track(vehicle: string, km: int) {
+      positions = positions + 1;
+      lastKm = km;
+    }
+    operation commandTruck(code: int) {
+      commands = commands + 1;
+      publish truckOut.command("truck", code);
+    }
+    operation commandVan(code: int) {
+      commands = commands + 1;
+      publish vanOut.command("van", code);
+    }
+    schedule {
+      on receive truckIn.position(vehicle, km) track(vehicle, km);
+      on receive vanIn.position(vehicle, km) track(vehicle, km);
+    }
+  }
+  component def Archive {
+    /** A separate software component that a test inspects. */
+    attribute stored: uint = 0;
+    operation store() {
+      stored = stored + 1;
+    }
+    schedule {
+      on start store();
+    }
+  }
+  component truck: Vehicle;
+  component van: Vehicle;
+  component backend: Backend;
+  component archive: Archive;
+  connect (truck.uplink, backend.truckIn);
+  connect (van.uplink, backend.vanIn);
+  connect (backend.truckOut, truck.downlink);
+  connect (backend.vanOut, van.downlink);
+  use case 'Monitor live position' of backend {
+    publish truck.uplink.position("truck", 12);
+    publish van.uplink.position("van", 40);
+    wait 1ms;
+  }
+  test 'Command a vehicle' of backend {
+    /** Uses the second listed occurrence with the second listed case of the first list. */
+    backend.commandVan(7);
+    on receive van.downlink.command(vehicle, code) {
+      assert vehicle == "van" and code == 7;
+    }
+    publish van.uplink.position("van", 41);
+    wait 1ms;
+    assert backend.commands == 1 and backend.lastKm == 41;
+  }
+  test 'Positions and archive' of backend {
+    /** Uses the truck and inspects the archive, both associated by the second list. */
+    publish truck.uplink.position("truck", 5);
+    publish truck.uplink.position("truck", 6);
+    wait 1ms;
+    assert backend.positions == 2 and backend.lastKm == 6 and archive.stored == 1;
+  }
+  associate truck, van to 'Monitor live position', 'Command a vehicle';
+  associate truck, archive to 'Positions and archive';
+}

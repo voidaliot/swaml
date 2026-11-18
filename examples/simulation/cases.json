@@ -51,6 +51,18 @@
       "FleetBackend::Open alert lookup": "pass",
       "FleetBackend::Twin inspection": "pass"
     },
+    "examples/35-conditional-expression.swaml": {
+      "FaultDebounce::Same counters either way": "pass",
+      "FaultDebounce::Only the selected branch runs": "pass"
+    },
+    "examples/36-contextual-words.swaml": {
+      "UplinkSession::Session state is a plain name": "pass"
+    },
+    "examples/37-association-lists.swaml": {
+      "FleetCases::Monitor live position": "pass",
+      "FleetCases::Command a vehicle": "pass",
+      "FleetCases::Positions and archive": "pass"
+    },
     "examples/notation/catalog.swaml": {
       "Notation::Startup": "pass"
     },
