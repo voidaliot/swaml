@@ -84,6 +84,57 @@ test('malformed places and selectors recover without exceptions', async () => {
     }
 });
 
+// Statement recovery: a place or selector being typed keeps the rest of its component, with at most the
+// syntax errors the kept 2.2 grammar (the 3.1.0 parser) reports for the same text.
+const kept22 = async () => {
+    const { parsers } = await import(new URL('../../../scripts/compatibility-2-2.mjs', import.meta.url).href) as { parsers(): Promise<{ kept: { parser: { LangiumParser: { parse(text: string): { parserErrors: unknown[]; lexerErrors: unknown[] } } } } }> };
+    return (await parsers()).kept.parser.LangiumParser;
+};
+const typing = (line: string) => `package Test {
+  datatype S { n: int; xs: int[2]; }
+  component def D {
+    attribute a: int[3] = [1, 2, 3];
+    attribute r: S = record S { n = 1; xs = [1, 2]; };
+    attribute out1: int = 0;
+    operation run() {
+      out1 = 1;
+      ${line}
+      out1 = 2;
+      out1 = 3;
+    }
+    operation other() { out1 = 4; }
+    schedule { on start run(); }
+  }
+  component Demo: D;
+}`;
+test('WP1-G01 WP1-G02 an incomplete place, selector read or 2.2 read statement keeps the rest of its component', async () => {
+    const old = await kept22(), { Swaml } = createSwamlServices(EmptyFileSystem);
+    for (const line of ['a[ = 1;', 'a[0', 'a[0]', 'a[0] =', 'a[0]. = 2;', 'r. = 2;', 'r.n', 'r.xs[0]', 'out1', 'out1 = a[', 'out1 = r.', 'foo(a[0]', 'a[out1 + ] = 1;', 'a[0] = 1', 'r.n =', 'a[0].', 'r.xs[0].n', 'out1 = r.xs[0].', 'out1 = a[0][', 'a[0][1', 'r.xs[0] = r.xs[', 'out1 = r.xs[0]', 'foo(r.xs[0].', 'a[0].go(', 'a[0].go()']) {
+        const text = typing(line), now = Swaml.parser.LangiumParser.parse(text), before = old.parse(text);
+        const errors = now.parserErrors.length + now.lexerErrors.length, limit = Math.max(1, before.parserErrors.length + before.lexerErrors.length);
+        assert.ok(errors <= limit, `${line}: ${errors} errors, 2.2 had ${limit}`);
+        const d = (now.value as a.Model).packages[0].elements.find((e): e is a.ComponentDef => a.isComponentDef(e) && e.name === 'D')!;
+        const run = d.members.filter(a.isOperation).find(o => o.name === 'run')!;
+        // A line that ends in = may take the next line's start as its value; the statement after it survives.
+        assert.equal(run.body.statements.at(-1)?.$cstNode?.text, 'out1 = 3;', line);
+        assert.ok(d.members.some(m => a.isOperation(m) && m.name === 'other') && d.members.some(a.isSchedule), line);
+        assert.ok((now.value as a.Model).packages[0].elements.some(e => a.isComponentUsage(e) && e.name === 'Demo'), line);
+    }
+});
+test('WP1-G03 an incomplete indexed test path keeps the rest of its package', async () => {
+    const old = await kept22(), { Swaml } = createSwamlServices(EmptyFileSystem);
+    for (const line of ['backend.twins[1 + 0].join();', 'backend.twins[i].join();', 'backend.twins[0].', 'backend.twins[0].join(', 'assert backend.twins[0].', 'var v: int = backend.twins[0].snapshot.ids[', 'backend.twins[0].join(1)', 'assert backend.twins[0].link']) {
+        const text = twins(`${line}\n    assert true;\n    assert probe.n == 0;`) + '\npackage After { }';
+        const now = Swaml.parser.LangiumParser.parse(text), before = old.parse(text);
+        const errors = now.parserErrors.length, limit = Math.max(1, before.parserErrors.length);
+        assert.ok(errors <= limit, `${line}: ${errors} errors, 2.2 had ${limit}`);
+        const model = now.value as a.Model, fleet = model.packages[0], scenario = fleet.elements.find(a.isScenario)!;
+        assert.deepEqual(scenario.statements.slice(-2).map(s => s.$cstNode?.text), ['assert true;', 'assert probe.n == 0;'], line);
+        assert.equal(fleet.associations.length, 1, line);
+        assert.deepEqual(model.packages.map(p => p.name), ['Fleet', 'After'], line);
+    }
+});
+
 // ---------------------------------------------------------------- static rules
 
 test('WP1-S05 WP1-D01 WP1-S01 place roots: mutable locals, out parameters and non-const attributes only', async () => {

@@ -66,3 +66,81 @@ export class SwamlLexerErrorMessageProvider extends DefaultLexerErrorMessageProv
         return message;
     }
 }
+
+/** A Chevrotain grammar production, as far as statement recovery needs it. */
+type Production = { idx?: number; definition?: Production[]; nonTerminalName?: string; constructor: { name: string } };
+type Decision = { prodOccurrence: number; prodType?: number; rule: { name: string; definition: Production[] } };
+type Lookahead = { LA(i: number): { tokenType: TokenKind; image: string } };
+/** The lookahead strategy of a Chevrotain parser: the two decision builders statement recovery wraps. */
+export type LookaheadStrategy = {
+    buildLookaheadForAlternation(options: Decision): (this: Lookahead, alternatives?: unknown) => number | undefined;
+    buildLookaheadForOptional(options: Decision): (this: Lookahead) => boolean;
+};
+/** The productions of a decision: the one of its rule with the given kind and occurrence index. */
+function production(rule: Decision['rule'], kind: string, occurrence: number): Production | undefined {
+    const stack = [...rule.definition];
+    while (stack.length) {
+        const p = stack.pop()!;
+        if (p.constructor.name === kind && (p.idx ?? 0) === occurrence)
+            return p;
+        stack.push(...(p.definition ?? []));
+    }
+    return undefined;
+}
+/** Langium suffixes Chevrotain rule names with a zero-width space. */
+const ruleName = (name: string | undefined) => name?.replace(/​$/u, '');
+const startsWith = (p: Production | undefined, name: string) => p?.definition?.[0]?.constructor.name === 'NonTerminal' && ruleName(p.definition[0].nonTerminalName) === name;
+/**
+ * Statement recovery (WP1). An assignment and an expression statement share a value path prefix of any
+ * length (statuses[i].confirmed), so the adaptive lookahead finds no viable alternative while such a
+ * statement is still being typed, and a statement list would end there, dropping the rest of its
+ * component. When the adaptive prediction fails for a statement that starts with a name, this guess
+ * keeps the list going: an assignment when the statement is a place (names joined by . or :: and
+ * bracketed indexes) followed by =, otherwise an expression statement; the statement's own error recovery then reports the error and
+ * resynchronizes. Valid sources never reach the guess, so their parse is unchanged.
+ */
+export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
+    const strategy = Object.create(inner) as LookaheadStrategy;
+    strategy.buildLookaheadForAlternation = options => {
+        const base = inner.buildLookaheadForAlternation.call(strategy, options);
+        const alternatives = ruleName(options.rule.name) === 'Statement' ? production(options.rule, 'Alternation', options.prodOccurrence)?.definition ?? [] : [];
+        const assign = alternatives.findIndex(x => startsWith(x, 'Assign')), expression = alternatives.findIndex(x => startsWith(x, 'ExpressionStatement'));
+        if (assign < 0 || expression < 0)
+            return base;
+        return function (this: Lookahead, choices?: unknown) {
+            const predicted = base.call(this, choices);
+            if (predicted !== undefined || !nameToken(this.LA(1).tokenType))
+                return predicted;
+            // Outside brackets, a place is names joined by . or :: and bracketed indexes; anything else ends it.
+            let depth = 0, operand = false;
+            for (let i = 1; ; i++) {
+                const token = this.LA(i), text = token.tokenType.name === 'EOF' ? undefined : token.image;
+                if (text === undefined)
+                    return expression;
+                if (depth === 0) {
+                    if (text === '=')
+                        return assign;
+                    const name = nameToken(token.tokenType);
+                    if (name ? operand : !['.', '::', '['].includes(text))
+                        return expression;
+                    operand = name;
+                }
+                depth += ['(', '[', '{'].includes(text) ? 1 : [')', ']', '}'].includes(text) ? -1 : 0;
+                if (depth < 0)
+                    return expression;
+                if (depth === 0 && text === ']')
+                    operand = true;
+            }
+        };
+    };
+    strategy.buildLookaheadForOptional = options => {
+        const base = inner.buildLookaheadForOptional.call(strategy, options);
+        // PROD_TYPE.REPETITION: the statements of a block, an operation body or a case.
+        if (options.prodType !== 1 || !startsWith(production(options.rule, 'Repetition', options.prodOccurrence), 'Statement'))
+            return base;
+        return function (this: Lookahead) {
+            return base.call(this) || nameToken(this.LA(1).tokenType);
+        };
+    };
+    return strategy;
+}
