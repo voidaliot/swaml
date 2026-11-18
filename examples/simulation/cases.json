@@ -105,6 +105,9 @@
     "examples/46-breaker-internal.swaml": {
       "BreakerInternal::Store outage trips the breaker and recovers": "pass"
     },
+    "examples/47-reaction-forms.swaml": {
+      "ReactionForms::Every form": "pass"
+    },
     "examples/notation/catalog.swaml": {
       "Notation::Startup": "pass"
     },

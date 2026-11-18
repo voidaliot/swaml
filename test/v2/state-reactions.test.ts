@@ -153,7 +153,7 @@ test('WP5-G01 WP5-G02 (gate 3) the new forms parse without console output', asyn
         for (const [context, pairs] of recovery)
             for (const [line] of pairs)
                 Swaml.parser.LangiumParser.parse(context(line));
-        for (const file of ['examples/44-session-completion.swaml', 'examples/45-lock-deferral.swaml', 'examples/46-breaker-internal.swaml'])
+        for (const file of ['examples/44-session-completion.swaml', 'examples/45-lock-deferral.swaml', 'examples/46-breaker-internal.swaml', 'examples/47-reaction-forms.swaml'])
             Swaml.parser.LangiumParser.parse(readFileSync(new URL(file, root), 'utf8'));
     }
     finally {
@@ -625,6 +625,7 @@ test('WP5 examples: session completion, lock deferral and breaker internal trans
         'examples/44-session-completion.swaml': ['SessionCompletion::Opens after two refusals', 'SessionCompletion::Coverage loss during the request'],
         'examples/45-lock-deferral.swaml': ['LockDeferral::Requests during the pulse', 'LockDeferral::Request order across the pulse'],
         'examples/46-breaker-internal.swaml': ['BreakerInternal::Store outage trips the breaker and recovers'],
+        'examples/47-reaction-forms.swaml': ['ReactionForms::Every form'],
     };
     for (const [file, cases] of Object.entries(expected)) {
         const r = await parse(readFileSync(new URL(file, root), 'utf8'));
