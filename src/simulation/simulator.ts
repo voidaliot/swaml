@@ -1,7 +1,7 @@
 import { AstUtils, DocumentState, type AstNode } from 'langium';
 import * as a from '../language/generated/ast.js';
 import { SWAML_REFERENCE_PROFILE } from '../language/edition.js';
-import { inputEndpoints, memberQos, sampledMembers, sampledReadForm, LIBRARY_2_3_URI, isCompletion, isInternal, stateDeferrals, libraryIntrinsic, type LibraryIntrinsic, caseRead, caseTarget, isPlace, placeRoot, valueSteps, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, entryPeriod, entryDeadline, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
+import { flowStates, isStateful, inputEndpoints, memberQos, sampledMembers, sampledReadForm, LIBRARY_2_3_URI, isCompletion, isInternal, stateDeferrals, libraryIntrinsic, type LibraryIntrinsic, caseRead, caseTarget, isPlace, placeRoot, valueSteps, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, entryPeriod, entryDeadline, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
 import { binary, bind, checked, ContractViolation, copy, intText, plain, realText, RuntimeFault, scalar, squareRoot, voidValue, widen, type Environment, type Value } from './values.js';
 export { projectOperationTiming } from './timing.js';
 export interface SimulationOptions {
@@ -109,6 +109,11 @@ type Yield = {
     timeout?: number;
     /** The state of a stateful activation waiting at its selection (not inside an action), whose retained input it consumes (WP5-R09). */
     machine?: a.State;
+    /** PROTOTYPE P1: the stage 1 state (or true for a plain receive) at which a stateful operation waits. */
+    flow?: a.StateStep;
+    flowPoint?: boolean;
+    /** PROTOTYPE P1 variant P1_ARRIVAL_YIELD: the message a stage 1 selection takes after a zero-time wait. */
+    pick?: Message;
     /** The evaluated value of a computed receive timeout, recorded on its receiveWait observation (WP4-T01). */
     durationNs?: number;
 };
@@ -188,6 +193,11 @@ type Watch = {
     frame: Frame;
     active: boolean;
 };
+const P1_ARRIVAL_YIELD = !!process.env.P1_ARRIVAL_YIELD, P1_DISPOSE_ON_WAIT = !!process.env.P1_DISPOSE_ON_WAIT;
+/** PROTOTYPE P1: a jump to S, unwinding to the statement list that contains S (SIF-R07). */
+class JumpSignal {
+    constructor(public target: string) { }
+}
 class ReturnValue {
     constructor(public value: Value) { }
 }
@@ -232,6 +242,10 @@ type Message = {
     ordinal?: number;
     /** Set when the message was first retained by a deferring state and its defer observation recorded (WP5-T03). */
     retained?: boolean;
+    /** PROTOTYPE P1: the delivery event (time, insertion ordinal); stage 1 serves the message delivered first. */
+    delivered?: [number, number];
+    /** PROTOTYPE P1: a keep observation was recorded for this message (SIF-T02). */
+    kept?: boolean;
 };
 type Correlation = {
     id: string;
@@ -481,6 +495,8 @@ class Interpreter {
     private serial = 0;
     private order = 0;
     private offers = 0;
+    /** PROTOTYPE P1: the insertion ordinal of the event being run, which orders deliveries within an instant. */
+    private eventOrder = 0;
     /** Queued copies so far: the global offer ordinal of retained input (WP5-R09). */
     private ordinals = 0;
     /** Whether any message has been retained by a deferral in this run; until then consume() is the 2.2 walk (WP5-R11). */
@@ -659,6 +675,7 @@ class Interpreter {
                     break;
                 const event = this.events.pop()!;
                 this.time = event.time;
+                this.eventOrder = event.order;
                 this.fuel();
                 event.run();
                 this.pump();
@@ -816,6 +833,8 @@ class Interpreter {
         for (const w of f.watches)
             w.active = false;
         this.unlock(f);
+        if (!f.script && f.op && this.machines[this.label(f)] && flowStates(f.op).length)
+            this.machines[this.label(f)].live = false;
         this.log(failure ? 'failure' : 'complete', this.label(f), { activation: f.id, source: failure ? this.source(f.at) : undefined, value: value ? plain(value) : undefined, reason: failure, message: failure && message !== failure ? message : undefined });
         if (f.correlation)
             this.respond(f.correlation, { value, failure: failure ? 'remoteFailure' : undefined, out: (f as Frame & {
@@ -1055,10 +1074,34 @@ class Interpreter {
     }
     private *block(b: a.Block | a.OperationBody | a.Scenario, f: Frame, parent: Environment): Iterator {
         const local = new Map(parent);
-        for (const s of b.statements) {
+        // PROTOTYPE P1 (SIF-R07): a jump lands in the statement list that contains its target state; the blocks and loops
+        // between the jump and that list end (the signal unwinds them). Declarations after the target run again.
+        for (let i = 0; i < b.statements.length; i++) {
+            try {
+                yield* this.statement(b.statements[i], f, local);
+            }
+            catch (e) {
+                if (!(e instanceof JumpSignal))
+                    throw e;
+                const j = b.statements.findIndex(x => a.isStateStep(x) && x.name === e.target);
+                if (j < 0)
+                    throw e;
+                i = j - 1;
+            }
+        }
+        return voidValue();
+    }
+    private *statement(s: a.Statement, f: Frame, local: Environment): Iterator {
+        {
             this.fuel();
             f.at = s;
-            if (a.isLocalVariable(s))
+            // A state statement adds no step of its own after it ends: leaving continues into the next statement as a 2.2
+            // transition continues into its target's entry (the statements inside it are steps).
+            if (a.isStateStep(s))
+                return yield* this.flowState(s, f, local);
+            else if (a.isJump(s))
+                throw new JumpSignal(s.target);
+            else if (a.isLocalVariable(s))
                 bind(local, s.name, typeKey(s.type), yield* this.evaluate(s.value, f, local));
             else if (a.isAssign(s) && isPlace(s))
                 yield* this.assignPlace(s, f, local);
@@ -1117,7 +1160,8 @@ class Interpreter {
             else if (a.isReceive(s)) {
                 // A computed timeout is evaluated when the statement starts waiting, before any input is taken (WP4-S03, WP4-R02).
                 const computed = s.timeoutValue ? durationValue(yield* this.evaluate(s.timeoutValue, f, local)) : undefined;
-                const reply = yield computed !== undefined ? { kind: 'receive', branches: s.branches, timeout: computed, durationNs: computed } : { kind: 'receive', branches: s.branches, timeout: s.timeout ? nanos(s.timeout) : undefined };
+                const flow = !f.script && isStateful(f.op) ? { flowPoint: true } : {};
+                const reply = yield computed !== undefined ? { kind: 'receive', branches: s.branches, timeout: computed, durationNs: computed, ...flow } : { kind: 'receive', branches: s.branches, timeout: s.timeout ? nanos(s.timeout) : undefined, ...flow };
                 if (reply?.input && reply.branch && a.isReceiveBranch(reply.branch)) {
                     const scope = new Map(local);
                     this.bindInputs(scope, reply.branch.bindings, reply.input);
@@ -1167,6 +1211,217 @@ class Interpreter {
         }
         return voidValue();
     }
+    // ---- PROTOTYPE P1: native stage 1 interpreter for states in the flow (proposal revision 2, SIF-R01 to SIF-R12) ----
+    /** The stage 1 stateful operation of c that handles endpointName at some waiting point (its single owner, SIF-S01). */
+    private flowOwners = new Map<Structure, Map<string, Executable | undefined>>();
+    private flowOwner(c: Component, endpointName: string): Executable | undefined {
+        const known = this.flowOwners.get(c.structure) ?? this.flowOwners.set(c.structure, new Map()).get(c.structure)!;
+        if (!known.has(endpointName))
+            known.set(endpointName, members(c.structure).filter(isExecutable).find(op => flowStates(op).length > 0 && nodes(body(op)!).some(n => (a.isTransition(n) || a.isReceiveBranch(n)) && n.endpoint === endpointName)));
+        return known.get(endpointName);
+    }
+    /** A member's disposition at a waiting point: handled, the state's override, else the operation default (keep when none is written). */
+    private disposition(op: Executable, s: a.StateStep | undefined, endpointName: string): 'handled' | 'keep' | 'ignore' {
+        if (s?.transitions.some(t => t.endpoint === endpointName))
+            return 'handled';
+        const override = s?.dispositions.find(d => d.endpoints.includes(endpointName));
+        if (override)
+            return override.kind as 'keep' | 'ignore';
+        const operationDefault = body(op)!.dispositions.find(d => d.endpoints.includes(endpointName));
+        return (operationDefault?.kind ?? 'keep') as 'keep' | 'ignore';
+    }
+    /** SIF-T02: one keep observation per message, the first time a waiting point keeps it. */
+    private keepObservation(f: Frame, s: a.StateStep | undefined, endpointName: string, m: Message): void {
+        if (m.kept)
+            return;
+        m.kept = true;
+        this.log('keep', this.label(f), { activation: f.id, ...(s ? { state: s.name } : {}), member: endpointName, source: m.origin, message: m.id });
+    }
+    /** The ready queue heads addressed to f's component, with their endpoint names; aged heads are discarded first. */
+    private flowHeads(f: Frame): { queue: Message[]; m: Message; endpointName: string }[] {
+        const heads: { queue: Message[]; m: Message; endpointName: string }[] = [];
+        for (const queue of this.queues.values()) {
+            while (queue.length) {
+                const m = queue[0];
+                if (!(m as Message & { ready?: boolean }).ready || m.kind === 'reply' || m.kind === 'request')
+                    break;
+                const destination = this.ports.get(m.target);
+                if (!destination || destination.c !== f.c)
+                    break;
+                if (this.policyOf(m.route, m.member).maxAge !== undefined && this.time - m.emitted > this.policyOf(m.route, m.member).maxAge!) {
+                    queue.shift();
+                    this.log('discardAge', m.route.id, { source: m.origin, message: m.id });
+                    continue;
+                }
+                heads.push({ queue, m, endpointName: `${destination.p.name}.${m.member}` });
+                break;
+            }
+        }
+        const key = (m: Message) => m.delivered ?? [Infinity, Infinity];
+        return heads.sort((x, y) => key(x.m)[0] - key(y.m)[0] || key(x.m)[1] - key(y.m)[1]);
+    }
+    /** Takes a queue head as delivered input, as consume() does (deliver observation, argument widening). */
+    private take(queue: Message[], m: Message, endpointName: string, c: Component): Message {
+        queue.shift();
+        this.log('deliver', m.route.id, { source: m.origin, message: m.id, correlation: m.correlation?.id, targetPort: m.target });
+        const ep = memberEndpoint(c.structure, endpointName);
+        if (ep) {
+            const types = ep.member.kind === 'attribute' ? [typeKey(ep.member.type)] : ep.member.parameters.map(p => typeKey(p.type));
+            m.args = m.args.map((v, i) => widen(v, types[i]));
+        }
+        return { ...m, member: endpointName };
+    }
+    /** SIF-R02 step 1: ignored queued input is consumed in delivery order; kept input stays and is observed once. */
+    private applyDispositions(f: Frame, s: a.StateStep): void {
+        while (true) {
+            const ignored = this.flowHeads(f).find(h => this.flowOwner(f.c, h.endpointName) === f.op && this.disposition(f.op, s, h.endpointName) === 'ignore');
+            if (!ignored)
+                break;
+            this.take(ignored.queue, ignored.m, ignored.endpointName, f.c);
+            this.log('discardInput', ignored.endpointName, { source: ignored.m.origin, reason: 'ignored' });
+        }
+        for (const queue of this.queues.values())
+            for (const m of queue) {
+                if (!(m as Message & { ready?: boolean }).ready)
+                    break;
+                const destination = this.ports.get(m.target);
+                if (!destination || destination.c !== f.c || m.kind === 'reply' || m.kind === 'request')
+                    break;
+                const endpointName = `${destination.p.name}.${m.member}`;
+                if (this.flowOwner(f.c, endpointName) === f.op && this.disposition(f.op, s, endpointName) === 'keep')
+                    this.keepObservation(f, s, endpointName, m);
+            }
+    }
+    /** The triggers of s on one member, in written order: the first whose guard holds is taken (SIF-R03). */
+    private *inputTrigger(s: a.StateStep, f: Frame, local: Environment, input: Message): Generator<Yield, a.Transition | undefined, Reply | undefined> {
+        for (const t of s.transitions.filter(x => x.endpoint === input.member)) {
+            const scope = new Map(local);
+            this.bindInputs(scope, t.bindings ?? [], input);
+            f.at = t;
+            if (!t.guard || (yield* this.evaluate(t.guard, f, scope)).data)
+                return t;
+        }
+        this.log('discardInput', this.label(f), { activation: f.id, source: input.origin ?? this.source(s), reason: 'guard' });
+        return undefined;
+    }
+    /**
+     * SIF-R01, SIF-R05, SIF-R06: reaching a state. A state without triggers is a named step. Otherwise selections in written
+     * order (the input group at the position of its first trigger, served in delivery order), stay reactions, then leaving:
+     * exit actions, the trigger's block, then the jump target or the next statement.
+     */
+    private *flowState(s: a.StateStep, f: Frame, local: Environment): Iterator {
+        const key = this.label(f), entered = this.time;
+        this.machines[key] = { state: s.name, live: true };
+        f.at = s;
+        this.log('state', key, { state: s.name, activation: f.id, source: this.source(s) });
+        for (const action of s.actions.filter(x => x.kind === 'entry'))
+            yield* this.block(action.body, f, local);
+        const exit = function* (this: Interpreter): Iterator { for (const action of s.actions.filter(x => x.kind === 'exit'))
+            yield* this.block(action.body, f, local); return voidValue(); }.bind(this);
+        if (!s.transitions.length) {
+            yield* exit();
+            return voidValue();
+        }
+        // Computed durations: evaluated once, when the entry actions finish (WP4-R02); the timer counts from arrival.
+        const delays = new Map<a.Transition, number>();
+        for (const t of s.transitions.filter(x => !!x.delayValue)) {
+            f.at = t;
+            const value = durationValue(yield* this.evaluate(t.delayValue!, f, local));
+            delays.set(t, value);
+            this.log('timer', key, { state: s.name, source: this.source(t), timerNs: value, expiresNs: entered + value });
+        }
+        const delayOf = (t: a.Transition) => t.delay ? nanos(t.delay) : delays.get(t)!;
+        const armed = new Set(s.transitions.filter(t => !t.endpoint));
+        const firstInput = s.transitions.findIndex(t => !!t.endpoint);
+        const walk = s.transitions.filter((t, i) => !t.endpoint || i === firstInput);
+        const handled = new Set(s.transitions.flatMap(t => t.endpoint ? [t.endpoint] : []));
+        const timerReady = function* (this: Interpreter, t: a.Transition): Generator<Yield, boolean, Reply | undefined> {
+            if (!armed.has(t) || this.time < entered + delayOf(t))
+                return false;
+            f.at = t;
+            return !t.guard || !!(yield* this.evaluate(t.guard, f, new Map(local))).data;
+        }.bind(this);
+        while (true) {
+            let selected: a.Transition | undefined, input: Message | undefined;
+            selection: while (true) {
+                if (!P1_DISPOSE_ON_WAIT)
+                    this.applyDispositions(f, s);
+                for (const entry of walk) {
+                    if (!entry.endpoint) {
+                        if (yield* timerReady(entry)) {
+                            selected = entry;
+                            break selection;
+                        }
+                        continue;
+                    }
+                    const head = this.flowHeads(f).find(h => handled.has(h.endpointName));
+                    if (!head)
+                        continue;
+                    if (P1_ARRIVAL_YIELD) {
+                        // Variant: the selection passes through a zero-time wait, as a 2.2 machine does, and consume() hands over
+                        // exactly this message (delivery order kept).
+                        f.at = s;
+                        const reply: Reply | undefined = yield { kind: 'receive', branches: s.transitions.filter(t => !!t.endpoint), flow: s, pick: head.m };
+                        input = reply!.input!;
+                    }
+                    else
+                        input = this.take(head.queue, head.m, head.endpointName, f.c);
+                    selected = yield* this.inputTrigger(s, f, local, input);
+                    if (selected)
+                        break selection;
+                    continue selection;
+                }
+                // Variant P1_DISPOSE_ON_WAIT: dispositions apply only while the state waits (consume() at delivery and right
+                // after the wait starts), as the 2.2 discard did; a selection that takes something without waiting leaves
+                // unhandled input queued.
+                // Nothing ready: wait without the lock until the earliest armed timer whose guard holds, or a delivery.
+                let expires: number | undefined;
+                for (const t of s.transitions.filter(x => armed.has(x))) {
+                    f.at = t;
+                    if (t.guard && !(yield* this.evaluate(t.guard, f, new Map(local))).data)
+                        continue;
+                    const at = entered + delayOf(t);
+                    if (expires === undefined || at < expires)
+                        expires = at;
+                }
+                if (expires !== undefined && !Number.isSafeInteger(expires))
+                    throw new ContractViolation('ClockRange');
+                f.at = s;
+                const reply: Reply | undefined = yield { kind: 'receive', branches: s.transitions.filter(t => !!t.endpoint), timeout: expires === undefined ? undefined : expires - this.time, flow: s };
+                if (reply?.input) {
+                    // SIF-R04: the delivery that first made the input group ready fixes the selection.
+                    input = reply.input;
+                    selected = yield* this.inputTrigger(s, f, local, input);
+                    if (selected)
+                        break selection;
+                    continue selection;
+                }
+                // SIF-R04: the timer expiry fixes the selection: the first ready timer in written order.
+                for (const t of walk)
+                    if (!t.endpoint && (yield* timerReady(t))) {
+                        selected = t;
+                        break selection;
+                    }
+            }
+            const scope = new Map(local);
+            if (input)
+                this.bindInputs(scope, selected.bindings ?? [], input);
+            if (selected.stay) {
+                if (!selected.endpoint)
+                    armed.delete(selected);
+                this.log('state', key, { state: s.name, activation: f.id, source: this.source(selected), stay: true });
+                yield* this.block(selected.effect!, f, scope);
+                continue;
+            }
+            yield* exit();
+            if (selected.effect)
+                yield* this.block(selected.effect, f, scope);
+            if (selected.target !== undefined)
+                throw new JumpSignal(selected.target);
+            return voidValue();
+        }
+    }
+
     /**
      * A stateful activation (chapter 6.5). On entering a state: state update, entry actions, computed timers (WP4-R02),
      * then selection in the total order of WP5-R01: (1) the first enabled completion transition in declaration order,
@@ -1274,7 +1529,7 @@ class Interpreter {
                 const scope = new Map(local);
                 if (input)
                     this.bindInputs(scope, selected.bindings, input);
-                yield* this.block(selected.effect, f, scope);
+                yield* this.block(selected.effect!, f, scope);
                 selected = input = undefined;
             }
             const beforeReaction = suspensions();
@@ -1283,7 +1538,7 @@ class Interpreter {
             const scope = new Map(local);
             if (input)
                 this.bindInputs(scope, selected.bindings, input);
-            yield* this.block(selected.effect, f, scope);
+            yield* this.block(selected.effect!, f, scope);
             if (suspensions() !== beforeReaction)
                 chain.clear();
             via = selected;
@@ -1462,10 +1717,20 @@ class Interpreter {
                     return;
                 }
                 (m as Message & { ready: boolean }).ready = true;
+                m.delivered = [this.time, this.eventOrder];
             });
         }
     }
     private consume(): void {
+        if (P1_ARRIVAL_YIELD)
+            for (const f of this.frames) {
+                const w = f.waiting;
+                if (f.done || w?.kind !== 'receive' || !w.pick)
+                    continue;
+                const queue = [...this.queues.values()].find(q => q[0] === w.pick)!, d = this.ports.get(w.pick.target)!;
+                const input = this.take(queue, w.pick, `${d.p.name}.${w.pick.member}`, f.c);
+                this.resume(f, { input });
+            }
         if (this.retaining)
             this.consumeRetained();
         for (const queue of this.queues.values()) {
@@ -1542,6 +1807,30 @@ class Interpreter {
                     remove();
                     const branch = waiting.waiting.branches.find(b => this.listens(waiting, b, c, endpointName, m.kind))!;
                     this.resume(waiting, { input: { ...m, member: endpointName }, branch });
+                    continue;
+                }
+                const flowOwner = this.flowOwner(c, endpointName);
+                if (flowOwner) {
+                    const frame = this.findFrame(f => f.c === c && f.op === flowOwner && !f.done);
+                    const w = frame?.waiting;
+                    if (frame && w?.kind === 'receive' && (w.flow || w.flowPoint)) {
+                        const disposition = this.disposition(flowOwner, w.flow, endpointName);
+                        if (disposition === 'ignore') {
+                            remove();
+                            this.log('discardInput', endpointName, { source: m.origin, reason: 'ignored' });
+                            continue;
+                        }
+                        for (const x of queue) {
+                            if (!(x as Message & { ready?: boolean }).ready)
+                                break;
+                            this.keepObservation(frame, w.flow, endpointName, x);
+                        }
+                        break;
+                    }
+                    if (frame)
+                        break;
+                    remove();
+                    this.log('discardInput', endpointName, { source: m.origin, reason: 'inactiveOwner' });
                     continue;
                 }
                 const stateOwner = members(c.structure).filter(isExecutable).find(op => body(op)?.states.length && nodes(body(op)!).some(n => a.isTransition(n) && n.endpoint === endpointName));

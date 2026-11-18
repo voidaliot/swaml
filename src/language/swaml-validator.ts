@@ -12,7 +12,7 @@ const insideConditional = (e: AstNode): boolean => { for (let n = e.$container; 
 /** The name of the attribute, requirement attribute or policy setting whose initializer contains e. */
 const initialized = (e: AstNode): string => { for (let n: AstNode | undefined = e; n; n = n.$container) if (a.isAttribute(n) || a.isPolicySetting(n) || a.isPortMember(n)) return n.name; return ''; };
 const isExpression = (n: unknown): n is a.Expression => !!n && typeof n === 'object' && EXPRESSION_TYPES.has((n as AstNode).$type);
-import { forwardedPorts, isSampledMember, memberPolicy, memberQos, optsIn, sampledMembers, sampledReadForm, sampledReads, attributeAccess, isCompletion, isLiteralTrue, isReactionForm, transitionKind, useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_2_3_URI, container, constantValue, displayText, entryDeadline, entryPeriod, representableDuration, settingDuration, triggerIdentity, type ConstantProblem } from './semantic.js';
+import { flowStates, isStateful, forwardedPorts, isSampledMember, memberPolicy, memberQos, optsIn, sampledMembers, sampledReadForm, sampledReads, attributeAccess, isCompletion, isLiteralTrue, isReactionForm, transitionKind, useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_2_3_URI, container, constantValue, displayText, entryDeadline, entryPeriod, representableDuration, settingDuration, triggerIdentity, type ConstantProblem } from './semantic.js';
 import { ambiguousNameMessage } from './swaml-scope.js';
 type Env = Map<string, {
     type: string;
@@ -350,11 +350,13 @@ export class SwamlValidator {
             finished.add(x); return found; };
         if (cycle(op, new Set()))
             this.report(op, 'SW2006', 'Operation calls must be acyclic; recursion is forbidden.');
-        if(b.states.length&&owner(op,isExecutable))this.report(op,'SW2008','A stateful operation must be directly component-owned with one on start entry.');
+        if(isStateful(op)&&owner(op,isExecutable))this.report(op,'SW2008','A stateful operation must be directly component-owned with one on start entry.');
         if (b.states.length)
             this.states(op, c, env);
         else {
             this.block(b, env, c, op);
+            if (flowStates(op).length)
+                this.flowOperation(op, b, c);
             // Host intrinsics have documentation-only bodies (WP3-M01).
             if (typeKey(sig.result) !== 'void' && !this.terminates(b) && !identity(sig).startsWith('Swaml::Math::') && !declaredIntrinsic(op))
                 this.report(op, 'SW2006', 'A non-void operation must return or fail on every path.');
@@ -809,7 +811,7 @@ export class SwamlValidator {
                     this.report(e, 'SW2006', `Unknown operation ${e.target}; remote calls require an owned port.`);
                 return '?';
             }
-            if (isExecutable(t) && body(t)?.states.length)
+            if (isExecutable(t) && isStateful(t))
                 this.report(e, 'SW2006', 'Stateful operations are activated only by their on start entry.');
             const sig = isExecutable(t) ? signature(t) : t;
             if (!sig)
@@ -1171,10 +1173,14 @@ export class SwamlValidator {
                 if (s.timeoutBody)
                     this.block(s.timeoutBody, env, c, op);
             }
+            else if (a.isStateStep(s))
+                this.stateStep(s, env, c, op);
+            else if (a.isJump(s))
+                this.jumpRule(s, s.target, op);
             else if (a.isInterruptible(s) && this.script)
                 this.report(s, 'SW2006', 'Case scripts have no interrupt regions; wait with on receive or after D instead.');
             else if (a.isInterruptible(s)) {
-                if (op && body(op)?.states.length)
+                if (op && isStateful(op))
                     this.report(s, 'SW2006', 'Interrupt regions cannot occur in stateful operations.');
                 this.block(s.body, env, c, op);
                 this.block(s.handler, this.inputEnv(s, env, c), c, op);
@@ -1345,18 +1351,18 @@ export class SwamlValidator {
                         if (target && isExecutable(target) && effects(target, c).writes)
                             this.report(e, 'SW2006', 'Concurrent dispatch arguments cannot write state.');
                     }
-            if (e.concurrent && (effects(op, c).writes || body(op)?.states.length))
+            if (e.concurrent && (effects(op, c).writes || isStateful(op)))
                 this.report(e, 'SW2006', 'Concurrent entries cannot write state through any callee or be stateful.');
             if (e.kind === 'every' && e.deadline && e.period && nanos(e.deadline) > nanos(e.period))
                 this.report(e, 'SW2007', 'Periodic deadline cannot exceed its period.');
             if (e.kind === 'after') {
                 if (!ops.some(x => x.name === e.predecessor) || !entries.some(x => x.operation === e.predecessor))
                     this.report(e, 'SW2007', 'after needs a scheduled same-owner predecessor.');
-                if (sig.parameters.length || typeKey(sig.result) !== 'void' || body(op)?.states.length)
+                if (sig.parameters.length || typeKey(sig.result) !== 'void' || isStateful(op))
                     this.report(e, 'SW2007', 'after targets are parameterless void flow operations.');
                 graph.set(e.predecessor!, [...(graph.get(e.predecessor!) ?? []), op.name]);
             }
-            if (body(op)?.states.length && (entries.filter(x => x.operation === op.name).length !== 1 || e.kind !== 'start'))
+            if (isStateful(op) && (entries.filter(x => x.operation === op.name).length !== 1 || e.kind !== 'start'))
                 this.report(e, 'SW2008', 'A stateful operation needs exactly one on start entry.');
         }
         const cyclic = (name: string, seen: Set<string>): boolean => seen.has(name) || (graph.get(name) ?? []).some(x => cyclic(x, new Set([...seen, name])));
@@ -1366,8 +1372,121 @@ export class SwamlValidator {
                 break;
             }
         for (const op of ops)
-            if (body(op)?.states.length && !entries.some(e => e.operation === op.name))
+            if (isStateful(op) && !entries.some(e => e.operation === op.name))
                 this.report(op, 'SW2008', 'A stateful operation needs an on start entry.');
+    }
+    // ---- PROTOTYPE P1: stage 1 states in the flow (proposal revision 2, owner spelling stay / exit / to S) ----
+    /** The statement lists that contain n, innermost first, up to the operation body (SIF-S07). */
+    private enclosingLists(n: AstNode): { list: readonly a.Statement[]; child: AstNode }[] {
+        const out: { list: readonly a.Statement[]; child: AstNode }[] = [];
+        for (let child: AstNode = n, p = n.$container; p && !isExecutable(p); child = p, p = p.$container) {
+            if ((a.isBlock(p) || a.isOperationBody(p)) && child.$containerProperty === 'statements')
+                out.push({ list: p.statements, child });
+        }
+        return out;
+    }
+    /** SIF-S07, SIF-D04: a jump names a state of the same operation in its own statement list or an enclosing one; a forward jump over a used declaration is an error. */
+    private jumpRule(n: AstNode, target: string | undefined, op: Executable | undefined): void {
+        if (!op || this.script) {
+            this.report(n, 'SW2008', 'Jumps belong to stateful operations.');
+            return;
+        }
+        // A jump inside a state block: allowed only in a leaving trigger's block (at any depth), never in entry, exit or stay blocks.
+        for (let p: AstNode | undefined = n.$container; p && !isExecutable(p); p = p.$container) {
+            if (a.isStateAction(p) || a.isTransition(p) && p.stay)
+                this.report(n, 'SW2008', 'to is not allowed in entry, exit or stay blocks.');
+            if (a.isTransition(p))
+                break;
+        }
+        const lists = this.enclosingLists(n);
+        const found = lists.find(l => l.list.some(x => a.isStateStep(x) && x.name === target));
+        if (!found) {
+            this.report(n, 'SW2008', `to ${target}: no state ${target} in this statement list or an enclosing one.`);
+            return;
+        }
+        const from = found.list.indexOf(found.child as a.Statement), to = found.list.findIndex(x => a.isStateStep(x) && x.name === target);
+        if (to > from) {
+            const skipped = found.list.slice(from + 1, to).filter(a.isLocalVariable);
+            const used = found.list.slice(to).flatMap(x => nodes(x)).filter(a.isReferenceExpression).map(r => r.path.split('.')[0]);
+            for (const v of skipped)
+                if (used.includes(v.name))
+                    this.report(n, 'SW2008', `to ${target} skips the declaration of ${v.name}, which ${target} uses. Declare ${v.name} before the jump.`);
+        }
+        if (a.isJump(n)) {
+            const list = lists[0].list, i = list.indexOf(n);
+            const targets = new Set<string | undefined>([...flowStates(op).flatMap(x => x.transitions.map(t => t.target)), ...nodes(body(op)!).filter(a.isJump).map(j => j.target)]);
+            const next = list[i + 1];
+            if (next && !(a.isStateStep(next) && targets.has(next.name)))
+                this.report(n, 'SW2008', 'After to, only a state that is a jump target may follow in the same list.');
+        }
+    }
+    private stateStep(s: a.StateStep, env: Env, c: Structure | undefined, op: Executable | undefined): void {
+        if (!op || this.script) {
+            this.report(s, 'SW2008', 'Case scripts contain no states (D13).');
+            return;
+        }
+        for (const kind of ['entry', 'exit'])
+            if (s.actions.filter(x => x.kind === kind).length > 1)
+                this.report(s, 'SW2008', `Duplicate on ${kind} action.`);
+        const forbidden = (b: a.Block | undefined, what: string) => { for (const n of b ? nodes(b) : []) if (a.isStateStep(n) || a.isReceive(n) || a.isReturn(n)) this.report(n, 'SW2008', `${what} contain no state, receive or return statement.`); };
+        for (const ac of s.actions) {
+            forbidden(ac.body, 'Entry and exit actions');
+            this.block(ac.body, env, c, op);
+        }
+        // SIF-S06: the on receive triggers are contiguous.
+        const kinds = s.transitions.map(t => t.endpoint ? 'r' : 't').join('');
+        if (/r+t+r/.test(kinds))
+            this.report(s, 'SW2008', `The on receive triggers of state ${s.name} must be written together.`);
+        for (const t of s.transitions) {
+            const input = t.endpoint ? this.inputEnv(t, env, c) : env;
+            if (t.delayValue)
+                this.computedDuration(t.delayValue, env, c, op);
+            if (t.guard) {
+                this.value(t.guard, 'bool', input, c, op);
+                for (const call of nodes(t.guard).filter(a.isCallExpression)) {
+                    const target = this.callTarget(call, c);
+                    if (!t.endpoint)
+                        this.report(t.guard, 'SW2008', 'A timer guard reads only constants, locals and attributes this operation assigns (SIF-S05).');
+                    else if (!target || !isExecutable(target) || effects(target, c).writes || effects(target, c).communicates || effects(target, c).suspends)
+                        this.report(t.guard, 'SW2006', 'State guards may only be pure or read state.');
+                }
+            }
+            if (t.stay && (!t.effect || !t.effect.statements.length))
+                this.report(t, 'SW2008', 'A stay reaction has a non-empty block; to drop an input, write ignore (SIF-S03).');
+            forbidden(t.effect, 'Trigger blocks');
+            if (t.effect)
+                this.block(t.effect, input, c, op);
+            if (t.target !== undefined)
+                this.jumpRule(t, t.target, op);
+        }
+        for (const d of s.dispositions)
+            for (const ep of d.endpoints)
+                if (s.transitions.some(t => t.endpoint === ep))
+                    this.report(d, 'SW2008', `State ${s.name} handles ${ep} and cannot also ${d.kind} it.`);
+    }
+    /** SIF-S01 (parameterless void), SIF-S02, SIF-S09, SIF-D01 for an operation with state statements. */
+    private flowOperation(op: Executable, b: a.OperationBody, c: Structure | undefined): void {
+        const sig = signature(op)!, states = flowStates(op);
+        if (sig.parameters.length || typeKey(sig.result) !== 'void')
+            this.report(op, 'SW2008', 'A stateful operation is parameterless void.');
+        this.unique(states, op);
+        const waiting: { handled: Set<string> }[] = [];
+        const handledAll = new Set<string>();
+        for (const n of nodes(b)) {
+            if (a.isStateStep(n) && n.transitions.length)
+                waiting.push({ handled: new Set(n.transitions.flatMap(t => t.endpoint ? [t.endpoint] : [])) });
+            if (a.isReceive(n))
+                waiting.push({ handled: new Set(n.branches.map(x => x.endpoint)) });
+        }
+        waiting.forEach(w => w.handled.forEach(x => handledAll.add(x)));
+        const declared = new Set(b.dispositions.flatMap(d => d.endpoints));
+        for (const d of b.dispositions)
+            for (const ep of d.endpoints)
+                if (!handledAll.has(ep))
+                    this.report(d, 'SW2008', `${ep} is not handled at any waiting point of ${op.name} (SIF-S09).`);
+        for (const m of handledAll)
+            if (!declared.has(m) && waiting.some(w => !w.handled.has(m)))
+                this.report(op, 'SW2008', `${m} is not handled by every waiting point of ${op.name}: add keep ${m}; or ignore ${m}; at the top of ${op.name}.`);
     }
     private states(op: Executable, c: Structure | undefined, env: Env): void {
         const b = body(op)!, sig = signature(op)!;
@@ -1439,7 +1558,7 @@ export class SwamlValidator {
                     if (this.errorCount !== before)
                         erroneousGuards.add(t);
                 }
-                this.block(t.effect, input, c, op);
+                this.block(t.effect!, input, c, op);
             }
             // Deferral (WP5-S08, WP5-S09, WP5-D05, WP5-D06): required events or attributes that this machine owns through
             // its transitions, at most once per state, never handled by the same state.
@@ -1482,7 +1601,7 @@ export class SwamlValidator {
                     continue;
                 }
                 const cycle = path.slice(seen), key = [...cycle].sort().join('|');
-                const suspends = cycle.some(name => { const s = b.states.find(x => x.name === name)!; return s.actions.some(x => this.canSuspend(x.body, c)) || this.canSuspend(edge.get(name)!.effect, c); });
+                const suspends = cycle.some(name => { const s = b.states.find(x => x.name === name)!; return s.actions.some(x => this.canSuspend(x.body, c)) || this.canSuspend(edge.get(name)!.effect!, c); });
                 if (!reported.has(key) && !suspends) {
                     reported.add(key);
                     const first = b.states.find(s => cycle.includes(s.name))!.name, at = cycle.indexOf(first), ordered = [...cycle.slice(at), ...cycle.slice(0, at), first];
@@ -1520,7 +1639,7 @@ export class SwamlValidator {
         const completions = candidates.filter(({ t }) => !(c && !constantValue(t.guard!, c).problem));
         if (!completions.length)
             return;
-        const written = attributeAccess(b.states.flatMap(s => [...s.actions.map(x => x.body), ...s.transitions.map(t => t.effect)]), c).writes;
+        const written = attributeAccess(b.states.flatMap(s => [...s.actions.map(x => x.body), ...s.transitions.map(t => t.effect!)]), c).writes;
         // Polling helps only a guard that reads something that can change between two evaluations: an attribute that
         // some executable of the component writes, or a sample cell (WP6-D09).
         const writtenAnywhere = c ? attributeAccess(members(c).filter(isExecutable).flatMap(x => body(x) ? [body(x)!] : []), c).writes : new Set<string>();

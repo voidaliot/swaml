@@ -14,3 +14,4 @@ showcase/.vite/
 # Rebuilt from versioned source by the build/preview scripts
 src/language/standard-library.ts
 showcase/public/downloads/
+out-base/

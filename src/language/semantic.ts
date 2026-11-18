@@ -55,6 +55,18 @@ export function schedule(c: Structure, seen = new Set<Structure>()): a.ScheduleE
 }
 export function signature(op: Executable): a.Operation | undefined { return a.isOperation(op) ? op : op.definition.ref; }
 export function body(op: Executable): a.OperationBody | undefined { return op.body ?? signature(op)?.body; }
+/** PROTOTYPE P1: the state statements of an operation's own body (not of nested operations), in source order. */
+export function flowStates(op: Executable): a.StateStep[] {
+    const b = body(op);
+    if (!b)
+        return [];
+    const out: a.StateStep[] = [];
+    const visit = (n: AstNode) => { for (const x of AstUtils.streamContents(n)) { if (isExecutable(x)) continue; if (a.isStateStep(x)) out.push(x); visit(x); } };
+    visit(b);
+    return out;
+}
+/** PROTOTYPE P1: a 2.2 machine or an operation whose body contains a state statement (SIF-S01). */
+export function isStateful(op: Executable): boolean { return !!body(op)?.states.length || flowStates(op).length > 0; }
 export const isExecutable = (n: AstNode): n is Executable => a.isOperation(n) || a.isOperationUsage(n);
 /**
  * The host intrinsics of the 2.3 library packages (WP3-L01, WP3-L02, WP3-L03, WP3-M01): operation defs of the
@@ -982,7 +994,7 @@ export function caseCallRestriction(s: a.Scenario, path: string, operation: Exec
     const access = caseCallAccess(s, path);
     if (!access)
         return 'scope';
-    if (body(operation)?.states.length)
+    if (isStateful(operation))
         return 'stateful';
     const effect = effects(operation, structure);
     return access === 'testHelper' && (effect.communicates || effect.suspends) ? 'effects' : undefined;
