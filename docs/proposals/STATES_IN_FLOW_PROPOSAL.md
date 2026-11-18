@@ -9,9 +9,9 @@ Every runtime rule of this revision has been run by an interpreter prototype; "m
 - **Revision 4** of this document (`d117200`) and its reading samples.
 - **Owner decisions (binding, given after revision 4):** listed in "Changes since revision 4"; they settle revision 4's open decisions O1 to O6 and add the periodic end rule.
 - **Prototypes (all throwaway code, marked PROTOTYPE, never merged):**
-  - **P1r and P5** (flat states, parents, the migrator, the grammar spike) and **P4 and P6** (wakes, `StateLoop`, periodic machines): branch `prototype/states-in-flow-r4b`, head `0e58970`; evidence `E:\GitHub\swaml-vsc-ext\.temp\kept\states-p4\` and `…\states-p6\`.
-  - **P7** (this revision's experiments: the machine's own writes, the bound within one release, `if` tests and scheduling steps): branch `prototype/states-in-flow-r5` (from `0e58970`); models and evidence `E:\GitHub\swaml-vsc-ext\.temp\kept\states-p7\`. Rerun: `npm run build`, `bash p6/evidence.sh`; corpus: `P4_ROOT=<worktree> node p4/measure.mjs <worktree>/out E:/t/p4-scratch/mig <out.json>`, then `node p4/compare.mjs E:/t/p4-scratch/r-base4.json <out.json> E:/GitHub/swaml-vsc-ext/.temp/kept/states-p4/identity-map.json`.
-- **Design review of revision 3:** `E:\t\review-states-design-r3.md`; every blocking and important finding is closed (revision 4 table, kept in the history of this file), except I10 (extension cost, section 12) and DN (compact boxes, a drawing question for the extension, 2.1).
+  - **P1r and P5** (flat states, parents, the migrator, the grammar spike) and **P4 and P6** (wakes, `StateLoop`, periodic machines): branch `prototype/states-in-flow-r4b`, head `0e58970`; evidence kept outside this repository (states-p4 and states-p6).
+  - **P7** (this revision's experiments: the machine's own writes, the bound within one release, `if` tests and scheduling steps): branch `prototype/states-in-flow-r5` (from `0e58970`); models and evidence kept outside this repository (states-p7). Rerun: `npm run build`, `bash p6/evidence.sh`; corpus: `P4_ROOT=<worktree> node p4/measure.mjs <worktree>/out <migrated corpus> <out.json>`, then `node p4/compare.mjs <base results> <out.json> <states-p4 identity map>`.
+- **Design review of revision 3:** kept outside this repository (review-states-design-r3); every blocking and important finding is closed (revision 4 table, kept in the history of this file), except I10 (extension cost, section 12) and DN (compact boxes, a drawing question for the extension, 2.1).
 - **Reading samples:** [STATES_IN_FLOW_READING_SAMPLES.md](STATES_IN_FLOW_READING_SAMPLES.md), updated for this revision; every answer of samples 1 to 10 has been run.
 
 ## The whole thing in ten sentences
@@ -1462,7 +1462,7 @@ The old trace-digest gate (gate 2) cannot hold across the edition (identities ch
 
 ## 10. What consumers must handle
 
-**The VS Code extension:**
+**The editor integration:**
 - **Parsing:** the new grammar (states as statements, event lines, `exit;`/`to S;`, short bodies, `else if`, `if` release guards); `when`, `initial`, `final`, `defer` gone from completion, highlighting (TextMate grammar) and snippets. Until users migrate, a file with 2.2 machines is shown with a diagnostic that offers the migration command, not silently rejected.
 - **Flow View drawing** (2.1): state and parent boxes, one arrow per leave, diamonds for events with several leaves, numbers in written order, lanes per target, arrows crossing parent borders, the release in the frame header, empty decision diamonds with `[c]` lines for every flow, the end marker in periodic operations. The State view of 2.2 machines retires (a machine is drawn in Flow View).
 - **Flow View edits** (2.2): creation cards for states, parents, event lines, statements and leaves, with field completion for members, legal jump targets (SIF-S06) and conditions; dry-run previews that name changed numbers and behaviour order; braces written when a short body grows.

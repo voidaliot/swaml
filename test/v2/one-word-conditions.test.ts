@@ -8,6 +8,7 @@ import { AstUtils, type AstNode } from 'langium';
 import { formatDocument } from '../../src/language/formatter.js';
 import { projectModel } from '../../src/language/projection.js';
 import { resolveStatement, statementIdentity } from '../../src/language/semantic.js';
+import { suspendSite } from '../../src/language/placement.js';
 import { semanticIndex } from '../../src/language/path-services.js';
 import { viewCandidates } from '../../src/language/presentation.js';
 import { simulate } from '../../src/simulation/simulator.js';
@@ -151,6 +152,14 @@ test('SIF-G01 the validator treats else if as else { if … }: typing, returns, 
     const guard = (body: string) => `package Test { component def C { attribute k: int = 0; operation w() returns bool { if (k > 0) { return true; } ${body} return false; } operation f() { } schedule { on every 10ms f() if (w()); } } component Demo: C; }`;
     assert.deepEqual((await diagnostics(guard('else if (k < 0) { k = 1; }'))), (await diagnostics(guard('else { if (k < 0) { k = 1; } }'))));
     assert.ok((await diagnostics(guard('else if (k < 0) { k = 1; }'))).some(d => d.includes('Release guard must be pure or read state.')));
+    // WP8 T4 names the statement whose suspending call may suspend: the if of the else if, as for the if inside
+    // else { … } (a suspending call in a condition is itself an error, but the site is found before validation).
+    const site = async (body: string) => {
+        const c = (await parse(model(body, 'operation ready() returns bool { wait 1ms; return true; }'))).model.packages[0].elements.filter(a.isComponentDef)[0];
+        return statementIdentity(suspendSite(c.members.find(a.isOperation)!, c)!);
+    };
+    assert.equal(await site('if (a) { log = 1; } else if (b) { n = log + 1; } else if (ready()) { log = 2; }'), 'Test::C.f/1/otherwise/if/otherwise/if');
+    assert.equal(await site('if (a) { log = 1; } else { if (ready()) { log = 2; } }'), 'Test::C.f/1/otherwise/0');
 });
 
 test('SIF-G01 rename and references cover names read and written in an else if', async () => {
