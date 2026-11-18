@@ -90,12 +90,19 @@ package LockDeferral {
     port toDiscarding: Requests;
     port toDeferring: Requests;
   }
+  component def Fob {
+    /** Interface-only actor: a key fob with its own connection to the deferring lock, so its requests have their own queue. */
+    port toDeferring: Requests;
+  }
   component discarding: DiscardingLock;
   component deferring: DeferringLock;
   component body: Body;
+  component fob: Fob;
   connect: Queued (body.toDiscarding, discarding.requests);
   connect: Queued (body.toDeferring, deferring.requests);
-  associate body, discarding to 'Requests during the pulse', 'Request order across the pulse';
+  connect: Queued (fob.toDeferring, deferring.requests);
+  associate body, discarding to 'Requests during the pulse';
+  associate body, fob to 'Request order across the pulse';
   test 'Requests during the pulse' of deferring {
     /** lock at 0 ms, then unlock at 100 ms and lock at 200 ms, both during the first pulse. The discarding lock drops both and stays locked after one pulse; the deferring lock takes unlock when the pulse ends at 250 ms, retains lock during the unlocking pulse and takes it at 500 ms, so it pulses three times and ends locked. */
     publish body.toDiscarding.request(true);
@@ -111,10 +118,10 @@ package LockDeferral {
     assert deferring.locked and deferring.pulses == 3;
   }
   test 'Request order across the pulse' of deferring {
-    /** Two requests retained during one pulse are taken in offer order: unlock, then lock, so the lock ends locked after three pulses. */
+    /** Two requests retained during one pulse are taken in offer order across their queues: the fob's unlock, then the body's lock, so the lock ends locked after three pulses. The body's queue is the older one (its first lock request started the pulse), so taking the queues in creation order would discard the lock in isLocked and end unlocked after two pulses. */
     publish body.toDeferring.request(true);
     wait 10ms;
-    publish body.toDeferring.request(false);
+    publish fob.toDeferring.request(false);
     publish body.toDeferring.request(true);
     wait 900ms;
     assert deferring.locked and deferring.pulses == 3;

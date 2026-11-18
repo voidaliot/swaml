@@ -107,7 +107,7 @@ type Yield = {
     kind: 'receive';
     branches: (a.ReceiveBranch | a.Transition)[];
     timeout?: number;
-    /** The state of a stateful activation waiting at its selection (not inside an action), for deferral (WP5-R08). */
+    /** The state of a stateful activation waiting at its selection (not inside an action), whose retained input it consumes (WP5-R09). */
     machine?: a.State;
     /** The evaluated value of a computed receive timeout, recorded on its receiveWait observation (WP4-T01). */
     durationNs?: number;
@@ -1467,18 +1467,18 @@ class Interpreter {
                 }
                 const stateOwner = members(c.structure).filter(isExecutable).find(op => body(op)?.states.length && nodes(body(op)!).some(n => a.isTransition(n) && n.endpoint === endpointName));
                 const stateFrame = stateOwner && this.findFrame(f => f.c === c && f.op === stateOwner && !f.done);
-                // While the current state defers the member, its input stays queued (WP5-R08); each ready message is
-                // recorded once, the first time the machine waits at its selection in a deferring state (WP5-T03).
+                // While the current state defers the member, its input stays queued and is retained (WP5-R08): from the
+                // first instant at which it is deliverable while the machine waits at its selection in that state or runs
+                // an entry, exit or effect action of it. Each message is recorded once, on first retention (WP5-T03).
                 if (stateFrame?.machineState && stateDeferrals(stateFrame.machineState).includes(endpointName)) {
-                    if (stateFrame.waiting?.kind === 'receive' && stateFrame.waiting.machine)
-                        for (const x of queue) {
-                            if (!(x as Message & { ready?: boolean }).ready)
-                                break;
-                            if (x.retained)
-                                continue;
-                            x.retained = this.retaining = true;
-                            this.log('defer', `${c.path}.${stateOwner!.name}`, { activation: stateFrame.id, state: stateFrame.machineState.name, member: endpointName, source: x.origin, message: x.id });
-                        }
+                    for (const x of queue) {
+                        if (!(x as Message & { ready?: boolean }).ready)
+                            break;
+                        if (x.retained)
+                            continue;
+                        x.retained = this.retaining = true;
+                        this.log('defer', `${c.path}.${stateOwner!.name}`, { activation: stateFrame.id, state: stateFrame.machineState.name, member: endpointName, source: x.origin, message: x.id });
+                    }
                     break;
                 }
                 if (stateFrame && stateFrame.waiting?.kind !== 'receive')

@@ -105,6 +105,12 @@ test('WP5-G01 WP5-G02 the transition forms and deferrals parse with their AST sh
     const states = AstUtils.streamAllContents(r.model).filter(a.isState).toArray();
     assert.deepEqual(states.map(stateDeferrals), [['a.x', 'a.y'], [], []]);
     assert.equal(states[0].deferrals[0].$type, 'Deferral');
+    // The generated type matches the runtime shape: guard, target, endpoint and the delays are optional (review M2);
+    // this assignment does not compile if the grammar's declared interface Transition loses an optional property.
+    const shape: Pick<a.Transition, 'guard' | 'target' | 'endpoint' | 'delay' | 'delayValue'> = { guard: undefined, target: undefined, endpoint: undefined, delay: undefined, delayValue: undefined };
+    assert.ok(Object.values(shape).every(v => v === undefined));
+    const reflection = a.reflection.types.Transition.properties as Record<string, { name: string; optional?: boolean }>;
+    assert.deepEqual(Object.entries(reflection).filter(([, p]) => p.optional).map(([n]) => n).sort(), ['bindings', 'delay', 'delayValue', 'endpoint', 'guard', 'target']);
 });
 
 test('WP5-S01 WP5-G03 defer is a contextual word: a basic name in every edition and position, a keyword only at a state member start', async () => {
@@ -493,6 +499,73 @@ test('WP5-R09 retained input is consumed in global offer-ordinal order across qu
       state Both { on entry { wait 1ms; } on receive a.go() to Init { log = 9; } on receive a.x(v) { log = v; } }`, '', before, '', 'Init'));
     assert.deepEqual(story(ordered.trace), ['0 state Init', '0 deliver m4', '0 discardInput inactiveOwner 0', '500 state Busy', '1000 defer Busy a.x m5', '3000 deliver m6', '3000 state Both',
         '4000 deliver m5', '4000 internal Both 2/transitions/1', '4000 write log=1', '4000 deliver m7', '4000 write log=9', '4000 state Init', '4500 state Busy']);
+});
+
+test('WP5-R08 WP5-R09 WP5-T03 input is retained from the first instant it is deliverable in a deferring state, waiting or running an action: offer order in every shape (review D1)', async () => {
+    // y at 0 ms is consumed in A, which creates the y queue first; x follows at 1 ms and y at 2 ms. Both handles x as *10+1
+    // and y as *10+2, so offer order gives 912 and queue-creation order 921.
+    const yx = 'operation emit() { publish q.y(0); wait 1ms; publish q.x(0); wait 1ms; publish q.y(0); }';
+    const both = 'state Both { on receive a.x(v) to Both { log = log * 10 + 1; } on receive a.y(v) to Both { log = log * 10 + 2; } }';
+    const busy = (state: string) => machine(`state A { on receive a.y(v) to Busy { log = 9; } } ${state} ${both}`, '', yx);
+    const offer = ['0 state A', '0 deliver m4', '0 write log=9', '0 state Busy', '1000 defer Busy a.x m5', '2000 defer Busy a.y m6', '5000 state Both',
+        '5000 deliver m5', '5000 write log=91', '5000 state Both', '5000 deliver m6', '5000 write log=912', '5000 state Both'];
+    // Busy waits at its selection (D1a); Busy never waits: its entry suspends, then completion (D1b); its entry outlasts its timer (D1c).
+    for (const state of ['state Busy { defer a.x, a.y; after 5ms to Both { } }', 'state Busy { defer a.x, a.y; on entry { wait 5ms; } when (true) to Both { } }',
+        'state Busy { defer a.x, a.y; on entry { wait 5ms; } after 4ms to Both { } }']) {
+        const out = await runOf(busy(state), 10000000);
+        assert.deepEqual(story(out.trace), offer, state);
+    }
+    // The 2.2 shape (no defer) keeps the 2.2 queue walk: queue-creation order and no defer observation.
+    const old = await runOf(busy('state Busy { on entry { wait 5ms; } after 4ms to Both { } }'), 10000000);
+    assert.deepEqual(story(old.trace), ['0 state A', '0 deliver m4', '0 write log=9', '0 state Busy', '5000 state Both', '5000 deliver m6', '5000 write log=92', '5000 state Both', '5000 deliver m5', '5000 write log=921', '5000 state Both']);
+    // A message that arrives during a suspended entry action of a deferring state is retained then, once (review D7i).
+    const entry = await runOf(machine('state A { defer a.x; on entry { wait 5ms; } when (true) to H { } } state H { on receive a.x(v) to H { log = v; } }', '', 'operation emit() { wait 1ms; publish q.x(6); }'), 10000000);
+    assert.deepEqual(story(entry.trace), ['0 state A', '1000 defer A a.x m4', '5000 state H', '5000 deliver m4', '5000 write log=6', '5000 state H']);
+    // Deliverable for the first time during the effect of a transition into a deferring state: the effect runs in A, which
+    // neither defers nor waits, so both stay ordinary queued input until Busy is entered at 4 ms and retains them there.
+    const into = await runOf(machine(`state A { on receive a.y(v) { log = 9; } after 1ms to Busy { wait 3ms; } }
+      state Busy { defer a.x, a.y; on entry { wait 2ms; } when (true) to Both { } } ${both}`, '', 'operation emit() { publish q.y(0); wait 2ms; publish q.x(0); wait 1ms; publish q.y(0); }'), 10000000);
+    assert.deepEqual(story(into.trace), ['0 state A', '0 deliver m4', '0 internal A 0/transitions/0', '0 write log=9', '4000 state Busy', '4000 defer Busy a.y m6', '4000 defer Busy a.x m5',
+        '6000 state Both', '6000 deliver m5', '6000 write log=91', '6000 state Both', '6000 deliver m6', '6000 write log=912', '6000 state Both']);
+    // Deliverable during the effect of a transition out of a deferring state: Busy is still current, so it is retained.
+    const out = await runOf(machine(`state Busy { defer a.x, a.y; after 1ms to Both { wait 4ms; } } ${both}`, '', 'operation emit() { publish q.y(0); wait 2ms; publish q.x(0); wait 1ms; publish q.y(0); }', '', 'Busy'), 10000000);
+    assert.deepEqual(story(out.trace), ['0 state Busy', '0 defer Busy a.y m4', '2000 defer Busy a.x m5', '3000 defer Busy a.y m6', '5000 state Both', '5000 deliver m4', '5000 write log=2',
+        '5000 state Both', '5000 deliver m5', '5000 write log=21', '5000 state Both', '5000 deliver m6', '5000 write log=212', '5000 state Both']);
+});
+
+test('WP5-R08 a retained head older than its maxAge is discarded before the queues are walked in the 2.2 order', async () => {
+    // With 1 ms latency, x (offered at 0 ms, retained at 1 ms) ages past 3 ms with no event until z(2) becomes deliverable at
+    // 4 ms. The z queue is older than the x queue, yet the aged retained head is discarded first.
+    const source = machine('state Busy { defer a.x; on entry { wait 10ms; } on receive a.go() to H { } } state H { on receive a.x(v) { log = v; } }', '', 'operation emit() { publish q.x(1); wait 3ms; }', '', 'Busy')
+        .replace('  component m: M;', `  qos def Young: Swaml::Qos::Policy { delivery = Swaml::Qos::Delivery.atMostOnce; ordering = Swaml::Qos::Ordering.fifo; requestTimeout = 1s; capacity = 4; overflow = Swaml::Qos::Overflow.dropOldest; maxAge = 3ms; }
+  port def ZP { requires event z(n: int); }
+  port def ZQ { provides event z(n: int); }
+  component def Z { port q: ZQ; operation emit() { publish q.z(1); wait 3ms; publish q.z(2); } schedule { on start emit(); } }
+  component def RZ { port b: ZP; attribute got: int = 0; operation take(v: int) { got = got * 10 + v; } schedule { on receive b.z(v) take(v); } }
+  component z: Z;
+  component rz: RZ;
+  connect (z.q, rz.b);
+  component m: M;`).replace('connect (s.q, m.a);', 'connect: Young (s.q, m.a);');
+    const r = await valid(source);
+    const out = simulate([r.model], 'Test', { untilNs: 20000000, latencyNs: 1000000 });
+    assert.deepEqual(story(out.trace), ['0 state Busy', '1000 deliver m5', '1000 defer Busy a.x m6', '1000 write got=1', '4000 discardAge m6', '4000 deliver m8', '4000 write got=12']);
+});
+
+test('WP5-R07 the completion chain restarts at input and timer consumption and at entry, exit and effect suspension (exact stories)', async () => {
+    // An internal reaction consumes input (or a timer): the chain restarts there, so A and B are entered once more before
+    // the completion back into A closes a cycle (review D3d).
+    const input = await runOf(machine('state A { when (true) to B { } } state B { on receive a.x(v) { n = n + 1; } when (n > 0) to A { } }', '', 'operation emit() { wait 1ms; publish q.x(0); }'));
+    assert.deepEqual(story(input.trace), ['0 state A', '0 state B', '1000 deliver m4', '1000 internal B 1/transitions/0', '1000 write n=1', '1000 state A', '1000 state B', '1000 violation CompletionLoop m.run Test::M.run/states/1/transitions/1']);
+    const timer = await runOf(machine('state A { when (true) to B { } } state B { after 1ms { n = n + 1; } when (n > 0) to A { } }'));
+    assert.deepEqual(story(timer.trace), ['0 state A', '0 state B', '1000 internal B 1/transitions/0', '1000 write n=1', '1000 state A', '1000 state B', '1000 violation CompletionLoop m.run Test::M.run/states/1/transitions/1']);
+    // An exit action or an effect that suspends restarts the chain: the two-state completion cycle progresses every 1 ms (review D3e, D3i).
+    const exit = await runOf(machine('state A { on exit { wait 1ms; } when (n >= 0) to B { } } state B { when (n >= 0) to A { n = n + 1; } }'), 3500000);
+    assert.deepEqual([exit.status, story(exit.trace)], ['horizon', ['0 state A', '1000 state B', '1000 write n=1', '1000 state A', '2000 state B', '2000 write n=2', '2000 state A', '3000 state B', '3000 write n=3', '3000 state A']]);
+    const effect = await runOf(machine('state A { when (n >= 0) to B { } } state B { when (n >= 0) to A { wait 1ms; n = n + 1; } }'), 3500000);
+    assert.deepEqual([effect.status, story(effect.trace)], ['horizon', ['0 state A', '0 state B', '1000 write n=1', '1000 state A', '1000 state B', '2000 write n=2', '2000 state A', '2000 state B', '3000 write n=3', '3000 state A', '3000 state B']]);
+    // An entry action that suspends restarts the chain (review D3a).
+    const entry = await runOf(machine('state A { on entry { n = n + 1; wait 1ms; } when (n < 3) to A { } when (n >= 3) to B { } } final state B { }'));
+    assert.deepEqual([entry.status, story(entry.trace)], ['quiescent', ['0 state A', '0 write n=1', '1000 state A', '1000 write n=2', '2000 state A', '2000 write n=3', '3000 state B']]);
 });
 
 test('WP5-R09 WP5-T03 deferral across several states: one defer per message, kept until a handling state, never handled stays queued', async () => {

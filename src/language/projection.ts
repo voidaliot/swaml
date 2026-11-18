@@ -150,11 +150,12 @@ export function projectModel(models: readonly a.Model[]): Projection {
                 for (const pair of associationPairs(x))
                     if (pair.occurrence.ref && pair.target.ref)
                         addEdge('associate', identity(pair.occurrence.ref), identity(pair.target.ref), 'associate', isAssociationList(x) ? { pair: { occurrence: pair.occurrenceIndex, case: pair.targetIndex } } : {});
+            // A link recovered from a parse error can lack a reference or the design path; it is left out.
             for (const x of n.satisfactions)
-                if (x.requirement.ref)
+                if (x.requirement?.ref && x.design)
                     addEdge('satisfy', id + '::' + x.design, identity(x.requirement.ref), 'satisfy');
             for (const x of n.verifications)
-                if (x.requirement.ref && x.test.ref)
+                if (x.requirement?.ref && x.test?.ref)
                     addEdge('verify', identity(x.test.ref), identity(x.requirement.ref), 'verify');
         }
         result.nodes.push(p);

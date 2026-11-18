@@ -48,7 +48,8 @@ Fail: 'fail' reason=STRING ';';
 Assert: 'assert' condition=Expression ';';
 State: (final?='final')? 'state' name=Name '{' documentation=Documentation? (actions+=StateAction | transitions+=Transition | deferrals+=Deferral)* '}';
 StateAction: 'on' kind=('entry'|'exit') body=Block;
-Transition: ('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' (delay=Duration | '(' delayValue=Expression ')') ('when' '(' guard=Expression ')')? | 'when' '(' guard=Expression ')') ('to' target=Name)? effect=Block;
+interface Transition { endpoint?: string; bindings?: string[]; guard?: Expression; delay?: Duration; delayValue?: Expression; target?: string; effect: Block; }
+Transition returns Transition: ('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' (delay=Duration | '(' delayValue=Expression ')') ('when' '(' guard=Expression ')')? | 'when' '(' guard=Expression ')') ('to' target=Name)? effect=Block;
 Deferral: 'defer' endpoints+=MemberPath (',' endpoints+=MemberPath)* ';';
 Deployment: 'deployment' name=Name 'of' root=[ComponentUsage:QualifiedName] 'on' platform=[ComponentUsage:QualifiedName] '{' documentation=Documentation? placements+=Placement* '}';
 Placement: 'deploy' target=Path? 'on' node=Path ';';

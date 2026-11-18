@@ -1174,7 +1174,7 @@ The rules below define the selection of a stateful activation in 2.3; for a mach
 | WP5-R05 | **Internal reactions.** An internal transition runs only its effect: no exit, no entry, no state update, no `machines` change. The state's timers keep their epoch (the state-update time) and computed timers are not re-evaluated. An internal timer fires at most once per state entry. Its reaction leaves the other timers armed; an already elapsed one, including one with the same expiry, is selected after the completion evaluation that follows the reaction. |
 | WP5-R06 | **Suspended effects.** If an entry action or an internal effect suspends, the timers keep their epoch. On resumption, the machine evaluates completion, then elapsed timers, then input, as after entry actions. |
 | WP5-R07 | **`CompletionLoop`.** A completion chain starts when the stateful activation starts. It restarts at every consumption of input or a timer (internal reactions included) and at every suspension of an entry action, exit action or effect. A completion reaction that enters a state already entered in the current chain is the contract violation `CompletionLoop`, raised when the target state would be entered (after the exit actions and effect). It stops the run and bypasses `try`. A retry state whose entry suspends on a request and re-enters through completion is therefore allowed; a counting loop through completion transitions that never suspends is rejected even when bounded. |
-| WP5-R08 | **Retention.** While the current state defers member `m`, input for `m` stays in its connection queue, also while the machine runs an action, and capacity, overflow, ordering and `maxAge` apply to it observably. A retained attribute keeps only its latest value. A message is retained, and recorded once (WP5-T03), the first time the machine waits at its selection in a deferring state while the message is deliverable. |
+| WP5-R08 | **Retention.** While the current state defers member `m`, input for `m` stays in its connection queue, and capacity, overflow, ordering and `maxAge` apply to it observably. A retained attribute keeps only its latest value. A message is retained from the first instant at which it is deliverable while the machine's current state defers its member, whether the machine then waits at its selection or runs an entry action, exit action or transition effect of that state (the effect of a transition into a deferring state runs in the state it leaves). It gets exactly one `defer` observation, at that instant (WP5-T03), and stays retained in later states until it is consumed or discarded. Example: `y` is offered at 0 ms and consumed in `A`, which creates its queue; `x` is offered at 1 ms and `y` at 2 ms while the machine is in `state Busy { defer a.x, a.y; on entry { wait 5ms; } when (true) to Both { } }`. Both are retained when they become deliverable, at 1 ms and 2 ms, although `Busy` never waits, and `Both` takes `x` before `y` (WP5-R09), as it does when `Busy` instead waits for `after 5ms to Both { }`. |
 | WP5-R09 | **Retained order.** In a state that handles retained members, retained input precedes other queued input but follows completion transitions and elapsed timers (WP5-R01). It is consumed in global offer-ordinal order across all of the machine's queues: the order in which the messages were queued, not the order in which their queues were created. Input that was never retained follows in the 2.2 order. |
 | WP5-R10 | **Retained discard.** On entering a state that neither handles nor defers `m`, retained input for `m` is discarded at the next wait with reason `inactiveOwner`. |
 | WP5-R11 | **2.2 machines.** A machine without completion transitions, internal transitions, timer guards and deferrals selects and orders exactly as in 2.2, and its trace has no 2.3 observation or field. |
@@ -1192,7 +1192,7 @@ New and extended observations of 2.3 appear only where new syntax is used, so a 
 | WP4-T01 | `wait`, `receiveWait` (extended, computed forms only); `timer` (new) | A wait or receive timeout whose duration is computed adds `durationNs`, the evaluated value. A computed state timer is evaluated when the entry actions finish, after the `state` observation of that entry and the entry's own observations, and records a `timer` observation: `subject` the machine, `state`, `source` the timer transition, `timerNs` the evaluated value and `expiresNs` the expiry time. Literal waits and literal state timers add no field and no `timer` observation. `DurationRange` (WP4-R01) is recorded like every runtime failure; a caught one is a `caught` observation. |
 | WP5-T01 | `state` (extended) | An internal reaction is a `state` observation with `internal: true`, the unchanged `state`, the `activation` and the transition as `source`, recorded before its effect runs. A state entry has no `internal` field. |
 | WP5-T02 | `discardTimer` (new) | A timer consumed because its guard was false: `subject` the machine, `activation`, `state`, `source` the timer transition, `reason: 'guard'`. |
-| WP5-T03 | `defer` (new) | Exactly one per retained message, the first time the machine waits in a deferring state while the message is deliverable: `subject` the machine, `activation`, `state`, `member` (`port.member`), `source` the message origin and `message` the message identity. Deferred members are events or attributes, so there is no correlation. |
+| WP5-T03 | `defer` (new) | Exactly one per retained message, at its first retention (WP5-R08), whether the machine then waits or runs an action of the deferring state: `subject` the machine, `activation`, `state`, `member` (`port.member`), `source` the message origin and `message` the message identity. Deferred members are events or attributes, so there is no correlation. |
 | WP5-T04 | `violation` (extended) | `code: 'CompletionLoop'` with the machine as `subject` and the completion transition as `source`; the other violations keep the run target as subject and no `source`. |
 
 ## 6.7 Case runs
@@ -3250,7 +3250,8 @@ Fail: 'fail' reason=STRING ';';
 Assert: 'assert' condition=Expression ';';
 State: (final?='final')? 'state' name=Name '{' documentation=Documentation? (actions+=StateAction | transitions+=Transition | deferrals+=Deferral)* '}';
 StateAction: 'on' kind=('entry'|'exit') body=Block;
-Transition: ('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' (delay=Duration | '(' delayValue=Expression ')') ('when' '(' guard=Expression ')')? | 'when' '(' guard=Expression ')') ('to' target=Name)? effect=Block;
+interface Transition { endpoint?: string; bindings?: string[]; guard?: Expression; delay?: Duration; delayValue?: Expression; target?: string; effect: Block; }
+Transition returns Transition: ('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' (delay=Duration | '(' delayValue=Expression ')') ('when' '(' guard=Expression ')')? | 'when' '(' guard=Expression ')') ('to' target=Name)? effect=Block;
 Deferral: 'defer' endpoints+=MemberPath (',' endpoints+=MemberPath)* ';';
 Deployment: 'deployment' name=Name 'of' root=[ComponentUsage:QualifiedName] 'on' platform=[ComponentUsage:QualifiedName] '{' documentation=Documentation? placements+=Placement* '}';
 Placement: 'deploy' target=Path? 'on' node=Path ';';
@@ -6339,12 +6340,19 @@ package LockDeferral {
     port toDiscarding: Requests;
     port toDeferring: Requests;
   }
+  component def Fob {
+    /** Interface-only actor: a key fob with its own connection to the deferring lock, so its requests have their own queue. */
+    port toDeferring: Requests;
+  }
   component discarding: DiscardingLock;
   component deferring: DeferringLock;
   component body: Body;
+  component fob: Fob;
   connect: Queued (body.toDiscarding, discarding.requests);
   connect: Queued (body.toDeferring, deferring.requests);
-  associate body, discarding to 'Requests during the pulse', 'Request order across the pulse';
+  connect: Queued (fob.toDeferring, deferring.requests);
+  associate body, discarding to 'Requests during the pulse';
+  associate body, fob to 'Request order across the pulse';
   test 'Requests during the pulse' of deferring {
     /** lock at 0 ms, then unlock at 100 ms and lock at 200 ms, both during the first pulse. The discarding lock drops both and stays locked after one pulse; the deferring lock takes unlock when the pulse ends at 250 ms, retains lock during the unlocking pulse and takes it at 500 ms, so it pulses three times and ends locked. */
     publish body.toDiscarding.request(true);
@@ -6360,10 +6368,10 @@ package LockDeferral {
     assert deferring.locked and deferring.pulses == 3;
   }
   test 'Request order across the pulse' of deferring {
-    /** Two requests retained during one pulse are taken in offer order: unlock, then lock, so the lock ends locked after three pulses. */
+    /** Two requests retained during one pulse are taken in offer order across their queues: the fob's unlock, then the body's lock, so the lock ends locked after three pulses. The body's queue is the older one (its first lock request started the pulse), so taking the queues in creation order would discard the lock in isLocked and end unlocked after two pulses. */
     publish body.toDeferring.request(true);
     wait 10ms;
-    publish body.toDeferring.request(false);
+    publish fob.toDeferring.request(false);
     publish body.toDeferring.request(true);
     wait 900ms;
     assert deferring.locked and deferring.pulses == 3;
@@ -6571,13 +6579,13 @@ package ReactionForms {
       }
       state Counting {
         on receive feed.tick(n) when (n > 0) {
-          total = total + n;
+          total = total * 10 + n;
         }
         on receive feed.tick(n) {
           polls = polls + 100;
         }
         on receive feed.level(v) {
-          total = total + 1000 * v;
+          total = total * 10 + v;
         }
         on receive feed.done() to Done {
         }
@@ -6599,11 +6607,12 @@ package ReactionForms {
   connect: Swaml::Qos::Latest (source.out, counter.feed);
   associate source to 'Every form';
   test 'Every form' of counter {
-    /** A tick and a level arrive during Warmup and are retained; Counting (entered at 4 ms by the guarded computed timer) takes them in offer order, then a zero tick, then done. */
+    /** A level, a tick and a second level arrive during Warmup and are retained; the second level replaces the first (Latest keeps one value), so the level queue is older than the tick queue but holds the later offer. Counting (entered at 4 ms by the guarded computed timer) takes them in offer order, tick then level, folding total = total * 10 + value to 32 (queue order would give 23), then a zero tick, then done. */
+    send source.out.level(1);
     publish source.out.tick(3);
     send source.out.level(2);
     wait 5ms;
-    assert counter.total == 2003 and counter.polls == 11;
+    assert counter.total == 32 and counter.polls == 11;
     publish source.out.tick(0);
     publish source.out.done();
     wait 1ms;

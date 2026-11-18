@@ -799,10 +799,12 @@ export const isAssociationList = (x: a.Association): boolean => (x.moreOccurrenc
 /**
  * Every occurrence–case pair of an associate statement (WP2-S06): each listed occurrence with each listed case,
  * occurrences in list order, and for each of them the cases in list order. A single 2.2 statement has one pair.
+ * A statement recovered from a parse error can lack a listed reference (`associate a to ;`): a pair without either
+ * side is left out, and the other pairs keep their list positions.
  */
 export function associationPairs(x: a.Association): AssociationPair[] {
     const targets = associationTargets(x);
-    return associationOccurrences(x).flatMap((occurrence, occurrenceIndex) => targets.map((target, targetIndex) => ({ statement: x, occurrence, target, occurrenceIndex, targetIndex })));
+    return associationOccurrences(x).flatMap((occurrence, occurrenceIndex) => occurrence ? targets.flatMap((target, targetIndex) => target ? [{ statement: x, occurrence, target, occurrenceIndex, targetIndex }] : []) : []);
 }
 /** The top-level occurrences associated with a case by associate links of its package. */
 export function associatedOccurrences(s: a.Scenario): a.ComponentUsage[] {
