@@ -9,7 +9,7 @@ import { parseHelper } from 'langium/test';
 import { createSwamlServices } from '../../src/language/swaml-module.js';
 import { formatDocument } from '../../src/language/formatter.js';
 import { projectModel } from '../../src/language/projection.js';
-import { effectiveQos, memberQos, sampledMembers } from '../../src/language/semantic.js';
+import { attributeAccess, body, effectiveQos, effects, memberQos, sampledMembers } from '../../src/language/semantic.js';
 import { runCase, simulate } from '../../src/simulation/simulator.js';
 import type { Model } from '../../src/language/generated/ast.js';
 import * as a from '../../src/language/generated/ast.js';
@@ -168,6 +168,55 @@ test('WP6-S01 compatibility: p.m on a port without any initial value keeps its 2
         ['SW2005', 'door.ajar needs exactly one input owner.'],
         ['SW2005', 'door.count needs exactly one input owner.'],
     ]);
+});
+
+// Review F2, F3, F6: a name hides a port only where the validator sees it, and every position the validator types as a
+// sampled read has its cell.
+const shadowing = (reader: string) => `package Test {
+  datatype Rec { ajar: bool; count: int; }
+  port def Door { provides attribute ajar: bool = false; provides attribute count: int = 7; }
+  component def Sensor { port out: Door; attribute n: int = 0; operation tick() { n = n + 1; send out.ajar(n % 2 == 1); send out.count(n); } schedule { on every 10ms tick(); } }
+  component def Reader { reversed port door: Door; attribute seen: bool = false; attribute total: int = 0; attribute got: int = 0; ${reader} }
+  component Demo { component s: Sensor; component r: Reader; connect (s.out, r.door); }
+}`;
+const readerOf = (m: Model) => m.packages[0].elements.filter(a.isComponentDef).find(x => x.name === 'Reader')!;
+test('WP6-S01 WP6-S04 a local hides the port only where it is visible: another branch, a nested parameter and an earlier local (review F2)', async () => {
+    const peek = 'operation peek() { seen = door.ajar; }';
+    const branch = `operation read(k: int) { if (k > 0) { got = door.count; } else { var door: int = 3; got = door; } } ${peek}`;
+    for (const owner of ['operation take(v: int) { total = v; } schedule { on every 10ms read(1); on every 10ms peek(); on receive door.count(v) take(v); }', 'schedule { on every 10ms read(1); on every 10ms peek(); }']) {
+        const { model } = await valid(shadowing(branch + ' ' + owner));
+        assert.deepEqual([...sampledMembers(readerOf(model))].sort(), ['door.ajar', 'door.count']);
+        // The read at 10 ms sees the initial value or the value delivered in the same instant, at 20 ms the value of 10 ms; never a run-time fault.
+        const r = simulate([model], 'Test::Demo', { untilNs: 25000000 });
+        assert.deepEqual([(r.stores['Demo.r'] as Record<string, number>).got, r.trace.filter(o => o.kind === 'failure').length], [1, 0], owner);
+    }
+    // A parameter of a nested operation hides nothing in the enclosing operation.
+    const nested = await valid(shadowing('operation read() { operation inner(door: int) { } got = door.count; seen = door.ajar; } schedule { on every 10ms read(); }'));
+    assert.deepEqual([...sampledMembers(readerOf(nested.model))].sort(), ['door.ajar', 'door.count']);
+    // A local declared before the read hides the port: a record field read, not a sampled read, with its own owners.
+    const local = await valid(shadowing('operation read() { var door: Rec = record Rec { ajar = true; count = 5; }; got = door.count; } operation take(v: int) { total = v; } operation t2(v: bool) { seen = v; } schedule { on every 10ms read(); on receive door.count(v) take(v); on receive door.ajar(v) t2(v); }'));
+    assert.deepEqual([...sampledMembers(readerOf(local.model))], []);
+    assert.equal((simulate([local.model], 'Test::Demo', { untilNs: 15000000 }).stores['Demo.r'] as Record<string, number>).got, 5);
+});
+
+test('WP6-S01 WP6-R03 a sampled read in a schedule-entry argument has its cell, with or without a consuming owner (review F3)', async () => {
+    for (const owner of ['operation take(v: int) { total = v; } schedule { on every 10ms read(door.count); on every 10ms peek(); on receive door.count(v) take(v); }', 'schedule { on every 10ms read(door.count); on every 10ms peek(); }']) {
+        const { model } = await valid(shadowing('operation read(v: int) { got = v; } operation peek() { seen = door.ajar; } ' + owner));
+        assert.ok(sampledMembers(readerOf(model)).has('door.count'));
+        const r = simulate([model], 'Test::Demo', { untilNs: 25000000 });
+        assert.deepEqual([(r.stores['Demo.r'] as Record<string, number>).got, r.trace.filter(o => o.kind === 'failure').length], [1, 0], owner);
+    }
+    // A binding of a receive entry hides the port in that entry's arguments: door.count is then an unsampled member without an owner.
+    const bound = await parse(shadowing('operation take(v: Rec) { got = v.count; } operation peek() { seen = door.ajar; total = door.count; } schedule { on every 10ms peek(); }').replace('component Demo', 'port def Recs { provides event rec(r: Rec); } component def Feed { port out: Recs; operation t() { publish out.rec(record Rec { ajar = true; count = 9; }); } schedule { on every 10ms t(); } } component def Box { reversed port inp: Recs; reversed port door: Door; attribute got: int = 0; attribute seen: bool = false; operation take(v: int) { got = v; } operation peek() { seen = door.ajar; } schedule { on receive inp.rec(door) take(door.count); on every 10ms peek(); } } component Demo'));
+    assert.deepEqual(bound.errors.map(e => [e.code, e.message]), [['SW2005', 'door.count needs exactly one input owner.']]);
+    assert.deepEqual([...sampledMembers(bound.model.packages[0].elements.filter(a.isComponentDef).find(x => x.name === 'Box')!)], ['door.ajar']);
+});
+
+test('WP6-S01 effect and access analysis ignore a port hidden by a parameter: the helper stays pure (review F6)', async () => {
+    const { model } = await valid(shadowing('operation isOpen(door: Rec) returns bool { return door.ajar; } attribute init: bool = isOpen(record Rec { ajar = true; count = 1; }); operation read() { seen = door.ajar; got = door.count; } schedule { on every 10ms read(); }'));
+    const reader = readerOf(model), isOpen = reader.members.filter(a.isOperation).find(x => x.name === 'isOpen')!, read = reader.members.filter(a.isOperation).find(x => x.name === 'read')!;
+    assert.deepEqual([effects(isOpen, reader).reads, [...attributeAccess([body(isOpen)!], reader).cells]], [false, []]);
+    assert.deepEqual([effects(read, reader).reads, [...attributeAccess([body(read)!], reader).cells].sort()], [true, ['door.ajar', 'door.count']]);
 });
 
 test('WP6-S04 WP6-D03 sampling is not ownership: zero or one consuming owner for a sampled member, exactly one otherwise', async () => {

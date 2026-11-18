@@ -500,15 +500,15 @@ function ownedPorts(c: Structure): Map<string, a.PortUsage> {
 /**
  * The sampled-read form p.m of a value reference in component c (WP6-S01): p is an effective port of c whose member
  * named m, in the definition that port has in c, opts in to sampling; steps are the fields, index and selectors after
- * the member. A local, parameter or attribute with the name p shadows the port; callers that know the environment
- * check it first.
+ * the member. A visible local, parameter, loop variable or binding named p shadows the port (localVisible); an
+ * attribute cannot share the port's name.
  */
 export function sampledReadForm(e: a.ReferenceExpression, c: Structure): { port: a.PortUsage; member: a.PortMember; steps: Step[] } | undefined {
     const parts = e.path.split('.');
     if (parts.length < 2 || parts[0].includes('::'))
         return undefined;
     const port = ownedPorts(c).get(parts[0]), member = port && portMembers(port).find(m => m.name === parts[1]);
-    if (!port || !member || !optsIn(member))
+    if (!port || !member || !optsIn(member) || localVisible(e, parts[0]))
         return undefined;
     return { port, member, steps: valueSteps(e).slice(1) };
 }
@@ -523,35 +523,59 @@ export function forwardedPorts(c: Structure): Set<string> {
     return result;
 }
 /**
- * The members c samples, as port.member (WP6-S01, WP6-S04, WP6-M04): every sampled read in its executables of a
- * required attribute, with an initial value, of an owned port. A name that a parameter,
- * local, binding or loop variable of the same executable declares is not counted.
+ * The members c samples, as port.member (WP6-S01, WP6-S04, WP6-M04): every sampled read of a required attribute, with
+ * an initial value, of an owned port, in the executables of c and in the arguments of its schedule entries.
  */
 export function sampledMembers(c: Structure): Set<string> {
     return new Set(sampledReads(c).map(r => r.port.name + '.' + r.member.name));
 }
-/** The sampled reads of required attributes in the executables of c, each with its port and member (see sampledMembers). */
-export function sampledReads(c: Structure): { node: a.ReferenceExpression; port: a.PortUsage; member: a.PortMember }[] {
-    const result: { node: a.ReferenceExpression; port: a.PortUsage; member: a.PortMember }[] = [];
-    for (const op of members(c).filter(isExecutable)) {
-        const b = body(op);
-        if (!b)
-            continue;
-        const all = nodes(b), locals = new Set<string>((signature(op)?.parameters ?? []).map(p => p.name));
-        for (const n of all) {
-            if (a.isLocalVariable(n) || a.isArgument(n))
-                locals.add(n.name);
-            if (a.isReceiveBranch(n) || a.isInterruptible(n) || a.isTransition(n))
-                (n.bindings ?? []).forEach(x => locals.add(x));
-        }
-        for (const n of all)
-            if (a.isReferenceExpression(n) && !locals.has(n.path.split('.')[0])) {
+export type SampledRead = { node: a.ReferenceExpression; port: a.PortUsage; member: a.PortMember };
+/**
+ * The sampled reads of required attributes in c (see sampledMembers), each with its port and member, in source order:
+ * the bodies of its executables (nested operations included) and the arguments of its schedule entries, which are
+ * evaluated at dispatch in the activation's first segment (WP6-R03). Cached for one validation pass.
+ */
+export function sampledReads(c: Structure): SampledRead[] {
+    const cache = effectCache?.reads, known = cache?.get(c);
+    if (known)
+        return known;
+    const result: SampledRead[] = [];
+    const roots: AstNode[] = [...members(c).filter(isExecutable).flatMap(op => body(op) ? [body(op)!] : []), ...schedule(c).flatMap(e => e.args)];
+    for (const root of roots)
+        for (const n of nodes(root))
+            if (a.isReferenceExpression(n)) {
                 const form = sampledReadForm(n, c);
                 if (form && isSampledMember(form.port, form.member))
                     result.push({ node: n, port: form.port, member: form.member });
             }
-    }
+    cache?.set(c, result);
     return result;
+}
+/**
+ * Whether a local, parameter, loop variable or input binding named name is visible at node n (chapter 1.3, WP6-S01),
+ * by the scope rules the validator types with: parameters of the nearest executable (a nested operation captures no
+ * enclosing local), locals declared earlier in an enclosing block, a for local in its condition, update and body, a
+ * for-in element in its body, the bindings of a receive or call schedule entry in its arguments, of a receive branch
+ * in its body, of an interrupt region in its handler and of a receive transition in its guard and effect.
+ */
+export function localVisible(n: AstNode, name: string): boolean {
+    let child = n;
+    for (let p = n.$container; p; child = p, p = p.$container) {
+        if (isExecutable(p))
+            return (signature(p)?.parameters ?? []).some(x => x.name === name);
+        if (a.isScheduleEntry(p))
+            return p.bindings.includes(name);
+        if (a.isBlock(p) || a.isOperationBody(p) || a.isScenario(p)) {
+            const index = child.$containerProperty === 'statements' ? child.$containerIndex ?? 0 : 0;
+            if (p.statements.slice(0, index).some(s => a.isLocalVariable(s) && s.name === name))
+                return true;
+        }
+        else if (a.isFor(p) ? child !== p.initializer && p.initializer.name === name : a.isForEach(p) && child === p.body && p.variable.name === name)
+            return true;
+        else if ((a.isReceiveBranch(p) && child === p.body || a.isInterruptible(p) && child === p.handler || a.isTransition(p) && child !== p.delayValue) && (p.bindings ?? []).includes(name))
+            return true;
+    }
+    return false;
 }
 /** The endpoints c consumes input from: receive and call entries, receive branches, interrupt handlers, transitions and deferrals. */
 export function inputEndpoints(c: Structure): Set<string> {
@@ -572,10 +596,10 @@ export type Effect = {
     suspends: boolean;
 };
 /** Effects computed during one validation pass of one workspace snapshot (see useEffectCache). */
-let effectCache: { models: a.Model[], byStructure: Map<Structure | undefined, Map<Executable, Effect>>, attributeNames: Map<Structure, Set<string>>, ports: Map<Structure, Map<string, a.PortUsage>> } | undefined;
+let effectCache: { models: a.Model[], byStructure: Map<Structure | undefined, Map<Executable, Effect>>, attributeNames: Map<Structure, Set<string>>, ports: Map<Structure, Map<string, a.PortUsage>>, reads: Map<Structure, SampledRead[]> } | undefined;
 /** Caches effects for the models of one validation pass; a later pass or another workspace snapshot replaces it. */
 export function useEffectCache(models: a.Model[]): void {
-    effectCache = { models, byStructure: new Map(), attributeNames: new Map(), ports: new Map() };
+    effectCache = { models, byStructure: new Map(), attributeNames: new Map(), ports: new Map(), reads: new Map() };
 }
 export function effects(op: Executable, c?: Structure, seen = new Set<Executable>(), memo?: Map<Executable, Effect>, attributeNames?: Map<Structure, Set<string>>): Effect {
     // Package definitions have no caller-owned state, including when a parameter
