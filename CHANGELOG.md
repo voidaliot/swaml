@@ -4,6 +4,7 @@
 
 ### Examples
 
+- Format the three showcase models with the fixed formatter: every documentation and comment is kept (v2x 129 docs and 2 line comments, door 201 and 25, cloud 144 and 58) and their diagnostics and all 91 case results are unchanged. In the V2X model, a hazard repetition is no longer sent when, during signing, its event ended and a new one began (transmitHazard also compares the action identifier), and a sample is no longer taken when the application left running or degraded during the vehicle getter (takeSample re-checks it). The door model runs its cases with a step limit of 200,000 (examples/simulation/cases.json modelOptions, explained in notes), because two of its cases need 85,000 to 88,000 of the default 100,000. The example gate pins each remaining warning of the showcase models with its reason.
 - Add three showcase models under examples/showcase, each one complete .swaml file that the example gate validates and whose use cases and tests it runs: autosar-classic-door-controller.swaml (a door control unit in the style of AUTOSAR Classic with basic-software-like services, application components, the task schedule, deployment on a dual-core door module and a test bench), autosar-adaptive-v2x-telemetry.swaml (a service-oriented V2X and telemetry application in the style of AUTOSAR Adaptive) and cloud-fleet-monitoring.swaml (a vendor-neutral cloud backend for vehicle fleet monitoring). No standard or implementation version change.
 
 ### Language 2.3 (planned, not allocated)

@@ -1,7 +1,8 @@
 import { simulationOptionsProblem } from '../out/src/simulation/simulator.js';
 // Reads examples/simulation/cases.json: the expected case results of every complete example and the
 // options their runs use. "options" applies to every example; "modelOptions" may give one example its own
-// options (for example a larger maxSteps or a longer untilNs), each overriding the same global option.
+// options (for example a larger maxSteps or a longer untilNs), each overriding the same global option, and
+// "notes" says why in one string per example.
 // The one validator of simulation options is the simulator's own, so this file cannot drift from it.
 function checkOptions(options, where, partial) {
     const problem = simulationOptionsProblem(options, partial);
@@ -12,8 +13,12 @@ function checkOptions(options, where, partial) {
 /** Validates the parsed file against the example models it describes and returns it. */
 export function checkCasesFile(cases, models) {
     for (const key of Object.keys(cases))
-        if (!['options', 'modelOptions', 'examples'].includes(key))
+        if (!['options', 'modelOptions', 'notes', 'examples'].includes(key))
             throw new Error(`cases.json has unknown key ${key}`);
+    // notes explains an example's own options, since JSON has no comments.
+    for (const [model, note] of Object.entries(cases.notes ?? {}))
+        if (!cases.modelOptions?.[model] || typeof note !== 'string')
+            throw new Error(`cases.json notes for ${model} must be a string explaining its modelOptions`);
     checkOptions(cases.options, 'cases.json options', false);
     for (const [model, options] of Object.entries(cases.modelOptions ?? {})) {
         if (!models.includes(model))

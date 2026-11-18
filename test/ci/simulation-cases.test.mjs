@@ -41,3 +41,9 @@ test('option values are type-checked and options for an example without cases ar
     checkModelOptionsUsed(cases, models[0], 2);
     checkModelOptionsUsed(cases, models[1], 0);
 });
+
+test('notes explain the own options of an example', () => {
+    checkCasesFile({ options: { untilNs: 1 }, modelOptions: { [models[0]]: { maxSteps: 5 } }, notes: { [models[0]]: 'why' }, examples: {} }, models);
+    assert.throws(() => checkCasesFile({ options: { untilNs: 1 }, notes: { [models[0]]: 'why' }, examples: {} }, models), /notes/);
+    assert.throws(() => checkCasesFile({ options: { untilNs: 1 }, modelOptions: { [models[0]]: { maxSteps: 5 } }, notes: { [models[0]]: 5 }, examples: {} }, models), /notes/);
+});
