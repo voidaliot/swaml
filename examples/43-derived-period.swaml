@@ -1,5 +1,5 @@
 package DerivedPeriod {
-  /** A sampler whose period and deadline derive from a const attribute that each usage may redefine. In 2.2 periods and deadlines are literals, so a faster variant needs its own definition with its own schedule. From 2.3 on every (e) and deadline (e) take an expression of the constant sublanguage: integer and duration literals, const attributes with their effective value in the occurrence, arithmetic with exact integral division, comparisons and the conditional, without calls. The validator evaluates it for every occurrence: here every (periodMs * 1ms) is 20 ms in slow and 10 ms in fast, and the half-period deadline must divide exactly in both. */
+  /** A sampler whose period and deadline derive from a const attribute that each usage may redefine. In 2.2 periods and deadlines are literals, so a faster variant needs its own definition with its own schedule. From 2.3 on every (e) and deadline (e) take an expression of the constant sublanguage: integer and duration literals, const attributes with their effective value in the occurrence, arithmetic with exact integral division, comparisons and the conditional, without calls. The validator evaluates it for every occurrence: here every (periodMs * 1ms) is 20 ms in slow and 10 ms in fast, and the half-period deadline must divide exactly in every usage. */
   component def Sampler {
     const attribute periodMs: uint = 20;
     attribute samples: uint = 0;
@@ -21,6 +21,9 @@ package DerivedPeriod {
   component fast: Sampler {
     redefines const attribute periodMs: uint = 10;
   }
+  component late: Sampler {
+    redefines const attribute periodMs: uint = 8;
+  }
   associate fast to 'Period per usage', 'Busy within the deadline';
   test 'Period per usage' of slow {
     /** In 100 ms slow samples five times and fast ten times. */
@@ -32,5 +35,11 @@ package DerivedPeriod {
     slow.load(9);
     wait 100ms;
     assert slow.samples == 5 and fast.samples == 10;
+  }
+  test 'Deadline per usage' of late {
+    /** late runs every 8 ms with a deadline of 4 ms, half its own period. A 5 ms sample released at 8 ms misses it at 12 ms: the run stops with the Deadline violation, so this case fails by design. With the 10 ms deadline of slow it would pass. */
+    late.load(5);
+    wait 20ms;
+    assert late.samples >= 1;
   }
 }

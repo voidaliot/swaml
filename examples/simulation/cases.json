@@ -90,7 +90,8 @@
     },
     "examples/43-derived-period.swaml": {
       "DerivedPeriod::Period per usage": "pass",
-      "DerivedPeriod::Busy within the deadline": "pass"
+      "DerivedPeriod::Busy within the deadline": "pass",
+      "DerivedPeriod::Deadline per usage": "fail"
     },
     "examples/notation/catalog.swaml": {
       "Notation::Startup": "pass"
