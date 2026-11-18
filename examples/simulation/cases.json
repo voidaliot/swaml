@@ -82,6 +82,7 @@
       "Backoff::Counted loop rounds up": "pass",
       "Backoff::Computed wait is exact": "pass",
       "Backoff::A delay that is not positive fails": "pass",
+      "Backoff::Timeout doubles after a loss": "pass",
       "Backoff::Backoff timer uses the new delay": "pass"
     },
     "examples/42-lock-pulse.swaml": {

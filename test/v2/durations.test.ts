@@ -589,7 +589,7 @@ test('WP4-G03 WP4-G04 (gate 3) the new forms parse without console output, and a
 test('WP4 examples: computed backoff, lock pulse and derived period pass their cases, deterministically', async () => {
     const { readFileSync } = await import('node:fs');
     const expected: Record<string, string[]> = {
-        'examples/41-computed-backoff.swaml': ['Backoff::Counted loop rounds up', 'Backoff::Computed wait is exact', 'Backoff::A delay that is not positive fails', 'Backoff::Backoff timer uses the new delay'],
+        'examples/41-computed-backoff.swaml': ['Backoff::Counted loop rounds up', 'Backoff::Computed wait is exact', 'Backoff::A delay that is not positive fails', 'Backoff::Timeout doubles after a loss', 'Backoff::Backoff timer uses the new delay'],
         'examples/42-lock-pulse.swaml': ['LockPulse::Recalibrated pulse'],
         'examples/43-derived-period.swaml': ['DerivedPeriod::Period per usage', 'DerivedPeriod::Busy within the deadline'],
     };

@@ -5639,6 +5639,37 @@ package Backoff {
       return true;
     }
   }
+  port def Ack {
+    provides event ack(id: uint);
+  }
+  component def Requester {
+    /** Waits for an acknowledgement with a receive timeout that doubles after every loss: or after (timeoutMs * 1ms) is evaluated each time the statement starts waiting. */
+    reversed port acks: Ack;
+    attribute timeoutMs: uint = 10;
+    attribute lost: uint = 0;
+    attribute ackedAt: uint = 0;
+    operation awaitAck() {
+      var waiting: bool = true;
+      var tries: uint = 0;
+      while (waiting and tries < 5) {
+        tries = tries + 1;
+        on receive acks.ack(id) {
+          ackedAt = now();
+          waiting = false;
+        } or after (timeoutMs * 1ms) {
+          lost = lost + 1;
+          timeoutMs = timeoutMs * 2;
+        }
+      }
+    }
+    schedule {
+      on start awaitAck();
+    }
+  }
+  component def Peer {
+    /** Interface-only actor that acknowledges. */
+    port acks: Ack;
+  }
   component def Session {
     /** A connection machine whose Backoff state doubles the delay on entry and then waits it: the timer is evaluated when the entry actions finish, so it waits the new delay. */
     const attribute capMs: uint = 400;
@@ -5673,6 +5704,10 @@ package Backoff {
       on start run();
     }
   }
+  component requester: Requester;
+  component peer: Peer;
+  connect (peer.acks, requester.acks);
+  associate peer to 'Timeout doubles after a loss';
   component counted: CountedUplink;
   component computed: ComputedUplink;
   component session: Session;
@@ -5700,6 +5735,13 @@ package Backoff {
     assert not ok and now() == 0;
     ok = try(computed.pause(3), false);
     assert ok and now() == 3000000;
+  }
+  test 'Timeout doubles after a loss' of requester {
+    /** The first 10 ms timeout expires at 10 ms; the second wait lasts 20 ms, so an acknowledgement at 25 ms is taken. */
+    wait 25ms;
+    publish peer.acks.ack(1);
+    wait 1ms;
+    assert requester.lost == 1 and requester.timeoutMs == 20 and requester.ackedAt == 25000000;
   }
   test 'Backoff timer uses the new delay' of session {
     /** Each Backoff entry doubles the delay first: 100 ms, then 200 ms, then the 400 ms cap. */
