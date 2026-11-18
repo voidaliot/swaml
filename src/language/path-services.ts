@@ -3,7 +3,7 @@ import type { LangiumServices, RenameProvider, DefinitionProvider, ReferencesPro
 import type { DefinitionParams, Location, LocationLink, Range, ReferenceParams, RenameParams, TextDocumentPositionParams, WorkspaceEdit, TextEdit } from 'vscode-languageserver';
 import * as a from './generated/ast.js';
 import { viewCandidates, selectView } from './presentation.js';
-import { body, caseRead, caseTarget, container, isExecutable, isPlace, placeRoot, localOperation, memberEndpoint, members, nodes, owner, resolve, signature, packageOccurrences, type Node, type Structure } from './semantic.js';
+import { body, caseRead, caseTarget, container, endpoint, isExecutable, isPlace, placeRoot, localOperation, memberEndpoint, members, nodes, owner, packageEndpoint, portMembers, resolve, sampledReadForm, signature, packageOccurrences, type Node, type Structure } from './semantic.js';
 import { decodeQuotedName, formatName, formatQualifiedName, nameProblem, parseNameInput } from './names.js';
 export interface SemanticSymbol {
     key: string;
@@ -191,6 +191,16 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
             array = field.type.size !== undefined;
         }
     };
+    /** A sampled read p.m (WP6-S01): the port, the member, then the record fields after it (review F5). */
+    const sampledRefs = (n: a.ReferenceExpression, c: Structure | undefined, cst: CstNode | undefined): void => {
+        const form = c && sampledReadForm(n, c);
+        if (!form)
+            return;
+        const port = n.path.split('.')[0], steps = fieldSteps(n, cst);
+        add(n, cst, symbol(form.port), 0, port.length, n.path);
+        (steps[0] as { mark: (s: SemanticSymbol | undefined) => void }).mark(symbol(form.member));
+        fieldRefs(form.member.type, steps.slice(1));
+    };
     for (const model of models)
         for (const n of nodes(model)) {
             for (const r of AstUtils.streamReferences(n))
@@ -202,6 +212,11 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
                 // A package connection starts with a top-level occurrence of its package.
                 pathRefs(n, 'source', n.source, c as Node | undefined);
                 pathRefs(n, 'target', n.target, c as Node | undefined);
+                // A member policy names a member of both connected ports (WP6-S05); it refers to each (review F5).
+                const pkg = c ? undefined : owner(n, a.isPackage), ports = [n.source, n.target].map(path => (c ? endpoint(c, path) : pkg && packageEndpoint(pkg, path))?.port);
+                n.memberPolicies.forEach(mp => { if (mp.member !== undefined)
+                    for (const port of ports)
+                        add(mp, property(mp, 'member'), symbol(port && portMembers(port).find(m => m.name === mp.member))); });
             }
             if (a.isSend(n) || a.isReceiveBranch(n) || a.isInterruptible(n) || a.isTransition(n) && n.endpoint || a.isScheduleEntry(n) && n.endpoint)
                 if (c)
@@ -240,7 +255,9 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
                     add(n, cst, root, 0, head.length, n.path);
                     fieldRefs(root.type, steps);
                 }
-                else if (script && caseRead(script, n)?.kind === 'attribute') {
+                else if (!script)
+                    sampledRefs(n, c, cst);
+                else if (caseRead(script, n)?.kind === 'attribute') {
                     const pkg = owner(script, a.isPackage);
                     let current: Node | undefined = pkg && packageOccurrences(pkg).find(o => o.name === head) as Node | undefined, i = 0;
                     add(n, cst, symbol(current), 0, head.length, n.path);
@@ -270,6 +287,8 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
                         const i = en.literals.indexOf(parts[1]);
                         add(n, cst, symbol(en, 'literals', i), parts[0].length + 1, parts[1]?.length, n.path);
                     }
+                    else if (!script)
+                        sampledRefs(n, c, cst);
                 }
                 else {
                     add(n, cst, s, 0, parts[0].length, n.path);

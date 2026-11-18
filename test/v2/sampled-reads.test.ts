@@ -4,7 +4,7 @@
 import nodeTest from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { EmptyFileSystem } from 'langium';
+import { EmptyFileSystem, TextDocument } from 'langium';
 import { parseHelper } from 'langium/test';
 import { createSwamlServices } from '../../src/language/swaml-module.js';
 import { formatDocument } from '../../src/language/formatter.js';
@@ -14,6 +14,7 @@ import { runCase, simulate } from '../../src/simulation/simulator.js';
 import type { Model } from '../../src/language/generated/ast.js';
 import * as a from '../../src/language/generated/ast.js';
 import { parse, run, valid } from './helpers.js';
+import { semanticIndex } from '../../src/language/path-services.js';
 const test = (name: string, fn: () => unknown) => nodeTest(name, async () => { await fn(); });
 const root = new URL('../../../', import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -479,6 +480,41 @@ test('WP6-M01 WP6-M04 projections: member policies on their connection, initial 
     assert.equal(r.ports?.[0].members.find(m => m.name === 'lvl')?.initial, '4');
     const plain = projectModel([(await valid(policies('', 'connect (s.out, r.p);'))).model]);
     assert.ok(plain.edges.every(e => e.memberPolicies === undefined) && plain.nodes.every(n => n.sampled === undefined && (n.ports ?? []).every(p => p.members.every(m => m.initial === undefined))));
+});
+
+test('WP6-S01 WP6-S05 rename and references see sampled reads and member-policy names (review F5)', async () => {
+    const source = `package Test {
+  import Swaml::Qos;
+  qos def Fast: Policy { delivery = Delivery.atMostOnce; ordering = Ordering.fifo; capacity = 2; overflow = Overflow.dropOldest; requestTimeout = 1s; }
+  datatype Pos { x: int; y: int; }
+  port def Door { provides attribute ajar: bool = false; provides attribute pos: Pos = record Pos { x = 0; y = 0; }; provides event e(n: int); }
+  component def Sensor { port out: Door; operation tick() { send out.ajar(true); send out.pos(record Pos { x = 1; y = 2; }); publish out.e(1); } schedule { on every 10ms tick(); } }
+  component def Reader { reversed port door: Door; attribute seen: bool = false; attribute k: int = 0;
+    operation read() { seen = door.ajar; k = door.pos.x; } operation h(n: int) { k = n; }
+    schedule { on every 10ms read(); on receive door.e(n) h(n); } }
+  component Demo { component s: Sensor; component r: Reader; connect (s.out, r.door) { e: Fast; ajar: Fast; } }
+}`;
+    const r = await valid(source), text = (x: { range: { start: { line: number; character: number }; end: { line: number; character: number } } }) => source.slice(r.doc.textDocument.offsetAt(x.range.start), r.doc.textDocument.offsetAt(x.range.end));
+    const uses = (name: string, line: number) => semanticIndex([r.model]).filter(x => x.symbol.name === name && !x.declaration && x.range.start.line === line).map(text);
+    assert.deepEqual(uses('door', 7), ['door', 'door'], 'the port in both sampled reads');
+    assert.deepEqual(uses('ajar', 7), ['ajar']);
+    assert.deepEqual([uses('pos', 7), uses('x', 7)], [['pos'], ['x']], 'the member and the record field after it');
+    assert.deepEqual([uses('e', 9), uses('ajar', 9)], [['e'], ['ajar']], 'the member-policy names');
+    const rename = async (needle: string, newName: string) => {
+        const edit = await r.Swaml.lsp.RenameProvider!.rename(r.doc, { textDocument: { uri: r.doc.uri.toString() }, position: r.doc.textDocument.positionAt(source.indexOf(needle)), newName });
+        const changes = (edit?.documentChanges ?? []).flatMap(c => 'edits' in c ? c.edits : []);
+        return TextDocument.applyEdits(TextDocument.create('memory:///x.swaml', 'swaml', 0, source), changes.map(e => ('newText' in e ? e : { range: e.range, newText: '' }) as { range: never; newText: string }));
+    };
+    const port = await rename('door: Door', 'gate');
+    assert.match(port, /seen = gate\.ajar; k = gate\.pos\.x;/u);
+    await valid(port);
+    const member = await rename('ajar: bool', 'open');
+    assert.match(member, /seen = door\.open;/u);
+    assert.match(member, /\{ e: Fast; open: Fast; \}/u);
+    await valid(member);
+    const event = await rename('e(n: int); }', 'ev');
+    assert.match(event, /\{ ev: Fast; ajar: Fast; \}/u);
+    await valid(event);
 });
 
 test('WP6-M05 the formatter prints member-policy bodies one member per line and initial values, idempotently', async () => {
