@@ -5,18 +5,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-interface Gate { checkAst(): Promise<{ report: string; failures: string[]; compared: string[]; skipped: string[] }>; corpus(): string[] }
+interface Gate { checkAst(): Promise<{ report: string; failures: string[]; compared: string[]; skipped: string[]; excluded: string[] }>; corpus(): string[] }
 const gate = async () => await import(new URL('../../../scripts/compatibility-2-2.mjs', import.meta.url).href) as Gate;
 
 test('gate 1: every repository .swaml file keeps its 2.2 AST under N1', async t => {
     const { checkAst, corpus } = await gate();
-    const { report, failures, compared, skipped } = await checkAst();
+    const { report, failures, compared, skipped, excluded } = await checkAst();
     t.diagnostic(report);
     assert.deepEqual(failures, [], report + '\n' + failures.join('\n'));
-    // Every corpus file is either compared or listed as a 2.2 parse error; the showcase models are compared.
-    assert.deepEqual(corpus().filter(path => !compared.includes(path) && !skipped.includes(path)), []);
+    // Every corpus file is compared, listed as a 2.2 parse error, or excluded as a recorded 2.2 source with a machine
+    // (gate A; gate B runs those after migration); the showcase models are compared or excluded so.
+    assert.deepEqual(corpus().filter(path => !compared.includes(path) && !skipped.includes(path) && !excluded.includes(path)), []);
     for (const path of corpus().filter(path => path.startsWith('examples/showcase/')))
-        assert.ok(compared.includes(path), `${path} is compared`);
+        assert.ok(compared.includes(path) || excluded.includes(path), `${path} is compared or excluded`);
 });
 
 // Amendments are the only reviewed way to change one recorded gate-1 expectation. Each failure mode fails.

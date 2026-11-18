@@ -22,7 +22,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { canonicalJson, comparedTrace, execute, fixtureDirectory, loader, recordedSource, root, sha256, sourceSha256, subjectsOf } from './compatibility-2-2.mjs';
+import { canonicalJson, comparedTrace, containsMachine, execute, fixtureDirectory, loader, recordedSource, root, sha256, sourceSha256, subjectsOf } from './compatibility-2-2.mjs';
 import { SETS } from './compatibility-2-2-extended.mjs';
 import { migrateSource, migrationTools } from './migrate-machines.mjs';
 
@@ -88,17 +88,6 @@ async function subjects(parse) {
     }
     return out;
 }
-function containsMachine(node) {
-    for (const [key, value] of Object.entries(node)) {
-        if (key.startsWith('$'))
-            continue;
-        for (const child of Array.isArray(value) ? value : [value])
-            if (child && typeof child === 'object' && typeof child.$type === 'string' && (child.$type === 'OperationBody' && child.states?.length || containsMachine(child)))
-                return true;
-    }
-    return false;
-}
-
 /** Runs one subject on a text; yields [id, result, raw trace digest]. */
 async function* results(s, text, load) {
     if (s.kind === 'corpus') {
