@@ -54,7 +54,7 @@ The tables of `Swaml::Os` (WP8-L01) are in chapter 1.5. The run-order rule is in
 
 | ID | Rule |
 | --- | --- |
-| WP4-M03 | **Timing per occurrence.** Timing projects computed periods and deadlines per occurrence with `constantValue`. A definition-level selection shows the expression text. |
+| WP4-M03 | Moved to [chapter 4.3](../../spec/04-systems-and-conformance.md#43-views) in WP4. |
 | WP5-M01 | **Flow.** Flow shows completion transitions as edges labelled with their guard, internal transitions as reactions of their state without a target edge, and deferrals as state annotations. |
 | WP7-M01 | **Timing guards.** Timing shows release guards on their entries; observed mode marks `skip` observations. |
 | WP8-M04 | **Task lanes.** Timing groups activations in Task lanes when a deployment places them on Tasks. The General view shows operation placements. |
@@ -87,13 +87,13 @@ Diagnostics added or extended by 2.3. Message shapes are templates in the existi
 | WP2-D04 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP2. | |
 | WP2-D05 | — | Added and moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP2 (review of the conditional's parser limits). | |
 | WP3-D01 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP3. | |
-| WP4-D01 | SW2013 | Policy setting value (WP4-S02) | `{setting} must be a duration literal such as 1s.` / `{setting} is not a duration setting.` |
-| WP4-D02 | SW2002 | Non-integral computed duration (WP4-S01, WP4-S03, WP4-S04, WP4-S08) | `A duration must be integral, found {type}.` |
-| WP4-D03 | SW2007 | Outside the constant sublanguage (WP4-S05) | `{expression} is not a constant duration: {calls \| mutable state \| sampled reads \| now()} are not allowed.` |
-| WP4-D04 | SW2013 | Per-occurrence value (WP4-S06) | `{period \| deadline} of {entry} is {value} ns in {occurrence}; it must be a positive representable duration.` |
-| WP4-D05 | SW2007 | Deadline above period per occurrence (WP4-S06) | The existing deadline-above-period message, with the occurrence named. |
-| WP4-D06 | SW2016, warning | A computed duration expression that contains no duration literal, no `now()` call and no reference to a const attribute whose effective initializer, followed through const references, contains a duration literal or `now()` | `{expression} has no time unit and counts nanoseconds; multiply by a unit such as 1ms.` *Note from WP3:* a const attribute's initializer can never contain `now()`, because WP3-S01 rejects `now()` in every attribute initializer (SW2006, WP3-D01); only the duration-literal part of this clause can apply. |
-| WP4-D07 | SW2013 | Non-exact or zero-divisor `/` in a constant duration, per occurrence (WP4-S05) | `{expression} divides {a} by {b} in {occurrence}, which is not an exact integral division.` |
+| WP4-D01 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP4. | |
+| WP4-D02 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP4. | |
+| WP4-D03 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP4. | |
+| WP4-D04 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP4. | |
+| WP4-D05 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP4. | |
+| WP4-D06 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP4. | |
+| WP4-D07 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP4. | |
 | WP5-D01 | SW2008 | Completion transition without target (WP5-S02) | `A completion transition needs a target state.` |
 | WP5-D02 | SW2008 | Completion guard calls `now()` or has a wrong effect (WP5-S03) | `A completion guard cannot call now(); it is not re-evaluated as time passes.` / the existing guard-effect message |
 | WP5-D03 | SW2008 | `when (true)` cycle (WP5-S04) | `States {A} → {B} → {A} form a cycle of when (true) completion transitions.` |

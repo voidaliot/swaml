@@ -11,6 +11,7 @@ Each normalized node/constraint retains source declaration URI/range and any inh
 | ID | Rule |
 | --- | --- |
 | WP2-M04 | **Association pairs.** Each occurrence–case pair of an association list is one normalized link. Its provenance is the statement plus the positions of the occurrence and the case in their lists. Deleting one pair in a tool rewrites the list and keeps the other pairs. The reference projection (`projectModel`) gives each link of a list statement its positions as `pair: { occurrence, case }`; a single 2.2 statement has none. |
+| WP4-M04 | **Entry identity.** A schedule entry keeps the identity `Component/schedule/N`. Its trigger identity for replacement and duplicates is the canonical form of WP4-S07 (`triggerIdentity`, `entryKey`). |
 
 ## 7.2 Families
 
@@ -24,8 +25,8 @@ Each normalized node/constraint retains source declaration URI/range and any inh
 | Port/member | Definition or inline members, direction, reversal, optionality, payload/signature, idempotency |
 | Connection/forwarding | Endpoint occurrence references, alias provenance, structural member checks, effective policy |
 | Policy | Pinned complete values and declaration/use provenance; no shared runtime queue |
-| Schedule/entry | Trigger identity, effective target, dispatch arguments/bindings, period/deadline, concurrent |
-| State/transition | Initial/final, entry/exit/effects, receive bindings/guard or timer, ordered selection |
+| Schedule/entry | Trigger identity, effective target, dispatch arguments/bindings, period/deadline (a computed one as its expression text plus per-occurrence values, WP4), concurrent |
+| State/transition | Initial/final, entry/exit/effects, receive bindings/guard or timer (literal or computed delay, WP4), ordered selection |
 | Deployment | Software/platform roots, Node paths, family/index placements, effective specificity |
 | Requirement/case/view | Immutable attributes/docs, package intent links (associate, satisfy, verify), case kind, subject occurrence and ordered script statements with resolved actor ports, exact normal primary-subject call targets, explicitly associated test access roots and exact inspection/helper targets, ordered selection union; association pairs from list statements with their list positions |
 

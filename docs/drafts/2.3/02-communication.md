@@ -22,8 +22,8 @@
 | ID | Rule |
 | --- | --- |
 | WP6-S07 | Replace "Inline policies and per-use overrides do not exist." with "Member policies select a named policy per member; inline policies and field overrides do not exist." The effective policy of a member route is its member policy, else the connection policy, else `Swaml::Qos::Default`. Every completeness and idempotency check (SW2013) applies per member route. |
-| WP4-S02 | **Policy setting values.** A setting is `name = Expression;`. `requestTimeout`, `maxLatency` and `maxAge` must be a duration literal; computed values are rejected. Any other setting must not be a duration literal (`capacity = 5ms;` stays invalid). Both are SW2013. |
-| WP4-M01 | `semantic.ts` `effectiveQos` and the validator read the duration from `value.duration`. Effective policies of 2.2 sources are unchanged (gate 1, normalization N1). |
+| WP4-S02 | Moved to [chapter 2.4](../../spec/02-communication.md#24-versioned-policies-and-queues) in WP4. |
+| WP4-M01 | Moved to [chapter 2.4](../../spec/02-communication.md#24-versioned-policies-and-queues) in WP4. |
 
 ## 2.5 Requests, replies and failure
 

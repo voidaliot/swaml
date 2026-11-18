@@ -246,6 +246,8 @@ on start runs once; on every D runs periodically; on receive binds an incoming e
 
 wait, requests and receive statements release the component's serial lock. Another activation can change attributes before resumption. Recheck conditions after resuming before writing state. A concurrent entry cannot write state, even through a helper or out argument, and always reads its dispatch snapshot. Entry deadlines include suspension/backlog; an every entry defaults to its period. WCET belongs to target binding/evidence.
 
+From 2.3 a duration literal such as 250ms is a uint value in nanoseconds, so durations can be computed. Write them in parentheses: wait (delayMs * 1ms);, or after (ackTimeoutMs * 1ms) { … }, a state timer after (pulseMs * 1ms) to Locked { } (evaluated when the state's entry actions finish) and on every (periodMs * 1ms) poll() deadline (periodMs * 1ms / 2);. A period or deadline uses only literals, const attributes, arithmetic with exact integral division, comparisons and the conditional, and is evaluated for each occurrence, so a usage that redefines periodMs gets its own period. Multiply by a unit: after (pulseMs) would count nanoseconds (warning SW2016). A computed delay that is not positive fails with DurationRange, which try catches ([computed backoff](../examples/41-computed-backoff.swaml), [lock pulse](../examples/42-lock-pulse.swaml) and [derived period](../examples/43-derived-period.swaml) examples).
+
 while tests first; until tests after its body. An optional n times limit evaluates once and exits normally. Counted for and copied-array for in have lexical loop scopes. [The loop model](../examples/18-control-loops.swaml) covers every form. Unbounded loops are permitted but a finite run has a step budget/deadline.
 
 ## Receive, interrupt and model state
@@ -495,6 +497,12 @@ package Debounce {
 }
 ```
 
+**Durations (2.3).** A duration literal such as `250ms` is an expression value from 2.3: a `uint` number of nanoseconds, so `pulseMs * 1ms` is a computed duration and `const attribute timeoutNs: uint = 5ms;` is an ordinary const attribute. Computed durations are written in parentheses in waits, receive timeouts, state timers, periods and deadlines (chapter 3; the [computed backoff](../examples/41-computed-backoff.swaml), [lock pulse](../examples/42-lock-pulse.swaml) and [derived period](../examples/43-derived-period.swaml) examples).
+
+| ID | Rule |
+| --- | --- |
+| WP4-S01 | **Duration literals as values.** A duration literal in an expression is a `uint` value in nanoseconds (`1us` is 1000; `5 ms` with layout between value and unit is the same literal). It must be a safe integer number of nanoseconds or it is SW2013 `Duration must be positive safe integer nanoseconds.`; inside an expression `0ms` is the value 0, while every 2.2 position (`wait 5ms`, `or after`, state `after`, `every`, `deadline` and a policy setting) still requires a positive literal. Like an integer literal, a duration literal initializes a smaller integral domain when its value is in range (`var b: byte = 200ns;`). The unit words `ns`, `us`, `ms` and `s` stay contextual names: `ms * 2` reads a name. A computed duration (chapter 3.3, 3.5, 3.6) is an integral expression (`byte`, `uint` or `int`); any other type, `real` included, is SW2002 `A duration must be integral, found {type}.` (WP4-D02). |
+
 ## 1.5 Reuse and library boundaries
 
 Package operation definitions use only parameters and nested operations. Their usages inherit the signature; an optional body replaces the whole body. Calls in an inherited component body resolve by name in the concrete occurrence's effective members, with signature preservation checked on redefinition. Call graphs are acyclic. No other component's operation or calculation is a fallback name resolution target.
@@ -512,7 +520,7 @@ From 2.3, three more packages supply numbers, text and the logical clock. They a
 | WP3-M01 | The new packages are part of the versioned library source, `libraries/swaml-2.3.swaml`, loaded as a built-in document next to `libraries/swaml-2.0.swaml` and imported explicitly (a qualified name needs no import). Intrinsic bodies are documentation only, as for the `Swaml::Math` intrinsics; the return-path and package-definition checks exempt them by identity in the built-in document and in a copy of it that differs at most by a leading byte order mark, line ends and whitespace at the end of the file, as they exempt `Swaml::Math`. Only the built-in declarations are evaluated as intrinsics, and an operation usage of one without its own body is that intrinsic. Such a copy of a library document loaded as a workspace source duplicates the built-in packages (SW2001), as a copy of the 2.2 library always did, and hides nothing; a copy with any other change is user source and hides the library packages it declares. A run lists the 2.3 library document among its sources only when a supplied model imports or references one of its visible packages. |
 | WP3-R01 | `sqrt` is IEEE-754 correctly rounded. An argument below zero is the runtime failure `Arithmetic`; `-0.0` is not below zero and its root is `0.0`. A real value is always finite (chapter 1.4), so no NaN or infinity reaches or leaves `sqrt`. |
 | WP3-R02 | `intText` writes decimal digits, with `-` for negatives and no leading zeros. `realText` rounds the exact binary value of `v` to exactly `decimals` fraction digits, ties away from zero, and writes plain decimal notation with no exponent: `realText(2.5, 0)` is `3` and `realText(-2.5, 0)` is `-3`. A result that rounds to zero has no sign: `realText(-0.0001, 2)` is `0.00`. `decimals` above 15, or `abs(v)` of at least 1e21, is the runtime failure `Bounds`. This is not the tie rule of `Swaml::Math::round`, which rounds ties toward positive infinity. An implementation must not rely on JavaScript `toFixed` alone, which writes `-0.00` and switches to exponent notation from 1e21; the reference implementation computes in integers from the binary64 value. Because the exact binary value is rounded, `realText(1.005, 2)` is `1.00` and `realText(0.125, 2)` is `0.13`. |
-| WP3-R03 | `now()` returns the logical time of the evaluating step, in nanoseconds since the run epoch, as `uint`. Every activation reads the live clock: a concurrent activation reads live time, not its dispatch snapshot, which holds attributes only (chapter 3.4). In a handler it is the delivery step, after latency and fault delays; after a wait it is the resumption step; in a case script it is the script's step. Clock overflow remains the `ClockRange` violation. Durations as values arrive with WP4, which reads them as `uint` nanoseconds, the unit of `now()`. |
+| WP3-R03 | `now()` returns the logical time of the evaluating step, in nanoseconds since the run epoch, as `uint`. Every activation reads the live clock: a concurrent activation reads live time, not its dispatch snapshot, which holds attributes only (chapter 3.4). In a handler it is the delivery step, after latency and fault delays; after a wait it is the resumption step; in a case script it is the script's step. Clock overflow remains the `ClockRange` violation. Since WP4 a duration literal is a `uint` value in nanoseconds (WP4-S01), the unit of `now()`, so `now() - lastRxNs >= 100ms` compares like units. |
 
 `sqrt`, `intText` and `realText` failures are ordinary runtime failures: `try` catches them and a caught one is a `caught` observation (chapter 6). A hazard distance, a reception age and a diagnostic label use all three packages:
 
@@ -586,6 +594,11 @@ Closure is checked per package. Every nonoptional port of every occurrence of th
 
 A named qos def is typed by Swaml::Qos::Policy and supplies complete valid delivery, ordering, capacity, overflow and requestTimeout fields, plus optional maxLatency/maxAge. Values use the typed Delivery, Ordering and Overflow enums. Inline policies and per-use overrides do not exist. Each effective use is checked, including inherited connections and idempotency obligations.
 
+| ID | Rule |
+| --- | --- |
+| WP4-S02 | **Policy setting values.** A setting is `name = Expression;` (grammar WP4-G01). `requestTimeout`, `maxLatency` and `maxAge` are duration literals, optionally parenthesized; a computed value such as `requestTimeout = 2 * 1s;` is SW2013 `{setting} must be a duration literal such as 1s.` (WP4-D01). Any other setting is not a duration: a duration literal inside a larger value, such as `capacity = 4ms * 2;`, is SW2013 `{setting} is not a duration setting.`. The 2.2 forms keep their 2.2 rules and messages: `capacity = 5ms;` stays SW2013 `capacity needs a positive integer count, not a duration.` and a timeout without a duration, such as `requestTimeout = 5;`, stays `requestTimeout needs a duration.`. |
+| WP4-M01 | `settingDuration` (`semantic.ts`) is the duration literal of a 2.2-form setting (`Literal.duration` of the setting's value); `effectiveQos` and the validator read the duration through it, so the effective policies of 2.2 sources are unchanged (gate 1 under normalization N1, and the sixth extended 2.2 set). |
+
 Default is atMostOnce, fifo, capacity 16, reject, requestTimeout 1s, without latency/age bounds. Latest is atMostOnce/fifo/1/dropOldest/1s. Reliable is atLeastOnce/fifo/16/reject/1s. BestEffort is bestEffort/unordered/16/dropNewest/1s. These are pinned library values, always inspectable. atLeastOnce requests require an idempotent provided operation declaration; the declaration alone does not prove actual idempotence.
 
 Policy buffering applies to events and requests. Attribute members keep only the latest pending value independently of capacity and overflow. fifo preserves order within its queue. Unordered allows other orders, although the deterministic reference interpreter chooses insertion order. Overflow rejects the offer with a runtime failure or discards the selected oldest/newest message observably. Age discards are observable; latency assumptions are contract obligations. A backend identifies delivery and failure assumptions explicitly.
@@ -619,7 +632,7 @@ Effects are inferred transitively through the acyclic call graph: pure, reads st
 
 | ID | Rule |
 | --- | --- |
-| WP3-S01 | **`now()` effect.** `Swaml::Time::now()` has the effect class *reads state*, like a read of an attribute, although it reads the run clock rather than component state. It is therefore rejected in attribute and member initializers, requirement attributes and redefined attribute values included (SW2006, WP3-D01), and a package operation definition that calls it is rejected like any package definition that reads state (`Package definitions may use only parameters and nested operations.`). It is allowed in every other expression: statements, return values, schedule arguments, receive and state guards, concurrent entries (which may read state) and case scripts. It will be rejected in completion guards (WP5-S03) and in the constant sublanguage (WP4-S05) when those constructs arrive. |
+| WP3-S01 | **`now()` effect.** `Swaml::Time::now()` has the effect class *reads state*, like a read of an attribute, although it reads the run clock rather than component state. It is therefore rejected in attribute and member initializers, requirement attributes and redefined attribute values included (SW2006, WP3-D01), and a package operation definition that calls it is rejected like any package definition that reads state (`Package definitions may use only parameters and nested operations.`). It is allowed in every other expression: statements, return values, schedule arguments, receive and state guards, concurrent entries (which may read state) and case scripts. It is rejected in the constant sublanguage of periods and deadlines (SW2007, WP4-S05) and will be rejected in completion guards (WP5-S03) when they arrive. |
 
 Suspending calls may be the whole var initializer, assignment right side or expression statement, optionally wrapped in try; these must be ordinary statement values, not for-header initializers or updates. Evaluate the call before the loop when its result is needed there. Suspending calls cannot be embedded in arithmetic, call arguments, return values or predicates. Other expressions can have nonsuspending effects. Arguments evaluate left to right; only and/or short-circuit. Declarations and source order do not select overloads or change resolution.
 
@@ -632,6 +645,10 @@ Suspending calls may be the whole var initializer, assignment right side or expr
 Runtime failures unwind the current expression/frame/activation without rolling back committed effects. try(e, fallback) catches all runtime expression failures from valid source, including arithmetic, ranges, indexes, assert/fail in called operations and remote failures. Fallback is assignable to the expression type and evaluated only on failure. Nested try is valid. Void try(e) explicitly ignores failure; a void fallback can run recovery behavior.
 
 Static errors are never caught. Interrupts and deadline/activation/resource violations bypass try. The failure reason is recorded in evidence and unavailable as an implicit binding. Void has no value; completion is not a sentinel value. Non-void flow must structurally return or fail on every path; a positive-extent copied for-in body or an until body with a proven positive/no limit can establish this, while a dynamic possibly-zero limit cannot; bounded/unbounded loops that can execute zero times are insufficient to establish a return.
+
+| ID | Rule |
+| --- | --- |
+| WP4-R01 | **`DurationRange`.** A computed duration (sections 3.3, 3.6) is checked as an integer before any widening to `uint`. A value that is not positive or not a safe integer number of nanoseconds, including an integer overflow of the duration expression's own arithmetic, is the runtime failure `DurationRange`, never `Bounds` or `Arithmetic`. It is an ordinary runtime failure of the statement or state reaction that evaluated it: it unwinds to the nearest `try` around a calling expression or fails the activation, and it is observed before any wait begins. An expiry that leaves the clock range remains the `ClockRange` violation. |
 
 ## 3.3 Statements and scopes
 
@@ -672,6 +689,50 @@ package Places {
 
 send p.attribute(v) updates a provided attribute; publish p.event(args) emits a provided event. Return completes a frame, fail fails it, assert requires a bool and fails when false. Private state writes, emissions and successful local call effects remain committed when a later statement fails.
 
+| ID | Rule |
+| --- | --- |
+| WP4-S03 | **Computed waits.** `wait (e);` and `or after (e) { … }` take an integral expression without suspending calls (SW2002 with WP4-D02, SW2006), in the scope of the statement. It is evaluated when the statement starts waiting, before any queued input is taken; its reads happen before the suspension, so the stale-read warning (SW2011) treats them like other reads of the statement. A value that is not a positive representable duration is `DurationRange` (WP4-R01). Outside the constant sublanguage `/` yields `real` (chapter 1.4), so `wait (n * 1ms / 2);` is rejected. Without a unit, such as `wait (n);`, the duration counts nanoseconds and the validator warns (SW2016, WP4-D06). |
+
+```swaml
+package ComputedWaits {
+  port def Ack {
+    provides event ack(id: uint);
+  }
+  component def Retry {
+    reversed port acks: Ack;
+    const attribute ackTimeoutMs: uint = 20;
+    attribute backoffMs: uint = 5;
+    attribute acked: uint = 0;
+    attribute lost: uint = 0;
+    operation await() {
+      wait (backoffMs * 1ms);
+      on receive acks.ack(id) {
+        acked = acked + 1;
+      } or after (ackTimeoutMs * 1ms) {
+        lost = lost + 1;
+        backoffMs = backoffMs * 2;
+      }
+    }
+    schedule {
+      on start await();
+    }
+  }
+  component def Peer {
+    port acks: Ack;
+    operation go() {
+      wait 1ms;
+      publish acks.ack(1);
+    }
+    schedule {
+      on start go();
+    }
+  }
+  component retry: Retry;
+  component peer: Peer;
+  connect (peer.acks, retry.acks);
+}
+```
+
 ## 3.4 Suspension and locks
 
 Every component occurrence has one serial lock. Serial dispatch evaluates/copies schedule arguments under this lock. wait, requests, receive and idle state-machine waits release it. Resumption reacquires it and reads live attributes. Other activations may run and modify state while a serial activation is suspended. Activation locals remain its own copies. Concurrent entries overlap and read the dispatch snapshot throughout, including after resumption, and never write state.
@@ -700,11 +761,46 @@ Entry arguments evaluate and copy at dispatch. Non-call entries bind void flow w
 
 An explicit deadline is positive. An every entry's deadline cannot exceed its period. Deadline omission elsewhere is permitted; a host may impose additional documented validation requirements. concurrent is entry-local and requires a non-writing, non-stateful operation. Source WCET, timing blocks and root profiles do not exist; target bindings own execution-cost evidence.
 
+**Computed periods and deadlines (2.3).** A period or deadline may be an expression of the constant sublanguage, which the validator evaluates for each expanded occurrence (the [derived period](../examples/43-derived-period.swaml) example).
+
+| ID | Rule |
+| --- | --- |
+| WP4-S04 | **Computed periods and deadlines.** `on every (e)` and `deadline (e)` take an expression of the constant sublanguage (WP4-S05), evaluated once per expanded occurrence. Its value is integral (SW2002, WP4-D02); in this sublanguage `/` on integral operands is integral. |
+| WP4-S05 | **Constant sublanguage.** Allowed: integer, duration and boolean literals; const attributes of the owning occurrence with their effective value after redefinition, whose effective initializers are themselves in the sublanguage (and acyclic); unary `-` and `not`; `+ - * / %`; comparisons; `and`, `or`; the conditional; parentheses. `/` on two integral operands is exact integral division and must divide exactly in every occurrence: a non-exact quotient or a zero divisor (of `/` or `%`) is SW2013 `{expression} divides {a} by {b} in {occurrence}, which is not an exact integral division.` (WP4-D07). Rejected with SW2007 `{expression} is not a constant duration: {kind} are not allowed.` (WP4-D03), where the kind is `calls` (calls and `try`), `mutable state` (non-const attributes, locals, parameters and receive bindings), `now()` (a call for which `isClockRead` is true, WP3-S01) or `values other than integers, durations and booleans` (enum literals, record or array values and fields of const attributes); sampled reads join with WP6. Literals of other types are left to the type rules (SW2002). |
+| WP4-S06 | **Per-occurrence values.** For every expanded occurrence of every top-level occurrence of a package, each computed period and deadline is a positive, safe integer number of nanoseconds (SW2013 `{period \| deadline} of {entry} is {value} ns in {occurrence}; it must be a positive representable duration.`, WP4-D04) and an `every` entry's deadline does not exceed its period (SW2007 `Periodic deadline cannot exceed its period in {occurrence}.`, WP4-D05; two literals keep the 2.2 message without the occurrence). Each finding of an expression is reported once, for the first occurrence where it fails. A definition that is never instantiated is checked for sublanguage membership and typing only, because its default const values need not be meaningful. |
+| WP4-S07 | **Trigger identity.** The trigger of `on every (e)` is identified by the canonical expression text (`expressionText` in `semantic.ts`): comments and layout removed, one space between tokens except inside a duration literal and around `(` `)` `[` `]` `.` `::` `,`, integers in decimal and names in canonical spelling. A single literal, parenthesized or not, is its value in nanoseconds, so `every (20ms)` is `every 20ms` and `every 20000us`, while `every (2 * 10ms)` is another trigger. This identity drives inheritance replacement, duplicate detection (SW2007 `Duplicate (trigger, operation) entry.`) and `entryKey`; a release guard (WP7) is not part of it. |
+| WP4-M02 | **One evaluator.** `constantValue(expression, occurrence)` in `semantic.ts` evaluates the sublanguage exactly (bigint) and reports the first membership or value problem. The validator, `projection.ts`, the simulator and consuming tools use it; consumers read an occurrence's period and deadline in nanoseconds with `entryPeriod(entry, occurrence)` and `entryDeadline(entry, occurrence)` and the trigger identity with `triggerIdentity(entry)`. `constantNumber` stays the literal-only fold of the 2.2 type and index rules, so those keep their diagnostics. |
+
+```swaml
+package CyclePeriods {
+  component def Poller {
+    const attribute cyclePeriodMs: uint = 10;
+    attribute polls: uint = 0;
+    operation poll() {
+      polls = polls + 1;
+    }
+    schedule {
+      on every (cyclePeriodMs * 1ms) poll() deadline (cyclePeriodMs * 1ms / 2);
+    }
+  }
+  component standard: Poller;
+  component fast: Poller {
+    redefines const attribute cyclePeriodMs: uint = 4;
+  }
+}
+```
+
+In `fast` the poller runs every 4 ms with a 2 ms deadline; in `standard` every 10 ms with a 5 ms deadline.
+
 ## 3.6 States
 
 A stateful operation is parameterless void and has exactly one on start entry. initial names one owned state. States own at most one on entry and one on exit block plus ordered receive/timer transitions. A receive transition binds payload, optionally tests a pure/read-state bool guard, and names its target with to. after D is relative to the state update, before entry actions begin. Entry actions finish before a transition can run; if entry suspends past a timer expiry, the earliest elapsed timer is selected on resumption before queued input. Timers with equal expiry use declaration order. Evaluate competing enabled transitions in declaration order and take the first. There are no transition names, priorities or completion transitions.
 
 A reaction runs exit, transition effect, state update and entry in that order. Timers are invalidated by state exit and stale firings are observable discards. Unhandled input does not reset the current state timer. Every state is graph-reachable from initial; a final state has no outgoing transitions or exit action. Reaching final runs entry and completes the whole operation once. Hierarchical/orthogonal states and physical preemption are outside the language.
+
+| ID | Rule |
+| --- | --- |
+| WP4-S08 | **Computed state timers.** `after (e) to S { … }` takes an integral expression that is pure or reads state (SW2008 `State timers may only be pure or read state.`), in the machine's scope, with the unit warning SW2016. It is evaluated once per state entry, when the entry actions finish, in declaration order with the state's other computed timers; its expiry is the state-update time plus the value, so a timer whose operands the entry actions change uses the new value: `state Backoff { on entry { delayMs = minInt(delayMs * 2, capMs); } after (delayMs * 1ms) to Connecting { } }` waits the doubled delay. If entry suspends past the expiry, the timer has elapsed and is selected on resumption, as for literal timers. Discarded input does not re-evaluate it; re-entering the state does. Timers with equal expiry, literal or computed, keep declaration order. A value that is not a positive representable duration is `DurationRange` and fails the machine's activation (WP4-R01). The [computed backoff](../examples/41-computed-backoff.swaml) and [lock pulse](../examples/42-lock-pulse.swaml) examples show both. |
 
 ## 3.7 Case scripts
 
@@ -839,6 +935,10 @@ General and Grid select named semantic elements except views. Interconnect selec
 
 Flow covers statements, nested operation calls, loops, receive, interruption and function-owned states. Timing has declared and observed modes. Declared shows schedule release grid, causes, deadlines, static wait intervals and permitted concurrent overlap. Observed adds an identified trace, serial lock gaps, message latency, activation phases, terminal markers and open intervals; WCET/budget bars identify their target-binding/evidence source. A missing trace never produces fabricated observation. Views introduce no execution semantics.
 
+
+| ID | Rule |
+| --- | --- |
+| WP4-M03 | **Timing per occurrence.** The projection (`projectModel`) gives each schedule entry of an occurrence its evaluated `periodNs` and `deadlineNs` from `entryPeriod` and `entryDeadline`, and a computed period or deadline also its canonical text (`periodExpression`, `deadlineExpression`); a definition shows the text only, because its values belong to its occurrences. A computed state timer labels its transition `after ({expression})`. Entries with literal periods and deadlines gain no field, so the projections of 2.2 sources are unchanged. |
 ## 4.4 Validation groups
 
 | Code | Static group |
@@ -859,8 +959,9 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | SW2013 | Complete typed policies and representable positive durations; the reference resource limits: expression nesting in the validator, the work of the stale-read analysis, expanded component occurrences per top-level occurrence and the parser's bracket nesting and stack (WP2-D05) |
 | SW2014 | Canonical formatting differs, only in explicit formatting-check mode |
 | SW2015 | Retired in 2.1 together with the 2.0 case spellings; not reported |
+| SW2016 | Warning (2.3): a computed duration without a time unit, which counts nanoseconds |
 
-Diagnostics added by 2.3. Message shapes are templates; implementations may add context but keep the leading clause stable. All are errors.
+Diagnostics added by 2.3. Message shapes are templates; implementations may add context but keep the leading clause stable. All are errors except WP4-D06, a warning.
 
 | ID | Code | Condition | Message shape |
 | --- | --- | --- | --- |
@@ -877,6 +978,13 @@ Diagnostics added by 2.3. Message shapes are templates; implementations may add 
 | WP2-D04 | SW2000 | Conditional in statement position (WP2-G02) | The syntax message explains it: `A conditional expression is not a statement; use an if block.` An unparenthesized conditional operand adds to the parser's message: `A conditional expression is a whole expression; as an operand it is written in parentheses, as in (if (c) a else b).` |
 | WP2-D05 | SW2013 | Bracket nesting beyond the reference parser's resource limits; not a language rule. A *statement* is the run of tokens between two `;`, `{` or `}` that occur while no bracket is open. Within it, an open bracket is a `(` or `[`, the `{` of a record literal, or any other `{` while a bracket is open; `)`, `]` and `}` close the innermost open bracket of their kind. The statement ends at the next `;`, `{` or `}` with no bracket open, or *unbalanced* at a `)`, `]` or `}` that does not match the innermost open bracket, at a `;` while a `(` other than the parenthesis of a `for` statement or a `[` is innermost, or at the end of the file. (a) More than 200 brackets open at once in a statement, at the first bracket beyond 200; the limit is above every depth the 2.2 reference implementation parses. (b) A statement that ends unbalanced after more than 32 brackets were open at once, at its first token. In (a) and (b) the tokens of the statement, from its first token to its end (an ending `;` included, an ending bracket or brace not), are not parsed; the rest of the file is. (c) A parse that the host's stack cannot hold despite (a) and (b), such as deeply nested unclosed blocks, at the first most deeply nested token; the file is not parsed. Brackets inside strings, comments and quoted names are not brackets. | `Bracket nesting exceeds the reference parser limit of 200 levels; this statement is not parsed.` / `Bracket nesting exceeds the reference parser limit of 32 levels for a statement that leaves brackets unclosed; this statement is not parsed.` / `Bracket nesting exceeds the reference parser limit: the parser ran out of stack space at this nesting, so this file is not parsed.` Each adds what to do. |
 | WP3-D01 | SW2006 | `now()` in an initializer (WP3-S01) | The existing purity message, naming `now()`: `Initializer of {attribute} must be pure; now() reads state.` `{attribute}` is the attribute, requirement attribute or redefined attribute, spelled as in other messages (2.2 quoting). An initializer that reads the clock only through a helper keeps the 2.2 message `Attribute initializers must be pure.` |
+| WP4-D01 | SW2013 | Policy setting value (WP4-S02) | `{setting} must be a duration literal such as 1s.` for a computed `requestTimeout`, `maxLatency` or `maxAge` / `{setting} is not a duration setting.` for a duration inside another setting's value. The 2.2 forms keep their 2.2 messages. |
+| WP4-D02 | SW2002 | Non-integral computed duration (WP4-S01, WP4-S03, WP4-S04, WP4-S08) | `A duration must be integral, found {type}.` |
+| WP4-D03 | SW2007 | Outside the constant sublanguage (WP4-S05) | `{expression} is not a constant duration: {calls \| mutable state \| now() \| values other than integers, durations and booleans \| cyclic const attributes} are not allowed.` The expression is its canonical text (WP4-S07); sampled reads join with WP6. |
+| WP4-D04 | SW2013 | Per-occurrence value (WP4-S06) | `{period \| deadline} of {entry} is {value} ns in {occurrence}; it must be a positive representable duration.` The entry is named by its trigger and operation, such as `on every (periodMs * 1ms) poll`, the occurrence by its path. |
+| WP4-D05 | SW2007 | Deadline above period per occurrence (WP4-S06) | `Periodic deadline cannot exceed its period in {occurrence}.` Two literals keep the 2.2 message `Periodic deadline cannot exceed its period.` |
+| WP4-D06 | SW2016, warning | A computed duration expression that contains no duration literal, no `now()` call and no reference to a const attribute of the owner whose initializer, followed through const references, contains a duration literal. A const attribute's initializer can never contain `now()` (WP3-S01), so only the duration-literal part of this clause applies. | `{expression} has no time unit and counts nanoseconds; multiply by a unit such as 1ms.` `after (pulseMs)` with `pulseMs = 250` warns; `wait (timeoutNs);` with `const attribute timeoutNs: uint = 5ms;` does not. |
+| WP4-D07 | SW2013 | Non-exact or zero-divisor division in a constant duration, per occurrence (WP4-S05) | `{expression} divides {a} by {b} in {occurrence}, which is not an exact integral division.` The expression is the division itself. |
 
 Every diagnostic includes a source range and stable code. Machine-readable diagnostics retain declaration identity and occurrence context when resolved. A suggested edit is supplied only for a safe unambiguous correction; tools must revalidate the resulting complete workspace before applying it. Parser recovery may suspend semantic checks on invalid syntax, but the document remains invalid and must not crash the service.
 
@@ -907,7 +1015,7 @@ Ports map to owned typed features with per-member directional projections. Rever
 | WP2-M02 | `ConditionalExpression`: kind `value`, kernel `ControlFunctions::'if'`, normative `docs/spec/01-structure-and-types.md`. Only the selected branch is evaluated. |
 | WP2-M03 | `Association` keeps its entry. Its semantic text states that a list statement lowers to one reference per occurrence–case pair, with the statement and the list positions as provenance. |
 
-The changed productions `Assign`, `ReferenceExpression` and `CallExpression` (WP1) and `Expression` and `ExpressionStatement` (WP2) keep their mapping entries with updated semantic text in `spec/kerml-mapping.json`.
+The changed productions `Assign`, `ReferenceExpression` and `CallExpression` (WP1), `Expression` and `ExpressionStatement` (WP2) and `PolicySetting`, `Literal`, `Wait`, `Receive`, `ScheduleEntry` and `Transition` (WP4) keep their mapping entries with updated semantic text in `spec/kerml-mapping.json`.
 
 ## 5.2 Required semantic library
 
@@ -938,6 +1046,10 @@ Expand the finite occurrence tree of every executed top-level occurrence and ini
 
 Time uses nonnegative safe integer nanoseconds. Durations are positive and must remain representable after conversion/addition. Reference CPU steps cost zero physical time; a step budget prevents runaway computation. Ordering is deterministic by timestamp, phase and insertion ordinal. Deadline/request timeout wins a tie with reply or ordinary work. Receive timeout wins a tie with delivery in the reference selection. A run explicitly records its horizon; live/waiting activations and future events yield horizon status with open intervals rather than invented completion.
 
+
+| ID | Rule |
+| --- | --- |
+| WP4-R02 | **Computed durations.** A computed `wait` or receive timeout is evaluated when the statement starts waiting. A computed state timer is evaluated when the entry actions finish, and its expiry is the state-update time plus the value. Periods and deadlines use the per-occurrence constant values (WP4-S06), evaluated once per occurrence: an `every (e)` entry releases at root epoch + k·P of its occurrence and its deadline is release + D. A value that is not a positive representable duration is `DurationRange` (WP4-R01). An expiry outside the clock range stays the `ClockRange` violation. |
 ## 6.2 Lock and snapshot
 
 One serial activation runs at a time per component occurrence. Nonsuspending local calls borrow its context and lock. wait, requests, receive and idle state waits release the lock. On readiness, serial work reacquires it before continuing and uses live attributes; locals remain copied cells. Concurrent entries may overlap, read one dispatch snapshot throughout and cannot write state even through callees or out arguments. Target backends must state how they realize the same snapshot semantics.
@@ -978,6 +1090,7 @@ New and extended observations of 2.3 appear only where new syntax is used, so a 
 | ID | Observation | Fields and meaning |
 | --- | --- | --- |
 | WP1-T01 | `write` (extended) | A place assignment adds `place`, the evaluated place text such as `statuses[2].confirmed`, with decoded names and evaluated indexes. `value` is the new whole root value; `subject` is the root. A whole assignment has no `place`. |
+| WP4-T01 | `wait`, `receiveWait` (extended, computed forms only); `timer` (new) | A wait or receive timeout whose duration is computed adds `durationNs`, the evaluated value. A computed state timer is evaluated when the entry actions finish, after the `state` observation of that entry and the entry's own observations, and records a `timer` observation: `subject` the machine, `state`, `source` the timer transition, `timerNs` the evaluated value and `expiresNs` the expiry time. Literal waits and literal state timers add no field and no `timer` observation. `DurationRange` (WP4-R01) is recorded like every runtime failure; a caught one is a `caught` observation. |
 
 ## 6.7 Case runs
 
@@ -1009,6 +1122,7 @@ Each normalized node/constraint retains source declaration URI/range and any inh
 | ID | Rule |
 | --- | --- |
 | WP2-M04 | **Association pairs.** Each occurrence–case pair of an association list is one normalized link. Its provenance is the statement plus the positions of the occurrence and the case in their lists. Deleting one pair in a tool rewrites the list and keeps the other pairs. The reference projection (`projectModel`) gives each link of a list statement its positions as `pair: { occurrence, case }`; a single 2.2 statement has none. |
+| WP4-M04 | **Entry identity.** A schedule entry keeps the identity `Component/schedule/N`. Its trigger identity for replacement and duplicates is the canonical form of WP4-S07 (`triggerIdentity`, `entryKey`). |
 
 ## 7.2 Families
 
@@ -1022,8 +1136,8 @@ Each normalized node/constraint retains source declaration URI/range and any inh
 | Port/member | Definition or inline members, direction, reversal, optionality, payload/signature, idempotency |
 | Connection/forwarding | Endpoint occurrence references, alias provenance, structural member checks, effective policy |
 | Policy | Pinned complete values and declaration/use provenance; no shared runtime queue |
-| Schedule/entry | Trigger identity, effective target, dispatch arguments/bindings, period/deadline, concurrent |
-| State/transition | Initial/final, entry/exit/effects, receive bindings/guard or timer, ordered selection |
+| Schedule/entry | Trigger identity, effective target, dispatch arguments/bindings, period/deadline (a computed one as its expression text plus per-occurrence values, WP4), concurrent |
+| State/transition | Initial/final, entry/exit/effects, receive bindings/guard or timer (literal or computed delay, WP4), ordered selection |
 | Deployment | Software/platform roots, Node paths, family/index placements, effective specificity |
 | Requirement/case/view | Immutable attributes/docs, package intent links (associate, satisfy, verify), case kind, subject occurrence and ordered script statements with resolved actor ports, exact normal primary-subject call targets, explicitly associated test access roots and exact inspection/helper targets, ordered selection union; association pairs from list statements with their list positions |
 
@@ -1069,15 +1183,16 @@ Normative chapter of [swa.ml 2.2](LANGUAGE_SPECIFICATION.md). Acceptance levels 
 | V07 | Every required event/attribute and provided operation has one input owner; provided event/attribute emission provenance; interface-only components are exempt | SW2005 |
 | V08 | Operation signatures, no nested captures, typed calls/out/result, acyclic graph, return paths, pure initializers | SW2002/2006 |
 | V09 | Transitive effect inference, read-only guards, non-writing concurrent entries, suspension only in allowed whole expressions and never in a conditional | SW2006 |
-| V10 | One schedule, unique effective identities, matching trigger/binding signatures, same-owner acyclic after, fresh void targets and period/deadline rules | SW2007 |
+| V10 | One schedule, unique effective identities (computed periods by canonical text), matching trigger/binding signatures, same-owner acyclic after, fresh void targets and period/deadline rules per occurrence | SW2007 |
 | V11 | Stateful parameterless void signature, exactly one start entry, reachable states, ordered transitions and final restrictions | SW2008 |
-| V12 | Typed complete policies, effective-use idempotency, positive safe time/capacity domains | SW2013 |
+| V12 | Typed complete policies with duration literals for the time settings, effective-use idempotency, positive safe time/capacity domains | SW2013 |
 | V13 | Node-only target content, root/occurrence/index placement resolution, unique exact paths and at most one deployment per top-level occurrence | SW2009 |
 | V14 | Immutable requirements, case subjects in the same package, legal associate/satisfy/verify links, case script environment role and white-box access, seven library view kinds/subjects and stable selection union, association lists by pair | SW2010 |
 | V15 | Stale-read and inactive interrupt-input warnings without a race-freedom claim | SW2011/2012 |
 | V16 | Place roots, selector typing, `out` roots, no places as out arguments, literal component indexes in test paths | SW2002/2006/2010 |
 | V17 | Conditional typing, whole-expression placement, no suspension; contextual words in every name position; association lists without repeated pairs | SW2000/2002/2006/2010 |
 | V18 | `Swaml::Numeric`, `Swaml::Text` and `Swaml::Time` without new ambiguity for 2.2 sources; `now()` reads state and is rejected in initializers; no stale-read warning for `now()` values | SW2001/2006/2011 |
+| V19 | Duration values, policy setting literals, the constant sublanguage per occurrence, trigger identity, unit warning | SW2002/2007/2008/2013/2016 |
 
 Validation MUST rebuild semantic string paths as well as indexed references after workspace changes/additions/deletions. Negative lookups matter: a newly loaded declaration may make a previously resolved short name ambiguous. Malformed source remains editable and invalid; recovery cannot silently accept a different program. Definite-return analysis may be conservative rather than solving arbitrary conditions. Dynamic numeric/index/termination failures remain runtime obligations.
 
@@ -1099,6 +1214,7 @@ Validation MUST rebuild semantic string paths as well as indexed references afte
 | E12 | Place evaluation order, kept right-side writes, `Bounds` with unchanged root, `write.place` |
 | E13 | Conditional evaluates only the selected branch |
 | E14 | `sqrt` correctly rounded and `Arithmetic` below zero; `intText`; `realText` with ties away from zero, unsigned zero, `Bounds` above 15 decimals and from 1e21; `now()` live logical time in every activation |
+| E15 | Computed waits and timeouts evaluated when they start waiting, with `durationNs`; state timers evaluated after entry with `timer` observations; per-occurrence periods and deadlines; `DurationRange` |
 | E20 | Every run, use case and test of the 2.2 corpus keeps its status, full final stores, machines, deployments, verdict and message and its complete trace, ignoring only `profile` and `languageVersion` (compatibility gate 2, compared with a fixture recorded with implementation 3.1.0) |
 
 A deterministic reference run may choose one permitted order/delivery outcome. Its tests do not establish all possible traces or real transport reliability. A target implementation identifies additional scheduling/transport assumptions and evidence. Idempotency annotations are checked declarations, not proofs of side-effect behavior.
@@ -1147,7 +1263,9 @@ Values are bounded primitive scalars, nominal enums/records and fixed copied arr
 | test occurrence access | Resolved own-package executed software root is the subject or an explicit association, followed by single effective parts or part family members with literal indexes in range; reads use its live store under its lock, helper calls outside the exact primary subject neither communicate nor suspend; no ownership transfer or direct attribute assignment |
 | try(e, f) | e:T and f:U assignable to T; lazy f; effect union; no fallback only when T is void |
 | if (c) a else b | c : bool; a : T1, b : T2 with common type T under scalar widening, otherwise identical types; neither void; effect ε(c) ∪ ε(a) ∪ ε(b) without suspension; only the selected branch evaluates; a whole expression, never a statement |
-| now() | result uint, the logical time t of the evaluating step; effect reads state; not in initializers (and, from WP4 and WP5, not in constant expressions or completion guards); never a stale read |
+| now() | result uint, the logical time t of the evaluating step; effect reads state; not in initializers or constant expressions (SW2007, WP4-S05) and, from WP5, not in completion guards; never a stale read |
+| duration literal | Result uint (nanoseconds), a safe integer; positive in the 2.2 positions |
+| computed duration `(e)` | e integral; in wait and receive timeouts without suspending calls; in state timers pure or reads state; in periods and deadlines in the constant sublanguage, with exact integral `/`, valued per occurrence |
 | var x:T=e | Compatible value, fresh live name; Γ extends with mutable x; suspension allowed only when e is whole call/try |
 | x=e | Mutable local/out/attribute, compatible type; attribute write adds write effect; same whole-expression suspension rule |
 | place = e | The root is a mutable local, an assigned out or a non-const attribute; e is assignable to the place type; the effect adds a write of the root; the whole-expression suspension rule applies |
@@ -1173,6 +1291,7 @@ Scalar type assignability uses widening, with checked integral value conversion 
 | local step | Evaluate in ρ plus live serial σ or captured concurrent snapshot; update copied cells and emit source-provenanced observations |
 | place write | Evaluate indexes, then the right side; read σ[o] or ρ at the root; check the indexes; write the root with one place replaced; `write` with `place` |
 | suspend | Save continuation/ρ; remove serial lock; register wait timer, receive alternatives or pending request |
+| computed duration | Evaluate e when the statement starts waiting, or for a state timer when the entry actions finish; v ≤ 0 or v unsafe is `DurationRange`; wait/timeout register expiry t + v with `durationNs`; a state timer registers expiry t_update + v with a `timer` observation |
 | ready | Mark continuation ready; serial continuation must reacquire lock before reading current σ |
 | offer | Resolve alias chain, select connection/member queue, copy payload, apply latest attribute replacement or policy overflow/delivery |
 | request | Create unique pending R[r] with expiry t + requestTimeout; offer request; suspend caller |
@@ -2366,7 +2485,7 @@ Colon means typed by; returns names results. Dot is containment/member access; :
 
 # swa.ml 2.3 candidate implementation status
 
-**Standard:** 2.3 (unreleased candidate) · **Implementation package:** 4.0.0 · **Selected host semantics:** 2.3 · **Reference profile:** swaml-reference/2.3. The candidate is allocated and work package WP1 has landed: assignment to places such as `statuses[i].confirmed = true;` and `r.f = v;` (indexes, then the right side, then one read-modify-write of the root; `Bounds` leaves the root unchanged; `write` observations gain `place`), member access after an index such as `recent[i].vehicleId`, and literal component indexes in test inspection paths such as `backend.twins[0].link` and `backend.twins[0].currentView()`. Work package WP2 has landed: the whole-expression conditional `if (c) a else b` (typed by the common type of its branches, never a statement, no suspension inside, only the selected branch evaluated), `view`, `state`, `in` and `out` as contextual words in every name position (edition-aware name services write them unquoted for a 2.3 workspace and quoted for 2.2) and association lists `associate a, b to 'X', 'Y';` (one link per pair, a repeated pair is SW2010). Work package WP3 has landed: the library packages `Swaml::Numeric` (`minInt`, `maxInt`, `clampInt`, `clamp`, and `sqrt` as a correctly rounded host intrinsic), `Swaml::Text` (`intText`, `realText` with ties away from zero, no exponent and no negative zero, `boolText`) and `Swaml::Time` (`now()`, the live logical time in nanoseconds, which reads state, is rejected in initializers and is never a stale read), in the separate built-in document `libraries/swaml-2.3.swaml`; a workspace that declares its own package of one of these names uses it and the library package is hidden there, so 2.2 sources keep their meaning. Otherwise the host accepts exactly the 2.2 language, and the three [compatibility gates](RELEASE_2_3.md#compatibility-gates) compare every corpus AST and every recorded run, case and trace with fixtures recorded from implementation 3.1.0. The published [2.2 reference](SWAML-2.2-Reference.md) and [PDF](../output/pdf/SWAML-2.2-Specification.pdf) record the 2.2 release sources. The published 2.1 [reference book](SWAML-2.1-Reference.md) and [complete PDF](../output/pdf/SWAML-2.1-Specification.pdf), manifest and checksum remain frozen. The strict current-source [publication gate](PDF_PUBLICATION.md) checks the new edition independently of historical publications.
+**Standard:** 2.3 (unreleased candidate) · **Implementation package:** 4.0.0 · **Selected host semantics:** 2.3 · **Reference profile:** swaml-reference/2.3. The candidate is allocated and work package WP1 has landed: assignment to places such as `statuses[i].confirmed = true;` and `r.f = v;` (indexes, then the right side, then one read-modify-write of the root; `Bounds` leaves the root unchanged; `write` observations gain `place`), member access after an index such as `recent[i].vehicleId`, and literal component indexes in test inspection paths such as `backend.twins[0].link` and `backend.twins[0].currentView()`. Work package WP2 has landed: the whole-expression conditional `if (c) a else b` (typed by the common type of its branches, never a statement, no suspension inside, only the selected branch evaluated), `view`, `state`, `in` and `out` as contextual words in every name position (edition-aware name services write them unquoted for a 2.3 workspace and quoted for 2.2) and association lists `associate a, b to 'X', 'Y';` (one link per pair, a repeated pair is SW2010). Work package WP3 has landed: the library packages `Swaml::Numeric` (`minInt`, `maxInt`, `clampInt`, `clamp`, and `sqrt` as a correctly rounded host intrinsic), `Swaml::Text` (`intText`, `realText` with ties away from zero, no exponent and no negative zero, `boolText`) and `Swaml::Time` (`now()`, the live logical time in nanoseconds, which reads state, is rejected in initializers and is never a stale read), in the separate built-in document `libraries/swaml-2.3.swaml`; a workspace that declares its own package of one of these names uses it and the library package is hidden there, so 2.2 sources keep their meaning. Work package WP4 has landed: a duration literal is a `uint` value in nanoseconds; `wait (e);`, `or after (e)`, state timers `after (e)` (evaluated when the entry actions finish), `on every (e)` and `deadline (e)` take computed durations; a value that is not a positive representable duration is the catchable runtime failure `DurationRange`; periods and deadlines use the constant sublanguage, evaluated per expanded occurrence (redefined const attributes included) by one evaluator, `constantValue`, with exact integral division and trigger identity by canonical text; `PolicySetting` has the single form `name = Expression;`; computed waits and timeouts record `durationNs` and computed state timers a `timer` observation; SW2016 warns on a computed duration without a unit. Otherwise the host accepts exactly the 2.2 language, and the three [compatibility gates](RELEASE_2_3.md#compatibility-gates) compare every corpus AST and every recorded run, case and trace with fixtures recorded from implementation 3.1.0. The published [2.2 reference](SWAML-2.2-Reference.md) and [PDF](../output/pdf/SWAML-2.2-Specification.pdf) record the 2.2 release sources. The published 2.1 [reference book](SWAML-2.1-Reference.md) and [complete PDF](../output/pdf/SWAML-2.1-Specification.pdf), manifest and checksum remain frozen. The strict current-source [publication gate](PDF_PUBLICATION.md) checks the new edition independently of historical publications.
 
 The 2.0 core replaced the 1.x grammar, AST, resolver, validator and interpreter; 2.1 adds the package context, executable use cases and tests, package links, run targets and statement identities of [ADR 0019](decisions/0019-package-context.md). It does not accept 1.x or 2.0 source; the [release notes](RELEASE_2_1.md) describe the migration. Published 1.x and 2.0.0 books, PDFs, manifests/checksums and historical figure files remain unchanged. [ADR 0016](decisions/0016-swaml-2-0.md) defines the restart; [conformance obligations](spec/08-conformance-obligations.md) separate syntax, validation, execution, analysis, kernel and graphical claims.
 
@@ -2382,8 +2501,8 @@ The 2.2 edition adds explicit test access to the subject and associated software
 | Effects and failures | Transitive write/read/communication/suspension flags, pure initializers, read-only guards, non-writing concurrency, lazy try and allowed suspension placement |
 | Ports and routes | Per-member direction/reversal, structural compatibility with variance and individual diagnostics, connection/forwarding, package connections between top-level occurrences, per-package closure, resolved cardinality and ownership/emission provenance with the interface-only exemption |
 | Policies | Versioned complete typed QoS definitions, Default/Latest/Reliable/BestEffort, per-use idempotency; occurrence/direction/member queues and latest attributes |
-| Schedule and runtime | Start/every/receive/call/after entries, inherited entry replacement, dispatch copying, deadlines, lock release/reacquisition, live serial reads and concurrent snapshots |
-| Flow and state | Loops and copied iteration, wait/receive, interruption across callees, ordered nested transitions, final completion and queued startup input |
+| Schedule and runtime | Start/every/receive/call/after entries, inherited entry replacement, dispatch copying, deadlines, lock release/reacquisition, live serial reads and concurrent snapshots; 2.3 (WP4): computed periods and deadlines in the constant sublanguage, evaluated per expanded occurrence by `constantValue` (exact bigint arithmetic, exact integral division, positive safe values checked per occurrence), trigger identity by canonical expression text, per-occurrence Timing projection |
+| Flow and state | Loops and copied iteration, wait/receive, interruption across callees, ordered nested transitions, final completion and queued startup input; 2.3 (WP4): duration literals as `uint` values, computed waits and receive timeouts evaluated when they start waiting (`durationNs`), computed state timers evaluated after the entry actions (`timer` observation), `DurationRange` caught by `try`, SW2016 |
 | Correlation and adverse behavior | Routed results/out values, failures, timeout ties, terminal cancellation, late-reply suppression, policy overflow, age at eligibility and explicit resource limits |
 | Deployment | Separate software/platform roots, Node-only contents/targets, indexed/family placements and most-specific selection |
 | Requirements/cases/views | Immutable intent; package-owned use case/test with an optional subject that is a top-level occurrence of the same package; case scripts with the environment role of associated interface-only actors, on call replies, normal primary-subject operation calls in both case kinds and tests' private reads/helper calls (SW2010/SW2004/SW2005/SW2006); intent-only cases without statements; package associate, satisfy … by and verify … by links with SW2010 rules; seven library definitions, package/member subjects and stable occurrence unions |
@@ -2705,7 +2824,7 @@ swa.ml 2.2.
 
 The language core is portable TypeScript over Langium 4.4.0 and the normative grammar. Node CLI/server adapters own file access and source hashing. Build with npm run build; validate with node out/src/cli/main.js --json and explicitly load all application dependencies. The host selects parser 2.2; unsupported edition flags are errors.
 
-JSON diagnostics expose stable SW2xxx codes, range, URI and identity metadata. --format applies canonical token-preserving whitespace, printing places and selectors without spaces inside the path, as in statuses[i].confirmed = true; (WP1-M03), conditionals with every parenthesis of the source, as in x = 1 + (if (c) 2 else 3) + 4;, and association lists on one line when they fit in 100 characters, otherwise with one occurrence or case per continuation line; a list that contains a comment is not wrapped (WP2-M05); --check-format checks it without writing. The LSP exposes full-document formatting. Source repairs must be validated against the complete workspace before application.
+JSON diagnostics expose stable SW2xxx codes, range, URI and identity metadata. --format applies canonical token-preserving whitespace, printing places and selectors without spaces inside the path, as in statuses[i].confirmed = true; (WP1-M03), conditionals with every parenthesis of the source, as in x = 1 + (if (c) 2 else 3) + 4;, and association lists on one line when they fit in 100 characters, otherwise with one occurrence or case per continuation line; a list that contains a comment is not wrapped (WP2-M05); --check-format checks it without writing. It prints computed durations in parentheses, as in wait (n * 1ms); and on every (periodMs * 1ms) poll() deadline (periodMs * 1ms / 2);, and literal durations without them, as in wait 5ms; (WP4-M08). The LSP exposes full-document formatting. Source repairs must be validated against the complete workspace before application.
 
 The simulator requires validated models and records swaml-reference/2.3, sources, options, trace, final stores and deployment. Source digests are added by the CLI. Its finite logical run does not supply production timing or universal verification.
 
@@ -2977,13 +3096,13 @@ PortUsage: (redefines?='redefines')? (optional?='optional')? (reversed?='reverse
 PortMember: direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';
 Connect: (redefines?='redefines')? 'connect' (name=Name)? (':' policy=[QosPolicy:QualifiedName])? '(' source=Path ',' target=Path ')' documentation=Documentation? ';';
 QosPolicy: 'qos' 'def' name=Name (':' base=QualifiedName)? '{' documentation=Documentation? settings+=PolicySetting* '}';
-PolicySetting: name=Name '=' (value=Expression | duration=Duration) ';';
+PolicySetting: name=Name '=' value=Expression ';';
 Operation: (redefines?='redefines')? 'operation' (definition?='def')? name=Name '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)? body=OperationBody;
 OperationUsage: (redefines?='redefines')? 'operation' name=Name ':' definition=[Operation:QualifiedName] (documentation=Documentation? ';' | body=OperationBody);
 Executable: Operation | OperationUsage;
 OperationBody: '{' documentation=Documentation? operations+=Executable* ('initial' initial=Name ';' states+=State+ | statements+=Statement*) '}';
 Schedule: 'schedule' '{' entries+=ScheduleEntry* '}';
-ScheduleEntry: ('on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' deadline=Duration)? (concurrent?='concurrent')? ';';
+ScheduleEntry: ('on' (kind='start' | kind='every' (period=Duration | '(' periodValue=Expression ')') | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' (deadline=Duration | '(' deadlineValue=Expression ')'))? (concurrent?='concurrent')? ';';
 Block: '{' statements+=Statement* '}';
 Statement: LocalVariable | Assign | Send | ExpressionStatement | Return | If | While | Until | For | ForEach | Wait | Receive | Interruptible | Fail | Assert;
 LocalVariable: 'var' name=Name ':' type=TypeRef '=' value=Expression ';';
@@ -2998,15 +3117,15 @@ Until: 'until' '(' condition=Expression (',' limit=Expression 'times')? ')' body
 For: 'for' '(' initializer=LocalVariable condition=Expression ';' update=ForUpdate ')' body=Block;
 ForUpdate infers Assign: target=Name '=' value=Expression;
 ForEach: 'for' '(' variable=Argument 'in' collection=Expression ')' body=Block;
-Wait: 'wait' duration=Duration ';';
-Receive: 'on' branches+=ReceiveBranch ('or' branches+=ReceiveBranch)* ('or' 'after' timeout=Duration timeoutBody=Block)?;
+Wait: 'wait' (duration=Duration | '(' delay=Expression ')') ';';
+Receive: 'on' branches+=ReceiveBranch ('or' branches+=ReceiveBranch)* ('or' 'after' (timeout=Duration | '(' timeoutValue=Expression ')') timeoutBody=Block)?;
 ReceiveBranch: kind=('receive'|'call') endpoint=EndpointPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' body=Block;
 Interruptible: 'interruptible' body=Block 'on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' handler=Block;
 Fail: 'fail' reason=STRING ';';
 Assert: 'assert' condition=Expression ';';
 State: (final?='final')? 'state' name=Name '{' documentation=Documentation? (actions+=StateAction | transitions+=Transition)* '}';
 StateAction: 'on' kind=('entry'|'exit') body=Block;
-Transition: ('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' delay=Duration) 'to' target=Name effect=Block;
+Transition: ('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' (delay=Duration | '(' delayValue=Expression ')')) 'to' target=Name effect=Block;
 Deployment: 'deployment' name=Name 'of' root=[ComponentUsage:QualifiedName] 'on' platform=[ComponentUsage:QualifiedName] '{' documentation=Documentation? placements+=Placement* '}';
 Placement: 'deploy' target=Path? 'on' node=Path ';';
 Requirement: 'requirement' name=Name '{' documentation=Documentation? attributes+=Attribute* '}';
@@ -3052,7 +3171,7 @@ PrimaryExpression returns Expression: Literal | TryExpression | CallExpression |
 TryExpression: 'try' '(' expression=Expression (',' fallback=Expression)? ')';
 CallExpression: target=Path '(' (args+=Expression (',' args+=Expression)*)? ')';
 ReferenceExpression: path=ValuePath ('[' index=Expression ']' selectors+=Selector*)?;
-Literal: {infer Literal} (number=Numeric | text=STRING | boolean=('true'|'false'));
+Literal: {infer Literal} (number=Numeric | text=STRING | boolean=('true'|'false') | duration=Duration);
 RecordLiteral: 'record' type=[DataType:QualifiedName] '{' fields+=FieldValue* '}';
 FieldValue: name=Name '=' value=Expression ';';
 ArrayLiteral: '[' (values+=Expression (',' values+=Expression)*)? ']';
@@ -5476,6 +5595,262 @@ package DiagnosticText {
     var big: string = monitor.precise(1000000000000000000000.0, 0);
     var fifteen: string = monitor.precise(0.1, 15);
     assert monitor.tooPrecise == 1 and big == "?" and fifteen == "0.100000000000000";
+  }
+}
+```
+
+### 41-computed-backoff.swaml
+
+```swaml
+package Backoff {
+  /** Retry backoff in the shapes of the V2X uplink and the cloud gateway. In 2.2 a wait takes a literal only, so the uplink waits out a computed delay in a loop of 250 ms steps, which rounds every delay up to the next multiple of 250 ms, and the gateway keeps a fixed table of delays. From 2.3 a duration literal is a uint value in nanoseconds and wait (e), or after (e) and state timers after (e) take a computed integral delay: the backoff doubles up to a cap and is waited exactly. A delay that is not positive is the runtime failure DurationRange, which try catches like any runtime failure. */
+  import Swaml::Numeric;
+  import Swaml::Time;
+  component def CountedUplink {
+    /** The 2.2 shape: a delay in milliseconds waited in 250 ms steps. */
+    attribute waitedMs: uint = 0;
+    attribute backoffs: uint = 0;
+    operation backoff(delayMs: uint) {
+      var waited: uint = 0;
+      while (waited < delayMs) {
+        wait 250ms;
+        waited = waited + 250;
+      }
+      waitedMs = waited;
+      backoffs = backoffs + 1;
+    }
+  }
+  component def ComputedUplink {
+    /** The 2.3 shape: the delay doubles from firstMs up to capMs and is waited exactly. */
+    const attribute firstMs: uint = 100;
+    const attribute capMs: uint = 1000;
+    attribute delayMs: uint = 0;
+    attribute backoffs: uint = 0;
+    attribute lastWakeNs: uint = 0;
+    operation backoff() {
+      delayMs = if (delayMs == 0) firstMs else minInt(delayMs * 2, capMs);
+      wait (delayMs * 1ms);
+      lastWakeNs = now();
+      backoffs = backoffs + 1;
+    }
+    operation pause(millis: int) returns bool {
+      /** Waits millis milliseconds; a delay that is not positive fails with DurationRange. */
+      wait (millis * 1ms);
+      return true;
+    }
+  }
+  component def Session {
+    /** A connection machine whose Backoff state doubles the delay on entry and then waits it: the timer is evaluated when the entry actions finish, so it waits the new delay. */
+    const attribute capMs: uint = 400;
+    attribute delayMs: uint = 50;
+    attribute attempts: uint = 0;
+    attribute connectedAt: uint = 0;
+    operation run() {
+      initial Connecting;
+      state Connecting {
+        on entry {
+          attempts = attempts + 1;
+        }
+        after 10ms to Backoff {
+        }
+      }
+      state Backoff {
+        on entry {
+          delayMs = minInt(delayMs * 2, capMs);
+        }
+        after (delayMs * 1ms) to Retry {
+        }
+      }
+      state Retry {
+        on entry {
+          connectedAt = now();
+        }
+        after 5ms to Connecting {
+        }
+      }
+    }
+    schedule {
+      on start run();
+    }
+  }
+  component counted: CountedUplink;
+  component computed: ComputedUplink;
+  component session: Session;
+  test 'Counted loop rounds up' of counted {
+    /** The 2.2 loop waits 500 ms for a 300 ms delay. */
+    counted.backoff(300);
+    assert counted.waitedMs == 500 and now() == 500000000;
+  }
+  test 'Computed wait is exact' of computed {
+    /** The computed backoff waits 100, 200, 400, 800 and then the 1000 ms cap. */
+    computed.backoff();
+    assert now() == 100000000;
+    computed.backoff();
+    computed.backoff();
+    computed.backoff();
+    assert computed.delayMs == 800 and now() == 1500000000;
+    computed.backoff();
+    assert computed.delayMs == 1000 and computed.lastWakeNs == 2500000000 and computed.backoffs == 5;
+  }
+  test 'A delay that is not positive fails' of computed {
+    /** pause(0) and pause(-5) fail with DurationRange before waiting; try catches it and time does not advance. */
+    var ok: bool = try(computed.pause(0), false);
+    assert not ok and now() == 0;
+    ok = try(computed.pause(-5), false);
+    assert not ok and now() == 0;
+    ok = try(computed.pause(3), false);
+    assert ok and now() == 3000000;
+  }
+  test 'Backoff timer uses the new delay' of session {
+    /** Each Backoff entry doubles the delay first: 100 ms, then 200 ms, then the 400 ms cap. */
+    wait 112ms;
+    assert session.attempts == 1 and session.delayMs == 100 and session.connectedAt == 110000000;
+    wait 215ms;
+    assert session.attempts == 2 and session.delayMs == 200 and session.connectedAt == 325000000;
+    wait 415ms;
+    assert session.attempts == 3 and session.delayMs == 400 and session.connectedAt == 740000000;
+  }
+}
+```
+
+### 42-lock-pulse.swaml
+
+```swaml
+package LockPulse {
+  /** A door lock actuator in the shape of the door model's LockControl. The pulse length is a calibration attribute, pulseMs. In 2.2 a state timer takes a literal only, so the locking state repeats the calibration as after 250ms and ignores a recalibration. From 2.3 the timer is after (pulseMs * 1ms): it is evaluated when the entry actions of the state finish, and each pulse uses the current calibration. Without the unit, after (pulseMs) would count nanoseconds; the validator warns about it (SW2016). */
+  import Swaml::Time;
+  port def Request {
+    provides event lock();
+  }
+  component def LiteralLock {
+    /** The 2.2 shape. */
+    reversed port requests: Request;
+    attribute pulseMs: uint = 250;
+    attribute pulses: uint = 0;
+    attribute pulseEndNs: uint = 0;
+    operation calibrate(ms: uint) {
+      pulseMs = ms;
+    }
+    operation control() {
+      initial unlocked;
+      state unlocked {
+        on receive requests.lock() to locking {
+        }
+      }
+      state locking {
+        on entry {
+          pulses = pulses + 1;
+        }
+        after 250ms to locked {
+          pulseEndNs = now();
+        }
+      }
+      state locked {
+        on receive requests.lock() to locking {
+        }
+      }
+    }
+    schedule {
+      on start control();
+    }
+  }
+  component def ComputedLock {
+    /** The 2.3 shape: the pulse follows the calibration. */
+    reversed port requests: Request;
+    attribute pulseMs: uint = 250;
+    attribute pulses: uint = 0;
+    attribute pulseEndNs: uint = 0;
+    operation calibrate(ms: uint) {
+      pulseMs = ms;
+    }
+    operation control() {
+      initial unlocked;
+      state unlocked {
+        on receive requests.lock() to locking {
+        }
+      }
+      state locking {
+        on entry {
+          pulses = pulses + 1;
+        }
+        after (pulseMs * 1ms) to locked {
+          pulseEndNs = now();
+        }
+      }
+      state locked {
+        on receive requests.lock() to locking {
+        }
+      }
+    }
+    schedule {
+      on start control();
+    }
+  }
+  component def Body {
+    /** Interface-only actor that requests locking. */
+    port toLiteral: Request;
+    port toComputed: Request;
+  }
+  component literal: LiteralLock;
+  component computed: ComputedLock;
+  component body: Body;
+  connect (body.toLiteral, literal.requests);
+  connect (body.toComputed, computed.requests);
+  associate body, literal to 'Recalibrated pulse';
+  test 'Recalibrated pulse' of computed {
+    /** Both locks pulse 250 ms; after recalibration to 400 ms only the computed timer follows. */
+    publish body.toLiteral.lock();
+    publish body.toComputed.lock();
+    wait 300ms;
+    assert literal.pulseEndNs == 250000000 and computed.pulseEndNs == 250000000;
+    computed.calibrate(400);
+    literal.calibrate(400);
+    publish body.toLiteral.lock();
+    publish body.toComputed.lock();
+    wait 500ms;
+    assert literal.pulses == 2 and computed.pulses == 2;
+    assert literal.pulseEndNs == 550000000 and computed.pulseEndNs == 700000000;
+  }
+}
+```
+
+### 43-derived-period.swaml
+
+```swaml
+package DerivedPeriod {
+  /** A sampler whose period and deadline derive from a const attribute that each usage may redefine. In 2.2 periods and deadlines are literals, so a faster variant needs its own definition with its own schedule. From 2.3 on every (e) and deadline (e) take an expression of the constant sublanguage: integer and duration literals, const attributes with their effective value in the occurrence, arithmetic with exact integral division, comparisons and the conditional, without calls. The validator evaluates it for every occurrence: here every (periodMs * 1ms) is 20 ms in slow and 10 ms in fast, and the half-period deadline must divide exactly in both. */
+  component def Sampler {
+    const attribute periodMs: uint = 20;
+    attribute samples: uint = 0;
+    attribute busyMs: uint = 0;
+    operation sample() {
+      samples = samples + 1;
+      if (busyMs > 0) {
+        wait (busyMs * 1ms);
+      }
+    }
+    operation load(ms: uint) {
+      busyMs = ms;
+    }
+    schedule {
+      on every (periodMs * 1ms) sample() deadline (periodMs * 1ms / 2);
+    }
+  }
+  component slow: Sampler;
+  component fast: Sampler {
+    redefines const attribute periodMs: uint = 10;
+  }
+  associate fast to 'Period per usage', 'Busy within the deadline';
+  test 'Period per usage' of slow {
+    /** In 100 ms slow samples five times and fast ten times. */
+    wait 100ms;
+    assert slow.samples == 5 and fast.samples == 10;
+  }
+  test 'Busy within the deadline' of slow {
+    /** A 9 ms sample meets the 10 ms deadline of slow. In fast, whose deadline is 5 ms, it would be a Deadline violation. */
+    slow.load(9);
+    wait 100ms;
+    assert slow.samples == 5 and fast.samples == 10;
   }
 }
 ```

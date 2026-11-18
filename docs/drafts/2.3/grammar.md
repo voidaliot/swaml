@@ -14,10 +14,10 @@ Productions that several packages touch are written here in their final form. A 
 | WP2-G01 | **Applied in WP2** as `Expression returns Expression: ConditionalExpression \| UnaryExpression ({infer BinaryExpression.left=current} operator=('*'\|'/'\|'%') right=UnaryExpression)* ({infer BinaryExpression.left=current} operator=('+'\|'-') right=MultiplicativeExpression)* ({infer BinaryExpression.left=current} operator=('<'\|'<='\|'>'\|'>=') right=AdditiveExpression)* ({infer BinaryExpression.left=current} operator=('=='\|'!=') right=RelationalExpression)* ({infer BinaryExpression.left=current} operator='and' right=EqualityExpression)* ({infer BinaryExpression.left=current} operator='or' right=AndExpression)*;` with `ConditionalExpression: 'if' '(' condition=Expression ')' then=Expression 'else' otherwise=Expression;`. `OrExpression` and the rules below it are unchanged and still used for right operands and by `ExpressionStatement`. This is equivalent to the drafted `Expression returns Expression: ConditionalExpression \| OrExpression;`: every binary chain from `*` up to `or` is written into `Expression`, one loop per precedence level, each taking its right operands from the next higher level, so the tree is the same and a nesting level costs three parser rule calls instead of nine (WP2-D05). The language and the AST are the same. The CST changes: the CST node of a binary expression of any operator built at the top of an `Expression` has the grammar rule `Expression`, not `OrExpression`, `AndExpression`, `EqualityExpression`, `RelationalExpression`, `AdditiveExpression` or `MultiplicativeExpression`; a consumer that recognises an operator by the CST grammar rule name (for example `grammarRule === 'OrExpression'`) must use the AST (`BinaryExpression.operator`) or the token instead. The declared `type Expression` union gains `ConditionalExpression`. `PrimaryExpression` is unchanged, so `'(' Expression ')'` admits a parenthesized conditional as an operand. |
 | WP2-G02 | **Applied in WP2.** `ExpressionStatement: expression=OrExpression ';';` (was `Expression`): a conditional is never a statement. |
 | WP2-G03 | **Applied in WP2.** `Association: 'associate' occurrence=[ComponentUsage:Name] (',' moreOccurrences+=[ComponentUsage:Name])* 'to' target=[Scenario:Name] (',' moreTargets+=[Scenario:Name])* ';';` and `Name` gains `'view' \| 'state' \| 'in' \| 'out'`. |
-| WP4-G01 | `PolicySetting: name=Name '=' value=Expression ';';`: one alternative, so a 2.2 duration setting is now `Literal{duration}` (normalization N1 of gate 1). |
-| WP4-G02 | `Literal: {infer Literal} (number=Numeric \| text=STRING \| boolean=('true'\|'false') \| duration=Duration);` |
-| WP4-G03 | `Wait: 'wait' (duration=Duration \| '(' delay=Expression ')') ';';` and `Receive: … ('or' 'after' (timeout=Duration \| '(' timeoutValue=Expression ')') timeoutBody=Block)?;` |
-| WP4-G04 | `ScheduleEntry`: `kind='every' (period=Duration \| '(' periodValue=Expression ')')` and `('deadline' (deadline=Duration \| '(' deadlineValue=Expression ')'))?`; `Transition`: `'after' (delay=Duration \| '(' delayValue=Expression ')')`. |
+| WP4-G01 | **Applied in WP4** to `src/language/swaml.langium`. `PolicySetting: name=Name '=' value=Expression ';';`: one alternative, so a 2.2 duration setting is now `Literal{duration}` (normalization N1 of gate 1); `settingDuration` reads it (WP4-M01). |
+| WP4-G02 | **Applied in WP4.** `Literal: {infer Literal} (number=Numeric \| text=STRING \| boolean=('true'\|'false') \| duration=Duration);` |
+| WP4-G03 | **Applied in WP4.** `Wait: 'wait' (duration=Duration \| '(' delay=Expression ')') ';';` and `Receive: … ('or' 'after' (timeout=Duration \| '(' timeoutValue=Expression ')') timeoutBody=Block)?;` |
+| WP4-G04 | **Applied in WP4.** `ScheduleEntry`: `kind='every' (period=Duration \| '(' periodValue=Expression ')')` and `('deadline' (deadline=Duration \| '(' deadlineValue=Expression ')'))?`; `Transition`: `'after' (delay=Duration \| '(' delayValue=Expression ')')`. |
 | WP5-G01 | `Transition: ( 'on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? \| 'after' (delay=Duration \| '(' delayValue=Expression ')') ('when' '(' guard=Expression ')')? \| 'when' '(' guard=Expression ')' ) ('to' target=Name)? effect=Block;` |
 | WP5-G02 | `State: (final?='final')? 'state' name=Name '{' documentation=Documentation? (actions+=StateAction \| transitions+=Transition \| deferrals+=Deferral)* '}';` with `Deferral: 'defer' endpoints+=MemberPath (',' endpoints+=MemberPath)* ';';` |
 | WP5-G03 | `Name` gains `'defer'` (contextual from its introduction). |
@@ -44,7 +44,7 @@ Name returns string: ID | UNRESTRICTED_NAME | 'reversed' | 'to' | 'times' | 'nam
 | `assert if (p) a else b == 3;` | parses as `if (p) a else (b == 3)` |
 | `backend.twins[i].currentView()` | syntax error: call paths take literal indexes |
 | `backend.twins[i].link` | parses; rejected by WP1-S06 (SW2010) |
-| `qos def P: Policy { requestTimeout = 1s; … }` | parses as `PolicySetting{value: Literal{duration}}` |
+| `qos def P: Policy { requestTimeout = 1s; … }` | parses as `PolicySetting{value: Literal{duration}}` (WP4, applied) |
 | `attribute state: SessionState = SessionState.offline;` | parses (after WP2) |
 
 ## Compatibility gates
@@ -65,7 +65,7 @@ The formatter must print every new form before a showcase model is reformatted (
 | --- | --- |
 | WP1-M03 | **Applied in WP1** (`src/language/formatter.ts`, [tooling guide](../../TOOLING.md)). Prints places and selectors without spaces inside the path (`statuses[i].confirmed`). |
 | WP2-M05 | **Applied in WP2** (`src/language/formatter.ts`, [tooling guide](../../TOOLING.md)). Prints conditionals and never drops or adds parentheses that change the parse. Prints association lists on one line when they fit, otherwise one occurrence or case per continuation line. A list longer than 100 characters, indentation included, breaks after each comma and before `to`; a list that contains a comment keeps the token-preserving one-line layout and is not wrapped. |
-| WP4-M08 | Prints computed durations in parentheses (`wait (n * 1ms);`) and literal durations without them. |
+| WP4-M08 | **Applied in WP4** (`src/language/formatter.ts`, [tooling guide](../../TOOLING.md)). Prints computed durations in parentheses (`wait (n * 1ms);`) and literal durations without them. |
 | WP5-M04 | Prints completion transitions, internal transitions, timer guards and `defer` lines, keeping every state member in source order. |
 | WP6-M05 | Prints member-policy bodies with one member per line and attribute initial values. |
 | WP7-M03 | Prints a release guard between the operation call and `deadline`. |
@@ -73,9 +73,10 @@ The formatter must print every new form before a showcase model is reformatted (
 ## AST consequences
 
 These are tagged with the package that introduces them; together they justify implementation package 4.0.0 (ADR 0022, D2).
-- **Newly optional:** only `Transition.target` (WP5) and `Wait.duration` (WP4). `Transition.delay`, `ScheduleEntry.period`/`deadline` and `Receive.timeout` are already optional in 2.2.
+- **Newly optional:** only `Transition.target` (WP5) and `Wait.duration` (WP4, applied: a computed wait has `delay` instead). `Transition.delay`, `ScheduleEntry.period`/`deadline` and `Receive.timeout` are already optional in 2.2.
 - **Silent widenings:**
   - `Assign.target` may be dotted and carries `index` and `selectors` (WP1, applied);
   - `CallExpression.target` may contain `[n]` (WP1, applied);
   - `Association` holds several pairs (WP2);
-  - `PolicySetting.duration` is removed (WP4).
+  - `PolicySetting.duration` is removed (WP4, applied); a 2.2 duration setting is `value: Literal{duration}`.
+- **New optional properties (WP4, applied):** `Literal.duration`, `Wait.delay`, `Receive.timeoutValue`, `ScheduleEntry.periodValue` and `deadlineValue`, `Transition.delayValue`, each an `Expression` beside the 2.2 `Duration` property it can replace.
