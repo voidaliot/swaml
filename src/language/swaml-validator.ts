@@ -471,7 +471,9 @@ export class SwamlValidator {
         const pkg = owner(call, a.isPackage);
         if (!pkg || call.target.includes('.') || call.target.includes('::') || localOperation(call, call.target, container(call)))
             return undefined;
-        const clashing = this.models.flatMap(m => m.packages).filter(p => p === pkg || pkg.imports.some(i => i.namespace === p.name)).flatMap(p => p.elements.filter(x => x.name === call.target));
+        // The linker's order: the own package, then the imports in source order (SwamlLinker.createLinkingError).
+        const packages = this.models.flatMap(m => m.packages), visible = [pkg.name, ...pkg.imports.map(i => i.namespace).filter(n => n !== pkg.name)];
+        const clashing = [...new Set(visible.flatMap(name => packages.filter(p => p.name === name).flatMap(p => p.elements.filter(x => x.name === call.target))))];
         return clashing.length > 1 && clashing.some(x => AstUtils.getDocument(x).uri.toString() === LIBRARY_2_3_URI) ? clashing : undefined;
     }
     private callTarget(call: a.CallExpression, c?: Structure): Executable | a.PortMember | undefined {

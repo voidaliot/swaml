@@ -5,10 +5,10 @@ import nodeTest from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
-import { AstUtils, EmptyFileSystem } from 'langium';
+import { AstUtils, EmptyFileSystem, URI } from 'langium';
 import { createSwamlServices } from '../../src/language/swaml-module.js';
 import { STANDARD_LIBRARY, STANDARD_LIBRARY_2_3 } from '../../src/language/standard-library.js';
-import { effects, identity, isClockRead, libraryIntrinsic, LIBRARY_INTRINSICS, signature, typeKey } from '../../src/language/semantic.js';
+import { effects, identity, isClockRead, isLibraryCopy, libraryIntrinsic, LIBRARY_INTRINSICS, signature, typeKey } from '../../src/language/semantic.js';
 import { intText, realText, squareRoot, REAL_TEXT_LIMIT, REAL_TEXT_MAX_DECIMALS, RuntimeFault } from '../../src/simulation/values.js';
 import { runCase, simulate, type SimulationOptions } from '../../src/simulation/simulator.js';
 import * as a from '../../src/language/generated/ast.js';
@@ -163,8 +163,8 @@ package Test {
     // A short call name that two visible packages declare does not resolve, exactly as for two user packages.
     // With a 2.3 library operation among them, the SW2001 ambiguity message names both (never in a 2.2 source).
     const ambiguous = await parse(door('import Swaml::Math; import Types; import Swaml::Numeric;'));
-    assert.deepEqual(ambiguous.errors.map(e => [e.code, e.message]), [['SW2001', 'Ambiguous name clampInt: it names operation Swaml::Numeric::clampInt (imported) and operation Types::clampInt (imported). A short name must name one visible declaration; qualify the reference (Swaml::Numeric::clampInt or Types::clampInt) or rename one declaration.']]);
-    assert.deepEqual(ambiguous.errors[0].relatedInformation?.map(r => [r.location.uri, r.message]), [['builtin:/swaml-2.3.swaml', 'Declaration Swaml::Numeric::clampInt'], ['file:///0.swaml'.replace('0', String(ambiguous.doc.uri.path.slice(1, -6))), 'Declaration Types::clampInt']]);
+    assert.deepEqual(ambiguous.errors.map(e => [e.code, e.message]), [['SW2001', 'Ambiguous name clampInt: it names operation Types::clampInt (imported) and operation Swaml::Numeric::clampInt (imported). A short name must name one visible declaration; qualify the reference (Types::clampInt or Swaml::Numeric::clampInt) or rename one declaration.']]);
+    assert.deepEqual(ambiguous.errors[0].relatedInformation?.map(r => [r.location.uri, r.message]), [[ambiguous.doc.uri.toString(), 'Declaration Types::clampInt'], ['builtin:/swaml-2.3.swaml', 'Declaration Swaml::Numeric::clampInt']]);
     // Two user packages keep the 2.2 message.
     // Own package against the library.
     assert.deepEqual(await errors(`package Test {
@@ -172,7 +172,7 @@ package Test {
   operation def now() returns uint { return 1; }
   component def D { attribute t: uint = 0; operation go() { t = now(); } }
   component Demo: D;
-}`), [['SW2001', 'Ambiguous name now: it names operation Swaml::Time::now (imported) and operation Test::now. A short name must name one visible declaration; qualify the reference (Swaml::Time::now or Test::now) or rename one declaration.']]);
+}`), [['SW2001', 'Ambiguous name now: it names operation Test::now and operation Swaml::Time::now (imported). A short name must name one visible declaration; qualify the reference (Test::now or Swaml::Time::now) or rename one declaration.']]);
     // A component's own operation is found first, as in 2.2: no ambiguity.
     await valid(`package Test {
   import Swaml::Time;
@@ -224,12 +224,100 @@ package Test { import Swaml::Numeric; component def D { attribute k: int = 0; op
     assert.deepEqual((two.docs[1].diagnostics ?? []).map(x => x.message), []);
     assert.deepEqual(simulate([two.docs[1].parseResult.value as a.Model], 'App::Demo', { untilNs: 1000 }).stores.Demo, { t: 0 });
 });
+/** A workspace driven through DocumentBuilder.update with an in-memory file system, as a language server drives it. */
+const lspWorkspace = () => {
+    const files = new Map<string, string>();
+    const fileSystemProvider = () => ({
+        readFile: async (u: URI) => { const t = files.get(u.toString()); if (t === undefined) throw new Error('missing ' + u.toString()); return t; },
+        readFileSync: (u: URI) => files.get(u.toString()) ?? '',
+        readDirectory: async () => [], stat: async (u: URI) => ({ uri: u, isFile: true, isDirectory: false }), statSync: (u: URI) => ({ uri: u, isFile: true, isDirectory: false }),
+        exists: async (u: URI) => files.has(u.toString()), existsSync: (u: URI) => files.has(u.toString()), readBinary: async () => new Uint8Array(), readBinarySync: () => new Uint8Array(), readDirectorySync: () => []
+    });
+    const services = createSwamlServices({ fileSystemProvider } as unknown as Parameters<typeof createSwamlServices>[0]);
+    const { DocumentBuilder, LangiumDocuments } = services.shared.workspace;
+    const put = async (name: string, text: string) => { const uri = URI.parse(`memory:///${name}`); files.set(uri.toString(), text); if (LangiumDocuments.hasDocument(uri)) LangiumDocuments.deleteDocument(uri); await DocumentBuilder.update([uri], []); };
+    const remove = async (name: string) => { const uri = URI.parse(`memory:///${name}`); files.delete(uri.toString()); await DocumentBuilder.update([], [uri]); };
+    const doc = (name: string) => LangiumDocuments.getDocument(URI.parse(`memory:///${name}`))!;
+    const messages = (name: string) => (doc(name).diagnostics ?? []).map(d => d.message);
+    const library = () => (LangiumDocuments.getDocument(URI.parse('builtin:///swaml-2.3.swaml'))!.parseResult.value as a.Model).packages.map(p => p.name);
+    const runs = (...names: string[]) => simulate(names.map(n => doc(n).parseResult.value as a.Model), 'App::Demo', { untilNs: 1000 }).stores.Demo;
+    return { services, put, remove, doc, messages, library, runs };
+};
+const APP = `package App {
+  import Swaml::Numeric;
+  component def D { attribute r: real = 0.0; operation go() { r = sqrt(16.0); } schedule { on start go(); } }
+  component Demo: D;
+}`;
+const SHADOW = (name: string) => `package ${name} { operation def sqrt(v: real) returns real { return v / 2.0; } }`;
+test('WP3-L04 hiding follows the workspace through updates: add, delete (a deletion-only update), rename away and back (review R1)', async () => {
+    const w = lspWorkspace();
+    await w.put('app.swaml', APP);
+    assert.deepEqual([w.library(), w.messages('app.swaml'), w.runs('app.swaml')], [['Swaml::Numeric', 'Swaml::Text', 'Swaml::Time'], [], { r: 4 }]);
+    await w.put('user.swaml', SHADOW('Swaml::Numeric'));
+    assert.deepEqual([w.library(), w.messages('app.swaml'), w.runs('app.swaml', 'user.swaml')], [['Swaml::Text', 'Swaml::Time'], [], { r: 8 }]);
+    // Deleting the shadowing file restores the library, and the app relinks without being edited.
+    await w.remove('user.swaml');
+    assert.deepEqual([w.library(), w.messages('app.swaml'), w.runs('app.swaml')], [['Swaml::Numeric', 'Swaml::Text', 'Swaml::Time'], [], { r: 4 }]);
+    // Rename the package away and back in place.
+    await w.put('user.swaml', SHADOW('Swaml::Numeric'));
+    assert.deepEqual(w.library(), ['Swaml::Text', 'Swaml::Time']);
+    await w.put('user.swaml', SHADOW('Mine'));
+    assert.deepEqual([w.library(), w.messages('app.swaml'), w.runs('app.swaml', 'user.swaml')], [['Swaml::Numeric', 'Swaml::Text', 'Swaml::Time'], [], { r: 4 }]);
+    await w.put('user.swaml', SHADOW('Swaml::Numeric'));
+    assert.deepEqual([w.library(), w.runs('app.swaml', 'user.swaml')], [['Swaml::Text', 'Swaml::Time'], { r: 8 }]);
+    // Two shadowing documents are duplicates, as in 2.2; deleting one keeps the package hidden, deleting both restores it.
+    await w.put('user2.swaml', SHADOW('Swaml::Numeric'));
+    assert.deepEqual(w.messages('user2.swaml'), ['Duplicate package Swaml::Numeric.']);
+    await w.remove('user.swaml');
+    assert.deepEqual([w.library(), w.messages('user2.swaml'), w.messages('app.swaml'), w.runs('app.swaml', 'user2.swaml')], [['Swaml::Text', 'Swaml::Time'], [], [], { r: 8 }]);
+    await w.remove('user2.swaml');
+    assert.deepEqual([w.library(), w.messages('app.swaml'), w.runs('app.swaml')], [['Swaml::Numeric', 'Swaml::Text', 'Swaml::Time'], [], { r: 4 }]);
+});
+test('WP3-L04 the index exports of the built-in 2.3 document follow the visible packages after hide and unhide (review R4)', async () => {
+    const w = lspWorkspace(), index = w.services.shared.workspace.IndexManager, locator = w.services.Swaml.workspace.AstNodeLocator;
+    const exported = () => {
+        const library = w.services.shared.workspace.LangiumDocuments.getDocument(URI.parse('builtin:///swaml-2.3.swaml'))!, model = library.parseResult.value;
+        const entries = index.allElements().filter(d => d.documentUri.toString() === 'builtin:/swaml-2.3.swaml').toArray();
+        // Every exported path names the node it was exported for.
+        for (const d of entries)
+            assert.equal((locator.getAstNode(model, d.path) as { name?: string } | undefined)?.name, d.name, `${d.name} at ${d.path}`);
+        return entries.map(d => d.name).sort();
+    };
+    await w.put('app.swaml', APP);
+    assert.deepEqual(exported(), ['Swaml::Numeric', 'Swaml::Text', 'Swaml::Time']);
+    await w.put('user.swaml', SHADOW('Swaml::Numeric'));
+    assert.deepEqual(exported(), ['Swaml::Text', 'Swaml::Time']);
+    await w.remove('user.swaml');
+    assert.deepEqual(exported(), ['Swaml::Numeric', 'Swaml::Text', 'Swaml::Time']);
+});
+test('WP3-M01 a library copy may differ only by a byte order mark, line ends and trailing whitespace (review R3)', async () => {
+    const text = read('libraries/swaml-2.3.swaml');
+    for (const copy of ['﻿' + text, text.replaceAll('\n', '\r\n'), text + '\n\n  ', text.trimEnd()]) {
+        assert.equal(isLibraryCopy(copy), true);
+        assert.deepEqual((await parse(copy)).errors.map(e => e.code), ['SW2001', 'SW2001', 'SW2001']);
+    }
+    for (const changed of [' ' + text, text.replace('minInt', 'minimum'), text + '// note\n'])
+        assert.equal(isLibraryCopy(changed), false);
+    assert.equal(isLibraryCopy('package A { }'), false);
+});
+test('WP3-L04 a call and a reference ambiguous with a library operation list the declarations in the same order (review R2)', async () => {
+    const r = await parse(`package App {
+  import Swaml::Time;
+  operation def now() returns uint { return 1; }
+  component def D { attribute t: uint = 0; operation clock: now; operation go() { t = now(); } }
+  component Demo: D;
+}`);
+    const [reference, call] = [...r.errors].sort((x, y) => x.range.start.character - y.range.start.character).map(e => String(e.message));
+    assert.equal(call, reference);
+    assert.match(call, /^Ambiguous name now: it names operation App::now and operation Swaml::Time::now \(imported\)\./u);
+    assert.deepEqual(r.errors.map(e => e.relatedInformation?.map(x => x.message)), [['Declaration App::now', 'Declaration Swaml::Time::now'], ['Declaration App::now', 'Declaration Swaml::Time::now']]);
+});
 test('WP3-M01 a byte-equal copy of a library document is a duplicate, hides nothing and needs no return paths for its intrinsics', async () => {
     const copy = await parse(read('libraries/swaml-2.3.swaml'));
     assert.deepEqual(copy.errors.map(e => [e.code, e.message]), [['SW2001', 'Duplicate package Swaml::Numeric.'], ['SW2001', 'Duplicate package Swaml::Text.'], ['SW2001', 'Duplicate package Swaml::Time.']]);
     const copy20 = await parse(read('libraries/swaml-2.0.swaml'));
     assert.ok(copy20.errors.every(e => e.code === 'SW2001' && String(e.message).startsWith('Duplicate package')), JSON.stringify(copy20.errors.map(e => e.message)));
-    const changed = await parse(read('libraries/swaml-2.3.swaml') + '\n');
+    const changed = await parse(read('libraries/swaml-2.3.swaml') + '// a note\n');
     assert.deepEqual(changed.errors.map(e => e.code), ['SW2006', 'SW2006', 'SW2006', 'SW2006'], 'a changed copy is user source that hides the library');
 });
 

@@ -63,8 +63,32 @@ export const LIBRARY_INTRINSICS: Readonly<Record<string, 'sqrt' | 'intText' | 'r
 export type LibraryIntrinsic = 'sqrt' | 'intText' | 'realText' | 'now';
 /** The URI of the built-in document of the 2.3 library packages (WP3-M01). */
 export const LIBRARY_2_3_URI = 'builtin:/swaml-2.3.swaml';
-/** Whether text is a byte-equal copy (line ends aside) of a built-in library document, 2.2 or 2.3. */
-export const isLibraryCopy = (text: string): boolean => { const t = text.replaceAll('\r\n', '\n'); return t === STANDARD_LIBRARY_2_3 || t === STANDARD_LIBRARY; };
+const libraryText = (text: string) => text.replace(/^﻿/u, '').replaceAll('\r\n', '\n').replace(/\s+$/u, '');
+const LIBRARY_TEXTS = [libraryText(STANDARD_LIBRARY), libraryText(STANDARD_LIBRARY_2_3)];
+const LIBRARY_COPY_MIN = Math.min(...LIBRARY_TEXTS.map(t => t.length)), LIBRARY_COPY_MAX = 2 * Math.max(...LIBRARY_TEXTS.map(t => t.length)) + 4096;
+/**
+ * Whether text is a copy of a built-in library document, 2.2 or 2.3. Only a leading byte order mark, line ends and
+ * whitespace at the end of the file may differ; any other change makes it user source. A text whose length rules
+ * out a copy is never normalized.
+ */
+export const isLibraryCopy = (text: string): boolean => {
+    if (text.length < LIBRARY_COPY_MIN || text.length > LIBRARY_COPY_MAX)
+        return false;
+    const t = libraryText(text);
+    return t === LIBRARY_TEXTS[0] || t === LIBRARY_TEXTS[1];
+};
+/** Copy detection per text document, recomputed only when its version or text changes (WP3 review R4). */
+const copies = new WeakMap<object, { version: number; text: string; copy: boolean }>();
+export function isLibraryCopyDocument(document: { uri: { scheme: string }; textDocument: { version: number; getText(): string } }): boolean {
+    if (document.uri.scheme === 'builtin')
+        return false;
+    const text = document.textDocument.getText(), known = copies.get(document.textDocument);
+    if (known && known.version === document.textDocument.version && known.text === text)
+        return known.copy;
+    const copy = isLibraryCopy(text);
+    copies.set(document.textDocument, { version: document.textDocument.version, text, copy });
+    return copy;
+}
 /**
  * A declared intrinsic of the 2.3 library, in the built-in document or a byte-equal copy of it: its body is
  * documentation only, so the return-path and package-definition checks exempt it by identity, as they exempt
@@ -76,7 +100,7 @@ export function declaredIntrinsic(op: AstNode | undefined): boolean {
     if (!op ||!a.isOperation(op) || !op.definition || !a.isPackage(op.$container) || !Object.hasOwn(LIBRARY_INTRINSICS, identity(op)))
         return false;
     const document = AstUtils.getDocument(op);
-    return document.uri.scheme === 'builtin' || isLibraryCopy(document.textDocument.getText());
+    return document.uri.scheme === 'builtin' || isLibraryCopyDocument(document);
 }
 /** The 2.3 host intrinsic op is, if any: only the built-in library's declaration counts, never a same-named user operation. */
 export function libraryIntrinsic(op: AstNode | undefined): LibraryIntrinsic | undefined {
