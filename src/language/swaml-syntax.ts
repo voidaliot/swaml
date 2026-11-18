@@ -185,3 +185,20 @@ export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
     };
     return strategy;
 }
+
+/** Marks a lookahead strategy wrapped by recoverStatements, so that a test can see the wrapper in place. */
+export const RECOVERS_STATEMENTS: unique symbol = Symbol('swaml.recoverStatements');
+/**
+ * Installs statement recovery on a prepared, not yet finalized Langium parser. It relies on an internal of the
+ * parser library (the Chevrotain wrapper's lookahead strategy); when a library upgrade moves it, this fails
+ * with a clear message instead of silently parsing without recovery.
+ */
+export function applyStatementRecovery(parser: unknown): void {
+    const wrapper = (parser as { wrapper?: { lookaheadStrategy?: Partial<LookaheadStrategy> } }).wrapper;
+    const inner = wrapper?.lookaheadStrategy;
+    if (!wrapper || typeof inner?.buildLookaheadForAlternation !== 'function' || typeof inner.buildLookaheadForOptional !== 'function')
+        throw new Error('swa.ml statement recovery needs the Chevrotain lookahead strategy of the Langium parser (parser.wrapper.lookaheadStrategy with buildLookaheadForAlternation and buildLookaheadForOptional); the parser library changed. Update recoverStatements in src/language/swaml-syntax.ts.');
+    const strategy = recoverStatements(inner as LookaheadStrategy);
+    Object.defineProperty(strategy, RECOVERS_STATEMENTS, { value: true });
+    wrapper.lookaheadStrategy = strategy;
+}

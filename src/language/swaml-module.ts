@@ -8,7 +8,7 @@ import { SwamlDocumentBuilder, SwamlDocumentValidator } from './swaml-document-b
 import { SwamlPathServices } from './path-services.js';
 import { SwamlFormatter } from './formatter.js';
 import { STANDARD_LIBRARY } from './standard-library.js';
-import { recoverStatements, SwamlLexer, SwamlLexerErrorMessageProvider, SwamlParserErrorMessageProvider, SwamlValueConverter, type LookaheadStrategy } from './swaml-syntax.js';
+import { applyStatementRecovery, SwamlLexer, SwamlLexerErrorMessageProvider, SwamlParserErrorMessageProvider, SwamlValueConverter } from './swaml-syntax.js';
 export { effectiveQos } from './semantic.js';
 export { documentationText, modelComments, selectView, viewCandidates } from './presentation.js';
 export { SWAML_IMPLEMENTATION_VERSION, SWAML_LANGUAGE_VERSION, SWAML_REFERENCE_PROFILE } from './edition.js';
@@ -24,7 +24,7 @@ export const SwamlModule: Module<SwamlServices, PartialLangiumServices & {
 }> = {
     parser: {
         // Statement recovery (swaml-syntax.ts): the adaptive lookahead keeps a statement list going while a place is typed.
-        LangiumParser: services => { const parser = prepareLangiumParser(services), wrapper = (parser as unknown as { wrapper: { lookaheadStrategy: LookaheadStrategy } }).wrapper; wrapper.lookaheadStrategy = recoverStatements(wrapper.lookaheadStrategy); parser.finalize(); return parser; },
+        LangiumParser: services => { const parser = prepareLangiumParser(services); applyStatementRecovery(parser); parser.finalize(); return parser; },
         Lexer: services => new SwamlLexer(services), ValueConverter: () => new SwamlValueConverter(), ParserErrorMessageProvider: () => new SwamlParserErrorMessageProvider(), LexerErrorMessageProvider: () => new SwamlLexerErrorMessageProvider() },
     lsp: { Formatter: services => new SwamlFormatter(services.parser.Lexer), RenameProvider: services => new SwamlPathServices(services), DefinitionProvider: services => new SwamlPathServices(services), ReferencesProvider: services => new SwamlPathServices(services) },
     references: { ScopeProvider: services => new SwamlScopeProvider(services), Linker: services => new SwamlLinker(services) },
