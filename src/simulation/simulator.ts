@@ -1,7 +1,7 @@
 import { AstUtils, DocumentState, type AstNode } from 'langium';
 import * as a from '../language/generated/ast.js';
 import { SWAML_REFERENCE_PROFILE } from '../language/edition.js';
-import { LIBRARY_2_3_URI, isCompletion, isInternal, stateDeferrals, libraryIntrinsic, type LibraryIntrinsic, caseRead, caseTarget, isPlace, placeRoot, valueSteps, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, entryPeriod, entryDeadline, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
+import { inputEndpoints, memberQos, sampledMembers, sampledReadForm, LIBRARY_2_3_URI, isCompletion, isInternal, stateDeferrals, libraryIntrinsic, type LibraryIntrinsic, caseRead, caseTarget, isPlace, placeRoot, valueSteps, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, entryPeriod, entryDeadline, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
 import { binary, bind, checked, ContractViolation, copy, intText, plain, realText, RuntimeFault, scalar, squareRoot, voidValue, widen, type Environment, type Value } from './values.js';
 export { projectOperationTiming } from './timing.js';
 export interface SimulationOptions {
@@ -177,6 +177,11 @@ type Frame = {
     suspensions?: number;
     /** The current state of a stateful activation, whose deferrals retain input (WP5-R08). */
     machineState?: a.State;
+    /**
+     * Sample-cell values this activation has read since it last started or resumed (WP6-R03): activations of other
+     * occurrences interleave by step, so a delivery between two reads of one segment must not change what it sees.
+     */
+    sampled?: Map<string, Value>;
 };
 type Watch = {
     node: a.Interruptible;
@@ -196,7 +201,15 @@ type Route = {
         string
     ];
     policy: Policy;
+    /** The effective policy of each member that has a member policy (WP6-R05); other members use policy. */
+    members?: Map<string, Policy>;
 };
+/** A sample cell of one port occurrence and sampled member (WP6-R01): the latest delivered value. */
+type SampleCell = { value: Value; type: string; consumed: boolean };
+/** The member policies of a connection as effective policies per member (WP6-R05); none for a 2.2 connection. */
+function routeMembers(l: a.Connect): { members?: Map<string, Policy> } {
+    return l.memberPolicies.length ? { members: new Map(l.memberPolicies.map(mp => [mp.member, memberQos(l, mp.member)] as const)) } : {};
+}
 type Message = {
     id: string;
     route: Route;
@@ -448,6 +461,8 @@ class Interpreter {
     private aliases = new Map<string, string>();
     private routes: Route[] = [];
     private queues = new Map<string, Message[]>();
+    /** Sample cells by port occurrence and member, `${port}|${member}` (WP6-R01). */
+    private cells = new Map<string, SampleCell>();
     /** Activations that have not completed, in release order; completed ones never act again. */
     private frames = new Set<Frame>();
     /** Released activations not yet dispatched; an activation completes only after its dispatch. */
@@ -594,20 +609,21 @@ class Interpreter {
                     bind(c.store, v.name, typeKey(v.type), this.sync(this.evaluate(v.value, fake, new Map())));
                 }
                 initializing = undefined;
+                this.initializeCells(c, fake);
                 this.log('initialize', c.path, { definition: identity(c.structure) });
                 for (const [connectorIndex,l] of members(c.structure).filter(a.isConnect).entries()) {
                     const left = endpoint(c.structure, l.source)!, right = endpoint(c.structure, l.target)!;
                     if (left.child !== right.child)
                         this.aliases.set(`${c.path}.${left.child ? l.target : l.source}`, `${c.path}.${left.child ? l.source : l.target}`);
                     else
-                        this.routes.push({ id: `${c.path}.${l.name ?? `@connect${connectorIndex}`}`, endpoints: [`${c.path}.${l.source}`, `${c.path}.${l.target}`], policy: effectiveQos(l) });
+                        this.routes.push({ id: `${c.path}.${l.name ?? `@connect${connectorIndex}`}`, endpoints: [`${c.path}.${l.source}`, `${c.path}.${l.target}`], policy: effectiveQos(l), ...routeMembers(l) });
                 }
             }
             // A package run adds the package connections between its top-level ports; a component run leaves them open.
             if (this.target.kind === 'package')
                 this.target.package.connections.forEach((l, i) => {
                     if (packageEndpoint(this.target.package, l.source) && packageEndpoint(this.target.package, l.target))
-                        this.routes.push({ id: l.name ?? `@package${i}`, endpoints: [l.source, l.target], policy: effectiveQos(l) });
+                        this.routes.push({ id: l.name ?? `@package${i}`, endpoints: [l.source, l.target], policy: effectiveQos(l), ...routeMembers(l) });
                 });
             for (const r of this.routes)
                 r.endpoints = r.endpoints.map(p => this.leaf(p)) as [
@@ -761,6 +777,8 @@ class Interpreter {
             if (y.kind === 'step')
                 return;
             f.suspensions = (f.suspensions ?? 0) + 1;
+            // A read after a suspension sees the newer value (WP6-R03).
+            f.sampled = undefined;
             f.waiting = y;
             f.suspended = true;
             this.unlock(f);
@@ -884,16 +902,31 @@ class Interpreter {
                 const en = resolve(e, head, this.models);
                 if (a.isEnumType(en))
                     return scalar(identity(en), steps[0]?.field ?? '');
+                // A sampled read copies the live cell of an owned port, in every activation, a concurrent one too (WP6-R03, WP6-R07).
+                const sampled = !f.script ? sampledReadForm(e, f.c.structure) : undefined;
+                if (sampled?.member) {
+                    // The first read of a cell in a segment copies the live cell; later reads in the segment see that copy.
+                    const key = `${f.c.path}.${sampled.port.name}|${sampled.member.name}`, cell = this.cells.get(key);
+                    if (!cell)
+                        throw new RuntimeFault('Type', `${e.path} has no sample cell`);
+                    f.sampled ??= new Map();
+                    if (!f.sampled.has(key))
+                        f.sampled.set(key, copy([cell.value])[0]);
+                    value = copy([f.sampled.get(key)!])[0];
+                    steps = sampled.steps;
+                }
                 // A test reads a live attribute of its subject or a part inside it, such as twins[0].link (WP1-S06).
-                const read = f.script && caseRead(f.script, e);
-                if (!read || read.kind !== 'attribute')
-                    throw new RuntimeFault('Type', e.path);
-                const target = this.components.get(read.path);
-                if (!target)
-                    throw new RuntimeFault('Type', `${read.path} does not run in this package`);
-                yield* this.borrow(f, target);
-                value = target.store.get(read.attribute.name)!.value;
-                steps = read.steps;
+                else {
+                    const read = f.script && caseRead(f.script, e);
+                    if (!read || read.kind !== 'attribute')
+                        throw new RuntimeFault('Type', e.path);
+                    const target = this.components.get(read.path);
+                    if (!target)
+                        throw new RuntimeFault('Type', `${read.path} does not run in this package`);
+                    yield* this.borrow(f, target);
+                    value = target.store.get(read.attribute.name)!.value;
+                    steps = read.steps;
+                }
             }
             // Selectors apply left to right; each index is evaluated, checked and applied in turn (WP1-R04).
             for (const step of steps) {
@@ -1290,7 +1323,7 @@ class Interpreter {
             this.resume(f, { failure: 'unavailable' });
             return;
         }
-        const correlation: Correlation = { id: this.id('r'), frame: f, route, state: 'pending', expiry: this.time + route.policy.requestTimeout, origin: this.source(y.site) };
+        const correlation: Correlation = { id: this.id('r'), frame: f, route, state: 'pending', expiry: this.time + this.policyOf(route, member).requestTimeout, origin: this.source(y.site) };
         f.request = correlation;
         this.log('request', `${source}.${member}`, { activation: f.id, source: correlation.origin, correlation: correlation.id, route: route.id, caller:y.site?{declaration:identity(owner(y.site,executableOwner)!),uri:AstUtils.getDocument(y.site).uri.toString(),range:y.site.$cstNode!.range}:undefined });
         this.at(correlation.expiry, 0, () => { if (correlation.state === 'pending') {
@@ -1328,14 +1361,35 @@ class Interpreter {
             this.resume(correlation.frame, { failure: 'transport' });
         }
     }
+    /** The effective policy of a member route: member policy, else connection policy, else Default (WP6-R05). */
+    private policyOf(route: Route, member: string): Policy { return route.members?.get(member) ?? route.policy; }
+    /**
+     * WP6-R01: one sample cell per port occurrence and sampled member, holding the member's initial value before any
+     * startup work is released. consumed records whether the occurrence also owns the member's input (WP6-R04).
+     */
+    private initializeCells(c: Component, f: Frame): void {
+        const owned = inputEndpoints(c.structure);
+        for (const path of [...sampledMembers(c.structure)].sort()) {
+            const [port, member] = path.split('.'), ep = memberEndpoint(c.structure, path);
+            if (!ep?.member.initial || !ep.member.type)
+                continue;
+            const type = typeKey(ep.member.type);
+            this.cells.set(`${c.path}.${port}|${member}`, { value: widen(this.sync(this.evaluate(ep.member.initial, f, new Map())), type), type, consumed: owned.has(path) });
+        }
+    }
     private offer(message: Message): void {
-        const { route } = message, policy = route.policy, key = `${route.id}|${message.source}|${message.target}|${message.member}|${message.kind === 'reply' ? 'reply' : 'input'}`;
+        const { route } = message, policy = this.policyOf(route, message.member), key = `${route.id}|${message.source}|${message.target}|${message.member}|${message.kind === 'reply' ? 'reply' : 'input'}`;
+        // A sampled member updates its cell at each delivery (WP6-R02); without a consuming owner it has no queue (WP6-R04).
+        const cell = message.kind === 'attribute' ? this.cells.get(`${message.target}|${message.member}`) : undefined, queued = !cell || cell.consumed;
         let queue = this.queues.get(key);
-        if (!queue) {
+        if (!queue && queued) {
             queue = [];
             this.queues.set(key, queue);
         }
+        queue ??= [];
         const admit = (): boolean => {
+            if (!queued)
+                return true;
             if (message.kind === 'attribute') {
                 if (queue.length)
                     this.log('replaceAttribute', route.id, { source: message.origin, count: queue.length });
@@ -1371,19 +1425,34 @@ class Interpreter {
                 break;
             const m = i ? { ...message, id: this.id('m'), args: copy(message.args) } : message;
             m.ordinal = ++this.ordinals;
-            queue.push(m);
+            if (queued)
+                queue.push(m);
             const latency = this.options.latencyNs + (fault?.delayNs ?? 0);
             if (policy.maxLatency !== undefined && latency > policy.maxLatency)
                 throw new ContractViolation('MaxLatency');
             this.log('offer', route.id, { source: m.origin, message: m.id, member: m.member, correlation: m.correlation?.id, sourcePort: m.source, targetPort: m.target });
-            this.at(this.time + latency, 2, () => { if (!queue!.includes(m))
-                return; if (policy.maxAge !== undefined && this.time - m.emitted > policy.maxAge) {
-                queue!.splice(queue!.indexOf(m), 1);
-                this.log('discardAge', route.id, { source: m.origin, message: m.id });
-                return;
-            } (m as Message & {
-                ready: boolean;
-            }).ready = true; });
+            this.at(this.time + latency, 2, () => {
+                if (cell) {
+                    // The delivery event updates the cell, whether or not an owner consumes the value, unless the value
+                    // is older than maxAge at delivery; replacement in the owner's queue does not affect it (WP6-R02).
+                    if (policy.maxAge !== undefined && this.time - m.emitted > policy.maxAge) {
+                        if (queue!.includes(m))
+                            queue!.splice(queue!.indexOf(m), 1);
+                        this.log('discardAge', route.id, { source: m.origin, message: m.id });
+                        return;
+                    }
+                    cell.value = widen(copy(m.args)[0], cell.type);
+                    this.log('sample', `${m.target}.${m.member}`, { source: m.origin, message: m.id, targetPort: m.target, member: m.member, value: plain(cell.value) });
+                }
+                if (!queue!.includes(m))
+                    return;
+                if (policy.maxAge !== undefined && this.time - m.emitted > policy.maxAge) {
+                    queue!.splice(queue!.indexOf(m), 1);
+                    this.log('discardAge', route.id, { source: m.origin, message: m.id });
+                    return;
+                }
+                (m as Message & { ready: boolean }).ready = true;
+            });
         }
     }
     private consume(): void {
@@ -1396,7 +1465,7 @@ class Interpreter {
                     ready?: boolean;
                 }).ready)
                     break;
-                if (m.route.policy.maxAge !== undefined && this.time - m.emitted > m.route.policy.maxAge) {
+                if (this.policyOf(m.route, m.member).maxAge !== undefined && this.time - m.emitted > this.policyOf(m.route, m.member).maxAge!) {
                     queue.shift();
                     this.log('discardAge', m.route.id, { source: m.origin, message: m.id });
                     continue;
@@ -1506,7 +1575,7 @@ class Interpreter {
                 const m = queue[0];
                 if (!m?.retained || !(m as Message & { ready?: boolean }).ready)
                     continue;
-                if (m.route.policy.maxAge !== undefined && this.time - m.emitted > m.route.policy.maxAge) {
+                if (this.policyOf(m.route, m.member).maxAge !== undefined && this.time - m.emitted > this.policyOf(m.route, m.member).maxAge!) {
                     queue.shift();
                     this.log('discardAge', m.route.id, { source: m.origin, message: m.id });
                     aged = true;

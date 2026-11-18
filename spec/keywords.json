@@ -151,7 +151,7 @@
       "meaning": "Joins compatible ports; boundary-to-child derives forwarding.",
       "concern": "Policy-bearing connection",
       "normative": "docs/spec/02-communication.md",
-      "example": "(redefines?='redefines')? 'connect' (name=Name)? (':' policy=[QosPolicy:QualifiedName])? '(' source=Path ',' target=Path ')' documentation=Documentation? ';';",
+      "example": "(redefines?='redefines')? 'connect' (name=Name)? (':' policy=[QosPolicy:QualifiedName])? '(' source=Path ',' target=Path ')' (documentation=Documentation? ';' | '{' documentation=Documentation? memberPolicies+=MemberPolicy+ '}');",
       "contextual": false,
       "productions": [
         "Connect"
@@ -278,7 +278,7 @@
       "meaning": "Used in directed port members; see its grammar contexts and normative constraints.",
       "concern": "Directed port members",
       "normative": "docs/spec/02-communication.md",
-      "example": "direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';",
+      "example": "direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef ('=' initial=Expression)? | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';",
       "contextual": false,
       "productions": [
         "PortMember"
@@ -356,7 +356,7 @@
       "meaning": "Used in directed port members; see its grammar contexts and normative constraints.",
       "concern": "Directed port members",
       "normative": "docs/spec/02-communication.md",
-      "example": "direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';",
+      "example": "direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef ('=' initial=Expression)? | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';",
       "contextual": false,
       "productions": [
         "PortMember"
@@ -537,7 +537,7 @@
       "meaning": "Declares executable behavior; def supplies a reusable signature/body.",
       "concern": "Operations and nested ownership",
       "normative": "docs/spec/03-behavior.md",
-      "example": "direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';",
+      "example": "direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef ('=' initial=Expression)? | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';",
       "contextual": false,
       "productions": [
         "PortMember",
@@ -622,7 +622,7 @@
       "meaning": "Offers an attribute/event or implements an operation member.",
       "concern": "Directed port members",
       "normative": "docs/spec/02-communication.md",
-      "example": "direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';",
+      "example": "direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef ('=' initial=Expression)? | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';",
       "contextual": false,
       "productions": [
         "PortMember"
@@ -729,7 +729,7 @@
       "meaning": "Receives an attribute/event or requests an operation member.",
       "concern": "Directed port members",
       "normative": "docs/spec/02-communication.md",
-      "example": "direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';",
+      "example": "direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef ('=' initial=Expression)? | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';",
       "contextual": false,
       "productions": [
         "PortMember"
@@ -751,7 +751,7 @@
       "meaning": "Declares the result type; omitted result is void.",
       "concern": "Operations and nested ownership",
       "normative": "docs/spec/03-behavior.md",
-      "example": "direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';",
+      "example": "direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef ('=' initial=Expression)? | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';",
       "contextual": false,
       "productions": [
         "PortMember",

@@ -470,6 +470,95 @@ export function effectiveQos(c?: a.Connect | a.QosPolicy): Policy {
         result[s.name] = settingDuration(s) ? nanos(settingDuration(s)!) : a.isReferenceExpression(s.value) ? s.value.path.split('.').at(-1) : a.isLiteral(s.value) ? s.value.number ?? s.value.text : undefined;
     return result;
 }
+/** The member policy of a connection for one member, if any (WP6-S05). */
+export function memberPolicy(c: a.Connect, member: string): a.MemberPolicy | undefined { return c.memberPolicies.find(p => p.member === member); }
+/**
+ * The effective policy of one member route (WP6-S07, WP6-R05): its member policy, else the connection policy, else
+ * Swaml::Qos::Default. A connection without member policies gives every member its effectiveQos, as in 2.2.
+ */
+export function memberQos(c: a.Connect, member: string): Policy {
+    const policy = memberPolicy(c, member)?.policy.ref;
+    return policy ? effectiveQos(policy) : effectiveQos(c);
+}
+/**
+ * A port whose members declare an initial value (2.3 syntax) opts in to sampled reads (WP6-S01, WP6-S02): p.m on it
+ * is the 2.3 form, with the 2.3 diagnostics. p.m on any other port keeps its 2.2 diagnostics, so no 2.2 source changes.
+ */
+export function samplingPort(p: a.PortUsage): boolean { return portMembers(p).some(m => m.kind === 'attribute' && m.initial !== undefined); }
+/** A member that can be sampled through a port: a required attribute after reversal (WP6-S01). */
+export const isSampledMember = (p: a.PortUsage, m: a.PortMember | undefined): m is a.PortMember => !!m && m.kind === 'attribute' && direction(p, m) === 'requires';
+/** Sampling ports by name, cached for one validation pass (see useEffectCache) or computed per call. */
+function samplingPorts(c: Structure): Map<string, a.PortUsage> {
+    const cache = effectCache?.samplingPorts, known = cache?.get(c);
+    if (known)
+        return known;
+    const ports = new Map(members(c).filter(a.isPortUsage).filter(samplingPort).map(p => [p.name, p] as const));
+    cache?.set(c, ports);
+    return ports;
+}
+/**
+ * The sampled-read form p.m of a value reference in component c (WP6-S01): p is an owned port of c that opts in to
+ * sampling; member is the member named m, if any, and steps are the fields, index and selectors after it. A local,
+ * parameter or attribute with the name p shadows the port; callers that know the environment check it first.
+ */
+export function sampledReadForm(e: a.ReferenceExpression, c: Structure): { port: a.PortUsage; member?: a.PortMember; name: string; steps: Step[] } | undefined {
+    const parts = e.path.split('.');
+    if (parts.length < 2 || parts[0].includes('::'))
+        return undefined;
+    const port = samplingPorts(c).get(parts[0]);
+    if (!port)
+        return undefined;
+    return { port, member: portMembers(port).find(m => m.name === parts[1]), name: parts[1], steps: valueSteps(e).slice(1) };
+}
+/** Owned ports of c that are forwarded boundaries (chapter 2.3); they are never sampled (WP6-S08). */
+export function forwardedPorts(c: Structure): Set<string> {
+    const result = new Set<string>();
+    for (const link of members(c).filter(a.isConnect)) {
+        const l = endpoint(c, link.source), r = endpoint(c, link.target);
+        if (l && r && l.child !== r.child)
+            result.add(l.child ? link.target : link.source);
+    }
+    return result;
+}
+/**
+ * The members c samples, as port.member (WP6-S01, WP6-S04, WP6-M04): every sampled read in its executables of a
+ * required attribute of an owned port that opts in, whether or not it has an initial value. A name that a parameter,
+ * local, binding or loop variable of the same executable declares is not counted.
+ */
+export function sampledMembers(c: Structure): Set<string> {
+    const result = new Set<string>();
+    for (const op of members(c).filter(isExecutable)) {
+        const b = body(op);
+        if (!b)
+            continue;
+        const all = nodes(b), locals = new Set<string>((signature(op)?.parameters ?? []).map(p => p.name));
+        for (const n of all) {
+            if (a.isLocalVariable(n) || a.isArgument(n))
+                locals.add(n.name);
+            if (a.isReceiveBranch(n) || a.isInterruptible(n) || a.isTransition(n))
+                (n.bindings ?? []).forEach(x => locals.add(x));
+        }
+        for (const n of all)
+            if (a.isReferenceExpression(n) && !locals.has(n.path.split('.')[0])) {
+                const form = sampledReadForm(n, c);
+                if (form && isSampledMember(form.port, form.member))
+                    result.add(form.port.name + '.' + form.member.name);
+            }
+    }
+    return result;
+}
+/** The endpoints c consumes input from: receive and call entries, receive branches, interrupt handlers, transitions and deferrals. */
+export function inputEndpoints(c: Structure): Set<string> {
+    const result = new Set<string>(schedule(c).flatMap(e => e.endpoint ? [e.endpoint] : []));
+    for (const op of members(c).filter(isExecutable))
+        for (const n of body(op) ? nodes(body(op)!) : []) {
+            if ((a.isReceiveBranch(n) || a.isInterruptible(n) || a.isTransition(n)) && n.endpoint)
+                result.add(n.endpoint);
+            if (a.isDeferral(n))
+                n.endpoints.forEach(x => result.add(x));
+        }
+    return result;
+}
 export type Effect = {
     reads: boolean;
     writes: boolean;
@@ -477,10 +566,10 @@ export type Effect = {
     suspends: boolean;
 };
 /** Effects computed during one validation pass of one workspace snapshot (see useEffectCache). */
-let effectCache: { models: a.Model[], byStructure: Map<Structure | undefined, Map<Executable, Effect>>, attributeNames: Map<Structure, Set<string>> } | undefined;
+let effectCache: { models: a.Model[], byStructure: Map<Structure | undefined, Map<Executable, Effect>>, attributeNames: Map<Structure, Set<string>>, samplingPorts: Map<Structure, Map<string, a.PortUsage>> } | undefined;
 /** Caches effects for the models of one validation pass; a later pass or another workspace snapshot replaces it. */
 export function useEffectCache(models: a.Model[]): void {
-    effectCache = { models, byStructure: new Map(), attributeNames: new Map() };
+    effectCache = { models, byStructure: new Map(), attributeNames: new Map(), samplingPorts: new Map() };
 }
 export function effects(op: Executable, c?: Structure, seen = new Set<Executable>(), memo?: Map<Executable, Effect>, attributeNames?: Map<Structure, Set<string>>): Effect {
     // Package definitions have no caller-owned state, including when a parameter
@@ -528,6 +617,9 @@ function effectsOf(op: Executable, c: Structure | undefined, seen: Set<Executabl
     const contents = nodes(b).filter(n => owner(n, isExecutable) === (op.body ? op : signature(op)));
     for (const n of contents) {
         if (a.isReferenceExpression(n) && attributes.has(n.path.split('.')[0]))
+            result.reads = true;
+        // A sampled read reads state (WP6-S01).
+        else if (a.isReferenceExpression(n) && c && n.path.includes('.') && sampledReadForm(n, c))
             result.reads = true;
         // A place assignment writes its root (WP1-S05); a place write also reads the root it updates.
         if (a.isAssign(n) && attributes.has(placeRoot(n.target))) {
@@ -1028,9 +1120,9 @@ export const isLiteralTrue = (e: a.Expression | undefined): boolean => !!e && a.
  * out argument of a local or port call is written. clock is true when the group or a callee calls
  * Swaml::Time::now (WP5-S03).
  */
-export type AttributeAccess = { reads: Set<string>; writes: Set<string>; clock: boolean };
+export type AttributeAccess = { reads: Set<string>; writes: Set<string>; clock: boolean; cells: Set<string> };
 export function attributeAccess(roots: readonly AstNode[], c: Structure | undefined): AttributeAccess {
-    const result: AttributeAccess = { reads: new Set(), writes: new Set(), clock: false }, seen = new Set<Executable>();
+    const result: AttributeAccess = { reads: new Set(), writes: new Set(), clock: false, cells: new Set() }, seen = new Set<Executable>();
     const attributes = new Set(c ? members(c).filter(a.isAttribute).map(x => x.name) : []);
     // Only the nodes whose nearest executable is home count; nested operations are walked only when called.
     const walk = (root: AstNode, home: AstNode | undefined) => {
@@ -1039,6 +1131,12 @@ export function attributeAccess(roots: readonly AstNode[], c: Structure | undefi
                 continue;
             if (a.isReferenceExpression(n) && attributes.has(n.path.split('.')[0]))
                 result.reads.add(n.path.split('.')[0]);
+            // A sampled read p.m reads the sample cell of an owned port (WP6-S01).
+            else if (a.isReferenceExpression(n) && c) {
+                const sampled = sampledReadForm(n, c);
+                if (sampled && isSampledMember(sampled.port, sampled.member))
+                    result.cells.add(sampled.port.name + '.' + sampled.member.name);
+            }
             if (a.isAssign(n) && attributes.has(placeRoot(n.target)))
                 result.writes.add(placeRoot(n.target));
             if (!a.isCallExpression(n))
