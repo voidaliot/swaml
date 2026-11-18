@@ -91,7 +91,7 @@ Local calls, startup, periodic releases, waits, state timers and same-owner afte
 | Connection/forwarding | Policy-bearing opposite directions or queue-free boundary alias |
 | Operation definition/declaration/usage | Reusable signature/body or owned executable, nested without captures |
 | Schedule/entry | Trigger binding, dispatch arguments, deadline and concurrency |
-| State/transition | Ordered nested receive/timer reactions; final completion |
+| States | States as steps of the flow: entry once, looks in written order, event lines, `exit;` and `to S;`, parents (chapters 3.6, 6.5) |
 | Deployment/placement | Software occurrences placed on platform Node occurrences |
 | Requirement/case/view | Immutable intent; package-owned use cases and tests with an optional top-level subject occurrence, package associate/satisfy/verify links; stable selection union |
 
@@ -254,7 +254,7 @@ while tests first; until tests after its body. An optional n times limit evaluat
 
 [Receive statements](../examples/21-receive-and-try.swaml) wait for one of several explicitly bound inputs or a timeout, keeping early input queued. An [interruptible region](../examples/19-interruptible-function.swaml) is armed only during its body/callees and transfers within the same activation, preserving committed effects. Inactive region input is discarded observably; heed SW2012.
 
-For a state machine, write initial and state directly in an operation. Put transitions inside each source state, in the order they should be tested. Use on entry/on exit, on receive with optional when, after D to Target, and final state. A stateful operation has no parameters/result and exactly one on start schedule entry. [The state example](../examples/04-stateful-function.swaml) completes at its final state; idle reactions do not release after dependents.
+For a state machine, write states as steps of the operation's flow: `state S { … }` holds `on entry`, `on exit`, event lines (`on receive p.m(x) { … }`, `after D { … }`), statements that run at every look, and inner states. `if` checks now and never waits; the state looks again each time something happens to it. Leave with `exit;` (go on with what is written next) or `to S;`, the only bodies that may drop their braces (`after 3ms exit;`). An operation with states has no parameters/result and exactly one on start schedule entry. [The state example](../examples/04-stateful-function.swaml) completes when its flow reaches its end; a state that waits does not release after dependents. 2.2 machines (`initial`, `final`, `when`) are migrated with `node scripts/migrate-machines.mjs <file> --write`.
 
 ## Describe deployment, intent and views
 
@@ -376,7 +376,7 @@ A name is written as a basic name, an ASCII letter or underscore followed by ASC
 | --- | --- |
 | WP2-S01 | **Contextual words.** From 2.3, `view`, `state`, `in` and `out` are contextual: they keep their keyword roles (views, states and `initial`, parameter directions, `for … in`) and are legal names in every name position: attribute, local, parameter, operation, state, initial state, component, port, port member and endpoint, view, enum literal, field, package segment, and both positions of `for (x: T in values)`. `defer` is an ordinary basic name until the work package that introduces the `defer` keyword makes it contextual (WP5-S01). |
 | WP2-M01 | **Edition-aware spelling.** Name services (`formatName`, `formatQualifiedName` and `formatPath` in `src/language/names.ts`) take the workspace edition. For a 2.3 workspace they write a contextual word as a basic name; for a 2.2 or earlier workspace they keep quoting `view`, `state`, `in` and `out`, which are reserved there. A quoted spelling such as 'state' remains valid and denotes the same name. |
-| WP5-S01 | **`defer` is contextual.** `defer` is a keyword only at the start of a state member, where it begins a deferral (chapter 3.6); everywhere else it is a basic name in every name position, as it was in 2.2. Because 2.2 had no such word, `defer` is never reserved in any edition: name services (`formatName`, `formatPath`) write it unquoted for 2.2 and 2.3 workspaces alike, it is not one of `CONTEXTUAL_FROM_2_3` (the words that were reserved in 2.2) but of `KEYWORDS_FROM_2_3` in `src/language/names.ts`, and no 2.2 spelling, message or rename changes. A statement that starts with the name `defer` continues with `=`, `(`, `.` or `[`, never with a name, so it never reads as a deferral. |
+| WP5-S01 | *Rejected.* `defer` never became a word of the language: deferral left with the other WP5 state forms before release (states in the flow). `defer` is a basic name in every position, as in 2.2. |
 
 The words keep their keyword roles next to their name uses:
 
@@ -885,63 +885,64 @@ While the sampled mode is `sleep`, no `slot` runs, its 2 ms deadline is cancelle
 
 ## 3.6 States
 
-A stateful operation is parameterless void and has exactly one on start entry. initial names one owned state. States own at most one on entry and one on exit block plus ordered receive/timer transitions. A receive transition binds payload, optionally tests a pure/read-state bool guard, and names its target with to. after D is relative to the state update, before entry actions begin. Entry actions finish before a transition can run; if entry suspends past a timer expiry, the earliest elapsed timer is selected on resumption before queued input. Timers with equal expiry use declaration order. Evaluate competing enabled transitions in declaration order and take the first. There are no transition names or priorities. From 2.3 a state may also own completion transitions `when (g) to S`, guarded timers `after D when (g)`, internal transitions without `to` and deferrals `defer p.m;`, in any order with its actions and transitions (rules below; runtime in chapter 6.5).
-
-A reaction runs exit, transition effect, state update and entry in that order. Timers are invalidated by state exit and stale firings are observable discards. Unhandled input does not reset the current state timer. Every state is graph-reachable from initial; a final state has no outgoing transitions or exit action. Reaching final runs entry and completes the whole operation once. Hierarchical/orthogonal states and physical preemption are outside the language.
+From 2.3 a state is an ordinary step of an operation's flow (states in the flow; [proposal](proposals/STATES_IN_FLOW_PROPOSAL.md), which this section and chapter 6.5 make normative package by package). The flow reaches a state, its `on entry` runs once, and it stays entered, waiting, until a look leaves it; a state with nothing to look at does not wait. Inside its braces a state holds `on entry`, `on exit`, event lines (`on receive p.m(x) { … }`, `after D { … }`), ordinary statements and, last, inner states; a state with inner states is a parent, and what is written on it applies in every state inside it. `if` checks now and never waits: the state looks again at what is inside its braces each time something happens to it (chapter 6.5). `exit;` leaves and goes on with what is written next; `to S;` goes to state `S`; only these two may drop their braces (`after 250ms exit;`). The 2.2 machine syntax (`initial`, `final`, transitions with `when` guards and `to` heads) and the WP5 forms (completion and internal transitions, guarded timers, `defer`) are not part of 2.3; 2.2 machines are migrated by the recipe of the proposal's section 7.1.
 
 | ID | Rule |
 | --- | --- |
-| WP4-S08 | **Computed state timers.** `after (e) to S { … }` takes an integral expression that is pure or reads state (SW2008 `State timers may only be pure or read state.`), in the machine's scope, with the unit warning SW2016. It is evaluated once per state entry, when the entry actions finish, in declaration order with the state's other computed timers; its expiry is the state-update time plus the value, so a timer whose operands the entry actions change uses the new value: `state Backoff { on entry { delayMs = minInt(delayMs * 2, capMs); } after (delayMs * 1ms) to Connecting { } }` waits the doubled delay. If entry suspends past the expiry, the timer has elapsed and is selected on resumption, as for literal timers. Discarded input does not re-evaluate it; re-entering the state does. Timers with equal expiry, literal or computed, keep declaration order. A value that is not a positive representable duration is `DurationRange` and fails the machine's activation (WP4-R01). The [computed backoff](../examples/41-computed-backoff.swaml) and [lock pulse](../examples/42-lock-pulse.swaml) examples show both. |
-| WP5-S02 | **Completion transitions.** `when (g) to S { … }` has no trigger: it is selected after the entry actions of its state finish and after every internal reaction (chapter 6.5, WP5-R01). It requires a target, `A completion transition needs a target state.` (SW2008, WP5-D01). A final state has none (WP5-D04). This reverses the 2.0 exclusion of completion transitions for guard-only completion only (ADR 0023). |
-| WP5-S03 | **Completion guards.** A completion guard is `bool` and pure or reads state; a call that writes, communicates or suspends is SW2008 with the guard-effect message `State guards may only be pure or read state.` (WP5-D02). It does not call `now()`, directly or through a called operation (`isClockRead`): `A completion guard cannot call now(); it is not re-evaluated as time passes.` (SW2008, WP5-D02). |
-| WP5-S04 | **Completion cycles.** A cycle of states connected only by completion transitions whose guard is the literal `true` (parentheses leave no node) is an error, reported once per cycle at the transition that leaves its first state in source order: `States A → B → A form a cycle of when (true) completion transitions.` (SW2008, WP5-D03). Only the first `when (true)` of a state can be taken, so a later one does not form a cycle. A cycle through other guards is a runtime matter (`CompletionLoop`, WP5-R07). As in WP5-R07, a cycle on which an entry action, exit action or effect can suspend (a wait, a receive, an interrupt region, a request, or a call to an operation that does) restarts its chain at every round and is not an error: `state A { on entry { n = n + 1; wait 1ms; } when (true) to A { } }` is a retry. |
-| WP5-S05 | **Reachability.** Graph reachability from `initial` follows receive, timer and completion edges. Internal transitions add no edge. |
-| WP5-S06 | **Timer guards.** `after D when (g) …` takes a `bool` guard that is pure or reads state (SW2008, the guard-effect message, WP5-D07). A receive guard keeps its 2.2 rule and code (SW2006). |
-| WP5-S07 | **Internal transitions.** A receive or timer transition without `to` is internal: `on receive p.m(x) { … }`, `after 2s { … }`. A final state has no transitions of any form: the 2.2 forms keep `Final states have no transitions or exit action.`, and each completion, internal or guarded-timer transition is `Final state {state} cannot have transitions or deferrals.` (SW2008, WP5-D04). |
-| WP5-S08 | **Deferral.** `defer p.m, …;` is a state member that names required events or attributes of the machine's component (`{member} is not an input of {operation}.`). Some state of the machine has a transition on each deferred member (`{member} is deferred, but no state of {operation} handles it.`, WP5-D05). No state both defers a member and has a transition on it (`State {state} defers {member} and also handles it.`), and a state defers a member at most once (`State {state} defers {member} twice.`, WP5-D06). A final state defers nothing (WP5-D04). All are SW2008 and reported at the member. |
-| WP5-S09 | **Deferral and ownership.** A deferral belongs to the machine's single input ownership (SW2005): it counts as the machine, never as a second owner, so a member deferred by a machine and also received by a schedule entry has two owners. |
-| WP5-S10 | **Explicit self transitions.** A transition `to` its own state keeps its 2.2 meaning: exit, effect, state update, entry, with timers restarted. Only a transition without `to` is internal. |
+| SIF-S01 | **Which operations may contain states.** An operation with states is directly owned by a component definition, has no parameters and returns `void`; it has exactly one effective schedule entry in every occurrence of its component, `on start` (a waiting machine) or `on every P` (a periodic machine; until package 5 lands, rejected), never `concurrent`; it is never called; it contains no interrupt region and no plain receive statement. Case scripts contain no states. Violations are SW2008 (SIF-D01) with the messages of the proposal's section 3.1. |
+| SIF-S02 | **Structure.** A state has at most one `on entry` and one `on exit`; state names are unique within an operation (SW2008, SIF-D03). |
+| SIF-S03 | **Items before inner states.** A state's braces hold its items, then inner states only (SW2008, SIF-D03). |
+| SIF-S04 | **Where leaves stand.** `exit;` and `to S;` stand only inside a state's braces, directly or at any depth of `if`/`else` blocks standing there or inside an event line's block; never in `on entry`, `on exit`, a loop body, an interrupt region or the flow outside states. `on entry`, `on exit` and event line blocks contain no state, no plain receive statement and no `return`; `return` does not stand in a state's braces (SW2008, SIF-D02). |
+| SIF-S05 | **What statements in a state read.** Attributes of the executing occurrence, sampled port members, locals visible at the statement, constants and calls of operations that read state; the diagnostic for `now()` and non-sampled port members (SIF-D04) lands with package 4. |
+| SIF-S06 | **Jump targets.** `to S` names a state in a list containing the jump's state or an enclosing list, or inside parents standing directly in such a list; never through an `if` branch or loop body; never over a declaration used at or after the target (SW2008, SIF-D02). |
+| SIF-S07 | **Bindings.** An event line's bindings are visible in its block only. |
+| SIF-S08 | **Short bodies.** A body without braces is exactly `exit;` or `to S;` (grammar; anything else is a syntax error). |
+| WP4-S08 | **Computed state timers.** `after (e) { … }` takes an integral expression that is pure or reads state (SW2008 `State timers may only be pure or read state.`), in the machine's scope, with the unit warning SW2016. It is evaluated once per arrival of its state, when the entry action finishes (SIF-R01), so a timer whose operands the entry action changes uses the new value: `state Backoff { on entry { delayMs = minInt(delayMs * 2, capMs); } after (delayMs * 1ms) to Connecting; }` waits the doubled delay. A line or a look does not re-evaluate it; a new arrival does. A value that is not a positive representable duration is `DurationRange` and fails the machine's activation (WP4-R01). The [computed backoff](../examples/41-computed-backoff.swaml) and [lock pulse](../examples/42-lock-pulse.swaml) examples show both. |
 
 ```swaml
-package StateReactions {
+package LockController {
   port def Requests {
     provides event request(lock: bool);
   }
+  port def Power {
+    provides event off();
+  }
   component def Lock {
     reversed port requests: Requests;
+    reversed port power: Power;
     attribute pulses: uint = 0;
-    attribute retries: uint = 0;
     attribute locked: bool = false;
     operation control() {
-      initial unlocked;
-      state unlocked {
-        on receive requests.request(lock) when (lock) to locking {
+      var wanted: bool = false;
+      state powered {
+        on receive requests.request(lock) {
+          wanted = lock;
         }
-      }
-      state locking {
-        /** Requests during the pulse stay queued until a state that handles them. */
-        defer requests.request;
-        on entry {
-          pulses = pulses + 1;
+        on receive power.off() exit;
+        state unlocked {
+          on entry {
+            locked = false;
+          }
+          if (wanted) exit;
         }
-        after 250ms when (pulses < 3) to isLocked {
-          locked = true;
+        state locking {
+          on entry {
+            pulses = pulses + 1;
+          }
+          after 250ms exit;
         }
-        after 250ms to failed {
+        state isLocked {
+          on entry {
+            locked = true;
+          }
+          if (not wanted) exit;
         }
-      }
-      state isLocked {
-        /** Internal: no exit, no entry, the state is unchanged. */
-        on receive requests.request(lock) when (lock) {
-          retries = retries + 1;
+        state unlocking {
+          on entry {
+            pulses = pulses + 1;
+          }
+          after 250ms to unlocked;
         }
-        on receive requests.request(lock) when (not lock) to unlocked {
-          locked = false;
-        }
-        when (retries > 2) to failed {
-        }
-      }
-      final state failed {
       }
     }
     schedule {
@@ -950,14 +951,16 @@ package StateReactions {
   }
   component def Body {
     port toLock: Requests;
+    port toPower: Power;
   }
   component lock: Lock;
   component body: Body;
-  connect: Swaml::Qos::Latest (body.toLock, lock.requests);
+  connect (body.toLock, lock.requests);
+  connect (body.toPower, lock.power);
 }
 ```
 
-The [session completion](../examples/44-session-completion.swaml), [lock deferral](../examples/45-lock-deferral.swaml) and [breaker](../examples/46-breaker-internal.swaml) examples compare each form with its 2.2 shape.
+One variable remembers the latest request; every state of `powered` sets it through the parent's line, and the resting states ask it. The [session completion](../examples/44-session-completion.swaml), [lock deferral](../examples/45-lock-deferral.swaml), [breaker](../examples/46-breaker-internal.swaml) and [reaction forms](../examples/47-reaction-forms.swaml) examples compare the forms with their 2.2 shapes, migrated.
 
 ## 3.7 Case scripts
 
@@ -1124,7 +1127,7 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | ID | Rule |
 | --- | --- |
 | WP4-M03 | **Timing per occurrence.** The projection (`projectModel`) gives each schedule entry of an occurrence its evaluated `periodNs` and `deadlineNs` from `entryPeriod` and `entryDeadline`, and a computed period or deadline also its display text (`periodExpression`, `deadlineExpression`, from `displayText`: the source spelling in canonical layout, so `deadline (3ms)` shows `3ms`); a definition shows values only for literal periods and deadlines and the text for computed ones, whose values belong to its occurrences. All values come from `entryPeriod` and `entryDeadline`, as in the simulator and the validator. A computed state timer labels its transition `after ({display text})`. Entries with literal periods and deadlines gain no field, so the projections of 2.2 sources are unchanged. |
-| WP5-M01 | **Flow and states.** The projection (`projectModel`) gives a completion transition an edge labelled `when (g)` with `completion: true`, a guarded timer edge its `guard` text, and gives a state node its internal transitions as `reactions` (label, order, guard) without an edge and its deferred members as `deferrals`. An internal transition never produces an edge. These fields appear only for the 2.3 forms. Flow shows completion edges with their guard, internal transitions as reactions of their state and deferrals as state annotations. |
+| SIF-M01 | **Flow and states.** The projection (`projectModel`) gives a state its node and each leave (`exit;` or `to S;`) one `transition` edge to the state it reaches, labelled with the event line it stands in (if any) and the `[c]` conditions of the `if` branches around it. | The language package (`projection.ts`). |
 | WP7-M01 | **Timing guards.** The projection (`projectModel`) gives a guarded schedule entry its `guard` text (`displayText`); the field is absent on an entry without a guard. Observed Timing (`projectOperationTiming`) ends an activation's interval at its `skip` and lists `skip` among its markers. |
 | WP8-M04 | **Task lanes.** Timing groups activations in Task lanes when a deployment places them on Tasks. The General view shows operation placements; this drawing is a consumer obligation, which the language package does not provide (review F7). | The language package delivers the plan (`deploymentPlan(d).placements` with `kind`, `prefix` and `operation`, and `entries` with their Task and Core), not a deployment projection: a General view must draw an operation placement from the plan, never by joining the deploy path to an occurrence path. The reference run records the Task of an activation on a Task as `task` on its `release` observation, and `projectOperationTiming` gives each interval of such an activation its lane (`TimingInterval.task`); both are absent when the activation is not on a Task.
 ## 4.4 Validation groups
@@ -1139,7 +1142,7 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | SW2005 | Single input owner and emission provenance; interface-only components are exempt |
 | SW2006 | Calls, nested scope, effects, returns, out arguments and suspension placement |
 | SW2007 | Schedule identity, signatures, deadlines and after graph; release guards (2.3) |
-| SW2008 | Stateful signatures, scheduling, ordered states and reachability/finality |
+| SW2008 | Operations with states, structure of states, leaves and jumps (states in the flow, SIF-D01 to SIF-D03 and SIF-D05) |
 | SW2009 | Node content, deployment paths, indexes and specificity |
 | SW2010 | Requirement/case/view references, case subjects, associate, satisfy and verify links, the environment role and white-box access of case scripts |
 | SW2011 | Conservative stale-read warning |
@@ -1149,12 +1152,12 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | SW2015 | Retired in 2.1 together with the 2.0 case spellings; not reported |
 | SW2016 | Warning (2.3): a computed duration without a time unit, which counts nanoseconds |
 | SW2019 | Warning (2.3): two every entries of one occurrence for the same operation with equal periods but different triggers |
-| SW2017 | Warning (2.3): a completion guard that reads nothing the machine writes, so it cannot change while the machine waits, or that folds to false, so its transition is never taken |
-| SW2018 | Warning (2.3): a deferred event whose policy on a route into the occurrence rejects on overflow |
+| SW2017 | Not reported: the completion-guard warnings of the 2.3 work packages (WP5-D08, WP6-D09, WP6-D10) left with the completion transitions before release (states in the flow) |
+| SW2018 | Warning (2.3): a member named in a periodic machine that is delivered over a route that rejects on overflow (SIF-D06, package 5 of states in the flow) |
 | SW2020 | Warning (2.3): a release guard that folds to false, so its entry never runs its operation, or a replacing schedule entry without a guard that drops an inherited release guard |
 | SW2021 | Warning (2.3): an operation placement on a platform without a `Swaml::Os` task, which changes no run and which only T7 uses (WP8-D12) |
 
-Diagnostics added by 2.3. Message shapes are templates; implementations may add context but keep the leading clause stable. All are errors except WP4-D06, WP4-D08, WP5-D08, WP5-D09, WP6-D09, WP6-D10, WP7-D03, WP7-D04 and WP8-D12, which are warnings. A diagnostic of WP6 applies only to a reference `p.m` of a member that opts in to sampling (an attribute member with an initial value, 2.3 syntax), to behaviour inherited with such a reference or to a member-policy body, so every 2.2 source keeps its diagnostics.
+Diagnostics added by 2.3. Message shapes are templates; implementations may add context but keep the leading clause stable. All are errors except WP4-D06, WP4-D08, SIF-D06, WP7-D03, WP7-D04 and WP8-D12, which are warnings. A diagnostic of WP6 applies only to a reference `p.m` of a member that opts in to sampling (an attribute member with an initial value, 2.3 syntax), to behaviour inherited with such a reference or to a member-policy body, so every 2.2 source keeps its diagnostics.
 
 | ID | Code | Condition | Message shape |
 | --- | --- | --- | --- |
@@ -1179,14 +1182,12 @@ Diagnostics added by 2.3. Message shapes are templates; implementations may add 
 | WP4-D06 | SW2016, warning | A computed duration expression that contains no duration literal, no `now()` call and no reference to a const attribute of the owner whose initializer, followed through const references, contains a duration literal. A const attribute's initializer can never contain `now()` (WP3-S01) or read another attribute, so only a duration literal in its own initializer counts. | `{expression} has no time unit and counts nanoseconds; multiply by a unit such as 1ms.` `after (pulseMs)` with `pulseMs = 250` warns; `wait (timeoutNs);` with `const attribute timeoutNs: uint = 5ms;` does not. |
 | WP4-D07 | SW2013 | Non-exact or zero-divisor division in a constant duration, per occurrence (WP4-S05) | `{expression} divides {a} by {b} in {occurrence}, which is not an exact integral division.` for `/`; `{expression} takes the remainder of {a} by {b} in {occurrence}, which is not defined for a zero divisor.` for `%` by zero. The expression is the division itself. |
 | WP4-D08 | SW2019, warning | Two effective `every` entries of one occurrence for the same operation whose periods are equal in that occurrence but whose trigger identities (WP4-S07) differ, such as a base `on every 20ms g();` and a specialization's `on every (2 * 10ms) g();`: neither replaces the other, so the operation is released twice per period. Literal periods are identified by their nanoseconds as in 2.2, so one of the two is computed and no 2.2 source gets it. Reported once, at the later entry. | `{entry} and {other entry} have the same period in {occurrence} but different triggers, so neither replaces the other and {operation} is released twice per period; write the same trigger to replace an entry.` |
-| WP5-D01 | SW2008 | Completion transition without target (WP5-S02) | `A completion transition needs a target state.` |
-| WP5-D02 | SW2008 | Completion guard calls `now()`, directly or through a callee, or has a wrong effect (WP5-S03) | `A completion guard cannot call now(); it is not re-evaluated as time passes.` at the call / `State guards may only be pure or read state.` |
-| WP5-D03 | SW2008 | `when (true)` cycle on which no entry action, exit action or effect can suspend (WP5-S04) | `States {A} → {B} → {A} form a cycle of when (true) completion transitions.` |
-| WP5-D04 | SW2008 | Completion, internal or guarded-timer transition or deferral in a final state (WP5-S02, WP5-S07, WP5-S08) | `Final state {state} cannot have transitions or deferrals.` at each; 2.2 forms keep `Final states have no transitions or exit action.` |
-| WP5-D05 | SW2008 | Deferred member not an input, or not handled by any state (WP5-S08, WP5-S09) | `{member} is not an input of {operation}.` / `{member} is deferred, but no state of {operation} handles it.` |
-| WP5-D06 | SW2008 | Defer and handle in one state, or deferred twice (WP5-S08) | `State {state} defers {member} and also handles it.` / `State {state} defers {member} twice.` |
-| WP5-D07 | SW2008 | Timer guard effect (WP5-S06) | `State guards may only be pure or read state.` |
-| WP5-D08 | SW2017, warning | Completion guard that reads no component attribute written by the machine's entry actions, exit actions or effects or their transitive callees; a sample cell (chapter 2.6) is not such an attribute, because completion is not re-evaluated when a cell is updated (WP5-R03; confirmed in WP6). Not reported for a guard that folds to true (the literal `true`, `1 == 1`, `not false`), for a guard that folds to false (WP6-D10 reports it), for a guard that already has an error, or in a polling state as WP6-D09 narrows it | `Completion guard of {state} reads nothing that {operation} writes; it cannot change while the machine waits.`, followed by ` Completion is not re-evaluated when a sample cell is updated.` when the guard reads a sample cell. |
+| SIF-D01 | SW2008 | Operation-kind violations of SIF-S01 (chapter 3.6) | The messages of the proposal's section 3.1, for example `` `op` contains states, so it keeps its place and can only be released by one `on start` or one `on every` entry. `` |
+| SIF-D02 | SW2008 | Leave and jump violations (SIF-S04, SIF-S06) | For example `` `to c` skips the declaration of `x`, which `c` uses. Declare `x` before the jump. `` |
+| SIF-D03 | SW2008 | Structure (SIF-S02, SIF-S03) | `Duplicate on {entry/exit} in {state}` / `{state} has inner states; only states may follow the first one` / `Two states are named {name} in {op}` |
+| SIF-D04 | SW2006 | A statement standing in a state reads `now()` or a non-sampled port member (SIF-S05); package 4 | `{statement} in {state} reads {what}, which nothing announces; use after D, or a sampled member.` |
+| SIF-D05 | SW2008 | A waiting machine has a cycle of states whose arrival looks leave without any condition; package 4 | `{a} and {b} leave each other at once; reached, this stops the run with StateLoop.` |
+| SIF-D06 | SW2018, warning | A member named in a periodic machine is delivered over a route that rejects on overflow; package 5 | `{member} is taken one per release by {op}; a faster sender, or a false release guard, fills its queue and makes the sender fail.` |
 | WP6-D01 | SW2005 | Sampling a forwarded boundary (WP6-S08) | `{port}.{member} cannot be sampled: {port} is a forwarded boundary.` |
 | WP6-D02 | SW2004 | Port redefinition that removes the initial value, or changes the type, of a member that inherited behaviour samples (WP6-S03), at the redefinition, once per member | `Sampled attribute {member} of {portDefinition} needs an initial value: inherited {operation} samples {port}.{member}.` / `Sampled attribute {member} of {portDefinition} must keep type {type}: inherited {operation} samples {port}.{member}.` (`an inherited schedule entry` for a read in a schedule-entry argument) |
 | WP6-D03 | SW2005 | Ownership of sampled and unsampled members (WP6-S04) | The existing owner messages; a sampled member with no owner is not reported. |
@@ -1195,8 +1196,6 @@ Diagnostics added by 2.3. Message shapes are templates; implementations may add 
 | WP6-D06 | SW2004 | Member policy on forwarding, unknown member or repeated member (WP6-S05) | `Member policies are not allowed on forwarding {connection}.` / `{member} is not a member of both ports of {connection}.` / `{member} has two policies in {connection}.` |
 | WP6-D07 | SW2013 | Member policy completeness or idempotency per member route (WP6-S07) | The existing policy messages, naming the member. |
 | WP6-D08 | SW2010 | Sampled read in a case script (WP6-S09) | `A case script cannot sample {port}.{member}; use on receive.` |
-| WP6-D09 | SW2017, warning | The polling exemption of WP5-D08, narrowed (WP5 review N2; a separate, revocable change while the owner reviews WP5-R03). A state polls when it has a self receive or timer transition, or an internal receive transition (an internal timer fires once per entry), whose guard is absent or does not fold to false; the exemption then applies only to a guard that reads an attribute that some executable of the component writes, or a sample cell. A self transition whose guard reads its input, such as `when (v > 100)`, still exempts the state, because whether it can be true is not decided statically | The WP5-D08 message. |
-| WP6-D10 | SW2017, warning | Completion guard that folds to false in its definition (WP5 review N3, owner decision). Not reported when the guard names a const attribute of its component that an attribute redefinition in a specialization or usage of that component replaces (the same declaration, not only the same name), so that it may fold differently per occurrence | `Completion guard of {state} is always false; the transition is never taken.` |
 | WP7-D01 | SW2007 | Release guard on a `start` or `call` entry (WP7-S01) | `A release guard is allowed only on every, receive and after entries.` |
 | WP7-D02 | SW2007 | Release guard type or effect (WP7-S02) | `Release guard must be bool, found {type}.` / `Release guard must be pure or read state.` (a call that writes or communicates; unresolved, remote and suspending calls keep the call rules' messages); a name outside the scope keeps the existing unresolved-name message (SW2002). |
 | WP7-D03 | SW2020, warning | Release guard of an `every`, `receive` or `after` entry that folds to false in the structure where the entry is written, so the entry never runs its operation (review F3, as WP6-D10 for completion guards). Reported once, at the guard. Not reported when the guard names a const attribute of its component that an attribute redefinition in a specialization or usage of that component replaces (the same declaration, not only the same name), so that it may fold differently per occurrence; a guard that folds to true or does not fold gets no diagnostic. It needs a release guard, so no 2.2 source has it | `Release guard if ({guard}) of {entry} is always false; the entry never runs {operation}.` {entry} is the trigger and operation (`on every 10ms slot`, `on receive inp.go take`, `after slot next`); names are spelled as in 2.2. The fixed leading text `Release guard if (` (respelled from `Release guard when (` by SIF-G01) tells it apart from WP7-D04, which shares SW2020. |
@@ -1214,7 +1213,6 @@ Diagnostics added by 2.3. Message shapes are templates; implementations may add 
 | WP8-D11 | SW2009 | A `kind`, `priority`, `preemptive`, `periodNs` or `responseNs` attribute of a Task occurrence whose effective value is not a constant of its type (a `TaskKind` literal, a bool, or a `uint` up to 2^53 − 1) in the constant sublanguage (WP4-S05) | `{attribute} of task {task} must be a constant {TaskKind literal \| bool \| uint} value.`, with ` up to 9007199254740991` before the period for a `uint` constant above 2^53 − 1 (reported at the deployment's platform reference; the Task takes part in no other task rule) |
 | WP8-D12 | SW2021, warning | An operation placement (WP8-S01) on a platform without a `Swaml::Os` Task: it is valid, but it changes no run (the run's `deployments` record shows occurrence placements only) and only T7 uses it (review F9, F10). It needs an operation path, so no 2.2 source has it | `Operation placement {path} on {target} does not change the run on a platform without a Swaml::Os task: the run records and orders occurrence placements only, and only the one-core rule T7 uses it.` |
 | WP8-D13 | SW2009 | A platform root that is a `Swaml::Os` Task (review F3): a deploy target cannot name the root, so the Task could receive nothing. Reported at the deployment's platform reference; no other task rule applies | `The platform root {platform} is a Swaml::Os task; a task runs on a core or node, so declare the task inside a Node or Core platform and deploy on it.` |
-| WP5-D09 | SW2018, warning | Deferred event with an effective `reject` overflow on a route into this occurrence (attributes never overflow) | `{member} is deferred in {state}, but policy {policy} of {connection} rejects on overflow; a full queue fails the sender. Give {connection} a policy that drops on overflow (Overflow.dropOldest or Overflow.dropNewest) or a capacity that holds the retained messages.` {connection} is the connection name or `connect (a, b)`. When a member policy is the rejecting effective policy (WP6-S07), {policy} names it and the advice reads `Give {member} of {connection} a member policy that drops on overflow …`; a connection without member policies, every 2.2 source included, keeps the message above. The library default policy rejects on overflow, so a deferral over a connection without a policy is reported: the warning is intended, because the sender's publish fails while the receiver defers. A deferral that already has an error (WP5-D04 to WP5-D06) is not reported. |
 
 Every diagnostic includes a source range and stable code. Machine-readable diagnostics retain declaration identity and occurrence context when resolved. A suggested edit is supplied only for a safe unambiguous correction; tools must revalidate the resulting complete workspace before applying it. Parser recovery may suspend semantic checks on invalid syntax, but the document remains invalid and must not crash the service.
 
@@ -1334,24 +1332,28 @@ A required request creates a unique pending correlation and suspends the caller.
 
 An event is consumed by its one owner. Input for a receive statement remains queued before that statement waits. Inputs for inactive interrupt regions are discarded and observed. An armed region includes suspended local callees; matching input cancels protected frames/continuation and any pending local request, but not a remote server. Transfer stays in the same activation/deadline, preserves outer locals and committed effects, and runs the handler. Terminal interrupted correlations suppress late replies. No physical scheduling/preemption guarantee is implied.
 
-A state machine waits without the component lock. Each reaction selects the first enabled nested transition for the input/timer, runs exit/effect/state-update/entry, and releases the lock again when idle. The timer epoch is the state update before entry actions, including time spent suspended in entry. Entry completes before timer selection; elapsed timers precede queued input, with earliest expiry first and equal-expiry transitions in source order. Deadline ties still win. State entry owns timer generations; stale timers cannot fire after exit. Unhandled input does not restart a timer. Final entry completes the whole operation once; it can release after dependents.
-
-The rules below define the selection of a stateful activation in 2.3; for a machine without the 2.3 forms they are exactly the 2.2 order above (WP5-R11).
+An operation with states (chapter 3.6) keeps its place in its own activation: a waiting machine (released `on start`) waits between looks without the component lock, and each look holds the lock until it ends or a block suspends. The rules below are normative from 2.3; rules marked with a later package are specified in the [states in the flow proposal](proposals/STATES_IN_FLOW_PROPOSAL.md) and land with that package of its implementation plan (section 11). The 2.2 machine order (ordered transitions with exit, effect, state update and entry) no longer exists; 2.2 machines are migrated (proposal 7.1), and the migrated text gives the 2.2 results except the one accepted difference r10 (proposal 7.4, gates B and C).
 
 | ID | Rule |
 | --- | --- |
-| WP5-R01 | **Selection order.** After the entry actions of a state finish (and its computed timers are evaluated, WP4-R02), the machine selects in this total order: (1) the first enabled completion transition in declaration order, taken at once (exit, effect, state update, entry); (2) the earliest elapsed armed timer, declaration order on equal expiry; (3) retained input in global offer-ordinal order (WP5-R09); (4) other queued input in the 2.2 order. If nothing is selectable, it waits without the lock. |
-| WP5-R13 | **Input during a chain.** Input queued while entry actions run, or during a chain of completion reactions, stays queued and is selected in whatever state the chain reaches. If that state neither handles nor defers it, it is discarded there (`discardInput`, `inactiveOwner`). |
-| WP5-R02 | **After internal reactions.** The same completion evaluation follows every internal reaction. |
-| WP5-R03 | **No completion after discards.** Completion is not evaluated after `discardInput` (no enabled receive transition) or `discardTimer`: neither changes anything the machine owns. Completion guards are not re-evaluated when other operations change what they read (SW2017, WP5-D08). |
-| WP5-R04 | **Guarded timers.** When a guarded timer is selected, its guard is evaluated. If the guard is false, the timer is consumed for this state entry (`discardTimer`, WP5-T02) and the next timer with the same expiry is tried in declaration order. Later timers stay armed. Re-entering the state arms it again. |
-| WP5-R05 | **Internal reactions.** An internal transition runs only its effect: no exit, no entry, no state update, no `machines` change. The state's timers keep their epoch (the state-update time) and computed timers are not re-evaluated. An internal timer fires at most once per state entry. Its reaction leaves the other timers armed; an already elapsed one, including one with the same expiry, is selected after the completion evaluation that follows the reaction. |
-| WP5-R06 | **Suspended effects.** If an entry action or an internal effect suspends, the timers keep their epoch. On resumption, the machine evaluates completion, then elapsed timers, then input, as after entry actions. |
-| WP5-R07 | **`CompletionLoop`.** A completion chain starts when the stateful activation starts. It restarts at every consumption of input or a timer (internal reactions included) and at every suspension of an entry action, exit action or effect. A completion reaction that enters a state already entered in the current chain is the contract violation `CompletionLoop`, raised when the target state would be entered (after the exit actions and effect). It stops the run and bypasses `try`. A retry state whose entry suspends on a request and re-enters through completion is therefore allowed; a counting loop through completion transitions that never suspends is rejected even when bounded. |
-| WP5-R08 | **Retention.** While the current state defers member `m`, input for `m` stays in its connection queue, and capacity, overflow, ordering and `maxAge` apply to it observably. A retained attribute keeps only its latest value. A message is retained from the first instant at which it is deliverable while the machine's current state defers its member, whether the machine then waits at its selection or runs an entry action, exit action or transition effect of that state (the effect of a transition into a deferring state runs in the state it leaves). It gets exactly one `defer` observation, at that instant (WP5-T03), and stays retained in later states until it is consumed or discarded. Example: `y` is offered at 0 ms and consumed in `A`, which creates its queue; `x` is offered at 1 ms and `y` at 2 ms while the machine is in `state Busy { defer a.x, a.y; on entry { wait 5ms; } when (true) to Both { } }`. Both are retained when they become deliverable, at 1 ms and 2 ms, although `Busy` never waits, and `Both` takes `x` before `y` (WP5-R09), as it does when `Busy` instead waits for `after 5ms to Both { }`. |
-| WP5-R09 | **Retained order.** In a state that handles retained members, retained input precedes other queued input but follows completion transitions and elapsed timers (WP5-R01). It is consumed in global offer-ordinal order across all of the machine's queues: the order in which the messages were queued, not the order in which their queues were created. Input that was never retained follows in the 2.2 order. |
-| WP5-R10 | **Retained discard.** On entering a state that neither handles nor defers `m`, retained input for `m` is discarded at the next wait with reason `inactiveOwner`. |
-| WP5-R11 | **2.2 machines.** A machine without completion transitions, internal transitions, timer guards and deferrals selects and orders exactly as in 2.2, and its trace has no 2.3 observation or field. |
+| SIF-R01 | **Reaching a state.** When the flow, a leave or a jump reaches state X: a `state` observation (`trigger` the leave that led here), X's timer start is now, X's `on entry` runs once (it may suspend; input arriving meanwhile stays queued), X's computed `after` durations are evaluated once (WP4-R02); then a parent reaches its first inner state, a state with nothing to look at runs its `on exit` and the flow continues with the next statement, and any other state makes its arrival look and, if that does not leave, waits. Parents entered on the way to a target run the same steps without the last one, outermost first. |
+| SIF-R02 | **The look.** A look at S goes through the levels of S (its parents outermost first, then S), within a level through its items in written order, skipping `on entry` and `on exit`: an event line runs when its event is present, a statement runs always, and the look ends at the first `exit;` or `to S;` it runs, or after the last item of S. |
+| SIF-R03 | **What is present.** At most one message: the one whose delivery caused the look, or at the start of a wait the first-delivered queued message of a member named at S; every event line on its member, at any level, runs in walk order. Every timer of a level of S that has run out when the look starts and has not been present before; a timer is present at exactly one look per arrival of its level. An arrival look has no message. |
+| SIF-R04 | **Values.** A look reads every value as it is when it runs (WP6-R03). |
+| SIF-R05 | **Waiting.** When S begins to wait: timers that ran out make one look now; queued messages of owned members not named at S are dropped (`discardInput`, `inactiveOwner`); a queued named message ends the wait in zero time (the wait end is an event of the same instant, phase 2), and its look takes the first-delivered named message at that moment. Otherwise S waits until a timer of a level runs out (phase 1, a look), a named message is delivered (phase 2, a look with it) or an owned message not named at S is delivered (dropped on arrival, no look). |
+| SIF-R06 | **Inputs.** A plain operation keeps the 2.2 rule. An operation with states keeps input queued while it is busy and drops owned, unnamed input while a state waits (`inactiveOwner`). A taken message whose lines ran only false tests is `discardInput` with reason `noEnabledTransition`; one taken by a look that left before a line on its member ran has reason `leftBeforeLine`. After a waiting machine completes, its members' input is discarded (`inactiveOwner`). Members that no line names are untouched. |
+| SIF-R07 | **Wakes** (package 4). Writes by another activation of the occurrence to what a waiting state's statements read, and sample-cell updates of what they read, make a look; writes made while the machine is busy are pending and make one look when it begins to wait. |
+| SIF-R08 | **Own writes** (package 4). In a waiting machine, a line's write to a value that a statement before it in the look read makes one re-look with nothing present. |
+| SIF-R09 | **Leaving.** In text order: the statements before the leave in its block, then `on exit` of every state left, innermost first, then `on entry` of every state entered, outermost first, then the target's arrival look. `exit;` of an inner state reaches the next inner state, or, from the last one, leaves the parent too; `exit;` of a state in the flow goes on with the next statement. Leaving adds no scheduling point. |
+| SIF-R10 | **Unwinding.** A jump ends every block, loop and parent between it and the list that contains the target; a backward jump that passes a declaration runs it again; a `var` standing in a state is a local of the look. |
+| SIF-R11 | **Parents.** A parent's items are looked at before the inner state's, at every look; its timers count from the parent's arrival and keep running while its inner states change; a state inside a parent with something to look at waits, even with no items of its own. |
+| SIF-R12 | **Run to completion and steps.** A look runs to completion holding the lock, except while a block suspends. The test of an `if` written in a state's braces outside `on entry` and `on exit` is not a scheduling step; the statements it runs are. |
+| SIF-R13 | **Completion.** The end of the body or `return` completes a waiting machine once; then its members' input is discarded and `after` dependents are released. |
+| SIF-R14 | **Periodic machines** (package 5). Released `on every P`, an operation with states is one persistent activation per occurrence: it keeps its place, locals, loops and timer starts between releases and makes one look per release. |
+| SIF-R15 | **Releases** (package 5). Timers keep running across releases, skipped ones too; one message per release; deadline per release; a false release guard is a `skip`. |
+| SIF-R16 | **Bound within one release** (package 5). A state reached a second time in one release ends the release in that state (`held: true`). |
+| SIF-R17 | **Periodic end** (package 5). At its end no state is active, and the next release starts the flow again from the top. |
+| SIF-R18 | **`StateLoop`** (package 4). A waiting machine whose configuration repeats at a look of the same state in one instant, with only its own activity between, stops the run with the contract violation `StateLoop`. |
 
 
 ## 6.6 Evidence and resources
@@ -1364,10 +1366,13 @@ New and extended observations of 2.3 appear only where new syntax is used, so a 
 | --- | --- | --- |
 | WP1-T01 | `write` (extended) | A place assignment adds `place`, the evaluated place text such as `statuses[2].confirmed`, with decoded names and evaluated indexes. `value` is the new whole root value; `subject` is the root. A whole assignment has no `place`. |
 | WP4-T01 | `wait`, `receiveWait` (extended, computed forms only); `timer` (new) | A wait or receive timeout whose duration is computed adds `durationNs`, the evaluated value. A computed state timer is evaluated when the entry actions finish, after the `state` observation of that entry and the entry's own observations, and records a `timer` observation: `subject` the machine, `state`, `source` the timer transition, `timerNs` the evaluated value and `expiresNs` the expiry time. Literal waits and literal state timers add no field and no `timer` observation. `DurationRange` (WP4-R01) is recorded like every runtime failure; a caught one is a `caught` observation. |
-| WP5-T01 | `state` (extended) | An internal reaction is a `state` observation with `internal: true`, the unchanged `state`, the `activation` and the transition as `source`, recorded before its effect runs. A state entry has no `internal` field. |
-| WP5-T02 | `discardTimer` (new) | A timer consumed because its guard was false: `subject` the machine, `activation`, `state`, `source` the timer transition, `reason: 'guard'`. |
-| WP5-T03 | `defer` (new) | Exactly one per retained message, at its first retention (WP5-R08), whether the machine then waits or runs an action of the deferring state: `subject` the machine, `activation`, `state`, `member` (`port.member`), `source` the message origin and `message` the message identity. Deferred members are events or attributes, so there is no correlation. |
-| WP5-T04 | `violation` (extended) | `code: 'CompletionLoop'` with the machine as `subject` and the completion transition as `source`; the other violations keep the run target as subject and no `source`. |
+| SIF-T01 | `state` | At each arrival and each parent entered (outermost first): `source` the state, `trigger` the leave that led there (absent for an arrival by the flow); `held: true` when SIF-R16 ended the release at this arrival (package 5). |
+| SIF-T02 | `state` with `stay: true` | A look with a message or a timer whose line ran a statement and did not leave; `source` the first such line. Arrival looks and looks without such a line add no observation. |
+| SIF-T03 | `wake` (package 4) | Before a look caused by a value: `state` and `cause` (`write`, `sample` or `own`), `pending: true` when it was recorded while the machine was busy. |
+| SIF-T04 | `discardInput` (extended) | Reasons `inactiveOwner` (dropped while waiting, on arrival, when a wait begins, at a release, after completion), `noEnabledTransition` (taken; its lines ran only false tests), `leftBeforeLine` (taken by a look that left before a line on its member ran). |
+| SIF-T05 | `release`, `skip` (package 5) | Periodic machines: the machine's one activation and the release number, also on `skip`. |
+| SIF-T06 | `periodicEnd` (package 5) | A periodic machine reached its end: `activation`, `release`. |
+| SIF-T07 | `violation` (package 4) | `StateLoop` with the operation occurrence as subject and the state as `source`; `StepLimit` unchanged. |
 | WP7-T01 | `skip` (new) | A release whose guard was false: `subject` the operation occurrence (`c.slot`), `activation`, `source` the schedule entry (`Pkg::C/schedule/N`). It replaces `complete` and, like `complete`, follows the activation's `unlock`. A skipped release therefore records exactly `release`, `dispatch`, `unlock` (serial entries only), `skip` and, for a `receive` entry, `discardInput`: the activation exists from its release, the guard is its first step, and no argument or operation observation belongs to it. |
 | WP7-T02 | `discardInput`, `failure` (extended) | A skipped `receive` entry's input is a `discardInput` directly after its `skip`, with `subject` the operation occurrence (`c.take`, as for the `skip` and for an activation's `noEnabledTransition` discard; the member is the delivered message's), `activation`, `source` the message origin, `message` the message identity and `reason: 'releaseGuard'`. A failing release guard is a `failure` with the entry, or the failing statement of an operation it calls, as `source` (WP7-R06). |
 
@@ -1385,7 +1390,7 @@ The run stops with status stopped when the script completes or fails, otherwise 
 
 | ID | Rule |
 | --- | --- |
-| WP5-R12 | A `CompletionLoop` violation fails a case: it is a contract violation in trace order, like the existing ones, with the verdict message `Contract violation CompletionLoop.`, and never an inconclusive step-limit stop. |
+| SIF-R18 | A `StateLoop` violation (package 4) fails a case like the other contract violations, with the verdict message `Contract violation StateLoop.`. |
 | WP7-R07 | A skipped release is neither a failure nor a completion of the case script, so it never decides a verdict. A failing release guard is an uncaught activation failure and fails the case (reason `run-failure`, `source` as in WP7-R06). |
 
 
@@ -1513,7 +1518,7 @@ Validation MUST rebuild semantic string paths as well as indexed references afte
 | E13 | Conditional evaluates only the selected branch |
 | E14 | `sqrt` correctly rounded and `Arithmetic` below zero; `intText`; `realText` with ties away from zero, unsigned zero, `Bounds` above 15 decimals and from 1e21; `now()` live logical time in every activation |
 | E15 | Computed waits and timeouts evaluated when they start waiting, with `durationNs`; state timers evaluated after entry with `timer` observations; per-occurrence periods and deadlines; `DurationRange` |
-| E16 | Completion, elapsed-timer and input order; no completion after discards; `discardTimer`; internal reactions keep timers; `CompletionLoop`; retention and offer-ordinal order; one `defer` per retained message |
+| E16 | States in the flow: arrival, look order and what is present (SIF-R01 to SIF-R03), waiting with timers before input and the re-pick at the zero-time wait end (SIF-R05), the three discard reasons (SIF-R06), leaving in text order (SIF-R09), unwinding (SIF-R10), parents (SIF-R11), an `if` test in a state is not a step (SIF-R12); 2.2 machines through the migration (gates B and C) |
 | E17 | Sample cells updated at delivery (after latency and faults, ordered within the instant by the event order), independent of consumption, read live and stable within an activation segment, with `sample` observations; per-member policies |
 | E18 | Release guards at dispatch before the arguments (a false guard evaluates none), deadline cancellation, skip as completion for successors, `skip` observations, `releaseGuard` discard, guard failure sourced at the entry or at the failing statement of a called operation, with no successor, unchanged grid |
 | E19 | Priority and in-task ordering keys for releases, dispatches and ready continuations, Task-placed before unplaced at equal priority, unplaced case scripts; unchanged order without Tasks; `task` on releases on a Task |
@@ -1607,11 +1612,10 @@ Scalar type assignability uses widening, with checked integral value conversion 
 | timeout | At expiry, pending becomes failed; ready failure continuation; tie beats reply |
 | try success/failure | Return e value on success; on RuntimeFault evaluate fallback lazily with existing σ/Q effects retained |
 | interrupt | Match active region; disarm/unwind protected continuation, cancel pending correlation as interrupted, retain activation/deadline/outer ρ and committed effects |
-| state reaction | Select first enabled transition, exit/effect/update/entry, invalidate old timer generation; idle releases lock |
-| completion | After entry or an internal reaction: the first enabled completion transition in order, then exit, effect, update, entry; a revisited state in a completion chain is a `CompletionLoop` violation |
-| guarded timer | At expiry, a false guard consumes the timer generation for this entry (`discardTimer`) |
-| internal reaction | Effect only; M (timer generations) unchanged |
-| retain | A deferred member's message stays in Q, marked retained (`defer` once); it is consumed in offer-ordinal order on entering a handling state |
+| state arrival | Observation, timer start, entry once, computed timers; a parent reaches its first inner state, a state with nothing to look at continues the flow, any other state makes its arrival look (SIF-R01) |
+| look | Levels outermost first, items in written order; present lines and every statement run; the first leave ends it; it runs to completion holding L[o] unless a block suspends (SIF-R02, SIF-R12) |
+| state wait | Timers that ran out first, then drop unnamed owned input, then a queued named message in zero time (re-picked at phase 2), else wait without L[o] for a timer (phase 1) or a named delivery (phase 2) (SIF-R05) |
+| leave | Block statements before the leave, exits innermost first, entries outermost first, the target's arrival look (SIF-R09) |
 | sample | At the delivery event of a value whose offer is not older than the offer of the value S[p, m] holds, S[p, m] := value, with a `sample` observation; a read sees the updates ordered before it in the event order (time, phase, insertion ordinal), and one activation sees one value of a cell between two suspensions (WP6) |
 | guarded dispatch | At the first execution step, before the arguments, evaluate the release guard. False (no argument is evaluated): cancel the deadline, release L[o], record `skip`, release `after` targets as on completion, and discard a receive entry's input (`discardInput`, `releaseGuard`). Failure: `failure` with the entry as source (the failing statement of a called operation), no successors (WP7) |
 | ordered selection | Equal (t, phase) items are ordered by descending Task priority (unplaced items at 0), then Task-placed before unplaced, then by Task declaration rank and in-task position, then by insertion ordinal (WP8-R01); on a Core that has Tasks only the activation that holds the Core (from its dispatch or resumption to its next wait or end) may take a step, and the selection among the others applies when the Core is free (WP8-R02, no preemption) |
@@ -2825,7 +2829,7 @@ The 2.2 edition adds explicit test access to the subject and associated software
 | Ports and routes | Per-member direction/reversal, structural compatibility with variance and individual diagnostics, connection/forwarding, package connections between top-level occurrences, per-package closure, resolved cardinality and ownership/emission provenance with the interface-only exemption |
 | Policies | Versioned complete typed QoS definitions, Default/Latest/Reliable/BestEffort, per-use idempotency; occurrence/direction/member queues and latest attributes |
 | Schedule and runtime | Start/every/receive/call/after entries, inherited entry replacement, dispatch copying, deadlines, lock release/reacquisition, live serial reads and concurrent snapshots; 2.3 (WP4): computed periods and deadlines in the constant sublanguage, evaluated per expanded occurrence by `constantValue` (exact bigint arithmetic, exact integral division, positive safe values checked per occurrence), trigger identity by canonical expression text, per-occurrence Timing projection |
-| Flow and state | Loops and copied iteration, wait/receive, interruption across callees, ordered nested transitions, final completion and queued startup input; 2.3 (WP4): duration literals as `uint` values, computed waits and receive timeouts evaluated when they start waiting (`durationNs`), computed state timers evaluated after the entry actions (`timer` observation), `DurationRange` caught by `try`, SW2016; 2.3 (WP5): completion transitions `when (g) to S` evaluated after entry and after every internal reaction, guarded timers with `discardTimer`, internal transitions without `to` that keep the timer epoch (`state` with `internal: true`), deferral with one `defer` observation per retained message and global offer-ordinal order of retained input, the contract violation `CompletionLoop`, SW2017 and SW2018 |
+| Flow and state | Loops and copied iteration, wait/receive, interruption across callees, ordered nested transitions, final completion and queued startup input; 2.3 (WP4): duration literals as `uint` values, computed waits and receive timeouts evaluated when they start waiting (`durationNs`), computed state timers evaluated after the entry actions (`timer` observation), `DurationRange` caught by `try`, SW2016; 2.3 (states in the flow, packages 2a and 2b): states as steps of the flow with `on entry`, `on exit`, event lines, statements and inner states, `exit;` and `to S;`, waiting machines (SIF-R01 to SIF-R06, R09, R10, R12, R13), parents and direct entry ported (their package 3 tests pending); the 2.2 machine syntax and the WP5 forms are removed, 2.2 machines migrate with `scripts/migrate-machines.mjs` (gates B and C); wakes, `StateLoop` (package 4) and periodic machines (package 5) are not implemented yet |
 | Correlation and adverse behavior | Routed results/out values, failures, timeout ties, terminal cancellation, late-reply suppression, policy overflow, age at eligibility and explicit resource limits |
 | Deployment | Separate software/platform roots, Node-only contents/targets, indexed/family placements and most-specific selection |
 | Requirements/cases/views | Immutable intent; package-owned use case/test with an optional subject that is a top-level occurrence of the same package; case scripts with the environment role of associated interface-only actors, on call replies, normal primary-subject operation calls in both case kinds and tests' private reads/helper calls (SW2010/SW2004/SW2005/SW2006); intent-only cases without statements; package associate, satisfy … by and verify … by links with SW2010 rules; seven library definitions, package/member subjects and stable occurrence unions |

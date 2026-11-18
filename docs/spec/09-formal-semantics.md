@@ -71,11 +71,10 @@ Scalar type assignability uses widening, with checked integral value conversion 
 | timeout | At expiry, pending becomes failed; ready failure continuation; tie beats reply |
 | try success/failure | Return e value on success; on RuntimeFault evaluate fallback lazily with existing σ/Q effects retained |
 | interrupt | Match active region; disarm/unwind protected continuation, cancel pending correlation as interrupted, retain activation/deadline/outer ρ and committed effects |
-| state reaction | Select first enabled transition, exit/effect/update/entry, invalidate old timer generation; idle releases lock |
-| completion | After entry or an internal reaction: the first enabled completion transition in order, then exit, effect, update, entry; a revisited state in a completion chain is a `CompletionLoop` violation |
-| guarded timer | At expiry, a false guard consumes the timer generation for this entry (`discardTimer`) |
-| internal reaction | Effect only; M (timer generations) unchanged |
-| retain | A deferred member's message stays in Q, marked retained (`defer` once); it is consumed in offer-ordinal order on entering a handling state |
+| state arrival | Observation, timer start, entry once, computed timers; a parent reaches its first inner state, a state with nothing to look at continues the flow, any other state makes its arrival look (SIF-R01) |
+| look | Levels outermost first, items in written order; present lines and every statement run; the first leave ends it; it runs to completion holding L[o] unless a block suspends (SIF-R02, SIF-R12) |
+| state wait | Timers that ran out first, then drop unnamed owned input, then a queued named message in zero time (re-picked at phase 2), else wait without L[o] for a timer (phase 1) or a named delivery (phase 2) (SIF-R05) |
+| leave | Block statements before the leave, exits innermost first, entries outermost first, the target's arrival look (SIF-R09) |
 | sample | At the delivery event of a value whose offer is not older than the offer of the value S[p, m] holds, S[p, m] := value, with a `sample` observation; a read sees the updates ordered before it in the event order (time, phase, insertion ordinal), and one activation sees one value of a cell between two suspensions (WP6) |
 | guarded dispatch | At the first execution step, before the arguments, evaluate the release guard. False (no argument is evaluated): cancel the deadline, release L[o], record `skip`, release `after` targets as on completion, and discard a receive entry's input (`discardInput`, `releaseGuard`). Failure: `failure` with the entry as source (the failing statement of a called operation), no successors (WP7) |
 | ordered selection | Equal (t, phase) items are ordered by descending Task priority (unplaced items at 0), then Task-placed before unplaced, then by Task declaration rank and in-task position, then by insertion ordinal (WP8-R01); on a Core that has Tasks only the activation that holds the Core (from its dispatch or resumption to its next wait or end) may take a step, and the selection among the others applies when the Core is free (WP8-R02, no preemption) |
