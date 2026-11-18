@@ -323,8 +323,12 @@ test('WP6-S06 redefines connect replaces the whole connection with its member po
 test('WP6-S07 SW2018 uses the effective policy of the deferred member route', async () => {
     const machine = (connect: string) => policies('', connect).replace('schedule { on receive p.e(n) handle(n); on call p.get() get(); } }', 'operation m() { initial A; state A { on receive p.e(n) to B { k = n; } } state B { defer p.e; after 1ms to A { } } } schedule { on start m(); on call p.get() get(); } }').replace('operation handle(n: int) { k = n; } ', '');
     assert.deepEqual(await warnings(machine('connect (s.out, r.p) { e: Fast; }')), []);
-    assert.deepEqual((await warnings(machine('connect: Fast (s.out, r.p) { e: Sure; get: Fast; }').replace('overflow = Overflow.dropOldest; requestTimeout = 1s; }\n  port', 'overflow = Overflow.reject; requestTimeout = 1s; }\n  port'))).map(([c, m]) => [c, m.split(';')[0]]),
-        [['SW2018', "p.e is deferred in B, but policy Sure of connect (s.'out', r.p) rejects on overflow"]]);
+    const rejecting = (connect: string) => warnings(machine(connect).replace('overflow = Overflow.dropOldest; requestTimeout = 1s; }\n  port', 'overflow = Overflow.reject; requestTimeout = 1s; }\n  port'));
+    // The advice names the member policy where the fix belongs (review F8); the connection-level advice is unchanged.
+    assert.deepEqual(await rejecting('connect: Fast (s.out, r.p) { e: Sure; get: Fast; }'),
+        [['SW2018', "p.e is deferred in B, but policy Sure of connect (s.'out', r.p) rejects on overflow; a full queue fails the sender. Give e of connect (s.'out', r.p) a member policy that drops on overflow (Overflow.dropOldest or Overflow.dropNewest) or a capacity that holds the retained messages."]]);
+    assert.deepEqual(await rejecting('connect link: Sure (s.out, r.p) { get: Fast; }'),
+        [['SW2018', 'p.e is deferred in B, but policy Sure of link rejects on overflow; a full queue fails the sender. Give link a policy that drops on overflow (Overflow.dropOldest or Overflow.dropNewest) or a capacity that holds the retained messages.']]);
 });
 
 test('WP6-D10 (SW2017) a completion guard that folds to false is dead; a redefined const is left alone', async () => {
@@ -454,6 +458,21 @@ test('WP6-R05 each member route uses its effective policy: capacity, overflow an
     assert.equal((fast.stores['Demo.r'] as Record<string, number>).k, 3, 'Fast: capacity 2 keeps two retained events');
     assert.equal(kinds(fast.trace as Observation[], 'overflow').length, 1);
     assert.equal((many.stores['Demo.r'] as Record<string, number>).k, 4, 'the member policy Sure holds four');
+});
+
+test('WP6-R05 a request times out after the requestTimeout of its member policy, not of the connection policy (review F9)', async () => {
+    const source = (connect: string) => `package Test {
+  import Swaml::Qos;
+  qos def Slow: Policy { delivery = Delivery.atMostOnce; ordering = Ordering.fifo; capacity = 2; overflow = Overflow.dropOldest; requestTimeout = 1s; }
+  qos def Quick: Policy { delivery = Delivery.atMostOnce; ordering = Ordering.fifo; capacity = 2; overflow = Overflow.dropOldest; requestTimeout = 1ms; }
+  port def P { provides operation get(x: int) returns int; }
+  component def S { port out: P; operation get(x: int) returns int { wait 5ms; return x; } schedule { on call out.get(x) get(x); } }
+  component def R { reversed port p: P; attribute k: int = 0; operation run() { k = try(p.get(3), -1); } schedule { on start run(); } }
+  component Demo { component s: S; component r: R; ${connect} }
+}`;
+    const quick = await run(source('connect: Slow (s.out, r.p) { get: Quick; }'), 20000000), slow = await run(source('connect: Slow (s.out, r.p);'), 20000000);
+    assert.deepEqual([quick.stores['Demo.r'], kinds(quick.trace as Observation[], 'timeout').map(o => o.timeNs)], [{ k: -1 }, [1000000]]);
+    assert.deepEqual([slow.stores['Demo.r'], kinds(slow.trace as Observation[], 'timeout').length], [{ k: 3 }, 0]);
 });
 
 test('WP6-R01 WP6-R02 forwarded boundaries and multiplicity families: the cell belongs to the sampling port occurrence', async () => {

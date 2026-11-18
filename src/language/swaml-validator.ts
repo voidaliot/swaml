@@ -1688,7 +1688,7 @@ export class SwamlValidator {
                                 // The effective policy of the member route names the member policy where one applies (WP6-S07).
                                 const named = own ?? link.node.policy?.ref, policy = named ? formatName(named.name, MESSAGE_SPELLING) : 'Default';
                                 const connection = link.node.name !== undefined ? formatName(link.node.name, MESSAGE_SPELLING) : `connect (${formatPath(link.node.source, MESSAGE_SPELLING)}, ${formatPath(link.node.target, MESSAGE_SPELLING)})`;
-                                this.report(d, 'SW2018', `${formatPath(endpoint, MESSAGE_SPELLING)} is deferred in ${formatName(state.name, MESSAGE_SPELLING)}, but policy ${policy} of ${connection} rejects on overflow; a full queue fails the sender. Give ${connection} a policy that drops on overflow (Overflow.dropOldest or Overflow.dropNewest) or a capacity that holds the retained messages.`, true, range ? { range } : {});
+                                this.report(d, 'SW2018', `${formatPath(endpoint, MESSAGE_SPELLING)} is deferred in ${formatName(state.name, MESSAGE_SPELLING)}, but policy ${policy} of ${connection} rejects on overflow; a full queue fails the sender. ${own ? `Give ${formatName(member, MESSAGE_SPELLING)} of ${connection} a member policy` : `Give ${connection} a policy`} that drops on overflow (Overflow.dropOldest or Overflow.dropNewest) or a capacity that holds the retained messages.`, true, range ? { range } : {});
                             }
                         });
                 }
