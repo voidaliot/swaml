@@ -76,6 +76,9 @@ test('WP7-S01 WP7-D01 a release guard on a start or call entry is SW2007, once, 
         ['SW2007', 'A release guard is allowed only on every, receive and after entries.'],
         ['SW2007', 'A release guard is allowed only on every, receive and after entries.'],
     ]);
+    // Reported at the guard, not the whole entry (review mutant R-5).
+    const lines = source.split('\n');
+    assert.deepEqual((await parse(source)).errors.map(e => e.range.start.line === e.range.end.line ? lines[e.range.start.line].slice(e.range.start.character, e.range.end.character) : '(lines)'), ['armed', 'n > 0 and missing']);
 });
 
 test('WP7-S02 WP7-D02 a release guard is bool, pure or reads state, in the scope of attributes, sampled ports, now() and receive bindings', async () => {
@@ -96,6 +99,12 @@ test('WP7-S02 WP7-D02 a release guard is bool, pure or reads state, in the scope
         ['on every 10ms slot() when (nothing());', [['SW2006', 'Unknown operation nothing; remote calls require an owned port.']]],
         // The bindings belong to the receive entry; an every entry has none.
         ['on every 10ms slot() when (v);', [['SW2002', 'Unknown local value v; nested operations never capture enclosing locals and component attributes are private.']]],
+        // Guards on receive and after entries are typed and checked the same way (review mutants R-3, R-4).
+        ['on receive inp.go(v) take(v) when (v);', [['SW2007', 'Release guard must be bool, found int.']]],
+        ['on receive inp.go(v) take(v) when (v > 0 and bump());', [['SW2007', 'Release guard must be pure or read state.']]],
+        ['on every 10ms slot(); after slot next() when (runs);', [['SW2007', 'Release guard must be bool, found uint.']]],
+        ['on every 10ms slot(); after slot next() when (shout());', [['SW2007', 'Release guard must be pure or read state.']]],
+        ['on every 10ms slot(); after slot next() when (v);', [['SW2002', 'Unknown local value v; nested operations never capture enclosing locals and component attributes are private.']]],
     ];
     for (const [entry, expected] of cases)
         assert.deepEqual(await errors(model(`${port} ${helpers}`, entry)), expected, entry);
