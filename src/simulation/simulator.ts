@@ -1,6 +1,7 @@
 import { AstUtils, DocumentState, type AstNode } from 'langium';
 import * as a from '../language/generated/ast.js';
 import { SWAML_REFERENCE_PROFILE } from '../language/edition.js';
+import { deploymentPlan } from '../language/placement.js';
 import { inputEndpoints, memberQos, sampledMembers, sampledReadForm, LIBRARY_2_3_URI, isCompletion, isInternal, stateDeferrals, libraryIntrinsic, type LibraryIntrinsic, caseRead, caseTarget, isPlace, placeRoot, valueSteps, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, entryPeriod, entryDeadline, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
 import { binary, bind, checked, ContractViolation, copy, intText, plain, realText, RuntimeFault, scalar, squareRoot, voidValue, widen, type Environment, type Value } from './values.js';
 export { projectOperationTiming } from './timing.js';
@@ -188,6 +189,8 @@ type Frame = {
      * be discarded with reason releaseGuard (WP7-R04).
      */
     skipped?: { input?: Message };
+    /** WP8-R01: the ordering key of an activation on a Swaml::Os Task; absent for unplaced and case-script activations. */
+    key?: RunKey;
 };
 type Watch = {
     node: a.Interruptible;
@@ -254,8 +257,31 @@ type Event = {
     order: number;
     run: () => void;
     live: () => boolean;
+    /** WP8-R01: the key of the activation the event releases, dispatches or resumes, when it is on a Task. */
+    key?: RunKey;
 };
-const before = (x: Event, y: Event): boolean => x.time !== y.time ? x.time < y.time : x.phase !== y.phase ? x.phase < y.phase : x.order < y.order;
+/**
+ * The ordering key of an activation on a Swaml::Os Task (WP8-R01): its Task's priority, the Task's declaration
+ * rank on the platform and the entry's in-task position (WP8-M01).
+ */
+export type RunKey = { priority: number; rank: number; position: number; task: string };
+/**
+ * WP8-R01: at equal time and phase, descending Task priority (unplaced at priority 0), then activations on a Task
+ * before unplaced ones of equal priority, then, on the same Task, in-task position; then the insertion ordinal. Two
+ * Tasks of equal priority (on different Cores) are ordered by their declaration rank, so that the order is total
+ * (owner decision WP8-B). Without Tasks every key is absent and the 2.2 order is unchanged.
+ */
+export const compareKeys = (x: RunKey | undefined, y: RunKey | undefined): number => {
+    if (x === y)
+        return 0;
+    const px = x?.priority ?? 0, py = y?.priority ?? 0;
+    if (px !== py)
+        return py - px;
+    if (!x || !y)
+        return x ? -1 : y ? 1 : 0;
+    return x.rank - y.rank || x.position - y.position;
+};
+const before = (x: Event, y: Event): boolean => x.time !== y.time ? x.time < y.time : x.phase !== y.phase ? x.phase < y.phase : (x.key || y.key ? compareKeys(x.key, y.key) || x.order - y.order : x.order - y.order) < 0;
 /**
  * Pending events, ordered by time, then phase, then scheduling order; order is unique, so the order is
  * total and ties keep the order in which they were scheduled. A binary heap makes each step logarithmic
@@ -482,6 +508,9 @@ class Interpreter {
     private trace: TraceEvent[] = [];
     private machines: SimulationResult['machines'] = {};
     private deployments: SimulationResult['deployments'] = {};
+    /** WP8-R01: the ordering key of each entry on a Swaml::Os Task, per component occurrence. */
+    private keys = new Map<Component, Map<a.ScheduleEntry, RunKey>>();
+    private tasked = false;
     private time = 0;
     private steps = 0;
     private serial = 0;
@@ -546,8 +575,19 @@ class Interpreter {
     private log(kind: string, subject: string, details: Record<string, unknown> = {}): void { this.trace.push({ timeNs: this.time, ordinal: this.trace.length + 1, kind, subject, ...details }); }
     private fuel = (): void => { if (++this.steps > this.options.maxSteps)
         throw new ContractViolation('StepLimit'); };
-    private at(time: number, phase: number, run: () => void, live: () => boolean = () => true): void { if (!Number.isSafeInteger(time))
-        throw new ContractViolation('ClockRange'); this.events.push({ time, phase, order: this.order++, run, live }); }
+    private at(time: number, phase: number, run: () => void, live: () => boolean = () => true, key?: RunKey): void { if (!Number.isSafeInteger(time))
+        throw new ContractViolation('ClockRange'); this.events.push(key ? { time, phase, order: this.order++, run, live, key } : { time, phase, order: this.order++, run, live }); }
+    private keyOf(c: Component, entry: a.ScheduleEntry): RunKey | undefined { return this.tasked ? this.keys.get(c)?.get(entry) : undefined; }
+    /** The key of the entry a delivered message releases, or of the activation a reply resumes (WP8-R01). */
+    private deliveryKey(m: Message): RunKey | undefined {
+        if (!this.tasked)
+            return undefined;
+        if (m.kind === 'reply')
+            return m.correlation?.frame.key;
+        const destination = this.ports.get(m.target);
+        const entry = destination && schedule(destination.c.structure).find(e => e.endpoint === `${destination.p.name}.${m.member}` && e.kind === (m.kind === 'request' ? 'call' : 'receive'));
+        return destination && entry ? this.keyOf(destination.c, entry) : undefined;
+    }
     /** The first not completed activation that satisfies test, in release order. */
     private findFrame(test: (f: Frame) => boolean): Frame | undefined { for (const f of this.frames)
         if (test(f))
@@ -646,14 +686,14 @@ class Interpreter {
             for (const c of this.components.values())
                 for (const e of schedule(c.structure)) {
                     if (e.kind === 'start')
-                        this.at(0, 2, () => this.release(c, e));
+                        this.at(0, 2, () => this.release(c, e), undefined, this.keyOf(c, e));
                     if (e.kind === 'every') {
                         // A computed period is the constant value of this occurrence (WP4-S04, WP4-R02).
                         const period = entryPeriod(e, c.structure);
                         if (period === undefined)
                             throw new Error(`Period of ${c.path}.${e.operation} is not a positive representable duration`);
-                        const tick = () => { this.release(c, e); this.at(this.time + period, 2, tick); };
-                        this.at(this.time + period, 2, tick);
+                        const key = this.keyOf(c, e), tick = () => { this.release(c, e); this.at(this.time + period, 2, tick, undefined, key); };
+                        this.at(this.time + period, 2, tick, undefined, key);
                     }
                 }
             // A case script starts after the initialization barrier, released after every on start entry.
@@ -702,6 +742,18 @@ class Interpreter {
             const matches = d.placements.filter(p => !p.target || path === `${root.name}.${p.target}` || path.startsWith(`${root.name}.${p.target}.`) || path.startsWith(`${root.name}.${p.target}[`)).sort((a, b) => (b.target?.length ?? 0) - (a.target?.length ?? 0));
             this.deployments[path] = matches[0] ? `${identity(d.platform.ref!)}.${matches[0].node}` : null;
         }
+        // WP8-R01: entries on Swaml::Os Tasks take their Task's priority and their in-task position. A platform without
+        // Tasks adds no key, so the run keeps its 2.2 order.
+        const plan = deploymentPlan(d);
+        if (plan?.taskRules)
+            for (const e of plan.entries) {
+                const c = this.components.get(e.occurrence.path);
+                if (!c || !e.task || e.position === undefined)
+                    continue;
+                this.tasked = true;
+                const forComponent = this.keys.get(c) ?? this.keys.set(c, new Map()).get(c)!;
+                forComponent.set(e.entry, { priority: Number(e.task.priority ?? 0n), rank: e.task.rank, position: e.position, task: e.task.path });
+            }
     }
     private sync(g: Iterator): Value { let r = g.next(); while (!r.done && r.value.kind === 'step')
         r = g.next(); if (!r.done)
@@ -711,10 +763,14 @@ class Interpreter {
             throw new ContractViolation('ActivationOverflow');
         const op = members(c.structure).filter(isExecutable).find(x => x.name === entry.operation)!;
         const f: Frame = { id: this.id('a'), c, op, entry, released: this.time, iterator: undefined!, snapshot: new Map(), done: false, suspended: false, started: false, token: 0, watches: [], correlation: message?.correlation, at: entry };
+        const key = this.keyOf(c, entry);
+        if (key)
+            f.key = key;
         f.iterator = this.activate(f, message);
         this.frames.add(f);
         this.unstarted++;
-        this.log('release', `${c.path}.${op.name}`, { activation: f.id, source: this.source(entry), cause: entry.kind, predecessorActivation: predecessor?.id });
+        // The Task of an activation on a Swaml::Os Task, for Task lanes (WP8-M04); absent otherwise.
+        this.log('release', `${c.path}.${op.name}`, { activation: f.id, source: this.source(entry), cause: entry.kind, predecessorActivation: predecessor?.id, ...(key ? { task: key.task } : {}) });
         // One precedence everywhere (entryDeadline): an explicit deadline, literal or computed, then the period (WP4-S04).
         const deadline = entry.deadlineValue || entry.periodValue ? this.computedDeadline(c, entry) : entryDeadline(entry, c.structure);
         if (deadline)
@@ -731,7 +787,8 @@ class Interpreter {
     }
     private pump(): void {
         this.consume();
-        for (const f of this.frames) {
+        // WP8-R01: dispatches and ready continuations follow the ordering keys; without Tasks, the release order.
+        for (const f of this.tasked ? [...this.frames].sort((x, y) => compareKeys(x.key, y.key)) : this.frames) {
             if (f.done || f.suspended || (f as Frame & {
                 queued?: boolean;
             }).queued || (!f.entry.concurrent || !f.started) && f.c.lock && f.c.lock !== f)
@@ -751,7 +808,7 @@ class Interpreter {
             }).queued = true;
             this.at(this.time, 4, () => { (f as Frame & {
                 queued: boolean;
-            }).queued = false; this.drive(f); });
+            }).queued = false; this.drive(f); }, undefined, f.key);
         }
     }
     /** Dispatched, not completed concurrent activations of c. */
@@ -798,10 +855,10 @@ class Interpreter {
             this.log(y.kind === 'request' ? 'requestWait' : y.kind === 'receive' ? 'receiveWait' : 'wait', this.label(f), { activation: f.id, source: this.source(f.at), ...(y.kind !== 'request' && y.durationNs !== undefined ? { durationNs: y.durationNs } : {}) });
             if (y.kind === 'wait')
                 this.at(this.time + y.duration, 2, () => { if (f.token === token)
-                    this.resume(f); }, () => f.token === token && !f.done);
+                    this.resume(f); }, () => f.token === token && !f.done, f.key);
             if (y.kind === 'receive' && y.timeout !== undefined)
                 this.at(this.time + y.timeout, 1, () => { if (f.token === token && f.suspended)
-                    this.resume(f, {}); }, () => f.token === token && !f.done);
+                    this.resume(f, {}); }, () => f.token === token && !f.done, f.key);
             if (y.kind === 'request')
                 this.request(f, y);
         }
@@ -840,7 +897,7 @@ class Interpreter {
         if (!failure && !f.script)
             for (const e of schedule(f.c.structure))
                 if (e.kind === 'after' && e.predecessor === f.op.name)
-                    this.at(this.time, 2, () => this.release(f.c, e, undefined, f));
+                    this.at(this.time, 2, () => this.release(f.c, e, undefined, f), undefined, this.keyOf(f.c, e));
     }
     private *activate(f: Frame, message?: Message): Iterator {
         const env: Environment = new Map();
@@ -1363,7 +1420,7 @@ class Interpreter {
             correlation.state = 'failed';
             this.log('timeout', y.endpoint, { source: correlation.origin, correlation: correlation.id });
             this.resume(f, { failure: 'timeout' });
-        } }, () => correlation.state === 'pending');
+        } }, () => correlation.state === 'pending', f.key);
         try {
             this.offer({ id: this.id('m'), route, source, target: route.endpoints.find(p => p !== source)!, member, args: copy(y.args), emitted: this.time, correlation, kind: 'request', origin: correlation.origin });
         }
@@ -1490,7 +1547,7 @@ class Interpreter {
                     return;
                 }
                 (m as Message & { ready: boolean }).ready = true;
-            });
+            }, undefined, this.deliveryKey(m));
         }
     }
     private consume(): void {

@@ -16,3 +16,23 @@ package Swaml::Time {
   /** The logical clock of the reference run (swa.ml 2.3). */
   operation def now() returns uint { /** Host intrinsic: the logical time of the evaluating step in nanoseconds since the run epoch; reads state. */ }
 }
+package Swaml::Os {
+  /** Cores and operating-system tasks of a deployment platform (swa.ml 2.3). The values are design decisions checked statically (T1 to T7); costs and budgets belong to a target binding. With zero-cost steps a run orders equal-time work by priority and in-task position only; kind, preemptive and responseNs have no runtime effect. */
+  import Swaml::Platform;
+  enum TaskKind {
+    basic,
+    extended,
+    isr
+  }
+  component def Core specializes Node {
+    /** A processor core. The Tasks of a Core are the Task occurrences whose nearest Core ancestor it is; Tasks without a Core ancestor form one implicit Core per platform root. */
+  }
+  component def Task specializes Process {
+    /** An operating-system task: kind, priority (higher first, unique per Core), preemptability, period and response bound. */
+    const attribute kind: TaskKind = TaskKind.basic;
+    const attribute priority: uint = 0;
+    const attribute preemptive: bool = true;
+    const attribute periodNs: uint = 0 /** 0: event-activated. */;
+    const attribute responseNs: uint = 0 /** Response bound of an event-activated task or ISR; 0: none. */;
+  }
+}
