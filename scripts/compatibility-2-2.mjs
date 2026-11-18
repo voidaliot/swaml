@@ -385,8 +385,13 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const traces = flags.includes('--write-traces') ? resolve(flags[flags.indexOf('--write-traces') + 1] ?? '') : undefined;
     if (gate !== 'ast' && gate !== 'runs')
         throw Error('Usage: node scripts/compatibility-2-2.mjs ast|runs [--record | --write-traces <dir>]');
-    if (record)
+    if (record) {
+        // The fixtures are recorded once, with the 3.1.0 implementation; a gate never passes by re-recording.
+        const version = JSON.parse(read('package.json')).version;
+        if (existsSync(fixturePath(gate === 'ast' ? 'ast.json' : 'behaviour.json')) || version !== '3.1.0')
+            throw Error(`The 2.2 compatibility fixtures are recorded once with implementation 3.1.0 (this is ${version}); they are never re-recorded.`);
         console.log(gate === 'ast' ? await recordAst() : await recordRuns());
+    }
     else {
         const { report, failures } = gate === 'ast' ? await checkAst() : await checkRuns({ writeTraces: traces });
         for (const failure of failures)
