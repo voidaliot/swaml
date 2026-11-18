@@ -369,20 +369,22 @@ test('WP7-R01 WP6-S01 a guard reads sample cells: the latest value delivered bef
 
 test('WP7-R01 WP6-R03 the guard, the arguments and the body read one sampled value even when a delivery falls between the guard step and the body', async () => {
     // C is dispatched before Src at each instant, so Src's send of the new mode is delivered after C's guard step and
-    // before the later steps of look; a segment that dropped the guard's copy would let the body see the new value.
-    const source = (guard: string) => `package Test {
+    // before the later steps of look; a segment that dropped the guard's copy would let the body see the new value. With
+    // a literal argument the guard is the only read before the body (review mutant R-7); with mode.current the
+    // argument reads the cell too.
+    const source = (guard: string, argument: string) => `package Test {
   enum PowerMode { run, sleep }
   port def Mode { provides attribute current: PowerMode = PowerMode.run; }
   component def Src { port mode: Mode; attribute k: int = 0; operation tick() { send mode.current(if (k % 2 == 0) PowerMode.sleep else PowerMode.run); k = k + 1; } schedule { on every 10ms tick(); } }
   component def C { reversed port mode: Mode; attribute runs: uint = 0; attribute seen: uint = 0; attribute differ: uint = 0;
     operation awake() returns bool { return mode.current != PowerMode.sleep; }
     operation look(p: PowerMode) { runs = runs + 1; runs = runs + 1; runs = runs + 1; if (mode.current == PowerMode.sleep) { seen = seen + 1; } if (p != mode.current) { differ = differ + 1; } }
-    schedule { on every 10ms look(mode.current) when (${guard}); }
+    schedule { on every 10ms look(${argument}) when (${guard}); }
   }
   component Demo { component c: C; component s: Src; connect (s.mode, c.mode); }
 }`;
-    for (const guard of ['mode.current != PowerMode.sleep', 'awake()']) {
-        const r = simulate([(await valid(source(guard))).model], 'Test::Demo', { untilNs: 45_000_000 });
+    for (const argument of ['PowerMode.run', 'mode.current']) for (const guard of ['mode.current != PowerMode.sleep', 'awake()']) {
+        const r = simulate([(await valid(source(guard, argument))).model], 'Test::Demo', { untilNs: 45_000_000 });
         const looks = r.trace.filter(o => o.subject === 'Demo.c.look' && ['complete', 'skip'].includes(o.kind));
         assert.deepEqual(looks.map(o => [ms(o), o.kind]), [[10, 'complete'], [20, 'skip'], [30, 'complete'], [40, 'skip']], guard);
         // The interleaving happens: a sample update of c's cell lies between a completed look's dispatch and its completion.
@@ -391,7 +393,7 @@ test('WP7-R01 WP6-R03 the guard, the arguments and the body read one sampled val
             return r.trace.some(o => o.kind === 'sample' && o.ordinal > dispatch.ordinal && o.ordinal < done.ordinal);
         });
         assert.ok(interleaved, guard);
-        assert.deepEqual([r.stores['Demo.c'].seen, r.stores['Demo.c'].differ], [0, 0], `${guard}: the body and the argument see what the guard saw`);
+        assert.deepEqual([r.stores['Demo.c'].seen, r.stores['Demo.c'].differ], [0, 0], `${guard}, ${argument}: the body and the argument see what the guard saw`);
     }
 });
 
