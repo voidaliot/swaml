@@ -348,7 +348,7 @@ test("WP5-S09 a deferral belongs to the machine's single input ownership (SW2005
     assert.deepEqual(only.filter(e => ['SW2005', 'SW2008'].includes(e[0])), [['SW2008', 'a.y is deferred, but no state of run handles it.']]);
 });
 
-test('WP5-D08 SW2017 warns on a completion guard that reads nothing the machine writes; WP6 confirms it for sampled cells (hook)', async () => {
+test('WP5-D08 SW2017 warns on a completion guard that reads nothing the machine writes; WP6 confirms it for sampled cells (test/v2/sampled-reads.test.ts)', async () => {
     const message = 'Completion guard of A reads nothing that run writes; it cannot change while the machine waits.';
     const extra = 'operation tick() { n = n + 1; } operation set() { ok = true; } operation flag() returns bool { return ok; }';
     const warn = (body: string) => warnings(machine(body, extra).replace('schedule { on start run(); }', 'schedule { on start run(); on every 1ms tick(); }'));
@@ -360,10 +360,12 @@ test('WP5-D08 SW2017 warns on a completion guard that reads nothing the machine 
     assert.deepEqual(await warn('state A { on receive a.x(v) { log = v; } when (log > 2) to B { } } final state B { }'), []);
     assert.deepEqual(await warn('state A { on exit { ok = true; } after 1ms to C { } when (flag()) to B { } } state C { after 1ms to A { } } final state B { }'), []);
     assert.deepEqual(await warn('state A { on entry { set(); } when (flag()) to B { } } final state B { }'), []);
-    // A literal true never waits and is not reported (review L1): nor is a guard that is constant after folding, true or false.
+    // A literal true never waits and is not reported (review L1): nor is a guard that folds to true. A guard that folds
+    // to false is dead and gets the WP6-D10 wording instead (WP5 review N3, owner decision).
     assert.deepEqual(await warn('state A { when (true) to B { } } final state B { }'), []);
-    for (const guard of ['1 == 1', 'not false', 'false', '(2 > 1) and not (1 == 2)'])
+    for (const guard of ['1 == 1', 'not false', '(2 > 1) and not (1 == 2)'])
         assert.deepEqual(await warn(`state A { when (${guard}) to B { } after 1ms to B { } } final state B { }`), [], guard);
+    assert.deepEqual(await warn('state A { when (false) to B { } after 1ms to B { } } final state B { }'), [['SW2017', 'Completion guard of A is always false; the transition is never taken.']]);
     // A guard that already has an error gets no SW2017 besides it: a writing callee, now() through a callee, a request.
     const faulty = 'operation bump() returns bool { n = n + 1; return true; } operation late() returns bool { return Swaml::Time::now() > 1ms; } optional port srv { requires operation ask() returns bool; }';
     for (const guard of ['bump()', 'late()', 'srv.ask()']) {

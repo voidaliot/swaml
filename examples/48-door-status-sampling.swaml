@@ -1,0 +1,112 @@
+package DoorStatus {
+  /** A transmit task in the shape of the door model's ComMain. In 2.2 it needs a store handler per required attribute (StoringCom: a receive entry and an attribute copy for each value it sends). From 2.3 a port whose attribute members declare initial values is sampled: door.ajar reads the latest value delivered to the port without a handler (SamplingCom). The cell holds the initial value until the first delivery, takes each delivered value at its delivery instant whether or not an owner consumes it, and is read live, also after a suspension. */
+  datatype StatusPdu {
+    ajar: bool;
+    window: int;
+  }
+  port def DoorState {
+    provides attribute ajar: bool = false;
+    provides attribute window: int = -1;
+  }
+  port def StatusFrames {
+    provides event status(pdu: StatusPdu);
+  }
+  component def StoringCom {
+    /** The 2.2 shape: one stored copy and one handler per sent value. */
+    reversed port door: DoorState;
+    port tx: StatusFrames;
+    attribute ajarCopy: bool = false;
+    attribute windowCopy: int = -1;
+    attribute frames: uint = 0;
+    operation storeAjar(v: bool) {
+      ajarCopy = v;
+    }
+    operation storeWindow(v: int) {
+      windowCopy = v;
+    }
+    operation txMain() {
+      publish tx.status(record StatusPdu { ajar = ajarCopy; window = windowCopy; });
+      frames = frames + 1;
+    }
+    schedule {
+      on receive door.ajar(v) storeAjar(v);
+      on receive door.window(v) storeWindow(v);
+      on every 10ms txMain();
+    }
+  }
+  component def SamplingCom {
+    /** The 2.3 shape: ajar is sampled only; window is sampled and also consumed by a handler that counts its changes. */
+    reversed port door: DoorState;
+    port tx: StatusFrames;
+    attribute sentAjar: bool = false;
+    attribute sentWindow: int = 0;
+    attribute frames: uint = 0;
+    attribute windowChanges: uint = 0;
+    attribute settled: int = 0;
+    operation onWindow(v: int) {
+      windowChanges = windowChanges + 1;
+    }
+    operation txMain() {
+      sentAjar = door.ajar;
+      sentWindow = door.window;
+      publish tx.status(record StatusPdu { ajar = door.ajar; window = door.window; });
+      frames = frames + 1;
+    }
+    operation settle() {
+      /** Reads the window position, waits, and reads it again: the second read sees a value delivered during the wait. */
+      var before: int = door.window;
+      wait 4ms;
+      settled = door.window - before;
+    }
+    schedule {
+      on receive door.window(v) onWindow(v);
+      on every 10ms txMain();
+      on every 20ms settle();
+    }
+  }
+  component def Sensors {
+    /** Interface-only actor for the door sensors. */
+    port toStoring: DoorState;
+    port toSampling: DoorState;
+  }
+  component def Gateway {
+    /** Interface-only actor that receives the status frames. */
+    reversed port fromStoring: StatusFrames;
+    reversed port fromSampling: StatusFrames;
+  }
+  component storing: StoringCom;
+  component sampling: SamplingCom;
+  component sensors: Sensors;
+  component gateway: Gateway;
+  connect (sensors.toStoring, storing.door);
+  connect (sensors.toSampling, sampling.door);
+  connect (storing.tx, gateway.fromStoring);
+  connect (sampling.tx, gateway.fromSampling);
+  associate sensors, gateway to 'Initial values before the first delivery', 'Latest value at each frame', 'Live read after a wait';
+  test 'Initial values before the first delivery' of sampling {
+    /** Nothing is sent: the 10 ms frame carries the declared initial values, false and -1 (not the zero value 0). */
+    wait 15ms;
+    assert sampling.frames == 1 and not sampling.sentAjar and sampling.sentWindow == -1;
+  }
+  test 'Latest value at each frame' of sampling {
+    /** The door opens at 2 ms and the window moves to 30 and then 60 before the 10 ms frame; the frame carries the latest values. Only window is consumed, so ajar has no pending value and no deliver observation, and both window values are counted. At 11 ms the door closes; the 20 ms frame carries false. */
+    wait 2ms;
+    send sensors.toSampling.ajar(true);
+    send sensors.toSampling.window(30);
+    send sensors.toSampling.window(60);
+    wait 9ms;
+    assert sampling.frames == 1 and sampling.sentAjar and sampling.sentWindow == 60;
+    send sensors.toSampling.ajar(false);
+    wait 9ms;
+    assert sampling.frames == 2 and not sampling.sentAjar and sampling.sentWindow == 60 and sampling.windowChanges == 2;
+  }
+  test 'Live read after a wait' of sampling {
+    /** settle reads the window at 20 ms, waits 4 ms and reads again. A value delivered at 22 ms is seen by the second read: settled is the difference 50 - 10. */
+    wait 5ms;
+    send sensors.toSampling.window(10);
+    wait 17ms;
+    send sensors.toSampling.window(50);
+    wait 8ms;
+    assert sampling.settled == 40;
+  }
+}
