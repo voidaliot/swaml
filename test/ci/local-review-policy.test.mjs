@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { frozenCopies, publishedEditions } from '../../scripts/check-frozen-publications.mjs';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -38,19 +40,27 @@ test('publication checks are deliberate and run every published 2.x edition in a
 // A published edition's checker name must be directly followed, on the same line and
 // after an optional closing quote, by --archive. Anything else is a strict run. A checker
 // name built from a variable, glob or concatenation cannot be checked and is rejected.
+// This is a tripwire against accidental strict runs, not an obfuscation detector: a path
+// assembled from parts at run time (as this file does for its own samples) passes any
+// line scan, and review is the backstop for deliberate obfuscation.
 const strictChecker = new RegExp(stem + String.raw`2\.[0-2](?:\.0)?\.py(?!["']?[ \t]+--archive(?![\w=-]))`, 'u');
 const dynamicChecker = new RegExp(stem + String.raw`(?![\w.]*\.py\b)[\w.]*(?:[$%{}*?[\]'"` + '`' + String.raw`+(<]|$)`, 'u');
 const violates = line => strictChecker.test(line) || dynamicChecker.test(line);
 const repository = fileURLToPath(new URL('../../', import.meta.url));
-// Exact files that name the checkers as data, never as a command.
+// Exact files that name the checkers as data, never as a command. Each one is frozen or
+// pinned by check-frozen-publications.mjs, so no runnable file is both unscanned and unfrozen.
 const dataFiles = new Set([
-    // Published source manifests (pinned by check-frozen-publications.mjs).
+    // Published source manifests.
     ...['2.0.0', '2.1', '2.2'].map(edition => `output/pdf/SWAML-${edition}-Specification.manifest.json`),
-    // Embedded-source inventories of the publication builders and checkers (frozen, except the historical 2.0.0 builder).
-    'scripts/build-spec-pdf-2.0.py', 'scripts/build-spec-pdf-2.1.py', `scripts/${stem}2.1.py`, `scripts/${stem}2.2.py`, 'scripts/publication_2_2_sources.py',
-    // The frozen-file lists and their test.
-    'scripts/check-frozen-publications.mjs', 'test/ci/frozen-publications.test.mjs',
+    // Embedded-source inventories of the 2.1 and 2.2 publication builders and checkers.
+    'scripts/build-spec-pdf-2.1.py', `scripts/${stem}2.1.py`, `scripts/${stem}2.2.py`, 'scripts/publication_2_2_sources.py',
 ]);
+// Exact lines (SHA-256 of the line without CR) allowed in a scanned file that is not frozen:
+// the attachment list of the historical 2.0.0 builder, a named exception of the frozen check.
+const dataLines = new Map([
+    ['scripts/build-spec-pdf-2.0.py', new Set(['d1bf8e1028f6add81c999d2f638b11c5dbcbd6eac8ba8358f01f25d296c39cd8'])],
+]);
+const lineDigest = line => createHash('sha256').update(line.replace(/\r$/u, '')).digest('hex');
 
 /** Every tracked text file; Markdown contributes only its fenced code lines. */
 function violations(root) {
@@ -58,6 +68,7 @@ function violations(root) {
     const tracked = execFileSync('git', ['-C', root, 'ls-files', '-z'], {maxBuffer: 1 << 26}).toString('utf8').split('\0').filter(Boolean);
     for (const path of tracked) {
         if (dataFiles.has(path) || !existsSync(join(root, path))) continue;
+        const allowed = dataLines.get(path) ?? new Set();
         const raw = readFileSync(join(root, path));
         if (raw.includes(0)) continue;
         let fence = null;
@@ -67,14 +78,16 @@ function violations(root) {
                 if (marker && (!fence || marker[0] === fence[0])) { fence = fence ? null : marker; return; }
                 if (!fence) return;
             }
-            if (violates(line)) found.push(`${path}:${i + 1}`);
+            if (violates(line) && !allowed.has(lineDigest(line))) found.push(`${path}:${i + 1}`);
         });
     }
     return found;
 }
 
 test('no tracked file runs a published edition checker strictly or by a computed name', () => {
-    for (const path of dataFiles) assert.ok(existsSync(join(repository, path)), path);
+    const frozen = new Set([...frozenCopies.values()].flatMap(entry => Object.keys(entry.files)));
+    const pinned = new Set([...publishedEditions.keys()].map(edition => `output/pdf/SWAML-${edition}-Specification.manifest.json`));
+    for (const path of dataFiles) assert.ok(existsSync(join(repository, path)) && (frozen.has(path) || pinned.has(path)), `${path} is excluded but not frozen`);
     assert.deepEqual(violations(repository), []);
 });
 

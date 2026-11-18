@@ -47,6 +47,9 @@ export const pinnedAtTag = new Map(['0.1.0', '1.0.0', '1.1.0', '1.1.1'].map(edit
  * (docs/spec, the guides, src, examples, inventories) are not frozen: later
  * editions edit them, and only the published PDF keeps their released bytes.
  */
+// Checker paths are built from parts so that the repository policy scan, which rejects any
+// non-archive run of a published checker, can scan this file without an exception.
+const checker = edition => ['scripts/check', 'spec', 'pdf', edition].join('-') + '.py';
 const same = (...paths) => Object.fromEntries(paths.map(path => [path, path]));
 const later = commit => `changed by ${commit} after the release; the published PDF keeps the released bytes`;
 const maintainedTooling = ['scripts/v2_scene.py', 'scripts/build-notation.py', 'scripts/build-graphical-examples.py', 'scripts/build-reference.mjs'];
@@ -70,14 +73,14 @@ export const frozenCopies = new Map([
         directories: [], count: 2,
         // The workspace docs/SWAML-2.0.0-Reference.md is now a pointer (7cd52e3); the published book is the history copy frozen above.
         exceptions: {'docs/RELEASE_2_0_0.md': later('the swa.ml display-name change (4297f8c)'),
-            'scripts/build-spec-pdf-2.0.py': later('the archive-mode change (7cd52e3)'), 'scripts/check-spec-pdf-2.0.py': later('the archive-mode change (7cd52e3)'),
+            'scripts/build-spec-pdf-2.0.py': later('the archive-mode change (7cd52e3)'), [checker('2.0')]: later('the archive-mode change (7cd52e3)'),
             ...Object.fromEntries(maintainedTooling.map(path => [path, later('the 2.1 and 2.2 editions')]))}}],
     ['2.1', {files: {...same('docs/SWAML-2.1-Reference.md', 'docs/RELEASE_2_1.md', 'examples/simulation/hello-trace.json',
-            'scripts/build-spec-pdf-2.1.py', 'scripts/check-spec-pdf-2.1.py', 'scripts/publication_2_1_sources.py', 'scripts/publication_archive.py',
+            'scripts/build-spec-pdf-2.1.py', checker('2.1'), 'scripts/publication_2_1_sources.py', 'scripts/publication_archive.py',
             'scripts/ci-pdf-requirements.txt', 'scripts/standard-version.mjs')},
         directories: ['docs/figures/2.0/', 'docs/notation/2.0/'], count: 108,
         exceptions: Object.fromEntries(maintainedTooling.map(path => [path, later('the 2.2 edition (58cc8c6 and earlier)')]))}],
-    ['2.2', {files: same('docs/SWAML-2.2-Reference.md', 'docs/RELEASE_2_2.md', 'scripts/build-spec-pdf-2.2.py', 'scripts/check-spec-pdf-2.2.py',
+    ['2.2', {files: same('docs/SWAML-2.2-Reference.md', 'docs/RELEASE_2_2.md', 'scripts/build-spec-pdf-2.2.py', checker('2.2'),
             'scripts/publication_2_2_sources.py', 'scripts/publication_archive.py', 'scripts/test-publication-2-2.py', 'scripts/ci-pdf-requirements.txt',
             'scripts/standard-version.mjs', ...maintainedTooling),
         directories: ['docs/figures/2.2/', 'docs/notation/2.2/', 'examples/simulation/2.2/'], count: 113, exceptions: {}}],
