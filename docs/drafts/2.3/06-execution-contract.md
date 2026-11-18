@@ -72,7 +72,7 @@ New and extended observations. Field names follow the existing trace (`timeNs`, 
 | WP7-T01 | `skip` (new) | A release whose guard was false: `subject` the operation occurrence, `activation`, `source` the schedule entry. |
 | WP7-T02 | `discardInput`, `failure` (extended) | A skipped `receive` entry's input is a `discardInput` with `reason: 'releaseGuard'`. A failing release guard is a `failure` with the entry as `source`. |
 
-`DurationRange` (WP4-R01) and the `sqrt` and `realText` failures (WP3-R01, WP3-R02) are recorded like every runtime failure. A caught one is a `caught` observation.
+`DurationRange` (WP4-R01) is recorded like every runtime failure. A caught one is a `caught` observation. (The `sqrt` and `realText` failures, WP3-R01 and WP3-R02, moved to [chapter 6.3](../../spec/06-execution-contract.md#63-values-flow-and-failure) in WP3.)
 
 ## 6.7 Case runs
 
