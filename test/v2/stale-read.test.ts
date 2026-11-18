@@ -264,3 +264,39 @@ test('merged SW2011 summaries report every operation that unmerged summaries rep
     }
     assert.ok(compared > 200, `${compared} valid models compared`);
 });
+
+test('merged SW2011 summaries keep caller-induced findings of helpers with sibling writes', async () => {
+    // Two writes in one innermost block under nested conditions after a wait, each condition re-reading one
+    // write's attributes, called from a single-statement caller so its only possible warning is this call.
+    // With own findings judged after merging (the defect fixed together with this test) 14 of these 100
+    // models lose the caller's warning; judged per write, none does.
+    let seed = 7;
+    const random = (n: number) => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed % n; };
+    const pick = <T>(xs: T[]) => xs[random(xs.length)];
+    const names = ['n', 'm', 's', 'x', 'y'];
+    let compared = 0, warned = 0;
+    for (let i = 0; i < 100; i++) {
+        const [a, t1, x, y, t2] = Array.from({ length: 5 }, () => pick(names));
+        const helper = `if (${a} > 0) { wait 1ms; if (${t1} > 0 and ${x} > 0) { if (v > 0 and ${y} > 0 and ${t2} > 0) { ${t1} = ${x} + v; ${t2} = v + ${y}; } } }`;
+        const source = `package Test { component Demo { ${names.map(n => `attribute ${n}: int = 0;`).join(' ')}\noperation h(v: int) { ${helper} }\noperation f() { wait 1ms; h(${pick(names)}); }\nschedule { on start f(); } } }`;
+        const lines = async (unmerged: boolean) => {
+            SwamlValidator.staleReadUnmerged = unmerged;
+            try {
+                const r = await parse(source);
+                return r.errors.length ? undefined : new Set(r.warnings.filter(w => w.code === 'SW2011').map(w => w.range.start.line));
+            }
+            finally {
+                SwamlValidator.staleReadUnmerged = false;
+            }
+        };
+        const merged = await lines(false), reference = await lines(true);
+        if (!merged || !reference)
+            continue;
+        compared++;
+        if (reference.size)
+            warned++;
+        for (const line of reference)
+            assert.ok(merged.has(line), `model ${i}: the merged analysis misses a warning in line ${line + 1}\n${source}`);
+    }
+    assert.ok(compared >= 90 && warned >= 20, `${compared} models compared, ${warned} with warnings`);
+});
