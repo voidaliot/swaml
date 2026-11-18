@@ -1,0 +1,172 @@
+{
+  "rule": "WP1a-M01",
+  "recordedWith": {
+    "implementation": "3.1.0",
+    "commit": "213f583b14bf9808429b04f7252732a118015576",
+    "languageVersion": "2.2",
+    "profile": "swaml-reference/2.2",
+    "node": "v26.12.0"
+  },
+  "grammar": "test/fixtures/compatibility-2-2/swaml-2.2.langium",
+  "grammarSha256": "8197bdb5c4f233b002cc9d404d64fb604583ba1c36e1b13aeebc98d88ea867d7",
+  "normalization": "Compared form: $type and properties, keys sorted, references as {$ref: text}, $-properties and empty defaults (undefined, false, []) removed; N1 rewrites PolicySetting{duration: d} to PolicySetting{value: Literal{duration: d}} on both sides.",
+  "astDigest": "SHA-256 of the compared form as canonical JSON (UTF-8, object keys sorted, no whitespace).",
+  "files": {
+    "examples/01-hello.swaml": {
+      "sourceSha256": "558b9265ff148a0c58fc81dd6ffe55250033b52c684f07149c49230af9a48256",
+      "astSha256": "c0c9b965998b2132d3ef55aa8f6daebd877a0aada7eeb636d45bec0b29b7538b"
+    },
+    "examples/02-realtime-controller.swaml": {
+      "sourceSha256": "ecc4181065146ee7c8a8532badb2d6181bed3bec2fb108ce0d1b2dd0a62e1391",
+      "astSha256": "59164275828f04787b2dcd0cb5404e0d489ddac44df2d6109fe6c82e0d948465"
+    },
+    "examples/03-service-pubsub.swaml": {
+      "sourceSha256": "5c71e58701eb77284fe0021a0cd9edf1227f067add26f19259d2f37d76dac481",
+      "astSha256": "12895bc9038feb24c614e4a48a25ecbdb840556485fc091c60c47dd3374951c1"
+    },
+    "examples/04-stateful-function.swaml": {
+      "sourceSha256": "bdb2beb6d6a66ca2c44f0109dde8e11d4af8063ca12fa1a1ae2e936e9c542728",
+      "astSha256": "6c7bd38f0bba3fe5c3378aace369c0f76f008eb1d6eea2c6e3488018b10b2a81"
+    },
+    "examples/05-values-and-flow.swaml": {
+      "sourceSha256": "4098b08b5b48b01074160fa2ba450bde0da7ccbebdcb9420bf5427bf404c59d8",
+      "astSha256": "37db15e056da1c2553479b6c91f054ddca77d83c655c6442dc33d2cdb7245186"
+    },
+    "examples/06-mixed-gateway.swaml": {
+      "sourceSha256": "1fcda428c930f122e7c85756f88002b57c28a5ac809a43577cb4c778e307ed41",
+      "astSha256": "8d23233eed6f5ccdb7b61b17556bfdad0cc31256f9cc1a5ccbe805fc6f43ea6c"
+    },
+    "examples/07-client-server.swaml": {
+      "sourceSha256": "90d474d4c5cb0f3ddb468a12b0cc0f259113b10f34c3dbf10b0f29f4af88c43c",
+      "astSha256": "6755c5b16468ae5b0e57e23fcbeb0696de48e7ed3bf95d0dad0c9b1b15eb5f11"
+    },
+    "examples/08-service-field.swaml": {
+      "sourceSha256": "19afbb501255e5ed7483a1a5f1de2d95ea7c6b7402a9802d1f5593591e132cca",
+      "astSha256": "c5cb414b01274cdfc5d2e634cb10be8aabc3122af32cf29a113816ae3bce9bdf"
+    },
+    "examples/09-component-roots.swaml": {
+      "sourceSha256": "36874eefa14675f18379441294235268d72be8700eea93dd5c1b1ce13eb7312c",
+      "astSha256": "8338b41689cee55dc5af19260232797b06612d924eb54bc19727a1f8a45fb6e6"
+    },
+    "examples/10-reusable-qos.swaml": {
+      "sourceSha256": "50ef4943a394477e7b4d95f263154ac8d6b0d82daf7f4c0ef0f6e5c55ba4024b",
+      "astSha256": "6062183b13ffcb9b242839d6b6ecf1ab1c9b8671d370a12c669163b7403afd38"
+    },
+    "examples/11-autosar-classic.swaml": {
+      "sourceSha256": "5c392940125b4d4f8bd995f7a97c648f30f7a34db03f8af6f3f187882b77c128",
+      "astSha256": "cc42c758a49e98cd72936202378d16746b416b6c0aa97835780557042f0b59cc"
+    },
+    "examples/12-autosar-adaptive.swaml": {
+      "sourceSha256": "3621c6c9037fff45f44901ac6b703dfaf1543a99fd6c26f6754e7b4fe1d53163",
+      "astSha256": "7bfb785734d35c27d7bfcfc1b31f1bb3548ef79accb4bc56b741b1cda95df74d"
+    },
+    "examples/13-web-application.swaml": {
+      "sourceSha256": "6fe1d85716d812f8cea25a8d77321c0bd8d44da0d289af8dcfe20c37925759a7",
+      "astSha256": "6c0874a8d3377a9e314dcadf7963d76dac57cfa7d997a61cfc7bd11993e16475"
+    },
+    "examples/14-cloud-service.swaml": {
+      "sourceSha256": "b5bb239090d2f922771a0a9eebb8feb988d6c37aa69b6ee8d2769c4cabc42a0e",
+      "astSha256": "439a6080ffa7575f317bb8c717ccabec7275f74985573d1fce30dd9ea0f97ee2"
+    },
+    "examples/15-component-specialization.swaml": {
+      "sourceSha256": "9edbb8ccbe0f71aa49a6f252126b41c90dab41b6942119ec24475b1ba52b99fc",
+      "astSha256": "30f5523c8343b11068556e993d63dbb787cee0e0ea2fdb4f134fe9d5443fff2d"
+    },
+    "examples/16-requirements-and-views.swaml": {
+      "sourceSha256": "e5e111315df18e60c049046dca62cf05de0b678d9648023554e01d6890c1d38d",
+      "astSha256": "0b129722e6522a17fe7ff4f551a5a3b60e10f6f89a33cea615a945735d6f4e2d"
+    },
+    "examples/17-function-timing.swaml": {
+      "sourceSha256": "c2ced1c6c550656f02a633713194cedeaee4fcfccdefe671b903b6738816a3cb",
+      "astSha256": "a017c9c78daf147578186aa76cc02f3fa57df6a29d75dc3683ac30852cd361dd"
+    },
+    "examples/18-control-loops.swaml": {
+      "sourceSha256": "31aff9d8bc4c87e0f54c2426649472227b5da243bbfc1f912c30df6e32f6bf54",
+      "astSha256": "93fe50415b906e17e64e97a2bb9ccf58b7258de34f321a0aaa5c666751fac2e4"
+    },
+    "examples/19-interruptible-function.swaml": {
+      "sourceSha256": "ee36a9c5eeddc990572adc65dbbe9ea4b1e28b2bc03956a6849fbea0ef27957f",
+      "astSha256": "9d1bbd352106ba67b1de3c50acaf36c5645894d6c494039286fdbb99af73462c"
+    },
+    "examples/20-classes-and-operations.swaml": {
+      "sourceSha256": "e0f4e654263d0d15f116019cfff40cd3922d31b46edb39e80b1775ee12100bcb",
+      "astSha256": "659e78afe944240c01bd32b1b1172042839cb59677b5a1b141628e687beed944"
+    },
+    "examples/21-receive-and-try.swaml": {
+      "sourceSha256": "1379a0071cf2c9727ed11841b200e91b7dc35906fa50c64a187e000059ab818a",
+      "astSha256": "30fc6e214d95bbdea79815333a4aef86cfcbcc4699b9605247c7a6824486f999"
+    },
+    "examples/22-platform-deployment.swaml": {
+      "sourceSha256": "c94473ed416785f43b791363f2472f98061048d7938035c0e0a619253ce8178a",
+      "astSha256": "f36e0e6221e6ff47354cce2dd3a364c80ee2a4ab67601bd136cd931e341d5518"
+    },
+    "examples/23-multiplicity.swaml": {
+      "sourceSha256": "db015bc1fb81fc4985129dd60cceb58bd0a9ca79aab98cb2fdd228b3378b83b5",
+      "astSha256": "42a818e96e17d0e8f07480ed3973363bdfe8e166f86d136d66635a7a6fb9b059"
+    },
+    "examples/24-operation-usage.swaml": {
+      "sourceSha256": "85df62eca03dacbfc81e6c156012800271e42f6393165ec12c4031ebce28a089",
+      "astSha256": "d2e6a80d18cc9b36c91850f7bedba028dafdaf802e932e32981b973434a02696"
+    },
+    "examples/25-function-completion.swaml": {
+      "sourceSha256": "7cedf60065895941b23af70156936680d3edd04389a10e8717874398ad77ed3f",
+      "astSha256": "82b2160cee7a622f70f74ae82fc3352f5462eb3421085a7d6d592f3df81d2bce"
+    },
+    "examples/26-boundary-forwarding.swaml": {
+      "sourceSha256": "ab9db715c49a2d92ccefdb49eecf850455f9a66a1c70fc509cc311b23fe43ea7",
+      "astSha256": "2a36717bd7a757761448d659d63ce2617c40181105428cfbb90aa2e439b5b34d"
+    },
+    "examples/27-mixed-port.swaml": {
+      "sourceSha256": "cb3dc6a756f887bd068f48894ca13d61f027f4ecc6a2142fe96adc6b7aeded99",
+      "astSha256": "11bd65823f96b9f10553dd90defa97a7b7c08309e7b4dc490edabc4d727775bc"
+    },
+    "examples/28-use-cases.swaml": {
+      "sourceSha256": "74479648ebfd983117ce9e0f3f80efa71bb804ee02ecd22a001a33916ac2248a",
+      "astSha256": "de4dd7ea14dc654dcee64d5d47a80300f294f6afd1cd70eafd414f007049278a"
+    },
+    "examples/29-executable-cases.swaml": {
+      "sourceSha256": "6cc18fa4059f876fc848ccd80ab8d10692f4f40a8a5cb27a8c632d6088707f9f",
+      "astSha256": "2caaa3ab987cba3ad2a9434d33d7a16e95846534ec23a4fd8d81b99ddf937c62"
+    },
+    "examples/30-associated-integration.swaml": {
+      "sourceSha256": "79c4aa479d2d2f918e38b1aecd1c9a25281df94f11b5f4c7f302f99c975dc2a9",
+      "astSha256": "aee55773c3b1f865e2585ef6ce36d029e499a4d1c180f46d88262761d58ba25a"
+    },
+    "examples/31-case-subject-calls.swaml": {
+      "sourceSha256": "cb840b4ec38597b8f71787a162dc9b8370ff845d40a75f737b9f4fdb6ba8e128",
+      "astSha256": "61305e0c174419941db35524cddb0495e512ff86f1f52d140c38fe50aafbf904"
+    },
+    "examples/invalid/bypass-port.swaml": {
+      "sourceSha256": "9298c8a2c883b566c6b77d5838bcde8e2da6efc011a40075626294c24b68894b",
+      "astSha256": "115c52bee0c8e65a669b0be79e550f38554a5d02b0db7078a7b25ca6b1c696b3"
+    },
+    "examples/invalid/free-event.swaml": {
+      "sourceSha256": "12b16eddfcd25a82717f78ee78562ce4ff03bcc8331b0beefb1f0f0d407f6422",
+      "skipped": "2.2 parse errors: 1:24 Expecting token of type '}' but found `event`. 'event' is a reserved word. If it is meant as a name, write it as a quoted name ('event') or choose another name."
+    },
+    "examples/notation/catalog.swaml": {
+      "sourceSha256": "e19fc9f07e6af499bfb04b584de61a31b40c1237da85094d92b609f15e6ee7ab",
+      "astSha256": "b638cd5b3f37177da1ee258120f1f77db8b38c1d1481a184b7e6351f808b6827"
+    },
+    "examples/notation/control-flow.swaml": {
+      "sourceSha256": "182f67df9c5ad27ac61aa3936a9ffb5350ff5abd4a6f16b097ae6703d722dfb6",
+      "astSha256": "6a87379598887ab1eb2157eb9b891a30ec4b41d25a6eb3ec6109ee7e428c9b7c"
+    },
+    "examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "sourceSha256": "96eac26951c3a2b012fa1d8e8d77c68ce4fc889bb2dc32d86cd4fda2bde2e589",
+      "astSha256": "39e492b92c1e6cb3c3a31632a754b282b903d35738a7449a621844c2cc3322d4"
+    },
+    "examples/showcase/autosar-classic-door-controller.swaml": {
+      "sourceSha256": "90442790433eb3c7037292c6d74a717c533f70d9724a55ef30a4e5a8f17d0d4a",
+      "astSha256": "c637e871a8e50251ec7772dc08e378ddb9c726e6924d5e520040c63dfc93ab57"
+    },
+    "examples/showcase/cloud-fleet-monitoring.swaml": {
+      "sourceSha256": "2bcedf7f8844f39219dab4939060fbdad3dc7926c820cbdf0dff3052f23479e5",
+      "astSha256": "432e0f82bd23e81f75c67c0115e61c0f03a5c7482b57c636606f5da14f9305a7"
+    },
+    "libraries/swaml-2.0.swaml": {
+      "sourceSha256": "2dbff90416abd887d8ec9dc403ac794c185c86f9eed6f4b50ca0198ac16b597f",
+      "astSha256": "80c7f8794f0fd25fd0b7a9291401a96542b7964223715d6ccd9463342a7ffa87"
+    }
+  }
+}
