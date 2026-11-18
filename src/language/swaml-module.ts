@@ -7,7 +7,7 @@ import { SwamlLanguageServer } from './language-server.js';
 import { SwamlDocumentBuilder, SwamlDocumentValidator } from './swaml-document-builder.js';
 import { SwamlPathServices } from './path-services.js';
 import { SwamlFormatter } from './formatter.js';
-import { STANDARD_LIBRARY } from './standard-library.js';
+import { STANDARD_LIBRARY, STANDARD_LIBRARY_2_3 } from './standard-library.js';
 import { applyStatementRecovery, guardParserStack, SwamlLexer, SwamlLexerErrorMessageProvider, SwamlParserErrorMessageProvider, SwamlValueConverter } from './swaml-syntax.js';
 export { effectiveQos } from './semantic.js';
 export { documentationText, modelComments, selectView, viewCandidates } from './presentation.js';
@@ -38,5 +38,8 @@ export function createSwamlServices(context: DefaultSharedModuleContext, ...host
     Swaml.validation.ValidationRegistry.register({ Model: Swaml.validation.SwamlValidator.checkModel }, Swaml.validation.SwamlValidator);
     const library = shared.workspace.LangiumDocumentFactory.fromString(STANDARD_LIBRARY, URI.parse('builtin:///swaml-2.0.swaml'));
     shared.workspace.LangiumDocuments.addDocument(library);
+    // The 2.3 packages Swaml::Numeric, Swaml::Text and Swaml::Time are a separate built-in document (WP3-M01),
+    // so the 2.2 library keeps its bytes, document URI and source ranges.
+    shared.workspace.LangiumDocuments.addDocument(shared.workspace.LangiumDocumentFactory.fromString(STANDARD_LIBRARY_2_3, URI.parse('builtin:///swaml-2.3.swaml')));
     return { shared, Swaml };
 }

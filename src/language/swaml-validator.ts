@@ -9,8 +9,10 @@ import { staleWrite, STALE_READ_WORK_LIMIT, type StaleReadBudget, type Summary }
 const EXPRESSION_TYPES = new Set(['ConditionalExpression', 'BinaryExpression', 'UnaryExpression', 'Literal', 'CallExpression', 'TryExpression', 'ReferenceExpression', 'RecordLiteral', 'ArrayLiteral']);
 /** Whether an expression is inside a conditional expression (WP2-S04). */
 const insideConditional = (e: AstNode): boolean => { for (let n = e.$container; n && (isExpression(n) || a.isFieldValue(n) || a.isSelector(n)); n = n.$container) if (a.isConditionalExpression(n)) return true; return false; };
+/** The name of the attribute, requirement attribute or policy setting whose initializer contains e. */
+const initialized = (e: AstNode): string => { for (let n: AstNode | undefined = e; n; n = n.$container) if (a.isAttribute(n) || a.isPolicySetting(n)) return n.name; return ''; };
 const isExpression = (n: unknown): n is a.Expression => !!n && typeof n === 'object' && EXPRESSION_TYPES.has((n as AstNode).$type);
-import { useEffectCache } from './semantic.js';
+import { useEffectCache, isClockRead, libraryIntrinsic } from './semantic.js';
 type Env = Map<string, {
     type: string;
     mutable: boolean;
@@ -291,7 +293,7 @@ export class SwamlValidator {
         this.unique([...sig.parameters, ...b.operations], op);
         for (const nested of b.operations)
             this.operation(nested, c);
-        if (!c && !identity(op).startsWith('Swaml::Math::') && Object.values(effects(op)).some(Boolean))
+        if (!c && !identity(op).startsWith('Swaml::Math::') && !libraryIntrinsic(op) && Object.values(effects(op)).some(Boolean))
             this.report(op, 'SW2006', 'Package definitions may use only parameters and nested operations.');
         // Depth-first search with a finished set, so shared callees are explored once rather than once per path.
         const finished = new Set<Executable>();
@@ -306,7 +308,8 @@ export class SwamlValidator {
             this.states(op, c, env);
         else {
             this.block(b, env, c, op);
-            if (typeKey(sig.result) !== 'void' && !this.terminates(b) && !identity(sig).startsWith('Swaml::Math::'))
+            // Host intrinsics have documentation-only bodies (WP3-M01).
+            if (typeKey(sig.result) !== 'void' && !this.terminates(b) && !identity(sig).startsWith('Swaml::Math::') && !libraryIntrinsic(op))
                 this.report(op, 'SW2006', 'A non-void operation must return or fail on every path.');
         }
         if (sig.parameters.some(p => p.direction === 'out')) this.outFlow(op,c);
@@ -482,7 +485,10 @@ export class SwamlValidator {
         if (!op && !this.script)
             for (const call of nodes(e).filter(a.isCallExpression)) {
                 const t = this.callTarget(call, c);
-                if (t && (!isExecutable(t) || Object.values(effects(t, c)).some(Boolean)))
+                // The clock reads state (WP3-S01); its message names it and the initialized member (WP3-D01).
+                if (t && isClockRead(t))
+                    this.report(e, 'SW2006', `Initializer of ${formatName(initialized(e), MESSAGE_SPELLING)} must be pure; now() reads state.`);
+                else if (t && (!isExecutable(t) || Object.values(effects(t, c)).some(Boolean)))
                     this.report(e, 'SW2006', 'Attribute initializers must be pure.');
             }
     }

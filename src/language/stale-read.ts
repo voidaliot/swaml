@@ -1,6 +1,6 @@
 import type { AstNode } from 'langium';
 import * as a from './generated/ast.js';
-import { body, isExecutable, isPlace, placeRoot, signature, type Effect, type Executable } from './semantic.js';
+import { body, isClockRead, isExecutable, isPlace, placeRoot, signature, type Effect, type Executable } from './semantic.js';
 /** The index expressions of a value reference or place, left to right: the first index, then each selector index. */
 const indexExpressions = (n: a.ReferenceExpression | a.Assign): a.Expression[] => [...(n.index ? [n.index] : []), ...(n.selectors ?? []).flatMap(x => x.index ? [x.index] : [])];
 
@@ -242,6 +242,9 @@ class Analysis {
         const values = this.sequence(inputs.map(x => x.arg), flow), argument = new Map(inputs.map((x, k) => [x.i, values[k]]));
         const args = parameters.map((_, i) => argument.get(i) ?? none());
         let returned = none(), outs: Value[] = parameters.map(() => none());
+        // The logical clock is never a stale read (WP3-S02): its value carries no attribute and it never suspends.
+        if (isClockRead(target))
+            return none();
         if (!target || !isExecutable(target))
             // A request (or an unresolved call) waits for its reply; the reply itself is not component state.
             this.suspend(flow);

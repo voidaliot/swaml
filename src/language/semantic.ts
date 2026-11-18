@@ -53,6 +53,29 @@ export function schedule(c: Structure, seen = new Set<Structure>()): a.ScheduleE
 export function signature(op: Executable): a.Operation | undefined { return a.isOperation(op) ? op : op.definition.ref; }
 export function body(op: Executable): a.OperationBody | undefined { return op.body ?? signature(op)?.body; }
 export const isExecutable = (n: AstNode): n is Executable => a.isOperation(n) || a.isOperationUsage(n);
+/**
+ * The host intrinsics of the 2.3 library packages (WP3-L01, WP3-L02, WP3-L03, WP3-M01): operation defs of the
+ * built-in document swaml-2.3.swaml whose bodies are documentation only. A host evaluates them (chapter 6).
+ * Swaml::Math keeps its 2.2 intrinsics and their handling unchanged (WP3-L04).
+ */
+export const LIBRARY_INTRINSICS: Readonly<Record<string, 'sqrt' | 'intText' | 'realText' | 'now'>> = { 'Swaml::Numeric::sqrt': 'sqrt', 'Swaml::Text::intText': 'intText', 'Swaml::Text::realText': 'realText', 'Swaml::Time::now': 'now' };
+export type LibraryIntrinsic = 'sqrt' | 'intText' | 'realText' | 'now';
+/** The 2.3 host intrinsic op is, if any: only the built-in library's declaration counts, never a same-named user operation. */
+export function libraryIntrinsic(op: AstNode | undefined): LibraryIntrinsic | undefined {
+    // A usage of an intrinsic definition without its own body is that intrinsic; a usage body replaces it.
+    if (op && a.isOperationUsage(op))
+        return op.body ? undefined : libraryIntrinsic(op.definition?.ref);
+    if (!op || !a.isOperation(op) || !op.definition || !a.isPackage(op.$container) || !Object.hasOwn(LIBRARY_INTRINSICS, identity(op)))
+        return undefined;
+    return AstUtils.getDocument(op).uri.scheme === 'builtin' ? LIBRARY_INTRINSICS[identity(op)] : undefined;
+}
+/**
+ * Swaml::Time::now, the logical clock (WP3-L03). Its effect class is reads state (WP3-S01): it is rejected in
+ * attribute and member initializers (SW2006, WP3-D01) and never reported as a stale read (WP3-S02).
+ * Hook for WP4-S05 (the constant sublanguage) and WP5-S03 (completion guards): both reject a call for which
+ * this is true.
+ */
+export const isClockRead = (op: AstNode | undefined): boolean => libraryIntrinsic(op) === 'now';
 export function localOperation(n: AstNode, name: string, c?: Structure): Executable | undefined {
     const op = isExecutable(n) ? n : owner(n, isExecutable);
     // The enclosing operation's siblings are deliberately absent: no closure capture.
@@ -252,6 +275,11 @@ export function effects(op: Executable, c?: Structure, seen = new Set<Executable
     return result;
 }
 function effectsOf(op: Executable, c: Structure | undefined, seen: Set<Executable>, memo: Map<Executable, Effect>, result: Effect, attributes: Set<string>, attributeNames: Map<Structure, Set<string>>): void {
+    // The clock has no source body to infer from: reading it reads state (WP3-S01).
+    if (isClockRead(op)) {
+        result.reads = true;
+        return;
+    }
     const b = body(op);
     if (!b)
         return;

@@ -1,8 +1,8 @@
 import { AstUtils, DocumentState, type AstNode } from 'langium';
 import * as a from '../language/generated/ast.js';
 import { SWAML_REFERENCE_PROFILE } from '../language/edition.js';
-import { caseRead, caseTarget, isPlace, placeRoot, valueSteps, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
-import { binary, bind, checked, ContractViolation, copy, plain, RuntimeFault, scalar, voidValue, widen, type Environment, type Value } from './values.js';
+import { libraryIntrinsic, type LibraryIntrinsic, caseRead, caseTarget, isPlace, placeRoot, valueSteps, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
+import { binary, bind, checked, ContractViolation, copy, intText, plain, realText, RuntimeFault, scalar, squareRoot, voidValue, widen, type Environment, type Value } from './values.js';
 export { projectOperationTiming } from './timing.js';
 export interface SimulationOptions {
     untilNs: number;
@@ -270,6 +270,8 @@ export function simulate(models: a.Model[], target: string, options: SimulationO
     const selected = runTarget(models, target);
     return new Interpreter(workspace(models), selected, options).run();
 }
+/** The built-in document of the 2.3 library packages Swaml::Numeric, Swaml::Text and Swaml::Time. */
+const LIBRARY_2_3_URI = 'builtin:/swaml-2.3.swaml';
 /** Checks that a run receives a linked, validated and complete workspace; returns it with the built-in libraries. */
 function workspace(models: a.Model[]): a.Model[] {
     for (const model of models) {
@@ -277,19 +279,30 @@ function workspace(models: a.Model[]): a.Model[] {
         if (d.parseResult.value!==model || d.state < DocumentState.Validated || d.diagnostics?.some(x => x.severity === 1))
             throw new Error('Simulation requires a linked, validated workspace without errors.');
     }
-    const libraries = (workspaceModels.get(models[0]) ?? []).filter(m => AstUtils.getDocument(m).uri.scheme === 'builtin');
+    const builtin = (workspaceModels.get(models[0]) ?? []).filter(m => AstUtils.getDocument(m).uri.scheme === 'builtin');
     const supplied = new Set(models);
+    // The 2.3 library document (WP3-M01) joins a run, and so its result's sources, only when a supplied model
+    // imports one of its packages or references one of its declarations; a run that does not use it, every
+    // 2.2 run among them, keeps exactly the 2.2 workspace and sources.
+    const used = new Set<a.Model>();
+    const library23 = new Set(builtin.filter(m => AstUtils.getDocument(m).uri.toString() === LIBRARY_2_3_URI));
+    const use = (doc: { parseResult: { value: unknown } }) => { if (library23.has(doc.parseResult.value as a.Model)) used.add(doc.parseResult.value as a.Model); };
     for (const model of models) {
         const workspace = workspaceModels.get(model) ?? models;
         for (const pkg of model.packages)
-            for (const i of pkg.imports)
+            for (const i of pkg.imports) {
                 if (!i.namespace.startsWith('Swaml::') && !models.some(m => m.packages.some(p => p.name === i.namespace)))
                     throw new Error('Supply every imported application source.');
+                for (const library of library23)
+                    if (library.packages.some(p => p.name === i.namespace))
+                        used.add(library);
+            }
         for (const n of nodes(model)) {
             for (const ref of AstUtils.streamReferences(n)) {
                 const target = 'ref' in ref.reference ? ref.reference.ref : undefined;
                 if (target) {
                     const doc = AstUtils.getDocument(target);
+                    use(doc);
                     if (doc.uri.scheme !== 'builtin' && !supplied.has(doc.parseResult.value as a.Model))
                         throw new Error('Supply every referenced application source.');
                 }
@@ -299,12 +312,14 @@ function workspace(models: a.Model[]): a.Model[] {
                 const target = path.includes('::') && resolve(n, path.split('.')[0], workspace);
                 if (target) {
                     const doc = AstUtils.getDocument(target);
+                    use(doc);
                     if (doc.uri.scheme !== 'builtin' && !supplied.has(doc.parseResult.value as a.Model))
                         throw new Error('Supply every qualified application source.');
                 }
             }
         }
     }
+    const libraries = builtin.filter(m => !library23.has(m) || used.has(m));
     return [...new Set([...models, ...libraries])];
 }
 /** The result of one use case or test: pass, fail, inconclusive or no checks. */
@@ -761,6 +776,9 @@ class Interpreter {
         try {
             if (identity(sig).startsWith('Swaml::Math::') && ['floor', 'round', 'trunc', 'length'].includes(sig.name))
                 return this.intrinsic(sig.name, args);
+            const host = libraryIntrinsic(op);
+            if (host)
+                return this.libraryIntrinsic(host, args);
             if (body(op)?.states.length)
                 yield* this.machine(op, f, local);
             else
@@ -790,6 +808,18 @@ class Interpreter {
         return { type, data: Array.from({ length: Number(m[2]) }, () => this.zero(m[1])) }; return scalar(type, 0); }
     private intrinsic(name: string, args: Value[]): Value { if (name === 'length')
         return checked('uint', [...String(args[0].data)].length); const n = args[0].data as number; return checked('int', name === 'floor' ? Math.floor(n) : name === 'round' ? Math.round(n) : Math.trunc(n)); }
+    /**
+     * The 2.3 library intrinsics (chapter 6): sqrt (WP3-R01), intText and realText (WP3-R02) and now (WP3-R03),
+     * the logical time of the evaluating step. Every activation reads the live clock, a concurrent one too;
+     * dispatch snapshots hold attributes only.
+     */
+    private libraryIntrinsic(name: LibraryIntrinsic, args: Value[]): Value {
+        if (name === 'now')
+            return checked('uint', this.time);
+        if (name === 'sqrt')
+            return checked('real', squareRoot(args[0].data as number));
+        return scalar('string', name === 'intText' ? intText(args[0].data as number) : realText(args[0].data as number, args[1].data as number));
+    }
     private *evaluate(e: a.Expression, f: Frame, local: Environment): Iterator {
         this.fuel();
         const env = this.env(f, local);
