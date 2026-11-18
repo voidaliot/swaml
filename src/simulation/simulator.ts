@@ -1648,7 +1648,7 @@ class Interpreter {
                 else {
                     this.countLook(present.cause);
                     f.wakePending = false;
-                    this.checkLoop(f, levels);
+                    this.checkLoop(f, levels, present);
                     left = yield* this.look(levels, f, local, key, present);
                 }
                 if (left) {
@@ -1792,7 +1792,7 @@ class Interpreter {
      * S in the same instant with no external activity between. Configurations are taken from the second look of S in an
      * instant (P6_HASH_FIRST: from the first), so a loop is found one cycle later than the first repetition.
      */
-    private checkLoop(f: Frame, levels: FlowLevel[]): void {
+    private checkLoop(f: Frame, levels: FlowLevel[], present: { input?: Message; timers: boolean }): void {
         if (P6_NO_STATELOOP)
             return;
         const c = f.c, s = levels.at(-1)!.state;
@@ -1802,7 +1802,10 @@ class Interpreter {
         c.loops.looks.set(s, n);
         if (n < 2 && !P6_HASH_FIRST)
             return;
-        const t0 = performance.now(), config = this.configuration(c);
+        // What is present belongs to the configuration: a message taken from the queue for this look is no longer queued, so a
+        // message look and the arrival look after it would otherwise compare equal (false positive found on the corpus, r6/r7).
+        const due = levels.flatMap(l => this.timerLines(l).filter(t => !l.presented.has(t) && this.time >= this.due(l, t)).map(t => this.source(t)));
+        const t0 = performance.now(), config = this.configuration(c) + JSON.stringify([present.input ? [present.input.member, present.input.args.map(plain)] : null, present.timers ? due : []]);
         this.stats.configs++;
         this.stats.configChars += config.length;
         this.stats.configNs += Math.round((performance.now() - t0) * 1e6);
