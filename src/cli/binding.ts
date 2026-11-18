@@ -8,7 +8,7 @@ import { BINDING_SCHEMA, bindingFindingText, checkBinding, type BindingFinding }
 import { languageArguments } from './options.js';
 export const BINDING_USAGE = 'swaml binding check [--language-version 2.3] [--json] binding.json file.swaml [more files...]';
 /**
- * swaml binding check (WP8-M03, WP8-D10): validates a target binding against swaml-binding/2.3 and resolves its
+ * swaml binding check (WP8-M03, WP8-D10): validates a target binding against swaml-binding/1 and resolves its
  * identities against the validated sources and the named deployment. Prints one line per finding (severity, JSON
  * Pointer, identity, reason) and a summary, or JSON with --json. Exit codes: 0 when the binding resolves (placed
  * operations without a cost are findings and do not fail), 1 on a schema error, an unresolved or duplicate identity,

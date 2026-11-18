@@ -63,7 +63,7 @@
   - A deploy path may end at an operation that an effective schedule entry releases (`deploy comMain.storePdu on doorModules[0].core1.isrCan;`); it overrides every occurrence placement, an indexed path its family, and exact paths stay unique.
   - `Swaml::Os` (`TaskKind`, `Core`, `Task` with `kind`, `priority`, `preemptive`, `periodNs`, `responseNs`) in the 2.3 library document. On a platform with a Task, T1 to T6 (unique priorities per Core, entry kinds on periodic tasks and ISRs, suspension only on extended tasks, deadlines not below response bounds, every entry on a Task) and, with a Core or Task, T7 (one Core per component occurrence) are SW2009, as is a Task attribute that is not a constant (WP8-D11, new).
   - The reference run orders equal-time releases, dispatches and ready continuations by Task priority, Task-placed before unplaced, then in-task position (deploy order, the tree depth-first, schedule order); `release` records `task`, and Timing intervals carry their Task lane. A run without Tasks is unchanged.
-  - `spec/binding.schema.json` (`swaml-binding/2.3`) and `swaml binding check <binding> <sources…>` with JSON Pointer findings and exit codes 0, 1 and 2.
+  - `spec/binding.schema.json` (`swaml-binding/1`, versioned independently of the language edition, with an optional root `$schema`) and `swaml binding check <binding> <sources…>` with JSON Pointer findings (the root is `""`) and exit codes 0, 1 and 2.
   - Examples 52 (door deployment) and 53 (task order), with mutation-checked cases; a ninth extended 2.2 set recorded from 213f583.
   - Consumers: new `placement` and `binding` package exports, `release.task`, `TimingInterval.task`; see the WP8 consumer notes and owner decisions in [the 2.3 release draft](docs/RELEASE_2_3.md).
 - Compatibility gate tooling: an eighth extended 2.2 set (`models-wp6.json` with `recorded-wp6.json`, 16 sources with related information, recorded once from `213f583`) covers `p.m` references to port members in every 2.2 position and connection policies in every 2.2 shape; the WP6 drafts applied without the opt-in by initial value fail it with 25 differences.
@@ -95,7 +95,7 @@
   - policies per connection member;
   - release guards;
   - operation-level placement;
-  - `Swaml::Os` tasks with static mapping rules, priority ordering in the reference run and a `swaml-binding/2.3` schema checked by `swaml binding check`.
+  - `Swaml::Os` tasks with static mapping rules, priority ordering in the reference run and a `swaml-binding/1` schema checked by `swaml binding check`.
 - Planned new warnings: SW2016 (computed duration without a unit), SW2017 (completion guard that cannot change while the machine waits) and SW2018 (deferred member with a rejecting overflow policy). Planned runtime codes: `DurationRange` and the `CompletionLoop` violation.
 - Implementation package 4.0.0 because existing AST properties widen in the planned work packages; profile `swaml-reference/2.3`.
 - Not in 2.3: port arrays (an additive 2.4 candidate); trigonometry, enum conversions and the timed run (Tier 2). Rejected: per-index configuration, service discovery and a "did not arrive" construct.

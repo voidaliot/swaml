@@ -3,24 +3,35 @@ import { formatName, formatPath, formatQualifiedName } from './names.js';
 import { deploymentPlan } from './placement.js';
 import { endpoint, isExecutable, members, owner, packageEndpoint } from './semantic.js';
 /**
- * The target binding of swa.ml 2.3 (WP8-M02, WP8-M03): the schema swaml-binding/2.3 of spec/binding.schema.json and
+ * The target binding of swa.ml 2.3 (WP8-M02, WP8-M03): the schema swaml-binding/1 of spec/binding.schema.json and
  * the resolution of its identities against a validated model. Portable: the host reads the file and the sources.
  * A binding check is static resolution of target assumptions; it computes no schedule and is neither an analysis
- * claim nor schedulability evidence (WP8-M05).
+ * claim nor schedulability evidence (WP8-M05). The schema has a version of its own, independent of the language
+ * edition (decision 3, review F6), so that renaming a language release does not invalidate binding files.
  */
-export const BINDING_SCHEMA = 'swaml-binding/2.3';
-/** The shape spec/binding.schema.json declares; a unit test keeps the two equal. */
+export const BINDING_SCHEMA = 'swaml-binding/1';
+/** A JSON Schema property of the binding, as spec/binding.schema.json declares it (without its description). */
+export type BindingProperty =
+    | { type: 'string'; minLength?: number }
+    | { type: 'integer'; minimum: number; maximum: number }
+    | { type: 'array' }
+    | { const: string };
+const TEXT = { type: 'string', minLength: 1 } as const;
+const NS = { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER } as const;
+/**
+ * The shape spec/binding.schema.json declares, with every property's type and range; the checker enforces exactly
+ * this, and a unit test keeps it equal to the schema file. `$schema` is the usual editor association (any string).
+ */
 export const BINDING_SHAPE = {
-    root: { required: ['schema', 'deployment'], optional: ['costs', 'budgets', 'crossCoreLatencyNs'] },
-    costs: { required: ['operation', 'wcetNs', 'source'], optional: ['bcetNs'] },
-    budgets: { required: ['task', 'budgetNs'], optional: [] },
-    crossCoreLatencyNs: { required: ['connection', 'maxNs'], optional: [] },
-} as const;
-const TEXT = new Set(['deployment', 'operation', 'source', 'task', 'connection']);
+    root: { required: ['schema', 'deployment'], properties: { $schema: { type: 'string' }, schema: { const: BINDING_SCHEMA }, deployment: TEXT, costs: { type: 'array' }, budgets: { type: 'array' }, crossCoreLatencyNs: { type: 'array' } } },
+    costs: { required: ['operation', 'wcetNs', 'source'], properties: { operation: TEXT, wcetNs: NS, bcetNs: NS, source: TEXT } },
+    budgets: { required: ['task', 'budgetNs'], properties: { task: TEXT, budgetNs: NS } },
+    crossCoreLatencyNs: { required: ['connection', 'maxNs'], properties: { connection: TEXT, maxNs: NS } },
+} as const satisfies Record<string, { required: readonly string[]; properties: Record<string, BindingProperty> }>;
 /** One finding of a binding check (WP8-D10): an error fails the check; a finding (a placed operation without a cost) does not. */
 export interface BindingFinding {
     severity: 'error' | 'finding';
-    /** The JSON Pointer (RFC 6901) of the offending value, or of the array that lacks an entry. */
+    /** The JSON Pointer (RFC 6901) of the offending value, or of the array that lacks an entry; the root is "". */
     pointer: string;
     /** The identity concerned, when there is one. */
     identity?: string;
@@ -38,7 +49,23 @@ const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'obj
 export function bindingSchemaFindings(value: unknown): BindingFinding[] {
     const out: BindingFinding[] = [];
     const error = (at: string, reason: string) => out.push({ severity: 'error', pointer: at, reason });
-    const object = (v: unknown, at: string, shape: { required: readonly string[]; optional: readonly string[] }): v is Record<string, unknown> => {
+    const check = (x: unknown, at: string, p: BindingProperty) => {
+        if ('const' in p) {
+            if (x !== p.const)
+                error(at, `must be "${p.const}", found ${JSON.stringify(x)}`);
+        }
+        else if (p.type === 'string') {
+            if (typeof x !== 'string' || x.length < (p.minLength ?? 0))
+                error(at, p.minLength ? 'must be a non-empty string' : 'must be a string');
+        }
+        else if (p.type === 'integer') {
+            if (typeof x !== 'number' || !Number.isInteger(x) || x < p.minimum || x > p.maximum)
+                error(at, `must be an integer from ${p.minimum} to ${p.maximum}`);
+        }
+        else if (!Array.isArray(x))
+            error(at, 'must be an array');
+    };
+    const object = (v: unknown, at: string, shape: { required: readonly string[]; properties: Record<string, BindingProperty> }): v is Record<string, unknown> => {
         if (!isObject(v)) {
             error(at, `must be an object, found ${Array.isArray(v) ? 'an array' : v === null ? 'null' : typeof v}`);
             return false;
@@ -47,31 +74,19 @@ export function bindingSchemaFindings(value: unknown): BindingFinding[] {
             if (!(k in v))
                 error(at, `is missing the required property ${k}`);
         for (const [k, x] of Object.entries(v)) {
-            if (!shape.required.includes(k) && !shape.optional.includes(k))
+            const p = Object.hasOwn(shape.properties, k) ? shape.properties[k] : undefined;
+            if (!p)
                 error(at + pointer(k), 'is not a property of the schema');
-            else if (TEXT.has(k)) {
-                if (typeof x !== 'string' || !x.length)
-                    error(at + pointer(k), 'must be a non-empty string');
-            }
-            else if (k !== 'schema' && !(k in BINDING_SHAPE) && (typeof x !== 'number' || !Number.isSafeInteger(x) || x < 0))
-                error(at + pointer(k), `must be an integer from 0 to ${Number.MAX_SAFE_INTEGER}`);
+            else
+                check(x, at + pointer(k), p);
         }
         return true;
     };
     if (!object(value, '', BINDING_SHAPE.root))
         return out;
-    if ('schema' in value && value.schema !== BINDING_SCHEMA)
-        error(pointer('schema'), `must be "${BINDING_SCHEMA}", found ${JSON.stringify(value.schema)}`);
-    for (const list of ['costs', 'budgets', 'crossCoreLatencyNs'] as const) {
-        if (!(list in value))
-            continue;
-        const items = value[list];
-        if (!Array.isArray(items)) {
-            error(pointer(list), 'must be an array');
-            continue;
-        }
-        items.forEach((item, i) => object(item, pointer(list, i), BINDING_SHAPE[list]));
-    }
+    for (const list of ['costs', 'budgets', 'crossCoreLatencyNs'] as const)
+        if (Array.isArray(value[list]))
+            (value[list] as unknown[]).forEach((item, i) => object(item, pointer(list, i), BINDING_SHAPE[list]));
     return out;
 }
 /** The canonical identity of a deployment: Package::name in the current spelling, for example DoorEcu::'Front left door'. */
@@ -151,7 +166,7 @@ export function checkBinding(value: unknown, models: readonly a.Model[]): Bindin
 function sortFindings(findings: BindingFinding[]): BindingFinding[] {
     return [...findings.filter(f => f.severity === 'error'), ...findings.filter(f => f.severity === 'finding')];
 }
-/** One line per finding (WP8-D10): severity, JSON Pointer, identity and reason. */
+/** One line per finding (WP8-D10): severity, JSON Pointer (the root, "", printed as "" as in --json), identity and reason. */
 export function bindingFindingText(f: BindingFinding): string {
-    return `${f.severity} ${f.pointer || '/'}${f.identity !== undefined ? ' ' + f.identity : ''}: ${f.reason}.`;
+    return `${f.severity} ${f.pointer === '' ? '""' : f.pointer}${f.identity !== undefined ? ' ' + f.identity : ''}: ${f.reason}.`;
 }

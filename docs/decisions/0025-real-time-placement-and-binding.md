@@ -107,7 +107,7 @@ package Swaml::Os {
 
 ### Target binding (B18, WP8)
 
-`spec/binding.schema.json` defines `"schema": "swaml-binding/2.3"`:
+`spec/binding.schema.json` defines `"schema": "swaml-binding/1"` (first written `swaml-binding/2.3`; decoupled from the language edition after the WP8 review, F6, so that renaming the release does not invalidate binding files; a root `$schema` string for editors is allowed):
 - `deployment`: the deployment's qualified identity;
 - `costs`: per operation occurrence `wcetNs`, optional `bcetNs ≤ wcetNs` and a `source` reference;
 - `budgets`: per Task occurrence, `budgetNs`;
@@ -174,7 +174,7 @@ It computes no schedule in 2.3.
 - **No preemption (review F1).** The first WP8 commit let a higher-priority activation released at an instant run between two statements of a lower-priority one of the same Core, which contradicted WP8-R02 and made `preemptive = false` meaningless to a designer. Each Core now has one running activation, from its dispatch or resumption to its next wait or end; the scan for the next one visits activations in key order, kept sorted on release instead of sorted at every step. The reviewer's model (`L` publishes to `H` and then to `C` at 10 ms) logs 32 on Tasks of one Core as on plain Nodes, and 23 when `H` and `C` run on another Core.
 - **Task rules per Core (review F2, F3, F4).** T6 applies to the entries of occurrences deployed in a Core that has Tasks; software on a plain Node outside every Core keeps the 2.2 meaning, so a platform mixes OS Cores with plain Nodes as the door showcase does. The D07 example names a Task of the occurrence's own Core that accepts the entry under T2 to T4. A platform root that is a Task is WP8-D13. An `after` successor runs on its predecessor's Task on every Task kind (OSEK chaining). An operation placement on a platform without a Task is the warning SW2021 (WP8-D12).
 - **Plan cost (review F5).** The plan indexes placements by path and walks each occurrence's ancestors once, so it is linear in occurrences, entries and placements; on a platform without `Swaml::Os` the validator reads only the placement kinds and the entries are never computed.
-- **Binding.** `spec/binding.schema.json` and the checker's `BINDING_SHAPE` are kept equal by a unit test; no schema library is added. Findings are `error|finding {pointer} {identity}: {reason}.`; exit codes 0, 1 and 2 as in the release draft.
+- **Binding.** `spec/binding.schema.json` and the checker's `BINDING_SHAPE` (every property with its type and range) are kept equal by a unit test; no schema library is added. The schema id is `swaml-binding/1`; a root-level finding has the pointer `""` in text and JSON. Findings are `error|finding {pointer} {identity}: {reason}.`; exit codes 0, 1 and 2 as in the release draft.
 - **Proof.** Example 52 is the door deployment: ComMain's main functions on the 20 ms task of core 1 and its receive entries on the CAN interrupt and an event task of the same Core, rxMainFunction first by deploy order, a higher-priority 10 ms supervision and NvM on the extended background task. Its cases fail when the deploy order or the priorities are swapped, and the obvious misplacements (a receive entry on the 20 ms task, NvM on a basic task, ComMain across Cores, equal priorities, a deadline below a response bound) are rejected.
 - **Open.** The General view does not yet draw operation placements: the language projection has no deployment projection, and the drawing belongs to the consuming tools (WP8-M04, second sentence).
 

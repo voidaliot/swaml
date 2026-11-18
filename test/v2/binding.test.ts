@@ -1,4 +1,4 @@
-// WP8 of swa.ml 2.3: the target binding schema swaml-binding/2.3 and swaml binding check (WP8-M02, WP8-M03,
+// WP8 of swa.ml 2.3: the target binding schema swaml-binding/1 and swaml binding check (WP8-M02, WP8-M03,
 // WP8-D10, WP8-M05).
 import nodeTest from 'node:test';
 import assert from 'node:assert/strict';
@@ -7,14 +7,14 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { BINDING_SHAPE, bindingFindingText, checkBinding } from '../../src/language/binding.js';
+import { BINDING_SHAPE, bindingFindingText, bindingSchemaFindings, checkBinding } from '../../src/language/binding.js';
 import { parse } from './helpers.js';
 const test = (name: string, fn: () => unknown) => nodeTest(name, async () => { await fn(); });
 const root = new URL('../../../', import.meta.url);
 const DOOR = fileURLToPath(new URL('examples/52-door-deployment.swaml', root));
 const CLI = fileURLToPath(new URL('out/src/cli/main.js', root));
 const VALID = {
-    schema: 'swaml-binding/2.3',
+    schema: 'swaml-binding/1',
     deployment: "DoorDeployment::'Front left door'",
     costs: [
         { operation: 'dcu.comMain.rxMainFunction', wcetNs: 80000, bcetNs: 20000, source: 'trace measurement 2026-10' },
@@ -29,13 +29,36 @@ const door = async () => (await parse(readFileSync(DOOR, 'utf8'))).model;
 const lines = async (value: unknown) => checkBinding(value, [await door()]).findings.map(bindingFindingText);
 const errorsOf = async (value: unknown) => (await lines(value)).filter(l => l.startsWith('error'));
 
-test('WP8-M02 spec/binding.schema.json declares exactly the shape the checker enforces', () => {
+test('WP8-M02 spec/binding.schema.json declares exactly the shape the checker enforces, types and ranges included (review F6)', () => {
     const schema = JSON.parse(readFileSync(new URL('spec/binding.schema.json', root), 'utf8'));
-    const shape = (s: { required: string[]; properties: Record<string, unknown>; additionalProperties: boolean }) => ({ required: s.required, optional: Object.keys(s.properties).filter(k => !s.required.includes(k)), closed: s.additionalProperties === false });
-    assert.deepEqual(shape(schema), { ...BINDING_SHAPE.root, closed: true });
+    type ObjectSchema = { type: string; required: string[]; properties: Record<string, Record<string, unknown>>; additionalProperties: boolean };
+    // Every keyword of every property except its description and an array's items (compared as objects below).
+    const bare = (x: Record<string, unknown>) => Object.fromEntries(Object.entries(x).filter(([k]) => k !== 'description' && k !== 'items'));
+    const shape = (o: ObjectSchema) => ({ type: o.type, closed: o.additionalProperties === false, required: o.required, properties: Object.fromEntries(Object.entries(o.properties).map(([k, v]) => [k, bare(v)])) });
+    const expected = (s: { required: readonly string[]; properties: object }) => ({ type: 'object', closed: true, required: [...s.required], properties: JSON.parse(JSON.stringify(s.properties)) });
+    assert.deepEqual(shape(schema), expected(BINDING_SHAPE.root));
     for (const list of ['costs', 'budgets', 'crossCoreLatencyNs'] as const)
-        assert.deepEqual(shape(schema.properties[list].items), { ...BINDING_SHAPE[list], closed: true }, list);
-    assert.equal(schema.properties.schema.const, 'swaml-binding/2.3');
+        assert.deepEqual(shape(schema.properties[list].items), expected(BINDING_SHAPE[list]), list);
+    // The schema has a version of its own, independent of the language edition.
+    assert.equal(schema.properties.schema.const, 'swaml-binding/1');
+    assert.equal(schema.$id, 'https://swa.ml/schema/swaml-binding/1');
+    // A changed range in the checker's shape would fail the comparison above.
+    const tampered = JSON.parse(JSON.stringify(BINDING_SHAPE.costs));
+    tampered.properties.wcetNs.maximum = 1000;
+    assert.notDeepEqual(shape(schema.properties.costs.items), expected(tampered));
+});
+
+test('WP8-M02 (review F6) $schema is accepted at the root; root findings use the pointer "" in text as in JSON', async () => {
+    assert.deepEqual(await errorsOf({ $schema: './spec/binding.schema.json', ...VALID }), []);
+    assert.deepEqual(await errorsOf({ ...VALID, $schema: 7 }), ['error /$schema: must be a string.']);
+    assert.deepEqual(bindingSchemaFindings({ deployment: VALID.deployment }).map(f => [f.pointer, bindingFindingText(f)]), [['', 'error "": is missing the required property schema.']]);
+});
+
+test('WP8-M03 (review F8 X12, X13) placed operations on plain Nodes are findings too; a package connection that does not join the root is no route', async () => {
+    const panel = { schema: 'swaml-binding/1', deployment: "DoorDeployment::'Switch panel'" };
+    assert.deepEqual(await lines(panel), ['finding /costs switchPanel.respond: placed operation has no cost.', 'finding /costs switchPanel.monitorBus: placed operation has no cost.']);
+    assert.deepEqual(checkBinding(panel, [await door()]).resolved.connections, ['linSlot']);
+    assert.deepEqual(await errorsOf({ ...VALID, crossCoreLatencyNs: [{ connection: 'linSlot', maxNs: 1 }] }), ["error /crossCoreLatencyNs/0/connection linSlot: no connection route of DoorDeployment::'Front left door' has this identity."]);
 });
 
 test('WP8-M03 a binding resolves against the door deployment; placed operations without a cost are findings', async () => {
@@ -52,14 +75,14 @@ test('WP8-M03 a binding resolves against the door deployment; placed operations 
 });
 
 test('WP8-M03 schema errors: version, unknown and missing properties, types and ranges', async () => {
-    assert.deepEqual(await errorsOf({ ...VALID, schema: 'swaml-binding/2.4' }), ['error /schema: must be "swaml-binding/2.3", found "swaml-binding/2.4".']);
+    assert.deepEqual(await errorsOf({ ...VALID, schema: 'swaml-binding/2.4' }), ['error /schema: must be "swaml-binding/1", found "swaml-binding/2.4".']);
     assert.deepEqual(await errorsOf({ ...VALID, extra: 1, costs: [{ operation: 'dcu.comMain.rxMainFunction', wcetNs: -1, source: '', note: 'x' }] }), [
         'error /extra: is not a property of the schema.',
         'error /costs/0/wcetNs: must be an integer from 0 to 9007199254740991.',
         'error /costs/0/source: must be a non-empty string.',
         'error /costs/0/note: is not a property of the schema.']);
-    assert.deepEqual(await errorsOf({ deployment: VALID.deployment, budgets: {} }), ['error /: is missing the required property schema.', 'error /budgets: must be an array.']);
-    assert.deepEqual(await errorsOf([]), ['error /: must be an object, found an array.']);
+    assert.deepEqual(await errorsOf({ deployment: VALID.deployment, budgets: {} }), ['error "": is missing the required property schema.', 'error /budgets: must be an array.']);
+    assert.deepEqual(await errorsOf([]), ['error "": must be an object, found an array.']);
     assert.deepEqual(await errorsOf({ ...VALID, budgets: [{ task: 'vehicle.doorModules[0].core1.task20ms', budgetNs: 1.5 }, 'x'] }), [
         'error /budgets/0/budgetNs: must be an integer from 0 to 9007199254740991.', 'error /budgets/1: must be an object, found string.']);
 });
@@ -96,12 +119,12 @@ test('WP8-M03 swaml binding check: exit codes and output lines', () => {
     const ok = cli('binding', 'check', good, DOOR);
     assert.equal(ok.code, 0, ok.out);
     assert.match(ok.out, /^finding \/costs dcu\.canIf\.rxIndication: placed operation has no cost\.$/mu);
-    assert.match(ok.out, /^Checked binding .*good\.json for DoorDeployment::'Front left door' \(swaml-binding\/2\.3\): 0 error\(s\), 5 finding\(s\)\.$/mu);
+    assert.match(ok.out, /^Checked binding .*good\.json for DoorDeployment::'Front left door' \(swaml-binding\/1\): 0 error\(s\), 5 finding\(s\)\.$/mu);
     const json = JSON.parse(cli('binding', 'check', '--json', good, DOOR).out);
-    assert.deepEqual([json.schema, json.deployment, json.errorCount, json.findingCount], ['swaml-binding/2.3', "DoorDeployment::'Front left door'", 0, 5]);
+    assert.deepEqual([json.schema, json.deployment, json.errorCount, json.findingCount], ['swaml-binding/1', "DoorDeployment::'Front left door'", 0, 5]);
     const mismatch = cli('binding', 'check', file('v24.json', JSON.stringify({ ...VALID, schema: 'swaml-binding/2.4' })), DOOR);
     assert.equal(mismatch.code, 1);
-    assert.match(mismatch.out, /^error \/schema: must be "swaml-binding\/2\.3", found "swaml-binding\/2\.4"\.$/mu);
+    assert.match(mismatch.out, /^error \/schema: must be "swaml-binding\/1", found "swaml-binding\/2\.4"\.$/mu);
     const unresolved = cli('binding', 'check', file('bad.json', JSON.stringify({ ...VALID, budgets: [{ task: 'vehicle.nothing', budgetNs: 1 }] })), DOOR);
     assert.equal(unresolved.code, 1);
     assert.match(unresolved.out, /^error \/budgets\/0\/task vehicle\.nothing: /mu);
@@ -109,7 +132,7 @@ test('WP8-M03 swaml binding check: exit codes and output lines', () => {
     assert.equal(bcet.code, 1);
     const notJson = cli('binding', 'check', file('broken.json', '{ "schema": '), DOOR);
     assert.equal(notJson.code, 1);
-    assert.match(notJson.out, /^error \/: the file is not JSON/mu);
+    assert.match(notJson.out, /^error "": the file is not JSON/mu);
     const missing = cli('binding', 'check', join(dir, 'missing.json'), DOOR);
     assert.equal(missing.code, 2);
     assert.match(missing.out, /^Cannot read .*missing\.json: ENOENT\.$/mu);
