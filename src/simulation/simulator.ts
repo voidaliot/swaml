@@ -1224,6 +1224,8 @@ class Interpreter {
     private disposition(op: Executable, s: a.StateStep | undefined, endpointName: string): 'handled' | 'keep' | 'ignore' {
         if (s?.transitions.some(t => t.endpoint === endpointName))
             return 'handled';
+        if (s && body(op)!.reactions.some(t => t.endpoint === endpointName))
+            return 'handled';
         const override = s?.dispositions.find(d => d.endpoints.includes(endpointName));
         if (override)
             return override.kind as 'keep' | 'ignore';
@@ -1293,8 +1295,22 @@ class Interpreter {
             }
     }
     /** The triggers of s on one member, in written order: the first whose guard holds is taken (SIF-R03). */
-    private *inputTrigger(s: a.StateStep, f: Frame, local: Environment, input: Message): Generator<Yield, a.Transition | undefined, Reply | undefined> {
-        for (const t of s.transitions.filter(x => x.endpoint === input.member)) {
+    /**
+     * PROTOTYPE P1 (owner variant, no keep/ignore): the state's triggers plus the operation-level reactions (written
+     * `otherwise on receive m(x) { }` in the prototype) on members the state does not handle, innermost first. They join the
+     * state's input group (after its own receive triggers), or the end of its triggers when it has none.
+     */
+    private effectiveTriggers(op: Executable, s: a.StateStep): a.Transition[] {
+        const own = new Set(s.transitions.flatMap(t => t.endpoint ? [t.endpoint] : []));
+        const fallback = body(op)!.reactions.filter(t => t.endpoint && !own.has(t.endpoint));
+        if (!fallback.length)
+            return s.transitions;
+        const last = s.transitions.map(t => !!t.endpoint).lastIndexOf(true);
+        const at = last < 0 ? s.transitions.length : last + 1;
+        return [...s.transitions.slice(0, at), ...fallback, ...s.transitions.slice(at)];
+    }
+    private *inputTrigger(triggers: a.Transition[], s: a.StateStep, f: Frame, local: Environment, input: Message): Generator<Yield, a.Transition | undefined, Reply | undefined> {
+        for (const t of triggers.filter(x => x.endpoint === input.member)) {
             const scope = new Map(local);
             this.bindInputs(scope, t.bindings ?? [], input);
             f.at = t;
@@ -1331,10 +1347,11 @@ class Interpreter {
             this.log('timer', key, { state: s.name, source: this.source(t), timerNs: value, expiresNs: entered + value });
         }
         const delayOf = (t: a.Transition) => t.delay ? nanos(t.delay) : delays.get(t)!;
-        const armed = new Set(s.transitions.filter(t => !t.endpoint));
-        const firstInput = s.transitions.findIndex(t => !!t.endpoint);
-        const walk = s.transitions.filter((t, i) => !t.endpoint || i === firstInput);
-        const handled = new Set(s.transitions.flatMap(t => t.endpoint ? [t.endpoint] : []));
+        const triggers = this.effectiveTriggers(f.op, s);
+        const armed = new Set(triggers.filter(t => !t.endpoint));
+        const firstInput = triggers.findIndex(t => !!t.endpoint);
+        const walk = triggers.filter((t, i) => !t.endpoint || i === firstInput);
+        const handled = new Set(triggers.flatMap(t => t.endpoint ? [t.endpoint] : []));
         const timerReady = function* (this: Interpreter, t: a.Transition): Generator<Yield, boolean, Reply | undefined> {
             if (!armed.has(t) || this.time < entered + delayOf(t))
                 return false;
@@ -1361,12 +1378,12 @@ class Interpreter {
                         // Variant: the selection passes through a zero-time wait, as a 2.2 machine does, and consume() hands over
                         // exactly this message (delivery order kept).
                         f.at = s;
-                        const reply: Reply | undefined = yield { kind: 'receive', branches: s.transitions.filter(t => !!t.endpoint), flow: s, pick: head.m };
+                        const reply: Reply | undefined = yield { kind: 'receive', branches: triggers.filter(t => !!t.endpoint), flow: s, pick: head.m };
                         input = reply!.input!;
                     }
                     else
                         input = this.take(head.queue, head.m, head.endpointName, f.c);
-                    selected = yield* this.inputTrigger(s, f, local, input);
+                    selected = yield* this.inputTrigger(triggers, s, f, local, input);
                     if (selected)
                         break selection;
                     continue selection;
@@ -1376,7 +1393,7 @@ class Interpreter {
                 // unhandled input queued.
                 // Nothing ready: wait without the lock until the earliest armed timer whose guard holds, or a delivery.
                 let expires: number | undefined;
-                for (const t of s.transitions.filter(x => armed.has(x))) {
+                for (const t of triggers.filter(x => armed.has(x))) {
                     f.at = t;
                     if (t.guard && !(yield* this.evaluate(t.guard, f, new Map(local))).data)
                         continue;
@@ -1387,11 +1404,11 @@ class Interpreter {
                 if (expires !== undefined && !Number.isSafeInteger(expires))
                     throw new ContractViolation('ClockRange');
                 f.at = s;
-                const reply: Reply | undefined = yield { kind: 'receive', branches: s.transitions.filter(t => !!t.endpoint), timeout: expires === undefined ? undefined : expires - this.time, flow: s };
+                const reply: Reply | undefined = yield { kind: 'receive', branches: triggers.filter(t => !!t.endpoint), timeout: expires === undefined ? undefined : expires - this.time, flow: s };
                 if (reply?.input) {
                     // SIF-R04: the delivery that first made the input group ready fixes the selection.
                     input = reply.input;
-                    selected = yield* this.inputTrigger(s, f, local, input);
+                    selected = yield* this.inputTrigger(triggers, s, f, local, input);
                     if (selected)
                         break selection;
                     continue selection;
@@ -1406,7 +1423,8 @@ class Interpreter {
             const scope = new Map(local);
             if (input)
                 this.bindInputs(scope, selected.bindings ?? [], input);
-            if (selected.stay) {
+            // A trigger that says neither exit nor to S stays (the owner's spelling without the stay word).
+            if (selected.stay || !selected.leave && selected.target === undefined) {
                 if (!selected.endpoint)
                     armed.delete(selected);
                 this.log('state', key, { state: s.name, activation: f.id, source: this.source(selected), stay: true });

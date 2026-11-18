@@ -6,7 +6,7 @@ import { readFileSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 const root = 'E:/t/sw-p1';
-const out = process.argv[2];
+const out = process.argv[2], MODE = process.env.P1_MODE ?? 'ignore';
 const base = pathToFileURL(join(root, 'out-base') + '/').href;
 const { EmptyFileSystem, GrammarUtils, AstUtils } = await import('langium');
 const { parseHelper } = await import('langium/test');
@@ -99,7 +99,14 @@ function migrateMachine(src, doc, op, b) {
   for (const st of b.states) { for (const t of st.transitions) if (t.endpoint) spelled.set(t.endpoint, GrammarUtils.findNodeForProperty(t.$cstNode, 'endpoint').text);
     for (const d of st.deferrals ?? []) d.endpoints.forEach((e, i) => spelled.set(e, GrammarUtils.findNodesForProperty(d.$cstNode, 'endpoints')[i].text)); }
   const spell = e => spelled.get(e) ?? e;
-  if (ignore.length) { lines.push(`ignore ${ignore.map(spell).join(', ')};`); m.operationLines++; }
+  // P1_MODE: ignore (revision 2 spelling), empty (owner variant: no keep/ignore; empty reactions drop input, operation-level
+  // `otherwise on receive m(x) { }` where no state keeps the member, per state otherwise), keep (nothing written at all).
+  const keptIn = x => b.states.some(st => (st.deferrals ?? []).some(d => d.endpoints.includes(x)) && !handles(st).has(x));
+  const headOf = x => { const t = b.states.flatMap(st => st.transitions).find(t => t.endpoint === x); const bs = GrammarUtils.findNodesForProperty(t.$cstNode, 'bindings').map(n => n.text); return `on receive ${spell(x)}(${bs.join(', ')})`; };
+  m.opReactions = 0; m.stateReactions = 0;
+  const perState = MODE === 'empty' ? ignore.filter(keptIn) : [];
+  if (MODE === 'ignore' && ignore.length) { lines.push(`ignore ${ignore.map(spell).join(', ')};`); m.operationLines++; }
+  if (MODE === 'empty') for (const x of ignore.filter(x => !keptIn(x))) { lines.push(`otherwise ${headOf(x)} { }`); m.opReactions++; }
   const map = {};
   const oldState = s => `${opId}/states/${b.states.indexOf(s)}`;
   for (const item of stmts) {
@@ -111,7 +118,7 @@ function migrateMachine(src, doc, op, b) {
     if (s.documentation) body.push(s.documentation.$cstNode.text);
     for (const ac of s.actions) body.push(cstText(ac));
     const keeps = (s.deferrals ?? []).flatMap(d => d.endpoints).filter(x => !handles(s).has(x));
-    if (keeps.length) { body.push(`keep ${keeps.map(spell).join(', ')};`); m.stateOverrides++; }
+    if (keeps.length && MODE === 'ignore') { body.push(`keep ${keeps.map(spell).join(', ')};`); m.stateOverrides++; }
     // Trigger order: timers first, by literal duration (stable), then receive transitions in declaration order.
     let timers = s.transitions.filter(t => kind(t) === 'timer');
     const computed = timers.some(t => t.delayValue);
@@ -158,6 +165,7 @@ function migrateMachine(src, doc, op, b) {
       map[oldT] = `${newId}/transitions/${j}`;
       body.push(render(t));
     });
+    if (!s.final) for (const x of perState) if (!handles(s).has(x) && !keeps.includes(x)) { body.push(`${headOf(x)} { }`); m.stateReactions++; }
     const name = nameText(s);
     const pad = indent + '  ';
     const inner = body.map(x => pad + x.split('\n').join('\n')).join('\n');

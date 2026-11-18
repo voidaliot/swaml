@@ -1479,14 +1479,25 @@ export class SwamlValidator {
                 waiting.push({ handled: new Set(n.branches.map(x => x.endpoint)) });
         }
         waiting.forEach(w => w.handled.forEach(x => handledAll.add(x)));
-        const declared = new Set(b.dispositions.flatMap(d => d.endpoints));
+        for (const r of b.reactions) {
+            const input = this.inputEnv(r, this.env(c), c);
+            if (r.guard)
+                this.value(r.guard, 'bool', input, c, op);
+            if (r.effect)
+                this.block(r.effect, input, c, op);
+            if (!r.endpoint || r.leave || r.target !== undefined)
+                this.report(r, 'SW2008', 'An operation-level reaction is an on receive reaction that stays.');
+            else
+                handledAll.add(r.endpoint);
+        }
+        const declared = new Set([...b.dispositions.flatMap(d => d.endpoints), ...b.reactions.flatMap(r => r.endpoint ? [r.endpoint] : [])]);
         for (const d of b.dispositions)
             for (const ep of d.endpoints)
                 if (!handledAll.has(ep))
                     this.report(d, 'SW2008', `${ep} is not handled at any waiting point of ${op.name} (SIF-S09).`);
         for (const m of handledAll)
             if (!declared.has(m) && waiting.some(w => !w.handled.has(m)))
-                this.report(op, 'SW2008', `${m} is not handled by every waiting point of ${op.name}: add keep ${m}; or ignore ${m}; at the top of ${op.name}.`);
+                this.report(op, 'SW2008', `${m} is not handled by every waiting point of ${op.name}; it is kept where it is not handled.`, true);
     }
     private states(op: Executable, c: Structure | undefined, env: Env): void {
         const b = body(op)!, sig = signature(op)!;
