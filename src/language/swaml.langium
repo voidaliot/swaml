@@ -26,7 +26,7 @@ OperationUsage: (redefines?='redefines')? 'operation' name=Name ':' definition=[
 Executable: Operation | OperationUsage;
 OperationBody: '{' documentation=Documentation? operations+=Executable* ('initial' initial=Name ';' states+=State+ | statements+=Statement*) '}';
 Schedule: 'schedule' '{' entries+=ScheduleEntry* '}';
-ScheduleEntry: ('on' (kind='start' | kind='every' (period=Duration | '(' periodValue=Expression ')') | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('when' '(' guard=Expression ')')? ('deadline' (deadline=Duration | '(' deadlineValue=Expression ')'))? (concurrent?='concurrent')? ';';
+ScheduleEntry: ('on' (kind='start' | kind='every' (period=Duration | '(' periodValue=Expression ')') | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('if' '(' guard=Expression ')')? ('deadline' (deadline=Duration | '(' deadlineValue=Expression ')'))? (concurrent?='concurrent')? ';';
 Block: '{' statements+=Statement* '}';
 Statement: LocalVariable | Assign | Send | ExpressionStatement | Return | If | While | Until | For | ForEach | Wait | Receive | Interruptible | Fail | Assert;
 LocalVariable: 'var' name=Name ':' type=TypeRef '=' value=Expression ';';
@@ -35,7 +35,11 @@ Selector: '.' field=Name | '[' index=Expression ']';
 ExpressionStatement: expression=OrExpression ';';
 Send: kind=('send'|'publish') endpoint=EndpointPath '(' (args+=Expression (',' args+=Expression)*)? ')' ';';
 Return: 'return' value=Expression? ';';
-If: 'if' '(' condition=Expression ')' then=Block ('else' otherwise=Block)?;
+If: 'if' '(' condition=Expression ')' then=Block ('else' otherwise=ElseBody)?;
+// 2.3 (SIF-G01): else if. An ElseIf holds the one If written after else, as a one-statement list, so every block walker runs
+// it as 2.2 runs else { if … }; its statement identity names it by the segment if (…/otherwise/if), not by an index.
+ElseBody: Block | ElseIf;
+ElseIf: statements+=If;
 While: 'while' '(' condition=Expression (',' limit=Expression 'times')? ')' body=Block;
 Until: 'until' '(' condition=Expression (',' limit=Expression 'times')? ')' body=Block;
 For: 'for' '(' initializer=LocalVariable condition=Expression ';' update=ForUpdate ')' body=Block;

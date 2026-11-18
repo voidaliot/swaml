@@ -335,7 +335,7 @@ class Analysis {
         return current;
     }
     private readonly conditions = new Map<a.If, Value>();
-    block(b: a.Block | undefined, flow: Flow): Flow {
+    block(b: a.Block | a.ElseIf | undefined, flow: Flow): Flow {
         return this.statements(b?.statements ?? [], flow);
     }
     statement(s: a.Statement, flow: Flow): Flow {

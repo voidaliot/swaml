@@ -376,7 +376,9 @@
         "Block",
         "Statement",
         "Assign",
-        "If"
+        "If",
+        "ElseBody",
+        "ElseIf"
       ],
       "keywords": [
         "if",
@@ -1097,6 +1099,20 @@
       },
       {
         "production": "If",
+        "concepts": [
+          "flow"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "ElseBody",
+        "concepts": [
+          "flow"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "ElseIf",
         "concepts": [
           "flow"
         ],

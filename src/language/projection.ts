@@ -47,7 +47,7 @@ export interface ProjectionNode {
         periodExpression?: string;
         /** The canonical text of a computed deadline, deadline (e) (WP4-M03); absent for a literal deadline. */
         deadlineExpression?: string;
-        /** The canonical text of a release guard, when (g) (WP7-M01); absent on an entry without one. */
+        /** The canonical text of a release guard's condition g, written if (g) (WP7-M01); absent on an entry without one. */
         guard?: string;
         concurrent: boolean;
         code: string;

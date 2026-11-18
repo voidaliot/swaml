@@ -339,7 +339,7 @@ export function suspendSite(op: Executable, c: Structure | undefined, seen = new
     }
     return undefined;
 }
-const statementOf = (n: AstNode): AstNode => { let s: AstNode = n; while (s.$container && !a.isBlock(s.$container) && !a.isOperationBody(s.$container) && !isExecutable(s.$container)) s = s.$container; return s; };
+const statementOf = (n: AstNode): AstNode => { let s: AstNode = n; while (s.$container && !a.isBlock(s.$container) && !a.isElseIf(s.$container) && !a.isOperationBody(s.$container) && !isExecutable(s.$container)) s = s.$container; return s; };
 /** The source text of a statement for diagnostics: whitespace collapsed, at most 60 characters, without the final semicolon. */
 export function statementText(n: AstNode): string {
     const text = (n.$cstNode?.text ?? n.$type).replace(/\s+/gu, ' ').trim();

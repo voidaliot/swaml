@@ -430,7 +430,7 @@ export class SwamlValidator {
         } if (!a.isCallExpression(e))
             return new Set(); const target = this.callTarget(e, c), params = target ? (isExecutable(target) ? signature(target)?.parameters : target.parameters) : []; return new Set(e.args.flatMap((arg, i) => params?.[i]?.direction === 'out' && a.isReferenceExpression(arg) && outs.includes(arg.path) ? [arg.path] : [])); };
         const join = (branches: (Set<string> | undefined)[]): Set<string> | undefined => { const live = branches.filter((x): x is Set<string> => !!x); return live.length ? new Set([...live[0]].filter(x => live.every(s => s.has(x)))) : undefined; };
-        const flow = (b: a.Block | a.OperationBody, input: Set<string>): Set<string> | undefined => {
+        const flow = (b: a.Block | a.ElseIf | a.OperationBody, input: Set<string>): Set<string> | undefined => {
             let assigned = new Set(input);
             for (const stmt of b.statements) {
                 if (a.isReturn(stmt)) {
@@ -1052,7 +1052,7 @@ export class SwamlValidator {
         else
             this.value(v, typeKey(p.type), env, c, op); });
     }
-    private block(b: a.Block | a.OperationBody | a.Scenario, inherited: Env, c: Structure | undefined, op: Executable | undefined): void {
+    private block(b: a.Block | a.ElseIf | a.OperationBody | a.Scenario, inherited: Env, c: Structure | undefined, op: Executable | undefined): void {
         const env = new Map(inherited);
         for (const s of b.statements) {
             if (a.isLocalVariable(s)) {
@@ -1300,7 +1300,7 @@ export class SwamlValidator {
             this.report(n, 'SW2001', `Input ${name} shadows a live name.`); result.set(name, { type: types[i] ?? '?', mutable: operation && ep.member.parameters[i]?.direction === 'out' }); });
         return result;
     }
-    private terminates(b: a.Block | a.OperationBody): boolean { return b.statements.some(s => a.isReturn(s) || a.isFail(s) || a.isIf(s) && !!s.otherwise && this.terminates(s.then) && this.terminates(s.otherwise) || a.isInterruptible(s) && this.terminates(s.body) && this.terminates(s.handler) || a.isUntil(s) && this.terminates(s.body) && (!s.limit||(constantNumber(s.limit)??0)>0) || a.isForEach(s) && /\[[1-9]\d*\]$/.test(expressionTypes.get(s.collection)??'') && this.terminates(s.body)); }
+    private terminates(b: a.Block | a.ElseIf | a.OperationBody): boolean { return b.statements.some(s => a.isReturn(s) || a.isFail(s) || a.isIf(s) && !!s.otherwise && this.terminates(s.then) && this.terminates(s.otherwise) || a.isInterruptible(s) && this.terminates(s.body) && this.terminates(s.handler) || a.isUntil(s) && this.terminates(s.body) && (!s.limit||(constantNumber(s.limit)??0)>0) || a.isForEach(s) && /\[[1-9]\d*\]$/.test(expressionTypes.get(s.collection)??'') && this.terminates(s.body)); }
     private schedules(c: Structure, explained: ReadonlySet<a.ScheduleEntry>): void {
         const entries = schedule(c), keys = new Set<string>();
         for (const e of c.members.filter(a.isSchedule).flatMap(s => s.entries)) {
@@ -1410,8 +1410,8 @@ export class SwamlValidator {
      * entry never runs its operation; a guard that names a const attribute some specialization or usage redefines (the
      * same declaration) folds per occurrence and is left alone, as for WP6-D10. WP7-D04: an entry without a guard
      * replaces an inherited entry that has one (WP7-S03), from c's base or, for a part redefinition, from the usage it
-     * redefines, which silently drops a safety condition; a replacement with any guard, when (true) included, states its
-     * own condition and is not reported. The two messages start with fixed texts, `Release guard when (` and
+     * redefines, which silently drops a safety condition; a replacement with any guard, if (true) included, states its
+     * own condition and is not reported. The two messages start with fixed texts, `Release guard if (` and
      * `Replacing entry `, so a consumer tells them apart without a second code.
      */
     private guardWarnings(e: a.ScheduleEntry, c: Structure): void {
@@ -1419,7 +1419,7 @@ export class SwamlValidator {
             return;
         if (e.guard) {
             if (constantValue(e.guard, c).value === false && !this.redefinedConstant(e.guard, c))
-                this.report(e.guard, 'SW2020', `Release guard when (${displayText(e.guard, MESSAGE_SPELLING)}) of ${this.guardEntryText(e)} is always false; the entry never runs ${formatName(e.operation, MESSAGE_SPELLING)}.`, true);
+                this.report(e.guard, 'SW2020', `Release guard if (${displayText(e.guard, MESSAGE_SPELLING)}) of ${this.guardEntryText(e)} is always false; the entry never runs ${formatName(e.operation, MESSAGE_SPELLING)}.`, true);
             return;
         }
         const base = a.isComponentDef(c) ? c.specializes?.ref : c.definition?.ref, key = entryKey(e);
@@ -1431,13 +1431,13 @@ export class SwamlValidator {
         const document = inherited?.guard && AstUtils.getDocument(inherited.guard).parseResult;
         if (!inherited?.guard || !document || document.parserErrors.length || document.lexerErrors.length)
             return;
-        // An inherited guard that folds to true (when (true)) in c constrains nothing, so dropping it changes nothing.
+        // An inherited guard that folds to true (if (true)) in c constrains nothing, so dropping it changes nothing.
         // The fold is evaluated in c, the replacing structure, where a const redefinition may change its value.
         if (constantValue(inherited.guard, c).value === true)
             return;
         const declared = container(inherited);
         const where = declared ? formatName(declared.name, MESSAGE_SPELLING) : 'its base';
-        this.report(e, 'SW2020', `Replacing entry ${this.guardEntryText(e)} drops the inherited release guard when (${displayText(inherited.guard, MESSAGE_SPELLING)}) of ${where}, so it runs ${formatName(e.operation, MESSAGE_SPELLING)} whatever the guard says; repeat the guard, or write when (true) to remove it deliberately.`, true, { related: [inherited] });
+        this.report(e, 'SW2020', `Replacing entry ${this.guardEntryText(e)} drops the inherited release guard if (${displayText(inherited.guard, MESSAGE_SPELLING)}) of ${where}, so it runs ${formatName(e.operation, MESSAGE_SPELLING)} whatever the guard says; repeat the guard, or write if (true) to remove it deliberately.`, true, { related: [inherited] });
     }
     /** The usage a `redefines component` usage replaces: the member of that name in its owner's base, if any. */
     private redefinedUsage(c: Structure): a.ComponentUsage | undefined {
