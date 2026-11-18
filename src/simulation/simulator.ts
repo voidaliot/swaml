@@ -673,7 +673,8 @@ class Interpreter {
         this.frames.add(f);
         this.unstarted++;
         this.log('release', `${c.path}.${op.name}`, { activation: f.id, source: this.source(entry), cause: entry.kind, predecessorActivation: predecessor?.id });
-        const deadline = entry.deadline ? nanos(entry.deadline) : entry.period ? nanos(entry.period) : entry.deadlineValue || entry.periodValue ? this.computedDeadline(c, entry) : undefined;
+        // One precedence everywhere (entryDeadline): an explicit deadline, literal or computed, then the period (WP4-S04).
+        const deadline = entry.deadlineValue || entry.periodValue ? this.computedDeadline(c, entry) : entryDeadline(entry, c.structure);
         if (deadline)
             this.at(this.time + deadline, 0, () => { if (!f.done)
                 throw new ContractViolation('Deadline', f.id); }, () => !f.done);

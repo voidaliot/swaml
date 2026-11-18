@@ -12,7 +12,7 @@ const insideConditional = (e: AstNode): boolean => { for (let n = e.$container; 
 /** The name of the attribute, requirement attribute or policy setting whose initializer contains e. */
 const initialized = (e: AstNode): string => { for (let n: AstNode | undefined = e; n; n = n.$container) if (a.isAttribute(n) || a.isPolicySetting(n)) return n.name; return ''; };
 const isExpression = (n: unknown): n is a.Expression => !!n && typeof n === 'object' && EXPRESSION_TYPES.has((n as AstNode).$type);
-import { useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_2_3_URI, container, constantValue, expressionText, representableDuration, settingDuration, type ConstantProblem } from './semantic.js';
+import { useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_2_3_URI, container, constantValue, displayText, entryDeadline, entryPeriod, representableDuration, settingDuration, triggerIdentity, type ConstantProblem } from './semantic.js';
 import { ambiguousNameMessage } from './swaml-scope.js';
 type Env = Map<string, {
     type: string;
@@ -283,7 +283,7 @@ export class SwamlValidator {
                 this.report(s, 'SW2013', `${s.name} is not a duration setting.`);
             if (s.name === 'capacity' && !computed && (literal || !a.isLiteral(s.value) || s.value.number === undefined))
                 this.report(s, 'SW2013', 'capacity needs a positive integer count, not a duration.');
-            if (s.value && !literal && ['delivery', 'ordering', 'overflow'].includes(s.name))
+            if (s.value && !literal && !computed && ['delivery', 'ordering', 'overflow'].includes(s.name))
                 this.value(s.value, 'Swaml::Qos::' + ({ delivery: 'Delivery', ordering: 'Ordering', overflow: 'Overflow' } as Record<string, string>)[s.name], new Map());
         }
     }
@@ -755,7 +755,7 @@ export class SwamlValidator {
      */
     private unitWarning(e: a.Expression, c: Structure | undefined): void {
         if (!this.carriesUnit(e, c, new Set()))
-            this.report(e, 'SW2016', `${expressionText(e)} has no time unit and counts nanoseconds; multiply by a unit such as 1ms.`, true);
+            this.report(e, 'SW2016', `${displayText(e)} has no time unit and counts nanoseconds; multiply by a unit such as 1ms.`, true);
     }
     private carriesUnit(e: a.Expression, c: Structure | undefined, seen: Set<a.Attribute>): boolean {
         for (const n of nodes(e)) {
@@ -797,7 +797,7 @@ export class SwamlValidator {
     private constantProblem(e: a.Expression, problem: ConstantProblem): boolean {
         const category = problem.kind === 'call' ? problem.clock ? 'now()' : 'calls' : problem.kind === 'state' ? 'mutable state' : problem.kind === 'value' ? 'values other than integers, durations and booleans' : problem.kind === 'cycle' ? 'cyclic const attributes' : undefined;
         if (category)
-            this.report(e, 'SW2007', `${expressionText(e)} is not a constant duration: ${category} are not allowed.`);
+            this.report(e, 'SW2007', `${displayText(e)} is not a constant duration: ${category} are not allowed.`);
         return !!category;
     }
     /**
@@ -811,8 +811,10 @@ export class SwamlValidator {
             return;
         const done = this.durationFindings;
         const once = (n: AstNode, kind: string, report: () => void) => { const key = kind + '@' + (n.$cstNode?.offset ?? -1) + ':' + AstUtils.getDocument(n).uri.toString(); if (!done.has(key)) { done.add(key); report(); } };
-        for (const occurrence of occurrences(root))
-            for (const e of schedule(occurrence.structure)) {
+        for (const occurrence of occurrences(root)) {
+            const entries = schedule(occurrence.structure);
+            this.equalPeriods(entries, occurrence.path, occurrence.structure, once);
+            for (const e of entries) {
                 if (!e.periodValue && !e.deadlineValue)
                     continue;
                 const value = (expression: a.Expression | undefined, what: 'period' | 'deadline'): bigint | undefined => {
@@ -821,7 +823,10 @@ export class SwamlValidator {
                     const result = constantValue(expression, occurrence.structure);
                     if (result.problem?.kind === 'division') {
                         const problem = result.problem;
-                        once(problem.node, 'division', () => this.report(expression, 'SW2013', `${expressionText(problem.node)} divides ${problem.left} by ${problem.right} in ${occurrence.path}, which is not an exact integral division.`));
+                        // A zero divisor of % has its own wording (WP4-D07).
+                        once(problem.node, 'division', () => this.report(expression, 'SW2013', problem.node.operator === '%'
+                            ? `${displayText(problem.node)} takes the remainder of ${problem.left} by ${problem.right} in ${occurrence.path}, which is not defined for a zero divisor.`
+                            : `${displayText(problem.node)} divides ${problem.left} by ${problem.right} in ${occurrence.path}, which is not an exact integral division.`));
                         return undefined;
                     }
                     if (result.problem) {
@@ -836,17 +841,36 @@ export class SwamlValidator {
                     }
                     return result.value;
                 };
-                const period = e.periodValue ? value(e.periodValue, 'period') : e.period ? BigInt(nanos(e.period)) : undefined;
-                const deadline = e.deadlineValue ? value(e.deadlineValue, 'deadline') : e.deadline ? BigInt(nanos(e.deadline)) : undefined;
-                if (e.kind === 'every' && period !== undefined && deadline !== undefined && deadline > period)
+                // Problems are reported above; the comparison reads the same helpers as the simulator and the projection.
+                const problems = [e.periodValue && value(e.periodValue, 'period') === undefined, e.deadlineValue && value(e.deadlineValue, 'deadline') === undefined].some(Boolean);
+                const period = entryPeriod(e, occurrence.structure), deadline = entryDeadline(e, occurrence.structure);
+                if (!problems && e.kind === 'every' && (e.deadline || e.deadlineValue) && period !== undefined && deadline !== undefined && deadline > period)
                     once(e, 'deadline', () => this.report(e, 'SW2007', `Periodic deadline cannot exceed its period in ${occurrence.path}.`));
             }
+        }
+    }
+    /**
+     * SW2019 (WP4-D08, warning): two effective every entries of one occurrence release the same operation with equal
+     * periods but different trigger identities, so neither replaces the other and the operation is released twice per
+     * period. Literal periods are identified by their nanoseconds as in 2.2, so at least one of the two is computed and
+     * a 2.2 source never gets this warning. Reported once, at the later entry, for the first occurrence.
+     */
+    private equalPeriods(entries: readonly a.ScheduleEntry[], path: string, structure: Structure, once: (n: AstNode, kind: string, report: () => void) => void): void {
+        const periodic = entries.filter(e => e.kind === 'every' && (e.period || e.periodValue));
+        if (!periodic.some(e => e.periodValue))
+            return;
+        periodic.forEach((later, i) => {
+            const period = entryPeriod(later, structure);
+            const earlier = periodic.slice(0, i).find(x => x.operation === later.operation && triggerIdentity(x) !== triggerIdentity(later) && period !== undefined && entryPeriod(x, structure) === period);
+            if (earlier)
+                once(later, 'equalPeriod', () => this.report(later, 'SW2019', `${this.entryText(later)} and ${this.entryText(earlier)} have the same period in ${path} but different triggers, so neither replaces the other and ${later.operation} is released twice per period; write the same trigger to replace an entry.`, true));
+        });
     }
     /** The per-occurrence duration findings of the current document check, each reported once (WP4-S06). */
     private readonly durationFindings = new Set<string>();
     /** An entry as diagnostics name it: its trigger and operation, such as every (periodMs * 1ms) poll (WP4-D04). */
     private entryText(e: a.ScheduleEntry): string {
-        const trigger = e.kind === 'every' ? `every ${e.periodValue ? `(${expressionText(e.periodValue)})` : e.period ? `${e.period.value}${e.period.unit}` : ''}` : e.kind === 'after' ? `after ${e.predecessor}` : e.kind === 'start' ? 'start' : `${e.kind} ${e.endpoint}`;
+        const trigger = e.kind === 'every' ? `every ${e.periodValue ? `(${displayText(e.periodValue)})` : e.period ? `${e.period.value}${e.period.unit}` : ''}` : e.kind === 'after' ? `after ${e.predecessor}` : e.kind === 'start' ? 'start' : `${e.kind} ${e.endpoint}`;
         return `on ${trigger} ${e.operation}`.replace('on after', 'after');
     }
     /**
@@ -1230,7 +1254,8 @@ export class SwamlValidator {
                     this.computedDuration(t.delayValue, env, c, op);
                     for (const call of nodes(t.delayValue).filter(a.isCallExpression)) {
                         const target = this.callTarget(call, c);
-                        if (!target || !isExecutable(target) || effects(target, c).writes || effects(target, c).communicates || effects(target, c).suspends)
+                        // An unresolved call is reported by the call rules only (one diagnostic per cause).
+                        if (target && (!isExecutable(target) || effects(target, c).writes || effects(target, c).communicates || effects(target, c).suspends))
                             this.report(t.delayValue, 'SW2008', 'State timers may only be pure or read state.');
                     }
                 }

@@ -160,6 +160,20 @@ function hint(actual: Token | undefined, previous: Token | undefined, expectsNam
         return ` A name containing spaces must be quoted, for example '${shown(previous!)} ${shown(actual)}'.`;
     return '';
 }
+/**
+ * WP4: a computed duration that is missing its expression, such as wait ( or after ( followed by something that
+ * cannot start an expression, is explained in one line instead of the list of every expression start. Only the
+ * keyword forms new in 2.3 (wait, after, every and deadline directly followed by an opening parenthesis) qualify,
+ * so no 2.2 message changes.
+ */
+function computedDurationHint(actual: Token | undefined, previous: Token | undefined): string | undefined {
+    if (!actual || previous?.image !== '(')
+        return undefined;
+    const index = tokens.findIndex(t => t.startOffset === previous.startOffset), keyword = index > 0 ? tokens[index - 1].image : undefined;
+    return keyword && ['wait', 'after', 'every', 'deadline'].includes(keyword) && tokens[index - 1].tokenType?.name === keyword
+        ? `Expecting a duration expression after ${keyword} (, such as ${keyword} (n * 1ms), but found \`${actual.image}\`.`
+        : undefined;
+}
 export class SwamlParserErrorMessageProvider extends LangiumParserErrorMessageProvider {
     override buildMismatchTokenMessage(options: Parameters<LangiumParserErrorMessageProvider['buildMismatchTokenMessage']>[0]): string {
         const expectsName = nameToken(options.expected);
@@ -169,6 +183,9 @@ export class SwamlParserErrorMessageProvider extends LangiumParserErrorMessagePr
     }
     override buildNoViableAltMessage(options: Parameters<LangiumParserErrorMessageProvider['buildNoViableAltMessage']>[0]): string {
         const first = options.expectedPathsPerAlt.flatMap(alternative => alternative.map(path => path[0])), expectsName = first.length > 0 && first.every(nameToken), actual = options.actual[0];
+        const duration = computedDurationHint(actual, options.previous);
+        if (duration)
+            return duration;
         if (actual?.image === 'if' && OPERAND_RULES.has(ruleName(options.ruleName) ?? ''))
             return super.buildNoViableAltMessage(options) + OPERAND_HINT;
         return (expectsName && actual ? `Expecting a name but found \`${actual.image}\`.` : super.buildNoViableAltMessage(options)) + hint(actual, options.previous, expectsName);

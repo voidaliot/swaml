@@ -9,7 +9,7 @@ import { parseHelper } from 'langium/test';
 import { createSwamlServices } from '../../src/language/swaml-module.js';
 import { formatDocument } from '../../src/language/formatter.js';
 import { projectModel } from '../../src/language/projection.js';
-import { constantValue, effectiveQos, entryDeadline, entryKey, entryPeriod, expressionText, expressionTypes, occurrences, schedule, settingDuration, triggerIdentity } from '../../src/language/semantic.js';
+import { constantValue, displayText, effectiveQos, entryDeadline, entryKey, entryPeriod, expressionText, expressionTypes, occurrences, schedule, settingDuration, triggerIdentity } from '../../src/language/semantic.js';
 import { runCase, simulate } from '../../src/simulation/simulator.js';
 import type { Model } from '../../src/language/generated/ast.js';
 import * as a from '../../src/language/generated/ast.js';
@@ -188,6 +188,29 @@ test('WP4-R02 a computed deadline is enforced at release plus its per-occurrence
     assert.equal(violation.reason ?? violation.code, 'Deadline');
 });
 
+test('WP4-R02 WP4-S04 (review F1) the deadline precedence is the same for every combination of literal and computed periods and deadlines', async () => {
+    // op waits 15 ms: a 10 ms deadline is violated at 30 ms (release at 20 ms); the default deadline, the 20 ms period, is met.
+    const combinations: [string, string, number | undefined][] = [
+        ['20ms', '', undefined], ['20ms', 'deadline 10ms', 30000000], ['20ms', 'deadline (10ms)', 30000000], ['20ms', 'deadline (tenMs * 1ms)', 30000000],
+        ['(20ms)', '', undefined], ['(twentyMs * 1ms)', '', undefined], ['(twentyMs * 1ms)', 'deadline 10ms', 30000000], ['(twentyMs * 1ms)', 'deadline (tenMs * 1ms)', 30000000],
+    ];
+    for (const [period, deadline, at] of combinations) {
+        const source = wrap(`const attribute tenMs: uint = 10; const attribute twentyMs: uint = 20; attribute n: uint = 0;
+      operation op() { wait 15ms; n = n + 1; }
+      schedule { on every ${period} op() ${deadline}; }`);
+        const r = await valid(source);
+        const out = simulate([r.model], 'Test::Demo', { untilNs: 100000000 }), violation = kinds(out.trace, 'violation')[0];
+        assert.deepEqual([out.status, violation?.timeNs], [at ? 'violation' : 'horizon', at], `every ${period} ${deadline}`);
+        const expected = at ? 10000000 : 20000000;
+        const projected = projectModel([r.model]).nodes.find(x => x.id === 'Test::Demo')!.schedule![0];
+        assert.equal(projected.deadlineNs, expected, `projection of every ${period} ${deadline}`);
+        const entry = nodesOf(r.model, a.isScheduleEntry)[0], usage = r.model.packages[0].elements.find(a.isComponentUsage)!;
+        assert.equal(entryDeadline(entry, usage), expected);
+    }
+    // The validator compares the same values: a computed deadline above a literal period.
+    assert.deepEqual(await errors(periodic('on every 10ms tick() deadline (periodMs * 2ms);')), [['SW2007', 'Periodic deadline cannot exceed its period in Demo.']]);
+});
+
 // ---------------------------------------------------------------- computed state timers
 
 const machine = (states: string, attributes = '', more = '') => wrap(`${attributes}
@@ -307,7 +330,7 @@ test('WP4-S04 WP4-S05 WP4-D02 integral division is exact in the constant sublang
     assert.deepEqual(await errors(periodic('on every (periodMs * 1ms) tick() deadline (periodMs * 1ms / 4);')), []);
     assert.deepEqual(await errors(periodic('on every (periodMs * 1ms) tick() deadline (periodMs * 1ms / 3);')), [['SW2013', 'periodMs * 1ms / 3 divides 10000000 by 3 in Demo, which is not an exact integral division.']]);
     assert.deepEqual(await errors(periodic('on every (periodMs * 1ms / (periodMs - 10)) tick();')), [['SW2013', 'periodMs * 1ms / (periodMs - 10) divides 10000000 by 0 in Demo, which is not an exact integral division.']]);
-    assert.deepEqual(await errors(periodic('on every (periodMs * 1ms % 0) tick();')), [['SW2013', 'periodMs * 1ms % 0 divides 10000000 by 0 in Demo, which is not an exact integral division.']]);
+    assert.deepEqual(await errors(periodic('on every (periodMs * 1ms % 0) tick();')), [['SW2013', 'periodMs * 1ms % 0 takes the remainder of 10000000 by 0 in Demo, which is not defined for a zero divisor.']]);
     assert.deepEqual(await errors(periodic('on every (periodMs * 1.5) tick();')), [['SW2002', 'A duration must be integral, found real.']]);
     assert.deepEqual(await errors(periodic('on every (periodMs > 1) tick();')), [['SW2002', 'A duration must be integral, found bool.']]);
 });
@@ -468,6 +491,63 @@ test('WP4-M08 the formatter prints computed durations in parentheses and literal
     }
 });
 
+test('WP4-S07 (review F3, F4) display text keeps the source spelling; identity text is collision-free', async () => {
+    const r = await parse(periodic("on every (arr[0] * 1ms + (periodMs - 1) * 2ms) tick() deadline (3ms); on every (try(helper(), 1) * 1ms) tock();", 'const attribute periodMs: uint = 10; const attribute arr: uint[2] = [1, 2];'));
+    const [first, second] = nodesOf(r.model, a.isScheduleEntry);
+    assert.equal(displayText(first.periodValue!), 'arr[0] * 1ms + (periodMs - 1) * 2ms');
+    assert.equal(displayText(first.deadlineValue!), '3ms');
+    assert.equal(expressionText(first.deadlineValue!), '3000000', 'identity of a single literal is its nanoseconds');
+    assert.equal(displayText(second.periodValue!), 'try(helper(), 1) * 1ms');
+    assert.ok(r.errors.some(e => e.message === 'arr[0] * 1ms + (periodMs - 1) * 2ms is not a constant duration: values other than integers, durations and booleans are not allowed.'), JSON.stringify(r.errors.map(e => e.message)));
+    const projected = projectModel([r.model]).nodes.find(x => x.id === 'Test::D')!.schedule![0];
+    assert.equal(projected.deadlineExpression, '3ms');
+    // a or b and a name aorb, a [1] array and a[1] index stay apart.
+    const pair = await parse(periodic('on every (if (a or b) 1ms else 2ms) tick(); on every (if (aorb) 1ms else 2ms) tick();', 'const attribute a: bool = true; const attribute b: bool = false; const attribute aorb: bool = true;'));
+    const [x, y] = nodesOf(pair.model, a.isScheduleEntry);
+    assert.notEqual(triggerIdentity(x), triggerIdentity(y));
+    assert.deepEqual(pair.errors, []);
+});
+
+test('WP4-D07 (review F5) a remainder by zero has its own wording', async () => {
+    assert.deepEqual(await errors(periodic('on every (periodMs % (periodMs - 10) * 1ms + 1ms) tick();')), [['SW2013', 'periodMs % (periodMs - 10) takes the remainder of 10 by 0 in Demo, which is not defined for a zero divisor.']]);
+});
+
+test('WP4-D01 WP4-S08 (review F6) one diagnostic per cause on the new forms; a missing duration expression has a short syntax message', async () => {
+    assert.deepEqual(await errors(policy('capacity = 4; requestTimeout = 1s; delivery = 5ms * 2;').replace('delivery = Delivery.atMostOnce; ', '')), [['SW2013', 'A policy needs complete valid delivery, ordering, capacity, overflow and requestTimeout.'], ['SW2013', 'delivery is not a duration setting.']]);
+    const unknown = await errors(machine('state A { after (nope() * 1ms) to B { } } final state B { }'));
+    assert.ok(!unknown.some(([c]) => c === 'SW2008'), JSON.stringify(unknown));
+    const { Swaml } = createSwamlServices(EmptyFileSystem);
+    for (const [line, keyword] of [['wait ();', 'wait'], ['on receive p.m() { } or after () { }', 'after']])
+        assert.deepEqual(Swaml.parser.LangiumParser.parse(statement(line)).parserErrors.map(e => e.message), [`Expecting a duration expression after ${keyword} (, such as ${keyword} (n * 1ms), but found \`)\`.`]);
+    assert.deepEqual(Swaml.parser.LangiumParser.parse(entry('on every () g();')).parserErrors.map(e => e.message), ['Expecting a duration expression after every (, such as every (n * 1ms), but found `)`.']);
+    assert.match(Swaml.parser.LangiumParser.parse(statement('x = ();')).parserErrors[0].message, /^Expecting: one of these possible Token sequences/u, 'the 2.2 message of an empty parenthesis is unchanged');
+});
+
+test('WP4-D08 (review F8) SW2019 warns when entries with different triggers have equal periods in an occurrence; literal periods keep 2.2 value identity', async () => {
+    const source = `package Test {
+  component def Base { const attribute periodMs: uint = 10; attribute n: uint = 0; operation g() { n = n + 1; } schedule { on every 20ms g(); } }
+  component def Derived specializes Base { schedule { on every (2 * 10ms) g(); } }
+  component Demo: Derived;
+}`;
+    assert.deepEqual(await warnings(source), [['SW2019', 'on every (2 * 10ms) g and on every 20ms g have the same period in Demo but different triggers, so neither replaces the other and g is released twice per period; write the same trigger to replace an entry.']]);
+    // Literal periods written in different units are one trigger, as in 2.2: replaced, no warning.
+    const literal = `package Test {
+  component def Base { attribute n: uint = 0; operation g() { n = n + 1; } schedule { on every 20ms g(); } }
+  component def Derived specializes Base { schedule { on every 20000us g(); } }
+  component Demo: Derived;
+}`;
+    assert.deepEqual(await warnings(literal), []);
+    const r = await valid(literal);
+    assert.equal(schedule(r.model.packages[0].elements.find((e): e is a.ComponentDef => a.isComponentDef(e) && e.name === 'Derived')!).length, 1);
+    // Equal only in one occurrence: the warning names that occurrence.
+    const perUsage = `package Test {
+  component def D { const attribute periodMs: uint = 10; attribute n: uint = 0; operation g() { n = n + 1; } schedule { on every 20ms g(); on every (periodMs * 1ms) g(); } }
+  component a: D;
+  component b: D { redefines const attribute periodMs: uint = 20; }
+}`;
+    assert.deepEqual((await warnings(perUsage)).map(w => String(w[1]).split(' but')[0]), ['on every (periodMs * 1ms) g and on every 20ms g have the same period in b']);
+});
+
 // ---------------------------------------------------------------- recovery
 
 const statement = (line: string) => `package Test {
@@ -591,14 +671,24 @@ test('WP4 examples: computed backoff, lock pulse and derived period pass their c
     const expected: Record<string, string[]> = {
         'examples/41-computed-backoff.swaml': ['Backoff::Counted loop rounds up', 'Backoff::Computed wait is exact', 'Backoff::A delay that is not positive fails', 'Backoff::Timeout doubles after a loss', 'Backoff::Backoff timer uses the new delay'],
         'examples/42-lock-pulse.swaml': ['LockPulse::Recalibrated pulse'],
-        'examples/43-derived-period.swaml': ['DerivedPeriod::Period per usage', 'DerivedPeriod::Busy within the deadline'],
+        'examples/43-derived-period.swaml': ['DerivedPeriod::Period per usage', 'DerivedPeriod::Busy within the deadline', 'DerivedPeriod::Deadline per usage'],
     };
     for (const [file, cases] of Object.entries(expected)) {
         const r = await parse(readFileSync(new URL(file, root), 'utf8'));
         assert.deepEqual(r.doc.diagnostics?.map(d => [d.code, d.message]), [], file);
         for (const name of cases) {
             const first = runCase([r.model], name, { untilNs: 10000000000 }), second = runCase([r.model], name, { untilNs: 10000000000 });
-            assert.equal(first.result, 'pass', `${name}: ${first.message}`);
+            // The derived deadline of late (4 ms) is violated by design at 12 ms (WP4-R02, review F1).
+            if (name === 'DerivedPeriod::Deadline per usage') {
+                assert.equal(first.result, 'fail');
+                const violation = (first.run?.trace ?? []).find(t => t.kind === 'violation') as Observation | undefined;
+                assert.deepEqual([first.run?.status, violation?.timeNs, violation?.reason ?? violation?.code], ['violation', 12000000, 'Deadline'], JSON.stringify(violation));
+            }
+            else
+                assert.equal(first.result, 'pass', `${name}: ${first.message}`);
+            // A non-positive delay is DurationRange, not Bounds (review F2).
+            if (name === 'Backoff::A delay that is not positive fails')
+                assert.deepEqual(kinds(first.run!.trace, 'caught').map(t => t.reason), ['DurationRange', 'DurationRange']);
             assert.equal(JSON.stringify(first.run?.trace), JSON.stringify(second.run?.trace), `${name} is deterministic`);
         }
     }

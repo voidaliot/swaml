@@ -185,26 +185,38 @@ export function nanos(d: a.Duration): number { return d.value * ({ ns: 1, us: 10
  */
 export function settingDuration(s: a.PolicySetting): a.Duration | undefined { return a.isLiteral(s.value) ? s.value.duration : undefined; }
 /**
- * The canonical text of an expression (WP4-S07): its tokens without comments or layout, one space between tokens
- * except inside a duration literal (1ms), after ( [ . :: and before ) ] , . :: and before the argument list of a call
- * or try, integers in decimal and names in
- * canonical spelling. A single integer or duration literal, parenthesized or not, is its value in nanoseconds,
- * so every (20ms) and every 20ms have the same trigger identity, and every (2 * 10ms) another one.
+ * The canonical display text of an expression (WP4-S07): its tokens without comments or layout, integers in decimal
+ * and names in canonical spelling, one space between tokens except none after ( [ . :: and none before ) ] , . ::,
+ * none before the index [ of a value and the argument list ( of a call or try, and none inside a duration literal
+ * (1ms). A parenthesized subexpression and an array literal are spaced like any operand: a * (b + c), [1, 2].
+ * Messages and projections show this text; it keeps the unit of a literal (deadline (3ms) shows 3ms).
+ */
+export function displayText(e: a.Expression): string {
+    const leaves = e.$cstNode ? CstUtils.flattenCst(e.$cstNode).filter(n => !n.hidden).toArray() : [];
+    let text = '';
+    leaves.forEach((leaf, i) => {
+        const type = leaf.tokenType.name, image = type === 'UNRESTRICTED_NAME' ? formatName(decodeQuotedName(leaf.text)) : type === 'INT' ? String(Number(leaf.text)) : leaf.text;
+        const previous = leaves[i - 1];
+        const glued = !previous || ['(', '[', '.', '::'].includes(previous.text) || [')', ']', ',', '.', '::'].includes(leaf.text)
+            || a.isDuration(leaf.astNode) && previous.astNode === leaf.astNode
+            || leaf.text === '(' && (a.isCallExpression(leaf.astNode) || a.isTryExpression(leaf.astNode))
+            || leaf.text === '[' && !a.isArrayLiteral(leaf.astNode);
+        text += (glued ? '' : ' ') + image;
+    });
+    return text;
+}
+/**
+ * The trigger identity text of an expression (WP4-S07): a single integer or duration literal, parenthesized or not,
+ * is its value in nanoseconds, so every (20ms) and every 20ms (and every 20000us) have the same identity; any other
+ * expression is its display text, so every (2 * 10ms) is another trigger. Tokens stay separated by a space, so an
+ * operator sequence such as a or b can never equal a name.
  */
 export function expressionText(e: a.Expression): string {
     if (a.isLiteral(e) && e.duration)
         return String(nanos(e.duration));
     if (a.isLiteral(e) && e.number !== undefined && !e.$cstNode?.text.includes('.'))
         return String(e.number);
-    const leaves = e.$cstNode ? CstUtils.flattenCst(e.$cstNode).filter(n => !n.hidden).toArray() : [];
-    let text = '';
-    leaves.forEach((leaf, i) => {
-        const type = leaf.tokenType.name, image = type === 'UNRESTRICTED_NAME' ? formatName(decodeQuotedName(leaf.text)) : type === 'INT' ? String(Number(leaf.text)) : leaf.text;
-        // A call or try attaches its argument list: f(x), try(f(x), 0).
-        const previous = leaves[i - 1], glued = !previous || ['(', '[', '.', '::'].includes(previous.text) || [')', ']', ',', '.', '::'].includes(leaf.text) || a.isDuration(leaf.astNode) && previous.astNode === leaf.astNode || leaf.text === '(' && (a.isCallExpression(leaf.astNode) || a.isTryExpression(leaf.astNode));
-        text += (glued ? '' : ' ') + image;
-    });
-    return text;
+    return displayText(e);
 }
 /** Why an expression is not a constant duration, or why its value cannot be computed (WP4-S05, WP4-D03, WP4-D07). */
 export type ConstantProblem =
@@ -326,22 +338,26 @@ export const representableDuration = (v: bigint | boolean | undefined): v is big
  * entries and when the value is not a positive representable duration (a validation error). Consumers read
  * periods through this function rather than entry.period, which a computed period leaves undefined.
  */
-export function entryPeriod(e: a.ScheduleEntry, occurrence: Structure): number | undefined {
+export function entryPeriod(e: a.ScheduleEntry, occurrence?: Structure): number | undefined {
     if (e.period)
         return nanos(e.period);
-    if (!e.periodValue)
+    if (!e.periodValue || !occurrence)
         return undefined;
     const v = constantValue(e.periodValue, occurrence).value;
     return representableDuration(v) ? Number(v) : undefined;
 }
 /**
- * The effective deadline of an entry in an expanded occurrence, in nanoseconds: its explicit deadline (literal or
- * constant expression), otherwise the period of an every entry, otherwise undefined (WP4-S04, WP4-M02, WP4-M03).
+ * The effective deadline of an entry in an expanded occurrence, in nanoseconds (WP4-S04, WP4-M02, WP4-M03): an
+ * explicit deadline wins, literal (deadline 10ms) or computed (deadline (e)); without one, the period of an every
+ * entry, literal or computed; otherwise undefined. The simulator, the validator and the projection all read it
+ * here, so they cannot disagree. Without an occurrence (a definition), computed parts are undefined.
  */
-export function entryDeadline(e: a.ScheduleEntry, occurrence: Structure): number | undefined {
+export function entryDeadline(e: a.ScheduleEntry, occurrence?: Structure): number | undefined {
     if (e.deadline)
         return nanos(e.deadline);
     if (e.deadlineValue) {
+        if (!occurrence)
+            return undefined;
         const v = constantValue(e.deadlineValue, occurrence).value;
         return representableDuration(v) ? Number(v) : undefined;
     }

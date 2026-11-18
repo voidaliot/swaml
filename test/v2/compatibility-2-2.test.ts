@@ -78,7 +78,7 @@ test('gate 1 amendments: the rule index finds the 2.3 draft rules and the ADRs',
     const { rules, adrs } = knownRules();
     assert.ok(rules.has('WP4-D06') && rules.has('WP8-S08') && adrs.has('ADR 0022') && adrs.has('ADR 0025'));
     assert.ok(!rules.has('WP4-D99') && !adrs.has('ADR 0099'));
-    assert.equal(rules.size, 209, 'every WPn-Kxx row of the drafts (the draft index counts 209)');
+    assert.equal(rules.size, 210, 'every WPn-Kxx row of the drafts (the draft index counts 210; WP4 added WP4-D08)');
 });
 
 test('gate 1 amendments: rules marked deferred or rejected are not known and cannot justify an amendment', async () => {
