@@ -74,13 +74,13 @@ Diagnostics added or extended by 2.3. Message shapes are templates in the existi
 
 | ID | Code | Condition | Message shape |
 | --- | --- | --- | --- |
-| WP1-D01 | SW2006 | Place root is not a mutable local, `out` parameter or non-const attribute (WP1-S05) | `Cannot assign to {place}: {root} is {an in parameter \| a const attribute \| a port \| a child component \| a qualified name}.` |
-| WP1-D02 | SW2006 | `out` root read before definite assignment (WP1-S07) | `Out parameter {name} must be assigned before {place} is assigned.` |
-| WP1-D03 | SW2006 | Place as out argument (WP1-S04) | `An out argument must be a name; {place} is a place.` |
-| WP1-D04 | SW2002 | Selector typing (WP1-S02, WP1-S03) | `{type} has no field {field}.` / `{type} is not an array and cannot be indexed.` / `Index must be integral, found {type}.` / `Index {n} is outside {type}.` |
-| WP1-D05 | SW2010 | Non-literal component index in a test path (WP1-S06) | `Component index in {path} must be a literal.` |
-| WP1-D06 | SW2002 | Literal component index outside multiplicity (WP1-S06) | `Index {n} is outside the multiplicity {m} of {child}.` |
-| WP1-D07 | SW2006 | Indexed call path outside a test (WP1-S08) | `{path}: an indexed call path is allowed only in a test.` |
+| WP1-D01 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP1. | |
+| WP1-D02 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP1. | |
+| WP1-D03 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP1. | |
+| WP1-D04 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP1. | |
+| WP1-D05 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP1. | |
+| WP1-D06 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP1. | |
+| WP1-D07 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP1. | |
 | WP2-D01 | SW2002 | Conditional condition or branch types (WP2-S02) | `Condition must be bool, found {type}.` / `Conditional branches have no common type: {type1} and {type2}.` |
 | WP2-D02 | SW2006 | Suspending call in a conditional (WP2-S04) | `A suspending call cannot appear in a conditional expression.` |
 | WP2-D03 | SW2010 | Repeated association pair (WP2-S06) | `{occurrence} is already associated with {case}.` |

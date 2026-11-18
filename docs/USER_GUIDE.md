@@ -144,7 +144,7 @@ Load every application dependency together. Fix syntax/names first, then ownersh
 
 ## Test explicitly associated components
 
-In the 2.2 semantics, a test may inspect its primary subject and the software components explicitly referenced by its `associate` links, including their single parts. The components remain owned by the structural model. For example:
+In the 2.2 semantics, a test may inspect its primary subject and the software components explicitly referenced by its `associate` links, including their single parts and, from 2.3, a member of a part family named by a literal index such as `backend.twins[0].link`. The components remain owned by the structural model. For example:
 
 ```swaml
 package AssociatedTests {

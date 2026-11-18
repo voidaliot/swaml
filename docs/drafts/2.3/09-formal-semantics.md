@@ -14,8 +14,8 @@ C = (D, O, σ, S, Q, A, M, R, L, B, t)
 
 | Construct | Premises and result | Package |
 | --- | --- | --- |
-| `x[i].f…` / `x[i][j]…` | x in Γ; each selector is a record field or an integral array index; the result is the selected type; literal indexes are in extent; a copy | [WP1] |
-| `place = e` | The root is a mutable local, an assigned `out` or a non-const attribute; e is assignable to the place type; the effect adds a write of the root; the whole-expression suspension rule applies | [WP1] |
+| `x[i].f…` / `x[i][j]…` | Moved to [chapter 9.2](../../spec/09-formal-semantics.md#92-typing-schemas) in WP1. | [WP1] |
+| `place = e` | Moved to [chapter 9.2](../../spec/09-formal-semantics.md#92-typing-schemas) in WP1. | [WP1] |
 | `if (c) a else b` | c : bool; a : T1, b : T2 with common type T; effect ε(c) ∪ ε(a) ∪ ε(b) without suspension; not a statement | [WP2] |
 | `now()` | Result uint; effect reads state; not in initializers, completion guards or constant expressions | [WP3] |
 | duration literal | Result uint (nanoseconds), representable | [WP4] |
@@ -29,7 +29,7 @@ C = (D, O, σ, S, Q, A, M, R, L, B, t)
 
 | Rule | Configuration change and observation | Package |
 | --- | --- | --- |
-| place write | Evaluate indexes, then the right side; read σ[o] or ρ at the root; check the indexes; write the root with one place replaced; `write` with `place` | [WP1] |
+| place write | Moved to [chapter 9.3](../../spec/09-formal-semantics.md#93-transition-schemas) in WP1. | [WP1] |
 | completion | After entry or an internal reaction: the first enabled completion transition in order, then exit, effect, update, entry; a revisited state in a completion chain is a `CompletionLoop` violation | [WP5] |
 | guarded timer | At expiry, a false guard consumes the timer generation for this entry (`discardTimer`) | [WP5] |
 | internal reaction | Effect only; M (timer generations) unchanged | [WP5] |

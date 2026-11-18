@@ -246,8 +246,12 @@ function effectsOf(op: Executable, c: Structure | undefined, seen: Set<Executabl
     for (const n of contents) {
         if (a.isReferenceExpression(n) && attributes.has(n.path.split('.')[0]))
             result.reads = true;
-        if (a.isAssign(n) && attributes.has(n.target))
+        // A place assignment writes its root (WP1-S05); a place write also reads the root it updates.
+        if (a.isAssign(n) && attributes.has(placeRoot(n.target))) {
             result.writes = true;
+            if (isPlace(n))
+                result.reads = true;
+        }
         if (a.isSend(n))
             result.communicates = true;
         if (a.isWait(n) || a.isReceive(n) || a.isTransition(n) || a.isInterruptible(n))
@@ -515,8 +519,10 @@ export function testAccessRoots(s: a.Scenario): a.ComponentUsage[] {
 export function testCanAccess(s: a.Scenario, path: string): boolean {
     const [head, ...parts] = path.split('.');
     let current: Structure | undefined = testAccessRoots(s).find(root => root.name === head);
-    for (const name of parts) {
-        current = current && members(current).filter(a.isComponentUsage).find(child => child.name === name && child.size === undefined);
+    for (const part of parts) {
+        // A part of a multiplicity family is named with its literal index, as in twins[0] (WP1-S06).
+        const [, name, index] = /^(.*?)(?:\[(\d+)\])?$/.exec(part)!;
+        current = current && members(current).filter(a.isComponentUsage).find(child => child.name === name && (index === undefined ? child.size === undefined : child.size !== undefined && Number(index) < child.size));
         if (!current)
             return false;
     }
@@ -597,20 +603,100 @@ export function caseTarget(s: a.Scenario, path: string): CaseTarget | undefined 
         const member = rest.length === 2 ? portMembers(port).find(m => m.name === rest[1]) : undefined;
         return member && { kind: 'port', occurrence, port, member };
     }
-    let structure: Structure = occurrence, at = head, i = 0;
-    for (; i < rest.length; i++) {
-        const child: a.ComponentUsage | undefined = members(structure).filter(a.isComponentUsage).find(x => x.name === rest[i] && x.size === undefined);
-        if (!child)
-            break;
-        structure = child;
-        at += '.' + rest[i];
-    }
-    const name = rest[i];
-    if (name === undefined)
+    // A call path of a test may index a part family with a literal, as in backend.twins[0].currentView (WP1-S06).
+    const walked = walkParts(occurrence, head, pathSteps(rest));
+    if (walked.problem)
         return undefined;
+    const { structure, path: at, next } = walked, steps = pathSteps(rest), step = steps[next];
+    if (!step || step.field === undefined)
+        return undefined;
+    const name = step.field;
     const operation = members(structure).filter(isExecutable).find(x => x.name === name);
     if (operation)
-        return i === rest.length - 1 ? { kind: 'operation', path: at, structure, operation } : undefined;
+        return next === steps.length - 1 ? { kind: 'operation', path: at, structure, operation } : undefined;
     const attribute = members(structure).filter(a.isAttribute).find(x => x.name === name);
-    return attribute && { kind: 'attribute', path: at, structure, attribute, fields: rest.slice(i + 1) };
+    const fields = steps.slice(next + 1);
+    return attribute && fields.every(x => x.field !== undefined) ? { kind: 'attribute', path: at, structure, attribute, fields: fields.map(x => x.field!) } : undefined;
+}
+/**
+ * One step of a value path or place after its first name (WP1-S02): a record field or part name, or an
+ * index. A literal index of a call path is a number; an index of a read or place is its expression.
+ */
+export type Step = { field: string; index?: undefined; node?: AstNode } | { field?: undefined; index: number | a.Expression; node?: AstNode };
+/** The steps of a source path string such as twins[0].link (literal indexes only). */
+export function pathSteps(parts: readonly string[]): Step[] {
+    return parts.flatMap((part): Step[] => { const [, name, index] = /^(.*?)(?:\[(\d+)\])?$/.exec(part)!; return index === undefined ? [{ field: name }] : [{ field: name }, { index: Number(index) }]; });
+}
+/** The steps after the first name of a value reference or assignment target: dotted names, the first index and the selectors. */
+export function valueSteps(n: a.ReferenceExpression | a.Assign): Step[] {
+    const names = (a.isAssign(n) ? n.target : n.path).split('.').slice(1);
+    return [...names.map(field => ({ field, node: n })), ...(n.index ? [{ index: n.index, node: n.index }] : []), ...(n.selectors ?? []).map(s => s.field !== undefined ? { field: s.field, node: s as AstNode } : { index: s.index!, node: s.index! as AstNode })];
+}
+/** The root name of an assignment target or value path: its first segment. */
+export const placeRoot = (target: string): string => target.split('.')[0];
+/** An assignment whose target is a place other than a bare name: dotted, qualified or indexed (WP1-S05). */
+export const isPlace = (s: a.Assign): boolean => s.target.includes('.') || s.target.includes('::') || !!s.index;
+/** The literal value of an index, or undefined when it is not an integral literal. */
+export function literalIndex(index: number | a.Expression): number | undefined {
+    if (typeof index === 'number')
+        return index;
+    return a.isLiteral(index) && index.number !== undefined && !index.$cstNode?.text.includes('.') ? index.number : undefined;
+}
+/** Why a component index of a test path is invalid (WP1-S06): not a literal, outside the multiplicity, or a single part indexed. */
+export type PartProblem = { problem: 'literal' | 'range' | 'single'; child: a.ComponentUsage; index: number | a.Expression; path: string };
+/**
+ * Walks part names from an occurrence: a single part takes no index, and a part family takes one literal
+ * index inside its multiplicity. Stops at the first step that is not a part name.
+ */
+export function walkParts(start: Structure, path: string, steps: readonly Step[]): { structure: Structure; path: string; next: number; problem?: PartProblem } {
+    let structure = start, at = path, i = 0;
+    while (i < steps.length) {
+        const step = steps[i];
+        if (step.field === undefined)
+            break;
+        const child = members(structure).filter(a.isComponentUsage).find(x => x.name === step.field);
+        if (!child)
+            break;
+        const next = steps[i + 1];
+        if (child.size === undefined) {
+            if (next && next.index !== undefined)
+                return { structure, path: at, next: i, problem: { problem: 'single', child, index: next.index, path: at + '.' + child.name } };
+            at += '.' + child.name;
+            i++;
+        }
+        else {
+            if (!next || next.index === undefined)
+                break;
+            const n = literalIndex(next.index);
+            if (n === undefined)
+                return { structure, path: at, next: i, problem: { problem: 'literal', child, index: next.index, path: at + '.' + child.name } };
+            if (!Number.isSafeInteger(n) || n < 0 || n >= child.size)
+                return { structure, path: at, next: i, problem: { problem: 'range', child, index: next.index, path: at + '.' + child.name } };
+            at += `.${child.name}[${n}]`;
+            i += 2;
+        }
+        structure = child;
+    }
+    return { structure, path: at, next: i };
+}
+/** What a value reference of a case script reads: an attribute of an accessible part, followed by value steps. */
+export type CaseRead = { kind: 'attribute'; path: string; structure: Structure; attribute: a.Attribute; steps: Step[] } | { kind: 'problem'; problem: PartProblem };
+/**
+ * Resolves a value read of a case script that starts at a top-level occurrence of its package, such as
+ * atm.dispenser.count or, in a test, backend.twins[0].link (WP1-S06). Part families take literal indexes;
+ * the steps after the attribute select record fields and array elements of its value.
+ */
+export function caseRead(s: a.Scenario, e: a.ReferenceExpression): CaseRead | undefined {
+    const p = owner(s, a.isPackage), head = e.path.split('.')[0];
+    const occurrence = p && packageOccurrences(p).find(o => o.name === head);
+    if (!occurrence)
+        return undefined;
+    const steps = valueSteps(e), walked = walkParts(occurrence, head, steps);
+    if (walked.problem)
+        return { kind: 'problem', problem: walked.problem };
+    const step = steps[walked.next];
+    if (!step || step.field === undefined || members(walked.structure).some(x => a.isPortUsage(x) && x.name === step.field))
+        return undefined;
+    const attribute = members(walked.structure).filter(a.isAttribute).find(x => x.name === step.field);
+    return attribute && { kind: 'attribute', path: walked.path, structure: walked.structure, attribute, steps: steps.slice(walked.next + 1) };
 }

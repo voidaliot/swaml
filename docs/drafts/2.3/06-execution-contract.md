@@ -27,7 +27,7 @@ Release guards (new paragraph after the `after` paragraph):
 
 | ID | Rule |
 | --- | --- |
-| WP1-R04 | **Places and reads.** Place assignment follows WP1-R01 to WP1-R03. Selector reads evaluate index expressions left to right and return a copy; a dynamic index outside its extent is `Bounds`. |
+| WP1-R04 | Moved to [chapter 6.3](../../spec/06-execution-contract.md#63-values-flow-and-failure) in WP1. |
 | WP2-R01 | **Conditional.** Evaluate the condition, then only the selected branch. |
 
 ## 6.4 Communication
@@ -62,7 +62,7 @@ New and extended observations. Field names follow the existing trace (`timeNs`, 
 
 | ID | Observation | Fields and meaning |
 | --- | --- | --- |
-| WP1-T01 | `write` (extended) | A place assignment adds `place`, the evaluated place text such as `statuses[2].confirmed`. `value` is the new whole root value; `subject` is the root. |
+| WP1-T01 | `write` | Moved to [chapter 6.6](../../spec/06-execution-contract.md#66-evidence-and-resources) in WP1. |
 | WP4-T01 | `wait`, `receiveWait` (extended, computed forms only); `timer` (new) | A wait or receive timeout whose duration is computed adds the optional field `durationNs` with the evaluated value. A computed state timer is evaluated when the entry actions finish, after the `state` observation of that entry, so it gets a new `timer` observation at that moment: `subject` the machine, `state`, `source` the timer transition, `timerNs` the evaluated value and `expiresNs` the expiry time. Literal waits and literal state timers produce no new field and no `timer` observation, so 2.2 traces stay identical. |
 | WP5-T01 | `state` (extended) | An internal reaction is a `state` observation with `internal: true`, the unchanged `state` and the transition as `source`. |
 | WP5-T02 | `discardTimer` (new) | A timer consumed because its guard was false: `subject` the machine, `state`, `source` the timer transition, `reason: 'guard'`. |

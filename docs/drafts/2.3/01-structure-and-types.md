@@ -18,23 +18,21 @@ No rule changes. The sentence "Connector loops and port arrays do not exist" sta
 
 | ID | Rule |
 | --- | --- |
-| WP1-S01 | The sentence "Local data access never traverses child components or ports" gains: "except a sampled read `p.m` of an owned port (chapter 2.6)". Places (chapter 3.3) are rooted in locals, `out` parameters and non-const attributes only. *(Text change in WP1; the sampled-read exception is activated by WP6-S01.)* |
+| WP1-S01 | The places sentence moved to [chapter 1.3](../../spec/01-structure-and-types.md#13-state-and-lexical-values) in WP1. Still open, with WP6-S01: the sentence "Local data access never traverses child components or ports" gains "except a sampled read `p.m` of an owned port (chapter 2.6)". |
 
 ## 1.4 Value domains
 
-Replace "In-place field/index assignment and reference values are absent." with the rules below.
+WP1 replaced "In-place field/index assignment and reference values are absent." in chapter 1.4 with WP1-S02 and WP1-S03, and its examples are validated `swaml` fences there.
 
 | ID | Rule |
 | --- | --- |
-| WP1-S02 | **Selectors.** After a first `[index]`, a value reference or assignment target continues with any sequence of `.field` and `[index]` selectors. `.f` selects a field of a record type and `[i]` indexes a fixed array with an integral index; the result type is the field or element type. Index expressions evaluate left to right. A read yields a copy. Reference values remain absent. |
-| WP1-S03 | **Static index range.** A literal index outside the extent of the indexed array type is a static error, at every selector position. |
+| WP1-S02 | Moved to [chapter 1.4](../../spec/01-structure-and-types.md#14-value-domains) in WP1. |
+| WP1-S03 | Moved to [chapter 1.4](../../spec/01-structure-and-types.md#14-value-domains) in WP1. |
 | WP2-S02 | **Conditional typing.** `if (c) a else b` requires `c: bool`. Its type is the common type of `a` and `b` under scalar widening (byte → uint → int → real). Records, enums and arrays must be identical types. The conditional is not a known literal, so initializing a smaller integral domain from it follows the general computed-assignment rule. |
 | WP2-S03 | **Conditional precedence.** The conditional is a whole expression; as an operand it is parenthesized. Within it, `else` extends to the end of the expression. |
 | WP4-S01 | **Duration literals as values.** A duration literal in an expression is a `uint` value in nanoseconds (`1us` = 1000). Its value is representable or the literal is a static error. Computed durations (chapter 3) are integral expressions; `real` is rejected. |
 
 ```text
-statuses[index].confirmed = true;
-if (recent[i].vehicleId == vehicle and recent[i].status != AlertStatus.resolved) { return i; }
 counter = clampInt((if (previous < 0) 0 else previous) + stepUp, passedThreshold, failedThreshold);
 var lastRxNs: uint = 0;   // compared with now() - lastRxNs >= rxTimeoutMs * 1ms
 ```

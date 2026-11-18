@@ -42,7 +42,7 @@ Unreleased draft reference for the 2.3 candidate. Its chapters are the maintaine
 
 # swa.ml 2.2 language specification
 
-**Edition:** 2.3 (unreleased candidate) · **Parser:** 2.3 · **Reference profile:** swaml-reference/2.3 · **Status:** allocated draft; nothing in it is published. The candidate accepts exactly the 2.2 language until its work packages land ([2.3 release draft](RELEASE_2_3.md)); the published 2.2 edition (10 November 2026), its [reference](SWAML-2.2-Reference.md) and the published 2.1 edition and their artifacts are unchanged. [2.2 release notes](RELEASE_2_2.md) describe syntax-preserving associated-component test access and normal primary-subject calls from both case kinds. [Release notes](RELEASE_2_1.md) describe the changes and the migration from 2.0; the published 2.0 edition remains under its legacy v2.0.0 tag.
+**Edition:** 2.3 (unreleased candidate) · **Parser:** 2.3 · **Reference profile:** swaml-reference/2.3 · **Status:** allocated draft; nothing in it is published. The candidate accepts the 2.2 language plus the rules of the work packages landed so far, which the maintained chapters carry (WP1: places, selector reads and literal component indexes in test paths; [2.3 release draft](RELEASE_2_3.md)); the published 2.2 edition (10 November 2026), its [reference](SWAML-2.2-Reference.md) and the published 2.1 edition and their artifacts are unchanged. [2.2 release notes](RELEASE_2_2.md) describe syntax-preserving associated-component test access and normal primary-subject calls from both case kinds. [Release notes](RELEASE_2_1.md) describe the changes and the migration from 2.0; the published 2.0 edition remains under its legacy v2.0.0 tag.
 
 swa.ml is the Software Architecture Modeling Language: a textual language for explicit software structure, communication and executable behavior. [ADR 0016](decisions/0016-swaml-2-0.md) accepts the clean restart; [ADR 0019](decisions/0019-package-context.md) adds the package context and executable cases of 2.1. The language has one component concept and one operation concept. It does not accept 1.x source. Published books and PDFs retain their original bytes.
 
@@ -283,7 +283,7 @@ Load every application dependency together. Fix syntax/names first, then ownersh
 
 ## Test explicitly associated components
 
-In the 2.2 semantics, a test may inspect its primary subject and the software components explicitly referenced by its `associate` links, including their single parts. The components remain owned by the structural model. For example:
+In the 2.2 semantics, a test may inspect its primary subject and the software components explicitly referenced by its `associate` links, including their single parts and, from 2.3, a member of a part family named by a literal index such as `backend.twins[0].link`. The components remain owned by the structural model. For example:
 
 ```swaml
 package AssociatedTests {
@@ -351,7 +351,7 @@ Run a bounded simulation only after validation. Choose the run target: a package
 
 Keep diagnostics/evidence honest. Consult [implementation status](IMPLEMENTATION_STATUS.md) before claiming full V/E/G/K support. Publishing a page or release is a separate user-authorized action; this project requires a design preview before publication.
 
-For 2.2 tests, resolve each inspection root to the subject or an explicit same-package `associate` occurrence. Follow only existing single parts; preserve effective inherited members and exact occurrence identity. Both case kinds may call operations of the exact primary subject normally, including its own port communication and waits; use cases gain no private reads, part calls or peer calls. Calls on extra test owners remain immediate noncommunicating helpers. Unassociated peers, same-prefix names, platform roots and multiplicity families do not gain access. Association never owns an occurrence or narrows the whole-package run. Actor interaction keeps its associated interface-only port rules. See [ADR 0020](decisions/0020-associated-test-access.md) and [ADR 0021](decisions/0021-case-subject-calls.md).
+For 2.2 tests, resolve each inspection root to the subject or an explicit same-package `associate` occurrence. Follow only existing single parts and, from 2.3, members of part families named by a literal index such as `backend.twins[0].link` (WP1-S06); preserve effective inherited members and exact occurrence identity. Both case kinds may call operations of the exact primary subject normally, including its own port communication and waits; use cases gain no private reads, part calls or peer calls. Calls on extra test owners remain immediate noncommunicating helpers. Unassociated peers, same-prefix names, platform roots, unindexed multiplicity families and non-literal component indexes do not gain access. Association never owns an occurrence or narrows the whole-package run. Actor interaction keeps its associated interface-only port rules. See [ADR 0020](decisions/0020-associated-test-access.md) and [ADR 0021](decisions/0021-case-subject-calls.md).
 
 
 ---
@@ -380,7 +380,7 @@ A component whose effective members, including specialization, have ports but no
 
 A usage body is an anonymous specialization with explicit whole-member replacement and added members, including typed roots. Single specializes inheritance is acyclic. An inherited member with the same name requires redefines; a nonexistent inherited target is an error. Replacement preserves category, types, operation signature and body category. Child component definitions may specialize the replaced type. Port replacement preserves directed compatibility and optionality. Attributes preserve constness and type. No partial operation-body merge, super dispatch or implicit shadowing exists.
 
-A literal positive multiplicity [n] on a child creates n separate occurrences. Paths index every array usage with a literal in range, as in wheels[2].svc. Connector loops and port arrays do not exist. Composition is finite and acyclic. Definition identity does not identify an occurrence or a store.
+A literal positive multiplicity [n] on a child creates n separate occurrences. Paths index every array usage with a literal in range, as in wheels[2].svc; a test's inspection path indexes part families the same way (section 3.7, WP1-S06). Connector loops and port arrays do not exist. Composition is finite and acyclic. Definition identity does not identify an occurrence or a store.
 
 ## 1.3 State and lexical values
 
@@ -388,11 +388,51 @@ attribute declares component-owned mutable state; const attribute fixes its valu
 
 var declares an activation/block local. in is the default parameter direction and is immutable; out parameters are mutable with success-only copy-back. Live names cannot shadow another live local, parameter or attribute. A nested operation sees its own parameters, its nested operations and the owning component's attributes, never enclosing parameters or locals. Local data access never traverses child components or ports.
 
+| ID | Rule |
+| --- | --- |
+| WP1-S01 | Places (section 3.3) are rooted in locals, `out` parameters and non-const attributes only; a place never selects a child component or a port. |
+
 ## 1.4 Value domains
 
 bool, byte (0–255), uint (0–9007199254740991), int (−9007199254740991 through 9007199254740991), finite real and string are primitive domains. void has no values and is only an operation result. Records and enums are nominal by qualified declaration identity. A datatype declares every field explicitly; a record construction supplies each once, with no extra fields. Enum literals use Type.literal; a live value named Type takes precedence, so a qualified enum reference avoids ambiguity.
 
-Fixed arrays have positive safe extents, copied elements and invariant element type/extent. Array literals are checked elementwise against their destination type. Index expressions are integral; literal out-of-range indexes fail statically and dynamic bounds fail at runtime. In-place field/index assignment and reference values are absent.
+Fixed arrays have positive safe extents, copied elements and invariant element type/extent. Array literals are checked elementwise against their destination type. Index expressions are integral; literal out-of-range indexes fail statically and dynamic bounds fail at runtime.
+
+| ID | Rule |
+| --- | --- |
+| WP1-S02 | **Selectors.** After a first `[index]`, a value reference or assignment target continues with any sequence of `.field` and `[index]` selectors. `.f` selects a field of a record type and `[i]` indexes a fixed array with an integral index; the result type is the field or element type. Index expressions evaluate left to right. A read takes its root first, then applies each selector in turn (WP1-R04); a place reads its root after its right side (WP1-R01). A read yields a copy. Reference values remain absent. |
+| WP1-S03 | **Static index range.** A literal index outside the extent of the indexed array type is a static error, at every selector position. |
+
+Both are SW2002 (WP1-D04). A place such as `statuses[index].confirmed` is assigned in place (section 3.3); a read such as `recent[i].vehicleId` copies one field of one element:
+
+```swaml
+package Values {
+  datatype DtcStatus {
+    confirmed: bool;
+    occurrences: uint;
+  }
+  datatype Alert {
+    vehicleId: string;
+    open: bool;
+  }
+  component def Memory {
+    attribute statuses: DtcStatus[2] = [record DtcStatus { confirmed = false; occurrences = 0; }, record DtcStatus { confirmed = false; occurrences = 0; }];
+    attribute recent: Alert[2] = [record Alert { vehicleId = "TRK-101"; open = true; }, record Alert { vehicleId = "VAN-7"; open = false; }];
+    operation confirm(index: uint) {
+      statuses[index].confirmed = true;
+      statuses[index].occurrences = statuses[index].occurrences + 1;
+    }
+    operation findOpen(vehicle: string) returns int {
+      for (var i: int = 0; i < 2; i = i + 1) {
+        if (recent[i].vehicleId == vehicle and recent[i].open) {
+          return i;
+        }
+      }
+      return -1;
+    }
+  }
+}
+```
 
 Scalar widening is byte to uint to int to real. Known integral literals may initialize smaller integral domains if in range. General computed integral assignments are range-checked by the backend where permitted by the type rule; real never implicitly narrows. Integral arithmetic yields int; slash or a real operand yields real. Integer operations are exact within the safe domain and overflow fails. Division/remainder by zero and non-finite reals fail. Equality is recursive and type-compatible; ordering is numeric. Only and/or short-circuit. The grammar defines precedence.
 
@@ -466,7 +506,11 @@ An operation declaration always has parentheses and an optional returns T result
 
 Calls are expressions. A void call is a statement; a non-void result cannot be silently discarded. Calls with out arguments are statements; each out argument is a mutable compatible local, out parameter or component attribute. In/out values are copied and out copy-back occurs only after successful whole return. An operation of a component cannot invoke a different component by a structural path; it must use its own required port operation. Case scripts have the explicitly limited subject/helper access of section 3.7. Stateful operations are activated by their schedule rather than called locally.
 
-Effects are inferred transitively through the acyclic call graph: pure, reads state, writes state, communicates, suspends. The implementation MUST also retain a writes flag when a higher effect dominates, so communicating/suspending callees cannot conceal a write. Passing an attribute as out is a write. Attribute initializers are pure. State guards may only be pure or read state. Concurrent schedule entries cannot write state through any reachable callee or out argument.
+| ID | Rule |
+| --- | --- |
+| WP1-S04 | **Out arguments.** Out arguments remain bare names; a place is not an out argument in 2.3 (SW2006, WP1-D03). |
+
+Effects are inferred transitively through the acyclic call graph: pure, reads state, writes state, communicates, suspends. The implementation MUST also retain a writes flag when a higher effect dominates, so communicating/suspending callees cannot conceal a write. Passing an attribute as out is a write. A place assignment has the write effect of its root, and an attribute root is an attribute write. Attribute initializers are pure. State guards may only be pure or read state. Concurrent schedule entries cannot write state through any reachable callee or out argument.
 
 Suspending calls may be the whole var initializer, assignment right side or expression statement, optionally wrapped in try; these must be ordinary statement values, not for-header initializers or updates. Evaluate the call before the loop when its result is needed there. Suspending calls cannot be embedded in arithmetic, call arguments, return values or predicates. Other expressions can have nonsuspending effects. Arguments evaluate left to right; only and/or short-circuit. Declarations and source order do not select overloads or change resolution.
 
@@ -478,17 +522,50 @@ Static errors are never caught. Interrupts and deadline/activation/resource viol
 
 ## 3.3 Statements and scopes
 
-var declares a typed local; assignment replaces a copied mutable cell. if requires bool. while tests first; until executes at least once unless its explicit limit is zero, and stops when its bool condition becomes true. Optional n times takes a uint-compatible expression evaluated once at entry; reaching the limit exits normally. for uses an initializer-local scope, bool condition, body and assignment update. for (x: T in values) iterates one copied fixed-array snapshot with a fresh element/body scope each time. Locals do not leak from blocks. There is no break, continue, do, bound or forEach syntax.
+var declares a typed local; assignment replaces a copied mutable cell or one place inside it. if requires bool. while tests first; until executes at least once unless its explicit limit is zero, and stops when its bool condition becomes true. Optional n times takes a uint-compatible expression evaluated once at entry; reaching the limit exits normally. for uses an initializer-local scope, bool condition, body and assignment update. for (x: T in values) iterates one copied fixed-array snapshot with a fresh element/body scope each time. Locals do not leak from blocks. There is no break, continue, do, bound or forEach syntax.
 
 wait D suspends for a positive duration. on receive p.m(bindings) { ... } or receive ... or after D { ... } waits for one input or optional timeout. Each payload is explicitly bound, each member has that statement as exclusive owner, and input received before the statement waits stays in the connector queue. Without timeout the wait is unbounded, subject to an entry deadline and host limits. Selecting a branch consumes one message once.
 
 interruptible { body } on receive p.m(bindings) { handler } arms an unnamed region only while the protected body, including its called frames, is running or suspended. Input while inactive is discarded and traced; the validator warns. Input while armed transfers within the same activation, cancels protected continuation/local request, preserves outer locals/deadline and committed effects, and then executes the handler. Protected block locals do not escape. Nested regions unwind to the selected owning region. A server handling a cancelled request is not cancelled. Regions are prohibited in stateful operations; concurrent regions are permitted only when transitively non-writing and consume input once in activation order in the reference backend.
+
+| ID | Rule |
+| --- | --- |
+| WP1-S05 | **Place roots.** The assignment target is a place (section 1.4). In an operation, its root is a mutable local, an `out` parameter or a non-const attribute of the executing component. In a case script, it is one of the script's own locals or an `on call` out binding. `in` parameters, const attributes, ports, child components and qualified names are rejected (SW2006, WP1-D01). A dotted target without an index is a place too. The `for` header update keeps a bare name. |
+| WP1-S07 | **`out` roots.** An `out` parameter used as a place root must be definitely assigned before the assignment (SW2006, WP1-D02). In a case script, an `on call` out binding must be assigned as a whole before it is used as a place root or read with selectors (SW2006, WP1-D02); an empty reply and the 2.2 read forms keep their 2.2 rules. |
+| WP1-R01 | **Place evaluation order.** Evaluate the target's index expressions left to right, then the right side, then read the root cell, check every index against the value read, and write the root with exactly one place replaced. Writes performed by the right side are kept. |
+| WP1-R02 | **Place failure.** An index outside its extent at runtime is the runtime failure `Bounds`; the root is unchanged. |
+
+```swaml
+package Places {
+  datatype Status {
+    confirmed: bool;
+    occurrences: uint;
+  }
+  component def Memory {
+    attribute counters: int[3] = [0, 0, 0];
+    attribute statuses: Status[3] = [record Status { confirmed = false; occurrences = 0; }, record Status { confirmed = false; occurrences = 0; }, record Status { confirmed = false; occurrences = 0; }];
+    operation note(index: uint, counter: int) {
+      counters[index] = counter;
+      statuses[index].occurrences = statuses[index].occurrences + 1;
+    }
+    operation copyOut(out result: Status[3]) {
+      result = statuses;
+      result[0].confirmed = true;
+    }
+  }
+}
+```
 
 send p.attribute(v) updates a provided attribute; publish p.event(args) emits a provided event. Return completes a frame, fail fails it, assert requires a bool and fails when false. Private state writes, emissions and successful local call effects remain committed when a later statement fails.
 
 ## 3.4 Suspension and locks
 
 Every component occurrence has one serial lock. Serial dispatch evaluates/copies schedule arguments under this lock. wait, requests, receive and idle state-machine waits release it. Resumption reacquires it and reads live attributes. Other activations may run and modify state while a serial activation is suspended. Activation locals remain its own copies. Concurrent entries overlap and read the dispatch snapshot throughout, including after resumption, and never write state.
+
+| ID | Rule |
+| --- | --- |
+| WP1-R03 | A place assignment's read-modify-write happens under the serial lock after any resumption; no suspension splits it. |
+| WP1-M01 | The stale-read warning (SW2011) treats a place write as a write of its root. Index values read before a suspension are tracked like other pre-suspension reads. |
 
 A stale-read warning identifies a pre-suspension state read that may affect a later write. Recheck live state after resuming. This warning is conservative and is not a race-freedom proof. A successful static check does not establish scheduling, termination or deadlock freedom.
 
@@ -516,13 +593,54 @@ A reaction runs exit, transition effect, state update and entry in that order. T
 
 ## 3.7 Case scripts
 
-A use case or test whose body holds statements after its optional documentation is a case script ([ADR 0019](decisions/0019-package-context.md)). Its statements are the statement language of section 3.3: var, assignment to its own locals, send, publish, calls, on receive … or receive … or after D, wait, if, while, until, for, for in, assert, fail and return. A case owns no nested operations, states, schedule entries or interrupt regions. A case with statements needs of; a case without statements records intent only.
+A use case or test whose body holds statements after its optional documentation is a case script ([ADR 0019](decisions/0019-package-context.md)). Its statements are the statement language of section 3.3: var, assignment to places rooted in its own locals or on call out bindings (WP1-S05), send, publish, calls, on receive … or receive … or after D, wait, if, while, until, for, for in, assert, fail and return. A case owns no nested operations, states, schedule entries or interrupt regions. A case with statements needs of; a case without statements records intent only.
 
 A script is the environment of its subject. Its endpoints are occurrence.port.member, where occurrence is a top-level component occurrence of the case's package that is not the subject, is associated with the case by associate occurrence to Case; and is interface-only. send and publish emit a provided attribute or event of that actor port; on receive waits for a required attribute or event of it; a call such as customer.panel.withdraw(200) requests a required operation and suspends like any request. on call occurrence.port.op(bindings) { … } is a further branch of on … or …, allowed only in case scripts, that answers a request for a provided operation of the actor port. Inside it return v; is the reply exactly like the result of a served operation: out bindings are mutable and their values return with the reply, a non-void branch returns or fails on every path, and a failure inside the branch replies with a remote failure and fails the case. Any other return ends the case and has no value. Operations keep port.member endpoints and serve requests through schedule on call entries.
 
 Both case kinds may call operations of their exact primary subject, such as atm.withdraw(20), using its normal serial context ([ADR 0021](decisions/0021-case-subject-calls.md)). The operation may communicate through its own ports, receive and wait; the case resumes on return. Stateful operations remain on-start only, and suspending calls obey the whole-expression rule. The call is local within the case activation, not a fresh schedule release or an implicit port request.
 
-A use case cannot inspect private attributes or directly call subject parts or associated components. A test may additionally read attributes of its subject, explicitly associated software component occurrences and the single parts inside those roots, including record fields, such as atm.dispensedToday or atm.dispenser.count. Helper calls on those extra owners remain restricted to operations that neither communicate nor suspend. A referenced root must be an executed, non-multiple software occurrence of the same package; platform roots have no runtime store. Association grants no ownership and does not select execution roots. Dotted value reads retain lexical local precedence; dotted operation calls retain their occurrence-call namespace. A case never assigns component attributes directly; assignment targets only the script's own locals and out bindings. Reads observe the live store under the target's serial lock. Calls borrow the occurrence's actual execution context; suspension releases its lock and resumption reads live state. Results and output values copy back only on successful return, after restoring the caller context.
+A use case cannot inspect private attributes or directly call subject parts or associated components. A test may additionally read attributes of its subject, explicitly associated software component occurrences and the parts inside those roots, including record fields and array elements, such as atm.dispensedToday, atm.dispenser.count or backend.twins[0].link. Helper calls on those extra owners remain restricted to operations that neither communicate nor suspend. A referenced root must be an executed, non-multiple software occurrence of the same package; platform roots have no runtime store. Association grants no ownership and does not select execution roots. Dotted value reads retain lexical local precedence; dotted operation calls retain their occurrence-call namespace. A case never assigns component attributes directly; assignment targets are places rooted in the script's own locals or on call out bindings (WP1-S05). Reads observe the live store under the target's serial lock. Calls borrow the occurrence's actual execution context; suspension releases its lock and resumption reads live state. Results and output values copy back only on successful return, after restoring the caller context.
+
+| ID | Rule |
+| --- | --- |
+| WP1-S06 | **Indexed test paths.** In a test's inspection path, a component segment with multiplicity takes a literal index, for reads (`backend.twins[0].link`) and helper calls (`backend.twins[0].currentView()`). A non-literal index on a component segment is an error (SW2010, WP1-D05). A literal index outside the multiplicity is an error (SW2002, WP1-D06). Roots stay non-multiple top-level occurrences; only parts inside the root are indexed. This amends "Nested/indexed association paths and intermediate component indexes remain unsupported" of ADR 0020 for intermediate indexes only. Association paths stay unindexed. |
+| WP1-S08 | **Indexed call paths elsewhere.** Outside test scripts, a call path that contains an index is an error (SW2006, WP1-D07). |
+
+A single part takes no index, and an unindexed part family is not an inspection path (SW2002). Helper calls on an indexed part keep the restrictions of every extra owner: they neither communicate nor suspend.
+
+```swaml
+package Fleet {
+  enum LinkState {
+    offline, online
+  }
+  datatype VehicleView {
+    vehicleId: string;
+    speed: int;
+  }
+  component def Twin {
+    attribute link: LinkState = LinkState.offline;
+    attribute latest: VehicleView = record VehicleView { vehicleId = ""; speed = 0; };
+    operation attach(vehicle: string) {
+      link = LinkState.online;
+      latest.vehicleId = vehicle;
+    }
+    operation currentView() returns VehicleView {
+      return latest;
+    }
+  }
+  component def Backend {
+    component twins: Twin[2];
+  }
+  component backend: Backend;
+  test 'Twin inspection' of backend {
+    assert backend.twins[0].link == LinkState.offline;
+    backend.twins[0].attach("TRK-101");
+    var shown: VehicleView = backend.twins[0].currentView();
+    assert shown.vehicleId == "TRK-101" and backend.twins[0].latest.vehicleId == "TRK-101";
+    assert backend.twins[1].link == LinkState.offline;
+  }
+}
+```
 
 SW2010 reports a script without of, an actor that is not associated or not interface-only, the subject used as an actor, private reads or non-subject direct calls from a use case, and test inspection outside the subject and explicitly associated software roots. SW2004 reports emission and call endpoints of the wrong shape, kind or direction and SW2005 input endpoints; SW2006 reports on call outside case scripts, communicating or suspending test-helper calls outside the primary subject, on call branches without a reply on every path and interrupt regions in cases; SW2002 reports values, bindings and results.
 
@@ -547,7 +665,7 @@ A requirement owns immutable typed attributes and at most one doc. Requirements 
 
 A case is written use case Name of subject { … } or test Name of subject { … }. Cases are package members only; components never own cases. The of clause is optional and names a top-level component occurrence declared in the same package: the subject, the system under consideration. A case of a part is written in a package where that component is a top-level occurrence. A case without of, or without statements, records intent only. The case body owns optional documentation followed by optional statements; an executable subject must be a non-multiple software occurrence; platform roots do not execute. A case with statements is a script that may call its primary subject's operations and act through the ports of associated interface-only components (section 3.7), and runs in a fresh run of its package (section 6.7).
 
-associate Occurrence to Case; records that a top-level component occurrence of the same package takes part in a use case or test of the same package. The occurrence is not the case's subject and each pair is associated at most once. In a use case, associated occurrences are its actors. In a test, an associated software occurrence also establishes an explicit white-box participant reference; it may have its own behavior, and its single parts may be read or called under section 3.7. Neither kind of case owns those components. Interface-only participants act as actor port proxies; they communicate with the subject only through ports and package connections, and a case script acts through the ports of the interface-only ones.
+associate Occurrence to Case; records that a top-level component occurrence of the same package takes part in a use case or test of the same package. The occurrence is not the case's subject and each pair is associated at most once. In a use case, associated occurrences are its actors. In a test, an associated software occurrence also establishes an explicit white-box participant reference; it may have its own behavior, and its single parts and literally indexed members of its part families may be read or called under section 3.7. Neither kind of case owns those components. Interface-only participants act as actor port proxies; they communicate with the subject only through ports and package connections, and a case script acts through the ports of the interface-only ones.
 
 satisfy Requirement by design; claims that a component satisfies a requirement. design is a component definition or a top-level component occurrence declared in this package, optionally followed by nested parts such as Workbench.editor or cells[1]; a literal index is within the multiplicity. The claim is written in the package that declares the head of the design path; the requirement may be imported. Each requirement and design pair is claimed at most once.
 
@@ -584,6 +702,18 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | SW2014 | Canonical formatting differs, only in explicit formatting-check mode |
 | SW2015 | Retired in 2.1 together with the 2.0 case spellings; not reported |
 
+Diagnostics added by 2.3. Message shapes are templates; implementations may add context but keep the leading clause stable. All are errors.
+
+| ID | Code | Condition | Message shape |
+| --- | --- | --- | --- |
+| WP1-D01 | SW2006 | Place root is not a mutable local, `out` parameter or non-const attribute (WP1-S05) | `Cannot assign to {place}: {root} is {an in parameter \| a const attribute \| a port \| a child component \| a qualified name}.` The reference validator also names `an immutable binding` (an input binding or `for in` element), `a component occurrence` (in a case script) and `not a local, out parameter or attribute`. A bare name keeps its 2.2 message. |
+| WP1-D02 | SW2006 | `out` root read before definite assignment (WP1-S07) | `Out parameter {name} must be assigned before {place} is assigned.` For an `on call` out binding: `Out binding {name} must be assigned before {place} is assigned.` or `… before {place} is read.` |
+| WP1-D03 | SW2006 | Place as out argument (WP1-S04) | `An out argument must be a name; {place} is a place.` A 2.2 form such as `r.f` or `a[i]` keeps the 2.2 message `An out argument needs a mutable compatible local, out parameter or attribute.` |
+| WP1-D04 | SW2002 | Selector typing (WP1-S02, WP1-S03) | `{type} has no field {field}.` / `{type} is not an array and cannot be indexed.` / `Index must be integral, found {type}.` / `Index {n} is outside {type}.` A read without selectors keeps its 2.2 messages. |
+| WP1-D05 | SW2010 | Non-literal component index in a test path (WP1-S06) | `Component index in {path} must be a literal.` |
+| WP1-D06 | SW2002 | Literal component index outside multiplicity (WP1-S06) | `Index {n} is outside the multiplicity {m} of {child}.` An index on a single part is `{part} is a single part and takes no index.` |
+| WP1-D07 | SW2006 | Indexed call path outside a test (WP1-S08) | `{path}: an indexed call path is allowed only in a test.` |
+
 Every diagnostic includes a source range and stable code. Machine-readable diagnostics retain declaration identity and occurrence context when resolved. A suggested edit is supplied only for a safe unambiguous correction; tools must revalidate the resulting complete workspace before applying it. Parser recovery may suspend semantic checks on invalid syntax, but the document remains invalid and must not crash the service.
 
 ## 4.5 Evidence boundaries
@@ -606,6 +736,12 @@ Packages map to Package/namespace membership and imports. Datatypes/enums preser
 A result-bearing operation maps to a Function; a void operation maps to a Behavior. This mapping does not make a result-bearing swa.ml operation pure. Effects remain explicit swa.ml constraints. Operation usages retain their shared signature and effective body. Nested operations are owned executables without lexical captures; states contribute to their owning operation rather than becoming an independent executable.
 
 Ports map to owned typed features with per-member directional projections. Reversal flips each projection. Structural compatibility is retained as per-member typing constraints, not replaced by nominal port identity. Connections map to Connector instances with source occurrence/member route and independent policy queues. Forwarding maps to queue-free boundary aliases with preserved chains, not an extra message hop. Messages, transfer values, correlation and terminal failures require swa.ml semantics over suitable KerML Step/transfer structures.
+
+| ID | Rule |
+| --- | --- |
+| WP1-M02 | `Selector`: kind `value`, normative `docs/spec/01-structure-and-types.md`. A place assignment lowers to a whole-value write of its root with one replaced feature value. It never becomes a reference feature. |
+
+The changed productions `Assign`, `ReferenceExpression` and `CallExpression` keep their mapping entries with updated semantic text in `spec/kerml-mapping.json`.
 
 ## 5.2 Required semantic library
 
@@ -646,6 +782,10 @@ After a successful whole operation completes and unlocks, each effective after e
 
 Evaluation is left to right with and/or short-circuit. Payloads, records, arrays, parameters/results and out copy-back are copied, with nominal identities and domain checks. for in uses one copied collection. A loop limit evaluates once, is checked in the uint domain, and exits normally at the count; termination beyond declared limits is not statically proved. Integer overflow, non-finite reals, zero division, invalid indexes and failed assert/fail are runtime failures.
 
+| ID | Rule |
+| --- | --- |
+| WP1-R04 | **Places and reads.** Place assignment follows WP1-R01 to WP1-R03 (section 3.3). Selector reads evaluate index expressions left to right and return a copy; a dynamic index outside its extent is `Bounds`. A read takes the value of its root before evaluating any of its index expressions, then evaluates, checks and applies each index and field in turn, as 2.2 reads do; a place evaluates all its indexes, then the right side, and reads and writes its root last (WP1-R01). Selecting a field or element of an out value that was never assigned (an unanswered `on call` out binding copied back to its caller, a 2.2 case) is the runtime failure `Type`. |
+
 A local failure unwinds frames to the nearest try or fails the activation. Try fallback is lazy and type-compatible; prior state writes/emissions remain committed. Out values copy back only on successful return. Interrupt transfers and deadline/resource/activation violations are outside try. Resource failure is explicit evidence; no silently dropped activation is reported as successful execution.
 
 ## 6.4 Communication
@@ -664,13 +804,19 @@ A state machine waits without the component lock. Each reaction selects the firs
 
 Trace ordinals distinguish equal-time observations. Record initialize, release, dispatch, ready, unlock, wait/requestWait/receiveWait, messages/offers/delivery, writes, states, interruption, completion/failure, caught failures, timeout, overflow/discards, late replies and violations. Retain activation/correlation/route identities where applicable. Each observation caused by a statement or schedule entry records its statement identity as source: writes, emissions, asserts, failures and suspensions name the executing statement, a state wait or reaction its state or transition, releases and dispatches the schedule entry, and every message lifecycle observation (offer, delivery, replacement, overflow, drop, retry, age or input discard, interruption, request, reply, timeout, cancellation, late reply) the statement that emitted or requested the message. Messages and correlations keep the identity of the emitting or requesting statement. Final stores are occurrence-indexed and timing projections leave live intervals open. No-failure-observed means only that finite run under its recorded assumptions. Step, backlog and concurrent limits are finite, explicit options. Production timing, real transport guarantees and universal verification remain separate claims.
 
+New and extended observations of 2.3 appear only where new syntax is used, so a 2.2 model's trace is unchanged.
+
+| ID | Observation | Fields and meaning |
+| --- | --- | --- |
+| WP1-T01 | `write` (extended) | A place assignment adds `place`, the evaluated place text such as `statuses[2].confirmed`, with decoded names and evaluated indexes. `value` is the new whole root value; `subject` is the root. A whole assignment has no `place`. |
+
 ## 6.7 Case runs
 
 Each case with statements runs in its own fresh run of its package target. The script is a serial activation of its own, released at 0 ns after every on start entry, so it starts after the initialization barrier. It may call operations of its exact primary subject and act at the ports of its associated interface-only occurrences, which do nothing else. Input that reaches an actor port before the script waits for it stays in that connection's queue under the connection's policy (capacity, overflow, ordering and age), and an attribute keeps only its latest value, so a later on receive consumes the oldest queued event or the latest attribute value. A request addressed to an actor port waits in its queue until an on call branch takes it or the caller's requestTimeout expires.
 
 A primary-subject call waits for its serial lock, switches the actual running frame into the subject's operation context and restores the case context on return or failure. The operation uses its own ports and live store, and may suspend; suspension releases its lock and resumption reacquires it. This local call creates no new schedule activation, implicit port, route, QoS timeout or `after` release. The script waits for completion, with ordinary `try` and success-only result/output-copy semantics and the case's existing horizon and resource bounds. It cannot execute a later actor-reply branch while blocked in the call; use an independently behaving actor or an earlier actor event when that response must proceed concurrently.
 
-Tests additionally inspect their subject and explicitly associated software roots and their single parts under the target's serial lock. Helper calls on owners other than the exact primary subject may mutate through their operation but may neither communicate nor suspend. Use cases gain no private reads or part/peer calls. Associations preserve occurrence identity without cloning stores or changing package initialization, connections or execution roots.
+Tests additionally inspect their subject and explicitly associated software roots and their parts, a part family member named by a literal index such as twins[0], under the target's serial lock. Helper calls on owners other than the exact primary subject may mutate through their operation but may neither communicate nor suspend. Use cases gain no private reads or part/peer calls. Associations preserve occurrence identity without cloning stores or changing package initialization, connections or execution roots.
 
 Execution stores remain occurrence-local, but the trace records only the observations it emits. Local and white-box calls reuse their caller's activation, and individual reads and call invocations have no separate observation. A borrowed-call failure may be labelled with the case instead of its target. Consumers must retain available declaring-source, subject, activation and correlation context; a shared statement identity alone cannot attribute facts to every instance or invocation. Legal slash names can also produce ambiguous statement identities. Leave such attribution unknown, and never infer that a short-circuited expression or an unobserved return executed merely because its containing statement was reached.
 
@@ -743,7 +889,7 @@ Normative chapter of [swa.ml 2.2](LANGUAGE_SPECIFICATION.md). Acceptance levels 
 | --- | --- | --- |
 | V01 | Headerless pinned edition, portable tokens, malformed recovery and literal domains | syntax, SW2000/2002 |
 | V02 | Legal basic/quoted name spelling, unique names, explicit imports, unambiguous qualified/short references, no live-name shadowing | SW2001 |
-| V03 | Finite nominal records/enums/fixed arrays, complete typed values, no void data, index ranges | SW2002 |
+| V03 | Finite nominal records/enums/fixed arrays, complete typed values, no void data, index ranges at every selector | SW2002 |
 | V04 | Component-only definitions/usages, finite containment, acyclic single base, explicit compatible whole replacement, typed root additions, positive multiplicity | SW2003 |
 | V05 | Directed port shape, reversal, nominal payloads and structural variance with per-member diagnostics | SW2004 |
 | V06 | Immediate-child indexed routes, derived forwarding/connection, policy-free unique aliases, no duplicate resolved routes, package connections between top-level occurrences of one package, per-package closure/cardinality | SW2004 |
@@ -756,6 +902,7 @@ Normative chapter of [swa.ml 2.2](LANGUAGE_SPECIFICATION.md). Acceptance levels 
 | V13 | Node-only target content, root/occurrence/index placement resolution, unique exact paths and at most one deployment per top-level occurrence | SW2009 |
 | V14 | Immutable requirements, case subjects in the same package, legal associate/satisfy/verify links, case script environment role and white-box access, seven library view kinds/subjects and stable selection union | SW2010 |
 | V15 | Stale-read and inactive interrupt-input warnings without a race-freedom claim | SW2011/2012 |
+| V16 | Place roots, selector typing, `out` roots, no places as out arguments, literal component indexes in test paths | SW2002/2006/2010 |
 
 Validation MUST rebuild semantic string paths as well as indexed references after workspace changes/additions/deletions. Negative lookups matter: a newly loaded declaration may make a previously resolved short name ambiguous. Malformed source remains editable and invalid; recovery cannot silently accept a different program. Definite-return analysis may be conservative rather than solving arbitrary conditions. Dynamic numeric/index/termination failures remain runtime obligations.
 
@@ -774,6 +921,7 @@ Validation MUST rebuild semantic string paths as well as indexed references afte
 | E09 | One fresh after activation per successful whole completion after unlock, failure suppression and new context/deadline |
 | E10 | Run/source/target/profile/option provenance, package and isolated component targets, trace ordinals with statement sources, occurrence stores and open observed timing intervals |
 | E11 | Fresh package run per case script, release after startup entries, retained early actor input, on call replies, normal primary-subject calls with actual context/lock suspension and restoration, test inspection/helper access under its serial lock, stop on script completion or failure and pass/fail/inconclusive/no checks results with statement identities |
+| E12 | Place evaluation order, kept right-side writes, `Bounds` with unchanged root, `write.place` |
 | E20 | Every run, use case and test of the 2.2 corpus keeps its status, full final stores, machines, deployments, verdict and message and its complete trace, ignoring only `profile` and `languageVersion` (compatibility gate 2, compared with a fixture recorded with implementation 3.1.0) |
 
 A deterministic reference run may choose one permitted order/delivery outcome. Its tests do not establish all possible traces or real transport reliability. A target implementation identifies additional scheduling/transport assumptions and evidence. Idempotency annotations are checked declarations, not proofs of side-effect behavior.
@@ -814,14 +962,16 @@ Values are bounded primitive scalars, nominal enums/records and fixed copied arr
 | Construct | Premises and result |
 | --- | --- |
 | x / x.field / x[i] | x in Γ; nominal record field or integral array index; result declared type; dynamic index must be in extent |
+| x[i].f… / x[i][j]… | x in Γ; each selector is a record field or an integral array index; the result is the selected type; literal indexes are in extent; a copy |
 | Enum.literal | No live first-segment value shadows the enum; unambiguous accessible nominal enum and literal |
 | operation(args) | Resolved same-owner/nested or imported pure definition; copied typed in arguments; mutable compatible out targets; result declared type; effect is union of arguments and callee |
 | p.member(args) | p is owned, member requires operation; arguments satisfy signature; effect communicates and suspends |
 | case subject call | Exact primary software subject; copied typed arguments/results, actual serial operation context and normal effects; suspension releases/reacquires its lock, caller context restores on return/failure; local activation semantics, no implicit route or schedule release |
-| test occurrence access | Resolved own-package executed software root is the subject or an explicit association, followed by single effective parts; reads use its live store under its lock, helper calls outside the exact primary subject neither communicate nor suspend; no ownership transfer or direct attribute assignment |
+| test occurrence access | Resolved own-package executed software root is the subject or an explicit association, followed by single effective parts or part family members with literal indexes in range; reads use its live store under its lock, helper calls outside the exact primary subject neither communicate nor suspend; no ownership transfer or direct attribute assignment |
 | try(e, f) | e:T and f:U assignable to T; lazy f; effect union; no fallback only when T is void |
 | var x:T=e | Compatible value, fresh live name; Γ extends with mutable x; suspension allowed only when e is whole call/try |
 | x=e | Mutable local/out/attribute, compatible type; attribute write adds write effect; same whole-expression suspension rule |
+| place = e | The root is a mutable local, an assigned out or a non-const attribute; e is assignable to the place type; the effect adds a write of the root; the whole-expression suspension rule applies |
 | return e | e assignable to owning operation result; expression does not suspend; success copy-back |
 | if/while/until/assert | bool condition; optional loop limit uint-compatible and evaluated once |
 | for | Fresh initializer scope; bool condition; mutable typed update; fresh body scope each iteration |
@@ -842,6 +992,7 @@ Scalar type assignability uses widening, with checked integral value conversion 
 | release | Add fresh activation to B with release time/cause/deadline; bounded admission or explicit violation |
 | dispatch | Acquire L[o] for serial work; copy entry arguments under lock; concurrent work captures σ[o] snapshot |
 | local step | Evaluate in ρ plus live serial σ or captured concurrent snapshot; update copied cells and emit source-provenanced observations |
+| place write | Evaluate indexes, then the right side; read σ[o] or ρ at the root; check the indexes; write the root with one place replaced; `write` with `place` |
 | suspend | Save continuation/ρ; remove serial lock; register wait timer, receive alternatives or pending request |
 | ready | Mark continuation ready; serial continuation must reacquire lock before reading current σ |
 | offer | Resolve alias chain, select connection/member queue, copy payload, apply latest attribute replacement or policy overflow/delivery |
@@ -2036,7 +2187,7 @@ Colon means typed by; returns names results. Dot is containment/member access; :
 
 # swa.ml 2.3 candidate implementation status
 
-**Standard:** 2.3 (unreleased candidate) · **Implementation package:** 4.0.0 · **Selected host semantics:** 2.3 · **Reference profile:** swaml-reference/2.3. The candidate is allocated but no 2.3 language change has landed yet: the host accepts exactly the 2.2 language, with the concrete grammar unchanged from 2.1, and the three [compatibility gates](RELEASE_2_3.md#compatibility-gates) compare every corpus AST and every recorded run, case and trace with fixtures recorded from implementation 3.1.0. The published [2.2 reference](SWAML-2.2-Reference.md) and [PDF](../output/pdf/SWAML-2.2-Specification.pdf) record the 2.2 release sources. The published 2.1 [reference book](SWAML-2.1-Reference.md) and [complete PDF](../output/pdf/SWAML-2.1-Specification.pdf), manifest and checksum remain frozen. The strict current-source [publication gate](PDF_PUBLICATION.md) checks the new edition independently of historical publications.
+**Standard:** 2.3 (unreleased candidate) · **Implementation package:** 4.0.0 · **Selected host semantics:** 2.3 · **Reference profile:** swaml-reference/2.3. The candidate is allocated and work package WP1 has landed: assignment to places such as `statuses[i].confirmed = true;` and `r.f = v;` (indexes, then the right side, then one read-modify-write of the root; `Bounds` leaves the root unchanged; `write` observations gain `place`), member access after an index such as `recent[i].vehicleId`, and literal component indexes in test inspection paths such as `backend.twins[0].link` and `backend.twins[0].currentView()`. Otherwise the host accepts exactly the 2.2 language, and the three [compatibility gates](RELEASE_2_3.md#compatibility-gates) compare every corpus AST and every recorded run, case and trace with fixtures recorded from implementation 3.1.0. The published [2.2 reference](SWAML-2.2-Reference.md) and [PDF](../output/pdf/SWAML-2.2-Specification.pdf) record the 2.2 release sources. The published 2.1 [reference book](SWAML-2.1-Reference.md) and [complete PDF](../output/pdf/SWAML-2.1-Specification.pdf), manifest and checksum remain frozen. The strict current-source [publication gate](PDF_PUBLICATION.md) checks the new edition independently of historical publications.
 
 The 2.0 core replaced the 1.x grammar, AST, resolver, validator and interpreter; 2.1 adds the package context, executable use cases and tests, package links, run targets and statement identities of [ADR 0019](decisions/0019-package-context.md). It does not accept 1.x or 2.0 source; the [release notes](RELEASE_2_1.md) describe the migration. Published 1.x and 2.0.0 books, PDFs, manifests/checksums and historical figure files remain unchanged. [ADR 0016](decisions/0016-swaml-2-0.md) defines the restart; [conformance obligations](spec/08-conformance-obligations.md) separate syntax, validation, execution, analysis, kernel and graphical claims.
 
@@ -2047,7 +2198,7 @@ The 2.2 edition adds explicit test access to the subject and associated software
 | Capability | Implemented evidence and boundary |
 | --- | --- |
 | Syntax and recovery | Normative Langium grammar, generated AST/TextMate, quoted names with naming hints for spaces, reserved words, double quotes, non-ASCII letters and misplaced docs, malformed input and retired-syntax rejection tests |
-| Components and values | Single specialization, whole redefinition, usage bodies, typed roots, indexed multiplicity, private copied stores, nominal records/enums/arrays and checked domains |
+| Components and values | Single specialization, whole redefinition, usage bodies, typed roots, indexed multiplicity, private copied stores, nominal records/enums/arrays and checked domains; 2.3 (WP1): places with record field and array element selectors, rooted in mutable locals, out parameters (after definite assignment) and non-const attributes, evaluated indexes first, then the right side, then one read-modify-write under the serial lock with `Bounds` leaving the root unchanged and a `write.place` trace field; selector reads after an index; SW2011 treats a place write as a write of its root. Places are not out arguments |
 | Operations | Definitions/usages, explicit returns, nested no-capture scope, expression calls, in/out, success-only copy-back, definite out assignment and acyclic calls |
 | Effects and failures | Transitive write/read/communication/suspension flags, pure initializers, read-only guards, non-writing concurrency, lazy try and allowed suspension placement |
 | Ports and routes | Per-member direction/reversal, structural compatibility with variance and individual diagnostics, connection/forwarding, package connections between top-level occurrences, per-package closure, resolved cardinality and ownership/emission provenance with the interface-only exemption |
@@ -2059,7 +2210,7 @@ The 2.2 edition adds explicit test access to the subject and associated software
 | Requirements/cases/views | Immutable intent; package-owned use case/test with an optional subject that is a top-level occurrence of the same package; case scripts with the environment role of associated interface-only actors, on call replies, normal primary-subject operation calls in both case kinds and tests' private reads/helper calls (SW2010/SW2004/SW2005/SW2006); intent-only cases without statements; package associate, satisfy … by and verify … by links with SW2010 rules; seven library definitions, package/member subjects and stable occurrence unions |
 | AI authoring | Usage and AI guides, portable author/validate skills, --json diagnostics with code/range/URI/declaration/occurrence metadata and selected safe repair edits |
 | Authoring services | Canonical token-preserving full-document formatting; semantic index, definition/references and versioned multi-file rename over indexed paths, port members, nested operations, schedules, states, placements, package connection ends, case subjects, associate, satisfy and verify links and view subjects/eligible filters; rename writes quoted names where required and unquoted names inside string paths; portable name spelling helpers for hosts |
-| Case runs | A fresh package run per case script released after startup entries, retained early actor input, on call replies, white-box access under the serial lock, stop on completion or failure, pass/fail/inconclusive/no checks with statement identities; swaml test with summary, JSON and exit codes; every example case runs with its expected result |
+| Case runs | A fresh package run per case script released after startup entries, retained early actor input, on call replies, white-box access under the serial lock (in 2.3 also to part family members by a literal index, such as backend.twins[0]), stop on completion or failure, pass/fail/inconclusive/no checks with statement identities; swaml test with summary, JSON and exit codes; every example case runs with its expected result |
 | Host behavior | CLI exit/JSON/edition checks and LSP negotiation pinned to 2.3 with the swaml-reference/2.3 profile and package identity, complete dependency enforcement, standard-library validation and workspace negative-lookup invalidation |
 | Diagrams and page | Exhaustive notation/mapping inventories; original SVG/PNG/scenes labeled with the standard version and source-subject checks; generated source/trace site data, seven interactive views, light/dark/system themes and responsive preview |
 
@@ -2375,7 +2526,7 @@ swa.ml 2.2.
 
 The language core is portable TypeScript over Langium 4.4.0 and the normative grammar. Node CLI/server adapters own file access and source hashing. Build with npm run build; validate with node out/src/cli/main.js --json and explicitly load all application dependencies. The host selects parser 2.2; unsupported edition flags are errors.
 
-JSON diagnostics expose stable SW2xxx codes, range, URI and identity metadata. --format applies canonical token-preserving whitespace; --check-format checks it without writing. The LSP exposes full-document formatting. Source repairs must be validated against the complete workspace before application.
+JSON diagnostics expose stable SW2xxx codes, range, URI and identity metadata. --format applies canonical token-preserving whitespace, printing places and selectors without spaces inside the path, as in statuses[i].confirmed = true; (WP1-M03); --check-format checks it without writing. The LSP exposes full-document formatting. Source repairs must be validated against the complete workspace before application.
 
 The simulator requires validated models and records swaml-reference/2.3, sources, options, trace, final stores and deployment. Source digests are added by the CLI. Its finite logical run does not supply production timing or universal verification.
 
@@ -2657,7 +2808,8 @@ ScheduleEntry: ('on' (kind='start' | kind='every' period=Duration | kind=('recei
 Block: '{' statements+=Statement* '}';
 Statement: LocalVariable | Assign | Send | ExpressionStatement | Return | If | While | Until | For | ForEach | Wait | Receive | Interruptible | Fail | Assert;
 LocalVariable: 'var' name=Name ':' type=TypeRef '=' value=Expression ';';
-Assign: target=Name '=' value=Expression ';';
+Assign: target=ValuePath ('[' index=Expression ']' selectors+=Selector*)? '=' value=Expression ';';
+Selector: '.' field=Name | '[' index=Expression ']';
 ExpressionStatement: expression=Expression ';';
 Send: kind=('send'|'publish') endpoint=EndpointPath '(' (args+=Expression (',' args+=Expression)*)? ')' ';';
 Return: 'return' value=Expression? ';';
@@ -2712,8 +2864,8 @@ MultiplicativeExpression returns Expression: UnaryExpression ({infer BinaryExpre
 UnaryExpression returns Expression: {infer UnaryExpression} operator=('not'|'-') operand=UnaryExpression | PrimaryExpression;
 PrimaryExpression returns Expression: Literal | TryExpression | CallExpression | ReferenceExpression | RecordLiteral | ArrayLiteral | '(' Expression ')';
 TryExpression: 'try' '(' expression=Expression (',' fallback=Expression)? ')';
-CallExpression: target=ValuePath '(' (args+=Expression (',' args+=Expression)*)? ')';
-ReferenceExpression: path=ValuePath ('[' index=Expression ']')?;
+CallExpression: target=Path '(' (args+=Expression (',' args+=Expression)*)? ')';
+ReferenceExpression: path=ValuePath ('[' index=Expression ']' selectors+=Selector*)?;
 Literal: {infer Literal} (number=Numeric | text=STRING | boolean=('true'|'false'));
 RecordLiteral: 'record' type=[DataType:QualifiedName] '{' fields+=FieldValue* '}';
 FieldValue: name=Name '=' value=Expression ';';
@@ -4271,6 +4423,307 @@ package Calibration {
   test 'A hold arrives first' of Held {
     wait 5ms;
     assert Held.calibrator.path == "held" and Held.calibrator.use == 9 and Held.calibrator.test == 0.0;
+  }
+}
+```
+
+### 33-element-assignment.swaml
+
+```swaml
+package EventMemory {
+  /** A diagnostic event memory written twice, as in the door controller's Dem. The 2.2 shape rebuilds the whole counter array with one selection per slot and replaces a whole status record to change one flag. The 2.3 shape assigns the element and the field directly: counters[index] = counter; and statuses[index].confirmed = true;. A test feeds both memories the same reports and checks that they end in the same state. */
+  enum Fault {
+    voltage, motor, hall
+  }
+  datatype DtcStatus {
+    testFailed: bool;
+    pending: bool;
+    confirmed: bool;
+    occurrences: uint;
+  }
+  port def Reports {
+    provides event report(fault: Fault, failed: bool);
+  }
+  operation def indexOf(fault: Fault) returns uint {
+    if (fault == Fault.voltage) {
+      return 0;
+    }
+    if (fault == Fault.motor) {
+      return 1;
+    }
+    return 2;
+  }
+  operation def clampInt(v: int, low: int, high: int) returns int {
+    if (v < low) {
+      return low;
+    }
+    if (v > high) {
+      return high;
+    }
+    return v;
+  }
+  operation def pickInt(condition: bool, whenTrue: int, otherwise: int) returns int {
+    if (condition) {
+      return whenTrue;
+    }
+    return otherwise;
+  }
+  operation def pickStatus(condition: bool, whenTrue: DtcStatus, otherwise: DtcStatus) returns DtcStatus {
+    if (condition) {
+      return whenTrue;
+    }
+    return otherwise;
+  }
+  component def Memory {
+    /** The counter rules both shapes share: a failed report counts up from zero or above, a passed report counts down from zero or below. */
+    reversed port input: Reports;
+    const attribute stepUp: int = 2;
+    const attribute stepDown: int = 2;
+    const attribute failedThreshold: int = 4;
+    const attribute passedThreshold: int = -4;
+    attribute reports: uint = 0;
+    attribute counters: int[3] = [0, 0, 0];
+    attribute statuses: DtcStatus[3] = [record DtcStatus {
+      testFailed = false;
+      pending = false;
+      confirmed = false;
+      occurrences = 0;
+    }, record DtcStatus {
+      testFailed = false;
+      pending = false;
+      confirmed = false;
+      occurrences = 0;
+    }, record DtcStatus {
+      testFailed = false;
+      pending = false;
+      confirmed = false;
+      occurrences = 0;
+    }];
+    operation next(previous: int, failed: bool) returns int {
+      if (failed) {
+        return clampInt(pickInt(previous < 0, 0, previous) + stepUp, passedThreshold, failedThreshold);
+      }
+      return clampInt(pickInt(previous > 0, 0, previous) - stepDown, passedThreshold, failedThreshold);
+    }
+    operation report(fault: Fault, failed: bool) {
+    }
+    schedule {
+      on receive input.report(fault, failed) report(fault, failed);
+    }
+  }
+  component def Rebuilding specializes Memory {
+    /** The 2.2 shape: every change rebuilds a whole array. */
+    operation withCounter(index: uint, value: int) {
+      counters = [pickInt(index == 0, value, counters[0]), pickInt(index == 1, value, counters[1]), pickInt(index == 2, value, counters[2])];
+    }
+    operation withStatus(index: uint, value: DtcStatus) {
+      statuses = [pickStatus(index == 0, value, statuses[0]), pickStatus(index == 1, value, statuses[1]), pickStatus(index == 2, value, statuses[2])];
+    }
+    redefines operation report(fault: Fault, failed: bool) {
+      reports = reports + 1;
+      var index: uint = indexOf(fault);
+      var previous: int = counters[index];
+      var counter: int = next(previous, failed);
+      if (counter == previous) {
+        return;
+      }
+      withCounter(index, counter);
+      var status: DtcStatus = statuses[index];
+      if (counter >= failedThreshold and not status.testFailed) {
+        withStatus(index, record DtcStatus {
+          testFailed = true; pending = true; confirmed = true; occurrences = status.occurrences + 1;
+        });
+      }
+      if (counter <= 0 and status.testFailed) {
+        withStatus(index, record DtcStatus {
+          testFailed = false; pending = status.pending; confirmed = status.confirmed; occurrences = status.occurrences;
+        });
+      }
+    }
+  }
+  component def Placing specializes Memory {
+    /** The 2.3 shape: the element and the fields are assigned in place. */
+    redefines operation report(fault: Fault, failed: bool) {
+      reports = reports + 1;
+      var index: uint = indexOf(fault);
+      var previous: int = counters[index];
+      var counter: int = next(previous, failed);
+      if (counter == previous) {
+        return;
+      }
+      counters[index] = counter;
+      if (counter >= failedThreshold and not statuses[index].testFailed) {
+        statuses[index].testFailed = true;
+        statuses[index].pending = true;
+        statuses[index].confirmed = true;
+        statuses[index].occurrences = statuses[index].occurrences + 1;
+      }
+      if (counter <= 0 and statuses[index].testFailed) {
+        statuses[index].testFailed = false;
+      }
+    }
+  }
+  component rebuilt: Rebuilding;
+  component placed: Placing;
+  component monitor {
+    port output: Reports;
+  }
+  connect (monitor.output, rebuilt.input);
+  connect (monitor.output, placed.input);
+  test 'Same memory either way' of placed {
+    /** Two failed voltage reports confirm the fault, one failed motor report leaves it pending, and three passed voltage reports heal the voltage counter. */
+    publish monitor.output.report(Fault.voltage, true);
+    publish monitor.output.report(Fault.voltage, true);
+    publish monitor.output.report(Fault.motor, true);
+    wait 1ms;
+    assert placed.counters[0] == 4 and placed.statuses[0].confirmed and placed.statuses[0].occurrences == 1;
+    assert placed.counters[1] == 2 and not placed.statuses[1].testFailed;
+    publish monitor.output.report(Fault.voltage, false);
+    publish monitor.output.report(Fault.voltage, false);
+    publish monitor.output.report(Fault.voltage, false);
+    wait 1ms;
+    assert placed.counters[0] == -4 and not placed.statuses[0].testFailed and placed.statuses[0].confirmed;
+    assert rebuilt.reports == placed.reports and rebuilt.counters == placed.counters and rebuilt.statuses == placed.statuses;
+  }
+  associate monitor to 'Same memory either way';
+  associate rebuilt to 'Same memory either way';
+  component def Ledger {
+    /** The evaluation order of a place: its index first, then the right side, then one write of the root that keeps what the right side wrote. A bad index is Bounds and leaves the root unchanged. */
+    attribute counters: int[3] = [0, 0, 0];
+    attribute order: int = 0;
+    operation pick() returns int {
+      order = order * 10 + 1;
+      return 1;
+    }
+    operation bump() returns int {
+      order = order * 10 + 2;
+      counters[2] = 40;
+      return 7;
+    }
+    operation put(index: int, value: int) {
+      counters[index] = value;
+    }
+    operation settle() {
+      counters[pick()] = bump();
+    }
+    operation overflow() {
+      try(put(3, 99));
+      counters[0] = counters[0] + 5;
+    }
+  }
+  component ledger: Ledger;
+  test 'Place order and bounds' of ledger {
+    ledger.settle();
+    assert ledger.order == 12 and ledger.counters == [0, 7, 40];
+    ledger.overflow();
+    assert ledger.counters == [5, 7, 40];
+  }
+}
+```
+
+### 34-indexed-reads.swaml
+
+```swaml
+package FleetBackend {
+  /** A fleet backend in the shape of the cloud model's AlertRouter and vehicle twins. The 2.2 shape copies an array element into a local to read one of its fields; the 2.3 shape reads the member after the index, as in recent[i].vehicleId. A test may now also inspect one twin of the family twins[2] by a literal index, reading backend.twins[0].link and calling backend.twins[0].currentView(), instead of testing the twin behaviour on a separate stand-in occurrence. */
+  enum AlertStatus {
+    open, acknowledged, resolved
+  }
+  enum LinkState {
+    offline, online
+  }
+  datatype Alert {
+    vehicleId: string;
+    kind: string;
+    status: AlertStatus;
+  }
+  datatype VehicleView {
+    vehicleId: string;
+    speed: int;
+  }
+  component def AlertRouter {
+    attribute recent: Alert[4] = [record Alert {
+      vehicleId = "TRK-101";
+      kind = "overheat";
+      status = AlertStatus.resolved;
+    }, record Alert {
+      vehicleId = "TRK-101";
+      kind = "overheat";
+      status = AlertStatus.open;
+    }, record Alert {
+      vehicleId = "VAN-7";
+      kind = "overheat";
+      status = AlertStatus.open;
+    }, record Alert {
+      vehicleId = "TRK-101";
+      kind = "tyre";
+      status = AlertStatus.open;
+    }];
+    operation findOpenByCopy(vehicle: string, kind: string) returns int {
+      /** The 2.2 shape: a copy of each element before reading its fields. */
+      for (var i: int = 0; i < 4; i = i + 1) {
+        var a: Alert = recent[i];
+        if (a.vehicleId == vehicle and a.kind == kind and a.status != AlertStatus.resolved) {
+          return i;
+        }
+      }
+      return -1;
+    }
+    operation findOpen(vehicle: string, kind: string) returns int {
+      /** The 2.3 shape: member access after the index. */
+      for (var i: int = 0; i < 4; i = i + 1) {
+        if (recent[i].vehicleId == vehicle and recent[i].kind == kind and recent[i].status != AlertStatus.resolved) {
+          return i;
+        }
+      }
+      return -1;
+    }
+    operation acknowledge(vehicle: string, kind: string) returns int {
+      var i: int = findOpen(vehicle, kind);
+      if (i >= 0) {
+        recent[i].status = AlertStatus.acknowledged;
+      }
+      return i;
+    }
+  }
+  component def Twin {
+    attribute link: LinkState = LinkState.offline;
+    attribute latest: VehicleView = record VehicleView {
+      vehicleId = "";
+      speed = 0;
+    };
+    operation attach(vehicle: string) {
+      link = LinkState.online;
+      latest.vehicleId = vehicle;
+    }
+    operation report(speed: int) {
+      latest.speed = speed;
+    }
+    operation currentView() returns VehicleView {
+      return latest;
+    }
+  }
+  component def Backend {
+    component router: AlertRouter;
+    component twins: Twin[2];
+  }
+  component backend: Backend;
+  test 'Open alert lookup' of backend {
+    /** Both shapes find the same open alert; acknowledging it updates one field of one element. */
+    assert backend.router.findOpen("TRK-101", "overheat") == 1 and backend.router.findOpenByCopy("TRK-101", "overheat") == 1;
+    assert backend.router.findOpen("VAN-7", "tyre") == -1 and backend.router.findOpenByCopy("VAN-7", "tyre") == -1;
+    assert backend.router.acknowledge("VAN-7", "overheat") == 2;
+    assert backend.router.recent[2].status == AlertStatus.acknowledged and backend.router.recent[2].vehicleId == "VAN-7";
+    assert backend.router.recent[1].status == AlertStatus.open;
+  }
+  test 'Twin inspection' of backend {
+    /** Each twin of the family is its own occurrence with its own store. */
+    assert backend.twins[0].link == LinkState.offline;
+    backend.twins[0].attach("TRK-101");
+    backend.twins[0].report(72);
+    var shown: VehicleView = backend.twins[0].currentView();
+    assert shown.vehicleId == "TRK-101" and shown.speed == 72;
+    assert backend.twins[0].latest.speed == 72 and backend.twins[1].link == LinkState.offline and backend.twins[1].latest.vehicleId == "";
   }
 }
 ```

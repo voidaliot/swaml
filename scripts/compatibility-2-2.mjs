@@ -213,15 +213,25 @@ const DIAGNOSTIC = /^(error|warning|information|hint) (\S+) (\d+:\d+-\d+:\d+) (.
  * and every ADR number with a file under docs/decisions.
  */
 export function knownRules(base = root) {
-    const rules = new Set(), adrs = new Set();
+    const rules = new Set(), adrs = new Set(), withdrawn = new Set();
     const markdown = directory => existsSync(join(base, ...directory.split('/'))) ? readdirSync(join(base, ...directory.split('/'))).filter(f => f.endsWith('.md')).map(f => `${directory}/${f}`) : [];
-    for (const path of [...markdown('docs/drafts/2.3'), ...markdown('docs/spec'), 'docs/LANGUAGE_SPECIFICATION.md'])
-        for (const match of readFileSync(join(base, ...path.split('/')), 'utf8').matchAll(/^\| (WP\d+[a-z]?-[GSRDTLM]\d{2}) \|/gmu))
-            rules.add(match[1]);
+    for (const path of [...markdown('docs/drafts/2.3'), ...markdown('docs/spec'), 'docs/LANGUAGE_SPECIFICATION.md'].filter(p => existsSync(join(base, ...p.split('/')))))
+        for (const match of readFileSync(join(base, ...path.split('/')), 'utf8').matchAll(/^\| (WP\d+[a-z]?-[GSRDTLM]\d{2}) \|([^\r\n]*)/gmu))
+            // Every cell after the identifier counts: a diagnostic row puts its code before the rule text.
+            (match[2].split(/(?<!\\)\|/u).some(cell => WITHDRAWN.test(cell.trim())) ? withdrawn : rules).add(match[1]);
+    // A rule marked deferred or rejected in any row is not a known rule, wherever else it is written.
+    for (const id of withdrawn)
+        rules.delete(id);
     for (const file of readdirSync(join(base, 'docs', 'decisions')))
         if (/^\d{4}-.*\.md$/u.test(file))
             adrs.add(`ADR ${file.slice(0, 4)}`);
-    return { rules, adrs };
+    return { rules, adrs, withdrawn };
+}
+/** The marker of a deferred or rejected rule: a cell of its row after the identifier (the rule text, or the condition of a diagnostic row) starts with *Deferred.* or *Rejected.* (docs/drafts/2.3/README.md). */
+export const WITHDRAWN = /^\*(?:Deferred|Rejected)\.\*/u;
+/** One line per applied amendment for the gate-1 report: file, rule, kind and the recorded and current values. */
+export function amendmentReport(amendments) {
+    return amendments.map(a => `  amendment ${a.file} (${a.rule}, ${a.kind}${a.key ? ' at ' + a.key : ''}): ${JSON.stringify(a.recorded)} -> ${a.current === null ? 'removed' : JSON.stringify(a.current)}`).join('\n');
 }
 export function amendmentProblems(amendments, files, known = knownRules()) {
     const problems = [], seen = new Set();
@@ -231,6 +241,8 @@ export function amendmentProblems(amendments, files, known = knownRules()) {
             problems.push(`${at}: kind must be diagnostic or type; references and behaviour are never amended`);
         if (/^WP1a-/u.test(a.rule ?? ''))
             problems.push(`${at}: WP1a rules define the gates and cannot justify an amendment`);
+        else if (known.withdrawn?.has(a.rule))
+            problems.push(`${at}: ${a.rule} is marked deferred or rejected and cannot justify an amendment`);
         else if (!known.rules.has(a.rule) && !known.adrs.has(a.rule))
             problems.push(`${at}: needs the rule identifier (WPn-Kxx) defined in the 2.3 drafts or chapters, or an existing ADR (ADR 00nn), that requires it; ${JSON.stringify(a.rule ?? null)} is neither`);
         if (typeof a.reason !== 'string' || !a.reason.trim())
@@ -481,7 +493,8 @@ export async function checkAst({ writeProjections } = {}) {
         }
     }
     const report = `Gate 1 (AST identity under N1): ${identical.size} sources identical to 2.2, ${skipped.size} skipped with 2.2 parse errors`
-        + (skipped.size ? ` (${[...skipped.keys()].join(', ')})` : '') + `; ${resolved} sources keep the recorded references, diagnostics and expression types (${amendments.length} amendments); ${projected} keep their view projections; ${failures.length} differences.`;
+        + (skipped.size ? ` (${[...skipped.keys()].join(', ')})` : '') + `; ${resolved} sources keep the recorded references, diagnostics and expression types (${amendments.length} amendments); ${projected} keep their view projections; ${failures.length} differences.`
+        + (amendments.length ? '\nApplied amendments:\n' + amendmentReport(amendments) : '');
     return { report, failures, compared: [...compared], skipped: [...skipped.keys()] };
 }
 

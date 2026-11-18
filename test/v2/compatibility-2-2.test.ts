@@ -80,3 +80,37 @@ test('gate 1 amendments: the rule index finds the 2.3 draft rules and the ADRs',
     assert.ok(!rules.has('WP4-D99') && !adrs.has('ADR 0099'));
     assert.equal(rules.size, 208, 'every WPn-Kxx row of the drafts (the draft index counts 208)');
 });
+
+test('gate 1 amendments: rules marked deferred or rejected are not known and cannot justify an amendment', async () => {
+    const { knownRules, amendmentProblems } = await import(new URL('../../../scripts/compatibility-2-2.mjs', import.meta.url).href) as { knownRules(base?: string): { rules: Set<string>; adrs: Set<string>; withdrawn: Set<string> }; amendmentProblems(a: Amendment[], files: Record<string, Recorded>, known?: unknown): string[] };
+    const { mkdtempSync, mkdirSync, writeFileSync, rmSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { tmpdir } = await import('node:os');
+    const base = mkdtempSync(join(tmpdir(), 'swaml-rules-'));
+    try {
+        for (const directory of ['docs/drafts/2.3', 'docs/spec', 'docs/decisions'])
+            mkdirSync(join(base, ...directory.split('/')), { recursive: true });
+        writeFileSync(join(base, 'docs', 'drafts', '2.3', 'x.md'), '| ID | Rule |\n| --- | --- |\n| WP4-D06 | A rule. |\n| WP5-S04 | *Deferred.* Moved to 2.4. |\n| WP6-S01 | *Rejected.* Not adopted. |\n| WP7-S01 | Moved to chapter 3.5. |\r\n| WP7-D01 | SW2007 | *Deferred.* Moved to 2.4. | `Message.` |\n| WP7-D02 | SW2007 | A condition. | `One \\| other.` |\n');
+        writeFileSync(join(base, 'docs', 'spec', '03.md'), '| ID | Rule |\n| --- | --- |\n| WP7-S01 | A moved rule. |\n| WP6-S01 | Still written here, but rejected in the drafts. |\n');
+        writeFileSync(join(base, 'docs', 'LANGUAGE_SPECIFICATION.md'), '# Spec\n');
+        writeFileSync(join(base, 'docs', 'decisions', '0022-x.md'), '# ADR\n');
+        const known = knownRules(base);
+        // A diagnostic row is withdrawn by its condition cell, after the code column (review F8).
+        assert.deepEqual([...known.rules].sort(), ['WP4-D06', 'WP7-D02', 'WP7-S01']);
+        assert.deepEqual([...known.withdrawn].sort(), ['WP5-S04', 'WP6-S01', 'WP7-D01']);
+        assert.match(amendmentProblems([{ ...reword, rule: 'WP5-S04' }], { 'm.swaml': recorded }, known).join(), /deferred or rejected/u);
+        assert.deepEqual(amendmentProblems([{ ...reword, rule: 'WP7-S01' }], { 'm.swaml': recorded }, known), []);
+    }
+    finally {
+        rmSync(base, { recursive: true, force: true });
+    }
+});
+
+test('gate 1 report: every applied amendment is printed with its file, rule, kind and values', async () => {
+    const { amendmentReport } = await import(new URL('../../../scripts/compatibility-2-2.mjs', import.meta.url).href) as { amendmentReport(a: Amendment[]): string };
+    assert.deepEqual(amendmentReport([reword, { file: 'm.swaml', kind: 'type', key: '10:5 BinaryExpression', recorded: 'int', current: 'uint', rule: 'WP4-S01', reason: 'r' }, { file: 'm.swaml', kind: 'diagnostic', recorded: recorded.diagnostics[0], current: null as unknown as string, rule: 'WP4-D06', reason: 'r' }]).split('\n'), [
+        `  amendment m.swaml (WP4-D06, diagnostic): ${JSON.stringify(recorded.diagnostics[0])} -> ${JSON.stringify(reword.current)}`,
+        '  amendment m.swaml (WP4-S01, type at 10:5 BinaryExpression): "int" -> "uint"',
+        `  amendment m.swaml (WP4-D06, diagnostic): ${JSON.stringify(recorded.diagnostics[0])} -> removed`,
+    ]);
+});

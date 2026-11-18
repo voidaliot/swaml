@@ -1,7 +1,7 @@
 import { AstUtils, DocumentState, type AstNode } from 'langium';
 import * as a from '../language/generated/ast.js';
 import { SWAML_REFERENCE_PROFILE } from '../language/edition.js';
-import { caseTarget, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
+import { caseRead, caseTarget, isPlace, placeRoot, valueSteps, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
 import { binary, bind, checked, ContractViolation, copy, plain, RuntimeFault, scalar, voidValue, widen, type Environment, type Value } from './values.js';
 export { projectOperationTiming } from './timing.js';
 export interface SimulationOptions {
@@ -107,6 +107,14 @@ type Yield = {
     timeout?: number;
 };
 type Iterator = Generator<Yield, Value, Reply | undefined>;
+/**
+ * An out value that was never assigned (an unanswered on call out binding, copied back to its caller) is a
+ * placeholder without fields or elements; selecting into it is the runtime failure Type, not a host error.
+ */
+function unassigned(v: Value | undefined, path: string): asserts v is Value {
+    if (!v || v.data === null || typeof v.data !== 'object')
+        throw new RuntimeFault('Type', `${path} has no assigned value to select from`);
+}
 type Component = {
     path: string;
     structure: Structure;
@@ -478,6 +486,46 @@ class Interpreter {
     } { const c = local.get(name) ?? f.c.store.get(name); if (!c)
         throw new RuntimeFault('Type', `Unknown value ${name}`); return c; }
     private assign(f: Frame, local: Environment, name: string, value: Value, site?: AstNode): void { const c = this.cell(f, local, name); c.value = widen(value, c.type); this.log('write', `${f.c.path}.${name}`, { activation: f.id, source: this.source(site ?? f.at), scope: local.has(name) ? 'local' : 'attribute', value: plain(c.value) }); }
+    /**
+     * A place assignment (WP1-R01 to WP1-R03): the target's index expressions left to right, then the right
+     * side, then the root cell is read live, every index is checked against the value read and the root is
+     * written with exactly one place replaced. A bad index is the runtime failure Bounds and leaves the root
+     * unchanged. The read-modify-write runs without suspension, after the right side resumed under the lock.
+     */
+    private *assignPlace(s: a.Assign, f: Frame, local: Environment): Iterator {
+        const steps = valueSteps(s), indexes: number[] = [];
+        for (const step of steps)
+            if (step.index !== undefined)
+                indexes.push((yield* this.evaluate(step.index as a.Expression, f, local)).data as number);
+        const value = yield* this.evaluate(s.value, f, local), root = placeRoot(s.target), cell = this.cell(f, local, root);
+        const next = copy(cell.value);
+        let parent: Value | undefined, key: string | number | undefined, current = next, i = 0, place = root;
+        for (const step of steps) {
+            parent = current;
+            if (step.field !== undefined) {
+                unassigned(current, place);
+                key = step.field;
+                current = (current.data as Record<string, Value>)[step.field];
+                place += '.' + step.field;
+                continue;
+            }
+            unassigned(current, place);
+            const index = indexes[i++], array = current.data as Value[];
+            if (!Number.isSafeInteger(index) || index < 0 || index >= array.length)
+                throw new RuntimeFault('Bounds');
+            key = index;
+            current = array[index];
+            place += `[${index}]`;
+        }
+        const replaced = widen(value, current.type);
+        if (typeof key === 'number')
+            (parent!.data as Value[])[key] = replaced;
+        else
+            (parent!.data as Record<string, Value>)[key!] = replaced;
+        cell.value = next;
+        this.log('write', `${f.c.path}.${root}`, { activation: f.id, source: this.source(f.at), scope: local.has(root) ? 'local' : 'attribute', value: plain(next), place });
+        return voidValue();
+    }
     run(): SimulationResult {
         let initializing: { c: Component; attribute: a.Attribute } | undefined;
         try {
@@ -748,14 +796,14 @@ class Interpreter {
         if (a.isLiteral(e))
             return e.number !== undefined ? checked(e.$cstNode!.text.includes('.') ? 'real' : 'int', e.number) : e.boolean !== undefined ? scalar('bool', e.boolean === 'true') : scalar('string', e.text!);
         if (a.isReferenceExpression(e)) {
-            let [head, ...fields] = e.path.split('.');
-            let value = env.get(head)?.value;
+            const head = e.path.split('.')[0];
+            let value = env.get(head)?.value, steps = valueSteps(e);
             if (!value) {
                 const en = resolve(e, head, this.models);
                 if (a.isEnumType(en))
-                    return scalar(identity(en), fields[0]);
-                // A test reads a live attribute of its subject or a part inside it.
-                const read = f.script && caseTarget(f.script, e.path);
+                    return scalar(identity(en), steps[0]?.field ?? '');
+                // A test reads a live attribute of its subject or a part inside it, such as twins[0].link (WP1-S06).
+                const read = f.script && caseRead(f.script, e);
                 if (!read || read.kind !== 'attribute')
                     throw new RuntimeFault('Type', e.path);
                 const target = this.components.get(read.path);
@@ -763,12 +811,16 @@ class Interpreter {
                     throw new RuntimeFault('Type', `${read.path} does not run in this package`);
                 yield* this.borrow(f, target);
                 value = target.store.get(read.attribute.name)!.value;
-                fields = read.fields;
+                steps = read.steps;
             }
-            for (const key of fields)
-                value = (value.data as Record<string, Value>)[key];
-            if (e.index) {
-                const index = (yield* this.evaluate(e.index, f, local)).data as number;
+            // Selectors apply left to right; each index is evaluated, checked and applied in turn (WP1-R04).
+            for (const step of steps) {
+                unassigned(value, e.path);
+                if (step.field !== undefined) {
+                    value = (value.data as Record<string, Value>)[step.field];
+                    continue;
+                }
+                const index = (yield* this.evaluate(step.index as a.Expression, f, local)).data as number;
                 const array = value.data as Value[];
                 if (!Number.isSafeInteger(index) || index < 0 || index >= array.length)
                     throw new RuntimeFault('Bounds');
@@ -873,6 +925,8 @@ class Interpreter {
             f.at = s;
             if (a.isLocalVariable(s))
                 bind(local, s.name, typeKey(s.type), yield* this.evaluate(s.value, f, local));
+            else if (a.isAssign(s) && isPlace(s))
+                yield* this.assignPlace(s, f, local);
             else if (a.isAssign(s))
                 this.assign(f, local, s.target, yield* this.evaluate(s.value, f, local));
             else if (a.isExpressionStatement(s))

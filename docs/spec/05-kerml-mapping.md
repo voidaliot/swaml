@@ -10,6 +10,12 @@ A result-bearing operation maps to a Function; a void operation maps to a Behavi
 
 Ports map to owned typed features with per-member directional projections. Reversal flips each projection. Structural compatibility is retained as per-member typing constraints, not replaced by nominal port identity. Connections map to Connector instances with source occurrence/member route and independent policy queues. Forwarding maps to queue-free boundary aliases with preserved chains, not an extra message hop. Messages, transfer values, correlation and terminal failures require swa.ml semantics over suitable KerML Step/transfer structures.
 
+| ID | Rule |
+| --- | --- |
+| WP1-M02 | `Selector`: kind `value`, normative `docs/spec/01-structure-and-types.md`. A place assignment lowers to a whole-value write of its root with one replaced feature value. It never becomes a reference feature. |
+
+The changed productions `Assign`, `ReferenceExpression` and `CallExpression` keep their mapping entries with updated semantic text in `spec/kerml-mapping.json`.
+
 ## 5.2 Required semantic library
 
 A K-conforming backend MUST implement a pinned swa.ml semantic library specializing the selected KerML 1.0 library. It defines Component, Operation, Port, Connector, Message, Queue, Activation, Schedule, state-machine reactions, copied values, failure and interruption. It MUST preserve suspension/unlock/relock, snapshots, deadlines, queue identity, success-only out copy-back, after success releases, state transition ordering and cancellation/late-reply behavior. Merely attaching uninterpreted metadata is preservation rather than proof that a kernel tool understands the execution semantics.
