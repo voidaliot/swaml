@@ -44,7 +44,8 @@
       "Calibration::A hold arrives first": "pass"
     },
     "examples/33-element-assignment.swaml": {
-      "EventMemory::Same memory either way": "pass"
+      "EventMemory::Same memory either way": "pass",
+      "EventMemory::Place order and bounds": "pass"
     },
     "examples/34-indexed-reads.swaml": {
       "FleetBackend::Open alert lookup": "pass",

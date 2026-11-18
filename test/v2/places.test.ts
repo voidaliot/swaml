@@ -489,3 +489,25 @@ test('places and selectors run in the simulate API and keep 2.2 forms unchanged 
     assert.ok(writes(result.trace).every(w => !('place' in w)), '2.2 forms add no place field');
     assert.deepEqual(result.stores.Demo, { xs: [3, 4], n: 2 });
 });
+
+test('WP1-D04 WP1-D06 messages name the failing segment and print literal indexes as written (review F5)', async () => {
+    const found = await errors(twins('assert backend.twins[0].missing;'));
+    assert.ok(found.some(([c, m]) => c === 'SW2002' && String(m).startsWith('Unknown value backend.twins[0].missing: backend.twins[0] has no attribute or part missing;')), JSON.stringify(found));
+    const nested = await errors(twins('assert backend.twins[0].link;').replace('component def Backend { component twins: Twin[3]; component single: Twin; }', 'component def Row { component cells: Twin[2]; } component def Backend { component twins: Twin[3]; component single: Twin; component grid: Row[2]; }').replace('assert backend.twins[0].link;', 'assert backend.grid[1].cells.link;'));
+    assert.ok(nested.some(([c, m]) => c === 'SW2002' && String(m).startsWith('Unknown value backend.grid[1].cells.link: backend.grid[1].cells is a part family and takes a literal index;')), JSON.stringify(nested));
+    const huge = await errors(wrap('attribute a: int[3] = [1, 2, 3]; attribute s: Status[3] = ' + statuses + '; operation f() { s[9007199254740993].confirmed = true; } schedule { on start f(); }'));
+    assert.ok(huge.some(([c, m]) => c === 'SW2002' && m === 'Index 9007199254740993 is outside Test::Status[3].'), JSON.stringify(huge));
+    const call = await errors(twins('backend.twins[9007199254740993].join(1);'));
+    assert.ok(call.some(([c, m]) => c === 'SW2002' && m === 'Index 9007199254740993 is outside the multiplicity 3 of backend.twins.'), JSON.stringify(call));
+});
+
+test('WP1-R04 a read takes its root first, then evaluates and applies each selector in turn; a place reads its root last (review F4)', async () => {
+    const r = await run(wrap(`attribute a: int[3] = [1, 2, 3]; attribute ss: Status[2] = [record Status { confirmed = false; occurrences = 1; }, record Status { confirmed = false; occurrences = 2; }];
+      attribute read1: int = 0; attribute read2: int = 0;
+      operation reset() returns int { a = [10, 20, 30]; return 0; }
+      operation bump() returns int { ss[0].occurrences = 50; return 0; }
+      operation f() { read1 = a[reset()]; read2 = ss[bump()].occurrences; a[reset()] = 7; }
+      schedule { on start f(); }`));
+    // The reads saw the roots as they were before their index calls wrote them; the place saw the write.
+    assert.deepEqual([r.stores.Demo.read1, r.stores.Demo.read2, r.stores.Demo.a], [1, 1, [7, 20, 30]]);
+});

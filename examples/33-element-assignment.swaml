@@ -155,4 +155,35 @@ package EventMemory {
   }
   associate monitor to 'Same memory either way';
   associate rebuilt to 'Same memory either way';
+  component def Ledger {
+    /** The evaluation order of a place: its index first, then the right side, then one write of the root that keeps what the right side wrote. A bad index is Bounds and leaves the root unchanged. */
+    attribute counters: int[3] = [0, 0, 0];
+    attribute order: int = 0;
+    operation pick() returns int {
+      order = order * 10 + 1;
+      return 1;
+    }
+    operation bump() returns int {
+      order = order * 10 + 2;
+      counters[2] = 40;
+      return 7;
+    }
+    operation put(index: int, value: int) {
+      counters[index] = value;
+    }
+    operation settle() {
+      counters[pick()] = bump();
+    }
+    operation overflow() {
+      try(put(3, 99));
+      counters[0] = counters[0] + 5;
+    }
+  }
+  component ledger: Ledger;
+  test 'Place order and bounds' of ledger {
+    ledger.settle();
+    assert ledger.order == 12 and ledger.counters == [0, 7, 40];
+    ledger.overflow();
+    assert ledger.counters == [5, 7, 40];
+  }
 }

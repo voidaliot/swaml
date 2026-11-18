@@ -400,7 +400,7 @@ Fixed arrays have positive safe extents, copied elements and invariant element t
 
 | ID | Rule |
 | --- | --- |
-| WP1-S02 | **Selectors.** After a first `[index]`, a value reference or assignment target continues with any sequence of `.field` and `[index]` selectors. `.f` selects a field of a record type and `[i]` indexes a fixed array with an integral index; the result type is the field or element type. Index expressions evaluate left to right. A read yields a copy. Reference values remain absent. |
+| WP1-S02 | **Selectors.** After a first `[index]`, a value reference or assignment target continues with any sequence of `.field` and `[index]` selectors. `.f` selects a field of a record type and `[i]` indexes a fixed array with an integral index; the result type is the field or element type. Index expressions evaluate left to right. A read takes its root first, then applies each selector in turn (WP1-R04); a place reads its root after its right side (WP1-R01). A read yields a copy. Reference values remain absent. |
 | WP1-S03 | **Static index range.** A literal index outside the extent of the indexed array type is a static error, at every selector position. |
 
 Both are SW2002 (WP1-D04). A place such as `statuses[index].confirmed` is assigned in place (section 3.3); a read such as `recent[i].vehicleId` copies one field of one element:
@@ -531,7 +531,7 @@ interruptible { body } on receive p.m(bindings) { handler } arms an unnamed regi
 | ID | Rule |
 | --- | --- |
 | WP1-S05 | **Place roots.** The assignment target is a place (section 1.4). In an operation, its root is a mutable local, an `out` parameter or a non-const attribute of the executing component. In a case script, it is one of the script's own locals or an `on call` out binding. `in` parameters, const attributes, ports, child components and qualified names are rejected (SW2006, WP1-D01). A dotted target without an index is a place too. The `for` header update keeps a bare name. |
-| WP1-S07 | **`out` roots.** An `out` parameter used as a place root must be definitely assigned before the assignment (SW2006, WP1-D02). |
+| WP1-S07 | **`out` roots.** An `out` parameter used as a place root must be definitely assigned before the assignment (SW2006, WP1-D02). In a case script, an `on call` out binding must be assigned as a whole before it is used as a place root or read with selectors (SW2006, WP1-D02); an empty reply and the 2.2 read forms keep their 2.2 rules. |
 | WP1-R01 | **Place evaluation order.** Evaluate the target's index expressions left to right, then the right side, then read the root cell, check every index against the value read, and write the root with exactly one place replaced. Writes performed by the right side are kept. |
 | WP1-R02 | **Place failure.** An index outside its extent at runtime is the runtime failure `Bounds`; the root is unchanged. |
 
@@ -707,8 +707,8 @@ Diagnostics added by 2.3. Message shapes are templates; implementations may add 
 | ID | Code | Condition | Message shape |
 | --- | --- | --- | --- |
 | WP1-D01 | SW2006 | Place root is not a mutable local, `out` parameter or non-const attribute (WP1-S05) | `Cannot assign to {place}: {root} is {an in parameter \| a const attribute \| a port \| a child component \| a qualified name}.` The reference validator also names `an immutable binding` (an input binding or `for in` element), `a component occurrence` (in a case script) and `not a local, out parameter or attribute`. A bare name keeps its 2.2 message. |
-| WP1-D02 | SW2006 | `out` root read before definite assignment (WP1-S07) | `Out parameter {name} must be assigned before {place} is assigned.` |
-| WP1-D03 | SW2006 | Place as out argument (WP1-S04) | `An out argument must be a name; {place} is a place.` |
+| WP1-D02 | SW2006 | `out` root read before definite assignment (WP1-S07) | `Out parameter {name} must be assigned before {place} is assigned.` For an `on call` out binding: `Out binding {name} must be assigned before {place} is assigned.` or `… before {place} is read.` |
+| WP1-D03 | SW2006 | Place as out argument (WP1-S04) | `An out argument must be a name; {place} is a place.` A 2.2 form such as `r.f` or `a[i]` keeps the 2.2 message `An out argument needs a mutable compatible local, out parameter or attribute.` |
 | WP1-D04 | SW2002 | Selector typing (WP1-S02, WP1-S03) | `{type} has no field {field}.` / `{type} is not an array and cannot be indexed.` / `Index must be integral, found {type}.` / `Index {n} is outside {type}.` A read without selectors keeps its 2.2 messages. |
 | WP1-D05 | SW2010 | Non-literal component index in a test path (WP1-S06) | `Component index in {path} must be a literal.` |
 | WP1-D06 | SW2002 | Literal component index outside multiplicity (WP1-S06) | `Index {n} is outside the multiplicity {m} of {child}.` An index on a single part is `{part} is a single part and takes no index.` |
@@ -784,7 +784,7 @@ Evaluation is left to right with and/or short-circuit. Payloads, records, arrays
 
 | ID | Rule |
 | --- | --- |
-| WP1-R04 | **Places and reads.** Place assignment follows WP1-R01 to WP1-R03 (section 3.3). Selector reads evaluate index expressions left to right and return a copy; a dynamic index outside its extent is `Bounds`. The reference simulator evaluates, checks and applies the index of each read selector in turn. |
+| WP1-R04 | **Places and reads.** Place assignment follows WP1-R01 to WP1-R03 (section 3.3). Selector reads evaluate index expressions left to right and return a copy; a dynamic index outside its extent is `Bounds`. A read takes the value of its root before evaluating any of its index expressions, then evaluates, checks and applies each index and field in turn, as 2.2 reads do; a place evaluates all its indexes, then the right side, and reads and writes its root last (WP1-R01). Selecting a field or element of an out value that was never assigned (an unanswered `on call` out binding copied back to its caller, a 2.2 case) is the runtime failure `Type`. |
 
 A local failure unwinds frames to the nearest try or fails the activation. Try fallback is lazy and type-compatible; prior state writes/emissions remain committed. Out values copy back only on successful return. Interrupt transfers and deadline/resource/activation violations are outside try. Resource failure is explicit evidence; no silently dropped activation is reported as successful execution.
 
@@ -4587,6 +4587,37 @@ package EventMemory {
   }
   associate monitor to 'Same memory either way';
   associate rebuilt to 'Same memory either way';
+  component def Ledger {
+    /** The evaluation order of a place: its index first, then the right side, then one write of the root that keeps what the right side wrote. A bad index is Bounds and leaves the root unchanged. */
+    attribute counters: int[3] = [0, 0, 0];
+    attribute order: int = 0;
+    operation pick() returns int {
+      order = order * 10 + 1;
+      return 1;
+    }
+    operation bump() returns int {
+      order = order * 10 + 2;
+      counters[2] = 40;
+      return 7;
+    }
+    operation put(index: int, value: int) {
+      counters[index] = value;
+    }
+    operation settle() {
+      counters[pick()] = bump();
+    }
+    operation overflow() {
+      try(put(3, 99));
+      counters[0] = counters[0] + 5;
+    }
+  }
+  component ledger: Ledger;
+  test 'Place order and bounds' of ledger {
+    ledger.settle();
+    assert ledger.order == 12 and ledger.counters == [0, 7, 40];
+    ledger.overflow();
+    assert ledger.counters == [5, 7, 40];
+  }
 }
 ```
 

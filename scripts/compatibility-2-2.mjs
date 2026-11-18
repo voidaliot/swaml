@@ -217,7 +217,8 @@ export function knownRules(base = root) {
     const markdown = directory => existsSync(join(base, ...directory.split('/'))) ? readdirSync(join(base, ...directory.split('/'))).filter(f => f.endsWith('.md')).map(f => `${directory}/${f}`) : [];
     for (const path of [...markdown('docs/drafts/2.3'), ...markdown('docs/spec'), 'docs/LANGUAGE_SPECIFICATION.md'].filter(p => existsSync(join(base, ...p.split('/')))))
         for (const match of readFileSync(join(base, ...path.split('/')), 'utf8').matchAll(/^\| (WP\d+[a-z]?-[GSRDTLM]\d{2}) \|([^\r\n]*)/gmu))
-            (WITHDRAWN.test(match[2].trimStart()) ? withdrawn : rules).add(match[1]);
+            // Every cell after the identifier counts: a diagnostic row puts its code before the rule text.
+            (match[2].split(/(?<!\\)\|/u).some(cell => WITHDRAWN.test(cell.trim())) ? withdrawn : rules).add(match[1]);
     // A rule marked deferred or rejected in any row is not a known rule, wherever else it is written.
     for (const id of withdrawn)
         rules.delete(id);
@@ -226,7 +227,7 @@ export function knownRules(base = root) {
             adrs.add(`ADR ${file.slice(0, 4)}`);
     return { rules, adrs, withdrawn };
 }
-/** The marker of a deferred or rejected rule: its rule cell starts with *Deferred.* or *Rejected.* (docs/drafts/2.3/README.md). */
+/** The marker of a deferred or rejected rule: a cell of its row after the identifier (the rule text, or the condition of a diagnostic row) starts with *Deferred.* or *Rejected.* (docs/drafts/2.3/README.md). */
 export const WITHDRAWN = /^\*(?:Deferred|Rejected)\.\*/u;
 /** One line per applied amendment for the gate-1 report: file, rule, kind and the recorded and current values. */
 export function amendmentReport(amendments) {

@@ -90,13 +90,14 @@ test('gate 1 amendments: rules marked deferred or rejected are not known and can
     try {
         for (const directory of ['docs/drafts/2.3', 'docs/spec', 'docs/decisions'])
             mkdirSync(join(base, ...directory.split('/')), { recursive: true });
-        writeFileSync(join(base, 'docs', 'drafts', '2.3', 'x.md'), '| ID | Rule |\n| --- | --- |\n| WP4-D06 | A rule. |\n| WP5-S04 | *Deferred.* Moved to 2.4. |\n| WP6-S01 | *Rejected.* Not adopted. |\n| WP7-S01 | Moved to chapter 3.5. |\r\n');
+        writeFileSync(join(base, 'docs', 'drafts', '2.3', 'x.md'), '| ID | Rule |\n| --- | --- |\n| WP4-D06 | A rule. |\n| WP5-S04 | *Deferred.* Moved to 2.4. |\n| WP6-S01 | *Rejected.* Not adopted. |\n| WP7-S01 | Moved to chapter 3.5. |\r\n| WP7-D01 | SW2007 | *Deferred.* Moved to 2.4. | `Message.` |\n| WP7-D02 | SW2007 | A condition. | `One \\| other.` |\n');
         writeFileSync(join(base, 'docs', 'spec', '03.md'), '| ID | Rule |\n| --- | --- |\n| WP7-S01 | A moved rule. |\n| WP6-S01 | Still written here, but rejected in the drafts. |\n');
         writeFileSync(join(base, 'docs', 'LANGUAGE_SPECIFICATION.md'), '# Spec\n');
         writeFileSync(join(base, 'docs', 'decisions', '0022-x.md'), '# ADR\n');
         const known = knownRules(base);
-        assert.deepEqual([...known.rules].sort(), ['WP4-D06', 'WP7-S01']);
-        assert.deepEqual([...known.withdrawn].sort(), ['WP5-S04', 'WP6-S01']);
+        // A diagnostic row is withdrawn by its condition cell, after the code column (review F8).
+        assert.deepEqual([...known.rules].sort(), ['WP4-D06', 'WP7-D02', 'WP7-S01']);
+        assert.deepEqual([...known.withdrawn].sort(), ['WP5-S04', 'WP6-S01', 'WP7-D01']);
         assert.match(amendmentProblems([{ ...reword, rule: 'WP5-S04' }], { 'm.swaml': recorded }, known).join(), /deferred or rejected/u);
         assert.deepEqual(amendmentProblems([{ ...reword, rule: 'WP7-S01' }], { 'm.swaml': recorded }, known), []);
     }
