@@ -56,7 +56,7 @@ The tables of `Swaml::Os` (WP8-L01) are in chapter 1.5. The run-order rule is in
 | --- | --- |
 | WP4-M03 | Moved to [chapter 4.3](../../spec/04-systems-and-conformance.md#43-views) in WP4. |
 | WP5-M01 | Moved to [chapter 4.3](../../spec/04-systems-and-conformance.md#43-views) in WP5. |
-| WP7-M01 | **Timing guards.** Timing shows release guards on their entries; observed mode marks `skip` observations. |
+| WP7-M01 | Moved to [chapter 4.3](../../spec/04-systems-and-conformance.md#43-views) in WP7. |
 | WP8-M04 | **Task lanes.** Timing groups activations in Task lanes when a deployment places them on Tasks. The General view shows operation placements. |
 | WP6-M01 | Moved to [chapter 4.3](../../spec/04-systems-and-conformance.md#43-views) in WP6. |
 
@@ -112,8 +112,8 @@ Diagnostics added or extended by 2.3. Message shapes are templates in the existi
 | WP6-D06 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP6. | |
 | WP6-D07 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP6. | |
 | WP6-D08 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP6. | |
-| WP7-D01 | SW2007 | Release guard on a `start` or `call` entry (WP7-S01) | `A release guard is allowed only on every, receive and after entries.` |
-| WP7-D02 | SW2007 | Release guard type, effect or scope (WP7-S02) | `Release guard must be bool, found {type}.` / `Release guard must be pure or read state.` / an unresolved-name message for names outside the scope |
+| WP7-D01 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP7. | |
+| WP7-D02 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP7. | |
 | WP8-D01 | SW2009 | Operation placement target (WP8-S01) | `{path} names operation {operation}, which no schedule entry of {occurrence} releases.` |
 | WP8-D02 | SW2009 | T1 | `Tasks {task1} and {task2} of {core} share priority {priority}.` |
 | WP8-D03 | SW2009 | T2 | `{entry} cannot run on periodic task {task}: {its period {p} is not a multiple of {periodNs} \| event entries need a task with periodNs = 0 \| its predecessor runs on {otherTask}}.` |

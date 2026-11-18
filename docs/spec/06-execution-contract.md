@@ -20,6 +20,17 @@ One serial activation runs at a time per component occurrence. Nonsuspending loc
 
 After a successful whole operation completes and unlocks, each effective after entry releases one fresh activation. No release occurs on failure, idle state reaction or intermediate local return. Each dependent has fresh deadline, locals and snapshot/backlog accounting. Correlated service reply transport and local completion dependencies are distinct observations. Duplicate dependencies are statically invalid and the graph is acyclic.
 
+Release guards (2.3) decide at dispatch whether a released activation runs. A false guard is a skip, which counts as a completion for after successors.
+
+| ID | Rule |
+| --- | --- |
+| WP7-R01 | **Evaluation.** A release guard is evaluated at the activation's first execution step (after its `release` and `dispatch` observations), before its dispatch arguments and in their scope. It sees every sample-cell update ordered before that step in the instant's event order (time, phase, insertion ordinal; WP6-R02), and none ordered after it. Serial entries evaluate under the serial lock and read live attributes. Concurrent entries read attributes from their dispatch snapshot and sample cells and `now()` live (WP6-R07). A cell the guard reads keeps its value for the arguments and the operation until the operation suspends (WP6-R03), so the guard, the arguments and the body read one value. The arguments are evaluated only after a true guard; an argument failure keeps its 2.2 meaning. |
+| WP7-R02 | **False guard.** No argument is evaluated and no operation runs, so a guard may protect its own arguments (`use(sum % count) when (count != 0)` never divides by zero), and the deadline armed at release is cancelled. The serial lock is released, as on completion. The activation ends with `skip` (WP7-T01), never `complete`. |
+| WP7-R03 | **Skip as completion.** A skip counts as a successful whole completion for `after` successors: each successor is released at the time of the skip, with the skipped activation as its `predecessorActivation`, and applies its own guard. |
+| WP7-R04 | **Receive entries.** A `receive` entry consumes its input at release, as in 2.2. When its guard is false, that input is discarded (`discardInput` with reason `releaseGuard`, WP7-T02); it is never retained or offered to another receiver. |
+| WP7-R05 | **Grid.** Periodic releases stay on the root-epoch grid `kD` whatever the guard results (D9). |
+| WP7-R06 | **Guard failure.** A runtime failure inside a release guard is an uncaught failure of that release: the deadline is cancelled, no successor is released and the lock is released. Its `failure` names the entry as `source` when the guard expression itself fails, and the failing statement (`Pkg::C.op/N`) when the failure happens inside an operation the guard calls, as for a dispatch argument. |
+
 ## 6.3 Values, flow and failure
 
 Evaluation is left to right with and/or short-circuit. Payloads, records, arrays, parameters/results and out copy-back are copied, with nominal identities and domain checks. for in uses one copied collection. A loop limit evaluates once, is checked in the uint domain, and exits normally at the count; termination beyond declared limits is not statically proved. Integer overflow, non-finite reals, zero division, invalid indexes and failed assert/fail are runtime failures.
@@ -83,6 +94,8 @@ New and extended observations of 2.3 appear only where new syntax is used, so a 
 | WP5-T02 | `discardTimer` (new) | A timer consumed because its guard was false: `subject` the machine, `activation`, `state`, `source` the timer transition, `reason: 'guard'`. |
 | WP5-T03 | `defer` (new) | Exactly one per retained message, at its first retention (WP5-R08), whether the machine then waits or runs an action of the deferring state: `subject` the machine, `activation`, `state`, `member` (`port.member`), `source` the message origin and `message` the message identity. Deferred members are events or attributes, so there is no correlation. |
 | WP5-T04 | `violation` (extended) | `code: 'CompletionLoop'` with the machine as `subject` and the completion transition as `source`; the other violations keep the run target as subject and no `source`. |
+| WP7-T01 | `skip` (new) | A release whose guard was false: `subject` the operation occurrence (`c.slot`), `activation`, `source` the schedule entry (`Pkg::C/schedule/N`). It replaces `complete` and, like `complete`, follows the activation's `unlock`. A skipped release therefore records exactly `release`, `dispatch`, `unlock` (serial entries only), `skip` and, for a `receive` entry, `discardInput`: the activation exists from its release, the guard is its first step, and no argument or operation observation belongs to it. |
+| WP7-T02 | `discardInput`, `failure` (extended) | A skipped `receive` entry's input is a `discardInput` directly after its `skip`, with `subject` the operation occurrence (`c.take`, as for the `skip` and for an activation's `noEnabledTransition` discard; the member is the delivered message's), `activation`, `source` the message origin, `message` the message identity and `reason: 'releaseGuard'`. A failing release guard is a `failure` with the entry, or the failing statement of an operation it calls, as `source` (WP7-R06). |
 
 ## 6.7 Case runs
 
@@ -99,3 +112,4 @@ The run stops with status stopped when the script completes or fails, otherwise 
 | ID | Rule |
 | --- | --- |
 | WP5-R12 | A `CompletionLoop` violation fails a case: it is a contract violation in trace order, like the existing ones, with the verdict message `Contract violation CompletionLoop.`, and never an inconclusive step-limit stop. |
+| WP7-R07 | A skipped release is neither a failure nor a completion of the case script, so it never decides a verdict. A failing release guard is an uncaught activation failure and fails the case (reason `run-failure`, `source` as in WP7-R06). |

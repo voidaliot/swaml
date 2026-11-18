@@ -47,6 +47,8 @@ export interface ProjectionNode {
         periodExpression?: string;
         /** The canonical text of a computed deadline, deadline (e) (WP4-M03); absent for a literal deadline. */
         deadlineExpression?: string;
+        /** The canonical text of a release guard, when (g) (WP7-M01); absent on an entry without one. */
+        guard?: string;
         concurrent: boolean;
         code: string;
     }[];
@@ -130,7 +132,7 @@ export function projectModel(models: readonly a.Model[]): Projection {
             const sampled = [...sampledMembers(n)].sort();
             if (sampled.length)
                 p.sampled = sampled;
-            p.schedule = schedule(n).map(e => ({ trigger: e.kind + (e.endpoint ? ' ' + e.endpoint : e.predecessor ? ' ' + e.predecessor : ''), target: e.operation, periodNs: entryPeriod(e, occurrence ? n : undefined), deadlineNs: entryDeadline(e, occurrence ? n : undefined), concurrent: e.concurrent, code: e.$cstNode!.text, ...(e.periodValue ? { periodExpression: displayText(e.periodValue) } : {}), ...(e.deadlineValue ? { deadlineExpression: displayText(e.deadlineValue) } : {}) }));
+            p.schedule = schedule(n).map(e => ({ trigger: e.kind + (e.endpoint ? ' ' + e.endpoint : e.predecessor ? ' ' + e.predecessor : ''), target: e.operation, periodNs: entryPeriod(e, occurrence ? n : undefined), deadlineNs: entryDeadline(e, occurrence ? n : undefined), concurrent: e.concurrent, code: e.$cstNode!.text, ...(e.periodValue ? { periodExpression: displayText(e.periodValue) } : {}), ...(e.deadlineValue ? { deadlineExpression: displayText(e.deadlineValue) } : {}), ...(e.guard ? { guard: displayText(e.guard) } : {}) }));
             for (const c of members(n).filter(a.isConnect)) {
                 const forward = c.source.split('.').length !== c.target.split('.').length;
                 addEdge(forward ? 'forwarding' : 'connection', id + '.' + c.source, id + '.' + c.target, c.name ?? 'Default', forward ? {} : { policy: effectiveQos(c), ...memberPolicyLabels(c) });

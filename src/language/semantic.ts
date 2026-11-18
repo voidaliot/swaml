@@ -1,5 +1,5 @@
 import { AstUtils, CstUtils, type AstNode, type Reference } from 'langium';
-import { decodeQuotedName, formatName } from './names.js';
+import { decodeQuotedName, formatName, type NameEdition } from './names.js';
 import * as a from './generated/ast.js';
 import { STANDARD_LIBRARY, STANDARD_LIBRARY_2_3 } from './standard-library.js';
 /** Shared semantic algorithms have no filesystem or host dependencies. */
@@ -184,18 +184,23 @@ export function nanos(d: a.Duration): number { return d.value * ({ ns: 1, us: 10
  * 2.3 a setting has the single form name = Expression; (WP4-G01), so a 2.2 duration setting is Literal{duration}.
  */
 export function settingDuration(s: a.PolicySetting): a.Duration | undefined { return a.isLiteral(s.value) ? s.value.duration : undefined; }
+/** The keywords that the grammar also accepts as names (rule Name). */
+const NAME_WORDS = new Set(['reversed', 'to', 'times', 'name', 'kind', 'path', 'use', 'case', 'test', 'associate', 'by', 'ns', 'us', 'ms', 's', 'defer', 'view', 'state', 'in', 'out']);
 /**
  * The canonical display text of an expression (WP4-S07): its tokens without comments or layout, integers in decimal
  * and names in canonical spelling, one space between tokens except none after ( [ . :: and none before ) ] , . ::,
  * none before the index [ of a value and the argument list ( of a call or try, and none inside a duration literal
  * (1ms). A parenthesized subexpression and an array literal are spaced like any operand: a * (b + c), [1, 2].
- * Messages and projections show this text; it keeps the unit of a literal (deadline (3ms) shows 3ms).
+ * Messages and projections show this text; it keeps the unit of a literal (deadline (3ms) shows 3ms). With an
+ * edition, every name is spelled for that edition instead, so a message can quote names as 2.2 does
+ * (MESSAGE_SPELLING): a contextual word written unquoted in 2.3, such as view, is shown 'view'.
  */
-export function displayText(e: a.Expression): string {
+export function displayText(e: a.Expression, edition?: NameEdition): string {
     const leaves = e.$cstNode ? CstUtils.flattenCst(e.$cstNode).filter(n => !n.hidden).toArray() : [];
     let text = '';
     leaves.forEach((leaf, i) => {
-        const type = leaf.tokenType.name, image = type === 'UNRESTRICTED_NAME' ? formatName(decodeQuotedName(leaf.text)) : type === 'INT' ? String(Number(leaf.text)) : leaf.text;
+        const type = leaf.tokenType.name, word = edition !== undefined && !a.isDuration(leaf.astNode) && (type === 'ID' || type === leaf.text && NAME_WORDS.has(leaf.text));
+        const image = type === 'UNRESTRICTED_NAME' ? formatName(decodeQuotedName(leaf.text), edition) : word ? formatName(leaf.text, edition) : type === 'INT' ? String(Number(leaf.text)) : leaf.text;
         const previous = leaves[i - 1];
         const glued = !previous || ['(', '[', '.', '::'].includes(previous.text) || [')', ']', ',', '.', '::'].includes(leaf.text)
             || a.isDuration(leaf.astNode) && previous.astNode === leaf.astNode
@@ -525,7 +530,8 @@ export function forwardedPorts(c: Structure): Set<string> {
 }
 /**
  * The members c samples, as port.member (WP6-S01, WP6-S04, WP6-M04): every sampled read of a required attribute, with
- * an initial value, of an owned port, in the executables of c and in the arguments of its schedule entries.
+ * an initial value, of an owned port, in the executables of c and in the arguments and release guards of its schedule
+ * entries.
  */
 export function sampledMembers(c: Structure): Set<string> {
     return new Set(sampledReads(c).map(r => r.port.name + '.' + r.member.name));
@@ -533,15 +539,16 @@ export function sampledMembers(c: Structure): Set<string> {
 export type SampledRead = { node: a.ReferenceExpression; port: a.PortUsage; member: a.PortMember };
 /**
  * The sampled reads of required attributes in c (see sampledMembers), each with its port and member, in source order:
- * the bodies of its executables (nested operations included) and the arguments of its schedule entries, which are
- * evaluated at dispatch in the activation's first segment (WP6-R03). Cached for one validation pass.
+ * the bodies of its executables (nested operations included) and the arguments and release guards of its schedule
+ * entries, which are evaluated at dispatch in the activation's first segment (WP6-R03, WP7-R01). Cached for one
+ * validation pass.
  */
 export function sampledReads(c: Structure): SampledRead[] {
     const cache = effectCache?.reads, known = cache?.get(c);
     if (known)
         return known;
     const result: SampledRead[] = [];
-    const roots: AstNode[] = [...members(c).filter(isExecutable).flatMap(op => body(op) ? [body(op)!] : []), ...schedule(c).flatMap(e => e.args)];
+    const roots: AstNode[] = [...members(c).filter(isExecutable).flatMap(op => body(op) ? [body(op)!] : []), ...schedule(c).flatMap(e => e.guard ? [...e.args, e.guard] : e.args)];
     for (const root of roots)
         for (const n of nodes(root))
             if (a.isReferenceExpression(n)) {
@@ -556,7 +563,7 @@ export function sampledReads(c: Structure): SampledRead[] {
  * Whether a local, parameter, loop variable or input binding named name is visible at node n (chapter 1.3, WP6-S01),
  * by the scope rules the validator types with: parameters of the nearest executable (a nested operation captures no
  * enclosing local), locals declared earlier in an enclosing block, a for local in its condition, update and body, a
- * for-in element in its body, the bindings of a receive or call schedule entry in its arguments, of a receive branch
+ * for-in element in its body, the bindings of a receive or call schedule entry in its arguments and release guard, of a receive branch
  * in its body, of an interrupt region in its handler and of a receive transition in its guard and effect.
  */
 export function localVisible(n: AstNode, name: string): boolean {

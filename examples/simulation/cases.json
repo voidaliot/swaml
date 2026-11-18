@@ -116,6 +116,17 @@
     "examples/49-body-can-member-policies.swaml": {
       "BodyCan::Per-member policies on one connection": "pass"
     },
+    "examples/50-lin-master-mode-gating.swaml": {
+      "LinMasterGating::Headers every slot while awake": "pass",
+      "LinMasterGating::No headers while asleep, checkpoints continue": "pass",
+      "LinMasterGating::Responses while asleep are dropped": "pass",
+      "LinMasterGating::Slots stay on the grid after waking": "pass"
+    },
+    "examples/51-com-main-release-guard.swaml": {
+      "ComMainGating::Frames every 100 ms while awake": "pass",
+      "ComMainGating::Transmission pauses while asleep, reception continues": "pass",
+      "ComMainGating::The transmit timer resumes after waking": "pass"
+    },
     "examples/notation/catalog.swaml": {
       "Notation::Startup": "pass"
     },

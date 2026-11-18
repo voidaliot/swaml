@@ -639,14 +639,14 @@ component def ComMain {
 
 | ID | Rule |
 | --- | --- |
-| WP6-S01 | **Form.** In an operation body, in a transition, completion or timer guard, or in an argument of a schedule entry of the owning component (evaluated at dispatch, in the activation's first segment, WP6-R03), `p.m` is a sampled read when `p` is an owned port of the executing component, its member `m`, in the definition the port has in the executing occurrence after redefinition, is an attribute that declares an initial value (the member opts in to sampling), and no local, parameter, loop variable or binding named `p` is visible at the read, by the scope rules of chapter 1.3 (a local of another branch, of a later statement or of a nested operation does not hide the port; `localVisible` in `semantic.ts`). `m` must be required after reversal (SW2006 `{port}.{member} is not a required attribute of an owned port.`, WP6-D05). Fields, an index and selectors may follow the member. The value is the member's type and the effect class is *reads state*. A reference `p.m` to a member that declares no initial value keeps its 2.2 meaning and diagnostics (SW2002 `Unknown local value p.m; …`), also when another member of the same port opts in, so no 2.2 source changes (owner decision A of WP6). |
+| WP6-S01 | **Form.** In an operation body, in a transition, completion or timer guard, or in an argument or release guard (WP7-S02) of a schedule entry of the owning component (evaluated at dispatch, in the activation's first segment, WP6-R03, WP7-R01), `p.m` is a sampled read when `p` is an owned port of the executing component, its member `m`, in the definition the port has in the executing occurrence after redefinition, is an attribute that declares an initial value (the member opts in to sampling), and no local, parameter, loop variable or binding named `p` is visible at the read, by the scope rules of chapter 1.3 (a local of another branch, of a later statement or of a nested operation does not hide the port; `localVisible` in `semantic.ts`). `m` must be required after reversal (SW2006 `{port}.{member} is not a required attribute of an owned port.`, WP6-D05). Fields, an index and selectors may follow the member. The value is the member's type and the effect class is *reads state*. A reference `p.m` to a member that declares no initial value keeps its 2.2 meaning and diagnostics (SW2002 `Unknown local value p.m; …`), also when another member of the same port opts in, so no 2.2 source changes (owner decision A of WP6). |
 | WP6-S08 | **Forbidden ports and positions.** Sampling a forwarded boundary port is SW2005 `{port}.{member} cannot be sampled: {port} is a forwarded boundary.` (WP6-D01). `p.m` on a child's port remains an error with its 2.2 diagnostic (SW2002). A sampled read is not allowed in an attribute initializer (SW2006 `A sampled read is not allowed in an initializer.`) or in the constant sublanguage of chapter 3.5 (SW2007 `A sampled read is not allowed in a constant duration.`, WP6-D05). A member's initial value is checked without a component, so a reference in it is unknown (SW2002). Case scripts do not sample (WP6-S09). |
 | WP6-R01 | **Cell.** Each port occurrence holds one sample cell per sampled member, initialized to the member's initial value before startup work is released. A read never fails. |
 | WP6-R02 | **Update instant.** A cell takes a value at the instant the value is delivered to the port: the message's delivery time after the route's latency and fault delay. This is independent of whether a receive owner consumes it, and of a newer value replacing it in the owner's pending queue. A dropped offer, and a value older than the route's `maxAge` at delivery (observed as `discardAge`), does not update the cell. Each duplicate copy updates it at its own delivery instant. A cell never goes back to an older value: a value whose offer precedes the offer of the value the cell holds, delivered later because of a fault delay or a longer latency, updates nothing and produces no observation (no `sample` and no other kind; its `offer` is the last observation of that value), so the cell agrees with the newest value offered among those delivered, as an owner's pending queue keeps the newest offer (owner decision B of WP6). Within one logical instant, events run in the deterministic event order (time, phase, insertion ordinal). An activation sees the cell updates ordered before its reading step in that order. A delivery produced later in the same instant, for example by a zero-latency send from an activation that runs in that instant, is seen only by reads ordered after it. Worked example: at t = 20 ms a periodic `producer.tick` sends `level.value(v)` over a zero-latency connection, and a periodic `consumer.slot()` of another component, whose body first tests `if (level.value > 0)`, is released at the same instant. If the consumer's first step is ordered before the producer's step, its test reads the previous value; the new value is delivered later in the same instant and is seen by the next activation that reads it after that delivery, at the latest the release at t = 40 ms (the rest of this activation keeps the value it read, WP6-R03). If the producer's step and the delivery come first, the test reads the new value. |
-| WP6-R03 | **Live reads, stable within a segment.** Every activation, serial or concurrent, reads the live cell: cells are not part of a concurrent dispatch snapshot. The first read of a cell in an activation segment, after the activation starts or resumes, copies the live cell, and later reads of that cell until the next suspension see that copy, although the steps of activations of other occurrences interleave with them. So a guard and the body of one activation, and the schedule-entry arguments evaluated at dispatch, see the same value unless the body suspends in between, and a read after a suspension sees the newer value. |
+| WP6-R03 | **Live reads, stable within a segment.** Every activation, serial or concurrent, reads the live cell: cells are not part of a concurrent dispatch snapshot. The first read of a cell in an activation segment, after the activation starts or resumes, copies the live cell, and later reads of that cell until the next suspension see that copy, although the steps of activations of other occurrences interleave with them. So a guard and the body of one activation, and the schedule-entry arguments and release guard evaluated at dispatch, see the same value unless the body suspends in between, and a read after a suspension sees the newer value. |
 | WP6-R04 | **No consumer.** A sampled member without a consuming owner has no pending-value queue and no `deliver` or `replaceAttribute` observation. Its cell is the only store, and its offers and drops remain observable. |
 
-Sampled reads serve level-triggered use. Edge reactions, such as resetting on a mode change, switching outputs off on entering sleep or detecting wake-up, keep receive handlers. Completion guards are not re-evaluated when a cell is updated (WP5-R03); a completion guard that reads only cells gets SW2017 (WP5-D08).
+Sampled reads serve level-triggered use. Edge reactions, such as resetting on a mode change, switching outputs off on entering sleep or detecting wake-up, keep receive handlers. A release guard cannot detect an edge on the member its own `receive` entry consumes: the cell is updated at delivery (WP6-R02), before that entry is released, so in `on receive mode.current(p) onMode(p) when (p != mode.current);` the binding and the sampled read hold the same new value and the guard is always false. Completion guards are not re-evaluated when a cell is updated (WP5-R03); a completion guard that reads only cells gets SW2017 (WP5-D08).
 
 B21 (service discovery) is rejected. A team models each binding as a static, optionally `optional`, connection, exposes availability as `provides attribute available: bool = false;` and samples it.
 
@@ -797,10 +797,10 @@ A component owns at most one schedule block. Effective entries inherit and are r
 | Trigger | Release and signature |
 | --- | --- |
 | on start | Once after the initialization barrier |
-| on every D | At root epoch + kD, k at least 1; deadline defaults to D |
-| on receive p.m(bindings) | One activation per received required event/attribute |
+| on every D | At root epoch + kD, k at least 1, unless its release guard is false (chapter 6.2); deadline defaults to D |
+| on receive p.m(bindings) | One activation per received required event/attribute, unless its release guard is false (chapter 6.2) |
 | on call p.m(bindings) | Serve a provided operation; typed result/out values form the reply |
-| after predecessor | Fresh activation after successful whole same-owner predecessor completion and unlock |
+| after predecessor | Fresh activation after successful whole same-owner predecessor completion and unlock, unless its release guard is false (chapter 6.2); a skipped predecessor counts as completed |
 
 Entry arguments evaluate and copy at dispatch. Non-call entries bind void flow with no out parameters; after targets are parameterless void flow. Predecessors are scheduled same-owner operation names, never paths/qualified names/port members; the effective after graph is acyclic. Failure releases nothing. A fresh activation has its own release/deadline/locals/snapshot/backlog accounting; results and parameters are not forwarded. Stateful success means reaching final, not becoming idle after a reaction.
 
@@ -836,6 +836,50 @@ package CyclePeriods {
 ```
 
 In `fast` the poller runs every 4 ms with a 2 ms deadline; in `standard` every 10 ms with a 5 ms deadline.
+
+**Release guards (2.3).** `when (g)` after the operation call of an `every`, `receive` or `after` entry gates each release: a false guard skips it (chapter 6.2, WP7-R01 to WP7-R07). The [LIN master](../examples/50-lin-master-mode-gating.swaml) and [ComMain](../examples/51-com-main-release-guard.swaml) examples gate their periodic work by a sampled power mode instead of returning early from every release. A skip counts as a completion for `after` successors (WP7-R03) but has none of the skipped operation's effects, so a successor that depends on them must test the same condition in its own guard, as example 51 does; the validator does not detect a successor that relies on a skipped predecessor.
+
+| ID | Rule |
+| --- | --- |
+| WP7-S01 | **Release guards.** `when (g)` may follow the operation call of an `every`, `receive` or `after` entry, before `deadline` and `concurrent` (WP7-G01). On a `start` or `call` entry it is an error (SW2007 `A release guard is allowed only on every, receive and after entries.`, WP7-D01), reported once, at the guard where the entry is written; such a guard is not typed. A guard that folds to false is a warning (SW2020, WP7-D03): the entry never runs its operation. |
+| WP7-S02 | **Guard effects and scope.** A release guard is `bool` (SW2007 `Release guard must be bool, found {type}.`) and pure or reads state: a call of an operation that writes or communicates is SW2007 `Release guard must be pure or read state.`, at the call; an unresolved, remote or suspending call is reported by the call rules only (WP7-D02). Its scope is the scope of the entry's arguments: the component's attributes, its sampled ports (WP6-S01; a sampled read in a guard is a sampled read of the component for WP6-S03 and WP6-S04), `now()` and the entry's receive bindings, which hide a port of the same name. The operation's parameters are not in scope; a name outside the scope keeps its unresolved-name message (SW2002). Like the arguments, the guard of an inherited entry is typed in every effective structure, so a redefined helper that writes is reported before any run; a guard whose own document has syntax errors is typed nowhere until its syntax is fixed: the validation of a document with syntax errors reports only those errors, and a structure in another document that inherits the entry skips the guard, so a valid file that specializes it gets no error for the unfinished guard. |
+| WP7-S03 | **Identity.** A release guard is not part of entry identity, so two entries that differ only in their guard are duplicates (SW2007 `Duplicate (trigger, operation) entry.`), and an entry of a specialization or usage with the same trigger and operation replaces an inherited entry together with its guard; a replacement without a guard removes it, which is a warning (SW2020, WP7-D04) unless the inherited guard folds to true: write `when (true)` to remove a guard deliberately. |
+
+```swaml
+package ReleaseGuards {
+  enum PowerMode {
+    run,
+    sleep
+  }
+  port def ModeState {
+    provides attribute current: PowerMode = PowerMode.run;
+  }
+  component def StateManager {
+    /** Interface-only actor that broadcasts the power mode. */
+    port mode: ModeState;
+  }
+  component def Slots {
+    reversed port mode: ModeState;
+    attribute headers: uint = 0;
+    attribute checkpoints: uint = 0;
+    operation slot() {
+      headers = headers + 1;
+    }
+    operation checkpoint() {
+      checkpoints = checkpoints + 1;
+    }
+    schedule {
+      on every 20ms slot() when (mode.current != PowerMode.sleep) deadline 2ms;
+      after slot checkpoint();
+    }
+  }
+  component manager: StateManager;
+  component lin: Slots;
+  connect (manager.mode, lin.mode);
+}
+```
+
+While the sampled mode is `sleep`, no `slot` runs, its 2 ms deadline is cancelled and its releases stay on the 20 ms grid; each skip still releases `checkpoint`.
 
 ## 3.6 States
 
@@ -1051,6 +1095,7 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | --- | --- |
 | WP4-M03 | **Timing per occurrence.** The projection (`projectModel`) gives each schedule entry of an occurrence its evaluated `periodNs` and `deadlineNs` from `entryPeriod` and `entryDeadline`, and a computed period or deadline also its display text (`periodExpression`, `deadlineExpression`, from `displayText`: the source spelling in canonical layout, so `deadline (3ms)` shows `3ms`); a definition shows values only for literal periods and deadlines and the text for computed ones, whose values belong to its occurrences. All values come from `entryPeriod` and `entryDeadline`, as in the simulator and the validator. A computed state timer labels its transition `after ({display text})`. Entries with literal periods and deadlines gain no field, so the projections of 2.2 sources are unchanged. |
 | WP5-M01 | **Flow and states.** The projection (`projectModel`) gives a completion transition an edge labelled `when (g)` with `completion: true`, a guarded timer edge its `guard` text, and gives a state node its internal transitions as `reactions` (label, order, guard) without an edge and its deferred members as `deferrals`. An internal transition never produces an edge. These fields appear only for the 2.3 forms. Flow shows completion edges with their guard, internal transitions as reactions of their state and deferrals as state annotations. |
+| WP7-M01 | **Timing guards.** The projection (`projectModel`) gives a guarded schedule entry its `guard` text (`displayText`); the field is absent on an entry without a guard. Observed Timing (`projectOperationTiming`) ends an activation's interval at its `skip` and lists `skip` among its markers. |
 ## 4.4 Validation groups
 
 | Code | Static group |
@@ -1062,7 +1107,7 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | SW2004 | Port shape, structural compatibility, endpoints, package connection ends, aliases, per-package closure/cardinality |
 | SW2005 | Single input owner and emission provenance; interface-only components are exempt |
 | SW2006 | Calls, nested scope, effects, returns, out arguments and suspension placement |
-| SW2007 | Schedule identity, signatures, deadlines and after graph |
+| SW2007 | Schedule identity, signatures, deadlines and after graph; release guards (2.3) |
 | SW2008 | Stateful signatures, scheduling, ordered states and reachability/finality |
 | SW2009 | Node content, deployment paths, indexes and specificity |
 | SW2010 | Requirement/case/view references, case subjects, associate, satisfy and verify links, the environment role and white-box access of case scripts |
@@ -1075,8 +1120,9 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | SW2019 | Warning (2.3): two every entries of one occurrence for the same operation with equal periods but different triggers |
 | SW2017 | Warning (2.3): a completion guard that reads nothing the machine writes, so it cannot change while the machine waits, or that folds to false, so its transition is never taken |
 | SW2018 | Warning (2.3): a deferred event whose policy on a route into the occurrence rejects on overflow |
+| SW2020 | Warning (2.3): a release guard that folds to false, so its entry never runs its operation, or a replacing schedule entry without a guard that drops an inherited release guard |
 
-Diagnostics added by 2.3. Message shapes are templates; implementations may add context but keep the leading clause stable. All are errors except WP4-D06, WP4-D08, WP5-D08, WP5-D09, WP6-D09 and WP6-D10, which are warnings. A diagnostic of WP6 applies only to a reference `p.m` of a member that opts in to sampling (an attribute member with an initial value, 2.3 syntax), to behaviour inherited with such a reference or to a member-policy body, so every 2.2 source keeps its diagnostics.
+Diagnostics added by 2.3. Message shapes are templates; implementations may add context but keep the leading clause stable. All are errors except WP4-D06, WP4-D08, WP5-D08, WP5-D09, WP6-D09, WP6-D10, WP7-D03 and WP7-D04, which are warnings. A diagnostic of WP6 applies only to a reference `p.m` of a member that opts in to sampling (an attribute member with an initial value, 2.3 syntax), to behaviour inherited with such a reference or to a member-policy body, so every 2.2 source keeps its diagnostics.
 
 | ID | Code | Condition | Message shape |
 | --- | --- | --- | --- |
@@ -1119,6 +1165,10 @@ Diagnostics added by 2.3. Message shapes are templates; implementations may add 
 | WP6-D08 | SW2010 | Sampled read in a case script (WP6-S09) | `A case script cannot sample {port}.{member}; use on receive.` |
 | WP6-D09 | SW2017, warning | The polling exemption of WP5-D08, narrowed (WP5 review N2; a separate, revocable change while the owner reviews WP5-R03). A state polls when it has a self receive or timer transition, or an internal receive transition (an internal timer fires once per entry), whose guard is absent or does not fold to false; the exemption then applies only to a guard that reads an attribute that some executable of the component writes, or a sample cell. A self transition whose guard reads its input, such as `when (v > 100)`, still exempts the state, because whether it can be true is not decided statically | The WP5-D08 message. |
 | WP6-D10 | SW2017, warning | Completion guard that folds to false in its definition (WP5 review N3, owner decision). Not reported when the guard names a const attribute of its component that an attribute redefinition in a specialization or usage of that component replaces (the same declaration, not only the same name), so that it may fold differently per occurrence | `Completion guard of {state} is always false; the transition is never taken.` |
+| WP7-D01 | SW2007 | Release guard on a `start` or `call` entry (WP7-S01) | `A release guard is allowed only on every, receive and after entries.` |
+| WP7-D02 | SW2007 | Release guard type or effect (WP7-S02) | `Release guard must be bool, found {type}.` / `Release guard must be pure or read state.` (a call that writes or communicates; unresolved, remote and suspending calls keep the call rules' messages); a name outside the scope keeps the existing unresolved-name message (SW2002). |
+| WP7-D03 | SW2020, warning | Release guard of an `every`, `receive` or `after` entry that folds to false in the structure where the entry is written, so the entry never runs its operation (review F3, as WP6-D10 for completion guards). Reported once, at the guard. Not reported when the guard names a const attribute of its component that an attribute redefinition in a specialization or usage of that component replaces (the same declaration, not only the same name), so that it may fold differently per occurrence; a guard that folds to true or does not fold gets no diagnostic. It needs a release guard, so no 2.2 source has it | `Release guard when ({guard}) of {entry} is always false; the entry never runs {operation}.` {entry} is the trigger and operation (`on every 10ms slot`, `on receive inp.go take`, `after slot next`); names are spelled as in 2.2. The fixed leading text `Release guard when (` tells it apart from WP7-D04, which shares SW2020. |
+| WP7-D04 | SW2020, warning | An entry without a release guard, written in a specialization or usage, that replaces (WP7-S03) an inherited entry whose guard does not fold to true (review F2). The inherited entry is one of the effective schedule of the base (the specialized definition, or a usage's definition) or, when the usage is a part redefinition (`redefines component c: D { schedule { … } }`), of the usage it redefines (review V1); the fold is evaluated in the replacing component, so a const redefinition there decides it (review V2). Reported at the replacing entry, with the inherited entry as related information. A part redefinition that writes no replacing entry also replaces the redefined usage's entries, with their guards, by those of its own definition; it has no entry to report and is not reported. A replacement with any guard, `when (true)` included, states its own condition and is not reported; an inherited guard in a document with syntax errors is not reported elsewhere. It needs a release guard, so no 2.2 source has it | `Replacing entry {entry} drops the inherited release guard when ({guard}) of {component}, so it runs {operation} whatever the guard says; repeat the guard, or write when (true) to remove it deliberately.` {component} is the definition or usage that wrote the inherited entry. The fixed leading text `Replacing entry ` tells it apart from WP7-D03, which shares SW2020. |
 | WP5-D09 | SW2018, warning | Deferred event with an effective `reject` overflow on a route into this occurrence (attributes never overflow) | `{member} is deferred in {state}, but policy {policy} of {connection} rejects on overflow; a full queue fails the sender. Give {connection} a policy that drops on overflow (Overflow.dropOldest or Overflow.dropNewest) or a capacity that holds the retained messages.` {connection} is the connection name or `connect (a, b)`. When a member policy is the rejecting effective policy (WP6-S07), {policy} names it and the advice reads `Give {member} of {connection} a member policy that drops on overflow …`; a connection without member policies, every 2.2 source included, keeps the message above. The library default policy rejects on overflow, so a deferral over a connection without a policy is reported: the warning is intended, because the sender's publish fails while the receiver defers. A deferral that already has an error (WP5-D04 to WP5-D06) is not reported. |
 
 Every diagnostic includes a source range and stable code. Machine-readable diagnostics retain declaration identity and occurrence context when resolved. A suggested edit is supplied only for a safe unambiguous correction; tools must revalidate the resulting complete workspace before applying it. Parser recovery may suspend semantic checks on invalid syntax, but the document remains invalid and must not crash the service.
@@ -1152,7 +1202,7 @@ Ports map to owned typed features with per-member directional projections. Rever
 | WP6-M03 | `PortMember` with an initial value maps the initial value as the feature's default value. Sampled reads lower to a read of a per-port-occurrence sample feature. They are not a transfer step. `Connect` records its member policies. |
 | WP2-M03 | `Association` keeps its entry. Its semantic text states that a list statement lowers to one reference per occurrence–case pair, with the statement and the list positions as provenance. |
 
-The changed productions `Assign`, `ReferenceExpression` and `CallExpression` (WP1), `Expression` and `ExpressionStatement` (WP2) and `PolicySetting`, `Literal`, `Wait`, `Receive`, `ScheduleEntry` and `Transition` (WP4) and `State` and `Transition` (WP5) keep their mapping entries with updated semantic text in `spec/kerml-mapping.json`: a completion transition is a guard-only TransitionUsage without trigger, and an internal transition has no target change. WP5-M02: the new production `Deferral` has kind `lowering`, normative `docs/spec/03-behavior.md`, and lowers to a state-scoped retention constraint on the machine's input projection.
+The changed productions `Assign`, `ReferenceExpression` and `CallExpression` (WP1), `Expression` and `ExpressionStatement` (WP2) and `PolicySetting`, `Literal`, `Wait`, `Receive`, `ScheduleEntry` and `Transition` (WP4) and `State` and `Transition` (WP5) and `ScheduleEntry` (WP7, release guards) keep their mapping entries with updated semantic text in `spec/kerml-mapping.json`: a completion transition is a guard-only TransitionUsage without trigger, and an internal transition has no target change. WP5-M02: the new production `Deferral` has kind `lowering`, normative `docs/spec/03-behavior.md`, and lowers to a state-scoped retention constraint on the machine's input projection.
 
 ## 5.2 Required semantic library
 
@@ -1192,6 +1242,17 @@ Time uses nonnegative safe integer nanoseconds. Durations are positive and must 
 One serial activation runs at a time per component occurrence. Nonsuspending local calls borrow its context and lock. wait, requests, receive and idle state waits release the lock. On readiness, serial work reacquires it before continuing and uses live attributes; locals remain copied cells. Concurrent entries may overlap, read one dispatch snapshot throughout and cannot write state even through callees or out arguments. Target backends must state how they realize the same snapshot semantics.
 
 After a successful whole operation completes and unlocks, each effective after entry releases one fresh activation. No release occurs on failure, idle state reaction or intermediate local return. Each dependent has fresh deadline, locals and snapshot/backlog accounting. Correlated service reply transport and local completion dependencies are distinct observations. Duplicate dependencies are statically invalid and the graph is acyclic.
+
+Release guards (2.3) decide at dispatch whether a released activation runs. A false guard is a skip, which counts as a completion for after successors.
+
+| ID | Rule |
+| --- | --- |
+| WP7-R01 | **Evaluation.** A release guard is evaluated at the activation's first execution step (after its `release` and `dispatch` observations), before its dispatch arguments and in their scope. It sees every sample-cell update ordered before that step in the instant's event order (time, phase, insertion ordinal; WP6-R02), and none ordered after it. Serial entries evaluate under the serial lock and read live attributes. Concurrent entries read attributes from their dispatch snapshot and sample cells and `now()` live (WP6-R07). A cell the guard reads keeps its value for the arguments and the operation until the operation suspends (WP6-R03), so the guard, the arguments and the body read one value. The arguments are evaluated only after a true guard; an argument failure keeps its 2.2 meaning. |
+| WP7-R02 | **False guard.** No argument is evaluated and no operation runs, so a guard may protect its own arguments (`use(sum % count) when (count != 0)` never divides by zero), and the deadline armed at release is cancelled. The serial lock is released, as on completion. The activation ends with `skip` (WP7-T01), never `complete`. |
+| WP7-R03 | **Skip as completion.** A skip counts as a successful whole completion for `after` successors: each successor is released at the time of the skip, with the skipped activation as its `predecessorActivation`, and applies its own guard. |
+| WP7-R04 | **Receive entries.** A `receive` entry consumes its input at release, as in 2.2. When its guard is false, that input is discarded (`discardInput` with reason `releaseGuard`, WP7-T02); it is never retained or offered to another receiver. |
+| WP7-R05 | **Grid.** Periodic releases stay on the root-epoch grid `kD` whatever the guard results (D9). |
+| WP7-R06 | **Guard failure.** A runtime failure inside a release guard is an uncaught failure of that release: the deadline is cancelled, no successor is released and the lock is released. Its `failure` names the entry as `source` when the guard expression itself fails, and the failing statement (`Pkg::C.op/N`) when the failure happens inside an operation the guard calls, as for a dispatch argument. |
 
 ## 6.3 Values, flow and failure
 
@@ -1256,6 +1317,8 @@ New and extended observations of 2.3 appear only where new syntax is used, so a 
 | WP5-T02 | `discardTimer` (new) | A timer consumed because its guard was false: `subject` the machine, `activation`, `state`, `source` the timer transition, `reason: 'guard'`. |
 | WP5-T03 | `defer` (new) | Exactly one per retained message, at its first retention (WP5-R08), whether the machine then waits or runs an action of the deferring state: `subject` the machine, `activation`, `state`, `member` (`port.member`), `source` the message origin and `message` the message identity. Deferred members are events or attributes, so there is no correlation. |
 | WP5-T04 | `violation` (extended) | `code: 'CompletionLoop'` with the machine as `subject` and the completion transition as `source`; the other violations keep the run target as subject and no `source`. |
+| WP7-T01 | `skip` (new) | A release whose guard was false: `subject` the operation occurrence (`c.slot`), `activation`, `source` the schedule entry (`Pkg::C/schedule/N`). It replaces `complete` and, like `complete`, follows the activation's `unlock`. A skipped release therefore records exactly `release`, `dispatch`, `unlock` (serial entries only), `skip` and, for a `receive` entry, `discardInput`: the activation exists from its release, the guard is its first step, and no argument or operation observation belongs to it. |
+| WP7-T02 | `discardInput`, `failure` (extended) | A skipped `receive` entry's input is a `discardInput` directly after its `skip`, with `subject` the operation occurrence (`c.take`, as for the `skip` and for an activation's `noEnabledTransition` discard; the member is the delivered message's), `activation`, `source` the message origin, `message` the message identity and `reason: 'releaseGuard'`. A failing release guard is a `failure` with the entry, or the failing statement of an operation it calls, as `source` (WP7-R06). |
 
 ## 6.7 Case runs
 
@@ -1272,6 +1335,7 @@ The run stops with status stopped when the script completes or fails, otherwise 
 | ID | Rule |
 | --- | --- |
 | WP5-R12 | A `CompletionLoop` violation fails a case: it is a contract violation in trace order, like the existing ones, with the verdict message `Contract violation CompletionLoop.`, and never an inconclusive step-limit stop. |
+| WP7-R07 | A skipped release is neither a failure nor a completion of the case script, so it never decides a verdict. A failing release guard is an uncaught activation failure and fails the case (reason `run-failure`, `source` as in WP7-R06). |
 
 
 ---
@@ -1305,7 +1369,7 @@ Each normalized node/constraint retains source declaration URI/range and any inh
 | Port/member | Definition or inline members, direction, reversal, optionality, payload/signature, idempotency, initial value of attribute members, sampled members per port (WP6) |
 | Connection/forwarding | Endpoint occurrence references, alias provenance, structural member checks, effective policy, member policies with the effective policy per member route (WP6) |
 | Policy | Pinned complete values and declaration/use provenance; no shared runtime queue |
-| Schedule/entry | Trigger identity, effective target, dispatch arguments/bindings, period/deadline (a computed one as its expression text plus per-occurrence values, WP4), concurrent |
+| Schedule/entry | Trigger identity, effective target, dispatch arguments/bindings, period/deadline (a computed one as its expression text plus per-occurrence values, WP4), release guard (not part of trigger identity, WP7), concurrent |
 | State/transition | Initial/final, entry/exit/effects, receive bindings/guard or timer (literal or computed delay, WP4), transition kind (receive, timer or completion), optional target (internal when absent), timer guard, state deferrals in order (WP5), ordered selection |
 | Deployment | Software/platform roots, Node paths, family/index placements, effective specificity |
 | Requirement/case/view | Immutable attributes/docs, package intent links (associate, satisfy, verify), case kind, subject occurrence and ordered script statements with resolved actor ports, exact normal primary-subject call targets, explicitly associated test access roots and exact inspection/helper targets, ordered selection union; association pairs from list statements with their list positions |
@@ -1328,11 +1392,15 @@ Statements retain ordered operands, scopes, effects and success/failure continua
 
 A schedule entry lowers to a release mechanism and dispatch-time argument evaluation. After edges retain same-owner predecessor operation and completed activation identities, success-only release after unlock, fresh deadline/context and no implicit data forwarding/join. Stateful reactions retain source-order transitions, guards, timer generations and exit/effect/update/entry phases. WP5-M03: they retain source-order completion, timer and receive groups, internal reactions without a state update, timer guards and the deferral set per state. State bodies do not gain separate executable identities. Final entry completes the operation once.
 
+| ID | Rule |
+| --- | --- |
+| WP7-M02 | A schedule entry with a release guard lowers to its release mechanism, then guard evaluation at dispatch before the arguments, then either the arguments and the activation or a skip that counts as completion for `after` edges. The skip cancels the release's deadline, releases the lock and discards a receive entry's consumed input. |
+
 ## 7.5 Presentation and equivalence
 
 Views normalize to library definition plus ordered selected occurrences, retaining original include/filter clauses. General layouts preserve the same graph. Timing observations retain exact source/run/root/activation/correlation identities and open intervals; declared contracts remain independently identifiable. Geometry, collapse, routing bends and camera stay in sidecars.
 
-Equivalence requires an identity-respecting correspondence preserving ownership, types/shapes, effective members, routes/policies, evaluation/effect order, schedule releases, suspension, failures, cancellation, states, deployment, intent links and selected occurrence order. Whitespace/ordinary comments are outside execution equivalence but remain required for authoring round trips. Exporters cannot drop unsupported semantics silently or claim that carrying metadata supplies execution/kernel evidence.
+Equivalence requires an identity-respecting correspondence preserving ownership, types/shapes, effective members, routes/policies, evaluation/effect order, schedule releases and release-guard skips, suspension, failures, cancellation, states, deployment, intent links and selected occurrence order. Whitespace/ordinary comments are outside execution equivalence but remain required for authoring round trips. Exporters cannot drop unsupported semantics silently or claim that carrying metadata supplies execution/kernel evidence.
 
 
 ---
@@ -1356,7 +1424,7 @@ Normative chapter of [swa.ml 2.2](LANGUAGE_SPECIFICATION.md). Acceptance levels 
 | V07 | Every required event/attribute and provided operation has one input owner; provided event/attribute emission provenance; interface-only components are exempt | SW2005 |
 | V08 | Operation signatures, no nested captures, typed calls/out/result, acyclic graph, return paths, pure initializers | SW2002/2006 |
 | V09 | Transitive effect inference, read-only guards, non-writing concurrent entries, suspension only in allowed whole expressions and never in a conditional | SW2006 |
-| V10 | One schedule, unique effective identities (computed periods by canonical text), matching trigger/binding signatures, same-owner acyclic after, fresh void targets and period/deadline rules per occurrence | SW2007 |
+| V10 | One schedule, unique effective identities (computed periods by canonical text), matching trigger/binding signatures, same-owner acyclic after, fresh void targets, period/deadline rules per occurrence and release guards (WP7) | SW2007 |
 | V11 | Stateful parameterless void signature, exactly one start entry, reachable states, ordered transitions and final restrictions | SW2008 |
 | V12 | Typed complete policies with duration literals for the time settings, effective-use idempotency, positive safe time/capacity domains | SW2013 |
 | V13 | Node-only target content, root/occurrence/index placement resolution, unique exact paths and at most one deployment per top-level occurrence | SW2009 |
@@ -1368,6 +1436,7 @@ Normative chapter of [swa.ml 2.2](LANGUAGE_SPECIFICATION.md). Acceptance levels 
 | V19 | Duration values, policy setting literals, the constant sublanguage per occurrence, trigger identity, unit warning | SW2002/2007/2008/2013/2016/2019 |
 | V20 | Completion transitions, timer guards, internal transitions, deferral, completion-guard and deferral-overflow warnings | SW2005/2008/2017/2018 |
 | V21 | Sampled-read ports and positions, mandatory initial values, zero-or-one owners of sampled members, member policies, dead completion guards | SW2004/2005/2006/2007/2010/2013/2017 |
+| V22 | Release guards on every, receive and after entries only, bool with read-only effects, in the scope of the entry's arguments; not part of entry identity | SW2007 |
 
 Validation MUST rebuild semantic string paths as well as indexed references after workspace changes/additions/deletions. Negative lookups matter: a newly loaded declaration may make a previously resolved short name ambiguous. Malformed source remains editable and invalid; recovery cannot silently accept a different program. Definite-return analysis may be conservative rather than solving arbitrary conditions. Dynamic numeric/index/termination failures remain runtime obligations.
 
@@ -1392,6 +1461,7 @@ Validation MUST rebuild semantic string paths as well as indexed references afte
 | E15 | Computed waits and timeouts evaluated when they start waiting, with `durationNs`; state timers evaluated after entry with `timer` observations; per-occurrence periods and deadlines; `DurationRange` |
 | E16 | Completion, elapsed-timer and input order; no completion after discards; `discardTimer`; internal reactions keep timers; `CompletionLoop`; retention and offer-ordinal order; one `defer` per retained message |
 | E17 | Sample cells updated at delivery (after latency and faults, ordered within the instant by the event order), independent of consumption, read live and stable within an activation segment, with `sample` observations; per-member policies |
+| E18 | Release guards at dispatch before the arguments (a false guard evaluates none), deadline cancellation, skip as completion for successors, `skip` observations, `releaseGuard` discard, guard failure sourced at the entry or at the failing statement of a called operation, with no successor, unchanged grid |
 | E20 | Every run, use case and test of the 2.2 corpus keeps its status, full final stores, machines, deployments, verdict and message and its complete trace, ignoring only `profile` and `languageVersion` (compatibility gate 2, compared with a fixture recorded with implementation 3.1.0) |
 
 A deterministic reference run may choose one permitted order/delivery outcome. Its tests do not establish all possible traces or real transport reliability. A target implementation identifies additional scheduling/transport assumptions and evidence. Idempotency annotations are checked declarations, not proofs of side-effect behavior.
@@ -1448,6 +1518,7 @@ Values are bounded primitive scalars, nominal enums/records and fixed copied arr
 | completion guard | bool; pure or reads state; no `now()`, directly or through a callee |
 | `p.m` sampled | p an owned, non-forwarded port; m a required attribute that declares an initial value in the definition p has in the occurrence; result the member type; effect reads state (WP6) |
 | timer guard | bool; pure or reads state |
+| release guard | bool; pure or reads state; on every, receive and after entries; scope: attributes, sampled ports, `now()`, receive bindings, not the operation's parameters (WP7) |
 | var x:T=e | Compatible value, fresh live name; Γ extends with mutable x; suspension allowed only when e is whole call/try |
 | x=e | Mutable local/out/attribute, compatible type; attribute write adds write effect; same whole-expression suspension rule |
 | place = e | The root is a mutable local, an assigned out or a non-const attribute; e is assignable to the place type; the effect adds a write of the root; the whole-expression suspension rule applies |
@@ -1487,6 +1558,7 @@ Scalar type assignability uses widening, with checked integral value conversion 
 | internal reaction | Effect only; M (timer generations) unchanged |
 | retain | A deferred member's message stays in Q, marked retained (`defer` once); it is consumed in offer-ordinal order on entering a handling state |
 | sample | At the delivery event of a value whose offer is not older than the offer of the value S[p, m] holds, S[p, m] := value, with a `sample` observation; a read sees the updates ordered before it in the event order (time, phase, insertion ordinal), and one activation sees one value of a cell between two suspensions (WP6) |
+| guarded dispatch | At the first execution step, before the arguments, evaluate the release guard. False (no argument is evaluated): cancel the deadline, release L[o], record `skip`, release `after` targets as on completion, and discard a receive entry's input (`discardInput`, `releaseGuard`). Failure: `failure` with the entry as source (the failing statement of a called operation), no successors (WP7) |
 | complete | Finish activation and unlock; correlated reply is offered separately; successful whole completion releases after targets fresh |
 | violation | Deadline, activation overflow, step/concurrent resource or clock failure stops the reference run and bypasses try |
 | case script | A fresh package configuration adds one serial script activation after startup releases; direct primary-subject calls borrow its actual serial context, script emissions/requests/receives use actor ports, on call replies to the pending correlation, and script completion or failure stops the run |
@@ -2647,9 +2719,9 @@ Suspends for a duration and releases the serial lock.
 
 ## Keyword: when
 
-Used in ordered state transitions; see its grammar contexts and normative constraints.
+Guards a receive, timer or completion transition, or (from 2.3) the release of an every, receive or after schedule entry (WP7-S01).
 
-**Context:** Ordered state transitions. **Grammar:** Transition. **Name use:** reserved.
+**Context:** Ordered state transitions. **Grammar:** ScheduleEntry, Transition. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -2680,7 +2752,7 @@ Colon means typed by; returns names results. Dot is containment/member access; :
 
 # swa.ml 2.3 candidate implementation status
 
-**Standard:** 2.3 (unreleased candidate) · **Implementation package:** 4.0.0 · **Selected host semantics:** 2.3 · **Reference profile:** swaml-reference/2.3. The candidate is allocated and work package WP1 has landed: assignment to places such as `statuses[i].confirmed = true;` and `r.f = v;` (indexes, then the right side, then one read-modify-write of the root; `Bounds` leaves the root unchanged; `write` observations gain `place`), member access after an index such as `recent[i].vehicleId`, and literal component indexes in test inspection paths such as `backend.twins[0].link` and `backend.twins[0].currentView()`. Work package WP2 has landed: the whole-expression conditional `if (c) a else b` (typed by the common type of its branches, never a statement, no suspension inside, only the selected branch evaluated), `view`, `state`, `in` and `out` as contextual words in every name position (edition-aware name services write them unquoted for a 2.3 workspace and quoted for 2.2) and association lists `associate a, b to 'X', 'Y';` (one link per pair, a repeated pair is SW2010). Work package WP3 has landed: the library packages `Swaml::Numeric` (`minInt`, `maxInt`, `clampInt`, `clamp`, and `sqrt` as a correctly rounded host intrinsic), `Swaml::Text` (`intText`, `realText` with ties away from zero, no exponent and no negative zero, `boolText`) and `Swaml::Time` (`now()`, the live logical time in nanoseconds, which reads state, is rejected in initializers and is never a stale read), in the separate built-in document `libraries/swaml-2.3.swaml`; a workspace that declares its own package of one of these names uses it and the library package is hidden there, so 2.2 sources keep their meaning. Work package WP4 has landed: a duration literal is a `uint` value in nanoseconds; `wait (e);`, `or after (e)`, state timers `after (e)` (evaluated when the entry actions finish), `on every (e)` and `deadline (e)` take computed durations; a value that is not a positive representable duration is the catchable runtime failure `DurationRange`; periods and deadlines use the constant sublanguage, evaluated per expanded occurrence (redefined const attributes included) by one evaluator, `constantValue`, with exact integral division and trigger identity by canonical text; `PolicySetting` has the single form `name = Expression;`; computed waits and timeouts record `durationNs` and computed state timers a `timer` observation; SW2016 warns on a computed duration without a unit. Otherwise the host accepts exactly the 2.2 language, and the three [compatibility gates](RELEASE_2_3.md#compatibility-gates) compare every corpus AST and every recorded run, case and trace with fixtures recorded from implementation 3.1.0. The published [2.2 reference](SWAML-2.2-Reference.md) and [PDF](../output/pdf/SWAML-2.2-Specification.pdf) record the 2.2 release sources. The published 2.1 [reference book](SWAML-2.1-Reference.md) and [complete PDF](../output/pdf/SWAML-2.1-Specification.pdf), manifest and checksum remain frozen. The strict current-source [publication gate](PDF_PUBLICATION.md) checks the new edition independently of historical publications. Work package WP5 has landed: completion transitions, guarded timers, internal transitions and deferral in states (ADR 0023), with `defer` as a contextual word.
+**Standard:** 2.3 (unreleased candidate) · **Implementation package:** 4.0.0 · **Selected host semantics:** 2.3 · **Reference profile:** swaml-reference/2.3. The candidate is allocated and work package WP1 has landed: assignment to places such as `statuses[i].confirmed = true;` and `r.f = v;` (indexes, then the right side, then one read-modify-write of the root; `Bounds` leaves the root unchanged; `write` observations gain `place`), member access after an index such as `recent[i].vehicleId`, and literal component indexes in test inspection paths such as `backend.twins[0].link` and `backend.twins[0].currentView()`. Work package WP2 has landed: the whole-expression conditional `if (c) a else b` (typed by the common type of its branches, never a statement, no suspension inside, only the selected branch evaluated), `view`, `state`, `in` and `out` as contextual words in every name position (edition-aware name services write them unquoted for a 2.3 workspace and quoted for 2.2) and association lists `associate a, b to 'X', 'Y';` (one link per pair, a repeated pair is SW2010). Work package WP3 has landed: the library packages `Swaml::Numeric` (`minInt`, `maxInt`, `clampInt`, `clamp`, and `sqrt` as a correctly rounded host intrinsic), `Swaml::Text` (`intText`, `realText` with ties away from zero, no exponent and no negative zero, `boolText`) and `Swaml::Time` (`now()`, the live logical time in nanoseconds, which reads state, is rejected in initializers and is never a stale read), in the separate built-in document `libraries/swaml-2.3.swaml`; a workspace that declares its own package of one of these names uses it and the library package is hidden there, so 2.2 sources keep their meaning. Work package WP4 has landed: a duration literal is a `uint` value in nanoseconds; `wait (e);`, `or after (e)`, state timers `after (e)` (evaluated when the entry actions finish), `on every (e)` and `deadline (e)` take computed durations; a value that is not a positive representable duration is the catchable runtime failure `DurationRange`; periods and deadlines use the constant sublanguage, evaluated per expanded occurrence (redefined const attributes included) by one evaluator, `constantValue`, with exact integral division and trigger identity by canonical text; `PolicySetting` has the single form `name = Expression;`; computed waits and timeouts record `durationNs` and computed state timers a `timer` observation; SW2016 warns on a computed duration without a unit. Otherwise the host accepts exactly the 2.2 language, and the three [compatibility gates](RELEASE_2_3.md#compatibility-gates) compare every corpus AST and every recorded run, case and trace with fixtures recorded from implementation 3.1.0. The published [2.2 reference](SWAML-2.2-Reference.md) and [PDF](../output/pdf/SWAML-2.2-Specification.pdf) record the 2.2 release sources. The published 2.1 [reference book](SWAML-2.1-Reference.md) and [complete PDF](../output/pdf/SWAML-2.1-Specification.pdf), manifest and checksum remain frozen. The strict current-source [publication gate](PDF_PUBLICATION.md) checks the new edition independently of historical publications. Work package WP5 has landed: completion transitions, guarded timers, internal transitions and deferral in states (ADR 0023), with `defer` as a contextual word. Work package WP6 has landed: sampled reads of required attributes that declare initial values and per-member connection policies (ADR 0024). Work package WP7 has landed: release guards `when (g)` on `every`, `receive` and `after` schedule entries (ADR 0025), evaluated at dispatch; a false guard is a `skip` that cancels the deadline and counts as a completion for `after` successors, a skipped receive entry discards its input (`discardInput` reason `releaseGuard`), and the periodic grid is unchanged.
 
 The 2.0 core replaced the 1.x grammar, AST, resolver, validator and interpreter; 2.1 adds the package context, executable use cases and tests, package links, run targets and statement identities of [ADR 0019](decisions/0019-package-context.md). It does not accept 1.x or 2.0 source; the [release notes](RELEASE_2_1.md) describe the migration. Published 1.x and 2.0.0 books, PDFs, manifests/checksums and historical figure files remain unchanged. [ADR 0016](decisions/0016-swaml-2-0.md) defines the restart; [conformance obligations](spec/08-conformance-obligations.md) separate syntax, validation, execution, analysis, kernel and graphical claims.
 
@@ -3019,7 +3091,7 @@ swa.ml 2.2.
 
 The language core is portable TypeScript over Langium 4.4.0 and the normative grammar. Node CLI/server adapters own file access and source hashing. Build with npm run build; validate with node out/src/cli/main.js --json and explicitly load all application dependencies. The host selects parser 2.2; unsupported edition flags are errors.
 
-JSON diagnostics expose stable SW2xxx codes, range, URI and identity metadata. --format applies canonical token-preserving whitespace, printing places and selectors without spaces inside the path, as in statuses[i].confirmed = true; (WP1-M03), conditionals with every parenthesis of the source, as in x = 1 + (if (c) 2 else 3) + 4;, and association lists on one line when they fit in 100 characters, otherwise with one occurrence or case per continuation line; a list that contains a comment is not wrapped (WP2-M05); --check-format checks it without writing. It prints computed durations in parentheses, as in wait (n * 1ms); and on every (periodMs * 1ms) poll() deadline (periodMs * 1ms / 2);, and literal durations without them, as in wait 5ms; (WP4-M08). It prints completion transitions, internal transitions, timer guards and defer lines, as in when (sessionId > 0) to Connected {, on receive stream.accepted(t) {, after 250ms when (pulses < 3) to isLocked { and defer requests.request, keys.key;, keeping every state member in source order (WP5-M04). The LSP exposes full-document formatting. Source repairs must be validated against the complete workspace before application.
+JSON diagnostics expose stable SW2xxx codes, range, URI and identity metadata. --format applies canonical token-preserving whitespace, printing places and selectors without spaces inside the path, as in statuses[i].confirmed = true; (WP1-M03), conditionals with every parenthesis of the source, as in x = 1 + (if (c) 2 else 3) + 4;, and association lists on one line when they fit in 100 characters, otherwise with one occurrence or case per continuation line; a list that contains a comment is not wrapped (WP2-M05); --check-format checks it without writing. It prints computed durations in parentheses, as in wait (n * 1ms); and on every (periodMs * 1ms) poll() deadline (periodMs * 1ms / 2);, and literal durations without them, as in wait 5ms; (WP4-M08). It prints completion transitions, internal transitions, timer guards and defer lines, as in when (sessionId > 0) to Connected {, on receive stream.accepted(t) {, after 250ms when (pulses < 3) to isLocked { and defer requests.request, keys.key;, keeping every state member in source order (WP5-M04). It prints a release guard between the operation call and `deadline`, as in on every 20ms slot() when (mode.current != PowerMode.sleep) deadline 2ms; (WP7-M03). The LSP exposes full-document formatting. Source repairs must be validated against the complete workspace before application.
 
 The simulator requires validated models and records swaml-reference/2.3, sources, options, trace, final stores and deployment. Source digests are added by the CLI. Its finite logical run does not supply production timing or universal verification.
 
@@ -3298,7 +3370,7 @@ OperationUsage: (redefines?='redefines')? 'operation' name=Name ':' definition=[
 Executable: Operation | OperationUsage;
 OperationBody: '{' documentation=Documentation? operations+=Executable* ('initial' initial=Name ';' states+=State+ | statements+=Statement*) '}';
 Schedule: 'schedule' '{' entries+=ScheduleEntry* '}';
-ScheduleEntry: ('on' (kind='start' | kind='every' (period=Duration | '(' periodValue=Expression ')') | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' (deadline=Duration | '(' deadlineValue=Expression ')'))? (concurrent?='concurrent')? ';';
+ScheduleEntry: ('on' (kind='start' | kind='every' (period=Duration | '(' periodValue=Expression ')') | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('when' '(' guard=Expression ')')? ('deadline' (deadline=Duration | '(' deadlineValue=Expression ')'))? (concurrent?='concurrent')? ';';
 Block: '{' statements+=Statement* '}';
 Statement: LocalVariable | Assign | Send | ExpressionStatement | Return | If | While | Until | For | ForEach | Wait | Receive | Interruptible | Fail | Assert;
 LocalVariable: 'var' name=Name ':' type=TypeRef '=' value=Expression ';';
@@ -6890,6 +6962,250 @@ package BodyCan {
     assert dcu.statuses == 2 and dcu.locked;
     assert dcu.crashes == 3 and dcu.crashOrder == 123;
     assert plain.crashes == 2 and plain.crashOrder == 13;
+  }
+}
+```
+
+### 50-lin-master-mode-gating.swaml
+
+```swaml
+package LinMasterGating {
+  /** A LIN master in the shape of the door model's LinMaster. In 2.2 it keeps a sleeping flag and returns early from every 20 ms slot, so the Timing view shows activations that do nothing. From 2.3 a release guard, when (g), gates the release: while the sampled power mode is sleep no slot runs and no header is sent, the deadline armed at the release is cancelled, and the skip counts as a completion, so the alive checkpoint after each slot still runs. A response that arrives while asleep is consumed and discarded by the guarded receive entry. Periodic releases stay on the 20 ms grid. */
+  import Swaml::Time;
+  enum PowerMode {
+    startup,
+    run,
+    sleep
+  }
+  datatype LinResponse {
+    switches: uint;
+    alive: uint;
+  }
+  port def ModeState {
+    provides attribute current: PowerMode = PowerMode.startup;
+  }
+  port def LinBus {
+    provides event response(frame: LinResponse);
+    requires event header(id: uint);
+  }
+  port def SwitchFrames {
+    provides event frame(switches: uint);
+  }
+  component def LinMaster {
+    /** One unconditional frame per 20 ms slot: each slot evaluates the response to the previous header and sends the next one. */
+    reversed port bus: LinBus;
+    reversed port mode: ModeState;
+    port frames: SwitchFrames;
+    attribute response: LinResponse = record LinResponse {
+      switches = 0;
+      alive = 256;
+    };
+    attribute received: bool = false;
+    attribute lastAlive: uint = 256;
+    attribute missed: uint = 0;
+    attribute headers: uint = 0;
+    attribute checkpoints: uint = 0;
+    attribute lastSlotNs: uint = 0;
+    operation storeResponse(frame: LinResponse) {
+      response = frame;
+      received = true;
+    }
+    operation slot() {
+      /** No early return: the release guard decides whether the slot runs. */
+      if (headers > 0) {
+        if (received and response.alive != lastAlive) {
+          missed = 0;
+          lastAlive = response.alive;
+          publish frames.frame(response.switches);
+        } else {
+          missed = missed + 1;
+        }
+      }
+      received = false;
+      headers = headers + 1;
+      lastSlotNs = now();
+      publish bus.header(16);
+    }
+    operation checkpoint() {
+      /** The alive supervision checkpoint of the slot, awake or asleep. */
+      checkpoints = checkpoints + 1;
+    }
+    schedule {
+      on receive bus.response(frame) storeResponse(frame) when (mode.current != PowerMode.sleep);
+      on every 20ms slot() when (mode.current != PowerMode.sleep) deadline 2ms;
+      after slot checkpoint();
+    }
+  }
+  component def Slave {
+    /** Interface-only actor: the LIN slave that answers headers. */
+    port bus: LinBus;
+  }
+  component def Ecu {
+    /** Interface-only actor: the ECU state manager that broadcasts the power mode. */
+    port mode: ModeState;
+  }
+  component def Gateway {
+    /** Interface-only actor that receives the switch frames. */
+    reversed port frames: SwitchFrames;
+  }
+  component lin: LinMaster;
+  component slave: Slave;
+  component ecu: Ecu;
+  component gateway: Gateway;
+  connect (slave.bus, lin.bus);
+  connect (ecu.mode, lin.mode);
+  connect (lin.frames, gateway.frames);
+  associate slave, ecu, gateway to 'Headers every slot while awake', 'No headers while asleep, checkpoints continue', 'Responses while asleep are dropped', 'Slots stay on the grid after waking';
+  test 'Headers every slot while awake' of lin {
+    /** Slots at 20, 40 and 60 ms; the response to the first header is published at the second slot. */
+    wait 25ms;
+    publish slave.bus.response(record LinResponse { switches = 5; alive = 1; });
+    wait 40ms;
+    assert lin.headers == 3 and lin.checkpoints == 3 and lin.lastSlotNs == 60000000;
+    assert lin.lastAlive == 1 and lin.missed == 1;
+  }
+  test 'No headers while asleep, checkpoints continue' of lin {
+    /** The power mode becomes sleep at 30 ms: the slots at 40 to 100 ms are skipped, but every skip releases the checkpoint after it. */
+    wait 30ms;
+    send ecu.mode.current(PowerMode.sleep);
+    wait 75ms;
+    assert lin.headers == 1 and lin.checkpoints == 5 and lin.lastSlotNs == 20000000;
+  }
+  test 'Responses while asleep are dropped' of lin {
+    /** A response at 25 ms is evaluated at 40 ms. The response at 50 ms arrives while asleep and is discarded, so after waking at 70 ms the slot at 80 ms counts a missed response instead of publishing a stale one. */
+    wait 25ms;
+    publish slave.bus.response(record LinResponse { switches = 5; alive = 1; });
+    wait 20ms;
+    send ecu.mode.current(PowerMode.sleep);
+    wait 5ms;
+    publish slave.bus.response(record LinResponse { switches = 9; alive = 2; });
+    wait 20ms;
+    send ecu.mode.current(PowerMode.run);
+    wait 15ms;
+    assert lin.headers == 3 and lin.lastAlive == 1 and lin.missed == 1 and not lin.received;
+  }
+  test 'Slots stay on the grid after waking' of lin {
+    /** Asleep from 10 ms, awake again at 47 ms: the next slot runs at 60 ms on the 20 ms grid, not 20 ms after waking. */
+    wait 10ms;
+    send ecu.mode.current(PowerMode.sleep);
+    wait 37ms;
+    send ecu.mode.current(PowerMode.run);
+    wait 18ms;
+    assert lin.headers == 1 and lin.lastSlotNs == 60000000 and lin.checkpoints == 3;
+  }
+}
+```
+
+### 51-com-main-release-guard.swaml
+
+```swaml
+package ComMainGating {
+  /** Com main functions in the shape of the door model's ComMain. In 2.2 txMainFunction returns early while the power mode is sleep. From 2.3 the after entry carries a release guard: reception runs every 20 ms whatever the mode, transmission only while awake, and its 100 ms timer pauses while asleep instead of advancing. The diagnostics entry is guarded by a helper that reads the sampled mode. */
+  import Swaml::Time;
+  enum PowerMode {
+    startup,
+    run,
+    sleep
+  }
+  datatype DoorStatusPdu {
+    ajar: bool;
+    alive: uint;
+  }
+  port def ModeState {
+    provides attribute current: PowerMode = PowerMode.run;
+  }
+  port def DoorState {
+    provides attribute ajar: bool = false;
+  }
+  port def TxPdu {
+    provides event doorStatus(pdu: DoorStatusPdu);
+  }
+  port def Diagnostics {
+    provides event report(rxCycles: uint);
+  }
+  component def ComMain {
+    reversed port mode: ModeState;
+    reversed port door: DoorState;
+    port tx: TxPdu;
+    port diag: Diagnostics;
+    const attribute txPeriodMs: uint = 100;
+    attribute rxCycles: uint = 0;
+    attribute txRuns: uint = 0;
+    attribute txTimerMs: uint = 0;
+    attribute txAlive: uint = 0;
+    attribute framesSent: uint = 0;
+    attribute lastFrameNs: uint = 0;
+    attribute reports: uint = 0;
+    operation networkActive() returns bool {
+      return mode.current == PowerMode.run;
+    }
+    operation rxMainFunction() {
+      /** 20 ms reception; it runs in every mode. */
+      rxCycles = rxCycles + 1;
+    }
+    operation txMainFunction() {
+      /** 20 ms: cyclic transmission of the door status every 100 ms of awake time. */
+      txRuns = txRuns + 1;
+      txTimerMs = txTimerMs + 20;
+      if (txTimerMs >= txPeriodMs) {
+        txTimerMs = 0;
+        txAlive = (txAlive + 1) % 16;
+        framesSent = framesSent + 1;
+        lastFrameNs = now();
+        publish tx.doorStatus(record DoorStatusPdu { ajar = door.ajar; alive = txAlive; });
+      }
+    }
+    operation reportDiagnostics() {
+      reports = reports + 1;
+      publish diag.report(rxCycles);
+    }
+    schedule {
+      on every 20ms rxMainFunction() deadline 2ms;
+      after rxMainFunction txMainFunction() when (mode.current != PowerMode.sleep) deadline 5ms;
+      on every 100ms reportDiagnostics() when (networkActive()) deadline 10ms;
+    }
+  }
+  component def Ecu {
+    /** Interface-only actor: the ECU state manager and the door sensor. */
+    port mode: ModeState;
+    port door: DoorState;
+  }
+  component def Gateway {
+    /** Interface-only actor that receives the frames and the diagnostics. */
+    reversed port tx: TxPdu;
+    reversed port diag: Diagnostics;
+  }
+  component com: ComMain;
+  component ecu: Ecu;
+  component gateway: Gateway;
+  connect (ecu.mode, com.mode);
+  connect (ecu.door, com.door);
+  connect (com.tx, gateway.tx);
+  connect (com.diag, gateway.diag);
+  associate ecu, gateway to 'Frames every 100 ms while awake', 'Transmission pauses while asleep, reception continues', 'The transmit timer resumes after waking';
+  test 'Frames every 100 ms while awake' of com {
+    wait 5ms;
+    send ecu.door.ajar(true);
+    wait 200ms;
+    assert com.rxCycles == 10 and com.txRuns == 10 and com.framesSent == 2 and com.lastFrameNs == 200000000;
+    assert com.reports == 2;
+  }
+  test 'Transmission pauses while asleep, reception continues' of com {
+    /** Asleep from 50 ms: transmission ran at 20 and 40 ms only, its timer holds 40 ms, and no frame or report is sent. */
+    wait 50ms;
+    send ecu.mode.current(PowerMode.sleep);
+    wait 155ms;
+    assert com.rxCycles == 10 and com.txRuns == 2 and com.txTimerMs == 40 and com.framesSent == 0 and com.reports == 0;
+  }
+  test 'The transmit timer resumes after waking' of com {
+    /** Asleep from 50 to 130 ms: the timer continues from 40 ms at 140 ms and reaches 100 ms at 180 ms, which sends the first frame. */
+    wait 50ms;
+    send ecu.mode.current(PowerMode.sleep);
+    wait 80ms;
+    send ecu.mode.current(PowerMode.run);
+    wait 55ms;
+    assert com.txRuns == 5 and com.framesSent == 1 and com.lastFrameNs == 180000000 and com.txTimerMs == 0;
+    assert com.reports == 0;
   }
 }
 ```

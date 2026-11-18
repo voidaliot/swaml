@@ -1118,7 +1118,7 @@ schedule {
 ```
 
 **Recommendation: add** `when (g)` on `every`, `receive` and `after` entries; on `start` and `call` entries it is SW2007.
-- **Scope:** component attributes, sampled ports, `now()` and the entry's receive bindings. Dispatch arguments are evaluated first.
+- **Scope:** component attributes, sampled ports, `now()` and the entry's receive bindings. Dispatch arguments are evaluated first. *Superseded by ADR 0025 and WP7-R01 (owner decision E in the WP7 review): the guard is evaluated first, and the arguments only when it is true.*
 - **Evaluation:** at dispatch, under the serial lock or in the concurrent snapshot.
 - **False guard (finding 2):**
   - no operation runs, and the deadline armed at release is cancelled;
@@ -1126,7 +1126,7 @@ schedule {
   - the skip **counts as a successful whole completion for `after` successors**: they are released and apply their own guards (AUTOSAR mode disabling suppresses one runnable, not its successors);
   - a `receive` entry's input is consumed and discarded (`releaseGuard`);
   - the periodic grid is unchanged (D9).
-- **Runtime failure inside a guard:** an uncaught failure of that release. The trace records `failure` with the entry as source; the deadline is cancelled, no successors are released and the lock is released. With D7, sampled reads cannot cause it; arithmetic can.
+- **Runtime failure inside a guard:** an uncaught failure of that release. The trace records `failure` with the entry as source (*superseded by ADR 0025 and WP7-R06, owner decision H in the WP7 review: the entry when the guard's own expression fails, the failing statement when the failure happens inside an operation the guard calls*); the deadline is cancelled, no successors are released and the lock is released. With D7, sampled reads cannot cause it; arithmetic can.
 - **Identity:** the guard is not part of entry identity.
 
 **After** (`LinMaster` with `reversed port mode: ModeState`; `sleeping` is removed; the edge handler stays for the poll reset):
@@ -1189,7 +1189,7 @@ Dynamic topology is outside the language (spec §2, ADR 0019, I1/I5). Instead:
 | Rule | Interaction |
 | --- | --- |
 | Places vs const/in, out arguments | Roots are rejected as listed; places are not out arguments (B1). |
-| Snapshots, stale reads | Concurrent entries never write; sampled reads and release guards use the snapshot; `now()` is live; SW2011 (A2) tracks places and ignores `now()`. |
+| Snapshots, stale reads | Concurrent entries never write; sampled reads and release guards use the snapshot (*superseded by ADR 0024 and WP6-R07/WP7-R01: sample cells are read live, a concurrent entry reads only attributes from its snapshot*); `now()` is live; SW2011 (A2) tracks places and ignores `now()`. |
 | Computed durations vs deadlines and Timing | Periods and deadlines come from the constant sublanguage per occurrence, so declared grids stay exact. `wait`/`after` expressions are dynamic intervals. State timers are evaluated after entry. |
 | Completion vs ordered transitions | Completion, then elapsed timers, then input, each group in declaration order. No completion after discards. `CompletionLoop` violation. |
 | Internal transitions vs timers | No restart; an internal timer fires once per entry; a suspending internal effect keeps the timers. |
@@ -1328,5 +1328,5 @@ Other changes from re-taking the showcase snippets at `cc16c25`:
 
 - **SW2016 groups three heuristic warnings under one new code.** Decided: separate codes SW2016–SW2018 (ADRs 0022, 0023).
 - **T4 (decided in ADR 0025: a state machine uses a basic task only if no reaction can suspend) was my reading of how a state machine maps to basic tasks** (its idle wait does not count as suspension). A target team may want state machines on extended tasks only; that is a one-line rule change.
-- **The instant a sampled cell is updated** ("delivery eligibility"). Decided in ADR 0024: at the delivery instant, before any activation dispatched at that instant evaluates its release guard.
+- **The instant a sampled cell is updated** ("delivery eligibility"). Decided in ADR 0024: at the delivery instant, before any activation dispatched at that instant evaluates its release guard. *Superseded by ADR 0024 as implemented (WP6-R02, WP7-R01): a cell is updated at the delivery step in the instant's event order, and a guard sees only the updates ordered before its own step, so a same-instant delivery ordered after the guard step is not seen.*
 - **Not prototyped:** the runtime and validation rules (B6, B7, B9, B14, B18, B19). Only the grammar and the corpus gate were.

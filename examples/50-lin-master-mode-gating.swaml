@@ -1,0 +1,125 @@
+package LinMasterGating {
+  /** A LIN master in the shape of the door model's LinMaster. In 2.2 it keeps a sleeping flag and returns early from every 20 ms slot, so the Timing view shows activations that do nothing. From 2.3 a release guard, when (g), gates the release: while the sampled power mode is sleep no slot runs and no header is sent, the deadline armed at the release is cancelled, and the skip counts as a completion, so the alive checkpoint after each slot still runs. A response that arrives while asleep is consumed and discarded by the guarded receive entry. Periodic releases stay on the 20 ms grid. */
+  import Swaml::Time;
+  enum PowerMode {
+    startup,
+    run,
+    sleep
+  }
+  datatype LinResponse {
+    switches: uint;
+    alive: uint;
+  }
+  port def ModeState {
+    provides attribute current: PowerMode = PowerMode.startup;
+  }
+  port def LinBus {
+    provides event response(frame: LinResponse);
+    requires event header(id: uint);
+  }
+  port def SwitchFrames {
+    provides event frame(switches: uint);
+  }
+  component def LinMaster {
+    /** One unconditional frame per 20 ms slot: each slot evaluates the response to the previous header and sends the next one. */
+    reversed port bus: LinBus;
+    reversed port mode: ModeState;
+    port frames: SwitchFrames;
+    attribute response: LinResponse = record LinResponse {
+      switches = 0;
+      alive = 256;
+    };
+    attribute received: bool = false;
+    attribute lastAlive: uint = 256;
+    attribute missed: uint = 0;
+    attribute headers: uint = 0;
+    attribute checkpoints: uint = 0;
+    attribute lastSlotNs: uint = 0;
+    operation storeResponse(frame: LinResponse) {
+      response = frame;
+      received = true;
+    }
+    operation slot() {
+      /** No early return: the release guard decides whether the slot runs. */
+      if (headers > 0) {
+        if (received and response.alive != lastAlive) {
+          missed = 0;
+          lastAlive = response.alive;
+          publish frames.frame(response.switches);
+        } else {
+          missed = missed + 1;
+        }
+      }
+      received = false;
+      headers = headers + 1;
+      lastSlotNs = now();
+      publish bus.header(16);
+    }
+    operation checkpoint() {
+      /** The alive supervision checkpoint of the slot, awake or asleep. */
+      checkpoints = checkpoints + 1;
+    }
+    schedule {
+      on receive bus.response(frame) storeResponse(frame) when (mode.current != PowerMode.sleep);
+      on every 20ms slot() when (mode.current != PowerMode.sleep) deadline 2ms;
+      after slot checkpoint();
+    }
+  }
+  component def Slave {
+    /** Interface-only actor: the LIN slave that answers headers. */
+    port bus: LinBus;
+  }
+  component def Ecu {
+    /** Interface-only actor: the ECU state manager that broadcasts the power mode. */
+    port mode: ModeState;
+  }
+  component def Gateway {
+    /** Interface-only actor that receives the switch frames. */
+    reversed port frames: SwitchFrames;
+  }
+  component lin: LinMaster;
+  component slave: Slave;
+  component ecu: Ecu;
+  component gateway: Gateway;
+  connect (slave.bus, lin.bus);
+  connect (ecu.mode, lin.mode);
+  connect (lin.frames, gateway.frames);
+  associate slave, ecu, gateway to 'Headers every slot while awake', 'No headers while asleep, checkpoints continue', 'Responses while asleep are dropped', 'Slots stay on the grid after waking';
+  test 'Headers every slot while awake' of lin {
+    /** Slots at 20, 40 and 60 ms; the response to the first header is published at the second slot. */
+    wait 25ms;
+    publish slave.bus.response(record LinResponse { switches = 5; alive = 1; });
+    wait 40ms;
+    assert lin.headers == 3 and lin.checkpoints == 3 and lin.lastSlotNs == 60000000;
+    assert lin.lastAlive == 1 and lin.missed == 1;
+  }
+  test 'No headers while asleep, checkpoints continue' of lin {
+    /** The power mode becomes sleep at 30 ms: the slots at 40 to 100 ms are skipped, but every skip releases the checkpoint after it. */
+    wait 30ms;
+    send ecu.mode.current(PowerMode.sleep);
+    wait 75ms;
+    assert lin.headers == 1 and lin.checkpoints == 5 and lin.lastSlotNs == 20000000;
+  }
+  test 'Responses while asleep are dropped' of lin {
+    /** A response at 25 ms is evaluated at 40 ms. The response at 50 ms arrives while asleep and is discarded, so after waking at 70 ms the slot at 80 ms counts a missed response instead of publishing a stale one. */
+    wait 25ms;
+    publish slave.bus.response(record LinResponse { switches = 5; alive = 1; });
+    wait 20ms;
+    send ecu.mode.current(PowerMode.sleep);
+    wait 5ms;
+    publish slave.bus.response(record LinResponse { switches = 9; alive = 2; });
+    wait 20ms;
+    send ecu.mode.current(PowerMode.run);
+    wait 15ms;
+    assert lin.headers == 3 and lin.lastAlive == 1 and lin.missed == 1 and not lin.received;
+  }
+  test 'Slots stay on the grid after waking' of lin {
+    /** Asleep from 10 ms, awake again at 47 ms: the next slot runs at 60 ms on the 20 ms grid, not 20 ms after waking. */
+    wait 10ms;
+    send ecu.mode.current(PowerMode.sleep);
+    wait 37ms;
+    send ecu.mode.current(PowerMode.run);
+    wait 18ms;
+    assert lin.headers == 1 and lin.lastSlotNs == 60000000 and lin.checkpoints == 3;
+  }
+}

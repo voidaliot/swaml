@@ -88,7 +88,7 @@ connect bodyCan: BodyCanFrames (bcm.bus, dcu.canBus) {
 
 ## Alternatives rejected
 
-- **An optional initial value, with early reads failing `unavailable` (D7 alternative).** A failure inside a transition, completion or release guard has no defined meaning, and no activation exists yet for a release guard (finding 7a).
+- **An optional initial value, with early reads failing `unavailable` (D7 alternative).** A failure inside a transition or completion guard has no defined meaning (finding 7a). *Amended in WP7:* a release guard is evaluated inside its activation, at the first step after `release` and `dispatch` and before the arguments, and a failure there is a failure of that activation (WP7-R01, WP7-R06), so the original remark that no activation exists yet for a release guard no longer holds; an early-read failure in a release guard would still fail every release while the cell is unset, which is why the initial value stays mandatory.
 - **Counting sampling as ownership.** This contradicts allowing a sampled attribute with no consumer (finding 7b).
 - **Sampling forwarded boundaries.** A forwarded boundary is never locally handled (chapter 2.1), and its cell would duplicate the child's (finding 7c).
 - **Field overrides in a member policy.** These are inline policies under another name. Named policies stay inspectable and checkable.

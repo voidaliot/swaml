@@ -12,16 +12,16 @@
 
 ## 6.2 Lock and snapshot
 
-Release guards (new paragraph after the `after` paragraph):
+Release guards (applied in WP7 as a new paragraph after the `after` paragraph):
 
 | ID | Rule |
 | --- | --- |
-| WP7-R01 | **Evaluation.** A release guard is evaluated at the activation's first execution step, together with its dispatch arguments. It sees every sample-cell update ordered before that step in the instant's event order (time, phase, insertion ordinal; WP6-R02), and none ordered after it. Serial entries evaluate under the serial lock. Concurrent entries read attributes from their dispatch snapshot and sample cells and `now()` live (WP6-R07). |
-| WP7-R02 | **False guard.** No operation runs, and the deadline armed at release is cancelled. The serial lock is released. |
-| WP7-R03 | **Skip as completion.** A skip counts as a successful whole completion for `after` successors: each successor is released at the time of the skip and applies its own guard. |
-| WP7-R04 | **Receive entries.** A `receive` entry consumes its input at release, as in 2.2. When its guard is false, that input is discarded. |
-| WP7-R05 | **Grid.** Periodic releases stay on the root-epoch grid `kD` whatever the guard results (D9). |
-| WP7-R06 | **Guard failure.** A runtime failure inside a release guard is an uncaught failure of that release: the deadline is cancelled, no successor is released and the lock is released. |
+| WP7-R01 | Moved to [chapter 6.2](../../spec/06-execution-contract.md#62-lock-and-snapshot) in WP7. |
+| WP7-R02 | Moved to [chapter 6.2](../../spec/06-execution-contract.md#62-lock-and-snapshot) in WP7. |
+| WP7-R03 | Moved to [chapter 6.2](../../spec/06-execution-contract.md#62-lock-and-snapshot) in WP7. |
+| WP7-R04 | Moved to [chapter 6.2](../../spec/06-execution-contract.md#62-lock-and-snapshot) in WP7. |
+| WP7-R05 | Moved to [chapter 6.2](../../spec/06-execution-contract.md#62-lock-and-snapshot) in WP7. |
+| WP7-R06 | Moved to [chapter 6.2](../../spec/06-execution-contract.md#62-lock-and-snapshot) in WP7. |
 
 ## 6.3 Values, flow and failure
 
@@ -69,8 +69,8 @@ New and extended observations. Field names follow the existing trace (`timeNs`, 
 | WP5-T03 | `defer` (new) | Moved to [chapter 6.6](../../spec/06-execution-contract.md#66-evidence-and-resources) in WP5. |
 | WP5-T04 | `violation` (extended) | Moved to [chapter 6.6](../../spec/06-execution-contract.md#66-evidence-and-resources) in WP5. |
 | WP6-T01 | Moved to [chapter 6.4](../../spec/06-execution-contract.md#64-communication) in WP6. |
-| WP7-T01 | `skip` (new) | A release whose guard was false: `subject` the operation occurrence, `activation`, `source` the schedule entry. |
-| WP7-T02 | `discardInput`, `failure` (extended) | A skipped `receive` entry's input is a `discardInput` with `reason: 'releaseGuard'`. A failing release guard is a `failure` with the entry as `source`. |
+| WP7-T01 | `skip` (new) | Moved to [chapter 6.6](../../spec/06-execution-contract.md#66-evidence-and-resources) in WP7. |
+| WP7-T02 | `discardInput`, `failure` (extended) | Moved to [chapter 6.6](../../spec/06-execution-contract.md#66-evidence-and-resources) in WP7. |
 
 The `DurationRange` observation rule moved to [chapter 6.6](../../spec/06-execution-contract.md#66-evidence-and-resources) in WP4. (The `sqrt` and `realText` failures, WP3-R01 and WP3-R02, moved to [chapter 6.3](../../spec/06-execution-contract.md#63-values-flow-and-failure) in WP3.)
 
@@ -79,4 +79,4 @@ The `DurationRange` observation rule moved to [chapter 6.6](../../spec/06-execut
 | ID | Rule |
 | --- | --- |
 | WP5-R12 | Moved to [chapter 6.7](../../spec/06-execution-contract.md#67-case-runs) in WP5. |
-| WP7-R07 | A skipped release is neither a failure nor a completion of the case script. A failing release guard is an uncaught activation failure and fails the case. |
+| WP7-R07 | Moved to [chapter 6.7](../../spec/06-execution-contract.md#67-case-runs) in WP7. |

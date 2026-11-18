@@ -1306,6 +1306,12 @@ export class SwamlValidator {
             for (const expression of [e.periodValue, e.deadlineValue])
                 if (expression)
                     this.constantDuration(expression, c);
+            // A release guard belongs to every, receive and after entries (WP7-S01, WP7-D01); reported once, where written.
+            if (e.guard && (e.kind === 'start' || e.kind === 'call'))
+                this.report(e.guard, 'SW2007', 'A release guard is allowed only on every, receive and after entries.');
+            else
+                this.guardWarnings(e, c);
+            // The guard is not part of entry identity (WP7-S03): entries that differ only in their guard are duplicates.
             const k = entryKey(e);
             if (keys.has(k))
                 this.report(e, 'SW2007', 'Duplicate (trigger, operation) entry.');
@@ -1319,8 +1325,11 @@ export class SwamlValidator {
                 continue;
             }
             const env = e.endpoint ? this.inputEnv(e, this.env(c), c, e.kind === 'call') : this.env(c);
-            if (!explained.has(e))
+            if (!explained.has(e)) {
                 this.arguments(e, sig.parameters, e.args, env, c, op);
+                if (e.guard && e.kind !== 'start' && e.kind !== 'call')
+                    this.releaseGuard(e.guard, env, c, op);
+            }
             if (e.kind !== 'call' && (typeKey(sig.result) !== 'void' || sig.parameters.some(p => p.direction === 'out')))
                 this.report(e, 'SW2007', 'Only on call entries may bind results/out parameters.');
             if (e.kind === 'call') {
@@ -1368,6 +1377,81 @@ export class SwamlValidator {
         for (const op of ops)
             if (body(op)?.states.length && !entries.some(e => e.operation === op.name))
                 this.report(op, 'SW2008', 'A stateful operation needs an on start entry.');
+    }
+    /**
+     * A release guard (WP7-S02, WP7-D02): bool, pure or reading state, typed in the scope of the entry's arguments, the
+     * component's attributes, its sampled ports, now() and the entry's receive bindings, never the operation's
+     * parameters (an unresolved name keeps its existing message). A call that writes or communicates is reported here;
+     * an unresolved, remote or suspending call is reported by the call rules only (one diagnostic per cause). Like the
+     * arguments, an inherited entry's guard is typed in every effective structure, so a derived definition that
+     * redefines an attribute the guard reads gets a deterministic result before any run.
+     */
+    private releaseGuard(guard: a.Expression, env: Env, c: Structure, op: Executable): void {
+        // An inherited guard from a document that does not parse is not typed in another one: its own document reports
+        // only the syntax errors, and a valid file that specializes it gets no error for the unfinished guard.
+        const declared = AstUtils.getDocument(guard).parseResult;
+        if (declared.parserErrors.length || declared.lexerErrors.length)
+            return;
+        const type = this.infer(guard, env, c, op);
+        if (type !== 'bool' && type !== '?')
+            this.report(guard, 'SW2007', `Release guard must be bool, found ${type}.`);
+        for (const call of nodes(guard).filter(a.isCallExpression)) {
+            const target = this.callTarget(call, c);
+            if (!target || !isExecutable(target) || effects(target, c).suspends)
+                continue;
+            if (effects(target, c).writes || effects(target, c).communicates)
+                this.report(call, 'SW2007', 'Release guard must be pure or read state.');
+        }
+    }
+    /**
+     * SW2020 (warnings) on an entry where it is written in c. WP7-D03: its release guard folds to false in c, so the
+     * entry never runs its operation; a guard that names a const attribute some specialization or usage redefines (the
+     * same declaration) folds per occurrence and is left alone, as for WP6-D10. WP7-D04: an entry without a guard
+     * replaces an inherited entry that has one (WP7-S03), from c's base or, for a part redefinition, from the usage it
+     * redefines, which silently drops a safety condition; a replacement with any guard, when (true) included, states its
+     * own condition and is not reported. The two messages start with fixed texts, `Release guard when (` and
+     * `Replacing entry `, so a consumer tells them apart without a second code.
+     */
+    private guardWarnings(e: a.ScheduleEntry, c: Structure): void {
+        if (e.kind === 'start' || e.kind === 'call')
+            return;
+        if (e.guard) {
+            if (constantValue(e.guard, c).value === false && !this.redefinedConstant(e.guard, c))
+                this.report(e.guard, 'SW2020', `Release guard when (${displayText(e.guard, MESSAGE_SPELLING)}) of ${this.guardEntryText(e)} is always false; the entry never runs ${formatName(e.operation, MESSAGE_SPELLING)}.`, true);
+            return;
+        }
+        const base = a.isComponentDef(c) ? c.specializes?.ref : c.definition?.ref, key = entryKey(e);
+        // The entries c replaces: those of its base and, for a part redefinition, those of the usage it redefines
+        // (the effective schedule of that usage, which a redefinition replaces as a whole; review V1).
+        const replaced = this.redefinedUsage(c);
+        const inherited = [base, replaced].flatMap(s => s ? [schedule(s).find(x => entryKey(x) === key)] : []).find(x => x?.guard);
+        // An inherited guard in a document that does not parse is not reported elsewhere (as in releaseGuard).
+        const document = inherited?.guard && AstUtils.getDocument(inherited.guard).parseResult;
+        if (!inherited?.guard || !document || document.parserErrors.length || document.lexerErrors.length)
+            return;
+        // An inherited guard that folds to true (when (true)) in c constrains nothing, so dropping it changes nothing.
+        // The fold is evaluated in c, the replacing structure, where a const redefinition may change its value.
+        if (constantValue(inherited.guard, c).value === true)
+            return;
+        const declared = container(inherited);
+        const where = declared ? formatName(declared.name, MESSAGE_SPELLING) : 'its base';
+        this.report(e, 'SW2020', `Replacing entry ${this.guardEntryText(e)} drops the inherited release guard when (${displayText(inherited.guard, MESSAGE_SPELLING)}) of ${where}, so it runs ${formatName(e.operation, MESSAGE_SPELLING)} whatever the guard says; repeat the guard, or write when (true) to remove it deliberately.`, true, { related: [inherited] });
+    }
+    /** The usage a `redefines component` usage replaces: the member of that name in its owner's base, if any. */
+    private redefinedUsage(c: Structure): a.ComponentUsage | undefined {
+        if (!a.isComponentUsage(c) || !c.redefines || !c.name)
+            return undefined;
+        const owner = c.$container;
+        const base = a.isComponentDef(owner) ? owner.specializes?.ref : a.isComponentUsage(owner) ? owner.definition?.ref : undefined;
+        if (!base || this.baseCycle(base, new Set()))
+            return undefined;
+        return members(base).find((m): m is a.ComponentUsage => a.isComponentUsage(m) && m.name === c.name);
+    }
+    /** An entry's trigger and operation for a message, with names spelled as in 2.2 (on every 10ms slot, after a b). */
+    private guardEntryText(e: a.ScheduleEntry): string {
+        const name = (x: string) => formatName(x, MESSAGE_SPELLING);
+        const trigger = e.kind === 'every' ? `on every ${e.periodValue ? `(${displayText(e.periodValue, MESSAGE_SPELLING)})` : e.period ? `${e.period.value}${e.period.unit}` : ''}` : e.kind === 'after' ? `after ${name(e.predecessor!)}` : `on ${e.kind} ${formatPath(e.endpoint!, MESSAGE_SPELLING)}`;
+        return `${trigger} ${name(e.operation)}`;
     }
     private states(op: Executable, c: Structure | undefined, env: Env): void {
         const b = body(op)!, sig = signature(op)!;

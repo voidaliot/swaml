@@ -702,9 +702,9 @@ Suspends for a duration and releases the serial lock.
 
 ## Keyword: when
 
-Used in ordered state transitions; see its grammar contexts and normative constraints.
+Guards a receive, timer or completion transition, or (from 2.3) the release of an every, receive or after schedule entry (WP7-S01).
 
-**Context:** Ordered state transitions. **Grammar:** Transition. **Name use:** reserved.
+**Context:** Ordered state transitions. **Grammar:** ScheduleEntry, Transition. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 

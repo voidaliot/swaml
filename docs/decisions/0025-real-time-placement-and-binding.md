@@ -1,6 +1,6 @@
 # ADR 0025: Release guards, operation placement, tasks and the target binding
 
-Status: accepted for the unreleased standard 2.3, 18 November 2026. Owner approval of the 2.3 scope and decisions D9, D10, D11 and D13 of the [2.3 proposal](../proposals/NEXT_MINOR_PROPOSAL.md). The owner decided the state-machine rule T4. Not implemented: each rule lands with the work package named in the [2.3 chapter drafts](../drafts/2.3/README.md). This ADR is normative where it differs from the proposal. It amends chapter 4.1 of the specification, which leaves core and task allocation to target translation. Published editions remain unchanged.
+Status: accepted for the unreleased standard 2.3, 18 November 2026. Owner approval of the 2.3 scope and decisions D9, D10, D11 and D13 of the [2.3 proposal](../proposals/NEXT_MINOR_PROPOSAL.md). The owner decided the state-machine rule T4. Not implemented: each rule lands with the work package named in the [2.3 chapter drafts](../drafts/2.3/README.md). This ADR is normative where it differs from the proposal. It amends chapter 4.1 of the specification, which leaves core and task allocation to target translation. Published editions remain unchanged. WP7 implements B19 (chapters 3.5, 6.2, 6.6 and 6.7, rules WP7-*); see *Implementation in WP7*.
 
 Items: B19 mode-dependent schedules, B17 operation-level deployment, B18 tasks (Tier 1). Deferred: B18 timed run and B20 latency chains (Tier 2). Work packages: WP7 (B19, after WP4), WP8 (B17, B18, after WP4, WP7 and tool fix A4).
 
@@ -34,14 +34,14 @@ on every 20ms slot() when (mode.current != PowerMode.sleep) deadline 2ms;
 
 - **Allowed entries (SW2007).** A guard on `start` or `call` entries is an error.
 - **Effects (SW2007).** The guard is pure or reads state. Its scope is the component's attributes, its sampled ports (ADR 0024), `now()` and the entry's receive bindings.
-- **Evaluation.** At the activation's first execution step, together with its dispatch arguments. It sees the deliveries and sample-cell updates ordered before that step in the instant's event order (ADR 0024). A serial entry evaluates under the serial lock. A concurrent entry reads attributes from its dispatch snapshot and sample cells live.
+- **Evaluation.** At the activation's first execution step, before its dispatch arguments (amended in WP7, see *Implementation in WP7*). It sees the deliveries and sample-cell updates ordered before that step in the instant's event order (ADR 0024). A serial entry evaluates under the serial lock. A concurrent entry reads attributes from its dispatch snapshot and sample cells live.
 - **False guard.**
-  - No operation runs, and the deadline armed at release is cancelled.
+  - No argument is evaluated, no operation runs, and the deadline armed at release is cancelled.
   - The trace records `skip` with the entry as source.
   - The skip counts as a successful whole completion for `after` successors: they are released at the time of the skip and apply their own guards. AUTOSAR mode disabling suppresses one runnable, not its successors.
   - A `receive` entry's input, consumed at release as in 2.2, is discarded with `discardInput` reason `releaseGuard`.
   - The periodic grid stays on the root epoch (D9), and the serial lock is released.
-- **Guard failure.** A runtime failure inside the guard is an uncaught failure of that release. The trace records `failure` with the entry as source; the deadline is cancelled, no successor is released and the lock is released. Sampled reads cannot cause it (D7); arithmetic can.
+- **Guard failure.** A runtime failure inside the guard is an uncaught failure of that release. The trace records `failure` with the entry as source, or the failing statement of an operation the guard calls, as for the arguments (amended in WP7); the deadline is cancelled, no successor is released and the lock is released. Sampled reads cannot cause it (D7); arithmetic can.
 - **Identity.** The guard is not part of entry identity.
 
 ### Operation placement (B17, WP8)
@@ -154,6 +154,15 @@ It computes no schedule in 2.3.
 - the OS configuration format;
 - memory mapping;
 - generated code.
+
+## Implementation in WP7
+
+- **Scope of the guard.** The guard has exactly the scope of the entry's dispatch arguments, which the validator already types: the component's attributes, its sampled ports, `now()` and the entry's receive bindings. A sampled read in a guard is a sampled read of the component (ownership and the mandatory initial value of ADR 0024 apply), and a binding of the same name hides the port, by the validator's scope rules (`localVisible`).
+- **Order at dispatch.** The guard is evaluated first, then, only when it is true, the arguments (owner decision E in the WP7 review, replacing the proposal's order). A false guard therefore evaluates no argument: a skipped release never runs an argument helper that writes or communicates, and a guard may protect its own arguments (`use(sum % count) when (count != 0)`). An argument failure keeps its 2.2 meaning and can only follow a true guard. The guard, the arguments and the body read one sampled value (WP6-R03).
+- **Observations.** The activation exists from its release: a skipped serial release records `release`, `dispatch`, `unlock`, `skip` (a concurrent one has no `unlock`), and a receive entry adds `discardInput`; no argument or operation observation belongs to it. A skip replaces `complete` and, like it, follows the activation's `unlock`; a skipped receive entry's `discardInput` (reason `releaseGuard`, with `activation` and `message`) directly follows its `skip`. A failing guard's `failure` names the entry as `source` when its own expression fails, and the failing statement when the failure happens inside an operation the guard calls, exactly as for a dispatch argument (owner decision H in the WP7 review, replacing the draft's entry-only source).
+- **Diagnostics.** A suspending, remote or unresolved call in a guard is reported by the existing call rules only; the guard rule reports calls that write or communicate. A guard on a `start` or `call` entry is reported once, where it is written, and is not typed.
+- **Inherited guards.** Like the arguments, a guard of an inherited entry is typed in every effective structure, so a redefined helper that writes is an error before any run; a guard whose document has syntax errors is typed nowhere until its syntax is fixed: the validation of a document with syntax errors reports only those errors, and a structure in another document that inherits the entry skips the guard, so a valid file that specializes it gets no error for the unfinished guard. An entry with the same trigger and operation in a specialization or usage replaces the inherited entry with its guard (WP7-S03).
+- **Independent of state machines.** Release guards apply to schedule entries only. They use none of the WP5 state forms (completion transitions, internal reactions, deferral); a stateful operation has exactly one `on start` entry, which cannot carry a guard.
 
 ## Alternatives rejected
 
