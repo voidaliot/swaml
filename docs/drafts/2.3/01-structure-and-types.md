@@ -6,8 +6,8 @@
 
 | ID | Rule |
 | --- | --- |
-| WP2-S01 | Moved to [chapter 1.1](../../spec/01-structure-and-types.md#11-names-and-documentation) in WP2. `defer` joins the list of contextual words with WP5-S01 and WP5-G03, which introduce the keyword. |
-| WP5-S01 | `defer` is a contextual word from its introduction (ADR 0023). |
+| WP2-S01 | Moved to [chapter 1.1](../../spec/01-structure-and-types.md#11-names-and-documentation) in WP2. `defer` joined the contextual words in WP5 (WP5-S01, WP5-G03): a keyword only at a state member start and a basic name in every edition. |
+| WP5-S01 | Moved to [chapter 1.1](../../spec/01-structure-and-types.md#11-names-and-documentation) in WP5. |
 | WP2-M01 | Moved to [chapter 1.1](../../spec/01-structure-and-types.md#11-names-and-documentation) in WP2. |
 
 ## 1.2 Components and occurrences

@@ -178,13 +178,79 @@ In `fast` the poller runs every 4 ms with a 2 ms deadline; in `standard` every 1
 
 ## 3.6 States
 
-A stateful operation is parameterless void and has exactly one on start entry. initial names one owned state. States own at most one on entry and one on exit block plus ordered receive/timer transitions. A receive transition binds payload, optionally tests a pure/read-state bool guard, and names its target with to. after D is relative to the state update, before entry actions begin. Entry actions finish before a transition can run; if entry suspends past a timer expiry, the earliest elapsed timer is selected on resumption before queued input. Timers with equal expiry use declaration order. Evaluate competing enabled transitions in declaration order and take the first. There are no transition names, priorities or completion transitions.
+A stateful operation is parameterless void and has exactly one on start entry. initial names one owned state. States own at most one on entry and one on exit block plus ordered receive/timer transitions. A receive transition binds payload, optionally tests a pure/read-state bool guard, and names its target with to. after D is relative to the state update, before entry actions begin. Entry actions finish before a transition can run; if entry suspends past a timer expiry, the earliest elapsed timer is selected on resumption before queued input. Timers with equal expiry use declaration order. Evaluate competing enabled transitions in declaration order and take the first. There are no transition names or priorities. From 2.3 a state may also own completion transitions `when (g) to S`, guarded timers `after D when (g)`, internal transitions without `to` and deferrals `defer p.m;`, in any order with its actions and transitions (rules below; runtime in chapter 6.5).
 
 A reaction runs exit, transition effect, state update and entry in that order. Timers are invalidated by state exit and stale firings are observable discards. Unhandled input does not reset the current state timer. Every state is graph-reachable from initial; a final state has no outgoing transitions or exit action. Reaching final runs entry and completes the whole operation once. Hierarchical/orthogonal states and physical preemption are outside the language.
 
 | ID | Rule |
 | --- | --- |
 | WP4-S08 | **Computed state timers.** `after (e) to S { … }` takes an integral expression that is pure or reads state (SW2008 `State timers may only be pure or read state.`), in the machine's scope, with the unit warning SW2016. It is evaluated once per state entry, when the entry actions finish, in declaration order with the state's other computed timers; its expiry is the state-update time plus the value, so a timer whose operands the entry actions change uses the new value: `state Backoff { on entry { delayMs = minInt(delayMs * 2, capMs); } after (delayMs * 1ms) to Connecting { } }` waits the doubled delay. If entry suspends past the expiry, the timer has elapsed and is selected on resumption, as for literal timers. Discarded input does not re-evaluate it; re-entering the state does. Timers with equal expiry, literal or computed, keep declaration order. A value that is not a positive representable duration is `DurationRange` and fails the machine's activation (WP4-R01). The [computed backoff](../../examples/41-computed-backoff.swaml) and [lock pulse](../../examples/42-lock-pulse.swaml) examples show both. |
+| WP5-S02 | **Completion transitions.** `when (g) to S { … }` has no trigger: it is selected after the entry actions of its state finish and after every internal reaction (chapter 6.5, WP5-R01). It requires a target, `A completion transition needs a target state.` (SW2008, WP5-D01). A final state has none (WP5-D04). This reverses the 2.0 exclusion of completion transitions for guard-only completion only (ADR 0023). |
+| WP5-S03 | **Completion guards.** A completion guard is `bool` and pure or reads state; a call that writes, communicates or suspends is SW2008 with the guard-effect message `State guards may only be pure or read state.` (WP5-D02). It does not call `now()`, directly or through a called operation (`isClockRead`): `A completion guard cannot call now(); it is not re-evaluated as time passes.` (SW2008, WP5-D02). |
+| WP5-S04 | **Completion cycles.** A cycle of states connected only by completion transitions whose guard is the literal `true` (parentheses leave no node) is an error, reported once per cycle at the transition that leaves its first state in source order: `States A → B → A form a cycle of when (true) completion transitions.` (SW2008, WP5-D03). Only the first `when (true)` of a state can be taken, so a later one does not form a cycle. A cycle through other guards is a runtime matter (`CompletionLoop`, WP5-R07). |
+| WP5-S05 | **Reachability.** Graph reachability from `initial` follows receive, timer and completion edges. Internal transitions add no edge. |
+| WP5-S06 | **Timer guards.** `after D when (g) …` takes a `bool` guard that is pure or reads state (SW2008, the guard-effect message, WP5-D07). A receive guard keeps its 2.2 rule and code (SW2006). |
+| WP5-S07 | **Internal transitions.** A receive or timer transition without `to` is internal: `on receive p.m(x) { … }`, `after 2s { … }`. A final state has no transitions of any form: the 2.2 forms keep `Final states have no transitions or exit action.`, and each completion, internal or guarded-timer transition is `Final state {state} cannot have transitions or deferrals.` (SW2008, WP5-D04). |
+| WP5-S08 | **Deferral.** `defer p.m, …;` is a state member that names required events or attributes of the machine's component (`{member} is not an input of {operation}.`). Some state of the machine has a transition on each deferred member (`{member} is deferred, but no state of {operation} handles it.`, WP5-D05). No state both defers a member and has a transition on it (`State {state} defers {member} and also handles it.`), and a state defers a member at most once (`State {state} defers {member} twice.`, WP5-D06). A final state defers nothing (WP5-D04). All are SW2008 and reported at the member. |
+| WP5-S09 | **Deferral and ownership.** A deferral belongs to the machine's single input ownership (SW2005): it counts as the machine, never as a second owner, so a member deferred by a machine and also received by a schedule entry has two owners. |
+| WP5-S10 | **Explicit self transitions.** A transition `to` its own state keeps its 2.2 meaning: exit, effect, state update, entry, with timers restarted. Only a transition without `to` is internal. |
+
+```swaml
+package StateReactions {
+  port def Requests {
+    provides event request(lock: bool);
+  }
+  component def Lock {
+    reversed port requests: Requests;
+    attribute pulses: uint = 0;
+    attribute retries: uint = 0;
+    attribute locked: bool = false;
+    operation control() {
+      initial unlocked;
+      state unlocked {
+        on receive requests.request(lock) when (lock) to locking {
+        }
+      }
+      state locking {
+        /** Requests during the pulse stay queued until a state that handles them. */
+        defer requests.request;
+        on entry {
+          pulses = pulses + 1;
+        }
+        after 250ms when (pulses < 3) to isLocked {
+          locked = true;
+        }
+        after 250ms to failed {
+        }
+      }
+      state isLocked {
+        /** Internal: no exit, no entry, the state is unchanged. */
+        on receive requests.request(lock) when (lock) {
+          retries = retries + 1;
+        }
+        on receive requests.request(lock) when (not lock) to unlocked {
+          locked = false;
+        }
+        when (retries > 2) to failed {
+        }
+      }
+      final state failed {
+      }
+    }
+    schedule {
+      on start control();
+    }
+  }
+  component def Body {
+    port toLock: Requests;
+  }
+  component lock: Lock;
+  component body: Body;
+  connect: Swaml::Qos::Latest (body.toLock, lock.requests);
+}
+```
+
+The [session completion](../../examples/44-session-completion.swaml), [lock deferral](../../examples/45-lock-deferral.swaml) and [breaker](../../examples/46-breaker-internal.swaml) examples compare each form with its 2.2 shape.
 
 ## 3.7 Case scripts
 

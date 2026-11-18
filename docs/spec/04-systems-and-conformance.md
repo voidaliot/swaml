@@ -77,6 +77,7 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | ID | Rule |
 | --- | --- |
 | WP4-M03 | **Timing per occurrence.** The projection (`projectModel`) gives each schedule entry of an occurrence its evaluated `periodNs` and `deadlineNs` from `entryPeriod` and `entryDeadline`, and a computed period or deadline also its display text (`periodExpression`, `deadlineExpression`, from `displayText`: the source spelling in canonical layout, so `deadline (3ms)` shows `3ms`); a definition shows values only for literal periods and deadlines and the text for computed ones, whose values belong to its occurrences. All values come from `entryPeriod` and `entryDeadline`, as in the simulator and the validator. A computed state timer labels its transition `after ({display text})`. Entries with literal periods and deadlines gain no field, so the projections of 2.2 sources are unchanged. |
+| WP5-M01 | **Flow and states.** The projection (`projectModel`) gives a completion transition an edge labelled `when (g)` with `completion: true`, a guarded timer edge its `guard` text, and gives a state node its internal transitions as `reactions` (label, order, guard) without an edge and its deferred members as `deferrals`. An internal transition never produces an edge. These fields appear only for the 2.3 forms. Flow shows completion edges with their guard, internal transitions as reactions of their state and deferrals as state annotations. |
 ## 4.4 Validation groups
 
 | Code | Static group |
@@ -99,8 +100,10 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | SW2015 | Retired in 2.1 together with the 2.0 case spellings; not reported |
 | SW2016 | Warning (2.3): a computed duration without a time unit, which counts nanoseconds |
 | SW2019 | Warning (2.3): two every entries of one occurrence for the same operation with equal periods but different triggers |
+| SW2017 | Warning (2.3): a completion guard that reads nothing the machine writes, so it cannot change while the machine waits |
+| SW2018 | Warning (2.3): a deferred event whose policy on a route into the occurrence rejects on overflow |
 
-Diagnostics added by 2.3. Message shapes are templates; implementations may add context but keep the leading clause stable. All are errors except WP4-D06 and WP4-D08, which are warnings.
+Diagnostics added by 2.3. Message shapes are templates; implementations may add context but keep the leading clause stable. All are errors except WP4-D06, WP4-D08, WP5-D08 and WP5-D09, which are warnings.
 
 | ID | Code | Condition | Message shape |
 | --- | --- | --- | --- |
@@ -125,6 +128,15 @@ Diagnostics added by 2.3. Message shapes are templates; implementations may add 
 | WP4-D06 | SW2016, warning | A computed duration expression that contains no duration literal, no `now()` call and no reference to a const attribute of the owner whose initializer, followed through const references, contains a duration literal. A const attribute's initializer can never contain `now()` (WP3-S01) or read another attribute, so only a duration literal in its own initializer counts. | `{expression} has no time unit and counts nanoseconds; multiply by a unit such as 1ms.` `after (pulseMs)` with `pulseMs = 250` warns; `wait (timeoutNs);` with `const attribute timeoutNs: uint = 5ms;` does not. |
 | WP4-D07 | SW2013 | Non-exact or zero-divisor division in a constant duration, per occurrence (WP4-S05) | `{expression} divides {a} by {b} in {occurrence}, which is not an exact integral division.` for `/`; `{expression} takes the remainder of {a} by {b} in {occurrence}, which is not defined for a zero divisor.` for `%` by zero. The expression is the division itself. |
 | WP4-D08 | SW2019, warning | Two effective `every` entries of one occurrence for the same operation whose periods are equal in that occurrence but whose trigger identities (WP4-S07) differ, such as a base `on every 20ms g();` and a specialization's `on every (2 * 10ms) g();`: neither replaces the other, so the operation is released twice per period. Literal periods are identified by their nanoseconds as in 2.2, so one of the two is computed and no 2.2 source gets it. Reported once, at the later entry. | `{entry} and {other entry} have the same period in {occurrence} but different triggers, so neither replaces the other and {operation} is released twice per period; write the same trigger to replace an entry.` |
+| WP5-D01 | SW2008 | Completion transition without target (WP5-S02) | `A completion transition needs a target state.` |
+| WP5-D02 | SW2008 | Completion guard calls `now()`, directly or through a callee, or has a wrong effect (WP5-S03) | `A completion guard cannot call now(); it is not re-evaluated as time passes.` at the call / `State guards may only be pure or read state.` |
+| WP5-D03 | SW2008 | `when (true)` cycle (WP5-S04) | `States {A} → {B} → {A} form a cycle of when (true) completion transitions.` |
+| WP5-D04 | SW2008 | Completion, internal or guarded-timer transition or deferral in a final state (WP5-S02, WP5-S07, WP5-S08) | `Final state {state} cannot have transitions or deferrals.` at each; 2.2 forms keep `Final states have no transitions or exit action.` |
+| WP5-D05 | SW2008 | Deferred member not an input, or not handled by any state (WP5-S08, WP5-S09) | `{member} is not an input of {operation}.` / `{member} is deferred, but no state of {operation} handles it.` |
+| WP5-D06 | SW2008 | Defer and handle in one state, or deferred twice (WP5-S08) | `State {state} defers {member} and also handles it.` / `State {state} defers {member} twice.` |
+| WP5-D07 | SW2008 | Timer guard effect (WP5-S06) | `State guards may only be pure or read state.` |
+| WP5-D08 | SW2017, warning | Completion guard, other than the literal `true`, that reads no component attribute written by the machine's entry actions, exit actions or effects or their transitive callees | `Completion guard of {state} reads nothing that {operation} writes; it cannot change while the machine waits.` WP6 confirms it for guards that read only sampled cells. |
+| WP5-D09 | SW2018, warning | Deferred event with an effective `reject` overflow on a route into this occurrence (attributes never overflow) | `{member} is deferred in {state}, but policy {policy} of {connection} rejects on overflow; a full queue fails the sender.` {connection} is the connection name or `connect (a, b)`. |
 
 Every diagnostic includes a source range and stable code. Machine-readable diagnostics retain declaration identity and occurrence context when resolved. A suggested edit is supplied only for a safe unambiguous correction; tools must revalidate the resulting complete workspace before applying it. Parser recovery may suspend semantic checks on invalid syntax, but the document remains invalid and must not crash the service.
 

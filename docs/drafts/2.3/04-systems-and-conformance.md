@@ -55,7 +55,7 @@ The tables of `Swaml::Os` (WP8-L01) are in chapter 1.5. The run-order rule is in
 | ID | Rule |
 | --- | --- |
 | WP4-M03 | Moved to [chapter 4.3](../../spec/04-systems-and-conformance.md#43-views) in WP4. |
-| WP5-M01 | **Flow.** Flow shows completion transitions as edges labelled with their guard, internal transitions as reactions of their state without a target edge, and deferrals as state annotations. |
+| WP5-M01 | Moved to [chapter 4.3](../../spec/04-systems-and-conformance.md#43-views) in WP5. |
 | WP7-M01 | **Timing guards.** Timing shows release guards on their entries; observed mode marks `skip` observations. |
 | WP8-M04 | **Task lanes.** Timing groups activations in Task lanes when a deployment places them on Tasks. The General view shows operation placements. |
 | WP6-M01 | **Interconnect.** Interconnect labels member policies on their connection. |
@@ -95,15 +95,15 @@ Diagnostics added or extended by 2.3. Message shapes are templates in the existi
 | WP4-D06 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP4. | |
 | WP4-D07 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP4. | |
 | WP4-D08 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP4 (added in its review). | |
-| WP5-D01 | SW2008 | Completion transition without target (WP5-S02) | `A completion transition needs a target state.` |
-| WP5-D02 | SW2008 | Completion guard calls `now()` or has a wrong effect (WP5-S03) | `A completion guard cannot call now(); it is not re-evaluated as time passes.` / the existing guard-effect message |
-| WP5-D03 | SW2008 | `when (true)` cycle (WP5-S04) | `States {A} → {B} → {A} form a cycle of when (true) completion transitions.` |
-| WP5-D04 | SW2008 | Transition or deferral in a final state (WP5-S02, WP5-S07, WP5-S08) | `Final state {state} cannot have transitions or deferrals.` |
-| WP5-D05 | SW2008 | Deferred member not handled by any state, or not owned by this machine (WP5-S08, WP5-S09) | `{member} is deferred, but no state of {operation} handles it.` / `{member} is not an input of {operation}.` |
-| WP5-D06 | SW2008 | Defer and handle in one state, or deferred twice (WP5-S08) | `State {state} defers {member} and also handles it.` / `State {state} defers {member} twice.` |
-| WP5-D07 | SW2008 | Timer guard effect (WP5-S06) | The existing guard-effect message. |
-| WP5-D08 | SW2017, warning | Completion guard that reads nothing written by the machine's entry actions, exit actions or effects or their callees | `Completion guard of {state} reads nothing that {operation} writes; it cannot change while the machine waits.` |
-| WP5-D09 | SW2018, warning | Deferred member with an effective `reject` overflow on a route into this occurrence | `{member} is deferred in {state}, but policy {policy} of {connection} rejects on overflow; a full queue fails the sender.` |
+| WP5-D01 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP5. | |
+| WP5-D02 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP5. | |
+| WP5-D03 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP5. | |
+| WP5-D04 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP5. | |
+| WP5-D05 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP5. | |
+| WP5-D06 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP5. | |
+| WP5-D07 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP5. | |
+| WP5-D08 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP5. | |
+| WP5-D09 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP5. | |
 | WP6-D01 | SW2005 | Sampling a forwarded boundary (WP6-S08) | `{port}.{member} cannot be sampled: {port} is a forwarded boundary.` |
 | WP6-D02 | SW2004 | Sampled member without initial value (WP6-S03) | `Sampled attribute {member} of {portDefinition} needs an initial value.` |
 | WP6-D03 | SW2005 | Ownership of sampled and unsampled members (WP6-S04) | The existing owner messages; a sampled member with no owner is not reported. |

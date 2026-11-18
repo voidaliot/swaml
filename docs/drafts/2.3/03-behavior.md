@@ -8,7 +8,7 @@
 | --- | --- |
 | WP1-S04 | Moved to [chapter 3.1](../../spec/03-behavior.md#31-operations-and-effects) in WP1. |
 | WP2-S04 | Moved to [chapter 3.1](../../spec/03-behavior.md#31-operations-and-effects) in WP2. |
-| WP3-S01 | Moved to [chapter 3.1](../../spec/03-behavior.md#31-operations-and-effects) in WP3. The constant-sublanguage clause applied with WP4-S05 (WP4); the completion-guard clause applies with WP5-S03; both reject a call for which `isClockRead` (`semantic.ts`) is true. |
+| WP3-S01 | Moved to [chapter 3.1](../../spec/03-behavior.md#31-operations-and-effects) in WP3. The constant-sublanguage clause applied with WP4-S05 (WP4); the completion-guard clause applied with WP5-S03 (WP5); both reject a call for which `isClockRead` (`semantic.ts`) is true. |
 | WP3-S02 | Moved to [chapter 3.4](../../spec/03-behavior.md#34-suspension-and-locks) in WP3. |
 
 ## 3.2 Failure
@@ -62,40 +62,22 @@ The release rows of the trigger table gain "unless its release guard is false (c
 
 ## 3.6 States
 
-Replace the first paragraph's last sentence, "There are no transition names, priorities or completion transitions.", with "There are no transition names or priorities." Then add the rules below.
-
-```text
-state Connecting {
-  on entry { sessionId = try(cloud.openSession(vehicleId), 0); }
-  when (sessionId > 0) to Connected { sessionsOpened = sessionsOpened + 1; }
-  when (true) to Backoff { }
-  on receive network.coverage(up) when (not up) to Offline { }
-}
-state Closed {
-  on receive stream.accepted(t) { write(t); }          // internal: no exit, no entry
-  when (consecutiveFailures >= failureThreshold) to Open { }
-}
-state locking {
-  defer requests.request;
-  after 250ms to locked { }
-}
-state Backoff { after (lastBackoffMs * 1ms) to Connecting { } }
-```
+Applied in WP5: the first paragraph's last sentence reads "There are no transition names or priorities.", followed by the 2.3 state members. The fragments that stood here are complete validated sources now: the `swaml` fence in [chapter 3.6](../../spec/03-behavior.md#36-states) and the [session completion](../../../examples/44-session-completion.swaml), [lock deferral](../../../examples/45-lock-deferral.swaml) and [breaker](../../../examples/46-breaker-internal.swaml) examples.
 
 | ID | Rule |
 | --- | --- |
 | WP4-S08 | Moved to [chapter 3.6](../../spec/03-behavior.md#36-states) in WP4. |
-| WP5-S02 | **Completion transitions.** `when (g) to S { … }` has no trigger and requires a target (SW2008). A final state has none. |
-| WP5-S03 | **Completion guards.** A completion guard is `bool`, pure or reads state, and does not call `now()` (SW2008). |
-| WP5-S04 | **Completion cycles.** A cycle of states connected only by completion transitions whose guard is the literal `true`, after removing parentheses, is an error (SW2008). |
-| WP5-S05 | **Reachability.** Graph reachability from `initial` includes completion edges. Internal transitions add no edge. |
-| WP5-S06 | **Timer guards.** `after D when (g)` takes a `bool` guard that is pure or reads state (SW2008). |
-| WP5-S07 | **Internal transitions.** A receive or timer transition without `to` is internal. A final state has no transitions of any form (SW2008). |
-| WP5-S08 | **Deferral.** `defer p.m, …;` names required events or attributes that this stateful operation owns through its transitions. Some state of the machine has a transition on each deferred member. No state both defers a member and has a transition on it. A member is deferred at most once per state. A final state defers nothing. All are SW2008. |
-| WP5-S09 | **Deferral and ownership.** A deferral belongs to the machine's single input ownership (SW2005); it is never a second owner. |
-| WP5-S10 | **Explicit self transitions.** A transition `to` its own state keeps its 2.2 meaning: exit, effect, state update, entry, with timers restarted. |
+| WP5-S02 | Moved to [chapter 3.6](../../spec/03-behavior.md#36-states) in WP5. |
+| WP5-S03 | Moved to [chapter 3.6](../../spec/03-behavior.md#36-states) in WP5. |
+| WP5-S04 | Moved to [chapter 3.6](../../spec/03-behavior.md#36-states) in WP5. |
+| WP5-S05 | Moved to [chapter 3.6](../../spec/03-behavior.md#36-states) in WP5. |
+| WP5-S06 | Moved to [chapter 3.6](../../spec/03-behavior.md#36-states) in WP5. |
+| WP5-S07 | Moved to [chapter 3.6](../../spec/03-behavior.md#36-states) in WP5. |
+| WP5-S08 | Moved to [chapter 3.6](../../spec/03-behavior.md#36-states) in WP5. |
+| WP5-S09 | Moved to [chapter 3.6](../../spec/03-behavior.md#36-states) in WP5. |
+| WP5-S10 | Moved to [chapter 3.6](../../spec/03-behavior.md#36-states) in WP5. |
 
-The runtime rules for these forms are in chapter 6.5 (WP5-R01 to WP5-R13).
+The runtime rules for these forms moved to [chapter 6.5](../../spec/06-execution-contract.md#65-input-ownership-and-interruption) (WP5-R01 to WP5-R13) in WP5.
 
 ## 3.7 Case scripts
 
