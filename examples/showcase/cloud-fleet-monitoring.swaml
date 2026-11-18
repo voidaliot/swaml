@@ -20,11 +20,9 @@ package FleetCloud {
   import Swaml::Views;
   import Swaml::Platform;
   import Swaml::Math;
-
   // ---------------------------------------------------------------------------------------------------------------
   // Value types
   // ---------------------------------------------------------------------------------------------------------------
-
   enum LinkState {
     /** Connection state of a vehicle as seen by its digital twin. */
     offline, online, stale
@@ -115,7 +113,11 @@ package FleetCloud {
     ignitionOn: bool;
     firmware: uint;
   }
-  datatype DeadLetter { vehicleId: string; sequence: uint; reason: string; }
+  datatype DeadLetter {
+    vehicleId: string;
+    sequence: uint;
+    reason: string;
+  }
   datatype DeviceIdentity {
     /** A device known to the registry. The epoch counts its authenticated sessions; frame sequences restart in every session. */
     known: bool;
@@ -188,19 +190,33 @@ package FleetCloud {
     issuedBy: string;
     ttlMs: uint;
   }
-  datatype CommandUpdate { commandId: uint; tenantId: string; vehicleId: string; status: CommandStatus; }
+  datatype CommandUpdate {
+    commandId: uint;
+    tenantId: string;
+    vehicleId: string;
+    status: CommandStatus;
+  }
   datatype Rollup {
     /** One aggregation window of the time-series store. */
     frames: uint;
     meanSpeedKph: real;
   }
-  datatype AuditEntry { kind: AuditKind; actor: string; tenantId: string; action: string; subject: string; }
-  datatype PlatformHealth { registryUp: bool; storeUp: bool; ingestionUp: bool; probes: uint; }
-
+  datatype AuditEntry {
+    kind: AuditKind;
+    actor: string;
+    tenantId: string;
+    action: string;
+    subject: string;
+  }
+  datatype PlatformHealth {
+    registryUp: bool;
+    storeUp: bool;
+    ingestionUp: bool;
+    probes: uint;
+  }
   // ---------------------------------------------------------------------------------------------------------------
   // Value helpers (pure package operations)
   // ---------------------------------------------------------------------------------------------------------------
-
   operation def Reading(vehicleId: string, sequence: uint, schemaVersion: uint, xKm: real, yKm: real, speedKph: real, engineTempC: real, fuel: real, ignitionOn: bool) returns Frame {
     /** A well-formed frame. Schema 1 is sent by firmware 37, schema 2 by firmware 42. */
     var firmware: uint = 42;
@@ -214,7 +230,10 @@ package FleetCloud {
       payloadBytes = 184;
       checksumOk = true;
       sentAtMs = sequence * 1000;
-      position = record GridPosition { xKm = xKm; yKm = yKm; };
+      position = record GridPosition {
+        xKm = xKm;
+        yKm = yKm;
+      };
       speedKph = speedKph;
       engineTempC = engineTempC;
       fuel = fuel;
@@ -241,7 +260,12 @@ package FleetCloud {
   }
   operation def Stamped(f: Frame, epoch: uint) returns Envelope {
     /** A frame as an alder gateway session in slot 0 would submit it. */
-    return record Envelope { frame = f; tenantId = "alder"; slot = 0; epoch = epoch; };
+    return record Envelope {
+      frame = f;
+      tenantId = "alder";
+      slot = 0;
+      epoch = epoch;
+    };
   }
   operation def Sample(vehicleId: string, sequence: uint, speedKph: real) returns Telemetry {
     /** Normalized telemetry for stage-level tests. */
@@ -251,7 +275,10 @@ package FleetCloud {
       slot = 0;
       sequence = sequence;
       sentAtMs = sequence * 1000;
-      position = record GridPosition { xKm = 10.0; yKm = 10.0; };
+      position = record GridPosition {
+        xKm = 10.0;
+        yKm = 10.0;
+      };
       speedKph = speedKph;
       engineTempC = 85.0;
       fuelPct = 60.0;
@@ -263,13 +290,30 @@ package FleetCloud {
     return Sample("", 0, 0.0);
   }
   operation def Unknown(vehicleId: string) returns DeviceIdentity {
-    return record DeviceIdentity { known = false; vehicleId = vehicleId; tenantId = ""; slot = 0; epoch = 0; };
+    return record DeviceIdentity {
+      known = false;
+      vehicleId = vehicleId;
+      tenantId = "";
+      slot = 0;
+      epoch = 0;
+    };
   }
   operation def Known(vehicleId: string, tenantId: string, slot: uint, epoch: uint) returns DeviceIdentity {
-    return record DeviceIdentity { known = true; vehicleId = vehicleId; tenantId = tenantId; slot = slot; epoch = epoch; };
+    return record DeviceIdentity {
+      known = true;
+      vehicleId = vehicleId;
+      tenantId = tenantId;
+      slot = slot;
+      epoch = epoch;
+    };
   }
   operation def Anonymous() returns Principal {
-    return record Principal { authenticated = false; operatorId = "anonymous"; tenantId = ""; role = Role.viewer; };
+    return record Principal {
+      authenticated = false;
+      operatorId = "anonymous";
+      tenantId = "";
+      role = Role.viewer;
+    };
   }
   operation def Refused(vehicleId: string, status: QueryStatus) returns VehicleView {
     /** A view that reveals nothing but the refusal. */
@@ -278,7 +322,10 @@ package FleetCloud {
       vehicleId = vehicleId;
       tenantId = "";
       link = LinkState.offline;
-      position = record GridPosition { xKm = 0.0; yKm = 0.0; };
+      position = record GridPosition {
+        xKm = 0.0;
+        yKm = 0.0;
+      };
       speedKph = 0.0;
       engineTempC = 0.0;
       fuelPct = 0.0;
@@ -323,13 +370,29 @@ package FleetCloud {
     };
   }
   operation def Outcome(c: Command, status: CommandStatus) returns CommandUpdate {
-    return record CommandUpdate { commandId = c.commandId; tenantId = c.tenantId; vehicleId = c.vehicleId; status = status; };
+    return record CommandUpdate {
+      commandId = c.commandId;
+      tenantId = c.tenantId;
+      vehicleId = c.vehicleId;
+      status = status;
+    };
   }
   operation def Entry(kind: AuditKind, actor: string, tenantId: string, action: string, subject: string) returns AuditEntry {
-    return record AuditEntry { kind = kind; actor = actor; tenantId = tenantId; action = action; subject = subject; };
+    return record AuditEntry {
+      kind = kind;
+      actor = actor;
+      tenantId = tenantId;
+      action = action;
+      subject = subject;
+    };
   }
   operation def Unprobed() returns PlatformHealth {
-    return record PlatformHealth { registryUp = false; storeUp = false; ingestionUp = false; probes = 0; };
+    return record PlatformHealth {
+      registryUp = false;
+      storeUp = false;
+      ingestionUp = false;
+      probes = 0;
+    };
   }
   operation def WithValue(values: uint[4], index: uint, value: uint) returns uint[4] {
     /** Replace one element: the language has no in-place index assignment, so the array is rebuilt. */
@@ -379,11 +442,9 @@ package FleetCloud {
     }
     return [r0, r1, r2, r3];
   }
-
   // ---------------------------------------------------------------------------------------------------------------
   // Communication policies
   // ---------------------------------------------------------------------------------------------------------------
-
   qos def VehicleUplink: Policy {
     /** Cellular link to a vehicle: bounded, and under overload the oldest message gives way to fresher data. */
     delivery = Delivery.atMostOnce;
@@ -468,11 +529,9 @@ package FleetCloud {
     overflow = Overflow.dropOldest;
     requestTimeout = 1s;
   }
-
   // ---------------------------------------------------------------------------------------------------------------
   // Ports
   // ---------------------------------------------------------------------------------------------------------------
-
   port def VehicleLink {
     /** The vehicle's side of its session: uplink frames, heartbeats and command acknowledgements; downlink acks, throttling and commands. */
     provides event hello(vehicleId: string, deviceKey: string);
@@ -588,11 +647,9 @@ package FleetCloud {
     requires event alert(a: Alert);
     requires event commandUpdate(u: CommandUpdate);
   }
-
   // ---------------------------------------------------------------------------------------------------------------
   // Actors and external systems (interface-only)
   // ---------------------------------------------------------------------------------------------------------------
-
   component def Vehicle {
     /** Actor: a connected vehicle's telematics unit. */
     port link: VehicleLink;
@@ -609,11 +666,9 @@ package FleetCloud {
     /** External system: the push and voice notification provider. */
     port api: NotifyApi;
   }
-
   // ---------------------------------------------------------------------------------------------------------------
   // Device edge
   // ---------------------------------------------------------------------------------------------------------------
-
   component def DeviceGateway {
     /**
     Terminates one vehicle session. It authenticates the vehicle's key against the registry, stamps each frame with
@@ -743,7 +798,12 @@ package FleetCloud {
         publish vehicle.ack(f.sequence, IngestOutcome.unauthenticated);
         return;
       }
-      var envelope: Envelope = record Envelope { frame = f; tenantId = sessionTenant; slot = sessionSlot; epoch = sessionEpoch; };
+      var envelope: Envelope = record Envelope {
+        frame = f;
+        tenantId = sessionTenant;
+        slot = sessionSlot;
+        epoch = sessionEpoch;
+      };
       var outcome: IngestOutcome = submitWithRetry(envelope);
       publish vehicle.ack(f.sequence, outcome);
     }
@@ -814,7 +874,7 @@ package FleetCloud {
           return i;
         }
       }
-      return - 1;
+      return -1;
     }
     operation slotUsable(i: int) returns bool {
       /** The slot has a twin and no earlier registered active vehicle claims it. */
@@ -862,11 +922,9 @@ package FleetCloud {
       on call health.ping() ping() concurrent;
     }
   }
-
   // ---------------------------------------------------------------------------------------------------------------
   // Ingestion and stream processing
   // ---------------------------------------------------------------------------------------------------------------
-
   component def IngestionPipeline {
     /**
     Validates, deduplicates and normalizes frames. Malformed frames and unsupported schemas go to the dead-letter
@@ -933,11 +991,13 @@ package FleetCloud {
     operation submit(e: Envelope) returns IngestOutcome {
       track(1);
       wait 2ms;
-      track(- 1);
+      track(-1);
       var reason: string = problem(e.frame);
       if (reason != "") {
         deadLettered = deadLettered + 1;
-        publish deadLetters.rejected(record DeadLetter { vehicleId = e.frame.vehicleId; sequence = e.frame.sequence; reason = reason; });
+        publish deadLetters.rejected(record DeadLetter {
+          vehicleId = e.frame.vehicleId; sequence = e.frame.sequence; reason = reason;
+        });
         if (e.frame.schemaVersion > newestSchema) {
           return IngestOutcome.unsupportedSchema;
         }
@@ -1048,7 +1108,8 @@ package FleetCloud {
       minYKm = 0.0;
       maxYKm = 30.0;
       marginKm = 0.5;
-    } /** The permitted operating area of the fleet. */;
+    }
+    /** The permitted operating area of the fleet. */;
     attribute slot: uint = 0;
     attribute vehicleId: string = "";
     attribute tenantId: string = "";
@@ -1098,7 +1159,9 @@ package FleetCloud {
         tripMaxSpeedKph = max(tripMaxSpeedKph, t.speedKph);
         if (not t.ignitionOn) {
           tripActive = false;
-          publish trips.completed(record TripSummary { vehicleId = vehicleId; tenantId = tenantId; gridDistanceKm = tripDistanceKm; maxSpeedKph = tripMaxSpeedKph; });
+          publish trips.completed(record TripSummary {
+            vehicleId = vehicleId; tenantId = tenantId; gridDistanceKm = tripDistanceKm; maxSpeedKph = tripMaxSpeedKph;
+          });
         }
       } else {
         if (t.ignitionOn and t.speedKph > 5.0) {
@@ -1148,7 +1211,7 @@ package FleetCloud {
         insideZone = false;
         publish conditions.changed(condition(AlertKind.geofenceBreach, Severity.critical, true, "left the permitted operating area"));
       } else {
-        if (not insideZone and excursion < - zone.marginKm) {
+        if (not insideZone and excursion < -zone.marginKm) {
           insideZone = true;
           publish conditions.changed(condition(AlertKind.geofenceBreach, Severity.critical, false, "back inside the permitted operating area"));
         }
@@ -1259,11 +1322,9 @@ package FleetCloud {
       on call api.vehicleView(tenant, vehicle) vehicleView(tenant, vehicle);
     }
   }
-
   // ---------------------------------------------------------------------------------------------------------------
   // Storage
   // ---------------------------------------------------------------------------------------------------------------
-
   component def TimeSeriesStore {
     /** The telemetry time-series store with idempotent append, window rollups and a two-window retention job. */
     port data: SeriesApi;
@@ -1271,7 +1332,10 @@ package FleetCloud {
     attribute points: uint = 0;
     attribute rollups: uint = 0;
     attribute lastVehicle: string = "";
-    attribute lastRollup: Rollup = record Rollup { frames = 0; meanSpeedKph = 0.0; };
+    attribute lastRollup: Rollup = record Rollup {
+      frames = 0;
+      meanSpeedKph = 0.0;
+    };
     attribute currentWindow: uint = 0;
     attribute previousWindow: uint = 0;
     attribute expired: uint = 0;
@@ -1396,7 +1460,10 @@ package FleetCloud {
         rollupsSkipped = rollupsSkipped + 1;
         return;
       }
-      var window: Rollup = record Rollup { frames = windowFrames; meanSpeedKph = windowSpeedSum / windowFrames; };
+      var window: Rollup = record Rollup {
+        frames = windowFrames;
+        meanSpeedKph = windowSpeedSum / windowFrames;
+      };
       windowFrames = 0;
       windowSpeedSum = 0.0;
       storeRollup(window);
@@ -1437,11 +1504,9 @@ package FleetCloud {
       on every 2s evaluate();
     }
   }
-
   // ---------------------------------------------------------------------------------------------------------------
   // Alerting and notification
   // ---------------------------------------------------------------------------------------------------------------
-
   component def AlertRouter {
     /** Turns condition edges into alerts, keeps the four most recent alerts and republishes their status changes. Critical alerts are paged one at a time: while the desk is busy, up to four further pages wait here. When the alert at the desk resolves, its paging is withdrawn; waiting pages of resolved alerts are skipped. */
     reversed port conditions: ConditionFeed;
@@ -1508,7 +1573,7 @@ package FleetCloud {
           return i;
         }
       }
-      return - 1;
+      return -1;
     }
     operation findId(alertId: uint) returns int {
       for (var i: int = 0; i < 4; i = i + 1) {
@@ -1517,7 +1582,7 @@ package FleetCloud {
           return i;
         }
       }
-      return - 1;
+      return -1;
     }
     operation replace(index: int, a: Alert) {
       recent = WithAlert(recent, index, a);
@@ -1595,7 +1660,12 @@ package FleetCloud {
     attribute lastAcknowledgedBy: string = "";
     attribute withdrawals: uint = 0;
     operation compose(channel: Channel, recipient: string) returns Page {
-      return record Page { alertId = current.alertId; channel = channel; recipient = recipient; text = "CRITICAL " + current.vehicleId + ": " + current.detail; };
+      return record Page {
+        alertId = current.alertId;
+        channel = channel;
+        recipient = recipient;
+        text = "CRITICAL " + current.vehicleId + ": " + current.detail;
+      };
     }
     operation notify(page: Page) {
       /** Deliver one page, retrying once after 100 ms. */
@@ -1687,11 +1757,9 @@ package FleetCloud {
     connect paging: Reliable (router.pages, desk.pages);
     connect statusUpdates: Reliable (desk.status, router.status);
   }
-
   // ---------------------------------------------------------------------------------------------------------------
   // Remote commands
   // ---------------------------------------------------------------------------------------------------------------
-
   component def CommandIntake {
     /** Accepts operator commands, checks that the vehicle belongs to the operator's tenant, allocates the command id, dispatches it to the tracker of the vehicle's slot and relays the outcomes. A vehicle whose slot has no tracker is rejected. With a command in flight for a vehicle, a further command for that vehicle is refused as busy instead of being queued; other vehicles are unaffected. */
     port api: CommandApi;
@@ -1834,11 +1902,9 @@ package FleetCloud {
     connect outcomes0: Reliable (trackers[0].updates, intake.resolved);
     connect outcomes1: Reliable (trackers[1].updates, intake.resolved);
   }
-
   // ---------------------------------------------------------------------------------------------------------------
   // Operator API, access control, audit and health
   // ---------------------------------------------------------------------------------------------------------------
-
   component def AccessControl {
     /** Operator identities, tenants and roles. */
     port api: OperatorAuth;
@@ -1852,7 +1918,12 @@ package FleetCloud {
       for (var i: int = 0; i < 3; i = i + 1) {
         if (tokens[i] == token) {
           grants = grants + 1;
-          return record Principal { authenticated = true; operatorId = operatorIds[i]; tenantId = tenants[i]; role = roles[i]; };
+          return record Principal {
+            authenticated = true;
+            operatorId = operatorIds[i];
+            tenantId = tenants[i];
+            role = roles[i];
+          };
         }
       }
       refusals = refusals + 1;
@@ -2043,17 +2114,17 @@ package FleetCloud {
       if (not registryUp or not ingestionUp or not storeUp) {
         failedProbes = failedProbes + 1;
       }
-      send report.health(record PlatformHealth { registryUp = registryUp; storeUp = storeUp; ingestionUp = ingestionUp; probes = probes; });
+      send report.health(record PlatformHealth {
+        registryUp = registryUp; storeUp = storeUp; ingestionUp = ingestionUp; probes = probes;
+      });
     }
     schedule {
       on every 500ms probe() deadline 400ms;
     }
   }
-
   // ---------------------------------------------------------------------------------------------------------------
   // The backend
   // ---------------------------------------------------------------------------------------------------------------
-
   component def FleetBackend {
     /**
     The fleet monitoring backend. Two gateway instances each terminate one vehicle connection, two dashboard
@@ -2108,46 +2179,44 @@ package FleetCloud {
     connect quarantine: Reliable (ingestion.deadLetters, deadLetters.letters);
     connect partition0: StreamFanout (router.slot0, twins[0].feed);
     connect partition1: StreamFanout (router.slot1, twins[1].feed);
-    connect: Latest (twins[0].snapshots, fleet.snapshots);
-    connect: Latest (twins[1].snapshots, fleet.snapshots);
-    connect: Latest (twins[0].snapshots, sessions[0].live);
-    connect: Latest (twins[1].snapshots, sessions[0].live);
-    connect: Latest (twins[0].snapshots, sessions[1].live);
-    connect: Latest (twins[1].snapshots, sessions[1].live);
-    connect: Reliable (twins[0].conditions, alerting.conditions);
-    connect: Reliable (twins[1].conditions, alerting.conditions);
+    connect: Latest(twins[0].snapshots, fleet.snapshots);
+    connect: Latest(twins[1].snapshots, fleet.snapshots);
+    connect: Latest(twins[0].snapshots, sessions[0].live);
+    connect: Latest(twins[1].snapshots, sessions[0].live);
+    connect: Latest(twins[0].snapshots, sessions[1].live);
+    connect: Latest(twins[1].snapshots, sessions[1].live);
+    connect: Reliable(twins[0].conditions, alerting.conditions);
+    connect: Reliable(twins[1].conditions, alerting.conditions);
     connect (twins[0].trips, fleet.trips);
     connect (twins[1].trips, fleet.trips);
     connect persistence: StoreCalls (writer.store, store.data);
     connect lookups: ControlCalls (commands.directory, registry.directory);
-    connect: ControlCalls (sessions[0].identity, access.api);
-    connect: ControlCalls (sessions[1].identity, access.api);
-    connect: ControlCalls (sessions[0].queries, fleet.api);
-    connect: ControlCalls (sessions[1].queries, fleet.api);
-    connect: ControlCalls (sessions[0].commands, commands.api);
-    connect: ControlCalls (sessions[1].commands, commands.api);
+    connect: ControlCalls(sessions[0].identity, access.api);
+    connect: ControlCalls(sessions[1].identity, access.api);
+    connect: ControlCalls(sessions[0].queries, fleet.api);
+    connect: ControlCalls(sessions[1].queries, fleet.api);
+    connect: ControlCalls(sessions[0].commands, commands.api);
+    connect: ControlCalls(sessions[1].commands, commands.api);
     connect (commands.updates, sessions[0].commandUpdates);
     connect (commands.updates, sessions[1].commandUpdates);
     connect (alerting.feed, sessions[0].alerts);
     connect (alerting.feed, sessions[1].alerts);
-    connect: AuditTrail (gateways[0].audit, audit.entries);
-    connect: AuditTrail (gateways[1].audit, audit.entries);
-    connect: AuditTrail (sessions[0].audit, audit.entries);
-    connect: AuditTrail (sessions[1].audit, audit.entries);
-    connect: AuditTrail (alerting.audit, audit.entries);
-    connect: AuditTrail (commands.audit, audit.entries);
-    connect: AuditTrail (commands.updates, audit.outcomes);
-    connect: HealthChecks (monitor.registry, registry.health);
-    connect: HealthChecks (monitor.ingestion, ingestion.health);
-    connect: HealthChecks (monitor.store, store.health);
+    connect: AuditTrail(gateways[0].audit, audit.entries);
+    connect: AuditTrail(gateways[1].audit, audit.entries);
+    connect: AuditTrail(sessions[0].audit, audit.entries);
+    connect: AuditTrail(sessions[1].audit, audit.entries);
+    connect: AuditTrail(alerting.audit, audit.entries);
+    connect: AuditTrail(commands.audit, audit.entries);
+    connect: AuditTrail(commands.updates, audit.outcomes);
+    connect: HealthChecks(monitor.registry, registry.health);
+    connect: HealthChecks(monitor.ingestion, ingestion.health);
+    connect: HealthChecks(monitor.store, store.health);
     connect (monitor.report, sessions[0].health);
     connect (monitor.report, sessions[1].health);
   }
-
   // ---------------------------------------------------------------------------------------------------------------
   // Platform and deployment
   // ---------------------------------------------------------------------------------------------------------------
-
   component def ComputeNode specializes Node {
     /** A virtual machine of a cluster node pool, running one container runtime process. */
     const attribute vcpus: uint = 8;
@@ -2176,11 +2245,9 @@ package FleetCloud {
       redefines const attribute ref: string = "region-2";
     }
   }
-
   // ---------------------------------------------------------------------------------------------------------------
   // The system context
   // ---------------------------------------------------------------------------------------------------------------
-
   component backend: FleetBackend;
   component truck: Vehicle;
   component van: Vehicle;
@@ -2216,11 +2283,9 @@ package FleetCloud {
     deploy audit on standby.storage.nodes[0];
     deploy monitor on standby.processing.nodes[0];
   }
-
   // ---------------------------------------------------------------------------------------------------------------
   // Requirements
   // ---------------------------------------------------------------------------------------------------------------
-
   requirement 'Alert latency' {
     /** A critical condition reaches the notification provider within 2 s of the frame that revealed it. */
     attribute budgetMs: uint = 2000;
@@ -2273,11 +2338,9 @@ package FleetCloud {
     /** A session answers at most five queries in a burst and regains one query per second. */
     attribute burst: uint = 5;
   }
-
   // ---------------------------------------------------------------------------------------------------------------
   // Use cases
   // ---------------------------------------------------------------------------------------------------------------
-
   use case 'Monitor live position' of backend {
     /** A dispatcher subscribes to the live map, a truck connects and reports, and the dispatcher sees it move and queries it. */
     var me: Principal = alderDispatcher.console.login("tok-alder-ana");
@@ -2376,11 +2439,9 @@ package FleetCloud {
   associate truck to 'Run a firmware campaign';
   associate van to 'Run a firmware campaign';
   associate alderDispatcher to 'Run a firmware campaign';
-
   // ---------------------------------------------------------------------------------------------------------------
   // Tests
   // ---------------------------------------------------------------------------------------------------------------
-
   test 'Telemetry stored and visible' of backend {
     /** Frames of two vehicles are accepted, stored, rolled up and routed to their twins; the campaign sees one of two reporting vehicles on the target firmware. */
     publish truck.link.hello("TRK-101", "key-101");
@@ -2959,7 +3020,6 @@ package FleetCloud {
   associate birchDispatcher to 'Tenant isolation holds';
   associate alderDispatcher to 'Console guards';
   associate birchDispatcher to 'Console guards';
-
   test 'Superseded session closes' of backend {
     /** The truck reconnects over a second link: the old session is told it is closed, its frames are refused and its heartbeats no longer keep the twin online, while the new session carries on with a restarted sequence. */
     var me: Principal = alderDispatcher.console.login("tok-alder-ana");
@@ -3319,11 +3379,9 @@ package FleetCloud {
   associate van to 'Paging queue follows alert state';
   associate pager to 'Paging queue follows alert state';
   associate onCall to 'Paging queue follows alert state';
-
   // ---------------------------------------------------------------------------------------------------------------
   // Intent links
   // ---------------------------------------------------------------------------------------------------------------
-
   satisfy 'Alert latency' by backend.alerting;
   satisfy Escalation by EscalationDesk;
   satisfy 'Lossless ingestion' by IngestionPipeline;
@@ -3367,11 +3425,9 @@ package FleetCloud {
   verify Auditability by 'Tenant isolation holds';
   verify Auditability by 'Unacknowledged breach escalates';
   verify 'Operator rate limit' by 'Console guards';
-
   // ---------------------------------------------------------------------------------------------------------------
   // Views
   // ---------------------------------------------------------------------------------------------------------------
-
   view overview: General of FleetCloud;
   view services: General of backend;
   view platform: General {

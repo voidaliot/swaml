@@ -5,6 +5,10 @@ import * as a from './generated/ast.js';
 import { associatedOccurrences, caseTarget, testCanAccess, caseCallAccess, caseCallRestriction, allowsSuspendingCall, connectionRoutes, designComponent, interfaceOnly, packageEndpoint, packageOccurrences, expressionTypes, OCCURRENCE_LIMIT, occurrenceCount, workspaceModels, assignable, body, compatibility, constantNumber, direction, effectiveQos, effects, endpoint, entryKey, identity, integral, isExecutable, isNode, localOperation, memberEndpoint, members, nanos, nodes, numeric, occurrences, owner, resolve, schedule, signature, typeKey, type Executable, type Node, type Structure, portMembers } from './semantic.js';
 import { selectView, viewCandidates, type ViewSubject } from './presentation.js';
 import { decodeQuotedName, formatName, nameProblem } from './names.js';
+import { staleWrite, STALE_READ_WORK_LIMIT, type StaleReadBudget, type Summary } from './stale-read.js';
+const EXPRESSION_TYPES = new Set(['BinaryExpression', 'UnaryExpression', 'Literal', 'CallExpression', 'TryExpression', 'ReferenceExpression', 'RecordLiteral', 'ArrayLiteral']);
+const isExpression = (n: unknown): n is a.Expression => !!n && typeof n === 'object' && EXPRESSION_TYPES.has((n as AstNode).$type);
+import { useEffectCache } from './semantic.js';
 type Env = Map<string, {
     type: string;
     mutable: boolean;
@@ -23,6 +27,14 @@ export class SwamlValidator {
         return selectView(view, this.models, this.viewSubjects.get('subjects', () => viewCandidates(this.models)));
     }
     private reported = new Set<string>();
+    /** Statement visits of the stale-read analysis per document; a reference validation limit (tests may lower it). */
+    static staleReadWorkLimit = STALE_READ_WORK_LIMIT;
+    /** Test-only: analyse SW2011 without merging summary records, as the reference for the merged analysis. */
+    static staleReadUnmerged = false;
+    /** SW2011 summaries and work of one validation pass. */
+    private staleSummaries = new Map<Structure, Map<Executable, Summary>>();
+    private staleBudget: StaleReadBudget = { work: 0 };
+    private staleLimitReported = false;
     private report(n: AstNode, code: string, message: string, warning = false, extra: { range?: Range; edits?: { range: Range; newText: string }[]; declaration?: AstNode } = {}): void { const declarationDoc=AstUtils.getDocument(n),currentDoc=AstUtils.getDocument(this.currentModel),foreign=declarationDoc!==currentDoc;
         // Inherited members are checked for their definition and every usage; report each finding once.
         const reportKey=[code,message,declarationDoc.uri.toString(),JSON.stringify(extra.range??n.$cstNode?.range)].join('|');if(this.reported.has(reportKey))return;this.reported.add(reportKey);
@@ -41,6 +53,11 @@ export class SwamlValidator {
             this.models.push(model);
         for (const item of this.models)
             workspaceModels.set(item, this.models);
+        useEffectCache(this.models);
+        this.staleSummaries = new Map();
+        this.staleBudget = { work: 0, limit: SwamlValidator.staleReadWorkLimit };
+        this.staleLimitReported = false;
+        this.checkExpressionDepth(model);
         if (model.$cstNode)
             for (const leaf of CstUtils.flattenCst(model.$cstNode).filter(l => l.tokenType.name === 'UNRESTRICTED_NAME')) {
                 const problem = nameProblem(decodeQuotedName(leaf.text));
@@ -274,8 +291,12 @@ export class SwamlValidator {
             this.operation(nested, c);
         if (!c && !identity(op).startsWith('Swaml::Math::') && Object.values(effects(op)).some(Boolean))
             this.report(op, 'SW2006', 'Package definitions may use only parameters and nested operations.');
+        // Depth-first search with a finished set, so shared callees are explored once rather than once per path.
+        const finished = new Set<Executable>();
         const cycle = (x: Executable, stack: Set<Executable>): boolean => { if (stack.has(x))
-            return true; return (body(x) ? nodes(body(x)!) : []).filter(a.isCallExpression).some(call => { const t = this.callTarget(call, c); return t && isExecutable(t) && cycle(t, new Set([...stack, x])); }); };
+            return true; if (finished.has(x))
+            return false; stack.add(x); const found = (body(x) ? nodes(body(x)!) : []).filter(a.isCallExpression).some(call => { const t = this.callTarget(call, c); return t && isExecutable(t) && cycle(t, stack); }); stack.delete(x); if (!found)
+            finished.add(x); return found; };
         if (cycle(op, new Set()))
             this.report(op, 'SW2006', 'Operation calls must be acyclic; recursion is forbidden.');
         if(b.states.length&&owner(op,isExecutable))this.report(op,'SW2008','A stateful operation must be directly component-owned with one on start entry.');
@@ -288,17 +309,15 @@ export class SwamlValidator {
         }
         if (sig.parameters.some(p => p.direction === 'out')) this.outFlow(op,c);
         if (c && effects(op, c).writes && effects(op, c).suspends) {
-            const attrs = new Set(members(c).filter(a.isAttribute).map(x => x.name));
-            let suspended = false, read = false;
-            for (const n of nodes(b)) {
-                if (a.isReferenceExpression(n) && attrs.has(n.path.split('.')[0]) && !suspended)
-                    read = true;
-                if (a.isWait(n) || a.isReceive(n) || a.isCallExpression(n) && (!this.callTarget(n, c) || !isExecutable(this.callTarget(n, c)!) || effects(this.callTarget(n, c) as Executable, c).suspends))
-                    suspended = true;
-                if (read && suspended && a.isAssign(n) && attrs.has(n.target)) {
-                    this.report(n, 'SW2011', 'A read before suspension may influence this write. Recheck live attributes after resuming.', true);
-                    break;
-                }
+            const summaries = this.staleSummaries.get(c) ?? this.staleSummaries.set(c, new Map()).get(c)!;
+            const limit = SwamlValidator.staleReadWorkLimit;
+            const result = this.staleBudget.work > limit ? { limit: true } : staleWrite(op, { attributes: new Set(members(c).filter(a.isAttribute).map(x => x.name)), target: call => this.callTarget(call, c), effects: x => effects(x, c), summaries, budget: this.staleBudget, unmerged: SwamlValidator.staleReadUnmerged });
+            if (result.write)
+                this.report(result.write, 'SW2011', 'A read before suspension may influence this write. Recheck live attributes after resuming.', true);
+            if (result.limit && !this.staleLimitReported) {
+                // A reference resource boundary, not a stale read: stop the analysis and say so once per document.
+                this.staleLimitReported = true;
+                this.report(op, 'SW2013', `The stale-read analysis of this document reached the reference validation limit of ${limit} statement visits at operation ${op.name}; SW2011 is not checked for ${op.name} or for the operations validated after it in this document. Other validation is unaffected.`, true, this.at(op, 'name'));
             }
         }
     }
@@ -439,7 +458,27 @@ export class SwamlValidator {
                     this.report(e, 'SW2006', 'Attribute initializers must be pure.');
             }
     }
-    private infer(e: a.Expression | undefined, env: Env, c?: Structure, op?: Executable, allow = false): string { const t=this.inferValue(e,env,c,op,allow);if(e)expressionTypes.set(e,t);return t;}
+    /** Expressions nested deeper than this are reported instead of inferred, so validation cannot exhaust the stack. */
+    private static readonly EXPRESSION_DEPTH_LIMIT = 1000;
+    private readonly tooDeep = new Set<AstNode>();
+    private checkExpressionDepth(model: a.Model): void {
+        this.tooDeep.clear();
+        for (const root of AstUtils.streamAst(model).filter(n => isExpression(n) && !isExpression(n.$container))) {
+            let deepest = 0;
+            const stack: [AstNode, number][] = [[root, 1]];
+            while (stack.length && deepest <= SwamlValidator.EXPRESSION_DEPTH_LIMIT) {
+                const [n, depth] = stack.pop()!;
+                deepest = Math.max(deepest, depth);
+                for (const child of AstUtils.streamContents(n))
+                    stack.push([child, depth + 1]);
+            }
+            if (deepest > SwamlValidator.EXPRESSION_DEPTH_LIMIT) {
+                this.tooDeep.add(root);
+                this.report(root, 'SW2013', `Expression nesting exceeds the reference validation limit of ${SwamlValidator.EXPRESSION_DEPTH_LIMIT} levels; split it into local variables.`);
+            }
+        }
+    }
+    private infer(e: a.Expression | undefined, env: Env, c?: Structure, op?: Executable, allow = false): string { if (e && this.tooDeep.has(e)) return '?'; const t=this.inferValue(e,env,c,op,allow);if(e)expressionTypes.set(e,t);return t;}
     private inferValue(e: a.Expression | undefined, env: Env, c?: Structure, op?: Executable, allow = false): string {
         if (!e)
             return 'void';

@@ -5,6 +5,7 @@ import { parseHelper } from 'langium/test';
 import { createSwamlServices } from '../out/src/language/swaml-module.js';
 import { runCase, runTests, simulate } from '../out/src/simulation/simulator.js';
 import { readStandardVersion } from './standard-version.mjs';
+import { caseOptions, checkCasesFile, checkModelOptionsUsed } from './simulation-cases.mjs';
 const root = new URL('../', import.meta.url);
 const edition = await readStandardVersion();
 async function load(model) {
@@ -37,15 +38,18 @@ for (const run of runs) {
     }
     console.log(`Simulated ${run.case ? 'case' : result.target.kind} ${name}: ${result.status}, ${result.trace.length} observations, expected stores match.`);
 }
-// Every use case and test of every complete example runs with its expected result.
-const expected = JSON.parse(await readFile(new URL('examples/simulation/cases.json', root), 'utf8'));
+// Every use case and test of every complete example runs with its expected result, using the example's
+// own options from modelOptions over the global options.
 async function walk(path) { const files = []; for (const e of await readdir(new URL(path, root), { withFileTypes: true })) { if (e.name === 'invalid') continue; if (e.isDirectory()) files.push(...await walk(path + e.name + '/')); else if (e.name.endsWith('.swaml')) files.push(path + e.name); } return files; }
+const examples = (await walk('examples/')).sort();
+const expected = checkCasesFile(JSON.parse(await readFile(new URL('examples/simulation/cases.json', root), 'utf8')), examples);
 let total = 0;
-for (const model of (await walk('examples/')).sort()) {
-    const models = await load(model), results = runTests(models, expected.options);
+for (const model of examples) {
+    const options = caseOptions(expected, model), models = await load(model), results = runTests(models, options);
+    checkModelOptionsUsed(expected, model, results.length);
     if (!results.length) continue;
     assert.deepEqual(Object.fromEntries(results.map(r => [r.case, r.result])), expected.examples[model] ?? {}, `${model}: case results (${results.filter(r => r.message).map(r => r.case + ': ' + r.message).join('; ')})`);
-    assert.deepEqual(results, runTests(models, expected.options), `${model}: case reproducibility`);
+    assert.deepEqual(results, runTests(models, options), `${model}: case reproducibility`);
     total += results.length;
 }
 assert.equal(total, Object.values(expected.examples).reduce((n, cases) => n + Object.keys(cases).length, 0), 'Every listed example case was run');

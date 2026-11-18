@@ -5,7 +5,7 @@ import { AstUtils, URI } from 'langium';
 import { NodeFileSystem } from 'langium/node';
 import { createSwamlServices } from '../language/swaml-module.js';
 import type { Model } from '../language/generated/ast.js';
-import { REFERENCE_PROFILE, runTests, simulate, type SimulationOptions } from '../simulation/simulator.js';
+import { eachTest, REFERENCE_PROFILE, simulate, type SimulationOptions } from '../simulation/simulator.js';
 import { implementationIdentity } from './evidence.js';
 import { LANGUAGE_VERSION } from './options.js';
 /** The default horizon of swaml test: a case run stops earlier when its script completes or fails. */
@@ -91,24 +91,39 @@ export async function testCommand(args: string[]): Promise<number> {
     const models = await load(f.files);
     if (!models)
         return 1;
-    const results = runTests(models, options, { package: f.values.get('--package'), case: f.values.get('--case') });
-    if ((f.values.has('--package') || f.values.has('--case')) && !results.length)
-        throw new Error(`No use case or test matches${f.values.has('--package') ? ' package ' + f.values.get('--package') : ''}${f.values.has('--case') ? ' case ' + f.values.get('--case') : ''}.`);
-    const summary = { pass: 0, fail: 0, inconclusive: 0, noChecks: 0 };
-    for (const r of results)
+    // Cases run one at a time; text output keeps only each verdict and JSON output each case's serialized
+    // text, never the run objects of earlier cases.
+    const json = f.switches.has('--json'), summary = { pass: 0, fail: 0, inconclusive: 0, noChecks: 0 }, serialized: string[] = [];
+    let count = 0;
+    for (const r of eachTest(models, options, { package: f.values.get('--package'), case: f.values.get('--case') })) {
+        count++;
         summary[r.result === 'no checks' ? 'noChecks' : r.result]++;
-    if (f.switches.has('--json')) {
-        // The report states the supplied sources once as digests, also when no case ran.
-        const sources = models.map(m => AstUtils.getDocument(m)).map(d => ({ uri: d.uri.toString(), text: d.textDocument.getText() }));
-        const cases = results.map(r => r.run ? { ...r, run: { ...r.run, sources: undefined } } : r);
-        console.log(JSON.stringify({ languageVersion: LANGUAGE_VERSION, profile: REFERENCE_PROFILE, options, summary, cases, implementation: await implementationIdentity(), sourceDigests: digests(sources) }, null, 2));
-    }
-    else {
-        for (const r of results) {
+        if (json)
+            // Indented as an element of the top-level cases array, exactly as one JSON.stringify of the report.
+            serialized.push(JSON.stringify(r.run ? { ...r, run: { ...r.run, sources: undefined } } : r, null, 2).replace(/^/gm, '    '));
+        else {
             const where = r.source ? ` at ${r.source}` : '';
             console.log(`${r.result.padEnd(12)} ${r.case}${r.result === 'fail' || r.result === 'inconclusive' ? `${where}: ${r.message}` : ''}`);
         }
-        console.log(`${results.length} case(s): ${summary.pass} pass, ${summary.fail} fail, ${summary.inconclusive} inconclusive, ${summary.noChecks} no checks.`);
     }
+    if ((f.values.has('--package') || f.values.has('--case')) && !count)
+        throw new Error(`No use case or test matches${f.values.has('--package') ? ' package ' + f.values.get('--package') : ''}${f.values.has('--case') ? ' case ' + f.values.get('--case') : ''}.`);
+    if (json) {
+        // The report states the supplied sources once as digests, also when no case ran.
+        const sources = models.map(m => AstUtils.getDocument(m)).map(d => ({ uri: d.uri.toString(), text: d.textDocument.getText() }));
+        const marker = 'swaml-cases-placeholder', report = JSON.stringify({ languageVersion: LANGUAGE_VERSION, profile: REFERENCE_PROFILE, options, summary, cases: marker, implementation: await implementationIdentity(), sourceDigests: digests(sources) }, null, 2);
+        const [head, tail] = report.split(JSON.stringify(marker));
+        process.stdout.write(head);
+        if (serialized.length) {
+            process.stdout.write('[\n');
+            serialized.forEach((text, i) => process.stdout.write(text + (i + 1 < serialized.length ? ',\n' : '\n')));
+            process.stdout.write('  ]');
+        }
+        else
+            process.stdout.write('[]');
+        process.stdout.write(tail + '\n');
+    }
+    else
+        console.log(`${count} case(s): ${summary.pass} pass, ${summary.fail} fail, ${summary.inconclusive} inconclusive, ${summary.noChecks} no checks.`);
     return summary.fail ? 1 : 0;
 }

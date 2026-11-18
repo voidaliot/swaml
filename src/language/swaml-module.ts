@@ -1,7 +1,7 @@
 import { inject, URI, type Module } from 'langium';
 import { createDefaultModule, createDefaultSharedModule, type DefaultSharedModuleContext, type LangiumServices, type PartialLangiumServices } from 'langium/lsp';
 import { SwamlGeneratedModule, SwamlGeneratedSharedModule } from './generated/module.js';
-import { SwamlScopeProvider } from './swaml-scope.js';
+import { SwamlScopeProvider, SwamlLinker } from './swaml-scope.js';
 import { SwamlValidator } from './swaml-validator.js';
 import { SwamlLanguageServer } from './language-server.js';
 import { SwamlDocumentBuilder, SwamlDocumentValidator } from './swaml-document-builder.js';
@@ -23,8 +23,8 @@ export const SwamlModule: Module<SwamlServices, PartialLangiumServices & {
     };
 }> = {
     parser: { Lexer: services => new SwamlLexer(services), ValueConverter: () => new SwamlValueConverter(), ParserErrorMessageProvider: () => new SwamlParserErrorMessageProvider(), LexerErrorMessageProvider: () => new SwamlLexerErrorMessageProvider() },
-    lsp: { Formatter: () => new SwamlFormatter(), RenameProvider: services => new SwamlPathServices(services), DefinitionProvider: services => new SwamlPathServices(services), ReferencesProvider: services => new SwamlPathServices(services) },
-    references: { ScopeProvider: services => new SwamlScopeProvider(services) },
+    lsp: { Formatter: services => new SwamlFormatter(services.parser.Lexer), RenameProvider: services => new SwamlPathServices(services), DefinitionProvider: services => new SwamlPathServices(services), ReferencesProvider: services => new SwamlPathServices(services) },
+    references: { ScopeProvider: services => new SwamlScopeProvider(services), Linker: services => new SwamlLinker(services) },
     validation: { SwamlValidator: services => new SwamlValidator(services), DocumentValidator: services => new SwamlDocumentValidator(services) }
 };
 export function createSwamlServices(context: DefaultSharedModuleContext, ...hostModules: Module<SwamlServices, PartialLangiumServices & { validation?: { SwamlValidator?: SwamlValidator } }>[]) {

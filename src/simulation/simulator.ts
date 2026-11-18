@@ -16,6 +16,38 @@ export interface SimulationOptions {
         delayNs?: number;
     }[];
 }
+const OPTION_KEYS = ['untilNs', 'maxSteps', 'maxPending', 'maxConcurrent', 'latencyNs', 'faults'];
+const FAULT_KEYS = ['offer', 'kind', 'delayNs'];
+/**
+ * Why options are not valid simulation options, or undefined when they are. With partial, untilNs may be
+ * omitted (options that are completed by defaults elsewhere, such as an example's own options).
+ */
+export function simulationOptionsProblem(options: unknown, partial = false): string | undefined {
+    if (!options || typeof options !== 'object' || Array.isArray(options))
+        return 'Simulation options must be an object';
+    const o = options as Record<string, unknown>;
+    for (const k of Object.keys(o))
+        if (!OPTION_KEYS.includes(k))
+            return `Unknown simulation option ${k}`;
+    for (const k of ['untilNs', 'maxSteps', 'maxPending', 'maxConcurrent', 'latencyNs']) {
+        const v = o[k];
+        if (v === undefined && (k !== 'untilNs' || partial))
+            continue;
+        if (!Number.isSafeInteger(v) || (v as number) < (k === 'untilNs' || k === 'latencyNs' ? 0 : 1))
+            return `Invalid ${k}`;
+    }
+    if (o.faults === undefined)
+        return undefined;
+    if (!Array.isArray(o.faults))
+        return 'Invalid fault';
+    const seen = new Set<number>();
+    for (const f of o.faults as Record<string, unknown>[]) {
+        if (!f || typeof f !== 'object' || Object.keys(f).some(k => !FAULT_KEYS.includes(k)) || !Number.isSafeInteger(f.offer) || (f.offer as number) < 1 || seen.has(f.offer as number) || !['drop', 'duplicate', 'transport'].includes(f.kind as string) || f.delayNs !== undefined && (!Number.isSafeInteger(f.delayNs) || (f.delayNs as number) < 0))
+            return 'Invalid fault';
+        seen.add(f.offer as number);
+    }
+    return undefined;
+}
 export interface TraceEvent {
     timeNs: number;
     ordinal: number;
@@ -313,8 +345,16 @@ export function runCase(models: a.Model[], name: string, options: SimulationOpti
 }
 /** Runs every case of the supplied sources, optionally only one package's or one case's (by identity or name). */
 export function runTests(models: a.Model[], options: SimulationOptions, select: { package?: string; case?: string } = {}): CaseResult[] {
+    return [...eachTest(models, options, select)];
+}
+/**
+ * Runs the same cases as runTests one at a time: each case runs only when the previous result has been
+ * consumed, so a caller that keeps only what it reports never holds more than one case's run.
+ */
+export function* eachTest(models: a.Model[], options: SimulationOptions, select: { package?: string; case?: string } = {}): Generator<CaseResult> {
     const all = workspace(models), cases = workspaceCases(models).filter(s => (!select.package || owner(s, a.isPackage)!.name === select.package) && (!select.case || identity(s) === select.case || s.name === select.case));
-    return cases.map(s => caseResult(all, s, options));
+    for (const s of cases)
+        yield caseResult(all, s, options);
 }
 function caseResult(models: a.Model[], s: a.Scenario, options: SimulationOptions): CaseResult {
     const base: CaseResult = { case: identity(s), kind: s.kind as CaseResult['kind'], ...(s.subject?.ref ? { subject: identity(s.subject.ref) } : {}), result: 'no checks' };
@@ -369,19 +409,10 @@ class Interpreter {
     private stop?: 'violation' | 'limit';
     private options: Required<SimulationOptions>;
     constructor(private models: a.Model[], private target: RunTarget, options: SimulationOptions, private script?: a.Scenario) {
+        const problem = simulationOptionsProblem(options);
+        if (problem)
+            throw new Error(problem);
         this.options = { untilNs: options.untilNs, maxSteps: options.maxSteps ?? 100000, maxPending: options.maxPending ?? 1024, maxConcurrent: options.maxConcurrent ?? 64, latencyNs: options.latencyNs ?? 0, faults: options.faults ?? [] };
-        for (const k of Object.keys(options))
-            if (!(k in this.options))
-                throw new Error(`Unknown simulation option ${k}`);
-        for (const k of ['untilNs', 'maxSteps', 'maxPending', 'maxConcurrent', 'latencyNs'] as const)
-            if (!Number.isSafeInteger(this.options[k]) || this.options[k] < (k === 'untilNs' || k === 'latencyNs' ? 0 : 1))
-                throw new Error(`Invalid ${k}`);
-        const seen = new Set<number>();
-        for (const f of this.options.faults) {
-            if (!Number.isSafeInteger(f.offer) || f.offer < 1 || seen.has(f.offer) || !['drop', 'duplicate', 'transport'].includes(f.kind) || f.delayNs !== undefined && (!Number.isSafeInteger(f.delayNs) || f.delayNs < 0))
-                throw new Error('Invalid fault');
-            seen.add(f.offer);
-        }
     }
     private id(prefix: string): string { return `${prefix}${++this.serial}`; }
     /** The trace subject of an activation: the operation, or the case whose script it runs. */

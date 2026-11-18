@@ -526,7 +526,7 @@ package AdaptiveV2x::Types {
   }
   operation def foldable(v: int) returns bool {
     /** The digest domain: strictly between minus and plus half the prime, so no two values in it are congruent modulo the prime. */
-    return v > - 47453124 and v < 47453124;
+    return v > -47453124 and v < 47453124;
   }
   operation def mix(acc: int, value: int) returns int {
     /**
@@ -652,7 +652,7 @@ package AdaptiveV2x::Types {
   operation def neighbourSlot(table: Neighbour[8], stationId: uint) returns int {
     /** The row of a known station, else the first free row, else the oldest row. */
     var index: int = 0;
-    var free: int = - 1;
+    var free: int = -1;
     var oldest: int = 0;
     var oldestAge: uint = 0;
     for (row: Neighbour in table) {
@@ -681,7 +681,7 @@ package AdaptiveV2x::Types {
   }
   operation def withNeighbour(table: Neighbour[8], index: int, item: Neighbour) returns Neighbour[8] {
     /** Arrays have no in-place element assignment: the table is rebuilt with one row replaced. */
-    return[placeNeighbour(table[0], 0, index, item), placeNeighbour(table[1], 1, index, item), placeNeighbour(table[2], 2, index, item), placeNeighbour(table[3], 3, index, item), placeNeighbour(table[4], 4, index, item), placeNeighbour(table[5], 5, index, item), placeNeighbour(table[6], 6, index, item), placeNeighbour(table[7], 7, index, item)];
+    return [placeNeighbour(table[0], 0, index, item), placeNeighbour(table[1], 1, index, item), placeNeighbour(table[2], 2, index, item), placeNeighbour(table[3], 3, index, item), placeNeighbour(table[4], 4, index, item), placeNeighbour(table[5], 5, index, item), placeNeighbour(table[6], 6, index, item), placeNeighbour(table[7], 7, index, item)];
   }
   operation def aged(row: Neighbour, elapsedMs: uint, maxAgeMs: uint) returns Neighbour {
     if (not row.valid) {
@@ -700,7 +700,7 @@ package AdaptiveV2x::Types {
     };
   }
   operation def ageTable(table: Neighbour[8], elapsedMs: uint, maxAgeMs: uint) returns Neighbour[8] {
-    return[aged(table[0], elapsedMs, maxAgeMs), aged(table[1], elapsedMs, maxAgeMs), aged(table[2], elapsedMs, maxAgeMs), aged(table[3], elapsedMs, maxAgeMs), aged(table[4], elapsedMs, maxAgeMs), aged(table[5], elapsedMs, maxAgeMs), aged(table[6], elapsedMs, maxAgeMs), aged(table[7], elapsedMs, maxAgeMs)];
+    return [aged(table[0], elapsedMs, maxAgeMs), aged(table[1], elapsedMs, maxAgeMs), aged(table[2], elapsedMs, maxAgeMs), aged(table[3], elapsedMs, maxAgeMs), aged(table[4], elapsedMs, maxAgeMs), aged(table[5], elapsedMs, maxAgeMs), aged(table[6], elapsedMs, maxAgeMs), aged(table[7], elapsedMs, maxAgeMs)];
   }
   operation def countNeighbours(table: Neighbour[8]) returns uint {
     var count: uint = 0;
@@ -732,10 +732,10 @@ package AdaptiveV2x::Types {
     return old;
   }
   operation def withBatch(buffer: TelemetryBatch[4], index: int, item: TelemetryBatch) returns TelemetryBatch[4] {
-    return[placeBatch(buffer[0], 0, index, item), placeBatch(buffer[1], 1, index, item), placeBatch(buffer[2], 2, index, item), placeBatch(buffer[3], 3, index, item)];
+    return [placeBatch(buffer[0], 0, index, item), placeBatch(buffer[1], 1, index, item), placeBatch(buffer[2], 2, index, item), placeBatch(buffer[3], 3, index, item)];
   }
   operation def dropHead(buffer: TelemetryBatch[4]) returns TelemetryBatch[4] {
-    return[buffer[1], buffer[2], buffer[3], emptyBatch()];
+    return [buffer[1], buffer[2], buffer[3], emptyBatch()];
   }
   operation def compressedSize(rawBytes: uint, percent: uint) returns uint {
     /** A fixed-ratio stand-in for a compression codec. */
@@ -766,7 +766,7 @@ package AdaptiveV2x::Types {
     return v >= lo and v <= hi;
   }
   operation def positionInRange(p: LocalPosition) returns bool {
-    return inRange(p.east, - 100000.0, 100000.0) and inRange(p.north, - 100000.0, 100000.0);
+    return inRange(p.east, -100000.0, 100000.0) and inRange(p.north, -100000.0, 100000.0);
   }
   operation def wellFormed(frame: V2xFrame) returns bool {
     /** Range checks on every field that a received frame's use depends on, applied before verification. Identifiers and time must be non-zero and inside the digest domain. The 600 s validity cap and the 5 km radius cap are showcase limits. */
@@ -778,7 +778,7 @@ package AdaptiveV2x::Types {
     }
     if (frame.header.messageKind == MessageKind.awareness) {
       var a: AwarenessContainer = frame.awareness;
-      return frame.hazard == noHazard() and a.stationType != StationType.unknown and positionInRange(a.position) and inRange(a.speedMps, 0.0, 90.0) and inRange(a.headingDeg, 0.0, 360.0) and inRange(a.accelerationMps2, - 15.0, 15.0);
+      return frame.hazard == noHazard() and a.stationType != StationType.unknown and positionInRange(a.position) and inRange(a.speedMps, 0.0, 90.0) and inRange(a.headingDeg, 0.0, 360.0) and inRange(a.accelerationMps2, -15.0, 15.0);
     }
     var h: HazardContainer = frame.hazard;
     return frame.awareness == noAwareness() and h.actionId >= 1 and h.actionId <= 65535 and h.cause != HazardCause.none and h.subCause <= 255 and positionInRange(h.eventPosition) and h.relevanceRadiusM > 0.0 and h.relevanceRadiusM <= 5000.0 and h.validityMs >= 1 and h.validityMs <= 600000;
@@ -803,7 +803,14 @@ package AdaptiveV2x::Types {
     return severity > row.severity or severity == row.severity and distanceM < row.distanceM;
   }
   operation def vacantWarning() returns ActiveWarning {
-    return record ActiveWarning { valid = false; originStationId = 0; actionId = 0; expiresMs = 0; severity = 0; distanceM = 0.0; };
+    return record ActiveWarning {
+      valid = false;
+      originStationId = 0;
+      actionId = 0;
+      expiresMs = 0;
+      severity = 0;
+      distanceM = 0.0;
+    };
   }
   operation def warningSlot(table: ActiveWarning[4], originStationId: uint, actionId: uint) returns int {
     /** The row of a shown event, or -1. */
@@ -814,7 +821,7 @@ package AdaptiveV2x::Types {
       }
       index = index + 1;
     }
-    return - 1;
+    return -1;
   }
   operation def victimSlot(table: ActiveWarning[4], severity: int, distanceM: real) returns int {
     /** The first free row; else the least urgent row if the new event is more urgent than it; else -1. */
@@ -834,7 +841,7 @@ package AdaptiveV2x::Types {
     if (moreUrgent(severity, distanceM, weakest)) {
       return least;
     }
-    return - 1;
+    return -1;
   }
   operation def placeWarning(old: ActiveWarning, k: int, index: int, item: ActiveWarning) returns ActiveWarning {
     if (k == index) {
@@ -894,7 +901,7 @@ package AdaptiveV2x {
     port hazards: HazardDetection;
     port supervision: Supervision;
     const attribute maxSpeedMps: real = 90.0;
-    const attribute hardBrakingMps2: real = - 6.0;
+    const attribute hardBrakingMps2: real = -6.0;
     const attribute standstillMps: real = 0.5;
     attribute position: LocalPosition = origin();
     attribute speedMps: real = 0.0;
@@ -1025,10 +1032,10 @@ package AdaptiveV2x {
     attribute denmsSent: uint = 0;
     attribute hazardsCancelled: uint = 0;
     attribute hazardsExpired: uint = 0;
-    attribute neighbours: Neighbour[8] =[vacantNeighbour(), vacantNeighbour(), vacantNeighbour(), vacantNeighbour(), vacantNeighbour(), vacantNeighbour(), vacantNeighbour(), vacantNeighbour()];
+    attribute neighbours: Neighbour[8] = [vacantNeighbour(), vacantNeighbour(), vacantNeighbour(), vacantNeighbour(), vacantNeighbour(), vacantNeighbour(), vacantNeighbour(), vacantNeighbour()];
     attribute neighbourCount: uint = 0;
     attribute framesReceived: uint = 0;
-    attribute lastRssiDbm: int = - 120;
+    attribute lastRssiDbm: int = -120;
     attribute droppedMalformed: uint = 0;
     attribute droppedSecurity: uint = 0;
     attribute droppedImplausible: uint = 0;
@@ -1091,7 +1098,7 @@ package AdaptiveV2x {
     }
     operation transmitAwareness(frame: V2xFrame) {
       /** Signs and sends a prepared awareness frame; the remembered values are those actually sent. Signing suspends, so the running state is re-read afterwards; a frame is not sent when the application left running meanwhile or when its station identifier no longer matches the signing pseudonym. */
-      var digest: int = try(frameDigest(frame), - 1);
+      var digest: int = try(frameDigest(frame), -1);
       if (digest < 0) {
         transmitFailed();
         return;
@@ -1141,7 +1148,7 @@ package AdaptiveV2x {
     }
     operation transmitHazard(frame: V2xFrame) {
       /** Signs a prepared hazard frame and sends it on both channels. After signing it re-reads whether the event is still active, so a repetition signed while the event ended is not sent; a cancellation is always sent. */
-      var digest: int = try(frameDigest(frame), - 1);
+      var digest: int = try(frameDigest(frame), -1);
       if (digest < 0) {
         transmitFailed();
         return;
@@ -1154,7 +1161,7 @@ package AdaptiveV2x {
         });
         return;
       }
-      if (not frame.hazard.termination and not hazardActive) {
+      if (not frame.hazard.termination and (not hazardActive or frame.hazard.actionId != ownActionId)) {
         return;
       }
       if (trailer.pseudonymId != frame.header.stationId) {
@@ -1178,7 +1185,7 @@ package AdaptiveV2x {
         on entry {
           send security.rotationHold(false);
         }
-        on receive hazards.hazardDetected(cause, position) when(canAnnounce()) to Active {
+        on receive hazards.hazardDetected(cause, position) when (canAnnounce()) to Active {
           startHazard(cause, position);
         }
       }
@@ -1187,9 +1194,11 @@ package AdaptiveV2x {
         on entry {
           send security.rotationHold(true);
           beginOwnEvent();
-        } on exit {
+        }
+        on exit {
           hazardActive = false;
-        } on receive hazards.hazardCleared() to Idle {
+        }
+        on receive hazards.hazardCleared() to Idle {
           hazardsCancelled = hazardsCancelled + 1;
           transmitHazard(ownHazardFrame(true));
         }
@@ -1200,7 +1209,7 @@ package AdaptiveV2x {
     }
     operation plausible(frame: V2xFrame) returns bool {
       var age: int = wrappedAge(nowMs, frame.header.generationDeltaTime);
-      if (age > maxFrameAgeMs or - age > clockToleranceMs) {
+      if (age > maxFrameAgeMs or -age > clockToleranceMs) {
         return false;
       }
       var reference: LocalPosition = frame.awareness.position;
@@ -1262,10 +1271,14 @@ package AdaptiveV2x {
         warningsDisplaced = warningsDisplaced + 1;
         publish warnings.warningCleared(displaced.originStationId, displaced.actionId);
       }
-      activeWarnings = withWarning(activeWarnings, free, record ActiveWarning { valid = true; originStationId = frame.header.stationId; actionId = frame.hazard.actionId; expiresMs = expires; severity = severity; distanceM = distanceM; });
+      activeWarnings = withWarning(activeWarnings, free, record ActiveWarning {
+        valid = true; originStationId = frame.header.stationId; actionId = frame.hazard.actionId; expiresMs = expires; severity = severity; distanceM = distanceM;
+      });
       activeWarningCount = countWarnings(activeWarnings);
       warningsIssued = warningsIssued + 1;
-      publish warnings.warning(record DriverWarning { actionId = frame.hazard.actionId; originStationId = frame.header.stationId; cause = frame.hazard.cause; distanceM = distanceM; });
+      publish warnings.warning(record DriverWarning {
+        actionId = frame.hazard.actionId; originStationId = frame.header.stationId; cause = frame.hazard.cause; distanceM = distanceM;
+      });
     }
     operation expireWarnings() {
       /** Withdraws every shown warning whose validity has ended. */
@@ -1289,7 +1302,9 @@ package AdaptiveV2x {
     operation transmitFailed() {
       /** A frame that cannot be digested is not sent; the failure is counted and reported to the health monitor. */
       transmitFailures = transmitFailures + 1;
-      publish supervision.errorReport(record ErrorReport { entity = SupervisedEntity.v2xMessages; code = ErrorCode.signingFailed; detail = transmitFailures; });
+      publish supervision.errorReport(record ErrorReport {
+        entity = SupervisedEntity.v2xMessages; code = ErrorCode.signingFailed; detail = transmitFailures;
+      });
     }
     operation synchronizeClock(itsTimeMs: uint) {
       /** Stand-in for GNSS-based ITS time synchronization of the service clock; no source calls it in this model, tests use it to place the clock. */
@@ -1305,7 +1320,7 @@ package AdaptiveV2x {
         countMalformed();
         return;
       }
-      var digest: int = try(frameDigest(frame), - 1);
+      var digest: int = try(frameDigest(frame), -1);
       if (digest < 0) {
         countMalformed();
         return;
@@ -1346,11 +1361,11 @@ package AdaptiveV2x {
     /** Access-layer adapter of one radio channel: counts traffic and drops frames below the receiver sensitivity. */
     reversed port upper: RadioChannelLink;
     port lower: RadioChannelLink;
-    const attribute sensitivityDbm: int = - 92;
+    const attribute sensitivityDbm: int = -92;
     attribute framesSent: uint = 0;
     attribute framesReceived: uint = 0;
     attribute weakFramesDropped: uint = 0;
-    attribute lastRssiDbm: int = - 120;
+    attribute lastRssiDbm: int = -120;
     operation transmit(frame: V2xFrame) {
       framesSent = framesSent + 1;
       publish lower.frameOut(frame);
@@ -1409,7 +1424,11 @@ package AdaptiveV2x {
       if (signaturesSinceRotation > maxSignaturesPerPseudonym) {
         maxSignaturesPerPseudonym = signaturesSinceRotation;
       }
-      var trailer: SecurityTrailer = record SecurityTrailer { pseudonymId = pseudonymId; certificateId = certificateId; signature = signatureOf(digest, pseudonymId, certificateId, pkiKey()); };
+      var trailer: SecurityTrailer = record SecurityTrailer {
+        pseudonymId = pseudonymId;
+        certificateId = certificateId;
+        signature = signatureOf(digest, pseudonymId, certificateId, pkiKey());
+      };
       if (signaturesSinceRotation >= signaturesPerPseudonym) {
         if (rotationHold) {
           rotationsDeferred = rotationsDeferred + 1;
@@ -1435,7 +1454,7 @@ package AdaptiveV2x {
         verificationFailures = verificationFailures + 1;
         return VerifyResult.unknownCertificate;
       }
-      var expected: int = try(signatureOf(digest, trailer.pseudonymId, trailer.certificateId, pkiKey()), - 1);
+      var expected: int = try(signatureOf(digest, trailer.pseudonymId, trailer.certificateId, pkiKey()), -1);
       if (trailer.signature != expected) {
         verificationFailures = verificationFailures + 1;
         return VerifyResult.badSignature;
@@ -1537,7 +1556,7 @@ package AdaptiveV2x {
       });
       return record VehicleState {
         position = origin();
-        speedMps = - 1.0;
+        speedMps = -1.0;
         headingDeg = 0.0;
         accelerationMps2 = 0.0;
         lights = lightsOff();
@@ -1560,9 +1579,9 @@ package AdaptiveV2x {
       takeSample();
     }
     operation takeSample() {
-      /** Reads the vehicle state through the getter method; consent is rechecked after the call because it may have been withdrawn meanwhile. */
+      /** Reads the vehicle state through the getter method; consent and the application state are rechecked after the call because either may have changed meanwhile. */
       var s: VehicleState = try(vehicle.currentState(), sampleUnavailable());
-      if (s.speedMps < 0.0 or consent != ConsentState.granted) {
+      if (s.speedMps < 0.0 or consent != ConsentState.granted or appState != FunctionGroupState.running and appState != FunctionGroupState.degraded) {
         return;
       }
       samplesTaken = samplesTaken + 1;
@@ -1618,7 +1637,8 @@ package AdaptiveV2x {
       state Offline {
         on entry {
           enter(SessionState.offline);
-        } on receive network.coverage(up) when(up) to Connecting {
+        }
+        on receive network.coverage(up) when (up) to Connecting {
         }
       }
       state Connecting {
@@ -1626,11 +1646,14 @@ package AdaptiveV2x {
           enter(SessionState.connecting);
           attempts = attempts + 1;
           publish ctl.openRequested(attempts);
-        } on receive ctl.opened(id) to Connected {
+        }
+        on receive ctl.opened(id) to Connected {
           sessionId = id;
           sessionsOpened = sessionsOpened + 1;
-        } on receive ctl.refused() to Backoff {
-        } on receive network.coverage(up) when(not up) to Offline {
+        }
+        on receive ctl.refused() to Backoff {
+        }
+        on receive network.coverage(up) when (not up) to Offline {
           coverageLosses = coverageLosses + 1;
         }
       }
@@ -1638,8 +1661,10 @@ package AdaptiveV2x {
         on entry {
           enter(SessionState.connected);
           attempts = 0;
-        } on receive ctl.transferFailed() to Backoff {
-        } on receive network.coverage(up) when(not up) to Offline {
+        }
+        on receive ctl.transferFailed() to Backoff {
+        }
+        on receive network.coverage(up) when (not up) to Offline {
           coverageLosses = coverageLosses + 1;
         }
       }
@@ -1648,8 +1673,10 @@ package AdaptiveV2x {
           enter(SessionState.backoff);
           backoffs = backoffs + 1;
           publish ctl.backoffRequested(attempts);
-        } on receive ctl.backoffElapsed() to Connecting {
-        } on receive network.coverage(up) when(not up) to Offline {
+        }
+        on receive ctl.backoffElapsed() to Connecting {
+        }
+        on receive network.coverage(up) when (not up) to Offline {
           coverageLosses = coverageLosses + 1;
           publish ctl.backoffAborted();
         }
@@ -1675,7 +1702,7 @@ package AdaptiveV2x {
     attribute consent: ConsentState = ConsentState.unknown;
     attribute uploadEnabled: bool = true;
     attribute appState: FunctionGroupState = FunctionGroupState.off;
-    attribute buffer: TelemetryBatch[4] =[emptyBatch(), emptyBatch(), emptyBatch(), emptyBatch()];
+    attribute buffer: TelemetryBatch[4] = [emptyBatch(), emptyBatch(), emptyBatch(), emptyBatch()];
     attribute buffered: uint = 0;
     attribute batchesReceived: uint = 0;
     attribute droppedBatches: uint = 0;
@@ -1712,7 +1739,7 @@ package AdaptiveV2x {
       if (c == ConsentState.withdrawn) {
         purgedBatches = purgedBatches + buffered;
         buffered = 0;
-        buffer =[emptyBatch(), emptyBatch(), emptyBatch(), emptyBatch()];
+        buffer = [emptyBatch(), emptyBatch(), emptyBatch(), emptyBatch()];
       }
     }
     operation onConfig(cfg: TelemetryConfig) {
@@ -1937,18 +1964,33 @@ package AdaptiveV2x {
     }
     operation assessCycle(armed: bool, vehicle: uint, v2x: uint, telemetry: uint, uplink: uint, uplinkWindow: bool) returns SupervisionResult {
       /** Judges one supervision cycle from its checkpoint counts; the uplink, which checkpoints once a second, is judged every second cycle. */
-      var result: SupervisionResult = record SupervisionResult { healthy = true; culprit = SupervisedEntity.vehicleState; };
+      var result: SupervisionResult = record SupervisionResult {
+        healthy = true;
+        culprit = SupervisedEntity.vehicleState;
+      };
       if (armed and vehicle < minVehicleCheckpoints) {
-        result = record SupervisionResult { healthy = false; culprit = SupervisedEntity.vehicleState; };
+        result = record SupervisionResult {
+          healthy = false;
+          culprit = SupervisedEntity.vehicleState;
+        };
       }
       if (v2x < minV2xCheckpoints) {
-        result = record SupervisionResult { healthy = false; culprit = SupervisedEntity.v2xMessages; };
+        result = record SupervisionResult {
+          healthy = false;
+          culprit = SupervisedEntity.v2xMessages;
+        };
       }
       if (telemetry < minTelemetryCheckpoints) {
-        result = record SupervisionResult { healthy = false; culprit = SupervisedEntity.telemetry; };
+        result = record SupervisionResult {
+          healthy = false;
+          culprit = SupervisedEntity.telemetry;
+        };
       }
       if (uplinkWindow and uplink < minUplinkCheckpoints) {
-        result = record SupervisionResult { healthy = false; culprit = SupervisedEntity.uplink; };
+        result = record SupervisionResult {
+          healthy = false;
+          culprit = SupervisedEntity.uplink;
+        };
       }
       return result;
     }
@@ -1957,7 +1999,10 @@ package AdaptiveV2x {
       var uplinkWindow: bool = supervisionCycles > 1 and supervisionCycles % 2 == 1;
       var verdict: SupervisionResult = assessCycle(vehicleArmed, vehicleCount, v2xCount, telemetryCount, uplinkCount, uplinkWindow);
       if (verdict.healthy and v2xErrors > 0) {
-        verdict = record SupervisionResult { healthy = false; culprit = SupervisedEntity.v2xMessages; };
+        verdict = record SupervisionResult {
+          healthy = false;
+          culprit = SupervisedEntity.v2xMessages;
+        };
       }
       v2xErrors = 0;
       vehicleCount = 0;
@@ -2019,24 +2064,29 @@ package AdaptiveV2x {
           enter(FunctionGroupState.startup);
         }
         after 200ms to Running {
-        } on receive power.ignitionOff() to ShuttingDown {
+        }
+        on receive power.ignitionOff() to ShuttingDown {
         }
       }
       state Running {
         on entry {
           enter(FunctionGroupState.running);
-        } on receive platform.supervisionFailed(entity) to Degraded {
+        }
+        on receive platform.supervisionFailed(entity) to Degraded {
           degradations = degradations + 1;
           lastFailedEntity = entity;
-        } on receive power.ignitionOff() to ShuttingDown {
+        }
+        on receive power.ignitionOff() to ShuttingDown {
         }
       }
       state Degraded {
         /** Supervision failed: awareness transmission pauses, reception and telemetry continue. */
         on entry {
           enter(FunctionGroupState.degraded);
-        } on receive platform.supervisionRecovered() to Running {
-        } on receive power.ignitionOff() to ShuttingDown {
+        }
+        on receive platform.supervisionRecovered() to Running {
+        }
+        on receive power.ignitionOff() to ShuttingDown {
         }
       }
       state ShuttingDown {
@@ -2187,7 +2237,9 @@ package AdaptiveV2x {
   }
   use case 'Share awareness' of app {
     /** The vehicle signal gateway reports position, heading and speed; a neighbouring station hears a signed awareness message carrying them. */
-    send vehicleBus.signals.position(record LocalPosition { east = 10.0; north = 20.0; });
+    send vehicleBus.signals.position(record LocalPosition {
+      east = 10.0; north = 20.0;
+    });
     send vehicleBus.signals.headingDeg(90.0);
     send vehicleBus.signals.speedMps(13.9);
     on receive otherVehicle.cch.frameOut(frame) {
@@ -2200,17 +2252,22 @@ package AdaptiveV2x {
   }
   use case 'Warn driver of road hazard' of app {
     /** A roadside unit announces road works on the service channel; the driver is warned within 50 ms and the warning is withdrawn when the roadside unit cancels the event. */
-    send vehicleBus.signals.position(record LocalPosition { east = 0.0; north = 0.0; });
+    send vehicleBus.signals.position(record LocalPosition {
+      east = 0.0; north = 0.0;
+    });
     wait 400ms;
-    var site: LocalPosition = record LocalPosition { east = 300.0; north = 40.0; };
-    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5001, 400, 7, HazardCause.roadworks, site, 1000.0, 60000, false), 5001, 9042), - 70);
+    var site: LocalPosition = record LocalPosition {
+      east = 300.0;
+      north = 40.0;
+    };
+    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5001, 400, 7, HazardCause.roadworks, site, 1000.0, 60000, false), 5001, 9042), -70);
     on receive driver.warnings.warning(item) {
       assert item.cause == HazardCause.roadworks and item.actionId == 7 and item.originStationId == 5001;
       assert item.distanceM > 302.0 and item.distanceM < 303.0;
     } or after 50ms {
       fail "no driver warning within 50 ms";
     }
-    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5001, 400, 7, HazardCause.roadworks, site, 1000.0, 60000, true), 5001, 9042), - 70);
+    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5001, 400, 7, HazardCause.roadworks, site, 1000.0, 60000, true), 5001, 9042), -70);
     on receive driver.warnings.warningCleared(origin, actionId) {
       assert origin == 5001 and actionId == 7;
     } or after 50ms {
@@ -2219,10 +2276,12 @@ package AdaptiveV2x {
   }
   use case 'Broadcast own hazard' of app {
     /** Hard braking makes the vehicle announce a dangerous situation to neighbouring stations, and cancel it when braking ends. */
-    send vehicleBus.signals.position(record LocalPosition { east = 50.0; north = 0.0; });
+    send vehicleBus.signals.position(record LocalPosition {
+      east = 50.0; north = 0.0;
+    });
     send vehicleBus.signals.speedMps(20.0);
     wait 300ms;
-    send vehicleBus.signals.accelerationMps2(- 7.5);
+    send vehicleBus.signals.accelerationMps2(-7.5);
     var announced: bool = false;
     var tries: int = 0;
     while (not announced and tries < 8) {
@@ -2237,7 +2296,7 @@ package AdaptiveV2x {
       tries = tries + 1;
     }
     assert announced;
-    send vehicleBus.signals.accelerationMps2(- 1.0);
+    send vehicleBus.signals.accelerationMps2(-1.0);
     var cancelled: bool = false;
     tries = 0;
     while (not cancelled and tries < 8) {
@@ -2264,12 +2323,14 @@ package AdaptiveV2x {
     on call cloud.api.upload(sessionId, batch) {
       assert sessionId == 314 and batch.sequence == 1 and batch.sampleCount == 5;
       assert batch.compressedBytes < batch.rawBytes;
-      return record UploadAck { sequence = batch.sequence; accepted = true; };
+      return record UploadAck {
+        sequence = batch.sequence;
+        accepted = true;
+      };
     } or after 3s {
       fail "no telemetry upload";
     }
   }
-
   test 'Awareness rate follows dynamics' of app {
     /** At constant speed awareness messages are exactly 1000 ms apart. A speed change of 1 m/s, a heading change of 5 degrees or a move of 5 m per message each makes them follow every 100 ms check, within 150 ms of the change and carrying the newest values. */
     send vehicleBus.signals.position(origin());
@@ -2335,7 +2396,9 @@ package AdaptiveV2x {
     while (k < 5) {
       east = east + 5.0;
       send vehicleBus.signals.speedMps(speed);
-      send vehicleBus.signals.position(record LocalPosition { east = east; north = 0.0; });
+      send vehicleBus.signals.position(record LocalPosition {
+        east = east; north = 0.0;
+      });
       on receive otherVehicle.cch.frameOut(frame) {
         if (frame.header.generationDeltaTime - last != 100 or frame.awareness.position.east != east) {
           fastGapsOk = false;
@@ -2351,30 +2414,35 @@ package AdaptiveV2x {
   test 'Irrelevant hazard filtered' of app {
     /** A hazard outside its relevance radius never reaches the driver; a relevant one warns within 50 ms, its repetition warns only once, and the cancellation of another event does not withdraw it. */
     wait 300ms;
-    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5002, 300, 1, HazardCause.adverseWeather, record LocalPosition { east = 900.0; north = 0.0; }, 300.0, 60000, false), 5002, 1142), - 80);
+    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5002, 300, 1, HazardCause.adverseWeather, record LocalPosition {
+      east = 900.0; north = 0.0;
+    }, 300.0, 60000, false), 5002, 1142), -80);
     on receive driver.warnings.warning(item) {
       fail "an irrelevant hazard reached the driver";
     } or after 100ms {
     }
-    var spot: LocalPosition = record LocalPosition { east = 120.0; north = 50.0; };
+    var spot: LocalPosition = record LocalPosition {
+      east = 120.0;
+      north = 50.0;
+    };
     var near: V2xFrame = signedBy(hazardFrame(6001, 400, 3, HazardCause.collisionRisk, spot, 400.0, 10000, false), 6001, 3342);
-    publish otherVehicle.cch.frameIn(near, - 75);
+    publish otherVehicle.cch.frameIn(near, -75);
     on receive driver.warnings.warning(item) {
       assert item.actionId == 3 and item.cause == HazardCause.collisionRisk and item.originStationId == 6001;
     } or after 50ms {
       fail "no warning within 50 ms";
     }
-    publish otherVehicle.cch.frameIn(near, - 75);
+    publish otherVehicle.cch.frameIn(near, -75);
     on receive driver.warnings.warning(item) {
       fail "a repetition warned twice";
     } or after 100ms {
     }
-    publish otherVehicle.cch.frameIn(signedBy(hazardFrame(6001, 400, 4, HazardCause.collisionRisk, spot, 400.0, 10000, true), 6001, 3342), - 75);
+    publish otherVehicle.cch.frameIn(signedBy(hazardFrame(6001, 400, 4, HazardCause.collisionRisk, spot, 400.0, 10000, true), 6001, 3342), -75);
     on receive driver.warnings.warningCleared(origin, actionId) {
       fail "the cancellation of another event withdrew the warning";
     } or after 100ms {
     }
-    publish otherVehicle.cch.frameIn(signedBy(hazardFrame(6002, 400, 3, HazardCause.collisionRisk, spot, 400.0, 10000, true), 6002, 3442), - 75);
+    publish otherVehicle.cch.frameIn(signedBy(hazardFrame(6002, 400, 3, HazardCause.collisionRisk, spot, 400.0, 10000, true), 6002, 3442), -75);
     on receive driver.warnings.warningCleared(origin, actionId) {
       fail "a cancellation from another station withdrew the warning";
     } or after 100ms {
@@ -2385,8 +2453,12 @@ package AdaptiveV2x {
   test 'Concurrent hazards and validity' of app {
     /** Two events are shown at once. Cancelling one withdraws only that one; the other is withdrawn when its validity ends, and an event already past its validity is not shown. */
     wait 300ms;
-    publish otherVehicle.cch.frameIn(signedBy(hazardFrame(6001, 300, 3, HazardCause.collisionRisk, record LocalPosition { east = 100.0; north = 0.0; }, 400.0, 10000, false), 6001, 3342), - 70);
-    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5001, 300, 1, HazardCause.adverseWeather, record LocalPosition { east = 0.0; north = 200.0; }, 600.0, 1500, false), 5001, 9042), - 70);
+    publish otherVehicle.cch.frameIn(signedBy(hazardFrame(6001, 300, 3, HazardCause.collisionRisk, record LocalPosition {
+      east = 100.0; north = 0.0;
+    }, 400.0, 10000, false), 6001, 3342), -70);
+    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5001, 300, 1, HazardCause.adverseWeather, record LocalPosition {
+      east = 0.0; north = 200.0;
+    }, 600.0, 1500, false), 5001, 9042), -70);
     var warned: uint = 0;
     while (warned < 2) {
       on receive driver.warnings.warning(item) {
@@ -2396,7 +2468,9 @@ package AdaptiveV2x {
       }
     }
     assert app.v2x.activeWarningCount == 2;
-    publish otherVehicle.cch.frameIn(signedBy(hazardFrame(6001, 300, 3, HazardCause.collisionRisk, record LocalPosition { east = 100.0; north = 0.0; }, 400.0, 10000, true), 6001, 3342), - 70);
+    publish otherVehicle.cch.frameIn(signedBy(hazardFrame(6001, 300, 3, HazardCause.collisionRisk, record LocalPosition {
+      east = 100.0; north = 0.0;
+    }, 400.0, 10000, true), 6001, 3342), -70);
     on receive driver.warnings.warningCleared(origin, actionId) {
       assert origin == 6001 and actionId == 3;
     } or after 50ms {
@@ -2409,7 +2483,9 @@ package AdaptiveV2x {
       fail "the event outlived its validity";
     }
     assert app.v2x.activeWarningCount == 0 and app.v2x.warningsExpired == 1 and app.v2x.nowMs >= 1800;
-    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5001, 1700, 2, HazardCause.adverseWeather, record LocalPosition { east = 0.0; north = 200.0; }, 600.0, 100, false), 5001, 9042), - 70);
+    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5001, 1700, 2, HazardCause.adverseWeather, record LocalPosition {
+      east = 0.0; north = 200.0;
+    }, 600.0, 100, false), 5001, 9042), -70);
     on receive driver.warnings.warning(item) {
       fail "an expired event was shown";
     } or after 50ms {
@@ -2419,34 +2495,54 @@ package AdaptiveV2x {
   test 'Tampered frames dropped' of app {
     /** Changing any signed field of a genuine frame, presenting another trusted certificate with its signature, or adding content to the unused container invalidates it: none of the variants is used, while the genuine frames are. */
     wait 300ms;
-    var site: LocalPosition = record LocalPosition { east = 900.0; north = 0.0; };
+    var site: LocalPosition = record LocalPosition {
+      east = 900.0;
+      north = 0.0;
+    };
     var genuine: V2xFrame = signedBy(hazardFrame(5002, 300, 1, HazardCause.adverseWeather, site, 300.0, 60000, false), 5002, 1142);
     var seal: SecurityTrailer = genuine.trailer;
-    var moved: LocalPosition = record LocalPosition { east = 900.0; north = 1200.0; };
-    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 1, HazardCause.collisionRisk, site, 300.0, 60000, false), seal), - 70);
-    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 1, HazardCause.adverseWeather, moved, 300.0, 60000, false), seal), - 70);
-    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 1, HazardCause.adverseWeather, site, 5000.0, 60000, false), seal), - 70);
-    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 1, HazardCause.adverseWeather, site, 300.0, 99000, false), seal), - 70);
-    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 1, HazardCause.adverseWeather, site, 300.0, 60000, true), seal), - 70);
-    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 2, HazardCause.adverseWeather, site, 300.0, 60000, false), seal), - 70);
-    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 250, 1, HazardCause.adverseWeather, site, 300.0, 60000, false), seal), - 70);
-    publish roadsideUnit.sch.frameIn(withTrailer(genuine, record SecurityTrailer { pseudonymId = 5002; certificateId = 1242; signature = seal.signature; }), - 70);
+    var moved: LocalPosition = record LocalPosition {
+      east = 900.0;
+      north = 1200.0;
+    };
+    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 1, HazardCause.collisionRisk, site, 300.0, 60000, false), seal), -70);
+    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 1, HazardCause.adverseWeather, moved, 300.0, 60000, false), seal), -70);
+    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 1, HazardCause.adverseWeather, site, 5000.0, 60000, false), seal), -70);
+    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 1, HazardCause.adverseWeather, site, 300.0, 99000, false), seal), -70);
+    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 1, HazardCause.adverseWeather, site, 300.0, 60000, true), seal), -70);
+    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 2, HazardCause.adverseWeather, site, 300.0, 60000, false), seal), -70);
+    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 250, 1, HazardCause.adverseWeather, site, 300.0, 60000, false), seal), -70);
+    publish roadsideUnit.sch.frameIn(withTrailer(genuine, record SecurityTrailer {
+      pseudonymId = 5002; certificateId = 1242; signature = seal.signature;
+    }), -70);
     var peer: V2xFrame = signedBy(awarenessFrame(2001, 300, StationType.passengerCar, peerState(40.0, 0.0, 12.0, 270.0)), 2001, 5542);
     var stamp: SecurityTrailer = peer.trailer;
-    publish otherVehicle.cch.frameIn(withTrailer(awarenessFrame(2001, 300, StationType.passengerCar, peerState(40.0, 0.0, 12.0, 90.0)), stamp), - 60);
-    publish otherVehicle.cch.frameIn(withTrailer(awarenessFrame(2001, 300, StationType.passengerCar, peerState(40.0, 0.0, 30.0, 270.0)), stamp), - 60);
-    publish otherVehicle.cch.frameIn(withTrailer(awarenessFrame(2001, 300, StationType.heavyTruck, peerState(40.0, 0.0, 12.0, 270.0)), stamp), - 60);
-    publish otherVehicle.cch.frameIn(withTrailer(awarenessFrame(2009, 300, StationType.passengerCar, peerState(40.0, 0.0, 12.0, 270.0)), stamp), - 60);
-    publish otherVehicle.cch.frameIn(withTrailer(awarenessFrame(2001, 300, StationType.passengerCar, record VehicleState { position = record LocalPosition { east = 40.0; north = 0.0; }; speedMps = 12.0; headingDeg = 270.0; accelerationMps2 = 0.0; lights = record ExteriorLights { lowBeam = false; brakeLights = false; hazardLights = true; }; updates = 1; }), stamp), - 60);
-    var smuggled: V2xFrame = hazardFrame(2001, 300, 1, HazardCause.collisionRisk, record LocalPosition { east = 40.0; north = 0.0; }, 300.0, 60000, false);
-    publish otherVehicle.cch.frameIn(record V2xFrame { header = peer.header; awareness = peer.awareness; hazard = smuggled.hazard; trailer = stamp; }, - 60);
+    publish otherVehicle.cch.frameIn(withTrailer(awarenessFrame(2001, 300, StationType.passengerCar, peerState(40.0, 0.0, 12.0, 90.0)), stamp), -60);
+    publish otherVehicle.cch.frameIn(withTrailer(awarenessFrame(2001, 300, StationType.passengerCar, peerState(40.0, 0.0, 30.0, 270.0)), stamp), -60);
+    publish otherVehicle.cch.frameIn(withTrailer(awarenessFrame(2001, 300, StationType.heavyTruck, peerState(40.0, 0.0, 12.0, 270.0)), stamp), -60);
+    publish otherVehicle.cch.frameIn(withTrailer(awarenessFrame(2009, 300, StationType.passengerCar, peerState(40.0, 0.0, 12.0, 270.0)), stamp), -60);
+    publish otherVehicle.cch.frameIn(withTrailer(awarenessFrame(2001, 300, StationType.passengerCar, record VehicleState {
+      position = record LocalPosition {
+        east = 40.0; north = 0.0;
+      }; speedMps = 12.0; headingDeg = 270.0; accelerationMps2 = 0.0; lights = record ExteriorLights {
+        lowBeam = false; brakeLights = false; hazardLights = true;
+      }; updates = 1;
+    }), stamp), -60);
+    var smuggled: V2xFrame = hazardFrame(2001, 300, 1, HazardCause.collisionRisk, record LocalPosition {
+      east = 40.0; north = 0.0;
+    }, 300.0, 60000, false);
+    publish otherVehicle.cch.frameIn(record V2xFrame {
+      header = peer.header; awareness = peer.awareness; hazard = smuggled.hazard; trailer = stamp;
+    }, -60);
     on receive driver.warnings.warning(item) {
       fail "a tampered frame reached the driver";
     } or after 100ms {
     }
     assert app.v2x.droppedSecurity == 13 and app.v2x.droppedMalformed == 1 and app.v2x.warningsIssued == 0 and app.v2x.neighbourCount == 0;
-    publish otherVehicle.cch.frameIn(peer, - 60);
-    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5002, 300, 1, HazardCause.adverseWeather, record LocalPosition { east = 100.0; north = 0.0; }, 300.0, 60000, false), 5002, 1142), - 70);
+    publish otherVehicle.cch.frameIn(peer, -60);
+    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5002, 300, 1, HazardCause.adverseWeather, record LocalPosition {
+      east = 100.0; north = 0.0;
+    }, 300.0, 60000, false), 5002, 1142), -70);
     on receive driver.warnings.warning(item) {
       assert item.originStationId == 5002;
     } or after 50ms {
@@ -2457,27 +2553,59 @@ package AdaptiveV2x {
   test 'Forged frames rejected' of app {
     /** Multi-field forgeries that would cancel out in a weighted-sum digest with weight 31 or 131, identifiers raised by the prime modulus, and out-of-range values are rejected; none reaches the driver. The non-linearity of the fold itself is checked by 'Digest fold is non-linear'. */
     wait 300ms;
-    var genuine: V2xFrame = signedBy(hazardFrame(5002, 300, 1, HazardCause.collisionRisk, record LocalPosition { east = 100.0; north = 1000.0; }, 300.0, 60000, false), 5002, 1142);
+    var genuine: V2xFrame = signedBy(hazardFrame(5002, 300, 1, HazardCause.collisionRisk, record LocalPosition {
+      east = 100.0; north = 1000.0;
+    }, 300.0, 60000, false), 5002, 1142);
     var seal: SecurityTrailer = genuine.trailer;
-    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 1, HazardCause.collisionRisk, record LocalPosition { east = 132.26; north = - 0.06; }, 300.0, 60000, false), seal), - 70);
-    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 1, HazardCause.collisionRisk, record LocalPosition { east = 100.0; north = 1000.0; }, 1300.0, 996960007, false), seal), - 70);
-    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5003, 269, 1, HazardCause.collisionRisk, record LocalPosition { east = 100.0; north = 1000.0; }, 1300.0, 996960007, false), seal), - 70);
-    var near: V2xFrame = signedBy(hazardFrame(5002, 300, 1, HazardCause.collisionRisk, record LocalPosition { east = 100.0; north = 100.0; }, 300.0, 60000, false), 5002, 1142);
-    publish roadsideUnit.sch.frameIn(withTrailer(near, record SecurityTrailer { pseudonymId = 4902; certificateId = 4242; signature = near.trailer.signature; }), - 70);
-    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5003, 269, 1, HazardCause.collisionRisk, record LocalPosition { east = 100.0; north = 1000.0; }, 300.0, 60000, false), seal), - 70);
-    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 1, HazardCause.collisionRisk, record LocalPosition { east = 101.0; north = 969.0; }, 300.0, 60000, false), seal), - 70);
-    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 1, HazardCause.collisionRisk, record LocalPosition { east = 100.0; north = 1000.0; }, 301.0, 56900, false), seal), - 70);
-    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 1, HazardCause.collisionRisk, record LocalPosition { east = 101.0; north = 869.0; }, 300.0, 60000, false), seal), - 70);
-    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 2, HazardCause.adverseWeather, record LocalPosition { east = 100.0; north = 1000.0; }, 300.0, 60000, false), seal), - 70);
+    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 1, HazardCause.collisionRisk, record LocalPosition {
+      east = 132.26; north = -0.06;
+    }, 300.0, 60000, false), seal), -70);
+    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 1, HazardCause.collisionRisk, record LocalPosition {
+      east = 100.0; north = 1000.0;
+    }, 1300.0, 996960007, false), seal), -70);
+    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5003, 269, 1, HazardCause.collisionRisk, record LocalPosition {
+      east = 100.0; north = 1000.0;
+    }, 1300.0, 996960007, false), seal), -70);
+    var near: V2xFrame = signedBy(hazardFrame(5002, 300, 1, HazardCause.collisionRisk, record LocalPosition {
+      east = 100.0; north = 100.0;
+    }, 300.0, 60000, false), 5002, 1142);
+    publish roadsideUnit.sch.frameIn(withTrailer(near, record SecurityTrailer {
+      pseudonymId = 4902; certificateId = 4242; signature = near.trailer.signature;
+    }), -70);
+    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5003, 269, 1, HazardCause.collisionRisk, record LocalPosition {
+      east = 100.0; north = 1000.0;
+    }, 300.0, 60000, false), seal), -70);
+    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 1, HazardCause.collisionRisk, record LocalPosition {
+      east = 101.0; north = 969.0;
+    }, 300.0, 60000, false), seal), -70);
+    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 1, HazardCause.collisionRisk, record LocalPosition {
+      east = 100.0; north = 1000.0;
+    }, 301.0, 56900, false), seal), -70);
+    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 1, HazardCause.collisionRisk, record LocalPosition {
+      east = 101.0; north = 869.0;
+    }, 300.0, 60000, false), seal), -70);
+    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002, 300, 2, HazardCause.adverseWeather, record LocalPosition {
+      east = 100.0; north = 1000.0;
+    }, 300.0, 60000, false), seal), -70);
     on receive driver.warnings.warning(item) {
       fail "a forged frame reached the driver";
     } or after 100ms {
     }
-    var far: V2xFrame = signedBy(hazardFrame(5002, 300, 1, HazardCause.adverseWeather, record LocalPosition { east = 900.0; north = 0.0; }, 300.0, 60000, false), 5002, 1142);
-    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002 + 94906249, 300, 1, HazardCause.adverseWeather, record LocalPosition { east = 900.0; north = 0.0; }, 300.0, 60000, false), far.trailer), - 70);
-    publish roadsideUnit.sch.frameIn(withTrailer(near, record SecurityTrailer { pseudonymId = 5002 + 94906249; certificateId = 1142 + 9490624900; signature = near.trailer.signature; }), - 70);
-    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5002, 300, 1, HazardCause.collisionRisk, record LocalPosition { east = 100.0; north = 0.0; }, 6000.0, 60000, false), 5002, 1142), - 70);
-    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5002, 300, 2, HazardCause.collisionRisk, record LocalPosition { east = 100.0; north = 0.0; }, 300.0, 700000, false), 5002, 1142), - 70);
+    var far: V2xFrame = signedBy(hazardFrame(5002, 300, 1, HazardCause.adverseWeather, record LocalPosition {
+      east = 900.0; north = 0.0;
+    }, 300.0, 60000, false), 5002, 1142);
+    publish roadsideUnit.sch.frameIn(withTrailer(hazardFrame(5002 + 94906249, 300, 1, HazardCause.adverseWeather, record LocalPosition {
+      east = 900.0; north = 0.0;
+    }, 300.0, 60000, false), far.trailer), -70);
+    publish roadsideUnit.sch.frameIn(withTrailer(near, record SecurityTrailer {
+      pseudonymId = 5002 + 94906249; certificateId = 1142 + 9490624900; signature = near.trailer.signature;
+    }), -70);
+    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5002, 300, 1, HazardCause.collisionRisk, record LocalPosition {
+      east = 100.0; north = 0.0;
+    }, 6000.0, 60000, false), 5002, 1142), -70);
+    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5002, 300, 2, HazardCause.collisionRisk, record LocalPosition {
+      east = 100.0; north = 0.0;
+    }, 300.0, 700000, false), 5002, 1142), -70);
     on receive driver.warnings.warning(item) {
       fail "a frame outside the field ranges reached the driver";
     } or after 100ms {
@@ -2500,16 +2628,26 @@ package AdaptiveV2x {
       k = k + 1;
     }
     assert nonlinear;
-    assert try(mix(1, 47453124), - 1) == - 1 and try(mix(1, - 47453124), - 1) == - 1 and mix(1, 47453123) >= 0;
+    assert try(mix(1, 47453124), -1) == -1 and try(mix(1, -47453124), -1) == -1 and mix(1, 47453123) >= 0;
   }
   test 'Most urgent hazards kept' of app {
     /** With four events shown, a less urgent event is not shown; a more urgent one displaces the least urgent shown event, ranked by cause severity and then distance. Displacement is not counted as expiry. */
     wait 300ms;
-    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(6001, 300, 1, HazardCause.collisionRisk, record LocalPosition { east = 30.0; north = 0.0; }, 200.0, 30000, false), 6001, 9042), - 70);
-    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5001, 300, 1, HazardCause.roadworks, record LocalPosition { east = 0.0; north = 600.0; }, 1000.0, 60000, false), 5001, 9042), - 70);
-    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5002, 300, 1, HazardCause.roadworks, record LocalPosition { east = 0.0; north = 700.0; }, 1000.0, 60000, false), 5002, 9042), - 70);
-    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5003, 300, 1, HazardCause.roadworks, record LocalPosition { east = 0.0; north = 800.0; }, 1000.0, 60000, false), 5003, 9042), - 70);
-    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5004, 300, 1, HazardCause.adverseWeather, record LocalPosition { east = 900.0; north = 0.0; }, 1000.0, 60000, false), 5004, 9042), - 70);
+    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(6001, 300, 1, HazardCause.collisionRisk, record LocalPosition {
+      east = 30.0; north = 0.0;
+    }, 200.0, 30000, false), 6001, 9042), -70);
+    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5001, 300, 1, HazardCause.roadworks, record LocalPosition {
+      east = 0.0; north = 600.0;
+    }, 1000.0, 60000, false), 5001, 9042), -70);
+    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5002, 300, 1, HazardCause.roadworks, record LocalPosition {
+      east = 0.0; north = 700.0;
+    }, 1000.0, 60000, false), 5002, 9042), -70);
+    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5003, 300, 1, HazardCause.roadworks, record LocalPosition {
+      east = 0.0; north = 800.0;
+    }, 1000.0, 60000, false), 5003, 9042), -70);
+    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5004, 300, 1, HazardCause.adverseWeather, record LocalPosition {
+      east = 900.0; north = 0.0;
+    }, 1000.0, 60000, false), 5004, 9042), -70);
     wait 50ms;
     assert app.v2x.activeWarningCount == 4 and app.v2x.warningsIssued == 4 and app.v2x.warningsNotShown == 1;
     assert warningSlot(app.v2x.activeWarnings, 6001, 1) >= 0 and warningSlot(app.v2x.activeWarnings, 5004, 1) < 0;
@@ -2521,13 +2659,17 @@ package AdaptiveV2x {
         fail "four warnings expected";
       }
     }
-    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(6002, 350, 1, HazardCause.collisionRisk, record LocalPosition { east = 50.0; north = 0.0; }, 200.0, 30000, false), 6002, 9042), - 70);
+    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(6002, 350, 1, HazardCause.collisionRisk, record LocalPosition {
+      east = 50.0; north = 0.0;
+    }, 200.0, 30000, false), 6002, 9042), -70);
     on receive driver.warnings.warningCleared(origin, actionId) {
       assert origin == 5003 and actionId == 1;
     } or after 50ms {
       fail "the farthest road works were not displaced";
     }
-    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5005, 350, 1, HazardCause.roadworks, record LocalPosition { east = 0.0; north = 650.0; }, 1000.0, 60000, false), 5005, 9042), - 70);
+    publish roadsideUnit.sch.frameIn(signedBy(hazardFrame(5005, 350, 1, HazardCause.roadworks, record LocalPosition {
+      east = 0.0; north = 650.0;
+    }, 1000.0, 60000, false), 5005, 9042), -70);
     on receive driver.warnings.warningCleared(origin, actionId) {
       assert origin == 5002 and actionId == 1;
     } or after 50ms {
@@ -2541,34 +2683,36 @@ package AdaptiveV2x {
     /** A forged signature and an untrusted certificate are both dropped before use; the genuine message enters the neighbour table. */
     wait 300ms;
     var genuine: V2xFrame = signedBy(awarenessFrame(2001, 300, StationType.passengerCar, peerState(40.0, 0.0, 12.0, 270.0)), 2001, 5542);
-    var forged: V2xFrame = withTrailer(genuine, record SecurityTrailer { pseudonymId = 2001; certificateId = 5542; signature = genuine.trailer.signature + 1; });
+    var forged: V2xFrame = withTrailer(genuine, record SecurityTrailer {
+      pseudonymId = 2001; certificateId = 5542; signature = genuine.trailer.signature + 1;
+    });
     var untrusted: V2xFrame = signedBy(awarenessFrame(2002, 300, StationType.passengerCar, peerState(60.0, 0.0, 12.0, 270.0)), 2002, 5517);
-    publish otherVehicle.cch.frameIn(forged, - 60);
-    publish otherVehicle.cch.frameIn(untrusted, - 60);
+    publish otherVehicle.cch.frameIn(forged, -60);
+    publish otherVehicle.cch.frameIn(untrusted, -60);
     wait 20ms;
     assert app.v2x.droppedSecurity == 2 and app.v2x.neighbourCount == 0;
     assert app.security.verificationFailures == 2 and app.security.verifications == 2;
-    publish otherVehicle.cch.frameIn(genuine, - 60);
+    publish otherVehicle.cch.frameIn(genuine, -60);
     wait 20ms;
     assert app.v2x.neighbourCount == 1 and app.v2x.droppedSecurity == 2 and app.security.verifications == 3;
   }
   test 'Neighbour ageing and plausibility' of app {
     /** Implausible speed, out-of-range positions, stale frames and frames from the future are dropped, a frame below receiver sensitivity never reaches the service, and neighbours not heard for 2 s age out. */
     wait 300ms;
-    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2001, 300, StationType.passengerCar, peerState(40.0, 0.0, 12.0, 270.0)), 2001, 5542), - 60);
-    publish roadsideUnit.cch.frameIn(signedBy(awarenessFrame(5001, 300, StationType.roadSideUnit, peerState(- 80.0, 10.0, 0.0, 0.0)), 5001, 9042), - 70);
-    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2003, 300, StationType.passengerCar, peerState(30.0, 5.0, 80.0, 90.0)), 2003, 6642), - 60);
-    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2004, 300, StationType.heavyTruck, peerState(3000.0, 0.0, 20.0, 90.0)), 2004, 6742), - 60);
-    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2005, 300, StationType.bus, peerState(70.0, 0.0, 10.0, 90.0)), 2005, 6842), - 100);
+    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2001, 300, StationType.passengerCar, peerState(40.0, 0.0, 12.0, 270.0)), 2001, 5542), -60);
+    publish roadsideUnit.cch.frameIn(signedBy(awarenessFrame(5001, 300, StationType.roadSideUnit, peerState(-80.0, 10.0, 0.0, 0.0)), 5001, 9042), -70);
+    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2003, 300, StationType.passengerCar, peerState(30.0, 5.0, 80.0, 90.0)), 2003, 6642), -60);
+    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2004, 300, StationType.heavyTruck, peerState(3000.0, 0.0, 20.0, 90.0)), 2004, 6742), -60);
+    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2005, 300, StationType.bus, peerState(70.0, 0.0, 10.0, 90.0)), 2005, 6842), -100);
     wait 50ms;
     assert app.v2x.framesReceived == 4 and app.v2x.droppedImplausible == 2 and app.v2x.neighbourCount == 2;
     wait 1000ms;
     assert app.v2x.neighbourCount == 2;
     wait 1600ms;
     assert app.v2x.neighbourCount == 0 and app.v2x.nowMs == 2900;
-    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2006, 300, StationType.passengerCar, peerState(20.0, 0.0, 10.0, 90.0)), 2006, 6942), - 60);
-    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2007, 3500, StationType.passengerCar, peerState(25.0, 0.0, 10.0, 90.0)), 2007, 7042), - 60);
-    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2008, 2850, StationType.passengerCar, peerState(30.0, 0.0, 10.0, 90.0)), 2008, 7142), - 60);
+    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2006, 300, StationType.passengerCar, peerState(20.0, 0.0, 10.0, 90.0)), 2006, 6942), -60);
+    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2007, 3500, StationType.passengerCar, peerState(25.0, 0.0, 10.0, 90.0)), 2007, 7042), -60);
+    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2008, 2850, StationType.passengerCar, peerState(30.0, 0.0, 10.0, 90.0)), 2008, 7142), -60);
     wait 20ms;
     assert app.v2x.droppedImplausible == 4 and app.v2x.neighbourCount == 1;
   }
@@ -2610,7 +2754,10 @@ package AdaptiveV2x {
         assert sessionId == 42 and batch.sequence == expected;
         expected = expected + 1;
         uploads = uploads + 1;
-        return record UploadAck { sequence = batch.sequence; accepted = true; };
+        return record UploadAck {
+          sequence = batch.sequence;
+          accepted = true;
+        };
       } or after 1500ms {
         fail "buffered telemetry was not flushed";
       }
@@ -2658,7 +2805,10 @@ package AdaptiveV2x {
     }
     on call cloud.api.upload(sessionId, batch) {
       assert batch.sequence == 1;
-      return record UploadAck { sequence = batch.sequence; accepted = true; };
+      return record UploadAck {
+        sequence = batch.sequence;
+        accepted = true;
+      };
     } or after 3s {
       fail "no upload while consent is granted";
     }
@@ -2745,10 +2895,10 @@ package AdaptiveV2x {
   test 'Repetition outlived by cancellation' of app {
     /** A hazard repetition signed while the event is cancelled is not sent after the cancellation. */
     wait 300ms;
-    send vehicleBus.signals.accelerationMps2(- 7.5);
+    send vehicleBus.signals.accelerationMps2(-7.5);
     wait 700ms;
     wait 500us;
-    send vehicleBus.signals.accelerationMps2(- 1.0);
+    send vehicleBus.signals.accelerationMps2(-1.0);
     var afterCancel: uint = 0;
     var cancelled: bool = false;
     var k: int = 0;
@@ -2822,10 +2972,12 @@ package AdaptiveV2x {
   }
   test 'Rotation deferred during own hazard' of app {
     /** While an own hazard is active, more than ten signatures keep one pseudonym, so every repetition and the cancellation share the event's origin. The deferred rotation follows the cancellation, and the next event starts again at action 1 under the new pseudonym. */
-    send vehicleBus.signals.position(record LocalPosition { east = 50.0; north = 0.0; });
+    send vehicleBus.signals.position(record LocalPosition {
+      east = 50.0; north = 0.0;
+    });
     send vehicleBus.signals.speedMps(20.0);
     wait 300ms;
-    send vehicleBus.signals.accelerationMps2(- 7.5);
+    send vehicleBus.signals.accelerationMps2(-7.5);
     var speed: real = 20.0;
     var frames: uint = 0;
     var hazards: uint = 0;
@@ -2849,7 +3001,7 @@ package AdaptiveV2x {
     }
     assert stable and frames > 10 and hazards >= 2 and app.security.rotations == 0;
     assert app.security.signaturesSinceRotation > 10 and app.security.rotationsDeferred >= 2;
-    send vehicleBus.signals.accelerationMps2(- 1.0);
+    send vehicleBus.signals.accelerationMps2(-1.0);
     var cancelled: bool = false;
     var renewed: bool = false;
     k = 0;
@@ -2870,7 +3022,7 @@ package AdaptiveV2x {
       k = k + 1;
     }
     assert cancelled and renewed and app.security.rotations == 1;
-    send vehicleBus.signals.accelerationMps2(- 8.0);
+    send vehicleBus.signals.accelerationMps2(-8.0);
     var announced: bool = false;
     k = 0;
     while (k < 6 and not announced) {
@@ -2887,10 +3039,12 @@ package AdaptiveV2x {
   }
   test 'New hazard right after cancellation' of app {
     /** A new own hazard 1 ms after a cancellation that released a deferred rotation is announced at once under the new pseudonym, numbered from action 1. */
-    send vehicleBus.signals.position(record LocalPosition { east = 50.0; north = 0.0; });
+    send vehicleBus.signals.position(record LocalPosition {
+      east = 50.0; north = 0.0;
+    });
     send vehicleBus.signals.speedMps(20.0);
     wait 300ms;
-    send vehicleBus.signals.accelerationMps2(- 7.5);
+    send vehicleBus.signals.accelerationMps2(-7.5);
     var speed: real = 20.0;
     var k: int = 0;
     while (k < 12) {
@@ -2900,9 +3054,9 @@ package AdaptiveV2x {
       k = k + 1;
     }
     assert app.security.signaturesSinceRotation >= 10 and app.security.rotations == 0;
-    send vehicleBus.signals.accelerationMps2(- 1.0);
+    send vehicleBus.signals.accelerationMps2(-1.0);
     wait 1ms;
-    send vehicleBus.signals.accelerationMps2(- 7.5);
+    send vehicleBus.signals.accelerationMps2(-7.5);
     var cancelled: bool = false;
     var renewed: bool = false;
     k = 0;
@@ -2924,10 +3078,12 @@ package AdaptiveV2x {
   }
   test 'Rotation deferral is bounded' of app {
     /** A hazard held for its whole 5 s validity defers rotation for the event only: the pseudonym signs more than ten but at most 80 messages, and rotates as soon as the event expires. */
-    send vehicleBus.signals.position(record LocalPosition { east = 50.0; north = 0.0; });
+    send vehicleBus.signals.position(record LocalPosition {
+      east = 50.0; north = 0.0;
+    });
     send vehicleBus.signals.speedMps(20.0);
     wait 300ms;
-    send vehicleBus.signals.accelerationMps2(- 7.5);
+    send vehicleBus.signals.accelerationMps2(-7.5);
     var speed: real = 20.0;
     var k: int = 0;
     while (k < 40) {
@@ -2958,7 +3114,9 @@ package AdaptiveV2x {
     var k: int = 0;
     while (k < 8) {
       east = east + 5.0;
-      send vehicleBus.signals.position(record LocalPosition { east = east; north = 0.0; });
+      send vehicleBus.signals.position(record LocalPosition {
+        east = east; north = 0.0;
+      });
       on receive otherVehicle.cch.frameOut(frame) {
         if (cams > 0 and (frame.header.generationDeltaTime - last + 65536) % 65536 != 100) {
           gapsOk = false;
@@ -2971,7 +3129,7 @@ package AdaptiveV2x {
       k = k + 1;
     }
     assert cams == 8 and gapsOk and app.v2x.nowMs > 47453200 and app.v2x.transmitFailures == 0;
-    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2001, app.v2x.nowMs % 65536, StationType.passengerCar, peerState(40.0, 0.0, 12.0, 270.0)), 2001, 5542), - 60);
+    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2001, app.v2x.nowMs % 65536, StationType.passengerCar, peerState(40.0, 0.0, 12.0, 270.0)), 2001, 5542), -60);
     wait 20ms;
     assert app.v2x.neighbourCount == 1;
     app.v2x.synchronizeClock(52428500);
@@ -2979,7 +3137,9 @@ package AdaptiveV2x {
     k = 0;
     while (k < 8) {
       east = east + 5.0;
-      send vehicleBus.signals.position(record LocalPosition { east = east; north = 0.0; });
+      send vehicleBus.signals.position(record LocalPosition {
+        east = east; north = 0.0;
+      });
       on receive otherVehicle.cch.frameOut(frame) {
         if (k > 0 and (frame.header.generationDeltaTime - last + 65536) % 65536 != 100) {
           gapsOk = false;
@@ -2995,9 +3155,9 @@ package AdaptiveV2x {
     }
     assert wrapped and gapsOk and app.v2x.nowMs % 65536 < 1000;
     var now: uint = app.v2x.nowMs % 65536;
-    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2002, (now + 65400) % 65536, StationType.passengerCar, peerState(60.0, 0.0, 12.0, 270.0)), 2002, 5642), - 60);
-    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2003, (now + 62536) % 65536, StationType.passengerCar, peerState(70.0, 0.0, 12.0, 270.0)), 2003, 5742), - 60);
-    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2004, (now + 500) % 65536, StationType.passengerCar, peerState(80.0, 0.0, 12.0, 270.0)), 2004, 5842), - 60);
+    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2002, (now + 65400) % 65536, StationType.passengerCar, peerState(60.0, 0.0, 12.0, 270.0)), 2002, 5642), -60);
+    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2003, (now + 62536) % 65536, StationType.passengerCar, peerState(70.0, 0.0, 12.0, 270.0)), 2003, 5742), -60);
+    publish otherVehicle.cch.frameIn(signedBy(awarenessFrame(2004, (now + 500) % 65536, StationType.passengerCar, peerState(80.0, 0.0, 12.0, 270.0)), 2004, 5842), -60);
     wait 20ms;
     assert app.v2x.neighbourCount == 2 and app.v2x.droppedImplausible == 2 and app.v2x.droppedMalformed == 0;
     wait 2600ms;
@@ -3006,7 +3166,9 @@ package AdaptiveV2x {
   test 'Hazard validity expiry' of app {
     /** Hazard lights at standstill announce a stationary vehicle. The announcement is repeated every second and expires after its 5 s validity without a cancellation. */
     wait 300ms;
-    send vehicleBus.signals.lights(record ExteriorLights { lowBeam = true; brakeLights = false; hazardLights = true; });
+    send vehicleBus.signals.lights(record ExteriorLights {
+      lowBeam = true; brakeLights = false; hazardLights = true;
+    });
     var announced: bool = false;
     var tries: int = 0;
     while (not announced and tries < 8) {
@@ -3024,7 +3186,6 @@ package AdaptiveV2x {
     assert app.v2x.hazardsExpired == 1 and app.v2x.hazardsCancelled == 0 and not app.v2x.hazardActive;
     assert app.v2x.denmsSent == 6;
   }
-
   associate vehicleBus to 'Share awareness';
   associate otherVehicle to 'Share awareness';
   associate vehicleBus to 'Warn driver of road hazard';
@@ -3080,7 +3241,6 @@ package AdaptiveV2x {
   associate otherVehicle to 'Long uptime and clock wrap';
   associate vehicleBus to 'Hazard validity expiry';
   associate otherVehicle to 'Hazard validity expiry';
-
   satisfy 'Awareness generation' by app.v2x;
   satisfy 'Awareness latency' by app.vehicleState;
   satisfy 'Awareness latency' by app.v2x;
@@ -3129,7 +3289,6 @@ package AdaptiveV2x {
   verify 'Controlled shutdown' by 'Shutdown on ignition off';
   verify 'Controlled shutdown' by 'Signing outlives the state';
   verify 'Hazard lifecycle' by 'Repetition outlived by cancellation';
-
   view architecture: General of app;
   view services: Interconnect of app;
   view 'deployment platform': General of vehicle;

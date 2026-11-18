@@ -2,6 +2,14 @@
   "options": {
     "untilNs": 10000000000
   },
+  "modelOptions": {
+    "examples/showcase/autosar-classic-door-controller.swaml": {
+      "maxSteps": 200000
+    }
+  },
+  "notes": {
+    "examples/showcase/autosar-classic-door-controller.swaml": "Two cases (Auto-lock by speed, Reversal distance at minimum supply) need 85,000 to 88,000 of the default 100,000 steps; a larger step limit keeps them clear of it."
+  },
   "examples": {
     "examples/02-realtime-controller.swaml": {
       "Control::ControlLoop": "pass"
