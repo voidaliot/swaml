@@ -1309,6 +1309,8 @@ export class SwamlValidator {
             // A release guard belongs to every, receive and after entries (WP7-S01, WP7-D01); reported once, where written.
             if (e.guard && (e.kind === 'start' || e.kind === 'call'))
                 this.report(e.guard, 'SW2007', 'A release guard is allowed only on every, receive and after entries.');
+            else
+                this.guardWarnings(e, c);
             // The guard is not part of entry identity (WP7-S03): entries that differ only in their guard are duplicates.
             const k = entryKey(e);
             if (keys.has(k))
@@ -1400,6 +1402,26 @@ export class SwamlValidator {
             if (effects(target, c).writes || effects(target, c).communicates)
                 this.report(call, 'SW2007', 'Release guard must be pure or read state.');
         }
+    }
+    /**
+     * SW2020 (warnings) on an entry where it is written in c. WP7-D03: its release guard folds to false in c, so the
+     * entry never runs its operation; a guard that names a const attribute some specialization or usage redefines (the
+     * same declaration) folds per occurrence and is left alone, as for WP6-D10.
+     */
+    private guardWarnings(e: a.ScheduleEntry, c: Structure): void {
+        if (e.kind === 'start' || e.kind === 'call')
+            return;
+        if (e.guard) {
+            if (constantValue(e.guard, c).value === false && !this.redefinedConstant(e.guard, c))
+                this.report(e.guard, 'SW2020', `Release guard when (${displayText(e.guard, MESSAGE_SPELLING)}) of ${this.guardEntryText(e)} is always false; the entry never runs ${formatName(e.operation, MESSAGE_SPELLING)}.`, true);
+            return;
+        }
+    }
+    /** An entry's trigger and operation for a message, with names spelled as in 2.2 (on every 10ms slot, after a b). */
+    private guardEntryText(e: a.ScheduleEntry): string {
+        const name = (x: string) => formatName(x, MESSAGE_SPELLING);
+        const trigger = e.kind === 'every' ? `on every ${e.periodValue ? `(${displayText(e.periodValue, MESSAGE_SPELLING)})` : e.period ? `${e.period.value}${e.period.unit}` : ''}` : e.kind === 'after' ? `after ${name(e.predecessor!)}` : `on ${e.kind} ${formatPath(e.endpoint!, MESSAGE_SPELLING)}`;
+        return `${trigger} ${name(e.operation)}`;
     }
     private states(op: Executable, c: Structure | undefined, env: Env): void {
         const b = body(op)!, sig = signature(op)!;

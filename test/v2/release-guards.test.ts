@@ -101,6 +101,35 @@ test('WP7-S02 WP7-D02 a release guard is bool, pure or reads state, in the scope
         assert.deepEqual(await errors(model(`${port} ${helpers}`, entry)), expected, entry);
 });
 
+/** The SW2020 warnings of a source, with their code, message and the text they cover. */
+const guardWarnings = async (source: string) => {
+    const r = await parse(source), lines = source.split('\n');
+    assert.deepEqual(r.errors.map(e => [e.code, e.message]), []);
+    return r.warnings.filter(w => w.code === 'SW2020').map(w => [String(w.message), w.range.start.line === w.range.end.line ? lines[w.range.start.line].slice(w.range.start.character, w.range.end.character) : '(lines)']);
+};
+
+test('WP7-D03 (SW2020) a release guard that folds to false is reported at the guard; a redefined const is left alone', async () => {
+    const dead = (guard: string, entry = 'on every 10ms slot', op = 'slot') => `Release guard when (${guard}) of ${entry} is always false; the entry never runs ${op}.`;
+    for (const guard of ['false', '1 == 2', 'not true', 'off', 'off and not off', 'limit > 3'])
+        assert.deepEqual(await guardWarnings(model('const attribute off: bool = false; const attribute limit: int = 2;', `on every 10ms slot() when (${guard});`)), [[dead(guard), guard]], guard);
+    // Receive and after entries too; names are spelled as in 2.2 (a contextual word is quoted).
+    assert.deepEqual(await guardWarnings(model('const attribute view: bool = false;', 'on receive inp.go(v) take(v) when (view); after take next() when (false);')),
+        [[dead("'view'", 'on receive inp.go take', 'take'), 'view'], [dead('false', 'after take next', 'next'), 'false']]);
+    // A guard that is true, that cannot fold or that reads state: no diagnostic.
+    for (const guard of ['true', 'not off', 'awake', 'off and awake', 'now() >= 0', 'limit == 2'])
+        assert.deepEqual(await guardWarnings(model('const attribute off: bool = false; const attribute limit: int = 2;', `on every 10ms slot() when (${guard});`)), [], guard);
+    // A const that a specialization or usage redefines folds per occurrence: not reported, and the redefinition decides the run.
+    const redefined = (more: string) => model('const attribute off: bool = false;', 'on every 10ms slot() when (off);', more);
+    for (const more of ['component def On specializes C { redefines const attribute off: bool = true; }', 'component Holder { component s: Src; component c: C { redefines const attribute off: bool = true; } connect (s.out, c.inp); connect (s.mode, c.mode); }'])
+        assert.deepEqual(await guardWarnings(redefined(more)), [], more);
+    const { model: m } = await valid(redefined('component Holder { component s: Src; component c: C { redefines const attribute off: bool = true; } connect (s.out, c.inp); connect (s.mode, c.mode); }'));
+    assert.equal(simulate([m], 'Test::Holder', { untilNs: 21_000_000 }).stores['Holder.c'].runs, 2);
+    // A redefinition of another component's const of the same name does not hide it (the declaration decides).
+    assert.deepEqual(await guardWarnings(redefined('component def K { const attribute off: bool = true; } component def L specializes K { redefines const attribute off: bool = false; }')), [[dead('off'), 'off']]);
+    // A start entry's guard is already an error and gets no warning besides it.
+    assert.deepEqual((await parse(model('', 'on start next() when (false);'))).warnings.filter(w => w.code === 'SW2020'), []);
+});
+
 test('WP7-S03 the guard is not part of entry identity: duplicates, and a derived entry replaces the guarded base entry', async () => {
     assert.deepEqual(await errors(model('', 'on every 10ms slot() when (awake); on every 10ms slot();')), [['SW2007', 'Duplicate (trigger, operation) entry.']]);
     assert.deepEqual(await errors(model('', 'on every 10ms slot() when (awake); on every 10ms slot() when (not awake);')), [['SW2007', 'Duplicate (trigger, operation) entry.']]);

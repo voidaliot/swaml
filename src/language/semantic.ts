@@ -1,5 +1,5 @@
 import { AstUtils, CstUtils, type AstNode, type Reference } from 'langium';
-import { decodeQuotedName, formatName } from './names.js';
+import { decodeQuotedName, formatName, type NameEdition } from './names.js';
 import * as a from './generated/ast.js';
 import { STANDARD_LIBRARY, STANDARD_LIBRARY_2_3 } from './standard-library.js';
 /** Shared semantic algorithms have no filesystem or host dependencies. */
@@ -184,18 +184,23 @@ export function nanos(d: a.Duration): number { return d.value * ({ ns: 1, us: 10
  * 2.3 a setting has the single form name = Expression; (WP4-G01), so a 2.2 duration setting is Literal{duration}.
  */
 export function settingDuration(s: a.PolicySetting): a.Duration | undefined { return a.isLiteral(s.value) ? s.value.duration : undefined; }
+/** The keywords that the grammar also accepts as names (rule Name). */
+const NAME_WORDS = new Set(['reversed', 'to', 'times', 'name', 'kind', 'path', 'use', 'case', 'test', 'associate', 'by', 'ns', 'us', 'ms', 's', 'defer', 'view', 'state', 'in', 'out']);
 /**
  * The canonical display text of an expression (WP4-S07): its tokens without comments or layout, integers in decimal
  * and names in canonical spelling, one space between tokens except none after ( [ . :: and none before ) ] , . ::,
  * none before the index [ of a value and the argument list ( of a call or try, and none inside a duration literal
  * (1ms). A parenthesized subexpression and an array literal are spaced like any operand: a * (b + c), [1, 2].
- * Messages and projections show this text; it keeps the unit of a literal (deadline (3ms) shows 3ms).
+ * Messages and projections show this text; it keeps the unit of a literal (deadline (3ms) shows 3ms). With an
+ * edition, every name is spelled for that edition instead, so a message can quote names as 2.2 does
+ * (MESSAGE_SPELLING): a contextual word written unquoted in 2.3, such as view, is shown 'view'.
  */
-export function displayText(e: a.Expression): string {
+export function displayText(e: a.Expression, edition?: NameEdition): string {
     const leaves = e.$cstNode ? CstUtils.flattenCst(e.$cstNode).filter(n => !n.hidden).toArray() : [];
     let text = '';
     leaves.forEach((leaf, i) => {
-        const type = leaf.tokenType.name, image = type === 'UNRESTRICTED_NAME' ? formatName(decodeQuotedName(leaf.text)) : type === 'INT' ? String(Number(leaf.text)) : leaf.text;
+        const type = leaf.tokenType.name, word = edition !== undefined && !a.isDuration(leaf.astNode) && (type === 'ID' || type === leaf.text && NAME_WORDS.has(leaf.text));
+        const image = type === 'UNRESTRICTED_NAME' ? formatName(decodeQuotedName(leaf.text), edition) : word ? formatName(leaf.text, edition) : type === 'INT' ? String(Number(leaf.text)) : leaf.text;
         const previous = leaves[i - 1];
         const glued = !previous || ['(', '[', '.', '::'].includes(previous.text) || [')', ']', ',', '.', '::'].includes(leaf.text)
             || a.isDuration(leaf.astNode) && previous.astNode === leaf.astNode
