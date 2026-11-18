@@ -36,6 +36,6 @@ C = (D, O, σ, S, Q, A, M, R, L, B, t)
 | retain | Moved to [chapter 9.3](../../spec/09-formal-semantics.md#93-transition-schemas) in WP5. | [WP5] |
 | sample | Moved to [chapter 9.3](../../spec/09-formal-semantics.md#93-transition-schemas) in WP6. | [WP6] |
 | guarded dispatch | Moved to [chapter 9.3](../../spec/09-formal-semantics.md#93-transition-schemas) in WP7. | [WP7] |
-| ordered selection | Equal (t, phase) items ordered by descending priority, then in-task position, then insertion ordinal | [WP8] |
+| ordered selection | Moved to [chapter 9.3](../../spec/09-formal-semantics.md#93-transition-schemas) in WP8. | [WP8] |
 
 The state paragraph "Select an already elapsed timer after entry completes before queued input" became "After entry completes, evaluate completion transitions, then select an already elapsed timer, then queued input" [WP5, applied].

@@ -7,8 +7,8 @@
 | ID | Rule |
 | --- | --- |
 | WP4-R02 | Moved to [chapter 6.1](../../spec/06-execution-contract.md#61-lifecycle-and-time) in WP4. |
-| WP8-R01 | **Ordering keys.** Releases, dispatches and ready continuations at equal logical time and phase are ordered by descending Task priority (unplaced activations at priority 0), then activations on a Task before unplaced activations of equal priority, then, between activations on the same Task, by in-task position (WP8-M01), then by the existing insertion ordinal. A case-script activation is unplaced. A primary-subject call borrowed by a case (ADR 0021) runs within the case activation and keeps its keys; it does not take the Task of the subject's entries. A run without Tasks has equal keys and keeps its 2.2 order. |
-| WP8-R02 | **Zero cost.** With zero-cost steps, `preemptive`, `kind` and `responseNs` have no runtime effect beyond the static rules. A run records the applied deployment as before. |
+| WP8-R01 | Moved to [chapter 6.1](../../spec/06-execution-contract.md#61-lifecycle-and-time) in WP8. |
+| WP8-R02 | Moved to [chapter 6.1](../../spec/06-execution-contract.md#61-lifecycle-and-time) in WP8. |
 
 ## 6.2 Lock and snapshot
 

@@ -39,7 +39,7 @@ var lastRxNs: uint = 0;   // compared with now() - lastRxNs >= rxTimeoutMs * 1ms
 
 ## 1.5 Reuse and library boundaries
 
-WP3 applied the library sentence for `Swaml::Numeric`, `Swaml::Text` and `Swaml::Time` in [chapter 1.5](../../spec/01-structure-and-types.md#15-reuse-and-library-boundaries). With WP8 it becomes: "The versioned source libraries are Swaml::Math, Swaml::Numeric, Swaml::Text, Swaml::Time, Swaml::Calls, Swaml::Qos, Swaml::Views, Swaml::Platform and Swaml::Os."
+WP3 applied the library sentence for `Swaml::Numeric`, `Swaml::Text` and `Swaml::Time` in [chapter 1.5](../../spec/01-structure-and-types.md#15-reuse-and-library-boundaries). WP8 applied it: "The versioned source libraries are Swaml::Math, Swaml::Numeric, Swaml::Text, Swaml::Time, Swaml::Calls, Swaml::Qos, Swaml::Views, Swaml::Platform and Swaml::Os."
 
 | ID | Rule |
 | --- | --- |
@@ -51,6 +51,6 @@ WP3 applied the library sentence for `Swaml::Numeric`, `Swaml::Text` and `Swaml:
 | WP3-R01 | Moved to [chapter 1.5](../../spec/01-structure-and-types.md#15-reuse-and-library-boundaries) in WP3. |
 | WP3-R02 | Moved to [chapter 1.5](../../spec/01-structure-and-types.md#15-reuse-and-library-boundaries) in WP3. |
 | WP3-R03 | Moved to [chapter 1.5](../../spec/01-structure-and-types.md#15-reuse-and-library-boundaries) in WP3. |
-| WP8-L01 | `Swaml::Os` declares `enum TaskKind { basic, extended, isr }`, `component def Core specializes Node { }` and `component def Task specializes Process` with the const attributes `kind: TaskKind = TaskKind.basic`, `priority: uint = 0`, `preemptive: bool = true`, `periodNs: uint = 0` and `responseNs: uint = 0`, documented as in ADR 0025. It imports `Swaml::Platform`. |
+| WP8-L01 | Moved to [chapter 1.5](../../spec/01-structure-and-types.md#15-reuse-and-library-boundaries) in WP8. |
 
 Tier 2, not part of 2.3: trigonometry as swa.ml source in `Swaml::Numeric` and enum conversions with the library-only `enum` parameter type (ADR 0022).

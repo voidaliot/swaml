@@ -8,7 +8,7 @@
 | --- | --- |
 | WP2-M04 | Moved to [chapter 7.1](../../spec/07-normalized-model.md#71-identity-and-provenance) in WP2. |
 | WP4-M04 | Moved to [chapter 7.1](../../spec/07-normalized-model.md#71-identity-and-provenance) in WP4. |
-| WP8-M06 | **Placement identity.** An operation placement is identified by its deployment and exact path, like an occurrence placement. |
+| WP8-M06 | Moved to [chapter 7.1](../../spec/07-normalized-model.md#71-identity-and-provenance) in WP8. |
 
 ## 7.2 Families
 
@@ -21,7 +21,7 @@ The family table gains the following content:
 | State/transition | Applied to [chapter 7.2](../../spec/07-normalized-model.md#72-families) in WP4 (computed delay) and WP5 (transition kind, optional target, timer guard, state deferrals in order). | WP4, WP5 |
 | Port/member | Applied to [chapter 7.2](../../spec/07-normalized-model.md#72-families) in WP6 (initial values, sampled members). | WP6 |
 | Connection/forwarding | Applied to [chapter 7.2](../../spec/07-normalized-model.md#72-families) in WP6 (member policies with their effective policy per member route). | WP6 |
-| Deployment | Operation placements, effective placement per entry, Task, Core and in-task position | WP8 |
+| Deployment | Applied to [chapter 7.2](../../spec/07-normalized-model.md#72-families) in WP8. | WP8 |
 | Requirement/case/view | Moved to [chapter 7.2](../../spec/07-normalized-model.md#72-families) in WP2. | WP2 |
 
 ## 7.3 Routes and queues

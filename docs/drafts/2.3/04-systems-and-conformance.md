@@ -4,7 +4,7 @@
 
 ## 4.1 Deployment
 
-The sentence "Buses, hardware timing, core/task allocation and operating-system scheduling are target-translation concerns." becomes "Buses, hardware timing and operating-system scheduling are target-translation concerns. Core and task allocation may be declared with `Swaml::Os` (below); its costs belong to a target binding."
+Applied in WP8: the sentence "Buses, hardware timing, core/task allocation and operating-system scheduling are target-translation concerns." became "Buses, hardware timing and operating-system scheduling are target-translation concerns. Core and task allocation may be declared with `Swaml::Os` (below); its costs belong to a target binding."
 
 ```text
 import Swaml::Os;
@@ -28,21 +28,21 @@ deployment 'Front left door' of dcu on vehicle {
 
 | ID | Rule |
 | --- | --- |
-| WP8-S01 | **Operation placement.** A placement path may end at an operation of the addressed occurrence that is the target of at least one effective schedule entry of that occurrence; otherwise SW2009. It applies to every activation released by those entries. Callees run in their caller's placement. |
-| WP8-S02 | **Specificity.** Each schedule entry's effective placement is the most specific placement among its operation, its occurrence and that occurrence's ancestors. An operation placement overrides any occurrence placement. A multiplicity family path applies to every index, and an indexed path overrides it. Exact paths, including operation paths, are unique within one deployment (SW2009). |
-| WP8-S03 | **Core grouping.** The Tasks of a Core are the `Swaml::Os::Task` occurrences whose nearest `Swaml::Os::Core` ancestor is that Core. Tasks without a Core ancestor form one implicit Core per platform root. An entry is on Task K when its effective placement target is K or a Node whose nearest Task ancestor is K. |
-| WP8-S04 | **Activation.** T1–T6 apply to every deployment whose platform tree contains a `Swaml::Os::Task` occurrence, wherever its placements point. T7 applies whenever the platform tree contains a `Swaml::Os::Core` or `Swaml::Os::Task` occurrence. A platform with neither keeps its 2.2 meaning. |
-| WP8-S05 | **T1.** Priorities are unique among the Tasks of one Core (SW2009). |
-| WP8-S06 | **T2.** A Task with `periodNs > 0` receives only `every` entries whose evaluated period is a positive multiple of `periodNs`, plus `after` successors of entries on the same Task. `receive`, `call` and `start` entries go to Tasks with `periodNs = 0` (SW2009). |
-| WP8-S07 | **T3.** A Task of kind `isr` has `periodNs = 0` and `preemptive = true`, and receives only `receive` entries and their `after` successors (SW2009). |
-| WP8-S08 | **T4.** An activation that may suspend (a transitive suspend effect: `wait`, a request, a `receive` statement or a suspending callee) is placed only on a Task of kind `extended`. A stateful operation may be placed on a `basic` Task only if none of its reactions can suspend, counting its entry actions, exit actions, transition effects (including internal and completion effects) and their callees. The idle wait between reactions does not count. Otherwise it needs an `extended` Task (SW2009). |
-| WP8-S09 | **T5.** If a Task has `responseNs > 0`, every entry on it that has an explicit deadline has `deadline ≥ responseNs` (SW2009). |
-| WP8-S10 | **T6 and T7.** T6: every schedule entry of the deployed tree is on a Task. T7: the effective placements of all entries of one component occurrence reach at most one Core, explicit or implicit. A placement reaches a Core when its target is the Core or lies below it. Placements on Nodes outside any Core do not count. Both are SW2009. |
-| WP8-M01 | **In-task position.** An entry's position in its Task is the order of the `deploy` statements whose target is that Task or a Node whose nearest Task ancestor is that Task. An operation placement contributes the entries of that operation in schedule order. An occurrence placement contributes, in schedule order, those entries of the occurrence that no more specific placement claims. Its descendants without their own placement follow depth-first in declaration order, multiplicity indexes ascending. *Schedule order* is the effective order of `semantic.ts` `schedule()`: inherited entries in their base order, a replacing entry at the position of the entry it replaces, then new entries in authored order. |
-| WP8-M02 | **Target binding.** `spec/binding.schema.json` defines schema `swaml-binding/2.3` with `deployment`, `costs` (`operation`, `wcetNs`, optional `bcetNs`, `source`), `budgets` (`task`, `budgetNs`) and `crossCoreLatencyNs` (`connection`, `maxNs`), and no other properties. Software operations are named by occurrence path plus operation name from the deployed root, and Tasks by platform occurrence path. Connections use the route identities of runs and traces: `owner.name`, or `owner.@connectN` for an unnamed component connection, where `N` counts every `connect` member of the owner including forwarding. A package connection is `name`, or `@packageN` when unnamed. Names use canonical spelling. |
-| WP8-M03 | **`swaml binding check`.** `swaml binding check <binding> <sources…>` validates the file against the schema and resolves every identity against the validated model and the named deployment. It exits 1 on a schema error, an unresolved identity or `bcetNs > wcetNs`. It reports every placed operation without a cost as a finding without failing. It computes no schedule. |
+| WP8-S01 | Moved to [chapter 4.1](../../spec/04-systems-and-conformance.md#41-deployment) in WP8. |
+| WP8-S02 | Moved to [chapter 4.1](../../spec/04-systems-and-conformance.md#41-deployment) in WP8. |
+| WP8-S03 | Moved to [chapter 4.1](../../spec/04-systems-and-conformance.md#41-deployment) in WP8. |
+| WP8-S04 | Moved to [chapter 4.1](../../spec/04-systems-and-conformance.md#41-deployment) in WP8. |
+| WP8-S05 | Moved to [chapter 4.1](../../spec/04-systems-and-conformance.md#41-deployment) in WP8. |
+| WP8-S06 | Moved to [chapter 4.1](../../spec/04-systems-and-conformance.md#41-deployment) in WP8. |
+| WP8-S07 | Moved to [chapter 4.1](../../spec/04-systems-and-conformance.md#41-deployment) in WP8. |
+| WP8-S08 | Moved to [chapter 4.1](../../spec/04-systems-and-conformance.md#41-deployment) in WP8. |
+| WP8-S09 | Moved to [chapter 4.1](../../spec/04-systems-and-conformance.md#41-deployment) in WP8. |
+| WP8-S10 | Moved to [chapter 4.1](../../spec/04-systems-and-conformance.md#41-deployment) in WP8. |
+| WP8-M01 | Moved to [chapter 4.1](../../spec/04-systems-and-conformance.md#41-deployment) in WP8. |
+| WP8-M02 | Moved to [chapter 4.1](../../spec/04-systems-and-conformance.md#41-deployment) in WP8. |
+| WP8-M03 | Moved to [chapter 4.1](../../spec/04-systems-and-conformance.md#41-deployment) in WP8. |
 
-The tables of `Swaml::Os` (WP8-L01) are in chapter 1.5. The run-order rule is in chapter 6.1 (WP8-R01).
+The tables of `Swaml::Os` (WP8-L01) are in chapter 1.5. The run-order rule is in chapter 6.1 (WP8-R01). WP8 moved all its rules and added WP8-D11 in [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups).
 
 ## 4.2 Requirements, cases and package links
 
@@ -57,7 +57,7 @@ The tables of `Swaml::Os` (WP8-L01) are in chapter 1.5. The run-order rule is in
 | WP4-M03 | Moved to [chapter 4.3](../../spec/04-systems-and-conformance.md#43-views) in WP4. |
 | WP5-M01 | Moved to [chapter 4.3](../../spec/04-systems-and-conformance.md#43-views) in WP5. |
 | WP7-M01 | Moved to [chapter 4.3](../../spec/04-systems-and-conformance.md#43-views) in WP7. |
-| WP8-M04 | **Task lanes.** Timing groups activations in Task lanes when a deployment places them on Tasks. The General view shows operation placements. |
+| WP8-M04 | Moved to [chapter 4.3](../../spec/04-systems-and-conformance.md#43-views) in WP8. |
 | WP6-M01 | Moved to [chapter 4.3](../../spec/04-systems-and-conformance.md#43-views) in WP6. |
 
 ## 4.4 Validation groups
@@ -114,19 +114,19 @@ Diagnostics added or extended by 2.3. Message shapes are templates in the existi
 | WP6-D08 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP6. | |
 | WP7-D01 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP7. | |
 | WP7-D02 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP7. | |
-| WP8-D01 | SW2009 | Operation placement target (WP8-S01) | `{path} names operation {operation}, which no schedule entry of {occurrence} releases.` |
-| WP8-D02 | SW2009 | T1 | `Tasks {task1} and {task2} of {core} share priority {priority}.` |
-| WP8-D03 | SW2009 | T2 | `{entry} cannot run on periodic task {task}: {its period {p} is not a multiple of {periodNs} \| event entries need a task with periodNs = 0 \| its predecessor runs on {otherTask}}.` |
-| WP8-D04 | SW2009 | T3 | `ISR task {task} {must have periodNs = 0 \| must be preemptive \| accepts only receive entries and their after successors}.` |
-| WP8-D05 | SW2009 | T4 | `{entry} may suspend in {statement} and needs an extended task; {task} is {basic \| isr}.` |
-| WP8-D06 | SW2009 | T5 | `Deadline {d} of {entry} is shorter than the response bound {r} of {task}.` |
-| WP8-D07 | SW2009 | T6 | `{entry} of {occurrence} is not placed on a task of {platform}; place {operation} or {occurrence} on a task, for example: deploy {occurrencePath}.{operation} on {taskPath};` (the example names the nearest Task that already hosts an entry of the occurrence, or the first Task of the platform). |
-| WP8-D08 | SW2009 | T7 | `{occurrence} runs on {core1} and {core2}; all its operations must run on one core.` |
-| WP8-D09 | SW2009 | Duplicate exact operation path (WP8-S02) | The existing `Duplicate exact deployment path.` |
-| WP8-D10 | — (CLI) | `swaml binding check` findings (WP8-M03) | One line per finding with the JSON Pointer of the offending value, the identity and the reason; missing costs are marked as findings, not errors. |
+| WP8-D01 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP8. | |
+| WP8-D02 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP8. | |
+| WP8-D03 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP8. | |
+| WP8-D04 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP8. | |
+| WP8-D05 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP8. | |
+| WP8-D06 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP8. | |
+| WP8-D07 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP8. | |
+| WP8-D08 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP8. | |
+| WP8-D09 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP8. | |
+| WP8-D10 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP8. | |
 
 ## 4.5 Evidence boundaries
 
 | ID | Rule |
 | --- | --- |
-| WP8-M05 | A binding check is static resolution of target assumptions. It is neither an analysis claim (A) nor schedulability evidence. The Tier 2 timed profile `swaml-reference-timed/2.4` is where costs first influence a run. |
+| WP8-M05 | Moved to [chapter 4.5](../../spec/04-systems-and-conformance.md#45-evidence-boundaries) in WP8. |
