@@ -1,10 +1,43 @@
-import { AstUtils, DefaultDocumentBuilder, DefaultDocumentValidator, type LangiumDocument, type AstNode, type BuildOptions, type LinkingError, type ValidationOptions } from 'langium';
+import { AstUtils, DefaultDocumentBuilder, DefaultDocumentValidator, DocumentState, type LangiumDocument, type AstNode, type BuildOptions, type LinkingError, type LangiumSharedCoreServices, type ValidationOptions } from 'langium';
 import type { CancellationToken, Diagnostic } from 'vscode-languageserver';
-import { isModel, isPackage } from './generated/ast.js';
+import { isModel, isPackage, type Model, type Package } from './generated/ast.js';
+import { LIBRARY_2_3_URI, isLibraryCopy } from './semantic.js';
 import { MESSAGE_SPELLING, formatQualifiedName } from './names.js';
 import { BRACKET_NESTING_CLAUSE } from './swaml-syntax.js';
+/** The packages of each built-in document as loaded, before any is hidden. */
+const loadedPackages = new WeakMap<Model, Package[]>();
+/**
+ * WP3-L04: a workspace that declares a package named like a 2.3 library package (Swaml::Numeric, Swaml::Text,
+ * Swaml::Time) uses its own; the library package is not available there. The built-in 2.3 document then lists
+ * only its other packages, so scope, linking, resolution, validation and runs see exactly the 2.2 workspace.
+ * A byte-equal copy of a built-in library is not a user package and hides nothing (it is a duplicate, as a copy of
+ * the 2.2 library is). Recomputed for every build, before linking.
+ */
+export function hideShadowedLibraryPackages(documents: Iterable<LangiumDocument>): void {
+    const all = [...documents], own = new Set<string>();
+    for (const d of all)
+        if (d.uri.scheme !== 'builtin' && isModel(d.parseResult.value) && !isLibraryCopy(d.textDocument.getText()))
+            for (const p of d.parseResult.value.packages)
+                own.add(p.name);
+    for (const d of all) {
+        const model = d.parseResult.value;
+        if (d.uri.toString() !== LIBRARY_2_3_URI || !isModel(model))
+            continue;
+        const loaded = loadedPackages.get(model) ?? loadedPackages.set(model, [...model.packages]).get(model)!;
+        const visible = loaded.filter(p => !own.has(p.name));
+        if (visible.length === model.packages.length && visible.every((p, i) => model.packages[i] === p))
+            continue;
+        model.packages.splice(0, model.packages.length, ...visible);
+        // Keep node paths (the AST node locator reads $containerIndex) consistent with the visible list.
+        visible.forEach((p, i) => (p as { $containerIndex?: number }).$containerIndex = i);
+    }
+}
 /** Semantic string paths and negative lookups participate in workspace invalidation. */
 export class SwamlDocumentBuilder extends DefaultDocumentBuilder {
+    constructor(services: LangiumSharedCoreServices) {
+        super(services);
+        this.onBuildPhase(DocumentState.IndexedContent, () => hideShadowedLibraryPackages(this.langiumDocuments.all));
+    }
     override async build<T extends AstNode>(documents: LangiumDocument<T>[], options?: BuildOptions, cancelToken?: CancellationToken): Promise<void> {
         const libraries = this.langiumDocuments.all.filter(d => d.uri.scheme === 'builtin' && !documents.some(x => x === d)).toArray();
         await super.build<AstNode>([...documents, ...libraries], options, cancelToken);

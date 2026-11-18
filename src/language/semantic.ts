@@ -1,5 +1,6 @@
 import { AstUtils, type AstNode, type Reference } from 'langium';
 import * as a from './generated/ast.js';
+import { STANDARD_LIBRARY, STANDARD_LIBRARY_2_3 } from './standard-library.js';
 /** Shared semantic algorithms have no filesystem or host dependencies. */
 export type Node = AstNode & {
     [key: string]: any;
@@ -60,6 +61,23 @@ export const isExecutable = (n: AstNode): n is Executable => a.isOperation(n) ||
  */
 export const LIBRARY_INTRINSICS: Readonly<Record<string, 'sqrt' | 'intText' | 'realText' | 'now'>> = { 'Swaml::Numeric::sqrt': 'sqrt', 'Swaml::Text::intText': 'intText', 'Swaml::Text::realText': 'realText', 'Swaml::Time::now': 'now' };
 export type LibraryIntrinsic = 'sqrt' | 'intText' | 'realText' | 'now';
+/** The URI of the built-in document of the 2.3 library packages (WP3-M01). */
+export const LIBRARY_2_3_URI = 'builtin:/swaml-2.3.swaml';
+/** Whether text is a byte-equal copy (line ends aside) of a built-in library document, 2.2 or 2.3. */
+export const isLibraryCopy = (text: string): boolean => { const t = text.replaceAll('\r\n', '\n'); return t === STANDARD_LIBRARY_2_3 || t === STANDARD_LIBRARY; };
+/**
+ * A declared intrinsic of the 2.3 library, in the built-in document or a byte-equal copy of it: its body is
+ * documentation only, so the return-path and package-definition checks exempt it by identity, as they exempt
+ * Swaml::Math (WP3-M01). Only the built-in declaration is evaluated (libraryIntrinsic).
+ */
+export function declaredIntrinsic(op: AstNode | undefined): boolean {
+    if (op && a.isOperationUsage(op))
+        return !op.body && declaredIntrinsic(op.definition?.ref);
+    if (!op ||!a.isOperation(op) || !op.definition || !a.isPackage(op.$container) || !Object.hasOwn(LIBRARY_INTRINSICS, identity(op)))
+        return false;
+    const document = AstUtils.getDocument(op);
+    return document.uri.scheme === 'builtin' || isLibraryCopy(document.textDocument.getText());
+}
 /** The 2.3 host intrinsic op is, if any: only the built-in library's declaration counts, never a same-named user operation. */
 export function libraryIntrinsic(op: AstNode | undefined): LibraryIntrinsic | undefined {
     // A usage of an intrinsic definition without its own body is that intrinsic; a usage body replaces it.

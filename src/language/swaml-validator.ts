@@ -4,7 +4,7 @@ import type { LangiumServices } from 'langium/lsp';
 import * as a from './generated/ast.js';
 import { associatedOccurrences, associationOccurrences, associationPairs, associationTargets, isAssociationList, caseRead, conditionalType, caseTarget, isPlace, pathSteps, placeRoot, valueSteps, walkParts, type PartProblem, type Step, testCanAccess, caseCallAccess, caseCallRestriction, allowsSuspendingCall, connectionRoutes, designComponent, interfaceOnly, packageEndpoint, packageOccurrences, expressionTypes, OCCURRENCE_LIMIT, occurrenceCount, workspaceModels, assignable, body, compatibility, constantNumber, direction, effectiveQos, effects, endpoint, entryKey, identity, integral, isExecutable, isNode, localOperation, memberEndpoint, members, nanos, nodes, numeric, occurrences, owner, resolve, schedule, signature, typeKey, type Executable, type Node, type Structure, portMembers } from './semantic.js';
 import { selectView, viewCandidates, type ViewSubject } from './presentation.js';
-import { MESSAGE_SPELLING, decodeQuotedName, formatName, nameProblem } from './names.js';
+import { MESSAGE_SPELLING, decodeQuotedName, formatName, formatQualifiedName, nameProblem } from './names.js';
 import { staleWrite, STALE_READ_WORK_LIMIT, type StaleReadBudget, type Summary } from './stale-read.js';
 const EXPRESSION_TYPES = new Set(['ConditionalExpression', 'BinaryExpression', 'UnaryExpression', 'Literal', 'CallExpression', 'TryExpression', 'ReferenceExpression', 'RecordLiteral', 'ArrayLiteral']);
 /** Whether an expression is inside a conditional expression (WP2-S04). */
@@ -12,7 +12,8 @@ const insideConditional = (e: AstNode): boolean => { for (let n = e.$container; 
 /** The name of the attribute, requirement attribute or policy setting whose initializer contains e. */
 const initialized = (e: AstNode): string => { for (let n: AstNode | undefined = e; n; n = n.$container) if (a.isAttribute(n) || a.isPolicySetting(n)) return n.name; return ''; };
 const isExpression = (n: unknown): n is a.Expression => !!n && typeof n === 'object' && EXPRESSION_TYPES.has((n as AstNode).$type);
-import { useEffectCache, isClockRead, libraryIntrinsic } from './semantic.js';
+import { useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_2_3_URI, container } from './semantic.js';
+import { ambiguousNameMessage } from './swaml-scope.js';
 type Env = Map<string, {
     type: string;
     mutable: boolean;
@@ -39,12 +40,12 @@ export class SwamlValidator {
     private staleSummaries = new Map<Structure, Map<Executable, Summary>>();
     private staleBudget: StaleReadBudget = { work: 0 };
     private staleLimitReported = false;
-    private report(n: AstNode, code: string, message: string, warning = false, extra: { range?: Range; edits?: { range: Range; newText: string }[]; declaration?: AstNode } = {}): void { const declarationDoc=AstUtils.getDocument(n),currentDoc=AstUtils.getDocument(this.currentModel),foreign=declarationDoc!==currentDoc;
+    private report(n: AstNode, code: string, message: string, warning = false, extra: { range?: Range; edits?: { range: Range; newText: string }[]; declaration?: AstNode; related?: AstNode[] } = {}): void { const declarationDoc=AstUtils.getDocument(n),currentDoc=AstUtils.getDocument(this.currentModel),foreign=declarationDoc!==currentDoc;
         // Inherited members are checked for their definition and every usage; report each finding once.
         const reportKey=[code,message,declarationDoc.uri.toString(),JSON.stringify(extra.range??n.$cstNode?.range)].join('|');if(this.reported.has(reportKey))return;this.reported.add(reportKey);
         const declarationOwner=owner(n,(x):x is Structure=>a.isComponentDef(x)||a.isComponentUsage(x));
         const primary=foreign?this.currentModel.packages.flatMap(p=>p.elements.filter(a.isComponentUsage)).find(root=>occurrenceCount(root)<=OCCURRENCE_LIMIT&&occurrences(root).some(o=>o.structure===declarationOwner||o.definition===declarationOwner))??this.currentModel.packages[0]??this.currentModel:n;
-        this.accept(warning ? 'warning' : 'error', message, { node: primary, ...(extra.range&&!foreign?{range:extra.range}:{}), code, relatedInformation:foreign?[{location:{uri:declarationDoc.uri.toString(),range:n.$cstNode!.range},message:'Declaration '+identity(n)}]:extra.declaration?[{location:{uri:AstUtils.getDocument(extra.declaration).uri.toString(),range:extra.declaration.$cstNode!.range},message:'Declaration '+identity(extra.declaration)}]:undefined, data: { declaration: identity(extra.declaration ?? n), occurrencePaths: this.models.flatMap(m => m.packages.flatMap(p => p.elements.filter(a.isComponentUsage))).filter(root => occurrenceCount(root) <= OCCURRENCE_LIMIT).flatMap(root => occurrences(root).filter(o => o.structure === n || o.structure === owner(n, (x): x is Structure => a.isComponentDef(x) || a.isComponentUsage(x)) || o.definition === owner(n, a.isComponentDef)).map(o => identity(root) + o.path.slice(root.name.length))), ...(!foreign && code === 'SW2003' && message.includes('needs redefines') && n.$cstNode ? { suggestedEdits: [{ uri: AstUtils.getDocument(n).uri.toString(), range: { start: n.$cstNode.range.start, end: n.$cstNode.range.start }, newText: 'redefines ' }] } : !foreign && extra.edits ? { suggestedEdits: extra.edits.map(edit => ({ uri: declarationDoc.uri.toString(), ...edit })) } : {}) } }); }
+        this.accept(warning ? 'warning' : 'error', message, { node: primary, ...(extra.range&&!foreign?{range:extra.range}:{}), code, relatedInformation:foreign?[{location:{uri:declarationDoc.uri.toString(),range:n.$cstNode!.range},message:'Declaration '+identity(n)}]:extra.related?extra.related.filter(x=>x.$cstNode).map(x=>({location:{uri:AstUtils.getDocument(x).uri.toString(),range:x.$cstNode!.range},message:'Declaration '+formatQualifiedName(identity(x),MESSAGE_SPELLING)})):extra.declaration?[{location:{uri:AstUtils.getDocument(extra.declaration).uri.toString(),range:extra.declaration.$cstNode!.range},message:'Declaration '+identity(extra.declaration)}]:undefined, data: { declaration: identity(extra.declaration ?? n), occurrencePaths: this.models.flatMap(m => m.packages.flatMap(p => p.elements.filter(a.isComponentUsage))).filter(root => occurrenceCount(root) <= OCCURRENCE_LIMIT).flatMap(root => occurrences(root).filter(o => o.structure === n || o.structure === owner(n, (x): x is Structure => a.isComponentDef(x) || a.isComponentUsage(x)) || o.definition === owner(n, a.isComponentDef)).map(o => identity(root) + o.path.slice(root.name.length))), ...(!foreign && code === 'SW2003' && message.includes('needs redefines') && n.$cstNode ? { suggestedEdits: [{ uri: AstUtils.getDocument(n).uri.toString(), range: { start: n.$cstNode.range.start, end: n.$cstNode.range.start }, newText: 'redefines ' }] } : !foreign && extra.edits ? { suggestedEdits: extra.edits.map(edit => ({ uri: declarationDoc.uri.toString(), ...edit })) } : {}) } }); }
     checkModel = (model: a.Model, accept: ValidationAcceptor): void => {
         this.accept = accept;
         this.currentModel=model;
@@ -293,7 +294,7 @@ export class SwamlValidator {
         this.unique([...sig.parameters, ...b.operations], op);
         for (const nested of b.operations)
             this.operation(nested, c);
-        if (!c && !identity(op).startsWith('Swaml::Math::') && !libraryIntrinsic(op) && Object.values(effects(op)).some(Boolean))
+        if (!c && !identity(op).startsWith('Swaml::Math::') && !declaredIntrinsic(op) && Object.values(effects(op)).some(Boolean))
             this.report(op, 'SW2006', 'Package definitions may use only parameters and nested operations.');
         // Depth-first search with a finished set, so shared callees are explored once rather than once per path.
         const finished = new Set<Executable>();
@@ -309,7 +310,7 @@ export class SwamlValidator {
         else {
             this.block(b, env, c, op);
             // Host intrinsics have documentation-only bodies (WP3-M01).
-            if (typeKey(sig.result) !== 'void' && !this.terminates(b) && !identity(sig).startsWith('Swaml::Math::') && !libraryIntrinsic(op))
+            if (typeKey(sig.result) !== 'void' && !this.terminates(b) && !identity(sig).startsWith('Swaml::Math::') && !declaredIntrinsic(op))
                 this.report(op, 'SW2006', 'A non-void operation must return or fail on every path.');
         }
         if (sig.parameters.some(p => p.direction === 'out')) this.outFlow(op,c);
@@ -461,6 +462,17 @@ export class SwamlValidator {
         const end = flow(binding ? binding.body : body(op!)!, new Set());
         if (end && op)
             check(op, end);
+    }
+    /**
+     * The visible declarations of an unresolved short call name when several share it and one of them is a 2.3 library
+     * declaration (WP3-L04). A 2.2 source cannot import the 2.3 packages, so it never gets this.
+     */
+    private libraryAmbiguity(call: a.CallExpression): AstNode[] | undefined {
+        const pkg = owner(call, a.isPackage);
+        if (!pkg || call.target.includes('.') || call.target.includes('::') || localOperation(call, call.target, container(call)))
+            return undefined;
+        const clashing = this.models.flatMap(m => m.packages).filter(p => p === pkg || pkg.imports.some(i => i.namespace === p.name)).flatMap(p => p.elements.filter(x => x.name === call.target));
+        return clashing.length > 1 && clashing.some(x => AstUtils.getDocument(x).uri.toString() === LIBRARY_2_3_URI) ? clashing : undefined;
     }
     private callTarget(call: a.CallExpression, c?: Structure): Executable | a.PortMember | undefined {
         if (this.script && call.target.includes('.')) {
@@ -633,7 +645,12 @@ export class SwamlValidator {
             }
             const t = this.callTarget(e, c);
             if (!t) {
-                this.report(e, 'SW2006', `Unknown operation ${e.target}; remote calls require an owned port.`);
+                const clashing = this.libraryAmbiguity(e);
+                if (clashing)
+                    // A short call name shared with a 2.3 library operation (WP3-L04); never in a 2.2 source.
+                    this.report(e, 'SW2001', ambiguousNameMessage(e.target, clashing, owner(e, a.isPackage)!, x => a.isOperation(x) && clashing.filter(y => owner(y, a.isPackage) === owner(x, a.isPackage)).length === 1), false, { ...this.at(e, 'target'), related: clashing });
+                else
+                    this.report(e, 'SW2006', `Unknown operation ${e.target}; remote calls require an owned port.`);
                 return '?';
             }
             if (isExecutable(t) && body(t)?.states.length)

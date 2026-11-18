@@ -33,6 +33,17 @@ export class SwamlScopeProvider extends DefaultScopeProvider {
 }
 const KIND: Record<string, string> = { DataType: 'datatype', EnumType: 'enum', ComponentDef: 'component def', ComponentUsage: 'component', PortDef: 'port def', Operation: 'operation', QosPolicy: 'qos def', ViewDef: 'view def', Requirement: 'requirement', View: 'view', Deployment: 'deployment' };
 const kindOf = (n: AstNode) => a.isScenario(n) ? (n.kind === 'test' ? 'test' : 'use case') : KIND[n.$type] ?? n.$type;
+/**
+ * The SW2001 message for a short name that several visible declarations share, in the 2.2 spelling; resolvable
+ * selects the declarations whose qualified name the advice may suggest.
+ */
+export function ambiguousNameMessage(name: string, clashing: readonly AstNode[], pkg: a.Package, resolvable: (e: AstNode) => boolean): string {
+    const qualified = (e: AstNode) => formatQualifiedName(owner(e, a.isPackage)!.name + '::' + (e as AstNode & { name: string }).name, MESSAGE_SPELLING);
+    const described = clashing.map(e => `${kindOf(e)} ${qualified(e)}${owner(e, a.isPackage) === pkg ? '' : ' (imported)'}`);
+    const alternatives = clashing.filter(resolvable).map(qualified);
+    const advice = alternatives.length ? `qualify the reference (${alternatives.join(' or ')}) or rename one declaration` : 'rename one declaration';
+    return `Ambiguous name ${formatName(name, MESSAGE_SPELLING)}: it names ${described.slice(0, -1).join(', ')} and ${described[described.length - 1]}. A short name must name one visible declaration; ${advice}.`;
+}
 /** Explains a short name that the scope leaves unresolved because several visible declarations share it. */
 export class SwamlLinker extends DefaultLinker {
     /** Package elements by package name and element name, built once per link pass. */
@@ -67,12 +78,8 @@ export class SwamlLinker extends DefaultLinker {
         const clashing = local && own.length ? own : [...new Set(visible.flatMap(named))];
         if (clashing.length < 2)
             return error;
-        const qualified = (e: AstNode) => formatQualifiedName(owner(e, a.isPackage)!.name + '::' + (e as AstNode & { name: string }).name, MESSAGE_SPELLING);
-        const described = clashing.map(e => `${kindOf(e)} ${qualified(e)}${owner(e, a.isPackage) === pkg ? '' : ' (imported)'}`);
         // Only suggest a qualified name that resolves: unique in its package and of the expected kind.
         const type = this.reflection.getReferenceType(refInfo);
-        const alternatives = clashing.filter(e => named(owner(e, a.isPackage)!.name).length === 1 && this.reflection.isSubtype(e.$type, type)).map(qualified);
-        const advice = alternatives.length ? `qualify the reference (${alternatives.join(' or ')}) or rename one declaration` : 'rename one declaration';
-        return { ...error, declarations: clashing, message: `Ambiguous name ${formatName(name, MESSAGE_SPELLING)}: it names ${described.slice(0, -1).join(', ')} and ${described[described.length - 1]}. A short name must name one visible declaration; ${advice}.` };
+        return { ...error, declarations: clashing, message: ambiguousNameMessage(name, clashing, pkg, e => named(owner(e, a.isPackage)!.name).length === 1 && this.reflection.isSubtype(e.$type, type)) };
     }
 }
