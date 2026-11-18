@@ -28,20 +28,63 @@ export const publishedEditions = new Map([
 ]);
 
 /**
+ * The release tag whose files the pins equal. By default the edition's own tag v<edition>;
+ * the 0.1.0 to 1.1.1 publications were rebuilt by the 1.2.0 release (e175de6), so
+ * their published files are those at v1.2.0.
+ */
+export const pinnedAtTag = new Map(['0.1.0', '1.0.0', '1.1.0', '1.1.1'].map(edition => [edition, 'v1.2.0']));
+
+/**
  * Edition-specific workspace copies, compared with the hash their edition's
  * manifest records. `files` maps a workspace path to its manifest path; every file
- * in `directories` must be a manifest source and equal it. Maintained sources
- * (docs/spec, the guides, src, scripts, examples, inventories) are not frozen:
- * later editions edit them, and only the published PDF keeps their 2.x bytes.
+ * in `directories` must be a manifest source and equal it.
+ *
+ * Every companion a manifest lists (reference book, release and migration notes)
+ * and every script it lists is either frozen here or a named exception with its
+ * reason. The publication scripts are frozen so that the archive checkers and the
+ * tooling a published PDF embeds cannot be weakened unseen; a later edition adds
+ * new X.Y files or removes an entry here in a reviewed change. Maintained sources
+ * (docs/spec, the guides, src, examples, inventories) are not frozen: later
+ * editions edit them, and only the published PDF keeps their released bytes.
  */
+const same = (...paths) => Object.fromEntries(paths.map(path => [path, path]));
+const later = commit => `changed by ${commit} after the release; the published PDF keeps the released bytes`;
+const maintainedTooling = ['scripts/v2_scene.py', 'scripts/build-notation.py', 'scripts/build-graphical-examples.py', 'scripts/build-reference.mjs'];
 export const frozenCopies = new Map([
-    ['2.0.0', {files: {'history/2.0.0/docs/SWAML-2.0.0-Reference.md': 'docs/SWAML-2.0.0-Reference.md'}, directories: [], count: 1}],
-    ['2.1', {files: {'docs/SWAML-2.1-Reference.md': 'docs/SWAML-2.1-Reference.md', 'docs/RELEASE_2_1.md': 'docs/RELEASE_2_1.md',
-        'examples/simulation/hello-trace.json': 'examples/simulation/hello-trace.json'},
-        directories: ['docs/figures/2.0/', 'docs/notation/2.0/'], count: 102}],
-    ['2.2', {files: {'docs/SWAML-2.2-Reference.md': 'docs/SWAML-2.2-Reference.md', 'docs/RELEASE_2_2.md': 'docs/RELEASE_2_2.md'},
-        directories: ['docs/figures/2.2/', 'docs/notation/2.2/', 'examples/simulation/2.2/'], count: 102}],
+    ['0.1.0', {files: {}, directories: [], count: 0, exceptions: {}}],
+    ['1.0.0', {files: same('docs/MIGRATION_1_0.md', 'docs/RELEASE_1_0.md'), directories: [], count: 2,
+        exceptions: {'docs/SWAML-1.0.0-Reference.md': later('the 1.2.0 release (e175de6)')}}],
+    ['1.1.0', {files: same('docs/MIGRATION_1_1.md', 'docs/RELEASE_1_1.md'), directories: [], count: 2,
+        exceptions: {'docs/SWAML-1.1.0-Reference.md': later('the 1.2.0 release (e175de6)')}}],
+    ['1.1.1', {files: same('docs/MIGRATION_1_1.md', 'docs/RELEASE_1_1_1.md'), directories: [], count: 2,
+        exceptions: {'docs/SWAML-1.1.1-Reference.md': later('the 1.2.0 release (e175de6)')}}],
+    ['1.2.0', {files: same('docs/MIGRATION_1_1.md', 'docs/RELEASE_1_2_0.md', 'docs/SWAML-1.2.0-Reference.md'), directories: [], count: 3,
+        exceptions: {'docs/MIGRATION_1_2.md': later('the 1.2.1 and 1.3.0 releases (c38d1cf, dc83eff)')}}],
+    ['1.2.1', {files: same('docs/MIGRATION_1_1.md', 'docs/SWAML-1.2.1-Reference.md'), directories: [], count: 2,
+        exceptions: {'docs/MIGRATION_1_2.md': later('the 1.3.0 release (dc83eff)'), 'docs/RELEASE_1_2_1.md': later('the 1.3.0 release (dc83eff)')}}],
+    ['1.3.0', {files: same('docs/MIGRATION_1_1.md', 'docs/MIGRATION_1_2.md', 'docs/RELEASE_1_3_0.md', 'docs/SWAML-1.3.0-Reference.md'), directories: [], count: 4,
+        exceptions: {'docs/MIGRATION_1_3.md': later('the 1.3.1 release (9dafa65)')}}],
+    ['1.3.1', {files: same('docs/MIGRATION_1_1.md', 'docs/MIGRATION_1_2.md', 'docs/MIGRATION_1_3.md', 'docs/MIGRATION_1_3_1.md',
+        'docs/RELEASE_1_3_0.md', 'docs/RELEASE_1_3_1.md', 'docs/SWAML-1.3.1-Reference.md'), directories: [], count: 7, exceptions: {}}],
+    ['2.0.0', {files: {'history/2.0.0/docs/SWAML-2.0.0-Reference.md': 'docs/SWAML-2.0.0-Reference.md', ...same('scripts/pdf-requirements.txt')},
+        directories: [], count: 2,
+        // The workspace docs/SWAML-2.0.0-Reference.md is now a pointer (7cd52e3); the published book is the history copy frozen above.
+        exceptions: {'docs/RELEASE_2_0_0.md': later('the swa.ml display-name change (4297f8c)'),
+            'scripts/build-spec-pdf-2.0.py': later('the archive-mode change (7cd52e3)'), 'scripts/check-spec-pdf-2.0.py': later('the archive-mode change (7cd52e3)'),
+            ...Object.fromEntries(maintainedTooling.map(path => [path, later('the 2.1 and 2.2 editions')]))}}],
+    ['2.1', {files: {...same('docs/SWAML-2.1-Reference.md', 'docs/RELEASE_2_1.md', 'examples/simulation/hello-trace.json',
+            'scripts/build-spec-pdf-2.1.py', 'scripts/check-spec-pdf-2.1.py', 'scripts/publication_2_1_sources.py', 'scripts/publication_archive.py',
+            'scripts/ci-pdf-requirements.txt', 'scripts/standard-version.mjs')},
+        directories: ['docs/figures/2.0/', 'docs/notation/2.0/'], count: 108,
+        exceptions: Object.fromEntries(maintainedTooling.map(path => [path, later('the 2.2 edition (58cc8c6 and earlier)')]))}],
+    ['2.2', {files: same('docs/SWAML-2.2-Reference.md', 'docs/RELEASE_2_2.md', 'scripts/build-spec-pdf-2.2.py', 'scripts/check-spec-pdf-2.2.py',
+            'scripts/publication_2_2_sources.py', 'scripts/publication_archive.py', 'scripts/test-publication-2-2.py', 'scripts/ci-pdf-requirements.txt',
+            'scripts/standard-version.mjs', ...maintainedTooling),
+        directories: ['docs/figures/2.2/', 'docs/notation/2.2/', 'examples/simulation/2.2/'], count: 113, exceptions: {}}],
 ]);
+
+/** Manifest sources that must be frozen or a named exception. */
+const companion = /^(?:docs\/(?:SWAML-[^/]+-Reference|RELEASE_[^/]+|MIGRATION_[^/]+)\.md|scripts\/.+)$/u;
 
 const binary = /\.(?:pdf|png|ttf)$/u;
 
@@ -63,8 +106,8 @@ async function filesUnder(root, directory) {
 }
 
 /** Throws on the first difference; returns the number of pinned and compared files. */
-export async function checkFrozenPublications(root, {editions = [...publishedEditions.keys()]} = {}) {
-    let pinned = 0, copies = 0;
+export async function checkFrozenPublications(root, {editions = [...publishedEditions.keys()], copies: frozenEntries = frozenCopies} = {}) {
+    let pinned = 0, copies = 0, exceptions = 0;
     for (const edition of editions) {
         const pins = publishedEditions.get(edition);
         if (!pins) throw Error(`No pinned publication for edition ${edition}`);
@@ -76,8 +119,8 @@ export async function checkFrozenPublications(root, {editions = [...publishedEdi
         }
         const manifest = JSON.parse(await readFile(join(root, ...`${base}.manifest.json`.split('/')), 'utf8'));
         if (manifest.pdfSha256 !== pins.pdf) throw Error(`Published ${edition} manifest records another PDF`);
-        const frozen = frozenCopies.get(edition);
-        if (!frozen) continue;
+        const frozen = frozenEntries.get(edition);
+        if (!frozen) throw Error(`No frozen-copy entry for edition ${edition}`);
         const recorded = new Map(manifest.sources.map(s => [s.path, s.sha256]));
         const expected = new Map(Object.entries(frozen.files));
         for (const directory of frozen.directories) {
@@ -94,12 +137,21 @@ export async function checkFrozenPublications(root, {editions = [...publishedEdi
                 throw Error(`Frozen ${edition} copy differs from its publication: ${path}`);
             copies++;
         }
+        const covered = new Set(expected.values());
+        for (const source of Object.keys(frozen.exceptions)) {
+            if (!recorded.has(source) || covered.has(source)) throw Error(`Invalid ${edition} frozen-copy exception: ${source}`);
+            exceptions++;
+        }
+        for (const source of recorded.keys()) {
+            if (companion.test(source) && !covered.has(source) && !(source in frozen.exceptions))
+                throw Error(`Published ${edition} companion or script is neither frozen nor a named exception: ${source}`);
+        }
     }
-    return {pinned, copies};
+    return {pinned, copies, exceptions};
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
     const root = fileURLToPath(new URL('..', import.meta.url));
-    const {pinned, copies} = await checkFrozenPublications(root);
-    console.log(`Frozen publications: ${pinned} published files pinned for ${publishedEditions.size} editions; ${copies} edition-specific copies equal their manifests.`);
+    const {pinned, copies, exceptions} = await checkFrozenPublications(root);
+    console.log(`Frozen publications: ${pinned} published files pinned for ${publishedEditions.size} editions; ${copies} frozen copies equal their manifests; ${exceptions} named exceptions.`);
 }

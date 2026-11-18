@@ -22,7 +22,9 @@ The original scripts/test-publication-archive.py, scripts/check-spec-pdf.py and 
 
 ## Frozen publications
 
-node scripts/check-frozen-publications.mjs runs in npm run check and source CI (test/ci/frozen-publications.test.mjs). It pins the SHA-256 of the PDF, .manifest.json and .sha256 file of every published edition under output/pdf (0.1.0, 1.0.0, 1.1.0, 1.1.1, 1.2.0, 1.2.1, 1.3.0, 1.3.1, 2.0.0, 2.1 and 2.2), so a rebuilt or edited publication fails even when its manifest and checksum agree with it. It also requires each edition-specific workspace copy to equal the hash its edition's manifest records: for 2.2 the reference book, RELEASE_2_2.md and every file under docs/figures/2.2, docs/notation/2.2 and examples/simulation/2.2; for 2.1 the reference book, RELEASE_2_1.md, examples/simulation/hello-trace.json and every file under docs/figures/2.0 and docs/notation/2.0; for 2.0.0 the frozen reference under history/2.0.0. A file added to one of those directories fails as well. PDF, PNG and TTF files are compared byte for byte, every other file after CRLF is normalized to LF, as the builders hashed them. Maintained sources (docs/spec, the guides, src, scripts, examples and inventories) are not frozen: later editions edit them, and the published PDF keeps their released bytes. A new edition adds its pins when it is published.
+node scripts/check-frozen-publications.mjs runs in npm run check and source CI (test/ci/frozen-publications.test.mjs). It pins the SHA-256 of the PDF, .manifest.json and .sha256 file of every published edition under output/pdf (0.1.0, 1.0.0, 1.1.0, 1.1.1, 1.2.0, 1.2.1, 1.3.0, 1.3.1, 2.0.0, 2.1 and 2.2), so a rebuilt or edited publication fails even when its manifest and checksum agree with it. Source CI fetches the release tags, and the test compares the pins with the files at each release tag (v1.2.0 for 0.1.0 to 1.1.1, which that release rebuilt), so a pin cannot be edited silently; without tags that comparison is skipped with a notice.
+
+The check also requires each frozen workspace copy to equal the hash its edition's manifest records: for 2.2 the reference book, RELEASE_2_2.md, every file under docs/figures/2.2, docs/notation/2.2 and examples/simulation/2.2, and every script the 2.2 PDF embeds (its builder, checker, source inventory, archive verifier, publication test, requirements and the shared notation, figure, reference and version scripts); for 2.1 the reference book, RELEASE_2_1.md, examples/simulation/hello-trace.json, every file under docs/figures/2.0 and docs/notation/2.0 and the 2.1 publication scripts; for 2.0.0 the frozen reference under history/2.0.0 and pdf-requirements.txt; for 1.x the reference books and release and migration notes. A file added to a frozen directory fails as well. Every companion or script that a manifest lists and that changed after its release is a named exception in the script, with the commit that changed it. PDF, PNG and TTF files are compared byte for byte, every other file after CRLF is normalized to LF, as the builders hashed them. Maintained sources (docs/spec, the guides, src, examples and inventories) are not frozen. A new edition adds its pins when it is published; a later edition that needs to change a frozen script adds a new X.Y file or removes the entry in a reviewed change.
 
 ## 2.2 commands
 
@@ -64,9 +66,10 @@ runs the Node 24 and Windows compatibility checks. Routine language CI keeps the
 semantic tests and production website build; it does not rebuild a frozen 1.x book.
 
 ```sh
-python scripts/build-spec-pdf-2.0.py
-python scripts/check-spec-pdf-2.0.py
+python scripts/check-spec-pdf-2.0.py --archive
 ```
+
+scripts/build-spec-pdf-2.0.py is the historical release builder of the published 2.0.0 edition. Do not run it.
 
 The new builder embeds exact canonical repository LF text and binary assets, records their hashes and a bundle hash, identifies the source base commit and dependency versions, and uses the bundled DejaVu fonts. PNG reproducibility checks compare pixel bytes independently of platform compression, while SVG and scene JSON remain byte-exact.
 

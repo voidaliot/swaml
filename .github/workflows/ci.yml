@@ -34,6 +34,8 @@ jobs:
             showcase/package-lock.json
       - run: npm ci --ignore-scripts
       - run: npm run check
+      # Release tags let the frozen-publication test compare its pins with the published files.
+      - run: git fetch --no-tags --depth=1 origin 'refs/tags/v*:refs/tags/v*'
       - run: node --test test/ci/*.test.mjs
 
       # Reuse the built language core instead of building it in a second PR job.
