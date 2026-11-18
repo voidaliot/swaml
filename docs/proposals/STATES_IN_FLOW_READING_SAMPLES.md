@@ -1,17 +1,17 @@
 # States in the flow: reading samples
 
-**Purpose:** prototype P3 of the design review, rewritten for revision 4 of [the proposal](STATES_IN_FLOW_PROPOSAL.md). Nine small behaviours, each with a sketch of its Flow View drawing and five plain questions. Read the text and the drawing cold, answer the questions, then compare with the answers at the end. If a question cannot be answered from the text and the drawing alone, the look has failed there.
+**Purpose:** prototype P3 of the design review, updated for revision 5 (the final specification) of [the proposal](STATES_IN_FLOW_PROPOSAL.md). Ten small behaviours, each with a sketch of its Flow View drawing and five plain questions. Read the text and the drawing cold, answer the questions, then compare with the answers at the end. If a question cannot be answered from the text and the drawing alone, the look has failed there.
 
-Nothing here is accepted by a parser yet; the fences are plain text.
+**Every answer has been run** by the interpreter prototypes (samples 1 to 7: P5, rerun with P7; sample 8: P4; sample 9: P6; sample 10: P7). Revision 5 corrects sample 8 Q2 and the reason of Q5, and adds sample 10. Nothing here is accepted by the released parser; the fences are plain text.
 
 **How to read the text:**
-- A state waits. Each time something happens to it (it is reached, a message it names arrives, its timer runs out, someone else writes a value it reads, or, every P, a release comes), it **looks** at what is inside its braces again, top to bottom, the braces of an enclosing state first.
-- At a look, the line of what happened runs (`on receive m(x) { … }` for that message, `after D { … }` when D has passed since the state was reached), and every other statement in the braces runs. `if` checks now and skips when false; it never waits.
+- A state waits. Each time something happens to it (it is reached, a message it names arrives, its timer runs out, someone else writes a value it reads, one of its own lines writes a value that a statement above that line already read, or, every P, a release comes), it **looks** at what is inside its braces again, top to bottom, the braces of an enclosing state first.
+- At a look, the line of what happened runs (`on receive m(x) { … }` for that message, `after D { … }` when D has passed since the state was reached), and every other statement in the braces runs. `if` checks now and skips when false; it never waits. A look reads every value as it is at the moment the look runs.
 - The look stops at the first `exit;` (leave, go on with what is written next) or `to S;` (go to state `S`). The statements written before it run first, then `on exit`, then the next state's `on entry`.
 - A look sees one message; several messages are looked at one after another, in the order they were delivered. A message that the state (and the states around it) does not name is dropped while it waits; one that arrives while the operation is busy waits for the next state that waits.
 - A state whose braces end with inner states is a parent: what is written on it applies in every state inside.
-- Released `on every P`, the operation looks once per release and keeps its place between releases.
-- Short form: `after 250ms exit;` means `after 250ms { exit; }`; only `exit;` and `to S;` may drop their braces (owner decision O1).
+- Released `on every P`, the operation looks once per release and keeps its place between releases. A state reached in a release looks at once, in that release, with the same values; a state reached a second time in one release waits for the next release. When the operation reaches its end, the next release starts it again from the top.
+- Short form: `after 250ms exit;` means `after 250ms { exit; }`; only `exit;` and `to S;` may drop their braces.
 
 **How to read the drawing:** rounded boxes are states, plain boxes are steps, `◇` is a decision (empty; its conditions `[c]` are on the lines that leave it), `⋄` a merge, `●` the start, `◉` the end. The header says how the operation is released. Lines inside a box are what the state does without leaving. Arrows out of a box are ways out, numbered in written order, labelled `event [condition] / what runs on the way`. Back jumps run up the left side, skips down the right side.
 
@@ -546,7 +546,7 @@ operation control() {
 
 **Questions.**
 1. 100 ms after closing started, a current value of 5000 is delivered. What happens?
-2. A halt request and a current value of 5000 are delivered at the same instant, the request first. Does the window reverse?
+2. A halt request and a current value of 5000 are delivered at the same instant, the request first. Does the window reverse? And if instead two current values, 5000 and then 3000, are delivered at the same instant?
 3. The current is already 5000 when `closing` is entered. What happens?
 4. In the filtered variant, with `motorCurrent` at 3000, the raw current is 9000 for one millisecond and then 3000 again. Does the window reverse?
 5. Exactly 8 s after closing started, a current value of 5000 is delivered. What happens?
@@ -583,7 +583,7 @@ schedule {
 }
 ```
 
-`switch.position` and `sense.current` are sampled port members; `travel` starts at 0 and `fullTravel` is 400. The release guard is written with the proposed `if` spelling of WP7's guard.
+`switch.position` and `sense.current` are sampled port members; `travel` starts at 0 and `fullTravel` is 400. The release guard is WP7's guard in its `if` spelling.
 
 ```text
  «operation» step · every 10ms
@@ -622,6 +622,66 @@ schedule {
 3. The switch returns to neutral at 95 ms. At which release does the motor stop?
 4. At one release, the current is above the limit and the switch is back to neutral. Which state comes next?
 5. `reversing` is entered at 150 ms. `supply.ok` is false for the releases from 500 ms to 600 ms. When does `reversing` end?
+
+## 10. Supply monitor every 50 ms
+
+```text
+operation classify() {
+  while (true) {
+    state normal {
+      if (supplyMv < underMv) exit;
+    }
+    state low {
+      on entry { lowSamples = 0; }
+      if (supplyMv >= recoverMv) to normal;
+      if (supplyMv < underMv) { lowSamples = lowSamples + 1; }
+      if (lowSamples >= qualifySamples) exit;
+    }
+    state under {
+      on entry { undervoltage = true; }
+      on exit { undervoltage = false; }
+      if (supplyMv >= recoverMv) to normal;
+    }
+  }
+}
+schedule {
+  on receive supply.supplyMv(mv) store(mv);      // store(mv) { supplyMv = mv; }
+  on every 50ms classify() deadline 2ms;
+}
+```
+
+`underMv` is 9000, `recoverMv` 9500, `qualifySamples` 2, and `supplyMv` starts at 13500. The first release is at 50 ms. A **wrong** variant replaces `low` by `state low { if (supplyMv >= recoverMv) to normal; if (supplyMv < underMv) exit; }` (no counter).
+
+```text
+ «operation» classify · every 50ms
+            ●
+  ┌────────►◇ [true]
+  │ ╭───────▼──────────────────────────╮
+  │ │ normal                           │◄──────────────┐
+  │ ╰───────┬──────────────────────────╯               │
+  │         │ [supplyMv < underMv]                     │
+  │ ╭───────▼──────────────────────────╮               │
+  │ │ low                              │               │
+  │ │ entry: lowSamples = 0            │               │
+  │ │ if (supplyMv < underMv) …        │               │
+  │ ╰───┬──────────────────────┬───────╯               │
+  │     │1 [supplyMv >=        │2 [lowSamples >=       │
+  │     │   recoverMv] ────────┼── qualifySamples] ────┤
+  │ ╭───────────────────────── ▼ ──────╮               │
+  │ │ under                            │               │
+  │ │ entry: undervoltage = true       │               │
+  │ │ exit:  undervoltage = false      │               │
+  │ ╰───────┬──────────────────────────╯               │
+  │         │ [supplyMv >= recoverMv] ─────────────────┘
+  └─ (never reached)
+```
+
+**Questions.**
+1. A reading of 8800 mV arrives at 60 ms and nothing else until 110 ms. In the **wrong** variant, at which release is undervoltage reported?
+2. Readings: 8800 at 60 ms, 9200 at 110 ms, 8700 at 160 ms. In the text above, at which release is undervoltage reported?
+3. Then 9600 arrives at 260 ms. When is undervoltage cleared?
+4. Then 8900 arrives at 360 ms and 9600 at 410 ms. Is undervoltage reported, in the text above and in the wrong variant?
+5. Why does `low`'s entry set `lowSamples` to 0, and not to 1, although one low reading has already been seen?
 
 ## Answers
 
@@ -676,10 +736,10 @@ schedule {
 
 ### 8. Anti-pinch condition
 1. The window reverses at 100 ms: the delivery updates `sense.current`, `closing` looks again, the condition holds, `pinchReversals` is counted, `reversing` drives down for 400 ms and the flow returns to `idle`.
-2. No. The request is delivered first, so `closing` looks at it while `sense.current` still holds the old value: the condition is false, the halt leaves for `idle`. The new current value arrives when `idle` waits, and `idle` does not read it.
+2. **Yes (corrected in revision 5).** The request's delivery causes the look, but the look runs after the second delivery of the same instant has updated `sense.current`: a look reads the values as they are when it runs. The pinch condition is written first, holds, and leaves for `reversing`; the request line never runs, and the request is recorded as taken by a look that left before its line ran (`discardInput`, `leftBeforeLine`). With 5000 and then 3000 at one instant, the first delivery wakes `closing`, but its look runs after the second update and sees 3000: no reversal. (Revision 4 answered "no" to the first case, reasoning with the value at the moment of the request; that was wrong under WP6-R03.)
 3. It reverses at once: the condition is checked by the arrival look and holds already.
 4. No. The filter writes 4500, which is not above the limit, and then lower values; `closing` looks at every write, but never sees more than 4500, never the raw 9000.
-5. The window goes to `idle` without reversing: the 8 s timer is looked at before the delivery of the same instant, while the current still holds its old value.
+5. The window goes to `idle` without reversing. A timer that runs out at an instant is looked at before any delivery of that instant (phase 1 before phase 2), so the look runs before the new value has been delivered and reads the old one; the 8 s line leaves. The new value then arrives while `idle` waits, and `idle` does not read it.
 
 ### 9. Periodic window controller
 1. At 30 ms. The first release at 10 ms reaches `idle` (the motor is stopped); the releases at 20 ms and 30 ms look at `idle`, and at 30 ms the switch is up, so `closing` is reached in that release and its entry starts the motor.
@@ -687,3 +747,10 @@ schedule {
 3. At 100 ms, the first release after the switch returned: the second condition of `closing` holds, and `idle`'s entry stops the motor in the same release.
 4. `reversing`: the current condition is written first, and the look stops at the first leave.
 5. At 610 ms. The 400 ms are due at 550 ms, but the releases from 500 ms to 600 ms are skipped and make no look; the first release that runs is at 610 ms, and its look takes the timer.
+
+### 10. Supply monitor
+1. At 100 ms, the first release after the low reading: `normal` leaves, `low` is reached in the same release, and its arrival look reads the same 8800: still low, so it leaves at once for `under`. One low release qualifies; that is the trap.
+2. At 200 ms. At 100 ms `low` is reached and its arrival look counts the first low release (`lowSamples` 1). At 150 ms the reading is 9200: neither low nor recovered, nothing changes. At 200 ms the reading 8700 is the second low release: `lowSamples` 2, `under` is reached and reports.
+3. At 300 ms, the first release after the 9600 reading: `under` jumps to `normal`, and its `on exit` clears undervoltage.
+4. In the text above, no: at 400 ms `low` is reached and counts one low release, and at 450 ms the 9600 reading jumps back to `normal`. In the wrong variant, yes: reported at 400 ms and cleared at 450 ms.
+5. Because the arrival look runs at once and counts: the entry resets the counter, and the arrival look, which reads the same low value that made `normal` leave, adds the first count.
