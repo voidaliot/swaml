@@ -35,7 +35,7 @@ The computed-wait examples moved to [chapter 3.3](../../spec/03-behavior.md#33-s
 | ID | Rule |
 | --- | --- |
 | WP1-R03 | Moved to [chapter 3.4](../../spec/03-behavior.md#34-suspension-and-locks) in WP1. |
-| WP6-R07 | **Concurrent reads (amends 3.4).** The sentence on concurrent entries becomes: "Concurrent entries overlap and read attributes from the dispatch snapshot throughout, including after resumption; they read sample cells and `now()` live; they never write state." Each cell read copies the whole value atomically, so a record is never observed half-updated. The 2.2 snapshot guarantee is unaffected, because 2.2 models have no cells. |
+| WP6-R07 | Moved to [chapter 3.4](../../spec/03-behavior.md#34-suspension-and-locks) in WP6. |
 | WP1-M01 | Moved to [chapter 3.4](../../spec/03-behavior.md#34-suspension-and-locks) in WP1. |
 
 ## 3.5 Schedule
@@ -85,6 +85,6 @@ The runtime rules for these forms moved to [chapter 6.5](../../spec/06-execution
 | --- | --- |
 | WP1-S06 | Moved to [chapter 3.7](../../spec/03-behavior.md#37-case-scripts) in WP1. |
 | WP1-S08 | Moved to [chapter 3.7](../../spec/03-behavior.md#37-case-scripts) in WP1. |
-| WP6-S09 | **No sampling in scripts.** Case scripts do not sample ports. They keep `on receive` at actor ports (SW2010). |
+| WP6-S09 | Moved to [chapter 3.7](../../spec/03-behavior.md#37-case-scripts) in WP6. |
 
 The case-script paragraph on assignment gained "Assignment targets are places rooted in the script's own locals or `on call` out bindings (WP1-S05)" in WP1.

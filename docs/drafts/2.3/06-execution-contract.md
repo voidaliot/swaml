@@ -34,8 +34,8 @@ Release guards (new paragraph after the `after` paragraph):
 
 | ID | Rule |
 | --- | --- |
-| WP6-R05 | **Per-member policy.** Each member route uses its effective policy (member policy, else connection policy, else `Default`) for capacity, overflow, ordering, delivery, request timeout, latency and age. Queues remain per connection occurrence, direction and member. |
-| WP6-R06 | **Sample cells.** Sample cells follow WP6-R01 to WP6-R04. Updating a cell never consumes input and never releases work. A cell update is part of its delivery event and takes its place in the instant's event order like every other event. |
+| WP6-R05 | Moved to [chapter 6.4](../../spec/06-execution-contract.md#64-communication) in WP6. |
+| WP6-R06 | Moved to [chapter 6.4](../../spec/06-execution-contract.md#64-communication) in WP6. |
 
 ## 6.5 Input ownership and interruption
 
@@ -68,7 +68,7 @@ New and extended observations. Field names follow the existing trace (`timeNs`, 
 | WP5-T02 | `discardTimer` (new) | Moved to [chapter 6.6](../../spec/06-execution-contract.md#66-evidence-and-resources) in WP5. |
 | WP5-T03 | `defer` (new) | Moved to [chapter 6.6](../../spec/06-execution-contract.md#66-evidence-and-resources) in WP5. |
 | WP5-T04 | `violation` (extended) | Moved to [chapter 6.6](../../spec/06-execution-contract.md#66-evidence-and-resources) in WP5. |
-| WP6-T01 | `sample` (new) | A cell update: `subject` the port occurrence and member, `targetPort`, `member`, the copied `value`, the message identity and `source` the emitting statement. `deliver` keeps meaning consumption by an owner, so a member that is both sampled and consumed produces one `sample` and one `deliver`. Reads are not observed. |
+| WP6-T01 | Moved to [chapter 6.4](../../spec/06-execution-contract.md#64-communication) in WP6. |
 | WP7-T01 | `skip` (new) | A release whose guard was false: `subject` the operation occurrence, `activation`, `source` the schedule entry. |
 | WP7-T02 | `discardInput`, `failure` (extended) | A skipped `receive` entry's input is a `discardInput` with `reason: 'releaseGuard'`. A failing release guard is a `failure` with the entry as `source`. |
 

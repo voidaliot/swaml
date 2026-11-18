@@ -58,7 +58,7 @@ The tables of `Swaml::Os` (WP8-L01) are in chapter 1.5. The run-order rule is in
 | WP5-M01 | Moved to [chapter 4.3](../../spec/04-systems-and-conformance.md#43-views) in WP5. |
 | WP7-M01 | **Timing guards.** Timing shows release guards on their entries; observed mode marks `skip` observations. |
 | WP8-M04 | **Task lanes.** Timing groups activations in Task lanes when a deployment places them on Tasks. The General view shows operation placements. |
-| WP6-M01 | **Interconnect.** Interconnect labels member policies on their connection. |
+| WP6-M01 | Moved to [chapter 4.3](../../spec/04-systems-and-conformance.md#43-views) in WP6. |
 
 ## 4.4 Validation groups
 
@@ -104,14 +104,14 @@ Diagnostics added or extended by 2.3. Message shapes are templates in the existi
 | WP5-D07 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP5. | |
 | WP5-D08 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP5. | |
 | WP5-D09 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP5. | |
-| WP6-D01 | SW2005 | Sampling a forwarded boundary (WP6-S08) | `{port}.{member} cannot be sampled: {port} is a forwarded boundary.` |
-| WP6-D02 | SW2004 | Sampled member without initial value (WP6-S03) | `Sampled attribute {member} of {portDefinition} needs an initial value.` |
-| WP6-D03 | SW2005 | Ownership of sampled and unsampled members (WP6-S04) | The existing owner messages; a sampled member with no owner is not reported. |
-| WP6-D04 | SW2002, SW2006 | Initial value typing and purity (WP6-S02) | The existing initializer messages. |
-| WP6-D05 | SW2006 | `p.m` not an owned port's required attribute, or in a forbidden position (WP6-S01, WP6-S08) | `{port}.{member} is not a required attribute of an owned port.` / `A sampled read is not allowed in {an initializer \| a constant duration}.` |
-| WP6-D06 | SW2004 | Member policy on forwarding, unknown member or repeated member (WP6-S05) | `Member policies are not allowed on forwarding {connection}.` / `{member} is not a member of both ports of {connection}.` / `{member} has two policies in {connection}.` |
-| WP6-D07 | SW2013 | Member policy completeness or idempotency per member route (WP6-S07) | The existing policy messages, naming the member. |
-| WP6-D08 | SW2010 | Sampled read in a case script (WP6-S09) | `A case script cannot sample {port}.{member}; use on receive.` |
+| WP6-D01 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP6. | |
+| WP6-D02 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP6. | |
+| WP6-D03 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP6. | |
+| WP6-D04 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP6. | |
+| WP6-D05 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP6. | |
+| WP6-D06 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP6. | |
+| WP6-D07 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP6. | |
+| WP6-D08 | — | Moved to [chapter 4.4](../../spec/04-systems-and-conformance.md#44-validation-groups) in WP6. | |
 | WP7-D01 | SW2007 | Release guard on a `start` or `call` entry (WP7-S01) | `A release guard is allowed only on every, receive and after entries.` |
 | WP7-D02 | SW2007 | Release guard type, effect or scope (WP7-S02) | `Release guard must be bool, found {type}.` / `Release guard must be pure or read state.` / an unresolved-name message for names outside the scope |
 | WP8-D01 | SW2009 | Operation placement target (WP8-S01) | `{path} names operation {operation}, which no schedule entry of {occurrence} releases.` |

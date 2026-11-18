@@ -19,8 +19,8 @@ The family table gains the following content:
 | Statement/expression | Places with root, ordered selectors and index expressions; conditional with condition and both branches | WP1, WP2 (applied) |
 | Schedule/entry | Period and deadline as expression text plus per-occurrence values; release guard | WP4, WP7 |
 | State/transition | Applied to [chapter 7.2](../../spec/07-normalized-model.md#72-families) in WP4 (computed delay) and WP5 (transition kind, optional target, timer guard, state deferrals in order). | WP4, WP5 |
-| Port/member | Initial value of attribute members; sampled members per port | WP6 |
-| Connection/forwarding | Member policies with their effective policy per member route | WP6 |
+| Port/member | Applied to [chapter 7.2](../../spec/07-normalized-model.md#72-families) in WP6 (initial values, sampled members). | WP6 |
+| Connection/forwarding | Applied to [chapter 7.2](../../spec/07-normalized-model.md#72-families) in WP6 (member policies with their effective policy per member route). | WP6 |
 | Deployment | Operation placements, effective placement per entry, Task, Core and in-task position | WP8 |
 | Requirement/case/view | Moved to [chapter 7.2](../../spec/07-normalized-model.md#72-families) in WP2. | WP2 |
 
@@ -28,7 +28,7 @@ The family table gains the following content:
 
 | ID | Rule |
 | --- | --- |
-| WP6-M04 | A normalized connection records the effective policy of each member route, and the member-policy declaration where one applies. Every sampled member of a port occurrence records its sample cell with its initial value, and its zero or one consuming owner. |
+| WP6-M04 | Moved to [chapter 7.3](../../spec/07-normalized-model.md#73-routes-and-queues) in WP6. |
 
 ## 7.4 Executable lowering
 

@@ -4,7 +4,7 @@
 
 ## 9.1 Domains
 
-The configuration gains sample cells S, per port occurrence and member [WP6], and the retained-input marks of each machine's queued messages [WP5, applied to [chapter 9.1](../../spec/09-formal-semantics.md#91-domains)]:
+The configuration gains sample cells S, per port occurrence and member [WP6, applied to [chapter 9.1](../../spec/09-formal-semantics.md#91-domains)], and the retained-input marks of each machine's queued messages [WP5, applied to [chapter 9.1](../../spec/09-formal-semantics.md#91-domains)]:
 
 ```text
 C = (D, O, σ, S, Q, A, M, R, L, B, t)
@@ -22,7 +22,7 @@ C = (D, O, σ, S, Q, A, M, R, L, B, t)
 | computed duration `(e)` | Moved to [chapter 9.2](../../spec/09-formal-semantics.md#92-typing-schemas) in WP4. | [WP4] |
 | completion guard | Moved to [chapter 9.2](../../spec/09-formal-semantics.md#92-typing-schemas) in WP5. | [WP5] |
 | timer guard | Moved to [chapter 9.2](../../spec/09-formal-semantics.md#92-typing-schemas) in WP5. | [WP5] |
-| `p.m` sampled | p an owned, non-forwarded port; m a required attribute with an initial value; result the member type; effect reads state | [WP6] |
+| `p.m` sampled | Moved to [chapter 9.2](../../spec/09-formal-semantics.md#92-typing-schemas) in WP6. | [WP6] |
 | release guard | bool; pure or reads state; scope: attributes, sampled ports, `now()`, receive bindings | [WP7] |
 
 ## 9.3 Transition schemas
@@ -34,7 +34,7 @@ C = (D, O, σ, S, Q, A, M, R, L, B, t)
 | guarded timer | Moved to [chapter 9.3](../../spec/09-formal-semantics.md#93-transition-schemas) in WP5. | [WP5] |
 | internal reaction | Moved to [chapter 9.3](../../spec/09-formal-semantics.md#93-transition-schemas) in WP5. | [WP5] |
 | retain | Moved to [chapter 9.3](../../spec/09-formal-semantics.md#93-transition-schemas) in WP5. | [WP5] |
-| sample | At the delivery event of a value, S[p, m] := value, with a `sample` observation; a read sees the updates ordered before it in the event order (time, phase, insertion ordinal) | [WP6] |
+| sample | Moved to [chapter 9.3](../../spec/09-formal-semantics.md#93-transition-schemas) in WP6. | [WP6] |
 | guarded dispatch | At the first execution step. Guard false: cancel the deadline, record `skip`, release `after` targets as on completion, release L[o]. Guard failure: `failure`, no successors | [WP7] |
 | ordered selection | Equal (t, phase) items ordered by descending priority, then in-task position, then insertion ordinal | [WP8] |
 

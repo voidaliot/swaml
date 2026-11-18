@@ -14,7 +14,7 @@ D; Γ ⊢ s ⇒ Γ'
 C —observation→ C'
 ```
 
-The queued messages in Q carry a retained mark (WP5): a message that a deferring state retained, recorded once by `defer` and consumed in offer-ordinal order when a state handles it (chapter 6.5).
+The configuration also holds sample cells S, per port occurrence and sampled member (WP6), initialized to the member's initial value. The queued messages in Q carry a retained mark (WP5): a message that a deferring state retained, recorded once by `defer` and consumed in offer-ordinal order when a state handles it (chapter 6.5).
 
 Values are bounded primitive scalars, nominal enums/records and fixed copied arrays; void has no inhabitant. Effect ε retains read/write/communication/suspension flags, with pure as empty. Transitive union over an acyclic call graph computes effects. The maximum class is a presentation of these flags rather than permission to erase a write beneath suspension.
 
@@ -35,6 +35,7 @@ Values are bounded primitive scalars, nominal enums/records and fixed copied arr
 | duration literal | Result uint (nanoseconds), a safe integer; positive in the 2.2 positions |
 | computed duration `(e)` | e integral; in wait and receive timeouts without suspending calls; in state timers pure or reads state; in periods and deadlines in the constant sublanguage, with exact integral `/`, valued per occurrence |
 | completion guard | bool; pure or reads state; no `now()`, directly or through a callee |
+| `p.m` sampled | p an owned, non-forwarded port that opts in to sampling; m a required attribute with an initial value; result the member type; effect reads state (WP6) |
 | timer guard | bool; pure or reads state |
 | var x:T=e | Compatible value, fresh live name; Γ extends with mutable x; suspension allowed only when e is whole call/try |
 | x=e | Mutable local/out/attribute, compatible type; attribute write adds write effect; same whole-expression suspension rule |
@@ -74,6 +75,7 @@ Scalar type assignability uses widening, with checked integral value conversion 
 | guarded timer | At expiry, a false guard consumes the timer generation for this entry (`discardTimer`) |
 | internal reaction | Effect only; M (timer generations) unchanged |
 | retain | A deferred member's message stays in Q, marked retained (`defer` once); it is consumed in offer-ordinal order on entering a handling state |
+| sample | At the delivery event of a value, S[p, m] := value, with a `sample` observation; a read sees the updates ordered before it in the event order (time, phase, insertion ordinal), and one activation sees one value of a cell between two suspensions (WP6) |
 | complete | Finish activation and unlock; correlated reply is offered separately; successful whole completion releases after targets fresh |
 | violation | Deadline, activation overflow, step/concurrent resource or clock failure stops the reference run and bypasses try |
 | case script | A fresh package configuration adds one serial script activation after startup releases; direct primary-subject calls borrow its actual serial context, script emissions/requests/receives use actor ports, on call replies to the pending correlation, and script completion or failure stops the run |

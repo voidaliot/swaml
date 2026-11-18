@@ -1,6 +1,6 @@
 # ADR 0024: Sampled reads, member policies, association lists and contextual words
 
-Status: accepted for the unreleased standard 2.3, 18 November 2026. Owner approval of the 2.3 scope and decisions D7 and D12 of the [2.3 proposal](../proposals/NEXT_MINOR_PROPOSAL.md). Not implemented: each rule lands with the work package named in the [2.3 chapter drafts](../drafts/2.3/README.md). This ADR is normative where it differs from the proposal. It amends the "per-use overrides do not exist" sentence of chapter 2.4 and the one-owner rule of chapter 2.1 for sampled attributes. Published editions remain unchanged.
+Status: accepted for the unreleased standard 2.3, 18 November 2026. Owner approval of the 2.3 scope and decisions D7 and D12 of the [2.3 proposal](../proposals/NEXT_MINOR_PROPOSAL.md). Not implemented: each rule lands with the work package named in the [2.3 chapter drafts](../drafts/2.3/README.md). This ADR is normative where it differs from the proposal. It amends the "per-use overrides do not exist" sentence of chapter 2.4 and the one-owner rule of chapter 2.1 for sampled attributes. Published editions remain unchanged. WP6 implements B13 and B14 (chapter 2.6, rules WP6-*); see *Implementation in WP6* below for the two choices it made to keep every 2.2 source unchanged.
 
 Items: B13 policy per member, B14 sampled read of a required attribute, B15 reserved member names, B16 association lists. Rejected: B11b port arrays (an additive 2.4 candidate), B11c per-index configuration, B16 absence construct, B21 service discovery. Deferred: B12 boundary port to several children (Tier 2). Work packages: WP2 (B15, B16), WP6 (B13, B14).
 
@@ -110,8 +110,14 @@ connect bodyCan: BodyCanFrames (bcm.bus, dcu.canBus) {
 
 The new forms are new syntax. A 2.2 source has no sampled reads, because 2.2 rejects `p.m` as a value. It also has no member-policy body, no initial value on a port member and no list association. The new contextual words were reserved in 2.2, so no valid 2.2 source uses them as basic names. Quoted uses keep their meaning. The SW2005 change only relaxes the rule for sampled members. Release gates: corpus AST identity, unchanged simulation results and a warning-free grammar (ADR 0022).
 
+## Implementation in WP6
+
+- **Opt-in by initial value (compatibility).** `p.m` was already valid 2.2 syntax with a 2.2 diagnostic (SW2002 `Unknown local value p.m; …`, plus SW2005 for the unowned member). Recognizing every `p.m` on an owned port as a sampled read would change those diagnostics on 2.2 sources: the missing initial value of D7 would turn SW2002 into SW2004, a forwarded boundary SW2002 into SW2005, and the owner error SW2005 would disappear. WP6 therefore treats `p.m` as a sampled read only on a port that opts in, one whose effective members give some attribute an initial value (2.3 syntax); all the WP6 diagnostics apply there, and `p.m` on any other port keeps its 2.2 meaning and messages. The owner decides whether to keep this opt-in or to accept the diagnostic change.
+- **Stable reads within a segment.** The reference interpreter interleaves the steps of activations of different occurrences within an instant, so a zero-latency delivery can fall between two reads of one activation. To honour "a guard and the body of one activation see the same value unless the body suspends in between", the first read of a cell after an activation starts or resumes copies it, and the later reads of that cell until the next suspension see that copy (WP6-R03).
+- **Replaced and aged values.** A value replaced in the owner's pending queue still updates the cell at its delivery instant; a value older than `maxAge` at delivery is discarded (`discardAge`) and does not.
+
 ## Open items
 
-- **When a sampled value becomes readable.** Decided by the owner for WP0: the delivery instant, ordered within the instant by the event order, with live reads; see the table above. WP6 implements it with the simulator's delivery events. It must show by tests that duplicates, drops and latency update the cell as stated.
+- **When a sampled value becomes readable.** Decided by the owner for WP0: the delivery instant, ordered within the instant by the event order, with live reads; see the table above. Implemented in WP6 with the simulator's delivery events; `test/v2/sampled-reads.test.ts` shows that latency, drops, duplicates, fault delays and `maxAge` update the cell as stated, and the worked example in both orders.
 - Port arrays: 2.4 candidate.
 - B12: Tier 2.

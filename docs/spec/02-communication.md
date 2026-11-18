@@ -8,7 +8,13 @@ A port def owns named provides/requires attribute, event and operation members. 
 
 A component uses port p: Definition; or an inline port body. reversed flips every member direction. optional is a prefix that waives that port's closure requirement; it does not waive required ports elsewhere on a forwarding chain. A provided attribute/event is emitted by this side; a provided operation is implemented by this side. Requires means the opposite.
 
-Every provided attribute/event MUST have syntactic operation emission provenance. Every required attribute/event and provided operation MUST have exactly one owner: a schedule entry, one stateful operation's transition set, one receive statement or one interrupt region. Multiple alternative transitions in that one stateful operation are one owner. A forwarded boundary is never also locally handled or emitted. An interface-only component (section 1.2) is exempt from these provenance and owner rules.
+Every provided attribute/event MUST have syntactic operation emission provenance. Every required event and provided operation, and every required attribute that is not sampled (section 2.6), MUST have exactly one owner: a schedule entry, one stateful operation's transition set, one receive statement or one interrupt region. Multiple alternative transitions in that one stateful operation are one owner. A sampled required attribute has zero or one consuming owner; sampling is not ownership. A forwarded boundary is never also locally handled or emitted. An interface-only component (section 1.2) is exempt from these provenance and owner rules.
+
+| ID | Rule |
+| --- | --- |
+| WP6-S02 | **Initial value.** An attribute member may declare an initial value, `provides attribute ajar: bool = false;` (grammar WP6-G01). The expression is pure (SW2006) and assignable to the member type (SW2002), with the attribute-initializer messages (WP6-D04); it is checked once where the member is declared. Event and operation members have none (grammar). |
+| WP6-S03 | **Mandatory when sampled.** When a component samples a member (section 2.6), the sampling port's effective member declaration, after reversal, has an initial value; a sampled read of a member without one is SW2004 `Sampled attribute {member} of {portDefinition} needs an initial value.` at the read (WP6-D02). The provider side's initial value, if any, has no runtime meaning in 2.3. |
+| WP6-S04 | **Ownership.** A sampled required attribute has zero or one consuming owner; sampling is not ownership. Two owners keep the SW2005 message `{port}.{member} needs exactly one input owner.`; a sampled member with no owner is not reported (WP6-D03). A member is sampled by a component when one of its executables contains a sampled read of it (`sampledMembers`). |
 
 All input stimuli, including operator/test drivers, are ordinary typed emissions from validated source operations or case scripts through routes; a case script emits only at the ports of its associated interface-only occurrences. Hidden harness releases and destination injection are forbidden. An unconnected optional request fails unavailable. An optional unconnected event/attribute emission has no recipient and remains observable.
 
@@ -22,6 +28,11 @@ Forwarding compares a boundary and immediate child's port in the same direction.
 
 connect (a, b); joins owned ports or ports of immediate children. A child with multiplicity requires a literal index. Name and policy are optional: connect link: Reliable (a, b);. Endpoints are unordered.
 
+| ID | Rule |
+| --- | --- |
+| WP6-S05 | **Member policies.** A connection may end in a body of member policies instead of `;` (grammar WP6-G02), `connect bodyCan: Cyclic (bcm.bus, dcu.canBus) { crash: CanEvent; }`. Each names a member present, by name, in both connected ports, and so routed by this connection, at most once per connection. A body on a derived forwarding is an error. Package connections may carry member policies. All are SW2004 (WP6-D06): `Member policies are not allowed on forwarding {connection}.`, `{member} is not a member of both ports of {connection}.`, `{member} has two policies in {connection}.`, where `{connection}` is the connection's name or `connect ({source}, {target})`. [Example 49](../../examples/49-body-can-member-policies.swaml) queues event frames and keeps only the newest cyclic frame on one connection. |
+| WP6-S06 | **Redefinition.** `redefines connect` replaces the whole inherited connection, including all its member policies; nothing is merged. |
+
 A connect may also be a package member. Each end of a package connection is occurrence.port, where occurrence is a top-level component occurrence declared in the same package; a nested path, a definition or an imported occurrence is an error (SW2004). A package connection is always a connection, never forwarding, and follows the same compatibility, duplicate, policy and idempotence rules. It cannot redefine.
 
 Boundary-to-child endpoints derive forwarding when same-direction compatibility holds. Forwarding has no queue or policy; a policy is an error. Each boundary and child port is forwarded at most once. Other endpoints derive a connection using opposite-direction compatibility. Invalid endpoints report the applicable compatibility failures. Self connections and duplicate endpoint pairs, including duplicates after forwarding resolution, are errors.
@@ -30,7 +41,11 @@ Closure is checked per package. Every nonoptional port of every occurrence of th
 
 ## 2.4 Versioned policies and queues
 
-A named qos def is typed by Swaml::Qos::Policy and supplies complete valid delivery, ordering, capacity, overflow and requestTimeout fields, plus optional maxLatency/maxAge. Values use the typed Delivery, Ordering and Overflow enums. Inline policies and per-use overrides do not exist. Each effective use is checked, including inherited connections and idempotency obligations.
+A named qos def is typed by Swaml::Qos::Policy and supplies complete valid delivery, ordering, capacity, overflow and requestTimeout fields, plus optional maxLatency/maxAge. Values use the typed Delivery, Ordering and Overflow enums. Member policies select a named policy per member; inline policies and field overrides do not exist. Each effective use is checked, including inherited connections and idempotency obligations.
+
+| ID | Rule |
+| --- | --- |
+| WP6-S07 | **Effective policy of a member route.** The effective policy of a member route is its member policy, else the connection policy, else `Swaml::Qos::Default` (`memberQos` in `semantic.ts`). Every completeness and idempotency check (SW2013) applies per member route (WP6-D07): an `atLeastOnce` member policy needs an idempotent provided operation, and a member policy that is not `atLeastOnce` lifts the obligation of an `atLeastOnce` connection policy for that member. A member policy names a `qos def`, whose completeness is checked at the definition. The deferral warning SW2018 (WP5-D09) uses the effective policy of the deferred member's route. |
 
 | ID | Rule |
 | --- | --- |
@@ -43,6 +58,31 @@ Policy buffering applies to events and requests. Attribute members keep only the
 
 ## 2.5 Requests, replies and failure
 
-A required operation is called as p.member(args). Its timeout comes from the route policy. Each request has a unique correlation and its response returns on the same member/route in reverse. Successful result and out values are copied back together; failure copies neither. Timeout, unavailable, rejected, transport and remoteFailure are failure reasons recorded as Swaml::Calls::CallFailure values or local runtime kinds in evidence. The model cannot inspect the reason.
+A required operation is called as p.member(args). Its timeout comes from the effective policy of its member route (WP6-S07). Each request has a unique correlation and its response returns on the same member/route in reverse. Successful result and out values are copied back together; failure copies neither. Timeout, unavailable, rejected, transport and remoteFailure are failure reasons recorded as Swaml::Calls::CallFailure values or local runtime kinds in evidence. The model cannot inspect the reason.
 
 A request suspends and releases the caller's serial lock. Timeout and reply at the same timestamp resolve as timeout; terminal correlations never reopen. Late replies are suppressed observably. Interruption cancels the local request continuation and correlation; the server continues and its committed effects remain. The interrupted terminal is not a catchable failure. try catches expression failures and supplies a compatible lazy fallback; bare calls propagate failure to the activation.
+
+## 2.6 Sampled reads
+
+A port opts in to sampling when one of its attribute members declares an initial value. On such a port a component reads the latest value delivered to a required attribute without a receive handler, as `door.ajar`, where `door` is the port and `ajar` the member ([example 48](../../examples/48-door-status-sampling.swaml)):
+
+```text
+port def DoorState { provides attribute ajar: bool = false; }
+component def ComMain {
+  reversed port door: DoorState;
+  operation txMain() { publish tx.status(record StatusPdu { ajar = door.ajar; }); }
+}
+```
+
+| ID | Rule |
+| --- | --- |
+| WP6-S01 | **Form.** In an operation body, or in a transition, completion, timer or release guard of the owning component, `p.m` is a sampled read when `p` is an owned port of the executing component that opts in to sampling (an attribute member of its effective declaration has an initial value) and no local, parameter or binding named `p` is visible. `m` must be a required attribute member of `p` after reversal (SW2006 `{port}.{member} is not a required attribute of an owned port.`, WP6-D05). Fields, an index and selectors may follow the member. The value is the member's type and the effect class is *reads state*. A reference `p.m` on a port that does not opt in keeps its 2.2 meaning and diagnostics (SW2002 `Unknown local value p.m; …`), so no 2.2 source changes. |
+| WP6-S08 | **Forbidden ports and positions.** Sampling a forwarded boundary port is SW2005 `{port}.{member} cannot be sampled: {port} is a forwarded boundary.` (WP6-D01). `p.m` on a child's port remains an error with its 2.2 diagnostic (SW2002). A sampled read is not allowed in an attribute initializer (SW2006 `A sampled read is not allowed in an initializer.`) or in the constant sublanguage of chapter 3.5 (SW2007 `A sampled read is not allowed in a constant duration.`, WP6-D05). A member's initial value is checked without a component, so a reference in it is unknown (SW2002). Case scripts do not sample (WP6-S09). |
+| WP6-R01 | **Cell.** Each port occurrence holds one sample cell per sampled member, initialized to the member's initial value before startup work is released. A read never fails. |
+| WP6-R02 | **Update instant.** A cell takes a value at the instant the value is delivered to the port: the message's delivery time after the route's latency and fault delay. This is independent of whether a receive owner consumes it, and of a newer value replacing it in the owner's pending queue. A dropped offer, and a value older than the route's `maxAge` at delivery (observed as `discardAge`), does not update the cell. Each duplicate copy updates it at its own delivery instant. Within one logical instant, events run in the deterministic event order (time, phase, insertion ordinal). An activation sees the cell updates ordered before its reading step in that order. A delivery produced later in the same instant, for example by a zero-latency send from an activation that runs in that instant, is seen only by reads ordered after it. Worked example: at t = 20 ms a periodic `producer.tick` sends `level.value(v)` over a zero-latency connection, and a periodic `consumer.slot() when (level.value > 0)` of another component is released at the same instant. If the consumer's first step is ordered before the producer's step, its guard reads the previous value; the new value is delivered later in the same instant and is seen by the next read ordered after that delivery, at the latest by the release at t = 40 ms. If the producer's step and the delivery come first, the guard reads the new value. |
+| WP6-R03 | **Live reads.** Every read of a cell, serial or concurrent, is live. Cells are not part of a concurrent dispatch snapshot. A guard and the body of one activation see the same value unless the body suspends in between: the first read of a cell after an activation starts or resumes copies the live cell, and later reads of that cell until the next suspension see that copy, although the steps of activations of other occurrences interleave with them. A body read after a suspension sees the newer value. |
+| WP6-R04 | **No consumer.** A sampled member without a consuming owner has no pending-value queue and no `deliver` or `replaceAttribute` observation. Its cell is the only store, and its offers and drops remain observable. |
+
+Sampled reads serve level-triggered use. Edge reactions, such as resetting on a mode change, switching outputs off on entering sleep or detecting wake-up, keep receive handlers. Completion guards are not re-evaluated when a cell is updated (WP5-R03); a completion guard that reads only cells gets SW2017 (WP5-D08).
+
+B21 (service discovery) is rejected. A team models each binding as a static, optionally `optional`, connection, exposes availability as `provides attribute available: bool = false;` and samples it.
