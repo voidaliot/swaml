@@ -856,9 +856,9 @@ const statementOwner = (n: AstNode) => isExecutable(n) || a.isScenario(n);
  * executable's body: a statement contributes its index in the enclosing statement list, and every
  * other step contributes its slot name, followed by an index for list slots (then, otherwise, body,
  * branches/N, timeoutBody, handler, initializer, update, states/N, actions/N, transitions/N, effect).
- * The If of an else if (SIF-G01) is named by the segment if after its outer If's otherwise slot, for example
- * Shop::Desk.serve/2/otherwise/if/then/0, while the 2.2 form else { if … } keeps the index of its block statement
- * (Shop::Desk.serve/2/otherwise/0/then/0): the two forms are told apart, and no 2.2 identity changes.
+ * The If of an else if (SIF-G01) is the one statement of its ElseIf and has the identity it has in the 2.2 form
+ * else { if … }, for example Shop::Desk.serve/2/otherwise/0/then/0 in both spellings, so rewriting one spelling as the
+ * other keeps every identity.
  * A state is itself identified as <executable>/states/N and a transition, including its guard, as
  * <executable>/states/N/transitions/M. A schedule entry is written <component identity>/schedule/N with N counting the entries the
  * component declares. Identities follow source structure, so an edit that reorders statements
@@ -884,7 +884,7 @@ export function statementIdentity(n: AstNode): string | undefined {
         if (a.isOperationBody(x) && isExecutable(x.$container))
             continue;
         if (x.$containerProperty === 'statements')
-            path.unshift(a.isElseIf(x.$container) ? 'if' : String(x.$containerIndex));
+            path.unshift(String(x.$containerIndex));
         else
             path.unshift(...(x.$containerIndex === undefined ? [x.$containerProperty!] : [x.$containerProperty!, String(x.$containerIndex)]));
     }
@@ -905,7 +905,7 @@ export function resolveStatement(models: readonly a.Model[], source: string): As
         let x: Node | undefined = (isExecutable(n) ? n.body : n) as Node | undefined;
         for (let i = 0; x && i < segments.length; i++) {
             const segment = segments[i];
-            const value = /^\d+$/.test(segment) ? x.statements?.[Number(segment)] : segment === 'if' && a.isElseIf(x) ? x.statements[0] : x[segment];
+            const value = /^\d+$/.test(segment) ? x.statements?.[Number(segment)] : x[segment];
             x = Array.isArray(value) ? /^\d+$/.test(segments[i + 1] ?? '') ? value[Number(segments[++i])] : undefined : value;
             if (x !== undefined && (typeof x !== 'object' || !('$type' in x)))
                 x = undefined;

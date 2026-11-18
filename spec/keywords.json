@@ -244,7 +244,7 @@
       "meaning": "Used in statements and decisions; see its grammar contexts and normative constraints.",
       "concern": "Statements and decisions",
       "normative": "docs/spec/03-behavior.md",
-      "example": "'if' '(' condition=Expression ')' then=Block ('else' otherwise=ElseBody)?;",
+      "example": "'if' '(' condition=Expression ')' then=Block ('else' (otherwise=Block | otherwise=ElseIf))?;",
       "contextual": false,
       "productions": [
         "If",

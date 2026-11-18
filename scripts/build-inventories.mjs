@@ -24,7 +24,7 @@ const groups=[
  ['operations','Operations and nested ownership',['Operation','OperationUsage','Executable','OperationBody'],['operation','returns'],'24-operation-usage','OperationUsage::Demo','operation'],
  ['calls','Expression calls and copied out values',['CallExpression','ExpressionStatement','Return'],['return'],'07-client-server','ClientServer::Client','call'],
  ['try','Runtime failure and lazy fallback',['TryExpression','Fail','Assert'],['try','fail','assert'],'07-client-server','ClientServer::Client','try'],
- ['flow','Statements and decisions',['Block','Statement','Assign','If','ElseBody','ElseIf'],['if','else'],'05-values-and-flow','Values::Demo','flow'],
+ ['flow','Statements and decisions',['Block','Statement','Assign','If','ElseIf'],['if','else'],'05-values-and-flow','Values::Demo','flow'],
  ['loops','Loops and copied iteration',['While','Until','For','ForUpdate','ForEach'],['while','until','for','times'],'18-control-loops','Loops::Demo','loop'],
  ['schedule','Schedule entry and successful chaining',['Schedule','ScheduleEntry'],['schedule','start','every','call','deadline','concurrent'],'25-function-completion','Chaining::Demo','schedule'],
  ['receive','Suspending wait and receive',['Wait','Receive','ReceiveBranch'],['wait','receive','or'],'21-receive-and-try','Receiving::Receiver','receive'],
@@ -83,7 +83,7 @@ const wp7Semantic={
 // Productions SIF package 1 adds or changes (one word for conditions, SIF-G01).
 const sifSemantic={
  If:'If: a decision statement that runs its then block when its bool condition holds and otherwise its else block or, written else if, another if statement (SIF-G01); it preserves statement order, types, occurrence identity and source provenance.',
- ElseIf:'ElseIf: the one if statement written directly after else (SIF-G01). It lowers exactly as an else block holding that statement, so else if (c) and else { if (c) } have one meaning; its statement identity names the if by the segment if, so the two spellings keep distinct, stable identities. It preserves order, occurrence identity and source provenance.'
+ ElseIf:'ElseIf: the one if statement written directly after else (SIF-G01). It lowers exactly as an else block holding that statement, so else if (c) and else { if (c) } have one meaning; its if has the statement identity of the if in else { if (c) }, so rewriting one spelling as the other keeps every identity. It preserves order, occurrence identity and source provenance.'
 };
 const kindOverride={MemberPolicy:'reference'};
 const kernelOverride={ConditionalExpression:["ControlFunctions::'if'"]};

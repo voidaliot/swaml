@@ -316,19 +316,12 @@
       "normative": "docs/spec/03-behavior.md"
     },
     {
-      "source": "ElseBody",
-      "kind": "grouping",
-      "kernel": [],
-      "semantic": "ElseBody: preserve statements and decisions, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
-      "normative": "docs/spec/03-behavior.md"
-    },
-    {
       "source": "ElseIf",
       "kind": "element",
       "kernel": [
         "Feature"
       ],
-      "semantic": "ElseIf: the one if statement written directly after else (SIF-G01). It lowers exactly as an else block holding that statement, so else if (c) and else { if (c) } have one meaning; its statement identity names the if by the segment if, so the two spellings keep distinct, stable identities. It preserves order, occurrence identity and source provenance.",
+      "semantic": "ElseIf: the one if statement written directly after else (SIF-G01). It lowers exactly as an else block holding that statement, so else if (c) and else { if (c) } have one meaning; its if has the statement identity of the if in else { if (c) }, so rewriting one spelling as the other keeps every identity. It preserves order, occurrence identity and source provenance.",
       "normative": "docs/spec/03-behavior.md"
     },
     {

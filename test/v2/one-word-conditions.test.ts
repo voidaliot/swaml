@@ -1,7 +1,7 @@
 // States in the flow, package 1 (docs/proposals/STATES_IN_FLOW_PROPOSAL.md, SIF-G01): one word for conditions. A release
 // guard is written if (g) after the call (the WP7 candidate spelling when (g) is a syntax error), and an if statement's
-// else may be followed by another if (else if), which runs exactly as the 2.2 form else { if … } and has its own stable
-// statement identities (…/otherwise/if).
+// else may be followed by another if (else if), which runs exactly as the 2.2 form else { if … } and has the same
+// statement identities (…/otherwise/0), so rewriting one spelling as the other keeps every identity.
 import nodeTest from 'node:test';
 import assert from 'node:assert/strict';
 import { AstUtils, type AstNode } from 'langium';
@@ -47,7 +47,16 @@ test('SIF-G01 a release guard is written if (g); when (g) on a schedule entry is
     assert.equal(e.guard?.$cstNode?.text, 'awake');
     assert.equal(e.deadline?.value, 2);
     const old = await parse(entry('when (awake)'));
-    assert.deepEqual(old.errors.map(d => [d.code, d.message]), [['SW2000', "Expecting token of type ';' but found `when`. A release guard is written if (condition) after the call, as in f() if (ready) deadline 2ms."]]);
+    const hint = "Expecting token of type ';' but found `when`. A release guard is written if (condition) after the call, as in f() if (ready) deadline 2ms.";
+    assert.deepEqual(old.errors.map(d => [d.code, d.message]), [['SW2000', hint]]);
+    // A guard written after deadline or concurrent gets the same explanation, not the reserved-word hint (review F2).
+    const late = (tail: string) => `package Test { component def C { attribute awake: bool = true; attribute k: int = 2; operation f() { } schedule { on every 10ms f() ${tail}; } } component Demo: C; }`;
+    for (const tail of ['deadline 2ms if (awake)', 'concurrent if (awake)', 'deadline 2ms concurrent if (awake)', 'deadline (k * 1ms) if (awake)', 'if (awake) deadline 2ms if (awake)']) {
+        const wrong = await parse(late(tail));
+        assert.deepEqual(wrong.errors.map(d => [d.code, d.message]), [['SW2000', hint.replace('`when`', '`if`')]], tail);
+    }
+    // An if that follows neither keeps its message.
+    assert.ok((await parse(late('if (awake) if (awake)'))).errors.every(d => !String(d.message).includes('A release guard is written')));
     // when keeps its 2.2 meaning in state machines: a guarded receive transition still parses and validates.
     await valid(`package Test { port def P { provides event e(v: int); } component def C { reversed port p: P; attribute k: int = 0;
       operation m() { initial A; state A { on receive p.e(v) when (v > 0) to B { k = v; } } final state B { } }
@@ -85,42 +94,65 @@ test('SIF-G01 the kept 2.2 grammar rejects else if and accepts else { if … }; 
     assert.equal(current(model(nested)).errors, undefined);
 });
 
-test('SIF-G01 statement identities: else if names its if by the segment if; the 2.2 form keeps its index paths; both resolve', async () => {
+test('SIF-G01 statement identities: the if of an else if has the identity of the if in else { if … }; both spellings resolve', async () => {
     const { model: m } = await valid(model(chain));
-    assert.deepEqual(statementIdentities(m), [
-        'Assign Test::C.f/0', 'If Test::C.f/1', 'Assign Test::C.f/1/then/0',
-        'If Test::C.f/1/otherwise/if', 'Assign Test::C.f/1/otherwise/if/then/0',
-        'If Test::C.f/1/otherwise/if/otherwise/if', 'Assign Test::C.f/1/otherwise/if/otherwise/if/then/0',
-        'Assign Test::C.f/1/otherwise/if/otherwise/if/otherwise/0'
-    ]);
-    // The 2.2 form keeps exactly the identities 2.2 gave it.
     const { model: m2 } = await valid(model(nested));
-    assert.deepEqual(statementIdentities(m2), [
+    // Both spellings have exactly the identities 2.2 gives the nested form, so converting one into the other keeps them.
+    const expected = [
         'Assign Test::C.f/0', 'If Test::C.f/1', 'Assign Test::C.f/1/then/0',
         'If Test::C.f/1/otherwise/0', 'Assign Test::C.f/1/otherwise/0/then/0',
         'If Test::C.f/1/otherwise/0/otherwise/0', 'Assign Test::C.f/1/otherwise/0/otherwise/0/then/0',
         'Assign Test::C.f/1/otherwise/0/otherwise/0/otherwise/0'
-    ]);
+    ];
+    assert.deepEqual(statementIdentities(m), expected);
+    assert.deepEqual(statementIdentities(m2), expected);
     for (const x of [m, m2])
         for (const n of AstUtils.streamAst(x).filter(n => n.$containerProperty === 'statements'))
             assert.equal(resolveStatement([x], statementIdentity(n)!), n, statementIdentity(n));
-    // An index never names the if of an else if, and the segment if never names a block statement.
-    assert.equal(resolveStatement([m], 'Test::C.f/1/otherwise/0'), undefined);
-    assert.equal(resolveStatement([m2], 'Test::C.f/1/otherwise/if'), undefined);
-    // The ElseIf node and the condition of an else if belong to the identity of their statements.
+    // The identity names the if of the else if in the chained source, and the if inside the block in the nested one.
     const elseIf = AstUtils.streamAst(m).find(a.isElseIf)!;
+    assert.equal(resolveStatement([m], 'Test::C.f/1/otherwise/0'), elseIf.statements[0]);
+    assert.ok(a.isBlock(resolveStatement([m2], 'Test::C.f/1/otherwise/0')!.$container));
+    // No other segment names it: the candidate segment if, a slot name in place of the index, or another index.
+    for (const source of ['Test::C.f/1/otherwise/if', 'Test::C.f/1/otherwise/statements/0', 'Test::C.f/1/otherwise/1'])
+        assert.equal(resolveStatement([m], source), undefined, source);
+    // The ElseIf node stays distinguishable for the formatter; it and the condition of an else if belong to the identity
+    // of their statements.
+    assert.ok(a.isElseIf(elseIf) && !a.isBlock(elseIf));
     assert.equal(statementIdentity(elseIf), 'Test::C.f/1');
-    assert.equal(statementIdentity(elseIf.statements[0].condition), 'Test::C.f/1/otherwise/if');
+    assert.equal(statementIdentity(elseIf.statements[0].condition), 'Test::C.f/1/otherwise/0');
 });
 
-test('SIF-G01 else if runs as else { if … }: the same stores and trace, with the else if identities as sources', async () => {
+test('SIF-G01 else if runs as else { if … }: the same stores and the identical trace, sources included', async () => {
     const runOf = async (body: string) => simulate([(await valid(model(body))).model], 'Test::Demo', { untilNs: 45_000_000 });
     const chained = await runOf(chain), plain = await runOf(nested);
     assert.deepEqual(chained.stores, plain.stores);
     assert.deepEqual(chained.stores, { Demo: { n: 4, log: 40, a: true, b: false } });
-    const rename = (s: unknown) => typeof s === 'string' ? s.replaceAll('/otherwise/if', '/otherwise/0') : s;
-    assert.deepEqual(chained.trace.map(o => 'source' in o ? { ...o, source: rename(o.source) } : o), plain.trace);
-    assert.deepEqual([...new Set(chained.trace.filter(o => o.kind === 'write').map(o => o.source))], ['Test::C.f/0', 'Test::C.f/1/then/0', 'Test::C.f/1/otherwise/if/then/0', 'Test::C.f/1/otherwise/if/otherwise/if/then/0', 'Test::C.f/1/otherwise/if/otherwise/if/otherwise/0']);
+    assert.deepEqual(chained.trace, plain.trace);
+    assert.deepEqual([...new Set(chained.trace.filter(o => o.kind === 'write').map(o => o.source))], ['Test::C.f/0', 'Test::C.f/1/then/0', 'Test::C.f/1/otherwise/0/then/0', 'Test::C.f/1/otherwise/0/otherwise/0/then/0', 'Test::C.f/1/otherwise/0/otherwise/0/otherwise/0']);
+});
+
+test('SIF-G01 a final else binds to the nearest if: in the parse tree and in the run, for chains of one to four else if', async () => {
+    for (const links of [1, 2, 3, 4]) {
+        // if (n == 1) { log = 1; } else if (n == 2) { log = 2; } … else { log = 99; }: n counts the releases.
+        const body = 'if (n == 1) { log = 1; }' + Array.from({ length: links }, (_, i) => ` else if (n == ${i + 2}) { log = ${i + 2}; }`).join('') + ' else { log = 99; }';
+        const { model: m } = await valid(model(body));
+        let x = m.packages[0].elements.filter(a.isComponentDef)[0].members.find(a.isOperation)!.body.statements[1] as a.If;
+        for (let i = 0; i < links; i++) {
+            assert.ok(a.isElseIf(x.otherwise), `${links}: link ${i}`);
+            x = (x.otherwise as a.ElseIf).statements[0];
+        }
+        // The last if, and only it, owns the final else.
+        assert.equal(x.condition.$cstNode?.text, `n == ${links + 1}`);
+        assert.ok(a.isBlock(x.otherwise));
+        assert.equal((x.otherwise as a.Block).statements[0].$cstNode?.text, 'log = 99;');
+        // Run release by release: each condition is checked in turn, and the final else runs only after the last one
+        // fails (an else bound to an outer if would run in place of an inner then).
+        for (const releases of [1, links + 1, links + 2, links + 3]) {
+            const r = simulate([m], 'Test::Demo', { untilNs: releases * 10_000_000 + 5_000_000 });
+            assert.deepEqual(r.stores.Demo, { n: releases, log: releases <= links + 1 ? releases : 99, a: true, b: false }, `${links} links, ${releases} releases`);
+        }
+    }
 });
 
 test('SIF-G01 the validator treats else if as else { if … }: typing, returns, definite assignment, stale reads and effects', async () => {
@@ -140,6 +172,14 @@ test('SIF-G01 the validator treats else if as else { if … }: typing, returns, 
         assert.deepEqual(x, y, chained);
         assert.ok(x.length > 0, `${chained} is diagnosed`);
     }
+    // SW2011 treats an if whose only branch returns as a condition on the rest of its block. An if followed by an else if
+    // has an else, as the nested form has, so its condition does not guard what follows (review F5, mutation O6):
+    // neither spelling reports the write after the wait.
+    const early = ['if (log > 0) { return; } else if (b) { n = 1; } wait 1ms; n = 5;', 'if (log > 0) { return; } else { if (b) { n = 1; } } wait 1ms; n = 5;'];
+    assert.deepEqual(await diagnostics(model(early[0])), await diagnostics(model(early[1])));
+    assert.deepEqual((await diagnostics(model(early[0]))).filter(d => d.includes('SW2011')), []);
+    // The same if without an else does guard it, and the write after the wait is reported.
+    assert.ok((await diagnostics(model('if (log > 0) { return; } wait 1ms; n = 5;'))).some(d => d.includes('SW2011')));
     // Every path of if / else if / else returns: no missing-return error, as for the nested form; without the final
     // else both forms report the same missing return.
     const returning = (body: string) => `package Test { component def C { operation g(k: int) returns int { ${body} } } }`;
@@ -165,7 +205,8 @@ test('SIF-G01 the validator treats else if as else { if … }: typing, returns, 
         const c = (await parse(model(body, 'operation ready() returns bool { wait 1ms; return true; }'))).model.packages[0].elements.filter(a.isComponentDef)[0];
         return statementIdentity(suspendSite(c.members.find(a.isOperation)!, c)!);
     };
-    assert.equal(await site('if (a) { log = 1; } else if (b) { n = log + 1; } else if (ready()) { log = 2; }'), 'Test::C.f/1/otherwise/if/otherwise/if');
+    assert.equal(await site('if (a) { log = 1; } else if (b) { n = log + 1; } else if (ready()) { log = 2; }'), 'Test::C.f/1/otherwise/0/otherwise/0');
+    assert.equal(await site('if (a) { log = 1; } else { if (b) { n = log + 1; } else { if (ready()) { log = 2; } } }'), 'Test::C.f/1/otherwise/0/otherwise/0');
     assert.equal(await site('if (a) { log = 1; } else { if (ready()) { log = 2; } }'), 'Test::C.f/1/otherwise/0');
 });
 
@@ -190,6 +231,12 @@ test('SIF-G01 the formatter keeps else if on one line, also with comments betwee
     assert.match(two, /\} else \/\* a \*\/ \/\* b \*\/ if \(b\) \{/u);
     for (const text of [block, line, two])
         assert.equal(formatDocument((await parse(text)).doc as never), text);
+    // A comment between else and { keeps the 2.2 output (recorded from main, e477daa, and 3.1.0): else ends its line, and
+    // the comments and the block start lines of their own (review F3, mutation O2).
+    const lines = (text: string) => text.split('\n').slice(8, 15).join('\n');
+    assert.equal(lines(await format('if (a) { log = 1; } else /* c */ { log = 2; }')), '      if (a) {\n        log = 1;\n      } else\n      /* c */\n      {\n        log = 2;\n      }');
+    assert.equal(lines(await format('if (a) { log = 1; } else // c\n{ log = 2; }')), '      if (a) {\n        log = 1;\n      } else\n      // c\n      {\n        log = 2;\n      }');
+    assert.equal(lines(await format('if (a) { log = 1; } else /* a */ /* b */ { log = 2; }')), '      if (a) {\n        log = 1;\n      } else\n      /* a */\n      /* b */\n      {\n        log = 2;');
     // The guard is printed if (g) between the call and deadline.
     const entry = formatDocument((await parse('package Test { component def C { attribute awake: bool = true; operation f() { } schedule { on every 10ms f()if(awake)deadline 2ms; } } }')).doc as never);
     assert.match(entry, /on every 10ms f\(\) if \(awake\) deadline 2ms;/u);
