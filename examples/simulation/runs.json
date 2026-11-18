@@ -300,5 +300,17 @@
         "dispensedToday": 300
       }
     }
+  },
+  {
+    "model": "examples/38-square-root.swaml",
+    "case": "HazardDistance::Negative argument fails",
+    "options": "examples/simulation/38-square-root.json",
+    "expectedResult": "pass",
+    "expectedStores": {
+      "relevance": {
+        "invalidInputs": 1
+      }
+    },
+    "expectedCaught": ["Arithmetic"]
   }
 ]

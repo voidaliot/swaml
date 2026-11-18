@@ -271,3 +271,49 @@ test('WP2-D05 valid nesting parses at least as deep as under the kept 2.2 gramma
         assert.ok(await parses(shared, low), `${form}: 2.2 parses depth ${low}, so must the current parser`);
     }
 });
+
+test('WP2-D05 (c) the stack guard fails loudly when the parser library no longer offers its rule catch (WP3 review F4)', () => {
+    for (const parser of [{ parse: () => ({}) }, { parse: () => ({}), wrapper: {} }, { parse: () => ({}), wrapper: { invokeRuleCatch: 1 } }])
+        assert.throws(() => guardParserStack(parser), /parser\.wrapper\.invokeRuleCatch/u);
+    // The real parser has it, and the guard is installed on the instance.
+    const parser = createSwamlServices(EmptyFileSystem).Swaml.parser.LangiumParser as unknown as { wrapper: object };
+    assert.ok(Object.hasOwn(parser.wrapper, 'invokeRuleCatch'));
+});
+test('WP2-D05 (c) else chains near the stack limit report SW2013 and never throw, which needs the rule-catch hook (WP3 review F4)', () => {
+    const parser = createSwamlServices(EmptyFileSystem).Swaml.parser.LangiumParser;
+    const text = (n: number) => `package P { component def D { attribute x: int = 0; operation run() { ${'if (x > 0) { } else { '.repeat(n)}x = 1;${'}'.repeat(n)} } } }`;
+    let stopped = 0;
+    for (let depth = 300; depth <= 700; depth += 3) {
+        const result = parser.parse(text(depth));
+        if (result.lexerErrors.some(e => e.message === PARSER_STACK_MESSAGE))
+            stopped++;
+    }
+    assert.ok(stopped > 0, 'some else chains exceed the stack');
+    // The overflow test matches V8's wording.
+    let overflow: unknown;
+    const deep = (n: number): number => n ? deep(n - 1) + 1 : 0;
+    try { deep(1e7); } catch (e) { overflow = e; }
+    assert.ok(overflow instanceof RangeError && /call stack/iu.test(overflow.message), String(overflow));
+});
+test('WP2-D05 any exception out of a parse leaves the parser clean for the next parse (WP3 review F4)', async () => {
+    const { readdirSync, readFileSync } = await import('node:fs');
+    class Failing extends SwamlValueConverter {
+        boom = true;
+        protected override runConverter(rule: Parameters<SwamlValueConverter['runConverter']>[0], input: string, cstNode: Parameters<SwamlValueConverter['runConverter']>[2]) {
+            if (this.boom && input === '"BOOM"')
+                throw new TypeError('converter bug');
+            return super.runConverter(rule, input, cstNode);
+        }
+    }
+    const converter = new Failing();
+    const parser = createSwamlServices(EmptyFileSystem, { parser: { ValueConverter: () => converter } }).Swaml.parser.LangiumParser;
+    const fresh = createSwamlServices(EmptyFileSystem).Swaml.parser.LangiumParser;
+    const shape = (node: unknown) => JSON.stringify(node, (key, value) => key.startsWith('$') && key !== '$type' ? undefined : value && typeof value === 'object' && '$refText' in value ? value.$refText : value);
+    const files = readdirSync(new URL('examples/', root)).filter(f => f.endsWith('.swaml')).slice(0, 20);
+    assert.equal(files.length, 20);
+    for (const file of files) {
+        assert.throws(() => parser.parse('package P { component def D { attribute s: string = ""; operation run() { s = "BOOM"; } } }'), /converter bug/u);
+        const text = readFileSync(new URL('examples/' + file, root), 'utf8');
+        assert.equal(shape(parser.parse(text).value), shape(fresh.parse(text).value), file);
+    }
+});

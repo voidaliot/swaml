@@ -81,7 +81,7 @@ package OperationGuide {
 
 A declaration has parentheses and optional returns; a usage has a type and inherits its signature. Its optional body replaces the whole definition body. Nested operations come first and never capture the outer operation's parameters/locals. Pass values explicitly. Component operations may read/write their own attributes. Package definitions can use only parameters/nested operations. Calls are expressions; void calls are statements; a value result cannot be discarded. Out arguments name mutable compatible cells and copy back only after success. Recursion and overloading are absent.
 
-Import Swaml::Math explicitly for abs/min/max/floor/round/trunc/length/concat. View, QoS, CallFailure and Platform libraries are also loaded and explicitly imported when using their short names. Do not invent host built-ins or assume an arbitrary library exists.
+Import Swaml::Math explicitly for abs/min/max/floor/round/trunc/length/concat. From 2.3, import Swaml::Numeric for minInt/maxInt/clampInt/clamp and the correctly rounded sqrt, Swaml::Text for intText/realText/boolText (realText(v, decimals) rounds ties away from zero and fails with Bounds above 15 decimals or from 1e21) and Swaml::Time for now(), the logical time in nanoseconds, which reads state and is not allowed in attribute initializers ([square root](../examples/38-square-root.swaml), [logical clock](../examples/39-logical-clock.swaml) and [number text](../examples/40-number-text.swaml) examples). View, QoS, CallFailure and Platform libraries are also loaded and explicitly imported when using their short names. Do not invent host built-ins or assume an arbitrary library exists.
 
 ## Connect components
 

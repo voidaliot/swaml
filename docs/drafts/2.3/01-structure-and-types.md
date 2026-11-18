@@ -39,18 +39,18 @@ var lastRxNs: uint = 0;   // compared with now() - lastRxNs >= rxTimeoutMs * 1ms
 
 ## 1.5 Reuse and library boundaries
 
-The library sentence becomes: "The versioned source libraries are Swaml::Math, Swaml::Numeric, Swaml::Text, Swaml::Time, Swaml::Calls, Swaml::Qos, Swaml::Views, Swaml::Platform and Swaml::Os."
+WP3 applied the library sentence for `Swaml::Numeric`, `Swaml::Text` and `Swaml::Time` in [chapter 1.5](../../spec/01-structure-and-types.md#15-reuse-and-library-boundaries). With WP8 it becomes: "The versioned source libraries are Swaml::Math, Swaml::Numeric, Swaml::Text, Swaml::Time, Swaml::Calls, Swaml::Qos, Swaml::Views, Swaml::Platform and Swaml::Os."
 
 | ID | Rule |
 | --- | --- |
-| WP3-L01 | `Swaml::Numeric` declares `operation def minInt(a: int, b: int) returns int`, `maxInt(a: int, b: int) returns int`, `clampInt(v: int, low: int, high: int) returns int` and `clamp(v: real, low: real, high: real) returns real` with swa.ml source bodies (as in [proposal B4](../../proposals/NEXT_MINOR_PROPOSAL.md#b4-numbers-and-text)), and `sqrt(v: real) returns real` as a host intrinsic. |
-| WP3-L02 | `Swaml::Text` declares `intText(v: int) returns string` and `realText(v: real, decimals: uint) returns string` as host intrinsics and `boolText(v: bool) returns string` with a source body. |
-| WP3-L03 | `Swaml::Time` declares `now() returns uint` as a host intrinsic. |
-| WP3-L04 | No operation is added to `Swaml::Math` or `Swaml::Platform`. A workspace that imports one of the new packages and declares a same-named operation follows the existing ambiguity rule (SW2001); the WP3 tests show that no corpus model becomes ambiguous. |
-| WP3-M01 | The new packages are part of the versioned library source (`libraries/`), loaded like the existing libraries and imported explicitly. Intrinsic bodies are documentation-only, as for the `Swaml::Math` intrinsics. |
-| WP3-R01 | `sqrt` is IEEE-754 correctly rounded. An argument below zero is the runtime failure `Arithmetic`. |
-| WP3-R02 | `intText` writes decimal digits, with `-` for negatives and no leading zeros. `realText` rounds the exact binary value of `v` to exactly `decimals` fraction digits, ties away from zero, and writes plain decimal notation with no exponent: `realText(2.5, 0)` is `3` and `realText(-2.5, 0)` is `-3`. A result that rounds to zero has no sign: `realText(-0.0001, 2)` is `0.00`. `decimals` above 15, or `abs(v)` of at least 1e21, is the runtime failure `Bounds`. This is not the tie rule of `Swaml::Math::round`, which rounds ties toward positive infinity. An implementation must not rely on JavaScript `toFixed` alone, which writes `-0.00` and switches to exponent notation from 1e21. |
-| WP3-R03 | `now()` returns the logical time of the evaluating step, in nanoseconds since the run epoch. A concurrent activation reads live time, not its dispatch snapshot. |
+| WP3-L01 | Moved to [chapter 1.5](../../spec/01-structure-and-types.md#15-reuse-and-library-boundaries) in WP3. |
+| WP3-L02 | Moved to [chapter 1.5](../../spec/01-structure-and-types.md#15-reuse-and-library-boundaries) in WP3. |
+| WP3-L03 | Moved to [chapter 1.5](../../spec/01-structure-and-types.md#15-reuse-and-library-boundaries) in WP3. |
+| WP3-L04 | Moved to [chapter 1.5](../../spec/01-structure-and-types.md#15-reuse-and-library-boundaries) in WP3. |
+| WP3-M01 | Moved to [chapter 1.5](../../spec/01-structure-and-types.md#15-reuse-and-library-boundaries) in WP3. |
+| WP3-R01 | Moved to [chapter 1.5](../../spec/01-structure-and-types.md#15-reuse-and-library-boundaries) in WP3. |
+| WP3-R02 | Moved to [chapter 1.5](../../spec/01-structure-and-types.md#15-reuse-and-library-boundaries) in WP3. |
+| WP3-R03 | Moved to [chapter 1.5](../../spec/01-structure-and-types.md#15-reuse-and-library-boundaries) in WP3. |
 | WP8-L01 | `Swaml::Os` declares `enum TaskKind { basic, extended, isr }`, `component def Core specializes Node { }` and `component def Task specializes Process` with the const attributes `kind: TaskKind = TaskKind.basic`, `priority: uint = 0`, `preemptive: bool = true`, `periodNs: uint = 0` and `responseNs: uint = 0`, documented as in ADR 0025. It imports `Swaml::Platform`. |
 
 Tier 2, not part of 2.3: trigonometry as swa.ml source in `Swaml::Numeric` and enum conversions with the library-only `enum` parameter type (ADR 0022).

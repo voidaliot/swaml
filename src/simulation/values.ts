@@ -65,3 +65,50 @@ export function binary(op: string, l: Value, r: Value): Value {
     }
     return checked(type, op === '+' ? x + y : op === '-' ? x - y : op === '*' ? x * y : op === '/' ? x / y : x % y);
 }
+/** The most fraction digits realText writes, and the magnitude from which it fails (WP3-R02). */
+export const REAL_TEXT_MAX_DECIMALS = 15;
+export const REAL_TEXT_LIMIT = 1e21;
+/** The exact value of a finite, non-negative binary64 number as mantissa * 2^exponent. */
+function binary64(x: number): [bigint, number] {
+    const view = new DataView(new ArrayBuffer(8));
+    view.setFloat64(0, x);
+    const bits = view.getBigUint64(0), biased = Number((bits >> 52n) & 0x7ffn), fraction = bits & ((1n << 52n) - 1n);
+    return biased === 0 ? [fraction, -1074] : [fraction | (1n << 52n), biased - 1075];
+}
+/** Swaml::Text::intText (WP3-R02): decimal digits, '-' for negatives, no leading zeros. */
+export function intText(v: number): string {
+    if (!Number.isSafeInteger(v))
+        throw new RuntimeFault('Bounds', 'Value outside int');
+    return BigInt(v).toString();
+}
+/**
+ * Swaml::Text::realText (WP3-R02): the exact binary value of v rounded to exactly decimals fraction digits,
+ * ties away from zero, in plain decimal notation without exponent and without a signed zero. Computed in
+ * integers from the binary64 bits, never with toFixed, which writes -0.00 and switches to exponent notation.
+ */
+export function realText(v: number, decimals: number): string {
+    if (!Number.isSafeInteger(decimals) || decimals < 0 || decimals > REAL_TEXT_MAX_DECIMALS)
+        throw new RuntimeFault('Bounds', `realText writes at most ${REAL_TEXT_MAX_DECIMALS} decimals`);
+    if (!Number.isFinite(v) || Math.abs(v) >= REAL_TEXT_LIMIT)
+        throw new RuntimeFault('Bounds', 'realText needs an absolute value below 1e21');
+    const [mantissa, exponent] = binary64(Math.abs(v)), scale = 10n ** BigInt(decimals);
+    let units: bigint;
+    if (exponent >= 0)
+        units = (mantissa << BigInt(exponent)) * scale;
+    else {
+        const numerator = mantissa * scale, denominator = 1n << BigInt(-exponent);
+        units = numerator / denominator;
+        // Ties away from zero: the magnitude rounds up when the remainder is at least one half.
+        if ((numerator % denominator) * 2n >= denominator)
+            units += 1n;
+    }
+    const digits = units.toString().padStart(decimals + 1, '0');
+    const text = decimals ? `${digits.slice(0, -decimals)}.${digits.slice(-decimals)}` : digits;
+    return v < 0 && units !== 0n ? '-' + text : text;
+}
+/** Swaml::Numeric::sqrt (WP3-R01): IEEE-754 square root, correctly rounded; below zero is Arithmetic. */
+export function squareRoot(v: number): number {
+    if (v < 0)
+        throw new RuntimeFault('Arithmetic', 'Square root of a negative number');
+    return Math.sqrt(v);
+}

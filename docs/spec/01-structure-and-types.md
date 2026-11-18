@@ -139,4 +139,50 @@ package Debounce {
 
 Package operation definitions use only parameters and nested operations. Their usages inherit the signature; an optional body replaces the whole body. Calls in an inherited component body resolve by name in the concrete occurrence's effective members, with signature preservation checked on redefinition. Call graphs are acyclic. No other component's operation or calculation is a fallback name resolution target.
 
-The versioned source libraries are Swaml::Math, Swaml::Calls, Swaml::Qos, Swaml::Views and Swaml::Platform. They are always loaded but imported explicitly. Math provides abs, min, max, checked floor/round/trunc conversion to int, Unicode scalar length and concat. floor/round/trunc/length are explicitly identified host intrinsics in the reference library; round ties toward positive infinity. Their backend semantics and range failures remain required.
+The versioned source libraries are Swaml::Math, Swaml::Numeric, Swaml::Text, Swaml::Time, Swaml::Calls, Swaml::Qos, Swaml::Views and Swaml::Platform. They are always loaded but imported explicitly. Math provides abs, min, max, checked floor/round/trunc conversion to int, Unicode scalar length and concat. floor/round/trunc/length are explicitly identified host intrinsics in the reference library; round ties toward positive infinity. Their backend semantics and range failures remain required.
+
+From 2.3, three more packages supply numbers, text and the logical clock. They are new packages rather than additions to Swaml::Math, because a model that imports Swaml::Math next to its own clampInt (the door model's DoorEcu::Types) must stay unambiguous.
+
+| ID | Rule |
+| --- | --- |
+| WP3-L01 | `Swaml::Numeric` declares `operation def minInt(a: int, b: int) returns int`, `maxInt(a: int, b: int) returns int`, `clampInt(v: int, low: int, high: int) returns int` and `clamp(v: real, low: real, high: real) returns real` with swa.ml source bodies, and `sqrt(v: real) returns real` as a host intrinsic. `clampInt` and `clamp` test `low` first: a value below `low` is `low`, otherwise a value above `high` is `high`. |
+| WP3-L02 | `Swaml::Text` declares `intText(v: int) returns string` and `realText(v: real, decimals: uint) returns string` as host intrinsics and `boolText(v: bool) returns string` with a source body (`"true"` or `"false"`). |
+| WP3-L03 | `Swaml::Time` declares `now() returns uint` as a host intrinsic. Its effect is *reads state* (chapter 3.1, WP3-S01). |
+| WP3-L04 | No operation is added to `Swaml::Math` or `Swaml::Platform`; the 2.2 library source keeps its bytes. **A workspace that declares a package named like a 2.3 library package uses its own; the library package is not available there.** Such a package, declared in any document of the workspace other than a library copy, hides the built-in `Swaml::Numeric`, `Swaml::Text` or `Swaml::Time` of the same name for scope, linking, resolution, validation and runs (the others stay available); its operations are ordinary operations, never intrinsics, and no diagnostic is added, so a 2.2 source that declares such a package keeps its 2.2 meaning. Hiding is workspace-global, as package resolution and duplicate detection are: it applies to every document of the workspace and follows every change, a deleted or renamed declaration included. A workspace with such a package cannot reach the library operations of that name, by import or qualified name. Otherwise a workspace that imports one of the new packages and declares a same-named element follows the ambiguity rule: a reference that two visible declarations share is SW2001 (`Ambiguous name …`), and so is a short call name shared with a 2.3 library operation, reported with the same message and the declarations as related information; a short call name that only user packages share keeps the 2.2 SW2006 `Unknown operation …`. A component's own or nested operation is found first, as before. A qualified name resolves either. Because no 2.2 source can import the new packages, no 2.2 model becomes ambiguous. |
+| WP3-M01 | The new packages are part of the versioned library source, `libraries/swaml-2.3.swaml`, loaded as a built-in document next to `libraries/swaml-2.0.swaml` and imported explicitly (a qualified name needs no import). Intrinsic bodies are documentation only, as for the `Swaml::Math` intrinsics; the return-path and package-definition checks exempt them by identity in the built-in document and in a copy of it that differs at most by a leading byte order mark, line ends and whitespace at the end of the file, as they exempt `Swaml::Math`. Only the built-in declarations are evaluated as intrinsics, and an operation usage of one without its own body is that intrinsic. Such a copy of a library document loaded as a workspace source duplicates the built-in packages (SW2001), as a copy of the 2.2 library always did, and hides nothing; a copy with any other change is user source and hides the library packages it declares. A run lists the 2.3 library document among its sources only when a supplied model imports or references one of its visible packages. |
+| WP3-R01 | `sqrt` is IEEE-754 correctly rounded. An argument below zero is the runtime failure `Arithmetic`; `-0.0` is not below zero and its root is `0.0`. A real value is always finite (chapter 1.4), so no NaN or infinity reaches or leaves `sqrt`. |
+| WP3-R02 | `intText` writes decimal digits, with `-` for negatives and no leading zeros. `realText` rounds the exact binary value of `v` to exactly `decimals` fraction digits, ties away from zero, and writes plain decimal notation with no exponent: `realText(2.5, 0)` is `3` and `realText(-2.5, 0)` is `-3`. A result that rounds to zero has no sign: `realText(-0.0001, 2)` is `0.00`. `decimals` above 15, or `abs(v)` of at least 1e21, is the runtime failure `Bounds`. This is not the tie rule of `Swaml::Math::round`, which rounds ties toward positive infinity. An implementation must not rely on JavaScript `toFixed` alone, which writes `-0.00` and switches to exponent notation from 1e21; the reference implementation computes in integers from the binary64 value. Because the exact binary value is rounded, `realText(1.005, 2)` is `1.00` and `realText(0.125, 2)` is `0.13`. |
+| WP3-R03 | `now()` returns the logical time of the evaluating step, in nanoseconds since the run epoch, as `uint`. Every activation reads the live clock: a concurrent activation reads live time, not its dispatch snapshot, which holds attributes only (chapter 3.4). In a handler it is the delivery step, after latency and fault delays; after a wait it is the resumption step; in a case script it is the script's step. Clock overflow remains the `ClockRange` violation. Durations as values arrive with WP4, which reads them as `uint` nanoseconds, the unit of `now()`. |
+
+`sqrt`, `intText` and `realText` failures are ordinary runtime failures: `try` catches them and a caught one is a `caught` observation (chapter 6). A hazard distance, a reception age and a diagnostic label use all three packages:
+
+```swaml
+package LibraryUse {
+  import Swaml::Numeric;
+  import Swaml::Text;
+  import Swaml::Time;
+  component def Monitor {
+    const attribute timeoutMs: uint = 100;
+    attribute lastRxNs: uint = 0;
+    attribute distanceM: real = 0.0;
+    attribute label: string = "";
+    attribute level: int = 0;
+    operation onFrame(dx: real, dy: real, raw: int) {
+      lastRxNs = now();
+      distanceM = sqrt(dx * dx + dy * dy);
+      level = clampInt(raw, 0, 10);
+      label = "level " + intText(level) + " at " + realText(distanceM, 1) + " m, stale " + boolText(false);
+    }
+    operation check() {
+      if (now() - lastRxNs >= timeoutMs * 1000000) {
+        label = "stale for " + realText((now() - lastRxNs) / 1000000.0, 3) + " ms";
+      }
+    }
+    operation guarded(v: real) returns real {
+      return try(sqrt(v), 0.0);
+    }
+  }
+}
+```
+
+The before-and-after examples are [square root](../../examples/38-square-root.swaml), [logical clock](../../examples/39-logical-clock.swaml) and [number text](../../examples/40-number-text.swaml). Trigonometry and enum conversions are not part of 2.3.

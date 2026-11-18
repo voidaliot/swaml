@@ -1,0 +1,18 @@
+package Swaml::Numeric {
+  /** Integer and real helpers and the correctly rounded square root (swa.ml 2.3). */
+  operation def minInt(a: int, b: int) returns int { if (a < b) { return a; } return b; }
+  operation def maxInt(a: int, b: int) returns int { if (a > b) { return a; } return b; }
+  operation def clampInt(v: int, low: int, high: int) returns int { if (v < low) { return low; } if (v > high) { return high; } return v; }
+  operation def clamp(v: real, low: real, high: real) returns real { if (v < low) { return low; } if (v > high) { return high; } return v; }
+  operation def sqrt(v: real) returns real { /** Host intrinsic: IEEE-754 correctly rounded square root; an argument below zero is the runtime failure Arithmetic. */ }
+}
+package Swaml::Text {
+  /** Decimal text of numbers and booleans (swa.ml 2.3). */
+  operation def intText(v: int) returns string { /** Host intrinsic: decimal digits, '-' for negatives, no leading zeros. */ }
+  operation def realText(v: real, decimals: uint) returns string { /** Host intrinsic: the exact binary value rounded to exactly decimals fraction digits, ties away from zero, plain notation, no signed zero; decimals above 15 or a magnitude of at least 1e21 is the runtime failure Bounds. */ }
+  operation def boolText(v: bool) returns string { if (v) { return "true"; } return "false"; }
+}
+package Swaml::Time {
+  /** The logical clock of the reference run (swa.ml 2.3). */
+  operation def now() returns uint { /** Host intrinsic: the logical time of the evaluating step in nanoseconds since the run epoch; reads state. */ }
+}

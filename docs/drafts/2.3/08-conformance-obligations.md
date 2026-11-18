@@ -8,7 +8,7 @@
 | --- | --- | --- | --- |
 | V16 | Moved to [chapter 8.1](../../spec/08-conformance-obligations.md#81-static-obligations) in WP1. | | [WP1] |
 | V17 | Moved to [chapter 8.1](../../spec/08-conformance-obligations.md#81-static-obligations) in WP2. | | [WP2] |
-| V18 | `Swaml::Numeric`, `Swaml::Text` and `Swaml::Time` without new ambiguity; `now()` placement | SW2001/2006 | [WP3] |
+| V18 | Moved to [chapter 8.1](../../spec/08-conformance-obligations.md#81-static-obligations) in WP3. | | [WP3] |
 | V19 | Duration values, policy setting literals, the constant sublanguage per occurrence, trigger identity, unit warning | SW2002/2007/2013/2016 | [WP4] |
 | V20 | Completion, timer guards, internal transitions, deferral, completion-guard and deferral-overflow warnings | SW2005/2008/2017/2018 | [WP5] |
 | V21 | Sampled-read ports and positions, mandatory initial values, zero-or-one owners of sampled members, member policies | SW2004/2005/2006/2013 | [WP6] |
@@ -23,7 +23,7 @@ Existing rows change their text accordingly: V03 (selectors, done in WP1), V09 (
 | --- | --- | --- |
 | E12 | Moved to [chapter 8.2](../../spec/08-conformance-obligations.md#82-runtime-obligations) in WP1. | [WP1] |
 | E13 | Moved to [chapter 8.2](../../spec/08-conformance-obligations.md#82-runtime-obligations) in WP2. | [WP2] |
-| E14 | `sqrt`, `intText`, `realText` (ties away from zero, unsigned zero, `Bounds` from 1e21) and `now()` live time | [WP3] |
+| E14 | Moved to [chapter 8.2](../../spec/08-conformance-obligations.md#82-runtime-obligations) in WP3. | [WP3] |
 | E15 | Computed waits, timeouts, state timers after entry, per-occurrence periods and deadlines, `DurationRange` | [WP4] |
 | E16 | Completion, elapsed-timer and input order; no completion after discards; `discardTimer`; internal reactions keep timers; `CompletionLoop`; retention and offer-ordinal order; `defer` | [WP5] |
 | E17 | Sample cells updated at delivery (after latency and faults, before same-instant guards), independent of consumption, read live, with `sample` observations; per-member policies | [WP6] |

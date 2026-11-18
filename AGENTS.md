@@ -1,6 +1,6 @@
 # Instructions for agents working on swa.ml
 
-swa.ml 2.2 is the current published edition; the repository prepares the unreleased 2.3 candidate, which so far accepts the 2.2 language plus work packages WP1 (places, selector reads and literal component indexes in test paths) and WP2 (the whole-expression conditional, view, state, in and out as contextual words, association lists) ([2.3 release draft](docs/RELEASE_2_3.md)).
+swa.ml 2.2 is the current published edition; the repository prepares the unreleased 2.3 candidate, which so far accepts the 2.2 language plus work packages WP1 (places, selector reads and literal component indexes in test paths), WP2 (the whole-expression conditional, view, state, in and out as contextual words, association lists) and WP3 (the library packages Swaml::Numeric, Swaml::Text and Swaml::Time) ([2.3 release draft](docs/RELEASE_2_3.md)).
 
 Read docs/LANGUAGE_SPECIFICATION.md, the affected normative chapter, docs/IMPLEMENTATION_STATUS.md, docs/spec/06-execution-contract.md through 09-formal-semantics.md, docs/decisions/0016-swaml-2-0.md, docs/decisions/0019-package-context.md and CONTRIBUTING.md before changing meaning.
 

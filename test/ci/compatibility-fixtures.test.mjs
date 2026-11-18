@@ -69,12 +69,18 @@ const EXTENDED = {
     // The WP2 review set: 2.2 sources whose diagnostics spell a quoted contextual word.
     'models-wp2b.json': '80173cb5e9945077c896e9f18eaebd2282a041782dc59c82628433829d2bf665',
     'recorded-wp2b.json': '3a6881e47c39199378e44ab140a699e105faf8b6fb476f53cb2c1b1ce1b752a8',
+    // The WP3 set: 2.2 sources that declare, import or use the names of the 2.3 library packages (WP3-L04).
+    'models-wp3.json': '192203cced460e3d49a36f187930128a263eea58f9d5c5aa9aeda342071d1201',
+    'recorded-wp3.json': 'c03bed8354e225fc0d463e7e8e6d69202a39be3ba329ebb3dfdb669739d180ab',
+    // The WP3 review set: 2.2 sources with their own Swaml::Numeric, Swaml::Text or Swaml::Time (review F1).
+    'models-wp3b.json': '1c9da30556381e6f8e808a4689e3d8fc47d523f19bee991ecb91234741ff87a9',
+    'recorded-wp3b.json': 'e3e13851c805793e28c72add57b8449c1f2d769503339556b6a3a4b9561caaba',
 };
 test('the extended 2.2 fixture keeps its pinned bytes and names the 3.1.0 recording commit', () => {
     const extended = name => readFileSync(new URL(`../../test/fixtures/compatibility-2-2-extended/${name}`, import.meta.url), 'utf8').replaceAll('\r\n', '\n');
     for (const [name, digest] of Object.entries(EXTENDED))
         assert.equal(createHash('sha256').update(extended(name), 'utf8').digest('hex'), digest, `${name} changed; the extended fixture is recorded once and never edited`);
-    for (const name of ['recorded.json', 'recorded-wp2.json', 'recorded-wp2b.json']) {
+    for (const name of ['recorded.json', 'recorded-wp2.json', 'recorded-wp2b.json', 'recorded-wp3.json', 'recorded-wp3b.json']) {
         const { recordedWith } = JSON.parse(extended(name));
         assert.deepEqual([recordedWith.commit, recordedWith.implementation, recordedWith.languageVersion, recordedWith.profile], [RECORDED, '3.1.0', '2.2', 'swaml-reference/2.2'], name);
     }

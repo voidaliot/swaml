@@ -42,7 +42,7 @@ Unreleased draft reference for the 2.3 candidate. Its chapters are the maintaine
 
 # swa.ml 2.2 language specification
 
-**Edition:** 2.3 (unreleased candidate) · **Parser:** 2.3 · **Reference profile:** swaml-reference/2.3 · **Status:** allocated draft; nothing in it is published. The candidate accepts the 2.2 language plus the rules of the work packages landed so far, which the maintained chapters carry (WP1: places, selector reads and literal component indexes in test paths; WP2: the whole-expression conditional, contextual words and association lists; [2.3 release draft](RELEASE_2_3.md)); the published 2.2 edition (10 November 2026), its [reference](SWAML-2.2-Reference.md) and the published 2.1 edition and their artifacts are unchanged. [2.2 release notes](RELEASE_2_2.md) describe syntax-preserving associated-component test access and normal primary-subject calls from both case kinds. [Release notes](RELEASE_2_1.md) describe the changes and the migration from 2.0; the published 2.0 edition remains under its legacy v2.0.0 tag.
+**Edition:** 2.3 (unreleased candidate) · **Parser:** 2.3 · **Reference profile:** swaml-reference/2.3 · **Status:** allocated draft; nothing in it is published. The candidate accepts the 2.2 language plus the rules of the work packages landed so far, which the maintained chapters carry (WP1: places, selector reads and literal component indexes in test paths; WP2: the whole-expression conditional, contextual words and association lists; WP3: the library packages Swaml::Numeric, Swaml::Text and Swaml::Time; [2.3 release draft](RELEASE_2_3.md)); the published 2.2 edition (10 November 2026), its [reference](SWAML-2.2-Reference.md) and the published 2.1 edition and their artifacts are unchanged. [2.2 release notes](RELEASE_2_2.md) describe syntax-preserving associated-component test access and normal primary-subject calls from both case kinds. [Release notes](RELEASE_2_1.md) describe the changes and the migration from 2.0; the published 2.0 edition remains under its legacy v2.0.0 tag.
 
 swa.ml is the Software Architecture Modeling Language: a textual language for explicit software structure, communication and executable behavior. [ADR 0016](decisions/0016-swaml-2-0.md) accepts the clean restart; [ADR 0019](decisions/0019-package-context.md) adds the package context and executable cases of 2.1. The language has one component concept and one operation concept. It does not accept 1.x source. Published books and PDFs retain their original bytes.
 
@@ -220,7 +220,7 @@ package OperationGuide {
 
 A declaration has parentheses and optional returns; a usage has a type and inherits its signature. Its optional body replaces the whole definition body. Nested operations come first and never capture the outer operation's parameters/locals. Pass values explicitly. Component operations may read/write their own attributes. Package definitions can use only parameters/nested operations. Calls are expressions; void calls are statements; a value result cannot be discarded. Out arguments name mutable compatible cells and copy back only after success. Recursion and overloading are absent.
 
-Import Swaml::Math explicitly for abs/min/max/floor/round/trunc/length/concat. View, QoS, CallFailure and Platform libraries are also loaded and explicitly imported when using their short names. Do not invent host built-ins or assume an arbitrary library exists.
+Import Swaml::Math explicitly for abs/min/max/floor/round/trunc/length/concat. From 2.3, import Swaml::Numeric for minInt/maxInt/clampInt/clamp and the correctly rounded sqrt, Swaml::Text for intText/realText/boolText (realText(v, decimals) rounds ties away from zero and fails with Bounds above 15 decimals or from 1e21) and Swaml::Time for now(), the logical time in nanoseconds, which reads state and is not allowed in attribute initializers ([square root](../examples/38-square-root.swaml), [logical clock](../examples/39-logical-clock.swaml) and [number text](../examples/40-number-text.swaml) examples). View, QoS, CallFailure and Platform libraries are also loaded and explicitly imported when using their short names. Do not invent host built-ins or assume an arbitrary library exists.
 
 ## Connect components
 
@@ -499,7 +499,53 @@ package Debounce {
 
 Package operation definitions use only parameters and nested operations. Their usages inherit the signature; an optional body replaces the whole body. Calls in an inherited component body resolve by name in the concrete occurrence's effective members, with signature preservation checked on redefinition. Call graphs are acyclic. No other component's operation or calculation is a fallback name resolution target.
 
-The versioned source libraries are Swaml::Math, Swaml::Calls, Swaml::Qos, Swaml::Views and Swaml::Platform. They are always loaded but imported explicitly. Math provides abs, min, max, checked floor/round/trunc conversion to int, Unicode scalar length and concat. floor/round/trunc/length are explicitly identified host intrinsics in the reference library; round ties toward positive infinity. Their backend semantics and range failures remain required.
+The versioned source libraries are Swaml::Math, Swaml::Numeric, Swaml::Text, Swaml::Time, Swaml::Calls, Swaml::Qos, Swaml::Views and Swaml::Platform. They are always loaded but imported explicitly. Math provides abs, min, max, checked floor/round/trunc conversion to int, Unicode scalar length and concat. floor/round/trunc/length are explicitly identified host intrinsics in the reference library; round ties toward positive infinity. Their backend semantics and range failures remain required.
+
+From 2.3, three more packages supply numbers, text and the logical clock. They are new packages rather than additions to Swaml::Math, because a model that imports Swaml::Math next to its own clampInt (the door model's DoorEcu::Types) must stay unambiguous.
+
+| ID | Rule |
+| --- | --- |
+| WP3-L01 | `Swaml::Numeric` declares `operation def minInt(a: int, b: int) returns int`, `maxInt(a: int, b: int) returns int`, `clampInt(v: int, low: int, high: int) returns int` and `clamp(v: real, low: real, high: real) returns real` with swa.ml source bodies, and `sqrt(v: real) returns real` as a host intrinsic. `clampInt` and `clamp` test `low` first: a value below `low` is `low`, otherwise a value above `high` is `high`. |
+| WP3-L02 | `Swaml::Text` declares `intText(v: int) returns string` and `realText(v: real, decimals: uint) returns string` as host intrinsics and `boolText(v: bool) returns string` with a source body (`"true"` or `"false"`). |
+| WP3-L03 | `Swaml::Time` declares `now() returns uint` as a host intrinsic. Its effect is *reads state* (chapter 3.1, WP3-S01). |
+| WP3-L04 | No operation is added to `Swaml::Math` or `Swaml::Platform`; the 2.2 library source keeps its bytes. **A workspace that declares a package named like a 2.3 library package uses its own; the library package is not available there.** Such a package, declared in any document of the workspace other than a library copy, hides the built-in `Swaml::Numeric`, `Swaml::Text` or `Swaml::Time` of the same name for scope, linking, resolution, validation and runs (the others stay available); its operations are ordinary operations, never intrinsics, and no diagnostic is added, so a 2.2 source that declares such a package keeps its 2.2 meaning. Hiding is workspace-global, as package resolution and duplicate detection are: it applies to every document of the workspace and follows every change, a deleted or renamed declaration included. A workspace with such a package cannot reach the library operations of that name, by import or qualified name. Otherwise a workspace that imports one of the new packages and declares a same-named element follows the ambiguity rule: a reference that two visible declarations share is SW2001 (`Ambiguous name …`), and so is a short call name shared with a 2.3 library operation, reported with the same message and the declarations as related information; a short call name that only user packages share keeps the 2.2 SW2006 `Unknown operation …`. A component's own or nested operation is found first, as before. A qualified name resolves either. Because no 2.2 source can import the new packages, no 2.2 model becomes ambiguous. |
+| WP3-M01 | The new packages are part of the versioned library source, `libraries/swaml-2.3.swaml`, loaded as a built-in document next to `libraries/swaml-2.0.swaml` and imported explicitly (a qualified name needs no import). Intrinsic bodies are documentation only, as for the `Swaml::Math` intrinsics; the return-path and package-definition checks exempt them by identity in the built-in document and in a copy of it that differs at most by a leading byte order mark, line ends and whitespace at the end of the file, as they exempt `Swaml::Math`. Only the built-in declarations are evaluated as intrinsics, and an operation usage of one without its own body is that intrinsic. Such a copy of a library document loaded as a workspace source duplicates the built-in packages (SW2001), as a copy of the 2.2 library always did, and hides nothing; a copy with any other change is user source and hides the library packages it declares. A run lists the 2.3 library document among its sources only when a supplied model imports or references one of its visible packages. |
+| WP3-R01 | `sqrt` is IEEE-754 correctly rounded. An argument below zero is the runtime failure `Arithmetic`; `-0.0` is not below zero and its root is `0.0`. A real value is always finite (chapter 1.4), so no NaN or infinity reaches or leaves `sqrt`. |
+| WP3-R02 | `intText` writes decimal digits, with `-` for negatives and no leading zeros. `realText` rounds the exact binary value of `v` to exactly `decimals` fraction digits, ties away from zero, and writes plain decimal notation with no exponent: `realText(2.5, 0)` is `3` and `realText(-2.5, 0)` is `-3`. A result that rounds to zero has no sign: `realText(-0.0001, 2)` is `0.00`. `decimals` above 15, or `abs(v)` of at least 1e21, is the runtime failure `Bounds`. This is not the tie rule of `Swaml::Math::round`, which rounds ties toward positive infinity. An implementation must not rely on JavaScript `toFixed` alone, which writes `-0.00` and switches to exponent notation from 1e21; the reference implementation computes in integers from the binary64 value. Because the exact binary value is rounded, `realText(1.005, 2)` is `1.00` and `realText(0.125, 2)` is `0.13`. |
+| WP3-R03 | `now()` returns the logical time of the evaluating step, in nanoseconds since the run epoch, as `uint`. Every activation reads the live clock: a concurrent activation reads live time, not its dispatch snapshot, which holds attributes only (chapter 3.4). In a handler it is the delivery step, after latency and fault delays; after a wait it is the resumption step; in a case script it is the script's step. Clock overflow remains the `ClockRange` violation. Durations as values arrive with WP4, which reads them as `uint` nanoseconds, the unit of `now()`. |
+
+`sqrt`, `intText` and `realText` failures are ordinary runtime failures: `try` catches them and a caught one is a `caught` observation (chapter 6). A hazard distance, a reception age and a diagnostic label use all three packages:
+
+```swaml
+package LibraryUse {
+  import Swaml::Numeric;
+  import Swaml::Text;
+  import Swaml::Time;
+  component def Monitor {
+    const attribute timeoutMs: uint = 100;
+    attribute lastRxNs: uint = 0;
+    attribute distanceM: real = 0.0;
+    attribute label: string = "";
+    attribute level: int = 0;
+    operation onFrame(dx: real, dy: real, raw: int) {
+      lastRxNs = now();
+      distanceM = sqrt(dx * dx + dy * dy);
+      level = clampInt(raw, 0, 10);
+      label = "level " + intText(level) + " at " + realText(distanceM, 1) + " m, stale " + boolText(false);
+    }
+    operation check() {
+      if (now() - lastRxNs >= timeoutMs * 1000000) {
+        label = "stale for " + realText((now() - lastRxNs) / 1000000.0, 3) + " ms";
+      }
+    }
+    operation guarded(v: real) returns real {
+      return try(sqrt(v), 0.0);
+    }
+  }
+}
+```
+
+The before-and-after examples are [square root](../examples/38-square-root.swaml), [logical clock](../examples/39-logical-clock.swaml) and [number text](../examples/40-number-text.swaml). Trigonometry and enum conversions are not part of 2.3.
 
 
 ---
@@ -571,6 +617,10 @@ Calls are expressions. A void call is a statement; a non-void result cannot be s
 
 Effects are inferred transitively through the acyclic call graph: pure, reads state, writes state, communicates, suspends. The implementation MUST also retain a writes flag when a higher effect dominates, so communicating/suspending callees cannot conceal a write. Passing an attribute as out is a write. A place assignment has the write effect of its root, and an attribute root is an attribute write. Attribute initializers are pure. State guards may only be pure or read state. Concurrent schedule entries cannot write state through any reachable callee or out argument.
 
+| ID | Rule |
+| --- | --- |
+| WP3-S01 | **`now()` effect.** `Swaml::Time::now()` has the effect class *reads state*, like a read of an attribute, although it reads the run clock rather than component state. It is therefore rejected in attribute and member initializers, requirement attributes and redefined attribute values included (SW2006, WP3-D01), and a package operation definition that calls it is rejected like any package definition that reads state (`Package definitions may use only parameters and nested operations.`). It is allowed in every other expression: statements, return values, schedule arguments, receive and state guards, concurrent entries (which may read state) and case scripts. It will be rejected in completion guards (WP5-S03) and in the constant sublanguage (WP4-S05) when those constructs arrive. |
+
 Suspending calls may be the whole var initializer, assignment right side or expression statement, optionally wrapped in try; these must be ordinary statement values, not for-header initializers or updates. Evaluate the call before the loop when its result is needed there. Suspending calls cannot be embedded in arithmetic, call arguments, return values or predicates. Other expressions can have nonsuspending effects. Arguments evaluate left to right; only and/or short-circuit. Declarations and source order do not select overloads or change resolution.
 
 | ID | Rule |
@@ -630,6 +680,7 @@ Every component occurrence has one serial lock. Serial dispatch evaluates/copies
 | --- | --- |
 | WP1-R03 | A place assignment's read-modify-write happens under the serial lock after any resumption; no suspension splits it. |
 | WP1-M01 | The stale-read warning (SW2011) treats a place write as a write of its root. Index values read before a suspension are tracked like other pre-suspension reads. |
+| WP3-S02 | **Stale reads.** The stale-read warning (SW2011) never reports a value obtained from `now()`: the clock is not component state, so a time stamp taken before a suspension and used after it, directly, through a helper that returns it or in a condition, is not a stale read. An attribute read in the same expression is still tracked. A 2.2 operation that happens to be named `now` and reads an attribute is an ordinary operation and keeps its warnings. |
 
 A stale-read warning identifies a pre-suspension state read that may affect a later write. Recheck live state after resuming. This warning is conservative and is not a race-freedom proof. A successful static check does not establish scheduling, termination or deadlock freedom.
 
@@ -825,6 +876,7 @@ Diagnostics added by 2.3. Message shapes are templates; implementations may add 
 | WP2-D03 | SW2010 | Repeated association pair (WP2-S06) | `{occurrence} is already associated with {case}.` A repeat between two single-pair statements keeps the 2.2 message `Duplicate associate {occurrence} to {case}.` |
 | WP2-D04 | SW2000 | Conditional in statement position (WP2-G02) | The syntax message explains it: `A conditional expression is not a statement; use an if block.` An unparenthesized conditional operand adds to the parser's message: `A conditional expression is a whole expression; as an operand it is written in parentheses, as in (if (c) a else b).` |
 | WP2-D05 | SW2013 | Bracket nesting beyond the reference parser's resource limits; not a language rule. A *statement* is the run of tokens between two `;`, `{` or `}` that occur while no bracket is open. Within it, an open bracket is a `(` or `[`, the `{` of a record literal, or any other `{` while a bracket is open; `)`, `]` and `}` close the innermost open bracket of their kind. The statement ends at the next `;`, `{` or `}` with no bracket open, or *unbalanced* at a `)`, `]` or `}` that does not match the innermost open bracket, at a `;` while a `(` other than the parenthesis of a `for` statement or a `[` is innermost, or at the end of the file. (a) More than 200 brackets open at once in a statement, at the first bracket beyond 200; the limit is above every depth the 2.2 reference implementation parses. (b) A statement that ends unbalanced after more than 32 brackets were open at once, at its first token. In (a) and (b) the tokens of the statement, from its first token to its end (an ending `;` included, an ending bracket or brace not), are not parsed; the rest of the file is. (c) A parse that the host's stack cannot hold despite (a) and (b), such as deeply nested unclosed blocks, at the first most deeply nested token; the file is not parsed. Brackets inside strings, comments and quoted names are not brackets. | `Bracket nesting exceeds the reference parser limit of 200 levels; this statement is not parsed.` / `Bracket nesting exceeds the reference parser limit of 32 levels for a statement that leaves brackets unclosed; this statement is not parsed.` / `Bracket nesting exceeds the reference parser limit: the parser ran out of stack space at this nesting, so this file is not parsed.` Each adds what to do. |
+| WP3-D01 | SW2006 | `now()` in an initializer (WP3-S01) | The existing purity message, naming `now()`: `Initializer of {attribute} must be pure; now() reads state.` `{attribute}` is the attribute, requirement attribute or redefined attribute, spelled as in other messages (2.2 quoting). An initializer that reads the clock only through a helper keeps the 2.2 message `Attribute initializers must be pure.` |
 
 Every diagnostic includes a source range and stable code. Machine-readable diagnostics retain declaration identity and occurrence context when resolved. A suggested edit is supplied only for a safe unambiguous correction; tools must revalidate the resulting complete workspace before applying it. Parser recovery may suspend semantic checks on invalid syntax, but the document remains invalid and must not crash the service.
 
@@ -900,6 +952,8 @@ Evaluation is left to right with and/or short-circuit. Payloads, records, arrays
 | --- | --- |
 | WP2-R01 | **Conditional.** Evaluate the condition, then only the selected branch; the value takes the conditional's common type. A failure in the selected branch fails like any expression; the other branch is never evaluated. |
 | WP1-R04 | **Places and reads.** Place assignment follows WP1-R01 to WP1-R03 (section 3.3). Selector reads evaluate index expressions left to right and return a copy; a dynamic index outside its extent is `Bounds`. A read takes the value of its root before evaluating any of its index expressions, then evaluates, checks and applies each index and field in turn, as 2.2 reads do; a place evaluates all its indexes, then the right side, and reads and writes its root last (WP1-R01). Selecting a field or element of an out value that was never assigned (an unanswered `on call` out binding copied back to its caller, a 2.2 case) is the runtime failure `Type`. |
+
+Library host intrinsics follow chapter 1.5: `sqrt` (WP3-R01), `intText` and `realText` (WP3-R02) and `now()` (WP3-R03). The `sqrt` failure `Arithmetic` and the `realText` failure `Bounds` are recorded like every runtime failure, and a caught one is a `caught` observation. `now()` returns the logical time of the step that evaluates it, live in every activation, and adds no trace observation.
 
 A local failure unwinds frames to the nearest try or fails the activation. Try fallback is lazy and type-compatible; prior state writes/emissions remain committed. Out values copy back only on successful return. Interrupt transfers and deadline/resource/activation violations are outside try. Resource failure is explicit evidence; no silently dropped activation is reported as successful execution.
 
@@ -1023,6 +1077,7 @@ Normative chapter of [swa.ml 2.2](LANGUAGE_SPECIFICATION.md). Acceptance levels 
 | V15 | Stale-read and inactive interrupt-input warnings without a race-freedom claim | SW2011/2012 |
 | V16 | Place roots, selector typing, `out` roots, no places as out arguments, literal component indexes in test paths | SW2002/2006/2010 |
 | V17 | Conditional typing, whole-expression placement, no suspension; contextual words in every name position; association lists without repeated pairs | SW2000/2002/2006/2010 |
+| V18 | `Swaml::Numeric`, `Swaml::Text` and `Swaml::Time` without new ambiguity for 2.2 sources; `now()` reads state and is rejected in initializers; no stale-read warning for `now()` values | SW2001/2006/2011 |
 
 Validation MUST rebuild semantic string paths as well as indexed references after workspace changes/additions/deletions. Negative lookups matter: a newly loaded declaration may make a previously resolved short name ambiguous. Malformed source remains editable and invalid; recovery cannot silently accept a different program. Definite-return analysis may be conservative rather than solving arbitrary conditions. Dynamic numeric/index/termination failures remain runtime obligations.
 
@@ -1043,6 +1098,7 @@ Validation MUST rebuild semantic string paths as well as indexed references afte
 | E11 | Fresh package run per case script, release after startup entries, retained early actor input, on call replies, normal primary-subject calls with actual context/lock suspension and restoration, test inspection/helper access under its serial lock, stop on script completion or failure and pass/fail/inconclusive/no checks results with statement identities |
 | E12 | Place evaluation order, kept right-side writes, `Bounds` with unchanged root, `write.place` |
 | E13 | Conditional evaluates only the selected branch |
+| E14 | `sqrt` correctly rounded and `Arithmetic` below zero; `intText`; `realText` with ties away from zero, unsigned zero, `Bounds` above 15 decimals and from 1e21; `now()` live logical time in every activation |
 | E20 | Every run, use case and test of the 2.2 corpus keeps its status, full final stores, machines, deployments, verdict and message and its complete trace, ignoring only `profile` and `languageVersion` (compatibility gate 2, compared with a fixture recorded with implementation 3.1.0) |
 
 A deterministic reference run may choose one permitted order/delivery outcome. Its tests do not establish all possible traces or real transport reliability. A target implementation identifies additional scheduling/transport assumptions and evidence. Idempotency annotations are checked declarations, not proofs of side-effect behavior.
@@ -1091,6 +1147,7 @@ Values are bounded primitive scalars, nominal enums/records and fixed copied arr
 | test occurrence access | Resolved own-package executed software root is the subject or an explicit association, followed by single effective parts or part family members with literal indexes in range; reads use its live store under its lock, helper calls outside the exact primary subject neither communicate nor suspend; no ownership transfer or direct attribute assignment |
 | try(e, f) | e:T and f:U assignable to T; lazy f; effect union; no fallback only when T is void |
 | if (c) a else b | c : bool; a : T1, b : T2 with common type T under scalar widening, otherwise identical types; neither void; effect ε(c) ∪ ε(a) ∪ ε(b) without suspension; only the selected branch evaluates; a whole expression, never a statement |
+| now() | result uint, the logical time t of the evaluating step; effect reads state; not in initializers (and, from WP4 and WP5, not in constant expressions or completion guards); never a stale read |
 | var x:T=e | Compatible value, fresh live name; Γ extends with mutable x; suspension allowed only when e is whole call/try |
 | x=e | Mutable local/out/attribute, compatible type; attribute write adds write effect; same whole-expression suspension rule |
 | place = e | The root is a mutable local, an assigned out or a non-const attribute; e is assignable to the place type; the effect adds a write of the root; the whole-expression suspension rule applies |
@@ -2309,7 +2366,7 @@ Colon means typed by; returns names results. Dot is containment/member access; :
 
 # swa.ml 2.3 candidate implementation status
 
-**Standard:** 2.3 (unreleased candidate) · **Implementation package:** 4.0.0 · **Selected host semantics:** 2.3 · **Reference profile:** swaml-reference/2.3. The candidate is allocated and work package WP1 has landed: assignment to places such as `statuses[i].confirmed = true;` and `r.f = v;` (indexes, then the right side, then one read-modify-write of the root; `Bounds` leaves the root unchanged; `write` observations gain `place`), member access after an index such as `recent[i].vehicleId`, and literal component indexes in test inspection paths such as `backend.twins[0].link` and `backend.twins[0].currentView()`. Work package WP2 has landed: the whole-expression conditional `if (c) a else b` (typed by the common type of its branches, never a statement, no suspension inside, only the selected branch evaluated), `view`, `state`, `in` and `out` as contextual words in every name position (edition-aware name services write them unquoted for a 2.3 workspace and quoted for 2.2) and association lists `associate a, b to 'X', 'Y';` (one link per pair, a repeated pair is SW2010). Otherwise the host accepts exactly the 2.2 language, and the three [compatibility gates](RELEASE_2_3.md#compatibility-gates) compare every corpus AST and every recorded run, case and trace with fixtures recorded from implementation 3.1.0. The published [2.2 reference](SWAML-2.2-Reference.md) and [PDF](../output/pdf/SWAML-2.2-Specification.pdf) record the 2.2 release sources. The published 2.1 [reference book](SWAML-2.1-Reference.md) and [complete PDF](../output/pdf/SWAML-2.1-Specification.pdf), manifest and checksum remain frozen. The strict current-source [publication gate](PDF_PUBLICATION.md) checks the new edition independently of historical publications.
+**Standard:** 2.3 (unreleased candidate) · **Implementation package:** 4.0.0 · **Selected host semantics:** 2.3 · **Reference profile:** swaml-reference/2.3. The candidate is allocated and work package WP1 has landed: assignment to places such as `statuses[i].confirmed = true;` and `r.f = v;` (indexes, then the right side, then one read-modify-write of the root; `Bounds` leaves the root unchanged; `write` observations gain `place`), member access after an index such as `recent[i].vehicleId`, and literal component indexes in test inspection paths such as `backend.twins[0].link` and `backend.twins[0].currentView()`. Work package WP2 has landed: the whole-expression conditional `if (c) a else b` (typed by the common type of its branches, never a statement, no suspension inside, only the selected branch evaluated), `view`, `state`, `in` and `out` as contextual words in every name position (edition-aware name services write them unquoted for a 2.3 workspace and quoted for 2.2) and association lists `associate a, b to 'X', 'Y';` (one link per pair, a repeated pair is SW2010). Work package WP3 has landed: the library packages `Swaml::Numeric` (`minInt`, `maxInt`, `clampInt`, `clamp`, and `sqrt` as a correctly rounded host intrinsic), `Swaml::Text` (`intText`, `realText` with ties away from zero, no exponent and no negative zero, `boolText`) and `Swaml::Time` (`now()`, the live logical time in nanoseconds, which reads state, is rejected in initializers and is never a stale read), in the separate built-in document `libraries/swaml-2.3.swaml`; a workspace that declares its own package of one of these names uses it and the library package is hidden there, so 2.2 sources keep their meaning. Otherwise the host accepts exactly the 2.2 language, and the three [compatibility gates](RELEASE_2_3.md#compatibility-gates) compare every corpus AST and every recorded run, case and trace with fixtures recorded from implementation 3.1.0. The published [2.2 reference](SWAML-2.2-Reference.md) and [PDF](../output/pdf/SWAML-2.2-Specification.pdf) record the 2.2 release sources. The published 2.1 [reference book](SWAML-2.1-Reference.md) and [complete PDF](../output/pdf/SWAML-2.1-Specification.pdf), manifest and checksum remain frozen. The strict current-source [publication gate](PDF_PUBLICATION.md) checks the new edition independently of historical publications.
 
 The 2.0 core replaced the 1.x grammar, AST, resolver, validator and interpreter; 2.1 adds the package context, executable use cases and tests, package links, run targets and statement identities of [ADR 0019](decisions/0019-package-context.md). It does not accept 1.x or 2.0 source; the [release notes](RELEASE_2_1.md) describe the migration. Published 1.x and 2.0.0 books, PDFs, manifests/checksums and historical figure files remain unchanged. [ADR 0016](decisions/0016-swaml-2-0.md) defines the restart; [conformance obligations](spec/08-conformance-obligations.md) separate syntax, validation, execution, analysis, kernel and graphical claims.
 
@@ -2333,7 +2390,7 @@ The 2.2 edition adds explicit test access to the subject and associated software
 | AI authoring | Usage and AI guides, portable author/validate skills, --json diagnostics with code/range/URI/declaration/occurrence metadata and selected safe repair edits |
 | Authoring services | Canonical token-preserving full-document formatting; semantic index, definition/references and versioned multi-file rename over indexed paths, port members, nested operations, schedules, states, placements, package connection ends, case subjects, associate, satisfy and verify links and view subjects/eligible filters; rename writes quoted names where required and unquoted names inside string paths; portable name spelling helpers for hosts |
 | Case runs | A fresh package run per case script released after startup entries, retained early actor input, on call replies, white-box access under the serial lock (in 2.3 also to part family members by a literal index, such as backend.twins[0]), stop on completion or failure, pass/fail/inconclusive/no checks with statement identities; swaml test with summary, JSON and exit codes; every example case runs with its expected result |
-| Host behavior | CLI exit/JSON/edition checks and LSP negotiation pinned to 2.3 with the swaml-reference/2.3 profile and package identity, complete dependency enforcement, standard-library validation and workspace negative-lookup invalidation |
+| Host behavior | CLI exit/JSON/edition checks and LSP negotiation pinned to 2.3 with the swaml-reference/2.3 profile and package identity, complete dependency enforcement, standard-library validation (both built-in documents, the 2.2 library and the 2.3 packages) and workspace negative-lookup invalidation; 2.3 (WP3): host intrinsics `sqrt` (IEEE-754), `intText`, `realText` (exact integer rounding of the binary64 value, never `toFixed`) and `now()` (the run clock) |
 | Diagrams and page | Exhaustive notation/mapping inventories; original SVG/PNG/scenes labeled with the standard version and source-subject checks; generated source/trace site data, seven interactive views, light/dark/system themes and responsive preview |
 
 The unit suite exercises observable positive/negative language behavior, malformed recovery, final stores/traces and validated authoring edits. The example gate validates every current model, checks explicit expected stores and deterministic reruns. These are reference implementation tests, not an independent formal certification of all possible executions.
@@ -5170,5 +5227,255 @@ package FleetCases {
   }
   associate truck, van to 'Monitor live position', 'Command a vehicle';
   associate truck, archive to 'Positions and archive';
+}
+```
+
+### 38-square-root.swaml
+
+```swaml
+package HazardDistance {
+  /** Hazard relevance by distance, in the shape of the V2X model's AdaptiveV2x::Types. The 2.2 shape computes a square root by a fixed number of Newton steps, because the library had none; it is not correctly rounded and does not converge for large distances. The 2.3 shape imports Swaml::Numeric and calls sqrt, the host's IEEE-754 correctly rounded square root, whose argument below zero is the runtime failure Arithmetic. */
+  import Swaml::Math;
+  import Swaml::Numeric;
+  datatype Position {
+    eastM: real;
+    northM: real;
+  }
+  operation def squareRoot(v: real) returns real {
+    /** The 2.2 shape: 24 Newton steps from max(v, 1.0). */
+    if (v <= 0.0) {
+      return 0.0;
+    }
+    var x: real = max(v, 1.0);
+    for (var i: int = 0; i < 24; i = i + 1) {
+      x = (x + v / x) / 2.0;
+    }
+    return x;
+  }
+  component def Relevance {
+    /** Distances in metres to the last hazard, computed both ways, and whether the hazard is within radiusM. */
+    const attribute radiusM: real = 500.0;
+    attribute newtonM: real = 0.0;
+    attribute sqrtM: real = 0.0;
+    attribute relevant: bool = false;
+    attribute invalidInputs: uint = 0;
+    operation squaredDistance(own: Position, hazard: Position) returns real {
+      var dx: real = hazard.eastM - own.eastM;
+      var dy: real = hazard.northM - own.northM;
+      return dx * dx + dy * dy;
+    }
+    operation locate(own: Position, hazard: Position) {
+      var d2: real = squaredDistance(own, hazard);
+      newtonM = squareRoot(d2);
+      sqrtM = sqrt(d2);
+      relevant = sqrtM <= radiusM;
+    }
+    operation calibrated(d2: real, offset: real) returns real {
+      /** A negative corrected square is an invalid input: sqrt fails with Arithmetic, caught here. */
+      var root: real = try(sqrt(d2 - offset), -1.0);
+      if (root < 0.0) {
+        invalidInputs = invalidInputs + 1;
+      }
+      return root;
+    }
+  }
+  component relevance: Relevance;
+  test 'Same distance for a 3-4-5 triangle' of relevance {
+    /** Small exact squares: both shapes agree. */
+    relevance.locate(record Position {
+      eastM = 100.0; northM = 200.0;
+    }, record Position {
+      eastM = 400.0; northM = 600.0;
+    });
+    assert relevance.newtonM == 500.0 and relevance.sqrtM == 500.0 and relevance.relevant;
+  }
+  test 'Correctly rounded' of relevance {
+    /** sqrt(2) is the double nearest the exact root; 24 Newton steps end one unit in the last place away. */
+    relevance.locate(record Position {
+      eastM = 0.0; northM = 0.0;
+    }, record Position {
+      eastM = 1.0; northM = 1.0;
+    });
+    assert relevance.sqrtM == 1.4142135623730951 and relevance.sqrtM * relevance.sqrtM != 2.0;
+    assert relevance.newtonM != relevance.sqrtM;
+  }
+  test 'Far hazard' of relevance {
+    /** At 3,000 km the fixed Newton loop has not converged; sqrt is exact and the hazard is not relevant. */
+    relevance.locate(record Position {
+      eastM = 0.0; northM = 0.0;
+    }, record Position {
+      eastM = 0.0; northM = 3000000.0;
+    });
+    assert relevance.sqrtM == 3000000.0 and not relevance.relevant;
+    assert relevance.newtonM > 3000080.0;
+  }
+  test 'Negative argument fails' of relevance {
+    /** sqrt below zero is the runtime failure Arithmetic, which try catches; -0.0 is not below zero. */
+    var root: real = relevance.calibrated(16.0, 7.0);
+    assert root == 3.0 and relevance.invalidInputs == 0;
+    root = relevance.calibrated(16.0, 16.5);
+    assert root == -1.0 and relevance.invalidInputs == 1;
+    root = relevance.calibrated(0.0, 0.0);
+    assert root == 0.0 and relevance.invalidInputs == 1;
+  }
+}
+```
+
+### 39-logical-clock.swaml
+
+```swaml
+package ReceptionAge {
+  /** A reception timeout in the shape of the door model's ComMain. The 2.2 shape counts the age of the last frame with rxAgeMs = rxAgeMs + 20, which is right only while the main function runs every 20 ms. The 2.3 shape stores the logical time of the last frame, lastRxNs = now(), and compares now() - lastRxNs with the timeout in nanoseconds, so it does not depend on the period. now() is the logical time of the evaluating step in nanoseconds since the run epoch; it reads state and is therefore not allowed in attribute initializers. */
+  import Swaml::Time;
+  port def Bus {
+    provides event frame(rolling: uint);
+  }
+  component def ComCore {
+    /** The reception logic, without its period. */
+    reversed port bus: Bus;
+    const attribute rxTimeoutMs: uint = 100;
+    attribute rxAgeMs: uint = 0;
+    attribute lastRxNs: uint = 0;
+    attribute timedOutByTicks: bool = false;
+    attribute timedOutByClock: bool = false;
+    attribute frames: uint = 0;
+    operation onFrame(rolling: uint) {
+      frames = frames + 1;
+      rxAgeMs = 0;
+      lastRxNs = now();
+      timedOutByTicks = false;
+      timedOutByClock = false;
+    }
+    operation rxMainFunction() {
+      // 2.2 shape: a counter that assumes the 20 ms period.
+      rxAgeMs = rxAgeMs + 20;
+      if (rxAgeMs >= rxTimeoutMs) {
+        timedOutByTicks = true;
+      }
+      // 2.3 shape: the age is now() - lastRxNs.
+      if (now() - lastRxNs >= rxTimeoutMs * 1000000) {
+        timedOutByClock = true;
+      }
+    }
+    operation ageNs() returns uint {
+      return now() - lastRxNs;
+    }
+    schedule {
+      on receive bus.frame(rolling) onFrame(rolling);
+    }
+  }
+  component def ComMain20 specializes ComCore {
+    /** The period the counter was written for. */
+    schedule {
+      on every 20ms rxMainFunction();
+    }
+  }
+  component def ComMain10 specializes ComCore {
+    /** The same logic every 10 ms: the counter now runs twice as fast. */
+    schedule {
+      on every 10ms rxMainFunction();
+    }
+  }
+  component def Gateway {
+    /** Interface-only actor that sends frames to both receivers. */
+    port toSlow: Bus;
+    port toFast: Bus;
+  }
+  component slow: ComMain20;
+  component fast: ComMain10;
+  component gateway: Gateway;
+  connect (gateway.toSlow, slow.bus);
+  connect (gateway.toFast, fast.bus);
+  associate gateway to 'Timeout at 20 ms', 'Timeout at 10 ms';
+  test 'Timeout at 20 ms' of slow {
+    /** With its own period both shapes agree: no timeout at 90 ms, a timeout at 100 ms. */
+    wait 90ms;
+    assert not slow.timedOutByTicks and not slow.timedOutByClock;
+    wait 10ms;
+    assert slow.timedOutByTicks and slow.timedOutByClock;
+  }
+  test 'Timeout at 10 ms' of fast {
+    /** At 50 ms the counter claims 100 ms; the clock age is 50 ms. A frame at 60 ms restarts both. */
+    wait 50ms;
+    assert fast.timedOutByTicks and not fast.timedOutByClock;
+    var age: uint = fast.ageNs();
+    assert age == 50000000 and now() == 50000000;
+    wait 10ms;
+    publish gateway.toFast.frame(1);
+    wait 90ms;
+    assert fast.frames == 1 and fast.lastRxNs == 60000000 and not fast.timedOutByClock;
+    wait 10ms;
+    assert fast.timedOutByClock and now() - fast.lastRxNs == 100000000;
+  }
+}
+```
+
+### 40-number-text.swaml
+
+```swaml
+package DiagnosticText {
+  /** Diagnostic labels with numbers. In 2.2 a number could not become text, so a label named one of a fixed set of values through a selection helper. In 2.3 Swaml::Text writes intText(v) in decimal, realText(v, decimals) rounded to exactly decimals fraction digits (ties away from zero, no exponent and no negative zero; more than 15 decimals or a magnitude of at least 1e21 is the runtime failure Bounds) and boolText(v). */
+  import Swaml::Math;
+  import Swaml::Text;
+  operation def levelName(level: int) returns string {
+    /** The 2.2 shape: only the listed values have text. */
+    if (level == 0) {
+      return "0";
+    }
+    if (level == 1) {
+      return "1";
+    }
+    if (level == 2) {
+      return "2";
+    }
+    return "many";
+  }
+  component def Monitor {
+    attribute legacy: string = "";
+    attribute label: string = "";
+    attribute tooPrecise: uint = 0;
+    operation legacyReport(code: int, level: int) {
+      legacy = concat("DTC level ", levelName(level));
+    }
+    operation report(code: int, voltage: real, latched: bool) {
+      label = "DTC " + intText(code) + " at " + realText(voltage, 2) + " V, latched " + boolText(latched);
+    }
+    operation precise(v: real, decimals: uint) returns string {
+      return try(realText(v, decimals), "?");
+    }
+    operation tooPreciseCount(v: real) {
+      var text: string = precise(v, 16);
+      if (text == "?") {
+        tooPrecise = tooPrecise + 1;
+      }
+    }
+  }
+  component monitor: Monitor;
+  test 'Labels' of monitor {
+    /** A level of 7 has no 2.2 text; the 2.3 label writes every value. */
+    monitor.legacyReport(4711, 7);
+    assert monitor.legacy == "DTC level many";
+    monitor.report(4711, 11.996, true);
+    assert monitor.label == "DTC 4711 at 12.00 V, latched true";
+    monitor.report(-12, -0.004, false);
+    assert monitor.label == "DTC -12 at 0.00 V, latched false";
+  }
+  test 'Rounding' of monitor {
+    /** Ties away from zero (unlike Swaml::Math::round, which rounds -2.5 to -2), no negative zero, exact binary values. */
+    var a: string = monitor.precise(-2.5, 0);
+    var b: string = monitor.precise(-0.0001, 2);
+    var c: string = monitor.precise(0.125, 2);
+    var d: string = monitor.precise(1.005, 2);
+    assert a == "-3" and b == "0.00" and c == "0.13" and d == "1.00" and round(-2.5) == -2;
+    var e: string = monitor.precise(999999999999999868928.0, 1);
+    assert e == "999999999999999868928.0";
+  }
+  test 'Bounds' of monitor {
+    /** More than 15 decimals or a magnitude of at least 1e21 is the runtime failure Bounds. */
+    monitor.tooPreciseCount(1.0);
+    var big: string = monitor.precise(1000000000000000000000.0, 0);
+    var fifteen: string = monitor.precise(0.1, 15);
+    assert monitor.tooPrecise == 1 and big == "?" and fifteen == "0.100000000000000";
+  }
 }
 ```

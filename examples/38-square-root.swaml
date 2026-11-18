@@ -1,0 +1,86 @@
+package HazardDistance {
+  /** Hazard relevance by distance, in the shape of the V2X model's AdaptiveV2x::Types. The 2.2 shape computes a square root by a fixed number of Newton steps, because the library had none; it is not correctly rounded and does not converge for large distances. The 2.3 shape imports Swaml::Numeric and calls sqrt, the host's IEEE-754 correctly rounded square root, whose argument below zero is the runtime failure Arithmetic. */
+  import Swaml::Math;
+  import Swaml::Numeric;
+  datatype Position {
+    eastM: real;
+    northM: real;
+  }
+  operation def squareRoot(v: real) returns real {
+    /** The 2.2 shape: 24 Newton steps from max(v, 1.0). */
+    if (v <= 0.0) {
+      return 0.0;
+    }
+    var x: real = max(v, 1.0);
+    for (var i: int = 0; i < 24; i = i + 1) {
+      x = (x + v / x) / 2.0;
+    }
+    return x;
+  }
+  component def Relevance {
+    /** Distances in metres to the last hazard, computed both ways, and whether the hazard is within radiusM. */
+    const attribute radiusM: real = 500.0;
+    attribute newtonM: real = 0.0;
+    attribute sqrtM: real = 0.0;
+    attribute relevant: bool = false;
+    attribute invalidInputs: uint = 0;
+    operation squaredDistance(own: Position, hazard: Position) returns real {
+      var dx: real = hazard.eastM - own.eastM;
+      var dy: real = hazard.northM - own.northM;
+      return dx * dx + dy * dy;
+    }
+    operation locate(own: Position, hazard: Position) {
+      var d2: real = squaredDistance(own, hazard);
+      newtonM = squareRoot(d2);
+      sqrtM = sqrt(d2);
+      relevant = sqrtM <= radiusM;
+    }
+    operation calibrated(d2: real, offset: real) returns real {
+      /** A negative corrected square is an invalid input: sqrt fails with Arithmetic, caught here. */
+      var root: real = try(sqrt(d2 - offset), -1.0);
+      if (root < 0.0) {
+        invalidInputs = invalidInputs + 1;
+      }
+      return root;
+    }
+  }
+  component relevance: Relevance;
+  test 'Same distance for a 3-4-5 triangle' of relevance {
+    /** Small exact squares: both shapes agree. */
+    relevance.locate(record Position {
+      eastM = 100.0; northM = 200.0;
+    }, record Position {
+      eastM = 400.0; northM = 600.0;
+    });
+    assert relevance.newtonM == 500.0 and relevance.sqrtM == 500.0 and relevance.relevant;
+  }
+  test 'Correctly rounded' of relevance {
+    /** sqrt(2) is the double nearest the exact root; 24 Newton steps end one unit in the last place away. */
+    relevance.locate(record Position {
+      eastM = 0.0; northM = 0.0;
+    }, record Position {
+      eastM = 1.0; northM = 1.0;
+    });
+    assert relevance.sqrtM == 1.4142135623730951 and relevance.sqrtM * relevance.sqrtM != 2.0;
+    assert relevance.newtonM != relevance.sqrtM;
+  }
+  test 'Far hazard' of relevance {
+    /** At 3,000 km the fixed Newton loop has not converged; sqrt is exact and the hazard is not relevant. */
+    relevance.locate(record Position {
+      eastM = 0.0; northM = 0.0;
+    }, record Position {
+      eastM = 0.0; northM = 3000000.0;
+    });
+    assert relevance.sqrtM == 3000000.0 and not relevance.relevant;
+    assert relevance.newtonM > 3000080.0;
+  }
+  test 'Negative argument fails' of relevance {
+    /** sqrt below zero is the runtime failure Arithmetic, which try catches; -0.0 is not below zero. */
+    var root: real = relevance.calibrated(16.0, 7.0);
+    assert root == 3.0 and relevance.invalidInputs == 0;
+    root = relevance.calibrated(16.0, 16.5);
+    assert root == -1.0 and relevance.invalidInputs == 1;
+    root = relevance.calibrated(0.0, 0.0);
+    assert root == 0.0 and relevance.invalidInputs == 1;
+  }
+}

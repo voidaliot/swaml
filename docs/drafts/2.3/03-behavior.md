@@ -8,8 +8,8 @@
 | --- | --- |
 | WP1-S04 | Moved to [chapter 3.1](../../spec/03-behavior.md#31-operations-and-effects) in WP1. |
 | WP2-S04 | Moved to [chapter 3.1](../../spec/03-behavior.md#31-operations-and-effects) in WP2. |
-| WP3-S01 | **`now()` effect.** `now()` has the effect class *reads state*. It is therefore rejected in attribute and member initializers (SW2006). It is rejected in completion guards (WP5-S03) and in the constant sublanguage (WP4-S05). |
-| WP3-S02 | **Stale reads.** The stale-read warning (SW2011, after tool fix A2) never reports a value obtained from `now()`. |
+| WP3-S01 | Moved to [chapter 3.1](../../spec/03-behavior.md#31-operations-and-effects) in WP3. The completion-guard clause applies with WP5-S03 and the constant-sublanguage clause with WP4-S05; both reject a call for which `isClockRead` (`semantic.ts`) is true. |
+| WP3-S02 | Moved to [chapter 3.4](../../spec/03-behavior.md#34-suspension-and-locks) in WP3. |
 
 ## 3.2 Failure
 
