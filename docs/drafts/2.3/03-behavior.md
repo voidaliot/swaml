@@ -8,14 +8,14 @@
 | --- | --- |
 | WP1-S04 | Moved to [chapter 3.1](../../spec/03-behavior.md#31-operations-and-effects) in WP1. |
 | WP2-S04 | Moved to [chapter 3.1](../../spec/03-behavior.md#31-operations-and-effects) in WP2. |
-| WP3-S01 | Moved to [chapter 3.1](../../spec/03-behavior.md#31-operations-and-effects) in WP3. The completion-guard clause applies with WP5-S03 and the constant-sublanguage clause with WP4-S05; both reject a call for which `isClockRead` (`semantic.ts`) is true. |
+| WP3-S01 | Moved to [chapter 3.1](../../spec/03-behavior.md#31-operations-and-effects) in WP3. The constant-sublanguage clause applied with WP4-S05 (WP4); the completion-guard clause applies with WP5-S03; both reject a call for which `isClockRead` (`semantic.ts`) is true. |
 | WP3-S02 | Moved to [chapter 3.4](../../spec/03-behavior.md#34-suspension-and-locks) in WP3. |
 
 ## 3.2 Failure
 
 | ID | Rule |
 | --- | --- |
-| WP4-R01 | **`DurationRange`.** A computed duration (chapters 3.3, 3.6) is checked as an integer before any widening to `uint`. A value that is not positive, or not a representable duration, is the runtime failure `DurationRange` and never `Bounds`. It is an ordinary runtime failure of the statement or reaction that evaluated it. |
+| WP4-R01 | Moved to [chapter 3.2](../../spec/03-behavior.md#32-failure) in WP4. |
 
 ## 3.3 Statements and scopes
 
@@ -26,12 +26,9 @@
 | WP1-R01 | Moved to [chapter 3.3](../../spec/03-behavior.md#33-statements-and-scopes) in WP1. |
 | WP1-R02 | Moved to [chapter 3.3](../../spec/03-behavior.md#33-statements-and-scopes) in WP1. |
 | WP2-S05 | Moved to [chapter 3.3](../../spec/03-behavior.md#33-statements-and-scopes) in WP2. |
-| WP4-S03 | **Computed waits.** `wait (e);` and `or after (e) { … }` take an integral, non-suspending expression (SW2002, SW2006), evaluated when the statement starts waiting. |
+| WP4-S03 | Moved to [chapter 3.3](../../spec/03-behavior.md#33-statements-and-scopes) in WP4. |
 
-```text
-wait (backoffMs * 1ms);                          // WP4
-on receive ctl.ack(id) { … } or after (ackTimeoutMs * 1ms) { … }
-```
+The computed-wait examples moved to [chapter 3.3](../../spec/03-behavior.md#33-statements-and-scopes) in WP4.
 
 ## 3.4 Suspension and locks
 
@@ -45,20 +42,21 @@ on receive ctl.ack(id) { … } or after (ackTimeoutMs * 1ms) { … }
 
 | ID | Rule |
 | --- | --- |
-| WP4-S04 | **Computed periods and deadlines.** `on every (e)` and `deadline (e)` take an expression of the constant sublanguage, evaluated once per expanded occurrence. Its value is integral (SW2002). |
-| WP4-S05 | **Constant sublanguage.** Allowed: integer and duration literals; const attributes of the owning occurrence with their effective value after redefinition, whose effective initializers are themselves in the sublanguage (acyclic); unary `-`; `+ - * / %`; comparisons; `and`/`or`/`not`; the conditional; parentheses. In this sublanguage, `/` on two integral operands is integral and must divide exactly for every occurrence. A non-exact quotient or a zero divisor is WP4-D07 (SW2013). Outside the sublanguage, `/` keeps the chapter 1.4 rule (real). Rejected (SW2007): calls, mutable attributes, locals, parameters, sampled reads and `now()`. |
-| WP4-S06 | **Per-occurrence values.** For every expanded occurrence of every top-level occurrence of a package, each computed period and deadline is positive and representable (SW2013), and an `every` entry's deadline does not exceed its period (SW2007). A definition that is never instantiated is checked for sublanguage membership and typing only. |
-| WP4-S07 | **Trigger identity.** The trigger of `on every (e)` is identified by the normalized expression text: comments and whitespace removed, names in canonical spelling. A parenthesized single literal normalizes to its nanoseconds, so `every (20ms)` is `every 20ms`. This identity drives inheritance replacement, duplicate detection (SW2007) and `semantic.ts` `entryKey`. |
-| WP4-M02 | **One evaluator.** `semantic.ts` `constantValue(expression, occurrence)` evaluates the sublanguage. It is used by the validator, `projection.ts`, the simulator and consuming tools, and it replaces `constantNumber`. |
+| WP4-S04 | Moved to [chapter 3.5](../../spec/03-behavior.md#35-schedule) in WP4. |
+| WP4-S05 | Moved to [chapter 3.5](../../spec/03-behavior.md#35-schedule) in WP4. |
+| WP4-S06 | Moved to [chapter 3.5](../../spec/03-behavior.md#35-schedule) in WP4. |
+| WP4-S07 | Moved to [chapter 3.5](../../spec/03-behavior.md#35-schedule) in WP4. |
+| WP4-M02 | Moved to [chapter 3.5](../../spec/03-behavior.md#35-schedule) in WP4. |
 | WP7-S01 | **Release guards.** `when (g)` may follow the operation call of an `every`, `receive` or `after` entry. On a `start` or `call` entry it is an error (SW2007). |
 | WP7-S02 | **Guard effects and scope.** A release guard is `bool`, pure or reads state (SW2007). Its scope is the component's attributes, its sampled ports, `now()` and the entry's receive bindings; the operation's parameters are not in scope. |
 | WP7-S03 | **Identity.** A release guard is not part of entry identity, so two entries that differ only in their guard are duplicates (SW2007). |
 
 ```text
-on every (cyclePeriodMs * 1ms) poll() deadline (cyclePeriodMs * 1ms / 2);   // valid when exact in every occurrence (WP4-S05)
 on every 20ms slot() when (mode.current != PowerMode.sleep) deadline 2ms;  // WP7
 after rxMainFunction txMainFunction() when (mode.current != PowerMode.sleep) deadline 5ms;
 ```
+
+The computed-period example moved to [chapter 3.5](../../spec/03-behavior.md#35-schedule) in WP4.
 
 The release rows of the trigger table gain "unless its release guard is false (chapter 6.2)". The runtime rules of release guards are in chapter 6.2 (WP7-R01 to WP7-R06).
 
@@ -86,7 +84,7 @@ state Backoff { after (lastBackoffMs * 1ms) to Connecting { } }
 
 | ID | Rule |
 | --- | --- |
-| WP4-S08 | **Computed state timers.** `after (e)` in a state takes an integral expression that is pure or reads state (SW2008). It is evaluated once per state entry, when the entry actions finish; expiry = state-update time + value. |
+| WP4-S08 | Moved to [chapter 3.6](../../spec/03-behavior.md#36-states) in WP4. |
 | WP5-S02 | **Completion transitions.** `when (g) to S { … }` has no trigger and requires a target (SW2008). A final state has none. |
 | WP5-S03 | **Completion guards.** A completion guard is `bool`, pure or reads state, and does not call `now()` (SW2008). |
 | WP5-S04 | **Completion cycles.** A cycle of states connected only by completion transitions whose guard is the literal `true`, after removing parentheses, is an error (SW2008). |

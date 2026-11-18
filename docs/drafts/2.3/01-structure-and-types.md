@@ -30,7 +30,7 @@ WP1 replaced "In-place field/index assignment and reference values are absent." 
 | WP1-S03 | Moved to [chapter 1.4](../../spec/01-structure-and-types.md#14-value-domains) in WP1. |
 | WP2-S02 | Moved to [chapter 1.4](../../spec/01-structure-and-types.md#14-value-domains) in WP2. |
 | WP2-S03 | Moved to [chapter 1.4](../../spec/01-structure-and-types.md#14-value-domains) in WP2. |
-| WP4-S01 | **Duration literals as values.** A duration literal in an expression is a `uint` value in nanoseconds (`1us` = 1000). Its value is representable or the literal is a static error. Computed durations (chapter 3) are integral expressions; `real` is rejected. |
+| WP4-S01 | Moved to [chapter 1.4](../../spec/01-structure-and-types.md#14-value-domains) in WP4. |
 
 ```text
 counter = clampInt((if (previous < 0) 0 else previous) + stepUp, passedThreshold, failedThreshold);

@@ -174,7 +174,7 @@
       "kernel": [
         "Connector"
       ],
-      "semantic": "PolicySetting: preserve policy-bearing connection, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "semantic": "PolicySetting: a named QoS setting with one expression value (WP4-G01); requestTimeout, maxLatency and maxAge are duration literals in nanoseconds and the other settings are not durations (WP4-S02). It preserves ownership, order and source provenance.",
       "normative": "docs/spec/02-communication.md"
     },
     {
@@ -226,7 +226,7 @@
       "kernel": [
         "Feature"
       ],
-      "semantic": "ScheduleEntry: preserve schedule entry and successful chaining, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "semantic": "ScheduleEntry: a release trigger and its operation; a period or deadline is a literal or an expression of the constant sublanguage with one value per expanded occurrence (WP4-S04 to WP4-S07). It preserves entry order, trigger identity, occurrence identity and source provenance.",
       "normative": "docs/spec/03-behavior.md"
     },
     {
@@ -357,7 +357,7 @@
       "kernel": [
         "Feature"
       ],
-      "semantic": "Wait: preserve suspending wait and receive, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "semantic": "Wait: a suspension for a literal duration or for a computed integral duration evaluated when the statement starts waiting (WP4-S03); it preserves statement order, occurrence identity and source provenance.",
       "normative": "docs/spec/03-behavior.md"
     },
     {
@@ -366,7 +366,7 @@
       "kernel": [
         "Feature"
       ],
-      "semantic": "Receive: preserve suspending wait and receive, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "semantic": "Receive: a suspension until one of its branches takes input, with an optional timeout that is a literal or a computed integral duration evaluated when the statement starts waiting (WP4-S03); it preserves branch order, occurrence identity and source provenance.",
       "normative": "docs/spec/03-behavior.md"
     },
     {
@@ -429,7 +429,7 @@
       "kernel": [
         "Feature"
       ],
-      "semantic": "Transition: preserve ordered state transitions, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "semantic": "Transition: an ordered receive or timer transition of a state; a timer is a literal or a computed integral duration evaluated once per state entry when the entry actions finish (WP4-S08). It preserves order, occurrence identity and source provenance.",
       "normative": "docs/spec/03-behavior.md"
     },
     {
@@ -765,7 +765,7 @@
       "kernel": [
         "Expression"
       ],
-      "semantic": "Literal: preserve typed expressions and operators, ownership, types, order, occurrence identity and source provenance as defined in its normative chapter.",
+      "semantic": "Literal: a number, text, bool or duration literal; a duration literal is a uint value in nanoseconds (WP4-S01). It preserves types and source provenance.",
       "normative": "docs/spec/01-structure-and-types.md"
     },
     {

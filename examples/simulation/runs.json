@@ -312,5 +312,17 @@
       }
     },
     "expectedCaught": ["Arithmetic"]
+  },
+  {
+    "model": "examples/41-computed-backoff.swaml",
+    "case": "Backoff::A delay that is not positive fails",
+    "options": "examples/simulation/41-computed-backoff.json",
+    "expectedResult": "pass",
+    "expectedStores": {
+      "computed": {
+        "backoffs": 0
+      }
+    },
+    "expectedCaught": ["DurationRange", "DurationRange"]
   }
 ]

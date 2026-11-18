@@ -1,4 +1,5 @@
-import { AstUtils, type AstNode, type Reference } from 'langium';
+import { AstUtils, CstUtils, type AstNode, type Reference } from 'langium';
+import { decodeQuotedName, formatName } from './names.js';
 import * as a from './generated/ast.js';
 import { STANDARD_LIBRARY, STANDARD_LIBRARY_2_3 } from './standard-library.js';
 /** Shared semantic algorithms have no filesystem or host dependencies. */
@@ -40,7 +41,8 @@ export function members(c: Structure, seen = new Set<Structure>()): a.ComponentM
     const names = new Set(own.filter(x => 'name' in x && x.name).map(x => (x as Node).name));
     return [...inherited.filter(x => !('name' in x) || !names.has(x.name)), ...own];
 }
-export function entryKey(e: a.ScheduleEntry): string { return `${e.kind}:${e.endpoint ?? e.predecessor ?? (e.period ? nanos(e.period) : '')}:${e.operation}`; }
+/** The (trigger, operation) identity of a schedule entry, for inheritance replacement and duplicates (WP4-S07, WP4-M04). */
+export function entryKey(e: a.ScheduleEntry): string { return `${e.kind}:${triggerIdentity(e)}:${e.operation}`; }
 export function schedule(c: Structure, seen = new Set<Structure>()): a.ScheduleEntry[] {
     if (seen.has(c))
         return [];
@@ -161,9 +163,15 @@ export function conditionalType(then: string, otherwise: string): string | undef
     const order = ['byte', 'uint', 'int', 'real'];
     return numeric(then) && numeric(otherwise) ? order[Math.max(order.indexOf(then), order.indexOf(otherwise))] : undefined;
 }
+/**
+ * The value of an integer literal, optionally negated, as the 2.2 type and index rules fold it. A duration literal
+ * folds to its nanoseconds (WP4-S01); no 2.2 source has one in an expression. This is not the constant sublanguage
+ * of periods and deadlines, which constantValue evaluates (WP4-M02): this fold stays literal-only so that the 2.2
+ * rules that use it keep their diagnostics.
+ */
 export function constantNumber(e?: a.Expression): number | undefined {
     if (a.isLiteral(e))
-        return e.number;
+        return e.duration ? nanos(e.duration) : e.number;
     if (a.isUnaryExpression(e) && e.operator === '-') {
         const n = constantNumber(e.operand);
         return n === undefined ? undefined : -n;
@@ -171,6 +179,198 @@ export function constantNumber(e?: a.Expression): number | undefined {
     return undefined;
 }
 export function nanos(d: a.Duration): number { return d.value * ({ ns: 1, us: 1000, ms: 1000000, s: 1000000000 }[d.unit]); }
+/**
+ * The duration literal of a policy setting written in its 2.2 form, such as requestTimeout = 1s; (WP4-M01). Since
+ * 2.3 a setting has the single form name = Expression; (WP4-G01), so a 2.2 duration setting is Literal{duration}.
+ */
+export function settingDuration(s: a.PolicySetting): a.Duration | undefined { return a.isLiteral(s.value) ? s.value.duration : undefined; }
+/**
+ * The canonical display text of an expression (WP4-S07): its tokens without comments or layout, integers in decimal
+ * and names in canonical spelling, one space between tokens except none after ( [ . :: and none before ) ] , . ::,
+ * none before the index [ of a value and the argument list ( of a call or try, and none inside a duration literal
+ * (1ms). A parenthesized subexpression and an array literal are spaced like any operand: a * (b + c), [1, 2].
+ * Messages and projections show this text; it keeps the unit of a literal (deadline (3ms) shows 3ms).
+ */
+export function displayText(e: a.Expression): string {
+    const leaves = e.$cstNode ? CstUtils.flattenCst(e.$cstNode).filter(n => !n.hidden).toArray() : [];
+    let text = '';
+    leaves.forEach((leaf, i) => {
+        const type = leaf.tokenType.name, image = type === 'UNRESTRICTED_NAME' ? formatName(decodeQuotedName(leaf.text)) : type === 'INT' ? String(Number(leaf.text)) : leaf.text;
+        const previous = leaves[i - 1];
+        const glued = !previous || ['(', '[', '.', '::'].includes(previous.text) || [')', ']', ',', '.', '::'].includes(leaf.text)
+            || a.isDuration(leaf.astNode) && previous.astNode === leaf.astNode
+            || leaf.text === '(' && (a.isCallExpression(leaf.astNode) || a.isTryExpression(leaf.astNode))
+            || leaf.text === '[' && !a.isArrayLiteral(leaf.astNode);
+        text += (glued ? '' : ' ') + image;
+    });
+    return text;
+}
+/**
+ * The trigger identity text of an expression (WP4-S07): a single integer or duration literal, parenthesized or not,
+ * is its value in nanoseconds, so every (20ms) and every 20ms (and every 20000us) have the same identity; any other
+ * expression is its display text, so every (2 * 10ms) is another trigger. Tokens stay separated by a space, so an
+ * operator sequence such as a or b can never equal a name.
+ */
+export function expressionText(e: a.Expression): string {
+    if (a.isLiteral(e) && e.duration)
+        return String(nanos(e.duration));
+    if (a.isLiteral(e) && e.number !== undefined && !e.$cstNode?.text.includes('.'))
+        return String(e.number);
+    return displayText(e);
+}
+/** Why an expression is not a constant duration, or why its value cannot be computed (WP4-S05, WP4-D03, WP4-D07). */
+export type ConstantProblem =
+    /** A call (try included); clock is true for Swaml::Time::now() (WP3-S01). */
+    | { kind: 'call'; node: a.CallExpression | a.TryExpression; clock: boolean }
+    /** A name that is not a const attribute of the occurrence: mutable attributes, locals, parameters, receive bindings. */
+    | { kind: 'state'; node: a.ReferenceExpression }
+    /** A value other than an integer, duration or boolean: array and record literals, enum literals, fields of const attributes. */
+    | { kind: 'value'; node: a.Expression }
+    /** A const attribute whose effective initializer refers back to itself. */
+    | { kind: 'cycle'; node: a.ReferenceExpression; attribute: a.Attribute }
+    /** A / whose quotient is not an exact integer, or a / or % whose divisor is zero, in this occurrence. */
+    | { kind: 'division'; node: a.BinaryExpression; left: bigint; right: bigint }
+    /** Operands of the wrong type, which the type rules report (SW2002). */
+    | { kind: 'type'; node: a.Expression };
+export type ConstantResult = { value: bigint | boolean; problem?: undefined } | { value?: undefined; problem: ConstantProblem };
+/**
+ * The constant sublanguage evaluator (WP4-S05, WP4-M02): the value of a period or deadline expression in one
+ * expanded occurrence. Allowed are integer, duration and boolean literals; const attributes of the occurrence with
+ * their effective value after redefinition (the members of the occurrence's structure), whose effective
+ * initializers are themselves in the sublanguage and acyclic; unary - and not; + - * / %; comparisons; and, or; the
+ * conditional; parentheses. In this sublanguage / on integers is exact integral division: a non-exact quotient or
+ * a zero divisor is a problem of the occurrence. Arithmetic is exact (bigint); whether the result is a positive
+ * representable duration is the caller's check (representableDuration, entryPeriod, entryDeadline). Membership
+ * problems of the whole expression (both branches of a conditional and every const attribute it reaches) come
+ * before value problems; within each, the first in evaluation order. The occurrence is the component usage of an
+ * expanded occurrence, or a definition, whose own const attribute values a definition-level check uses.
+ */
+export function constantValue(e: a.Expression, occurrence: Structure): ConstantResult {
+    const problem = constantMembership(e, occurrence, new Set());
+    return problem ? { problem } : evaluateConstant(e, occurrence);
+}
+/** The const attribute a single-name reference names in the occurrence, if any. */
+function constantAttribute(e: a.ReferenceExpression, occurrence: Structure): a.Attribute | undefined {
+    if (e.path.includes('.') || e.index || e.selectors?.length)
+        return undefined;
+    const found = members(occurrence).filter(a.isAttribute).find(x => x.name === e.path);
+    return found?.constant ? found : undefined;
+}
+function constantMembership(e: a.Expression, occurrence: Structure, visiting: Set<a.Attribute>): ConstantProblem | undefined {
+    // Literals of other types (real, string) are left to the type rules (SW2002), which report them once.
+    if (a.isLiteral(e))
+        return undefined;
+    if (a.isReferenceExpression(e)) {
+        const attribute = constantAttribute(e, occurrence);
+        if (!attribute) {
+            const head = members(occurrence).filter(a.isAttribute).find(x => x.name === e.path.split('.')[0]);
+            // A field or element of a const attribute, or an enum literal, is a value outside the sublanguage.
+            return head ? head.constant ? { kind: 'value', node: e } : { kind: 'state', node: e } : e.path.includes('.') ? { kind: 'value', node: e } : { kind: 'state', node: e };
+        }
+        if (visiting.has(attribute))
+            return { kind: 'cycle', node: e, attribute };
+        visiting.add(attribute);
+        const inner = constantMembership(attribute.value, occurrence, visiting);
+        visiting.delete(attribute);
+        return inner;
+    }
+    if (a.isCallExpression(e) || a.isTryExpression(e)) {
+        const target = a.isCallExpression(e) ? resolveCall(e) : undefined;
+        return { kind: 'call', node: e, clock: !!target && isExecutable(target) && isClockRead(target) };
+    }
+    if (a.isUnaryExpression(e))
+        return constantMembership(e.operand, occurrence, visiting);
+    if (a.isBinaryExpression(e))
+        return constantMembership(e.left, occurrence, visiting) ?? constantMembership(e.right, occurrence, visiting);
+    if (a.isConditionalExpression(e))
+        return constantMembership(e.condition, occurrence, visiting) ?? constantMembership(e.then, occurrence, visiting) ?? constantMembership(e.otherwise, occurrence, visiting);
+    return { kind: 'value', node: e };
+}
+/** The operation a call names, resolved as the effect analysis resolves it. */
+function resolveCall(n: a.CallExpression): AstNode | undefined {
+    if (n.target.includes('.'))
+        return undefined;
+    const model = AstUtils.getDocument(n).parseResult.value as a.Model;
+    return localOperation(n, n.target, container(n)) ?? resolve(n, n.target, workspaceModels.get(model) ?? [model]);
+}
+function evaluateConstant(e: a.Expression, occurrence: Structure): ConstantResult {
+    const type = (): ConstantResult => ({ problem: { kind: 'type', node: e } });
+    if (a.isLiteral(e))
+        return e.duration ? { value: BigInt(nanos(e.duration)) } : e.boolean !== undefined ? { value: e.boolean === 'true' } : e.number !== undefined && Number.isSafeInteger(e.number) ? { value: BigInt(e.number) } : type();
+    if (a.isReferenceExpression(e))
+        return evaluateConstant(constantAttribute(e, occurrence)!.value, occurrence);
+    if (a.isUnaryExpression(e)) {
+        const v = evaluateConstant(e.operand, occurrence);
+        if (v.problem)
+            return v;
+        return e.operator === 'not' ? typeof v.value === 'boolean' ? { value: !v.value } : type() : typeof v.value === 'bigint' ? { value: -v.value } : type();
+    }
+    if (a.isConditionalExpression(e)) {
+        const c = evaluateConstant(e.condition, occurrence);
+        return c.problem ? c : typeof c.value !== 'boolean' ? type() : evaluateConstant(c.value ? e.then : e.otherwise, occurrence);
+    }
+    if (!a.isBinaryExpression(e))
+        return type();
+    const l = evaluateConstant(e.left, occurrence);
+    if (l.problem)
+        return l;
+    const r = evaluateConstant(e.right, occurrence);
+    if (r.problem)
+        return r;
+    const x = l.value, y = r.value, op = e.operator;
+    if (op === 'and' || op === 'or')
+        return typeof x === 'boolean' && typeof y === 'boolean' ? { value: op === 'and' ? x && y : x || y } : type();
+    if (op === '==' || op === '!=')
+        return typeof x === typeof y ? { value: (x === y) === (op === '==') } : type();
+    if (typeof x !== 'bigint' || typeof y !== 'bigint')
+        return type();
+    if (['<', '<=', '>', '>='].includes(op))
+        return { value: op === '<' ? x < y : op === '<=' ? x <= y : op === '>' ? x > y : x >= y };
+    if ((op === '/' || op === '%') && (y === 0n || op === '/' && x % y !== 0n))
+        return { problem: { kind: 'division', node: e, left: x, right: y } };
+    return { value: op === '+' ? x + y : op === '-' ? x - y : op === '*' ? x * y : op === '/' ? x / y : x % y };
+}
+/** Whether a constant value is a duration: a positive integer number of nanoseconds that is a safe integer (WP4-S06). */
+export const representableDuration = (v: bigint | boolean | undefined): v is bigint => typeof v === 'bigint' && v > 0n && v <= BigInt(Number.MAX_SAFE_INTEGER);
+/**
+ * The effective period of an every entry in an expanded occurrence, in nanoseconds (WP4-S04, WP4-S06, WP4-M02,
+ * WP4-M03): the literal of every 20ms, or the constant value of every (e) in that occurrence. Undefined for other
+ * entries and when the value is not a positive representable duration (a validation error). Consumers read
+ * periods through this function rather than entry.period, which a computed period leaves undefined.
+ */
+export function entryPeriod(e: a.ScheduleEntry, occurrence?: Structure): number | undefined {
+    if (e.period)
+        return nanos(e.period);
+    if (!e.periodValue || !occurrence)
+        return undefined;
+    const v = constantValue(e.periodValue, occurrence).value;
+    return representableDuration(v) ? Number(v) : undefined;
+}
+/**
+ * The effective deadline of an entry in an expanded occurrence, in nanoseconds (WP4-S04, WP4-M02, WP4-M03): an
+ * explicit deadline wins, literal (deadline 10ms) or computed (deadline (e)); without one, the period of an every
+ * entry, literal or computed; otherwise undefined. The simulator, the validator and the projection all read it
+ * here, so they cannot disagree. Without an occurrence (a definition), computed parts are undefined.
+ */
+export function entryDeadline(e: a.ScheduleEntry, occurrence?: Structure): number | undefined {
+    if (e.deadline)
+        return nanos(e.deadline);
+    if (e.deadlineValue) {
+        if (!occurrence)
+            return undefined;
+        const v = constantValue(e.deadlineValue, occurrence).value;
+        return representableDuration(v) ? Number(v) : undefined;
+    }
+    return entryPeriod(e, occurrence);
+}
+/**
+ * The trigger identity of a schedule entry (WP4-S07, WP4-M04): its receive or call member, its after predecessor, or
+ * the period of an every entry, a literal or single parenthesized literal as nanoseconds, any other expression as
+ * its canonical text (expressionText). A release guard (WP7) is not part of it.
+ */
+export function triggerIdentity(e: a.ScheduleEntry): string {
+    return e.endpoint ?? e.predecessor ?? (e.period ? String(nanos(e.period)) : e.periodValue ? expressionText(e.periodValue) : '');
+}
 export function portMembers(p: a.PortUsage): a.PortMember[] { return p.definition?.ref?.members ?? p.members; }
 export function direction(p: a.PortUsage, m: a.PortMember): 'provides' | 'requires' { return p.reversed ? m.direction === 'provides' ? 'requires' : 'provides' : m.direction; }
 export function endpoint(c: Structure, path: string): {
@@ -267,7 +467,7 @@ export function effectiveQos(c?: a.Connect | a.QosPolicy): Policy {
         return { ...defaultPolicy };
     const result: any = {};
     for (const s of q.settings)
-        result[s.name] = s.duration ? nanos(s.duration) : a.isReferenceExpression(s.value) ? s.value.path.split('.').at(-1) : a.isLiteral(s.value) ? s.value.number ?? s.value.text : undefined;
+        result[s.name] = settingDuration(s) ? nanos(settingDuration(s)!) : a.isReferenceExpression(s.value) ? s.value.path.split('.').at(-1) : a.isLiteral(s.value) ? s.value.number ?? s.value.text : undefined;
     return result;
 }
 export type Effect = {

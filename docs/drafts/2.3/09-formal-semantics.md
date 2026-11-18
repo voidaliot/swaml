@@ -17,9 +17,9 @@ C = (D, O, σ, S, Q, A, M, R, L, B, t)
 | `x[i].f…` / `x[i][j]…` | Moved to [chapter 9.2](../../spec/09-formal-semantics.md#92-typing-schemas) in WP1. | [WP1] |
 | `place = e` | Moved to [chapter 9.2](../../spec/09-formal-semantics.md#92-typing-schemas) in WP1. | [WP1] |
 | `if (c) a else b` | Moved to [chapter 9.2](../../spec/09-formal-semantics.md#92-typing-schemas) in WP2. | [WP2] |
-| `now()` | Moved to [chapter 9.2](../../spec/09-formal-semantics.md#92-typing-schemas) in WP3. The completion-guard and constant-expression clauses apply with WP5 and WP4. | [WP3] |
-| duration literal | Result uint (nanoseconds), representable | [WP4] |
-| computed duration `(e)` | e integral; dynamic positions non-suspending (wait, timeout) or read-only (state timer); static positions in the constant sublanguage | [WP4] |
+| `now()` | Moved to [chapter 9.2](../../spec/09-formal-semantics.md#92-typing-schemas) in WP3. The constant-expression clause applied with WP4; the completion-guard clause applies with WP5. | [WP3] |
+| duration literal | Moved to [chapter 9.2](../../spec/09-formal-semantics.md#92-typing-schemas) in WP4. | [WP4] |
+| computed duration `(e)` | Moved to [chapter 9.2](../../spec/09-formal-semantics.md#92-typing-schemas) in WP4. | [WP4] |
 | completion guard | bool; pure or reads state; no `now()` | [WP5] |
 | timer guard | bool; pure or reads state | [WP5] |
 | `p.m` sampled | p an owned, non-forwarded port; m a required attribute with an initial value; result the member type; effect reads state | [WP6] |

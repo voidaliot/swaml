@@ -1,0 +1,113 @@
+{
+ "description": "Valid and invalid 2.2 sources outside the gate-1 corpus at every position a duration can appear in 2.2 (WP4): wait, receive or after, state after timers, on every and deadline with every unit, spaced units, leading zeros and comments inside a duration, QoS settings requestTimeout, maxLatency and maxAge with every unit next to capacity and the enum settings, policies specializing the library policy and connection redefinitions, invalid settings (capacity = 5ms, timeouts without a duration, other settings as durations, zero and unrepresentable values), zero and unrepresentable durations in every position, duplicate and replaced every entries written in different units, deadlines above periods, durations in case scripts, stale reads across literal waits, and names that look like units (ns, us, ms, s) as attributes, locals, parameters, members, operations, states and enum literals, beside durations. In 2.3 a duration literal is an expression value and PolicySetting has one form (WP4-G01, WP4-G02). Each parses with the kept 2.2 grammar. Their diagnostics (with related information), normalized ASTs and runs are recorded once from implementation 3.1.0 in recorded-wp4.json and compared by scripts/compatibility-2-2-extended.mjs.",
+ "models": [
+  {
+   "name": "d1 wait with every unit, spaced units and unit names as locals (runs)",
+   "target": "Waits::Demo",
+   "text": "package Waits {\n  component def W {\n    attribute ticks: uint = 0;\n    attribute ms: uint = 3;\n    attribute total: uint = 0;\n    operation go() {\n      wait 5ns;\n      wait 7us;\n      wait 2ms;\n      wait 3 ms;\n      wait 4  us;\n      var s: uint = ms * 1000;\n      var ns: uint = s + ms;\n      var us: uint = ns - 1;\n      total = s + ns + us;\n      ticks = ticks + 1;\n      wait 1s;\n      ticks = ticks + 1;\n      wait 9007199254740991ns;\n    }\n    schedule { on start go(); }\n  }\n  component Demo: W;\n}"
+  },
+  {
+   "name": "d2 receive or after with every unit and a timeout taken (runs)",
+   "target": "Receives::Demo",
+   "text": "package Receives {\n  port def Ping { provides event p0(n: uint); provides event p1(n: uint); provides event p2(n: uint); provides event p3(n: uint); provides event p4(n: uint); }\n  component def Source {\n    port out1: Ping;\n    operation emit() { wait 3ms; publish out1.p0(7); wait 20ms; publish out1.p2(8); publish out1.p4(9); if (false) { publish out1.p1(1); publish out1.p3(3); } }\n    schedule { on start emit(); }\n  }\n  component def Sink {\n    reversed port in1: Ping;\n    attribute got: uint = 0;\n    attribute timeouts: uint = 0;\n    operation listen() {\n      on receive in1.p0(n) { got = got + n; } or after 10ms { timeouts = timeouts + 1; }\n      on receive in1.p1(n) { got = got + n; } or after 500 us { timeouts = timeouts + 1; }\n      on receive in1.p2(n) { got = got + n; } or after 1s { timeouts = timeouts + 1; }\n      on receive in1.p3(n) { got = got + n; } or after 9000000ns { timeouts = timeouts + 1; }\n      on receive in1.p4(n) { got = got + n; } or after 2 s { timeouts = timeouts + 1; }\n    }\n    schedule { on start listen(); }\n  }\n  component def System {\n    component src: Source;\n    component dst: Sink;\n    connect (src.out1, dst.in1);\n  }\n  component Demo: System;\n}"
+  },
+  {
+   "name": "d3 state timers with every unit, equal expiry in declaration order, states named like units (runs)",
+   "target": "Timers::Demo",
+   "text": "package Timers {\n  component def M {\n    attribute path: uint = 0;\n    attribute s: uint = 0;\n    operation run() {\n      initial ms;\n      state ms {\n        on entry { s = s + 1; }\n        after 2ms to us { path = path * 10 + 1; }\n        after 2000us to ns { path = path * 10 + 9; }\n      }\n      state us {\n        after 30 ms to ns { path = path * 10 + 2; }\n        after 20000 us to ns { path = path * 10 + 3; }\n      }\n      state ns {\n        on entry { s = s + 1; }\n        after 5ns to done { path = path * 10 + 4; }\n      }\n      final state done { }\n    }\n    schedule { on start run(); }\n  }\n  component Demo: M;\n}"
+  },
+  {
+   "name": "d4 periods and deadlines with every unit and spaced units (runs)",
+   "target": "Periods::Demo",
+   "text": "package Periods {\n  component def P {\n    attribute a: uint = 0;\n    attribute b: uint = 0;\n    attribute c: uint = 0;\n    attribute d: uint = 0;\n    operation fa() { a = a + 1; }\n    operation fb() { b = b + 1; }\n    operation fc() { c = c + 1; }\n    operation peek() returns uint { return a; }\n    operation fe() { var seen: uint = a; }\n    operation fd() { d = d + 1; wait 1ms; }\n    schedule {\n      on every 10ms fa();\n      on every 2500 us fb() deadline 2 ms;\n      on every 20000000ns fc() deadline 5ms;\n      on every 4 ms fe() concurrent;\n      on every 1 s fd() deadline 3ms;\n    }\n  }\n  component Demo: P;\n}"
+  },
+  {
+   "name": "d5 duplicate every entries with equal nanoseconds in different units",
+   "text": "package Duplicates {\n  component def P {\n    attribute a: uint = 0;\n    operation fa() { a = a + 1; }\n    schedule {\n      on every 20ms fa();\n      on every 20000us fa();\n      on every 20000000 ns fa();\n    }\n  }\n  component Demo: P;\n}"
+  },
+  {
+   "name": "d6 inheritance replaces an every entry written in another unit (runs)",
+   "target": "Replace::Demo",
+   "text": "package Replace {\n  component def Base {\n    attribute n: uint = 0;\n    attribute late: uint = 0;\n    operation tick() { n = n + 1; }\n    operation slow() { late = late + 1; }\n    schedule { on every 20ms tick(); on every 1s slow() deadline 10ms; }\n  }\n  component def Derived specializes Base {\n    schedule { on every 20000us tick() deadline 5ms; on every 1000ms slow(); }\n  }\n  component Demo: Derived;\n}"
+  },
+  {
+   "name": "d7 QoS duration settings with every unit, capacity beside them, connected request timeout (runs)",
+   "target": "Policies::Demo2",
+   "text": "package Policies {\n  import Swaml::Qos;\n  qos def Fast: Policy {\n    delivery = Delivery.atMostOnce;\n    ordering = Ordering.fifo;\n    capacity = 4;\n    overflow = Overflow.reject;\n    requestTimeout = 5ms;\n    maxLatency = 2 ms;\n    maxAge = 3000us;\n  }\n  qos def Slow: Policy {\n    delivery = Delivery.atLeastOnce;\n    ordering = Ordering.unordered;\n    capacity = 16;\n    overflow = Overflow.dropOldest;\n    requestTimeout = 2s;\n    maxLatency = 900000000ns;\n    maxAge = 1 s;\n  }\n  port def Api { provides idempotent operation get(k: uint) returns uint; }\n  component def Server {\n    port api: Api;\n    operation serve(k: uint) returns uint { wait 10ms; return k + 1; }\n    schedule { on call api.get(k) serve(k); }\n  }\n  component def Client {\n    reversed port api: Api;\n    attribute r: uint = 0;\n    attribute failed: bool = false;\n    operation ask() { r = try(api.get(41), 0); failed = r == 0; }\n    schedule { on start ask(); }\n  }\n  component def Sys {\n    component server: Server;\n    component client: Client;\n    connect c: Fast (client.api, server.api);\n  }\n  component def Sys2 specializes Sys {\n    redefines connect c: Slow (client.api, server.api);\n  }\n  component Demo: Sys;\n  component Demo2: Sys2;\n}"
+  },
+  {
+   "name": "d8 request timeout from a policy (runs the timing out system)",
+   "target": "Policies2::Demo",
+   "text": "package Policies2 {\n  import Swaml::Qos;\n  qos def Tight: Policy {\n    delivery = Delivery.atMostOnce;\n    ordering = Ordering.fifo;\n    capacity = 1;\n    overflow = Overflow.dropNewest;\n    requestTimeout = 5 ms;\n  }\n  port def Api { provides operation get(k: uint) returns uint; }\n  component def Server {\n    port api: Api;\n    operation serve(k: uint) returns uint { wait 10ms; return k + 1; }\n    schedule { on call api.get(k) serve(k); }\n  }\n  component def Client {\n    reversed port api: Api;\n    attribute r: uint = 0;\n    operation ask() { r = try(api.get(41), 7); }\n    schedule { on start ask(); }\n  }\n  component def Sys {\n    component server: Server;\n    component client: Client;\n    connect : Tight (client.api, server.api);\n  }\n  component Demo: Sys;\n}"
+  },
+  {
+   "name": "d9 invalid duration settings: capacity as a duration, timeouts without durations, other settings as durations",
+   "text": "package BadPolicies {\n  import Swaml::Qos;\n  qos def A: Policy {\n    delivery = Delivery.atMostOnce;\n    ordering = Ordering.fifo;\n    capacity = 5ms;\n    overflow = Overflow.reject;\n    requestTimeout = 1s;\n  }\n  qos def B: Policy {\n    delivery = Delivery.atMostOnce;\n    ordering = Ordering.fifo;\n    capacity = 4;\n    overflow = Overflow.reject;\n    requestTimeout = 5;\n    maxLatency = 5 + 1;\n    maxAge = capacity;\n  }\n  qos def C: Policy {\n    delivery = 5ms;\n    ordering = 3 s;\n    capacity = 4;\n    overflow = 1ns;\n    requestTimeout = 1s;\n    retries = 3ms;\n  }\n  qos def D: Policy {\n    delivery = Delivery.atMostOnce;\n    ordering = Ordering.fifo;\n    capacity = 4;\n    overflow = Overflow.reject;\n    requestTimeout = 0ms;\n    maxAge = 0 s;\n    maxLatency = 9007199254740992ns;\n  }\n}"
+  },
+  {
+   "name": "d10 duration ranges: zero and unrepresentable waits, timeouts, timers, periods and deadlines",
+   "text": "package Ranges {\n  component def R {\n    attribute x: uint = 0;\n    operation a() { wait 0ms; }\n    operation b() { on receive p.m() { } or after 0ns { } }\n    operation c() {\n      initial s1;\n      state s1 { after 0us to s2 { } }\n      final state s2 { }\n    }\n    operation d() { wait 9007199254740992ns; }\n    operation e() { wait 10000000s; }\n    port p { provides event m(); }\n    schedule {\n      on start c();\n      on every 0ms a();\n      on every 10ms d() deadline 0ms;\n      on every 5ms e() deadline 6ms;\n      on every 10000000 s b();\n    }\n  }\n  component Demo: R;\n}"
+  },
+  {
+   "name": "d11 unit names as attributes, parameters, members, operations and enum literals (runs)",
+   "target": "UnitNames::Demo",
+   "text": "package UnitNames {\n  enum Unit { ns, us, ms, s }\n  datatype Span { ms: uint; s: uint; }\n  port def Clock { provides event us(ns: uint); }\n  component def Holder {\n    port clock: Clock;\n    attribute ms: uint = 1000;\n    attribute s: Unit = Unit.s;\n    attribute span: Span = record Span { ms = 5; s = 1; };\n    attribute total: uint = 0;\n    operation ns(us: uint) returns uint { return us * 1000; }\n    operation run() {\n      var us: uint = ns(ms);\n      total = us + span.ms * span.s;\n      if (s == Unit.s) { total = total + 1; }\n      wait 1 ms;\n      publish clock.us(total);\n      wait 1ms;\n    }\n    schedule { on start run(); }\n  }\n  component def Ear {\n    reversed port clock: Clock;\n    attribute heard: uint = 0;\n    operation hear(ns: uint) { heard = ns; }\n    schedule { on receive clock.us(ns) hear(ns); }\n  }\n  component def Sys {\n    component holder: Holder;\n    component ear: Ear;\n    connect (holder.clock, ear.clock);\n  }\n  component Demo: Sys;\n}"
+  },
+  {
+   "name": "d12 a name like a unit next to a duration, in a while limit and a wait",
+   "target": "Adjacent::Demo",
+   "text": "package Adjacent {\n  component def A {\n    attribute ms: uint = 2;\n    attribute n: uint = 0;\n    operation go() {\n      while (n < 10, ms times) { n = n + 1; wait 1 ms; }\n      wait 2 s;\n      n = n + ms;\n    }\n    schedule { on start go(); }\n  }\n  component Demo: A;\n}"
+  },
+  {
+   "name": "d13 durations in case scripts: waits and receive timeouts with every unit (cases)",
+   "tests": [
+    "Scripts::Hear the bell",
+    "Scripts::Ring"
+   ],
+   "text": "package Scripts {\n  port def Bell { provides event ring(n: uint); }\n  component def Door {\n    port bell: Bell;\n    attribute rings: uint = 0;\n    operation press() { wait 5ms; rings = rings + 1; publish bell.ring(rings); }\n    schedule { on every 20ms press(); }\n  }\n  component def Visitor { reversed port hear: Bell; }\n  component door: Door;\n  component visitor: Visitor;\n  connect (door.bell, visitor.hear);\n  associate visitor to 'Hear the bell';\n  test 'Hear the bell' of door {\n    wait 1 ms;\n    wait 2000us;\n    on receive visitor.hear.ring(n) { assert n == 1; } or after 30ms { fail \"no ring\"; }\n    on receive visitor.hear.ring(n) { assert n == 2; } or after 25000000 ns { fail \"early timeout\"; }\n    on receive visitor.hear.ring(n) { fail \"no ring expected so soon\"; } or after 1ms { }\n    wait 30 ms;\n    assert door.rings >= 3;\n  }\n  use case 'Ring' of door {\n    wait 25 ms;\n    assert true;\n  }\n}"
+  },
+  {
+   "name": "d14 deadline above period, deadline violation and a concurrent periodic entry (runs)",
+   "text": "package Deadlines {\n  component def D {\n    attribute n: uint = 0;\n    operation slow() { n = n + 1; wait 7ms; }\n    operation over() { }\n    schedule {\n      on every 10ms slow() deadline 5 ms;\n      on every 10ms over() deadline 11ms;\n    }\n  }\n  component Demo: D;\n}"
+  },
+  {
+   "name": "d14b a deadline violation from a spaced literal deadline (runs)",
+   "target": "Deadlines2::Run",
+   "text": "package Deadlines2 {\n  component def E {\n    attribute n: uint = 0;\n    operation slow() { n = n + 1; wait 7ms; }\n    schedule { on every 10ms slow() deadline 5 ms; }\n  }\n  component Run: E;\n}"
+  },
+  {
+   "name": "d15 stale reads across literal waits and receive timeouts (warnings)",
+   "target": "Stale::Demo",
+   "text": "package Stale {\n  port def P { provides event m(); }\n  component def S {\n    reversed port p: P;\n    attribute count: uint = 0;\n    attribute other: uint = 0;\n    operation bump() {\n      var n: uint = count;\n      wait 1ms;\n      count = n + 1;\n    }\n    operation listen() {\n      var n: uint = other;\n      on receive p.m() { } or after 5 ms { }\n      other = n + 1;\n    }\n    schedule { on every 10ms bump(); on start listen(); }\n  }\n  component def T {\n    port p: P;\n    operation go() { wait 2ms; publish p.m(); }\n    schedule { on start go(); }\n  }\n  component def Sys {\n    component s: S;\n    component t: T;\n    connect (t.p, s.p);\n  }\n  component Demo: Sys;\n}"
+  },
+  {
+   "name": "d16 a duration where an int is expected and an int where a duration is expected (parse-valid forms only)",
+   "text": "package Mixed {\n  import Swaml::Qos;\n  qos def M: Policy {\n    delivery = Delivery.atMostOnce;\n    ordering = Ordering.fifo;\n    capacity = 2 s;\n    overflow = Overflow.reject;\n    requestTimeout = 100;\n    maxLatency = Delivery.atMostOnce;\n    maxAge = \"1s\";\n  }\n  qos def Mine: Default {\n    requestTimeout = 3ms;\n  }\n  component def U {\n    attribute ms: uint = 5;\n    operation f() { }\n    schedule { on every 5ms f() deadline 6 ms; }\n  }\n  component Demo: U;\n}"
+  },
+  {
+   "name": "d17 policies from the library, a policy specializing a library policy, an inline literal policy reference (runs)",
+   "target": "LibraryPolicies::Demo",
+   "text": "package LibraryPolicies {\n  import Swaml::Qos;\n  qos def Full: Policy {\n    delivery = Delivery.bestEffort;\n    ordering = Ordering.fifo;\n    capacity = 2;\n    overflow = Overflow.dropNewest;\n    requestTimeout = 3 ms;\n    maxAge = 1ms;\n  }\n  port def Feed { provides event tick(n: uint); }\n  component def Pub {\n    port feed: Feed;\n    operation go() { var i: uint = 0; while (i < 5) { i = i + 1; publish feed.tick(i); } }\n    schedule { on start go(); }\n  }\n  component def Sub {\n    reversed port feed: Feed;\n    attribute last: uint = 0;\n    attribute seen: uint = 0;\n    operation take(n: uint) { wait 2ms; last = n; seen = seen + 1; }\n    schedule { on receive feed.tick(n) take(n); }\n  }\n  component def Sys {\n    component pub: Pub;\n    component sub: Sub;\n    connect : Full (pub.feed, sub.feed);\n  }\n  component Demo: Sys;\n}"
+  },
+  {
+   "name": "d18 after chains next to state after timers and periodic deadlines (runs)",
+   "target": "Chains::Demo",
+   "text": "package Chains {\n  component def C {\n    attribute order: uint = 0;\n    attribute stateTicks: uint = 0;\n    operation first() { wait 1ms; order = order * 10 + 1; }\n    operation second() { order = order * 10 + 2; }\n    operation machine() {\n      initial a;\n      state a { after 4ms to b { stateTicks = stateTicks + 1; } }\n      state b { after 4 ms to a { stateTicks = stateTicks + 1; } }\n    }\n    schedule {\n      on every 10ms first() deadline 2ms;\n      after first second();\n      on start machine();\n    }\n  }\n  component Demo: C;\n}"
+  },
+  {
+   "name": "d19 durations with leading zeros and a comment between value and unit",
+   "target": "Spelling::Demo",
+   "text": "package Spelling {\n  component def S {\n    attribute n: uint = 0;\n    operation f() { wait 005ms; wait 1 /* unit */ ms; n = n + 1; }\n    schedule { on every 0020 ms f() deadline 010ms; }\n  }\n  component Demo: S;\n}"
+  },
+  {
+   "name": "d20 a redefined component and redefined attribute next to literal periods (runs)",
+   "target": "Redefined::Demo",
+   "text": "package Redefined {\n  component def Worker {\n    attribute periodMs: uint = 20;\n    const attribute limit: uint = 3;\n    attribute n: uint = 0;\n    operation tick() { if (n < limit) { n = n + 1; } }\n    schedule { on every 20ms tick(); }\n  }\n  component def Pair {\n    component a: Worker;\n    component b: Worker;\n  }\n  component Demo: Pair {\n    redefines component b: Worker {\n      redefines const attribute limit: uint = 5;\n      redefines attribute periodMs: uint = 10;\n    }\n  }\n}"
+  },
+  {
+   "name": "d21 deadlines on receive and call entries, waits inside an interruptible region (runs)",
+   "target": "Entries::Demo",
+   "text": "package Entries {\n  port def Ctl { provides event stop(); provides event go(n: uint); }\n  port def Api { provides operation get() returns uint; }\n  component def Worker {\n    reversed port ctl: Ctl;\n    port api: Api;\n    attribute n: uint = 0;\n    attribute stopped: bool = false;\n    operation work(k: uint) {\n      interruptible {\n        wait 2ms;\n        wait 1 ms;\n        n = n + k;\n      } on receive ctl.stop() {\n        stopped = true;\n      }\n    }\n    operation serve() returns uint { wait 1us; return n; }\n    schedule {\n      on receive ctl.go(k) work(k) deadline 4 ms;\n      on call api.get() serve() deadline 500000ns;\n    }\n  }\n  component def Boss {\n    port ctl: Ctl;\n    reversed port api: Api;\n    attribute seen: uint = 0;\n    operation run() { publish ctl.go(3); wait 5ms; publish ctl.go(4); wait 1ms; publish ctl.stop(); wait 5ms; seen = api.get(); }\n    schedule { on start run(); }\n  }\n  component def Sys {\n    component worker: Worker;\n    component boss: Boss;\n    connect (boss.ctl, worker.ctl);\n    connect (boss.api, worker.api);\n  }\n  component Demo: Sys;\n}"
+  }
+ ]
+}

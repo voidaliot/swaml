@@ -6,7 +6,7 @@
 
 | ID | Rule |
 | --- | --- |
-| WP4-R02 | **Computed durations.** A computed `wait` or receive timeout is evaluated when the statement starts waiting. A computed state timer is evaluated when the entry actions finish, and its expiry is the state-update time plus the value. Periods and deadlines use the per-occurrence constant values (WP4-S06). A non-positive or unrepresentable value is `DurationRange` (WP4-R01). An expiry outside the clock range stays the `ClockRange` violation. |
+| WP4-R02 | Moved to [chapter 6.1](../../spec/06-execution-contract.md#61-lifecycle-and-time) in WP4. |
 | WP8-R01 | **Ordering keys.** Releases, dispatches and ready continuations at equal logical time and phase are ordered by descending Task priority (unplaced activations at priority 0), then activations on a Task before unplaced activations of equal priority, then, between activations on the same Task, by in-task position (WP8-M01), then by the existing insertion ordinal. A case-script activation is unplaced. A primary-subject call borrowed by a case (ADR 0021) runs within the case activation and keeps its keys; it does not take the Task of the subject's entries. A run without Tasks has equal keys and keeps its 2.2 order. |
 | WP8-R02 | **Zero cost.** With zero-cost steps, `preemptive`, `kind` and `responseNs` have no runtime effect beyond the static rules. A run records the applied deployment as before. |
 
@@ -63,7 +63,7 @@ New and extended observations. Field names follow the existing trace (`timeNs`, 
 | ID | Observation | Fields and meaning |
 | --- | --- | --- |
 | WP1-T01 | `write` | Moved to [chapter 6.6](../../spec/06-execution-contract.md#66-evidence-and-resources) in WP1. |
-| WP4-T01 | `wait`, `receiveWait` (extended, computed forms only); `timer` (new) | A wait or receive timeout whose duration is computed adds the optional field `durationNs` with the evaluated value. A computed state timer is evaluated when the entry actions finish, after the `state` observation of that entry, so it gets a new `timer` observation at that moment: `subject` the machine, `state`, `source` the timer transition, `timerNs` the evaluated value and `expiresNs` the expiry time. Literal waits and literal state timers produce no new field and no `timer` observation, so 2.2 traces stay identical. |
+| WP4-T01 | `wait`, `receiveWait`, `timer` | Moved to [chapter 6.6](../../spec/06-execution-contract.md#66-evidence-and-resources) in WP4. |
 | WP5-T01 | `state` (extended) | An internal reaction is a `state` observation with `internal: true`, the unchanged `state` and the transition as `source`. |
 | WP5-T02 | `discardTimer` (new) | A timer consumed because its guard was false: `subject` the machine, `state`, `source` the timer transition, `reason: 'guard'`. |
 | WP5-T03 | `defer` (new) | Exactly one per retained message, the first time the machine waits in a deferring state while the message is deliverable: `subject` the machine, `state`, `member`, `source` the message origin, and the message or correlation identity. |
@@ -72,7 +72,7 @@ New and extended observations. Field names follow the existing trace (`timeNs`, 
 | WP7-T01 | `skip` (new) | A release whose guard was false: `subject` the operation occurrence, `activation`, `source` the schedule entry. |
 | WP7-T02 | `discardInput`, `failure` (extended) | A skipped `receive` entry's input is a `discardInput` with `reason: 'releaseGuard'`. A failing release guard is a `failure` with the entry as `source`. |
 
-`DurationRange` (WP4-R01) is recorded like every runtime failure. A caught one is a `caught` observation. (The `sqrt` and `realText` failures, WP3-R01 and WP3-R02, moved to [chapter 6.3](../../spec/06-execution-contract.md#63-values-flow-and-failure) in WP3.)
+The `DurationRange` observation rule moved to [chapter 6.6](../../spec/06-execution-contract.md#66-evidence-and-resources) in WP4. (The `sqrt` and `realText` failures, WP3-R01 and WP3-R02, moved to [chapter 6.3](../../spec/06-execution-contract.md#63-values-flow-and-failure) in WP3.)
 
 ## 6.7 Case runs
 

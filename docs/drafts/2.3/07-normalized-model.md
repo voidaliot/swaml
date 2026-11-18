@@ -7,7 +7,7 @@
 | ID | Rule |
 | --- | --- |
 | WP2-M04 | Moved to [chapter 7.1](../../spec/07-normalized-model.md#71-identity-and-provenance) in WP2. |
-| WP4-M04 | **Entry identity.** A schedule entry keeps the identity `Component/schedule/N`. Its trigger identity for replacement and duplicates is the normalized form of WP4-S07. |
+| WP4-M04 | Moved to [chapter 7.1](../../spec/07-normalized-model.md#71-identity-and-provenance) in WP4. |
 | WP8-M06 | **Placement identity.** An operation placement is identified by its deployment and exact path, like an occurrence placement. |
 
 ## 7.2 Families

@@ -78,6 +78,21 @@
       "DiagnosticText::Rounding": "pass",
       "DiagnosticText::Bounds": "pass"
     },
+    "examples/41-computed-backoff.swaml": {
+      "Backoff::Counted loop rounds up": "pass",
+      "Backoff::Computed wait is exact": "pass",
+      "Backoff::A delay that is not positive fails": "pass",
+      "Backoff::Timeout doubles after a loss": "pass",
+      "Backoff::Backoff timer uses the new delay": "pass"
+    },
+    "examples/42-lock-pulse.swaml": {
+      "LockPulse::Recalibrated pulse": "pass"
+    },
+    "examples/43-derived-period.swaml": {
+      "DerivedPeriod::Period per usage": "pass",
+      "DerivedPeriod::Busy within the deadline": "pass",
+      "DerivedPeriod::Deadline per usage": "fail"
+    },
     "examples/notation/catalog.swaml": {
       "Notation::Startup": "pass"
     },
