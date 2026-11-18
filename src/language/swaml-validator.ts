@@ -1491,6 +1491,31 @@ export class SwamlValidator {
                 if (count > 1 && portMembers(port).some(m => direction(port, m) === 'requires' && m.kind !== 'event'))
                     this.report(node, 'SW2004', `Port ${path} requires exactly one peer after forwarding.`, false, range);
             }
+        this.deferralOverflow(occ.filter(o => checked.has(o.path.split('.')[0])), links, leaf);
+    }
+    /**
+     * WP5-D09 (SW2018): a deferred event whose effective policy on a route into this occurrence rejects on overflow. A
+     * retained message keeps its queue slot, so a full queue then fails the sender's offer. Attributes keep only their
+     * latest value and never overflow. Reported at the deferred member, once per connection.
+     */
+    private deferralOverflow(occ: ReturnType<typeof connectionRoutes>['occurrences'], links: ReturnType<typeof connectionRoutes>['links'], leaf: (path: string) => string): void {
+        for (const o of occ)
+            for (const op of members(o.structure).filter(isExecutable))
+                for (const state of body(op)?.states ?? [])
+                    for (const d of state.deferrals)
+                        d.endpoints.forEach((endpoint, i) => {
+                            const ep = memberEndpoint(o.structure, endpoint);
+                            if (!ep || ep.member.kind !== 'event' || direction(ep.port, ep.member) !== 'requires')
+                                return;
+                            const port = leaf(`${o.path}.${endpoint.split('.')[0]}`), range = GrammarUtils.findNodesForProperty(d.$cstNode, 'endpoints')[i]?.range;
+                            for (const link of links.filter(l => l.ends.includes(port))) {
+                                if (effectiveQos(link.node).overflow !== 'reject')
+                                    continue;
+                                const policy = link.node.policy?.ref ? formatName(link.node.policy.ref.name, MESSAGE_SPELLING) : 'Default';
+                                const connection = link.node.name !== undefined ? formatName(link.node.name, MESSAGE_SPELLING) : `connect (${formatPath(link.node.source, MESSAGE_SPELLING)}, ${formatPath(link.node.target, MESSAGE_SPELLING)})`;
+                                this.report(d, 'SW2018', `${formatPath(endpoint, MESSAGE_SPELLING)} is deferred in ${formatName(state.name, MESSAGE_SPELLING)}, but policy ${policy} of ${connection} rejects on overflow; a full queue fails the sender.`, true, range ? { range } : {});
+                            }
+                        });
     }
     /** The case script being validated: its case and, inside on call, the answered result type. */
     private script?: { scenario: a.Scenario; reply?: string };
