@@ -220,6 +220,9 @@ class Analysis {
         }
         if (a.isUnaryExpression(e))
             return this.expression(e.operand, flow);
+        // A conditional joins its condition and both branches; it never suspends (WP2-S04).
+        if (a.isConditionalExpression(e))
+            return this.sequence([e.condition, e.then, e.otherwise], flow).reduce(join, none());
         if (a.isTryExpression(e))
             return this.sequence(e.fallback ? [e.expression, e.fallback] : [e.expression], flow).reduce(join, none());
         if (a.isArrayLiteral(e))

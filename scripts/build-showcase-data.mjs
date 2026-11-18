@@ -8,6 +8,7 @@ import {parseHelper} from 'langium/test';
 import {createSwamlServices} from '../out/src/language/swaml-module.js';
 import {isScenario,isRequirement,isOperation,isComponentDef,isWait} from '../out/src/language/generated/ast.js';
 import {projectModel} from '../out/src/language/projection.js';
+import {associationPairs} from '../out/src/language/semantic.js';
 import {runTests,simulate} from '../out/src/simulation/simulator.js';
 import {projectOperationTiming} from '../out/src/simulation/timing.js';
 const standardVersion=await readStandardVersion();
@@ -27,7 +28,7 @@ const projection=projectModel([doc.parseResult.value]);const run=simulate([doc.p
 const results=new Map(runTests([doc.parseResult.value],{untilNs:1000000000}).map(r=>[r.case,r.result]));
 // The Case view draws each subject as a boundary, associated occurrences as actors outside it and satisfy/verify links.
 const typeOf=u=>u?.definition?.$refText??null;
-const cases=doc.parseResult.value.packages.flatMap(p=>p.elements.filter(isScenario).map(c=>({name:c.name,kind:c.kind==='test'?'test':'use case',subject:c.subject?.$refText??null,subjectType:typeOf(c.subject?.ref),actors:p.associations.filter(a=>a.target.ref===c).map(a=>({name:a.occurrence.$refText,type:typeOf(a.occurrence.ref)})),verifies:p.verifications.filter(v=>v.test.ref===c).map(v=>v.requirement.$refText),result:results.get(p.name+'::'+c.name)})));
+const cases=doc.parseResult.value.packages.flatMap(p=>p.elements.filter(isScenario).map(c=>({name:c.name,kind:c.kind==='test'?'test':'use case',subject:c.subject?.$refText??null,subjectType:typeOf(c.subject?.ref),actors:p.associations.flatMap(associationPairs).filter(a=>a.target.ref===c).map(a=>({name:a.occurrence.$refText,type:typeOf(a.occurrence.ref)})),verifies:p.verifications.filter(v=>v.test.ref===c).map(v=>v.requirement.$refText),result:results.get(p.name+'::'+c.name)})));
 const satisfactions=doc.parseResult.value.packages.flatMap(p=>p.satisfactions.map(s=>({requirement:s.requirement.$refText,design:s.design})));
 // The Sequence view shows the first observed offer on each connection of the reference run.
 const sequence=run.trace.filter(t=>t.kind==='offer').filter((t,i,all)=>all.findIndex(x=>x.subject===t.subject)===i).map(t=>({member:t.member,source:t.sourcePort.split('.').slice(1).join('.'),target:t.targetPort.split('.').slice(1).join('.'),via:t.subject.split('.').at(-1),timeNs:t.timeNs}));

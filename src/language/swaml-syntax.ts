@@ -15,9 +15,46 @@ export class SwamlValueConverter extends DefaultValueConverter {
 // Characters skipped by the current tokenization. Parsing follows tokenization
 // synchronously, so hints never mistake a skipped character for a space.
 const skipped = new Set<number>();
+// The tokens of the current tokenization, so that a syntax message can look past the failing token.
+let tokens: readonly Token[] = [];
 export class SwamlLexer extends DefaultLexer {
-    override tokenize(text: string, options?: TokenizeOptions): LexerResult { skipped.clear(); return super.tokenize(text, options); }
+    override tokenize(text: string, options?: TokenizeOptions): LexerResult { skipped.clear(); const result = super.tokenize(text, options); tokens = result.tokens; return result; }
 }
+/** WP2-D04: the message for if (c) a else b in statement position, where the if statement needs a block. */
+export const CONDITIONAL_STATEMENT_MESSAGE = 'A conditional expression is not a statement; use an if block.';
+/**
+ * Whether the if statement whose block is missing at actual has the shape of a conditional expression
+ * (WP2-G02, WP2-D04): an else follows at nesting depth 0 before the next ;, { or }.
+ */
+function conditionalStatement(actual: Token, previous: Token | undefined): boolean {
+    const at = tokens.findIndex(t => t.startOffset === actual.startOffset);
+    if (previous?.image !== ')' || at < 1)
+        return false;
+    // The block is the then block of an if statement: if ( … ) precedes it.
+    let open = at - 1;
+    for (let depth = 0; open >= 0; open--) {
+        depth += tokens[open].image === ')' ? 1 : tokens[open].image === '(' ? -1 : 0;
+        if (depth === 0)
+            break;
+    }
+    if (tokens[open - 1]?.image !== 'if')
+        return false;
+    let depth = 0;
+    for (let i = at; i < tokens.length; i++) {
+        const text = tokens[i].image;
+        if (depth === 0 && [';', '{', '}'].includes(text))
+            return false;
+        if (depth === 0 && text === 'else')
+            return true;
+        depth += ['(', '['].includes(text) ? 1 : [')', ']'].includes(text) ? -1 : 0;
+        if (depth < 0)
+            return false;
+    }
+    return false;
+}
+/** Expression rules in which a conditional can only be an operand (WP2-S03). */
+const OPERAND_RULES = new Set(['OrExpression', 'AndExpression', 'EqualityExpression', 'RelationalExpression', 'AdditiveExpression', 'MultiplicativeExpression', 'UnaryExpression', 'PrimaryExpression']);
+const OPERAND_HINT = ' A conditional expression is a whole expression; as an operand it is written in parentheses, as in (if (c) a else b).';
 const nameToken = (type: TokenKind | undefined) => !!type && (type.name === 'ID' || type.name === 'UNRESTRICTED_NAME' || CONTEXTUAL_KEYWORDS.has(type.name));
 const shown = (token: Token) => token.tokenType?.name === 'UNRESTRICTED_NAME' ? decodeQuotedName(token.image) : token.image;
 /** Explains the common naming and documentation mistakes after the parser's own message. */
@@ -38,10 +75,14 @@ function hint(actual: Token | undefined, previous: Token | undefined, expectsNam
 export class SwamlParserErrorMessageProvider extends LangiumParserErrorMessageProvider {
     override buildMismatchTokenMessage(options: Parameters<LangiumParserErrorMessageProvider['buildMismatchTokenMessage']>[0]): string {
         const expectsName = nameToken(options.expected);
+        if (ruleName(options.ruleName) === 'Block' && options.expected.name === '{' && conditionalStatement(options.actual, options.previous))
+            return CONDITIONAL_STATEMENT_MESSAGE;
         return (expectsName ? `Expecting a name but found \`${options.actual.image}\`.` : super.buildMismatchTokenMessage(options)) + hint(options.actual, options.previous, expectsName);
     }
     override buildNoViableAltMessage(options: Parameters<LangiumParserErrorMessageProvider['buildNoViableAltMessage']>[0]): string {
         const first = options.expectedPathsPerAlt.flatMap(alternative => alternative.map(path => path[0])), expectsName = first.length > 0 && first.every(nameToken), actual = options.actual[0];
+        if (actual?.image === 'if' && OPERAND_RULES.has(ruleName(options.ruleName) ?? ''))
+            return super.buildNoViableAltMessage(options) + OPERAND_HINT;
         return (expectsName && actual ? `Expecting a name but found \`${actual.image}\`.` : super.buildNoViableAltMessage(options)) + hint(actual, options.previous, expectsName);
     }
     override buildEarlyExitMessage(options: Parameters<LangiumParserErrorMessageProvider['buildEarlyExitMessage']>[0]): string {

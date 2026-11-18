@@ -909,6 +909,12 @@ class Interpreter {
                 this.assign(f, local, n, reply.out[i], e); });
             return widen(reply?.value ?? voidValue(), typeKey(sig?.result));
         }
+        if (a.isConditionalExpression(e)) {
+            // Evaluate the condition, then only the selected branch (WP2-R01); the value takes the conditional's type.
+            const selected = (yield* this.evaluate(e.condition, f, local)).data ? e.then : e.otherwise;
+            const value = yield* this.evaluate(selected, f, local), type = expressionTypes.get(e);
+            return type && type !== '?' ? widen(value, type) : value;
+        }
         if (a.isUnaryExpression(e)) {
             const v = yield* this.evaluate(e.operand, f, local);
             return e.operator === 'not' ? scalar('bool', !v.data) : checked(v.type === 'real' ? 'real' : 'int', -(v.data as number));

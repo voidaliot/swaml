@@ -2,11 +2,13 @@ import { AstUtils, CstUtils, DocumentState, GrammarUtils, WorkspaceCache, type A
 import type { Range } from 'vscode-languageserver';
 import type { LangiumServices } from 'langium/lsp';
 import * as a from './generated/ast.js';
-import { associatedOccurrences, caseRead, caseTarget, isPlace, pathSteps, placeRoot, valueSteps, walkParts, type PartProblem, type Step, testCanAccess, caseCallAccess, caseCallRestriction, allowsSuspendingCall, connectionRoutes, designComponent, interfaceOnly, packageEndpoint, packageOccurrences, expressionTypes, OCCURRENCE_LIMIT, occurrenceCount, workspaceModels, assignable, body, compatibility, constantNumber, direction, effectiveQos, effects, endpoint, entryKey, identity, integral, isExecutable, isNode, localOperation, memberEndpoint, members, nanos, nodes, numeric, occurrences, owner, resolve, schedule, signature, typeKey, type Executable, type Node, type Structure, portMembers } from './semantic.js';
+import { associatedOccurrences, associationOccurrences, associationPairs, associationTargets, isAssociationList, caseRead, conditionalType, caseTarget, isPlace, pathSteps, placeRoot, valueSteps, walkParts, type PartProblem, type Step, testCanAccess, caseCallAccess, caseCallRestriction, allowsSuspendingCall, connectionRoutes, designComponent, interfaceOnly, packageEndpoint, packageOccurrences, expressionTypes, OCCURRENCE_LIMIT, occurrenceCount, workspaceModels, assignable, body, compatibility, constantNumber, direction, effectiveQos, effects, endpoint, entryKey, identity, integral, isExecutable, isNode, localOperation, memberEndpoint, members, nanos, nodes, numeric, occurrences, owner, resolve, schedule, signature, typeKey, type Executable, type Node, type Structure, portMembers } from './semantic.js';
 import { selectView, viewCandidates, type ViewSubject } from './presentation.js';
 import { decodeQuotedName, formatName, nameProblem } from './names.js';
 import { staleWrite, STALE_READ_WORK_LIMIT, type StaleReadBudget, type Summary } from './stale-read.js';
-const EXPRESSION_TYPES = new Set(['BinaryExpression', 'UnaryExpression', 'Literal', 'CallExpression', 'TryExpression', 'ReferenceExpression', 'RecordLiteral', 'ArrayLiteral']);
+const EXPRESSION_TYPES = new Set(['ConditionalExpression', 'BinaryExpression', 'UnaryExpression', 'Literal', 'CallExpression', 'TryExpression', 'ReferenceExpression', 'RecordLiteral', 'ArrayLiteral']);
+/** Whether an expression is inside a conditional expression (WP2-S04). */
+const insideConditional = (e: AstNode): boolean => { for (let n = e.$container; n && (isExpression(n) || a.isFieldValue(n) || a.isSelector(n)); n = n.$container) if (a.isConditionalExpression(n)) return true; return false; };
 const isExpression = (n: unknown): n is a.Expression => !!n && typeof n === 'object' && EXPRESSION_TYPES.has((n as AstNode).$type);
 import { useEffectCache } from './semantic.js';
 type Env = Map<string, {
@@ -352,6 +354,11 @@ export class SwamlValidator {
             }
             if (a.isUnaryExpression(e))
                 read(e.operand, assigned);
+            if (a.isConditionalExpression(e)) {
+                read(e.condition, assigned);
+                read(e.then, assigned);
+                read(e.otherwise, assigned);
+            }
             if (a.isTryExpression(e)) {
                 read(e.expression, assigned);
                 read(e.fallback, assigned);
@@ -648,13 +655,18 @@ export class SwamlValidator {
             const suspends = scripted?.kind === 'operation'
                 ? caseCallAccess(this.script!.scenario, scripted.path) === 'subject' && effects(scripted.operation, scripted.structure).suspends
                 : !isExecutable(t) || effects(t, c).suspends;
-            if (suspends && (!allow || !allowsSuspendingCall(e)))
+            if (suspends && insideConditional(e))
+                // A conditional never suspends, wherever the call is inside it (WP2-S04, WP2-D02).
+                this.report(e, 'SW2006', 'A suspending call cannot appear in a conditional expression.');
+            else if (suspends && (!allow || !allowsSuspendingCall(e)))
                 this.report(e, 'SW2006', 'Suspending calls must be standalone statements or whole values of ordinary variable declarations or assignments, optionally in try. Store their result before using it in an expression or loop header.');
             this.arguments(e, sig.parameters, e.args, env, c, op);
             if (sig.parameters.some(x => x.direction === 'out') && !a.isExpressionStatement(e.$container) && !(a.isTryExpression(e.$container) && a.isExpressionStatement(e.$container.$container)))
                 this.report(e, 'SW2006', 'A call with out arguments must be a statement.');
             return typeKey(sig.result);
         }
+        if (a.isConditionalExpression(e))
+            return this.conditional(e, env, c, op);
         if (a.isUnaryExpression(e)) {
             const t = this.infer(e.operand, env, c, op);
             if (e.operator === 'not') {
@@ -683,6 +695,24 @@ export class SwamlValidator {
         if (!numeric(l) || !numeric(r) || e.operator === '%' && (!integral(l) || !integral(r)))
             this.report(e, 'SW2002', 'Arithmetic needs compatible numbers.');
         return e.operator === '/' || l === 'real' || r === 'real' ? 'real' : 'int';
+    }
+    /**
+     * The conditional if (c) a else b (WP2-S02, WP2-D01): a bool condition and branches with a common type under
+     * scalar widening (byte, uint, int, real); records, enums and arrays must be identical. No branch may be void,
+     * and no suspending call may appear anywhere inside it (WP2-S04, reported at the call).
+     */
+    private conditional(e: a.ConditionalExpression, env: Env, c?: Structure, op?: Executable): string {
+        const condition = this.infer(e.condition, env, c, op), then = this.infer(e.then, env, c, op), otherwise = this.infer(e.otherwise, env, c, op);
+        if (condition !== 'bool' && condition !== '?')
+            this.report(e.condition, 'SW2002', `Condition must be bool, found ${condition}.`);
+        if (then === 'void' || otherwise === 'void') {
+            this.report(then === 'void' ? e.then : e.otherwise, 'SW2002', 'Void completion is not an expression value.');
+            return '?';
+        }
+        const common = conditionalType(then, otherwise);
+        if (common === undefined)
+            this.report(e, 'SW2002', `Conditional branches have no common type: ${then} and ${otherwise}.`);
+        return common ?? '?';
     }
     private arguments(n: AstNode, params: a.Argument[], args: a.Expression[], env: Env, c?: Structure, op?: Executable): void {
         if (params.length !== args.length)
@@ -1239,19 +1269,49 @@ export class SwamlValidator {
             if (subject && !local(subject))
                 this.report(s, 'SW2010', `The subject of ${s.name} must be a top-level component occurrence of package ${p.name}; write the case in the package that declares ${subject.name}.`, false, at(s, 'subject'));
         }
-        const associated = new Set<string>();
+        // A single 2.2 statement keeps its 2.2 checks, ranges and messages; a list statement (WP2-G03) applies
+        // the same rules to every listed reference and pair (WP2-S06).
+        const associated = new Set<string>(), pairs = new Map<string, a.Association>();
+        // The reference range of the listed occurrence or case at a list position.
+        const listed = (x: a.Association, kind: 'occurrence' | 'target', index: number) => index === 0 ? at(x, kind)
+            : { range: GrammarUtils.findNodeForProperty(x.$cstNode, kind === 'occurrence' ? 'moreOccurrences' : 'moreTargets', index - 1)?.range };
         for (const x of p.associations) {
-            const occurrence = x.occurrence.ref, target = x.target.ref;
-            if (occurrence && !local(occurrence))
-                this.report(x, 'SW2010', `associate names a top-level component occurrence of package ${p.name}; ${occurrence.name} is declared elsewhere.`, false, at(x, 'occurrence'));
-            if (target && !local(target))
-                this.report(x, 'SW2010', `associate names a use case or test of package ${p.name}; ${target.name} is declared elsewhere.`, false, at(x, 'target'));
-            if (occurrence && target && target.subject?.ref === occurrence)
-                this.report(x, 'SW2010', `${occurrence.name} is the subject of ${target.name}; associate names another participant.`, false, at(x, 'occurrence'));
-            const key = x.occurrence.$refText + '|' + x.target.$refText;
-            if (associated.has(key))
-                this.report(x, 'SW2010', `Duplicate associate ${x.occurrence.$refText} to ${x.target.$refText}.`);
-            associated.add(key);
+            associationOccurrences(x).forEach((o, i) => {
+                if (o.ref && !local(o.ref))
+                    this.report(x, 'SW2010', `associate names a top-level component occurrence of package ${p.name}; ${o.ref.name} is declared elsewhere.`, false, listed(x, 'occurrence', i));
+            });
+            associationTargets(x).forEach((t, j) => {
+                if (t.ref && !local(t.ref))
+                    this.report(x, 'SW2010', `associate names a use case or test of package ${p.name}; ${t.ref.name} is declared elsewhere.`, false, listed(x, 'target', j));
+            });
+            for (const pair of associationPairs(x)) {
+                const occurrence = pair.occurrence.ref, target = pair.target.ref;
+                if (occurrence && target && target.subject?.ref === occurrence)
+                    this.report(x, 'SW2010', `${occurrence.name} is the subject of ${target.name}; associate names another participant.`, false, listed(x, 'occurrence', pair.occurrenceIndex));
+            }
+            if (!isAssociationList(x)) {
+                const key = x.occurrence.$refText + '|' + x.target.$refText;
+                if (associated.has(key)) {
+                    this.report(x, 'SW2010', `Duplicate associate ${x.occurrence.$refText} to ${x.target.$refText}.`);
+                    continue;
+                }
+                associated.add(key);
+            }
+            // A pair repeated within one statement or across statements is reported at the later reference
+            // (WP2-S06, WP2-D03): the repeated occurrence or case of a list, or else the later pair's occurrence.
+            const seen = new Set<string>();
+            for (const pair of associationPairs(x)) {
+                const occurrence = pair.occurrence.ref, target = pair.target.ref;
+                if (!occurrence || !target)
+                    continue;
+                const key = identity(occurrence) + '|' + identity(target), earlier = pairs.get(key);
+                if (earlier && !(earlier !== x && !isAssociationList(earlier) && !isAssociationList(x))) {
+                    const repeatedCase = earlier === x && seen.has(identity(occurrence) + '|' + pair.occurrenceIndex + '|' + identity(target));
+                    this.report(x, 'SW2010', `${occurrence.name} is already associated with ${target.name}.`, false, repeatedCase ? listed(x, 'target', pair.targetIndex) : listed(x, 'occurrence', pair.occurrenceIndex));
+                }
+                pairs.set(key, earlier ?? x);
+                seen.add(identity(occurrence) + '|' + pair.occurrenceIndex + '|' + identity(target));
+            }
         }
         const claims = new Set<string>();
         for (const x of p.satisfactions) {

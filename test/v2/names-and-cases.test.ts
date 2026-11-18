@@ -42,7 +42,10 @@ test('reserved and contextual words match the grammar', () => {
 test('name spelling quotes only when needed and round-trips', () => {
     assert.equal(formatName('Pump'), 'Pump');
     assert.equal(formatName('Withdraw cash'), "'Withdraw cash'");
-    assert.equal(formatName('state'), "'state'");
+    // WP2-M01: a 2.3 workspace writes the contextual words view, state, in and out unquoted; 2.2 keeps quoting them.
+    assert.equal(formatName('state'), 'state');
+    assert.equal(formatName('operation'), "'operation'");
+    assert.equal(formatName('state', '2.2'), "'state'");
     assert.equal(formatName('name'), 'name');
     assert.equal(formatName("it's"), "'it\\'s'");
     assert.equal(formatQualifiedName('Cash Machine::Teller'), "'Cash Machine'::Teller");
@@ -51,7 +54,9 @@ test('name spelling quotes only when needed and round-trips', () => {
     assert.equal(parseNameInput("  'Withdraw cash' "), 'Withdraw cash');
     assert.equal(parseNameInput('Withdraw cash'), 'Withdraw cash');
     assert.equal(parsePathInput("Shop :: 'Order Service' . port[ 2 ].ready"), 'Shop::Order Service.port[2].ready');
-    assert.equal(formatPath(parsePathInput("'Cash Machine'::Branch.'state'")), "'Cash Machine'::Branch.'state'");
+    assert.equal(formatPath(parsePathInput("'Cash Machine'::Branch.'state'")), "'Cash Machine'::Branch.state");
+    assert.equal(formatPath(parsePathInput("'Cash Machine'::Branch.'state'"), '2.2'), "'Cash Machine'::Branch.'state'");
+    assert.equal(formatPath(parsePathInput("'Cash Machine'::Branch.'operation'")), "'Cash Machine'::Branch.'operation'");
     assert.equal(formatPath(parsePathInput('Cash Machine::Branch.atm')), "'Cash Machine'::Branch.atm");
     for (const bad of ['', ' padded', 'two  spaces', 'a.b', 'a::b', 'x[1]', 'tab\there'])
         assert.ok(nameProblem(bad), bad);
@@ -77,7 +82,7 @@ test('parser messages explain spaces, double quotes, reserved words and doc plac
     const message = async (source: string) => (await parse(source)).errors.map(e => e.message).join('\n');
     assert.match(await message('package Test { component def Order Service { } }'), /must be quoted, for example 'Order Service'/);
     assert.match(await message('package Test { component def "Order Service" { } }'), /Names use single quotes, for example 'Order Service'/);
-    assert.match(await message('package Test { datatype R { state: int; } }'), /'state' is a reserved word/);
+    assert.match(await message('package Test { datatype R { operation: int; } }'), /'operation' is a reserved word/);
     assert.match(await message('package Test { component def A { } /** Doc. */ component def C { } }'), /documentation comment belongs first inside the braces/);
     const unicode = await message('package Test { component def Bestellübersicht { } }');
     assert.match(unicode, /quoted name, for example 'Bestellübersicht'/);

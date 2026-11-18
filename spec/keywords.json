@@ -44,7 +44,7 @@
       "meaning": "Records that a top-level occurrence of the package takes part in a use case or test other than as its subject.",
       "concern": "Use cases, tests and associations",
       "normative": "docs/spec/04-systems-and-conformance.md",
-      "example": "'associate' occurrence=[ComponentUsage:Name] 'to' target=[Scenario:Name] ';';",
+      "example": "'associate' occurrence=[ComponentUsage:Name] (',' moreOccurrences+=[ComponentUsage:Name])* 'to' target=[Scenario:Name] (',' moreTargets+=[Scenario:Name])* ';';",
       "contextual": true,
       "productions": [
         "Association",
@@ -234,7 +234,8 @@
       "example": "'if' '(' condition=Expression ')' then=Block ('else' otherwise=Block)?;",
       "contextual": false,
       "productions": [
-        "If"
+        "If",
+        "ConditionalExpression"
       ]
     },
     {
@@ -356,7 +357,8 @@
       "example": "'if' '(' condition=Expression ')' then=Block ('else' otherwise=Block)?;",
       "contextual": false,
       "productions": [
-        "If"
+        "If",
+        "ConditionalExpression"
       ]
     },
     {
@@ -376,10 +378,11 @@
       "concern": "Attributes and lexical locals",
       "normative": "docs/spec/01-structure-and-types.md",
       "example": "(direction=('in'|'out'))? name=Name ':' type=TypeRef;",
-      "contextual": false,
+      "contextual": true,
       "productions": [
         "Argument",
-        "ForEach"
+        "ForEach",
+        "Name"
       ]
     },
     {
@@ -559,9 +562,10 @@
       "concern": "Attributes and lexical locals",
       "normative": "docs/spec/01-structure-and-types.md",
       "example": "(direction=('in'|'out'))? name=Name ':' type=TypeRef;",
-      "contextual": false,
+      "contextual": true,
       "productions": [
-        "Argument"
+        "Argument",
+        "Name"
       ]
     },
     {
@@ -825,9 +829,10 @@
       "concern": "Ordered state transitions",
       "normative": "docs/spec/03-behavior.md",
       "example": "(final?='final')? 'state' name=Name '{' documentation=Documentation? (actions+=StateAction | transitions+=Transition)* '}';",
-      "contextual": false,
+      "contextual": true,
       "productions": [
-        "State"
+        "State",
+        "Name"
       ]
     },
     {
@@ -975,10 +980,11 @@
       "concern": "Seven library view definitions",
       "normative": "docs/spec/04-systems-and-conformance.md",
       "example": "'view' 'def' name=Name documentation=Documentation? ';';",
-      "contextual": false,
+      "contextual": true,
       "productions": [
         "ViewDef",
-        "View"
+        "View",
+        "Name"
       ]
     },
     {

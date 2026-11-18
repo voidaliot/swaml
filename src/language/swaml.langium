@@ -31,7 +31,7 @@ Statement: LocalVariable | Assign | Send | ExpressionStatement | Return | If | W
 LocalVariable: 'var' name=Name ':' type=TypeRef '=' value=Expression ';';
 Assign: target=ValuePath ('[' index=Expression ']' selectors+=Selector*)? '=' value=Expression ';';
 Selector: '.' field=Name | '[' index=Expression ']';
-ExpressionStatement: expression=Expression ';';
+ExpressionStatement: expression=OrExpression ';';
 Send: kind=('send'|'publish') endpoint=EndpointPath '(' (args+=Expression (',' args+=Expression)*)? ')' ';';
 Return: 'return' value=Expression? ';';
 If: 'if' '(' condition=Expression ')' then=Block ('else' otherwise=Block)?;
@@ -55,7 +55,7 @@ Requirement: 'requirement' name=Name '{' documentation=Documentation? attributes
 Documentation: text=DOC_COMMENT;
 Satisfaction: 'satisfy' requirement=[Requirement:QualifiedName] 'by' design=Path ';';
 Verification: 'verify' requirement=[Requirement:QualifiedName] 'by' test=[Scenario:Name] ';';
-Association: 'associate' occurrence=[ComponentUsage:Name] 'to' target=[Scenario:Name] ';';
+Association: 'associate' occurrence=[ComponentUsage:Name] (',' moreOccurrences+=[ComponentUsage:Name])* 'to' target=[Scenario:Name] (',' moreTargets+=[Scenario:Name])* ';';
 Scenario: kind=CaseKind name=Name ('of' subject=[ComponentUsage:Name])? '{' documentation=Documentation? statements+=Statement* '}';
 CaseKind returns string: 'use' 'case' | 'test';
 ViewDef: 'view' 'def' name=Name documentation=Documentation? ';';
@@ -68,14 +68,15 @@ FilterAnd returns FilterExpression: FilterPrimary ({infer FilterBinary.left=curr
 FilterPrimary returns FilterExpression: {infer FilterNot} 'not' operand=FilterPrimary | FilterComparison | '(' FilterExpression ')';
 FilterComparison: field=('name'|'kind'|'path') operator=('=='|'!=') value=STRING;
 Duration: value=INT unit=('ns'|'us'|'ms'|'s');
-Name returns string: ID | UNRESTRICTED_NAME | 'reversed' | 'to' | 'times' | 'name' | 'kind' | 'path' | 'use' | 'case' | 'test' | 'associate' | 'by' | 'ns' | 'us' | 'ms' | 's';
+Name returns string: ID | UNRESTRICTED_NAME | 'reversed' | 'to' | 'times' | 'name' | 'kind' | 'path' | 'use' | 'case' | 'test' | 'associate' | 'by' | 'ns' | 'us' | 'ms' | 's' | 'view' | 'state' | 'in' | 'out';
 MemberPath returns string: Name '.' Name;
 EndpointPath returns string: Name '.' Name ('.' Name)?;
 Path returns string: QualifiedName ('[' INT ']')? ('.' Name ('[' INT ']')?)*;
 QualifiedName returns string: Name ('::' Name)*;
 ValuePath returns string: QualifiedName ('.' Name)*;
-type Expression = BinaryExpression | UnaryExpression | Literal | CallExpression | TryExpression | ReferenceExpression | RecordLiteral | ArrayLiteral;
-Expression returns Expression: OrExpression;
+type Expression = ConditionalExpression | BinaryExpression | UnaryExpression | Literal | CallExpression | TryExpression | ReferenceExpression | RecordLiteral | ArrayLiteral;
+Expression returns Expression: ConditionalExpression | OrExpression;
+ConditionalExpression: 'if' '(' condition=Expression ')' then=Expression 'else' otherwise=Expression;
 OrExpression returns Expression: AndExpression ({infer BinaryExpression.left=current} operator='or' right=AndExpression)*;
 AndExpression returns Expression: EqualityExpression ({infer BinaryExpression.left=current} operator='and' right=EqualityExpression)*;
 EqualityExpression returns Expression: RelationalExpression ({infer BinaryExpression.left=current} operator=('=='|'!=') right=RelationalExpression)*;
