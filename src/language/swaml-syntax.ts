@@ -300,32 +300,42 @@ export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
 /** The message of the lexing error that replaces a parse the host stack could not hold (WP2-D05 (c), SW2013). */
 export const PARSER_STACK_MESSAGE = `${BRACKET_NESTING_CLAUSE}: the parser ran out of stack space at this nesting, so this file is not parsed. Reduce the nesting of blocks and brackets.`;
 type ParseResult = { value: unknown; lexerErrors: LexerResult['errors']; parserErrors: unknown[] };
-/**
- * Parser rule nesting beyond which an exception out of a parse counts as stack exhaustion (WP2-D05 (c)). An overflow
- * unwinds the parser through its finally blocks, which can replace the RangeError with a TypeError or another
- * RangeError; the rule nesting the parse reached shows the cause. On Node.js 26 with the default stack an overflow
- * needs several hundred rule levels (about 240 for unclosed indexes, 700 for parentheses, 1,500 for blocks in a fresh
- * process); the sources in this repository reach at most 35.
- */
-const STACK_EXHAUSTION_RULE_DEPTH = 200;
+const isStackOverflow = (error: unknown) => error instanceof RangeError && /call stack/i.test(error.message);
 /**
  * WP2-D05 (c): a parse that overflows the host's stack (nesting below the bracket limits that the host's stack still
  * cannot hold, such as deeply nested unclosed blocks) yields the parse of an empty file and one lexing error at the
  * first most deeply nested token, instead of a host exception. The document then reports SW2013 and the rest of
- * the workspace is unaffected. Other exceptions propagate.
+ * the workspace is unaffected.
+ *
+ * An overflow unwinds the parser through its finally blocks, which can replace the RangeError on the way out, with a
+ * TypeError when the AST stack runs empty or a RangeError ("Invalid array length") when the rule stack index does. So
+ * the overflow is recorded where the parser first catches it: Chevrotain hands every exception thrown inside a rule
+ * to invokeRuleCatch before any of those finally blocks runs above it. An exception counts as an overflow only when it
+ * is a stack-overflow RangeError or a stack-overflow RangeError passed through invokeRuleCatch during the same parse;
+ * any other exception, such as a failing value converter at any depth, propagates unchanged.
  */
 export function guardParserStack(parser: unknown): void {
-    const target = parser as { parse(text: string, options?: unknown): ParseResult; stack?: unknown[]; unorderedGroups?: Map<unknown, unknown>; lexerResult?: unknown; wrapper?: { RULE_STACK?: unknown } };
+    const target = parser as { parse(text: string, options?: unknown): ParseResult; stack?: unknown[]; unorderedGroups?: Map<unknown, unknown>; lexerResult?: unknown; wrapper?: { invokeRuleCatch?: (error: unknown, ...rest: unknown[]) => unknown } };
     const parse = target.parse.bind(target);
-    // The Chevrotain wrapper keeps its rule stack array allocated across parses; emptied, its length is the parse's deepest rule nesting.
-    const ruleStack = () => Array.isArray(target.wrapper?.RULE_STACK) ? target.wrapper.RULE_STACK as unknown[] : undefined;
+    // The first RangeError the parser caught in this parse. The hook runs near the end of the stack, so it only stores
+    // the error (no call that could overflow again); the message is tested after the parse has unwound.
+    let caught: RangeError | undefined;
+    const wrapper = target.wrapper, catcher = wrapper?.invokeRuleCatch;
+    // Installed on the instance, called only on an exception: the normal parse gains no frame.
+    if (wrapper && typeof catcher === 'function')
+        wrapper.invokeRuleCatch = function (this: unknown, error: unknown, ...rest: unknown[]) {
+            if (error instanceof RangeError && !caught)
+                caught = error;
+            return catcher.call(this, error, ...rest);
+        };
     target.parse = (text, options) => {
-        ruleStack()?.splice(0);
+        caught = undefined;
         try {
             return parse(text, options);
         } catch (error) {
-            const overflow = error instanceof RangeError && /call stack/i.test(error.message);
-            if (!overflow && (ruleStack()?.length ?? 0) <= STACK_EXHAUSTION_RULE_DEPTH)
+            const overflow = isStackOverflow(error) || isStackOverflow(caught);
+            caught = undefined;
+            if (!overflow)
                 throw error;
             let depth = 0, deepest = -1, at: Token | undefined;
             for (const token of tokens) {

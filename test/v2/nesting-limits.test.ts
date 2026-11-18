@@ -4,7 +4,7 @@ import nodeTest from 'node:test';
 import assert from 'node:assert/strict';
 import { EmptyFileSystem, TextDocument, URI, type LangiumDocument } from 'langium';
 import { createSwamlServices } from '../../src/language/swaml-module.js';
-import { BRACKET_NESTING_CLAUSE, BRACKET_NESTING_LIMIT, BRACKET_NESTING_MESSAGE, PARSER_STACK_MESSAGE, UNCLOSED_NESTING_LIMIT, guardParserStack } from '../../src/language/swaml-syntax.js';
+import { BRACKET_NESTING_CLAUSE, BRACKET_NESTING_LIMIT, BRACKET_NESTING_MESSAGE, PARSER_STACK_MESSAGE, SwamlValueConverter, UNCLOSED_NESTING_LIMIT, guardParserStack } from '../../src/language/swaml-syntax.js';
 import type { Model } from '../../src/language/generated/ast.js';
 import * as a from '../../src/language/generated/ast.js';
 const test = (name: string, fn: () => unknown) => nodeTest(name, async () => { await fn(); });
@@ -194,23 +194,64 @@ test('WP2-D05 (c) a parse that overflows the stack is SW2013 for its file only; 
     // The direct parser call reports the same instead of throwing.
     const direct = services.Swaml.parser.LangiumParser.parse(text);
     assert.deepEqual(direct.lexerErrors.map(e => e.message), [PARSER_STACK_MESSAGE]);
-    // An overflow that unwinds into another exception (a finally block of the parser fails on the state it left) is
-    // recognised by the rule nesting the parse reached; an exception from a shallow parse propagates.
-    const fake = (depth: number) => {
-        const wrapper = { RULE_STACK: [] as string[] };
+    // The three shapes an overflow takes out of the parser: the RangeError itself, or, after the parser's catch saw
+    // it, a TypeError or an "Invalid array length" RangeError from a finally block on the way out. A RangeError that
+    // is not an overflow, or a TypeError the parser never saw an overflow for, propagates.
+    const fake = (inner: Error | undefined, outer: Error) => {
+        const wrapper = { invokeRuleCatch(error: unknown) { throw error; } };
         return { wrapper, parse(text: string) {
             if (!text)
                 return { value: { $type: 'Model' }, lexerErrors: [], parserErrors: [] };
-            wrapper.RULE_STACK.push(...Array.from({ length: depth }, () => 'Rule'));
-            throw new TypeError('Cannot read properties of undefined');
+            try {
+                if (inner)
+                    wrapper.invokeRuleCatch(inner);
+            } finally {
+                throw outer;
+            }
         } };
     };
-    const unwound = fake(1000);
-    guardParserStack(unwound);
-    assert.deepEqual((unwound.parse('x') as unknown as { lexerErrors: { message: string }[] }).lexerErrors.map(e => e.message), [PARSER_STACK_MESSAGE]);
-    const shallow = fake(20);
-    guardParserStack(shallow);
-    assert.throws(() => shallow.parse('x'), TypeError);
+    const overflow = () => new RangeError('Maximum call stack size exceeded');
+    for (const [inner, outer] of [[undefined, overflow()], [overflow(), new TypeError('Cannot read properties of undefined')], [overflow(), new RangeError('Invalid array length')]] as const) {
+        const parser = fake(inner, outer);
+        guardParserStack(parser);
+        assert.deepEqual((parser.parse('x') as unknown as { lexerErrors: { message: string }[] }).lexerErrors.map(e => e.message), [PARSER_STACK_MESSAGE], outer.message);
+    }
+    for (const [inner, outer] of [[undefined, new TypeError('a bug')], [undefined, new RangeError('Invalid array length')], [new TypeError('a bug'), new TypeError('a bug')]] as const) {
+        const parser = fake(inner, outer);
+        guardParserStack(parser);
+        assert.throws(() => parser.parse('x'), outer);
+    }
+});
+
+test('WP2-D05 (c) near the stack limit every parse either succeeds or reports SW2013, whatever shape the overflow takes (review R2)', () => {
+    const parser = createSwamlServices(EmptyFileSystem).Swaml.parser.LangiumParser;
+    const text = (statement: string) => `package P { component def D { attribute x: int = 0; operation run() { ${statement} } } }`;
+    let parsed = 0, stopped = 0;
+    // Balanced and unclosed blocks, one level apart, across the depth where this process runs out of stack.
+    for (const [open, close, from, to] of [['if (x > 0) { ', ' }', 250, 480], ['if (x > 0) { ', '', 120, 280]] as const)
+        for (let depth = from; depth <= to; depth++) {
+            const result = parser.parse(text(`${open.repeat(depth)}x = 1;${close.repeat(depth)}`));
+            if (result.lexerErrors.some(e => e.message === PARSER_STACK_MESSAGE))
+                stopped++;
+            else
+                parsed++;
+        }
+    assert.ok(parsed > 0 && stopped > 0, `${parsed} parsed, ${stopped} stopped`);
+    assert.equal(parser.parse(text('x = 1;')).lexerErrors.length + parser.parse(text('x = 1;')).parserErrors.length, 0);
+});
+
+test('WP2-D05 (c) an exception that is not an overflow propagates at any depth (review R2)', () => {
+    // A value converter that fails on "BOOM": its TypeError is a bug to report, not a resource limit.
+    class Failing extends SwamlValueConverter {
+        protected override runConverter(rule: Parameters<SwamlValueConverter['runConverter']>[0], input: string, cstNode: Parameters<SwamlValueConverter['runConverter']>[2]) {
+            if (input === '"BOOM"')
+                throw new TypeError('converter bug');
+            return super.runConverter(rule, input, cstNode);
+        }
+    }
+    const parser = createSwamlServices(EmptyFileSystem, { parser: { ValueConverter: () => new Failing() } }).Swaml.parser.LangiumParser;
+    for (const depth of [0, 80, 150])
+        assert.throws(() => parser.parse(`package P { component def D { operation run() { var s: string = ${'('.repeat(depth)}"BOOM"${')'.repeat(depth)}; } } }`), /converter bug/u, `depth ${depth}`);
 });
 
 test('WP2-D05 valid nesting parses at least as deep as under the kept 2.2 grammar, on the document-builder path, for every form (review L1, N2)', async () => {
