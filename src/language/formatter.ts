@@ -88,7 +88,8 @@ function associationLines(tokens: readonly LeafCstNode[]): string[] {
 }
 
 /** Tokens after which an opening parenthesis is spaced rather than attached as a call. */
-const SPACED_BEFORE_PARENTHESIS = ['if', 'else', 'when', 'while', 'until', 'for', 'connect', 'or', '=', '==', '!=', '<', '<=', '>', '>=', '+', '-', '*', '/', '%', 'and', 'return', 'not'];
+// wait, after, every and deadline precede the parentheses of a computed duration (WP4-M08).
+const SPACED_BEFORE_PARENTHESIS = ['if', 'else', 'when', 'while', 'until', 'for', 'connect', 'wait', 'after', 'every', 'deadline', 'or', '=', '==', '!=', '<', '<=', '>', '>=', '+', '-', '*', '/', '%', 'and', 'return', 'not'];
 
 function canonical(tokens: LeafCstNode[], eol: string): string {
     const p = new Printer();

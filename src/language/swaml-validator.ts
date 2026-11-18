@@ -12,7 +12,7 @@ const insideConditional = (e: AstNode): boolean => { for (let n = e.$container; 
 /** The name of the attribute, requirement attribute or policy setting whose initializer contains e. */
 const initialized = (e: AstNode): string => { for (let n: AstNode | undefined = e; n; n = n.$container) if (a.isAttribute(n) || a.isPolicySetting(n)) return n.name; return ''; };
 const isExpression = (n: unknown): n is a.Expression => !!n && typeof n === 'object' && EXPRESSION_TYPES.has((n as AstNode).$type);
-import { useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_2_3_URI, container } from './semantic.js';
+import { useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_2_3_URI, container, constantValue, expressionText, representableDuration, settingDuration, type ConstantProblem } from './semantic.js';
 import { ambiguousNameMessage } from './swaml-scope.js';
 type Env = Map<string, {
     type: string;
@@ -50,6 +50,7 @@ export class SwamlValidator {
         this.accept = accept;
         this.currentModel=model;
         this.reported.clear();
+        this.durationFindings.clear();
         const d = AstUtils.getDocument(model);
         if (d.parseResult.parserErrors.length || d.parseResult.lexerErrors.length)
             return;
@@ -85,6 +86,8 @@ export class SwamlValidator {
                 }
                 if (a.isComponentDef(e) || a.isComponentUsage(e))
                     this.structure(e);
+                if (a.isComponentUsage(e))
+                    this.occurrenceDurations(e);
                 if (a.isPortDef(e))
                     this.port(e.members, e);
                 if (a.isViewDef(e) && p.name !== 'Swaml::Views')
@@ -126,7 +129,9 @@ export class SwamlValidator {
                 if (n.primitive === 'void' && (n.size !== undefined || !((a.isOperation(n.$container) || a.isPortMember(n.$container)) && n.$containerProperty === 'result')))
                     this.report(n, 'SW2002', 'void is only an operation result.');
             }
-            if (a.isDuration(n) && (!Number.isSafeInteger(nanos(n)) || nanos(n) <= 0))
+            // A duration literal in a 2.2 position (wait 5ms, every, deadline, after, a policy setting) is positive; in
+            // any other expression it is a uint value that must only be representable (WP4-S01).
+            if (a.isDuration(n) && (!Number.isSafeInteger(nanos(n)) || nanos(n) <= 0 && (!a.isLiteral(n.$container) || a.isPolicySetting(n.$container.$container))))
                 this.report(n, 'SW2013', 'Duration must be positive safe integer nanoseconds.');
         }
     };
@@ -267,11 +272,18 @@ export class SwamlValidator {
         for (const s of q.settings) {
             if (!['delivery', 'ordering', 'capacity', 'overflow', 'requestTimeout', 'maxLatency', 'maxAge'].includes(s.name))
                 this.report(s, 'SW2013', `Unknown setting ${s.name}.`);
-            if (['requestTimeout', 'maxLatency', 'maxAge'].includes(s.name) && !s.duration)
+            // A duration literal value is the 2.2 duration setting and keeps its 2.2 rules and messages (WP4-M01). Only a
+            // value that contains a duration literal inside a larger expression is new in 2.3 (WP4-S02, WP4-D01).
+            const literal = settingDuration(s), computed = !literal && nodes(s.value).some(a.isDuration), timeout = ['requestTimeout', 'maxLatency', 'maxAge'].includes(s.name);
+            if (timeout && computed)
+                this.report(s, 'SW2013', `${s.name} must be a duration literal such as 1s.`);
+            else if (timeout && !literal)
                 this.report(s, 'SW2013', `${s.name} needs a duration.`);
-            if (s.name === 'capacity' && (s.duration || !a.isLiteral(s.value) || s.value.number === undefined))
+            else if (!timeout && computed)
+                this.report(s, 'SW2013', `${s.name} is not a duration setting.`);
+            if (s.name === 'capacity' && !computed && (literal || !a.isLiteral(s.value) || s.value.number === undefined))
                 this.report(s, 'SW2013', 'capacity needs a positive integer count, not a duration.');
-            if (s.value && ['delivery', 'ordering', 'overflow'].includes(s.name))
+            if (s.value && !literal && ['delivery', 'ordering', 'overflow'].includes(s.name))
                 this.value(s.value, 'Swaml::Qos::' + ({ delivery: 'Delivery', ordering: 'Ordering', overflow: 'Overflow' } as Record<string, string>)[s.name], new Map());
         }
     }
@@ -531,6 +543,9 @@ export class SwamlValidator {
         if (!e)
             return 'void';
         if (a.isLiteral(e)) {
+            // A duration literal is a uint value in nanoseconds (WP4-S01).
+            if (e.duration)
+                return 'uint';
             if (e.number !== undefined) {
                 if (!Number.isFinite(e.number) || !e.$cstNode?.text.includes('.') && !Number.isSafeInteger(e.number))
                     this.report(e, 'SW2002', 'Numeric literal is outside its domain.');
@@ -719,7 +734,120 @@ export class SwamlValidator {
             return 'string';
         if (!numeric(l) || !numeric(r) || e.operator === '%' && (!integral(l) || !integral(r)))
             this.report(e, 'SW2002', 'Arithmetic needs compatible numbers.');
-        return e.operator === '/' || l === 'real' || r === 'real' ? 'real' : 'int';
+        // In the constant sublanguage of periods and deadlines, / on integral operands is exact integral division (WP4-S05).
+        return e.operator === '/' && !(this.constantDivision && integral(l) && integral(r)) || l === 'real' || r === 'real' ? 'real' : 'int';
+    }
+    /** True while a period or deadline expression is typed: / on integral operands is integral there (WP4-S05). */
+    private constantDivision = false;
+    /**
+     * A computed wait, receive timeout or state timer (WP4-S01, WP4-S03, WP4-S08): an integral expression (SW2002,
+     * WP4-D02) without suspending calls (SW2006, reported by the call rules), with the unit warning (WP4-D06).
+     */
+    private computedDuration(e: a.Expression, env: Env, c: Structure | undefined, op: Executable | undefined): void {
+        const t = this.infer(e, env, c, op);
+        if (t !== '?' && !integral(t))
+            this.report(e, 'SW2002', `A duration must be integral, found ${t}.`);
+        this.unitWarning(e, c);
+    }
+    /**
+     * SW2016 (WP4-D06): a computed duration with no duration literal, no now() call and no reference to a const
+     * attribute whose effective initializer, followed through const references, contains one counts nanoseconds.
+     */
+    private unitWarning(e: a.Expression, c: Structure | undefined): void {
+        if (!this.carriesUnit(e, c, new Set()))
+            this.report(e, 'SW2016', `${expressionText(e)} has no time unit and counts nanoseconds; multiply by a unit such as 1ms.`, true);
+    }
+    private carriesUnit(e: a.Expression, c: Structure | undefined, seen: Set<a.Attribute>): boolean {
+        for (const n of nodes(e)) {
+            if (a.isDuration(n))
+                return true;
+            if (a.isCallExpression(n)) {
+                const t = this.callTarget(n, c);
+                if (t && isExecutable(t) && isClockRead(t))
+                    return true;
+            }
+            if (a.isReferenceExpression(n) && c && !n.path.includes('.')) {
+                const attribute = members(c).filter(a.isAttribute).find(x => x.name === n.path && x.constant);
+                if (attribute && !seen.has(attribute)) {
+                    seen.add(attribute);
+                    if (this.carriesUnit(attribute.value, c, seen))
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+    /**
+     * A period or deadline expression where it is written (WP4-S04, WP4-S05): integral when / is exact integral
+     * division (SW2002, WP4-D02), in the constant sublanguage with the const values of its owner (SW2007, WP4-D03) and
+     * with the unit warning (WP4-D06). Its values are checked per expanded occurrence (occurrenceDurations).
+     */
+    private constantDuration(e: a.Expression, c: Structure): void {
+        this.constantDivision = true;
+        const t = this.infer(e, this.env(c), c);
+        this.constantDivision = false;
+        if (t !== '?' && !integral(t))
+            this.report(e, 'SW2002', `A duration must be integral, found ${t}.`);
+        const result = constantValue(e, c);
+        if (result.problem)
+            this.constantProblem(e, result.problem);
+        this.unitWarning(e, c);
+    }
+    /** Reports a membership problem of a period or deadline expression (WP4-D03); value problems are per occurrence. */
+    private constantProblem(e: a.Expression, problem: ConstantProblem): boolean {
+        const category = problem.kind === 'call' ? problem.clock ? 'now()' : 'calls' : problem.kind === 'state' ? 'mutable state' : problem.kind === 'value' ? 'values other than integers, durations and booleans' : problem.kind === 'cycle' ? 'cyclic const attributes' : undefined;
+        if (category)
+            this.report(e, 'SW2007', `${expressionText(e)} is not a constant duration: ${category} are not allowed.`);
+        return !!category;
+    }
+    /**
+     * WP4-S06: for every expanded occurrence of a top-level occurrence, each computed period and deadline is a positive
+     * representable duration (SW2013, WP4-D04), exact in every division (SW2013, WP4-D07), and an every entry's deadline
+     * does not exceed its period (SW2007, WP4-D05). Each expression reports each finding once, for the first occurrence
+     * where it fails, in the order of the package's top-level occurrences and their expansion.
+     */
+    private occurrenceDurations(root: a.ComponentUsage): void {
+        if (occurrenceCount(root) > OCCURRENCE_LIMIT)
+            return;
+        const done = this.durationFindings;
+        const once = (n: AstNode, kind: string, report: () => void) => { const key = kind + '@' + (n.$cstNode?.offset ?? -1) + ':' + AstUtils.getDocument(n).uri.toString(); if (!done.has(key)) { done.add(key); report(); } };
+        for (const occurrence of occurrences(root))
+            for (const e of schedule(occurrence.structure)) {
+                if (!e.periodValue && !e.deadlineValue)
+                    continue;
+                const value = (expression: a.Expression | undefined, what: 'period' | 'deadline'): bigint | undefined => {
+                    if (!expression)
+                        return undefined;
+                    const result = constantValue(expression, occurrence.structure);
+                    if (result.problem?.kind === 'division') {
+                        const problem = result.problem;
+                        once(problem.node, 'division', () => this.report(expression, 'SW2013', `${expressionText(problem.node)} divides ${problem.left} by ${problem.right} in ${occurrence.path}, which is not an exact integral division.`));
+                        return undefined;
+                    }
+                    if (result.problem) {
+                        once(expression, 'member', () => this.constantProblem(expression, result.problem));
+                        return undefined;
+                    }
+                    if (typeof result.value !== 'bigint')
+                        return undefined;
+                    if (!representableDuration(result.value)) {
+                        once(expression, 'range', () => this.report(expression, 'SW2013', `${what} of ${this.entryText(e)} is ${result.value} ns in ${occurrence.path}; it must be a positive representable duration.`));
+                        return undefined;
+                    }
+                    return result.value;
+                };
+                const period = e.periodValue ? value(e.periodValue, 'period') : e.period ? BigInt(nanos(e.period)) : undefined;
+                const deadline = e.deadlineValue ? value(e.deadlineValue, 'deadline') : e.deadline ? BigInt(nanos(e.deadline)) : undefined;
+                if (e.kind === 'every' && period !== undefined && deadline !== undefined && deadline > period)
+                    once(e, 'deadline', () => this.report(e, 'SW2007', `Periodic deadline cannot exceed its period in ${occurrence.path}.`));
+            }
+    }
+    /** The per-occurrence duration findings of the current document check, each reported once (WP4-S06). */
+    private readonly durationFindings = new Set<string>();
+    /** An entry as diagnostics name it: its trigger and operation, such as every (periodMs * 1ms) poll (WP4-D04). */
+    private entryText(e: a.ScheduleEntry): string {
+        const trigger = e.kind === 'every' ? `every ${e.periodValue ? `(${expressionText(e.periodValue)})` : e.period ? `${e.period.value}${e.period.unit}` : ''}` : e.kind === 'after' ? `after ${e.predecessor}` : e.kind === 'start' ? 'start' : `${e.kind} ${e.endpoint}`;
+        return `on ${trigger} ${e.operation}`.replace('on after', 'after');
     }
     /**
      * The conditional if (c) a else b (WP2-S02, WP2-D01): a bool condition and branches with a common type under
@@ -824,6 +952,8 @@ export class SwamlValidator {
             }
             else if (a.isAssert(s))
                 this.value(s.condition, 'bool', env, c, op);
+            else if (a.isWait(s) && s.delay)
+                this.computedDuration(s.delay, env, c, op);
             else if (a.isSend(s)) {
                 const ep = this.script ? this.scriptPort(s, 'endpoint', s.endpoint, [s.kind === 'send' ? 'attribute' : 'event'], 'provides', s.kind, 'SW2004') : c && memberEndpoint(c, s.endpoint);
                 if (!this.script && s.endpoint.split('.').length === 3)
@@ -844,6 +974,9 @@ export class SwamlValidator {
                     this.arguments(s, ep.member.parameters, s.args, env, c, op);
             }
             else if (a.isReceive(s)) {
+                // A computed timeout is evaluated when the statement starts waiting, in the statement's scope (WP4-S03).
+                if (s.timeoutValue)
+                    this.computedDuration(s.timeoutValue, env, c, op);
                 for (const br of s.branches) {
                     const call = br.kind === 'call';
                     if (call && !this.script) {
@@ -1001,6 +1134,10 @@ export class SwamlValidator {
     private schedules(c: Structure): void {
         const entries = schedule(c), keys = new Set<string>();
         for (const e of c.members.filter(a.isSchedule).flatMap(s => s.entries)) {
+            // Computed periods and deadlines where they are written: typing, membership and the unit (WP4-S04, WP4-S05).
+            for (const expression of [e.periodValue, e.deadlineValue])
+                if (expression)
+                    this.constantDuration(expression, c);
             const k = entryKey(e);
             if (keys.has(k))
                 this.report(e, 'SW2007', 'Duplicate (trigger, operation) entry.');
@@ -1041,7 +1178,7 @@ export class SwamlValidator {
                     }
             if (e.concurrent && (effects(op, c).writes || body(op)?.states.length))
                 this.report(e, 'SW2006', 'Concurrent entries cannot write state through any callee or be stateful.');
-            if (e.kind === 'every' && e.deadline && nanos(e.deadline) > nanos(e.period!))
+            if (e.kind === 'every' && e.deadline && e.period && nanos(e.deadline) > nanos(e.period))
                 this.report(e, 'SW2007', 'Periodic deadline cannot exceed its period.');
             if (e.kind === 'after') {
                 if (!ops.some(x => x.name === e.predecessor) || !entries.some(x => x.operation === e.predecessor))
@@ -1088,6 +1225,15 @@ export class SwamlValidator {
                 if (!b.states.some(s => s.name === t.target))
                     this.report(t, 'SW2008', `Unknown state ${t.target}.`);
                 const input = t.endpoint ? this.inputEnv(t, env, c) : env;
+                // A computed state timer is evaluated when the entry actions finish; it is pure or reads state (WP4-S08).
+                if (t.delayValue) {
+                    this.computedDuration(t.delayValue, env, c, op);
+                    for (const call of nodes(t.delayValue).filter(a.isCallExpression)) {
+                        const target = this.callTarget(call, c);
+                        if (!target || !isExecutable(target) || effects(target, c).writes || effects(target, c).communicates || effects(target, c).suspends)
+                            this.report(t.delayValue, 'SW2008', 'State timers may only be pure or read state.');
+                    }
+                }
                 if (t.guard) {
                     this.value(t.guard, 'bool', input, c, op);
                     for (const call of nodes(t.guard).filter(a.isCallExpression)) {

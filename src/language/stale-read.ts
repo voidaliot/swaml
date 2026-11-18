@@ -372,8 +372,11 @@ class Analysis {
         }
         else if (a.isAssert(s))
             this.expression(s.condition, flow);
-        else if (a.isWait(s))
+        else if (a.isWait(s)) {
+            // A computed wait is evaluated before the statement suspends (WP4-S03).
+            this.expression(s.delay, flow);
             this.suspend(flow);
+        }
         else if (a.isIf(s)) {
             const c = this.expression(s.condition, flow);
             this.conditions.set(s, c);
@@ -402,6 +405,8 @@ class Analysis {
             }));
         }
         else if (a.isReceive(s)) {
+            // A computed timeout is evaluated before the statement suspends (WP4-S03).
+            this.expression(s.timeoutValue, flow);
             this.suspend(flow);
             const outcomes = s.branches.map(br => {
                 const inner = flow.copy();

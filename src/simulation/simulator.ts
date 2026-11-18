@@ -1,7 +1,7 @@
 import { AstUtils, DocumentState, type AstNode } from 'langium';
 import * as a from '../language/generated/ast.js';
 import { SWAML_REFERENCE_PROFILE } from '../language/edition.js';
-import { LIBRARY_2_3_URI, libraryIntrinsic, type LibraryIntrinsic, caseRead, caseTarget, isPlace, placeRoot, valueSteps, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
+import { LIBRARY_2_3_URI, libraryIntrinsic, type LibraryIntrinsic, caseRead, caseTarget, isPlace, placeRoot, valueSteps, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, entryPeriod, entryDeadline, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
 import { binary, bind, checked, ContractViolation, copy, intText, plain, realText, RuntimeFault, scalar, squareRoot, voidValue, widen, type Environment, type Value } from './values.js';
 export { projectOperationTiming } from './timing.js';
 export interface SimulationOptions {
@@ -96,6 +96,8 @@ type Yield = {
 } | {
     kind: 'wait';
     duration: number;
+    /** The evaluated value of a computed wait, recorded on its wait observation (WP4-T01). */
+    durationNs?: number;
 } | {
     kind: 'request';
     endpoint: string;
@@ -105,7 +107,29 @@ type Yield = {
     kind: 'receive';
     branches: (a.ReceiveBranch | a.Transition)[];
     timeout?: number;
+    /** The evaluated value of a computed receive timeout, recorded on its receiveWait observation (WP4-T01). */
+    durationNs?: number;
 };
+/**
+ * WP4-R01: a computed duration is checked as an integer before any widening to uint. A value that is not positive
+ * or not a safe integer number of nanoseconds is the runtime failure DurationRange, never Bounds.
+ */
+function durationValue(v: Value): number {
+    if (typeof v.data !== 'number' || !Number.isSafeInteger(v.data) || v.data <= 0)
+        throw new RuntimeFault('DurationRange', `Duration ${String(v.data)} ns is not a positive representable duration`);
+    return v.data;
+}
+/**
+ * Whether an expression belongs to the computed duration of a wait, receive timeout or state timer, through
+ * operators and call arguments but not into a called body: integer overflow there is DurationRange (WP4-R01).
+ */
+function inDuration(e: a.Expression): boolean {
+    let root: AstNode = e;
+    while (root.$container && a.isExpression(root.$container))
+        root = root.$container;
+    const p = root.$containerProperty;
+    return a.isWait(root.$container) && p === 'delay' || a.isReceive(root.$container) && p === 'timeoutValue' || a.isTransition(root.$container) && p === 'delayValue';
+}
 type Iterator = Generator<Yield, Value, Reply | undefined>;
 /**
  * An out value that was never assigned (an unanswered on call out binding, copied back to its caller) is a
@@ -583,7 +607,10 @@ class Interpreter {
                     if (e.kind === 'start')
                         this.at(0, 2, () => this.release(c, e));
                     if (e.kind === 'every') {
-                        const period = nanos(e.period!);
+                        // A computed period is the constant value of this occurrence (WP4-S04, WP4-R02).
+                        const period = entryPeriod(e, c.structure);
+                        if (period === undefined)
+                            throw new Error(`Period of ${c.path}.${e.operation} is not a positive representable duration`);
                         const tick = () => { this.release(c, e); this.at(this.time + period, 2, tick); };
                         this.at(this.time + period, 2, tick);
                     }
@@ -646,10 +673,18 @@ class Interpreter {
         this.frames.add(f);
         this.unstarted++;
         this.log('release', `${c.path}.${op.name}`, { activation: f.id, source: this.source(entry), cause: entry.kind, predecessorActivation: predecessor?.id });
-        const deadline = entry.deadline ? nanos(entry.deadline) : entry.period ? nanos(entry.period) : undefined;
+        const deadline = entry.deadline ? nanos(entry.deadline) : entry.period ? nanos(entry.period) : entry.deadlineValue || entry.periodValue ? this.computedDeadline(c, entry) : undefined;
         if (deadline)
             this.at(this.time + deadline, 0, () => { if (!f.done)
                 throw new ContractViolation('Deadline', f.id); }, () => !f.done);
+    }
+    /** Computed deadlines and periods are constant per occurrence (WP4-S04, WP4-R02); each is evaluated once. */
+    private readonly deadlines = new Map<Component, Map<a.ScheduleEntry, number | undefined>>();
+    private computedDeadline(c: Component, entry: a.ScheduleEntry): number | undefined {
+        const known = this.deadlines.get(c) ?? this.deadlines.set(c, new Map()).get(c)!;
+        if (!known.has(entry))
+            known.set(entry, entryDeadline(entry, c.structure));
+        return known.get(entry);
     }
     private pump(): void {
         this.consume();
@@ -713,7 +748,8 @@ class Interpreter {
             f.suspended = true;
             this.unlock(f);
             const token = ++f.token;
-            this.log(y.kind === 'request' ? 'requestWait' : y.kind === 'receive' ? 'receiveWait' : 'wait', this.label(f), { activation: f.id, source: this.source(f.at) });
+            // A computed wait or receive timeout records its evaluated value; literal ones add nothing (WP4-T01).
+            this.log(y.kind === 'request' ? 'requestWait' : y.kind === 'receive' ? 'receiveWait' : 'wait', this.label(f), { activation: f.id, source: this.source(f.at), ...(y.kind !== 'request' && y.durationNs !== undefined ? { durationNs: y.durationNs } : {}) });
             if (y.kind === 'wait')
                 this.at(this.time + y.duration, 2, () => { if (f.token === token)
                     this.resume(f); }, () => f.token === token && !f.done);
@@ -822,7 +858,8 @@ class Interpreter {
         this.fuel();
         const env = this.env(f, local);
         if (a.isLiteral(e))
-            return e.number !== undefined ? checked(e.$cstNode!.text.includes('.') ? 'real' : 'int', e.number) : e.boolean !== undefined ? scalar('bool', e.boolean === 'true') : scalar('string', e.text!);
+            // A duration literal is a uint value in nanoseconds (WP4-S01).
+            return e.duration ? checked('uint', nanos(e.duration)) : e.number !== undefined ? checked(e.$cstNode!.text.includes('.') ? 'real' : 'int', e.number) : e.boolean !== undefined ? scalar('bool', e.boolean === 'true') : scalar('string', e.text!);
         if (a.isReferenceExpression(e)) {
             const head = e.path.split('.')[0];
             let value = env.get(head)?.value, steps = valueSteps(e);
@@ -950,7 +987,16 @@ class Interpreter {
         const left = yield* this.evaluate(e.left, f, local);
         if (e.operator === 'and' && left.data === false || e.operator === 'or' && left.data === true)
             return left;
-        return binary(e.operator, left, yield* this.evaluate(e.right, f, local));
+        const right = yield* this.evaluate(e.right, f, local);
+        try {
+            return binary(e.operator, left, right);
+        }
+        catch (x) {
+            // Integer overflow in a computed duration is DurationRange (WP4-R01); elsewhere it stays Arithmetic.
+            if (x instanceof RuntimeFault && x.code === 'Arithmetic' && x.message === 'Integer overflow' && inDuration(e))
+                throw new RuntimeFault('DurationRange', 'Duration is not a representable number of nanoseconds');
+            throw x;
+        }
     }
     private *block(b: a.Block | a.OperationBody | a.Scenario, f: Frame, parent: Environment): Iterator {
         const local = new Map(parent);
@@ -1006,10 +1052,17 @@ class Interpreter {
                     yield* this.block(s.body, f, loop);
                 }
             }
+            else if (a.isWait(s) && s.delay) {
+                // A computed wait is evaluated when the statement starts waiting (WP4-S03, WP4-R02).
+                const duration = durationValue(yield* this.evaluate(s.delay, f, local));
+                yield { kind: 'wait', duration, durationNs: duration };
+            }
             else if (a.isWait(s))
-                yield { kind: 'wait', duration: nanos(s.duration) };
+                yield { kind: 'wait', duration: nanos(s.duration!) };
             else if (a.isReceive(s)) {
-                const reply = yield { kind: 'receive', branches: s.branches, timeout: s.timeout ? nanos(s.timeout) : undefined };
+                // A computed timeout is evaluated when the statement starts waiting, before any input is taken (WP4-S03, WP4-R02).
+                const computed = s.timeoutValue ? durationValue(yield* this.evaluate(s.timeoutValue, f, local)) : undefined;
+                const reply = yield computed !== undefined ? { kind: 'receive', branches: s.branches, timeout: computed, durationNs: computed } : { kind: 'receive', branches: s.branches, timeout: s.timeout ? nanos(s.timeout) : undefined };
                 if (reply?.input && reply.branch && a.isReceiveBranch(reply.branch)) {
                     const scope = new Map(local);
                     this.bindInputs(scope, reply.branch.bindings, reply.input);
@@ -1072,10 +1125,20 @@ class Interpreter {
                 yield* this.block(action.body, f, local);
             if (state.final)
                 return voidValue();
+            // Computed timers are evaluated once per state entry, when the entry actions finish, in declaration order;
+            // each expires at the state-update time plus its value and records a timer observation (WP4-S08, WP4-R02, WP4-T01).
+            const delays = new Map<a.Transition, number>();
+            for (const t of state.transitions.filter(x => !!x.delayValue)) {
+                f.at = t;
+                const value = durationValue(yield* this.evaluate(t.delayValue!, f, local));
+                delays.set(t, value);
+                this.log('timer', key, { state: state.name, source: this.source(t), timerNs: value, expiresNs: entered + value });
+            }
+            const delayOf = (t: a.Transition) => t.delay ? nanos(t.delay) : delays.get(t)!;
             let selected: a.Transition | undefined, input: Message | undefined;
             while (!selected) {
-                const timers = state.transitions.filter(t => !!t.delay).sort((x, y) => nanos(x.delay!) - nanos(y.delay!));
-                const expires = timers[0] ? entered + nanos(timers[0].delay!) : undefined;
+                const timers = state.transitions.filter(t => !!t.delay || !!t.delayValue).sort((x, y) => delayOf(x) - delayOf(y));
+                const expires = timers[0] ? entered + delayOf(timers[0]) : undefined;
                 if (expires !== undefined && !Number.isSafeInteger(expires))
                     throw new ContractViolation('ClockRange');
                 const delay = expires === undefined ? undefined : Math.max(0, expires - this.time);
@@ -1084,7 +1147,7 @@ class Interpreter {
                 // Entry may suspend past expiry. Select the elapsed timer before queued input.
                 const reply: Reply | undefined = delay === 0 ? undefined : yield { kind: 'receive', branches: state.transitions, timeout: delay };
                 input = reply?.input;
-                const choices = input ? state.transitions.filter(t => t.endpoint === input!.member) : timers.filter(t => nanos(t.delay!) === nanos(timers[0].delay!));
+                const choices = input ? state.transitions.filter(t => t.endpoint === input!.member) : timers.filter(t => delayOf(t) === delayOf(timers[0]));
                 for (const t of choices) {
                     const scope = new Map(local);
                     if (input)

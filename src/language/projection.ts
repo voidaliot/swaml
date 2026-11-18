@@ -2,7 +2,7 @@ import { AstUtils, type AstNode } from 'langium';
 import type { Range } from 'vscode-languageserver';
 import * as a from './generated/ast.js';
 import { SWAML_LANGUAGE_VERSION } from './edition.js';
-import { associationPairs, body, isAssociationList, direction, effectiveQos, identity, isExecutable, members, nanos, owner, portMembers, schedule, signature, typeKey, type Node } from './semantic.js';
+import { entryDeadline, entryPeriod, expressionText, associationPairs, body, isAssociationList, direction, effectiveQos, identity, isExecutable, members, nanos, owner, portMembers, schedule, signature, typeKey, type Node } from './semantic.js';
 import { documentationText, viewCandidates, type ViewSubject } from './presentation.js';
 export interface ProjectionNode {
     id: string;
@@ -39,6 +39,10 @@ export interface ProjectionNode {
         target: string;
         periodNs?: number;
         deadlineNs?: number;
+        /** The canonical text of a computed period, every (e) (WP4-M03); absent for a literal period. */
+        periodExpression?: string;
+        /** The canonical text of a computed deadline, deadline (e) (WP4-M03); absent for a literal deadline. */
+        deadlineExpression?: string;
         concurrent: boolean;
         code: string;
     }[];
@@ -96,8 +100,11 @@ export function projectModel(models: readonly a.Model[]): Projection {
             p.type = `(${sig?.parameters.map(x => (x.direction ?? 'in') + ' ' + x.name + ': ' + typeKey(x.type)).join(', ')}) returns ${typeKey(sig?.result)}`;
         }
         if (a.isComponentDef(n) || a.isComponentUsage(n)) {
+            // Computed periods and deadlines are values of an occurrence: a usage shows the evaluated nanoseconds and the
+            // expression text, a definition the expression text only (WP4-M03).
+            const occurrence = a.isComponentUsage(n);
             p.ports = members(n).filter(a.isPortUsage).map(port => ({ name: port.name, optional: port.optional, reversed: port.reversed, members: portMembers(port).map(m => ({ name: m.name, kind: m.kind, direction: direction(port, m), type: typeKey(m.type ?? m.result), parameters: m.parameters.map(x => ({ name: x.name, type: typeKey(x.type), direction: x.direction ?? 'in' })), idempotent: m.idempotent })) }));
-            p.schedule = schedule(n).map(e => ({ trigger: e.kind + (e.endpoint ? ' ' + e.endpoint : e.predecessor ? ' ' + e.predecessor : ''), target: e.operation, periodNs: e.period ? nanos(e.period) : undefined, deadlineNs: e.deadline ? nanos(e.deadline) : e.period ? nanos(e.period) : undefined, concurrent: e.concurrent, code: e.$cstNode!.text }));
+            p.schedule = schedule(n).map(e => ({ trigger: e.kind + (e.endpoint ? ' ' + e.endpoint : e.predecessor ? ' ' + e.predecessor : ''), target: e.operation, periodNs: e.period ? nanos(e.period) : occurrence ? entryPeriod(e, n) : undefined, deadlineNs: e.deadline ? nanos(e.deadline) : e.period && !e.deadlineValue ? nanos(e.period) : occurrence ? entryDeadline(e, n) : undefined, concurrent: e.concurrent, code: e.$cstNode!.text, ...(e.periodValue ? { periodExpression: expressionText(e.periodValue) } : {}), ...(e.deadlineValue ? { deadlineExpression: expressionText(e.deadlineValue) } : {}) }));
             for (const c of members(n).filter(a.isConnect)) {
                 const forward = c.source.split('.').length !== c.target.split('.').length;
                 addEdge(forward ? 'forwarding' : 'connection', id + '.' + c.source, id + '.' + c.target, c.name ?? 'Default', forward ? {} : { policy: effectiveQos(c) });
@@ -108,7 +115,7 @@ export function projectModel(models: readonly a.Model[]): Projection {
         }
         if (isExecutable(n) && body(n)?.states.length)
             for (const state of body(n)!.states)
-                state.transitions.forEach((t, i) => addEdge('transition', id + '.' + state.name, id + '.' + t.target, t.endpoint ? 'on receive ' + t.endpoint : 'after ' + t.delay?.value + t.delay?.unit, { order: i }));
+                state.transitions.forEach((t, i) => addEdge('transition', id + '.' + state.name, id + '.' + t.target, t.endpoint ? 'on receive ' + t.endpoint : t.delayValue ? `after (${expressionText(t.delayValue)})` : 'after ' + t.delay?.value + t.delay?.unit, { order: i }));
         if (a.isScenario(n) && n.subject?.ref)
             // The subject is a top-level occurrence of the same package; a case without of has none.
             addEdge('subject', id, identity(n.subject.ref), 'subject');

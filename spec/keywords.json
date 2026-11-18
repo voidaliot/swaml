@@ -8,7 +8,7 @@
       "meaning": "Introduces a state timer, receive timeout or success schedule dependency.",
       "concern": "Ordered state transitions",
       "normative": "docs/spec/03-behavior.md",
-      "example": "('on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' deadline=Duration)? (concurrent?='concurrent')? ';';",
+      "example": "('on' (kind='start' | kind='every' (period=Duration | '(' periodValue=Expression ')') | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' (deadline=Duration | '(' deadlineValue=Expression ')'))? (concurrent?='concurrent')? ';';",
       "contextual": false,
       "productions": [
         "ScheduleEntry",
@@ -104,7 +104,7 @@
       "meaning": "Serves a provided operation as an on call schedule trigger, or answers a request at an actor port as an on call branch of a case script.",
       "concern": "Schedule entry and successful chaining",
       "normative": "docs/spec/03-behavior.md",
-      "example": "('on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' deadline=Duration)? (concurrent?='concurrent')? ';';",
+      "example": "('on' (kind='start' | kind='every' (period=Duration | '(' periodValue=Expression ')') | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' (deadline=Duration | '(' deadlineValue=Expression ')'))? (concurrent?='concurrent')? ';';",
       "contextual": false,
       "productions": [
         "ScheduleEntry",
@@ -140,7 +140,7 @@
       "meaning": "Permits overlapping non-writing snapshot activations.",
       "concern": "Schedule entry and successful chaining",
       "normative": "docs/spec/03-behavior.md",
-      "example": "('on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' deadline=Duration)? (concurrent?='concurrent')? ';';",
+      "example": "('on' (kind='start' | kind='every' (period=Duration | '(' periodValue=Expression ')') | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' (deadline=Duration | '(' deadlineValue=Expression ')'))? (concurrent?='concurrent')? ';';",
       "contextual": false,
       "productions": [
         "ScheduleEntry"
@@ -184,7 +184,7 @@
       "meaning": "Used in schedule entry and successful chaining; see its grammar contexts and normative constraints.",
       "concern": "Schedule entry and successful chaining",
       "normative": "docs/spec/03-behavior.md",
-      "example": "('on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' deadline=Duration)? (concurrent?='concurrent')? ';';",
+      "example": "('on' (kind='start' | kind='every' (period=Duration | '(' periodValue=Expression ')') | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' (deadline=Duration | '(' deadlineValue=Expression ')'))? (concurrent?='concurrent')? ';';",
       "contextual": false,
       "productions": [
         "ScheduleEntry"
@@ -277,7 +277,7 @@
       "meaning": "Used in schedule entry and successful chaining; see its grammar contexts and normative constraints.",
       "concern": "Schedule entry and successful chaining",
       "normative": "docs/spec/03-behavior.md",
-      "example": "('on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' deadline=Duration)? (concurrent?='concurrent')? ';';",
+      "example": "('on' (kind='start' | kind='every' (period=Duration | '(' periodValue=Expression ')') | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' (deadline=Duration | '(' deadlineValue=Expression ')'))? (concurrent?='concurrent')? ';';",
       "contextual": false,
       "productions": [
         "ScheduleEntry"
@@ -310,7 +310,7 @@
       "meaning": "Used in typed expressions and operators; see its grammar contexts and normative constraints.",
       "concern": "Typed expressions and operators",
       "normative": "docs/spec/01-structure-and-types.md",
-      "example": "{infer Literal} (number=Numeric | text=STRING | boolean=('true'|'false'));",
+      "example": "{infer Literal} (number=Numeric | text=STRING | boolean=('true'|'false') | duration=Duration);",
       "contextual": false,
       "productions": [
         "Literal"
@@ -508,7 +508,7 @@
       "meaning": "Used in ordered state transitions; see its grammar contexts and normative constraints.",
       "concern": "Ordered state transitions",
       "normative": "docs/spec/03-behavior.md",
-      "example": "('on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' deadline=Duration)? (concurrent?='concurrent')? ';';",
+      "example": "('on' (kind='start' | kind='every' (period=Duration | '(' periodValue=Expression ')') | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' (deadline=Duration | '(' deadlineValue=Expression ')'))? (concurrent?='concurrent')? ';';",
       "contextual": false,
       "productions": [
         "ScheduleEntry",
@@ -549,7 +549,7 @@
       "meaning": "Used in suspending wait and receive; see its grammar contexts and normative constraints.",
       "concern": "Suspending wait and receive",
       "normative": "docs/spec/03-behavior.md",
-      "example": "'on' branches+=ReceiveBranch ('or' branches+=ReceiveBranch)* ('or' 'after' timeout=Duration timeoutBody=Block)?;",
+      "example": "'on' branches+=ReceiveBranch ('or' branches+=ReceiveBranch)* ('or' 'after' (timeout=Duration | '(' timeoutValue=Expression ')') timeoutBody=Block)?;",
       "contextual": false,
       "productions": [
         "Receive",
@@ -654,7 +654,7 @@
       "meaning": "Used in suspending wait and receive; see its grammar contexts and normative constraints.",
       "concern": "Suspending wait and receive",
       "normative": "docs/spec/03-behavior.md",
-      "example": "('on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' deadline=Duration)? (concurrent?='concurrent')? ';';",
+      "example": "('on' (kind='start' | kind='every' (period=Duration | '(' periodValue=Expression ')') | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' (deadline=Duration | '(' deadlineValue=Expression ')'))? (concurrent?='concurrent')? ';';",
       "contextual": false,
       "productions": [
         "ScheduleEntry",
@@ -819,7 +819,7 @@
       "meaning": "Used in schedule entry and successful chaining; see its grammar contexts and normative constraints.",
       "concern": "Schedule entry and successful chaining",
       "normative": "docs/spec/03-behavior.md",
-      "example": "('on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' deadline=Duration)? (concurrent?='concurrent')? ';';",
+      "example": "('on' (kind='start' | kind='every' (period=Duration | '(' periodValue=Expression ')') | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' (deadline=Duration | '(' deadlineValue=Expression ')'))? (concurrent?='concurrent')? ';';",
       "contextual": false,
       "productions": [
         "ScheduleEntry"
@@ -878,7 +878,7 @@
       "meaning": "Introduces a state transition target or the case of an associate link.",
       "concern": "Ordered state transitions",
       "normative": "docs/spec/03-behavior.md",
-      "example": "('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' delay=Duration) 'to' target=Name effect=Block;",
+      "example": "('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' (delay=Duration | '(' delayValue=Expression ')')) 'to' target=Name effect=Block;",
       "contextual": true,
       "productions": [
         "Transition",
@@ -891,7 +891,7 @@
       "meaning": "Used in typed expressions and operators; see its grammar contexts and normative constraints.",
       "concern": "Typed expressions and operators",
       "normative": "docs/spec/01-structure-and-types.md",
-      "example": "{infer Literal} (number=Numeric | text=STRING | boolean=('true'|'false'));",
+      "example": "{infer Literal} (number=Numeric | text=STRING | boolean=('true'|'false') | duration=Duration);",
       "contextual": false,
       "productions": [
         "Literal"
@@ -1005,7 +1005,7 @@
       "meaning": "Suspends for a duration and releases the serial lock.",
       "concern": "Suspending wait and receive",
       "normative": "docs/spec/03-behavior.md",
-      "example": "'wait' duration=Duration ';';",
+      "example": "'wait' (duration=Duration | '(' delay=Expression ')') ';';",
       "contextual": false,
       "productions": [
         "Wait"
@@ -1016,7 +1016,7 @@
       "meaning": "Used in ordered state transitions; see its grammar contexts and normative constraints.",
       "concern": "Ordered state transitions",
       "normative": "docs/spec/03-behavior.md",
-      "example": "('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' delay=Duration) 'to' target=Name effect=Block;",
+      "example": "('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' (delay=Duration | '(' delayValue=Expression ')')) 'to' target=Name effect=Block;",
       "contextual": false,
       "productions": [
         "Transition"
