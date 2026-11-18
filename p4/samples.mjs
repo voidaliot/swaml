@@ -124,7 +124,7 @@ const samples = {
       publish link.hello(attempt);
       state awaiting {
         on receive link.ack(id) { if (id == attempt) { up = true; exit; } }
-        after (backoffMs * 1000000) {
+        after (backoffMs * 1ms) {
           if (backoffMs < 1000) { backoffMs = backoffMs * 2; }
           exit;
         }

@@ -191,7 +191,7 @@ type Frame = {
     /** PROTOTYPE P1r: a jump into a state inside the state about to be reached (direct entry), and the leave that led there. */
     flowTarget?: string;
     flowTrigger?: AstNode;
-    /** PROTOTYPE P1r: statements run in the current event line's block (an if whose test is false and has no else does not count). */
+    /** PROTOTYPE P1r: statements run in the current event line's block (an if whose test is false does not count). */
     lineWork?: number;
 };
 type FlowLevel = { state: a.StateStep; entered: number; delays: Map<a.Transition, number>; presented: Set<a.Transition> };
@@ -204,6 +204,8 @@ type Watch = {
     frame: Frame;
     active: boolean;
 };
+/** PROTOTYPE P1r measurement variant: pick the queued message in the same pump as the zero-time wait (P1's AY), not at a new event. */
+const P4_IMMEDIATE_PICK = !!process.env.P4_IMMEDIATE_PICK, P4_NO_LINE_IF_STEP = !!process.env.P4_NO_LINE_IF_STEP;
 /** PROTOTYPE: a jump out of every active state, unwinding to the statement list that contains its target (SIF-R07, SIF-R08). */
 class JumpSignal {
     constructor(public target: string, public node: AstNode) { }
@@ -820,13 +822,21 @@ class Interpreter {
                     this.resume(f); }, () => f.token === token && !f.done);
             // PROTOTYPE P1r (SIF-R04): the zero-time wait ends at an event of the same instant (phase 2, next insertion ordinal),
             // which picks the first-delivered message of a named member again.
-            if (y.kind === 'receive' && y.zero)
+            if (y.kind === 'receive' && y.zero && P4_IMMEDIATE_PICK) {
+                // Measurement variant: the 2.2 handover (the picked message is taken in the same pump as the yield).
+                this.dropUnnamed(f, y.flow!.named);
+                const owned = this.owned(f.op), h = this.flowHeads(f).find(x => owned.has(x.endpointName) && y.flow!.named.has(x.endpointName));
+                this.resume(f, h ? { input: this.take(h.queue, h.m, h.endpointName, f.c) } : {});
+            }
+            else if (y.kind === 'receive' && y.zero) {
+                this.dropUnnamed(f, y.flow!.named);
                 this.at(this.time, 2, () => {
                     if (f.token !== token || !f.suspended)
                         return;
                     const owned = this.owned(f.op), h = this.flowHeads(f).find(x => owned.has(x.endpointName) && y.flow!.named.has(x.endpointName));
                     this.resume(f, h ? { input: this.take(h.queue, h.m, h.endpointName, f.c) } : {});
                 }, () => f.token === token && !f.done);
+            }
             if (y.kind === 'receive' && y.timeout !== undefined)
                 this.at(this.time + y.timeout, 1, () => { if (f.token === token && f.suspended)
                     this.resume(f, {}); }, () => f.token === token && !f.done);
@@ -883,6 +893,9 @@ class Interpreter {
         sig.parameters.forEach((p, i) => bind(local, p.name, typeKey(p.type), args[i] ?? this.zero(typeKey(p.type))));
         let result = voidValue();
         const at = f.at;
+        // PROTOTYPE P1r: statements of a called operation are not statements of the calling event line (SIF-T03).
+        const lineWork = f.lineWork;
+        f.lineWork = undefined;
         try {
             if (identity(sig).startsWith('Swaml::Math::') && ['floor', 'round', 'trunc', 'length'].includes(sig.name))
                 return this.intrinsic(sig.name, args);
@@ -898,6 +911,9 @@ class Interpreter {
             if (!(e instanceof ReturnValue))
                 throw e;
             result = e.value;
+        }
+        finally {
+            f.lineWork = lineWork;
         }
         // A failure keeps f.at on the failing statement; a successful callee hands execution back to the caller's statement.
         f.at = at;
@@ -1134,7 +1150,8 @@ class Interpreter {
                 throw new ReturnValue(s.value ? yield* this.evaluate(s.value, f, local) : voidValue());
             else if (a.isIf(s)) {
                 const holds = !!(yield* this.evaluate(s.condition, f, local)).data;
-                if (f.lineWork !== undefined && (holds || s.otherwise))
+                // SIF-T03: a test that holds counts as work; a false test does not (its else branch counts its own statements).
+                if (f.lineWork !== undefined && holds)
                     f.lineWork++;
                 if (holds)
                     yield* this.block(s.then as a.Block, f, local);
@@ -1230,6 +1247,10 @@ class Interpreter {
             }
             else if (a.isFail(s))
                 throw new RuntimeFault('Failure', s.reason);
+            // Measurement variant P4_NO_LINE_IF_STEP: an if in an event line's block whose then-branch leaves (a migrated 2.2 guard) is
+            // no scheduling step, as a 2.2 guard evaluation was none.
+            if (P4_NO_LINE_IF_STEP && a.isIf(s) && f.lineWork !== undefined && (a.isExit(s.then.statements.at(-1)) || a.isJump(s.then.statements.at(-1))))
+                return voidValue();
             yield { kind: 'step' };
         }
         return voidValue();
@@ -1308,6 +1329,14 @@ class Interpreter {
     private timerLines(l: FlowLevel): a.Transition[] { return l.state.statements.filter((x): x is a.Transition => a.isTransition(x) && !x.endpoint); }
     private due(l: FlowLevel, t: a.Transition): number { return l.entered + (t.delay ? nanos(t.delay) : l.delays.get(t)!); }
     private timersDue(levels: FlowLevel[]): boolean { return levels.some(l => this.timerLines(l).some(t => !l.presented.has(t) && this.time >= this.due(l, t))); }
+    /** SIF-R04 step 2: queued input of owned members not named at the waiting state is dropped, in delivery order. */
+    private dropUnnamed(f: Frame, named: Set<string>): void {
+        const owned = this.owned(f.op);
+        for (let h = this.flowHeads(f).find(x => owned.has(x.endpointName) && !named.has(x.endpointName)); h; h = this.flowHeads(f).find(x => owned.has(x.endpointName) && !named.has(x.endpointName))) {
+            const m = this.take(h.queue, h.m, h.endpointName, f.c);
+            this.log('discardInput', h.endpointName, { source: m.origin, reason: 'inactiveOwner' });
+        }
+    }
     /** The entry point for P4: a write or sample-cell update in a waiting state's read set makes a look with nothing present. */
     wakeFlow(f: Frame): void {
         if (!f.done && f.waiting?.kind === 'receive' && f.waiting.flow && !f.waiting.zero)
@@ -1455,11 +1484,10 @@ class Interpreter {
         while (true) {
             if (this.timersDue(levels))
                 return { timers: true };
-            const named = this.namedAt(levels), owned = this.owned(f.op);
-            for (let h = this.flowHeads(f).find(x => owned.has(x.endpointName) && !named.has(x.endpointName)); h; h = this.flowHeads(f).find(x => owned.has(x.endpointName) && !named.has(x.endpointName))) {
-                const m = this.take(h.queue, h.m, h.endpointName, f.c);
-                this.log('discardInput', h.endpointName, { source: m.origin, reason: 'inactiveOwner' });
-            }
+            // Step 2 (drop the queued input of owned members not named here) is done right after this yield releases the lock:
+            // by drive() for the zero-time wait, by consume() for the ordinary wait (the 2.2 trace order: unlock, receiveWait,
+            // then the discards). Nothing else runs in between, so the behaviour is that of dropping before the wait.
+            const named = this.namedAt(levels);
             f.at = levels.at(-1)!.state;
             if (this.flowHeads(f).some(x => named.has(x.endpointName))) {
                 const reply: Reply | undefined = yield { kind: 'receive', branches: [], flow: { named }, zero: true };
