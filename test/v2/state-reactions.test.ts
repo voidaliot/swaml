@@ -294,6 +294,12 @@ test('WP5-S03 WP5-S06 WP5-D02 WP5-D07 completion and timer guards are bool and p
 test('WP5-S04 WP5-D03 a cycle of when (true) completion transitions is an error, once per cycle; other completion cycles are runtime matters', async () => {
     assert.deepEqual(await errors(states('state A { when (true) to B { } } state B { when ((true)) to C { } } state C { when (true) to A { } }')), [['SW2008', 'States A → B → C → A form a cycle of when (true) completion transitions.']]);
     assert.deepEqual(await errors(states('state A { when (true) to A { } }')), [['SW2008', 'States A → A form a cycle of when (true) completion transitions.']]);
+    // A cycle with an entry action, exit action or effect that can suspend restarts its chain at run time (WP5-R07) and is
+    // not an error (review L2); a non-suspending action keeps the error.
+    for (const cycle of ['state A { on entry { n = n + 1; wait 1ms; } when (true) to A { } }', 'state A { on exit { wait 1ms; } when (true) to B { } } state B { when (true) to A { } }',
+        'state A { when (true) to B { } } state B { when (true) to A { pause(); } }', 'state A { on entry { ok = srv.ask(); } when (true) to A { } }'])
+        assert.deepEqual(await errors(states(cycle, 'operation pause() { wait 1ms; } optional port srv { requires operation ask() returns bool; }')), [], cycle);
+    assert.deepEqual(await errors(states('state A { on entry { n = n + 1; } on exit { log = 1; } when (true) to B { quiet(); } } state B { when (true) to A { } }', 'operation quiet() { n = 0; }')), [['SW2008', 'States A → B → A form a cycle of when (true) completion transitions.']]);
     // Only the first when (true) of a state is taken; a cycle through a later one, or through a guard that is not the literal true, is not static.
     assert.deepEqual(await errors(states('state A { on entry { n = n + 1; } when (true) to B { } when (true) to A { } } state B { on receive a.go() to A { } }')), []);
     assert.deepEqual(await errors(states('state A { on entry { n = n + 1; } when (n > 0 or true) to B { } } state B { on entry { n = n + 1; } when (n > 0) to A { } }')), []);
@@ -333,21 +339,42 @@ test('WP5-D08 SW2017 warns on a completion guard that reads nothing the machine 
     const warn = (body: string) => warnings(machine(body, extra).replace('schedule { on start run(); }', 'schedule { on start run(); on every 1ms tick(); }'));
     // n is written only by tick, another operation: the guard is not re-evaluated when it changes.
     assert.deepEqual(await warn('state A { when (n > 2) to B { } } final state B { }'), [['SW2017', message]]);
-    assert.deepEqual(await warn('state A { when (false) to B { } after 1ms to B { } } final state B { }'), [['SW2017', message]]);
+    assert.deepEqual(await warn('state A { when (ok and n > 0) to B { } after 1ms to C { } } state C { after 1ms to A { } } final state B { }'), [['SW2017', message]]);
     // Written by the machine: its entry action, an exit action, a transition effect, an internal effect or a callee.
     assert.deepEqual(await warn('state A { on entry { n = n + 1; } when (n > 2) to B { } } final state B { }'), []);
     assert.deepEqual(await warn('state A { on receive a.x(v) { log = v; } when (log > 2) to B { } } final state B { }'), []);
     assert.deepEqual(await warn('state A { on exit { ok = true; } after 1ms to C { } when (flag()) to B { } } state C { after 1ms to A { } } final state B { }'), []);
     assert.deepEqual(await warn('state A { on entry { set(); } when (flag()) to B { } } final state B { }'), []);
-    // A literal true never waits and is not reported.
+    // A literal true never waits and is not reported (review L1): nor is a guard that is constant after folding, true or false.
     assert.deepEqual(await warn('state A { when (true) to B { } } final state B { }'), []);
+    for (const guard of ['1 == 1', 'not false', 'false', '(2 > 1) and not (1 == 2)'])
+        assert.deepEqual(await warn(`state A { when (${guard}) to B { } after 1ms to B { } } final state B { }`), [], guard);
+    // A guard that already has an error gets no SW2017 besides it: a writing callee, now() through a callee, a request.
+    const faulty = 'operation bump() returns bool { n = n + 1; return true; } operation late() returns bool { return Swaml::Time::now() > 1ms; } optional port srv { requires operation ask() returns bool; }';
+    for (const guard of ['bump()', 'late()', 'srv.ask()']) {
+        const all = (await parse(machine(`state A { when (${guard}) to B { } after 1ms to B { } } final state B { }`, faulty))).doc.diagnostics ?? [];
+        assert.ok(all.some(d => d.severity === 1) && !all.some(d => d.code === 'SW2017'), `${guard}: ${JSON.stringify(all.map(d => [d.code, d.message]))}`);
+    }
+    // The polling pattern: a state that re-enters itself through its own timer or receive transition evaluates the
+    // guard again after each wait, so it is not reported; a timer to another state still is (above).
+    assert.deepEqual(await warn('state A { after 20ms to A { } when (n > 2) to B { } } final state B { }'), []);
+    assert.deepEqual(await warn('state A { on receive a.go() to A { } when (n > 2) to B { } } final state B { }'), []);
+    assert.deepEqual(await warn('state A { after 20ms { } when (n > 2) to B { } } final state B { }'), [['SW2017', message]]);
 });
 
 test('WP5-D09 SW2018 warns on a deferred event whose route into the occurrence rejects on overflow, once per connection', async () => {
     const source = (policy: string, member = 'a.x') => machine(`state A { defer ${member}; on receive a.go() to H { } } state H { on receive a.x(v) to A { } on receive a.y(v) to A { } }`, '', 'operation emit() { }', policy);
-    assert.deepEqual(await warnings(source('')), [['SW2018', 'a.x is deferred in A, but policy Default of connect (s.q, m.a) rejects on overflow; a full queue fails the sender.']]);
-    assert.deepEqual(await warnings(source(': Swaml::Qos::Reliable')), [['SW2018', 'a.x is deferred in A, but policy Reliable of connect (s.q, m.a) rejects on overflow; a full queue fails the sender.']]);
-    assert.deepEqual(await warnings(source(' link: Swaml::Qos::Reliable')), [['SW2018', 'a.x is deferred in A, but policy Reliable of link rejects on overflow; a full queue fails the sender.']]);
+    const advice = (connection: string) => ` Give ${connection} a policy that drops on overflow (Overflow.dropOldest or Overflow.dropNewest) or a capacity that holds the retained messages.`;
+    // The library default rejects on overflow, so a deferral over a plain connect warns (review L3).
+    assert.deepEqual(await warnings(source('')), [['SW2018', 'a.x is deferred in A, but policy Default of connect (s.q, m.a) rejects on overflow; a full queue fails the sender.' + advice('connect (s.q, m.a)')]]);
+    assert.deepEqual(await warnings(source(': Swaml::Qos::Reliable')), [['SW2018', 'a.x is deferred in A, but policy Reliable of connect (s.q, m.a) rejects on overflow; a full queue fails the sender.' + advice('connect (s.q, m.a)')]]);
+    assert.deepEqual(await warnings(source(' link: Swaml::Qos::Reliable')), [['SW2018', 'a.x is deferred in A, but policy Reliable of link rejects on overflow; a full queue fails the sender.' + advice('link')]]);
+    // A deferral that already has an error gets no SW2018 besides it: in a final state, deferred and handled, twice, or never handled.
+    const erroneous = machine('state A { defer a.x, a.x; on receive a.go() to H { } } state H { defer a.go; on receive a.go() to F { } on receive a.x(v) to A { } } final state F { defer a.x; } state Z { defer a.y; on receive a.go() to A { } }');
+    const r = await parse(erroneous);
+    const lines = erroneous.split('\n'), line = lines.findIndex(l => l.includes('defer a.x, a.x'));
+    // Only the first listing of a.x in A warns: the second is the duplicate, H defers what it handles, F is final, a.y is unhandled.
+    assert.deepEqual((r.doc.diagnostics ?? []).filter(d => d.code === 'SW2018').map(d => [d.range.start.line, d.range.start.character]), [[line, lines[line].indexOf('a.x')]]);
     assert.deepEqual(await warnings(source(': Swaml::Qos::Latest')), []);
     assert.deepEqual(await warnings(source(': Swaml::Qos::BestEffort')), []);
 });
