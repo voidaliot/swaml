@@ -147,8 +147,9 @@ test('SIF-R02 a look walks the items in written order; an event line runs at its
     // Kills: walk order reversed within a level; a statement skipped at a message look.
     const s = machine('run() { state s { x = x * 10 + 1; on receive p.n() { x = x * 10 + 2; } x = x * 10 + 3; after 5ms { x = x * 10 + 4; } on receive p.k() exit; } }');
     const { store } = await drive(s, 'wait 1ms; publish p.n(); wait 9ms; publish p.k();');
-    // Arrival 13; n: 13 -> 131 -> 1312 -> 13123; 5 ms timer: 1312313 -> 13123134; k: 131231341 -> 1312313413.
-    assert.equal(store.x, 1312313413);
+    // Arrival 13; n: 123; the n line wrote x, which the first statement had read, so the state looks again at once (SIF-R08,
+    // package 4): 13; 5 ms timer: 134, and again 13 (its line also wrote x); k: 13 and the look ends at the leave.
+    assert.equal(store.x, 13123131341313);
 });
 
 test('SIF-R02 SIF-R09 a look ends at the first leave it runs; on exit runs after the leave\'s block, before the next state\'s entry', async () => {
@@ -387,7 +388,9 @@ test('SIF-G01 projection: states are view candidates of their operation; each to
 
 test('SIF-G01 half-typed states validate, project, index, build view candidates, format-refuse and simulate-refuse without throwing', async () => {
     const other = 'package V { import Flow; }';
-    for (const text of ['state', 'state s', 'state s {', 'state s { on receive p.m(v) }', 'state s { on receive p.m(v) if (v > 1) exit; }', 'state s { to }', 'state s { after }', 'state s { after 5ms }', 'state s { on entry }', 'state { exit; }', 'state s { exit }', 'state s { on receive }', 'state s { state }', 'to', 'exit', 'state s { if (x > 0) exit else to t; }']) {
+    for (const text of ['state', 'state s', 'state s {', 'state s { on receive p.m(v) }', 'state s { on receive p.m(v) if (v > 1) exit; }', 'state s { to }', 'state s { after }', 'state s { after 5ms }', 'state s { on entry }', 'state { exit; }', 'state s { exit }', 'state s { on receive }', 'state s { state }', 'to', 'exit', 'state s { if (x > 0) exit else to t; }',
+        // Packages 4 and 5: read sets (SIF-R07), SIF-D04 and SIF-D05 over half-typed statements and leaves.
+        'state s { if (x > ) exit; on receive p.n() exit; }', 'state s { if (now( exit; }', 'state a { to b; } state b { to', 'state a { exit; } state b { x = ; to a; }', 'state s { y = helper(; }']) {
         const source = sampleModel(machine(`run() { ${text} }`), '');
         const r = await parse(source);
         assert.ok(r.doc.parseResult.parserErrors.length, text);

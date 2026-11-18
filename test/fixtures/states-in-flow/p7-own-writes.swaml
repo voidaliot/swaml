@@ -1,0 +1,147 @@
+package OwnWrites {
+  /** SIF-R08: a write made by an event line's block to a name that a statement already run in the same look reads makes the state look again at once, with nothing present. Writes by statements standing in a state never cause a look. */
+  port def XIn {
+    provides event x();
+  }
+  port def AlarmIn {
+    provides event raise();
+    provides event stop();
+  }
+  port def FaultIn {
+    provides event fault();
+  }
+  port def AlarmOut {
+    provides event alarm();
+  }
+  component def Counter {
+    /** The trap of the prototype: the condition stands before the line that counts. With the re-look the third x leaves; without it the fourth would. */
+    reversed port in: XIn;
+    attribute left: bool = false;
+    attribute counted: uint = 0;
+    operation run() {
+      var n: uint = 0;
+      state s {
+        if (n > 2) { exit; }
+        on receive in.x() { n = n + 1; counted = n; }
+      }
+      left = true;
+    }
+    schedule { on start run(); }
+  }
+  component def OwnTimer {
+    /** The timer line writes ready after the condition was checked; without the re-look the state would wait for good. */
+    attribute ready: bool = false;
+    attribute left: bool = false;
+    operation run() {
+      state armed {
+        if (ready) { exit; }
+        after 10ms { ready = true; }
+      }
+      left = true;
+    }
+    schedule { on start run(); }
+  }
+  component def ParentAlarm {
+    /** A parent's condition is checked before the inner state's line in every look; the inner line's write is seen in the re-look. */
+    reversed port in: FaultIn;
+    attribute alarm: bool = false;
+    attribute safe: bool = false;
+    operation run() {
+      state supervised {
+        if (alarm) { to safeStop; }
+        state working {
+          on receive in.fault() { alarm = true; }
+        }
+      }
+      state safeStop {
+        on entry { safe = true; }
+      }
+    }
+    schedule { on start run(); }
+  }
+  component def Alarm {
+    /** A statement that acts: the re-look after raise publishes the alarm once; the stop look publishes it again (a statement runs at every look). One extra look, never more. */
+    reversed port in: AlarmIn;
+    port out: AlarmOut;
+    attribute alarmOn: bool = false;
+    attribute published: uint = 0;
+    operation run() {
+      state s {
+        if (alarmOn) { published = published + 1; publish out.alarm(); }
+        on receive in.raise() { alarmOn = true; }
+        on receive in.stop() { exit; }
+      }
+    }
+    schedule { on start run(); }
+  }
+  component def During {
+    /** Statement writes never cause a look: k counts looks (arrival and each x), and the condition sees the count of the previous look. */
+    reversed port in: XIn;
+    attribute k: uint = 0;
+    attribute left: bool = false;
+    operation run() {
+      state s {
+        if (k >= 3) { exit; }
+        k = k + 1;
+        on receive in.x() { }
+      }
+      left = true;
+    }
+    schedule { on start run(); }
+  }
+  component def Bench {
+    port toCounter: XIn;
+    port toParent: FaultIn;
+    port toAlarm: AlarmIn;
+    reversed port alarm: AlarmOut;
+    port toDuring: XIn;
+  }
+  component counter: Counter;
+  component ownTimer: OwnTimer;
+  component parentAlarm: ParentAlarm;
+  component alarm: Alarm;
+  component during: During;
+  component bench: Bench;
+  connect (bench.toCounter, counter.in);
+  connect (bench.toParent, parentAlarm.in);
+  connect (bench.toAlarm, alarm.in);
+  connect (alarm.out, bench.alarm);
+  connect (bench.toDuring, during.in);
+  associate bench to 'Counter leaves at the third x', 'Own timer write', 'Parent condition and inner line', 'Alarm acts once more, not forever', 'Statement writes cause no look';
+  test 'Counter leaves at the third x' of counter {
+    publish bench.toCounter.x();
+    wait 1ms;
+    publish bench.toCounter.x();
+    wait 1ms;
+    publish bench.toCounter.x();
+    wait 1ms;
+    assert counter.left and counter.counted == 3;
+  }
+  test 'Own timer write' of ownTimer {
+    wait 20ms;
+    assert ownTimer.left;
+  }
+  test 'Parent condition and inner line' of parentAlarm {
+    publish bench.toParent.fault();
+    wait 1ms;
+    assert parentAlarm.safe;
+  }
+  test 'Alarm acts once more, not forever' of alarm {
+    publish bench.toAlarm.raise();
+    wait 1ms;
+    assert alarm.published == 1;
+    publish bench.toAlarm.stop();
+    wait 1ms;
+    assert alarm.published == 2;
+  }
+  test 'Statement writes cause no look' of during {
+    publish bench.toDuring.x();
+    wait 1ms;
+    publish bench.toDuring.x();
+    wait 1ms;
+    assert during.k == 3 and not during.left;
+    publish bench.toDuring.x();
+    wait 1ms;
+    assert during.left;
+  }
+}

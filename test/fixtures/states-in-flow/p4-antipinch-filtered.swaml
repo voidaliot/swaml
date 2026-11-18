@@ -1,0 +1,86 @@
+package AntiPinchFiltered {
+  /** Reading sample 8, filtered variant: the condition reads motorCurrent, an attribute that filter() writes every millisecond (another activation of the same occurrence). */
+  import Swaml::Math;
+  enum MotorDirection { stop, up, down }
+  enum WindowRequest { autoUp, halt }
+  port def MotorSense {
+    provides attribute current: uint = 3000;
+  }
+  port def WindowRequests {
+    provides event request(c: WindowRequest);
+  }
+  port def MotorOut {
+    provides attribute dir: MotorDirection;
+  }
+  component def Lifter {
+    reversed port sense: MotorSense;
+    reversed port requests: WindowRequests;
+    port motor: MotorOut;
+    const attribute pinchLimit: uint = 4500;
+    attribute pinchReversals: uint = 0;
+    attribute motorCurrent: uint = 3000;
+    attribute direction: MotorDirection = MotorDirection.stop;
+    operation drive(d: MotorDirection) {
+      direction = d;
+      send motor.dir(d);
+    }
+    operation filter() {
+      motorCurrent = trunc((motorCurrent * 3 + sense.current) / 4);
+    }
+    operation control() {
+      state idle {
+        on entry { drive(MotorDirection.stop); }
+        on receive requests.request(c) { if (c == WindowRequest.autoUp) { exit; } }
+      }
+      state closing {
+        on entry { drive(MotorDirection.up); }
+        if (motorCurrent > pinchLimit) { pinchReversals = pinchReversals + 1; to reversing; }
+        on receive requests.request(c) { if (c == WindowRequest.halt) { to idle; } }
+        after 8s { to idle; }
+      }
+      state reversing {
+        on entry { drive(MotorDirection.down); }
+        after 400ms { to idle; }
+      }
+    }
+    schedule {
+      on start control();
+      on every 1ms filter();
+    }
+  }
+  component def Bench {
+    port sense: MotorSense;
+    port requests: WindowRequests;
+    reversed port motor: MotorOut;
+  }
+  component lifter: Lifter;
+  component bench: Bench;
+  connect (bench.sense, lifter.sense);
+  connect (bench.requests, lifter.requests);
+  connect (lifter.motor, bench.motor);
+  associate bench to 'Q4 9000 for one millisecond', 'Spike of three milliseconds', 'Closing for one second';
+  test 'Q4 9000 for one millisecond' of lifter {
+    publish bench.requests.request(WindowRequest.autoUp);
+    wait 100500us;
+    send bench.sense.current(9000);
+    wait 1ms;
+    send bench.sense.current(3000);
+    wait 50ms;
+    assert lifter.pinchReversals == 0;
+  }
+  test 'Spike of three milliseconds' of lifter {
+    publish bench.requests.request(WindowRequest.autoUp);
+    wait 100500us;
+    send bench.sense.current(9000);
+    wait 3ms;
+    send bench.sense.current(3000);
+    wait 50ms;
+    assert lifter.pinchReversals == 1;
+  }
+  test 'Closing for one second' of lifter {
+    /** Cost: closing is woken by every filter write (1000 per second), although the value does not change. */
+    publish bench.requests.request(WindowRequest.autoUp);
+    wait 1s;
+    assert lifter.pinchReversals == 0;
+  }
+}

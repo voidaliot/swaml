@@ -1,0 +1,222 @@
+package StateLoops {
+  /** StateLoop by repeated configuration (SIF-R18): bounded loops it must allow, unbounded ones it must stop, and the two known misses. Each component is the subject of one test; the others idle. */
+  port def Fill {
+    provides event fill(n: int);
+  }
+  port def Values {
+    provides operation get() returns int;
+  }
+  component def Drain {
+    /** A drain by re-arrival: one item per arrival, all in zero time, then back to idle. */
+    reversed port in: Fill;
+    attribute backlog: int = 0;
+    attribute taken: int = 0;
+    operation run() {
+      while (true) {
+        state idle {
+          on receive in.fill(n) { backlog = n; exit; }
+        }
+        state draining {
+          if (backlog > 0) { backlog = backlog - 1; taken = taken + 1; to draining; }
+          if (backlog == 0) { exit; }
+        }
+      }
+    }
+    schedule { on start run(); }
+  }
+  component def SlowDrain {
+    /** The same counter drained by a statement that stays: a statement's own writes cause no look (SIF-R08), so it takes one item per event (here per fill message). */
+    reversed port in: Fill;
+    attribute backlog: int = 0;
+    attribute taken: int = 0;
+    operation run() {
+      state draining {
+        on receive in.fill(n) { backlog = backlog + n; }
+        if (backlog > 0) { backlog = backlog - 1; taken = taken + 1; }
+      }
+    }
+    schedule { on start run(); }
+  }
+  component def PingPong {
+    /** Two machines of one occurrence that wake each other in zero time: n = 1 - n for ever. */
+    reversed port in: Fill;
+    attribute n: int = 5;
+    operation setN(v: int) {
+      n = v;
+    }
+    operation ping() {
+      state p {
+        if (n == 0) { n = 1; }
+      }
+    }
+    operation pong() {
+      state q {
+        if (n == 1) { n = 0; }
+      }
+    }
+    schedule {
+      on start ping();
+      on start pong();
+      on receive in.fill(v) setN(v);
+    }
+  }
+  component def Growing {
+    /** Known miss: the same ping-pong with a counter that grows, so no configuration repeats; it ends at the step limit. */
+    reversed port in: Fill;
+    attribute t: bool = true;
+    attribute k: int = 0;
+    attribute go: bool = false;
+    operation begin(v: int) {
+      go = true;
+    }
+    operation ping() {
+      state p {
+        if (go and not t) { t = true; k = k + 1; }
+      }
+    }
+    operation pong() {
+      state q {
+        if (go and t) { t = false; }
+      }
+    }
+    schedule {
+      on start ping();
+      on start pong();
+      on receive in.fill(v) begin(v);
+    }
+  }
+  component def Handshake {
+    /** A bounded four-step handshake between two machines of one occurrence, all in zero time: allowed. */
+    reversed port in: Fill;
+    attribute req: bool = false;
+    attribute ack: bool = false;
+    attribute rounds: int = 0;
+    operation client() {
+      state waitStart {
+        on receive in.fill(n) { exit; }
+      }
+      state requesting {
+        on entry { req = true; }
+        if (ack) { exit; }
+      }
+      state releasing {
+        on entry { req = false; }
+        if (not ack) { exit; }
+      }
+      rounds = rounds + 1;
+    }
+    operation server() {
+      state serving {
+        if (req) { ack = true; exit; }
+      }
+      state clearing {
+        if (not req) { ack = false; exit; }
+      }
+    }
+    schedule {
+      on start client();
+      on start server();
+    }
+  }
+  component def Arrival {
+    /** Arrival ping-pong: two states whose arrival looks leave at once, for ever. */
+    reversed port in: Fill;
+    attribute ready: bool = false;
+    operation run() {
+      state a {
+        on receive in.fill(n) { ready = true; }
+        if (ready) { to b; }
+      }
+      state b {
+        if (ready) { to a; }
+      }
+    }
+    schedule { on start run(); }
+  }
+  component def Asking {
+    /** Known miss: the arrival ping-pong with a zero-latency request in each look; every reply is external, so the configuration check never applies. */
+    reversed port in: Fill;
+    reversed port values: Values;
+    attribute ready: bool = false;
+    attribute got: int = 0;
+    operation run() {
+      state a {
+        on receive in.fill(n) { ready = true; }
+        if (ready) { got = values.get(); to b; }
+      }
+      state b {
+        if (ready) { to a; }
+      }
+    }
+    schedule { on start run(); }
+  }
+  component def Server {
+    port api: Values;
+    operation answer() returns int {
+      return 7;
+    }
+    schedule { on call api.get() answer(); }
+  }
+  component def Bench {
+    port toDrain: Fill;
+    port toSlow: Fill;
+    port toPing: Fill;
+    port toGrowing: Fill;
+    port toHandshake: Fill;
+    port toArrival: Fill;
+    port toAsking: Fill;
+  }
+  component drain: Drain;
+  component slowDrain: SlowDrain;
+  component pingPong: PingPong;
+  component growing: Growing;
+  component handshake: Handshake;
+  component arrival: Arrival;
+  component asking: Asking;
+  component server: Server;
+  component bench: Bench;
+  connect (bench.toDrain, drain.in);
+  connect (bench.toSlow, slowDrain.in);
+  connect (bench.toPing, pingPong.in);
+  connect (bench.toGrowing, growing.in);
+  connect (bench.toHandshake, handshake.in);
+  connect (bench.toArrival, arrival.in);
+  connect (bench.toAsking, asking.in);
+  connect (asking.values, server.api);
+  associate bench to 'Drain by re-arrival', 'Drain by a staying statement', 'Wake ping-pong', 'Growing ping-pong', 'Four-step handshake', 'Arrival ping-pong', 'Arrival ping-pong with a request';
+  test 'Drain by re-arrival' of drain {
+    publish bench.toDrain.fill(5);
+    wait 1ms;
+    publish bench.toDrain.fill(3);
+    wait 1ms;
+    assert drain.taken == 8 and drain.backlog == 0;
+  }
+  test 'Drain by a staying statement' of slowDrain {
+    publish bench.toSlow.fill(5);
+    wait 1ms;
+    publish bench.toSlow.fill(0);
+    wait 1ms;
+    assert slowDrain.taken == 2 and slowDrain.backlog == 3;
+  }
+  test 'Wake ping-pong' of pingPong {
+    publish bench.toPing.fill(0);
+    wait 1ms;
+  }
+  test 'Growing ping-pong' of growing {
+    publish bench.toGrowing.fill(1);
+    wait 1ms;
+  }
+  test 'Four-step handshake' of handshake {
+    publish bench.toHandshake.fill(1);
+    wait 1ms;
+    assert handshake.rounds == 1 and not handshake.req and not handshake.ack;
+  }
+  test 'Arrival ping-pong' of arrival {
+    publish bench.toArrival.fill(1);
+    wait 1ms;
+  }
+  test 'Arrival ping-pong with a request' of asking {
+    publish bench.toAsking.fill(1);
+    wait 1ms;
+  }
+}

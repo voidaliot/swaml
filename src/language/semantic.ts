@@ -75,6 +75,51 @@ export function flowStates(op: Executable): a.StateStep[] {
 }
 /** An operation with states (SIF-S01): an operation whose body contains a state statement. */
 export function isStateful(op: Executable): boolean { return flowStates(op).length > 0; }
+/** What a statement standing in a state reads (SIF-R07, SIF-R08): see statementReads. */
+export type StatementReads = { attributes: Set<string>; cells: Set<string>; names: Set<string> };
+/**
+ * What a statement standing in a state reads, directly or through the operations it calls, resolved in the effective
+ * structure c (a specialization's or a usage's redefinition replaces the base operation, SIF-R07):
+ * - attributes: the attributes of c it reads that no visible local, parameter or binding hides;
+ * - cells: the sample cells, as port|member, of its sampled reads (a binding or parameter named like the port hides it);
+ * - names: every name it reads, the locals of the flow included, for the own-write re-look (SIF-R08); inside a called
+ *   operation only its attribute reads count, since its own locals and parameters are not the machine's.
+ * A remote call (a request through a port) reads nothing of c.
+ */
+export function statementReads(item: AstNode, c: Structure): StatementReads {
+    const out: StatementReads = { attributes: new Set(), cells: new Set(), names: new Set() };
+    const attributes = new Set(members(c).filter(a.isAttribute).map(x => x.name)), visited = new Set<AstNode>();
+    const visit = (root: AstNode, own: boolean) => {
+        for (const n of AstUtils.streamAst(root)) {
+            if (a.isReferenceExpression(n)) {
+                const head = (n.path ?? '').split('.')[0];
+                if (!head)
+                    continue;
+                if (own)
+                    out.names.add(head);
+                if (localVisible(n, head))
+                    continue;
+                if (attributes.has(head)) {
+                    out.attributes.add(head);
+                    out.names.add(head);
+                    continue;
+                }
+                const sampled = sampledReadForm(n, c);
+                if (sampled)
+                    out.cells.add(`${sampled.port.name}|${sampled.member.name}`);
+            }
+            else if (a.isCallExpression(n) && n.target && !n.target.includes('.')) {
+                const op = localOperation(n, n.target, c), b = op && isExecutable(op) ? body(op) : undefined;
+                if (b && !visited.has(b)) {
+                    visited.add(b);
+                    visit(b, false);
+                }
+            }
+        }
+    };
+    visit(item, true);
+    return out;
+}
 /** A state's inner states: the states standing in its braces (SIF-S03). */
 export const innerStates = (s: a.StateStep): a.StateStep[] => s.statements.filter(a.isStateStep);
 /** A state's items: everything in its braces before (and, in an invalid text, between) its inner states (SIF-S03). */

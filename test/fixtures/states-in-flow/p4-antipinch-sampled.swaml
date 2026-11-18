@@ -1,0 +1,98 @@
+package AntiPinchSampled {
+  /** Reading sample 8, the anti-pinch condition on a sampled port member (docs/proposals/STATES_IN_FLOW_PROPOSAL.md 1.8). The bench is an interface-only actor; each test is one question of the sample. */
+  enum MotorDirection { stop, up, down }
+  enum WindowRequest { autoUp, halt }
+  port def MotorSense {
+    provides attribute current: uint = 0;
+  }
+  port def WindowRequests {
+    provides event request(c: WindowRequest);
+  }
+  port def MotorOut {
+    provides attribute dir: MotorDirection;
+  }
+  component def Lifter {
+    reversed port sense: MotorSense;
+    reversed port requests: WindowRequests;
+    port motor: MotorOut;
+    const attribute pinchLimit: uint = 4500;
+    attribute pinchReversals: uint = 0;
+    attribute direction: MotorDirection = MotorDirection.stop;
+    operation drive(d: MotorDirection) {
+      direction = d;
+      send motor.dir(d);
+    }
+    operation control() {
+      state idle {
+        on entry { drive(MotorDirection.stop); }
+        on receive requests.request(c) { if (c == WindowRequest.autoUp) { exit; } }
+      }
+      state closing {
+        on entry { drive(MotorDirection.up); }
+        if (sense.current > pinchLimit) { pinchReversals = pinchReversals + 1; to reversing; }
+        on receive requests.request(c) { if (c == WindowRequest.halt) { to idle; } }
+        after 8s { to idle; }
+      }
+      state reversing {
+        on entry { drive(MotorDirection.down); }
+        after 400ms { to idle; }
+      }
+    }
+    schedule {
+      on start control();
+    }
+  }
+  component def Bench {
+    port sense: MotorSense;
+    port requests: WindowRequests;
+    reversed port motor: MotorOut;
+  }
+  component lifter: Lifter;
+  component bench: Bench;
+  connect (bench.sense, lifter.sense);
+  connect (bench.requests, lifter.requests);
+  connect (lifter.motor, bench.motor);
+  associate bench to 'Q1 5000 at 100 ms', 'Q2 halt then 5000 at one instant', 'Q3 already 5000 on arrival', 'Q5 5000 exactly at 8 s', 'Flip 5000 then 3000 at one instant', 'Flip 5000 then 3000 one ns apart';
+  test 'Q1 5000 at 100 ms' of lifter {
+    publish bench.requests.request(WindowRequest.autoUp);
+    wait 100ms;
+    send bench.sense.current(5000);
+    wait 1ms;
+    assert lifter.pinchReversals == 1 and lifter.direction == MotorDirection.down;
+    wait 500ms;
+  }
+  test 'Q2 halt then 5000 at one instant' of lifter {
+    publish bench.requests.request(WindowRequest.autoUp);
+    wait 100ms;
+    publish bench.requests.request(WindowRequest.halt);
+    send bench.sense.current(5000);
+    wait 500ms;
+  }
+  test 'Q3 already 5000 on arrival' of lifter {
+    send bench.sense.current(5000);
+    wait 10ms;
+    publish bench.requests.request(WindowRequest.autoUp);
+    wait 500ms;
+  }
+  test 'Q5 5000 exactly at 8 s' of lifter {
+    publish bench.requests.request(WindowRequest.autoUp);
+    wait 8s;
+    send bench.sense.current(5000);
+    wait 500ms;
+  }
+  test 'Flip 5000 then 3000 at one instant' of lifter {
+    publish bench.requests.request(WindowRequest.autoUp);
+    wait 100ms;
+    send bench.sense.current(5000);
+    send bench.sense.current(3000);
+    wait 500ms;
+  }
+  test 'Flip 5000 then 3000 one ns apart' of lifter {
+    publish bench.requests.request(WindowRequest.autoUp);
+    wait 100ms;
+    send bench.sense.current(5000);
+    wait 1ns;
+    send bench.sense.current(3000);
+    wait 500ms;
+  }
+}

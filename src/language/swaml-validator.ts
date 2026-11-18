@@ -12,7 +12,7 @@ const insideConditional = (e: AstNode): boolean => { for (let n = e.$container; 
 /** The name of the attribute, requirement attribute or policy setting whose initializer contains e. */
 const initialized = (e: AstNode): string => { for (let n: AstNode | undefined = e; n; n = n.$container) if (a.isAttribute(n) || a.isPolicySetting(n) || a.isPortMember(n)) return n.name; return ''; };
 const isExpression = (n: unknown): n is a.Expression => !!n && typeof n === 'object' && EXPRESSION_TYPES.has((n as AstNode).$type);
-import { flowStates, innerStates, forwardedPorts, isSampledMember, memberPolicy, memberQos, optsIn, sampledMembers, sampledReadForm, sampledReads, useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_2_3_URI, container, constantValue, displayText, entryDeadline, entryPeriod, representableDuration, settingDuration, triggerIdentity, type ConstantProblem } from './semantic.js';
+import { flowStates, innerStates, stateItems, forwardedPorts, isSampledMember, memberPolicy, memberQos, optsIn, sampledMembers, sampledReadForm, sampledReads, useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_2_3_URI, container, constantValue, displayText, entryDeadline, entryPeriod, representableDuration, settingDuration, triggerIdentity, type ConstantProblem } from './semantic.js';
 import { ambiguousNameMessage } from './swaml-scope.js';
 import type { Occurrence } from './semantic.js';
 import { coreText, deploymentPlan, durationText, entryLabel, pathText, predecessors, statementText, suspendSite, type DeploymentPlan, type EntryPlacement, type OsTask } from './placement.js';
@@ -1400,6 +1400,56 @@ export class SwamlValidator {
         // States in the flow, package 5 replaces this: periodic machines (SIF-R14 to SIF-R17) are not run yet.
         else if (e.kind === 'every')
             this.report(e, 'SW2008', `${name} contains states; this implementation does not run periodic machines (on every) yet.`);
+        else if (e.kind === 'start')
+            this.leaveCycles(op);
+    }
+    /**
+     * SIF-D05: in a waiting machine, a cycle of states whose arrival looks leave without any condition is certain to stop the
+     * run with StateLoop (SIF-R18) once reached. A state leaves without a condition when the first statement of its look (its
+     * parents' items first) that can leave is exit; or to S; standing directly in the braces. Its successor is the state its
+     * arrival then reaches: the jump's target, the next inner state, the next state of the flow, or the first state of a
+     * while (true) body after its last one; entering a parent descends to its first inner state.
+     */
+    private leaveCycles(op: Executable): void {
+        const states = flowStates(op), byName = new Map(states.map(s => [s.name, s] as const));
+        const leaf = (s: a.StateStep | undefined): a.StateStep | undefined => s && innerStates(s).length ? leaf(innerStates(s)[0]) : s;
+        const levels = (s: a.StateStep): a.StateStep[] => a.isStateStep(s.$container) ? [...levels(s.$container), s] : [s];
+        const leaves = (n: AstNode) => a.isExit(n) || a.isJump(n) || nodes(n).some(x => a.isExit(x) || a.isJump(x));
+        // The state reached after exit; written at level s: the next inner state, or the next statement of the list.
+        const after = (s: a.StateStep): a.StateStep | undefined => {
+            const list = s.$container as AstNode & { statements?: AstNode[] }, i = s.$containerIndex ?? -1;
+            if (a.isStateStep(list))
+                return innerStates(list)[innerStates(list).indexOf(s) + 1] ? leaf(innerStates(list)[innerStates(list).indexOf(s) + 1]) : after(list);
+            const next = list.statements?.[i + 1];
+            if (next)
+                return a.isStateStep(next) ? leaf(next) : undefined;
+            const loop = list.$container;
+            const literalTrue = a.isWhile(loop) && a.isLiteral(loop.condition) && loop.condition.boolean === 'true';
+            return literalTrue && a.isStateStep(list.statements?.[0]) ? leaf(list.statements![0] as a.StateStep) : undefined;
+        };
+        const successor = new Map<a.StateStep, a.StateStep>();
+        for (const s of states.filter(x => !innerStates(x).length)) {
+            const first = levels(s).flatMap(l => stateItems(l).filter(x => !a.isStateAction(x) && !a.isEventLine(x)).map(x => ({ x, l }))).find(({ x }) => leaves(x));
+            const next = !first ? undefined : a.isJump(first.x) ? leaf(byName.get(first.x.target ?? '')) : a.isExit(first.x) ? after(first.l) : undefined;
+            if (next)
+                successor.set(s, next);
+        }
+        const reported = new Set<a.StateStep>();
+        for (const start of states) {
+            const path: a.StateStep[] = [];
+            let s: a.StateStep | undefined = start;
+            while (s && !path.includes(s) && !reported.has(s)) {
+                path.push(s);
+                s = successor.get(s);
+            }
+            if (!s || reported.has(s))
+                continue;
+            const cycle = path.slice(path.indexOf(s));
+            cycle.forEach(x => reported.add(x));
+            const names = cycle.map(x => formatName(x.name, MESSAGE_SPELLING));
+            const who = names.length === 1 ? `${names[0]} leaves to itself` : `${names.slice(0, -1).join(', ')} and ${names.at(-1)} leave each other`;
+            this.report(cycle[0], 'SW2008', `${who} at once; reached, this stops the run with StateLoop (SIF-D05).`, false, this.at(cycle[0], 'name'));
+        }
     }
     /** SIF-S01 (parameterless void, no plain receive statement) and SIF-S02 (state names unique in the operation): SIF-D01, SIF-D03. */
     private flowOperation(op: Executable, b: a.OperationBody): void {
@@ -1451,9 +1501,32 @@ export class SwamlValidator {
                 this.eventLine(item, look, c, op);
             else if (a.isStateStep(item))
                 this.stateStep(item, env, c, op);
-            else
+            else {
                 this.block({ statements: [item] } as unknown as a.Block, look, c, op, look);
+                this.unannounced(item, s, c);
+            }
         }
+    }
+    /**
+     * SIF-S05 (SIF-D04): a statement standing in a state reads only what announces its changes to the state. now() changes
+     * without anything happening to the state, directly or through a called operation, so a condition on it would never be
+     * looked at again when it changes. A port member that is not sampled is not readable at all (WP6-S01 reports it).
+     */
+    private unannounced(item: AstNode, s: a.StateStep, c: Structure | undefined): void {
+        const visited = new Set<AstNode>();
+        const clock = (root: AstNode): boolean => nodes(root).filter(a.isCallExpression).some(call => {
+            const t = this.callTarget(call, c);
+            if (!t || !isExecutable(t))
+                return false;
+            if (isClockRead(t))
+                return true;
+            const b = body(t);
+            return !!b && !visited.has(b) && (visited.add(b), clock(b));
+        });
+        if (!clock(item))
+            return;
+        const text = a.isIf(item) ? `if (${item.condition.$cstNode?.text ?? '…'})` : (item.$cstNode?.text ?? '').split('\n')[0].trim().replace(/;$/, '');
+        this.report(item, 'SW2006', `${text} in ${formatName(s.name, MESSAGE_SPELLING)} reads now(), which nothing announces; use after D, or a sampled member (SIF-D04).`);
     }
     /** An event line (SIF-S07): its input (events and attributes only), its timer, and its block with the bindings. */
     private eventLine(line: a.EventLine, env: Env, c: Structure | undefined, op: Executable): void {

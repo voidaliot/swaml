@@ -1,0 +1,229 @@
+package Values {
+  /** Conditions read in states and what wakes them (SIF-R07, SIF-R08): own writes, the statement before the line that writes what it reads, helpers, shadowing, specialization and usage-level redefinition, case calls that suspend, and a write while the machine is busy. */
+  datatype Reading {
+    v: int;
+  }
+  port def Level {
+    provides attribute v: int = 0;
+  }
+  port def TempIn {
+    provides event temp(v: int);
+  }
+  port def AbIn {
+    provides event a(v: int);
+    provides event b(v: int);
+  }
+  port def BusyIn {
+    provides event go();
+    provides event a(v: int);
+  }
+  component def OwnAfter {
+    /** The timer line writes ready, and the condition written after it sees it in the same look. */
+    attribute ready: bool = false;
+    attribute left: bool = false;
+    operation run() {
+      state armed {
+        after 10ms { ready = true; }
+        if (ready) { exit; }
+      }
+      left = true;
+    }
+    schedule { on start run(); }
+  }
+  component def OwnBefore {
+    /** The condition is written before the timer line that writes what it reads; the line's write makes the state look again (SIF-R08). */
+    attribute ready: bool = false;
+    attribute left: bool = false;
+    operation run() {
+      state armed {
+        if (ready) { exit; }
+        after 10ms { ready = true; }
+      }
+      left = true;
+    }
+    schedule { on start run(); }
+  }
+  component def Heater {
+    /** The condition calls a helper: the read set is the helper's reads, temp and limit. temp is written by setTemp, another activation (on receive), by a case call, or by stage(), which suspends in the middle. */
+    reversed port in: TempIn;
+    const attribute limit: int = 40;
+    attribute temp: int = 20;
+    attribute trips: int = 0;
+    attribute seen50: int = 0;
+    operation tooHot() returns bool {
+      return temp > limit;
+    }
+    operation setTemp(v: int) {
+      temp = v;
+    }
+    operation stage() {
+      temp = 50;
+      wait 10ms;
+      temp = 70;
+    }
+    operation run() {
+      state watching {
+        if (temp == 50) { seen50 = seen50 + 1; }
+        if (tooHot() and temp >= 70) { trips = trips + 1; exit; }
+      }
+    }
+    schedule {
+      on start run();
+      on receive in.temp(v) setTemp(v);
+    }
+  }
+  component def Shadowed {
+    /** A helper parameter named level hides the sampled port member level.v: cell updates of level.v are not in the read set and wake nothing. Locals and parameters named like an attribute are refused by the validator (they shadow a live name), so this is the one shadowing the read set must respect. */
+    reversed port level: Level;
+    attribute left: bool = false;
+    attribute peeked: int = 0;
+    operation peek() {
+      /** A sampled read of level.v elsewhere makes the member sampled (it needs no input owner then). */
+      peeked = level.v;
+    }
+    operation over(level: Reading) returns bool {
+      return level.v > 40;
+    }
+    operation run() {
+      state watching {
+        if (over(record Reading { v = 0; })) { exit; }
+      }
+      left = true;
+    }
+    schedule {
+      on start run();
+    }
+  }
+  component def Base {
+    /** hot() reads a here; Special redefines it to read b. The read set of watching is computed per effective occurrence. */
+    reversed port in: AbIn;
+    attribute a: int = 0;
+    attribute b: int = 0;
+    attribute trips: int = 0;
+    operation hot() returns bool {
+      return a > 5;
+    }
+    operation setA(v: int) {
+      a = v;
+    }
+    operation setB(v: int) {
+      b = v;
+    }
+    operation run() {
+      state watching {
+        if (hot()) { trips = trips + 1; exit; }
+      }
+    }
+    schedule {
+      on start run();
+      on receive in.a(v) setA(v);
+      on receive in.b(v) setB(v);
+    }
+  }
+  component def Special specializes Base {
+    redefines operation hot() returns bool {
+      return b > 5;
+    }
+  }
+  component def Busy {
+    /** The condition stands before a line that suspends; flag is written by another activation while the look is suspended. */
+    reversed port in: BusyIn;
+    attribute flag: bool = false;
+    attribute left: bool = false;
+    operation setFlag(v: int) {
+      flag = v > 0;
+    }
+    operation run() {
+      state s {
+        if (flag) { exit; }
+        on receive in.go() { wait 5ms; }
+      }
+      left = true;
+    }
+    schedule {
+      on start run();
+      on receive in.a(v) setFlag(v);
+    }
+  }
+  component def Bench {
+    port toHeater: TempIn;
+    port toShadowed: Level;
+    port toBase: AbIn;
+    port toSpecial: AbIn;
+    port toUsage: AbIn;
+    port toBusy: BusyIn;
+  }
+  component ownAfter: OwnAfter;
+  component ownBefore: OwnBefore;
+  component heater: Heater;
+  component shadowed: Shadowed;
+  component base: Base;
+  component special: Special;
+  component usage: Base {
+    redefines operation hot() returns bool {
+      return b > 5;
+    }
+  }
+  component busy: Busy;
+  component bench: Bench;
+  connect (bench.toHeater, heater.in);
+  connect (bench.toShadowed, shadowed.level);
+  connect (bench.toBase, base.in);
+  connect (bench.toSpecial, special.in);
+  connect (bench.toUsage, usage.in);
+  connect (bench.toBusy, busy.in);
+  associate special, usage to 'Redefinition per occurrence';
+  associate bench to 'Own write after the line', 'Own write before the line', 'Helper read set, write by another activation', 'Case call writes', 'Case call suspended in the middle', 'Shadowed attribute', 'Redefinition per occurrence', 'Write while the look is suspended';
+  test 'Own write after the line' of ownAfter {
+    wait 20ms;
+    assert ownAfter.left;
+  }
+  test 'Own write before the line' of ownBefore {
+    /** the timer line writes ready after the condition was checked, so the state looks again at once and leaves at 10 ms. */
+    wait 20ms;
+    assert ownBefore.ready and ownBefore.left;
+  }
+  test 'Helper read set, write by another activation' of heater {
+    publish bench.toHeater.temp(30);
+    wait 1ms;
+    publish bench.toHeater.temp(70);
+    wait 1ms;
+    assert heater.trips == 1;
+  }
+  test 'Case call writes' of heater {
+    heater.setTemp(30);
+    heater.setTemp(80);
+    wait 1ms;
+    assert heater.trips == 1;
+  }
+  test 'Case call suspended in the middle' of heater {
+    /** stage() writes 50, waits 10 ms, writes 70: the suspension unlocks the subject, so watching looks at 50 at 0 ms and at 70 at 10 ms. */
+    heater.stage();
+    wait 1ms;
+    assert heater.seen50 == 1 and heater.trips == 1;
+  }
+  test 'Shadowed attribute' of shadowed {
+    send bench.toShadowed.v(90);
+    wait 10ms;
+    assert not shadowed.left;
+  }
+  test 'Redefinition per occurrence' of base {
+    publish bench.toBase.b(10);
+    publish bench.toSpecial.a(10);
+    publish bench.toUsage.a(10);
+    wait 1ms;
+    assert base.trips == 0 and special.trips == 0 and usage.trips == 0;
+    publish bench.toBase.a(10);
+    publish bench.toSpecial.b(10);
+    publish bench.toUsage.b(10);
+    wait 1ms;
+    assert base.trips == 1 and special.trips == 1 and usage.trips == 1;
+  }
+  test 'Write while the look is suspended' of busy {
+    publish bench.toBusy.go();
+    wait 2ms;
+    publish bench.toBusy.a(1);
+    wait 10ms;
+    assert busy.left;
+  }
+}

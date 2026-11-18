@@ -2,7 +2,7 @@ import { AstUtils, DocumentState, type AstNode } from 'langium';
 import * as a from '../language/generated/ast.js';
 import { SWAML_REFERENCE_PROFILE } from '../language/edition.js';
 import { deploymentPlan } from '../language/placement.js';
-import { flowStates, innerStates, stateItems, inputEndpoints, memberQos, sampledMembers, sampledReadForm, LIBRARY_2_3_URI, libraryIntrinsic, type LibraryIntrinsic, caseRead, caseTarget, isPlace, placeRoot, valueSteps, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, entryPeriod, entryDeadline, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
+import { flowStates, innerStates, stateItems, statementReads, type StatementReads, inputEndpoints, memberQos, sampledMembers, sampledReadForm, LIBRARY_2_3_URI, libraryIntrinsic, type LibraryIntrinsic, caseRead, caseTarget, isPlace, placeRoot, valueSteps, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, entryPeriod, entryDeadline, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
 import { binary, bind, checked, ContractViolation, copy, intText, plain, realText, RuntimeFault, scalar, squareRoot, voidValue, widen, type Environment, type Value } from './values.js';
 export { projectOperationTiming } from './timing.js';
 export interface SimulationOptions {
@@ -91,6 +91,8 @@ type Reply = {
     failure?: string;
     input?: Message;
     branch?: a.ReceiveBranch;
+    /** A waiting state is woken by a value (SIF-R07): a look with no message. */
+    wake?: boolean;
 };
 type Yield = {
     kind: 'step';
@@ -149,7 +151,17 @@ type Component = {
     structure: Structure;
     store: Environment;
     lock?: Frame;
+    /**
+     * What happened to this occurrence from outside so far (SIF-R18): deliveries and sample updates from another
+     * occurrence, replies, and writes of a case script or of a case call into it. Two looks of a state with the same count
+     * between them saw only the occurrence's own activity.
+     */
+    external?: number;
+    /** SIF-R18 within the current instant: looks per state, and the configurations seen at them with their external count. */
+    loops?: { time: number; looks: Map<a.StateStep, number>; seen: Map<a.StateStep, Map<string, number>> };
 };
+/** Why a waiting state looks without a message (SIF-R07, SIF-R08, SIF-T03). */
+type WakeCause = { cause: 'write'; writer: string; attributes: string[] } | { cause: 'sample'; cell: string } | { cause: 'own'; names: string[] };
 type Frame = {
     id: string;
     c: Component;
@@ -194,6 +206,18 @@ type Frame = {
     flowTrigger?: AstNode;
     /** Statements run so far by the event line block that runs now (SIF-R06, SIF-T02); a false if test is no work. */
     lineWork?: number;
+    /** The state levels of the machine's current state and the locals of the list holding its outermost state (SIF-R07, SIF-R18). */
+    flow?: { levels: FlowLevel[]; local: Environment };
+    /** Attribute names this segment wrote, per occurrence written (a case call writes its subject), until its unlock (SIF-R07). */
+    dirty?: Map<Component, Set<string>>;
+    /** A wake that came while the machine was busy (SIF-R07): the next look serves it and every later one. */
+    wakePending?: WakeCause;
+    /** Attribute and local names written by the event line block that runs now (SIF-R08). */
+    lookWrites?: Set<string>;
+    /** Iteration counters of the bounded loops being run (n times, for … in): part of the configuration (SIF-R18). */
+    loops?: Map<AstNode, number>;
+    /** A case script running a call of an operation of its subject: its writes are external to the subject (SIF-R18). */
+    borrowed?: boolean;
 };
 /** The state levels of an operation with states: each entered state, outermost first (SIF-R01, SIF-R11). */
 type FlowLevel = {
@@ -206,7 +230,7 @@ type FlowLevel = {
     presented: Set<a.EventLine>;
 };
 /** What is present at a look (SIF-R03) and what caused it. */
-type Present = { input?: Message; timers: boolean; cause: 'arrival' | 'message' | 'timer' };
+type Present = { input?: Message; timers: boolean; cause: 'arrival' | 'message' | 'timer' | 'wake' | 'pending' | 'own' };
 /** exit; or to S; run by a look (SIF-R09). */
 class LeaveSignal {
     constructor(public node: a.Exit | a.Jump) { }
@@ -631,7 +655,23 @@ class Interpreter {
         value: Value;
     } { const c = local.get(name) ?? f.c.store.get(name); if (!c)
         throw new RuntimeFault('Type', `Unknown value ${name}`); return c; }
-    private assign(f: Frame, local: Environment, name: string, value: Value, site?: AstNode): void { const c = this.cell(f, local, name); c.value = widen(value, c.type); this.log('write', `${f.c.path}.${name}`, { activation: f.id, source: this.source(site ?? f.at), scope: local.has(name) ? 'local' : 'attribute', value: plain(c.value) }); }
+    /**
+     * Records a write for the wakes and the own-write re-look: an attribute write of this segment, per occurrence, flushed at
+     * its unlock (SIF-R07; a write of an equal value counts, wakes are writes), and any name an event line block writes (SIF-R08).
+     */
+    private noteWrite(f: Frame, local: Environment, name: string): void {
+        const cell = local.get(name);
+        // A line's write that a later look can see: an attribute, or a local of the flow around the state (not a local of
+        // the line's block, the look or a called operation).
+        if (f.lookWrites && (cell ? f.flow?.local.get(name) === cell : f.c.store.has(name)))
+            f.lookWrites.add(name);
+        if (cell || !f.c.store.has(name))
+            return;
+        const dirty = f.dirty ??= new Map(), names = dirty.get(f.c) ?? new Set<string>();
+        names.add(name);
+        dirty.set(f.c, names);
+    }
+    private assign(f: Frame, local: Environment, name: string, value: Value, site?: AstNode): void { const c = this.cell(f, local, name); c.value = widen(value, c.type); this.noteWrite(f, local, name); this.log('write', `${f.c.path}.${name}`, { activation: f.id, source: this.source(site ?? f.at), scope: local.has(name) ? 'local' : 'attribute', value: plain(c.value) }); }
     /**
      * A place assignment (WP1-R01 to WP1-R03): the target's index expressions left to right, then the right
      * side, then the root cell is read live, every index is checked against the value read and the root is
@@ -669,6 +709,7 @@ class Interpreter {
         else
             (parent!.data as Record<string, Value>)[key!] = replaced;
         cell.value = next;
+        this.noteWrite(f, local, root);
         this.log('write', `${f.c.path}.${root}`, { activation: f.id, source: this.source(f.at), scope: local.has(root) ? 'local' : 'attribute', value: plain(next), place });
         return voidValue();
     }
@@ -899,7 +940,7 @@ class Interpreter {
     private concurrent(c: Component): number { let n = 0; for (const x of this.frames)
         if (x.c === c && x.entry.concurrent && x.started)
             n++; return n; }
-    private unlock(f: Frame): void { if (f.c.lock === f) {
+    private unlock(f: Frame): void { this.flushWrites(f); if (f.c.lock === f) {
         f.c.lock = undefined;
         this.log('unlock', f.c.path, { activation: f.id });
     } }
@@ -1199,6 +1240,7 @@ class Interpreter {
                 f.op = scripted.operation;
                 f.script = undefined;
                 f.watches = [];
+                f.borrowed = true;
                 let completed = false, result: Value, outputs: Value[] | undefined;
                 try {
                     result = yield* this.call(scripted.operation, args, f);
@@ -1208,6 +1250,7 @@ class Interpreter {
                 finally {
                     const failedAt = f.at;
                     this.unlock(f);
+                    f.borrowed = false;
                     Object.assign(f, saved);
                     // A failure keeps its actual callee statement; a successful
                     // return and all out writes belong to the restored caller.
@@ -1307,16 +1350,24 @@ class Interpreter {
         }
         else if (a.isWhile(s) || a.isUntil(s)) {
             const limit = s.limit ? widen(yield* this.evaluate(s.limit, f, local), 'uint').data as number : Infinity;
-            for (let i = 0; i < limit; i++) {
-                this.fuel();
-                // The body moves f.at; a condition belongs to the loop statement again.
-                f.at = s;
-                if (a.isWhile(s) && !(yield* this.evaluate(s.condition, f, local)).data)
-                    break;
-                yield* this.block(s.body, f, local);
-                f.at = s;
-                if (a.isUntil(s) && (yield* this.evaluate(s.condition, f, local)).data)
-                    break;
+            try {
+                for (let i = 0; i < limit; i++) {
+                    this.fuel();
+                    // A bounded loop's counter belongs to the configuration (SIF-R18); an unbounded loop's count would hide a repetition.
+                    if (s.limit)
+                        (f.loops ??= new Map()).set(s, i);
+                    // The body moves f.at; a condition belongs to the loop statement again.
+                    f.at = s;
+                    if (a.isWhile(s) && !(yield* this.evaluate(s.condition, f, local)).data)
+                        break;
+                    yield* this.block(s.body, f, local);
+                    f.at = s;
+                    if (a.isUntil(s) && (yield* this.evaluate(s.condition, f, local)).data)
+                        break;
+                }
+            }
+            finally {
+                f.loops?.delete(s);
             }
         }
         else if (a.isFor(s)) {
@@ -1332,10 +1383,16 @@ class Interpreter {
         }
         else if (a.isForEach(s)) {
             const values = copy((yield* this.evaluate(s.collection, f, local)).data as Value[]);
-            for (const v of values) {
-                const loop = new Map(local);
-                bind(loop, s.variable.name, typeKey(s.variable.type), v);
-                yield* this.block(s.body, f, loop);
+            try {
+                for (const [i, v] of values.entries()) {
+                    (f.loops ??= new Map()).set(s, i);
+                    const loop = new Map(local);
+                    bind(loop, s.variable.name, typeKey(s.variable.type), v);
+                    yield* this.block(s.body, f, loop);
+                }
+            }
+            finally {
+                f.loops?.delete(s);
             }
         }
         else if (a.isWait(s) && s.delay) {
@@ -1538,9 +1595,13 @@ class Interpreter {
      * SIF-R02 to SIF-R04: one look. Levels outermost first; within a level its items in written order, skipping on entry and
      * on exit: an event line runs when its event is present, every statement runs. The look ends at the first exit; or to S;
      * it runs, which is returned with the level it was written at. Records the stay observation (SIF-T02) and the discard of
-     * a message that no line acted on (SIF-R06).
+     * a message that no line acted on (SIF-R06). In a waiting machine, a look that does not leave and whose event line
+     * block wrote a name that a statement run before that line in walk order reads returns those names (SIF-R08): the
+     * state looks again at once.
      */
-    private *look(levels: FlowLevel[], f: Frame, local: Environment, key: string, present: Present): Generator<Yield, { node: a.Exit | a.Jump; level: number } | undefined, Reply | undefined> {
+    private *look(levels: FlowLevel[], f: Frame, local: Environment, key: string, present: Present): Generator<Yield, { node: a.Exit | a.Jump; level: number } | { relook: string[] } | undefined, Reply | undefined> {
+        // SIF-R08: the names read by the statements run so far in this look, and those a later line wrote.
+        const passed = new Set<string>(), relook = new Set<string>(), own = this.relooks(f);
         // Every timer of a level that has run out when the look starts and was not present before (SIF-R03).
         const timers = new Set<a.EventLine>();
         if (present.timers)
@@ -1561,6 +1622,8 @@ class Interpreter {
                         continue;
                     if (!a.isEventLine(item)) {
                         yield* this.statement(item, f, scope);
+                        if (own)
+                            this.readsOf(item, f.c.structure).names.forEach(x => passed.add(x));
                         continue;
                     }
                     if (item.endpoint !== undefined ? input?.member !== item.endpoint : !timers.has(item))
@@ -1572,10 +1635,13 @@ class Interpreter {
                     }
                     f.at = item;
                     f.lineWork = 0;
+                    const writes = f.lookWrites = own ? new Set<string>() : undefined;
                     try {
                         yield* this.block(item.body, f, lineScope);
                     }
                     finally {
+                        f.lookWrites = undefined;
+                        writes?.forEach(x => { if (passed.has(x)) relook.add(x); });
                         const worked = (f.lineWork ?? 0) > 0;
                         f.lineWork = undefined;
                         if (worked) {
@@ -1597,7 +1663,7 @@ class Interpreter {
             this.log('discardInput', key, { activation: f.id, source: input.origin ?? this.source(leaf), reason: left && !lineRan ? 'leftBeforeLine' : 'noEnabledTransition' });
         else if (!left && lineWork && firstLine)
             this.log('state', key, { state: leaf.name, activation: f.id, source: this.source(firstLine), stay: true });
-        return left ? { node: left, level } : undefined;
+        return left ? { node: left, level } : relook.size ? { relook: [...relook] } : undefined;
     }
     /**
      * SIF-R09: leaving in text order. The block before the leave has run; on exit of every state left runs, innermost first;
@@ -1645,10 +1711,13 @@ class Interpreter {
                 return { timers: true, cause: 'timer' };
             const named = this.namedAt(levels);
             f.at = levels.at(-1)!.state;
-            if (this.flowHeads(f).some(x => named.has(x.endpointName))) {
+            // Step 3: a queued named message, or a wake that came while the machine was busy (SIF-R07), ends the wait in zero time.
+            if (f.wakePending || this.flowHeads(f).some(x => named.has(x.endpointName))) {
                 const reply: Reply | undefined = yield { kind: 'receive', branches: [], flow: { named }, zero: true };
                 if (reply?.input)
                     return { input: reply.input, timers: true, cause: 'message' };
+                if (f.wakePending)
+                    return { timers: true, cause: 'pending' };
                 continue;
             }
             let expires: number | undefined;
@@ -1661,30 +1730,182 @@ class Interpreter {
             const reply: Reply | undefined = yield { kind: 'receive', branches: [], timeout: expires === undefined ? undefined : Math.max(0, expires - this.time), flow: { named } };
             if (reply?.input)
                 return { input: reply.input, timers: true, cause: 'message' };
+            if (reply?.wake)
+                return { timers: true, cause: 'wake' };
             return { timers: true, cause: 'timer' };
         }
     }
     /**
      * A state standing in a statement list, reached by the flow or by a jump into it or into a state inside it (SIF-R01):
      * arrival, then looks until a look leaves; exit; from the outermost state returns to the list, which goes on with the
-     * next statement. A state with nothing to look at is a named step: it is left at once, as by exit;.
+     * next statement. A state with nothing to look at is a named step: it is left at once, as by exit;. A look whose line
+     * wrote what an earlier statement of the look read is followed at once by a look with nothing present (SIF-R08).
      */
     private *flowMachine(top: a.StateStep, f: Frame, local: Environment): Iterator {
         const key = this.label(f), target = f.flowTarget, trigger = f.flowTrigger;
         f.flowTarget = f.flowTrigger = undefined;
-        const levels: FlowLevel[] = [];
-        yield* this.enter(levels, target !== undefined && target !== top.name ? [top, ...this.pathInside(top, target)!] : [top], f, local, key, trigger);
-        let present: Present = { timers: true, cause: 'arrival' };
-        while (true) {
-            const left = this.hasSomething(levels) ? yield* this.look(levels, f, local, key, present) : { node: undefined, level: levels.length - 1 };
-            if (left) {
-                if (yield* this.leave(levels, left.level, left.node, f, local, key))
-                    return voidValue();
-                present = { timers: true, cause: 'arrival' };
-                continue;
+        const levels: FlowLevel[] = [], flow = f.flow = { levels, local };
+        try {
+            yield* this.enter(levels, target !== undefined && target !== top.name ? [top, ...this.pathInside(top, target)!] : [top], f, local, key, trigger);
+            let present: Present = { timers: true, cause: 'arrival' };
+            while (true) {
+                let left: { node: a.Exit | a.Jump | undefined; level: number } | undefined;
+                if (!this.hasSomething(levels))
+                    left = { node: undefined, level: levels.length - 1 };
+                else {
+                    this.beginLook(f, levels, key, present);
+                    const looked = yield* this.look(levels, f, local, key, present);
+                    if (looked && 'relook' in looked) {
+                        this.log('wake', key, { activation: f.id, state: levels.at(-1)!.state.name, cause: 'own', names: looked.relook });
+                        present = { timers: false, cause: 'own' };
+                        continue;
+                    }
+                    left = looked;
+                }
+                if (left) {
+                    if (yield* this.leave(levels, left.level, left.node, f, local, key))
+                        return voidValue();
+                    present = { timers: true, cause: 'arrival' };
+                    continue;
+                }
+                present = yield* this.wait(levels, f);
             }
-            present = yield* this.wait(levels, f);
         }
+        finally {
+            if (f.flow === flow)
+                f.flow = undefined;
+        }
+    }
+    /**
+     * Before every look: the pending wake is served by it (SIF-R05 step 3: one look serves every write made while the machine
+     * was busy; a look that it causes records it now, with pending: true), and the look is checked for StateLoop (SIF-R18).
+     */
+    private beginLook(f: Frame, levels: readonly FlowLevel[], key: string, present: Present): void {
+        const pending = f.wakePending;
+        f.wakePending = undefined;
+        if (pending && present.cause === 'pending')
+            this.log('wake', key, { activation: f.id, state: levels.at(-1)!.state.name, ...pending, pending: true });
+        this.checkLoop(f, levels, present);
+    }
+    // ---- Values that wake a state (SIF-R07), the own-write re-look (SIF-R08) and StateLoop (SIF-R18) ----
+    /** Whether a machine looks again after its own line's write (SIF-R08): waiting machines only. */
+    private relooks(_f: Frame): boolean { return true; }
+    private reads = new Map<AstNode, Map<Structure, StatementReads>>();
+    /** What one statement standing in a state reads in the effective structure c (statementReads), computed once. */
+    private readsOf(item: AstNode, c: Structure): StatementReads {
+        const known = this.reads.get(item) ?? this.reads.set(item, new Map()).get(item)!;
+        let r = known.get(c);
+        if (!r)
+            known.set(c, r = statementReads(item, c));
+        return r;
+    }
+    /**
+     * The read set of a waiting machine's current state (SIF-R07): the attributes and sample cells (occurrence path, port|member)
+     * read by the statements standing in its levels; event lines' blocks and on entry/on exit are not in it.
+     */
+    private readSet(g: Frame): { attributes: Set<string>; cells: Set<string> } {
+        const out = { attributes: new Set<string>(), cells: new Set<string>() };
+        for (const l of g.flow?.levels ?? [])
+            for (const item of stateItems(l.state))
+                if (!a.isStateAction(item) && !a.isEventLine(item)) {
+                    const r = this.readsOf(item, g.c.structure);
+                    r.attributes.forEach(x => out.attributes.add(x));
+                    r.cells.forEach(x => out.cells.add(`${g.c.path}.${x}`));
+                }
+        return out;
+    }
+    /** The machines that a write or a cell update of occurrence c may wake: in a state, waiting machines only (SIF-R07). */
+    private wakeable(c: Component, writer?: Frame): Frame[] {
+        const out: Frame[] = [];
+        for (const g of this.frames)
+            if (g !== writer && !g.done && g.c === c && !g.script && g.flow && this.relooks(g))
+                out.push(g);
+        return out;
+    }
+    /** Wakes g now when its state waits (a look with no message), or remembers the wake while it is busy (SIF-R07). */
+    private wakeOrPend(g: Frame, why: WakeCause): void {
+        const w = g.waiting;
+        if (g.suspended && w?.kind === 'receive' && w.flow && !w.zero) {
+            this.log('wake', this.label(g), { activation: g.id, state: g.flow!.levels.at(-1)?.state.name, ...why });
+            this.resume(g, { wake: true });
+        }
+        else
+            g.wakePending ??= why;
+    }
+    /**
+     * SIF-R07: at the end of a segment (its unlock at suspension, completion or failure) the attributes it wrote wake the
+     * waiting machines of the occurrence written whose read set holds them; a case script's writes into its subject are also
+     * activity from outside for StateLoop (SIF-R18).
+     */
+    private flushWrites(f: Frame): void {
+        const dirty = f.dirty;
+        if (!dirty)
+            return;
+        f.dirty = undefined;
+        for (const [c, names] of dirty) {
+            if (f.borrowed || f.script)
+                c.external = (c.external ?? 0) + 1;
+            for (const g of this.wakeable(c, f)) {
+                const reads = this.readSet(g).attributes, hit = [...names].filter(n => reads.has(n));
+                if (hit.length)
+                    this.wakeOrPend(g, { cause: 'write', writer: f.id, attributes: hit });
+            }
+        }
+    }
+    /** SIF-R07: a sample-cell update, at its delivery event, wakes the machines of the port's occurrence that read the cell. */
+    private cellUpdated(m: Message): void {
+        const c = this.ports.get(m.target)?.c, cell = `${m.target}|${m.member}`;
+        if (!c)
+            return;
+        for (const g of this.wakeable(c))
+            if (this.readSet(g).cells.has(cell))
+                this.wakeOrPend(g, { cause: 'sample', cell: `${m.target}.${m.member}` });
+    }
+    /** SIF-R18: a delivery or sample update from another occurrence is activity from outside of the target occurrence. */
+    private noteExternal(m: Message): void {
+        const target = this.ports.get(m.target)?.c, source = this.ports.get(m.source)?.c;
+        if (target && source !== target)
+            target.external = (target.external ?? 0) + 1;
+    }
+    /**
+     * The configuration of an occurrence at a look (SIF-R18): its attributes and sample cells; its input queues by member,
+     * payload, order and readiness (not message identity); for each of its activations its place, its state levels with
+     * their arrival times and the timers already present, its locals, its bounded loop counters and its pending wake.
+     */
+    private configuration(c: Component): string {
+        const queues: unknown[] = [];
+        for (const [k, q] of this.queues)
+            if (q.length && this.ports.get(q[0].target)?.c === c)
+                queues.push([k.slice(k.indexOf('|') + 1), q.map(m => [m.member, m.args.map(plain), !!(m as Message & { ready?: boolean }).ready])]);
+        const frames: unknown[] = [];
+        for (const g of this.frames)
+            if (!g.done && g.c === c)
+                frames.push([g.op?.name, this.source(g.at), g.waiting?.kind, g.flow?.levels.map(l => [l.state.name, l.entered, [...l.presented].map(x => this.source(x))]), g.flow ? [...g.flow.local].map(([n, v]) => [n, plain(v.value)]) : undefined, g.loops ? [...g.loops].map(([n, i]) => [this.source(n), i]) : undefined, g.wakePending ?? null]);
+        const cells = [...this.cells].filter(([k]) => k.startsWith(`${c.path}.`)).map(([k, v]) => [k, plain(v.value)]);
+        return JSON.stringify([[...c.store].map(([n, v]) => [n, plain(v.value)]), cells, queues, frames]);
+    }
+    /**
+     * SIF-R18: StateLoop at a look of state S of a waiting machine when the configuration of the occurrence, with what is
+     * present at this look (the message, by member and payload, and the timers that have run out), equals the one at an
+     * earlier look of S in the same instant with no activity from outside between. Configurations are taken from the
+     * second look of S in an instant, so a loop that would end is never stopped and nothing is hashed in the usual case.
+     */
+    private checkLoop(f: Frame, levels: readonly FlowLevel[], present: Present): void {
+        if (!this.relooks(f))
+            return;
+        const c = f.c, s = levels.at(-1)!.state;
+        if (c.loops?.time !== this.time)
+            c.loops = { time: this.time, looks: new Map(), seen: new Map() };
+        const n = (c.loops.looks.get(s) ?? 0) + 1;
+        c.loops.looks.set(s, n);
+        if (n < 2)
+            return;
+        const due = present.timers ? levels.flatMap(l => this.timerLines(l).filter(t => !l.presented.has(t) && this.time >= this.due(l, t)).map(t => this.source(t))) : [];
+        const config = this.configuration(c) + JSON.stringify([present.input ? [present.input.member, present.input.args.map(plain)] : null, due]);
+        const seen = c.loops.seen.get(s) ?? c.loops.seen.set(s, new Map()).get(s)!, external = c.external ?? 0;
+        if (seen.get(config) === external)
+            throw new ContractViolation('StateLoop', 'StateLoop', { subject: this.label(f), source: this.source(s) });
+        seen.set(config, external);
     }
     /** A script's on call branch answers a request at an actor port; return inside it is the reply. */
     private *answer(branch: a.ReceiveBranch, input: Message, f: Frame, scope: Environment): Iterator {
@@ -1847,6 +2068,9 @@ class Interpreter {
                         cell.value = widen(copy(m.args)[0], cell.type);
                         cell.offer = offer;
                         this.log('sample', `${m.target}.${m.member}`, { source: m.origin, message: m.id, targetPort: m.target, member: m.member, value: plain(cell.value) });
+                        this.noteExternal(m);
+                        // An update of a cell a waiting state reads wakes it, at this delivery event (SIF-R07).
+                        this.cellUpdated(m);
                     }
                 }
                 if (!queue!.includes(m))
@@ -1858,6 +2082,8 @@ class Interpreter {
                 }
                 (m as Message & { ready: boolean }).ready = true;
                 m.delivered = ++this.deliveries;
+                if (!cell)
+                    this.noteExternal(m);
             }, undefined, this.deliveryKey(m));
         }
     }
@@ -1898,6 +2124,7 @@ class Interpreter {
                         continue;
                     }
                     c.state = m.response?.failure ? 'failed' : 'succeeded';
+                    c.frame.c.external = (c.frame.c.external ?? 0) + 1;
                     this.log('reply', m.route.id, { source: c.origin, correlation: c.id, state: c.state });
                     this.resume(c.frame, m.response);
                     continue;
