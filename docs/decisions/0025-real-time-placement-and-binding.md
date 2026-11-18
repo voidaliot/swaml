@@ -26,10 +26,10 @@ The review (findings 2, 3 and 13) found:
 
 ### Release guards (B19, WP7)
 
-`when (g)` may follow the operation call of an `every`, `receive` or `after` schedule entry, before `deadline`:
+`if (g)` may follow the operation call of an `every`, `receive` or `after` schedule entry, before `deadline` (spelled `when (g)` until states-in-flow package 1, which made `if` the one word for conditions, SIF-G01):
 
 ```text
-on every 20ms slot() when (mode.current != PowerMode.sleep) deadline 2ms;
+on every 20ms slot() if (mode.current != PowerMode.sleep) deadline 2ms;
 ```
 
 - **Allowed entries (SW2007).** A guard on `start` or `call` entries is an error.
@@ -194,7 +194,7 @@ It computes no schedule in 2.3.
 
 ## Consequences
 
-- **Grammar.** `ScheduleEntry` gains `when (g)` (WP7). Placement needs no grammar change.
+- **Grammar.** `ScheduleEntry` gains `if (g)` (WP7, respelled from `when (g)` by SIF-G01). Placement needs no grammar change.
 - **Library.** `Swaml::Os` (WP8). The door model's `OsTask` is replaced by `Task`; `taskBackground` becomes `kind = TaskKind.extended`.
 - **Validator.**
   - SW2007 for release guards;

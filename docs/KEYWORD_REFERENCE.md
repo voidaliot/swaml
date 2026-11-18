@@ -254,9 +254,9 @@ Used in directed port members; see its grammar contexts and normative constraint
 
 ## Keyword: if
 
-Used in statements and decisions; see its grammar contexts and normative constraints.
+Starts a decision: an if statement, whose else may be followed by another if (else if, SIF-G01), a whole-expression conditional (WP2-G01), or (from 2.3) the release guard of an every, receive or after schedule entry (WP7-S01).
 
-**Context:** Statements and decisions. **Grammar:** If, ConditionalExpression. **Name use:** reserved.
+**Context:** Statements and decisions. **Grammar:** ScheduleEntry, If, ConditionalExpression. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -702,9 +702,9 @@ Suspends for a duration and releases the serial lock.
 
 ## Keyword: when
 
-Guards a receive, timer or completion transition, or (from 2.3) the release of an every, receive or after schedule entry (WP7-S01).
+Guards a receive, timer or completion transition of a state.
 
-**Context:** Ordered state transitions. **Grammar:** ScheduleEntry, Transition. **Name use:** reserved.
+**Context:** Ordered state transitions. **Grammar:** Transition. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
