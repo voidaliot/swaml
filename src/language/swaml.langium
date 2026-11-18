@@ -29,7 +29,8 @@ ScheduleEntry: ('on' (kind='start' | kind='every' period=Duration | kind=('recei
 Block: '{' statements+=Statement* '}';
 Statement: LocalVariable | Assign | Send | ExpressionStatement | Return | If | While | Until | For | ForEach | Wait | Receive | Interruptible | Fail | Assert;
 LocalVariable: 'var' name=Name ':' type=TypeRef '=' value=Expression ';';
-Assign: target=Name '=' value=Expression ';';
+Assign: target=ValuePath ('[' index=Expression ']' selectors+=Selector*)? '=' value=Expression ';';
+Selector: '.' field=Name | '[' index=Expression ']';
 ExpressionStatement: expression=Expression ';';
 Send: kind=('send'|'publish') endpoint=EndpointPath '(' (args+=Expression (',' args+=Expression)*)? ')' ';';
 Return: 'return' value=Expression? ';';
@@ -84,8 +85,8 @@ MultiplicativeExpression returns Expression: UnaryExpression ({infer BinaryExpre
 UnaryExpression returns Expression: {infer UnaryExpression} operator=('not'|'-') operand=UnaryExpression | PrimaryExpression;
 PrimaryExpression returns Expression: Literal | TryExpression | CallExpression | ReferenceExpression | RecordLiteral | ArrayLiteral | '(' Expression ')';
 TryExpression: 'try' '(' expression=Expression (',' fallback=Expression)? ')';
-CallExpression: target=ValuePath '(' (args+=Expression (',' args+=Expression)*)? ')';
-ReferenceExpression: path=ValuePath ('[' index=Expression ']')?;
+CallExpression: target=Path '(' (args+=Expression (',' args+=Expression)*)? ')';
+ReferenceExpression: path=ValuePath ('[' index=Expression ']' selectors+=Selector*)?;
 Literal: {infer Literal} (number=Numeric | text=STRING | boolean=('true'|'false'));
 RecordLiteral: 'record' type=[DataType:QualifiedName] '{' fields+=FieldValue* '}';
 FieldValue: name=Name '=' value=Expression ';';

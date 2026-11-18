@@ -3,7 +3,7 @@ import type { LangiumServices, RenameProvider, DefinitionProvider, ReferencesPro
 import type { DefinitionParams, Location, LocationLink, Range, ReferenceParams, RenameParams, TextDocumentPositionParams, WorkspaceEdit, TextEdit } from 'vscode-languageserver';
 import * as a from './generated/ast.js';
 import { viewCandidates, selectView } from './presentation.js';
-import { body, caseTarget, container, isExecutable, localOperation, memberEndpoint, members, nodes, owner, resolve, signature, packageOccurrences, type Node, type Structure } from './semantic.js';
+import { body, caseRead, caseTarget, container, isExecutable, isPlace, placeRoot, localOperation, memberEndpoint, members, nodes, owner, resolve, signature, packageOccurrences, type Node, type Structure } from './semantic.js';
 import { decodeQuotedName, formatName, formatQualifiedName, nameProblem, parseNameInput } from './names.js';
 export interface SemanticSymbol {
     key: string;
@@ -155,9 +155,40 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
         for (let i = 0; cst && current && i < parts.length; i++) {
             if (i)
                 current = childNode(current, parts[i]);
+            // A part family segment such as twins[0] names the part; its literal index is not part of the name (WP1-S06).
             if (current)
-                add(n, cst, symbol(current), pos, parts[i].length, path);
+                add(n, cst, symbol(current), pos, parts[i].replace(/\[\d+\]$/, '').length, path);
             pos += parts[i].length + 1;
+        }
+    };
+    /** The dotted names after the first name of a place or read, then its first index and its selectors, each name with how to mark it. */
+    type FieldStep = { name: string; mark: (s: SemanticSymbol | undefined) => void } | { name?: undefined };
+    const fieldSteps = (n: a.Assign | a.ReferenceExpression, cst: CstNode | undefined): FieldStep[] => {
+        const text = a.isAssign(n) ? n.target : n.path, parts = text.split('.');
+        let pos = parts[0].length + 1;
+        const steps: FieldStep[] = parts.slice(1).map(name => { const at = pos; pos += name.length + 1; return { name, mark: s => add(n, cst, s, at, name.length, text) }; });
+        if (n.index)
+            steps.push({});
+        for (const x of n.selectors ?? [])
+            steps.push(x.field !== undefined ? { name: x.field, mark: s => add(x, property(x, 'field'), s) } : {});
+        return steps;
+    };
+    /** Marks the record fields that a sequence of field and index steps selects from a value of the given type. */
+    const fieldRefs = (type: a.TypeRef | undefined, steps: FieldStep[]) => {
+        let data: a.ValueType | undefined = type?.type?.ref, array = type?.size !== undefined;
+        for (const step of steps) {
+            if (step.name === undefined) {
+                if (!array)
+                    return;
+                array = false;
+                continue;
+            }
+            const field = !array && a.isDataType(data) ? data.fields.find(f => f.name === step.name) : undefined;
+            if (!field)
+                return;
+            step.mark(symbol(field));
+            data = field.type.type?.ref;
+            array = field.type.size !== undefined;
         }
     };
     for (const model of models)
@@ -191,9 +222,40 @@ export function semanticIndex(models: readonly a.Model[]): SemanticReference[] {
                 else
                     native(n, property(n, 'target'), localOperation(n, n.target, c) ?? resolve(n, n.target, models));
             }
-            if (a.isAssign(n))
+            if (a.isAssign(n) && !isPlace(n))
                 add(n, property(n, 'target'), valueSymbol(n, n.target));
-            if (a.isReferenceExpression(n)) {
+            else if (a.isAssign(n)) {
+                // A place (WP1-S05): the root, then the record fields of its dotted names and selectors.
+                const cst = property(n, 'target'), root = valueSymbol(n, placeRoot(n.target));
+                add(n, cst, root, 0, placeRoot(n.target).length, n.target);
+                fieldRefs(root?.type, fieldSteps(n, cst));
+            }
+            if (a.isReferenceExpression(n) && (n.selectors ?? []).length) {
+                // A read with selectors (WP1-S02): a local value, or in a test an indexed part path (WP1-S06).
+                const cst = property(n, 'path'), head = placeRoot(n.path), root = valueSymbol(n, head), steps = fieldSteps(n, cst);
+                if (root) {
+                    add(n, cst, root, 0, head.length, n.path);
+                    fieldRefs(root.type, steps);
+                }
+                else if (script && caseRead(script, n)?.kind === 'attribute') {
+                    const pkg = owner(script, a.isPackage);
+                    let current: Node | undefined = pkg && packageOccurrences(pkg).find(o => o.name === head) as Node | undefined, i = 0;
+                    add(n, cst, symbol(current), 0, head.length, n.path);
+                    // Part names, each family followed by its literal index, then the attribute and its fields.
+                    for (; current && i < steps.length; i++) {
+                        const step = steps[i];
+                        if (step.name === undefined)
+                            continue;
+                        current = childNode(current, step.name);
+                        step.mark(symbol(current));
+                        if (a.isAttribute(current)) {
+                            fieldRefs(current.type, steps.slice(i + 1));
+                            break;
+                        }
+                    }
+                }
+            }
+            else if (a.isReferenceExpression(n)) {
                 const cst = property(n, 'path'), parts = n.path.split('.');
                 let s = valueSymbol(n, parts[0]), pos = 0;
                 if (!s && script && caseTarget(script, n.path))

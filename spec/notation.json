@@ -783,6 +783,7 @@
         "PrimaryExpression",
         "BinaryExpression",
         "ReferenceExpression",
+        "Selector",
         "ValuePath",
         "Literal",
         "Numeric"
@@ -1052,6 +1053,13 @@
         "production": "Assign",
         "concepts": [
           "flow"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "Selector",
+        "concepts": [
+          "expressions"
         ],
         "rationale": "Owned semantic projection preserves this production."
       },

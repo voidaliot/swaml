@@ -262,6 +262,15 @@
       "normative": "docs/spec/03-behavior.md"
     },
     {
+      "source": "Selector",
+      "kind": "value",
+      "kernel": [
+        "Expression"
+      ],
+      "semantic": "Selector: a record field or array element of a copied value (WP1-M02). A read yields a copy; a place assignment lowers to a whole-value write of its root with one replaced feature value and never becomes a reference feature.",
+      "normative": "docs/spec/01-structure-and-types.md"
+    },
+    {
       "source": "ExpressionStatement",
       "kind": "value",
       "kernel": [

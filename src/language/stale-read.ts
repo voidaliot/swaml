@@ -1,6 +1,8 @@
 import type { AstNode } from 'langium';
 import * as a from './generated/ast.js';
-import { body, isExecutable, signature, type Effect, type Executable } from './semantic.js';
+import { body, isExecutable, isPlace, placeRoot, signature, type Effect, type Executable } from './semantic.js';
+/** The index expressions of a value reference or place, left to right: the first index, then each selector index. */
+const indexExpressions = (n: a.ReferenceExpression | a.Assign): a.Expression[] => [...(n.index ? [n.index] : []), ...(n.selectors ?? []).flatMap(x => x.index ? [x.index] : [])];
 
 /**
  * SW2011 (docs/spec/03-behavior.md, 3.4): a pre-suspension state read that may affect a later write.
@@ -212,9 +214,9 @@ class Analysis {
         }
         const e = root;
         if (a.isReferenceExpression(e)) {
-            const head = e.path.split('.')[0], index = e.index ? this.expression(e.index, flow) : none();
+            const head = e.path.split('.')[0], indexes = this.sequence(indexExpressions(e), flow).reduce(join, none());
             const own = this.ctx.attributes.has(head) ? { fresh: new Set([head]), stale: new Set<string>() } : flow.locals.get(head) ?? none();
-            return join(own, index);
+            return join(own, indexes);
         }
         if (a.isUnaryExpression(e))
             return this.expression(e.operand, flow);
@@ -337,6 +339,15 @@ class Analysis {
             throw new WorkLimit();
         if (a.isLocalVariable(s))
             flow.locals.set(s.name, this.expression(s.value, flow));
+        else if (a.isAssign(s) && isPlace(s)) {
+            // A place write is a write of its root (WP1-M01). Its indexes are evaluated before the right side,
+            // so a suspension in the right side ages them; the root itself is read and written after it.
+            const root = placeRoot(s.target), v = this.sequence([...indexExpressions(s), s.value], flow).reduce(join, none());
+            if (this.ctx.attributes.has(root))
+                this.write(s, v, flow.guards, [root]);
+            else
+                flow.locals.set(root, join(flow.locals.get(root) ?? none(), v));
+        }
         else if (a.isAssign(s)) {
             const v = this.expression(s.value, flow);
             if (this.ctx.attributes.has(s.target))

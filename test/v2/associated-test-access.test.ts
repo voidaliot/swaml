@@ -64,7 +64,9 @@ test('local value precedence and the existing occurrence-call namespace remain u
 
 test('associated calls keep suspension, state-write and port-ownership restrictions', async () => {
     await invalid(model('peer.slow();'), 'SW2006');
-    await invalid(model('peer.n = 4;'), 'SW2000');
+    // A place rooted in an occurrence is not a script local (WP1-S05, WP1-D01): a test never assigns component state.
+    const write = await invalid(model('peer.n = 4;'), 'SW2006');
+    assert.ok(write.errors.some(e => e.message === 'Cannot assign to peer.n: peer is a component occurrence; a case script assigns only its own locals and on call out bindings.'), JSON.stringify(write.errors));
     const source = `package Ports { port def Link { provides event ping(); }
       component subject { reversed port p: Link; operation take() { } schedule { on receive p.ping() take(); } }
       component peer { port p: Link; operation emit() { publish p.ping(); } }
