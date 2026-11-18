@@ -246,7 +246,7 @@ const P4_NO_LINE_IF_STEP = !process.env.P4_LINE_IF_STEP;
  * free); P7_OWN_RELOOK_PERIODIC also re-looks inside a release of a periodic machine. Bound within one release (default on):
  * a state reached a second time in one release ends the release in that state (P7_NO_RELEASE_BOUND disables it).
  */
-const P7_NO_OWN_RELOOK = !!process.env.P7_NO_OWN_RELOOK, P7_OWN_RELOOK_ANY = !!process.env.P7_OWN_RELOOK_ANY, P7_OWN_RELOOK_PERIODIC = !!process.env.P7_OWN_RELOOK_PERIODIC, P7_NO_RELEASE_BOUND = !!process.env.P7_NO_RELEASE_BOUND;
+const P7_IF_STEP_NARROW = !!process.env.P7_IF_STEP_NARROW, P7_NO_OWN_RELOOK = !!process.env.P7_NO_OWN_RELOOK, P7_OWN_RELOOK_ANY = !!process.env.P7_OWN_RELOOK_ANY, P7_OWN_RELOOK_PERIODIC = !!process.env.P7_OWN_RELOOK_PERIODIC, P7_NO_RELEASE_BOUND = !!process.env.P7_NO_RELEASE_BOUND;
 const P6_NO_WAKES = !!process.env.P6_NO_WAKES, P6_NO_PENDING_WAKE = !!process.env.P6_NO_PENDING_WAKE, P6_NO_STATELOOP = !!process.env.P6_NO_STATELOOP, P6_HASH_FIRST = !!process.env.P6_HASH_FIRST, P6_SAMPLE_AT_TRIGGER = !!process.env.P6_SAMPLE_AT_TRIGGER;
 /** PROTOTYPE P4/P6 counters, reported on the result as prototype. */
 export type PrototypeStats = { looks: number; arrivalLooks: number; messageLooks: number; timerLooks: number; wakeLooks: number; releaseLooks: number; wakes: number; sameValueWakes: number; pendingWakes: number; configs: number; configNs: number; configChars: number; skips: number; releases: number };
@@ -1370,6 +1370,10 @@ class Interpreter {
             // no scheduling step, as a 2.2 guard evaluation was none.
             if (P4_NO_LINE_IF_STEP && a.isIf(s) && f.lineWork !== undefined && (a.isExit(s.then.statements.at(-1)) || a.isJump(s.then.statements.at(-1))))
                 return voidValue();
+            // PROTOTYPE P7 (revision 5, default): every if written in a state's braces outside on entry/on exit (standing in the
+            // state or in an event line's block, at any depth) is no scheduling step. P7_IF_STEP_NARROW keeps only the P5 rule above.
+            if (!P7_IF_STEP_NARROW && a.isIf(s) && this.inLookText(s))
+                return voidValue();
             yield { kind: 'step' };
         }
         return voidValue();
@@ -1571,6 +1575,18 @@ class Interpreter {
         }
         finish(false);
         return relook.size ? { relook: [...relook] } : undefined;
+    }
+    /** PROTOTYPE P7: the node is written in a state's braces, outside on entry and on exit. */
+    private inLookText(n: AstNode): boolean {
+        for (let c = n.$container; c; c = c.$container) {
+            if (a.isStateAction(c))
+                return false;
+            if (a.isStateStep(c))
+                return true;
+            if (isExecutable(c))
+                return false;
+        }
+        return false;
     }
     /** PROTOTYPE P7: the names (attributes, locals, sample cells as port|member) a statement reads, through helpers. */
     private itemNames(item: AstNode, structure: Structure): Set<string> {

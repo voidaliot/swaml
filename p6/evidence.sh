@@ -38,7 +38,7 @@ K6b="--kinds state,skip,send,publish,violation,failure,assert,periodicEnd,discar
   run p6-traffic-connection.swaml Light $K6b --subjects light.,bench.ped,ped. --until 80e9
   run p6-traffic-connection.swaml Connection $K6b --subjects manager.,bench.link,link. --until 80e9
 } > "$E/p6-traffic-connection-every-100ms.txt"
-run p6-heater-supply.swaml --until 700e9 --kinds send,write,violation,failure,assert --subjects heater.,heaterStates.,supply.,supplyStates.,supplyTrap. --writes undervoltage,heating | awk '{ if ($0 ~ / write /) { v=$0; sub(/.*= /,"",v); if (last[$3]==v) next; last[$3]=v } print }' > "$E/p6-heater-supply-bench.txt"
+run p6-heater-supply.swaml --until 700e9 --kinds send,write,violation,failure,assert --subjects heater.,heaterStates.,supply.,supplyStates.,supplyTrap.,supplyCounted. --writes undervoltage,heating | awk '{ if ($0 ~ / write /) { v=$0; sub(/.*= /,"",v); if (last[$3]==v) next; last[$3]=v } print }' > "$E/p6-heater-supply-bench.txt"
 timeout 900 node p6/timing.mjs > "$E/p6-timing-projection.txt" 2>&1
 timeout 900 node p6/door.mjs > "$E/p6-door-showcase-rewrites-vs-original.txt" 2>&1
 python p6/make-wp5.py && timeout 900 node p6/wp5.mjs > "$E/p4-wp5-44-46-47-rewrites.txt" 2>&1
