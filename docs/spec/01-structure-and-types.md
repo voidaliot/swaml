@@ -20,7 +20,7 @@ A component whose effective members, including specialization, have ports but no
 
 A usage body is an anonymous specialization with explicit whole-member replacement and added members, including typed roots. Single specializes inheritance is acyclic. An inherited member with the same name requires redefines; a nonexistent inherited target is an error. Replacement preserves category, types, operation signature and body category. Child component definitions may specialize the replaced type. Port replacement preserves directed compatibility and optionality. Attributes preserve constness and type. No partial operation-body merge, super dispatch or implicit shadowing exists.
 
-A literal positive multiplicity [n] on a child creates n separate occurrences. Paths index every array usage with a literal in range, as in wheels[2].svc. Connector loops and port arrays do not exist. Composition is finite and acyclic. Definition identity does not identify an occurrence or a store.
+A literal positive multiplicity [n] on a child creates n separate occurrences. Paths index every array usage with a literal in range, as in wheels[2].svc; a test's inspection path indexes part families the same way (section 3.7, WP1-S06). Connector loops and port arrays do not exist. Composition is finite and acyclic. Definition identity does not identify an occurrence or a store.
 
 ## 1.3 State and lexical values
 
@@ -28,11 +28,51 @@ attribute declares component-owned mutable state; const attribute fixes its valu
 
 var declares an activation/block local. in is the default parameter direction and is immutable; out parameters are mutable with success-only copy-back. Live names cannot shadow another live local, parameter or attribute. A nested operation sees its own parameters, its nested operations and the owning component's attributes, never enclosing parameters or locals. Local data access never traverses child components or ports.
 
+| ID | Rule |
+| --- | --- |
+| WP1-S01 | Places (section 3.3) are rooted in locals, `out` parameters and non-const attributes only; a place never selects a child component or a port. |
+
 ## 1.4 Value domains
 
 bool, byte (0–255), uint (0–9007199254740991), int (−9007199254740991 through 9007199254740991), finite real and string are primitive domains. void has no values and is only an operation result. Records and enums are nominal by qualified declaration identity. A datatype declares every field explicitly; a record construction supplies each once, with no extra fields. Enum literals use Type.literal; a live value named Type takes precedence, so a qualified enum reference avoids ambiguity.
 
-Fixed arrays have positive safe extents, copied elements and invariant element type/extent. Array literals are checked elementwise against their destination type. Index expressions are integral; literal out-of-range indexes fail statically and dynamic bounds fail at runtime. In-place field/index assignment and reference values are absent.
+Fixed arrays have positive safe extents, copied elements and invariant element type/extent. Array literals are checked elementwise against their destination type. Index expressions are integral; literal out-of-range indexes fail statically and dynamic bounds fail at runtime.
+
+| ID | Rule |
+| --- | --- |
+| WP1-S02 | **Selectors.** After a first `[index]`, a value reference or assignment target continues with any sequence of `.field` and `[index]` selectors. `.f` selects a field of a record type and `[i]` indexes a fixed array with an integral index; the result type is the field or element type. Index expressions evaluate left to right. A read yields a copy. Reference values remain absent. |
+| WP1-S03 | **Static index range.** A literal index outside the extent of the indexed array type is a static error, at every selector position. |
+
+Both are SW2002 (WP1-D04). A place such as `statuses[index].confirmed` is assigned in place (section 3.3); a read such as `recent[i].vehicleId` copies one field of one element:
+
+```swaml
+package Values {
+  datatype DtcStatus {
+    confirmed: bool;
+    occurrences: uint;
+  }
+  datatype Alert {
+    vehicleId: string;
+    open: bool;
+  }
+  component def Memory {
+    attribute statuses: DtcStatus[2] = [record DtcStatus { confirmed = false; occurrences = 0; }, record DtcStatus { confirmed = false; occurrences = 0; }];
+    attribute recent: Alert[2] = [record Alert { vehicleId = "TRK-101"; open = true; }, record Alert { vehicleId = "VAN-7"; open = false; }];
+    operation confirm(index: uint) {
+      statuses[index].confirmed = true;
+      statuses[index].occurrences = statuses[index].occurrences + 1;
+    }
+    operation findOpen(vehicle: string) returns int {
+      for (var i: int = 0; i < 2; i = i + 1) {
+        if (recent[i].vehicleId == vehicle and recent[i].open) {
+          return i;
+        }
+      }
+      return -1;
+    }
+  }
+}
+```
 
 Scalar widening is byte to uint to int to real. Known integral literals may initialize smaller integral domains if in range. General computed integral assignments are range-checked by the backend where permitted by the type rule; real never implicitly narrows. Integral arithmetic yields int; slash or a real operand yields real. Integer operations are exact within the safe domain and overflow fails. Division/remainder by zero and non-finite reals fail. Equality is recursive and type-compatible; ordering is numeric. Only and/or short-circuit. The grammar defines precedence.
 

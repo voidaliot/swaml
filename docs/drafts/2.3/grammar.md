@@ -8,9 +8,9 @@ Productions that several packages touch are written here in their final form. A 
 
 | ID | Rule |
 | --- | --- |
-| WP1-G01 | `Assign: target=ValuePath ('[' index=Expression ']' selectors+=Selector*)? '=' value=Expression ';';` with the new `Selector: '.' field=Name \| '[' index=Expression ']';`. `ForUpdate infers Assign: target=Name '=' value=Expression;` is unchanged. |
-| WP1-G02 | `ReferenceExpression: path=ValuePath ('[' index=Expression ']' selectors+=Selector*)?;` |
-| WP1-G03 | `CallExpression: target=Path '(' (args+=Expression (',' args+=Expression)*)? ')';` (was `ValuePath`; `Path` admits literal indexes only). |
+| WP1-G01 | **Applied in WP1** to `src/language/swaml.langium`. `Assign: target=ValuePath ('[' index=Expression ']' selectors+=Selector*)? '=' value=Expression ';';` with the new `Selector: '.' field=Name \| '[' index=Expression ']';`. `ForUpdate infers Assign: target=Name '=' value=Expression;` is unchanged. |
+| WP1-G02 | **Applied in WP1.** `ReferenceExpression: path=ValuePath ('[' index=Expression ']' selectors+=Selector*)?;` |
+| WP1-G03 | **Applied in WP1.** `CallExpression: target=Path '(' (args+=Expression (',' args+=Expression)*)? ')';` (was `ValuePath`; `Path` admits literal indexes only). |
 | WP2-G01 | `Expression returns Expression: ConditionalExpression \| OrExpression;` with `ConditionalExpression: 'if' '(' condition=Expression ')' then=Expression 'else' otherwise=Expression;`. The declared `type Expression` union gains `ConditionalExpression`. `PrimaryExpression` is unchanged, so `'(' Expression ')'` admits a parenthesized conditional as an operand. |
 | WP2-G02 | `ExpressionStatement: expression=OrExpression ';';` (was `Expression`): a conditional is never a statement. |
 | WP2-G03 | `Association: 'associate' occurrence=[ComponentUsage:Name] (',' moreOccurrences+=[ComponentUsage:Name])* 'to' target=[Scenario:Name] (',' moreTargets+=[Scenario:Name])* ';';` and `Name` gains `'view' \| 'state' \| 'in' \| 'out'`. |
@@ -63,7 +63,7 @@ The formatter must print every new form before a showcase model is reformatted (
 
 | ID | Rule |
 | --- | --- |
-| WP1-M03 | Prints places and selectors without spaces inside the path (`statuses[i].confirmed`). |
+| WP1-M03 | **Applied in WP1** (`src/language/formatter.ts`, [tooling guide](../../TOOLING.md)). Prints places and selectors without spaces inside the path (`statuses[i].confirmed`). |
 | WP2-M05 | Prints conditionals and never drops or adds parentheses that change the parse. Prints association lists on one line when they fit, otherwise one occurrence or case per continuation line. |
 | WP4-M08 | Prints computed durations in parentheses (`wait (n * 1ms);`) and literal durations without them. |
 | WP5-M04 | Prints completion transitions, internal transitions, timer guards and `defer` lines, keeping every state member in source order. |
@@ -75,7 +75,7 @@ The formatter must print every new form before a showcase model is reformatted (
 These are tagged with the package that introduces them; together they justify implementation package 4.0.0 (ADR 0022, D2).
 - **Newly optional:** only `Transition.target` (WP5) and `Wait.duration` (WP4). `Transition.delay`, `ScheduleEntry.period`/`deadline` and `Receive.timeout` are already optional in 2.2.
 - **Silent widenings:**
-  - `Assign.target` may be dotted and carries `index` and `selectors` (WP1);
-  - `CallExpression.target` may contain `[n]` (WP1);
+  - `Assign.target` may be dotted and carries `index` and `selectors` (WP1, applied);
+  - `CallExpression.target` may contain `[n]` (WP1, applied);
   - `Association` holds several pairs (WP2);
   - `PolicySetting.duration` is removed (WP4).

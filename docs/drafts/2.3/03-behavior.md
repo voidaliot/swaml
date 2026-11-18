@@ -6,7 +6,7 @@
 
 | ID | Rule |
 | --- | --- |
-| WP1-S04 | **Out arguments.** Out arguments remain bare names; a place is not an out argument in 2.3 (SW2006). |
+| WP1-S04 | Moved to [chapter 3.1](../../spec/03-behavior.md#31-operations-and-effects) in WP1. |
 | WP2-S04 | **Conditional effects.** The effect of a conditional is the union of its condition and both branches. No suspending call may appear anywhere in a conditional (SW2006); the whole-expression suspension rule is unchanged. |
 | WP3-S01 | **`now()` effect.** `now()` has the effect class *reads state*. It is therefore rejected in attribute and member initializers (SW2006). It is rejected in completion guards (WP5-S03) and in the constant sublanguage (WP4-S05). |
 | WP3-S02 | **Stale reads.** The stale-read warning (SW2011, after tool fix A2) never reports a value obtained from `now()`. |
@@ -21,16 +21,14 @@
 
 | ID | Rule |
 | --- | --- |
-| WP1-S05 | **Place roots.** The assignment target is a place (chapter 1.4). In an operation, its root is a mutable local, an `out` parameter or a non-const attribute of the executing component. In a case script, it is one of the script's own locals or an `on call` out binding. `in` parameters, const attributes, ports, child components and qualified names are rejected (SW2006). A dotted target without an index is a place too. The `for` header update keeps a bare name. |
-| WP1-S07 | **`out` roots.** An `out` parameter used as a place root must be definitely assigned before the assignment (SW2006). |
-| WP1-R01 | **Place evaluation order.** Evaluate the target's index expressions left to right, then the right side, then read the root cell, check every index against the value read, and write the root with exactly one place replaced. Writes performed by the right side are kept. |
-| WP1-R02 | **Place failure.** An index outside its extent at runtime is the runtime failure `Bounds`; the root is unchanged. |
+| WP1-S05 | Moved to [chapter 3.3](../../spec/03-behavior.md#33-statements-and-scopes) in WP1. |
+| WP1-S07 | Moved to [chapter 3.3](../../spec/03-behavior.md#33-statements-and-scopes) in WP1. |
+| WP1-R01 | Moved to [chapter 3.3](../../spec/03-behavior.md#33-statements-and-scopes) in WP1. |
+| WP1-R02 | Moved to [chapter 3.3](../../spec/03-behavior.md#33-statements-and-scopes) in WP1. |
 | WP2-S05 | **No conditional statement.** A conditional is never a statement (grammar WP2-G02). The `if` statement keeps its block form. |
 | WP4-S03 | **Computed waits.** `wait (e);` and `or after (e) { … }` take an integral, non-suspending expression (SW2002, SW2006), evaluated when the statement starts waiting. |
 
 ```text
-counters[index] = counter;                       // WP1
-statuses[index].occurrences = statuses[index].occurrences + 1;
 wait (backoffMs * 1ms);                          // WP4
 on receive ctl.ack(id) { … } or after (ackTimeoutMs * 1ms) { … }
 ```
@@ -39,9 +37,9 @@ on receive ctl.ack(id) { … } or after (ackTimeoutMs * 1ms) { … }
 
 | ID | Rule |
 | --- | --- |
-| WP1-R03 | A place assignment's read-modify-write happens under the serial lock after any resumption; no suspension splits it. |
+| WP1-R03 | Moved to [chapter 3.4](../../spec/03-behavior.md#34-suspension-and-locks) in WP1. |
 | WP6-R07 | **Concurrent reads (amends 3.4).** The sentence on concurrent entries becomes: "Concurrent entries overlap and read attributes from the dispatch snapshot throughout, including after resumption; they read sample cells and `now()` live; they never write state." Each cell read copies the whole value atomically, so a record is never observed half-updated. The 2.2 snapshot guarantee is unaffected, because 2.2 models have no cells. |
-| WP1-M01 | The stale-read warning (SW2011, after tool fix A2) treats a place write as a write of its root. Index values read before a suspension are tracked like other pre-suspension reads. |
+| WP1-M01 | Moved to [chapter 3.4](../../spec/03-behavior.md#34-suspension-and-locks) in WP1. |
 
 ## 3.5 Schedule
 
@@ -105,8 +103,8 @@ The runtime rules for these forms are in chapter 6.5 (WP5-R01 to WP5-R13).
 
 | ID | Rule |
 | --- | --- |
-| WP1-S06 | **Indexed test paths.** In a test's inspection path, a component segment with multiplicity takes a literal index, for reads (`backend.twins[0].link`) and helper calls (`backend.twins[0].currentView()`). A non-literal index on a component segment is an error (SW2010). A literal index outside the multiplicity is an error (SW2002). Roots stay non-multiple top-level occurrences; only parts inside the root are indexed. This amends "Nested/indexed association paths and intermediate component indexes remain unsupported" of ADR 0020 for intermediate indexes only. Association paths stay unindexed. |
-| WP1-S08 | **Indexed call paths elsewhere.** Outside test scripts, a call path that contains an index is an error (SW2006). |
+| WP1-S06 | Moved to [chapter 3.7](../../spec/03-behavior.md#37-case-scripts) in WP1. |
+| WP1-S08 | Moved to [chapter 3.7](../../spec/03-behavior.md#37-case-scripts) in WP1. |
 | WP6-S09 | **No sampling in scripts.** Case scripts do not sample ports. They keep `on receive` at actor ports (SW2010). |
 
-The case-script paragraph on assignment gains: "Assignment targets are places rooted in the script's own locals or `on call` out bindings (WP1-S05)."
+The case-script paragraph on assignment gained "Assignment targets are places rooted in the script's own locals or `on call` out bindings (WP1-S05)" in WP1.

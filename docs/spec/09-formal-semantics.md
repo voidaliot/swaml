@@ -21,14 +21,16 @@ Values are bounded primitive scalars, nominal enums/records and fixed copied arr
 | Construct | Premises and result |
 | --- | --- |
 | x / x.field / x[i] | x in Γ; nominal record field or integral array index; result declared type; dynamic index must be in extent |
+| x[i].f… / x[i][j]… | x in Γ; each selector is a record field or an integral array index; the result is the selected type; literal indexes are in extent; a copy |
 | Enum.literal | No live first-segment value shadows the enum; unambiguous accessible nominal enum and literal |
 | operation(args) | Resolved same-owner/nested or imported pure definition; copied typed in arguments; mutable compatible out targets; result declared type; effect is union of arguments and callee |
 | p.member(args) | p is owned, member requires operation; arguments satisfy signature; effect communicates and suspends |
 | case subject call | Exact primary software subject; copied typed arguments/results, actual serial operation context and normal effects; suspension releases/reacquires its lock, caller context restores on return/failure; local activation semantics, no implicit route or schedule release |
-| test occurrence access | Resolved own-package executed software root is the subject or an explicit association, followed by single effective parts; reads use its live store under its lock, helper calls outside the exact primary subject neither communicate nor suspend; no ownership transfer or direct attribute assignment |
+| test occurrence access | Resolved own-package executed software root is the subject or an explicit association, followed by single effective parts or part family members with literal indexes in range; reads use its live store under its lock, helper calls outside the exact primary subject neither communicate nor suspend; no ownership transfer or direct attribute assignment |
 | try(e, f) | e:T and f:U assignable to T; lazy f; effect union; no fallback only when T is void |
 | var x:T=e | Compatible value, fresh live name; Γ extends with mutable x; suspension allowed only when e is whole call/try |
 | x=e | Mutable local/out/attribute, compatible type; attribute write adds write effect; same whole-expression suspension rule |
+| place = e | The root is a mutable local, an assigned out or a non-const attribute; e is assignable to the place type; the effect adds a write of the root; the whole-expression suspension rule applies |
 | return e | e assignable to owning operation result; expression does not suspend; success copy-back |
 | if/while/until/assert | bool condition; optional loop limit uint-compatible and evaluated once |
 | for | Fresh initializer scope; bool condition; mutable typed update; fresh body scope each iteration |
@@ -49,6 +51,7 @@ Scalar type assignability uses widening, with checked integral value conversion 
 | release | Add fresh activation to B with release time/cause/deadline; bounded admission or explicit violation |
 | dispatch | Acquire L[o] for serial work; copy entry arguments under lock; concurrent work captures σ[o] snapshot |
 | local step | Evaluate in ρ plus live serial σ or captured concurrent snapshot; update copied cells and emit source-provenanced observations |
+| place write | Evaluate indexes, then the right side; read σ[o] or ρ at the root; check the indexes; write the root with one place replaced; `write` with `place` |
 | suspend | Save continuation/ρ; remove serial lock; register wait timer, receive alternatives or pending request |
 | ready | Mark continuation ready; serial continuation must reacquire lock before reading current σ |
 | offer | Resolve alias chain, select connection/member queue, copy payload, apply latest attribute replacement or policy overflow/delivery |

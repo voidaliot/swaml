@@ -6,7 +6,7 @@
 
 | ID | Required validation | Diagnostic group | Package |
 | --- | --- | --- | --- |
-| V16 | Place roots, selector typing, `out` roots, no places as out arguments, literal component indexes in test paths | SW2002/2006/2010 | [WP1] |
+| V16 | Moved to [chapter 8.1](../../spec/08-conformance-obligations.md#81-static-obligations) in WP1. | | [WP1] |
 | V17 | Conditional typing, whole-expression placement, no suspension; contextual words in every name position; association lists without repeated pairs | SW2000/2002/2006/2010 | [WP2] |
 | V18 | `Swaml::Numeric`, `Swaml::Text` and `Swaml::Time` without new ambiguity; `now()` placement | SW2001/2006 | [WP3] |
 | V19 | Duration values, policy setting literals, the constant sublanguage per occurrence, trigger identity, unit warning | SW2002/2007/2013/2016 | [WP4] |
@@ -15,13 +15,13 @@
 | V22 | Release guards on allowed entries with read-only effects and their scope | SW2007 | [WP7] |
 | V23 | Operation placement, same Core, T1–T6 | SW2009 | [WP8] |
 
-Existing rows change their text accordingly: V03 (selectors), V09 (conditional effects), V10 (computed periods and release guards), V11 (completion and deferral), V12 (policy literals and per-member policies), V13 (operation placement), V14 (association lists).
+Existing rows change their text accordingly: V03 (selectors, done in WP1), V09 (conditional effects), V10 (computed periods and release guards), V11 (completion and deferral), V12 (policy literals and per-member policies), V13 (operation placement), V14 (association lists).
 
 ## 8.2 Runtime obligations
 
 | ID | Required observable evidence | Package |
 | --- | --- | --- |
-| E12 | Place evaluation order, kept right-side writes, `Bounds` with unchanged root, `write.place` | [WP1] |
+| E12 | Moved to [chapter 8.2](../../spec/08-conformance-obligations.md#82-runtime-obligations) in WP1. | [WP1] |
 | E13 | Conditional evaluates only the selected branch | [WP2] |
 | E14 | `sqrt`, `intText`, `realText` (ties away from zero, unsigned zero, `Bounds` from 1e21) and `now()` live time | [WP3] |
 | E15 | Computed waits, timeouts, state timers after entry, per-occurrence periods and deadlines, `DurationRange` | [WP4] |
