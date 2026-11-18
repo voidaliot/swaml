@@ -1,0 +1,1073 @@
+{
+  "rule": "WP1a-M02 (supplement)",
+  "recordedWith": {
+    "implementation": "3.1.0",
+    "commit": "213f583b14bf9808429b04f7252732a118015576",
+    "languageVersion": "2.2",
+    "profile": "swaml-reference/2.2",
+    "node": "v26.12.0",
+    "script": "scripts/compatibility-2-2.mjs sha256 0b6b7fdb8e83973d0c598fe83dad5fc5ee9703044918f91c5d45f6bd841109e0"
+  },
+  "ignored": [
+    "profile",
+    "languageVersion"
+  ],
+  "resolvedOptions": {
+    "run Hello::Demo of examples/01-hello.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Control::Demo of examples/02-realtime-controller.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Commerce::Demo of examples/03-service-pubsub.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run States::Demo of examples/04-stateful-function.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Values::Demo of examples/05-values-and-flow.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Gateway::Demo of examples/06-mixed-gateway.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run ClientServer::Demo of examples/07-client-server.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Settings::Demo of examples/08-service-field.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Roots::Demo of examples/09-component-roots.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Policies::Demo of examples/10-reusable-qos.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Classic::Demo of examples/11-autosar-classic.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Adaptive::Demo of examples/12-autosar-adaptive.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Web::Demo of examples/13-web-application.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Cloud::Demo of examples/14-cloud-service.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Reuse::Demo of examples/15-component-specialization.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Traceability::Demo of examples/16-requirements-and-views.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Timing::Demo of examples/17-function-timing.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Loops::Demo of examples/18-control-loops.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Interrupts::Demo of examples/19-interruptible-function.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Operations::Demo of examples/20-classes-and-operations.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Receiving::Demo of examples/21-receive-and-try.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Placement::Demo of examples/22-platform-deployment.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Multiplicity::Demo of examples/23-multiplicity.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run OperationUsage::Demo of examples/24-operation-usage.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Chaining::Demo of examples/25-function-completion.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Boundary::Demo of examples/26-boundary-forwarding.swaml": {
+      "untilNs": 19000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run Cash Machine::Withdraw cash of examples/28-use-cases.swaml": {
+      "untilNs": 10000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "run AtmTests::Approved withdrawal of examples/29-executable-cases.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case Control::ControlLoop of examples/02-realtime-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case Traceability::Startup of examples/16-requirements-and-views.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case Cash Machine::Withdraw cash of examples/28-use-cases.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case Cash Machine::Authenticate of examples/28-use-cases.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case Cash Machine::Limit honoured of examples/28-use-cases.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case Banking::Withdraw of examples/29-executable-cases.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AtmTests::Fee rounding of examples/29-executable-cases.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AtmTests::Bank refusal of examples/29-executable-cases.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AtmTests::Approved withdrawal of examples/29-executable-cases.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AssociatedIntegration::Delivery of examples/30-associated-integration.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case SubjectCalls::Advance of examples/31-case-subject-calls.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case SubjectCalls::AdvanceAndInspect of examples/31-case-subject-calls.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case Notation::Startup of examples/notation/catalog.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Share awareness of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Warn driver of road hazard of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Broadcast own hazard of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Report fleet telemetry of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Awareness rate follows dynamics of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Irrelevant hazard filtered of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Concurrent hazards and validity of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Tampered frames dropped of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Forged frames rejected of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Digest fold is non-linear of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Most urgent hazards kept of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Signature failure dropped of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Neighbour ageing and plausibility of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Offline store and forward of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Coverage loss aborts backoff of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Consent withdrawn stops telemetry of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Consent gates the uplink of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Degraded on supervision failure of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Supervision judges every entity of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Signing outlives the state of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Repetition outlived by cancellation of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Shutdown on ignition off of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Station identifier rotates of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Rotation deferred during own hazard of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::New hazard right after cancellation of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Rotation deferral is bounded of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Long uptime and clock wrap of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case AdaptiveV2x::Hazard validity expiry of examples/showcase/autosar-adaptive-v2x-telemetry.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Lock and unlock of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Close the window with one touch of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Read fault memory of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Wake on door handle of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Comfort close from the key fob of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Mirror adjust, heat and remote side of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Pinch reversal of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Pinch protection after an interrupted reversal of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::One-touch close learns the closed stop of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Crash unlocks a locked door of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Auto-lock by speed of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Bus timeout fallback of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Sleep and wake of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Bus keeps the ECU awake after ignition off of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Calibration stored at shutdown of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Undervoltage fault reported of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Undervoltage stops a moving window of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Watchdog serviced of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Watchdog stops on a supervision failure of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Courtesy light afterglow of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Soft obstacle reverses of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Close starting against an obstacle of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Obstructed opening stops of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Very soft obstacle reverses of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Reversal distance at minimum supply of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Shutdown aborts on bus activity and wake-up of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Shutdown falls back when the write-all hangs of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Watchdog detects a hung anti-pinch path of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Debounced switch and latch inputs of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Switch panel lost of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Hall sensor fault disables one-touch of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Frozen Hall, closing with the switch held of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Frozen Hall, one-touch falls back to held close of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Frozen Hall, degraded close stops at an obstacle of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Blocked window trips the bridge of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case DoorEcu::Lock actuator fault of examples/showcase/autosar-classic-door-controller.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 200000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Monitor live position of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Command a vehicle of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Respond to a critical alert of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Telemetry stored and visible of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Duplicate frame dropped of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Malformed frame dead-lettered of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Device authentication enforced of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Burst throttles the vehicle of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Unacknowledged breach escalates of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Resolved alert stops paging of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Alert thresholds use hysteresis of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Silent vehicle detected offline of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Command times out of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Tenant isolation holds of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Console guards of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Superseded session closes of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Command acknowledgements are authenticated of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Paging queue follows alert state of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Gateway audit names the responsible tenant of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Supersede during a refused re-hello of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Supersede after a refused re-hello of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Resilience::Store outage trips the breaker and recovers of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Edge::Gateway retries with backoff of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Edge::Gateway gives up after three attempts of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Edge::Back-pressure watermarks of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    },
+    "case FleetCloud::Ingest::Late frame of an older session is superseded of examples/showcase/cloud-fleet-monitoring.swaml": {
+      "untilNs": 10000000000,
+      "maxSteps": 100000,
+      "maxPending": 1024,
+      "maxConcurrent": 64,
+      "latencyNs": 0,
+      "faults": []
+    }
+  },
+  "sources": {
+    "examples/32-calibration-bench.swaml": "1f98bb4aeef38afda6c390ceffb471b49cd007e97b08039a9219ca212a0986be"
+  },
+  "entries": [
+    {"id":"case Calibration::Converted through out parameters of examples/32-calibration-bench.swaml","kind":"case","model":"examples/32-calibration-bench.swaml","case":"Calibration::Converted through out parameters","options":{"untilNs":10000000000},"verdict":{"case":"Calibration::Converted through out parameters","kind":"test","subject":"Calibration::Demo","result":"pass","timeNs":5000000},"run":{"target":{"kind":"package","identity":"Calibration"},"outcome":"no-failure-observed","status":"stopped","timeNs":5000000,"steps":364,"stores":{"Demo":{},"Demo.probe":{"reversed":false},"Demo.calibrator":{"name":"bench","path":"","use":2,"test":0.7843137254901961,"last":200,"approval":{"by":"lab","to":"bench","associate":"none","case":0}},"Demo.client":{"gain":0.2,"unit":"ms"},"Reversed":{},"Reversed.calibrator":{"name":"bench","path":"reversed wiring","use":2,"test":0,"last":200,"approval":{"by":"bench","to":"reversed wiring","associate":"reversed wiring","case":7}},"Reversed.client":{"gain":0.2,"unit":"ms"},"Reversed.probe":{"reversed":true},"Scaled":{},"Scaled.probe":{"reversed":false},"Scaled.client":{"gain":0.2,"unit":"ms"},"Scaled.calibrator":{"name":"bench","path":"","use":2,"test":2,"last":200,"approval":{"by":"lab","to":"bench","associate":"none","case":0}}},"machines":{},"deployments":{"Demo":null,"Demo.probe":null,"Demo.calibrator":null,"Demo.client":null,"Reversed":null,"Reversed.calibrator":null,"Reversed.client":null,"Reversed.probe":null,"Scaled":null,"Scaled.probe":null,"Scaled.client":null,"Scaled.calibrator":null},"resolvedOptions":{"untilNs":10000000000,"maxSteps":100000,"maxPending":1024,"maxConcurrent":64,"latencyNs":0,"faults":[]},"traceLength":177,"traceKinds":{"arm":3,"assert":2,"complete":13,"deliver":10,"dispatch":13,"initialize":12,"interrupt":1,"offer":10,"publish":4,"ready":14,"receiveWait":3,"release":13,"reply":3,"request":3,"requestWait":3,"unlock":27,"wait":8,"write":35},"traceSha256":"665170ba9f0ade22268e11f80b513fee2995e9c8ebdc11bfbae78c502de3163f"}},
+    {"id":"case Calibration::Interrupted conversion copies nothing back of examples/32-calibration-bench.swaml","kind":"case","model":"examples/32-calibration-bench.swaml","case":"Calibration::Interrupted conversion copies nothing back","options":{"untilNs":10000000000},"verdict":{"case":"Calibration::Interrupted conversion copies nothing back","kind":"test","subject":"Calibration::Reversed","result":"pass","timeNs":5000000},"run":{"target":{"kind":"package","identity":"Calibration"},"outcome":"no-failure-observed","status":"stopped","timeNs":5000000,"steps":358,"stores":{"Demo":{},"Demo.probe":{"reversed":false},"Demo.calibrator":{"name":"bench","path":"","use":2,"test":0.7843137254901961,"last":200,"approval":{"by":"lab","to":"bench","associate":"none","case":0}},"Demo.client":{"gain":0.2,"unit":"ms"},"Reversed":{},"Reversed.calibrator":{"name":"bench","path":"reversed wiring","use":2,"test":0,"last":200,"approval":{"by":"bench","to":"reversed wiring","associate":"reversed wiring","case":7}},"Reversed.client":{"gain":0.2,"unit":"ms"},"Reversed.probe":{"reversed":true},"Scaled":{},"Scaled.probe":{"reversed":false},"Scaled.client":{"gain":0.2,"unit":"ms"},"Scaled.calibrator":{"name":"bench","path":"","use":2,"test":2,"last":200,"approval":{"by":"lab","to":"bench","associate":"none","case":0}}},"machines":{},"deployments":{"Demo":null,"Demo.probe":null,"Demo.calibrator":null,"Demo.client":null,"Reversed":null,"Reversed.calibrator":null,"Reversed.client":null,"Reversed.probe":null,"Scaled":null,"Scaled.probe":null,"Scaled.client":null,"Scaled.calibrator":null},"resolvedOptions":{"untilNs":10000000000,"maxSteps":100000,"maxPending":1024,"maxConcurrent":64,"latencyNs":0,"faults":[]},"traceLength":177,"traceKinds":{"arm":3,"assert":2,"complete":13,"deliver":10,"dispatch":13,"initialize":12,"interrupt":1,"offer":10,"publish":4,"ready":14,"receiveWait":3,"release":13,"reply":3,"request":3,"requestWait":3,"unlock":27,"wait":8,"write":35},"traceSha256":"5a1fab008cdd17f2338dc8969cc133f23581c93c54410b71f7e39a137ee7d6ec"}},
+    {"id":"case Calibration::Redefined scaling of examples/32-calibration-bench.swaml","kind":"case","model":"examples/32-calibration-bench.swaml","case":"Calibration::Redefined scaling","options":{"untilNs":10000000000},"verdict":{"case":"Calibration::Redefined scaling","kind":"test","subject":"Calibration::Scaled","result":"pass","timeNs":5000000},"run":{"target":{"kind":"package","identity":"Calibration"},"outcome":"no-failure-observed","status":"stopped","timeNs":5000000,"steps":344,"stores":{"Demo":{},"Demo.probe":{"reversed":false},"Demo.calibrator":{"name":"bench","path":"","use":2,"test":0.7843137254901961,"last":200,"approval":{"by":"lab","to":"bench","associate":"none","case":0}},"Demo.client":{"gain":0.2,"unit":"ms"},"Reversed":{},"Reversed.calibrator":{"name":"bench","path":"reversed wiring","use":2,"test":0,"last":200,"approval":{"by":"bench","to":"reversed wiring","associate":"reversed wiring","case":7}},"Reversed.client":{"gain":0.2,"unit":"ms"},"Reversed.probe":{"reversed":true},"Scaled":{},"Scaled.probe":{"reversed":false},"Scaled.client":{"gain":0.2,"unit":"ms"},"Scaled.calibrator":{"name":"bench","path":"","use":2,"test":2,"last":200,"approval":{"by":"lab","to":"bench","associate":"none","case":0}}},"machines":{},"deployments":{"Demo":null,"Demo.probe":null,"Demo.calibrator":null,"Demo.client":null,"Reversed":null,"Reversed.calibrator":null,"Reversed.client":null,"Reversed.probe":null,"Scaled":null,"Scaled.probe":null,"Scaled.client":null,"Scaled.calibrator":null},"resolvedOptions":{"untilNs":10000000000,"maxSteps":100000,"maxPending":1024,"maxConcurrent":64,"latencyNs":0,"faults":[]},"traceLength":176,"traceKinds":{"arm":3,"assert":1,"complete":13,"deliver":10,"dispatch":13,"initialize":12,"interrupt":1,"offer":10,"publish":4,"ready":14,"receiveWait":3,"release":13,"reply":3,"request":3,"requestWait":3,"unlock":27,"wait":8,"write":35},"traceSha256":"9f5ba0a08055b0a5abb28a9e1f20deaa25abf0d65b795a1e5d520f616848cc16"}}
+  ]
+}

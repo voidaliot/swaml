@@ -34,8 +34,11 @@ jobs:
             showcase/package-lock.json
       - run: npm ci --ignore-scripts
       - run: npm run check
-      # Release tags let the frozen-publication test compare its pins with the published files.
-      - run: git fetch --no-tags --depth=1 origin 'refs/tags/v*:refs/tags/v*'
+      # Release tags let the frozen-publication test compare its pins with the published files. The
+      # 3.1.0 commit that recorded the 2.2 compatibility fixtures lets their test check it (one commit, no history).
+      - run: |
+          git fetch --no-tags --depth=1 origin 'refs/tags/v*:refs/tags/v*'
+          git fetch --no-tags --depth=1 origin 213f583b14bf9808429b04f7252732a118015576
       - run: node --test test/ci/*.test.mjs
 
       # Reuse the built language core instead of building it in a second PR job.

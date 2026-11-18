@@ -1,6 +1,6 @@
 # swa.ml 2.3 — Complete language reference
 
-Unreleased draft reference for the 2.3 language, an allocated candidate that is not a published edition. Headerless parser 2.3; profile swaml-reference/2.3. Generated from maintained 2.3 chapters. Published PDFs and frozen release references, including the 2.0 reference under history/2.0.0, are unchanged. The release notes describe edition changes and the migration from 2.0; no compatibility parser is included.
+Unreleased draft reference for the 2.3 candidate. Its chapters are the maintained chapters, which still describe the 2.2 language that the candidate accepts unchanged; 2.3 additions are specified in docs/drafts/2.3 and move into these chapters with their work packages. Headerless parser 2.3; profile swaml-reference/2.3. Published PDFs and frozen release references, including the 2.0 reference under history/2.0.0, are unchanged. The release notes describe edition changes and the migration from 2.0; no compatibility parser is included.
 
 ## Contents
 
@@ -4101,5 +4101,158 @@ package SubjectCalls {
   }
   associate observer to AdvanceAndInspect;
   view behavior: Sequence of Advance;
+}
+```
+
+### 32-calibration-bench.swaml
+
+```swaml
+package Calibration {
+  /** A calibration bench. A probe reports raw byte counts, a calibrator converts them through out parameters, and two bench variants redefine parts of the bench. Out values are copied back only after a whole successful return: an interrupted conversion leaves its target unchanged. */
+  import Swaml::Views;
+  enum Unit {
+    ns, us, ms, s
+  }
+  datatype Approval {
+    by: string;
+    to: string;
+    associate: string;
+    case: uint;
+  }
+  port def Counts {
+    provides event sample(raw: byte, times: uint) /** One raw count, seen times in a row. */;
+    provides event abort(reason: string, code: uint);
+  }
+  port def Control {
+    provides event hold(code: uint);
+  }
+  port def Service {
+    provides operation calibrate(raw: byte, out gain: real, out unit: Unit);
+  }
+  operation def Scale(raw: byte, out value: real) returns void {
+    value = raw / 255.0;
+  }
+  component def Probe {
+    port reading: Counts;
+    attribute reversed: bool = false;
+    operation emit() {
+      wait 1ms;
+      publish reading.sample(200, 2);
+      if (reversed) {
+        wait 500us;
+        publish reading.abort("reversed wiring", 7);
+      }
+    }
+    schedule {
+      on start emit();
+    }
+  }
+  component def ReversedProbe specializes Probe {
+    redefines port reading: Counts /** The same counts, wired in reverse. */;
+    redefines attribute reversed: bool = true;
+  }
+  component def Calibrator {
+    port api: Service;
+    reversed port input: Counts /** Raw counts from the probe. */;
+    reversed port control: Control;
+    attribute name: string = "bench";
+    attribute path: string = "";
+    attribute use: uint = 0;
+    attribute test: real = 0.0;
+    attribute last: byte = 0;
+    attribute approval: Approval = record Approval {
+      by = "lab";
+      to = "bench";
+      associate = "none";
+      case = 0;
+    };
+    operation scale: Scale /** The shared scaling rule. */;
+    operation convert(in raw: byte, out value: real) {
+      wait 1ms;
+      scale(raw, value);
+    }
+    operation calibrate(raw: byte, out gain: real, out unit: Unit) {
+      operation half: Scale {
+        value = raw / 510.0;
+      }
+      half(raw, gain);
+      unit = Unit.ms;
+    }
+    operation listen() {
+      on receive input.sample(raw, times) {
+        last = raw;
+        use = use + times;
+        interruptible {
+          convert(raw, test);
+        } on receive input.abort(reason, code) {
+          path = reason;
+          approval = record Approval {
+            by = name;
+            to = path;
+            associate = reason;
+            case = code;
+          };
+        }
+      } or receive control.hold(code) {
+        path = "held";
+      }
+    }
+    schedule {
+      on start listen();
+      on call api.calibrate(raw, gain, unit) calibrate(raw, gain, unit);
+    }
+  }
+  component def Client {
+    reversed port api: Service;
+    port control: Control;
+    attribute gain: real = 0.0;
+    attribute unit: Unit = Unit.s;
+    operation ask() {
+      api.calibrate(102, gain, unit);
+    }
+    operation hold() {
+      publish control.hold(1);
+    }
+    schedule {
+      on start ask();
+    }
+  }
+  component def Bench {
+    component probe: Probe;
+    component calibrator: Calibrator;
+    component client: Client;
+    connect counts (probe.reading, calibrator.input) /** Raw counts. */;
+    connect (client.control, calibrator.control);
+    connect service (calibrator.api, client.api);
+  }
+  component Demo: Bench;
+  component Reversed: Bench {
+    redefines component probe: ReversedProbe;
+    redefines connect counts(probe.reading, calibrator.input) /** The same route, redefined for the reversed probe. */;
+  }
+  component Scaled: Bench {
+    redefines component calibrator: Calibrator {
+      redefines operation scale: Scale {
+        value = raw / 100.0;
+      }
+    }
+  }
+  view audit: General {
+    include Demo recursive where not (kind == "port") and path != "Demo.client";
+  }
+  test 'Converted through out parameters' of Demo {
+    wait 5ms;
+    assert Demo.calibrator.test == 200 / 255.0 and Demo.calibrator.use == 2 and Demo.calibrator.last == 200;
+    assert Demo.client.gain == 0.2 and Demo.client.unit == Unit.ms;
+  }
+  test 'Interrupted conversion copies nothing back' of Reversed {
+    wait 5ms;
+    assert Reversed.calibrator.test == 0.0 and Reversed.calibrator.path == "reversed wiring";
+    assert Reversed.calibrator.approval.case == 7 and Reversed.calibrator.approval.to == "reversed wiring";
+  }
+  test 'Redefined scaling' of Scaled {
+    wait 5ms;
+    assert Scaled.calibrator.test == 2.0;
+  }
 }
 ```

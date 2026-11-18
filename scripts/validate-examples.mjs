@@ -12,6 +12,8 @@ for(const name of (await readdir(new URL('examples/invalid/',root))).filter(f=>f
 const documentedWarnings={
     // The interrupt region discards input while inactive, as the example shows.
     'examples/19-interruptible-function.swaml':['SW2012 19:7'],
+    // An abort that arrives outside the interruptible conversion is discarded, as the calibration bench shows.
+    'examples/32-calibration-bench.swaml':['SW2012 76:9'],
     'examples/showcase/autosar-adaptive-v2x-telemetry.swaml':[
         // beginOwnEvent: transmitHazard checks the signed trailer against the frame built before signing.
         'SW2011 1078:7',
