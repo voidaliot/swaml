@@ -47,18 +47,15 @@ The computed-wait examples moved to [chapter 3.3](../../spec/03-behavior.md#33-s
 | WP4-S06 | Moved to [chapter 3.5](../../spec/03-behavior.md#35-schedule) in WP4. |
 | WP4-S07 | Moved to [chapter 3.5](../../spec/03-behavior.md#35-schedule) in WP4. |
 | WP4-M02 | Moved to [chapter 3.5](../../spec/03-behavior.md#35-schedule) in WP4. |
-| WP7-S01 | **Release guards.** `when (g)` may follow the operation call of an `every`, `receive` or `after` entry. On a `start` or `call` entry it is an error (SW2007). |
-| WP7-S02 | **Guard effects and scope.** A release guard is `bool`, pure or reads state (SW2007). Its scope is the component's attributes, its sampled ports, `now()` and the entry's receive bindings; the operation's parameters are not in scope. |
-| WP7-S03 | **Identity.** A release guard is not part of entry identity, so two entries that differ only in their guard are duplicates (SW2007). |
+| WP7-S01 | Moved to [chapter 3.5](../../spec/03-behavior.md#35-schedule) in WP7. |
+| WP7-S02 | Moved to [chapter 3.5](../../spec/03-behavior.md#35-schedule) in WP7. |
+| WP7-S03 | Moved to [chapter 3.5](../../spec/03-behavior.md#35-schedule) in WP7. |
 
-```text
-on every 20ms slot() when (mode.current != PowerMode.sleep) deadline 2ms;  // WP7
-after rxMainFunction txMainFunction() when (mode.current != PowerMode.sleep) deadline 5ms;
-```
+The release-guard fragments that stood here are complete validated sources now: the `swaml` fence in [chapter 3.5](../../spec/03-behavior.md#35-schedule) and the [LIN master](../../../examples/50-lin-master-mode-gating.swaml) and [ComMain](../../../examples/51-com-main-release-guard.swaml) examples.
 
 The computed-period example moved to [chapter 3.5](../../spec/03-behavior.md#35-schedule) in WP4.
 
-The release rows of the trigger table gain "unless its release guard is false (chapter 6.2)". The runtime rules of release guards are in chapter 6.2 (WP7-R01 to WP7-R06).
+Applied in WP7: the release rows of the trigger table gain "unless its release guard is false (chapter 6.2)". The runtime rules of release guards moved to [chapter 6.2](../../spec/06-execution-contract.md#62-lock-and-snapshot) (WP7-R01 to WP7-R06).
 
 ## 3.6 States
 

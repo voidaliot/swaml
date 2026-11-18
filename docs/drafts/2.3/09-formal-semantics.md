@@ -23,7 +23,7 @@ C = (D, O, σ, S, Q, A, M, R, L, B, t)
 | completion guard | Moved to [chapter 9.2](../../spec/09-formal-semantics.md#92-typing-schemas) in WP5. | [WP5] |
 | timer guard | Moved to [chapter 9.2](../../spec/09-formal-semantics.md#92-typing-schemas) in WP5. | [WP5] |
 | `p.m` sampled | Moved to [chapter 9.2](../../spec/09-formal-semantics.md#92-typing-schemas) in WP6. | [WP6] |
-| release guard | bool; pure or reads state; scope: attributes, sampled ports, `now()`, receive bindings | [WP7] |
+| release guard | Moved to [chapter 9.2](../../spec/09-formal-semantics.md#92-typing-schemas) in WP7. | [WP7] |
 
 ## 9.3 Transition schemas
 
@@ -35,7 +35,7 @@ C = (D, O, σ, S, Q, A, M, R, L, B, t)
 | internal reaction | Moved to [chapter 9.3](../../spec/09-formal-semantics.md#93-transition-schemas) in WP5. | [WP5] |
 | retain | Moved to [chapter 9.3](../../spec/09-formal-semantics.md#93-transition-schemas) in WP5. | [WP5] |
 | sample | Moved to [chapter 9.3](../../spec/09-formal-semantics.md#93-transition-schemas) in WP6. | [WP6] |
-| guarded dispatch | At the first execution step. Guard false: cancel the deadline, record `skip`, release `after` targets as on completion, release L[o]. Guard failure: `failure`, no successors | [WP7] |
+| guarded dispatch | Moved to [chapter 9.3](../../spec/09-formal-semantics.md#93-transition-schemas) in WP7. | [WP7] |
 | ordered selection | Equal (t, phase) items ordered by descending priority, then in-task position, then insertion ordinal | [WP8] |
 
 The state paragraph "Select an already elapsed timer after entry completes before queued input" became "After entry completes, evaluate completion transitions, then select an already elapsed timer, then queued input" [WP5, applied].

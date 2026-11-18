@@ -140,10 +140,10 @@ A component owns at most one schedule block. Effective entries inherit and are r
 | Trigger | Release and signature |
 | --- | --- |
 | on start | Once after the initialization barrier |
-| on every D | At root epoch + kD, k at least 1; deadline defaults to D |
-| on receive p.m(bindings) | One activation per received required event/attribute |
+| on every D | At root epoch + kD, k at least 1, unless its release guard is false (chapter 6.2); deadline defaults to D |
+| on receive p.m(bindings) | One activation per received required event/attribute, unless its release guard is false (chapter 6.2) |
 | on call p.m(bindings) | Serve a provided operation; typed result/out values form the reply |
-| after predecessor | Fresh activation after successful whole same-owner predecessor completion and unlock |
+| after predecessor | Fresh activation after successful whole same-owner predecessor completion and unlock, unless its release guard is false (chapter 6.2); a skipped predecessor counts as completed |
 
 Entry arguments evaluate and copy at dispatch. Non-call entries bind void flow with no out parameters; after targets are parameterless void flow. Predecessors are scheduled same-owner operation names, never paths/qualified names/port members; the effective after graph is acyclic. Failure releases nothing. A fresh activation has its own release/deadline/locals/snapshot/backlog accounting; results and parameters are not forwarded. Stateful success means reaching final, not becoming idle after a reaction.
 
@@ -179,6 +179,50 @@ package CyclePeriods {
 ```
 
 In `fast` the poller runs every 4 ms with a 2 ms deadline; in `standard` every 10 ms with a 5 ms deadline.
+
+**Release guards (2.3).** `when (g)` after the operation call of an `every`, `receive` or `after` entry gates each release: a false guard skips it (chapter 6.2, WP7-R01 to WP7-R07). The [LIN master](../../examples/50-lin-master-mode-gating.swaml) and [ComMain](../../examples/51-com-main-release-guard.swaml) examples gate their periodic work by a sampled power mode instead of returning early from every release.
+
+| ID | Rule |
+| --- | --- |
+| WP7-S01 | **Release guards.** `when (g)` may follow the operation call of an `every`, `receive` or `after` entry, before `deadline` and `concurrent` (WP7-G01). On a `start` or `call` entry it is an error (SW2007 `A release guard is allowed only on every, receive and after entries.`, WP7-D01), reported once, at the guard where the entry is written; such a guard is not typed. |
+| WP7-S02 | **Guard effects and scope.** A release guard is `bool` (SW2007 `Release guard must be bool, found {type}.`) and pure or reads state: a call of an operation that writes or communicates is SW2007 `Release guard must be pure or read state.`, at the call; an unresolved, remote or suspending call is reported by the call rules only (WP7-D02). Its scope is the scope of the entry's arguments: the component's attributes, its sampled ports (WP6-S01; a sampled read in a guard is a sampled read of the component for WP6-S03 and WP6-S04), `now()` and the entry's receive bindings, which hide a port of the same name. The operation's parameters are not in scope; a name outside the scope keeps its unresolved-name message (SW2002). Like the arguments, the guard of an inherited entry is typed in every effective structure, so a redefined helper that writes is reported before any run; a guard whose own document has syntax errors is typed only there. |
+| WP7-S03 | **Identity.** A release guard is not part of entry identity, so two entries that differ only in their guard are duplicates (SW2007 `Duplicate (trigger, operation) entry.`), and an entry of a specialization or usage with the same trigger and operation replaces an inherited entry together with its guard; a replacement without a guard removes it. |
+
+```swaml
+package ReleaseGuards {
+  enum PowerMode {
+    run,
+    sleep
+  }
+  port def ModeState {
+    provides attribute current: PowerMode = PowerMode.run;
+  }
+  component def StateManager {
+    /** Interface-only actor that broadcasts the power mode. */
+    port mode: ModeState;
+  }
+  component def Slots {
+    reversed port mode: ModeState;
+    attribute headers: uint = 0;
+    attribute checkpoints: uint = 0;
+    operation slot() {
+      headers = headers + 1;
+    }
+    operation checkpoint() {
+      checkpoints = checkpoints + 1;
+    }
+    schedule {
+      on every 20ms slot() when (mode.current != PowerMode.sleep) deadline 2ms;
+      after slot checkpoint();
+    }
+  }
+  component manager: StateManager;
+  component lin: Slots;
+  connect (manager.mode, lin.mode);
+}
+```
+
+While the sampled mode is `sleep`, no `slot` runs, its 2 ms deadline is cancelled and its releases stay on the 20 ms grid; each skip still releases `checkpoint`.
 
 ## 3.6 States
 
