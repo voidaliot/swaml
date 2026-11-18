@@ -4,10 +4,10 @@
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parse } from './lib.mjs';
-const base = pathToFileURL((process.env.P4_OUT ?? 'E:/t/sw-p6/out') + '/').href;
+const base = pathToFileURL((process.env.P4_OUT ?? 'E:/t/sw-p7/out') + '/').href;
 const { eachTest } = await import(base + 'src/simulation/simulator.js');
-const { caseOptions } = await import(pathToFileURL('E:/t/sw-p6/scripts/simulation-cases.mjs').href);
-const cases = JSON.parse(readFileSync('E:/t/sw-p6/examples/simulation/cases.json', 'utf8'));
+const { caseOptions } = await import(pathToFileURL('E:/t/sw-p7/scripts/simulation-cases.mjs').href);
+const cases = JSON.parse(readFileSync('E:/t/sw-p7/examples/simulation/cases.json', 'utf8'));
 const [file, key, reps = '5'] = process.argv.slice(2);
 const p = await parse(readFileSync(file, 'utf8'), 'file:///cost.swaml');
 if (p.errors.length) throw new Error(p.errors.slice(0, 3).map(e => e.message).join('; '));

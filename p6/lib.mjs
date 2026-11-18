@@ -1,14 +1,14 @@
 // PROTOTYPE P4/P6 harness library (throwaway, never product code): loads a hand-written model, runs it, prints the
-// controller's observable behaviour. Build first: npm run build. Env P4_OUT overrides the build dir (default E:/t/sw-p6/out).
+// controller's observable behaviour. Build first: npm run build. Env P4_OUT overrides the build dir (default E:/t/sw-p7/out).
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-const outDir = process.env.P4_OUT ?? 'E:/t/sw-p6/out';
+const outDir = process.env.P4_OUT ?? 'E:/t/sw-p7/out';
 const base = pathToFileURL(outDir + '/').href;
 const { EmptyFileSystem } = await import('langium');
 const { parseHelper } = await import('langium/test');
 const { createSwamlServices } = await import(base + 'src/language/swaml-module.js');
 export const { simulate, runCase, projectOperationTiming } = await import(base + 'src/simulation/simulator.js');
-export const MODELS = process.env.P6_MODELS ?? 'E:/GitHub/swaml-vsc-ext/.temp/kept/states-p6/models';
+export const MODELS = process.env.P6_MODELS ?? 'E:/GitHub/swaml-vsc-ext/.temp/kept/states-p7/models';
 export const fmt = ns => ns >= 1e9 && ns % 1e6 === 0 ? `${ns / 1e9}s` : ns % 1e6 === 0 ? `${ns / 1e6}ms` : `${ns / 1e6}ms`;
 export async function parse(text, uri = `file:///m-${Math.random().toString(36).slice(2)}.swaml`) {
   const { Swaml } = createSwamlServices(EmptyFileSystem);

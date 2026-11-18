@@ -4,10 +4,10 @@
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parse, MODELS } from './lib.mjs';
-const base = pathToFileURL((process.env.P4_OUT ?? 'E:/t/sw-p6/out') + '/').href;
+const base = pathToFileURL((process.env.P4_OUT ?? 'E:/t/sw-p7/out') + '/').href;
 const { eachTest } = await import(base + 'src/simulation/simulator.js');
-const { caseOptions } = await import(pathToFileURL('E:/t/sw-p6/scripts/simulation-cases.mjs').href);
-const cases = JSON.parse(readFileSync('E:/t/sw-p6/examples/simulation/cases.json', 'utf8'));
+const { caseOptions } = await import(pathToFileURL('E:/t/sw-p7/scripts/simulation-cases.mjs').href);
+const cases = JSON.parse(readFileSync('E:/t/sw-p7/examples/simulation/cases.json', 'utf8'));
 const key = 'examples/showcase/autosar-classic-door-controller.swaml';
 const options = caseOptions(cases, key);
 async function runAll(text, label) {
@@ -17,7 +17,7 @@ async function runAll(text, label) {
   for (const r of eachTest([p.model], options)) out[r.case] = r;
   return { out, ms: performance.now() - t0 };
 }
-const A = await runAll(readFileSync('E:/t/sw-p6/' + key, 'utf8'), 'original');
+const A = await runAll(readFileSync('E:/t/sw-p7/' + key, 'utf8'), 'original');
 const B = await runAll(readFileSync(`${MODELS}/door-periodic-rewrite.swaml`, 'utf8'), 'rewrite');
 const watched = ['dcu.heater', 'dcu.supply'];
 // Observable behaviour of the rewritten components: their sends and attribute writes (not state/release bookkeeping).

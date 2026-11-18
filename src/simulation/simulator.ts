@@ -215,6 +215,10 @@ type Frame = {
     borrowed?: boolean;
     /** PROTOTYPE P6: the persistent activation of a machine released on every: releases issued, releases ended, backlog. */
     periodic?: { seq: number; done: number; backlog: number[] };
+    /** PROTOTYPE P7: names written by the event line block that runs now (own-write re-look). */
+    lookWrites?: Set<string>;
+    /** PROTOTYPE P7: states reached in the current release of a periodic machine (bound within one release). */
+    reachedThisRelease?: Set<a.StateStep>;
 };
 type FlowLevel = { state: a.StateStep; entered: number; delays: Map<a.Transition, number>; presented: Set<a.Transition> };
 /** PROTOTYPE P1r: exit; or to S; run by a look (SIF-R07). */
@@ -235,6 +239,14 @@ const P4_NO_LINE_IF_STEP = !process.env.P4_LINE_IF_STEP;
  * P6_NO_STATELOOP, P6_HASH_FIRST (configuration from the first look of a state in an instant, not the second),
  * P6_SAMPLE_AT_TRIGGER (a look sees the sample cells as they were when what caused it happened, not when it runs).
  */
+/**
+ * PROTOTYPE P7 (revision 5): own-write re-look (default on in waiting machines): when an event line's block writes a name
+ * that a statement already run in this look reads, the state looks again at once with nothing present.
+ * P7_NO_OWN_RELOOK disables it; P7_OWN_RELOOK_ANY re-looks when the write is read by any statement of the levels (position
+ * free); P7_OWN_RELOOK_PERIODIC also re-looks inside a release of a periodic machine. Bound within one release (default on):
+ * a state reached a second time in one release ends the release in that state (P7_NO_RELEASE_BOUND disables it).
+ */
+const P7_NO_OWN_RELOOK = !!process.env.P7_NO_OWN_RELOOK, P7_OWN_RELOOK_ANY = !!process.env.P7_OWN_RELOOK_ANY, P7_OWN_RELOOK_PERIODIC = !!process.env.P7_OWN_RELOOK_PERIODIC, P7_NO_RELEASE_BOUND = !!process.env.P7_NO_RELEASE_BOUND;
 const P6_NO_WAKES = !!process.env.P6_NO_WAKES, P6_NO_PENDING_WAKE = !!process.env.P6_NO_PENDING_WAKE, P6_NO_STATELOOP = !!process.env.P6_NO_STATELOOP, P6_HASH_FIRST = !!process.env.P6_HASH_FIRST, P6_SAMPLE_AT_TRIGGER = !!process.env.P6_SAMPLE_AT_TRIGGER;
 /** PROTOTYPE P4/P6 counters, reported on the result as prototype. */
 export type PrototypeStats = { looks: number; arrivalLooks: number; messageLooks: number; timerLooks: number; wakeLooks: number; releaseLooks: number; wakes: number; sameValueWakes: number; pendingWakes: number; configs: number; configNs: number; configChars: number; skips: number; releases: number };
@@ -626,7 +638,7 @@ class Interpreter {
         m.set(name, (m.get(name) ?? false) || changed);
         f.dirty.set(f.c, m);
     }
-    private assign(f: Frame, local: Environment, name: string, value: Value, site?: AstNode): void { const c = this.cell(f, local, name); const old = JSON.stringify(plain(c.value)); c.value = widen(value, c.type); this.noteWrite(f, local, name, old !== JSON.stringify(plain(c.value))); this.log('write', `${f.c.path}.${name}`, { activation: f.id, source: this.source(site ?? f.at), scope: local.has(name) ? 'local' : 'attribute', value: plain(c.value) }); }
+    private assign(f: Frame, local: Environment, name: string, value: Value, site?: AstNode): void { f.lookWrites?.add(name); const c = this.cell(f, local, name); const old = JSON.stringify(plain(c.value)); c.value = widen(value, c.type); this.noteWrite(f, local, name, old !== JSON.stringify(plain(c.value))); this.log('write', `${f.c.path}.${name}`, { activation: f.id, source: this.source(site ?? f.at), scope: local.has(name) ? 'local' : 'attribute', value: plain(c.value) }); }
     /**
      * A place assignment (WP1-R01 to WP1-R03): the target's index expressions left to right, then the right
      * side, then the root cell is read live, every index is checked against the value read and the root is
@@ -663,6 +675,7 @@ class Interpreter {
             (parent!.data as Value[])[key] = replaced;
         else
             (parent!.data as Record<string, Value>)[key!] = replaced;
+        f.lookWrites?.add(root);
         this.noteWrite(f, local, root, JSON.stringify(plain(cell.value)) !== JSON.stringify(plain(next)));
         cell.value = next;
         this.log('write', `${f.c.path}.${root}`, { activation: f.id, source: this.source(f.at), scope: local.has(root) ? 'local' : 'attribute', value: plain(next), place });
@@ -977,6 +990,7 @@ class Interpreter {
             this.machines[this.label(f)] = { state: '', live: true };
             this.log('periodicEnd', this.label(f), { activation: f.id, release: f.periodic.seq - f.periodic.backlog.length });
             yield { kind: 'receive', branches: [], flow: { named: new Set() }, periodic: true };
+            f.reachedThisRelease = new Set();
         }
         const result = yield* this.call(f.op, args, f, env, outNames);
         if (f.entry.kind === 'call')
@@ -1485,7 +1499,15 @@ class Interpreter {
      * is present runs, every statement runs; the look ends at the first exit; or to S; it runs. Returns that leave and the
      * level it was written at.
      */
-    private *look(levels: FlowLevel[], f: Frame, local: Environment, key: string, present: { input?: Message; timers: boolean }): Generator<Yield, { node: a.Exit | a.Jump; level: number } | undefined, Reply | undefined> {
+    private *look(levels: FlowLevel[], f: Frame, local: Environment, key: string, present: { input?: Message; timers: boolean }): Generator<Yield, { node: a.Exit | a.Jump; level: number } | { relook: string[] } | undefined, Reply | undefined> {
+        // PROTOTYPE P7: names read by the statements already run in this look (static, through helpers, locals included).
+        const passed = new Set<string>(), relook = new Set<string>();
+        const relooks = !P7_NO_OWN_RELOOK && (!f.periodic || P7_OWN_RELOOK_PERIODIC);
+        if (relooks && P7_OWN_RELOOK_ANY)
+            for (const l of levels)
+                for (const item of this.stateItems(l.state))
+                    if (!a.isStateAction(item) && !a.isTransition(item))
+                        this.itemNames(item, f.c.structure).forEach(x => passed.add(x));
         const timers = new Set<a.Transition>();
         if (present.timers)
             for (const l of levels)
@@ -1517,10 +1539,13 @@ class Interpreter {
                             this.bindInputs(lineScope, item.bindings ?? [], input);
                         f.at = item;
                         const before = f.lineWork = 0;
+                        const writes = f.lookWrites = relooks ? new Set<string>() : undefined;
                         try {
                             yield* this.block(item.effect as a.Block, f, lineScope);
                         }
                         finally {
+                            f.lookWrites = undefined;
+                            writes?.forEach(x => { if (passed.has(x) && !(lineScope.has(x) && !local.has(x))) relook.add(x); });
                             const worked = (f.lineWork ?? 0) > before;
                             f.lineWork = undefined;
                             if (worked) {
@@ -1533,6 +1558,8 @@ class Interpreter {
                         continue;
                     }
                     yield* this.statement(item as a.Statement, f, scope);
+                    if (relooks)
+                        this.itemNames(item, f.c.structure).forEach(x => passed.add(x));
                 }
             }
         }
@@ -1543,7 +1570,30 @@ class Interpreter {
             return { node: e.node, level };
         }
         finish(false);
-        return undefined;
+        return relook.size ? { relook: [...relook] } : undefined;
+    }
+    /** PROTOTYPE P7: the names (attributes, locals, sample cells as port|member) a statement reads, through helpers. */
+    private itemNames(item: AstNode, structure: Structure): Set<string> {
+        const out = new Set<string>(), visited = new Set<AstNode>();
+        const visit = (root: AstNode) => {
+            for (const n of AstUtils.streamAst(root)) {
+                if (a.isReferenceExpression(n)) {
+                    out.add(n.path.split('.')[0]);
+                    const sampled = sampledReadForm(n, structure);
+                    if (sampled)
+                        out.add(`${sampled.port.name}|${sampled.member.name}`);
+                }
+                else if (a.isCallExpression(n) && !n.target.includes('.')) {
+                    const op = localOperation(n, n.target, structure);
+                    if (op && isExecutable(op) && body(op) && !visited.has(op)) {
+                        visited.add(op);
+                        visit(body(op)!);
+                    }
+                }
+            }
+        };
+        visit(item);
+        return out;
     }
     /**
      * SIF-R07: leaving in text order. The block before the leave has run; on exit of every state left, innermost first;
@@ -1593,6 +1643,7 @@ class Interpreter {
             const named = this.namedAt(levels);
             f.at = levels.at(-1)!.state;
             yield { kind: 'receive', branches: [], flow: { named }, periodic: true };
+            f.reachedThisRelease = new Set([levels.at(-1)!.state]);
             this.dropUnnamed(f, named);
             const owned = this.owned(f.op), h = this.flowHeads(f).find(x => owned.has(x.endpointName) && named.has(x.endpointName));
             return { input: h ? this.take(h.queue, h.m, h.endpointName, f.c) : undefined, timers: true, cause: 'release' };
@@ -1640,6 +1691,16 @@ class Interpreter {
         try {
             yield* this.enter(levels, target && target !== top.name ? [top, ...this.pathInside(top, target)!] : [top], f, local, key, trigger);
             let present: { input?: Message; timers: boolean; cause: string } = { timers: true, cause: 'arrival' };
+            if (f.periodic && !P7_NO_RELEASE_BOUND && this.hasSomething(levels)) {
+                const reached = f.reachedThisRelease ??= new Set();
+                const leafState = levels.at(-1)!.state;
+                if (reached.has(leafState)) {
+                    this.log('releaseBound', key, { activation: f.id, state: leafState.name });
+                    present = yield* this.wait(levels, f);
+                }
+                else
+                    reached.add(leafState);
+            }
             while (true) {
                 let left: { node: a.Exit | a.Jump | undefined; level: number } | undefined;
                 // A state with nothing to look at at any level is a named step: it leaves as by exit; (SIF-R01 step 5).
@@ -1649,12 +1710,29 @@ class Interpreter {
                     this.countLook(present.cause);
                     f.wakePending = false;
                     this.checkLoop(f, levels, present);
-                    left = yield* this.look(levels, f, local, key, present);
+                    const looked = yield* this.look(levels, f, local, key, present);
+                    if (looked && 'relook' in looked) {
+                        this.log('wake', key, { activation: f.id, state: levels.at(-1)!.state.name, own: looked.relook });
+                        present = { timers: false, cause: 'own' };
+                        continue;
+                    }
+                    left = looked;
                 }
                 if (left) {
                     if (yield* this.leave(levels, left.level, left.node, f, local, key))
                         return voidValue();
                     present = { timers: true, cause: 'arrival' };
+                    // PROTOTYPE P7: a state reached a second time in one release ends the release in that state.
+                    if (f.periodic && !P7_NO_RELEASE_BOUND && this.hasSomething(levels)) {
+                        const reached = f.reachedThisRelease ??= new Set();
+                        const leafState = levels.at(-1)!.state;
+                        if (reached.has(leafState)) {
+                            this.log('releaseBound', key, { activation: f.id, state: leafState.name });
+                            present = yield* this.wait(levels, f);
+                            continue;
+                        }
+                        reached.add(leafState);
+                    }
                     continue;
                 }
                 present = yield* this.wait(levels, f);

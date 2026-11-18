@@ -1,7 +1,7 @@
 # PROTOTYPE P4 item 5: hand rewrites of WP5 examples 44, 46, 47 in revision 4 (written once, kept in the models folder).
-M = 'E:/GitHub/swaml-vsc-ext/.temp/kept/states-p6/models/'
+M = 'E:/GitHub/swaml-vsc-ext/.temp/kept/states-p7/models/'
 def load(n):
-    return open('E:/t/sw-p6/examples/' + n, encoding='utf8', newline='').read().replace('\r\n', '\n')
+    return open('E:/t/sw-p7/examples/' + n, encoding='utf8', newline='').read().replace('\r\n', '\n')
 def rep(t, old, new):
     assert t.count(old) == 1, old[:80]
     return t.replace(old, new)

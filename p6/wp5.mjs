@@ -3,10 +3,10 @@
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parse, MODELS, show } from './lib.mjs';
-const base = pathToFileURL((process.env.P4_OUT ?? 'E:/t/sw-p6/out') + '/').href;
+const base = pathToFileURL((process.env.P4_OUT ?? 'E:/t/sw-p7/out') + '/').href;
 const { eachTest } = await import(base + 'src/simulation/simulator.js');
-const { caseOptions } = await import(pathToFileURL('E:/t/sw-p6/scripts/simulation-cases.mjs').href);
-const cases = JSON.parse(readFileSync('E:/t/sw-p6/examples/simulation/cases.json', 'utf8'));
+const { caseOptions } = await import(pathToFileURL('E:/t/sw-p7/scripts/simulation-cases.mjs').href);
+const cases = JSON.parse(readFileSync('E:/t/sw-p7/examples/simulation/cases.json', 'utf8'));
 const helpers = ['heldTick', 'hasTick', 'heldLevel', 'hasLevel'];
 for (const [orig, rew, subjects, writes] of [
   ['44-session-completion.swaml', 'wp5-44-session-completion.rev4.swaml', ['session.'], ['sessionId', 'attempts', 'backoffs', 'coverageLosses']],
@@ -18,7 +18,7 @@ for (const [orig, rew, subjects, writes] of [
     if (p.errors.length || p.parserErrors.length) throw new Error(label + ': ' + [...p.parserErrors.map(e => e.message), ...p.errors.map(e => `${e.range.start.line + 1}: ${e.message}`)].join('; '));
     return [...eachTest([p.model], options)];
   };
-  const A = await run(readFileSync('E:/t/sw-p6/' + key, 'utf8'), orig), B = await run(readFileSync(`${MODELS}/${rew}`, 'utf8'), rew);
+  const A = await run(readFileSync('E:/t/sw-p7/' + key, 'utf8'), orig), B = await run(readFileSync(`${MODELS}/${rew}`, 'utf8'), rew);
   console.log(`\n# ${orig} (WP5, 2.3 candidate) against ${rew} (revision 4, hand-written)`);
   for (const [i, x] of A.entries()) {
     const y = B[i];

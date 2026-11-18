@@ -4,7 +4,7 @@
 set -u
 export PATH="/e/GitHub/swaml-vsc-ext/.temp/node26/node-v26.12.0-win-x64:$PATH"
 cd "$(dirname "$0")/.."
-E=${1:-/e/GitHub/swaml-vsc-ext/.temp/kept/states-p6/evidence}
+E=${1:-/e/GitHub/swaml-vsc-ext/.temp/kept/states-p7/evidence}
 mkdir -p "$E"
 run() { timeout 900 node p6/cases.mjs "$@" 2>&1; }
 K="--kinds state,wake,write,send,publish,sample,violation,failure,assert,discardInput"
@@ -22,7 +22,7 @@ run p4-antipinch-filtered.swaml --kinds state,write,send,violation,failure,asser
   P6_NO_PENDING_WAKE=1 run p4-values.swaml "Write while" $K --subjects busy.,Values --writes left,flag
 } > "$E/p4-values-and-wakes.txt"
 run p4-stateloop.swaml --steps 200000 --kinds violation,failure,assert --subjects drain.,slowDrain.,pingPong.,growing.,handshake.,arrival.,asking.,StateLoops > "$E/p4-stateloop.txt"
-K6="--kinds state,release,skip,send,publish,write,violation,failure,assert,periodicEnd,discardInput,sample"
+K6="--kinds state,release,skip,send,publish,write,violation,failure,assert,periodicEnd,discardInput,sample,releaseBound"
 run p6-window-10ms.swaml $K6 --subjects controller.,bench.,Window10ms --writes travel > "$E/p6-sample9-window-10ms.txt"
 {
   run p6-periodic.swaml "B2" $K6 --subjects window.,bench.diag,bench.sense,Periodic --writes travel,answered
@@ -33,7 +33,7 @@ run p6-window-10ms.swaml $K6 --subjects controller.,bench.,Window10ms --writes t
   run p6-periodic.swaml "Deadline" $K6 --subjects longLook.,bench.toLong,Periodic --writes looks
   run p6-periodic.swaml "Messages" $K6 --subjects messages.,in.,Periodic --writes got,ns
 } > "$E/p6-periodic-cases.txt"
-K6b="--kinds state,skip,send,publish,violation,failure,assert,periodicEnd,discardInput"
+K6b="--kinds state,skip,send,publish,violation,failure,assert,periodicEnd,discardInput,releaseBound"
 {
   run p6-traffic-connection.swaml Light $K6b --subjects light.,bench.ped,ped. --until 80e9
   run p6-traffic-connection.swaml Connection $K6b --subjects manager.,bench.link,link. --until 80e9
@@ -42,4 +42,23 @@ run p6-heater-supply.swaml --until 700e9 --kinds send,write,violation,failure,as
 timeout 900 node p6/timing.mjs > "$E/p6-timing-projection.txt" 2>&1
 timeout 900 node p6/door.mjs > "$E/p6-door-showcase-rewrites-vs-original.txt" 2>&1
 python p6/make-wp5.py && timeout 900 node p6/wp5.mjs > "$E/p4-wp5-44-46-47-rewrites.txt" 2>&1
+# PROTOTYPE P7 (revision 5): own-write re-look and the bound within one release.
+KO="--kinds state,wake,write,publish,violation,failure,assert,discardInput"
+SO="--subjects counter.,ownTimer.,parentAlarm.,alarm.,during.,periodicCounter.,OwnWrites --writes left,counted,ready,alarmOn,safe,published,k,travel"
+{
+  echo "# Default (revision 5): a line's write to a name that a statement already run in this look reads makes the state look again"
+  run p7-own-writes.swaml $KO $SO
+  echo; echo "# Variant P7_NO_OWN_RELOOK=1 (revision 4 and the r4b prototype): own writes never cause a look"
+  P7_NO_OWN_RELOOK=1 run p7-own-writes.swaml "Counter" $KO $SO
+  P7_NO_OWN_RELOOK=1 run p7-own-writes.swaml "Own timer" $KO $SO
+  P7_NO_OWN_RELOOK=1 run p7-own-writes.swaml "Parent condition" $KO $SO
+  echo; echo "# Variant P7_OWN_RELOOK_PERIODIC=1: the re-look inside a release of a periodic machine (rejected: per-release work runs twice)"
+  P7_OWN_RELOOK_PERIODIC=1 run p7-own-writes.swaml "Periodic" $KO $SO
+} > "$E/p7-own-writes.txt"
+{
+  echo "# Default (revision 5): a state reached a second time in one release ends the release in that state"
+  run p6-periodic.swaml "Zero-time cycle" --steps 200000 --kinds state,release,violation,failure,assert,releaseBound --subjects spin.,chain.,Periodic
+  echo; echo "# Variant P7_NO_RELEASE_BOUND=1 (r4b prototype): StateLoop stops the repeating cycle; the growing cycle runs to the step limit"
+  P7_NO_RELEASE_BOUND=1 run p6-periodic.swaml "Zero-time cycle" --steps 200000 --kinds violation,failure,assert --subjects spin.,chain.,Periodic
+} > "$E/p7-release-bound.txt"
 echo "evidence written to $E"
