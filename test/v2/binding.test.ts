@@ -19,6 +19,8 @@ const VALID = {
     costs: [
         { operation: 'dcu.comMain.rxMainFunction', wcetNs: 80000, bcetNs: 20000, source: 'trace measurement 2026-10' },
         { operation: 'dcu.comMain.txMainFunction', wcetNs: 90000, source: 'analysis report A7' },
+        // bcetNs may equal wcetNs.
+        { operation: 'dcu.comMain.supervise', wcetNs: 1000, bcetNs: 1000, source: 'constant-time code' },
     ],
     budgets: [{ task: 'vehicle.doorModules[0].core1.task20ms', budgetNs: 500000 }],
     crossCoreLatencyNs: [{ connection: 'dcu.@connect3', maxNs: 1000000 }, { connection: 'bodyCan', maxNs: 5000000 }],
@@ -43,7 +45,6 @@ test('WP8-M03 a binding resolves against the door deployment; placed operations 
         'finding /costs dcu.canIf.rxIndication: placed operation has no cost.',
         'finding /costs dcu.comMain.storePdu: placed operation has no cost.',
         'finding /costs dcu.comMain.onMode: placed operation has no cost.',
-        'finding /costs dcu.comMain.supervise: placed operation has no cost.',
         'finding /costs dcu.nvm.writeAll: placed operation has no cost.',
         'finding /costs dcu.ecuMode.onMode: placed operation has no cost.']);
     assert.deepEqual(result.resolved.connections, ['dcu.@connect1', 'dcu.@connect3', 'dcu.@connect5', 'bodyCan', 'modeLine', 'statusLine']);
@@ -95,9 +96,9 @@ test('WP8-M03 swaml binding check: exit codes and output lines', () => {
     const ok = cli('binding', 'check', good, DOOR);
     assert.equal(ok.code, 0, ok.out);
     assert.match(ok.out, /^finding \/costs dcu\.canIf\.rxIndication: placed operation has no cost\.$/mu);
-    assert.match(ok.out, /^Checked binding .*good\.json for DoorDeployment::'Front left door' \(swaml-binding\/2\.3\): 0 error\(s\), 6 finding\(s\)\.$/mu);
+    assert.match(ok.out, /^Checked binding .*good\.json for DoorDeployment::'Front left door' \(swaml-binding\/2\.3\): 0 error\(s\), 5 finding\(s\)\.$/mu);
     const json = JSON.parse(cli('binding', 'check', '--json', good, DOOR).out);
-    assert.deepEqual([json.schema, json.deployment, json.errorCount, json.findingCount], ['swaml-binding/2.3', "DoorDeployment::'Front left door'", 0, 6]);
+    assert.deepEqual([json.schema, json.deployment, json.errorCount, json.findingCount], ['swaml-binding/2.3', "DoorDeployment::'Front left door'", 0, 5]);
     const mismatch = cli('binding', 'check', file('v24.json', JSON.stringify({ ...VALID, schema: 'swaml-binding/2.4' })), DOOR);
     assert.equal(mismatch.code, 1);
     assert.match(mismatch.out, /^error \/schema: must be "swaml-binding\/2\.3", found "swaml-binding\/2\.4"\.$/mu);

@@ -14,6 +14,7 @@ const initialized = (e: AstNode): string => { for (let n: AstNode | undefined = 
 const isExpression = (n: unknown): n is a.Expression => !!n && typeof n === 'object' && EXPRESSION_TYPES.has((n as AstNode).$type);
 import { forwardedPorts, isSampledMember, memberPolicy, memberQos, optsIn, sampledMembers, sampledReadForm, sampledReads, attributeAccess, isCompletion, isLiteralTrue, isReactionForm, transitionKind, useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_2_3_URI, container, constantValue, displayText, entryDeadline, entryPeriod, representableDuration, settingDuration, triggerIdentity, type ConstantProblem } from './semantic.js';
 import { ambiguousNameMessage } from './swaml-scope.js';
+import type { Occurrence } from './semantic.js';
 import { coreText, deploymentPlan, durationText, entryLabel, pathText, predecessors, statementText, suspendSite, type DeploymentPlan, type EntryPlacement, type OsTask } from './placement.js';
 type Env = Map<string, {
     type: string;
@@ -1785,7 +1786,7 @@ export class SwamlValidator {
         // T7 (WP8-D08): the entries of one component occurrence reach at most one Core.
         if (plan.coreRule)
             for (const o of plan.software) {
-                const reached = plan.entries.filter(e => e.occurrence === o && e.core !== undefined);
+                const reached = (plan.byOccurrence.get(o) ?? []).filter(e => e.core !== undefined);
                 const second = reached.find(e => e.core !== reached[0].core);
                 if (second)
                     once(second.placement!.node, `${pathText(o.path)} runs on ${coreText(plan, reached[0].core!)} and ${coreText(plan, second.core!)}; all its operations must run on one core.`);
@@ -1794,8 +1795,8 @@ export class SwamlValidator {
     /** T6 (WP8-D07): an entry that is not on a Task, with an example deploy line for a Task that already hosts its occurrence or an ancestor, or the platform's first Task. */
     private unplacedMessage(plan: DeploymentPlan, e: EntryPlacement): string {
         let host: OsTask | undefined;
-        for (let p: string | undefined = e.occurrence.path; p !== undefined && !host; p = plan.software.find(o => o.path === p)?.parent)
-            host = plan.entries.find(x => x.occurrence.path === p && x.task)?.task;
+        for (let o: Occurrence | undefined = e.occurrence; o && !host; o = o.parent !== undefined ? plan.occurrenceAt.get(o.parent) : undefined)
+            host = plan.byOccurrence.get(o)?.find(x => x.task)?.task;
         host ??= plan.tasks[0];
         const relative = e.occurrence.path === plan.root.name ? '' : e.occurrence.path.slice(plan.root.name.length + 1);
         const operation = formatName(e.entry.operation, MESSAGE_SPELLING);

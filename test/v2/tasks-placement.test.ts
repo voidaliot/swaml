@@ -146,7 +146,7 @@ test('WP8-S02 specificity: an operation placement overrides occurrence placement
 });
 
 test('WP8-S03 and WP8-S10 Core grouping: nearest Core, the implicit Core of the platform root, Nodes below Tasks, and T7', async () => {
-    const board = `component def Cpu specializes Core { ${task('a', { priority: 1 })} ${task('b', { priority: 2 })} component slot: Node; }`;
+    const board = `component def Cpu specializes Core { component a: Task { redefines const attribute priority: uint = 1; component sub: Node; } ${task('b', { priority: 2 })} component slot: Node; }`;
     const source = (deploys: string) => `package Test {
   import Swaml::Platform;
   import Swaml::Os;
@@ -158,7 +158,9 @@ test('WP8-S03 and WP8-S10 Core grouping: nearest Core, the implicit Core of the 
   component hw: Board;
   deployment D of Demo on hw { ${deploys} }
 }`;
-    // A Node below a Task: the slot is not below a Task, so x.q there is unplaced (T6) but still reaches cpu0 for T7.
+    // A Node below a Task puts its entries on that Task.
+    const below = await valid(source('deploy x on cpu0.a.sub; deploy y on loose;'));
+    assert.deepEqual(deploymentPlan(below.model.packages[0].elements.find(a.isDeployment)!)!.entries.filter(e => e.occurrence.path === 'Demo.x').map(e => [e.task?.path, e.core]), [['hw.cpu0.a', 'hw.cpu0'], ['hw.cpu0.a', 'hw.cpu0']]);
     assert.deepEqual(await errors(source('deploy x on cpu0.a; deploy x.q on cpu0.b; deploy y on loose;')), []);
     assert.deepEqual(await errors(source('deploy x on cpu0.a; deploy x.q on cpu1.b; deploy y on loose;')), ['Demo.x runs on hw.cpu0 and hw.cpu1; all its operations must run on one core.']);
     assert.deepEqual(await errors(source('deploy x on cpu0.a; deploy x.q on loose; deploy y on loose;')), ['Demo.x runs on hw.cpu0 and the implicit core of hw; all its operations must run on one core.']);
@@ -314,9 +316,9 @@ test('WP8-R01 equal priority on different Cores follows the task declaration ran
   import Swaml::Platform;
   import Swaml::Os;
   port def Q { provides event e(n: int); }
-  component def W { port out: Q; attribute k: int = 0; operation go() { wait 2ms; k = k + 1; publish out.e(k); } schedule { on every 10ms go(); } }
+  component def W { port out: Q; const attribute split: bool = false; attribute k: int = 0; operation go() { if (split) { wait 1ms; wait 2ms; } else { wait 3ms; } k = k + 1; publish out.e(k); } schedule { on every 10ms go(); } }
   component def Sink { reversed port a: Q; reversed port b: Q; attribute log: int = 0; operation fromA(v: int) { log = log * 10 + 1; } operation fromB(v: int) { log = log * 10 + 2; } schedule { on receive a.e(v) fromA(v); on receive b.e(v) fromB(v); } }
-  component Demo { component wa: W; component wb: W; component sink: Sink; connect (wa.out, sink.a); connect (wb.out, sink.b); }
+  component Demo { component wa: W; component wb: W { redefines const attribute split: bool = true; } component sink: Sink; connect (wa.out, sink.a); connect (wb.out, sink.b); }
   component def Board specializes Node { ${order} component sinkCore: Core { ${task('ev', { priority: 1 })} } }
   component hw: Board;
   deployment D of Demo on hw { deploy wa on c0.t; deploy wb on c1.t; deploy sink on sinkCore.ev; }
@@ -326,10 +328,11 @@ test('WP8-R01 equal priority on different Cores follows the task declaration ran
     const backward = await runOf(source(`component c1: Core { ${ext(4)} } component c0: Core { ${ext(4)} }`), 15000000);
     assert.equal(forward.stores['Demo.sink'].log, 12);
     assert.equal(backward.stores['Demo.sink'].log, 21);
-    // A higher priority on the second core wins regardless of rank, also for the wait expiry (ready) at 12ms.
+    // A higher priority on the second core wins regardless of rank, also for the wait expiries (ready) at 13 ms, although
+    // wb's last wait started at 11 ms, after wa's.
     const prio = await runOf(source(`component c0: Core { ${ext(4)} } component c1: Core { ${ext(5)} }`), 15000000);
     assert.equal(prio.stores['Demo.sink'].log, 21);
-    assert.deepEqual(kinds(prio.trace, 'ready').map(o => o.subject), ['Demo.wb.go', 'Demo.wa.go']);
+    assert.deepEqual(kinds(prio.trace, 'ready').filter(o => o.timeNs === 13000000).map(o => o.subject), ['Demo.wb.go', 'Demo.wa.go']);
 });
 
 test('WP8-R01 a case-script activation is unplaced, and a borrowed subject call keeps the case activation', async () => {

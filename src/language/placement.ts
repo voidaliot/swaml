@@ -83,6 +83,10 @@ export interface DeploymentPlan {
     coreRule: boolean;
     placements: PlacementInfo[];
     entries: EntryPlacement[];
+    /** The entries of each software occurrence, in schedule order. */
+    byOccurrence: Map<Occurrence, EntryPlacement[]>;
+    /** Software occurrences by path. */
+    occurrenceAt: Map<string, Occurrence>;
 }
 const plans = new WeakMap<a.Deployment, { key: unknown; plan: DeploymentPlan | undefined }>();
 /** A family path covers its indexed members; a path covers itself. */
@@ -160,11 +164,14 @@ function computePlan(d: a.Deployment): DeploymentPlan | undefined {
             .sort((x, y) => x.placement!.index - y.placement!.index || x.occurrenceIndex - y.occurrenceIndex || x.scheduleIndex - y.scheduleIndex)
             .forEach((e, position) => e.position = position);
     const taskRules = tasks.length > 0, coreRule = taskRules || [...roles.values()].includes('Core');
-    return { deployment: d, root, platform, software, platformOccurrences, tasks, taskRules, coreRule, placements, entries };
+    const byOccurrence = new Map<Occurrence, EntryPlacement[]>();
+    for (const e of entries)
+        (byOccurrence.get(e.occurrence) ?? byOccurrence.set(e.occurrence, []).get(e.occurrence)!).push(e);
+    return { deployment: d, root, platform, software, platformOccurrences, tasks, taskRules, coreRule, placements, entries, byOccurrence, occurrenceAt: new Map(software.map(o => [o.path, o])) };
 }
 /** The entries of the same occurrence whose completion releases an after entry (its predecessor operation's entries). */
 export function predecessors(plan: DeploymentPlan, e: EntryPlacement): EntryPlacement[] {
-    return e.entry.kind === 'after' ? plan.entries.filter(x => x.occurrence === e.occurrence && x.entry.operation === e.entry.predecessor) : [];
+    return e.entry.kind === 'after' ? (plan.byOccurrence.get(e.occurrence) ?? []).filter(x => x.entry.operation === e.entry.predecessor) : [];
 }
 const TASK_ATTRIBUTES =['kind', 'priority', 'preemptive', 'periodNs', 'responseNs'] as const;
 function taskAttributes(s: Structure): Pick<OsTask, 'kind' | 'priority' | 'preemptive' | 'periodNs' | 'responseNs'> {
