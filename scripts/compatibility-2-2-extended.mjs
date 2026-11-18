@@ -5,7 +5,8 @@
 // models-wp2.json (WP2: view, state, in and out in their keyword roles next to names, if statements and
 // single associations), models-wp2b.json (WP2 review: diagnostics that spell a quoted contextual word, compared
 // with their related information) and models-wp3.json (WP3-L04: the names of the 2.3 library packages, with
-// related information) and models-wp3b.json (WP3 review F1: own packages named like the 2.3 library packages). For each set, recorded.json or recorded-wp2.json holds, recorded once from the 3.1.0
+// related information), models-wp3b.json (WP3 review F1: own packages named like the 2.3 library packages) and
+// models-wp4.json (WP4: durations in every 2.2 position, policy settings and names that look like units). For each set, recorded.json or recorded-wp2.json holds, recorded once from the 3.1.0
 // implementation at 213f583, every diagnostic (severity, code, range, message), the digest of the normalized
 // AST and, for runnable models, the run or case results with their trace digests. The current implementation
 // must reproduce all of it. A run that threw a host error in 3.1.0 is not compared and is listed.
@@ -37,6 +38,9 @@ export const SETS = [
     { models: 'models-wp3.json', recorded: 'recorded-wp3.json', rule: 'WP3-L04: 2.2 sources that declare, import or use the names of the 2.3 library packages', related: true },
     // User packages named like the 2.3 library packages hide them (WP3-L04, WP3 review F1).
     { models: 'models-wp3b.json', recorded: 'recorded-wp3b.json', rule: 'WP3-L04 (review F1): 2.2 sources that declare their own Swaml::Numeric, Swaml::Text or Swaml::Time', related: true },
+    // Durations become expression values and PolicySetting has one form (WP4-G01, WP4-G02); these 2.2 sources use
+    // every position a duration can have in 2.2.
+    { models: 'models-wp4.json', recorded: 'recorded-wp4.json', rule: 'WP4-G01, WP4-G02: 2.2 sources with durations in every 2.2 position, policy settings and names that look like units', related: true },
 ];
 const strip = trace => trace.map(({ profile: _p, languageVersion: _l, ...rest }) => rest);
 const at = r => `${r.start.line + 1}:${r.start.character + 1}-${r.end.line + 1}:${r.end.character + 1}`;
