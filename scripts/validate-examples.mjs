@@ -14,6 +14,9 @@ const documentedWarnings={
     'examples/19-interruptible-function.swaml':['SW2012 19:7'],
     // An abort that arrives outside the interruptible conversion is discarded, as the calibration bench shows.
     'examples/32-calibration-bench.swaml':['SW2012 82:9'],
+    // SelfBreaker (migrated, states in the flow): write(t) runs in the else of the trip test and writes the failure count after
+    // the store request, under that test, which the look made before the request.
+    'examples/46-breaker-internal.swaml':['SW2011 103:13'],
     'examples/showcase/autosar-adaptive-v2x-telemetry.swaml':[
         // beginOwnEvent: transmitHazard checks the signed trailer against the frame built before signing.
         'SW2011 1078:7',

@@ -1,5 +1,5 @@
 package LockDeferral {
-  /** A door lock in the shape of the door model's LockControl. A lock or unlock request that arrives during the 250 ms motor pulse has no transition in 2.2 and is discarded (discardInput, inactiveOwner): DiscardingLock ends unlocked although the last request was lock. From 2.3 the pulse states write defer requests.request; and the request stays in its connection queue until a state that handles it, so DeferringLock ends locked. Retained input keeps its queue slot: with a policy that rejects on overflow a full queue fails the sender, and the validator warns about it (SW2018); these connections use the Queued policy, which drops the oldest request instead. */
+  /** A door lock in the shape of the door model's LockControl. A lock or unlock request that arrives during the 250 ms motor pulse has no transition in 2.2 and is discarded (discardInput, inactiveOwner): DiscardingLock ends unlocked although the last request was lock. With states in the flow a request is remembered in a variable: RememberingLock's states all write the latest request to wanted, and the resting states leave when wanted differs from where they rest, so it ends locked. Only the latest request is kept: requests that arrive during one pulse do not queue up a sequence of pulses. */
   import Swaml::Qos;
   qos def Queued: Policy {
     delivery = Delivery.atMostOnce;
@@ -12,34 +12,41 @@ package LockDeferral {
     provides event request(lock: bool);
   }
   component def DiscardingLock {
-    /** The 2.2 shape. */
+    /** The 2.2 shape, migrated. */
     reversed port requests: Requests;
     attribute locked: bool = false;
     attribute pulses: uint = 0;
     operation control() {
-      initial unlocked;
       state unlocked {
-        on receive requests.request(lock) when (lock) to locking {
+        on receive requests.request(lock) {
+          if (lock) {
+            exit;
+          }
         }
       }
       state locking {
         on entry {
           pulses = pulses + 1;
         }
-        after 250ms to isLocked {
+        after 250ms {
           locked = true;
+          exit;
         }
       }
       state isLocked {
-        on receive requests.request(lock) when (not lock) to unlocking {
+        on receive requests.request(lock) {
+          if (not lock) {
+            exit;
+          }
         }
       }
       state unlocking {
         on entry {
           pulses = pulses + 1;
         }
-        after 250ms to unlocked {
+        after 250ms {
           locked = false;
+          to unlocked;
         }
       }
     }
@@ -47,37 +54,47 @@ package LockDeferral {
       on start control();
     }
   }
-  component def DeferringLock {
-    /** The 2.3 shape: the pulse states retain requests. */
+  component def RememberingLock {
+    /** The 2.3 shape: every state remembers the latest request in wanted; the resting states ask it. */
     reversed port requests: Requests;
     attribute locked: bool = false;
     attribute pulses: uint = 0;
+    attribute wanted: bool = false;
     operation control() {
-      initial unlocked;
       state unlocked {
-        on receive requests.request(lock) when (lock) to locking {
+        on receive requests.request(lock) {
+          wanted = lock;
         }
+        if (wanted) exit;
       }
       state locking {
-        defer requests.request;
         on entry {
           pulses = pulses + 1;
         }
-        after 250ms to isLocked {
+        on receive requests.request(lock) {
+          wanted = lock;
+        }
+        after 250ms {
           locked = true;
+          exit;
         }
       }
       state isLocked {
-        on receive requests.request(lock) when (not lock) to unlocking {
+        on receive requests.request(lock) {
+          wanted = lock;
         }
+        if (not wanted) exit;
       }
       state unlocking {
-        defer requests.request;
         on entry {
           pulses = pulses + 1;
         }
-        after 250ms to unlocked {
+        on receive requests.request(lock) {
+          wanted = lock;
+        }
+        after 250ms {
           locked = false;
+          to unlocked;
         }
       }
     }
@@ -88,42 +105,42 @@ package LockDeferral {
   component def Body {
     /** Interface-only actor that sends lock requests to both locks. */
     port toDiscarding: Requests;
-    port toDeferring: Requests;
+    port toRemembering: Requests;
   }
   component def Fob {
-    /** Interface-only actor: a key fob with its own connection to the deferring lock, so its requests have their own queue. */
-    port toDeferring: Requests;
+    /** Interface-only actor: a key fob with its own connection to the remembering lock, so its requests have their own queue. */
+    port toRemembering: Requests;
   }
   component discarding: DiscardingLock;
-  component deferring: DeferringLock;
+  component remembering: RememberingLock;
   component body: Body;
   component fob: Fob;
   connect: Queued (body.toDiscarding, discarding.requests);
-  connect: Queued (body.toDeferring, deferring.requests);
-  connect: Queued (fob.toDeferring, deferring.requests);
+  connect: Queued (body.toRemembering, remembering.requests);
+  connect: Queued (fob.toRemembering, remembering.requests);
   associate body, discarding to 'Requests during the pulse';
   associate body, fob to 'Request order across the pulse';
-  test 'Requests during the pulse' of deferring {
-    /** lock at 0 ms, then unlock at 100 ms and lock at 200 ms, both during the first pulse. The discarding lock drops both and stays locked after one pulse; the deferring lock takes unlock when the pulse ends at 250 ms, retains lock during the unlocking pulse and takes it at 500 ms, so it pulses three times and ends locked. */
+  test 'Requests during the pulse' of remembering {
+    /** lock at 0 ms, then unlock at 100 ms and lock at 200 ms, both during the first pulse. The discarding lock drops both and stays locked after one pulse. The remembering lock keeps only the latest request, lock, so after the pulse ends at 250 ms it rests locked: one pulse, locked. A request queue (2.3 has no deferral) would have pulsed three times. */
     publish body.toDiscarding.request(true);
-    publish body.toDeferring.request(true);
+    publish body.toRemembering.request(true);
     wait 100ms;
     publish body.toDiscarding.request(false);
-    publish body.toDeferring.request(false);
+    publish body.toRemembering.request(false);
     wait 100ms;
     publish body.toDiscarding.request(true);
-    publish body.toDeferring.request(true);
+    publish body.toRemembering.request(true);
     wait 600ms;
     assert discarding.locked and discarding.pulses == 1;
-    assert deferring.locked and deferring.pulses == 3;
+    assert remembering.locked and remembering.pulses == 1;
   }
-  test 'Request order across the pulse' of deferring {
-    /** Two requests retained during one pulse are taken in offer order across their queues: the fob's unlock, then the body's lock, so the lock ends locked after three pulses. The body's queue is the older one (its first lock request started the pulse), so taking the queues in creation order would discard the lock in isLocked and end unlocked after two pulses. */
-    publish body.toDeferring.request(true);
+  test 'Request order across the pulse' of remembering {
+    /** Two requests during one pulse are looked at in delivery order across their queues: the fob's unlock, then the body's lock, so wanted ends true and the lock rests locked after one pulse. The body's queue is the older one (its first lock request started the pulse), so taking the queues in creation order would leave wanted false and unlock: two pulses, unlocked. */
+    publish body.toRemembering.request(true);
     wait 10ms;
-    publish fob.toDeferring.request(false);
-    publish body.toDeferring.request(true);
+    publish fob.toRemembering.request(false);
+    publish body.toRemembering.request(true);
     wait 900ms;
-    assert deferring.locked and deferring.pulses == 3;
+    assert remembering.locked and remembering.pulses == 1;
   }
 }

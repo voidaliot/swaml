@@ -6276,7 +6276,7 @@ package DerivedPeriod {
 
 ```swaml
 package SessionCompletion {
-  /** An uplink session in the shape of the V2X model's UplinkSessionManager. In 2.2 a state machine cannot decide on a value its own entry action computed: LegacySession publishes openRequested, a second component, Transfer, performs the request and answers opened or refused, and two control events exist only to return that decision. From 2.3 one machine opens the session in its entry action and decides with completion transitions, when (sessionId > 0) to Connected, which are evaluated after the entry actions finish (chapter 3.6). A coverage loss queued during the request is taken in whatever state the decision reaches. */
+  /** An uplink session in the shape of the V2X model's UplinkSessionManager. In 2.2 a state machine cannot decide on a value its own entry action computed: LegacySession publishes openRequested, a second component, Transfer, performs the request and answers opened or refused, and two control events exist only to return that decision. From 2.3 a state is a step of the flow: one machine opens the session in its entry action and decides with if (sessionId > 0) to Connected; standing in the state, which its arrival look checks after the entry action finishes. A coverage loss queued during the request is taken in whatever state the decision reaches. */
   port def CloudApi {
     provides operation openSession(vehicle: uint) returns uint;
   }
@@ -6305,7 +6305,7 @@ package SessionCompletion {
     }
   }
   component def Session {
-    /** The 2.3 shape: one machine, completion transitions on the result of its own request. */
+    /** The 2.3 shape: one machine that decides on the result of its own request by a condition standing in Connecting. */
     reversed port cloud: CloudApi;
     reversed port network: Coverage;
     const attribute vehicleId: uint = 7;
@@ -6314,38 +6314,44 @@ package SessionCompletion {
     attribute backoffs: uint = 0;
     attribute coverageLosses: uint = 0;
     operation run() {
-      initial Connecting;
       state Connecting {
         on entry {
           attempts = attempts + 1;
           sessionId = try(cloud.openSession(vehicleId), 0);
         }
-        when (sessionId > 0) to Connected {
-        }
-        when (true) to Backoff {
-        }
-        on receive network.coverage(up) when (not up) to Offline {
-          coverageLosses = coverageLosses + 1;
+        if (sessionId > 0) to Connected;
+        else to Backoff;
+        on receive network.coverage(up) {
+          if (not up) {
+            coverageLosses = coverageLosses + 1;
+            to Offline;
+          }
         }
       }
       state Backoff {
         on entry {
           backoffs = backoffs + 1;
         }
-        after 10ms to Connecting {
-        }
-        on receive network.coverage(up) when (not up) to Offline {
-          coverageLosses = coverageLosses + 1;
+        after 10ms to Connecting;
+        on receive network.coverage(up) {
+          if (not up) {
+            coverageLosses = coverageLosses + 1;
+            to Offline;
+          }
         }
       }
       state Connected {
-        on receive network.coverage(up) when (not up) to Offline {
-          coverageLosses = coverageLosses + 1;
-          sessionId = 0;
+        on receive network.coverage(up) {
+          if (not up) {
+            coverageLosses = coverageLosses + 1;
+            sessionId = 0;
+            to Offline;
+          }
         }
       }
       state Offline {
-        on receive network.coverage(up) when (up) to Connecting {
+        on receive network.coverage(up) {
+          if (up) to Connecting;
         }
       }
     }
@@ -6362,39 +6368,49 @@ package SessionCompletion {
     attribute backoffs: uint = 0;
     attribute coverageLosses: uint = 0;
     operation run() {
-      initial Connecting;
       state Connecting {
         on entry {
           attempts = attempts + 1;
           publish ctl.openRequested(attempts);
         }
-        on receive ctl.opened(id) to Connected {
+        on receive ctl.opened(id) {
           sessionId = id;
+          to Connected;
         }
-        on receive ctl.refused() to Backoff {
-        }
-        on receive network.coverage(up) when (not up) to Offline {
-          coverageLosses = coverageLosses + 1;
+        on receive ctl.refused() exit;
+        on receive network.coverage(up) {
+          if (not up) {
+            coverageLosses = coverageLosses + 1;
+            to Offline;
+          }
         }
       }
       state Backoff {
         on entry {
           backoffs = backoffs + 1;
         }
-        after 10ms to Connecting {
-        }
-        on receive network.coverage(up) when (not up) to Offline {
-          coverageLosses = coverageLosses + 1;
+        after 10ms to Connecting;
+        on receive network.coverage(up) {
+          if (not up) {
+            coverageLosses = coverageLosses + 1;
+            to Offline;
+          }
         }
       }
       state Connected {
-        on receive network.coverage(up) when (not up) to Offline {
-          coverageLosses = coverageLosses + 1;
-          sessionId = 0;
+        on receive network.coverage(up) {
+          if (not up) {
+            coverageLosses = coverageLosses + 1;
+            sessionId = 0;
+            exit;
+          }
         }
       }
       state Offline {
-        on receive network.coverage(up) when (up) to Connecting {
+        on receive network.coverage(up) {
+          if (up) {
+            to Connecting;
+          }
         }
       }
     }
@@ -6460,7 +6476,7 @@ package SessionCompletion {
 
 ```swaml
 package LockDeferral {
-  /** A door lock in the shape of the door model's LockControl. A lock or unlock request that arrives during the 250 ms motor pulse has no transition in 2.2 and is discarded (discardInput, inactiveOwner): DiscardingLock ends unlocked although the last request was lock. From 2.3 the pulse states write defer requests.request; and the request stays in its connection queue until a state that handles it, so DeferringLock ends locked. Retained input keeps its queue slot: with a policy that rejects on overflow a full queue fails the sender, and the validator warns about it (SW2018); these connections use the Queued policy, which drops the oldest request instead. */
+  /** A door lock in the shape of the door model's LockControl. A lock or unlock request that arrives during the 250 ms motor pulse has no transition in 2.2 and is discarded (discardInput, inactiveOwner): DiscardingLock ends unlocked although the last request was lock. With states in the flow a request is remembered in a variable: RememberingLock's states all write the latest request to wanted, and the resting states leave when wanted differs from where they rest, so it ends locked. Only the latest request is kept: requests that arrive during one pulse do not queue up a sequence of pulses. */
   import Swaml::Qos;
   qos def Queued: Policy {
     delivery = Delivery.atMostOnce;
@@ -6473,34 +6489,41 @@ package LockDeferral {
     provides event request(lock: bool);
   }
   component def DiscardingLock {
-    /** The 2.2 shape. */
+    /** The 2.2 shape, migrated. */
     reversed port requests: Requests;
     attribute locked: bool = false;
     attribute pulses: uint = 0;
     operation control() {
-      initial unlocked;
       state unlocked {
-        on receive requests.request(lock) when (lock) to locking {
+        on receive requests.request(lock) {
+          if (lock) {
+            exit;
+          }
         }
       }
       state locking {
         on entry {
           pulses = pulses + 1;
         }
-        after 250ms to isLocked {
+        after 250ms {
           locked = true;
+          exit;
         }
       }
       state isLocked {
-        on receive requests.request(lock) when (not lock) to unlocking {
+        on receive requests.request(lock) {
+          if (not lock) {
+            exit;
+          }
         }
       }
       state unlocking {
         on entry {
           pulses = pulses + 1;
         }
-        after 250ms to unlocked {
+        after 250ms {
           locked = false;
+          to unlocked;
         }
       }
     }
@@ -6508,37 +6531,47 @@ package LockDeferral {
       on start control();
     }
   }
-  component def DeferringLock {
-    /** The 2.3 shape: the pulse states retain requests. */
+  component def RememberingLock {
+    /** The 2.3 shape: every state remembers the latest request in wanted; the resting states ask it. */
     reversed port requests: Requests;
     attribute locked: bool = false;
     attribute pulses: uint = 0;
+    attribute wanted: bool = false;
     operation control() {
-      initial unlocked;
       state unlocked {
-        on receive requests.request(lock) when (lock) to locking {
+        on receive requests.request(lock) {
+          wanted = lock;
         }
+        if (wanted) exit;
       }
       state locking {
-        defer requests.request;
         on entry {
           pulses = pulses + 1;
         }
-        after 250ms to isLocked {
+        on receive requests.request(lock) {
+          wanted = lock;
+        }
+        after 250ms {
           locked = true;
+          exit;
         }
       }
       state isLocked {
-        on receive requests.request(lock) when (not lock) to unlocking {
+        on receive requests.request(lock) {
+          wanted = lock;
         }
+        if (not wanted) exit;
       }
       state unlocking {
-        defer requests.request;
         on entry {
           pulses = pulses + 1;
         }
-        after 250ms to unlocked {
+        on receive requests.request(lock) {
+          wanted = lock;
+        }
+        after 250ms {
           locked = false;
+          to unlocked;
         }
       }
     }
@@ -6549,43 +6582,43 @@ package LockDeferral {
   component def Body {
     /** Interface-only actor that sends lock requests to both locks. */
     port toDiscarding: Requests;
-    port toDeferring: Requests;
+    port toRemembering: Requests;
   }
   component def Fob {
-    /** Interface-only actor: a key fob with its own connection to the deferring lock, so its requests have their own queue. */
-    port toDeferring: Requests;
+    /** Interface-only actor: a key fob with its own connection to the remembering lock, so its requests have their own queue. */
+    port toRemembering: Requests;
   }
   component discarding: DiscardingLock;
-  component deferring: DeferringLock;
+  component remembering: RememberingLock;
   component body: Body;
   component fob: Fob;
   connect: Queued (body.toDiscarding, discarding.requests);
-  connect: Queued (body.toDeferring, deferring.requests);
-  connect: Queued (fob.toDeferring, deferring.requests);
+  connect: Queued (body.toRemembering, remembering.requests);
+  connect: Queued (fob.toRemembering, remembering.requests);
   associate body, discarding to 'Requests during the pulse';
   associate body, fob to 'Request order across the pulse';
-  test 'Requests during the pulse' of deferring {
-    /** lock at 0 ms, then unlock at 100 ms and lock at 200 ms, both during the first pulse. The discarding lock drops both and stays locked after one pulse; the deferring lock takes unlock when the pulse ends at 250 ms, retains lock during the unlocking pulse and takes it at 500 ms, so it pulses three times and ends locked. */
+  test 'Requests during the pulse' of remembering {
+    /** lock at 0 ms, then unlock at 100 ms and lock at 200 ms, both during the first pulse. The discarding lock drops both and stays locked after one pulse. The remembering lock keeps only the latest request, lock, so after the pulse ends at 250 ms it rests locked: one pulse, locked. A request queue (2.3 has no deferral) would have pulsed three times. */
     publish body.toDiscarding.request(true);
-    publish body.toDeferring.request(true);
+    publish body.toRemembering.request(true);
     wait 100ms;
     publish body.toDiscarding.request(false);
-    publish body.toDeferring.request(false);
+    publish body.toRemembering.request(false);
     wait 100ms;
     publish body.toDiscarding.request(true);
-    publish body.toDeferring.request(true);
+    publish body.toRemembering.request(true);
     wait 600ms;
     assert discarding.locked and discarding.pulses == 1;
-    assert deferring.locked and deferring.pulses == 3;
+    assert remembering.locked and remembering.pulses == 1;
   }
-  test 'Request order across the pulse' of deferring {
-    /** Two requests retained during one pulse are taken in offer order across their queues: the fob's unlock, then the body's lock, so the lock ends locked after three pulses. The body's queue is the older one (its first lock request started the pulse), so taking the queues in creation order would discard the lock in isLocked and end unlocked after two pulses. */
-    publish body.toDeferring.request(true);
+  test 'Request order across the pulse' of remembering {
+    /** Two requests during one pulse are looked at in delivery order across their queues: the fob's unlock, then the body's lock, so wanted ends true and the lock rests locked after one pulse. The body's queue is the older one (its first lock request started the pulse), so taking the queues in creation order would leave wanted false and unlock: two pulses, unlocked. */
+    publish body.toRemembering.request(true);
     wait 10ms;
-    publish fob.toDeferring.request(false);
-    publish body.toDeferring.request(true);
+    publish fob.toRemembering.request(false);
+    publish body.toRemembering.request(true);
     wait 900ms;
-    assert deferring.locked and deferring.pulses == 3;
+    assert remembering.locked and remembering.pulses == 1;
   }
 }
 ```
@@ -6594,7 +6627,7 @@ package LockDeferral {
 
 ```swaml
 package BreakerInternal {
-  /** A persistence circuit breaker in the shape of the cloud model's PersistenceWriter. In 2.2 every transition has a target: SelfBreaker writes an arrival in Closed with a self transition, to Closed, which exits and enters the state again, and trips only at the next arrival after the third failed write. In Open it must leave arrivals unhandled, because a self transition would restart the cool-down timer, so they appear only as discards. From 2.3 a transition without to is internal: it runs only its effect, without exit, entry or state update, and the state's timers keep their epoch. InternalBreaker writes arrivals internally, trips by a completion transition right after the third failed write, and counts the arrivals it sheds while Open without delaying the cool-down. */
+  /** A persistence circuit breaker in the shape of the cloud model's PersistenceWriter. SelfBreaker keeps the shape of its 2.2 machine (migrated): every arrival in Closed leaves and reaches Closed again (to Closed), which exits and enters the state, and it trips only at the next arrival after the third failed write; in Open it leaves arrivals unhandled, so they are dropped. With states in the flow a line that does not leave stays: the state is not left, its entry does not run again and its timers keep running. InternalBreaker writes arrivals with a staying line, trips by the condition standing in Closed after that line, right after the third failed write, and counts the arrivals it sheds while Open without delaying the cool-down. */
   port def Stream {
     provides event accepted(t: uint);
   }
@@ -6638,29 +6671,31 @@ package BreakerInternal {
       }
     }
     operation circuit() {
-      initial Closed;
       state Closed {
         on receive stream.accepted(t) {
           write(t);
         }
-        when (consecutiveFailures >= failureThreshold) to Open {
+        if (consecutiveFailures >= failureThreshold) {
           trips = trips + 1;
+          to Open;
         }
       }
       state Open {
         on receive stream.accepted(t) {
           shedArrivals = shedArrivals + 1;
         }
-        after 20ms to HalfOpen {
+        after 20ms {
           halfOpenAtNs = Swaml::Time::now();
+          exit;
         }
       }
       state HalfOpen {
         on entry {
           consecutiveFailures = 0;
         }
-        on receive stream.accepted(t) to Closed {
+        on receive stream.accepted(t) {
           write(t);
+          to Closed;
         }
       }
     }
@@ -6669,7 +6704,7 @@ package BreakerInternal {
     }
   }
   component def SelfBreaker {
-    /** The 2.2 shape. */
+    /** The 2.2 shape, migrated. */
     reversed port stream: Stream;
     reversed port store: StoreApi;
     const attribute failureThreshold: uint = 3;
@@ -6687,26 +6722,30 @@ package BreakerInternal {
       }
     }
     operation circuit() {
-      initial Closed;
       state Closed {
-        on receive stream.accepted(t) when (consecutiveFailures >= failureThreshold) to Open {
-          trips = trips + 1;
-        }
-        on receive stream.accepted(t) to Closed {
-          write(t);
+        on receive stream.accepted(t) {
+          if (consecutiveFailures >= failureThreshold) {
+            trips = trips + 1;
+            exit;
+          } else {
+            write(t);
+            to Closed;
+          }
         }
       }
       state Open {
-        after 20ms to HalfOpen {
+        after 20ms {
           halfOpenAtNs = Swaml::Time::now();
+          exit;
         }
       }
       state HalfOpen {
         on entry {
           consecutiveFailures = 0;
         }
-        on receive stream.accepted(t) to Closed {
+        on receive stream.accepted(t) {
           write(t);
+          to Closed;
         }
       }
     }
@@ -6730,7 +6769,7 @@ package BreakerInternal {
   connect (feed.toSelf, selfBreaker.stream);
   associate feed, store, selfStore, selfBreaker to 'Store outage trips the breaker and recovers';
   test 'Store outage trips the breaker and recovers' of internal {
-    /** Both stores are down; arrivals every 5 ms from 0 to 30 ms. The internal breaker trips right after its third failed write, at 11 ms, sheds the four arrivals at 15 to 30 ms while the cool-down keeps its epoch, and is half open at 31 ms. The 2.2 breaker trips only at the fourth arrival, at 15 ms, discards the arrivals while open and is half open at 35 ms. When the store is back, the next arrival closes both. */
+    /** Both stores are down; arrivals every 5 ms from 0 to 30 ms. The internal breaker trips right after its third failed write, at 11 ms, sheds the four arrivals at 15 to 30 ms while the cool-down keeps its epoch, and is half open at 31 ms. The breaker of the 2.2 shape trips only at the fourth arrival, at 15 ms, discards the arrivals while open and is half open at 35 ms. When the store is back, the next arrival closes both. */
     store.setDown(true);
     selfStore.setDown(true);
     for (var i: uint = 0; i <= 6; i = i + 1) {
@@ -6756,7 +6795,7 @@ package BreakerInternal {
 
 ```swaml
 package ReactionForms {
-  /** Every 2.3 state reaction form in one machine: completion transitions, internal and external timers with and without guards, literal and computed, internal receive transitions with and without guards, and a deferral of an event and an attribute in one line. defer stays a name elsewhere, here an attribute. */
+  /** The forms of a state in the flow in one machine: conditions standing in a state, staying and leaving timers, literal and computed, conditions checked once in a timer's line, staying and leaving receive lines, and input remembered in variables while a state cannot use it (2.3 has no deferral). defer is a name, here an attribute. */
   port def Feed {
     provides event tick(n: uint);
     provides attribute level: uint;
@@ -6768,42 +6807,65 @@ package ReactionForms {
     attribute stepMs: uint = 2;
     attribute defer: uint = 0;
     attribute polls: uint = 0;
+    attribute heldTick: uint = 0 /** Warmup remembers the last tick and the last level here; Counting takes them on entry, tick first. */;
+    attribute hasTick: bool = false;
+    attribute heldLevel: uint = 0;
+    attribute hasLevel: bool = false;
+    operation fold(n: uint) {
+      if (n > 0) {
+        total = total * 10 + n;
+      } else {
+        polls = polls + 100;
+      }
+    }
     operation run() {
-      initial Warmup;
       state Warmup {
-        defer feed.tick, feed.level;
         on entry {
           defer = defer + 1;
+        }
+        on receive feed.tick(n) {
+          heldTick = n;
+          hasTick = true;
+        }
+        on receive feed.level(v) {
+          heldLevel = v;
+          hasLevel = true;
         }
         after 1ms {
           polls = polls + 1;
         }
-        after (stepMs * 1ms) when (polls > 0) {
-          polls = polls + 10;
+        after (stepMs * 1ms) {
+          if (polls > 0) {
+            polls = polls + 10;
+          }
         }
-        after 3ms when (polls > 100) to Done {
+        after 3ms {
+          if (polls > 100) to Done;
         }
-        after (stepMs * 2ms) when (polls == 11) to Counting {
+        after (stepMs * 2ms) {
+          if (polls == 11) exit;
         }
-        when (defer > 1) to Done {
-        }
+        if (defer > 1) to Done;
       }
       state Counting {
-        on receive feed.tick(n) when (n > 0) {
-          total = total * 10 + n;
+        on entry {
+          if (hasTick) {
+            fold(heldTick);
+          }
+          if (hasLevel) {
+            total = total * 10 + heldLevel;
+          }
         }
         on receive feed.tick(n) {
-          polls = polls + 100;
+          fold(n);
         }
         on receive feed.level(v) {
           total = total * 10 + v;
         }
-        on receive feed.done() to Done {
-        }
-        when (total > 5000) to Done {
-        }
+        on receive feed.done() exit;
+        if (total > 5000) exit;
       }
-      final state Done {
+      state Done {
       }
     }
     schedule {
@@ -6818,7 +6880,7 @@ package ReactionForms {
   connect: Swaml::Qos::Latest (source.out, counter.feed);
   associate source to 'Every form';
   test 'Every form' of counter {
-    /** A level, a tick and a second level arrive during Warmup and are retained; the second level replaces the first (Latest keeps one value), so the level queue is older than the tick queue but holds the later offer. Counting (entered at 4 ms by the guarded computed timer) takes them in offer order, tick then level, folding total = total * 10 + value to 32 (queue order would give 23), then a zero tick, then done. */
+    /** A level, a tick and a second level arrive during Warmup, which remembers the last tick and the last level (the second level replaces the first). Counting (entered at 4 ms by the computed timer whose line checks polls == 11) takes them on entry, tick then level, folding total = total * 10 + value to 32, then a zero tick, then done. */
     send source.out.level(1);
     publish source.out.tick(3);
     send source.out.level(2);
@@ -6974,27 +7036,23 @@ package BodyCan {
     provides event lockStatus(locked: bool);
   }
   component def DoorEcu {
-    /** Takes one frame, then stays busy for 5 ms and retains the frames that arrive meanwhile in their connection queues, where each member route's policy applies. */
+    /** Takes one frame and stays busy for 5 ms in the line that took it; the frames that arrive meanwhile stay in their connection queues, where each member route's policy applies, and are looked at one by one when idle waits again. */
     reversed port canBus: BodyCanFrames;
     attribute crashes: uint = 0;
     attribute crashOrder: int = 0;
     attribute statuses: uint = 0;
     attribute locked: bool = false;
     operation run() {
-      initial idle;
       state idle {
-        on receive canBus.crash(severity) to busy {
+        on receive canBus.crash(severity) {
           crashes = crashes + 1;
           crashOrder = crashOrder * 10 + severity;
+          wait 5ms;
         }
-        on receive canBus.lockStatus(v) to busy {
+        on receive canBus.lockStatus(v) {
           statuses = statuses + 1;
           locked = v;
-        }
-      }
-      state busy {
-        defer canBus.crash, canBus.lockStatus;
-        after 5ms to idle {
+          wait 5ms;
         }
       }
     }

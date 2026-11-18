@@ -1,5 +1,5 @@
 package SessionCompletion {
-  /** An uplink session in the shape of the V2X model's UplinkSessionManager. In 2.2 a state machine cannot decide on a value its own entry action computed: LegacySession publishes openRequested, a second component, Transfer, performs the request and answers opened or refused, and two control events exist only to return that decision. From 2.3 one machine opens the session in its entry action and decides with completion transitions, when (sessionId > 0) to Connected, which are evaluated after the entry actions finish (chapter 3.6). A coverage loss queued during the request is taken in whatever state the decision reaches. */
+  /** An uplink session in the shape of the V2X model's UplinkSessionManager. In 2.2 a state machine cannot decide on a value its own entry action computed: LegacySession publishes openRequested, a second component, Transfer, performs the request and answers opened or refused, and two control events exist only to return that decision. From 2.3 a state is a step of the flow: one machine opens the session in its entry action and decides with if (sessionId > 0) to Connected; standing in the state, which its arrival look checks after the entry action finishes. A coverage loss queued during the request is taken in whatever state the decision reaches. */
   port def CloudApi {
     provides operation openSession(vehicle: uint) returns uint;
   }
@@ -28,7 +28,7 @@ package SessionCompletion {
     }
   }
   component def Session {
-    /** The 2.3 shape: one machine, completion transitions on the result of its own request. */
+    /** The 2.3 shape: one machine that decides on the result of its own request by a condition standing in Connecting. */
     reversed port cloud: CloudApi;
     reversed port network: Coverage;
     const attribute vehicleId: uint = 7;
@@ -37,38 +37,44 @@ package SessionCompletion {
     attribute backoffs: uint = 0;
     attribute coverageLosses: uint = 0;
     operation run() {
-      initial Connecting;
       state Connecting {
         on entry {
           attempts = attempts + 1;
           sessionId = try(cloud.openSession(vehicleId), 0);
         }
-        when (sessionId > 0) to Connected {
-        }
-        when (true) to Backoff {
-        }
-        on receive network.coverage(up) when (not up) to Offline {
-          coverageLosses = coverageLosses + 1;
+        if (sessionId > 0) to Connected;
+        else to Backoff;
+        on receive network.coverage(up) {
+          if (not up) {
+            coverageLosses = coverageLosses + 1;
+            to Offline;
+          }
         }
       }
       state Backoff {
         on entry {
           backoffs = backoffs + 1;
         }
-        after 10ms to Connecting {
-        }
-        on receive network.coverage(up) when (not up) to Offline {
-          coverageLosses = coverageLosses + 1;
+        after 10ms to Connecting;
+        on receive network.coverage(up) {
+          if (not up) {
+            coverageLosses = coverageLosses + 1;
+            to Offline;
+          }
         }
       }
       state Connected {
-        on receive network.coverage(up) when (not up) to Offline {
-          coverageLosses = coverageLosses + 1;
-          sessionId = 0;
+        on receive network.coverage(up) {
+          if (not up) {
+            coverageLosses = coverageLosses + 1;
+            sessionId = 0;
+            to Offline;
+          }
         }
       }
       state Offline {
-        on receive network.coverage(up) when (up) to Connecting {
+        on receive network.coverage(up) {
+          if (up) to Connecting;
         }
       }
     }
@@ -85,39 +91,49 @@ package SessionCompletion {
     attribute backoffs: uint = 0;
     attribute coverageLosses: uint = 0;
     operation run() {
-      initial Connecting;
       state Connecting {
         on entry {
           attempts = attempts + 1;
           publish ctl.openRequested(attempts);
         }
-        on receive ctl.opened(id) to Connected {
+        on receive ctl.opened(id) {
           sessionId = id;
+          to Connected;
         }
-        on receive ctl.refused() to Backoff {
-        }
-        on receive network.coverage(up) when (not up) to Offline {
-          coverageLosses = coverageLosses + 1;
+        on receive ctl.refused() exit;
+        on receive network.coverage(up) {
+          if (not up) {
+            coverageLosses = coverageLosses + 1;
+            to Offline;
+          }
         }
       }
       state Backoff {
         on entry {
           backoffs = backoffs + 1;
         }
-        after 10ms to Connecting {
-        }
-        on receive network.coverage(up) when (not up) to Offline {
-          coverageLosses = coverageLosses + 1;
+        after 10ms to Connecting;
+        on receive network.coverage(up) {
+          if (not up) {
+            coverageLosses = coverageLosses + 1;
+            to Offline;
+          }
         }
       }
       state Connected {
-        on receive network.coverage(up) when (not up) to Offline {
-          coverageLosses = coverageLosses + 1;
-          sessionId = 0;
+        on receive network.coverage(up) {
+          if (not up) {
+            coverageLosses = coverageLosses + 1;
+            sessionId = 0;
+            exit;
+          }
         }
       }
       state Offline {
-        on receive network.coverage(up) when (up) to Connecting {
+        on receive network.coverage(up) {
+          if (up) {
+            to Connecting;
+          }
         }
       }
     }

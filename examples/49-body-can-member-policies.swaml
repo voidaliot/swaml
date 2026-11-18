@@ -20,27 +20,23 @@ package BodyCan {
     provides event lockStatus(locked: bool);
   }
   component def DoorEcu {
-    /** Takes one frame, then stays busy for 5 ms and retains the frames that arrive meanwhile in their connection queues, where each member route's policy applies. */
+    /** Takes one frame and stays busy for 5 ms in the line that took it; the frames that arrive meanwhile stay in their connection queues, where each member route's policy applies, and are looked at one by one when idle waits again. */
     reversed port canBus: BodyCanFrames;
     attribute crashes: uint = 0;
     attribute crashOrder: int = 0;
     attribute statuses: uint = 0;
     attribute locked: bool = false;
     operation run() {
-      initial idle;
       state idle {
-        on receive canBus.crash(severity) to busy {
+        on receive canBus.crash(severity) {
           crashes = crashes + 1;
           crashOrder = crashOrder * 10 + severity;
+          wait 5ms;
         }
-        on receive canBus.lockStatus(v) to busy {
+        on receive canBus.lockStatus(v) {
           statuses = statuses + 1;
           locked = v;
-        }
-      }
-      state busy {
-        defer canBus.crash, canBus.lockStatus;
-        after 5ms to idle {
+          wait 5ms;
         }
       }
     }
