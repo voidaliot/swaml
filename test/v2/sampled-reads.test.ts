@@ -235,6 +235,7 @@ test('WP6-R01 WP6-T01 the cell holds the initial value before startup work; a sa
     const s = kinds(r.trace as Observation[], 'sample')[1];
     assert.deepEqual([s.subject, s.targetPort, s.member, s.value, typeof s.message, s.source], ['Demo.r.door.count', 'Demo.r.door', 'count', 1, 'string', 'Test::Sensor.tick/2']);
     assert.equal(kinds(r.trace as Observation[], 'deliver').length, 0, 'no consumer: no deliver (WP6-R04)');
+    assert.equal(kinds(r.trace as Observation[], 'replaceAttribute').length, 0, 'no consumer: no pending value to replace (WP6-R04)');
 });
 
 test('WP6-R02 latency, drops, duplicates, fault delays and maxAge update the cell at each delivery instant', async () => {
@@ -244,6 +245,13 @@ test('WP6-R02 latency, drops, duplicates, fault delays and maxAge update the cel
     // Offer 1 (count 1) is dropped: no update. Offer 3 (count 2) is duplicated, which atMostOnce (Default) suppresses.
     const faults = [{ offer: 1, kind: 'drop' }, { offer: 3, kind: 'duplicate' }];
     assert.deepEqual(samples((await timed(sender, reader, { faults })).trace as Observation[]).filter(x => x[1] === 'count'), [[20000000, 'count', 2], [30000000, 'count', 3], [40000000, 'count', 4]]);
+    // A value older than maxAge at delivery is discarded and leaves the cell unchanged.
+    const aged = door('attribute probe: int = 0; operation look() { probe = door.count; } schedule { on every 15ms look(); }', undefined, 'qos def Fresh: Swaml::Qos::Policy { delivery = Swaml::Qos::Delivery.atMostOnce; ordering = Swaml::Qos::Ordering.fifo; capacity = 4; overflow = Swaml::Qos::Overflow.dropOldest; requestTimeout = 1s; maxAge = 2ms; }').replace('connect (s.out, r.door);', 'connect: Fresh (s.out, r.door);');
+    const old = await run(aged, 16000000, { latencyNs: 3000000 });
+    assert.deepEqual([samples(old.trace as Observation[]).length, kinds(old.trace as Observation[], 'discardAge').length, (old.stores['Demo.r'] as Record<string, number>).probe], [0, 2, 7]);
+    // A read after the dropped offer still sees the initial value.
+    const dropped = await timed(sender, 'attribute probe: int = 0; operation look() { probe = door.count; } schedule { on every 15ms look(); }', { faults: [{ offer: 1, kind: 'drop' }] }, 16000000);
+    assert.equal((dropped.stores['Demo.r'] as Record<string, number>).probe, 7);
     // With bestEffort each copy updates the cell at its own delivery instant.
     const best = door(reader, undefined, 'qos def Loose: Swaml::Qos::Policy { delivery = Swaml::Qos::Delivery.bestEffort; ordering = Swaml::Qos::Ordering.fifo; capacity = 4; overflow = Swaml::Qos::Overflow.dropOldest; requestTimeout = 1s; }')
         .replace("operation tick() { n = n + 1; send out.ajar(n % 2 == 1); send out.count(n); } schedule { on every 10ms tick(); }", sender).replace('connect (s.out, r.door);', 'connect: Loose (s.out, r.door);');

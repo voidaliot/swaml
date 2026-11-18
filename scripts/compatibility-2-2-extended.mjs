@@ -7,7 +7,8 @@
 // with their related information) and models-wp3.json (WP3-L04: the names of the 2.3 library packages, with
 // related information), models-wp3b.json (WP3 review F1: own packages named like the 2.3 library packages) and
 // models-wp4.json (WP4: durations in every 2.2 position, policy settings and names that look like units) and
-// models-wp5.json (WP5: 2.2 state machines in every 2.2 shape, defer as an ordinary name). For each set, recorded.json or recorded-wp2.json holds, recorded once from the 3.1.0
+// models-wp5.json (WP5: 2.2 state machines in every 2.2 shape, defer as an ordinary name) and models-wp6.json (WP6: p.m
+// references to port members and connection policies in every 2.2 shape). For each set, recorded.json or recorded-wp2.json holds, recorded once from the 3.1.0
 // implementation at 213f583, every diagnostic (severity, code, range, message), the digest of the normalized
 // AST and, for runnable models, the run or case results with their trace digests. The current implementation
 // must reproduce all of it. A run that threw a host error in 3.1.0 is not compared and is listed.
@@ -45,6 +46,9 @@ export const SETS = [
     // States gain completion, internal and guarded-timer transitions and deferrals, and defer becomes a contextual word
     // (WP5-G01 to WP5-G03); these 2.2 machines must keep the 2.2 reaction order (WP5-R11) and defer stays a name.
     { models: 'models-wp5.json', recorded: 'recorded-wp5.json', rule: 'WP5-G01 to WP5-G03, WP5-R11: 2.2 state machines in every 2.2 shape and defer as an ordinary name', related: true },
+    // Ports opt in to sampled reads by initial values and connections gain member policies (WP6-G01, WP6-G02); these
+    // 2.2 sources read p.m in every 2.2 position (an unknown local value) and use connection policies in every 2.2 shape.
+    { models: 'models-wp6.json', recorded: 'recorded-wp6.json', rule: 'WP6-G01, WP6-G02, WP6-S01: 2.2 sources with p.m references to port members and connection policies in every 2.2 shape', related: true },
 ];
 const strip = trace => trace.map(({ profile: _p, languageVersion: _l, ...rest }) => rest);
 const at = r => `${r.start.line + 1}:${r.start.character + 1}-${r.end.line + 1}:${r.end.character + 1}`;
