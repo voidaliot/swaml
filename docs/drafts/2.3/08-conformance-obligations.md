@@ -13,7 +13,7 @@
 | V20 | Moved to [chapter 8.1](../../spec/08-conformance-obligations.md#81-static-obligations) in WP5. | | [WP5] |
 | V21 | Moved to [chapter 8.1](../../spec/08-conformance-obligations.md#81-static-obligations) in WP6. | | [WP6] |
 | V22 | Moved to [chapter 8.1](../../spec/08-conformance-obligations.md#81-static-obligations) in WP7. | | [WP7] |
-| V23 | Operation placement, same Core, T1–T6 | SW2009 | [WP8] |
+| V23 | Moved to [chapter 8.1](../../spec/08-conformance-obligations.md#81-static-obligations) in WP8. | | [WP8] |
 
 Existing rows change their text accordingly: V03 (selectors, done in WP1), V09 (conditional effects, done in WP2), V10 (computed periods, done in WP4, and release guards, done in WP7), V11 (completion and deferral), V12 (policy literals, done in WP4, and per-member policies), V13 (operation placement), V14 (association lists, done in WP2).
 
@@ -28,9 +28,9 @@ Existing rows change their text accordingly: V03 (selectors, done in WP1), V09 (
 | E16 | Moved to [chapter 8.2](../../spec/08-conformance-obligations.md#82-runtime-obligations) in WP5. | [WP5] |
 | E17 | Moved to [chapter 8.2](../../spec/08-conformance-obligations.md#82-runtime-obligations) in WP6. | [WP6] |
 | E18 | Moved to [chapter 8.2](../../spec/08-conformance-obligations.md#82-runtime-obligations) in WP7. | [WP7] |
-| E19 | Priority and in-task ordering keys; unchanged order without Tasks | [WP8] |
+| E19 | Moved to [chapter 8.2](../../spec/08-conformance-obligations.md#82-runtime-obligations) in WP8. | [WP8] |
 | E20 | Moved to [chapter 8](../../spec/08-conformance-obligations.md) by WP1a. | [WP1a], rerun by every package and WP9 |
 
 ## 8.3 Analysis, kernel and graphical claims
 
-Add after the schedulability sentence: "A validated `Swaml::Os` task mapping and a resolved target binding (`swaml binding check`) are static evidence of a declared mapping. They are not schedulability evidence." [WP8]
+Applied in WP8 after the schedulability sentence of [chapter 8.3](../../spec/08-conformance-obligations.md#83-analysis-kernel-and-graphical-claims): "A validated `Swaml::Os` task mapping and a resolved target binding (`swaml binding check`) are static evidence of a declared mapping. They are not schedulability evidence." [WP8]

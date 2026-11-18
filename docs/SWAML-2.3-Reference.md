@@ -508,7 +508,7 @@ package Debounce {
 
 Package operation definitions use only parameters and nested operations. Their usages inherit the signature; an optional body replaces the whole body. Calls in an inherited component body resolve by name in the concrete occurrence's effective members, with signature preservation checked on redefinition. Call graphs are acyclic. No other component's operation or calculation is a fallback name resolution target.
 
-The versioned source libraries are Swaml::Math, Swaml::Numeric, Swaml::Text, Swaml::Time, Swaml::Calls, Swaml::Qos, Swaml::Views and Swaml::Platform. They are always loaded but imported explicitly. Math provides abs, min, max, checked floor/round/trunc conversion to int, Unicode scalar length and concat. floor/round/trunc/length are explicitly identified host intrinsics in the reference library; round ties toward positive infinity. Their backend semantics and range failures remain required.
+The versioned source libraries are Swaml::Math, Swaml::Numeric, Swaml::Text, Swaml::Time, Swaml::Calls, Swaml::Qos, Swaml::Views, Swaml::Platform and Swaml::Os. They are always loaded but imported explicitly. Math provides abs, min, max, checked floor/round/trunc conversion to int, Unicode scalar length and concat. floor/round/trunc/length are explicitly identified host intrinsics in the reference library; round ties toward positive infinity. Their backend semantics and range failures remain required.
 
 From 2.3, three more packages supply numbers, text and the logical clock. They are new packages rather than additions to Swaml::Math, because a model that imports Swaml::Math next to its own clampInt (the door model's DoorEcu::Types) must stay unambiguous.
 
@@ -522,6 +522,7 @@ From 2.3, three more packages supply numbers, text and the logical clock. They a
 | WP3-R01 | `sqrt` is IEEE-754 correctly rounded. An argument below zero is the runtime failure `Arithmetic`; `-0.0` is not below zero and its root is `0.0`. A real value is always finite (chapter 1.4), so no NaN or infinity reaches or leaves `sqrt`. |
 | WP3-R02 | `intText` writes decimal digits, with `-` for negatives and no leading zeros. `realText` rounds the exact binary value of `v` to exactly `decimals` fraction digits, ties away from zero, and writes plain decimal notation with no exponent: `realText(2.5, 0)` is `3` and `realText(-2.5, 0)` is `-3`. A result that rounds to zero has no sign: `realText(-0.0001, 2)` is `0.00`. `decimals` above 15, or `abs(v)` of at least 1e21, is the runtime failure `Bounds`. This is not the tie rule of `Swaml::Math::round`, which rounds ties toward positive infinity. An implementation must not rely on JavaScript `toFixed` alone, which writes `-0.00` and switches to exponent notation from 1e21; the reference implementation computes in integers from the binary64 value. Because the exact binary value is rounded, `realText(1.005, 2)` is `1.00` and `realText(0.125, 2)` is `0.13`. |
 | WP3-R03 | `now()` returns the logical time of the evaluating step, in nanoseconds since the run epoch, as `uint`. Every activation reads the live clock: a concurrent activation reads live time, not its dispatch snapshot, which holds attributes only (chapter 3.4). In a handler it is the delivery step, after latency and fault delays; after a wait it is the resumption step; in a case script it is the script's step. Clock overflow remains the `ClockRange` violation. Since WP4 a duration literal is a `uint` value in nanoseconds (WP4-S01), the unit of `now()`, so `now() - lastRxNs >= 100ms` compares like units. |
+| WP8-L01 | `Swaml::Os` declares `enum TaskKind { basic, extended, isr }`, `component def Core specializes Node { }` and `component def Task specializes Process` with the const attributes `kind: TaskKind = TaskKind.basic`, `priority: uint = 0`, `preemptive: bool = true`, `periodNs: uint = 0` and `responseNs: uint = 0`, documented as in ADR 0025. It imports `Swaml::Platform`. | Only the built-in declarations have this meaning: a workspace that declares its own `Swaml::Os` uses it (WP3-L04), and its `Task` and `Core` are ordinary Nodes. The rules for Cores and Tasks are in [chapter 4.1](spec/04-systems-and-conformance.md#41-deployment).
 
 `sqrt`, `intText` and `realText` failures are ordinary runtime failures: `try` catches them and a caught one is a `caught` observation (chapter 6). A hazard distance, a reception age and a diagnostic label use all three packages:
 
@@ -1021,9 +1022,37 @@ Normative chapter of [swa.ml 2.2](LANGUAGE_SPECIFICATION.md).
 
 ## 4.1 Deployment
 
-Swaml::Platform supplies Node, Platform, Partition and Process component definitions. Node specialization owns only const attributes and child Nodes, with no operations, ports, connectors or schedule. Optional ref: string retains an external model identity for the host; it is not required for swa.ml validity and is never silently resolved as a software path. Buses, hardware timing, core/task allocation and operating-system scheduling are target-translation concerns.
+Swaml::Platform supplies Node, Platform, Partition and Process component definitions. Node specialization owns only const attributes and child Nodes, with no operations, ports, connectors or schedule. Optional ref: string retains an external model identity for the host; it is not required for swa.ml validity and is never silently resolved as a software path. Buses, hardware timing and operating-system scheduling are target-translation concerns. Core and task allocation may be declared with `Swaml::Os` (below); its costs belong to a target binding.
 
 A package deployment Name of Root on PlatformRoot owns placements. deploy on nodePath places the software root; deploy childPath on nodePath places that occurrence and descendants. A more specific path overrides an ancestor; an indexed path overrides a multiplicity family path. Exact paths are unique within one deployment. Every software path and literal index resolves in that root; every target resolves to a Node occurrence of that platform root. Only components are deployed. A top-level occurrence has at most one deployment in the workspace (SW2009 on each later one, at its root reference), and a package or component run applies it to that occurrence's tree; absence remains unallocated.
+
+From 2.3 a placement may end at an operation, and a platform may declare its Cores and operating-system Tasks with `Swaml::Os` ([ADR 0025](decisions/0025-real-time-placement-and-binding.md)). Example 52 (`examples/52-door-deployment.swaml`) is the door deployment in the shape of the showcase model; example 53 orders equal-time work on an implicit Core.
+
+```text
+deployment 'Front left door' of dcu on vehicle {
+  deploy comMain on doorModules[0].core1.task20ms;
+  deploy comMain.storePdu on doorModules[0].core1.isrCan;
+  deploy comMain.onMode on doorModules[0].core1.taskEventLow;
+}
+```
+
+| ID | Rule |
+| --- | --- |
+| WP8-S01 | **Operation placement.** A placement path may end at an operation of the addressed occurrence that is the target of at least one effective schedule entry of that occurrence; otherwise SW2009. It applies to every activation released by those entries. Callees run in their caller's placement. |
+| WP8-S02 | **Specificity.** Each schedule entry's effective placement is the most specific placement among its operation, its occurrence and that occurrence's ancestors. An operation placement overrides any occurrence placement. A multiplicity family path applies to every index, and an indexed path overrides it. A family path is the family as the last occurrence segment (`leaves`, or `leaves.a` for operation `a`); a path that continues below a family without an index (`mids.leaf` for `mids: Mid[2]`) names no occurrence, as in 2.2, and each index is written (`mids[0].leaf`) (review F14). Exact paths, including operation paths, are unique within one deployment (SW2009). |
+| WP8-S03 | **Core grouping.** The Tasks of a Core are the `Swaml::Os::Task` occurrences whose nearest `Swaml::Os::Core` ancestor is that Core. Tasks without a Core ancestor form one implicit Core per platform root; it spans the platform tree outside the explicit Cores. An entry is on Task K when its effective placement target is K or a Node whose nearest Task ancestor is K. A placement target is in a Core: the Core of its Task, else its nearest Core ancestor or itself, else the implicit Core when the platform has one; otherwise (a Node outside every Core of a platform whose Tasks all have a Core) it is in none. The platform root is never a Task (WP8-D13). |
+| WP8-S04 | **Activation, per Core.** T1 and T3 apply to every `Swaml::Os::Task` of the platform, and T2, T4 and T5 to every entry on a Task. T6 decides which entries must be on a Task. A placement target, or the platform root for software without one, is of one of three kinds: *in a Core* (WP8-S03: an explicit Core or anything below it, a Task or a Node below it, and on a platform with an implicit Core every Node outside the explicit Cores); an *OS node*, which is in no Core but has a Core with Tasks below it (an ECU Node such as `doorModules[0]`, or the root of a platform whose Tasks all lie inside explicit Cores); or a *plain Node*, which is in no Core and has no Core with Tasks below it. An occurrence is deployed where its effective occurrence placement points (its own, its family's or its nearest ancestor's); an occurrence without one is in the first Core its operation placements reach (in schedule order), and otherwise on the platform root. An entry must be on a Task when its occurrence is deployed in a Core that has Tasks or on an OS node, or when its own effective placement is: in the first case on a Task of that Core, in the second on a Task of one of the Cores below that OS node. Only software on a plain Node stays outside the task rules and keeps its 2.2 meaning, so one platform may mix OS Cores with plain Nodes (the door showcase's LIN switch panel; review F2), while a component left on an ECU by its root's placement must be placed on a Task (verification V1). T7 applies whenever the platform tree contains a `Swaml::Os::Core` or `Swaml::Os::Task` occurrence; a placement reaches the Core it is in, and one on an OS node or a plain Node reaches none. A platform with neither keeps its 2.2 meaning. |
+| WP8-S05 | **T1.** Priorities are unique among the Tasks of one Core (SW2009). The members of a Task family (`ts: Task[2]`) share their definition's priority, so a family on one Core always fails T1; declare such Tasks separately (review F12). |
+| WP8-S06 | **T2.** A Task with `periodNs > 0` receives only `every` entries whose evaluated period is a positive multiple of `periodNs`, plus `after` successors of entries on the same Task. `receive`, `call` and `start` entries go to Tasks with `periodNs = 0` (SW2009). On every Task kind, periodic or not, an `after` successor runs on the Task of its predecessor's entries, as OSEK chains a task; a successor whose predecessor is not on a Task is reported by T6 only (review F4). |
+| WP8-S07 | **T3.** A Task of kind `isr` has `periodNs = 0` and `preemptive = true`, and receives only `receive` entries and their `after` successors (SW2009). |
+| WP8-S08 | **T4.** An activation that may suspend (a transitive suspend effect: `wait`, a request, a `receive` statement or a suspending callee) is placed only on a Task of kind `extended`. A stateful operation may be placed on a `basic` Task only if none of its reactions can suspend, counting its entry actions, exit actions, transition effects (including internal and completion effects) and their callees. The idle wait between reactions does not count. Otherwise it needs an `extended` Task (SW2009). |
+| WP8-S09 | **T5.** If a Task has `responseNs > 0`, every entry on it that has an explicit deadline has `deadline ≥ responseNs` (SW2009). An implicit deadline (the period of an `every` entry) is not checked, even when it is below the response bound (review F11; left to the timed profile). |
+| WP8-S10 | **T6 and T7.** T6: every schedule entry in the scope of WP8-S04 is on a Task. T7: the effective placements of all entries of one component occurrence reach at most one Core, explicit or implicit. A placement reaches the Core it is in (WP8-S03). Placements in no Core (on a Node outside every Core of a platform without an implicit Core) do not count. Both are SW2009. |
+| WP8-M01 | **In-task position.** An entry's position in its Task is the order of the `deploy` statements whose target is that Task or a Node whose nearest Task ancestor is that Task. An operation placement contributes the entries of that operation in schedule order. An occurrence placement contributes, in schedule order, those entries of the occurrence that no more specific placement claims. Its descendants without their own placement follow depth-first in declaration order, multiplicity indexes ascending. *Schedule order* is the effective order of `semantic.ts` `schedule()`: inherited entries in their base order, a replacing entry at the position of the entry it replaces, then new entries in authored order. |
+| WP8-M02 | **Target binding.** `spec/binding.schema.json` defines schema `swaml-binding/1` (a version of its own, independent of the language edition, so that a later release name does not invalidate binding files; decision 3, review F6) with an optional root `$schema` string for editor association, `deployment`, `costs` (`operation`, `wcetNs`, optional `bcetNs`, `source`), `budgets` (`task`, `budgetNs`) and `crossCoreLatencyNs` (`connection`, `maxNs`), and no other properties. Software operations are named by occurrence path plus operation name from the deployed root, and Tasks by platform occurrence path. Connections use the route identities of runs and traces: `owner.name`, or `owner.@connectN` for an unnamed component connection, where `N` counts every `connect` member of the owner including forwarding. A package connection is `name`, or `@packageN` when unnamed. Names use canonical spelling: a quoted name keeps its quotes (`app.'my link'`), while traces record decoded names (`app.my link`), so for a quoted name the binding identity is the trace route id with each name segment in canonical spelling. Not in schema version 1: a family form for costs (each `x[i].op` is listed), a link to a model revision (a binding resolves against the sources it is checked with) and per-entry costs (an operation released by two entries has one cost). |
+| WP8-M03 | **`swaml binding check`.** `swaml binding check <binding> <sources…>` validates the file against the schema and resolves every identity against the validated model and the named deployment. It exits 1 on a schema error, an unresolved identity or `bcetNs > wcetNs`. It reports every placed operation without a cost as a finding without failing. It computes no schedule. |
+
+Notes on the implementation (owner-reviewable, [release draft](RELEASE_2_3.md#owner-decisions-in-wp8)): WP8-D01 names an unreleased operation only on a platform that contains a `Swaml::Os` Core or Task; on any other platform such a path keeps the 2.2 message `Unknown software occurrence {path}.` (WP8-A). T4 (WP8-S08) is decided on the property "the activation can wait apart from the idle selection of a machine": a `wait`, a `receive` statement, a request (a dotted call) or a call of an operation that can wait in that sense, in the operation's own code, its states' entry and exit actions and its transition effects; the transitions themselves are the idle selection and do not count (WP8-C). An entry's Task attributes are read from the Task occurrence after redefinition with the constant evaluator (WP4-S05).
 
 ## 4.2 Requirements, cases and package links
 
@@ -1096,6 +1125,7 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | WP4-M03 | **Timing per occurrence.** The projection (`projectModel`) gives each schedule entry of an occurrence its evaluated `periodNs` and `deadlineNs` from `entryPeriod` and `entryDeadline`, and a computed period or deadline also its display text (`periodExpression`, `deadlineExpression`, from `displayText`: the source spelling in canonical layout, so `deadline (3ms)` shows `3ms`); a definition shows values only for literal periods and deadlines and the text for computed ones, whose values belong to its occurrences. All values come from `entryPeriod` and `entryDeadline`, as in the simulator and the validator. A computed state timer labels its transition `after ({display text})`. Entries with literal periods and deadlines gain no field, so the projections of 2.2 sources are unchanged. |
 | WP5-M01 | **Flow and states.** The projection (`projectModel`) gives a completion transition an edge labelled `when (g)` with `completion: true`, a guarded timer edge its `guard` text, and gives a state node its internal transitions as `reactions` (label, order, guard) without an edge and its deferred members as `deferrals`. An internal transition never produces an edge. These fields appear only for the 2.3 forms. Flow shows completion edges with their guard, internal transitions as reactions of their state and deferrals as state annotations. |
 | WP7-M01 | **Timing guards.** The projection (`projectModel`) gives a guarded schedule entry its `guard` text (`displayText`); the field is absent on an entry without a guard. Observed Timing (`projectOperationTiming`) ends an activation's interval at its `skip` and lists `skip` among its markers. |
+| WP8-M04 | **Task lanes.** Timing groups activations in Task lanes when a deployment places them on Tasks. The General view shows operation placements; this drawing is a consumer obligation, which the language package does not provide (review F7). | The language package delivers the plan (`deploymentPlan(d).placements` with `kind`, `prefix` and `operation`, and `entries` with their Task and Core), not a deployment projection: a General view must draw an operation placement from the plan, never by joining the deploy path to an occurrence path. The reference run records the Task of an activation on a Task as `task` on its `release` observation, and `projectOperationTiming` gives each interval of such an activation its lane (`TimingInterval.task`); both are absent when the activation is not on a Task.
 ## 4.4 Validation groups
 
 | Code | Static group |
@@ -1121,8 +1151,9 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | SW2017 | Warning (2.3): a completion guard that reads nothing the machine writes, so it cannot change while the machine waits, or that folds to false, so its transition is never taken |
 | SW2018 | Warning (2.3): a deferred event whose policy on a route into the occurrence rejects on overflow |
 | SW2020 | Warning (2.3): a release guard that folds to false, so its entry never runs its operation, or a replacing schedule entry without a guard that drops an inherited release guard |
+| SW2021 | Warning (2.3): an operation placement on a platform without a `Swaml::Os` task, which changes no run and which only T7 uses (WP8-D12) |
 
-Diagnostics added by 2.3. Message shapes are templates; implementations may add context but keep the leading clause stable. All are errors except WP4-D06, WP4-D08, WP5-D08, WP5-D09, WP6-D09, WP6-D10, WP7-D03 and WP7-D04, which are warnings. A diagnostic of WP6 applies only to a reference `p.m` of a member that opts in to sampling (an attribute member with an initial value, 2.3 syntax), to behaviour inherited with such a reference or to a member-policy body, so every 2.2 source keeps its diagnostics.
+Diagnostics added by 2.3. Message shapes are templates; implementations may add context but keep the leading clause stable. All are errors except WP4-D06, WP4-D08, WP5-D08, WP5-D09, WP6-D09, WP6-D10, WP7-D03, WP7-D04 and WP8-D12, which are warnings. A diagnostic of WP6 applies only to a reference `p.m` of a member that opts in to sampling (an attribute member with an initial value, 2.3 syntax), to behaviour inherited with such a reference or to a member-policy body, so every 2.2 source keeps its diagnostics.
 
 | ID | Code | Condition | Message shape |
 | --- | --- | --- | --- |
@@ -1169,6 +1200,19 @@ Diagnostics added by 2.3. Message shapes are templates; implementations may add 
 | WP7-D02 | SW2007 | Release guard type or effect (WP7-S02) | `Release guard must be bool, found {type}.` / `Release guard must be pure or read state.` (a call that writes or communicates; unresolved, remote and suspending calls keep the call rules' messages); a name outside the scope keeps the existing unresolved-name message (SW2002). |
 | WP7-D03 | SW2020, warning | Release guard of an `every`, `receive` or `after` entry that folds to false in the structure where the entry is written, so the entry never runs its operation (review F3, as WP6-D10 for completion guards). Reported once, at the guard. Not reported when the guard names a const attribute of its component that an attribute redefinition in a specialization or usage of that component replaces (the same declaration, not only the same name), so that it may fold differently per occurrence; a guard that folds to true or does not fold gets no diagnostic. It needs a release guard, so no 2.2 source has it | `Release guard when ({guard}) of {entry} is always false; the entry never runs {operation}.` {entry} is the trigger and operation (`on every 10ms slot`, `on receive inp.go take`, `after slot next`); names are spelled as in 2.2. The fixed leading text `Release guard when (` tells it apart from WP7-D04, which shares SW2020. |
 | WP7-D04 | SW2020, warning | An entry without a release guard, written in a specialization or usage, that replaces (WP7-S03) an inherited entry whose guard does not fold to true (review F2). The inherited entry is one of the effective schedule of the base (the specialized definition, or a usage's definition) or, when the usage is a part redefinition (`redefines component c: D { schedule { … } }`), of the usage it redefines (review V1); the fold is evaluated in the replacing component, so a const redefinition there decides it (review V2). Reported at the replacing entry, with the inherited entry as related information. A part redefinition that writes no replacing entry also replaces the redefined usage's entries, with their guards, by those of its own definition; it has no entry to report and is not reported. A replacement with any guard, `when (true)` included, states its own condition and is not reported; an inherited guard in a document with syntax errors is not reported elsewhere. It needs a release guard, so no 2.2 source has it | `Replacing entry {entry} drops the inherited release guard when ({guard}) of {component}, so it runs {operation} whatever the guard says; repeat the guard, or write when (true) to remove it deliberately.` {component} is the definition or usage that wrote the inherited entry. The fixed leading text `Replacing entry ` tells it apart from WP7-D03, which shares SW2020. |
+| WP8-D01 | SW2009 | Operation placement target (WP8-S01) | `{path} names operation {operation}, which no schedule entry of {occurrence} releases.` (on a platform with a `Swaml::Os` Core or Task; elsewhere the 2.2 message `Unknown software occurrence {path}.`) |
+| WP8-D02 | SW2009 | T1 | `Tasks {task1} and {task2} of {core} share priority {priority}.` |
+| WP8-D03 | SW2009 | T2 | `{entry} cannot run on periodic task {task}: {its period {p} is not a multiple of {periodNs} \| event entries need a task with periodNs = 0}.` / `{entry} cannot run on task {task}: its predecessor runs on {otherTask}, and an after successor runs on the task of its predecessor.` (any Task kind, review F4) |
+| WP8-D04 | SW2009 | T3 | `ISR task {task} {must have periodNs = 0 \| must be preemptive \| accepts only receive entries and their after successors}.` |
+| WP8-D05 | SW2009 | T4 | `{entry} may suspend in {statement} and needs an extended task; {task} is {basic \| isr}.` |
+| WP8-D06 | SW2009 | T5 | `Deadline {d} of {entry} is shorter than the response bound {r} of {task}.` |
+| WP8-D07 | SW2009 | T6 | `{entry} of {occurrence} is not placed on a task of {where}; place {operation} or {occurrence} on a task, for example: {line}` / for an `after` successor whose predecessor is not on a Task that accepts it: `{entry} of {occurrence} is not placed on a task of {where}; an after successor runs on the task of its predecessor, so place {predecessor} on a task first and place {operation} with it, for example: {line} {line}` (`… so move {predecessor} to a task that also accepts {operation} and place …` when the predecessor is on a Task) / `{entry} of {occurrence} is not placed on a task of {where}; {where} has no task that accepts it (it needs {requirement}), so add one and place {operation} or {occurrence} on it.` {where} is the Core of WP8-S04 (`the implicit core of {platform}` for the implicit one) or the OS node the software is deployed on. {line} is `deploy {occurrencePath}.{operation} on {taskPath};`, or `change deploy {path} on {target}; to deploy {path} on {taskPath};` when that exact path already has a deploy statement (WP8-D09). The example satisfies T2 to T5 and T7: never an ISR for an entry other than `receive`, never a periodic Task whose period does not divide the entry's, an extended Task for an entry that may suspend, no response bound above an explicit deadline, a Task of the Core the occurrence already reaches, and for an `after` successor a Task that also accepts its predecessor's entries. Among those it prefers a Task that is no ISR, then the Task that already hosts an entry of the occurrence or of its nearest ancestor, then one that accepts every unplaced entry of the occurrence, then declaration rank; an `after` successor names its predecessor's Task when that Task accepts it (review F2, verification V3). {requirement} names the kind and period, `, of kind extended` and `, with responseNs = 0 or at most {deadline}` as needed, and for an `after` successor `a task that also accepts its predecessor {predecessor}`. |
+| WP8-D08 | SW2009 | T7 | `{occurrence} runs on {core1} and {core2}; all its operations must run on one core.` |
+| WP8-D09 | SW2009 | Duplicate exact operation path (WP8-S02) | The existing `Duplicate exact deployment path.` |
+| WP8-D10 | — (CLI) | `swaml binding check` findings (WP8-M03) | One line per finding with the JSON Pointer of the offending value, the identity and the reason; missing costs are marked as findings, not errors. The root is the empty pointer, printed `""` in the text as in `--json`. |
+| WP8-D11 | SW2009 | A `kind`, `priority`, `preemptive`, `periodNs` or `responseNs` attribute of a Task occurrence whose effective value is not a constant of its type (a `TaskKind` literal, a bool, or a `uint` up to 2^53 − 1) in the constant sublanguage (WP4-S05) | `{attribute} of task {task} must be a constant {TaskKind literal \| bool \| uint} value.`, with ` up to 9007199254740991` before the period for a `uint` constant above 2^53 − 1 (reported at the deployment's platform reference; the Task takes part in no other task rule) |
+| WP8-D12 | SW2021, warning | An operation placement (WP8-S01) on a platform without a `Swaml::Os` Task: it is valid, but it changes no run (the run's `deployments` record shows occurrence placements only) and only T7 uses it (review F9, F10). It needs an operation path, so no 2.2 source has it | `Operation placement {path} on {target} does not change the run on a platform without a Swaml::Os task: the run records and orders occurrence placements only, and only the one-core rule T7 uses it.` |
+| WP8-D13 | SW2009 | A platform root that is a `Swaml::Os` Task (review F3): a deploy target cannot name the root, so the Task could receive nothing. Reported at the deployment's platform reference; no other task rule applies | `The platform root {platform} is a Swaml::Os task; a task runs on a core or node, so declare the task inside a Node or Core platform and deploy on it.` |
 | WP5-D09 | SW2018, warning | Deferred event with an effective `reject` overflow on a route into this occurrence (attributes never overflow) | `{member} is deferred in {state}, but policy {policy} of {connection} rejects on overflow; a full queue fails the sender. Give {connection} a policy that drops on overflow (Overflow.dropOldest or Overflow.dropNewest) or a capacity that holds the retained messages.` {connection} is the connection name or `connect (a, b)`. When a member policy is the rejecting effective policy (WP6-S07), {policy} names it and the advice reads `Give {member} of {connection} a member policy that drops on overflow …`; a connection without member policies, every 2.2 source included, keeps the message above. The library default policy rejects on overflow, so a deferral over a connection without a policy is reported: the warning is intended, because the sender's publish fails while the receiver defers. A deferral that already has an error (WP5-D04 to WP5-D06) is not reported. |
 
 Every diagnostic includes a source range and stable code. Machine-readable diagnostics retain declaration identity and occurrence context when resolved. A suggested edit is supplied only for a safe unambiguous correction; tools must revalidate the resulting complete workspace before applying it. Parser recovery may suspend semantic checks on invalid syntax, but the document remains invalid and must not crash the service.
@@ -1176,6 +1220,10 @@ Every diagnostic includes a source range and stable code. Machine-readable diagn
 ## 4.5 Evidence boundaries
 
 S is syntax, V is static validity, E is reference execution behavior, A is an explicitly scoped analysis, K is validated kernel export and G is validated graphical source editing. Implementations report supported groups and evidence rather than promoting one level to another. [Chapter 8](spec/08-conformance-obligations.md) defines the obligations and [status](IMPLEMENTATION_STATUS.md) reports actual support. The reference simulator uses logical zero-cost execution and bounded resources; target deployment timing requires separate evidence.
+
+| ID | Rule |
+| --- | --- |
+| WP8-M05 | A binding check is static resolution of target assumptions. It is neither an analysis claim (A) nor schedulability evidence. The Tier 2 timed profile `swaml-reference-timed/2.4` is where costs first influence a run. |
 
 
 ---
@@ -1237,6 +1285,8 @@ Time uses nonnegative safe integer nanoseconds. Durations are positive and must 
 | ID | Rule |
 | --- | --- |
 | WP4-R02 | **Computed durations.** A computed `wait` or receive timeout is evaluated when the statement starts waiting. A computed state timer is evaluated when the entry actions finish, and its expiry is the state-update time plus the value. Periods and deadlines use the per-occurrence constant values (WP4-S06), evaluated once per occurrence: an `every (e)` entry releases at root epoch + k·P of its occurrence and its deadline is release + D. A value that is not a positive representable duration is `DurationRange` (WP4-R01). An expiry outside the clock range stays the `ClockRange` violation. |
+| WP8-R01 | **Ordering keys.** Releases, dispatches and ready continuations at equal logical time and phase are ordered by descending Task priority (unplaced activations at priority 0), then activations on a Task before unplaced activations of equal priority, then, between activations on the same Task, by in-task position (WP8-M01), then by the existing insertion ordinal. Entries of two deployments on one Task are numbered in the order in which the run applies the deployed roots (their declaration order), so the in-task position is defined across deployments. A case-script activation is unplaced. A primary-subject call borrowed by a case (ADR 0021) runs within the case activation and keeps its keys; it does not take the Task of the subject's entries. A run without Tasks has equal keys and keeps its 2.2 order. | Releases (`every`, `start` and `after` releases and the deliveries that release `receive` and `call` entries), dispatches (the scan for activations that may start or continue), the execution steps they schedule and ready continuations (wait expiries, receive timeouts, request expiries and replies) carry the key; deadlines and other events do not. Two Tasks of equal priority (on different Cores) are ordered by their declaration order in the platform, depth-first with indexes ascending, so that the order is total (owner decision WP8-B). Tasks of different platforms in one package run are compared by the same keys, as if one scheduler ran them; with zero-cost steps this only orders equal-time work.
+| WP8-R02 | **No preemption, zero cost.** On a Core that has Tasks, an activation that has been dispatched, or resumed after a wait, runs until it waits again or ends before any other activation on the same Core is dispatched or continued, whatever the priorities; the keys of WP8-R01 decide only which ready activation of the Core goes next. The simulation orders by priority but never preempts, because statements cost no time: preemption and response times belong to the target and its binding (WP8-M02). Activations on different Cores, and activations that are not on a Task, interleave statement by statement at one instant as in 2.2, ordered by WP8-R01. `preemptive`, `kind` and `responseNs` have no runtime effect beyond the static rules. A run records the applied deployment as before. | Review F1: an activation released while another of its Core runs (for example by a publish of that activation) waits until the running one waits or ends, then the highest key goes next. A component's lock (2.2) still applies inside one Core. An `after` successor of an activation on a Task is released in the completion step of its predecessor (OSEK chaining), so it competes for the freed Core with the work already released at that instant instead of following it by one event; the successor of an activation that is not on a Task is released as in 2.2, also in a run that has Tasks, so such software keeps its 2.2 trace and step count (verification V2). A run without Tasks has no Core lock, releases successors as in 2.2 and keeps its 2.2 interleaving. When the pending activations reach the run option `maxPending`, a run with Tasks records the `ActivationOverflow` violation with a `message` that names the limit, the number pending and the Core most of them wait for: one Core holds back every release of an instant while an activation runs, so its queue fills first (verification V6). |
 ## 6.2 Lock and snapshot
 
 One serial activation runs at a time per component occurrence. Nonsuspending local calls borrow its context and lock. wait, requests, receive and idle state waits release the lock. On readiness, serial work reacquires it before continuing and uses live attributes; locals remain copied cells. Concurrent entries may overlap, read one dispatch snapshot throughout and cannot write state even through callees or out arguments. Target backends must state how they realize the same snapshot semantics.
@@ -1356,6 +1406,7 @@ Each normalized node/constraint retains source declaration URI/range and any inh
 | --- | --- |
 | WP2-M04 | **Association pairs.** Each occurrence–case pair of an association list is one normalized link. Its provenance is the statement plus the positions of the occurrence and the case in their lists. Deleting one pair in a tool rewrites the list and keeps the other pairs. The reference projection (`projectModel`) gives each link of a list statement its positions as `pair: { occurrence, case }`; a single 2.2 statement has none. |
 | WP4-M04 | **Entry identity.** A schedule entry keeps the identity `Component/schedule/N`. Its trigger identity for replacement and duplicates is the canonical form of WP4-S07 (`triggerIdentity`, `entryKey`). |
+| WP8-M06 | **Placement identity.** An operation placement is identified by its deployment and exact path, like an occurrence placement. |
 
 ## 7.2 Families
 
@@ -1368,6 +1419,7 @@ Each normalized node/constraint retains source declaration URI/range and any inh
 | Operation | Signature, effective whole body, nested ownership without captures, inferred effect flags/class |
 | Port/member | Definition or inline members, direction, reversal, optionality, payload/signature, idempotency, initial value of attribute members, sampled members per port (WP6) |
 | Connection/forwarding | Endpoint occurrence references, alias provenance, structural member checks, effective policy, member policies with the effective policy per member route (WP6) |
+| Deployment | Root and platform occurrences, placements in order with their kind (occurrence or operation), the Swaml::Os Tasks with their Core and attributes, and the effective placement, Task, Core and in-task position of every effective schedule entry (WP8, `deploymentPlan`) |
 | Policy | Pinned complete values and declaration/use provenance; no shared runtime queue |
 | Schedule/entry | Trigger identity, effective target, dispatch arguments/bindings, period/deadline (a computed one as its expression text plus per-occurrence values, WP4), release guard (not part of trigger identity, WP7), concurrent |
 | State/transition | Initial/final, entry/exit/effects, receive bindings/guard or timer (literal or computed delay, WP4), transition kind (receive, timer or completion), optional target (internal when absent), timer guard, state deferrals in order (WP5), ordered selection |
@@ -1437,6 +1489,7 @@ Normative chapter of [swa.ml 2.2](LANGUAGE_SPECIFICATION.md). Acceptance levels 
 | V20 | Completion transitions, timer guards, internal transitions, deferral, completion-guard and deferral-overflow warnings | SW2005/2008/2017/2018 |
 | V21 | Sampled-read ports and positions, mandatory initial values, zero-or-one owners of sampled members, member policies, dead completion guards | SW2004/2005/2006/2007/2010/2013/2017 |
 | V22 | Release guards on every, receive and after entries only, bool with read-only effects, in the scope of the entry's arguments; not part of entry identity | SW2007 |
+| V23 | Operation placement, specificity, T1–T7 on Swaml::Os platforms (T6 per Core), in-task position, constant Task attributes, no Task as platform root, operation placements without effect | SW2009/2021 |
 
 Validation MUST rebuild semantic string paths as well as indexed references after workspace changes/additions/deletions. Negative lookups matter: a newly loaded declaration may make a previously resolved short name ambiguous. Malformed source remains editable and invalid; recovery cannot silently accept a different program. Definite-return analysis may be conservative rather than solving arbitrary conditions. Dynamic numeric/index/termination failures remain runtime obligations.
 
@@ -1462,13 +1515,14 @@ Validation MUST rebuild semantic string paths as well as indexed references afte
 | E16 | Completion, elapsed-timer and input order; no completion after discards; `discardTimer`; internal reactions keep timers; `CompletionLoop`; retention and offer-ordinal order; one `defer` per retained message |
 | E17 | Sample cells updated at delivery (after latency and faults, ordered within the instant by the event order), independent of consumption, read live and stable within an activation segment, with `sample` observations; per-member policies |
 | E18 | Release guards at dispatch before the arguments (a false guard evaluates none), deadline cancellation, skip as completion for successors, `skip` observations, `releaseGuard` discard, guard failure sourced at the entry or at the failing statement of a called operation, with no successor, unchanged grid |
+| E19 | Priority and in-task ordering keys for releases, dispatches and ready continuations, Task-placed before unplaced at equal priority, unplaced case scripts; unchanged order without Tasks; `task` on releases on a Task |
 | E20 | Every run, use case and test of the 2.2 corpus keeps its status, full final stores, machines, deployments, verdict and message and its complete trace, ignoring only `profile` and `languageVersion` (compatibility gate 2, compared with a fixture recorded with implementation 3.1.0) |
 
 A deterministic reference run may choose one permitted order/delivery outcome. Its tests do not establish all possible traces or real transport reliability. A target implementation identifies additional scheduling/transport assumptions and evidence. Idempotency annotations are checked declarations, not proofs of side-effect behavior.
 
 ## 8.3 Analysis, kernel and graphical claims
 
-Case realization needs a witness execution with payloads/assumptions; a passing case script is one such deterministic witness under its recorded assumptions, not a proof for every execution. Requirement fulfillment needs identified test/analysis/review evidence beyond satisfy/verify links. Schedulability needs target scheduler, cost and transport assumptions plus measurement/proof. Race/deadlock freedom requires analysis of suspension/interleaving and requests. A finite search without failure is not universal proof.
+Case realization needs a witness execution with payloads/assumptions; a passing case script is one such deterministic witness under its recorded assumptions, not a proof for every execution. Requirement fulfillment needs identified test/analysis/review evidence beyond satisfy/verify links. Schedulability needs target scheduler, cost and transport assumptions plus measurement/proof. A validated `Swaml::Os` task mapping and a resolved target binding (`swaml binding check`) are static evidence of a declared mapping. They are not schedulability evidence. Race/deadlock freedom requires analysis of suspension/interleaving and requests. A finite search without failure is not universal proof.
 
 K requires the complete normalized model, a pinned semantic library/exporter, kernel validation and round trips. Inventory coverage is not K. G requires Browser plus seven source views, occurrence-aware identity, notation, source-validated edits, sidecar layout and atomic native undo/redo. LSP syntax/formatting alone is not G. Semantic paths need path-aware rename/reference/navigation; generic name references are insufficient.
 
@@ -1559,6 +1613,7 @@ Scalar type assignability uses widening, with checked integral value conversion 
 | retain | A deferred member's message stays in Q, marked retained (`defer` once); it is consumed in offer-ordinal order on entering a handling state |
 | sample | At the delivery event of a value whose offer is not older than the offer of the value S[p, m] holds, S[p, m] := value, with a `sample` observation; a read sees the updates ordered before it in the event order (time, phase, insertion ordinal), and one activation sees one value of a cell between two suspensions (WP6) |
 | guarded dispatch | At the first execution step, before the arguments, evaluate the release guard. False (no argument is evaluated): cancel the deadline, release L[o], record `skip`, release `after` targets as on completion, and discard a receive entry's input (`discardInput`, `releaseGuard`). Failure: `failure` with the entry as source (the failing statement of a called operation), no successors (WP7) |
+| ordered selection | Equal (t, phase) items are ordered by descending Task priority (unplaced items at 0), then Task-placed before unplaced, then by Task declaration rank and in-task position, then by insertion ordinal (WP8-R01); on a Core that has Tasks only the activation that holds the Core (from its dispatch or resumption to its next wait or end) may take a step, and the selection among the others applies when the Core is free (WP8-R02, no preemption) |
 | complete | Finish activation and unlock; correlated reply is offered separately; successful whole completion releases after targets fresh |
 | violation | Deadline, activation overflow, step/concurrent resource or clock failure stops the reference run and bypasses try |
 | case script | A fresh package configuration adds one serial script activation after startup releases; direct primary-subject calls borrow its actual serial context, script emissions/requests/receives use actor ports, on call replies to the pending correlation, and script completion or failure stops the run |
@@ -2752,7 +2807,7 @@ Colon means typed by; returns names results. Dot is containment/member access; :
 
 # swa.ml 2.3 candidate implementation status
 
-**Standard:** 2.3 (unreleased candidate) · **Implementation package:** 4.0.0 · **Selected host semantics:** 2.3 · **Reference profile:** swaml-reference/2.3. The candidate is allocated and work package WP1 has landed: assignment to places such as `statuses[i].confirmed = true;` and `r.f = v;` (indexes, then the right side, then one read-modify-write of the root; `Bounds` leaves the root unchanged; `write` observations gain `place`), member access after an index such as `recent[i].vehicleId`, and literal component indexes in test inspection paths such as `backend.twins[0].link` and `backend.twins[0].currentView()`. Work package WP2 has landed: the whole-expression conditional `if (c) a else b` (typed by the common type of its branches, never a statement, no suspension inside, only the selected branch evaluated), `view`, `state`, `in` and `out` as contextual words in every name position (edition-aware name services write them unquoted for a 2.3 workspace and quoted for 2.2) and association lists `associate a, b to 'X', 'Y';` (one link per pair, a repeated pair is SW2010). Work package WP3 has landed: the library packages `Swaml::Numeric` (`minInt`, `maxInt`, `clampInt`, `clamp`, and `sqrt` as a correctly rounded host intrinsic), `Swaml::Text` (`intText`, `realText` with ties away from zero, no exponent and no negative zero, `boolText`) and `Swaml::Time` (`now()`, the live logical time in nanoseconds, which reads state, is rejected in initializers and is never a stale read), in the separate built-in document `libraries/swaml-2.3.swaml`; a workspace that declares its own package of one of these names uses it and the library package is hidden there, so 2.2 sources keep their meaning. Work package WP4 has landed: a duration literal is a `uint` value in nanoseconds; `wait (e);`, `or after (e)`, state timers `after (e)` (evaluated when the entry actions finish), `on every (e)` and `deadline (e)` take computed durations; a value that is not a positive representable duration is the catchable runtime failure `DurationRange`; periods and deadlines use the constant sublanguage, evaluated per expanded occurrence (redefined const attributes included) by one evaluator, `constantValue`, with exact integral division and trigger identity by canonical text; `PolicySetting` has the single form `name = Expression;`; computed waits and timeouts record `durationNs` and computed state timers a `timer` observation; SW2016 warns on a computed duration without a unit. Otherwise the host accepts exactly the 2.2 language, and the three [compatibility gates](RELEASE_2_3.md#compatibility-gates) compare every corpus AST and every recorded run, case and trace with fixtures recorded from implementation 3.1.0. The published [2.2 reference](SWAML-2.2-Reference.md) and [PDF](../output/pdf/SWAML-2.2-Specification.pdf) record the 2.2 release sources. The published 2.1 [reference book](SWAML-2.1-Reference.md) and [complete PDF](../output/pdf/SWAML-2.1-Specification.pdf), manifest and checksum remain frozen. The strict current-source [publication gate](PDF_PUBLICATION.md) checks the new edition independently of historical publications. Work package WP5 has landed: completion transitions, guarded timers, internal transitions and deferral in states (ADR 0023), with `defer` as a contextual word. Work package WP6 has landed: sampled reads of required attributes that declare initial values and per-member connection policies (ADR 0024). Work package WP7 has landed: release guards `when (g)` on `every`, `receive` and `after` schedule entries (ADR 0025), evaluated at dispatch; a false guard is a `skip` that cancels the deadline and counts as a completion for `after` successors, a skipped receive entry discards its input (`discardInput` reason `releaseGuard`), and the periodic grid is unchanged.
+**Standard:** 2.3 (unreleased candidate) · **Implementation package:** 4.0.0 · **Selected host semantics:** 2.3 · **Reference profile:** swaml-reference/2.3. The candidate is allocated and work package WP1 has landed: assignment to places such as `statuses[i].confirmed = true;` and `r.f = v;` (indexes, then the right side, then one read-modify-write of the root; `Bounds` leaves the root unchanged; `write` observations gain `place`), member access after an index such as `recent[i].vehicleId`, and literal component indexes in test inspection paths such as `backend.twins[0].link` and `backend.twins[0].currentView()`. Work package WP2 has landed: the whole-expression conditional `if (c) a else b` (typed by the common type of its branches, never a statement, no suspension inside, only the selected branch evaluated), `view`, `state`, `in` and `out` as contextual words in every name position (edition-aware name services write them unquoted for a 2.3 workspace and quoted for 2.2) and association lists `associate a, b to 'X', 'Y';` (one link per pair, a repeated pair is SW2010). Work package WP3 has landed: the library packages `Swaml::Numeric` (`minInt`, `maxInt`, `clampInt`, `clamp`, and `sqrt` as a correctly rounded host intrinsic), `Swaml::Text` (`intText`, `realText` with ties away from zero, no exponent and no negative zero, `boolText`) and `Swaml::Time` (`now()`, the live logical time in nanoseconds, which reads state, is rejected in initializers and is never a stale read), in the separate built-in document `libraries/swaml-2.3.swaml`; a workspace that declares its own package of one of these names uses it and the library package is hidden there, so 2.2 sources keep their meaning. Work package WP4 has landed: a duration literal is a `uint` value in nanoseconds; `wait (e);`, `or after (e)`, state timers `after (e)` (evaluated when the entry actions finish), `on every (e)` and `deadline (e)` take computed durations; a value that is not a positive representable duration is the catchable runtime failure `DurationRange`; periods and deadlines use the constant sublanguage, evaluated per expanded occurrence (redefined const attributes included) by one evaluator, `constantValue`, with exact integral division and trigger identity by canonical text; `PolicySetting` has the single form `name = Expression;`; computed waits and timeouts record `durationNs` and computed state timers a `timer` observation; SW2016 warns on a computed duration without a unit. Otherwise the host accepts exactly the 2.2 language, and the three [compatibility gates](RELEASE_2_3.md#compatibility-gates) compare every corpus AST and every recorded run, case and trace with fixtures recorded from implementation 3.1.0. The published [2.2 reference](SWAML-2.2-Reference.md) and [PDF](../output/pdf/SWAML-2.2-Specification.pdf) record the 2.2 release sources. The published 2.1 [reference book](SWAML-2.1-Reference.md) and [complete PDF](../output/pdf/SWAML-2.1-Specification.pdf), manifest and checksum remain frozen. The strict current-source [publication gate](PDF_PUBLICATION.md) checks the new edition independently of historical publications. Work package WP5 has landed: completion transitions, guarded timers, internal transitions and deferral in states (ADR 0023), with `defer` as a contextual word. Work package WP6 has landed: sampled reads of required attributes that declare initial values and per-member connection policies (ADR 0024). Work package WP7 has landed: release guards `when (g)` on `every`, `receive` and `after` schedule entries (ADR 0025), evaluated at dispatch; a false guard is a `skip` that cancels the deadline and counts as a completion for `after` successors, a skipped receive entry discards its input (`discardInput` reason `releaseGuard`), and the periodic grid is unchanged. Work package WP8 has landed: deploy paths that end at released operations, the library package `Swaml::Os` (`Core`, `Task`, `TaskKind`), task rules T1 to T7 and WP8-D11 (SW2009) on platforms with Swaml::Os Tasks or Cores, priority and in-task ordering keys in the reference run with `task` on releases and Timing lanes, and the `swaml-binding/1` schema with `swaml binding check` (ADR 0025). The General view does not yet draw operation placements; the binding check is static resolution, not schedulability evidence.
 
 The 2.0 core replaced the 1.x grammar, AST, resolver, validator and interpreter; 2.1 adds the package context, executable use cases and tests, package links, run targets and statement identities of [ADR 0019](decisions/0019-package-context.md). It does not accept 1.x or 2.0 source; the [release notes](RELEASE_2_1.md) describe the migration. Published 1.x and 2.0.0 books, PDFs, manifests/checksums and historical figure files remain unchanged. [ADR 0016](decisions/0016-swaml-2-0.md) defines the restart; [conformance obligations](spec/08-conformance-obligations.md) separate syntax, validation, execution, analysis, kernel and graphical claims.
 
@@ -3092,6 +3147,10 @@ swa.ml 2.2.
 The language core is portable TypeScript over Langium 4.4.0 and the normative grammar. Node CLI/server adapters own file access and source hashing. Build with npm run build; validate with node out/src/cli/main.js --json and explicitly load all application dependencies. The host selects parser 2.2; unsupported edition flags are errors.
 
 JSON diagnostics expose stable SW2xxx codes, range, URI and identity metadata. --format applies canonical token-preserving whitespace, printing places and selectors without spaces inside the path, as in statuses[i].confirmed = true; (WP1-M03), conditionals with every parenthesis of the source, as in x = 1 + (if (c) 2 else 3) + 4;, and association lists on one line when they fit in 100 characters, otherwise with one occurrence or case per continuation line; a list that contains a comment is not wrapped (WP2-M05); --check-format checks it without writing. It prints computed durations in parentheses, as in wait (n * 1ms); and on every (periodMs * 1ms) poll() deadline (periodMs * 1ms / 2);, and literal durations without them, as in wait 5ms; (WP4-M08). It prints completion transitions, internal transitions, timer guards and defer lines, as in when (sessionId > 0) to Connected {, on receive stream.accepted(t) {, after 250ms when (pulses < 3) to isLocked { and defer requests.request, keys.key;, keeping every state member in source order (WP5-M04). It prints a release guard between the operation call and `deadline`, as in on every 20ms slot() when (mode.current != PowerMode.sleep) deadline 2ms; (WP7-M03). The LSP exposes full-document formatting. Source repairs must be validated against the complete workspace before application.
+
+node scripts/mutations-wp8.mjs [M1,X7,...] applies the WP8 mutations (the author's M1 to M26, the review's X1 to X17 and the review fixes) one at a time to the build output, runs the WP8 unit tests, the example cases and the extended 2.2 sets, and prints which mutations each kills. It edits out/ in place: run it only after npm run build and never beside other work on the same build. It is not part of npm run check.
+
+swaml binding check [--language-version 2.3] [--json] binding.json file.swaml [more files...] validates a target binding (schema swaml-binding/1, spec/binding.schema.json, versioned independently of the language edition; a root "$schema" string for editors is allowed; WP8-M02, WP8-M03) and resolves its identities against the validated sources: the deployment by its canonical qualified identity (DoorEcu::'Front left door'), operations as occurrence path plus operation name from the deployed root (dcu.comMain.rxMainFunction), Tasks as Swaml::Os Task occurrence paths of the platform (vehicle.doorModules[0].core1.task20ms) and connections as route identities (owner.name, owner.@connectN counting every connect member, name or @packageN for package connections). Identities use canonical spelling (a quoted name keeps its quotes, app.'my link'), while traces record decoded names, so a route id with a quoted name differs from its binding identity by the quotes. It prints one line per finding, error|finding {JSON Pointer} {identity}: {reason}. (the root pointer is printed "", as in --json), then a summary; --json prints schema, deployment, errorCount, findingCount, modelErrors and findings. Exit 0: every identity resolves (placed operations without a cost are findings and do not fail). Exit 1: a schema error (an unknown or missing property, a wrong type or range, another schema version), an unresolved or duplicate identity, bcetNs > wcetNs, a file that is not JSON, or sources with errors. Exit 2: a usage error or a file that cannot be read. It computes no schedule; a resolved binding is not schedulability evidence (WP8-M05).
 
 The simulator requires validated models and records swaml-reference/2.3, sources, options, trace, final stores and deployment. Source digests are added by the CLI. Its finite logical run does not supply production timing or universal verification.
 
@@ -7206,6 +7265,354 @@ package ComMainGating {
     wait 55ms;
     assert com.txRuns == 5 and com.framesSent == 1 and com.lastFrameNs == 180000000 and com.txTimerMs == 0;
     assert com.reports == 0;
+  }
+}
+```
+
+### 52-door-deployment.swaml
+
+```swaml
+package DoorDeployment {
+  /** The task mapping of the door model, in its shape, with Swaml::Os. Two Cores carry the door module's tasks. ComMain keeps its periodic main functions on the 20 ms task of core 1, while its receive entries run on the CAN interrupt and the low event task of the same Core (operation placement, T2, T7). The deploy order fixes the in-task position: rxMainFunction runs before txMainFunction in every 20 ms slot although the schedule lists it second. The 10 ms supervision task has the higher priority, so at a shared instant it observes the state before the 20 ms functions. NvM writes suspend and run on the extended background task (T4). The switch panel, a LIN slave, runs on a plain Node of the same platform with no OS Core below it, so its entries need no Task; a component left on the door module by the root placement would need one, because the door module has OS Cores below it. Each placement is checked statically; with zero-cost steps the run orders equal-time work by priority and in-task position only. */
+  import Swaml::Platform;
+  import Swaml::Os;
+  enum PowerMode {
+    run,
+    sleep
+  }
+  port def CanRx {
+    provides event pdu(lockRequest: uint);
+  }
+  port def ModeState {
+    provides attribute current: PowerMode = PowerMode.run;
+  }
+  port def PowerState {
+    provides event changed(m: PowerMode);
+  }
+  port def DoorStatus {
+    provides event status(lockRequest: uint);
+  }
+  port def LinBus {
+    provides event header(frameId: uint);
+  }
+  port def NvmStore {
+    requires operation writeAll() returns bool;
+  }
+  component def CanInterface {
+    /** Lower-layer reception on the CAN interrupt: forwards each frame to ComMain. */
+    reversed port bus: CanRx;
+    port com: CanRx;
+    attribute frames: uint = 0;
+    operation rxIndication(lockRequest: uint) {
+      frames = frames + 1;
+      publish com.pdu(lockRequest);
+    }
+    schedule {
+      on receive bus.pdu(lockRequest) rxIndication(lockRequest) deadline 1ms;
+    }
+  }
+  component def ComMain {
+    /** Com main functions. storePdu is the RTE buffer update on the CAN interrupt; the main functions copy and transmit every 20 ms. */
+    reversed port pdus: CanRx;
+    reversed port mode: PowerState;
+    port tx: DoorStatus;
+    attribute pending: uint = 0;
+    attribute received: uint = 0;
+    attribute sent: uint = 0;
+    attribute supervised: uint = 0;
+    attribute supervisions: uint = 0;
+    attribute asleep: bool = false;
+    operation storePdu(lockRequest: uint) {
+      pending = lockRequest;
+    }
+    operation onMode(m: PowerMode) {
+      asleep = m == PowerMode.sleep;
+    }
+    operation txMainFunction() {
+      sent = received;
+      publish tx.status(sent);
+    }
+    operation rxMainFunction() {
+      received = pending;
+    }
+    operation supervise() {
+      supervised = sent;
+      supervisions = supervisions + 1;
+    }
+    schedule {
+      on every 20ms txMainFunction() deadline 5ms;
+      on every 20ms rxMainFunction() deadline 2ms;
+      on receive pdus.pdu(lockRequest) storePdu(lockRequest) deadline 1ms;
+      on receive mode.changed(m) onMode(m);
+      on every 10ms supervise() deadline 10ms;
+    }
+  }
+  component def NvmManager {
+    /** Writes all blocks at shutdown; each write waits for the flash driver, so NvM needs an extended task. */
+    reversed port api: NvmStore;
+    attribute writes: uint = 0;
+    operation writeAll() returns bool {
+      wait 3ms;
+      writes = writes + 1;
+      return true;
+    }
+    schedule {
+      on call api.writeAll() writeAll();
+    }
+  }
+  component def EcuMode {
+    /** Distributes the power mode and requests the NvM write-all when it changes to sleep. */
+    reversed port mode: ModeState;
+    port state: PowerState;
+    port nvm: NvmStore;
+    attribute stored: bool = false;
+    operation onMode(m: PowerMode) {
+      publish state.changed(m);
+      if (m == PowerMode.sleep) {
+        stored = nvm.writeAll();
+      }
+    }
+    schedule {
+      on receive mode.current(m) onMode(m);
+    }
+  }
+  component def LinSwitchPanel {
+    /** A LIN slave without an operating system: it answers each frame header and checks the bus every 100 ms. */
+    reversed port bus: LinBus;
+    attribute responses: uint = 0;
+    attribute checks: uint = 0;
+    operation respond(frameId: uint) {
+      responses = responses + 1;
+    }
+    operation monitorBus() {
+      checks = checks + 1;
+    }
+    schedule {
+      on receive bus.header(frameId) respond(frameId);
+      on every 100ms monitorBus();
+    }
+  }
+  component def DoorControlUnit {
+    reversed port can: CanRx;
+    reversed port mode: ModeState;
+    port status: DoorStatus;
+    component canIf: CanInterface;
+    component comMain: ComMain;
+    component nvm: NvmManager;
+    component ecuMode: EcuMode;
+    connect (can, canIf.bus);
+    connect (canIf.com, comMain.pdus);
+    connect (mode, ecuMode.mode);
+    connect (ecuMode.state, comMain.mode);
+    connect (comMain.tx, status);
+    connect (ecuMode.nvm, nvm.api);
+  }
+  component def SafetyCore specializes Core {
+    /** Core 0: mode management. */
+    component taskEventLow: Task {
+      redefines const attribute kind: TaskKind = TaskKind.extended;
+      redefines const attribute responseNs: uint = 10ms;
+      redefines const attribute priority: uint = 15;
+    }
+  }
+  component def ComfortCore specializes Core {
+    /** Core 1: communication and memory services. */
+    component isrCan: Task {
+      redefines const attribute kind: TaskKind = TaskKind.isr;
+      redefines const attribute responseNs: uint = 500us;
+      redefines const attribute priority: uint = 60;
+    }
+    component task10ms: Task {
+      redefines const attribute periodNs: uint = 10ms;
+      redefines const attribute priority: uint = 40;
+    }
+    component task20ms: Task {
+      redefines const attribute periodNs: uint = 20ms;
+      redefines const attribute priority: uint = 30;
+    }
+    component taskEventLow: Task {
+      redefines const attribute responseNs: uint = 5ms;
+      redefines const attribute priority: uint = 18;
+    }
+    component taskBackground: Task {
+      redefines const attribute kind: TaskKind = TaskKind.extended;
+      redefines const attribute priority: uint = 1;
+    }
+  }
+  component def DoorModule specializes Node {
+    component core0: SafetyCore;
+    component core1: ComfortCore;
+  }
+  component def BodyPlatform specializes Platform {
+    component doorModules: DoorModule[2];
+    component switchPanelNode: Node;
+  }
+  component def BodyControlModule {
+    /** Interface-only actor: the body controller on the CAN bus and the power mode master. */
+    port can: CanRx;
+    port mode: ModeState;
+    reversed port status: DoorStatus;
+    port lin: LinBus;
+  }
+  component dcu: DoorControlUnit;
+  component bcm: BodyControlModule;
+  component switchPanel: LinSwitchPanel;
+  component vehicle: BodyPlatform;
+  connect bodyCan (bcm.can, dcu.can);
+  connect modeLine (bcm.mode, dcu.mode);
+  connect statusLine (dcu.status, bcm.status);
+  connect linSlot (bcm.lin, switchPanel.bus);
+  deployment 'Front left door' of dcu on vehicle {
+    /** rxMainFunction is placed before the rest of ComMain on the 20 ms task, so it runs first in each slot. */
+    deploy on doorModules[0];
+    deploy canIf on doorModules[0].core1.isrCan;
+    deploy comMain.rxMainFunction on doorModules[0].core1.task20ms;
+    deploy comMain on doorModules[0].core1.task20ms;
+    deploy comMain.storePdu on doorModules[0].core1.isrCan;
+    deploy comMain.onMode on doorModules[0].core1.taskEventLow;
+    deploy comMain.supervise on doorModules[0].core1.task10ms;
+    deploy nvm on doorModules[0].core1.taskBackground;
+    deploy ecuMode on doorModules[0].core0.taskEventLow;
+  }
+  deployment 'Switch panel' of switchPanel on vehicle {
+    /** A plain Node with no Core below it: outside the task rules (WP8-S04), as in the door showcase. */
+    deploy on switchPanelNode;
+  }
+  associate bcm to 'A request is transmitted in the next slot', 'Supervision sees the state before the slot', 'Shutdown stores through the background task';
+  test 'A request is transmitted in the next slot' of dcu {
+    /** The PDU stored at 5 ms is copied by rxMainFunction and transmitted by txMainFunction in the 20 ms slot, in deploy order. */
+    wait 5ms;
+    publish bcm.can.pdu(7);
+    wait 20ms;
+    assert dcu.comMain.pending == 7 and dcu.comMain.received == 7 and dcu.comMain.sent == 7;
+    assert dcu.canIf.frames == 1;
+  }
+  test 'Supervision sees the state before the slot' of dcu {
+    /** At 20 ms the 10 ms task (priority 40) runs before the 20 ms task (priority 30): it still sees nothing sent. At 30 ms it sees the PDU. */
+    wait 5ms;
+    publish bcm.can.pdu(9);
+    wait 20ms;
+    assert dcu.comMain.sent == 9 and dcu.comMain.supervised == 0 and dcu.comMain.supervisions == 2;
+    wait 10ms;
+    assert dcu.comMain.supervised == 9 and dcu.comMain.supervisions == 3;
+  }
+  test 'Shutdown stores through the background task' of dcu {
+    /** The mode manager forwards the sleep request to ComMain; the write-all waits 3 ms on the extended background task. */
+    wait 2ms;
+    send bcm.mode.current(PowerMode.sleep);
+    wait 5ms;
+    assert dcu.comMain.asleep and dcu.ecuMode.stored and dcu.nvm.writes == 1;
+  }
+}
+```
+
+### 53-task-order.swaml
+
+```swaml
+package TaskOrder {
+  /** Equal-time order on Swaml::Os Tasks of one ECU without a declared Core (one implicit Core). FastFilter inherits Filter's schedule, replaces its smooth entry with a tighter deadline and adds an audit and two after successors. The 5 ms task has the higher priority, so audit runs first at every shared instant; on the 10 ms task the deploy order puts smooth before report although the schedule lists report first, and check, released when smooth completes, follows by its in-task position. The edge interrupt stores the input and its after successor flags it on the ISR task. Filter, deployed as a whole, keeps its schedule order. */
+  import Swaml::Platform;
+  import Swaml::Os;
+  port def Edges {
+    provides event edge(n: uint);
+  }
+  component def Filter {
+    reversed port input: Edges;
+    attribute raw: uint = 0;
+    attribute filtered: uint = 0;
+    attribute order: uint = 0;
+    operation capture(n: uint) {
+      raw = n;
+    }
+    operation report() {
+      order = order * 10 + 3;
+    }
+    operation smooth() {
+      filtered = raw;
+      order = order * 10 + 2;
+    }
+    schedule {
+      on receive input.edge(n) capture(n);
+      on every 10ms report();
+      on every 10ms smooth() deadline 10ms;
+    }
+  }
+  component def FastFilter specializes Filter {
+    attribute flagged: uint = 0;
+    operation audit() {
+      order = order * 10 + 5;
+    }
+    operation check() {
+      order = order * 10 + 4;
+    }
+    operation flag() {
+      flagged = flagged + 1;
+    }
+    schedule {
+      on every 10ms smooth() deadline 4ms;
+      on every 10ms audit();
+      after smooth check();
+      after capture flag();
+    }
+  }
+  component def App {
+    reversed port a: Edges;
+    reversed port b: Edges;
+    component left: FastFilter;
+    component right: Filter;
+    connect (a, left.input);
+    connect (b, right.input);
+  }
+  component def Ecu specializes Node {
+    /** Tasks without a Core ancestor: one implicit Core of the platform root. */
+    component edgeIsr: Task {
+      redefines const attribute kind: TaskKind = TaskKind.isr;
+      redefines const attribute priority: uint = 50;
+    }
+    component task5ms: Task {
+      redefines const attribute periodNs: uint = 5ms;
+      redefines const attribute priority: uint = 30;
+    }
+    component task10ms: Task {
+      redefines const attribute periodNs: uint = 10ms;
+      redefines const attribute priority: uint = 20;
+      redefines const attribute responseNs: uint = 4ms;
+    }
+  }
+  component def Sensor {
+    /** Interface-only actor that sends the edges. */
+    port a: Edges;
+    port b: Edges;
+  }
+  component app: App;
+  component sensor: Sensor;
+  component ecu: Ecu;
+  connect (sensor.a, app.a);
+  connect (sensor.b, app.b);
+  deployment Filters of app on ecu {
+    deploy left.capture on edgeIsr;
+    deploy left.flag on edgeIsr;
+    deploy left.smooth on task10ms;
+    deploy left on task10ms;
+    deploy left.audit on task5ms;
+    deploy right on task10ms;
+    deploy right.capture on edgeIsr;
+  }
+  associate sensor to 'Priority first, then deploy order', 'The interrupt stores the edge and flags it';
+  test 'Priority first, then deploy order' of app {
+    /** Each 10 ms instant runs audit (5 ms task), then smooth, report and check on the 10 ms task: check is released when smooth completes and takes its in-task position after report. */
+    wait 25ms;
+    assert app.left.order == 52345234;
+    assert app.right.order == 3232;
+  }
+  test 'The interrupt stores the edge and flags it' of app {
+    /** smooth at 10 ms copies the edge stored at 5 ms. */
+    wait 5ms;
+    publish sensor.a.edge(8);
+    publish sensor.b.edge(6);
+    wait 10ms;
+    assert app.left.raw == 8 and app.left.flagged == 1 and app.left.filtered == 8;
+    assert app.right.filtered == 6;
   }
 }
 ```

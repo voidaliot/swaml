@@ -5,6 +5,8 @@ export interface TimingInterval {
     startNs: number;
     endNs?: number;
     phase: string;
+    /** The Swaml::Os Task the activation runs on, from its release observation: its Task lane (WP8-M04). Absent when unplaced. */
+    task?: string;
 }
 /** Declared schedules are a separate projection; these intervals require an identified run. */
 export function projectOperationTiming(result: SimulationResult): {
@@ -12,7 +14,7 @@ export function projectOperationTiming(result: SimulationResult): {
     intervals: TimingInterval[];
     markers: TraceEvent[];
 } {
-    const intervals: TimingInterval[] = [], open = new Map<string, TimingInterval>();
+    const intervals: TimingInterval[] = [], open = new Map<string, TimingInterval>(), tasks = new Map<string, string>();
     for (const e of result.trace) {
         const id = e.activation as string | undefined;
         if (!id)
@@ -21,7 +23,10 @@ export function projectOperationTiming(result: SimulationResult): {
             const previous = open.get(id);
             if (previous)
                 previous.endNs = e.timeNs;
-            const next = { activation: id, subject: e.subject, startNs: e.timeNs, phase: e.kind };
+            if (e.kind === 'release' && typeof e.task === 'string')
+                tasks.set(id, e.task);
+            const task = tasks.get(id);
+            const next: TimingInterval = task ? { activation: id, subject: e.subject, startNs: e.timeNs, phase: e.kind, task } : { activation: id, subject: e.subject, startNs: e.timeNs, phase: e.kind };
             intervals.push(next);
             open.set(id, next);
         }

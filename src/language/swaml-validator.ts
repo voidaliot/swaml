@@ -14,6 +14,8 @@ const initialized = (e: AstNode): string => { for (let n: AstNode | undefined = 
 const isExpression = (n: unknown): n is a.Expression => !!n && typeof n === 'object' && EXPRESSION_TYPES.has((n as AstNode).$type);
 import { forwardedPorts, isSampledMember, memberPolicy, memberQos, optsIn, sampledMembers, sampledReadForm, sampledReads, attributeAccess, isCompletion, isLiteralTrue, isReactionForm, transitionKind, useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_2_3_URI, container, constantValue, displayText, entryDeadline, entryPeriod, representableDuration, settingDuration, triggerIdentity, type ConstantProblem } from './semantic.js';
 import { ambiguousNameMessage } from './swaml-scope.js';
+import type { Occurrence } from './semantic.js';
+import { coreText, deploymentPlan, durationText, entryLabel, pathText, predecessors, statementText, suspendSite, type DeploymentPlan, type EntryPlacement, type OsTask } from './placement.js';
 type Env = Map<string, {
     type: string;
     mutable: boolean;
@@ -1685,18 +1687,212 @@ export class SwamlValidator {
             return;
         if (!isNode(platform))
             this.report(d, 'SW2009', 'The platform root must specialize Swaml::Platform::Node.');
-        const software = occurrences(root), targets = occurrences(platform), seen = new Set<string>();
-        for (const p of d.placements) {
+        const software = occurrences(root), targets = new Map(occurrences(platform).map(o => [o.path, o])), seen = new Set<string>(), plan = deploymentPlan(d);
+        const known = plan ? undefined : new Set(software.flatMap(o => { const family = /^(.*)\[\d+\]$/u.exec(o.path)?.[1]; return family !== undefined ? [o.path, family] : [o.path]; }));
+        d.placements.forEach((p, i) => {
             const path = p.target ? `${root.name}.${p.target}` : root.name;
+            // WP8-D09: exact paths, operation paths included, are unique within one deployment.
             if (seen.has(path))
                 this.report(p, 'SW2009', 'Duplicate exact deployment path.');
             seen.add(path);
-            if (!software.some(o => o.path === path || p.target && o.path.startsWith(`${path}[`)))
+            const placed = plan?.placements[i];
+            // WP8-S01: a path may end at an operation that an effective entry of the addressed occurrence releases.
+            // WP8-D01 names an unreleased operation only on a Swaml::Os platform; elsewhere a path that is neither an
+            // occurrence nor a released operation keeps its 2.2 message (owner decision WP8-A).
+            if (placed?.unreleased && plan!.coreRule)
+                this.report(p, 'SW2009', `${pathText(placed.path)} names operation ${formatName(placed.unreleased.operation, MESSAGE_SPELLING)}, which no schedule entry of ${pathText(placed.unreleased.occurrence)} releases.`);
+            else if (placed ? placed.kind === 'unknown' : !known!.has(path))
                 this.report(p, 'SW2009', `Unknown software occurrence ${path}.`);
-            const target = targets.find(o => o.path === `${platform.name}.${p.node}`);
+            const target = targets.get(`${platform.name}.${p.node}`);
             if (!target || !isNode(target.structure))
                 this.report(p, 'SW2009', `Target ${p.node} must be a Node occurrence.`);
+            // WP8-D12: without a Swaml::Os Task an operation placement changes no run; only T7 uses it.
+            else if (placed?.kind === 'operation' && !plan!.taskRules && !plan!.rootTask)
+                this.report(p, 'SW2021', `Operation placement ${pathText(placed.path)} on ${pathText(target.path)} does not change the run on a platform without a Swaml::Os task: the run records and orders occurrence placements only, and only the one-core rule T7 uses it.`, true);
+        });
+        if (plan)
+            this.taskRules(plan);
+    }
+    /**
+     * The static task rules of a deployment on a Swaml::Os platform (WP8-S04 to WP8-S10, WP8-D13): T1 to T5 for the
+     * Tasks of the platform and the entries on them, T6 for the entries of occurrences deployed in a Core that has
+     * Tasks, T7 when the platform contains a Core or a Task. A platform with neither keeps its 2.2 meaning. Findings
+     * about a Task are reported at the platform reference, findings about entries at the deploy statement that
+     * places them, unplaced entries (T6) at the deployed root; each message is reported once per range.
+     */
+    private taskRules(plan: DeploymentPlan): void {
+        const d = plan.deployment, reported = new Set<string>();
+        const once = (n: AstNode, message: string, range: { range?: Range } = {}) => {
+            const key = `${n.$cstNode?.offset}:${range.range ? JSON.stringify(range.range) : ''}:${message}`;
+            if (!reported.has(key)) {
+                reported.add(key);
+                this.report(n, 'SW2009', message, false, range);
+            }
+        };
+        const platformRange = this.at(d, 'platform'), task = (t: OsTask) => pathText(t.path);
+        // WP8-D13: a Task needs a Core or Node above it; the root of a platform cannot be one.
+        if (plan.rootTask) {
+            once(d, `The platform root ${pathText(plan.platform.name)} is a Swaml::Os task; a task runs on a core or node, so declare the task inside a Node or Core platform and deploy on it.`, platformRange);
+            return;
         }
+        if (plan.taskRules) {
+            for (const t of plan.tasks) {
+                // WP8-D11: every Task attribute is a constant of its type in that occurrence.
+                for (const p of t.problems)
+                    once(d, `${p.attribute} of task ${task(t)} must be a constant ${p.attribute === 'kind' ? 'TaskKind literal' : p.attribute === 'preemptive' ? 'bool' : 'uint'} value${p.tooLarge ? ` up to ${Number.MAX_SAFE_INTEGER}` : ''}.`, platformRange);
+                // T3 (WP8-D04): an isr Task has periodNs = 0 and is preemptive.
+                if (t.kind === 'isr' && t.periodNs !== undefined && t.periodNs !== 0n)
+                    once(d, `ISR task ${task(t)} must have periodNs = 0.`, platformRange);
+                if (t.kind === 'isr' && t.preemptive === false)
+                    once(d, `ISR task ${task(t)} must be preemptive.`, platformRange);
+            }
+            // T1 (WP8-D02): unique priorities among the Tasks of one Core.
+            const family = (path: string) => /^(.*)\[\d+\]$/u.exec(path)?.[1];
+            for (const [i, t] of plan.tasks.entries()) {
+                const other = plan.tasks.slice(0, i).find(x => x.core === t.core && x.priority !== undefined && x.priority === t.priority);
+                if (other)
+                    once(d, `Tasks ${task(other)} and ${task(t)} of ${coreText(plan, t.core)} share priority ${t.priority}${family(other.path) !== undefined && family(other.path) === family(t.path) ? `; the members of a task family share their definition's priority, so declare the tasks of one core separately` : ''}.`, platformRange);
+            }
+            for (const e of plan.entries) {
+                const at = e.placement?.node, what = `${entryLabel(e.entry)} of ${pathText(e.occurrence.path)}`;
+                if (!e.task) {
+                    // T6 (WP8-D07, WP8-S04): an occurrence deployed in a Core that has Tasks, or an entry placed in one, needs a
+                    // Task of that Core; else one deployed on (or placed on) a Node in no Core with tasked Cores below it, such
+                    // as an ECU, or left on such a platform root, needs a Task of one of those Cores. Only a Node without a
+                    // tasked Core below it is outside the task rules.
+                    const core = [plan.occurrenceCore.get(e.occurrence), e.core].find(c => c !== undefined && plan.taskedCores.has(c));
+                    const region = core === undefined ? plan.occurrenceRegion.get(e.occurrence) ?? e.region : undefined;
+                    if (core !== undefined || region !== undefined)
+                        once(d, this.unplacedMessage(plan, e, core !== undefined ? { core } : { region: region! }), this.at(d, 'root'));
+                    continue;
+                }
+                const t = e.task;
+                if (!at || t.problems.length)
+                    continue;
+                // T2 (WP8-D03) and T3 (WP8-D04): entry kinds per Task. An after successor runs on its predecessor's Task, on
+                // every Task kind; a successor whose predecessor is not on a Task is left to T6.
+                const before = predecessors(plan, e);
+                if (e.entry.kind === 'after') {
+                    const other = before.every(p => p.task) ? before.find(p => p.task !== t) : undefined;
+                    if (other?.task)
+                        once(at, `${what} cannot run on task ${task(t)}: its predecessor runs on ${task(other.task)}, and an after successor runs on the task of its predecessor.`);
+                }
+                else if (t.kind === 'isr' && e.entry.kind !== 'receive')
+                    once(at, `ISR task ${task(t)} accepts only receive entries and their after successors; ${what} is not one.`);
+                else if (t.kind !== 'isr' && t.periodNs && e.entry.kind === 'every' && !this.periodFits(e, t))
+                    once(at, `${what} cannot run on periodic task ${task(t)}: its period ${durationText(entryPeriod(e.entry, e.occurrence.structure) ?? 0)} is not a multiple of ${durationText(t.periodNs)}.`);
+                else if (t.kind !== 'isr' && t.periodNs && e.entry.kind !== 'every')
+                    once(at, `${what} cannot run on periodic task ${task(t)}: event entries need a task with periodNs = 0.`);
+                // T4 (WP8-D05): an activation that may suspend runs on an extended Task.
+                const site = t.kind !== 'extended' ? this.suspends(e) : undefined;
+                if (site)
+                    once(at, `${what} may suspend in ${statementText(site)} and needs an extended task; ${task(t)} is ${t.kind}.`);
+                // T5 (WP8-D06): an explicit deadline is not shorter than the Task's response bound; an implicit one is not checked.
+                const deadline = e.entry.deadline || e.entry.deadlineValue ? entryDeadline(e.entry, e.occurrence.structure) : undefined;
+                if (t.responseNs && deadline !== undefined && BigInt(deadline) < t.responseNs)
+                    once(at, `Deadline ${durationText(deadline)} of ${what} is shorter than the response bound ${durationText(t.responseNs)} of ${task(t)}.`);
+            }
+        }
+        // T7 (WP8-D08): the entries of one component occurrence reach at most one Core.
+        if (plan.coreRule)
+            for (const o of plan.software) {
+                const reached = (plan.byOccurrence.get(o) ?? []).filter(e => e.core !== undefined);
+                const second = reached.find(e => e.core !== reached[0].core);
+                if (second)
+                    once(second.placement!.node, `${pathText(o.path)} runs on ${coreText(plan, reached[0].core!)} and ${coreText(plan, second.core!)}; all its operations must run on one core.`);
+            }
+    }
+    /** T2: the evaluated period of an every entry is a positive multiple of a periodic Task's period. */
+    private periodFits(e: EntryPlacement, t: OsTask): boolean {
+        const period = entryPeriod(e.entry, e.occurrence.structure);
+        return period !== undefined && !!t.periodNs && BigInt(period) % t.periodNs === 0n;
+    }
+    /** T4: where an activation of the entry's operation may suspend, if anywhere. */
+    private suspends(e: EntryPlacement): AstNode | undefined {
+        const op = members(e.occurrence.structure).filter(isExecutable).find(x => x.name === e.entry.operation);
+        return op ? suspendSite(op, e.occurrence.structure) : undefined;
+    }
+    /** What any entry on Task t needs apart from its kind: T4, T5, and no attribute problem of t (WP8-D11). */
+    private suits(e: EntryPlacement, t: OsTask): boolean {
+        if (t.problems.length || t.kind !== 'extended' && this.suspends(e))
+            return false;
+        const deadline = e.entry.deadline || e.entry.deadlineValue ? entryDeadline(e.entry, e.occurrence.structure) : undefined;
+        return !(t.responseNs && deadline !== undefined && BigInt(deadline) < t.responseNs);
+    }
+    /**
+     * T2 to T5 for entry e on Task t. An after successor runs on its predecessor's Task, so t must also accept the
+     * predecessor's entries (T2 and T3 admit a successor wherever its predecessor is).
+     */
+    private accepts(plan: DeploymentPlan, e: EntryPlacement, t: OsTask, seen = new Set<EntryPlacement>()): boolean {
+        if (seen.has(e))
+            return true;
+        seen.add(e);
+        if (!this.suits(e, t))
+            return false;
+        if (e.entry.kind === 'after')
+            return predecessors(plan, e).every(p => this.accepts(plan, p, t, seen));
+        return t.kind === 'isr' ? e.entry.kind === 'receive' : t.periodNs ? e.entry.kind === 'every' && this.periodFits(e, t) : true;
+    }
+    /**
+     * T6 (WP8-D07): an entry that is not on a Task although its occurrence (or its own placement) is in Core core, which
+     * has Tasks, or on Node region, which is in no Core but has Cores with Tasks below it (WP8-S04). The example gives
+     * deploy lines that satisfy T2 to T5 and T7: a Task of that Core (for a region, of the Core the occurrence already
+     * reaches, else of any tasked Core below the region) that accepts the entry, preferring a Task that is no ISR, then
+     * the Task that already hosts an entry of the occurrence or of its nearest ancestor, then one that accepts every
+     * unplaced entry of the occurrence, then declaration rank. An after successor names its predecessor's Task when that
+     * Task accepts it, else a Task for both. A line whose exact path already has a deploy statement is shown as a change
+     * of that statement (WP8-D09). Without a suitable Task the message says so.
+     */
+    private unplacedMessage(plan: DeploymentPlan, e: EntryPlacement, scope: { core: string } | { region: string }): string {
+        const operation = formatName(e.entry.operation, MESSAGE_SPELLING), occurrence = pathText(e.occurrence.path);
+        const where = 'core' in scope ? coreText(plan, scope.core) : pathText(scope.region);
+        const head = `${entryLabel(e.entry)} of ${occurrence} is not placed on a task of ${where}`;
+        // A deploy line for operation op of this occurrence on Task t; an existing line for that exact path is changed.
+        const line = (op: string, t: OsTask) => {
+            const relative = e.occurrence.path === plan.root.name ? '' : pathText(e.occurrence.path.slice(plan.root.name.length + 1)) + '.';
+            const target = `${relative}${formatName(op, MESSAGE_SPELLING)}`, on = pathText(t.path.slice(plan.platform.name.length + 1));
+            const existing = plan.placements.find(p => p.path === `${e.occurrence.path}.${op}`);
+            return existing ? `change deploy ${target} on ${pathText(existing.node.node ?? '')}; to deploy ${target} on ${on};` : `deploy ${target} on ${on};`;
+        };
+        const example = (t: OsTask) => `${head}; place ${operation} or ${occurrence} on a task, for example: ${line(e.entry.operation, t)}`;
+        const own = plan.byOccurrence.get(e.occurrence) ?? [];
+        const reached = own.map(x => x.core).find(c => c !== undefined && plan.taskedCores.has(c));
+        const below = (region: string, core: string) => core.startsWith(`${region}.`) || core.startsWith(`${region}[`);
+        const inScope = (t: OsTask) => 'core' in scope ? t.core === scope.core : reached !== undefined ? t.core === reached : below(scope.region, t.core);
+        const unplaced = own.filter(x => !x.task);
+        // How near the Task is: the nearest occurrence (this one, then its ancestors) with an entry on it, then that
+        // entry's schedule order.
+        const nearness = (t: OsTask): [number, number] => {
+            let n = 0;
+            for (let o: Occurrence | undefined = e.occurrence; o; o = o.parent !== undefined ? plan.occurrenceAt.get(o.parent) : undefined, n++) {
+                const i = plan.byOccurrence.get(o)?.findIndex(x => x.task === t) ?? -1;
+                if (i >= 0)
+                    return [n, i];
+            }
+            return [Infinity, 0];
+        };
+        const choose = (fits: (t: OsTask) => boolean) => plan.tasks.filter(t => inScope(t) && fits(t))
+            .map(t => ({ t, key: [t.kind === 'isr' ? 1 : 0, ...nearness(t), unplaced.every(x => this.accepts(plan, x, t)) ? 0 : 1, t.rank] }))
+            .sort((x, y) => { for (let i = 0; i < x.key.length; i++) if (x.key[i] !== y.key[i]) return x.key[i] < y.key[i] ? -1 : 1; return 0; })[0]?.t;
+        const deadline = e.entry.deadline || e.entry.deadlineValue ? entryDeadline(e.entry, e.occurrence.structure) : undefined;
+        const extra = `${this.suspends(e) ? ', of kind extended' : ''}${deadline !== undefined ? `, with responseNs = 0 or at most ${durationText(deadline)}` : ''}`;
+        if (e.entry.kind === 'after') {
+            const before = predecessors(plan, e), host = before[0]?.task;
+            const predecessor = formatName(e.entry.predecessor ?? '', MESSAGE_SPELLING);
+            if (host && inScope(host) && before.every(p => p.task === host) && this.suits(e, host))
+                return example(host);
+            const both = choose(t => this.accepts(plan, e, t));
+            if (both) {
+                const first = before.some(p => p.task) ? `move ${predecessor} to a task that also accepts ${operation}` : `place ${predecessor} on a task first`;
+                return `${head}; an after successor runs on the task of its predecessor, so ${first} and place ${operation} with it, for example: ${line(e.entry.predecessor ?? '', both)} ${line(e.entry.operation, both)}`;
+            }
+            return `${head}; ${where} has no task that accepts it (it needs a task that also accepts its predecessor ${predecessor}${extra}), so add one and place ${operation} or ${occurrence} on it.`;
+        }
+        const host = choose(t => this.accepts(plan, e, t));
+        if (host)
+            return example(host);
+        const need = e.entry.kind === 'every' ? `a task that is no ISR, with periodNs = 0 or a period that divides ${durationText(entryPeriod(e.entry, e.occurrence.structure) ?? 0)}` : e.entry.kind === 'receive' ? 'a task with periodNs = 0' : 'a task with periodNs = 0 that is no ISR';
+        return `${head}; ${where} has no task that accepts it (it needs ${need}${extra}), so add one and place ${operation} or ${occurrence} on it.`;
     }
     private view(v: a.View): void {
         const kind = v.definition.ref?.name;

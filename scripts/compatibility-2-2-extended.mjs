@@ -49,6 +49,10 @@ export const SETS = [
     // Ports opt in to sampled reads by initial values and connections gain member policies (WP6-G01, WP6-G02); these
     // 2.2 sources read p.m in every 2.2 position (an unknown local value) and use connection policies in every 2.2 shape.
     { models: 'models-wp6.json', recorded: 'recorded-wp6.json', rule: 'WP6-G01, WP6-G02, WP6-S01: 2.2 sources with p.m references to port members and connection policies in every 2.2 shape', related: true },
+    // Swaml::Os becomes a library package, deploy paths may end at released operations and Tasks order equal-time work
+    // (WP8-L01, WP8-S01, WP8-R01); these 2.2 sources use task-shaped platforms, own Swaml::Os packages, the names of
+    // the library's declarations and every 2.2 deploy path shape that stays invalid or keeps its meaning.
+    { models: 'models-wp8.json', recorded: 'recorded-wp8.json', rule: 'WP8-L01, WP8-S01, WP8-R01: 2.2 deployments on task-shaped platforms, own Swaml::Os packages and deploy paths in every 2.2 shape', related: true },
 ];
 const strip = trace => trace.map(({ profile: _p, languageVersion: _l, ...rest }) => rest);
 const at = r => `${r.start.line + 1}:${r.start.character + 1}-${r.end.line + 1}:${r.end.character + 1}`;

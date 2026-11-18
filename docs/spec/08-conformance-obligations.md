@@ -28,6 +28,7 @@ Normative chapter of [swa.ml 2.2](../LANGUAGE_SPECIFICATION.md). Acceptance leve
 | V20 | Completion transitions, timer guards, internal transitions, deferral, completion-guard and deferral-overflow warnings | SW2005/2008/2017/2018 |
 | V21 | Sampled-read ports and positions, mandatory initial values, zero-or-one owners of sampled members, member policies, dead completion guards | SW2004/2005/2006/2007/2010/2013/2017 |
 | V22 | Release guards on every, receive and after entries only, bool with read-only effects, in the scope of the entry's arguments; not part of entry identity | SW2007 |
+| V23 | Operation placement, specificity, T1–T7 on Swaml::Os platforms (T6 per Core), in-task position, constant Task attributes, no Task as platform root, operation placements without effect | SW2009/2021 |
 
 Validation MUST rebuild semantic string paths as well as indexed references after workspace changes/additions/deletions. Negative lookups matter: a newly loaded declaration may make a previously resolved short name ambiguous. Malformed source remains editable and invalid; recovery cannot silently accept a different program. Definite-return analysis may be conservative rather than solving arbitrary conditions. Dynamic numeric/index/termination failures remain runtime obligations.
 
@@ -53,13 +54,14 @@ Validation MUST rebuild semantic string paths as well as indexed references afte
 | E16 | Completion, elapsed-timer and input order; no completion after discards; `discardTimer`; internal reactions keep timers; `CompletionLoop`; retention and offer-ordinal order; one `defer` per retained message |
 | E17 | Sample cells updated at delivery (after latency and faults, ordered within the instant by the event order), independent of consumption, read live and stable within an activation segment, with `sample` observations; per-member policies |
 | E18 | Release guards at dispatch before the arguments (a false guard evaluates none), deadline cancellation, skip as completion for successors, `skip` observations, `releaseGuard` discard, guard failure sourced at the entry or at the failing statement of a called operation, with no successor, unchanged grid |
+| E19 | Priority and in-task ordering keys for releases, dispatches and ready continuations, Task-placed before unplaced at equal priority, unplaced case scripts; unchanged order without Tasks; `task` on releases on a Task |
 | E20 | Every run, use case and test of the 2.2 corpus keeps its status, full final stores, machines, deployments, verdict and message and its complete trace, ignoring only `profile` and `languageVersion` (compatibility gate 2, compared with a fixture recorded with implementation 3.1.0) |
 
 A deterministic reference run may choose one permitted order/delivery outcome. Its tests do not establish all possible traces or real transport reliability. A target implementation identifies additional scheduling/transport assumptions and evidence. Idempotency annotations are checked declarations, not proofs of side-effect behavior.
 
 ## 8.3 Analysis, kernel and graphical claims
 
-Case realization needs a witness execution with payloads/assumptions; a passing case script is one such deterministic witness under its recorded assumptions, not a proof for every execution. Requirement fulfillment needs identified test/analysis/review evidence beyond satisfy/verify links. Schedulability needs target scheduler, cost and transport assumptions plus measurement/proof. Race/deadlock freedom requires analysis of suspension/interleaving and requests. A finite search without failure is not universal proof.
+Case realization needs a witness execution with payloads/assumptions; a passing case script is one such deterministic witness under its recorded assumptions, not a proof for every execution. Requirement fulfillment needs identified test/analysis/review evidence beyond satisfy/verify links. Schedulability needs target scheduler, cost and transport assumptions plus measurement/proof. A validated `Swaml::Os` task mapping and a resolved target binding (`swaml binding check`) are static evidence of a declared mapping. They are not schedulability evidence. Race/deadlock freedom requires analysis of suspension/interleaving and requests. A finite search without failure is not universal proof.
 
 K requires the complete normalized model, a pinned semantic library/exporter, kernel validation and round trips. Inventory coverage is not K. G requires Browser plus seven source views, occurrence-aware identity, notation, source-validated edits, sidecar layout and atomic native undo/redo. LSP syntax/formatting alone is not G. Semantic paths need path-aware rename/reference/navigation; generic name references are insufficient.
 

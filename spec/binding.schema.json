@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://swa.ml/schema/swaml-binding/1",
+  "title": "swa.ml target binding, schema version 1",
+  "description": "Target assumptions for one deployment of a swa.ml model (WP8-M02; introduced with swa.ml 2.3). The schema has a version of its own, independent of the language edition. It records execution costs per operation occurrence, budgets per Swaml::Os Task occurrence and cross-core latencies per connection occurrence. Identities use the canonical spelling of the normalized model (a quoted name is written with its quotes, app.'my link'; traces record decoded names, so a route id with a quoted name differs from its binding identity by the quotes): operations as the occurrence path from the deployed root plus the operation name (dcu.comMain.rxMainFunction), Tasks as platform occurrence paths (vehicle.doorModules[0].core1.task20ms) and connections as the route identities of runs and traces (owner.name or owner.@connectN for a component connection, name or @packageN for a package connection). `swaml binding check` resolves them against the validated model (WP8-M03). A binding is static resolution of target assumptions; it is neither an analysis claim nor schedulability evidence (WP8-M05).",
+  "type": "object",
+  "required": ["schema", "deployment"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string", "description": "Optional editor association, for example the URI of this schema; not checked further." },
+    "schema": { "const": "swaml-binding/1", "description": "The schema identity and version." },
+    "deployment": { "type": "string", "minLength": 1, "description": "The deployment's qualified identity in canonical spelling, for example DoorEcu::'Front left door'." },
+    "costs": {
+      "type": "array",
+      "description": "One cost per operation identity: a family member is listed once per index, and an operation released by several entries has one cost.",
+      "items": {
+        "type": "object",
+        "required": ["operation", "wcetNs", "source"],
+        "additionalProperties": false,
+        "properties": {
+          "operation": { "type": "string", "minLength": 1, "description": "Occurrence path from the deployed root plus the operation name." },
+          "wcetNs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991, "description": "Worst-case execution time in nanoseconds." },
+          "bcetNs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991, "description": "Best-case execution time in nanoseconds; at most wcetNs." },
+          "source": { "type": "string", "minLength": 1, "description": "A reference to the measurement or analysis that supplies the cost." }
+        }
+      }
+    },
+    "budgets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["task", "budgetNs"],
+        "additionalProperties": false,
+        "properties": {
+          "task": { "type": "string", "minLength": 1, "description": "Platform occurrence path of a Swaml::Os Task." },
+          "budgetNs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991, "description": "Execution budget of the Task in nanoseconds." }
+        }
+      }
+    },
+    "crossCoreLatencyNs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["connection", "maxNs"],
+        "additionalProperties": false,
+        "properties": {
+          "connection": { "type": "string", "minLength": 1, "description": "Route identity of a connection occurrence." },
+          "maxNs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991, "description": "Largest cross-core transfer latency in nanoseconds." }
+        }
+      }
+    }
+  }
+}

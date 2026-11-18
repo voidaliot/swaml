@@ -1,0 +1,232 @@
+package DoorDeployment {
+  /** The task mapping of the door model, in its shape, with Swaml::Os. Two Cores carry the door module's tasks. ComMain keeps its periodic main functions on the 20 ms task of core 1, while its receive entries run on the CAN interrupt and the low event task of the same Core (operation placement, T2, T7). The deploy order fixes the in-task position: rxMainFunction runs before txMainFunction in every 20 ms slot although the schedule lists it second. The 10 ms supervision task has the higher priority, so at a shared instant it observes the state before the 20 ms functions. NvM writes suspend and run on the extended background task (T4). The switch panel, a LIN slave, runs on a plain Node of the same platform with no OS Core below it, so its entries need no Task; a component left on the door module by the root placement would need one, because the door module has OS Cores below it. Each placement is checked statically; with zero-cost steps the run orders equal-time work by priority and in-task position only. */
+  import Swaml::Platform;
+  import Swaml::Os;
+  enum PowerMode {
+    run,
+    sleep
+  }
+  port def CanRx {
+    provides event pdu(lockRequest: uint);
+  }
+  port def ModeState {
+    provides attribute current: PowerMode = PowerMode.run;
+  }
+  port def PowerState {
+    provides event changed(m: PowerMode);
+  }
+  port def DoorStatus {
+    provides event status(lockRequest: uint);
+  }
+  port def LinBus {
+    provides event header(frameId: uint);
+  }
+  port def NvmStore {
+    requires operation writeAll() returns bool;
+  }
+  component def CanInterface {
+    /** Lower-layer reception on the CAN interrupt: forwards each frame to ComMain. */
+    reversed port bus: CanRx;
+    port com: CanRx;
+    attribute frames: uint = 0;
+    operation rxIndication(lockRequest: uint) {
+      frames = frames + 1;
+      publish com.pdu(lockRequest);
+    }
+    schedule {
+      on receive bus.pdu(lockRequest) rxIndication(lockRequest) deadline 1ms;
+    }
+  }
+  component def ComMain {
+    /** Com main functions. storePdu is the RTE buffer update on the CAN interrupt; the main functions copy and transmit every 20 ms. */
+    reversed port pdus: CanRx;
+    reversed port mode: PowerState;
+    port tx: DoorStatus;
+    attribute pending: uint = 0;
+    attribute received: uint = 0;
+    attribute sent: uint = 0;
+    attribute supervised: uint = 0;
+    attribute supervisions: uint = 0;
+    attribute asleep: bool = false;
+    operation storePdu(lockRequest: uint) {
+      pending = lockRequest;
+    }
+    operation onMode(m: PowerMode) {
+      asleep = m == PowerMode.sleep;
+    }
+    operation txMainFunction() {
+      sent = received;
+      publish tx.status(sent);
+    }
+    operation rxMainFunction() {
+      received = pending;
+    }
+    operation supervise() {
+      supervised = sent;
+      supervisions = supervisions + 1;
+    }
+    schedule {
+      on every 20ms txMainFunction() deadline 5ms;
+      on every 20ms rxMainFunction() deadline 2ms;
+      on receive pdus.pdu(lockRequest) storePdu(lockRequest) deadline 1ms;
+      on receive mode.changed(m) onMode(m);
+      on every 10ms supervise() deadline 10ms;
+    }
+  }
+  component def NvmManager {
+    /** Writes all blocks at shutdown; each write waits for the flash driver, so NvM needs an extended task. */
+    reversed port api: NvmStore;
+    attribute writes: uint = 0;
+    operation writeAll() returns bool {
+      wait 3ms;
+      writes = writes + 1;
+      return true;
+    }
+    schedule {
+      on call api.writeAll() writeAll();
+    }
+  }
+  component def EcuMode {
+    /** Distributes the power mode and requests the NvM write-all when it changes to sleep. */
+    reversed port mode: ModeState;
+    port state: PowerState;
+    port nvm: NvmStore;
+    attribute stored: bool = false;
+    operation onMode(m: PowerMode) {
+      publish state.changed(m);
+      if (m == PowerMode.sleep) {
+        stored = nvm.writeAll();
+      }
+    }
+    schedule {
+      on receive mode.current(m) onMode(m);
+    }
+  }
+  component def LinSwitchPanel {
+    /** A LIN slave without an operating system: it answers each frame header and checks the bus every 100 ms. */
+    reversed port bus: LinBus;
+    attribute responses: uint = 0;
+    attribute checks: uint = 0;
+    operation respond(frameId: uint) {
+      responses = responses + 1;
+    }
+    operation monitorBus() {
+      checks = checks + 1;
+    }
+    schedule {
+      on receive bus.header(frameId) respond(frameId);
+      on every 100ms monitorBus();
+    }
+  }
+  component def DoorControlUnit {
+    reversed port can: CanRx;
+    reversed port mode: ModeState;
+    port status: DoorStatus;
+    component canIf: CanInterface;
+    component comMain: ComMain;
+    component nvm: NvmManager;
+    component ecuMode: EcuMode;
+    connect (can, canIf.bus);
+    connect (canIf.com, comMain.pdus);
+    connect (mode, ecuMode.mode);
+    connect (ecuMode.state, comMain.mode);
+    connect (comMain.tx, status);
+    connect (ecuMode.nvm, nvm.api);
+  }
+  component def SafetyCore specializes Core {
+    /** Core 0: mode management. */
+    component taskEventLow: Task {
+      redefines const attribute kind: TaskKind = TaskKind.extended;
+      redefines const attribute responseNs: uint = 10ms;
+      redefines const attribute priority: uint = 15;
+    }
+  }
+  component def ComfortCore specializes Core {
+    /** Core 1: communication and memory services. */
+    component isrCan: Task {
+      redefines const attribute kind: TaskKind = TaskKind.isr;
+      redefines const attribute responseNs: uint = 500us;
+      redefines const attribute priority: uint = 60;
+    }
+    component task10ms: Task {
+      redefines const attribute periodNs: uint = 10ms;
+      redefines const attribute priority: uint = 40;
+    }
+    component task20ms: Task {
+      redefines const attribute periodNs: uint = 20ms;
+      redefines const attribute priority: uint = 30;
+    }
+    component taskEventLow: Task {
+      redefines const attribute responseNs: uint = 5ms;
+      redefines const attribute priority: uint = 18;
+    }
+    component taskBackground: Task {
+      redefines const attribute kind: TaskKind = TaskKind.extended;
+      redefines const attribute priority: uint = 1;
+    }
+  }
+  component def DoorModule specializes Node {
+    component core0: SafetyCore;
+    component core1: ComfortCore;
+  }
+  component def BodyPlatform specializes Platform {
+    component doorModules: DoorModule[2];
+    component switchPanelNode: Node;
+  }
+  component def BodyControlModule {
+    /** Interface-only actor: the body controller on the CAN bus and the power mode master. */
+    port can: CanRx;
+    port mode: ModeState;
+    reversed port status: DoorStatus;
+    port lin: LinBus;
+  }
+  component dcu: DoorControlUnit;
+  component bcm: BodyControlModule;
+  component switchPanel: LinSwitchPanel;
+  component vehicle: BodyPlatform;
+  connect bodyCan (bcm.can, dcu.can);
+  connect modeLine (bcm.mode, dcu.mode);
+  connect statusLine (dcu.status, bcm.status);
+  connect linSlot (bcm.lin, switchPanel.bus);
+  deployment 'Front left door' of dcu on vehicle {
+    /** rxMainFunction is placed before the rest of ComMain on the 20 ms task, so it runs first in each slot. */
+    deploy on doorModules[0];
+    deploy canIf on doorModules[0].core1.isrCan;
+    deploy comMain.rxMainFunction on doorModules[0].core1.task20ms;
+    deploy comMain on doorModules[0].core1.task20ms;
+    deploy comMain.storePdu on doorModules[0].core1.isrCan;
+    deploy comMain.onMode on doorModules[0].core1.taskEventLow;
+    deploy comMain.supervise on doorModules[0].core1.task10ms;
+    deploy nvm on doorModules[0].core1.taskBackground;
+    deploy ecuMode on doorModules[0].core0.taskEventLow;
+  }
+  deployment 'Switch panel' of switchPanel on vehicle {
+    /** A plain Node with no Core below it: outside the task rules (WP8-S04), as in the door showcase. */
+    deploy on switchPanelNode;
+  }
+  associate bcm to 'A request is transmitted in the next slot', 'Supervision sees the state before the slot', 'Shutdown stores through the background task';
+  test 'A request is transmitted in the next slot' of dcu {
+    /** The PDU stored at 5 ms is copied by rxMainFunction and transmitted by txMainFunction in the 20 ms slot, in deploy order. */
+    wait 5ms;
+    publish bcm.can.pdu(7);
+    wait 20ms;
+    assert dcu.comMain.pending == 7 and dcu.comMain.received == 7 and dcu.comMain.sent == 7;
+    assert dcu.canIf.frames == 1;
+  }
+  test 'Supervision sees the state before the slot' of dcu {
+    /** At 20 ms the 10 ms task (priority 40) runs before the 20 ms task (priority 30): it still sees nothing sent. At 30 ms it sees the PDU. */
+    wait 5ms;
+    publish bcm.can.pdu(9);
+    wait 20ms;
+    assert dcu.comMain.sent == 9 and dcu.comMain.supervised == 0 and dcu.comMain.supervisions == 2;
+    wait 10ms;
+    assert dcu.comMain.supervised == 9 and dcu.comMain.supervisions == 3;
+  }
+  test 'Shutdown stores through the background task' of dcu {
+    /** The mode manager forwards the sleep request to ComMain; the write-all waits 3 ms on the extended background task. */
+    wait 2ms;
+    send bcm.mode.current(PowerMode.sleep);
+    wait 5ms;
+    assert dcu.comMain.asleep and dcu.ecuMode.stored and dcu.nvm.writes == 1;
+  }
+}

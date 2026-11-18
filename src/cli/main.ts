@@ -9,6 +9,7 @@ import { createSwamlServices } from '../language/swaml-module.js';
 import { formatDocument, FormattingSafetyError } from '../language/formatter.js';
 import { LANGUAGE_VERSION, languageArguments, withoutLanguageVersion } from './options.js';
 import { simulateCommand, testCommand, TEST_USAGE } from './run.js';
+import { bindingCommand, BINDING_USAGE } from './binding.js';
 try {
     const args = process.argv.slice(2);
     if (args[0] === 'simulate') {
@@ -17,11 +18,14 @@ try {
     else if (args[0] === 'test') {
         process.exitCode = await testCommand(withoutLanguageVersion(args.slice(1)));
     }
+    else if (args[0] === 'binding') {
+        process.exitCode = await bindingCommand(args.slice(1));
+    }
     else {
     const json = args.includes('--json'), format = args.includes('--format'), checkFormat = args.includes('--check-format');
     const files = languageArguments(args.filter(a => !['--json', '--format', '--check-format'].includes(a)));
     if (!files.length || format && checkFormat)
-        throw new Error('Usage: swaml [--language-version 2.3] [--json] [--format|--check-format] file.swaml [more files...]\n       swaml simulate [--language-version 2.3] [--target Package|Package::component] (--options options.json | --until-ns N) file.swaml [more files...]\n       ' + TEST_USAGE.replace('Usage: ', ''));
+        throw new Error('Usage: swaml [--language-version 2.3] [--json] [--format|--check-format] file.swaml [more files...]\n       swaml simulate [--language-version 2.3] [--target Package|Package::component] (--options options.json | --until-ns N) file.swaml [more files...]\n       ' + TEST_USAGE.replace('Usage: ', '') + '\n       ' + BINDING_USAGE);
     const { shared, Swaml } = createSwamlServices(NodeFileSystem);
     const docs = await Promise.all(files.map(f => shared.workspace.LangiumDocuments.getOrCreateDocument(URI.file(resolve(f)))));
     await shared.workspace.DocumentBuilder.build(docs, { validation: true });

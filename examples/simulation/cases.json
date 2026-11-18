@@ -127,6 +127,15 @@
       "ComMainGating::Transmission pauses while asleep, reception continues": "pass",
       "ComMainGating::The transmit timer resumes after waking": "pass"
     },
+    "examples/52-door-deployment.swaml": {
+      "DoorDeployment::A request is transmitted in the next slot": "pass",
+      "DoorDeployment::Supervision sees the state before the slot": "pass",
+      "DoorDeployment::Shutdown stores through the background task": "pass"
+    },
+    "examples/53-task-order.swaml": {
+      "TaskOrder::Priority first, then deploy order": "pass",
+      "TaskOrder::The interrupt stores the edge and flags it": "pass"
+    },
     "examples/notation/catalog.swaml": {
       "Notation::Startup": "pass"
     },

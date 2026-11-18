@@ -81,7 +81,7 @@ test('WP3-M01 the packages are the versioned source libraries/swaml-2.3.swaml, a
     assert.equal(STANDARD_LIBRARY, read('libraries/swaml-2.0.swaml'));
     assert.deepEqual(library().map(d => d.uri.toString()), ['builtin:/swaml-2.0.swaml', 'builtin:/swaml-2.3.swaml']);
     const docs = library();
-    assert.deepEqual((docs[1].parseResult.value as a.Model).packages.map(p => p.name), ['Swaml::Numeric', 'Swaml::Text', 'Swaml::Time']);
+    assert.deepEqual((docs[1].parseResult.value as a.Model).packages.map(p => p.name), ['Swaml::Numeric', 'Swaml::Text', 'Swaml::Time', 'Swaml::Os']);
     for (const [name, intrinsic] of Object.entries(LIBRARY_INTRINSICS)) {
         const op = libraryOperations().get(name)!;
         assert.equal(libraryIntrinsic(op), intrinsic, name);
@@ -252,26 +252,26 @@ const SHADOW = (name: string) => `package ${name} { operation def sqrt(v: real) 
 test('WP3-L04 hiding follows the workspace through updates: add, delete (a deletion-only update), rename away and back (review R1)', async () => {
     const w = lspWorkspace();
     await w.put('app.swaml', APP);
-    assert.deepEqual([w.library(), w.messages('app.swaml'), w.runs('app.swaml')], [['Swaml::Numeric', 'Swaml::Text', 'Swaml::Time'], [], { r: 4 }]);
+    assert.deepEqual([w.library(), w.messages('app.swaml'), w.runs('app.swaml')], [['Swaml::Numeric', 'Swaml::Text', 'Swaml::Time', 'Swaml::Os'], [], { r: 4 }]);
     await w.put('user.swaml', SHADOW('Swaml::Numeric'));
-    assert.deepEqual([w.library(), w.messages('app.swaml'), w.runs('app.swaml', 'user.swaml')], [['Swaml::Text', 'Swaml::Time'], [], { r: 8 }]);
+    assert.deepEqual([w.library(), w.messages('app.swaml'), w.runs('app.swaml', 'user.swaml')], [['Swaml::Text', 'Swaml::Time', 'Swaml::Os'], [], { r: 8 }]);
     // Deleting the shadowing file restores the library, and the app relinks without being edited.
     await w.remove('user.swaml');
-    assert.deepEqual([w.library(), w.messages('app.swaml'), w.runs('app.swaml')], [['Swaml::Numeric', 'Swaml::Text', 'Swaml::Time'], [], { r: 4 }]);
+    assert.deepEqual([w.library(), w.messages('app.swaml'), w.runs('app.swaml')], [['Swaml::Numeric', 'Swaml::Text', 'Swaml::Time', 'Swaml::Os'], [], { r: 4 }]);
     // Rename the package away and back in place.
     await w.put('user.swaml', SHADOW('Swaml::Numeric'));
-    assert.deepEqual(w.library(), ['Swaml::Text', 'Swaml::Time']);
+    assert.deepEqual(w.library(), ['Swaml::Text', 'Swaml::Time', 'Swaml::Os']);
     await w.put('user.swaml', SHADOW('Mine'));
-    assert.deepEqual([w.library(), w.messages('app.swaml'), w.runs('app.swaml', 'user.swaml')], [['Swaml::Numeric', 'Swaml::Text', 'Swaml::Time'], [], { r: 4 }]);
+    assert.deepEqual([w.library(), w.messages('app.swaml'), w.runs('app.swaml', 'user.swaml')], [['Swaml::Numeric', 'Swaml::Text', 'Swaml::Time', 'Swaml::Os'], [], { r: 4 }]);
     await w.put('user.swaml', SHADOW('Swaml::Numeric'));
-    assert.deepEqual([w.library(), w.runs('app.swaml', 'user.swaml')], [['Swaml::Text', 'Swaml::Time'], { r: 8 }]);
+    assert.deepEqual([w.library(), w.runs('app.swaml', 'user.swaml')], [['Swaml::Text', 'Swaml::Time', 'Swaml::Os'], { r: 8 }]);
     // Two shadowing documents are duplicates, as in 2.2; deleting one keeps the package hidden, deleting both restores it.
     await w.put('user2.swaml', SHADOW('Swaml::Numeric'));
     assert.deepEqual(w.messages('user2.swaml'), ['Duplicate package Swaml::Numeric.']);
     await w.remove('user.swaml');
-    assert.deepEqual([w.library(), w.messages('user2.swaml'), w.messages('app.swaml'), w.runs('app.swaml', 'user2.swaml')], [['Swaml::Text', 'Swaml::Time'], [], [], { r: 8 }]);
+    assert.deepEqual([w.library(), w.messages('user2.swaml'), w.messages('app.swaml'), w.runs('app.swaml', 'user2.swaml')], [['Swaml::Text', 'Swaml::Time', 'Swaml::Os'], [], [], { r: 8 }]);
     await w.remove('user2.swaml');
-    assert.deepEqual([w.library(), w.messages('app.swaml'), w.runs('app.swaml')], [['Swaml::Numeric', 'Swaml::Text', 'Swaml::Time'], [], { r: 4 }]);
+    assert.deepEqual([w.library(), w.messages('app.swaml'), w.runs('app.swaml')], [['Swaml::Numeric', 'Swaml::Text', 'Swaml::Time', 'Swaml::Os'], [], { r: 4 }]);
 });
 test('WP3-L04 the index exports of the built-in 2.3 document follow the visible packages after hide and unhide (review R4)', async () => {
     const w = lspWorkspace(), index = w.services.shared.workspace.IndexManager, locator = w.services.Swaml.workspace.AstNodeLocator;
@@ -284,17 +284,17 @@ test('WP3-L04 the index exports of the built-in 2.3 document follow the visible 
         return entries.map(d => d.name).sort();
     };
     await w.put('app.swaml', APP);
-    assert.deepEqual(exported(), ['Swaml::Numeric', 'Swaml::Text', 'Swaml::Time']);
+    assert.deepEqual(exported(), ['Swaml::Numeric', 'Swaml::Os', 'Swaml::Text', 'Swaml::Time']);
     await w.put('user.swaml', SHADOW('Swaml::Numeric'));
-    assert.deepEqual(exported(), ['Swaml::Text', 'Swaml::Time']);
+    assert.deepEqual(exported(), ['Swaml::Os', 'Swaml::Text', 'Swaml::Time']);
     await w.remove('user.swaml');
-    assert.deepEqual(exported(), ['Swaml::Numeric', 'Swaml::Text', 'Swaml::Time']);
+    assert.deepEqual(exported(), ['Swaml::Numeric', 'Swaml::Os', 'Swaml::Text', 'Swaml::Time']);
 });
 test('WP3-M01 a library copy may differ only by a byte order mark, line ends and trailing whitespace (review R3)', async () => {
     const text = read('libraries/swaml-2.3.swaml');
     for (const copy of ['﻿' + text, text.replaceAll('\n', '\r\n'), text + '\n\n  ', text.trimEnd()]) {
         assert.equal(isLibraryCopy(copy), true);
-        assert.deepEqual((await parse(copy)).errors.map(e => e.code), ['SW2001', 'SW2001', 'SW2001']);
+        assert.deepEqual((await parse(copy)).errors.map(e => e.code), ['SW2001', 'SW2001', 'SW2001', 'SW2001']);
     }
     for (const changed of [' ' + text, text.replace('minInt', 'minimum'), text + '// note\n'])
         assert.equal(isLibraryCopy(changed), false);
@@ -314,7 +314,7 @@ test('WP3-L04 a call and a reference ambiguous with a library operation list the
 });
 test('WP3-M01 a byte-equal copy of a library document is a duplicate, hides nothing and needs no return paths for its intrinsics', async () => {
     const copy = await parse(read('libraries/swaml-2.3.swaml'));
-    assert.deepEqual(copy.errors.map(e => [e.code, e.message]), [['SW2001', 'Duplicate package Swaml::Numeric.'], ['SW2001', 'Duplicate package Swaml::Text.'], ['SW2001', 'Duplicate package Swaml::Time.']]);
+    assert.deepEqual(copy.errors.map(e => [e.code, e.message]), [['SW2001', 'Duplicate package Swaml::Numeric.'], ['SW2001', 'Duplicate package Swaml::Text.'], ['SW2001', 'Duplicate package Swaml::Time.'], ['SW2001', 'Duplicate package Swaml::Os.']]);
     const copy20 = await parse(read('libraries/swaml-2.0.swaml'));
     assert.ok(copy20.errors.every(e => e.code === 'SW2001' && String(e.message).startsWith('Duplicate package')), JSON.stringify(copy20.errors.map(e => e.message)));
     const changed = await parse(read('libraries/swaml-2.3.swaml') + '// a note\n');
