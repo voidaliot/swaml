@@ -1,3 +1,5 @@
 # Test editions
 
 The active 2.1 suite is test/v2/. TypeScript compilation and npm test explicitly select it. Files directly under test/ are preserved 1.x regression sources referenced by immutable historical books; they are not compatibility tests for the current parser. Reproduce those suites with their pinned historical revision, never by enabling a legacy parser fallback in current development.
+
+test/fixtures/compatibility-2-2/ holds the swa.ml 2.3 compatibility gate fixtures (rules WP1a-M01 to WP1a-M03 of docs/drafts/2.3/grammar.md), recorded once with the 3.1.0 implementation before any 2.3 change: the kept 2.2 grammar, the AST digests, resolved references, diagnostics and expression types, view projections and amendments of gate 1 (test/v2/compatibility-2-2.test.ts) and the results, resolved options and trace digests of gate 2 (node scripts/compatibility-2-2.mjs runs, part of npm run check). Gate 3 is test/v2/grammar-warnings.test.ts together with scripts/langium-generate.mjs. Never re-record or edit these fixtures to make a gate pass.

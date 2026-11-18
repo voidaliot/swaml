@@ -1,0 +1,4 @@
+{
+  "policy": "Only diagnostics and expression types of gate 1 may be amended, each by an exact recorded and current string, the rule or ADR that justifies it and a reason; references and gate-2 behaviour are never amended. See docs/RELEASE_2_3.md.",
+  "amendments": []
+}

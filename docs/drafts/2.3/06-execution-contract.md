@@ -1,6 +1,6 @@
 # 6. Reference execution contract: 2.3 changes (draft)
 
-**Draft for the unreleased standard 2.3; see [the draft index](README.md).** Target: [chapter 6](../../spec/06-execution-contract.md). The profile becomes `swaml-reference/2.3` when the candidate is allocated (WP1a); the Tier 2 timed profile `swaml-reference-timed/2.4` is not part of 2.3. Every rule below leaves a 2.2 model's run unchanged: gate 2 (WP1a-M02) compares complete traces with the frozen 3.1.0 fixture, ignoring only `profile` and `languageVersion`. New trace information appears only where new syntax is used.
+**Draft for the unreleased standard 2.3; see [the draft index](README.md).** Target: [chapter 6](../../spec/06-execution-contract.md). The profile became `swaml-reference/2.3` when the candidate was allocated (WP1a); the Tier 2 timed profile `swaml-reference-timed/2.4` is not part of 2.3. Every rule below leaves a 2.2 model's run unchanged: gate 2 (WP1a-M02) compares complete traces with the frozen 3.1.0 fixture, ignoring only `profile` and `languageVersion`. New trace information appears only where new syntax is used.
 
 ## 6.1 Lifecycle and time
 

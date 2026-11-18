@@ -1,0 +1,401 @@
+{
+  "width": 920,
+  "height": 390,
+  "elements": [
+    {
+      "kind": "rect",
+      "x": 1,
+      "y": 1,
+      "w": 918,
+      "h": 388,
+      "fill": "#fafafa",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 36,
+      "text": "Mixed directed port members",
+      "size": 21
+    },
+    {
+      "kind": "line",
+      "x1": 26,
+      "y1": 54,
+      "x2": 894,
+      "y2": 54,
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 45,
+      "y": 105,
+      "w": 230,
+      "h": 215,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 45,
+      "y": 105,
+      "w": 230,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 57,
+      "y": 128,
+      "text": "owning component",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 57,
+      "y": 163,
+      "text": "boundary: Boundary",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 245,
+      "y": 185,
+      "w": 60,
+      "h": 60,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 254,
+      "y1": 215,
+      "x2": 296,
+      "y2": 215,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 254,
+      "y1": 215,
+      "x2": 261,
+      "y2": 209,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 254,
+      "y1": 215,
+      "x2": 261,
+      "y2": 221,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 296,
+      "y1": 215,
+      "x2": 289,
+      "y2": 209,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 296,
+      "y1": 215,
+      "x2": 289,
+      "y2": 221,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 305,
+      "y1": 198,
+      "x2": 355,
+      "y2": 120,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 355,
+      "y1": 120,
+      "x2": 410,
+      "y2": 120,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 410,
+      "y1": 120,
+      "x2": 402,
+      "y2": 115,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 410,
+      "y1": 120,
+      "x2": 402,
+      "y2": 125,
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 430,
+      "y": 125,
+      "text": "provides attribute value: real",
+      "size": 14
+    },
+    {
+      "kind": "line",
+      "x1": 305,
+      "y1": 208,
+      "x2": 355,
+      "y2": 170,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 355,
+      "y1": 170,
+      "x2": 410,
+      "y2": 170,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 355,
+      "y1": 170,
+      "x2": 363,
+      "y2": 165,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 355,
+      "y1": 170,
+      "x2": 363,
+      "y2": 175,
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 430,
+      "y": 175,
+      "text": "requires event reset()",
+      "size": 14
+    },
+    {
+      "kind": "line",
+      "x1": 305,
+      "y1": 224,
+      "x2": 370,
+      "y2": 230,
+      "dash": false
+    },
+    {
+      "kind": "ellipse",
+      "x": 370,
+      "y": 218,
+      "w": 24,
+      "h": 24,
+      "fill": "#ffffff"
+    },
+    {
+      "kind": "text",
+      "x": 430,
+      "y": 235,
+      "text": "provides operation read() returns real",
+      "size": 14
+    },
+    {
+      "kind": "line",
+      "x1": 305,
+      "y1": 237,
+      "x2": 370,
+      "y2": 285,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 388.0,
+      "y1": 295.392,
+      "x2": 385.708,
+      "y2": 296.413,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 385.708,
+      "y1": 296.413,
+      "x2": 383.254,
+      "y2": 296.934,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 383.254,
+      "y1": 296.934,
+      "x2": 380.746,
+      "y2": 296.934,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 380.746,
+      "y1": 296.934,
+      "x2": 378.292,
+      "y2": 296.413,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 378.292,
+      "y1": 296.413,
+      "x2": 376.0,
+      "y2": 295.392,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 376.0,
+      "y1": 295.392,
+      "x2": 373.97,
+      "y2": 293.918,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 373.97,
+      "y1": 293.918,
+      "x2": 372.292,
+      "y2": 292.053,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 372.292,
+      "y1": 292.053,
+      "x2": 371.037,
+      "y2": 289.881,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 371.037,
+      "y1": 289.881,
+      "x2": 370.262,
+      "y2": 287.495,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 370.262,
+      "y1": 287.495,
+      "x2": 370.0,
+      "y2": 285.0,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 370.0,
+      "y1": 285.0,
+      "x2": 370.262,
+      "y2": 282.505,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 370.262,
+      "y1": 282.505,
+      "x2": 371.037,
+      "y2": 280.119,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 371.037,
+      "y1": 280.119,
+      "x2": 372.292,
+      "y2": 277.947,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 372.292,
+      "y1": 277.947,
+      "x2": 373.97,
+      "y2": 276.082,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 373.97,
+      "y1": 276.082,
+      "x2": 376.0,
+      "y2": 274.608,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 376.0,
+      "y1": 274.608,
+      "x2": 378.292,
+      "y2": 273.587,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 378.292,
+      "y1": 273.587,
+      "x2": 380.746,
+      "y2": 273.066,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 380.746,
+      "y1": 273.066,
+      "x2": 383.254,
+      "y2": 273.066,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 383.254,
+      "y1": 273.066,
+      "x2": 385.708,
+      "y2": 273.587,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 385.708,
+      "y1": 273.587,
+      "x2": 388.0,
+      "y2": 274.608,
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 430,
+      "y": 290,
+      "text": "requires operation acknowledge()",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 45,
+      "y": 355,
+      "text": "One square boundary; arrows for data/events, ball/socket for operation members.",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 45,
+      "y": 377,
+      "text": "Labels retain member identity. Reversed flips each direction and swaps each operation glyph.",
+      "size": 13
+    }
+  ]
+}

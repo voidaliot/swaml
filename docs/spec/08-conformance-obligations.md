@@ -39,6 +39,7 @@ Validation MUST rebuild semantic string paths as well as indexed references afte
 | E09 | One fresh after activation per successful whole completion after unlock, failure suppression and new context/deadline |
 | E10 | Run/source/target/profile/option provenance, package and isolated component targets, trace ordinals with statement sources, occurrence stores and open observed timing intervals |
 | E11 | Fresh package run per case script, release after startup entries, retained early actor input, on call replies, normal primary-subject calls with actual context/lock suspension and restoration, test inspection/helper access under its serial lock, stop on script completion or failure and pass/fail/inconclusive/no checks results with statement identities |
+| E20 | Every run, use case and test of the 2.2 corpus keeps its status, full final stores, machines, deployments, verdict and message and its complete trace, ignoring only `profile` and `languageVersion` (compatibility gate 2, compared with a fixture recorded with implementation 3.1.0) |
 
 A deterministic reference run may choose one permitted order/delivery outcome. Its tests do not establish all possible traces or real transport reliability. A target implementation identifies additional scheduling/transport assumptions and evidence. Idempotency annotations are checked declarations, not proofs of side-effect behavior.
 

@@ -1,0 +1,156 @@
+{
+  "width": 920,
+  "height": 390,
+  "elements": [
+    {
+      "kind": "rect",
+      "x": 1,
+      "y": 1,
+      "w": 918,
+      "h": 388,
+      "fill": "#fafafa",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 26,
+      "y": 36,
+      "text": "Expression calls and copied out values",
+      "size": 21
+    },
+    {
+      "kind": "line",
+      "x1": 26,
+      "y1": 54,
+      "x2": 894,
+      "y2": 54,
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 40,
+      "y": 140,
+      "w": 235,
+      "h": 130,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 40,
+      "y": 140,
+      "w": 235,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 52,
+      "y": 163,
+      "text": "entry",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 52,
+      "y": 198,
+      "text": "typed arguments",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 345,
+      "y": 140,
+      "w": 235,
+      "h": 130,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 345,
+      "y": 140,
+      "w": 235,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 357,
+      "y": 163,
+      "text": "operation",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 357,
+      "y": 198,
+      "text": "local expression call",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 357,
+      "y": 220,
+      "text": "or owned port request",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 650,
+      "y": 140,
+      "w": 225,
+      "h": 130,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 650,
+      "y": 140,
+      "w": 225,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 662,
+      "y": 163,
+      "text": "return",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 662,
+      "y": 198,
+      "text": "copied result / out",
+      "size": 12
+    },
+    {
+      "kind": "text",
+      "x": 662,
+      "y": 220,
+      "text": "copy-back on success",
+      "size": 12
+    },
+    {
+      "kind": "line",
+      "x1": 275,
+      "y1": 205,
+      "x2": 345,
+      "y2": 205,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 580,
+      "y1": 205,
+      "x2": 650,
+      "y2": 205,
+      "dash": false
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import {readStandardVersion} from './standard-version.mjs';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {existsSync,readdirSync} from 'node:fs';
 import {posix} from 'node:path';
 import {createHash} from 'node:crypto';
 import {EmptyFileSystem,URI} from 'langium';
@@ -11,6 +12,13 @@ import {runTests,simulate} from '../out/src/simulation/simulator.js';
 import {projectOperationTiming} from '../out/src/simulation/timing.js';
 const standardVersion=await readStandardVersion();
 const root=new URL('../',import.meta.url), check=process.argv.includes('--check');
+// An edition is released when its PDF and manifest are published under output/pdf. An unreleased candidate
+// links to the latest published MAJOR.MINOR edition instead, never to a tag or PDF that does not exist.
+const published=edition=>['pdf','manifest.json'].every(suffix=>existsSync(new URL(`output/pdf/SWAML-${edition}-Specification.${suffix}`,root)));
+const editionKey=edition=>edition.split('.').map(Number);
+const publishedEditions=readdirSync(new URL('output/pdf/',root)).map(f=>/^SWAML-(\d+\.\d+)-Specification\.pdf$/.exec(f)?.[1]).filter(e=>e&&published(e)).sort((x,y)=>{const [a,b]=[editionKey(x),editionKey(y)];return a[0]-b[0]||a[1]-b[1];});
+const publication={edition:published(standardVersion)?standardVersion:publishedEditions.at(-1),status:published(standardVersion)?'released':'unreleased candidate'};
+if(!publication.edition)throw Error('No published MAJOR.MINOR edition under output/pdf');
 const source=await readFile(new URL('examples/02-realtime-controller.swaml',root),'utf8');
 const {Swaml}=createSwamlServices(EmptyFileSystem);const doc=await parseHelper(Swaml)(source,{documentUri:URI.parse('memory:///examples/02-realtime-controller.swaml'),validation:true});
 if(doc.diagnostics?.some(d=>d.severity===1))throw Error(JSON.stringify(doc.diagnostics));
@@ -26,7 +34,7 @@ const sequence=run.trace.filter(t=>t.kind==='offer').filter((t,i,all)=>all.findI
 const pkg=doc.parseResult.value.packages[0],controller=pkg.elements.find(x=>isComponentDef(x)&&x.name==='Controller'),regulate=controller.members.find(x=>isOperation(x)&&x.name==='regulate');
 const requirements=pkg.elements.filter(isRequirement).map(r=>({name:r.name,attributes:r.attributes.map(a=>({name:a.name,type:a.type.primitive,value:a.value.$cstNode.text}))}));
 const flow=regulate.body.statements.map(s=>({kind:s.$type,code:s.$cstNode.text}));
-const data={cases,satisfactions,sequence,requirements,flow,languageVersion:standardVersion,edition:standardVersion,status:'released',model:'examples/02-realtime-controller.swaml',source,sha256:createHash('sha256').update(source).digest('hex'),projection,timing:projectOperationTiming(run),run:{profile:run.profile,target:run.target,status:run.status,untilNs:run.options.untilNs,trace:run.trace,stores:run.stores}};
+const data={cases,satisfactions,sequence,requirements,flow,languageVersion:standardVersion,edition:standardVersion,status:publication.status,publishedEdition:publication.edition,model:'examples/02-realtime-controller.swaml',source,sha256:createHash('sha256').update(source).digest('hex'),projection,timing:projectOperationTiming(run),run:{profile:run.profile,target:run.target,status:run.status,untilNs:run.options.untilNs,trace:run.trace,stores:run.stores}};
 const path=new URL('showcase/src/generated/model.json',root),text=JSON.stringify(data,null,2)+'\n';
 if(check){if(await readFile(path,'utf8')!==text)throw Error('Stale site model/trace; run scripts/build-showcase-data.mjs');}
 else{await mkdir(new URL('showcase/src/generated/',root),{recursive:true});await writeFile(path,text);for(const [input,output] of [['docs/notation/2.0/ports.svg','mixed-ports.svg'],['examples/02-realtime-controller.swaml','controller.swaml'],['docs/USER_GUIDE.md','usage-guide.md'],['docs/SIMULATION.md','simulation.md'],['docs/IMPLEMENTATION_STATUS.md','implementation-status.md'],['docs/AI_GUIDE.md','ai-guide.md'],['skills/swaml-author/SKILL.md','swaml-author-SKILL.md'],['skills/swaml-validate/SKILL.md','swaml-validate-SKILL.md']]){const dest=new URL('showcase/public/downloads/'+output,root);await mkdir(new URL('showcase/public/downloads/',root),{recursive:true});let content=await readFile(new URL(input,root),'utf8');if(input.endsWith('.md'))content=content.replace(/\]\(([^)]+)\)/g,(all,target)=>/^[a-z]+:|^#/.test(target)?all:'](https://github.com/voidaliot/swaml/blob/main/'+posix.normalize(posix.join(posix.dirname(input),target))+')');await writeFile(dest,content);}}
