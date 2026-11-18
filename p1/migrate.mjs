@@ -77,6 +77,8 @@ function migrateMachine(src, doc, op, b) {
     if (kind(t) === 'completion') m.blocked.push({ state: s.name, guard: t.guard ? cstText(t.guard) : '', target: t.target, effect: t.effect ? cstText(t.effect) : '', text: cstText(t).replace(/\s+/g, ' ') });
   // A non-final state with no transition waits forever in 2.2; stage 1 would read it as a named step that falls through.
   for (const s of b.states) if (!s.final && !s.transitions.length && !(s.deferrals ?? []).length) m.blocked.push({ state: s.name, deadEnd: true, text: 'non-final state without transitions (waits forever in 2.2)' });
+  // Owner decision: no keep/defer feature; a deferring machine needs a hand rewrite (stored-request pattern).
+  if (MODE === 'none') for (const s of b.states) if ((s.deferrals ?? []).length) m.blocked.push({ state: s.name, defer: true, text: `defer ${(s.deferrals ?? []).flatMap(d => d.endpoints).join(', ')} (no keep in stage 1: rewrite with a stored request)` });
   if (!b.states.some(s => s.name === b.initial)) m.blocked.push({ state: b.initial, text: 'unknown initial state (invalid source)' });
   else if (b.states.find(s => s.name === b.initial).final) m.blocked.push({ state: b.initial, text: 'initial state is final' });
   if (m.blocked.length) return { m };

@@ -11,6 +11,8 @@ const { simulate } = await import(base + 'src/simulation/simulator.js');
 
 /** ports: { name: [member declarations from the controller's side] }; the driver gets reversed ports and sinks for outputs. */
 function model({ pkg, types = '', ports, attributes = '', ops = '', control, entry, emitAll }, script) {
+  // Owner decision (no keep/ignore, unhandled input dropped by default): P1_STRIP=1 removes the disposition lines.
+  if (process.env.P1_STRIP) control = control.replace(/\n\s*(keep|ignore) [^;]*;/g, '');
   const defs = Object.entries(ports).map(([p, ms]) => `  port def P_${p} { ${ms.map(m => m + ';').join(' ')} }`).join('\n');
   const cports = Object.keys(ports).map(p => `port ${p}: P_${p};`).join(' ');
   const dports = Object.keys(ports).map(p => `reversed port ${p}: P_${p};`).join(' ');

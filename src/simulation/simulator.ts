@@ -1220,7 +1220,7 @@ class Interpreter {
             known.set(endpointName, members(c.structure).filter(isExecutable).find(op => flowStates(op).length > 0 && nodes(body(op)!).some(n => (a.isTransition(n) || a.isReceiveBranch(n)) && n.endpoint === endpointName)));
         return known.get(endpointName);
     }
-    /** A member's disposition at a waiting point: handled, the state's override, else the operation default (keep when none is written). */
+    /** A member's disposition at a waiting point: handled, the state's override, else the operation default (drop when none is written). */
     private disposition(op: Executable, s: a.StateStep | undefined, endpointName: string): 'handled' | 'keep' | 'ignore' {
         if (s?.transitions.some(t => t.endpoint === endpointName))
             return 'handled';
@@ -1230,7 +1230,8 @@ class Interpreter {
         if (override)
             return override.kind as 'keep' | 'ignore';
         const operationDefault = body(op)!.dispositions.find(d => d.endpoints.includes(endpointName));
-        return (operationDefault?.kind ?? 'keep') as 'keep' | 'ignore';
+        // Owner decision: unhandled input is dropped by default (P1_DEFAULT=keep restores the keep-by-default variant).
+        return (operationDefault?.kind ?? (process.env.P1_DEFAULT === 'keep' ? 'keep' : 'ignore')) as 'keep' | 'ignore';
     }
     /** SIF-T02: one keep observation per message, the first time a waiting point keeps it. */
     private keepObservation(f: Frame, s: a.StateStep | undefined, endpointName: string, m: Message): void {
