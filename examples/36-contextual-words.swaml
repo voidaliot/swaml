@@ -49,16 +49,19 @@ package UplinkSession {
       send in.state(state);
     }
     operation session() {
-      initial idle;
       state idle {
-        on receive in.coverage(in) when (in) to working {
-          enter(next(state, in));
+        on receive in.coverage(in) {
+          if (in) {
+            enter(next(state, in));
+            exit;
+          }
         }
       }
       state working {
-        on receive in.coverage(in) to idle {
+        on receive in.coverage(in) {
           enter(next(state, in));
           count(view, covered);
+          to idle;
         }
       }
     }

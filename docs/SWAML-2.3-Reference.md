@@ -1721,7 +1721,7 @@ swa.ml 2.3; Policies::Demo.
 
 ![Policy-bearing connection](notation/2.3/connection.svg)
 
-**Source:** [Policies::Demo](../examples/10-reusable-qos.swaml). **Grammar:** Connect, QosPolicy, PolicySetting.
+**Source:** [Policies::Demo](../examples/10-reusable-qos.swaml). **Grammar:** Connect, MemberPolicy, QosPolicy, PolicySetting.
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 
@@ -1771,7 +1771,7 @@ swa.ml 2.3; Values::Demo.
 
 ![Statements and decisions](notation/2.3/flow.svg)
 
-**Source:** [Values::Demo](../examples/05-values-and-flow.swaml). **Grammar:** Block, Statement, Assign, If.
+**Source:** [Values::Demo](../examples/05-values-and-flow.swaml). **Grammar:** Block, Statement, Assign, If, ElseIf.
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 
@@ -1815,13 +1815,13 @@ swa.ml 2.3; Interrupts::Receiver.
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 
-## Ordered state transitions
+## States as steps of the flow
 
 swa.ml 2.3; States::Demo.lamp.
 
-![Ordered state transitions](notation/2.3/states.svg)
+![States as steps of the flow](notation/2.3/states.svg)
 
-**Source:** [States::Demo.lamp](../examples/04-stateful-function.swaml). **Grammar:** State, StateAction, Transition.
+**Source:** [States::Demo.lamp](../examples/04-stateful-function.swaml). **Grammar:** State, StateAction, Transition, Deferral, StateStep, StateMember, EventLine, ShortBody, Leave, Exit, Jump.
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 
@@ -1901,7 +1901,7 @@ swa.ml 2.3; Values::Demo.
 
 ![Typed expressions and operators](notation/2.3/expressions.svg)
 
-**Source:** [Values::Demo](../examples/05-values-and-flow.swaml). **Grammar:** Expression, OrExpression, AndExpression, EqualityExpression, RelationalExpression, AdditiveExpression, MultiplicativeExpression, UnaryExpression, PrimaryExpression, BinaryExpression, ReferenceExpression, ValuePath, Literal, Numeric.
+**Source:** [Values::Demo](../examples/05-values-and-flow.swaml). **Grammar:** Expression, OrExpression, AndExpression, EqualityExpression, RelationalExpression, AdditiveExpression, MultiplicativeExpression, UnaryExpression, PrimaryExpression, BinaryExpression, ConditionalExpression, ReferenceExpression, Selector, ValuePath, Literal, Numeric.
 
 Preserve owned source and distinct definition/occurrence identities. Drawing is a projection; it does not add execution semantics. A canonical source-backed projection; geometry is separate from semantics.
 
@@ -3693,21 +3693,19 @@ package States {
   component Demo {
     attribute lit: bool = false;
     operation lamp() {
-      initial Off;
       state Off {
-        after 2ms to On {
-        }
+        after 2ms exit;
       }
       state On {
         on entry {
           lit = true;
-        } on exit {
+        }
+        on exit {
           lit = false;
         }
-        after 3ms to Done {
-        }
+        after 3ms exit;
       }
-      final state Done {
+      state Done {
       }
     }
     schedule {
@@ -5565,16 +5563,19 @@ package UplinkSession {
       send in.state(state);
     }
     operation session() {
-      initial idle;
       state idle {
-        on receive in.coverage(in) when (in) to working {
-          enter(next(state, in));
+        on receive in.coverage(in) {
+          if (in) {
+            enter(next(state, in));
+            exit;
+          }
         }
       }
       state working {
-        on receive in.coverage(in) to idle {
+        on receive in.coverage(in) {
           enter(next(state, in));
           count(view, covered);
+          to idle;
         }
       }
     }
@@ -6022,27 +6023,23 @@ package Backoff {
     attribute attempts: uint = 0;
     attribute connectedAt: uint = 0;
     operation run() {
-      initial Connecting;
       state Connecting {
         on entry {
           attempts = attempts + 1;
         }
-        after 10ms to Backoff {
-        }
+        after 10ms exit;
       }
       state Backoff {
         on entry {
           delayMs = minInt(delayMs * 2, capMs);
         }
-        after (delayMs * 1ms) to Retry {
-        }
+        after (delayMs * 1ms) exit;
       }
       state Retry {
         on entry {
           connectedAt = now();
         }
-        after 5ms to Connecting {
-        }
+        after 5ms to Connecting;
       }
     }
     schedule {
@@ -6119,22 +6116,20 @@ package LockPulse {
       pulseMs = ms;
     }
     operation control() {
-      initial unlocked;
       state unlocked {
-        on receive requests.lock() to locking {
-        }
+        on receive requests.lock() exit;
       }
       state locking {
         on entry {
           pulses = pulses + 1;
         }
-        after 250ms to locked {
+        after 250ms {
           pulseEndNs = now();
+          exit;
         }
       }
       state locked {
-        on receive requests.lock() to locking {
-        }
+        on receive requests.lock() to locking;
       }
     }
     schedule {
@@ -6151,22 +6146,20 @@ package LockPulse {
       pulseMs = ms;
     }
     operation control() {
-      initial unlocked;
       state unlocked {
-        on receive requests.lock() to locking {
-        }
+        on receive requests.lock() exit;
       }
       state locking {
         on entry {
           pulses = pulses + 1;
         }
-        after (pulseMs * 1ms) to locked {
+        after (pulseMs * 1ms) {
           pulseEndNs = now();
+          exit;
         }
       }
       state locked {
-        on receive requests.lock() to locking {
-        }
+        on receive requests.lock() to locking;
       }
     }
     schedule {

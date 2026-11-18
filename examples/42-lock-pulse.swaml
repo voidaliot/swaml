@@ -14,22 +14,20 @@ package LockPulse {
       pulseMs = ms;
     }
     operation control() {
-      initial unlocked;
       state unlocked {
-        on receive requests.lock() to locking {
-        }
+        on receive requests.lock() exit;
       }
       state locking {
         on entry {
           pulses = pulses + 1;
         }
-        after 250ms to locked {
+        after 250ms {
           pulseEndNs = now();
+          exit;
         }
       }
       state locked {
-        on receive requests.lock() to locking {
-        }
+        on receive requests.lock() to locking;
       }
     }
     schedule {
@@ -46,22 +44,20 @@ package LockPulse {
       pulseMs = ms;
     }
     operation control() {
-      initial unlocked;
       state unlocked {
-        on receive requests.lock() to locking {
-        }
+        on receive requests.lock() exit;
       }
       state locking {
         on entry {
           pulses = pulses + 1;
         }
-        after (pulseMs * 1ms) to locked {
+        after (pulseMs * 1ms) {
           pulseEndNs = now();
+          exit;
         }
       }
       state locked {
-        on receive requests.lock() to locking {
-        }
+        on receive requests.lock() to locking;
       }
     }
     schedule {

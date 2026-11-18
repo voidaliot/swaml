@@ -519,9 +519,9 @@
     },
     {
       "id": "states",
-      "title": "Ordered state transitions",
+      "title": "States as steps of the flow",
       "context": "swa.ml 2.3; States::Demo.lamp",
-      "syntax": "operation lamp() {\n      initial Off;\n      state Off {\n        after 2ms to On {\n        }\n      }\n      state On {\n        on entry {\n          lit = true;\n        } on exit {\n          lit = false;\n        }\n        after 3ms to Done {\n        }\n      }\n      final state Done {\n      }\n    }",
+      "syntax": "operation lamp() {\n      state Off {\n        after 2ms exit;\n      }\n      state On {\n        on entry {\n          lit = true;\n        }\n        on exit {\n          lit = false;\n        }\n        after 3ms exit;\n      }\n      state Done {\n      }\n    }",
       "model": "examples/04-stateful-function.swaml",
       "subject": "States::Demo.lamp",
       "template": "state",
