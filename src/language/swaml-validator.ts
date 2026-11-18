@@ -12,7 +12,7 @@ const insideConditional = (e: AstNode): boolean => { for (let n = e.$container; 
 /** The name of the attribute, requirement attribute or policy setting whose initializer contains e. */
 const initialized = (e: AstNode): string => { for (let n: AstNode | undefined = e; n; n = n.$container) if (a.isAttribute(n) || a.isPolicySetting(n) || a.isPortMember(n)) return n.name; return ''; };
 const isExpression = (n: unknown): n is a.Expression => !!n && typeof n === 'object' && EXPRESSION_TYPES.has((n as AstNode).$type);
-import { forwardedPorts, isSampledMember, memberPolicy, memberQos, sampledMembers, sampledReadForm, samplingPort, attributeAccess, isCompletion, isLiteralTrue, isReactionForm, transitionKind, useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_2_3_URI, container, constantValue, displayText, entryDeadline, entryPeriod, representableDuration, settingDuration, triggerIdentity, type ConstantProblem } from './semantic.js';
+import { forwardedPorts, isSampledMember, memberPolicy, memberQos, optsIn, sampledMembers, sampledReadForm, sampledReads, attributeAccess, isCompletion, isLiteralTrue, isReactionForm, transitionKind, useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_2_3_URI, container, constantValue, displayText, entryDeadline, entryPeriod, representableDuration, settingDuration, triggerIdentity, type ConstantProblem } from './semantic.js';
 import { ambiguousNameMessage } from './swaml-scope.js';
 type Env = Map<string, {
     type: string;
@@ -245,7 +245,7 @@ export class SwamlValidator {
                 this.report(ep.port, 'SW2004', `${path} requires attributes or operations and needs one peer.`);
         }
         this.schedules(c);
-        this.ownership(c, forwarded);
+        this.ownership(c, forwarded, this.inheritedSamples(c));
         if (a.isPackage(c.$container) && a.isComponentUsage(c) && occurrenceCount(c) > OCCURRENCE_LIMIT)
             this.report(c, 'SW2013', 'Expanded root exceeds the reference validation limit of ' + OCCURRENCE_LIMIT + ' component occurrences.');
     }
@@ -552,16 +552,16 @@ export class SwamlValidator {
     }
     /**
      * A sampled read p.m (WP6-S01, WP6-S08) in component c: the member type, '?' after reporting an error, or undefined
-     * when the reference is not the 2.3 form, because p is not an owned port that opts in to sampling (samplingPort), so
-     * that every 2.2 source keeps its 2.2 diagnostics. Errors: not a required attribute (SW2006, WP6-D05), a forwarded
-     * boundary (SW2005, WP6-D01), an initializer (SW2006, WP6-D05) and no initial value (SW2004, WP6-D02). In the
-     * constant sublanguage (period and deadline expressions) the constant check reports it (SW2007, WP6-D05).
+     * when the reference is not the 2.3 form, because member m of the owned port p declares no initial value (optsIn),
+     * so that every 2.2 source keeps its 2.2 diagnostics. Errors: not a required attribute (SW2006, WP6-D05), a
+     * forwarded boundary (SW2005, WP6-D01) and an initializer (SW2006, WP6-D05). In the constant sublanguage (period
+     * and deadline expressions) the constant check reports it (SW2007, WP6-D05).
      */
     private sampledRead(e: a.ReferenceExpression, c: Structure, op: Executable | undefined): string | undefined {
         const form = sampledReadForm(e, c);
         if (!form)
             return undefined;
-        const text = formatPath(form.port.name + '.' + form.name, MESSAGE_SPELLING);
+        const text = formatPath(form.port.name + '.' + form.member.name, MESSAGE_SPELLING);
         if (!isSampledMember(form.port, form.member)) {
             this.report(e, 'SW2006', `${text} is not a required attribute of an owned port.`);
             return '?';
@@ -574,18 +574,54 @@ export class SwamlValidator {
             this.report(e, 'SW2006', 'A sampled read is not allowed in an initializer.');
             return '?';
         }
-        if (form.member.initial === undefined)
-            this.report(e, 'SW2004', `Sampled attribute ${formatName(form.member.name, MESSAGE_SPELLING)} of ${formatName(form.port.definition?.ref?.name ?? form.port.name, MESSAGE_SPELLING)} needs an initial value.`);
         return typeKey(form.member.type);
     }
-    /** occurrence.port.member in a case script on a port of a package occurrence that opts in to sampling (WP6-S09). */
+    /** occurrence.port.member in a case script, of a member of a package occurrence's port that opts in to sampling (WP6-S09). */
     private scriptSample(e: a.ReferenceExpression): string | undefined {
         const parts = e.path.split('.'), p = owner(this.script!.scenario, a.isPackage);
         if (parts.length < 3 || parts[0].includes('::') || !p)
             return undefined;
         const occurrence = packageOccurrences(p).find(o => o.name === parts[0]), port = occurrence && members(occurrence).filter(a.isPortUsage).find(x => x.name === parts[1]);
-        const member = port && samplingPort(port) ? portMembers(port).find(m => m.name === parts[2]) : undefined;
-        return port && member?.kind === 'attribute' ? formatPath(parts[1] + '.' + parts[2], MESSAGE_SPELLING) : undefined;
+        return port && optsIn(portMembers(port).find(m => m.name === parts[2])) ? formatPath(parts[1] + '.' + parts[2], MESSAGE_SPELLING) : undefined;
+    }
+    /**
+     * WP6-S03 (WP6-D02) and WP6-S08 (WP6-D01) for inherited behaviour: a sampled read of an inherited executable or
+     * schedule entry, valid where it is declared, stays a sampled read of c. A port redefinition of c that removes the
+     * initial value of a member it samples is SW2004 at the redefinition; a forwarding of c that makes its port a
+     * forwarded boundary is SW2005 at the forwarding; each is reported once per member. Returns the port.member paths
+     * that a base of c samples in behaviour c inherits: they keep the ownership rule of sampled members (WP6-S04), so a
+     * read that one of these errors already explains is not also reported as a member without an owner.
+     */
+    private inheritedSamples(c: Structure): Set<string> {
+        const paths = new Set<string>(), reported = new Set<string>(), seen = new Set<AstNode>();
+        if (this.baseCycle(c, new Set()))
+            return paths;
+        const executables = members(c).filter(isExecutable), entries = new Set(schedule(c)), forwarded = forwardedPorts(c);
+        for (let base = a.isComponentDef(c) ? c.specializes?.ref : c.definition?.ref; base; base = base.specializes?.ref)
+            for (const read of sampledReads(base)) {
+                // Only reads that c inherits: from an executable or schedule entry that c does not replace.
+                const entry = owner(read.node, a.isScheduleEntry), site = entry ? undefined : executables.find(x => { const b = body(x); return !!b && AstUtils.hasContainerOfType(read.node, n => n === b); });
+                if (seen.has(read.node) || (entry ? !entries.has(entry) : !site))
+                    continue;
+                seen.add(read.node);
+                const path = read.port.name + '.' + read.member.name, text = formatPath(path, MESSAGE_SPELLING);
+                paths.add(path);
+                if (reported.has(path))
+                    continue;
+                const who = entry ? 'an inherited schedule entry' : `inherited ${formatName(site!.name, MESSAGE_SPELLING)}`;
+                const port = members(c).filter(a.isPortUsage).find(x => x.name === read.port.name);
+                const member = port && portMembers(port).find(m => m.name === read.member.name);
+                if (port && c.members.includes(port) && member && !optsIn(member)) {
+                    this.report(port, 'SW2004', `Sampled attribute ${formatName(member.name, MESSAGE_SPELLING)} of ${formatName(port.definition?.ref?.name ?? port.name, MESSAGE_SPELLING)} needs an initial value: ${who} samples ${text}.`);
+                    reported.add(path);
+                }
+                const link = forwarded.has(read.port.name) ? c.members.filter(a.isConnect).find(l => l.source === read.port.name || l.target === read.port.name) : undefined;
+                if (link && !reported.has(path)) {
+                    this.report(link, 'SW2005', `${text} cannot be sampled: ${formatName(read.port.name, MESSAGE_SPELLING)} is a forwarded boundary; ${who} samples it.`);
+                    reported.add(path);
+                }
+            }
+        return paths;
     }
     /** Expressions nested deeper than this are reported instead of inferred, so validation cannot exhaust the stack. */
     private static readonly EXPRESSION_DEPTH_LIMIT = 1000;
@@ -1485,7 +1521,7 @@ export class SwamlValidator {
         const names = new Set(nodes(e).filter(a.isReferenceExpression).map(r => r.path.split('.')[0]));
         return names.size > 0 && this.models.some(m => nodes(m).some(n => a.isAttribute(n) && n.redefines && names.has(n.name)));
     }
-    private ownership(c: Structure, forwarded: Set<string>): void {
+    private ownership(c: Structure, forwarded: Set<string>, inheritedSampled: ReadonlySet<string>): void {
         // An interface-only component needs no implementation: it neither emits nor owns inputs.
         if (interfaceOnly(c))
             return;
@@ -1511,7 +1547,7 @@ export class SwamlValidator {
             }
         }
         // WP6-S04, WP6-D03: sampling is not ownership; a sampled required attribute has zero or one consuming owner.
-        const sampled = sampledMembers(c);
+        const sampled = new Set([...sampledMembers(c), ...inheritedSampled]);
         for (const p of members(c).filter(a.isPortUsage))
             for (const m of portMembers(p)) {
                 const path = `${p.name}.${m.name}`, input = direction(p, m) === (m.kind === 'operation' ? 'provides' : 'requires');

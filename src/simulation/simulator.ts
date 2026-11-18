@@ -904,7 +904,7 @@ class Interpreter {
                     return scalar(identity(en), steps[0]?.field ?? '');
                 // A sampled read copies the live cell of an owned port, in every activation, a concurrent one too (WP6-R03, WP6-R07).
                 const sampled = !f.script ? sampledReadForm(e, f.c.structure) : undefined;
-                if (sampled?.member) {
+                if (sampled) {
                     // The first read of a cell in a segment copies the live cell; later reads in the segment see that copy.
                     const key = `${f.c.path}.${sampled.port.name}|${sampled.member.name}`, cell = this.cells.get(key);
                     if (!cell)

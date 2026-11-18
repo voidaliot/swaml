@@ -481,34 +481,36 @@ export function memberQos(c: a.Connect, member: string): Policy {
     return policy ? effectiveQos(policy) : effectiveQos(c);
 }
 /**
- * A port whose members declare an initial value (2.3 syntax) opts in to sampled reads (WP6-S01, WP6-S02): p.m on it
- * is the 2.3 form, with the 2.3 diagnostics. p.m on any other port keeps its 2.2 diagnostics, so no 2.2 source changes.
+ * An attribute member that declares an initial value (2.3 syntax) opts in to sampled reads (WP6-S01, WP6-S02; owner
+ * decision A of WP6): p.m of it is the 2.3 form, with the 2.3 diagnostics. p.m of any other member, also on a port
+ * where a sibling member opts in, keeps its 2.2 meaning and diagnostics, so no 2.2 source changes.
  */
-export function samplingPort(p: a.PortUsage): boolean { return portMembers(p).some(m => m.kind === 'attribute' && m.initial !== undefined); }
+export const optsIn = (m: a.PortMember | undefined): boolean => !!m && m.kind === 'attribute' && m.initial !== undefined;
 /** A member that can be sampled through a port: a required attribute after reversal (WP6-S01). */
 export const isSampledMember = (p: a.PortUsage, m: a.PortMember | undefined): m is a.PortMember => !!m && m.kind === 'attribute' && direction(p, m) === 'requires';
-/** Sampling ports by name, cached for one validation pass (see useEffectCache) or computed per call. */
-function samplingPorts(c: Structure): Map<string, a.PortUsage> {
-    const cache = effectCache?.samplingPorts, known = cache?.get(c);
+/** The effective ports of c by name, cached for one validation pass (see useEffectCache) or computed per call. */
+function ownedPorts(c: Structure): Map<string, a.PortUsage> {
+    const cache = effectCache?.ports, known = cache?.get(c);
     if (known)
         return known;
-    const ports = new Map(members(c).filter(a.isPortUsage).filter(samplingPort).map(p => [p.name, p] as const));
+    const ports = new Map(members(c).filter(a.isPortUsage).map(p => [p.name, p] as const));
     cache?.set(c, ports);
     return ports;
 }
 /**
- * The sampled-read form p.m of a value reference in component c (WP6-S01): p is an owned port of c that opts in to
- * sampling; member is the member named m, if any, and steps are the fields, index and selectors after it. A local,
- * parameter or attribute with the name p shadows the port; callers that know the environment check it first.
+ * The sampled-read form p.m of a value reference in component c (WP6-S01): p is an effective port of c whose member
+ * named m, in the definition that port has in c, opts in to sampling; steps are the fields, index and selectors after
+ * the member. A local, parameter or attribute with the name p shadows the port; callers that know the environment
+ * check it first.
  */
-export function sampledReadForm(e: a.ReferenceExpression, c: Structure): { port: a.PortUsage; member?: a.PortMember; name: string; steps: Step[] } | undefined {
+export function sampledReadForm(e: a.ReferenceExpression, c: Structure): { port: a.PortUsage; member: a.PortMember; steps: Step[] } | undefined {
     const parts = e.path.split('.');
     if (parts.length < 2 || parts[0].includes('::'))
         return undefined;
-    const port = samplingPorts(c).get(parts[0]);
-    if (!port)
+    const port = ownedPorts(c).get(parts[0]), member = port && portMembers(port).find(m => m.name === parts[1]);
+    if (!port || !member || !optsIn(member))
         return undefined;
-    return { port, member: portMembers(port).find(m => m.name === parts[1]), name: parts[1], steps: valueSteps(e).slice(1) };
+    return { port, member, steps: valueSteps(e).slice(1) };
 }
 /** Owned ports of c that are forwarded boundaries (chapter 2.3); they are never sampled (WP6-S08). */
 export function forwardedPorts(c: Structure): Set<string> {
@@ -522,11 +524,15 @@ export function forwardedPorts(c: Structure): Set<string> {
 }
 /**
  * The members c samples, as port.member (WP6-S01, WP6-S04, WP6-M04): every sampled read in its executables of a
- * required attribute of an owned port that opts in, whether or not it has an initial value. A name that a parameter,
+ * required attribute, with an initial value, of an owned port. A name that a parameter,
  * local, binding or loop variable of the same executable declares is not counted.
  */
 export function sampledMembers(c: Structure): Set<string> {
-    const result = new Set<string>();
+    return new Set(sampledReads(c).map(r => r.port.name + '.' + r.member.name));
+}
+/** The sampled reads of required attributes in the executables of c, each with its port and member (see sampledMembers). */
+export function sampledReads(c: Structure): { node: a.ReferenceExpression; port: a.PortUsage; member: a.PortMember }[] {
+    const result: { node: a.ReferenceExpression; port: a.PortUsage; member: a.PortMember }[] = [];
     for (const op of members(c).filter(isExecutable)) {
         const b = body(op);
         if (!b)
@@ -542,7 +548,7 @@ export function sampledMembers(c: Structure): Set<string> {
             if (a.isReferenceExpression(n) && !locals.has(n.path.split('.')[0])) {
                 const form = sampledReadForm(n, c);
                 if (form && isSampledMember(form.port, form.member))
-                    result.add(form.port.name + '.' + form.member.name);
+                    result.push({ node: n, port: form.port, member: form.member });
             }
     }
     return result;
@@ -566,10 +572,10 @@ export type Effect = {
     suspends: boolean;
 };
 /** Effects computed during one validation pass of one workspace snapshot (see useEffectCache). */
-let effectCache: { models: a.Model[], byStructure: Map<Structure | undefined, Map<Executable, Effect>>, attributeNames: Map<Structure, Set<string>>, samplingPorts: Map<Structure, Map<string, a.PortUsage>> } | undefined;
+let effectCache: { models: a.Model[], byStructure: Map<Structure | undefined, Map<Executable, Effect>>, attributeNames: Map<Structure, Set<string>>, ports: Map<Structure, Map<string, a.PortUsage>> } | undefined;
 /** Caches effects for the models of one validation pass; a later pass or another workspace snapshot replaces it. */
 export function useEffectCache(models: a.Model[]): void {
-    effectCache = { models, byStructure: new Map(), attributeNames: new Map(), samplingPorts: new Map() };
+    effectCache = { models, byStructure: new Map(), attributeNames: new Map(), ports: new Map() };
 }
 export function effects(op: Executable, c?: Structure, seen = new Set<Executable>(), memo?: Map<Executable, Effect>, attributeNames?: Map<Structure, Set<string>>): Effect {
     // Package definitions have no caller-owned state, including when a parameter

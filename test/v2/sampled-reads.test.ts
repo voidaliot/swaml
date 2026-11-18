@@ -80,9 +80,14 @@ test('WP6-S01 a sampled read in an operation body, a receive guard, a completion
 }`);
 });
 
-test('WP6-S03 WP6-D02 a sampled member needs an initial value on the sampling side (SW2004)', async () => {
-    assert.deepEqual(await errors(door(reads, 'provides attribute ajar: bool = false; provides attribute count: int;')), [['SW2004', 'Sampled attribute count of Door needs an initial value.']]);
-    // The provider side's initial value has no runtime meaning: the reader's own declaration governs.
+test('WP6-S01 WP6-S03 the opt-in is per member: a member without an initial value keeps its 2.2 diagnostics beside one that opts in (owner decision A)', async () => {
+    const countOnly = 'operation read() { total = total + door.count; } schedule { on every 10ms read(); }';
+    const unknown = ['SW2002', 'Unknown local value door.count; nested operations never capture enclosing locals and component attributes are private.'];
+    const count22 = [unknown, ['SW2002', 'Arithmetic needs compatible numbers.'], ['SW2005', 'door.count needs exactly one input owner.']];
+    assert.deepEqual(await errors(door(countOnly, 'provides attribute ajar: bool = false; provides attribute count: int;')), count22);
+    // The same diagnostics as on a port where no member opts in (here peek's door.ajar is a 2.2 error too).
+    assert.deepEqual((await errors(door(countOnly, 'provides attribute ajar: bool; provides attribute count: int;'))).filter(([, m]) => !m.includes('ajar')), count22);
+    // The provider side's initial value has no runtime meaning: the reader's own declaration decides.
     const split = `package Test {
   port def Out { provides attribute level: int = 5; provides attribute ready: bool; }
   port def In { requires attribute level: int; requires attribute ready: bool = false; }
@@ -90,12 +95,45 @@ test('WP6-S03 WP6-D02 a sampled member needs an initial value on the sampling si
   component def R { port p: In; attribute k: int = 0; attribute up: bool = false; operation r() { k = p.level; up = p.ready; } schedule { on every 1ms r(); } }
   component Demo { component s: S; component r: R; connect (s.out, r.p); }
 }`;
-    assert.deepEqual((await errors(split)).filter(([c]) => c === 'SW2004'), [['SW2004', 'Sampled attribute level of In needs an initial value.']]);
+    assert.deepEqual(await errors(split), [['SW2002', 'Unknown local value p.level; nested operations never capture enclosing locals and component attributes are private.'], ['SW2005', 'p.level needs exactly one input owner.']]);
+});
+
+// Review F1: the redefined port is the one the occurrence has, so an inherited read is checked against it.
+const redefined = (derived: string, own = 'on receive door.ajar(v) take(v);') => `package Test {
+  port def D23 { provides attribute ajar: bool = false; }
+  port def D23b { provides attribute ajar: bool = true; }
+  port def D22 { provides attribute ajar: bool; }
+  component def Sensor22 { port out: D22; attribute n: int = 0; operation tick() { n = n + 1; send out.ajar(n % 2 == 1); } schedule { on every 10ms tick(); } }
+  component def Leaf { reversed port p: D23; attribute k: bool = false; operation r() { k = p.ajar; } schedule { on every 10ms r(); } }
+  component def Base { reversed port door: D23; attribute seen: bool = false; attribute got: bool = false; attribute first: bool = false;
+    operation read() { seen = door.ajar; } operation take(v: bool) { got = v; } operation begin() { first = door.ajar; }
+    schedule { on start begin(); on every 10ms read(); ${own} } }
+  ${derived}
+}`;
+test('WP6-S03 WP6-D02 a port redefinition that removes the initial value of a member inherited behaviour samples is SW2004 at the redefinition (review F1)', async () => {
+    const message = 'Sampled attribute ajar of D22 needs an initial value: inherited read samples door.ajar.';
+    const definition = 'component def Derived specializes Base { redefines reversed port door: D22; } ' +
+        'component Demo { component s: Sensor22; component r: Derived; connect (s.out, r.door); }';
+    assert.deepEqual(await errors(redefined(definition)), [['SW2004', message]]);
+    // A usage redefinition, a redefinition two levels up and a member without a consuming owner: the same single error.
+    assert.deepEqual(await errors(redefined('component Demo { component s: Sensor22; component r: Base { redefines reversed port door: D22; } connect (s.out, r.door); }')), [['SW2004', message]]);
+    assert.deepEqual(await errors(redefined(definition.replace('component def Derived specializes Base {', 'component def Mid specializes Base {') + ' component def Derived specializes Mid { }')), [['SW2004', message]]);
+    assert.deepEqual(await errors(redefined(definition, '')), [['SW2004', message]]);
+    // A redefinition that changes the initial value is valid; the cell starts with the value of the port the occurrence has.
+    const changed = await valid(redefined('component def Derived specializes Base { redefines reversed port door: D23b; } ' +
+        'component Demo { component s: Sensor22; component r: Derived; connect (s.out, r.door); }', ''));
+    const r = simulate([changed.model], 'Test::Demo', { untilNs: 5000000 });
+    assert.deepEqual([r.stores['Demo.r'], r.trace.filter(o => o.kind === 'failure')], [{ seen: false, got: false, first: true }, []]);
+    // A derived forwarding of the inherited port is SW2005 at the forwarding (WP6-D01).
+    assert.deepEqual(await errors(redefined('component def Derived specializes Base { component leaf: Leaf; connect (door, leaf.p); } ' +
+        'component Demo { component s: Sensor22; component r: Derived; connect (s.out, r.door); }', '')),
+        [['SW2005', 'door.ajar cannot be sampled: door is a forwarded boundary; inherited read samples it.']]);
 });
 
 test('WP6-S08 WP6-D01 WP6-D05 forbidden ports, members and positions', async () => {
     const e = async (reader: string) => (await errors(door(reader))).filter(([c]) => c !== 'SW2005');
-    assert.deepEqual(await e('operation read() { seen = door.nothing; } schedule { on every 10ms read(); }'), [['SW2006', 'door.nothing is not a required attribute of an owned port.']]);
+    // An unknown member declares no initial value, so it keeps its 2.2 message (owner decision A).
+    assert.deepEqual(await e('operation read() { seen = door.nothing; } schedule { on every 10ms read(); }'), [['SW2002', 'Unknown local value door.nothing; nested operations never capture enclosing locals and component attributes are private.']]);
     assert.deepEqual(await e('attribute x: bool = door.ajar;'), [['SW2006', 'A sampled read is not allowed in an initializer.']]);
     assert.deepEqual(await e('operation read() { var y: int = 0; } schedule { on every (door.count * 1ms) read(); }'), [['SW2007', 'A sampled read is not allowed in a constant duration.']]);
     // A provided attribute or an event of an opted-in port is not a required attribute.

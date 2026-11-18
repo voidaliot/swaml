@@ -35,7 +35,7 @@ Values are bounded primitive scalars, nominal enums/records and fixed copied arr
 | duration literal | Result uint (nanoseconds), a safe integer; positive in the 2.2 positions |
 | computed duration `(e)` | e integral; in wait and receive timeouts without suspending calls; in state timers pure or reads state; in periods and deadlines in the constant sublanguage, with exact integral `/`, valued per occurrence |
 | completion guard | bool; pure or reads state; no `now()`, directly or through a callee |
-| `p.m` sampled | p an owned, non-forwarded port that opts in to sampling; m a required attribute with an initial value; result the member type; effect reads state (WP6) |
+| `p.m` sampled | p an owned, non-forwarded port; m a required attribute that declares an initial value in the definition p has in the occurrence; result the member type; effect reads state (WP6) |
 | timer guard | bool; pure or reads state |
 | var x:T=e | Compatible value, fresh live name; Γ extends with mutable x; suspension allowed only when e is whole call/try |
 | x=e | Mutable local/out/attribute, compatible type; attribute write adds write effect; same whole-expression suspension rule |
