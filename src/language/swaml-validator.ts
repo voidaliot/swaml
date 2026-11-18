@@ -12,7 +12,7 @@ const insideConditional = (e: AstNode): boolean => { for (let n = e.$container; 
 /** The name of the attribute, requirement attribute or policy setting whose initializer contains e. */
 const initialized = (e: AstNode): string => { for (let n: AstNode | undefined = e; n; n = n.$container) if (a.isAttribute(n) || a.isPolicySetting(n) || a.isPortMember(n)) return n.name; return ''; };
 const isExpression = (n: unknown): n is a.Expression => !!n && typeof n === 'object' && EXPRESSION_TYPES.has((n as AstNode).$type);
-import { forwardedPorts, isSampledMember, memberPolicy, memberQos, optsIn, sampledMembers, sampledReadForm, sampledReads, attributeAccess, isCompletion, isLiteralTrue, isReactionForm, transitionKind, useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_2_3_URI, container, constantValue, displayText, entryDeadline, entryPeriod, representableDuration, settingDuration, triggerIdentity, type ConstantProblem } from './semantic.js';
+import { flowStates, innerStates, forwardedPorts, isSampledMember, memberPolicy, memberQos, optsIn, sampledMembers, sampledReadForm, sampledReads, attributeAccess, isCompletion, isLiteralTrue, isReactionForm, transitionKind, useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_2_3_URI, container, constantValue, displayText, entryDeadline, entryPeriod, representableDuration, settingDuration, triggerIdentity, type ConstantProblem } from './semantic.js';
 import { ambiguousNameMessage } from './swaml-scope.js';
 import type { Occurrence } from './semantic.js';
 import { coreText, deploymentPlan, durationText, entryLabel, pathText, predecessors, statementText, suspendSite, type DeploymentPlan, type EntryPlacement, type OsTask } from './placement.js';
@@ -352,10 +352,13 @@ export class SwamlValidator {
             finished.add(x); return found; };
         if (cycle(op, new Set()))
             this.report(op, 'SW2006', 'Operation calls must be acyclic; recursion is forbidden.');
-        if(b.states.length&&owner(op,isExecutable))this.report(op,'SW2008','A stateful operation must be directly component-owned with one on start entry.');
+        if (b.states.length && owner(op, isExecutable))
+            this.report(op, 'SW2008', 'A stateful operation must be directly component-owned with one on start entry.');
         if (b.states.length)
             this.states(op, c, env);
         else {
+            if (flowStates(op).length)
+                this.flowOperation(op, b);
             this.block(b, env, c, op);
             // Host intrinsics have documentation-only bodies (WP3-M01).
             if (typeKey(sig.result) !== 'void' && !this.terminates(b) && !identity(sig).startsWith('Swaml::Math::') && !declaredIntrinsic(op))
@@ -813,6 +816,8 @@ export class SwamlValidator {
             }
             if (isExecutable(t) && body(t)?.states.length)
                 this.report(e, 'SW2006', 'Stateful operations are activated only by their on start entry.');
+            else if (isExecutable(t) && flowStates(t).length)
+                this.report(e, 'SW2008', `${formatName(t.name, MESSAGE_SPELLING)} contains states, so it keeps its place and is released only by its schedule entry; it is never called (SIF-S01).`);
             const sig = isExecutable(t) ? signature(t) : t;
             if (!sig)
                 return '?';
@@ -1052,8 +1057,9 @@ export class SwamlValidator {
         else
             this.value(v, typeKey(p.type), env, c, op); });
     }
-    private block(b: a.Block | a.ElseIf | a.OperationBody | a.Scenario, inherited: Env, c: Structure | undefined, op: Executable | undefined): void {
-        const env = new Map(inherited);
+    private block(b: a.Block | a.ElseIf | a.OperationBody | a.Scenario, inherited: Env, c: Structure | undefined, op: Executable | undefined, into?: Env): void {
+        // into: the scope the statements declare into (the look scope of a state's statements); otherwise a fresh copy.
+        const env = into ?? new Map(inherited);
         for (const s of b.statements) {
             if (a.isLocalVariable(s)) {
                 this.value(s.value, typeKey(s.type), env, c, op, true);
@@ -1079,6 +1085,8 @@ export class SwamlValidator {
             else if (a.isReturn(s)) {
                 if (op && body(op)?.states.length)
                     this.report(s, 'SW2008', 'A stateful operation completes by reaching final state, not return.');
+                else if (owner(s, a.isStateStep))
+                    this.report(s, 'SW2008', 'return does not stand in a state; leave the state with exit; and return after it (SIF-S04).');
                 // In a case, return inside on call is the reply; any other return ends the case.
                 const t = this.script ? this.script.reply ?? 'void' : typeKey(op && signature(op)?.result);
                 if (!s.value && t !== 'void' || s.value && t === 'void')
@@ -1175,9 +1183,15 @@ export class SwamlValidator {
             }
             else if (a.isInterruptible(s) && this.script)
                 this.report(s, 'SW2006', 'Case scripts have no interrupt regions; wait with on receive or after D instead.');
+            else if (a.isStateStep(s))
+                this.stateStep(s, env, c, op);
+            else if (a.isExit(s) || a.isJump(s))
+                this.leaveRule(s, op);
             else if (a.isInterruptible(s)) {
                 if (op && body(op)?.states.length)
                     this.report(s, 'SW2006', 'Interrupt regions cannot occur in stateful operations.');
+                else if (op && flowStates(op).length)
+                    this.report(s, 'SW2008', 'An operation with states contains no interrupt region; write a state with an event line instead (SIF-S01).');
                 this.block(s.body, env, c, op);
                 this.block(s.handler, this.inputEnv(s, env, c), c, op);
                 this.report(s, 'SW2012', `Input ${s.endpoint} is discarded while this region is inactive.`, true);
@@ -1356,14 +1370,17 @@ export class SwamlValidator {
                         if (target && isExecutable(target) && effects(target, c).writes)
                             this.report(e, 'SW2006', 'Concurrent dispatch arguments cannot write state.');
                     }
-            if (e.concurrent && (effects(op, c).writes || body(op)?.states.length))
+            const flow = flowStates(op).length > 0;
+            if (flow)
+                this.flowEntry(op, e, entries);
+            if (!flow && e.concurrent && (effects(op, c).writes || body(op)?.states.length))
                 this.report(e, 'SW2006', 'Concurrent entries cannot write state through any callee or be stateful.');
             if (e.kind === 'every' && e.deadline && e.period && nanos(e.deadline) > nanos(e.period))
                 this.report(e, 'SW2007', 'Periodic deadline cannot exceed its period.');
             if (e.kind === 'after') {
                 if (!ops.some(x => x.name === e.predecessor) || !entries.some(x => x.operation === e.predecessor))
                     this.report(e, 'SW2007', 'after needs a scheduled same-owner predecessor.');
-                if (sig.parameters.length || typeKey(sig.result) !== 'void' || body(op)?.states.length)
+                if (!flow && (sig.parameters.length || typeKey(sig.result) !== 'void' || body(op)?.states.length))
                     this.report(e, 'SW2007', 'after targets are parameterless void flow operations.');
                 graph.set(e.predecessor!, [...(graph.get(e.predecessor!) ?? []), op.name]);
             }
@@ -1379,6 +1396,147 @@ export class SwamlValidator {
         for (const op of ops)
             if (body(op)?.states.length && !entries.some(e => e.operation === op.name))
                 this.report(op, 'SW2008', 'A stateful operation needs an on start entry.');
+            else if (flowStates(op).length && !entries.some(e => e.operation === op.name))
+                this.report(op, 'SW2008', `${formatName(op.name, MESSAGE_SPELLING)} contains states, so it keeps its place and needs exactly one on start or one on every entry, not concurrent (SIF-S01).`);
+    }
+    /**
+     * SIF-S01 for one schedule entry of an operation with states (SIF-D01): exactly one effective entry, on start or on
+     * every, never concurrent. The other entry kinds get a message that says how to write what they mean.
+     */
+    private flowEntry(op: Executable, e: a.ScheduleEntry, entries: readonly a.ScheduleEntry[]): void {
+        const name = formatName(op.name, MESSAGE_SPELLING), keeps = `${name} contains states, so it keeps its place`, released = `${keeps} and can only be released by one on start or one on every entry.`;
+        if (e.kind === 'receive')
+            this.report(e, 'SW2008', `${released} To react to ${formatPath(e.endpoint ?? '', MESSAGE_SPELLING)}, write on receive ${formatPath(e.endpoint ?? '', MESSAGE_SPELLING)}(…) { … } in its states.`);
+        else if (e.kind === 'after')
+            this.report(e, 'SW2008', `${released} To start after ${formatName(e.predecessor ?? '', MESSAGE_SPELLING)}, release ${name} on start and let its first state wait for a value that ${formatName(e.predecessor ?? '', MESSAGE_SPELLING)} sets.`);
+        else if (e.kind === 'call')
+            this.report(e, 'SW2008', `${released} An operation with states cannot answer calls; answer in a plain operation and let it set an attribute that a state reads.`);
+        else if (e.concurrent || entries.filter(x => x.operation === op.name).length !== 1)
+            this.report(e, 'SW2008', `${keeps} and needs exactly one on start or one on every entry, not concurrent (SIF-S01).`);
+        // States in the flow, package 5 replaces this: periodic machines (SIF-R14 to SIF-R17) are not run yet.
+        else if (e.kind === 'every')
+            this.report(e, 'SW2008', `${name} contains states; this implementation does not run periodic machines (on every) yet.`);
+    }
+    /** SIF-S01 (parameterless void, no plain receive statement) and SIF-S02 (state names unique in the operation): SIF-D01, SIF-D03. */
+    private flowOperation(op: Executable, b: a.OperationBody): void {
+        const sig = signature(op);
+        if (sig && (sig.parameters.length || typeKey(sig.result) !== 'void'))
+            this.report(op, 'SW2008', `${formatName(op.name, MESSAGE_SPELLING)} contains states, so it is parameterless and returns void (SIF-S01).`);
+        const seen = new Set<string>();
+        for (const s of flowStates(op)) {
+            if (seen.has(s.name))
+                this.report(s, 'SW2008', `Two states are named ${formatName(s.name, MESSAGE_SPELLING)} in ${formatName(op.name, MESSAGE_SPELLING)} (SIF-S02).`, false, this.at(s, 'name'));
+            seen.add(s.name);
+        }
+        for (const n of nodes(b))
+            if (a.isReceive(n) && owner(n, isExecutable) === op)
+                this.report(n, 'SW2008', 'An operation with states contains no plain receive statement; write a state with an event line, for example state waitGo { on receive cmd.go(v) { ok = v; exit; } } (SIF-S01).');
+    }
+    /**
+     * A state statement (SIF-S02 to SIF-S04, SIF-S07, SIF-S08; SIF-D03): where it may stand, its entry and exit actions,
+     * items before inner states, event lines with their bindings and timers. Statements standing in the state are typed as
+     * one list (a local declared there is a local of the look, seen by later items); entry and exit actions and inner states
+     * see the enclosing scope only.
+     */
+    private stateStep(s: a.StateStep, env: Env, c: Structure | undefined, op: Executable | undefined): void {
+        const name = formatName(s.name, MESSAGE_SPELLING);
+        if (!op || this.script) {
+            this.report(s, 'SW2008', 'Case scripts contain no states (SIF-S01).');
+            return;
+        }
+        // SIF-S04: a state stands in the flow, in a block of the flow, or directly in a parent's braces.
+        for (let p: AstNode | undefined = s.$container; p && !isExecutable(p); p = p.$container) {
+            if (a.isStateAction(p) || a.isEventLine(p) || a.isInterruptible(p) || a.isReceiveBranch(p) || a.isStateStep(p) && p !== s.$container) {
+                this.report(s, 'SW2008', `State ${name} stands in the flow or directly in a parent's braces, never in on entry, on exit, an event line, an interrupt region or a statement of a state (SIF-S04).`, false, this.at(s, 'name'));
+                break;
+            }
+            if (a.isStateStep(p))
+                break;
+        }
+        for (const kind of ['entry', 'exit'] as const)
+            if (s.statements.filter(x => a.isStateAction(x) && x.kind === kind).length > 1)
+                this.report(s, 'SW2008', `Duplicate on ${kind} in ${name} (SIF-S02).`, false, this.at(s, 'name'));
+        const first = s.statements.findIndex(a.isStateStep);
+        if (first >= 0 && s.statements.slice(first).some(x => !a.isStateStep(x)))
+            this.report(s, 'SW2008', `${name} has inner states; only states may follow the first one (SIF-S03).`, false, this.at(s, 'name'));
+        const look = new Map(env);
+        for (const item of s.statements) {
+            if (a.isStateAction(item))
+                this.block(item.body, env, c, op);
+            else if (a.isEventLine(item))
+                this.eventLine(item, look, c, op);
+            else if (a.isStateStep(item))
+                this.stateStep(item, env, c, op);
+            else
+                this.block({ statements: [item] } as unknown as a.Block, look, c, op, look);
+        }
+    }
+    /** An event line (SIF-S07): its input (events and attributes only), its timer, and its block with the bindings. */
+    private eventLine(line: a.EventLine, env: Env, c: Structure | undefined, op: Executable): void {
+        const input = line.endpoint !== undefined ? this.inputEnv(line, env, c) : env;
+        // A computed timer is evaluated once, when the state's entry actions finish; it is pure or reads state (WP4-S08).
+        if (line.delayValue) {
+            this.computedDuration(line.delayValue, env, c, op);
+            for (const call of nodes(line.delayValue).filter(a.isCallExpression)) {
+                const target = this.callTarget(call, c);
+                if (target && (!isExecutable(target) || effects(target, c).writes || effects(target, c).communicates || effects(target, c).suspends))
+                    this.report(line.delayValue, 'SW2008', 'State timers may only be pure or read state.');
+            }
+        }
+        if (line.body)
+            this.block(line.body, input, c, op);
+    }
+    /**
+     * SIF-S04 and SIF-S06 (SIF-D02): exit; and to S; stand inside a state's braces, directly or in if/else blocks standing
+     * there or in an event line's block; a jump names a state of a list that contains the jump's state or an enclosing list,
+     * or a state inside parents standing directly in such a list, and never skips a declaration used at or after it.
+     */
+    private leaveRule(n: a.Exit | a.Jump, op: Executable | undefined): void {
+        const word = a.isJump(n) ? `to ${formatName(n.target ?? '', MESSAGE_SPELLING)}` : 'exit';
+        if (!op || this.script) {
+            this.report(n, 'SW2008', `${word} leaves a state; case scripts contain no states (SIF-S04).`);
+            return;
+        }
+        let state: a.StateStep | undefined;
+        for (let p: AstNode | undefined = n.$container; p && !isExecutable(p); p = p.$container) {
+            if (a.isStateAction(p) || a.isWhile(p) || a.isUntil(p) || a.isFor(p) || a.isForEach(p) || a.isInterruptible(p) || a.isReceiveBranch(p) || a.isReceive(p)) {
+                this.report(n, 'SW2008', `${word} cannot stand in on entry, on exit, a loop body or an interrupt region; it stands in a state's braces, their if blocks or an event line's block (SIF-S04).`);
+                return;
+            }
+            if (a.isStateStep(p)) {
+                state = p;
+                break;
+            }
+        }
+        if (!state) {
+            this.report(n, 'SW2008', `${word} leaves a state and stands only inside a state's braces (SIF-S04).`);
+            return;
+        }
+        if (!a.isJump(n) || n.target === undefined)
+            return;
+        const target = n.target, within = (x: AstNode): boolean => a.isStateStep(x) && (x.name === target || innerStates(x).some(within));
+        let found: { list: readonly AstNode[]; at: number; to: number } | undefined;
+        for (let child: AstNode = n, p: AstNode | undefined = n.$container; p && !isExecutable(p); child = p, p = p.$container)
+            if ((a.isBlock(p) || a.isOperationBody(p) || a.isStateStep(p) || a.isElseIf(p)) && child.$containerProperty === 'statements') {
+                const to = p.statements.findIndex(within);
+                if (to >= 0) {
+                    found = { list: p.statements, at: child.$containerIndex ?? 0, to };
+                    break;
+                }
+            }
+        if (!found) {
+            this.report(n, 'SW2008', `${word}: no state ${formatName(target, MESSAGE_SPELLING)} in this list, an enclosing one, or inside a parent standing in one; a jump never enters an if branch or a loop (SIF-S06).`, false, this.at(n, 'target'));
+            return;
+        }
+        // A forward jump over a declaration that is used at or after the target (SIF-S06, SIF-R10).
+        for (const skipped of found.list.slice(found.at + 1, found.to).filter(a.isLocalVariable)) {
+            const uses = (x: AstNode) => nodes(x).some(r => a.isReferenceExpression(r) && r.path.split('.')[0] === skipped.name || a.isAssign(r) && placeRoot(r.target) === skipped.name);
+            if (found.list.slice(found.to).some(uses)) {
+                const local = formatName(skipped.name, MESSAGE_SPELLING);
+                this.report(n, 'SW2008', `\`${word}\` skips the declaration of \`${local}\`, which \`${formatName(target, MESSAGE_SPELLING)}\` uses. Declare \`${local}\` before the jump (SIF-S06).`, false, this.at(n, 'target'));
+                return;
+            }
+        }
     }
     /**
      * A release guard (WP7-S02, WP7-D02): bool, pure or reading state, typed in the scope of the entry's arguments, the
@@ -1652,7 +1810,7 @@ export class SwamlValidator {
                     emitted.add(n.endpoint);
                 if (a.isReceiveBranch(n) || a.isInterruptible(n))
                     add(n.endpoint, n);
-                if (a.isTransition(n) && n.endpoint)
+                if ((a.isTransition(n) || a.isEventLine(n)) && n.endpoint)
                     add(n.endpoint, op);
                 // A deferral is part of the machine's single input ownership, never a second owner (WP5-S09).
                 if (a.isDeferral(n))

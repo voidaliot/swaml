@@ -532,7 +532,14 @@
         "State",
         "StateAction",
         "Transition",
-        "Deferral"
+        "Deferral",
+        "StateStep",
+        "StateMember",
+        "EventLine",
+        "ShortBody",
+        "Leave",
+        "Exit",
+        "Jump"
       ],
       "keywords": [
         "initial",
@@ -1051,6 +1058,55 @@
         "production": "Statement",
         "concepts": [
           "flow"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "StateStep",
+        "concepts": [
+          "states"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "StateMember",
+        "concepts": [
+          "states"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "EventLine",
+        "concepts": [
+          "states"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "ShortBody",
+        "concepts": [
+          "states"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "Leave",
+        "concepts": [
+          "states"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "Exit",
+        "concepts": [
+          "states"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "Jump",
+        "concepts": [
+          "states"
         ],
         "rationale": "Owned semantic projection preserves this production."
       },

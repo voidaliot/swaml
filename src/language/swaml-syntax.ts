@@ -109,6 +109,8 @@ function guardNesting(result: LexerResult): void {
     }
 }
 /** WP2-D04: the message for if (c) a else b in statement position, where the if statement needs a block. */
+/** SIF-S08: the one hint for a body without braces that is not a leave. */
+export const SHORT_BODY_HINT = ' Only exit; and to S; may be written without braces.';
 export const CONDITIONAL_STATEMENT_MESSAGE = 'A conditional expression is not a statement; use an if block.';
 /**
  * Whether the if statement whose block is missing at actual has the shape of a conditional expression
@@ -240,6 +242,14 @@ export class SwamlParserErrorMessageProvider extends LangiumParserErrorMessagePr
             return duration;
         if (actual?.image === 'if' && OPERAND_RULES.has(ruleName(options.ruleName) ?? ''))
             return super.buildNoViableAltMessage(options) + OPERAND_HINT;
+        // A body after if (…), else or an event line head: a block, or without braces only exit; or to S; (SIF-S08). The
+        // message stays the block message of 2.2, with the conditional statement message where that shape is written.
+        const block = options.expectedPathsPerAlt.flat().find(path => path[0]?.name === '{')?.[0];
+        if (block && actual && first.every(t => ['{', 'exit', 'to'].includes(t.name)) && ['If', 'EventLine'].includes(ruleName(options.ruleName) ?? '')) {
+            if (ruleName(options.ruleName) === 'If' && conditionalStatement(actual, options.previous))
+                return CONDITIONAL_STATEMENT_MESSAGE;
+            return super.buildMismatchTokenMessage({ expected: block, actual, previous: options.previous, ruleName: options.ruleName }) + SHORT_BODY_HINT + hint(actual, options.previous, false);
+        }
         return (expectsName && actual ? `Expecting a name but found \`${actual.image}\`.` : super.buildNoViableAltMessage(options)) + hint(actual, options.previous, expectsName);
     }
     override buildEarlyExitMessage(options: Parameters<LangiumParserErrorMessageProvider['buildEarlyExitMessage']>[0]): string {

@@ -338,7 +338,7 @@ class Analysis {
     block(b: a.Block | a.ElseIf | undefined, flow: Flow): Flow {
         return this.statements(b?.statements ?? [], flow);
     }
-    statement(s: a.Statement, flow: Flow): Flow {
+    statement(s: a.Statement | a.StateMember, flow: Flow): Flow {
         if (this.found)
             return flow;
         if (++this.ctx.budget.work > (this.ctx.budget.limit ?? STALE_READ_WORK_LIMIT))
@@ -403,6 +403,34 @@ class Analysis {
                 g.locals.set(s.variable.name, join(g.locals.get(s.variable.name) ?? none(), collection));
                 return this.block(s.body, g);
             }));
+        }
+        else if (a.isStateStep(s)) {
+            // States in the flow (SIF-R01, SIF-R02, SIF-R05, SIF-R09): on entry once; then looks, each possibly after a wait
+            // (a suspension), running the statements standing in the state and, when present, the event lines; leaving runs
+            // on exit. Inner states are statements of their parent's look here, which over-approximates their order.
+            for (const x of s.statements)
+                if (a.isStateAction(x) && x.kind === 'entry')
+                    flow = this.block(x.body, flow);
+            let looked = this.loop(flow, inner => {
+                this.suspend(inner);
+                let at = inner;
+                for (const item of s.statements) {
+                    if (a.isStateAction(item))
+                        continue;
+                    if (a.isEventLine(item)) {
+                        const line = at.copy();
+                        item.bindings.forEach(n => line.locals.set(n, none()));
+                        at.merge(this.block(item.body, line));
+                    }
+                    else
+                        at = this.statement(item, at);
+                }
+                return at;
+            });
+            for (const x of s.statements)
+                if (a.isStateAction(x) && x.kind === 'exit')
+                    looked = this.block(x.body, looked);
+            return looked;
         }
         else if (a.isReceive(s)) {
             // A computed timeout is evaluated before the statement suspends (WP4-S03).

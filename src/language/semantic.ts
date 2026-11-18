@@ -55,6 +55,32 @@ export function schedule(c: Structure, seen = new Set<Structure>()): a.ScheduleE
 }
 export function signature(op: Executable): a.Operation | undefined { return a.isOperation(op) ? op : op.definition.ref; }
 export function body(op: Executable): a.OperationBody | undefined { return op.body ?? signature(op)?.body; }
+/** The states of an operation's own body (not of nested operations), parents before their inner states, in source order (SIF-G01). */
+export function flowStates(op: Executable): a.StateStep[] {
+    const b = body(op);
+    if (!b)
+        return [];
+    const out: a.StateStep[] = [];
+    const visit = (n: AstNode) => {
+        for (const x of AstUtils.streamContents(n)) {
+            if (isExecutable(x))
+                continue;
+            if (a.isStateStep(x))
+                out.push(x);
+            visit(x);
+        }
+    };
+    visit(b);
+    return out;
+}
+/** An operation with states (SIF-S01): a 2.2 machine (initial …) or an operation whose body contains a state statement. */
+export function isStateful(op: Executable): boolean { return !!body(op)?.states.length || flowStates(op).length > 0; }
+/** A state's inner states: the states standing in its braces (SIF-S03). */
+export const innerStates = (s: a.StateStep): a.StateStep[] => s.statements.filter(a.isStateStep);
+/** A state's items: everything in its braces before (and, in an invalid text, between) its inner states (SIF-S03). */
+export const stateItems = (s: a.StateStep): Exclude<a.StateMember, a.StateStep>[] => s.statements.filter((x): x is Exclude<a.StateMember, a.StateStep> => !a.isStateStep(x));
+/** A body written without braces (SIF-S08): only the concrete syntax tells it apart from { exit; } or { to S; }. */
+export const isShortBody = (b: a.Block): boolean => !!b.$cstNode && !b.$cstNode.text.startsWith('{');
 export const isExecutable = (n: AstNode): n is Executable => a.isOperation(n) || a.isOperationUsage(n);
 /**
  * The host intrinsics of the 2.3 library packages (WP3-L01, WP3-L02, WP3-L03, WP3-M01): operation defs of the
@@ -573,14 +599,16 @@ export function localVisible(n: AstNode, name: string): boolean {
             return (signature(p)?.parameters ?? []).some(x => x.name === name);
         if (a.isScheduleEntry(p))
             return p.bindings.includes(name);
-        if (a.isBlock(p) || a.isOperationBody(p) || a.isScenario(p)) {
+        // A local declared in a state's braces is a local of the look (SIF-R10): seen by later items, not by on entry, on
+        // exit or inner states, which run outside the look.
+        if (a.isBlock(p) || a.isOperationBody(p) || a.isScenario(p) || a.isStateStep(p) && !a.isStateAction(child) && !a.isStateStep(child)) {
             const index = child.$containerProperty === 'statements' ? child.$containerIndex ?? 0 : 0;
             if (p.statements.slice(0, index).some(s => a.isLocalVariable(s) && s.name === name))
                 return true;
         }
         else if (a.isFor(p) ? child !== p.initializer && p.initializer.name === name : a.isForEach(p) && child === p.body && p.variable.name === name)
             return true;
-        else if ((a.isReceiveBranch(p) && child === p.body || a.isInterruptible(p) && child === p.handler || a.isTransition(p) && child !== p.delayValue) && (p.bindings ?? []).includes(name))
+        else if ((a.isReceiveBranch(p) && child === p.body || a.isInterruptible(p) && child === p.handler || a.isTransition(p) && child !== p.delayValue || a.isEventLine(p) && child === p.body) && (p.bindings ?? []).includes(name))
             return true;
     }
     return false;
@@ -590,7 +618,7 @@ export function inputEndpoints(c: Structure): Set<string> {
     const result = new Set<string>(schedule(c).flatMap(e => e.endpoint ? [e.endpoint] : []));
     for (const op of members(c).filter(isExecutable))
         for (const n of body(op) ? nodes(body(op)!) : []) {
-            if ((a.isReceiveBranch(n) || a.isInterruptible(n) || a.isTransition(n)) && n.endpoint)
+            if ((a.isReceiveBranch(n) || a.isInterruptible(n) || a.isTransition(n) || a.isEventLine(n)) && n.endpoint)
                 result.add(n.endpoint);
             if (a.isDeferral(n))
                 n.endpoints.forEach(x => result.add(x));
@@ -667,7 +695,7 @@ function effectsOf(op: Executable, c: Structure | undefined, seen: Set<Executabl
         }
         if (a.isSend(n))
             result.communicates = true;
-        if (a.isWait(n) || a.isReceive(n) || a.isTransition(n) || a.isInterruptible(n))
+        if (a.isWait(n) || a.isReceive(n) || a.isTransition(n) || a.isInterruptible(n) || a.isStateStep(n))
             result.suspends = true;
         if (a.isCallExpression(n)) {
             if (n.target.includes('.')) {
@@ -992,7 +1020,7 @@ export function caseCallRestriction(s: a.Scenario, path: string, operation: Exec
     const access = caseCallAccess(s, path);
     if (!access)
         return 'scope';
-    if (body(operation)?.states.length)
+    if (isStateful(operation))
         return 'stateful';
     const effect = effects(operation, structure);
     return access === 'testHelper' && (effect.communicates || effect.suspends) ? 'effects' : undefined;

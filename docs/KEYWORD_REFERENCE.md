@@ -8,7 +8,7 @@ Generated from spec/keywords.json and the normative grammar. Examples here are g
 
 Introduces a state timer, receive timeout or success schedule dependency.
 
-**Context:** Ordered state transitions. **Grammar:** ScheduleEntry, Receive, Transition. **Name use:** reserved.
+**Context:** Ordered state transitions. **Grammar:** ScheduleEntry, EventLine, Receive, Transition. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -208,7 +208,7 @@ Used in schedule entry and successful chaining; see its grammar contexts and nor
 
 Used in ordered state transitions; see its grammar contexts and normative constraints.
 
-**Context:** Ordered state transitions. **Grammar:** StateAction. **Name use:** reserved.
+**Context:** Ordered state transitions. **Grammar:** Exit, StateAction. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -360,7 +360,7 @@ Used in use cases, tests and associations; see its grammar contexts and normativ
 
 Used in ordered state transitions; see its grammar contexts and normative constraints.
 
-**Context:** Ordered state transitions. **Grammar:** ScheduleEntry, Receive, Interruptible, StateAction, Transition, Deployment, Placement. **Name use:** reserved.
+**Context:** Ordered state transitions. **Grammar:** ScheduleEntry, EventLine, Receive, Interruptible, StateAction, Transition, Deployment, Placement. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -456,7 +456,7 @@ Used in typed copied values; see its grammar contexts and normative constraints.
 
 Used in suspending wait and receive; see its grammar contexts and normative constraints.
 
-**Context:** Suspending wait and receive. **Grammar:** ScheduleEntry, ReceiveBranch, Interruptible, Transition. **Name use:** reserved.
+**Context:** Suspending wait and receive. **Grammar:** ScheduleEntry, EventLine, ReceiveBranch, Interruptible, Transition. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -576,7 +576,7 @@ Used in schedule entry and successful chaining; see its grammar contexts and nor
 
 Used in ordered state transitions; see its grammar contexts and normative constraints.
 
-**Context:** Ordered state transitions. **Grammar:** State, Name. **Name use:** contextual.
+**Context:** Ordered state transitions. **Grammar:** StateStep, State, Name. **Name use:** contextual.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -608,7 +608,7 @@ Introduces a once-evaluated uint loop limit.
 
 Introduces a state transition target or the case of an associate link.
 
-**Context:** Ordered state transitions. **Grammar:** Transition, Association, Name. **Name use:** contextual.
+**Context:** Ordered state transitions. **Grammar:** Jump, Transition, Association, Name. **Name use:** contextual.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 

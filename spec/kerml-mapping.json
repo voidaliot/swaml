@@ -253,6 +253,65 @@
       "normative": "docs/spec/03-behavior.md"
     },
     {
+      "source": "StateStep",
+      "kind": "lowering",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "StateStep: a state written as a statement of the flow (SIF-G01): reached by the flow, a leave or a jump, its on entry runs once and it stays entered, waiting, until a look leaves it (SIF-R01, SIF-R05). Its braces hold entry and exit actions, event lines and statements, then inner states (SIF-S03). It lowers to a state usage of the operation's behaviour, preserving ownership, order, occurrence identity and source provenance.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "StateMember",
+      "kind": "grouping",
+      "kernel": [],
+      "semantic": "StateMember: an item standing in a state's braces, an entry or exit action, an event line, a statement or an inner state (SIF-G01); items keep their written order, which is the order of a look (SIF-R02), and their statement identities.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "EventLine",
+      "kind": "lowering",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "EventLine: an on receive p.m(x) or after D line of a state (SIF-G01); its block runs at a look at which its event is present (SIF-R02, SIF-R03). A timer is a literal or a computed integral duration evaluated once at arrival (SIF-R01). It lowers to an accept action or time event of the state, preserving order, occurrence identity and source provenance.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "ShortBody",
+      "kind": "grouping",
+      "kernel": [],
+      "semantic": "ShortBody: a body without braces that is exactly exit; or to S; (SIF-S08). It builds the same block as the braced form, so it lowers like it and has the same statement identities.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "Leave",
+      "kind": "lowering",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "Leave: exit; or to S; (SIF-G01), the statements that leave a state (SIF-R09).",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "Exit",
+      "kind": "lowering",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "Exit: leaves the state at whose level it is written and goes on with what is written next (SIF-R09); it lowers to a transition to the successor of that state, preserving order, occurrence identity and source provenance.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
+      "source": "Jump",
+      "kind": "lowering",
+      "kernel": [
+        "Feature"
+      ],
+      "semantic": "Jump: to S leaves the states up to the list that contains S and reaches S, entering parents on the way (SIF-R09, SIF-S06); it lowers to a transition to S, preserving order, occurrence identity and source provenance.",
+      "normative": "docs/spec/03-behavior.md"
+    },
+    {
       "source": "LocalVariable",
       "kind": "element",
       "kernel": [

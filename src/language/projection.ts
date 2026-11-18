@@ -2,7 +2,7 @@ import { AstUtils, type AstNode } from 'langium';
 import type { Range } from 'vscode-languageserver';
 import * as a from './generated/ast.js';
 import { SWAML_LANGUAGE_VERSION } from './edition.js';
-import { memberQos, sampledMembers, isCompletion, isInternal, stateDeferrals, entryDeadline, entryPeriod, displayText, associationPairs, body, isAssociationList, direction, effectiveQos, identity, isExecutable, members, nanos, owner, portMembers, schedule, signature, typeKey, type Node } from './semantic.js';
+import { flowStates, nodes, memberQos, sampledMembers, isCompletion, isInternal, stateDeferrals, entryDeadline, entryPeriod, displayText, associationPairs, body, isAssociationList, direction, effectiveQos, identity, isExecutable, members, nanos, owner, portMembers, schedule, signature, typeKey, type Node } from './semantic.js';
 import { documentationText, viewCandidates, type ViewSubject } from './presentation.js';
 export interface ProjectionNode {
     id: string;
@@ -65,6 +65,17 @@ function memberPolicyLabels(c: a.Connect): Pick<ProjectionEdge, 'memberPolicies'
 /** The label of a state transition: its trigger, or for a completion transition its guard (WP5-M01). */
 function transitionLabel(t: a.Transition): string {
     return t.endpoint ? 'on receive ' + t.endpoint : t.delayValue ? `after (${displayText(t.delayValue)})` : t.delay ? 'after ' + t.delay.value + t.delay.unit : `when (${t.guard ? displayText(t.guard) : ''})`;
+}
+/** What leads to a leave: its event line's head and the conditions of the ifs on the way, as [c]; 'to S' alone otherwise. */
+function leaveLabel(leave: a.Jump): string {
+    const parts: string[] = [];
+    for (let x: AstNode | undefined = leave.$container; x && !a.isStateStep(x); x = x.$container) {
+        if (a.isIf(x))
+            parts.unshift(`[${displayText(x.condition)}]`);
+        if (a.isEventLine(x))
+            parts.unshift(x.endpoint !== undefined ? x.endpoint : x.delayValue ? `after (${displayText(x.delayValue)})` : x.delay ? `after ${x.delay.value}${x.delay.unit}` : '');
+    }
+    return parts.length ? parts.join(' ') : `to ${leave.target}`;
 }
 export interface ProjectionEdge {
     id: string;
@@ -147,6 +158,15 @@ export function projectModel(models: readonly a.Model[]): Projection {
             for (const state of body(n)!.states)
                 state.transitions.forEach((t, i) => { if (t.target !== undefined)
                     addEdge('transition', id + '.' + state.name, id + '.' + t.target, transitionLabel(t), { order: i, ...(isCompletion(t) ? { completion: true } : t.guard && !t.endpoint ? { guard: displayText(t.guard) } : {}) }); });
+        // States in the flow (SIF-G01): one transition edge per to S, in written order of the leaves of its state, labelled
+        // with what leads to it: the event line and the if conditions on the way. exit; continues with the flow and has
+        // no target state, so it draws no edge here.
+        if (isExecutable(n))
+            for (const state of flowStates(n)) {
+                const leaves = nodes(state).filter((x): x is a.Exit | a.Jump => (a.isJump(x) || a.isExit(x)) && owner(x, a.isStateStep) === state);
+                leaves.forEach((leave, order) => { if (a.isJump(leave) && leave.target !== undefined && state.name !== undefined)
+                    addEdge('transition', id + '.' + state.name, id + '.' + leave.target, leaveLabel(leave), { order }); });
+            }
         if (a.isState(n)) {
             const reactions = n.transitions.flatMap((t, order) => isInternal(t) ? [{ label: transitionLabel(t), order, ...(t.guard ? { guard: displayText(t.guard) } : {}) }] : []), deferrals = stateDeferrals(n);
             if (reactions.length)

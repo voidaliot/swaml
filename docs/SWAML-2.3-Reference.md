@@ -2081,7 +2081,7 @@ Generated from spec/keywords.json and the normative grammar. Examples here are g
 
 Introduces a state timer, receive timeout or success schedule dependency.
 
-**Context:** Ordered state transitions. **Grammar:** ScheduleEntry, Receive, Transition. **Name use:** reserved.
+**Context:** Ordered state transitions. **Grammar:** ScheduleEntry, EventLine, Receive, Transition. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -2281,7 +2281,7 @@ Used in schedule entry and successful chaining; see its grammar contexts and nor
 
 Used in ordered state transitions; see its grammar contexts and normative constraints.
 
-**Context:** Ordered state transitions. **Grammar:** StateAction. **Name use:** reserved.
+**Context:** Ordered state transitions. **Grammar:** Exit, StateAction. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -2433,7 +2433,7 @@ Used in use cases, tests and associations; see its grammar contexts and normativ
 
 Used in ordered state transitions; see its grammar contexts and normative constraints.
 
-**Context:** Ordered state transitions. **Grammar:** ScheduleEntry, Receive, Interruptible, StateAction, Transition, Deployment, Placement. **Name use:** reserved.
+**Context:** Ordered state transitions. **Grammar:** ScheduleEntry, EventLine, Receive, Interruptible, StateAction, Transition, Deployment, Placement. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -2529,7 +2529,7 @@ Used in typed copied values; see its grammar contexts and normative constraints.
 
 Used in suspending wait and receive; see its grammar contexts and normative constraints.
 
-**Context:** Suspending wait and receive. **Grammar:** ScheduleEntry, ReceiveBranch, Interruptible, Transition. **Name use:** reserved.
+**Context:** Suspending wait and receive. **Grammar:** ScheduleEntry, EventLine, ReceiveBranch, Interruptible, Transition. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -2649,7 +2649,7 @@ Used in schedule entry and successful chaining; see its grammar contexts and nor
 
 Used in ordered state transitions; see its grammar contexts and normative constraints.
 
-**Context:** Ordered state transitions. **Grammar:** State, Name. **Name use:** contextual.
+**Context:** Ordered state transitions. **Grammar:** StateStep, State, Name. **Name use:** contextual.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -2681,7 +2681,7 @@ Introduces a once-evaluated uint loop limit.
 
 Introduces a state transition target or the case of an associate link.
 
-**Context:** Ordered state transitions. **Grammar:** Transition, Association, Name. **Name use:** contextual.
+**Context:** Ordered state transitions. **Grammar:** Jump, Transition, Association, Name. **Name use:** contextual.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -3432,7 +3432,18 @@ OperationBody: '{' documentation=Documentation? operations+=Executable* ('initia
 Schedule: 'schedule' '{' entries+=ScheduleEntry* '}';
 ScheduleEntry: ('on' (kind='start' | kind='every' (period=Duration | '(' periodValue=Expression ')') | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('if' '(' guard=Expression ')')? ('deadline' (deadline=Duration | '(' deadlineValue=Expression ')'))? (concurrent?='concurrent')? ';';
 Block: '{' statements+=Statement* '}';
-Statement: LocalVariable | Assign | Send | ExpressionStatement | Return | If | While | Until | For | ForEach | Wait | Receive | Interruptible | Fail | Assert;
+Statement: LocalVariable | Assign | Send | ExpressionStatement | Return | If | While | Until | For | ForEach | Wait | Receive | Interruptible | Fail | Assert | StateStep | Leave;
+// 2.3 states in the flow (SIF-G01): a state is a statement. Its braces hold on entry/on exit, event lines and statements, then
+// inner states (SIF-S03 is checked by the validator). Every item stands in `statements`, so items have statement identities.
+StateStep: 'state' name=Name '{' documentation=Documentation? statements+=StateMember* '}';
+StateMember: StateAction | EventLine | LocalVariable | Assign | Send | ExpressionStatement | Return | If | While | Until | For | ForEach | Wait | Interruptible | Fail | Assert | StateStep | Leave;
+EventLine: ('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' | 'after' (delay=Duration | '(' delayValue=Expression ')')) (body=Block | body=ShortBody);
+// The short form (SIF-S08): a body that is only exit; or to S; may drop its braces. It builds the same Block, so identities,
+// diagrams and every rule see a block; only the concrete syntax tells the two apart (isShortBody).
+ShortBody infers Block: statements+=Leave;
+Leave: Exit | Jump;
+Exit: {infer Exit} 'exit' ';';
+Jump: 'to' target=Name ';';
 LocalVariable: 'var' name=Name ':' type=TypeRef '=' value=Expression ';';
 Assign: target=ValuePath ('[' index=Expression ']' selectors+=Selector*)? '=' value=Expression ';';
 Selector: '.' field=Name | '[' index=Expression ']';
@@ -3442,7 +3453,7 @@ Return: 'return' value=Expression? ';';
 // 2.3 (SIF-G01): else if. An ElseIf holds the one If written after else, as a one-statement list, so every block walker runs
 // it as 2.2 runs else { if … }, and its If has the identity of that statement (…/otherwise/0). The alternation stays inside
 // If, without a rule of its own, so a 2.2 else block costs the parser no extra rule call per nesting level (WP2-D05).
-If: 'if' '(' condition=Expression ')' then=Block ('else' (otherwise=Block | otherwise=ElseIf))?;
+If: 'if' '(' condition=Expression ')' (then=Block | then=ShortBody) ('else' (otherwise=Block | otherwise=ShortBody | otherwise=ElseIf))?;
 ElseIf: statements+=If;
 While: 'while' '(' condition=Expression (',' limit=Expression 'times')? ')' body=Block;
 Until: 'until' '(' condition=Expression (',' limit=Expression 'times')? ')' body=Block;

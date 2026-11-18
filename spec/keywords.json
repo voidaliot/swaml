@@ -12,6 +12,7 @@
       "contextual": false,
       "productions": [
         "ScheduleEntry",
+        "EventLine",
         "Receive",
         "Transition"
       ]
@@ -244,7 +245,7 @@
       "meaning": "Used in statements and decisions; see its grammar contexts and normative constraints.",
       "concern": "Statements and decisions",
       "normative": "docs/spec/03-behavior.md",
-      "example": "'if' '(' condition=Expression ')' then=Block ('else' (otherwise=Block | otherwise=ElseIf))?;",
+      "example": "'if' '(' condition=Expression ')' (then=Block | then=ShortBody) ('else' (otherwise=Block | otherwise=ShortBody | otherwise=ElseIf))?;",
       "contextual": false,
       "productions": [
         "If",
@@ -300,9 +301,10 @@
       "meaning": "Used in ordered state transitions; see its grammar contexts and normative constraints.",
       "concern": "Ordered state transitions",
       "normative": "docs/spec/03-behavior.md",
-      "example": "'on' kind=('entry'|'exit') body=Block;",
+      "example": "{infer Exit} 'exit' ';';",
       "contextual": false,
       "productions": [
+        "Exit",
         "StateAction"
       ]
     },
@@ -525,6 +527,7 @@
       "contextual": false,
       "productions": [
         "ScheduleEntry",
+        "EventLine",
         "Receive",
         "Interruptible",
         "StateAction",
@@ -671,6 +674,7 @@
       "contextual": false,
       "productions": [
         "ScheduleEntry",
+        "EventLine",
         "ReceiveBranch",
         "Interruptible",
         "Transition"
@@ -843,9 +847,10 @@
       "meaning": "Used in ordered state transitions; see its grammar contexts and normative constraints.",
       "concern": "Ordered state transitions",
       "normative": "docs/spec/03-behavior.md",
-      "example": "(final?='final')? 'state' name=Name '{' documentation=Documentation? (actions+=StateAction | transitions+=Transition | deferrals+=Deferral)* '}';",
+      "example": "'state' name=Name '{' documentation=Documentation? statements+=StateMember* '}';",
       "contextual": true,
       "productions": [
+        "StateStep",
         "State",
         "Name"
       ]
@@ -891,9 +896,10 @@
       "meaning": "Introduces a state transition target or the case of an associate link.",
       "concern": "Ordered state transitions",
       "normative": "docs/spec/03-behavior.md",
-      "example": "('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' (delay=Duration | '(' delayValue=Expression ')') ('when' '(' guard=Expression ')')? | 'when' '(' guard=Expression ')') ('to' target=Name)? effect=Block;",
+      "example": "'to' target=Name ';';",
       "contextual": true,
       "productions": [
+        "Jump",
         "Transition",
         "Association",
         "Name"

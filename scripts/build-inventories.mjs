@@ -29,7 +29,7 @@ const groups=[
  ['schedule','Schedule entry and successful chaining',['Schedule','ScheduleEntry'],['schedule','start','every','call','deadline','concurrent'],'25-function-completion','Chaining::Demo','schedule'],
  ['receive','Suspending wait and receive',['Wait','Receive','ReceiveBranch'],['wait','receive','or'],'21-receive-and-try','Receiving::Receiver','receive'],
  ['interrupt','Armed interrupt and cancellation',['Interruptible'],['interruptible'],'19-interruptible-function','Interrupts::Receiver','interrupt'],
- ['states','Ordered state transitions',['State','StateAction','Transition','Deferral'],['initial','state','final','entry','exit','when','to','after','on','defer'],'04-stateful-function','States::Demo.lamp','state'],
+ ['states','Ordered state transitions',['State','StateAction','Transition','Deferral','StateStep','StateMember','EventLine','ShortBody','Leave','Exit','Jump'],['initial','state','final','entry','exit','when','to','after','on','defer'],'04-stateful-function','States::Demo.lamp','state'],
  ['deployment','Platform Nodes and placement',['Deployment','Placement'],['deployment','deploy'],'22-platform-deployment','Placement::Demo','deployment'],
  ['requirements','Requirements and package intent links',['Requirement','Satisfaction','Verification'],['requirement','satisfy','verify','by'],'16-requirements-and-views','Traceability::Delivery','requirement'],
  ['cases','Use cases, tests and associations',['Scenario','CaseKind','Association'],['use','case','test','associate','of'],'28-use-cases','Cash Machine::Withdraw cash','case'],
@@ -83,7 +83,14 @@ const wp7Semantic={
 // Productions SIF package 1 adds or changes (one word for conditions, SIF-G01).
 const sifSemantic={
  If:'If: a decision statement that runs its then block when its bool condition holds and otherwise its else block or, written else if, another if statement (SIF-G01); it preserves statement order, types, occurrence identity and source provenance.',
- ElseIf:'ElseIf: the one if statement written directly after else (SIF-G01). It lowers exactly as an else block holding that statement, so else if (c) and else { if (c) } have one meaning; its if has the statement identity of the if in else { if (c) }, so rewriting one spelling as the other keeps every identity. It preserves order, occurrence identity and source provenance.'
+ ElseIf:'ElseIf: the one if statement written directly after else (SIF-G01). It lowers exactly as an else block holding that statement, so else if (c) and else { if (c) } have one meaning; its if has the statement identity of the if in else { if (c) }, so rewriting one spelling as the other keeps every identity. It preserves order, occurrence identity and source provenance.',
+ StateStep:'StateStep: a state written as a statement of the flow (SIF-G01): reached by the flow, a leave or a jump, its on entry runs once and it stays entered, waiting, until a look leaves it (SIF-R01, SIF-R05). Its braces hold entry and exit actions, event lines and statements, then inner states (SIF-S03). It lowers to a state usage of the operation\'s behaviour, preserving ownership, order, occurrence identity and source provenance.',
+ StateMember:'StateMember: an item standing in a state\'s braces, an entry or exit action, an event line, a statement or an inner state (SIF-G01); items keep their written order, which is the order of a look (SIF-R02), and their statement identities.',
+ EventLine:'EventLine: an on receive p.m(x) or after D line of a state (SIF-G01); its block runs at a look at which its event is present (SIF-R02, SIF-R03). A timer is a literal or a computed integral duration evaluated once at arrival (SIF-R01). It lowers to an accept action or time event of the state, preserving order, occurrence identity and source provenance.',
+ ShortBody:'ShortBody: a body without braces that is exactly exit; or to S; (SIF-S08). It builds the same block as the braced form, so it lowers like it and has the same statement identities.',
+ Leave:'Leave: exit; or to S; (SIF-G01), the statements that leave a state (SIF-R09).',
+ Exit:'Exit: leaves the state at whose level it is written and goes on with what is written next (SIF-R09); it lowers to a transition to the successor of that state, preserving order, occurrence identity and source provenance.',
+ Jump:'Jump: to S leaves the states up to the list that contains S and reaches S, entering parents on the way (SIF-R09, SIF-S06); it lowers to a transition to S, preserving order, occurrence identity and source provenance.'
 };
 const kindOverride={MemberPolicy:'reference'};
 const kernelOverride={ConditionalExpression:["ControlFunctions::'if'"]};
