@@ -50,7 +50,7 @@ A schedule entry lowers to a release mechanism and dispatch-time argument evalua
 
 | ID | Rule |
 | --- | --- |
-| WP7-M02 | A schedule entry with a release guard lowers to its release mechanism, then guard evaluation at dispatch after the arguments, then either the activation or a skip that counts as completion for `after` edges. The skip cancels the release's deadline, releases the lock and discards a receive entry's consumed input. |
+| WP7-M02 | A schedule entry with a release guard lowers to its release mechanism, then guard evaluation at dispatch before the arguments, then either the arguments and the activation or a skip that counts as completion for `after` edges. The skip cancels the release's deadline, releases the lock and discards a receive entry's consumed input. |
 
 ## 7.5 Presentation and equivalence
 

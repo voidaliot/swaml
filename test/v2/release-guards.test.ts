@@ -229,11 +229,21 @@ test('WP7-R06 WP7-T02 a failing guard is an uncaught failure of the release with
     assert.equal(callee.status, 'horizon', 'the deadline is cancelled');
 });
 
-test('WP7-R01 dispatch arguments are evaluated before the guard; a serial guard sees what ran before it under the lock', async () => {
-    // An argument failure comes first, even when the guard would be false.
-    const args = await runClocked('operation par(n: int) { runs = runs + 1; }', 'on every 10ms par(100 % d) when (false);', 11_000_000);
+test('WP7-R01 WP7-R02 the guard is evaluated before the dispatch arguments: a false guard evaluates none, and a guard protects its arguments', async () => {
+    // A guard protects its own arguments: the division is never evaluated while the divisor is zero.
+    const members = 'operation par(n: int) { runs = runs + 1; } operation bump() returns int { lasts = lasts + 1; return 1; }';
+    const guarded = await runClocked(members, 'on every 10ms par(100 % d) when (d != 0);', 31_000_000);
+    assert.deepEqual([kinds(guarded.trace, 'failure').length, kinds(guarded.trace, 'skip').length, guarded.outcome], [0, 3, 'no-failure-observed']);
+    // A false guard evaluates no argument: a helper that writes in an argument never runs on a skipped release.
+    const skipped = await runClocked(members, 'on every 10ms par(bump()) when (toggles > 100);', 31_000_000);
+    assert.deepEqual([skipped.stores.c.lasts, skipped.stores.c.runs, kinds(skipped.trace, 'skip').length], [0, 0, 3]);
+    assert.ok(!skipped.trace.some(o => o.kind === 'write' && o.subject === 'c.lasts'));
+    // A true guard evaluates the arguments next, and an argument failure keeps its 2.2 meaning: a failure of the release.
+    const args = await runClocked(members, 'on every 10ms par(100 % d) when (d == 0);', 11_000_000);
     assert.deepEqual(kinds(args.trace, 'failure').map(o => [o.reason, o.source]), [['Arithmetic', 'Test::C/schedule/0']]);
     assert.equal(kinds(args.trace, 'skip').length, 0);
+    const ran = await runClocked(members, 'on every 10ms par(bump()) when (toggles < 100);', 21_000_000);
+    assert.deepEqual([ran.stores.c.lasts, ran.stores.c.runs], [2, 2]);
     // toggle runs first at each instant; the serial guard reads its write.
     const serial = await runClocked('', 'on every 10ms toggle(); on every 10ms slot() when (toggles % 2 == 0);', 41_000_000);
     assert.deepEqual(line(serial.trace, 'c.slot'), ['10 skip', '20 complete', '30 skip', '40 complete']);
@@ -245,12 +255,13 @@ test('WP7-R01 a concurrent entry reads attributes from its dispatch snapshot, no
     operation three() returns int { var x: int = 1; x = x + 1; return x + 1; }
     operation peek(n: int) { }
     operation flip() { awake = not awake; flips = flips + 1; }
-    schedule { on every 10ms peek(three()) when (awake) concurrent; on every 10ms flip(); }
+    schedule { on every 10ms peek(1) when (three() > 0 and awake) concurrent; on every 10ms flip(); }
   }
   component c: C;
 }`;
     const r = simulate([(await valid(source)).model], 'Test::c', { untilNs: 41_000_000 });
-    // flip writes awake while peek's arguments run; the guard reads the value at dispatch (true at 10 ms, false at 20 ms).
+    // flip writes awake while the guard's helper runs, before the guard reads awake; the guard reads the value at
+    // dispatch (true at 10 ms, false at 20 ms).
     const write = r.trace.find(o => o.kind === 'write' && o.subject === 'c.awake')!, done = r.trace.find(o => o.subject === 'c.peek' && ['skip', 'complete'].includes(o.kind))!;
     assert.ok(write.ordinal < done.ordinal && write.timeNs === done.timeNs, 'the live value changed before the guard step');
     assert.deepEqual(line(r.trace, 'c.peek'), ['10 complete', '20 skip', '30 complete', '40 skip']);
@@ -270,6 +281,34 @@ test('WP7-R01 WP6-S01 a guard reads sample cells: the latest value delivered bef
     assert.deepEqual(sampledMembers(c), new Set(['mode.current']));
     // A guard that samples beside a 2.2 receive owner of the same member is valid, as for any sampled read (WP6-S04).
     await valid(model('operation onMode(p: PowerMode) { }', 'on every 5ms slot() when (mode.current == PowerMode.run); on receive mode.current(p) onMode(p);'));
+});
+
+test('WP7-R01 WP6-R03 the guard, the arguments and the body read one sampled value even when a delivery falls between the guard step and the body', async () => {
+    // C is dispatched before Src at each instant, so Src's send of the new mode is delivered after C's guard step and
+    // before the later steps of look; a segment that dropped the guard's copy would let the body see the new value.
+    const source = (guard: string) => `package Test {
+  enum PowerMode { run, sleep }
+  port def Mode { provides attribute current: PowerMode = PowerMode.run; }
+  component def Src { port mode: Mode; attribute k: int = 0; operation tick() { send mode.current(if (k % 2 == 0) PowerMode.sleep else PowerMode.run); k = k + 1; } schedule { on every 10ms tick(); } }
+  component def C { reversed port mode: Mode; attribute runs: uint = 0; attribute seen: uint = 0; attribute differ: uint = 0;
+    operation awake() returns bool { return mode.current != PowerMode.sleep; }
+    operation look(p: PowerMode) { runs = runs + 1; runs = runs + 1; runs = runs + 1; if (mode.current == PowerMode.sleep) { seen = seen + 1; } if (p != mode.current) { differ = differ + 1; } }
+    schedule { on every 10ms look(mode.current) when (${guard}); }
+  }
+  component Demo { component c: C; component s: Src; connect (s.mode, c.mode); }
+}`;
+    for (const guard of ['mode.current != PowerMode.sleep', 'awake()']) {
+        const r = simulate([(await valid(source(guard))).model], 'Test::Demo', { untilNs: 45_000_000 });
+        const looks = r.trace.filter(o => o.subject === 'Demo.c.look' && ['complete', 'skip'].includes(o.kind));
+        assert.deepEqual(looks.map(o => [ms(o), o.kind]), [[10, 'complete'], [20, 'skip'], [30, 'complete'], [40, 'skip']], guard);
+        // The interleaving happens: a sample update of c's cell lies between a completed look's dispatch and its completion.
+        const interleaved = looks.filter(o => o.kind === 'complete').some(done => {
+            const dispatch = r.trace.find(o => o.kind === 'dispatch' && o.activation === done.activation)!;
+            return r.trace.some(o => o.kind === 'sample' && o.ordinal > dispatch.ordinal && o.ordinal < done.ordinal);
+        });
+        assert.ok(interleaved, guard);
+        assert.deepEqual([r.stores['Demo.c'].seen, r.stores['Demo.c'].differ], [0, 0], `${guard}: the body and the argument see what the guard saw`);
+    }
 });
 
 test('WP7-R07 a skipped release neither fails nor completes a case; a failing guard fails it', async () => {

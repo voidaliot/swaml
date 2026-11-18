@@ -78,7 +78,7 @@ const wp6Semantic={
 };
 // Productions WP7 changes (release guards, WP7-G01, WP7-M02).
 const wp7Semantic={
- ScheduleEntry:'ScheduleEntry: a release trigger and its operation; a period or deadline is a literal or an expression of the constant sublanguage with one value per expanded occurrence (WP4-S04 to WP4-S07). An every, receive or after entry may carry a release guard, which lowers to a guard evaluated at dispatch before the activation; a false guard is a skip that counts as completion for after successors (WP7-S01, WP7-M02). The guard is not part of trigger identity. It preserves entry order, trigger identity, occurrence identity and source provenance.'
+ ScheduleEntry:'ScheduleEntry: a release trigger and its operation; a period or deadline is a literal or an expression of the constant sublanguage with one value per expanded occurrence (WP4-S04 to WP4-S07). An every, receive or after entry may carry a release guard, which lowers to a guard evaluated at the first step of the activation, before its arguments; a false guard is a skip that evaluates no argument, runs no operation and counts as completion for after successors (WP7-S01, WP7-M02). The guard is not part of trigger identity. It preserves entry order, trigger identity, occurrence identity and source provenance.'
 };
 const kindOverride={MemberPolicy:'reference'};
 const kernelOverride={ConditionalExpression:["ControlFunctions::'if'"]};

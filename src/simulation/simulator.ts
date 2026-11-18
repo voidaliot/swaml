@@ -845,12 +845,10 @@ class Interpreter {
         const env: Environment = new Map();
         if (message)
             this.bindInputs(env, f.entry.bindings, message);
-        const args: Value[] = [];
-        for (const e of f.entry.args)
-            args.push(yield* this.evaluate(e, f, env));
-        // WP7-R01: a release guard is evaluated at the first execution step, after the dispatch arguments, in their
+        // WP7-R01: a release guard is evaluated at the first execution step, before the dispatch arguments, in their
         // scope: under the serial lock, or for a concurrent entry on its dispatch snapshot, with sample cells and now()
-        // read live. A runtime failure inside it is an uncaught failure of the release with the entry as source (WP7-R06).
+        // read live. A false guard evaluates no argument (WP7-R02), so a guard may protect its own arguments. A runtime
+        // failure inside it is an uncaught failure of the release with the entry as source (WP7-R06).
         if (f.entry.guard) {
             let released: Value;
             try {
@@ -866,6 +864,9 @@ class Interpreter {
                 return voidValue();
             }
         }
+        const args: Value[] = [];
+        for (const e of f.entry.args)
+            args.push(yield* this.evaluate(e, f, env));
         const sig = signature(f.op)!;
         const outNames = f.entry.args.map((arg, i) => sig.parameters[i]?.direction === 'out' && a.isReferenceExpression(arg) ? arg.path : undefined);
         const result = yield* this.call(f.op, args, f, env, outNames);

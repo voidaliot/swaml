@@ -34,9 +34,9 @@ on every 20ms slot() when (mode.current != PowerMode.sleep) deadline 2ms;
 
 - **Allowed entries (SW2007).** A guard on `start` or `call` entries is an error.
 - **Effects (SW2007).** The guard is pure or reads state. Its scope is the component's attributes, its sampled ports (ADR 0024), `now()` and the entry's receive bindings.
-- **Evaluation.** At the activation's first execution step, together with its dispatch arguments. It sees the deliveries and sample-cell updates ordered before that step in the instant's event order (ADR 0024). A serial entry evaluates under the serial lock. A concurrent entry reads attributes from its dispatch snapshot and sample cells live.
+- **Evaluation.** At the activation's first execution step, before its dispatch arguments (amended in WP7, see *Implementation in WP7*). It sees the deliveries and sample-cell updates ordered before that step in the instant's event order (ADR 0024). A serial entry evaluates under the serial lock. A concurrent entry reads attributes from its dispatch snapshot and sample cells live.
 - **False guard.**
-  - No operation runs, and the deadline armed at release is cancelled.
+  - No argument is evaluated, no operation runs, and the deadline armed at release is cancelled.
   - The trace records `skip` with the entry as source.
   - The skip counts as a successful whole completion for `after` successors: they are released at the time of the skip and apply their own guards. AUTOSAR mode disabling suppresses one runnable, not its successors.
   - A `receive` entry's input, consumed at release as in 2.2, is discarded with `discardInput` reason `releaseGuard`.
@@ -158,7 +158,7 @@ It computes no schedule in 2.3.
 ## Implementation in WP7
 
 - **Scope of the guard.** The guard has exactly the scope of the entry's dispatch arguments, which the validator already types: the component's attributes, its sampled ports, `now()` and the entry's receive bindings. A sampled read in a guard is a sampled read of the component (ownership and the mandatory initial value of ADR 0024 apply), and a binding of the same name hides the port, by the validator's scope rules (`localVisible`).
-- **Order at dispatch.** The arguments are evaluated first, then the guard (proposal, B19). An argument failure keeps its 2.2 meaning and comes before the guard.
+- **Order at dispatch.** The guard is evaluated first, then, only when it is true, the arguments (owner decision A in the WP7 review, replacing the proposal's order). A false guard therefore evaluates no argument: a skipped release never runs an argument helper that writes or communicates, and a guard may protect its own arguments (`use(sum % count) when (count != 0)`). An argument failure keeps its 2.2 meaning and can only follow a true guard. The guard, the arguments and the body read one sampled value (WP6-R03).
 - **Observations.** A skip replaces `complete` and, like it, follows the activation's `unlock`; a skipped receive entry's `discardInput` (reason `releaseGuard`, with `activation` and `message`) directly follows its `skip`. A failing guard's `failure` names the entry as `source` even when the failure happens inside an operation the guard calls.
 - **Diagnostics.** A suspending, remote or unresolved call in a guard is reported by the existing call rules only; the guard rule reports calls that write or communicate. A guard on a `start` or `call` entry is reported once, where it is written, and is not typed.
 - **Inherited guards.** Like the arguments, a guard of an inherited entry is typed in every effective structure, so a redefined helper that writes is an error before any run; a guard whose document has syntax errors is typed only in that document, so a valid file that specializes it gets no error for the unfinished guard. An entry with the same trigger and operation in a specialization or usage replaces the inherited entry with its guard (WP7-S03).
