@@ -155,7 +155,7 @@ function renderMarkdown(text, source, p) {
         }).join('') + '</tr>';
       }).join('\n');
       // A scrollable table is a named region that the keyboard can focus and scroll.
-      const name = 'Table: ' + token.header.map(c => plain(this.parser.parseInline(c.tokens))).join(', ');
+      const name = (headings.at(-1)?.title ?? p.title) + ', table: ' + token.header.map(c => plain(this.parser.parseInline(c.tokens))).join(', ');
       return `<div class="table-scroll" tabindex="0" role="region" aria-label="${esc(name.length > 120 ? name.slice(0, 117) + '…' : name)}"><table><thead><tr>${head}</tr></thead><tbody>\n${rows}\n</tbody></table></div>\n`;
     },
     // Mentions of a rule identifier or diagnostics code link to the row that defines it.
