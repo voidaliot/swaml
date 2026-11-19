@@ -22318,10 +22318,10 @@ endobj
 2098 0 obj
 <<
 /Author (swa\056ml contributors)
-/CreationDate (D\07220261119073910\05301\04700\047)
+/CreationDate (D\07220261119075727\05301\04700\047)
 /Creator (\050unspecified\051)
 /Keywords ()
-/ModDate (D\07220261119073910\05301\04700\047)
+/ModDate (D\07220261119075727\05301\04700\047)
 /Producer (ReportLab PDF Library \055 \050opensource\051)
 /Subject (Software Architecture Modeling Language 3\0560\072 normative specification\054 grammar and examples)
 /Title (swa\056ml 3\0560 Complete Language Specification)
@@ -22409,7 +22409,7 @@ endobj
 endobj
 2102 0 obj
 <<
-/Names [ (LICENSE) 2294 0 R (docs\137\137AI\137GUIDE\056md) 2134 0 R (docs\137\137ARCHITECTURE\137PATTERNS\056md) 2136 0 R (docs\137\137GRAPHICAL\137CATALOG\056md) 2124 0 R (docs\137\137GRAPHICAL\137EXAMPLES\056md) 2146 0 R (docs\137\137GRAPHICAL\137NOTATION\056md) 2122 0 R (docs\137\137IMPLEMENTATION\137STATUS\056md) 2148 0 R (docs\137\137KEYWORD\137REFERENCE\056md) 2144 0 R (docs\137\137LANGUAGE\137SPECIFICATION\056md) 2100 0 R (docs\137\137MIGRATION\1373\1370\056md) 2128 0 R (docs\137\137ONTOLOGY\137AND\137VIEWS\056md) 2138 0 R (docs\137\137QUICK\137START\056md) 2130 0 R (docs\137\137RELEASE\1373\1370\056md) 2126 0 R (docs\137\137REQUIREMENTS\137AND\137DOCUMENTATION\056md) 2142 0 R (docs\137\137SIMULATION\056md) 2140 0 R (docs\137\137SWAML\0553\0560\055Reference\056md) 2296 0 R (docs\137\137TOOLING\056md) 2150 0 R (docs\137\137USER\137GUIDE\056md) 2132 0 R (docs\137\137VERSIONING\056md) 2152 0 R (docs\137\137decisions\137\1370016\055swaml\0552\0550\056md) 2154 0 R (docs\137\137decisions\137\1370017\055readable\055names\055and\055use\055cases\056md) 2156 0 R (docs\137\137decisions\137\1370019\055package\055context\056md) 2158 0 R (docs\137\137decisions\137\1370020\055associated\055test\055access\056md) 2160 0 R (docs\137\137decisions\137\1370021\055case\055subject\055calls\056md) 2162 0 R (docs\137\137decisions\137\1370022\055values\055places\055and\055expressions\056md) 2164 0 R (docs\137\137decisions\137\1370024\055communication\055and\055package\055links\056md) 2166 0 R (docs\137\137decisions\137\1370025\055real\055time\055placement\055and\055binding\056md) 2168 0 R (docs\137\137decisions\137\1370026\055states\055in\055the\055flow\056md) 2170 0 R (docs\137\137figures\137\1373\0560\137\137architecture\056png) 2336 0 R (docs\137\137figures\137\1373\0560\137\137architecture\056scene\056json) 2338 0 R (docs\137\137figures\137\1373\0560\137\137architecture\056svg) 2340 0 R (docs\137\137figures\137\1373\0560\137\137deployment\056png) 2342 0 R (docs\137\137figures\137\1373\0560\137\137deployment\056scene\056json) 2344 0 R (docs\137\137figures\137\1373\0560\137\137deployment\056svg) 2346 0 R (docs\137\137figures\137\1373\0560\137\137forwarding\056png) 2348 0 R (docs\137\137figures\137\1373\0560\137\137forwarding\056scene\056json) 2350 0 R (docs\137\137figures\137\1373\0560\137\137forwarding\056svg) 2352 0 R (docs\137\137figures\137\1373\0560\137\137modeling\055overview\056png) 2354 0 R (docs\137\137figures\137\1373\0560\137\137modeling\055overview\056scene\056json) 2356 0 R (docs\137\137figures\137\1373\0560\137\137modeling\055overview\056svg) 2358 0 R (docs\137\137figures\137\1373\0560\137\137schedule\056png) 2360 0 R (docs\137\137figures\137\1373\0560\137\137schedule\056scene\056json) 2362 0 R (docs\137\137figures\137\1373\0560\137\137schedule\056svg) 2364 0 R (docs\137\137figures\137\1373\0560\137\137states\056png) 2366 0 R (docs\137\137figures\137\1373\0560\137\137states\056scene\056json) 2368 0 R (docs\137\137figures\137\1373\0560\137\137states\056svg) 2370 0 R (docs\137\137figures\137\1373\0560\137\137timing\056png) 2372 0 R (docs\137\137figures\137\1373\0560\137\137timing\056scene\056json) 2374 0 R (docs\137\137figures\137\1373\0560\137\137timing\056svg) 2376 0 R (docs\137\137notation\137\1373\0560\137\137attributes\056png) 2378 0 R (docs\137\137notation\137\1373\0560\137\137attributes\056scene\056json) 2380 0 R (docs\137\137notation\137\1373\0560\137\137attributes\056svg) 2382 0 R (docs\137\137notation\137\1373\0560\137\137calls\056png) 2384 0 R (docs\137\137notation\137\1373\0560\137\137calls\056scene\056json) 2386 0 R (docs\137\137notation\137\1373\0560\137\137calls\056svg) 2388 0 R (docs\137\137notation\137\1373\0560\137\137cases\056png) 2390 0 R (docs\137\137notation\137\1373\0560\137\137cases\056scene\056json) 2392 0 R (docs\137\137notation\137\1373\0560\137\137cases\056svg) 2394 0 R (docs\137\137notation\137\1373\0560\137\137components\056png) 2396 0 R (docs\137\137notation\137\1373\0560\137\137components\056scene\056json) 2398 0 R (docs\137\137notation\137\1373\0560\137\137components\056svg) 2400 0 R (docs\137\137notation\137\1373\0560\137\137connection\056png) 2402 0 R (docs\137\137notation\137\1373\0560\137\137connection\056scene\056json) 2404 0 R (docs\137\137notation\137\1373\0560\137\137connection\056svg) 2406 0 R (docs\137\137notation\137\1373\0560\137\137deployment\056png) 2408 0 R (docs\137\137notation\137\1373\0560\137\137deployment\056scene\056json) 2410 0 R (docs\137\137notation\137\1373\0560\137\137deployment\056svg) 2412 0 R (docs\137\137notation\137\1373\0560\137\137documentation\056png) 2414 0 R (docs\137\137notation\137\1373\0560\137\137documentation\056scene\056json) 2416 0 R (docs\137\137notation\137\1373\0560\137\137documentation\056svg) 2418 0 R (docs\137\137notation\137\1373\0560\137\137expressions\056png) 2420 0 R (docs\137\137notation\137\1373\0560\137\137expressions\056scene\056json) 2422 0 R (docs\137\137notation\137\1373\0560\137\137expressions\056svg) 2424 0 R (docs\137\137notation\137\1373\0560\137\137flow\056png) 2426 0 R (docs\137\137notation\137\1373\0560\137\137flow\056scene\056json) 2428 0 R (docs\137\137notation\137\1373\0560\137\137flow\056svg) 2430 0 R (docs\137\137notation\137\1373\0560\137\137forwarding\056png) 2432 0 R (docs\137\137notation\137\1373\0560\137\137forwarding\056scene\056json) 2434 0 R (docs\137\137notation\137\1373\0560\137\137forwarding\056svg) 2436 0 R (docs\137\137notation\137\1373\0560\137\137interrupt\056png) 2438 0 R (docs\137\137notation\137\1373\0560\137\137interrupt\056scene\056json) 2440 0 R (docs\137\137notation\137\1373\0560\137\137interrupt\056svg) 2442 0 R (docs\137\137notation\137\1373\0560\137\137lexical\056png) 2444 0 R (docs\137\137notation\137\1373\0560\137\137lexical\056scene\056json) 2446 0 R (docs\137\137notation\137\1373\0560\137\137lexical\056svg) 2448 0 R (docs\137\137notation\137\1373\0560\137\137loops\056png) 2450 0 R (docs\137\137notation\137\1373\0560\137\137loops\056scene\056json) 2452 0 R (docs\137\137notation\137\1373\0560\137\137loops\056svg) 2454 0 R (docs\137\137notation\137\1373\0560\137\137multiplicity\056png) 2456 0 R (docs\137\137notation\137\1373\0560\137\137multiplicity\056scene\056json) 2458 0 R (docs\137\137notation\137\1373\0560\137\137multiplicity\056svg) 2460 0 R (docs\137\137notation\137\1373\0560\137\137operations\056png) 2462 0 R (docs\137\137notation\137\1373\0560\137\137operations\056scene\056json) 2464 0 R (docs\137\137notation\137\1373\0560\137\137operations\056svg) 2466 0 R (docs\137\137notation\137\1373\0560\137\137package\056png) 2468 0 R (docs\137\137notation\137\1373\0560\137\137package\056scene\056json) 2470 0 R (docs\137\137notation\137\1373\0560\137\137package\056svg) 2472 0 R (docs\137\137notation\137\1373\0560\137\137ports\056png) 2474 0 R (docs\137\137notation\137\1373\0560\137\137ports\056scene\056json) 2476 0 R (docs\137\137notation\137\1373\0560\137\137ports\056svg) 2478 0 R (docs\137\137notation\137\1373\0560\137\137receive\056png) 2480 0 R (docs\137\137notation\137\1373\0560\137\137receive\056scene\056json) 2482 0 R (docs\137\137notation\137\1373\0560\137\137receive\056svg) 2484 0 R (docs\137\137notation\137\1373\0560\137\137requirements\056png) 2486 0 R (docs\137\137notation\137\1373\0560\137\137requirements\056scene\056json) 2488 0 R (docs\137\137notation\137\1373\0560\137\137requirements\056svg) 2490 0 R (docs\137\137notation\137\1373\0560\137\137schedule\056png) 2492 0 R (docs\137\137notation\137\1373\0560\137\137schedule\056scene\056json) 2494 0 R (docs\137\137notation\137\1373\0560\137\137schedule\056svg) 2496 0 R (docs\137\137notation\137\1373\0560\137\137scripts\056png) 2498 0 R (docs\137\137notation\137\1373\0560\137\137scripts\056scene\056json) 2500 0 R (docs\137\137notation\137\1373\0560\137\137scripts\056svg) 2502 0 R (docs\137\137notation\137\1373\0560\137\137states\056png) 2504 0 R (docs\137\137notation\137\1373\0560\137\137states\056scene\056json) 2506 0 R (docs\137\137notation\137\1373\0560\137\137states\056svg) 2508 0 R (docs\137\137notation\137\1373\0560\137\137timing\056png) 2510 0 R (docs\137\137notation\137\1373\0560\137\137timing\056scene\056json) 2512 0 R (docs\137\137notation\137\1373\0560\137\137timing\056svg) 2514 0 R (docs\137\137notation\137\1373\0560\137\137try\056png) 2516 0 R (docs\137\137notation\137\1373\0560\137\137try\056scene\056json) 2518 0 R (docs\137\137notation\137\1373\0560\137\137try\056svg) 2520 0 R (docs\137\137notation\137\1373\0560\137\137values\056png) 2522 0 R (docs\137\137notation\137\1373\0560\137\137values\056scene\056json) 2524 0 R (docs\137\137notation\137\1373\0560\137\137values\056svg) 2526 0 R (docs\137\137notation\137\1373\0560\137\137views\056png) 2528 0 R (docs\137\137notation\137\1373\0560\137\137views\056scene\056json) 2530 0 R (docs\137\137notation\137\1373\0560\137\137views\056svg) 2532 0 R (docs\137\137spec\137\13701\055structure\055and\055types\056md) 2104 0 R (docs\137\137spec\137\13702\055communication\056md) 2106 0 R (docs\137\137spec\137\13703\055behavior\056md) 2108 0 R (docs\137\137spec\137\13704\055systems\055and\055conformance\056md) 2110 0 R (docs\137\137spec\137\13705\055kerml\055mapping\056md) 2112 0 R (docs\137\137spec\137\13706\055execution\055contract\056md) 2114 0 R (docs\137\137spec\137\13707\055normalized\055model\056md) 2116 0 R (docs\137\137spec\137\13708\055conformance\055obligations\056md) 2118 0 R (docs\137\137spec\137\13709\055formal\055semantics\056md) 2120 0 R (examples\137\13701\055hello\056swaml) 2176 0 R (examples\137\13702\055realtime\055controller\056swaml) 2178 0 R (examples\137\13703\055service\055pubsub\056swaml) 2180 0 R (examples\137\13704\055stateful\055function\056swaml) 2182 0 R (examples\137\13705\055values\055and\055flow\056swaml) 2184 0 R (examples\137\13706\055mixed\055gateway\056swaml) 2186 0 R (examples\137\13707\055client\055server\056swaml) 2188 0 R (examples\137\13708\055service\055field\056swaml) 2190 0 R (examples\137\13709\055component\055roots\056swaml) 2192 0 R (examples\137\13710\055reusable\055qos\056swaml) 2194 0 R (examples\137\13711\055autosar\055classic\056swaml) 2196 0 R (examples\137\13712\055autosar\055adaptive\056swaml) 2198 0 R (examples\137\13713\055web\055application\056swaml) 2200 0 R (examples\137\13714\055cloud\055service\056swaml) 2202 0 R (examples\137\13715\055component\055specialization\056swaml) 2204 0 R (examples\137\13716\055requirements\055and\055views\056swaml) 2206 0 R (examples\137\13717\055function\055timing\056swaml) 2208 0 R (examples\137\13718\055control\055loops\056swaml) 2210 0 R (examples\137\13719\055interruptible\055function\056swaml) 2212 0 R (examples\137\13720\055classes\055and\055operations\056swaml) 2214 0 R (examples\137\13721\055receive\055and\055try\056swaml) 2216 0 R (examples\137\13722\055platform\055deployment\056swaml) 2218 0 R (examples\137\13723\055multiplicity\056swaml) 2220 0 R (examples\137\13724\055operation\055usage\056swaml) 2222 0 R (examples\137\13725\055function\055completion\056swaml) 2224 0 R (examples\137\13726\055boundary\055forwarding\056swaml) 2226 0 R (examples\137\13727\055mixed\055port\056swaml) 2228 0 R (examples\137\13728\055use\055cases\056swaml) 2230 0 R (examples\137\13729\055executable\055cases\056swaml) 2232 0 R (examples\137\13730\055associated\055integration\056swaml) 2234 0 R (examples\137\13731\055case\055subject\055calls\056swaml) 2236 0 R (examples\137\13732\055calibration\055bench\056swaml) 2238 0 R (examples\137\13733\055element\055assignment\056swaml) 2240 0 R (examples\137\13734\055indexed\055reads\056swaml) 2242 0 R (examples\137\13735\055conditional\055expression\056swaml) 2244 0 R (examples\137\13736\055contextual\055words\056swaml) 2246 0 R (examples\137\13737\055association\055lists\056swaml) 2248 0 R (examples\137\13738\055square\055root\056swaml) 2250 0 R (examples\137\13739\055logical\055clock\056swaml) 2252 0 R (examples\137\13740\055number\055text\056swaml) 2254 0 R (examples\137\13741\055computed\055backoff\056swaml) 2256 0 R (examples\137\13742\055lock\055pulse\056swaml) 2258 0 R (examples\137\13743\055derived\055period\056swaml) 2260 0 R (examples\137\13744\055uplink\055session\056swaml) 2262 0 R (examples\137\13745\055lock\055latest\055request\056swaml) 2264 0 R (examples\137\13746\055circuit\055breaker\056swaml) 2266 0 R (examples\137\13747\055sensor\055warmup\056swaml) 2268 0 R (examples\137\13748\055door\055status\055sampling\056swaml) 2270 0 R (examples\137\13749\055body\055can\055member\055policies\056swaml) 2272 0 R (examples\137\13750\055lin\055master\055mode\055gating\056swaml) 2274 0 R (examples\137\13751\055com\055main\055release\055guard\056swaml) 2276 0 R (examples\137\13752\055door\055deployment\056swaml) 2278 0 R (examples\137\13753\055task\055order\056swaml) 2280 0 R (examples\137\13754\055interior\055light\056swaml) 2282 0 R (examples\137\13755\055window\055auto\055up\056swaml) 2284 0 R (examples\137\13756\055cooling\055fan\056swaml) 2286 0 R (examples\137\13757\055turn\055signal\055flasher\056swaml) 2288 0 R (examples\137\137notation\137\137catalog\056swaml) 2534 0 R (examples\137\137notation\137\137control\055flow\056swaml) 2536 0 R (examples\137\137simulation\137\1373\0560\137\137hello\055trace\056json) 2538 0 R (libraries\137\137swaml\0552\0560\056swaml) 2290 0 R (libraries\137\137swaml\0553\0560\056swaml) 2292 0 R (package\055lock\056json) 2310 0 R (package\056json) 2308 0 R (resources\137\137fonts\137\137DejaVuSans\055Bold\056ttf) 2540 0 R (resources\137\137fonts\137\137DejaVuSans\055BoldOblique\056ttf) 2542 0 R (resources\137\137fonts\137\137DejaVuSans\055Oblique\056ttf) 2544 0 R (resources\137\137fonts\137\137DejaVuSans\056ttf) 2546 0 R (resources\137\137fonts\137\137DejaVuSansMono\056ttf) 2548 0 R (resources\137\137fonts\137\137LICENSE\055DejaVu\056txt) 2550 0 R (resources\137\137fonts\137\137README\056md) 2552 0 R (scripts\137\137build\055graphical\055examples\056py) 2328 0 R (scripts\137\137build\055notation\056py) 2326 0 R (scripts\137\137build\055reference\056mjs) 2330 0 R (scripts\137\137build\055spec\055pdf\0553\0560\056py) 2314 0 R (scripts\137\137check\055spec\055pdf\0553\0560\056py) 2316 0 R (scripts\137\137ci\055pdf\055requirements\056txt) 2322 0 R (scripts\137\137publication\1373\1370\137sources\056py) 2318 0 R (scripts\137\137publication\137archive\056py) 2320 0 R (scripts\137\137standard\055version\056mjs) 2332 0 R (scripts\137\137test\055publication\0553\0550\056py) 2334 0 R (scripts\137\137v2\137scene\056py) 2324 0 R (spec\137\137graphical\055examples\056json) 2304 0 R (spec\137\137kerml\055mapping\056json) 2174 0 R (spec\137\137keywords\056json) 2300 0 R (spec\137\137modeling\055overview\056json) 2306 0 R (spec\137\137notation\056json) 2302 0 R (spec\137\137standard\056json) 2298 0 R (src\137\137cli\137\137binding\056ts) 2554 0 R (src\137\137cli\137\137evidence\056ts) 2556 0 R (src\137\137cli\137\137main\056ts) 2558 0 R (src\137\137cli\137\137migrate\056ts) 2560 0 R (src\137\137cli\137\137options\056ts) 2562 0 R (src\137\137cli\137\137run\056ts) 2564 0 R (src\137\137cli\137\137simulate\056ts) 2566 0 R (src\137\137language\137\137binding\056ts) 2568 0 R (src\137\137language\137\137edition\056ts) 2570 0 R (src\137\137language\137\137formatter\056ts) 2572 0 R (src\137\137language\137\137language\055server\056ts) 2574 0 R (src\137\137language\137\137names\056ts) 2576 0 R (src\137\137language\137\137path\055services\056ts) 2578 0 R (src\137\137language\137\137placement\056ts) 2580 0 R (src\137\137language\137\137presentation\056ts) 2582 0 R (src\137\137language\137\137projection\056ts) 2584 0 R (src\137\137language\137\137semantic\056ts) 2586 0 R (src\137\137language\137\137stale\055read\056ts) 2588 0 R (src\137\137language\137\137swaml\055document\055builder\056ts) 2590 0 R (src\137\137language\137\137swaml\055module\056ts) 2592 0 R (src\137\137language\137\137swaml\055scope\056ts) 2594 0 R (src\137\137language\137\137swaml\055syntax\056ts) 2596 0 R (src\137\137language\137\137swaml\055validator\056ts) 2598 0 R (src\137\137language\137\137swaml\056langium) 2172 0 R (src\137\137migrate\137\137grammar\0552\0552\056ts) 2600 0 R (src\137\137migrate\137\137index\056ts) 2602 0 R (src\137\137migrate\137\137machines\056ts) 2604 0 R (src\137\137migrate\137\137tools\056ts) 2606 0 R (src\137\137server\137\137main\056ts) 2608 0 R (src\137\137simulation\137\137simulator\056ts) 2610 0 R (src\137\137simulation\137\137timing\056ts) 2612 0 R (src\137\137simulation\137\137values\056ts) 2614 0 R (tsconfig\056json) 2312 0 R ]
+/Names [ (LICENSE) 2294 0 R (docs\137\137AI\137GUIDE\056md) 2134 0 R (docs\137\137ARCHITECTURE\137PATTERNS\056md) 2136 0 R (docs\137\137GRAPHICAL\137CATALOG\056md) 2124 0 R (docs\137\137GRAPHICAL\137EXAMPLES\056md) 2146 0 R (docs\137\137GRAPHICAL\137NOTATION\056md) 2122 0 R (docs\137\137IMPLEMENTATION\137STATUS\056md) 2148 0 R (docs\137\137KEYWORD\137REFERENCE\056md) 2144 0 R (docs\137\137LANGUAGE\137SPECIFICATION\056md) 2100 0 R (docs\137\137MIGRATION\1373\1370\056md) 2128 0 R (docs\137\137ONTOLOGY\137AND\137VIEWS\056md) 2138 0 R (docs\137\137QUICK\137START\056md) 2130 0 R (docs\137\137RELEASE\1373\1370\056md) 2126 0 R (docs\137\137REQUIREMENTS\137AND\137DOCUMENTATION\056md) 2142 0 R (docs\137\137SIMULATION\056md) 2140 0 R (docs\137\137SWAML\0553\0560\055Reference\056md) 2296 0 R (docs\137\137TOOLING\056md) 2150 0 R (docs\137\137USER\137GUIDE\056md) 2132 0 R (docs\137\137VERSIONING\056md) 2152 0 R (docs\137\137decisions\137\1370016\055swaml\0552\0550\056md) 2154 0 R (docs\137\137decisions\137\1370017\055readable\055names\055and\055use\055cases\056md) 2156 0 R (docs\137\137decisions\137\1370019\055package\055context\056md) 2158 0 R (docs\137\137decisions\137\1370020\055associated\055test\055access\056md) 2160 0 R (docs\137\137decisions\137\1370021\055case\055subject\055calls\056md) 2162 0 R (docs\137\137decisions\137\1370022\055values\055places\055and\055expressions\056md) 2164 0 R (docs\137\137decisions\137\1370024\055communication\055and\055package\055links\056md) 2166 0 R (docs\137\137decisions\137\1370025\055real\055time\055placement\055and\055binding\056md) 2168 0 R (docs\137\137decisions\137\1370026\055states\055in\055the\055flow\056md) 2170 0 R (docs\137\137figures\137\1373\0560\137\137architecture\056png) 2336 0 R (docs\137\137figures\137\1373\0560\137\137architecture\056scene\056json) 2338 0 R (docs\137\137figures\137\1373\0560\137\137architecture\056svg) 2340 0 R (docs\137\137figures\137\1373\0560\137\137deployment\056png) 2342 0 R (docs\137\137figures\137\1373\0560\137\137deployment\056scene\056json) 2344 0 R (docs\137\137figures\137\1373\0560\137\137deployment\056svg) 2346 0 R (docs\137\137figures\137\1373\0560\137\137forwarding\056png) 2348 0 R (docs\137\137figures\137\1373\0560\137\137forwarding\056scene\056json) 2350 0 R (docs\137\137figures\137\1373\0560\137\137forwarding\056svg) 2352 0 R (docs\137\137figures\137\1373\0560\137\137modeling\055overview\056png) 2354 0 R (docs\137\137figures\137\1373\0560\137\137modeling\055overview\056scene\056json) 2356 0 R (docs\137\137figures\137\1373\0560\137\137modeling\055overview\056svg) 2358 0 R (docs\137\137figures\137\1373\0560\137\137schedule\056png) 2360 0 R (docs\137\137figures\137\1373\0560\137\137schedule\056scene\056json) 2362 0 R (docs\137\137figures\137\1373\0560\137\137schedule\056svg) 2364 0 R (docs\137\137figures\137\1373\0560\137\137states\056png) 2366 0 R (docs\137\137figures\137\1373\0560\137\137states\056scene\056json) 2368 0 R (docs\137\137figures\137\1373\0560\137\137states\056svg) 2370 0 R (docs\137\137figures\137\1373\0560\137\137timing\056png) 2372 0 R (docs\137\137figures\137\1373\0560\137\137timing\056scene\056json) 2374 0 R (docs\137\137figures\137\1373\0560\137\137timing\056svg) 2376 0 R (docs\137\137notation\137\1373\0560\137\137attributes\056png) 2378 0 R (docs\137\137notation\137\1373\0560\137\137attributes\056scene\056json) 2380 0 R (docs\137\137notation\137\1373\0560\137\137attributes\056svg) 2382 0 R (docs\137\137notation\137\1373\0560\137\137calls\056png) 2384 0 R (docs\137\137notation\137\1373\0560\137\137calls\056scene\056json) 2386 0 R (docs\137\137notation\137\1373\0560\137\137calls\056svg) 2388 0 R (docs\137\137notation\137\1373\0560\137\137cases\056png) 2390 0 R (docs\137\137notation\137\1373\0560\137\137cases\056scene\056json) 2392 0 R (docs\137\137notation\137\1373\0560\137\137cases\056svg) 2394 0 R (docs\137\137notation\137\1373\0560\137\137components\056png) 2396 0 R (docs\137\137notation\137\1373\0560\137\137components\056scene\056json) 2398 0 R (docs\137\137notation\137\1373\0560\137\137components\056svg) 2400 0 R (docs\137\137notation\137\1373\0560\137\137connection\056png) 2402 0 R (docs\137\137notation\137\1373\0560\137\137connection\056scene\056json) 2404 0 R (docs\137\137notation\137\1373\0560\137\137connection\056svg) 2406 0 R (docs\137\137notation\137\1373\0560\137\137deployment\056png) 2408 0 R (docs\137\137notation\137\1373\0560\137\137deployment\056scene\056json) 2410 0 R (docs\137\137notation\137\1373\0560\137\137deployment\056svg) 2412 0 R (docs\137\137notation\137\1373\0560\137\137documentation\056png) 2414 0 R (docs\137\137notation\137\1373\0560\137\137documentation\056scene\056json) 2416 0 R (docs\137\137notation\137\1373\0560\137\137documentation\056svg) 2418 0 R (docs\137\137notation\137\1373\0560\137\137expressions\056png) 2420 0 R (docs\137\137notation\137\1373\0560\137\137expressions\056scene\056json) 2422 0 R (docs\137\137notation\137\1373\0560\137\137expressions\056svg) 2424 0 R (docs\137\137notation\137\1373\0560\137\137flow\056png) 2426 0 R (docs\137\137notation\137\1373\0560\137\137flow\056scene\056json) 2428 0 R (docs\137\137notation\137\1373\0560\137\137flow\056svg) 2430 0 R (docs\137\137notation\137\1373\0560\137\137forwarding\056png) 2432 0 R (docs\137\137notation\137\1373\0560\137\137forwarding\056scene\056json) 2434 0 R (docs\137\137notation\137\1373\0560\137\137forwarding\056svg) 2436 0 R (docs\137\137notation\137\1373\0560\137\137interrupt\056png) 2438 0 R (docs\137\137notation\137\1373\0560\137\137interrupt\056scene\056json) 2440 0 R (docs\137\137notation\137\1373\0560\137\137interrupt\056svg) 2442 0 R (docs\137\137notation\137\1373\0560\137\137lexical\056png) 2444 0 R (docs\137\137notation\137\1373\0560\137\137lexical\056scene\056json) 2446 0 R (docs\137\137notation\137\1373\0560\137\137lexical\056svg) 2448 0 R (docs\137\137notation\137\1373\0560\137\137loops\056png) 2450 0 R (docs\137\137notation\137\1373\0560\137\137loops\056scene\056json) 2452 0 R (docs\137\137notation\137\1373\0560\137\137loops\056svg) 2454 0 R (docs\137\137notation\137\1373\0560\137\137multiplicity\056png) 2456 0 R (docs\137\137notation\137\1373\0560\137\137multiplicity\056scene\056json) 2458 0 R (docs\137\137notation\137\1373\0560\137\137multiplicity\056svg) 2460 0 R (docs\137\137notation\137\1373\0560\137\137operations\056png) 2462 0 R (docs\137\137notation\137\1373\0560\137\137operations\056scene\056json) 2464 0 R (docs\137\137notation\137\1373\0560\137\137operations\056svg) 2466 0 R (docs\137\137notation\137\1373\0560\137\137package\056png) 2468 0 R (docs\137\137notation\137\1373\0560\137\137package\056scene\056json) 2470 0 R (docs\137\137notation\137\1373\0560\137\137package\056svg) 2472 0 R (docs\137\137notation\137\1373\0560\137\137ports\056png) 2474 0 R (docs\137\137notation\137\1373\0560\137\137ports\056scene\056json) 2476 0 R (docs\137\137notation\137\1373\0560\137\137ports\056svg) 2478 0 R (docs\137\137notation\137\1373\0560\137\137receive\056png) 2480 0 R (docs\137\137notation\137\1373\0560\137\137receive\056scene\056json) 2482 0 R (docs\137\137notation\137\1373\0560\137\137receive\056svg) 2484 0 R (docs\137\137notation\137\1373\0560\137\137requirements\056png) 2486 0 R (docs\137\137notation\137\1373\0560\137\137requirements\056scene\056json) 2488 0 R (docs\137\137notation\137\1373\0560\137\137requirements\056svg) 2490 0 R (docs\137\137notation\137\1373\0560\137\137schedule\056png) 2492 0 R (docs\137\137notation\137\1373\0560\137\137schedule\056scene\056json) 2494 0 R (docs\137\137notation\137\1373\0560\137\137schedule\056svg) 2496 0 R (docs\137\137notation\137\1373\0560\137\137scripts\056png) 2498 0 R (docs\137\137notation\137\1373\0560\137\137scripts\056scene\056json) 2500 0 R (docs\137\137notation\137\1373\0560\137\137scripts\056svg) 2502 0 R (docs\137\137notation\137\1373\0560\137\137states\056png) 2504 0 R (docs\137\137notation\137\1373\0560\137\137states\056scene\056json) 2506 0 R (docs\137\137notation\137\1373\0560\137\137states\056svg) 2508 0 R (docs\137\137notation\137\1373\0560\137\137timing\056png) 2510 0 R (docs\137\137notation\137\1373\0560\137\137timing\056scene\056json) 2512 0 R (docs\137\137notation\137\1373\0560\137\137timing\056svg) 2514 0 R (docs\137\137notation\137\1373\0560\137\137try\056png) 2516 0 R (docs\137\137notation\137\1373\0560\137\137try\056scene\056json) 2518 0 R (docs\137\137notation\137\1373\0560\137\137try\056svg) 2520 0 R (docs\137\137notation\137\1373\0560\137\137values\056png) 2522 0 R (docs\137\137notation\137\1373\0560\137\137values\056scene\056json) 2524 0 R (docs\137\137notation\137\1373\0560\137\137values\056svg) 2526 0 R (docs\137\137notation\137\1373\0560\137\137views\056png) 2528 0 R (docs\137\137notation\137\1373\0560\137\137views\056scene\056json) 2530 0 R (docs\137\137notation\137\1373\0560\137\137views\056svg) 2532 0 R (docs\137\137spec\137\13701\055structure\055and\055types\056md) 2104 0 R (docs\137\137spec\137\13702\055communication\056md) 2106 0 R (docs\137\137spec\137\13703\055behavior\056md) 2108 0 R (docs\137\137spec\137\13704\055systems\055and\055conformance\056md) 2110 0 R (docs\137\137spec\137\13705\055kerml\055mapping\056md) 2112 0 R (docs\137\137spec\137\13706\055execution\055contract\056md) 2114 0 R (docs\137\137spec\137\13707\055normalized\055model\056md) 2116 0 R (docs\137\137spec\137\13708\055conformance\055obligations\056md) 2118 0 R (docs\137\137spec\137\13709\055formal\055semantics\056md) 2120 0 R (examples\137\13701\055hello\056swaml) 2176 0 R (examples\137\13702\055realtime\055controller\056swaml) 2178 0 R (examples\137\13703\055service\055pubsub\056swaml) 2180 0 R (examples\137\13704\055stateful\055function\056swaml) 2182 0 R (examples\137\13705\055values\055and\055flow\056swaml) 2184 0 R (examples\137\13706\055mixed\055gateway\056swaml) 2186 0 R (examples\137\13707\055client\055server\056swaml) 2188 0 R (examples\137\13708\055service\055field\056swaml) 2190 0 R (examples\137\13709\055component\055roots\056swaml) 2192 0 R (examples\137\13710\055reusable\055qos\056swaml) 2194 0 R (examples\137\13711\055autosar\055classic\056swaml) 2196 0 R (examples\137\13712\055autosar\055adaptive\056swaml) 2198 0 R (examples\137\13713\055web\055application\056swaml) 2200 0 R (examples\137\13714\055cloud\055service\056swaml) 2202 0 R (examples\137\13715\055component\055specialization\056swaml) 2204 0 R (examples\137\13716\055requirements\055and\055views\056swaml) 2206 0 R (examples\137\13717\055function\055timing\056swaml) 2208 0 R (examples\137\13718\055control\055loops\056swaml) 2210 0 R (examples\137\13719\055interruptible\055function\056swaml) 2212 0 R (examples\137\13720\055classes\055and\055operations\056swaml) 2214 0 R (examples\137\13721\055receive\055and\055try\056swaml) 2216 0 R (examples\137\13722\055platform\055deployment\056swaml) 2218 0 R (examples\137\13723\055multiplicity\056swaml) 2220 0 R (examples\137\13724\055operation\055usage\056swaml) 2222 0 R (examples\137\13725\055function\055completion\056swaml) 2224 0 R (examples\137\13726\055boundary\055forwarding\056swaml) 2226 0 R (examples\137\13727\055mixed\055port\056swaml) 2228 0 R (examples\137\13728\055use\055cases\056swaml) 2230 0 R (examples\137\13729\055executable\055cases\056swaml) 2232 0 R (examples\137\13730\055associated\055integration\056swaml) 2234 0 R (examples\137\13731\055case\055subject\055calls\056swaml) 2236 0 R (examples\137\13732\055calibration\055bench\056swaml) 2238 0 R (examples\137\13733\055element\055assignment\056swaml) 2240 0 R (examples\137\13734\055indexed\055reads\056swaml) 2242 0 R (examples\137\13735\055conditional\055expression\056swaml) 2244 0 R (examples\137\13736\055contextual\055words\056swaml) 2246 0 R (examples\137\13737\055association\055lists\056swaml) 2248 0 R (examples\137\13738\055square\055root\056swaml) 2250 0 R (examples\137\13739\055logical\055clock\056swaml) 2252 0 R (examples\137\13740\055number\055text\056swaml) 2254 0 R (examples\137\13741\055computed\055backoff\056swaml) 2256 0 R (examples\137\13742\055lock\055pulse\056swaml) 2258 0 R (examples\137\13743\055derived\055period\056swaml) 2260 0 R (examples\137\13744\055uplink\055session\056swaml) 2262 0 R (examples\137\13745\055lock\055latest\055request\056swaml) 2264 0 R (examples\137\13746\055circuit\055breaker\056swaml) 2266 0 R (examples\137\13747\055sensor\055warmup\056swaml) 2268 0 R (examples\137\13748\055door\055status\055sampling\056swaml) 2270 0 R (examples\137\13749\055body\055can\055member\055policies\056swaml) 2272 0 R (examples\137\13750\055lin\055master\055mode\055gating\056swaml) 2274 0 R (examples\137\13751\055com\055main\055release\055guard\056swaml) 2276 0 R (examples\137\13752\055door\055deployment\056swaml) 2278 0 R (examples\137\13753\055task\055order\056swaml) 2280 0 R (examples\137\13754\055interior\055light\056swaml) 2282 0 R (examples\137\13755\055window\055auto\055up\056swaml) 2284 0 R (examples\137\13756\055cooling\055fan\056swaml) 2286 0 R (examples\137\13757\055turn\055signal\055flasher\056swaml) 2288 0 R (examples\137\137notation\137\137catalog\056swaml) 2534 0 R (examples\137\137notation\137\137control\055flow\056swaml) 2536 0 R (examples\137\137simulation\137\1373\0560\137\137hello\055trace\056json) 2538 0 R (libraries\137\137swaml\0552\0560\056swaml) 2290 0 R (libraries\137\137swaml\0553\0560\056swaml) 2292 0 R (package\055lock\056json) 2310 0 R (package\056json) 2308 0 R (resources\137\137fonts\137\137DejaVuSans\055Bold\056ttf) 2540 0 R (resources\137\137fonts\137\137DejaVuSans\055BoldOblique\056ttf) 2542 0 R (resources\137\137fonts\137\137DejaVuSans\055Oblique\056ttf) 2544 0 R (resources\137\137fonts\137\137DejaVuSans\056ttf) 2546 0 R (resources\137\137fonts\137\137DejaVuSansMono\056ttf) 2548 0 R (resources\137\137fonts\137\137LICENSE\055DejaVu\056txt) 2550 0 R (resources\137\137fonts\137\137README\056md) 2552 0 R (scripts\137\137build\055graphical\055examples\056py) 2328 0 R (scripts\137\137build\055notation\056py) 2326 0 R (scripts\137\137build\055reference\056mjs) 2330 0 R (scripts\137\137build\055spec\055pdf\0553\0560\056py) 2314 0 R (scripts\137\137check\055spec\055pdf\0553\0560\056py) 2316 0 R (scripts\137\137ci\055pdf\055requirements\056txt) 2322 0 R (scripts\137\137publication\1373\1370\137sources\056py) 2318 0 R (scripts\137\137publication\137archive\056py) 2320 0 R (scripts\137\137standard\055version\056mjs) 2332 0 R (scripts\137\137test\055publication\0553\0550\056py) 2334 0 R (scripts\137\137v2\137scene\056py) 2324 0 R (spec\137\137graphical\055examples\056json) 2304 0 R (spec\137\137kerml\055mapping\056json) 2174 0 R (spec\137\137keywords\056json) 2300 0 R (spec\137\137modeling\055overview\056json) 2306 0 R (spec\137\137notation\056json) 2302 0 R (spec\137\137standard\056json) 2298 0 R (src\137\137cli\137\137binding\056ts) 2554 0 R (src\137\137cli\137\137evidence\056ts) 2556 0 R (src\137\137cli\137\137main\056ts) 2558 0 R (src\137\137cli\137\137migrate\056ts) 2560 0 R (src\137\137cli\137\137options\056ts) 2562 0 R (src\137\137cli\137\137run\056ts) 2564 0 R (src\137\137cli\137\137simulate\056ts) 2566 0 R (src\137\137language\137\137binding\056ts) 2568 0 R (src\137\137language\137\137edition\056ts) 2570 0 R (src\137\137language\137\137formatter\056ts) 2572 0 R (src\137\137language\137\137language\055server\056ts) 2574 0 R (src\137\137language\137\137names\056ts) 2576 0 R (src\137\137language\137\137path\055services\056ts) 2578 0 R (src\137\137language\137\137placement\056ts) 2580 0 R (src\137\137language\137\137presentation\056ts) 2582 0 R (src\137\137language\137\137projection\056ts) 2584 0 R (src\137\137language\137\137semantic\056ts) 2586 0 R (src\137\137language\137\137stale\055read\056ts) 2588 0 R (src\137\137language\137\137swaml\055document\055builder\056ts) 2590 0 R (src\137\137language\137\137swaml\055module\056ts) 2592 0 R (src\137\137language\137\137swaml\055scope\056ts) 2594 0 R (src\137\137language\137\137swaml\055syntax\056ts) 2596 0 R (src\137\137language\137\137swaml\055validator\056ts) 2598 0 R (src\137\137language\137\137swaml\056langium) 2172 0 R (src\137\137migrate\137\137index\056ts) 2600 0 R (src\137\137migrate\137\137machines\056ts) 2602 0 R (src\137\137migrate\137\137tools\056ts) 2604 0 R (src\137\137server\137\137main\056ts) 2606 0 R (src\137\137simulation\137\137simulator\056ts) 2608 0 R (src\137\137simulation\137\137timing\056ts) 2610 0 R (src\137\137simulation\137\137values\056ts) 2612 0 R (tsconfig\056json) 2312 0 R ]
 >>
 endobj
 2103 0 obj
@@ -46884,7 +46884,7 @@ endobj
 2317 0 obj
 <<
 /Type /EmbeddedFile
-/Length 8613
+/Length 8637
 >>
 stream
 """Verify the sources embedded in an X.Y-named edition such as swa.ml 3.0.
@@ -46938,7 +46938,7 @@ def publication_inventory(root: Path, edition: str = '3.0') -> PublicationInvent
         for folder in [f'docs/notation/{edition}', f'docs/figures/{edition}', 'resources/fonts', f'examples/simulation/{edition}', 'examples/notation']
         for p in (root/folder).glob('*') if p.is_file())
     attachments += sorted(p.relative_to(root).as_posix() for p in (root/'src').rglob('*.ts')
-        if 'generated' not in p.parts and p.name != 'standard-library.ts')
+        if 'generated' not in p.parts and p.name not in ('standard-library.ts', 'grammar-2-2.ts'))
     sources = list(dict.fromkeys(normative + guidance + ['src/language/swaml.langium', 'spec/kerml-mapping.json']
         + examples + ['LICENSE'] + attachments))
     return PublicationInventory(normative, guidance, examples, attachments, sources)
@@ -81110,26 +81110,6 @@ endobj
 2599 0 obj
 <<
 /Type /EmbeddedFile
-/Length 10134
->>
-stream
-// Generated from test/fixtures/compatibility-2-2/swaml-2.2.langium. Do not edit.
-export const GRAMMAR_2_2 = "grammar Swaml\n\nentry Model: packages+=Package*;\nPackage: 'package' name=QualifiedName '{' documentation=Documentation? (imports+=Import | elements+=Element | connections+=Connect | associations+=Association | satisfactions+=Satisfaction | verifications+=Verification)* '}';\nImport: 'import' namespace=QualifiedName ';';\nElement: DataType | EnumType | ComponentDef | ComponentUsage | PortDef | Operation | QosPolicy | ViewDef | Requirement | Scenario | View | Deployment;\nDataType: 'datatype' name=Name '{' documentation=Documentation? fields+=Field* '}';\nField: name=Name ':' type=TypeRef documentation=Documentation? ';';\nEnumType: 'enum' name=Name '{' documentation=Documentation? literals+=Name (',' literals+=Name)* '}';\nTypeRef: (primitive=('bool'|'byte'|'uint'|'int'|'real'|'string'|'void') | type=[ValueType:QualifiedName]) ('[' size=INT ']')?;\ntype ValueType = DataType | EnumType;\nArgument: (direction=('in'|'out'))? name=Name ':' type=TypeRef;\nComponentDef: 'component' 'def' name=Name ('specializes' specializes=[ComponentDef:QualifiedName])? '{' documentation=Documentation? members+=ComponentMember* '}';\nComponentUsage: (redefines?='redefines')? 'component' name=Name (':' definition=[ComponentDef:QualifiedName] ('[' size=INT ']')?)? (';' | '{' documentation=Documentation? members+=ComponentMember* '}');\nComponentMember: ComponentUsage | PortUsage | Attribute | Operation | OperationUsage | Connect | Schedule;\nAttribute: (redefines?='redefines')? (constant?='const')? 'attribute' name=Name ':' type=TypeRef '=' value=Expression documentation=Documentation? ';';\nPortDef: 'port' 'def' name=Name '{' documentation=Documentation? members+=PortMember* '}';\nPortUsage: (redefines?='redefines')? (optional?='optional')? (reversed?='reversed')? 'port' name=Name (':' definition=[PortDef:QualifiedName] documentation=Documentation? ';' | '{' documentation=Documentation? members+=PortMember* '}');\nPortMember: direction=('provides'|'requires') (idempotent?='idempotent')? kind=('attribute'|'event'|'operation') name=Name (':' type=TypeRef | '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)?) documentation=Documentation? ';';\nConnect: (redefines?='redefines')? 'connect' (name=Name)? (':' policy=[QosPolicy:QualifiedName])? '(' source=Path ',' target=Path ')' documentation=Documentation? ';';\nQosPolicy: 'qos' 'def' name=Name (':' base=QualifiedName)? '{' documentation=Documentation? settings+=PolicySetting* '}';\nPolicySetting: name=Name '=' (value=Expression | duration=Duration) ';';\nOperation: (redefines?='redefines')? 'operation' (definition?='def')? name=Name '(' (parameters+=Argument (',' parameters+=Argument)*)? ')' ('returns' result=TypeRef)? body=OperationBody;\nOperationUsage: (redefines?='redefines')? 'operation' name=Name ':' definition=[Operation:QualifiedName] (documentation=Documentation? ';' | body=OperationBody);\nExecutable: Operation | OperationUsage;\nOperationBody: '{' documentation=Documentation? operations+=Executable* ('initial' initial=Name ';' states+=State+ | statements+=Statement*) '}';\nSchedule: 'schedule' '{' entries+=ScheduleEntry* '}';\nScheduleEntry: ('on' (kind='start' | kind='every' period=Duration | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('deadline' deadline=Duration)? (concurrent?='concurrent')? ';';\nBlock: '{' statements+=Statement* '}';\nStatement: LocalVariable | Assign | Send | ExpressionStatement | Return | If | While | Until | For | ForEach | Wait | Receive | Interruptible | Fail | Assert;\nLocalVariable: 'var' name=Name ':' type=TypeRef '=' value=Expression ';';\nAssign: target=Name '=' value=Expression ';';\nExpressionStatement: expression=Expression ';';\nSend: kind=('send'|'publish') endpoint=EndpointPath '(' (args+=Expression (',' args+=Expression)*)? ')' ';';\nReturn: 'return' value=Expression? ';';\nIf: 'if' '(' condition=Expression ')' then=Block ('else' otherwise=Block)?;\nWhile: 'while' '(' condition=Expression (',' limit=Expression 'times')? ')' body=Block;\nUntil: 'until' '(' condition=Expression (',' limit=Expression 'times')? ')' body=Block;\nFor: 'for' '(' initializer=LocalVariable condition=Expression ';' update=ForUpdate ')' body=Block;\nForUpdate infers Assign: target=Name '=' value=Expression;\nForEach: 'for' '(' variable=Argument 'in' collection=Expression ')' body=Block;\nWait: 'wait' duration=Duration ';';\nReceive: 'on' branches+=ReceiveBranch ('or' branches+=ReceiveBranch)* ('or' 'after' timeout=Duration timeoutBody=Block)?;\nReceiveBranch: kind=('receive'|'call') endpoint=EndpointPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' body=Block;\nInterruptible: 'interruptible' body=Block 'on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' handler=Block;\nFail: 'fail' reason=STRING ';';\nAssert: 'assert' condition=Expression ';';\nState: (final?='final')? 'state' name=Name '{' documentation=Documentation? (actions+=StateAction | transitions+=Transition)* '}';\nStateAction: 'on' kind=('entry'|'exit') body=Block;\nTransition: ('on' 'receive' endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')' ('when' '(' guard=Expression ')')? | 'after' delay=Duration) 'to' target=Name effect=Block;\nDeployment: 'deployment' name=Name 'of' root=[ComponentUsage:QualifiedName] 'on' platform=[ComponentUsage:QualifiedName] '{' documentation=Documentation? placements+=Placement* '}';\nPlacement: 'deploy' target=Path? 'on' node=Path ';';\nRequirement: 'requirement' name=Name '{' documentation=Documentation? attributes+=Attribute* '}';\nDocumentation: text=DOC_COMMENT;\nSatisfaction: 'satisfy' requirement=[Requirement:QualifiedName] 'by' design=Path ';';\nVerification: 'verify' requirement=[Requirement:QualifiedName] 'by' test=[Scenario:Name] ';';\nAssociation: 'associate' occurrence=[ComponentUsage:Name] 'to' target=[Scenario:Name] ';';\nScenario: kind=CaseKind name=Name ('of' subject=[ComponentUsage:Name])? '{' documentation=Documentation? statements+=Statement* '}';\nCaseKind returns string: 'use' 'case' | 'test';\nViewDef: 'view' 'def' name=Name documentation=Documentation? ';';\nView: 'view' name=Name ':' definition=[ViewDef:QualifiedName] ('of' subject=Path documentation=Documentation? ';' | '{' documentation=Documentation? selections+=ViewSelection+ '}');\nViewSelection: 'include' subject=Path (recursive?='recursive')? ('where' filter=FilterExpression)? ';';\ntype FilterExpression = FilterBinary | FilterNot | FilterComparison;\nFilterExpression returns FilterExpression: FilterOr;\nFilterOr returns FilterExpression: FilterAnd ({infer FilterBinary.left=current} operator='or' right=FilterAnd)*;\nFilterAnd returns FilterExpression: FilterPrimary ({infer FilterBinary.left=current} operator='and' right=FilterPrimary)*;\nFilterPrimary returns FilterExpression: {infer FilterNot} 'not' operand=FilterPrimary | FilterComparison | '(' FilterExpression ')';\nFilterComparison: field=('name'|'kind'|'path') operator=('=='|'!=') value=STRING;\nDuration: value=INT unit=('ns'|'us'|'ms'|'s');\nName returns string: ID | UNRESTRICTED_NAME | 'reversed' | 'to' | 'times' | 'name' | 'kind' | 'path' | 'use' | 'case' | 'test' | 'associate' | 'by' | 'ns' | 'us' | 'ms' | 's';\nMemberPath returns string: Name '.' Name;\nEndpointPath returns string: Name '.' Name ('.' Name)?;\nPath returns string: QualifiedName ('[' INT ']')? ('.' Name ('[' INT ']')?)*;\nQualifiedName returns string: Name ('::' Name)*;\nValuePath returns string: QualifiedName ('.' Name)*;\ntype Expression = BinaryExpression | UnaryExpression | Literal | CallExpression | TryExpression | ReferenceExpression | RecordLiteral | ArrayLiteral;\nExpression returns Expression: OrExpression;\nOrExpression returns Expression: AndExpression ({infer BinaryExpression.left=current} operator='or' right=AndExpression)*;\nAndExpression returns Expression: EqualityExpression ({infer BinaryExpression.left=current} operator='and' right=EqualityExpression)*;\nEqualityExpression returns Expression: RelationalExpression ({infer BinaryExpression.left=current} operator=('=='|'!=') right=RelationalExpression)*;\nRelationalExpression returns Expression: AdditiveExpression ({infer BinaryExpression.left=current} operator=('<'|'<='|'>'|'>=') right=AdditiveExpression)*;\nAdditiveExpression returns Expression: MultiplicativeExpression ({infer BinaryExpression.left=current} operator=('+'|'-') right=MultiplicativeExpression)*;\nMultiplicativeExpression returns Expression: UnaryExpression ({infer BinaryExpression.left=current} operator=('*'|'/'|'%') right=UnaryExpression)*;\nUnaryExpression returns Expression: {infer UnaryExpression} operator=('not'|'-') operand=UnaryExpression | PrimaryExpression;\nPrimaryExpression returns Expression: Literal | TryExpression | CallExpression | ReferenceExpression | RecordLiteral | ArrayLiteral | '(' Expression ')';\nTryExpression: 'try' '(' expression=Expression (',' fallback=Expression)? ')';\nCallExpression: target=ValuePath '(' (args+=Expression (',' args+=Expression)*)? ')';\nReferenceExpression: path=ValuePath ('[' index=Expression ']')?;\nLiteral: {infer Literal} (number=Numeric | text=STRING | boolean=('true'|'false'));\nRecordLiteral: 'record' type=[DataType:QualifiedName] '{' fields+=FieldValue* '}';\nFieldValue: name=Name '=' value=Expression ';';\nArrayLiteral: '[' (values+=Expression (',' values+=Expression)*)? ']';\nNumeric returns number: NUMBER | INT;\nhidden terminal WS: /\\s+/;\nterminal DOC_COMMENT: /\\/\\*\\*(?:\\/|[\\s\\S]*?\\*\\/)/;\nterminal ID: /[_a-zA-Z][\\w]*/;\nterminal UNRESTRICTED_NAME: /'([^'\\\\\\x00-\\x1F\\x7F]|\\\\['\\\\])*'/;\nterminal NUMBER returns number: /[0-9]+\\.[0-9]+/;\nterminal INT returns number: /[0-9]+/;\nterminal STRING: /\"([^\"\\\\\\x00-\\x1F]|\\\\[\"\\\\nrt])*\"/;\nhidden terminal ML_COMMENT: /\\/\\*(?!\\*)[\\s\\S]*?\\*\\//;\nhidden terminal SL_COMMENT: /\\/\\/[^\\n\\r]*/;\n";
-
-endstream
-endobj
-2600 0 obj
-<<
-/Type /Filespec
-/F (src\137\137migrate\137\137grammar\0552\0552\056ts)
-/EF <<
-/F 2599 0 R
->>
->>
-endobj
-2601 0 obj
-<<
-/Type /EmbeddedFile
 /Length 784
 >>
 stream
@@ -81144,16 +81124,16 @@ export { migrateFile, migrateReleaseGuards, migrationTools, validateMigrated, ty
 
 endstream
 endobj
-2602 0 obj
+2600 0 obj
 <<
 /Type /Filespec
 /F (src\137\137migrate\137\137index\056ts)
 /EF <<
-/F 2601 0 R
+/F 2599 0 R
 >>
 >>
 endobj
-2603 0 obj
+2601 0 obj
 <<
 /Type /EmbeddedFile
 /Length 21986
@@ -81509,16 +81489,16 @@ export function migrateSource(source: string, parse: Parse, identity: Identity):
 
 endstream
 endobj
-2604 0 obj
+2602 0 obj
 <<
 /Type /Filespec
 /F (src\137\137migrate\137\137machines\056ts)
 /EF <<
-/F 2603 0 R
+/F 2601 0 R
 >>
 >>
 endobj
-2605 0 obj
+2603 0 obj
 <<
 /Type /EmbeddedFile
 /Length 8197
@@ -81647,16 +81627,16 @@ export async function validateMigrated(texts: Map<string, string>): Promise<Map<
 
 endstream
 endobj
-2606 0 obj
+2604 0 obj
 <<
 /Type /Filespec
 /F (src\137\137migrate\137\137tools\056ts)
 /EF <<
-/F 2605 0 R
+/F 2603 0 R
 >>
 >>
 endobj
-2607 0 obj
+2605 0 obj
 <<
 /Type /EmbeddedFile
 /Length 409
@@ -81672,16 +81652,16 @@ startLanguageServer(shared);
 
 endstream
 endobj
-2608 0 obj
+2606 0 obj
 <<
 /Type /Filespec
 /F (src\137\137server\137\137main\056ts)
 /EF <<
-/F 2607 0 R
+/F 2605 0 R
 >>
 >>
 endobj
-2609 0 obj
+2607 0 obj
 <<
 /Type /EmbeddedFile
 /Length 131682
@@ -83986,16 +83966,16 @@ class Interpreter {
 
 endstream
 endobj
-2610 0 obj
+2608 0 obj
 <<
 /Type /Filespec
 /F (src\137\137simulation\137\137simulator\056ts)
 /EF <<
-/F 2609 0 R
+/F 2607 0 R
 >>
 >>
 endobj
-2611 0 obj
+2609 0 obj
 <<
 /Type /EmbeddedFile
 /Length 6529
@@ -84120,16 +84100,16 @@ export function projectOperationTiming(result: SimulationResult): {
 
 endstream
 endobj
-2612 0 obj
+2610 0 obj
 <<
 /Type /Filespec
 /F (src\137\137simulation\137\137timing\056ts)
 /EF <<
-/F 2611 0 R
+/F 2609 0 R
 >>
 >>
 endobj
-2613 0 obj
+2611 0 obj
 <<
 /Type /EmbeddedFile
 /Length 6502
@@ -84252,17 +84232,17 @@ export function squareRoot(v: number): number {
 
 endstream
 endobj
-2614 0 obj
+2612 0 obj
 <<
 /Type /Filespec
 /F (src\137\137simulation\137\137values\056ts)
 /EF <<
-/F 2613 0 R
+/F 2611 0 R
 >>
 >>
 endobj
 xref
-0 2615
+0 2613
 0000000000 65535 f 
 0000000015 00000 n 
 0000000116 00000 n 
@@ -86366,525 +86346,523 @@ xref
 0001101942 00000 n 
 0001102053 00000 n 
 0001102101 00000 n 
-0001118630 00000 n 
-0001141156 00000 n 
-0001141285 00000 n 
-0001159391 00000 n 
-0001159508 00000 n 
-0001199838 00000 n 
-0001199950 00000 n 
-0001243324 00000 n 
-0001243457 00000 n 
-0001248872 00000 n 
-0001248992 00000 n 
-0001286296 00000 n 
-0001286421 00000 n 
-0001296330 00000 n 
-0001296453 00000 n 
-0001307586 00000 n 
-0001307716 00000 n 
-0001320778 00000 n 
-0001320901 00000 n 
-0001325537 00000 n 
-0001325644 00000 n 
-0001338413 00000 n 
-0001338519 00000 n 
-0001350090 00000 n 
-0001350193 00000 n 
-0001360997 00000 n 
-0001361102 00000 n 
-0001364659 00000 n 
-0001364759 00000 n 
-0001392009 00000 n 
-0001392108 00000 n 
-0001401096 00000 n 
-0001401193 00000 n 
-0001403116 00000 n 
-0001403226 00000 n 
-0001404770 00000 n 
-0001404880 00000 n 
-0001418153 00000 n 
-0001418249 00000 n 
-0001420057 00000 n 
-0001420179 00000 n 
-0001449373 00000 n 
-0001449479 00000 n 
-0001450724 00000 n 
-0001450831 00000 n 
-0001468066 00000 n 
-0001468176 00000 n 
-0001478019 00000 n 
-0001478112 00000 n 
-0001487398 00000 n 
-0001487494 00000 n 
-0001491631 00000 n 
-0001491757 00000 n 
-0001495253 00000 n 
-0001495404 00000 n 
-0001511579 00000 n 
-0001511708 00000 n 
-0001515463 00000 n 
-0001515602 00000 n 
-0001519402 00000 n 
-0001519537 00000 n 
-0001541963 00000 n 
-0001542112 00000 n 
-0001557592 00000 n 
-0001557743 00000 n 
-0001583451 00000 n 
-0001583605 00000 n 
-0001591197 00000 n 
-0001591335 00000 n 
-0001604424 00000 n 
-0001604535 00000 n 
-0001643712 00000 n 
-0001643816 00000 n 
-0001644521 00000 n 
-0001644625 00000 n 
-0001646522 00000 n 
-0001646643 00000 n 
-0001647679 00000 n 
-0001647795 00000 n 
-0001648302 00000 n 
-0001648421 00000 n 
-0001649098 00000 n 
-0001649218 00000 n 
-0001649902 00000 n 
-0001650017 00000 n 
-0001651057 00000 n 
-0001651172 00000 n 
-0001652208 00000 n 
-0001652323 00000 n 
-0001652871 00000 n 
-0001652988 00000 n 
-0001653883 00000 n 
-0001653997 00000 n 
-0001655390 00000 n 
-0001655507 00000 n 
-0001656543 00000 n 
-0001656661 00000 n 
-0001657692 00000 n 
-0001657809 00000 n 
-0001658842 00000 n 
-0001658957 00000 n 
-0001659505 00000 n 
-0001659631 00000 n 
-0001660802 00000 n 
-0001660929 00000 n 
-0001661273 00000 n 
-0001661390 00000 n 
-0001661896 00000 n 
-0001662011 00000 n 
-0001662783 00000 n 
-0001662907 00000 n 
-0001663502 00000 n 
-0001663629 00000 n 
-0001664382 00000 n 
-0001664502 00000 n 
-0001665227 00000 n 
-0001665348 00000 n 
-0001665833 00000 n 
-0001665944 00000 n 
-0001666543 00000 n 
-0001666660 00000 n 
-0001666997 00000 n 
-0001667118 00000 n 
-0001667973 00000 n 
-0001668094 00000 n 
-0001668427 00000 n 
-0001668539 00000 n 
-0001671781 00000 n 
-0001671892 00000 n 
-0001676612 00000 n 
-0001676730 00000 n 
-0001678379 00000 n 
-0001678503 00000 n 
-0001679610 00000 n 
-0001679733 00000 n 
-0001685380 00000 n 
-0001685499 00000 n 
-0001692716 00000 n 
-0001692836 00000 n 
-0001696836 00000 n 
-0001696951 00000 n 
-0001702611 00000 n 
-0001702735 00000 n 
-0001706300 00000 n 
-0001706418 00000 n 
-0001709642 00000 n 
-0001709761 00000 n 
-0001713451 00000 n 
-0001713564 00000 n 
-0001716858 00000 n 
-0001716973 00000 n 
-0001719867 00000 n 
-0001719980 00000 n 
-0001725668 00000 n 
-0001725786 00000 n 
-0001728802 00000 n 
-0001728914 00000 n 
-0001732091 00000 n 
-0001732207 00000 n 
-0001736461 00000 n 
-0001736577 00000 n 
-0001740368 00000 n 
-0001740492 00000 n 
-0001744967 00000 n 
-0001745084 00000 n 
-0001749587 00000 n 
-0001749702 00000 n 
-0001754539 00000 n 
-0001754664 00000 n 
-0001758516 00000 n 
-0001758648 00000 n 
-0001763942 00000 n 
-0001764072 00000 n 
-0001768285 00000 n 
-0001768415 00000 n 
-0001777708 00000 n 
-0001777825 00000 n 
-0001781687 00000 n 
-0001781799 00000 n 
-0001785853 00000 n 
-0001785969 00000 n 
-0001789573 00000 n 
-0001789692 00000 n 
-0001792973 00000 n 
-0001793086 00000 n 
-0001796290 00000 n 
-0001796414 00000 n 
-0001798509 00000 n 
-0001798618 00000 n 
-0001801601 00000 n 
-0001801710 00000 n 
-0001802854 00000 n 
-0001802929 00000 n 
-0002451984 00000 n 
-0002452098 00000 n 
-0002452194 00000 n 
-0002452290 00000 n 
-0002495776 00000 n 
-0002495872 00000 n 
-0002564834 00000 n 
-0002564930 00000 n 
-0002566462 00000 n 
-0002566571 00000 n 
-0002567773 00000 n 
-0002567881 00000 n 
-0002570360 00000 n 
-0002570443 00000 n 
-0002583063 00000 n 
-0002583154 00000 n 
-0002583569 00000 n 
-0002583653 00000 n 
-0002616241 00000 n 
-0002616360 00000 n 
-0002621709 00000 n 
-0002621828 00000 n 
-0002630516 00000 n 
-0002630637 00000 n 
-0002635263 00000 n 
-0002635374 00000 n 
-0002635682 00000 n 
-0002635797 00000 n 
-0002651286 00000 n 
-0002651386 00000 n 
-0002652716 00000 n 
-0002652822 00000 n 
-0002654824 00000 n 
-0002654943 00000 n 
-0002660176 00000 n 
-0002660284 00000 n 
-0002662267 00000 n 
-0002662376 00000 n 
-0002672978 00000 n 
-0002673096 00000 n 
-0002717904 00000 n 
-0002718032 00000 n 
-0002722001 00000 n 
-0002722139 00000 n 
-0002725237 00000 n 
-0002725365 00000 n 
-0002765217 00000 n 
-0002765343 00000 n 
-0002767763 00000 n 
-0002767899 00000 n 
-0002769928 00000 n 
-0002770054 00000 n 
-0002808856 00000 n 
-0002808982 00000 n 
-0002811103 00000 n 
-0002811239 00000 n 
-0002812922 00000 n 
-0002813048 00000 n 
-0002859917 00000 n 
-0002860053 00000 n 
-0002864034 00000 n 
-0002864180 00000 n 
-0002867290 00000 n 
-0002867426 00000 n 
-0002900781 00000 n 
-0002900905 00000 n 
-0002903101 00000 n 
-0002903235 00000 n 
-0002905024 00000 n 
-0002905148 00000 n 
-0002940592 00000 n 
-0002940714 00000 n 
-0002943973 00000 n 
-0002944105 00000 n 
-0002946561 00000 n 
-0002946683 00000 n 
-0002977859 00000 n 
-0002977981 00000 n 
-0002981458 00000 n 
-0002981590 00000 n 
-0002984164 00000 n 
-0002984286 00000 n 
-0003025709 00000 n 
-0003025836 00000 n 
-0003028095 00000 n 
-0003028232 00000 n 
-0003030142 00000 n 
-0003030269 00000 n 
-0003058309 00000 n 
-0003058431 00000 n 
-0003060995 00000 n 
-0003061127 00000 n 
-0003063096 00000 n 
-0003063218 00000 n 
-0003115101 00000 n 
-0003115223 00000 n 
-0003119661 00000 n 
-0003119793 00000 n 
-0003122953 00000 n 
-0003123075 00000 n 
-0003157008 00000 n 
-0003157135 00000 n 
-0003159358 00000 n 
-0003159495 00000 n 
-0003161335 00000 n 
-0003161462 00000 n 
-0003203379 00000 n 
-0003203506 00000 n 
-0003206281 00000 n 
-0003206418 00000 n 
-0003208652 00000 n 
-0003208779 00000 n 
-0003248109 00000 n 
-0003248236 00000 n 
-0003250649 00000 n 
-0003250786 00000 n 
-0003252808 00000 n 
-0003252935 00000 n 
-0003288390 00000 n 
-0003288520 00000 n 
-0003289921 00000 n 
-0003290061 00000 n 
-0003291259 00000 n 
-0003291389 00000 n 
-0003332672 00000 n 
-0003332800 00000 n 
-0003335061 00000 n 
-0003335199 00000 n 
-0003337111 00000 n 
-0003337239 00000 n 
-0003363974 00000 n 
-0003364095 00000 n 
-0003366645 00000 n 
-0003366776 00000 n 
-0003368731 00000 n 
-0003368852 00000 n 
-0003406826 00000 n 
-0003406953 00000 n 
-0003409065 00000 n 
-0003409202 00000 n 
-0003410876 00000 n 
-0003411003 00000 n 
-0003444475 00000 n 
-0003444601 00000 n 
-0003446923 00000 n 
-0003447059 00000 n 
-0003448935 00000 n 
-0003449061 00000 n 
-0003476713 00000 n 
-0003476837 00000 n 
-0003478087 00000 n 
-0003478221 00000 n 
-0003479271 00000 n 
-0003479395 00000 n 
-0003512602 00000 n 
-0003512724 00000 n 
-0003515335 00000 n 
-0003515467 00000 n 
-0003517599 00000 n 
-0003517721 00000 n 
-0003546304 00000 n 
-0003546433 00000 n 
-0003549095 00000 n 
-0003549234 00000 n 
-0003551417 00000 n 
-0003551546 00000 n 
-0003589623 00000 n 
-0003589750 00000 n 
-0003592119 00000 n 
-0003592256 00000 n 
-0003594214 00000 n 
-0003594341 00000 n 
-0003626692 00000 n 
-0003626816 00000 n 
-0003628919 00000 n 
-0003629053 00000 n 
-0003630752 00000 n 
-0003630876 00000 n 
-0003685835 00000 n 
-0003685957 00000 n 
-0003692766 00000 n 
-0003692898 00000 n 
-0003697216 00000 n 
-0003697338 00000 n 
-0003733523 00000 n 
-0003733647 00000 n 
-0003735994 00000 n 
-0003736128 00000 n 
-0003738029 00000 n 
-0003738153 00000 n 
-0003778975 00000 n 
-0003779104 00000 n 
-0003781373 00000 n 
-0003781512 00000 n 
-0003783398 00000 n 
-0003783527 00000 n 
-0003818227 00000 n 
-0003818352 00000 n 
-0003820557 00000 n 
-0003820692 00000 n 
-0003822490 00000 n 
-0003822615 00000 n 
-0003875896 00000 n 
-0003876020 00000 n 
-0003881041 00000 n 
-0003881175 00000 n 
-0003884752 00000 n 
-0003884876 00000 n 
-0003919566 00000 n 
-0003919689 00000 n 
-0003922945 00000 n 
-0003923078 00000 n 
-0003925531 00000 n 
-0003925654 00000 n 
-0003957319 00000 n 
-0003957442 00000 n 
-0003960906 00000 n 
-0003961039 00000 n 
-0003963600 00000 n 
-0003963723 00000 n 
-0004006138 00000 n 
-0004006258 00000 n 
-0004008975 00000 n 
-0004009105 00000 n 
-0004011223 00000 n 
-0004011343 00000 n 
-0004051916 00000 n 
-0004052039 00000 n 
-0004054288 00000 n 
-0004054421 00000 n 
-0004056321 00000 n 
-0004056444 00000 n 
-0004094002 00000 n 
-0004094124 00000 n 
-0004098431 00000 n 
-0004098563 00000 n 
-0004101867 00000 n 
-0004101989 00000 n 
-0004103156 00000 n 
-0004103272 00000 n 
-0004103785 00000 n 
-0004103909 00000 n 
-0004110667 00000 n 
-0004110805 00000 n 
-0004816566 00000 n 
-0004816689 00000 n 
-0005460058 00000 n 
-0005460188 00000 n 
-0006095681 00000 n 
-0006095807 00000 n 
-0006852960 00000 n 
-0006853075 00000 n 
-0007193864 00000 n 
-0007193983 00000 n 
-0007202874 00000 n 
-0007202996 00000 n 
-0007205872 00000 n 
-0007205982 00000 n 
-0007210182 00000 n 
-0007210285 00000 n 
-0007211931 00000 n 
-0007212035 00000 n 
-0007216587 00000 n 
-0007216687 00000 n 
-0007225497 00000 n 
-0007225600 00000 n 
-0007227130 00000 n 
-0007227233 00000 n 
-0007235407 00000 n 
-0007235506 00000 n 
-0007236289 00000 n 
-0007236393 00000 n 
-0007247876 00000 n 
-0007247984 00000 n 
-0007248533 00000 n 
-0007248641 00000 n 
-0007262785 00000 n 
-0007262895 00000 n 
-0007264414 00000 n 
-0007264533 00000 n 
-0007272434 00000 n 
-0007272540 00000 n 
-0007302697 00000 n 
-0007302814 00000 n 
-0007326791 00000 n 
-0007326901 00000 n 
-0007332000 00000 n 
-0007332113 00000 n 
-0007345094 00000 n 
-0007345205 00000 n 
-0007420081 00000 n 
-0007420190 00000 n 
-0007449638 00000 n 
-0007449752 00000 n 
-0007457489 00000 n 
-0007457618 00000 n 
-0007461708 00000 n 
-0007461824 00000 n 
-0007468820 00000 n 
-0007468935 00000 n 
-0007512181 00000 n 
-0007512297 00000 n 
-0007668544 00000 n 
-0007668663 00000 n 
-0007678873 00000 n 
-0007678990 00000 n 
-0007679848 00000 n 
-0007679953 00000 n 
-0007702015 00000 n 
-0007702123 00000 n 
-0007710395 00000 n 
-0007710500 00000 n 
-0007710983 00000 n 
-0007711086 00000 n 
-0007842845 00000 n 
-0007842957 00000 n 
-0007849561 00000 n 
-0007849670 00000 n 
-0007856247 00000 n 
+0001118569 00000 n 
+0001141095 00000 n 
+0001141224 00000 n 
+0001159330 00000 n 
+0001159447 00000 n 
+0001199777 00000 n 
+0001199889 00000 n 
+0001243263 00000 n 
+0001243396 00000 n 
+0001248811 00000 n 
+0001248931 00000 n 
+0001286235 00000 n 
+0001286360 00000 n 
+0001296269 00000 n 
+0001296392 00000 n 
+0001307525 00000 n 
+0001307655 00000 n 
+0001320717 00000 n 
+0001320840 00000 n 
+0001325476 00000 n 
+0001325583 00000 n 
+0001338352 00000 n 
+0001338458 00000 n 
+0001350029 00000 n 
+0001350132 00000 n 
+0001360936 00000 n 
+0001361041 00000 n 
+0001364598 00000 n 
+0001364698 00000 n 
+0001391948 00000 n 
+0001392047 00000 n 
+0001401035 00000 n 
+0001401132 00000 n 
+0001403055 00000 n 
+0001403165 00000 n 
+0001404709 00000 n 
+0001404819 00000 n 
+0001418092 00000 n 
+0001418188 00000 n 
+0001419996 00000 n 
+0001420118 00000 n 
+0001449312 00000 n 
+0001449418 00000 n 
+0001450663 00000 n 
+0001450770 00000 n 
+0001468005 00000 n 
+0001468115 00000 n 
+0001477958 00000 n 
+0001478051 00000 n 
+0001487337 00000 n 
+0001487433 00000 n 
+0001491570 00000 n 
+0001491696 00000 n 
+0001495192 00000 n 
+0001495343 00000 n 
+0001511518 00000 n 
+0001511647 00000 n 
+0001515402 00000 n 
+0001515541 00000 n 
+0001519341 00000 n 
+0001519476 00000 n 
+0001541902 00000 n 
+0001542051 00000 n 
+0001557531 00000 n 
+0001557682 00000 n 
+0001583390 00000 n 
+0001583544 00000 n 
+0001591136 00000 n 
+0001591274 00000 n 
+0001604363 00000 n 
+0001604474 00000 n 
+0001643651 00000 n 
+0001643755 00000 n 
+0001644460 00000 n 
+0001644564 00000 n 
+0001646461 00000 n 
+0001646582 00000 n 
+0001647618 00000 n 
+0001647734 00000 n 
+0001648241 00000 n 
+0001648360 00000 n 
+0001649037 00000 n 
+0001649157 00000 n 
+0001649841 00000 n 
+0001649956 00000 n 
+0001650996 00000 n 
+0001651111 00000 n 
+0001652147 00000 n 
+0001652262 00000 n 
+0001652810 00000 n 
+0001652927 00000 n 
+0001653822 00000 n 
+0001653936 00000 n 
+0001655329 00000 n 
+0001655446 00000 n 
+0001656482 00000 n 
+0001656600 00000 n 
+0001657631 00000 n 
+0001657748 00000 n 
+0001658781 00000 n 
+0001658896 00000 n 
+0001659444 00000 n 
+0001659570 00000 n 
+0001660741 00000 n 
+0001660868 00000 n 
+0001661212 00000 n 
+0001661329 00000 n 
+0001661835 00000 n 
+0001661950 00000 n 
+0001662722 00000 n 
+0001662846 00000 n 
+0001663441 00000 n 
+0001663568 00000 n 
+0001664321 00000 n 
+0001664441 00000 n 
+0001665166 00000 n 
+0001665287 00000 n 
+0001665772 00000 n 
+0001665883 00000 n 
+0001666482 00000 n 
+0001666599 00000 n 
+0001666936 00000 n 
+0001667057 00000 n 
+0001667912 00000 n 
+0001668033 00000 n 
+0001668366 00000 n 
+0001668478 00000 n 
+0001671720 00000 n 
+0001671831 00000 n 
+0001676551 00000 n 
+0001676669 00000 n 
+0001678318 00000 n 
+0001678442 00000 n 
+0001679549 00000 n 
+0001679672 00000 n 
+0001685319 00000 n 
+0001685438 00000 n 
+0001692655 00000 n 
+0001692775 00000 n 
+0001696775 00000 n 
+0001696890 00000 n 
+0001702550 00000 n 
+0001702674 00000 n 
+0001706239 00000 n 
+0001706357 00000 n 
+0001709581 00000 n 
+0001709700 00000 n 
+0001713390 00000 n 
+0001713503 00000 n 
+0001716797 00000 n 
+0001716912 00000 n 
+0001719806 00000 n 
+0001719919 00000 n 
+0001725607 00000 n 
+0001725725 00000 n 
+0001728741 00000 n 
+0001728853 00000 n 
+0001732030 00000 n 
+0001732146 00000 n 
+0001736400 00000 n 
+0001736516 00000 n 
+0001740307 00000 n 
+0001740431 00000 n 
+0001744906 00000 n 
+0001745023 00000 n 
+0001749526 00000 n 
+0001749641 00000 n 
+0001754478 00000 n 
+0001754603 00000 n 
+0001758455 00000 n 
+0001758587 00000 n 
+0001763881 00000 n 
+0001764011 00000 n 
+0001768224 00000 n 
+0001768354 00000 n 
+0001777647 00000 n 
+0001777764 00000 n 
+0001781626 00000 n 
+0001781738 00000 n 
+0001785792 00000 n 
+0001785908 00000 n 
+0001789512 00000 n 
+0001789631 00000 n 
+0001792912 00000 n 
+0001793025 00000 n 
+0001796229 00000 n 
+0001796353 00000 n 
+0001798448 00000 n 
+0001798557 00000 n 
+0001801540 00000 n 
+0001801649 00000 n 
+0001802793 00000 n 
+0001802868 00000 n 
+0002451923 00000 n 
+0002452037 00000 n 
+0002452133 00000 n 
+0002452229 00000 n 
+0002495715 00000 n 
+0002495811 00000 n 
+0002564773 00000 n 
+0002564869 00000 n 
+0002566401 00000 n 
+0002566510 00000 n 
+0002567712 00000 n 
+0002567820 00000 n 
+0002570299 00000 n 
+0002570382 00000 n 
+0002583002 00000 n 
+0002583093 00000 n 
+0002583508 00000 n 
+0002583592 00000 n 
+0002616180 00000 n 
+0002616299 00000 n 
+0002621648 00000 n 
+0002621767 00000 n 
+0002630479 00000 n 
+0002630600 00000 n 
+0002635226 00000 n 
+0002635337 00000 n 
+0002635645 00000 n 
+0002635760 00000 n 
+0002651249 00000 n 
+0002651349 00000 n 
+0002652679 00000 n 
+0002652785 00000 n 
+0002654787 00000 n 
+0002654906 00000 n 
+0002660139 00000 n 
+0002660247 00000 n 
+0002662230 00000 n 
+0002662339 00000 n 
+0002672941 00000 n 
+0002673059 00000 n 
+0002717867 00000 n 
+0002717995 00000 n 
+0002721964 00000 n 
+0002722102 00000 n 
+0002725200 00000 n 
+0002725328 00000 n 
+0002765180 00000 n 
+0002765306 00000 n 
+0002767726 00000 n 
+0002767862 00000 n 
+0002769891 00000 n 
+0002770017 00000 n 
+0002808819 00000 n 
+0002808945 00000 n 
+0002811066 00000 n 
+0002811202 00000 n 
+0002812885 00000 n 
+0002813011 00000 n 
+0002859880 00000 n 
+0002860016 00000 n 
+0002863997 00000 n 
+0002864143 00000 n 
+0002867253 00000 n 
+0002867389 00000 n 
+0002900744 00000 n 
+0002900868 00000 n 
+0002903064 00000 n 
+0002903198 00000 n 
+0002904987 00000 n 
+0002905111 00000 n 
+0002940555 00000 n 
+0002940677 00000 n 
+0002943936 00000 n 
+0002944068 00000 n 
+0002946524 00000 n 
+0002946646 00000 n 
+0002977822 00000 n 
+0002977944 00000 n 
+0002981421 00000 n 
+0002981553 00000 n 
+0002984127 00000 n 
+0002984249 00000 n 
+0003025672 00000 n 
+0003025799 00000 n 
+0003028058 00000 n 
+0003028195 00000 n 
+0003030105 00000 n 
+0003030232 00000 n 
+0003058272 00000 n 
+0003058394 00000 n 
+0003060958 00000 n 
+0003061090 00000 n 
+0003063059 00000 n 
+0003063181 00000 n 
+0003115064 00000 n 
+0003115186 00000 n 
+0003119624 00000 n 
+0003119756 00000 n 
+0003122916 00000 n 
+0003123038 00000 n 
+0003156971 00000 n 
+0003157098 00000 n 
+0003159321 00000 n 
+0003159458 00000 n 
+0003161298 00000 n 
+0003161425 00000 n 
+0003203342 00000 n 
+0003203469 00000 n 
+0003206244 00000 n 
+0003206381 00000 n 
+0003208615 00000 n 
+0003208742 00000 n 
+0003248072 00000 n 
+0003248199 00000 n 
+0003250612 00000 n 
+0003250749 00000 n 
+0003252771 00000 n 
+0003252898 00000 n 
+0003288353 00000 n 
+0003288483 00000 n 
+0003289884 00000 n 
+0003290024 00000 n 
+0003291222 00000 n 
+0003291352 00000 n 
+0003332635 00000 n 
+0003332763 00000 n 
+0003335024 00000 n 
+0003335162 00000 n 
+0003337074 00000 n 
+0003337202 00000 n 
+0003363937 00000 n 
+0003364058 00000 n 
+0003366608 00000 n 
+0003366739 00000 n 
+0003368694 00000 n 
+0003368815 00000 n 
+0003406789 00000 n 
+0003406916 00000 n 
+0003409028 00000 n 
+0003409165 00000 n 
+0003410839 00000 n 
+0003410966 00000 n 
+0003444438 00000 n 
+0003444564 00000 n 
+0003446886 00000 n 
+0003447022 00000 n 
+0003448898 00000 n 
+0003449024 00000 n 
+0003476676 00000 n 
+0003476800 00000 n 
+0003478050 00000 n 
+0003478184 00000 n 
+0003479234 00000 n 
+0003479358 00000 n 
+0003512565 00000 n 
+0003512687 00000 n 
+0003515298 00000 n 
+0003515430 00000 n 
+0003517562 00000 n 
+0003517684 00000 n 
+0003546267 00000 n 
+0003546396 00000 n 
+0003549058 00000 n 
+0003549197 00000 n 
+0003551380 00000 n 
+0003551509 00000 n 
+0003589586 00000 n 
+0003589713 00000 n 
+0003592082 00000 n 
+0003592219 00000 n 
+0003594177 00000 n 
+0003594304 00000 n 
+0003626655 00000 n 
+0003626779 00000 n 
+0003628882 00000 n 
+0003629016 00000 n 
+0003630715 00000 n 
+0003630839 00000 n 
+0003685798 00000 n 
+0003685920 00000 n 
+0003692729 00000 n 
+0003692861 00000 n 
+0003697179 00000 n 
+0003697301 00000 n 
+0003733486 00000 n 
+0003733610 00000 n 
+0003735957 00000 n 
+0003736091 00000 n 
+0003737992 00000 n 
+0003738116 00000 n 
+0003778938 00000 n 
+0003779067 00000 n 
+0003781336 00000 n 
+0003781475 00000 n 
+0003783361 00000 n 
+0003783490 00000 n 
+0003818190 00000 n 
+0003818315 00000 n 
+0003820520 00000 n 
+0003820655 00000 n 
+0003822453 00000 n 
+0003822578 00000 n 
+0003875859 00000 n 
+0003875983 00000 n 
+0003881004 00000 n 
+0003881138 00000 n 
+0003884715 00000 n 
+0003884839 00000 n 
+0003919529 00000 n 
+0003919652 00000 n 
+0003922908 00000 n 
+0003923041 00000 n 
+0003925494 00000 n 
+0003925617 00000 n 
+0003957282 00000 n 
+0003957405 00000 n 
+0003960869 00000 n 
+0003961002 00000 n 
+0003963563 00000 n 
+0003963686 00000 n 
+0004006101 00000 n 
+0004006221 00000 n 
+0004008938 00000 n 
+0004009068 00000 n 
+0004011186 00000 n 
+0004011306 00000 n 
+0004051879 00000 n 
+0004052002 00000 n 
+0004054251 00000 n 
+0004054384 00000 n 
+0004056284 00000 n 
+0004056407 00000 n 
+0004093965 00000 n 
+0004094087 00000 n 
+0004098394 00000 n 
+0004098526 00000 n 
+0004101830 00000 n 
+0004101952 00000 n 
+0004103119 00000 n 
+0004103235 00000 n 
+0004103748 00000 n 
+0004103872 00000 n 
+0004110630 00000 n 
+0004110768 00000 n 
+0004816529 00000 n 
+0004816652 00000 n 
+0005460021 00000 n 
+0005460151 00000 n 
+0006095644 00000 n 
+0006095770 00000 n 
+0006852923 00000 n 
+0006853038 00000 n 
+0007193827 00000 n 
+0007193946 00000 n 
+0007202837 00000 n 
+0007202959 00000 n 
+0007205835 00000 n 
+0007205945 00000 n 
+0007210145 00000 n 
+0007210248 00000 n 
+0007211894 00000 n 
+0007211998 00000 n 
+0007216550 00000 n 
+0007216650 00000 n 
+0007225460 00000 n 
+0007225563 00000 n 
+0007227093 00000 n 
+0007227196 00000 n 
+0007235370 00000 n 
+0007235469 00000 n 
+0007236252 00000 n 
+0007236356 00000 n 
+0007247839 00000 n 
+0007247947 00000 n 
+0007248496 00000 n 
+0007248604 00000 n 
+0007262748 00000 n 
+0007262858 00000 n 
+0007264377 00000 n 
+0007264496 00000 n 
+0007272397 00000 n 
+0007272503 00000 n 
+0007302660 00000 n 
+0007302777 00000 n 
+0007326754 00000 n 
+0007326864 00000 n 
+0007331963 00000 n 
+0007332076 00000 n 
+0007345057 00000 n 
+0007345168 00000 n 
+0007420044 00000 n 
+0007420153 00000 n 
+0007449601 00000 n 
+0007449715 00000 n 
+0007457452 00000 n 
+0007457581 00000 n 
+0007461671 00000 n 
+0007461787 00000 n 
+0007468783 00000 n 
+0007468898 00000 n 
+0007512144 00000 n 
+0007512260 00000 n 
+0007668507 00000 n 
+0007668626 00000 n 
+0007669484 00000 n 
+0007669589 00000 n 
+0007691651 00000 n 
+0007691759 00000 n 
+0007700031 00000 n 
+0007700136 00000 n 
+0007700619 00000 n 
+0007700722 00000 n 
+0007832481 00000 n 
+0007832593 00000 n 
+0007839197 00000 n 
+0007839306 00000 n 
+0007845883 00000 n 
 trailer
 <<
-/Size 2615
+/Size 2613
 /Root 1 0 R
 /Info 2098 0 R
-/ID [ (\053\270\310c\217\241\217\355\375\043\342\375\012\025\345\362) (\053\270\310c\217\241\217\355\375\043\342\375\012\025\345\362) ]
+/ID [ (\200R\252\366\034\015\001\336\241M\271\203\365\376\017\344) (\200R\252\366\034\015\001\336\241M\271\203\365\376\017\344) ]
 >>
 startxref
-7856356
+7845992
 %%EOF
