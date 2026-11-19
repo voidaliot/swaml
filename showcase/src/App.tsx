@@ -1,6 +1,7 @@
 import { Timing } from './Timing';
 import { useEffect, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import model from './generated/model.json';
+import { highlight } from './highlight.js';
 import './v2.css';
 
 const views = ['General', 'Interconnect', 'Case', 'Sequence', 'Grid', 'Flow', 'Timing'] as const;
@@ -18,9 +19,10 @@ function Icon({ name, size = 18 }: { name: string; size?: number }) {
   const paths: Record<string, string> = { arrow: 'M4 12h15m-5-5 5 5-5 5', external: 'M13 4h7v7m0-7L9 15M9 4H4v16h16v-5', sun: 'M12 2v2m0 16v2M2 12h2m16 0h2M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0', moon: 'M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11Z', system: 'M3 4h18v14H3zM8 22h8m-4-4v4', copy: 'M8 3h13v14H8zM4 7H2v15h13v-3', check: 'm4 12 5 5L20 6', plus: 'M12 4v16M4 12h16', source: 'm8 5-6 7 6 7m8-14 6 7-6 7m-2-15-4 16', grid: 'M3 3h7v7H3zm11 0h7v7h-7zM3 14h7v7H3zm11 0h7v7h-7z' };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d={paths[name] ?? paths.arrow}/></svg>;
 }
+// Source excerpts come from the site data only (check-showcase.mjs); highlighting is shared with the specification reader.
+const keywords = new Set(model.keywords);
 function Code({ text, numbers = false }: { text: string; numbers?: boolean }) {
-  const keyword = /^(component|def|redefines|attribute|const|operation|returns|port|provides|requires|reversed|schedule|on|start|every|receive|call|after|deadline|concurrent|wait|try|var|return|send|publish|connect|import|package|if|else|view|of|int|real|bool|string|uint)$/;
-  return <pre className={`source-code ${numbers ? 'numbered' : ''}`}><code>{text.trim().split('\n').map((line, i) => <span className="code-line" key={i}>{numbers && <span className="line-number" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>}<span>{line.split(/("(?:[^"\\]|\\.)*"|\b[A-Za-z]\w*\b)/g).map((t, j) => <span key={j} className={keyword.test(t) ? 'token-keyword' : t.startsWith('"') ? 'token-string' : ''}>{t}</span>)}</span>{'\n'}</span>)}</code></pre>;
+  return <pre className={`source-code ${numbers ? 'numbered' : ''}`}><code>{highlight(text.trim(), keywords).map((line, i) => <span className="code-line" key={i}>{numbers && <span className="line-number" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>}<span>{line.map((t, j) => <span key={j} className={t.c === 'keyword' ? 'token-keyword' : t.c === 'string' ? 'token-string' : undefined}>{t.t}</span>)}</span>{'\n'}</span>)}</code></pre>;
 }
 function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) {
   const [state, set] = useState<'idle'|'copied'|'failed'>('idle');
@@ -148,8 +150,8 @@ function Execution() {
         <h3>What “executable” means in swa.ml</h3>
         <p>The reference interpreter executes a validated model for a selected run target and a finite time horizon. It records operation activations, routed messages, waits and state changes.</p>
         <p>In this example, the sensor operation emits a fixed reading of <code>18.5</code>. The controller computes <code>(21.0 − 18.5) × 0.1</code> and sends a command. The heater component stores <code>{model.run.stores['Demo.heater'].power}</code>.</p>
-        <p className="execution-limit">These are software interactions in logical time. The example has no thermal plant model, and the interpreter assigns zero physical CPU cost. Target timing and production deployment require separate implementation and evidence.</p>
-        <a className="text-link" href="./downloads/simulation.md" download>Reference execution guide <Icon name="arrow" size={16}/></a>
+        <p className="execution-limit">These are software interactions in logical time. The example has no thermal plant model, and the interpreter assigns zero physical CPU cost. Placement of operations on <code>Swaml::Os</code> tasks and cores is checked statically; target timing and production deployment require a target binding with measured costs and separate evidence.</p>
+        <a className="text-link" href="./spec/simulation/">Reference execution guide <Icon name="arrow" size={16}/></a>
       </div>
       <div className="trace-panel">
         <div className="panel-heading"><span>REFERENCE RUN / SELECTED OBSERVATIONS</span><span>{model.run.untilNs / 1000000} ms horizon</span></div>
@@ -165,7 +167,39 @@ function Execution() {
         <div className="trace-footer"><code>{model.run.profile}</code><a href="./downloads/controller-run.json" download>Download run JSON <Icon name="arrow" size={14}/></a></div>
       </div>
     </div>
+    <States/>
   </section>;
+}
+
+// States as steps of the flow, in the same source and trace presentation, from a validated example and its test run.
+function States() {
+  const s = model.states, ms = (ns: number) => `${ns / 1000000} ms`;
+  const door = s.observations.find(o => o.kind === 'publish' && o.subject.startsWith('toDoor')), off = [...s.observations].reverse().find(o => o.kind === 'write' && o.subject.endsWith('.lit') && o.value === false);
+  return <div className="execution-grid states-grid">
+    <div className="execution-description">
+      <h3>States are steps of the flow</h3>
+      <p>A state is a statement of an operation’s flow. The flow reaches it, runs its <code>on entry</code> once and waits there. Each time something happens to the state, it looks at its lines again: <code>exit;</code> continues with the next statement, <code>to S;</code> enters <code>S</code>, and an <code>after</code> timer counts from the state’s entry.</p>
+      <p>A key wake leaves <code>asleep</code>, lights the lamp and enters <code>courtesy</code>.{door && off && <> The door opens at {ms(door.timeNs)}, which enters <code>courtesy</code> again and restarts its {s.annotation.timer} timer, so the light goes off at {ms(off.timeNs)}.</>}</p>
+      <figure className="source-preview">
+        <figcaption className="panel-heading"><span>{s.model.split('/').at(-1)}</span><span>{s.component}.{s.operation}()</span></figcaption>
+        <Code text={s.code} numbers/>
+        <div className="source-annotation"><span>Input</span><code>{s.annotation.inputs.join(', ')}</code><span>States</span><code>{s.annotation.states.join(', ')}</code><span>Output</span><code>{s.annotation.outputs.join(', ')}</code></div>
+      </figure>
+    </div>
+    <div className="trace-panel">
+      <div className="panel-heading"><span>TEST RUN / STATES AND WRITES</span><span>{s.result}</span></div>
+      <div className="trace-scroll"><table className="trace-table">
+        <caption>Messages, states entered and attribute writes of the test “{s.test}”</caption>
+        <thead><tr><th>Time</th><th>Observation</th><th>Value</th></tr></thead>
+        <tbody>{s.observations.map(o => <tr key={o.ordinal}>
+          <td>{ms(o.timeNs)}</td>
+          <td><span className="trace-kind">{o.kind}</span><code>{o.subject.replace('light.', '')}</code></td>
+          <td><code>{o.kind === 'state' ? String(o.value) : o.value === null ? '' : JSON.stringify(o.value)}</code></td>
+        </tr>)}</tbody>
+      </table></div>
+      <div className="trace-footer"><code>{s.profile}</code><a href="./downloads/interior-light.swaml" download>Model <Icon name="arrow" size={14}/></a><a href="./downloads/interior-light-run.json" download>Run JSON <Icon name="arrow" size={14}/></a></div>
+    </div>
+  </div>;
 }
 
 function Command({ text, label }: { text: string; label: string }) {
@@ -185,7 +219,7 @@ export default function App() {
     <a className="skip-link" href="#main">Skip to content</a>
     <header className="site-header">
       <a href="#" className="wordmark" aria-label="swa.ml home"><img src="./swaml.svg" alt="" width="36" height="36"/>swa.ml<span className="version-label">{released ? model.edition : `${model.edition} candidate`}</span></a>
-      <nav aria-label="Main navigation"><a href="#language">Language</a><a href="#explore">Example</a><a href="#execution">Execution</a><a href="#start">Documentation</a></nav>
+      <nav aria-label="Main navigation"><a href="#language">Language</a><a href="#explore">Example</a><a href="#execution">Execution</a><a href="#start">Documentation</a><a href="./spec/">Specification</a></nav>
       <button className="theme-toggle" onClick={() => setTheme(theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system')} aria-label={`Theme: ${theme}. Switch to ${theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system'}`} title={`Theme: ${theme}`}><Icon name={theme === 'light' ? 'sun' : theme === 'dark' ? 'moon' : 'system'}/><span>{theme}</span></button>
     </header>
     <main id="main">
@@ -193,9 +227,9 @@ export default function App() {
         <div className="hero-intro">
           <span className="eyebrow">SOFTWARE ARCHITECTURE MODELING LANGUAGE</span>
           <h1 id="hero-title">Model software architecture<br/>with executable behavior.</h1>
-          <p className="hero-description">swa.ml is a textual modeling language for software architects. Define component boundaries, typed communication and the operations that implement software behavior in one reviewable model.</p>
+          <p className="hero-description">swa.ml is a textual modeling language for software architects. Define component boundaries, typed communication and the operations that implement software behavior, with states as steps of their flow, in one reviewable model.</p>
           <p className="hero-detail">Validate the architecture, execute it in the reference interpreter, and inspect its state changes and message trace before implementing it on a target platform.</p>
-          <div className="hero-actions"><a className="button primary" href="#explore">Inspect the example <Icon name="arrow"/></a><a className="text-link" href="#execution">Execution semantics <Icon name="arrow" size={16}/></a></div>
+          <div className="hero-actions"><a className="button primary" href="#explore">Inspect the example <Icon name="arrow"/></a><a className="text-link" href="#execution">Execution semantics <Icon name="arrow" size={16}/></a><a className="text-link" href="./spec/">Read the specification <Icon name="arrow" size={16}/></a></div>
           <div className="hero-footnote"><span>{released ? `${model.edition} standard` : `${model.edition} unreleased candidate`}</span><span>Open source · MIT</span></div>
         </div>
         <figure className="source-preview">
@@ -210,7 +244,7 @@ export default function App() {
         <div className="section-heading"><div><span className="eyebrow">01 / ARCHITECTURAL CONCERNS</span><h2 id="language-title">Structure, communication and execution.</h2></div><p>Use the model to review responsibility, data flow and activation rules together.</p></div>
         <div className="concern-grid">
           <article><span className="concern-index">01</span><h3>Component boundaries</h3><p>Assign state and operations to the component that owns them. Reuse definitions while keeping each occurrence’s private state separate.</p><div className="concern-question">Which component owns this state?</div><Code text={all.find(n => n.id === 'Control::Demo')!.code}/></article>
-          <article><span className="concern-index">02</span><h3>Typed communication</h3><p>Declare the direction and payload of each port member. Connect components through explicit routes that the validator checks.</p><div className="concern-question">What crosses this boundary?</div><p>Port boundaries may mix attributes, events and operations; direction belongs to each member.</p><img className="notation-figure" src="./downloads/mixed-ports.svg" alt="Mixed port with directed attributes, events and operations" style={{width:"100%",height:"auto"}}/><Code text={all.find(n => n.id === 'Control::Temperature')!.code + '\n\n' + all.find(n => n.id === 'Control::Commands')!.code}/></article>
+          <article><span className="concern-index">02</span><h3>Typed communication</h3><p>Declare the direction and payload of each port member. Connect components through explicit routes that the validator checks.</p><div className="concern-question">What crosses this boundary?</div><p>Port boundaries may mix attributes, events and operations; direction belongs to each member. A required attribute with an initial value can be read directly as a sample, <code>port.member</code>.</p><img className="notation-figure" src="./downloads/mixed-ports.svg" alt="Mixed port with directed attributes, events and operations" style={{width:"100%",height:"auto"}}/><Code text={all.find(n => n.id === 'Control::Temperature')!.code + '\n\n' + all.find(n => n.id === 'Control::Commands')!.code}/></article>
           <article><span className="concern-index">03</span><h3>Executable operations</h3><p>Specify calculations, state updates, requests and events. Bind operations to startup, periodic or input triggers in a schedule.</p><div className="concern-question">What runs, and what activates it?</div><Code text={all.find(n => n.id === 'Control::Sensor')!.code}/></article>
         </div>
         <p className="section-note">Excerpts from the example below. The <code>.swaml</code> source defines meaning; diagrams project that source and layout stays separate.</p>
@@ -227,12 +261,12 @@ export default function App() {
           <article><span className="concern-index">03 / EXECUTE</span><h3>Inspect a bounded run</h3><p>Run the same run target to a 29 ms horizon using the supplied options. Review the trace and final stores.</p><Command text={'node out/src/cli/simulate.js Control::Demo showcase/public/downloads/controller-options.json examples/02-realtime-controller.swaml'} label="Copy execution command"/></article>
         </div>
         <div className="resource-grid">
-          <article><h3>Language and reference tools</h3><p>The {model.edition} guides describe the syntax, modeling workflow and current implementation limits.</p><div className="resource-links"><a href="./downloads/usage-guide.md" download>Usage guide <Icon name="arrow" size={15}/></a><a href="./downloads/implementation-status.md" download>Implementation status <Icon name="arrow" size={15}/></a><a href="./downloads/controller.swaml" download>Example source <Icon name="arrow" size={15}/></a><a href={`${github}/blob/v${model.publishedEdition}/output/pdf/SWAML-${model.publishedEdition}-Specification.pdf`} target="_blank" rel="noreferrer">{released ? 'Specification PDF' : `${model.publishedEdition} specification PDF`} <Icon name="external" size={14}/></a><a href={github} target="_blank" rel="noreferrer">Source repository <Icon name="external" size={14}/></a></div></article>
-          <article><h3>Agent-assisted authoring</h3><p>Use the authoring guide and portable skills to generate source, inspect diagnostics and revalidate the complete model after each change.</p><div className="resource-links"><a href="./downloads/ai-guide.md" download>AI authoring guide <Icon name="arrow" size={15}/></a><a href="./downloads/swaml-author-SKILL.md" download>Authoring skill <Icon name="arrow" size={15}/></a><a href="./downloads/swaml-validate-SKILL.md" download>Validation skill <Icon name="arrow" size={15}/></a></div></article>
+          <article><h3>Language and reference tools</h3><p>The {model.edition} specification, guides and release notes describe the syntax, modeling workflow and current implementation limits. <code>swaml migrate</code> rewrites state machines written for the previous edition.</p><div className="resource-links"><a href="./spec/">Browse the specification <Icon name="arrow" size={15}/></a>{model.specLinks.releaseNotes && <a href={model.specLinks.releaseNotes}>Release notes <Icon name="arrow" size={15}/></a>}{model.specLinks.migration && <a href={model.specLinks.migration}>Migration guide <Icon name="arrow" size={15}/></a>}<a href="./spec/user-guide/">Usage guide <Icon name="arrow" size={15}/></a><a href="./spec/implementation-status/">Implementation status <Icon name="arrow" size={15}/></a><a href="./downloads/controller.swaml" download>Example source <Icon name="arrow" size={15}/></a><a href={`${github}/releases/download/v${model.publishedEdition}/SWAML-${model.publishedEdition}-Specification.pdf`} target="_blank" rel="noreferrer">{released ? 'Specification PDF' : `${model.publishedEdition} specification PDF`} <Icon name="external" size={14}/></a><a href={github} target="_blank" rel="noreferrer">Source repository <Icon name="external" size={14}/></a></div></article>
+          <article><h3>Agent-assisted authoring</h3><p>Use the authoring guide and portable skills to generate source, inspect diagnostics and revalidate the complete model after each change.</p><div className="resource-links"><a href="./spec/ai-guide/">AI authoring guide <Icon name="arrow" size={15}/></a><a href={`${github}/blob/v${model.publishedEdition}/skills/swaml-author/SKILL.md`} target="_blank" rel="noreferrer">Authoring skill <Icon name="external" size={14}/></a><a href={`${github}/blob/v${model.publishedEdition}/skills/swaml-validate/SKILL.md`} target="_blank" rel="noreferrer">Validation skill <Icon name="external" size={14}/></a></div></article>
         </div>
         <p className="scope-note"><strong>Implementation scope.</strong> {released ? `swa.ml ${model.edition} is the current standard.` : `swa.ml ${model.publishedEdition} is the current published standard; ${model.edition} is an unreleased candidate and is not published.`} The reference interpreter executes software models under recorded assumptions; it does not generate a deployable application or establish target schedulability. Requirement links record intent. A bounded run supplies evidence for that run, not a general verification proof.</p>
       </section>
     </main>
-    <footer className="site-footer"><a className="wordmark" href="#"><img src="./swaml.svg" alt="" width="28" height="28"/>swa.ml</a><p>Software Architecture Modeling Language</p><div><a href={`${github}/blob/main/LICENSE`} target="_blank" rel="noreferrer">MIT license</a><a href={github} target="_blank" rel="noreferrer">GitHub <Icon name="external" size={12}/></a></div></footer>
+    <footer className="site-footer"><a className="wordmark" href="#"><img src="./swaml.svg" alt="" width="28" height="28"/>swa.ml</a><p>Software Architecture Modeling Language</p><div><a href="./spec/license/">MIT license</a><a href={github} target="_blank" rel="noreferrer">GitHub <Icon name="external" size={12}/></a></div></footer>
   </>;
 }

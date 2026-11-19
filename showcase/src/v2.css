@@ -228,6 +228,9 @@ table caption{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:i
 .execution-description h3 { margin-top: 0; }
 .execution-description p { font-size: 14px; line-height: 1.8; margin: 0 0 18px; }
 .execution-description code { font-size: 12px; }
+.states-grid { margin-top: 48px; padding-top: 44px; border-top: 1px solid var(--line); align-items: start; }
+.execution-description .source-preview { margin-top: 26px; }
+.execution-description .source-preview code { font-size: inherit; }
 .execution-limit { color: var(--muted); border-left: 2px solid var(--line); padding-left: 18px; }
 .trace-panel { min-width: 0; border: 1px solid var(--strong-line); align-self: start; }
 .trace-scroll { overflow: auto; }
@@ -272,7 +275,7 @@ table caption{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:i
 }
 @media(max-width:800px) {
   .site-header { min-height: 76px; padding: 16px 22px; gap: 20px; flex-wrap: wrap; }
-  .site-header nav { order: 3; width: 100%; justify-content: space-between; gap: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; }
+  .site-header nav { order: 3; width: 100%; flex-wrap: wrap; justify-content: space-between; gap: 10px 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; }
   .theme-toggle { margin-left: auto; }
   .hero { display: grid; grid-template-columns: minmax(0,1fr); padding: 38px 22px 42px; gap: 30px; }
   .hero h1 { font-size: clamp(36px,6vw,48px); letter-spacing: -1.4px; margin: 20px 0; max-width: 600px; }

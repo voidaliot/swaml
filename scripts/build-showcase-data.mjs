@@ -1,7 +1,6 @@
 import {readStandardVersion} from './standard-version.mjs';
-import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,rm} from 'node:fs/promises';
 import {existsSync,readdirSync} from 'node:fs';
-import {posix} from 'node:path';
 import {createHash} from 'node:crypto';
 import {EmptyFileSystem,URI} from 'langium';
 import {parseHelper} from 'langium/test';
@@ -35,16 +34,46 @@ const sequence=run.trace.filter(t=>t.kind==='offer').filter((t,i,all)=>all.findI
 const pkg=doc.parseResult.value.packages[0],controller=pkg.elements.find(x=>isComponentDef(x)&&x.name==='Controller'),regulate=controller.members.find(x=>isOperation(x)&&x.name==='regulate');
 const requirements=pkg.elements.filter(isRequirement).map(r=>({name:r.name,attributes:r.attributes.map(a=>({name:a.name,type:a.type.primitive,value:a.value.$cstNode.text}))}));
 const flow=regulate.body.statements.map(s=>({kind:s.$type,code:s.$cstNode.text}));
-const data={cases,satisfactions,sequence,requirements,flow,languageVersion:standardVersion,edition:standardVersion,status:publication.status,publishedEdition:publication.edition,model:'examples/02-realtime-controller.swaml',source,sha256:createHash('sha256').update(source).digest('hex'),projection,timing:projectOperationTiming(run),run:{profile:run.profile,target:run.target,status:run.status,untilNs:run.options.untilNs,trace:run.trace,stores:run.stores}};
+// States as steps of the flow: a validated example and one of its tests, run by the reference interpreter.
+const statesModel='examples/54-interior-light.swaml',statesTest='A door opening restarts the courtesy time';
+const statesSource=await readFile(new URL(statesModel,root),'utf8');
+const statesDoc=await parseHelper(Swaml)(statesSource,{documentUri:URI.parse('memory:///'+statesModel),validation:true});
+if(statesDoc.diagnostics?.some(d=>d.severity===1))throw Error(JSON.stringify(statesDoc.diagnostics));
+const statesPkg=statesDoc.parseResult.value.packages[0],light=statesPkg.elements.find(x=>isComponentDef(x)&&x.name==='Light'),lightRun=light.members.find(x=>isOperation(x)&&x.name==='run');
+// An excerpt is whole source lines, dedented; check-showcase.mjs matches it against the validated file.
+const excerpt=node=>{const lines=statesSource.split(/\r?\n/).slice(node.$cstNode.range.start.line,node.$cstNode.range.end.line+1),indent=Math.min(...lines.filter(l=>l.trim()).map(l=>/^ */.exec(l)[0].length));return lines.map(l=>l.slice(indent)).join('\n');};
+const [statesCase]=runTests([statesDoc.parseResult.value],{untilNs:1000000000},{package:statesPkg.name,case:statesTest});
+if(statesCase?.result!=='pass')throw Error('The site states example must pass: '+statesTest);
+const statesRun=statesCase.run;
+const observed=e=>e.kind==='publish'||e.kind==='state'||e.kind==='write'&&e.scope==='attribute';
+const states={model:statesModel,sha256:createHash('sha256').update(statesSource).digest('hex'),component:light.name,operation:lightRun.name,code:excerpt(lightRun),test:statesTest,result:statesCase.result,profile:statesRun.profile,timeNs:statesRun.timeNs,
+  observations:statesRun.trace.filter(observed).map(e=>({ordinal:e.ordinal,timeNs:e.timeNs,kind:e.kind,subject:e.kind==='publish'?e.subject.split('.').slice(1).join('.'):e.subject,value:e.kind==='state'?e.state+(e.trigger?' (entered again)':''):e.kind==='write'?e.value:e.args?.[0]??null})),
+  stores:statesRun.stores};
+// The annotation beside the excerpt is read from the excerpt and the run: the received messages, the states, the timer
+// and the attributes the run switches on and off.
+states.annotation={inputs:[...new Set([...states.code.matchAll(/\bon receive ([\w.]+\([^)]*\))/g)].map(m=>m[1]))],states:[...states.code.matchAll(/\bstate (\w+)/g)].map(m=>m[1]),
+  timer:/\bafter (\d+)(ns|us|ms|s)\b/.exec(states.code)?.slice(1).join(' ')??null,outputs:[...new Set(states.observations.filter(o=>o.kind==='write'&&typeof o.value==='boolean').map(o=>o.subject.split('.').at(-1)))]};
+// Front-page links into the specification reader, which shows the latest published edition (showcase/scripts/build-spec.mjs).
+const publishedSources=JSON.parse(await readFile(new URL(`output/pdf/SWAML-${publication.edition}-Specification.manifest.json`,root),'utf8')).sources.map(x=>x.path),underscore=publication.edition.replace('.','_');
+const specLinks={releaseNotes:publishedSources.includes(`docs/RELEASE_${underscore}.md`)?`./spec/release-${underscore.replace('_','-')}/`:null,migration:publishedSources.includes(`docs/MIGRATION_${underscore}.md`)?`./spec/migration-${underscore.replace('_','-')}/`:null};
+const keywords=[...new Set(JSON.parse(await readFile(new URL('spec/keywords.json',root),'utf8')).entries.flatMap(e=>e.keyword.split(' ')))].sort();
+const data={specLinks,keywords,states,cases,satisfactions,sequence,requirements,flow,languageVersion:standardVersion,edition:standardVersion,status:publication.status,publishedEdition:publication.edition,model:'examples/02-realtime-controller.swaml',source,sha256:createHash('sha256').update(source).digest('hex'),projection,timing:projectOperationTiming(run),run:{profile:run.profile,target:run.target,status:run.status,untilNs:run.options.untilNs,trace:run.trace,stores:run.stores}};
 const path=new URL('showcase/src/generated/model.json',root),text=JSON.stringify(data,null,2)+'\n';
 if(check){if(await readFile(path,'utf8')!==text)throw Error('Stale site model/trace; run scripts/build-showcase-data.mjs');}
-else{await mkdir(new URL('showcase/src/generated/',root),{recursive:true});await writeFile(path,text);for(const [input,output] of [['docs/notation/2.0/ports.svg','mixed-ports.svg'],['examples/02-realtime-controller.swaml','controller.swaml'],['docs/USER_GUIDE.md','usage-guide.md'],['docs/SIMULATION.md','simulation.md'],['docs/IMPLEMENTATION_STATUS.md','implementation-status.md'],['docs/AI_GUIDE.md','ai-guide.md'],['skills/swaml-author/SKILL.md','swaml-author-SKILL.md'],['skills/swaml-validate/SKILL.md','swaml-validate-SKILL.md']]){const dest=new URL('showcase/public/downloads/'+output,root);await mkdir(new URL('showcase/public/downloads/',root),{recursive:true});let content=await readFile(new URL(input,root),'utf8');if(input.endsWith('.md'))content=content.replace(/\]\(([^)]+)\)/g,(all,target)=>/^[a-z]+:|^#/.test(target)?all:'](https://github.com/voidaliot/swaml/blob/main/'+posix.normalize(posix.join(posix.dirname(input),target))+')');await writeFile(dest,content);}}
+else{await mkdir(new URL('showcase/src/generated/',root),{recursive:true});await writeFile(path,text);
+// Downloads are current-edition sources only; the guides are read on the site's specification pages (spec/).
+const downloadsDir=new URL('showcase/public/downloads/',root);await rm(downloadsDir,{recursive:true,force:true});await mkdir(downloadsDir,{recursive:true});
+for(const [input,output] of [['docs/notation/'+standardVersion+'/ports.svg','mixed-ports.svg'],['examples/02-realtime-controller.swaml','controller.swaml'],[statesModel,'interior-light.swaml']])await writeFile(new URL(output,downloadsDir),await readFile(new URL(input,root),'utf8'));}
 if (!check) {
   const downloads = new URL('showcase/public/downloads/', root);
   await writeFile(new URL('controller-options.json', downloads), JSON.stringify({untilNs: run.options.untilNs}, null, 2) + '\n');
   await writeFile(new URL('controller-run.json', downloads), JSON.stringify({
     ...run,
     source: {path: data.model, sha256: data.sha256},
+  }, null, 2) + '\n');
+  await writeFile(new URL('interior-light-run.json', downloads), JSON.stringify({
+    case: statesCase.case, result: statesCase.result, ...statesRun,
+    source: {path: statesModel, sha256: states.sha256},
   }, null, 2) + '\n');
 }
 console.log('Validated site source, seven source views and identified '+standardVersion+' trace '+(check?'checked.':'generated.'));

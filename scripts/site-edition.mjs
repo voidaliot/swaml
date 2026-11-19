@@ -1,0 +1,2 @@
+// Edition numbers written in front-page text, data and downloads: a version next to a word that names an edition.
+export const editionMentions = text => [...text.matchAll(/(?:swa\.ml|swaml-reference\/|\bedition|\bstandard|\brelease|\bparser|\bprofile|\bv)\s*(\d+\.(?:\d+|x))\b|\b(\d+\.(?:\d+|x))\s+(?:edition|standard|release|candidate|state machines?|machines?|models?|hosts?|syntax|reference|book|notation|sources?|traces?|guides?)\b/gi)].map(m => m[1] ?? m[2]);
