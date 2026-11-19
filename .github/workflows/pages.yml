@@ -19,8 +19,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-          # The specification reader reads the published edition from its tag (vX.Y) and checks repository links against it.
-          fetch-tags: true
+      # The specification reader reads the published edition from its tag (vX.Y) and checks repository links against it.
+      # A dispatch checks out one commit by SHA, where fetch-tags has no effect, so the edition tags are fetched here.
+      - name: Fetch the edition tags
+        run: git fetch --no-tags --depth=1 origin '+refs/tags/v*:refs/tags/v*'
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
