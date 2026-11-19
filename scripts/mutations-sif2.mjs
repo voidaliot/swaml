@@ -29,7 +29,7 @@ const MUTATIONS = [
     ['A2', 'a statement skipped at a message look', SIM, 'yield* this.statement(item, f, scope);', 'if (!input)\n                            yield* this.statement(item, f, scope);'],
     ['A3', 'look continuing after a leave (the first leave is remembered, the walk goes on to the last item)', SIM, [
         ['if (a.isExit(s) || a.isJump(s))\n            throw new LeaveSignal(s);', 'if (a.isExit(s) || a.isJump(s)) {\n            f.mutantLeave ??= { node: s, level: f.mutantLevel };\n            return voidValue();\n        }'],
-        ['for (level = 0; level < levels.length; level++) {\n', 'for (level = 0; level < levels.length; level++) {\n                f.mutantLevel = level;\n'],
+        ['for (level = from; level < levels.length; level++) {\n', 'for (level = from; level < levels.length; level++) {\n                f.mutantLevel = level;\n'],
         ['return left ? { node: left, level } :', 'if (!left && f.mutantLeave) {\n            left = f.mutantLeave.node;\n            level = f.mutantLeave.level;\n        }\n        f.mutantLeave = undefined;\n        return left ? { node: left, level } :'],
     ]],
     ['A4', "on exit before the leave's block (a line whose block leaves runs the state's on exit first)", SIM, [
@@ -41,8 +41,8 @@ const MUTATIONS = [
     ['A8', 'queued input looked at by a later event of the instant (another activation runs first, review 1 C-1)', SIM, 'const m = this.nextNamed(f, w.flow.named);', 'const m = f.token % 2 ? undefined : this.nextNamed(f, w.flow.named);'],
     ['A9', 'a message present at a look that left before its line is consumed instead of kept queued (review 4 P1)', SIM, 'if (input && !lineRan)\n            this.keepQueued(input);', 'if (input && !lineRan)\n            void 0;'],
     ['A10', 'if test counted as a step', SIM, 'if (a.isIf(s) && this.inLookText(s))', 'if (false)'],
-    ['A11', 'named step that waits', SIM, 'if (!this.hasSomething(levels))\n                    left = { node: undefined', 'if (false)\n                    left = { node: undefined'],
-    ['A12', 'exit; from a flow-level state not continuing with the next statement', SIM, 'if (yield* this.leave(levels, left.level, left.node, f, local, key))\n                        return voidValue();', 'if (yield* this.leave(levels, left.level, left.node, f, local, key))\n                        throw new ReturnValue(voidValue());'],
+    ['A11', 'named step that waits', SIM, 'if (!parent && !this.hasSomething(levels))\n                    left = { node: undefined', 'if (false)\n                    left = { node: undefined'],
+    ['A12', 'exit; from a flow-level state not continuing with the next statement', SIM, 'if (yield* this.leave(levels, left.level, left.node, f, local, key)) {', 'if (yield* this.leave(levels, left.level, left.node, f, local, key)) {\n                        throw new ReturnValue(voidValue());'],
     ['A13', 'backward jump not re-running a declaration', SIM, 'yield* this.statement(b.statements[i], f, local);', 'if (!(a.isLocalVariable(b.statements[i]) && local.has(b.statements[i].name)))\n                    yield* this.statement(b.statements[i], f, local);'],
     // Package 2b (section 11): the migrator.
     ['B1', 'chain order by target instead of declaration', MIG, 'const transitions = s.transitions.filter(t => t.endpoint === member);', 'const transitions = s.transitions.filter(t => t.endpoint === member).sort((x, y) => String(x.target).localeCompare(String(y.target)));'],
@@ -52,9 +52,9 @@ const MUTATIONS = [
     ['B5', 'dead end migrated as a named step', MIG, 'if (!s.final && !s.transitions.length && !s.deferrals?.length)\n            report.refused.push(', 'if (false)\n            report.refused.push('],
     ['B6', 'identity map off by one statement', MIG, 'map[`${path}/${n}`] = oldTransition(s, t);', 'map[`${path}/${n + 1}`] = oldTransition(s, t);'],
     // Package 3 (section 11): parents.
-    ['C1', 'inner first: the levels of a look walked innermost first', SIM, 'for (level = 0; level < levels.length; level++) {\n                // A local declared', 'for (level = levels.length - 1; level >= 0; level--) {\n                // A local declared'],
+    ['C1', 'inner first: the levels of a look walked innermost first', SIM, 'for (level = from; level < levels.length; level++) {\n                for (const item', 'for (level = levels.length - 1; level >= from; level--) {\n                for (const item'],
     ['C2', "parent on exit before the inner's", SIM, 'const l = levels.pop();', 'const l = levels.splice(n, 1)[0];'],
-    ['C3', 'parent timer restarting at inner changes', SIM, 'if (!queue.length && innerStates(s).length)\n                queue.push(innerStates(s)[0]);', 'if (!queue.length && innerStates(s).length)\n                queue.push(innerStates(s)[0]);\n            if (levels.length > 1)\n                for (const l of levels.slice(0, -1)) {\n                    l.entered = this.time;\n                    l.presented.clear();\n                }'],
+    ['C3', 'parent timer restarting at inner changes', SIM, 'yield* this.enter(levels, [innerStates(levels.at(-1).state)[0]], f, local, key, arrivedBy);', 'yield* this.enter(levels, [innerStates(levels.at(-1).state)[0]], f, local, key, arrivedBy);\n            if (levels.length > 1)\n                for (const l of levels.slice(0, -1)) {\n                    l.entered = this.time;\n                    l.presented.clear();\n                }'],
     ['C4', 'a leaf with no items inside a parent with lines not waiting', SIM, 'hasSomething(levels) { return levels.some(', 'hasSomething(levels) { return levels.slice(-1).some('],
     ['C5', 'exit; from the last inner state not leaving the parent', SIM, 'if (i < siblings.length - 1) {', 'if (i < siblings.length - 1 || true) {\n                    if (i === siblings.length - 1)\n                        return false;'],
     // Package 4 (section 11): wakes and own writes (D8 to D10 mutated StateLoop, which is cut).
@@ -68,13 +68,13 @@ const MUTATIONS = [
     ['D7', 're-look in periodic machines', SIM, 'const passed = new Set(), relook = new Set(), own = this.relooks(f);', 'const passed = new Set(), relook = new Set(), own = true;'],
     // Package 5 (section 11): periodic machines.
     ['E1', 'on entry rerun at each release', SIM, 'f.reached = new Set([leaf]);', "f.reached = new Set([leaf]);\n            for (const x of leaf.statements.filter(a.isStateAction).filter(x => x.kind === 'entry'))\n                yield* this.block(x.body, f, f.flow.local);"],
-    ['E2', 'timer reset by a skipped release', SIM, "            this.log('skip', this.label(f), { activation: f.id, source: this.source(f.entry), release: f.periodic.seq });", "            this.log('skip', this.label(f), { activation: f.id, source: this.source(f.entry), release: f.periodic.seq });\n        if (!holds && f.flow)\n            for (const l of f.flow.levels) {\n                l.entered = this.time;\n                l.presented.clear();\n            }"],
+    ['E2', 'timer reset by a skipped release', SIM, "            f.skipNote = { activation: f.id, source: this.source(f.entry), release: f.periodic.seq };", "            f.skipNote = { activation: f.id, source: this.source(f.entry), release: f.periodic.seq };\n        if (!holds && f.flow)\n            for (const l of f.flow.levels) {\n                l.entered = this.time;\n                l.presented.clear();\n            }"],
     ['E3', 'two messages taken in one release (the second is consumed by the same release)', SIM, "return { input: this.nextNamed(f, named), timers: true, cause: 'release' };", "const first = this.nextNamed(f, named);\n            if (first)\n                this.nextNamed(f, named);\n            return { input: first, timers: true, cause: 'release' };"],
     ['E4', 'arrival look skipped (every arrival in a periodic machine waits for the next release)', SIM, 'f.held = held;', 'f.held = true;'],
     ['E5', 'bound counting the first arrival (a state is held at its first arrival in a release)', SIM, 'held = f.reached.has(s);', 'held = f.reached.has(s) || f.reached.size === 0;'],
     ['E6', 'periodic end treated as a completion', SIM, "this.log('periodicEnd', this.label(f), { activation: f.id, release: f.periodic.seq });\n            yield* this.nextRelease(f, new Set());", 'return voidValue();'],
     ['E7', 'bound applied in waiting machines', SIM, 'return yield* this.periodicMachine(f);', 'return yield* this.periodicMachine(f);\n        f.reached = new Set();'],
-    ['E8', 'skip without activation', SIM, "this.log('skip', this.label(f), { activation: f.id, source: this.source(f.entry), release: f.periodic.seq });", "this.log('skip', this.label(f), { source: this.source(f.entry), release: f.periodic.seq });"],
+    ['E8', 'skip without activation', SIM, "f.skipNote = { activation: f.id, source: this.source(f.entry), release: f.periodic.seq };", "f.skipNote = { source: this.source(f.entry), release: f.periodic.seq };"],
     // The four adversarial reviews: their surviving mutations that still apply, and mutations of the fixes.
     ['R2-F1', 'a leave written on a parent taken from the current leaf (review 2 F1)', SIM, 'for (let k = level; k >= 0; k--) {', 'for (let k = levels.length - 1; k >= 0; k--) {'],
     ['R2-R3', 'exit; cascade never enters the next sibling of an enclosing parent (review 2 R3)', SIM, 'if (i < siblings.length - 1) {', 'if (i < siblings.length - 1 && at === level) {'],
@@ -87,7 +87,7 @@ const MUTATIONS = [
     ['R3-W2', 'a pending wake keeps the last cause (review 3 W2)', SIM, 'g.wakePending ??= why;', 'g.wakePending = why;'],
     ['R3-O2', 're-look also for writes to look and block locals (review 3 O2)', SIM, 'if (f.lookWrites && (cell ? f.flow?.local.get(name) === cell : f.c.store.has(name)))', 'if (f.lookWrites)'],
     ['R3-O4', 'a re-look presents due timers (review 3 O4)', SIM, "present = { timers: false, cause: 'own' };", "present = { timers: true, cause: 'own' };"],
-    ['R4-R5', 'periodic end leaves the last state in machines (review 4 R5)', SIM, "this.machines[this.label(f)] = { state: '', live: true };\n            this.log('periodicEnd'", "this.log('periodicEnd'"],
+    ['R4-R5', 'periodic end leaves the last state in machines (review 4 R5; equivalent since the leave observation empties machines first)', SIM, "this.machines[this.label(f)] = { state: '', live: true };\n            this.log('periodicEnd'", "this.log('periodicEnd'"],
     ['R4-R8', 'a failed periodic machine restarts at the next release (review 4 R8, P4)', SIM, 'if (machine?.done)\n            return;', 'if (machine?.done)\n            this.periodicMachines.delete(label);'],
     ['R4-P5', 'named steps not counted for the release bound (review 4 P5)', SIM, 'if (f.reached && !queue.length && !innerStates(s).length) {', 'if (f.reached && !queue.length && !innerStates(s).length && this.hasSomething(levels)) {'],
     ['R4-P7', 'a periodic skip recorded before the unlock (review 4 P7)', SIM, 'f.skipNote = { activation: f.id, source: this.source(f.entry), release: f.periodic.seq };', "this.log('skip', this.label(f), { activation: f.id, source: this.source(f.entry), release: f.periodic.seq });"],
