@@ -1,6 +1,6 @@
 # swa.ml: states as steps of the flow
 
-**Status:** **final specification, revision 5**, 18 November 2026, from which the language implementation is built. Not yet normative: the packages of section 11 make it normative, one by one. Nothing here changes the grammar, validator, simulator, standard version or a published artefact by itself. New syntax is in `text` fences because the released parser does not accept it.
+**Status:** **final specification, revision 6**, 19 November 2026 (revision 5 with the decisions taken after four adversarial reviews of the implementation, listed in "Revision 6" below; where an older section still says otherwise, revision 6, the maintained chapters 3.6, 4 and 6.5 and RELEASE_2_3 win), from which the language implementation is built. Not yet normative: the packages of section 11 make it normative, one by one. Nothing here changes the grammar, validator, simulator, standard version or a published artefact by itself. New syntax is in `text` fences because the released parser does not accept it.
 
 Every runtime rule of this revision has been run by an interpreter prototype; "measured" means measured by one, and section 8 lists every measurement with its numbers. What remains argued and not measured is named where it is stated.
 
@@ -21,11 +21,48 @@ Every runtime rule of this revision has been run by an interpreter prototype; "m
 3. `if` checks now and skips when false, everywhere; it never waits: what waits is the state, which looks at what is inside its braces again each time something happens to it.
 4. Something happens to a state when it is reached, when a message that it or a parent names is delivered, when its or a parent's timer runs out, when someone else writes or a delivery updates a value its statements read, when one of its own lines writes a value that a statement before that line already read, and, in a machine released `on every P`, at every release.
 5. A look goes through the parents' braces first, then the state's, in written order: the line of what happened runs, every statement runs (a plain statement in a state is "during" work), the look stops at the first `exit;` or `to S;`, and it reads every value as it is at the moment it runs.
-6. A look sees at most one message, in delivery order; a message that the state and its parents do not name is dropped while the state waits, nothing is written for it, and whatever must be remembered is remembered in a variable.
-7. `exit;` leaves and goes on with what is written next, `to S;` goes to state `S`, also straight into a state inside a parent but never into an `if` branch or a loop, and these two are the only bodies that may drop their braces.
-8. Leaving runs in the order of the text, the statements before the leave, then `on exit` of every state left (innermost first), then `on entry` of every state entered (outermost first), and the newly reached state does its work at once, in the same release.
+6. A look sees at most one message, in delivery order, and takes it when a line on its member runs; a look that leaves before that line leaves the message queued for the state reached; a message that the state and its parents do not name is dropped while the state waits, nothing is written for it, and whatever must be remembered is remembered in a variable.
+7. `exit;` leaves and goes on with what is written next, `to S;` goes to state `S`, also straight into a state inside a parent but never into an `if` branch or a loop; a leave written on a parent leaves everything inside it; these two are the only bodies that may drop their braces.
+8. Leaving runs in the order of the text, the statements before the leave, then `on exit` of every state left (innermost first), then `on entry` of every state entered (outermost first), and the newly reached state does its work at once, in the same release; a parent reached is looked at before its first inner state is entered.
 9. A timer runs once per entry of its state, counted from that entry; in a machine released `on every P` it keeps running across releases, skipped ones too, and is looked at at the first release at or after its moment.
-10. Released `on start`, the operation runs once; released `on every P`, it keeps its place, locals and loops between releases, looks once per release, ends a release when a state is reached a second time in it, and when it reaches its end no state is active and the next release starts it again from the top.
+10. Released `on start`, the operation runs once; released `on every P`, it keeps its place, locals and loops between releases, looks once per release, ends a release when a state (a named step too) is reached a second time in it, and when it reaches its end no state is active and the next release starts it again from the top; a machine that fails ends, either way.
+
+## Revision 6: decisions after the adversarial reviews
+
+Four adversarial reviews of the implementation (flat states and migration; parents; wakes and `StateLoop`; periodic machines) found mechanisms that were unsound or could not be stated simply. Following the owner's standing rules (simplicity, minimum rules, no pointless warnings, nothing unsound in a language that cannot change later), the orchestrator decided as follows; RELEASE_2_3 records each among the owner decisions of the states section, and chapters 3.6, 4 and 6.5 state the rules.
+
+| Topic | Decision |
+| --- | --- |
+| `StateLoop` (3.17, SIF-R18) | **Cut.** Its configuration comparison stopped loops that would end (a loop through another occurrence; locals and call stacks of plain activations). A loop without time passing ends at the step limit; the `StepLimit` violation carries a message that names the instant and the activations that ran in it (with each machine's state). |
+| SIF-D05 | — | *Cut in revision 6* (it rejected valid models). |
+| SIF-D04 | SW2006 | The condition of an `if` standing directly in a state of a waiting machine reads `now()`, directly or through a called operation (revision 6): `if ({condition}) in {state} reads now(); a waiting state tests it only when something wakes it and time passing wakes nothing, so write after D instead (SIF-D04).` |
+| SIF-D06, the periodic backlog | **Cut.** The warning fired on the natural form; a sender that overflows is reported by the run. The backlog was unreachable (deadline at most the period). |
+| When a message is taken (3.3, 3.5, 3.6) | A message is taken when a line on its member runs for it; a look that leaves before (an earlier statement, a timer line or a parent's line left) leaves it queued at the head of its queue for the state reached. `leftBeforeLine` is gone. Waiting and periodic machines alike. |
+| A wait that begins with input queued (3.5) | No zero-time wait: the state waits and its queued input is looked at as at a delivery, before another activation runs, as 2.2 did: owned input in delivery order, unnamed input dropped until a named message is taken; with none, a pending wake makes a look. At a release the same rule applies. |
+| A sampled member a state both reads and names in a line | Its delivery makes one look, with the message, whether the machine was waiting or busy (no sample wake). |
+| Leaves written on a parent (3.9) | A leave leaves the state it is written on and everything inside it; a target inside a state just left is entered again from there (its `on entry` runs, its timers restart). |
+| A parent reached (3.2, 3.11) | It is looked at (its levels) before its first inner state is entered; if that look leaves, no inner state is entered; the inner state's arrival look then walks its own level only. |
+| A `var` in a parent's braces (3.10) | A local of the look, seen by its later items and by the items of its inner states; not by `on entry`/`on exit`. |
+| Timing and `machines` (4.5, 4.6) | A band ends when its state is left: new observation `leave` when the flow goes on outside every state; `machines["c.op"].state` is `''` then; a completed machine reports its last state. Nested states are owned by their parent in the projection. Periodic machines get the phases of a plain activation within each release (release, dispatch/ready, wait, requestWait) with the release number; bands carry `held`; states passed through are markers. |
+| A periodic machine that fails (3.16) | It ends, like a waiting machine that fails: no `on exit`, later releases do nothing. |
+| The release bound (3.15) | Named steps count: `while (true) { state pulse { on entry { … } } }` pulses once per release after the first. |
+| The mirror heater (1.12) | Measured: the flag code switches off at 600.2 s, `after 600s` at 600.3 s (one period late). The rewrite writes `after 599900ms` (6000 releases counted from the arrival look are 5999 periods) and switches off at 600.2 s; the 600 s bench is a test. |
+| Release guards | A periodic machine's `skip` follows its `unlock`, as every skip (ADR 0025). |
+| Wakes (3.7, 3.8) | Kept. SIF-R08 counts a statement whose text names the value (short-circuited or untaken branches count). A pending wake records the cause of its first write. The number of looks in one instant can depend on the order of deliveries, so plain statements must not count events. |
+| Migration (7.1, 7.2, 7.4) | Bindings renamed all at once (swapped names never collapse), never inside strings or comments; comments kept; the CLI validates what it wrote and writes nothing with an error. Accepted behaviour changes: r10 (owned input looked at in delivery order instead of 2.2's queue-creation order, which also decides what is dropped) and C-3 (an `if` test in a migrated block is no scheduling step, which changes only the order across components), each pinned by one model in gate B. |
+
+### The counting table (periodic machines)
+
+A state just reached looks at the same values that made the previous state leave (its arrival look counts as a look of that release). The usual habits, written correctly:
+
+| Habit | Correct text |
+| --- | --- |
+| Debounce over N samples | `state checking { on entry { n = 0; } if (not pressed) to released; n = n + 1; if (n >= N) exit; }`: the arrival look counts the sample that led here, so start at 0 and count it. |
+| A timeout of N releases | `state waiting { on entry { n = 0; } n = n + 1; if (n >= N + 1) exit; }` leaves N releases after the arrival; or write a timer. |
+| A counter of N releases replaced by a timer | `after ((N - 1) * P)`: the release that reached the state counts as the first (the heater: 6000 releases of 100 ms are `after 599900ms`). |
+| Hysteresis | `state low { if (v > hi) exit; } state high { if (v < lo) to low; }`: right as written (the conditions are disjoint). |
+| Edge detection | `state up { if (not s) exit; } state down { if (s) { edges = edges + 1; to up; } }`: right as written. |
+| A condition that must hold at two releases | `state low { if (v >= under) to normal; n = n + 1; if (n >= 2) exit; }` with `n = 0` on entry (sample 10): the arrival look is the first. |
 
 ## Changes since revision 4
 
@@ -58,7 +95,7 @@ Every runtime rule of this revision has been run by an interpreter prototype; "m
 | A suspending line on a parent delays a substate's timer (250 ms pulse ended at 270 ms) | Run to completion stated as the rule, with this example (3.12, section 5). |
 | "A substate can shield itself" needs a variable set in `on entry`/`on exit` | The shielding pattern is written that way (3.11). |
 | `if` gains `else if` | **New against 2.2** (2.2's `else` takes a block only). Stated in the grammar delta (4.1). |
-| A message taken by a look that left before its line ran | New reason `leftBeforeLine` (4.5). |
+| A message taken by a look that left before its line ran | Revision 5: new reason `leftBeforeLine`; revision 6: the message is not taken and stays queued. |
 | Pending wakes are needed (a waiting machine stalls silently without them) | SIF-R07: a write made while the machine is busy wakes it when it begins to wait. |
 | `StateLoop` configuration must include what is present and exclude unbounded loop counters | SIF-R18 defines the configuration so. |
 | A `wake` observation is needed | Trace kind `wake` (4.5). |
@@ -813,14 +850,14 @@ operation tick() {
       on entry { heating = true; send drive.heaterPercent(heaterPercent); }
       on exit { heating = false; send drive.heaterPercent(0); }
       if (not requested) exit;
-      after 600s { requested = false; exit; }
+      after 599900ms { requested = false; exit; }   // 6000 releases counted from the arrival look
     }
   }
 }
 ```
 
 - **The counter is gone:** the 10-minute limit is a timer of `active`, counted from its entry and looked at at the first release at or after 600 s.
-- **Measured:** all 36 door showcase cases identical to the flag code (with `SupplyMonitor.classify` rewritten too), and a 602-second bench of the limit and toggles: identical sends and writes.
+- **Measured (corrected in revision 6, review 4 P2):** all 36 door showcase cases identical to the flag code (with `SupplyMonitor.classify` rewritten too); none of them reaches the limit. In the 602-second bench the flag code switches off at 600.2 s (it counts the release that switches on: 6000th count at 300 ms + 5999 periods), and the revision 5 text `after 600s` at 600.3 s, one period late. Written `after 599900ms` (the counting table), the rewrite switches off at 600.2 s with identical sends and writes; the bench is a test (`test/v2/states-periodic.test.ts`, gate F).
 
 ```text
  «operation» tick · every 100ms
@@ -835,7 +872,7 @@ operation tick() {
   │ │ entry: heating = true; send …    │
   │ │ exit:  heating = false; send …   │
   │ ╰───┬──────────────────┬───────────╯
-  │     │1 [not requested] │2 after 600s / requested = false
+  │     │1 [not requested] │2 after 599900ms / requested = false
   │     ⋄◄─────────────────┘
   └─────┘
 ```
@@ -1076,7 +1113,7 @@ After the arrival look and after any look that did not leave, S **waits**. When 
 | A state begins to wait | Queued messages of owned members not named at it are dropped (`inactiveOwner`); named ones are looked at one by one in zero time. |
 | A state waits | A delivered message of a named member causes a look; one of an owned member not named is dropped on arrival (`inactiveOwner`). |
 | Taken by a look whose present lines ran only `if` tests that were false | `discardInput`, reason `noEnabledTransition` (the 2.2 case "no guard holds"). |
-| Taken by a look that left before any line on its member ran | `discardInput`, reason `leftBeforeLine`. |
+| Present at a look that left before any line on its member ran | Not taken: it stays queued at the head of its queue for the state reached (revision 6; the candidate's `leftBeforeLine` is gone). |
 | Waiting machine after it completed | Queued and later messages of its members are discarded (`inactiveOwner`), as after a 2.2 final state. |
 | Periodic machine between releases | Stays queued. At a release, queued messages of owned members not named at the current state are dropped (`inactiveOwner`), then the first-delivered named one is present at the look. |
 | Periodic machine after it reached its end, before the next release | Stays queued; decided by the state that looks at the following release. |
@@ -1173,6 +1210,8 @@ When a periodic machine reaches the end of its body (or `return`): nothing happe
 
 ### 3.17 Looking forever in zero time: `StateLoop` (SIF-R18)
 
+**Cut in revision 6.** The rule below was found unsound (it stopped loops that end through another occurrence or through locals of plain activations) and is not part of the language: a loop without time passing ends at the step limit, whose report names the instant and the activations that ran in it. The text is kept as the record of the decision.
+
 **Where it can happen** (waiting machines only):
 - a chain of arrivals whose arrival looks leave at once (`state a { if (ready) to b; } state b { if (ready) to a; }`);
 - two waiting machines of one occurrence that wake each other (A: `if (n == 0) { n = 1; }`, B: `if (n == 1) { n = 0; }`).
@@ -1259,7 +1298,7 @@ Removed:    OperationBody's 'initial' Name ';' State+ alternative; State with 'f
 | SIF-R03 | Present: at most one message; every timer that has run out when the look starts and was not present before, once per arrival of its level (3.3). |
 | SIF-R04 | A look reads values as they are when it runs (WP6-R03) (3.3). |
 | SIF-R05 | Waiting: on beginning to wait, timers first, then drop, then a queued named message (picked when the wait begins, decision A8) or a pending wake in zero time; then timer (phase 1), delivery (phase 2) and wake looks (3.5). |
-| SIF-R06 | Inputs: the regimes of 3.6, with the reasons `inactiveOwner`, `noEnabledTransition`, `leftBeforeLine`. |
+| SIF-R06 | Inputs: the regimes of 3.6, with the reasons `inactiveOwner` and `noEnabledTransition`; a message present at a look that left before its line stays queued (revision 6). |
 | SIF-R07 | Wakes (waiting machines): writes of the read set by another activation of the occurrence at its unlock (borrowed calls at every unlock), sample-cell updates; pending wakes while busy (3.7). |
 | SIF-R08 | Own writes: a line's write to a value read by a statement before it in the look makes one re-look; waiting machines only (3.8). |
 | SIF-R09 | Leaving in text order: block, `on exit` innermost first, entries outermost first, target and its arrival look (3.9). |
@@ -1271,7 +1310,7 @@ Removed:    OperationBody's 'initial' Name ';' State+ alternative; State with 'f
 | SIF-R15 | Periodic timers, written order of message and timer, one message per release, deadline, release guards, `after` successors (3.14). |
 | SIF-R16 | Periodic: a state reached a second time in one release ends the release in that state (3.15). |
 | SIF-R17 | Periodic end: no state; the next release starts from the top (3.16). |
-| SIF-R18 | `StateLoop` (waiting machines) on an equal configuration at a look of the same state in one instant with only own activity between (3.17). |
+| SIF-R18 | *Cut in revision 6:* no loop detection; a loop without time passing ends at the step limit (`StepLimit` with a message naming the instant and the activations that ran). |
 
 ### 4.4 Diagnostics
 
@@ -1284,7 +1323,7 @@ Only six. For each: why the model cannot simply behave.
 | SIF-D03 | SW2008 | Structure (SIF-S02, SIF-S03): `Duplicate on {entry/exit} in {state}`, `{state} has inner states; only states may follow the first one`, `Two states are named {name} in {op}`. | Two entry blocks have no order; flow after inner states would be flow inside a parent, which has no meaning (no plain flow between inner states); a duplicate name makes `to` ambiguous. |
 | SIF-D04 | SW2006 | A statement standing in a state reads `now()` or a non-sampled port member (SIF-S05): `{statement} in {state} reads {what}, which nothing announces; use after D, or a sampled member.` | Such a value changes without anything happening to the state, so the model would look as if it re-checks and silently never would. |
 | SIF-D05 | SW2008 | A waiting machine has a cycle of states whose arrival looks leave without any condition: `{a} and {b} leave each other at once; reached, this stops the run with StateLoop.` | Reaching it is certain to violate SIF-R18; the error says so before a run. |
-| SIF-D06 | SW2018, warning | A member named in a periodic machine is delivered over a route that rejects on overflow: `{member} is taken one per release by {op}; a faster sender, or a false release guard, fills its queue and makes the sender fail.` | Not a model error, but a run-time failure of the *sender* that the text of the machine does not show; it is the one warning kept. |
+| SIF-D06 | — | *Cut in revision 6* (a warning on the natural form; the run reports a sender that overflows). |
 
 All diagnostics are evaluated per effective occurrence, since a redefinition can change the schedule entry.
 
@@ -1295,10 +1334,10 @@ All diagnostics are evaluated per effective occurrence, since a redefinition can
 | SIF-T01 | `state` | At each arrival and each parent entered (outermost first): `source` the state, `trigger` the leave that led there (absent for an arrival by the flow), `held: true` when SIF-R16 ended the release at this arrival. |
 | SIF-T02 | `state` with `stay: true` | A look with a message or a timer whose line ran a statement (a true test or any other statement) and did not leave; `source` the first such line. Arrival, wake, re-look and release looks without such a line add no observation. |
 | SIF-T03 | `wake` | Before a look caused by a value: `state`, and `cause` one of `write` (with `writer` activation and `attributes`), `sample` (with `cell`), `own` (with the names written, SIF-R08); `pending: true` when it was recorded while the machine was busy. |
-| SIF-T04 | `discardInput` | Reasons: `inactiveOwner` (dropped while waiting, on arrival, when a wait begins, at a release, after completion), `noEnabledTransition` (taken; its lines ran only false tests), `leftBeforeLine` (taken by a look that left before a line on its member ran). |
+| SIF-T04 | `discardInput` | Reasons: `inactiveOwner` (dropped while waiting, on arrival, when a wait begins, at a release, after completion) and `noEnabledTransition` (taken; its lines ran only false tests). |
 | SIF-T05 | `release`, `skip` | Periodic: per release, with the machine's one activation id (also on `skip`, which today carries none) and the release number. |
 | SIF-T06 | `periodicEnd` | Periodic: the machine reached its end; `activation`, `release`. |
-| SIF-T07 | `violation` | `StateLoop` (subject the operation occurrence, `source` the state); `StepLimit` unchanged. |
+| SIF-T07 | `violation` | `StepLimit` with a `message` naming the instant and the activations that ran; `StateLoop` is cut (revision 6). New in revision 6: `leave` (SIF-T09), when the flow goes on outside every state. |
 | SIF-T08 | `timer` | WP4-T01, for computed durations, at arrival. |
 | SIF-T09 | never | `defer`, `discardTimer`, `CompletionLoop`, a separate observation for the release bound. |
 
@@ -1468,7 +1507,7 @@ The old trace-digest gate (gate 2) cannot hold across the edition (identities ch
 - **Flow View edits** (2.2): creation cards for states, parents, event lines, statements and leaves, with field completion for members, legal jump targets (SIF-S06) and conditions; dry-run previews that name changed numbers and behaviour order; braces written when a short body grows.
 - **Sequence:** a state is a state invariant on the operation's lifeline; a parent an invariant region; a release of a periodic machine a found message on its lifeline.
 - **Timing:** nested state bands for waiting machines; the periodic projection of 4.6 (one interval per release, state band, skip markers with activation, end).
-- **Run overlays:** statement identities of the new text; old traces through the identity map; `state` with `trigger` and `held`, `wake` (with cause), `discardInput` reasons including `leftBeforeLine`, `periodicEnd`, `StateLoop`.
+- **Run overlays:** statement identities of the new text; old traces through the identity map; `state` with `trigger` and `held`, `wake` (with cause), `discardInput` reasons `inactiveOwner` and `noEnabledTransition`, `periodicEnd`, `StateLoop`.
 - **Migration command:** runs 7.2 with its diff preview, report and identity map; applies only on confirmation as one workspace edit.
 
 **Other consumers** (CLI, documentation site, PDF figures): the CLI gains `swaml migrate`; trace consumers handle the kinds of 4.5.
