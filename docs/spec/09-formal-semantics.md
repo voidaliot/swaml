@@ -1,6 +1,6 @@
 # 9. Formal semantics
 
-Normative schemas of [swa.ml 2.2](../LANGUAGE_SPECIFICATION.md). These constrain implementations without claiming a mechanically proved metatheory.
+Normative schemas of [swa.ml 3.0](../LANGUAGE_SPECIFICATION.md). These constrain implementations without claiming a mechanically proved metatheory.
 
 ## 9.1 Domains
 
@@ -31,7 +31,7 @@ Values are bounded primitive scalars, nominal enums/records and fixed copied arr
 | test occurrence access | Resolved own-package executed software root is the subject or an explicit association, followed by single effective parts or part family members with literal indexes in range; reads use its live store under its lock, helper calls outside the exact primary subject neither communicate nor suspend; no ownership transfer or direct attribute assignment |
 | try(e, f) | e:T and f:U assignable to T; lazy f; effect union; no fallback only when T is void |
 | if (c) a else b | c : bool; a : T1, b : T2 with common type T under scalar widening, otherwise identical types; neither void; effect ε(c) ∪ ε(a) ∪ ε(b) without suspension; only the selected branch evaluates; a whole expression, never a statement |
-| now() | result uint, the logical time t of the evaluating step; effect reads state; not in initializers or constant expressions (SW2007, WP4-S05) and not in completion guards (SW2008, WP5-S03); never a stale read |
+| now() | result uint, the logical time t of the evaluating step; effect reads state; not in initializers or constant expressions (SW2007, WP4-S05) and not in the condition of an `if` standing directly in a state of a waiting machine (SW2006, SIF-S05); never a stale read |
 | duration literal | Result uint (nanoseconds), a safe integer; positive in the 2.2 positions |
 | computed duration `(e)` | e integral; in wait and receive timeouts without suspending calls; in state timers pure or reads state; in periods and deadlines in the constant sublanguage, with exact integral `/`, valued per occurrence |
 | completion guard | bool; pure or reads state; no `now()`, directly or through a callee |
@@ -46,9 +46,9 @@ Values are bounded primitive scalars, nominal enums/records and fixed copied arr
 | for | Fresh initializer scope; bool condition; mutable typed update; fresh body scope each iteration |
 | for in | Collection T[n], explicit compatible element type; copied collection; fresh element/body scope |
 | wait/receive | Suspended continuation; owned input with explicit payload binding for receive; no implicit failure/payload name |
-| interruptible | Non-stateful operation, exclusive required input; protected and handler scopes share only outer locals |
+| interruptible | Operation without states, exclusive required input; protected and handler scopes share only outer locals |
 | state condition | bool, effects pure or reads state; an `if` in a state's braces is tested at every look of the state (SIF-R02) |
-| concurrent entry | Callee transitive effect has no write and body is not stateful |
+| concurrent entry | Callee transitive effect has no write and body has no states |
 | attribute initializer | Explicit destination type; empty state environment; pure effect |
 
 Scalar type assignability uses widening, with checked integral value conversion in assignments/parameter initialization. Port compatibility is structural by member name with contravariant operation inputs and covariant output/result payloads. Nominal records/enums do not become structurally equivalent. Array values preserve invariant element type/extent; literals are checked elementwise.

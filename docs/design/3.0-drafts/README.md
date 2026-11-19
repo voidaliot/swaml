@@ -1,5 +1,7 @@
 # swa.ml 2.3 chapter drafts
 
+> **Historical record of swa.ml 3.0.** These files are the work-package checklists of the 3.0 edition, drafted under the name 2.3. Every rule has moved into the [specification chapters](../../LANGUAGE_SPECIFICATION.md), which are the only normative text; where a row differs from them, the chapter wins. The 2.2 state machines and the WP5 state reactions some rows mention are not part of 3.0: states are steps of the flow ([chapter 3.6](../../spec/03-behavior.md#36-states), [chapter 6.5](../../spec/06-execution-contract.md#65-input-ownership-and-interruption)).
+
 **Status: draft for the unreleased standard 2.3. Not normative for any published edition.** These files state the changes that work packages WP1–WP8 make to the normative chapters. They are the checklist that implementers and reviewers tick off. The decisions behind them are [ADR 0022](../../decisions/0022-values-places-and-expressions.md), [ADR 0023](../../decisions/0023-state-reactions.md), [ADR 0024](../../decisions/0024-communication-and-package-links.md) and [ADR 0025](../../decisions/0025-real-time-placement-and-binding.md); the plan is in [the 2.3 release draft](../../RELEASE_3_0.md). Where a draft and an ADR differ, the ADR wins and the draft is corrected.
 
 ## Why separate files

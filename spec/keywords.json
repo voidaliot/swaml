@@ -241,7 +241,7 @@
     },
     {
       "keyword": "entry",
-      "meaning": "Used in states as steps of the flow; see its grammar contexts and normative constraints.",
+      "meaning": "Names the action that runs once when a state is reached (on entry).",
       "concern": "States as steps of the flow",
       "normative": "docs/spec/03-behavior.md",
       "example": "'on' kind=('entry'|'exit') body=Block;",
@@ -285,7 +285,7 @@
     },
     {
       "keyword": "exit",
-      "meaning": "Used in states as steps of the flow; see its grammar contexts and normative constraints.",
+      "meaning": "Leaves the state it is written in and goes on with what is written next (exit;), or names the action that runs when a state is left (on exit).",
       "concern": "States as steps of the flow",
       "normative": "docs/spec/03-behavior.md",
       "example": "{infer Exit} 'exit' ';';",
@@ -485,7 +485,7 @@
     },
     {
       "keyword": "on",
-      "meaning": "Used in states as steps of the flow; see its grammar contexts and normative constraints.",
+      "meaning": "Starts a schedule trigger (on start, on every, on receive, on call), an action or event line of a state (on entry, on exit, on receive), a receive statement, an on call branch of a case script or an interrupt handler, or the target of a deployment or deploy statement.",
       "concern": "States as steps of the flow",
       "normative": "docs/spec/03-behavior.md",
       "example": "('on' (kind='start' | kind='every' (period=Duration | '(' periodValue=Expression ')') | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('if' '(' guard=Expression ')')? ('deadline' (deadline=Duration | '(' deadlineValue=Expression ')'))? (concurrent?='concurrent')? ';';",
@@ -807,7 +807,7 @@
     },
     {
       "keyword": "state",
-      "meaning": "Used in states as steps of the flow; see its grammar contexts and normative constraints.",
+      "meaning": "Declares a state, a step of an operation's flow that runs on entry once and looks at its items each time something happens to it (chapter 3.6).",
       "concern": "States as steps of the flow",
       "normative": "docs/spec/03-behavior.md",
       "example": "'state' name=Name '{' documentation=Documentation? statements+=StateMember* '}';",

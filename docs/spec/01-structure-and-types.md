@@ -1,6 +1,6 @@
 # 1. Structure, names and types
 
-Normative chapter of [swa.ml 2.2](../LANGUAGE_SPECIFICATION.md).
+Normative chapter of [swa.ml 3.0](../LANGUAGE_SPECIFICATION.md).
 
 ## 1.1 Names and documentation
 
@@ -12,9 +12,9 @@ A name is written as a basic name, an ASCII letter or underscore followed by ASC
 
 | ID | Rule |
 | --- | --- |
-| WP2-S01 | **Contextual words.** From 3.0, `view`, `state`, `in` and `out` are contextual: they keep their keyword roles (views, states and `initial`, parameter directions, `for … in`) and are legal names in every name position: attribute, local, parameter, operation, state, initial state, component, port, port member and endpoint, view, enum literal, field, package segment, and both positions of `for (x: T in values)`. `defer` is an ordinary basic name until the work package that introduces the `defer` keyword makes it contextual (WP5-S01). |
-| WP2-M01 | **Edition-aware spelling.** Name services (`formatName`, `formatQualifiedName` and `formatPath` in `src/language/names.ts`) take the workspace edition. For a 3.0 workspace they write a contextual word as a basic name; for a 2.2 or earlier workspace they keep quoting `view`, `state`, `in` and `out`, which are reserved there. A quoted spelling such as 'state' remains valid and denotes the same name. |
-| WP5-S01 | *Rejected.* `defer` never became a word of the language: deferral left with the other WP5 state forms before release (states in the flow). `defer` is a basic name in every position, as in 2.2. |
+| WP2-S01 | **Contextual words.** From 3.0, `view`, `state`, `in` and `out` are contextual: they keep their keyword roles (views, states, parameter directions, `for … in`) and are legal names in every name position: attribute, local, parameter, operation, state, component, port, port member and endpoint, view, enum literal, field, package segment, and both positions of `for (x: T in values)`. `when`, `initial` and `final`, reserved in 2.2, are no words of 3.0 and are basic names in every position (`RETIRED_IN_3_0`); `defer` is a basic name in every edition (WP5-S01). |
+| WP2-M01 | **Edition-aware spelling.** Name services (`formatName`, `formatQualifiedName` and `formatPath` in `src/language/names.ts`) take the workspace edition. For a 3.0 workspace they write a contextual word, and `when`, `initial` and `final`, as a basic name; for a 2.2 or earlier workspace they keep quoting `view`, `state`, `in`, `out`, `when`, `initial` and `final`, which are reserved there. A quoted spelling such as 'state' remains valid and denotes the same name. |
+| WP5-S01 | *Rejected.* `defer` is not a word of the language; it is a basic name in every position, as in 2.2. Input that must be kept while a state cannot act on it is remembered in a variable (chapter 3.6). |
 
 The words keep their keyword roles next to their name uses:
 

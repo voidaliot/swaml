@@ -1,6 +1,6 @@
 # 2. Ports and communication
 
-Normative chapter of [swa.ml 2.2](../LANGUAGE_SPECIFICATION.md).
+Normative chapter of [swa.ml 3.0](../LANGUAGE_SPECIFICATION.md).
 
 ## 2.1 Directed port members
 
@@ -8,7 +8,7 @@ A port def owns named provides/requires attribute, event and operation members. 
 
 A component uses port p: Definition; or an inline port body. reversed flips every member direction. optional is a prefix that waives that port's closure requirement; it does not waive required ports elsewhere on a forwarding chain. A provided attribute/event is emitted by this side; a provided operation is implemented by this side. Requires means the opposite.
 
-Every provided attribute/event MUST have syntactic operation emission provenance. Every required event and provided operation, and every required attribute that is not sampled (section 2.6), MUST have exactly one owner: a schedule entry, one stateful operation's transition set, one receive statement or one interrupt region. Multiple alternative transitions in that one stateful operation are one owner. A sampled required attribute has zero or one consuming owner; sampling is not ownership. A forwarded boundary is never also locally handled or emitted. An interface-only component (section 1.2) is exempt from these provenance and owner rules.
+Every provided attribute/event MUST have syntactic operation emission provenance. Every required event and provided operation, and every required attribute that is not sampled (section 2.6), MUST have exactly one owner: a schedule entry, the event lines of one operation with states (chapter 3.6), one receive statement or one interrupt region. Several event lines on the member in that one operation, in one state or in several, are one owner. A sampled required attribute has zero or one consuming owner; sampling is not ownership. A forwarded boundary is never also locally handled or emitted. An interface-only component (section 1.2) is exempt from these provenance and owner rules.
 
 | ID | Rule |
 | --- | --- |
@@ -45,7 +45,7 @@ A named qos def is typed by Swaml::Qos::Policy and supplies complete valid deliv
 
 | ID | Rule |
 | --- | --- |
-| WP6-S07 | **Effective policy of a member route.** The effective policy of a member route is its member policy, else the connection policy, else `Swaml::Qos::Default` (`memberQos` in `semantic.ts`). Every completeness and idempotency check (SW2013) applies per member route (WP6-D07): an `atLeastOnce` member policy needs an idempotent provided operation, and a member policy that is not `atLeastOnce` lifts the obligation of an `atLeastOnce` connection policy for that member. A member policy names a `qos def`, whose completeness is checked at the definition. The deferral warning SW2018 (WP5-D09) uses the effective policy of the deferred member's route. |
+| WP6-S07 | **Effective policy of a member route.** The effective policy of a member route is its member policy, else the connection policy, else `Swaml::Qos::Default` (`memberQos` in `semantic.ts`). Every completeness and idempotency check (SW2013) applies per member route (WP6-D07): an `atLeastOnce` member policy needs an idempotent provided operation, and a member policy that is not `atLeastOnce` lifts the obligation of an `atLeastOnce` connection policy for that member. A member policy names a `qos def`, whose completeness is checked at the definition. |
 
 | ID | Rule |
 | --- | --- |
@@ -83,6 +83,6 @@ component def ComMain {
 | WP6-R03 | **Live reads, stable within a segment.** Every activation, serial or concurrent, reads the live cell: cells are not part of a concurrent dispatch snapshot. The first read of a cell in an activation segment, after the activation starts or resumes, copies the live cell, and later reads of that cell until the next suspension see that copy, although the steps of activations of other occurrences interleave with them. So a guard and the body of one activation, and the schedule-entry arguments and release guard evaluated at dispatch, see the same value unless the body suspends in between, and a read after a suspension sees the newer value. |
 | WP6-R04 | **No consumer.** A sampled member without a consuming owner has no pending-value queue and no `deliver` or `replaceAttribute` observation. Its cell is the only store, and its offers and drops remain observable. |
 
-Sampled reads serve level-triggered use. Edge reactions, such as resetting on a mode change, switching outputs off on entering sleep or detecting wake-up, keep receive handlers. A release guard cannot detect an edge on the member its own `receive` entry consumes: the cell is updated at delivery (WP6-R02), before that entry is released, so in `on receive mode.current(p) onMode(p) if (p != mode.current);` the binding and the sampled read hold the same new value and the guard is always false. Completion guards are not re-evaluated when a cell is updated (WP5-R03); a completion guard that reads only cells gets SW2017 (WP5-D08).
+Sampled reads serve level-triggered use. Edge reactions, such as resetting on a mode change, switching outputs off on entering sleep or detecting wake-up, keep receive handlers. A release guard cannot detect an edge on the member its own `receive` entry consumes: the cell is updated at delivery (WP6-R02), before that entry is released, so in `on receive mode.current(p) onMode(p) if (p != mode.current);` the binding and the sampled read hold the same new value and the guard is always false. A state whose statements read a cell is looked at again at each update of the cell (chapter 6.5, SIF-R07), so a condition written in a state's braces is checked again at every delivery, as in the [cooling fan](../../examples/56-cooling-fan.swaml) example.
 
 B21 (service discovery) is rejected. A team models each binding as a static, optionally `optional`, connection, exposes availability as `provides attribute available: bool = false;` and samples it.
