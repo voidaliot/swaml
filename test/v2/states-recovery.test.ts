@@ -66,3 +66,11 @@ test('an unclosed parent: the error names the state that is not closed instead o
     const plain = await first(model('if (x > 1) {\n        x = 2;'));
     assert.match(String(plain.message), /'operation' is a reserved word/);
 });
+
+test('the 2.2 machine-syntax error is not raised by documentation or comments that read like it', async () => {
+    const source = model('/** The initial value 20; the final state { is a word here. */\n      x = ;');
+    const e = await first(source);
+    assert.ok(!String(e.message).startsWith('This is swa.ml 2.2 state-machine syntax'), String(e.message));
+    const machine = await first(model('initial a;\n      state a { }\n      final state b { }'));
+    assert.match(String(machine.message), /^This is swa\.ml 2\.2 state-machine syntax/);
+});
