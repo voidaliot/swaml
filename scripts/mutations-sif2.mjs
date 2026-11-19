@@ -112,12 +112,19 @@ const MUTATIONS = [
     ['MC3', 'migrate: a migrated file that does not validate is written', CMD, 'if (errors.get(file).length) {', 'if (false) {'],
     ['MC4', 'migrate: a directory is not walked into its subdirectories', CMD, 'out.push(...await swamlFiles(join(path, entry.name)));', 'void 0;'],
     ['MC5', 'migrate: a release guard rewritten to another spelling', 'out/src/migrate/tools.js', "text = text.slice(0, offset) + 'if' + text.slice(offset + 4);", "text = text.slice(0, offset) + 'if ' + text.slice(offset + 4);"],
+    // Recovery of half-typed states (final package).
+    ['RC1', 'recovery: a nameless state read as an expression statement', 'out/src/language/swaml-syntax.js', "if (stateStep >= 0 && this.LA(1).tokenType.name === 'state'", "if (false && this.LA(1).tokenType.name === 'state'"],
+    ['RC2', 'recovery: a half-typed to; in a state gets the 2.2 messages', VAL, "const halfJump = s.expression.$cstNode?.text === 'to'", "const halfJump = false && s.expression.$cstNode?.text === 'to'"],
+    ['RC3', 'recovery: a dedented } does not name the unclosed state', 'out/src/language/swaml-syntax.js', 'dedented = o.name;', 'void 0;'],
+    ['RC4', 'recovery: after outside a state gets the generic message', 'out/src/language/swaml-syntax.js', 'return AFTER_OUTSIDE_STATE_MESSAGE;', 'void 0;'],
     ['E9', 'deadline measured once from the dispatch, not per release', SIM, "            // The deadline is per release, from the release (SIF-R15).\n            if (deadline)", "            // The deadline is per release, from the release (SIF-R15).\n            if (false)"],
 ];
 const run = (command, args) => { try { execFileSync(command, args, { cwd: root, stdio: 'pipe', encoding: 'utf8', timeout: 1500000 }); return true; } catch { return false; } };
 const node = args => run(process.execPath, args);
 const statesTests = readdirSync(join(root, 'out/test/v2')).filter(f => /^states-.*\.test\.js$/.test(f)).map(f => `out/test/v2/${f}`);
-const suites = id => id.startsWith('MC')
+const suites = id => id.startsWith('RC')
+    ? [['states recovery tests', ['--test', 'out/test/v2/states-recovery.test.js']]]
+    : id.startsWith('MC')
     ? [['migrate command tests', ['--test', 'test/ci/swaml-migrate.test.mjs']]]
     : id.startsWith('R5-N7')
     ? [['gate C test', ['--test', 'test/ci/accepted-differences.test.mjs']]]

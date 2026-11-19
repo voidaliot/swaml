@@ -1069,9 +1069,13 @@ export class SwamlValidator {
             }
             else if (a.isExpressionStatement(s)) {
                 const t = this.infer(s.expression, env, c, op, true), target = a.isCallExpression(s.expression) && this.callTarget(s.expression, c), out = target && (isExecutable(target) ? signature(target)?.parameters : target.parameters)?.some(x => x.direction === 'out');
-                if (t !== 'void' && t !== '?')
+                // A half-typed jump, to; in a state's braces, reads a value named to (an attribute, say): say what is missing.
+                const halfJump = s.expression.$cstNode?.text === 'to' && !!owner(s, a.isStateStep);
+                if (halfJump)
+                    this.report(s, 'SW2008', 'to needs the state it goes to, as in to S; (to alone reads a value named to).');
+                else if (t !== 'void' && t !== '?')
                     this.report(s, 'SW2006', 'A non-void result cannot be discarded.');
-                if (!a.isCallExpression(s.expression) && !a.isTryExpression(s.expression))
+                if (!halfJump && !a.isCallExpression(s.expression) && !a.isTryExpression(s.expression))
                     this.report(s, 'SW2006', 'Expression statements must call an operation or try.');
             }
             else if (a.isReturn(s)) {

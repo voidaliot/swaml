@@ -1,5 +1,5 @@
 import { DefaultLexer, DefaultLexerErrorMessageProvider, DefaultValueConverter, LangiumParserErrorMessageProvider, type CstNode, type GrammarAST, type LexerResult, type TokenizeOptions, type ValueType } from 'langium';
-import { CONTEXTUAL_KEYWORDS, RESERVED_WORDS, decodeQuotedName, quoteName } from './names.js';
+import { CONTEXTUAL_KEYWORDS, MESSAGE_SPELLING, RESERVED_WORDS, decodeQuotedName, formatName, quoteName } from './names.js';
 type Token = Parameters<LangiumParserErrorMessageProvider['buildMismatchTokenMessage']>[0]['actual'];
 type TokenKind = Token['tokenType'];
 /** Decodes quoted names and normalizes the two-word use case keyword to useCase. */
@@ -182,6 +182,35 @@ function computedDurationHint(actual: Token | undefined, previous: Token | undef
  * on receive p.m(…) as a receive statement, so no 2.2 message changes.
  */
 const MISSING_BRACE_HINT = ' The block before it is not closed: add } before this state member.';
+/** A timer line written outside a state's braces (SIF-S08): it is a line of a state, and the flow waits with wait D;. */
+export const AFTER_OUTSIDE_STATE_MESSAGE = 'after D { … } is a line of a state and stands only directly in a state\'s braces; to wait in the flow, write wait D;.';
+/** A receive line of a state joined to another by or: a state takes one line per member and looks at all of them. */
+export const OR_IN_STATE_MESSAGE = 'An event line of a state takes one member and is not joined by or: write one on receive line per member (the state looks at all its lines); or joins the branches of a receive statement in the flow.';
+/** A state written inside on entry or on exit (the member-start recovery ends the block there). */
+export const STATE_IN_ACTION_MESSAGE = 'A state does not stand inside on entry or on exit: close the block with } before it. A state stands in the flow or directly in a parent state\'s braces.';
+/**
+ * The innermost state whose braces are still open at actual, when a } is missing before a member or element: an unclosed
+ * state takes everything after it. Only a source with states (new in 3.0) gets this hint, so no 2.2 message changes.
+ */
+function unclosedState(actual: Token | undefined): string | undefined {
+    const index = actual ? tokens.findIndex(t => t.startOffset === actual.startOffset) : -1;
+    // The column a line starts at, from the first token on it (tokens carry lines and columns).
+    const indent = (i: number) => { let j = i; while (j > 0 && tokens[j - 1].startLine === tokens[i].startLine) j--; return tokens[j].startColumn ?? 0; };
+    const open: { name?: string; at: number }[] = [];
+    let dedented: string | undefined;
+    for (let i = 0; i < index; i++) {
+        const text = tokens[i].image;
+        if (text === '{')
+            open.push({ name: tokens[i - 2]?.tokenType?.name === 'state' && nameToken(tokens[i - 1]?.tokenType) ? shown(tokens[i - 1]) : undefined, at: i });
+        else if (text === '}') {
+            const o = open.pop();
+            // A } that starts its line left of the state it closes was written for an outer block: that state is unclosed.
+            if (o?.name !== undefined && dedented === undefined && indent(i) === tokens[i].startColumn && (tokens[i].startColumn ?? 0) < indent(o.at))
+                dedented = o.name;
+        }
+    }
+    return open.filter(x => x.name !== undefined).at(-1)?.name ?? dedented;
+}
 function memberAfterUnclosedBlock(actual: Token | undefined): boolean {
     const index = actual ? tokens.findIndex(t => t.startOffset === actual.startOffset) : -1;
     if (index < 0)
@@ -230,6 +259,18 @@ export class SwamlParserErrorMessageProvider extends LangiumParserErrorMessagePr
             return super.buildMismatchTokenMessage(options) + RELEASE_GUARD_HINT;
         if (options.expected.name === '}' && memberAfterUnclosedBlock(options.actual))
             return super.buildMismatchTokenMessage(options) + MISSING_BRACE_HINT;
+        if (options.expected.name === '}') {
+            const rule = ruleName(options.ruleName), actual = options.actual.tokenType?.name;
+            if (actual === 'after' && ['OperationBody', 'Block', 'Scenario'].includes(rule ?? ''))
+                return AFTER_OUTSIDE_STATE_MESSAGE;
+            if (actual === 'or' && rule === 'StateStep' && tokens[tokens.findIndex(t => t.startOffset === options.actual.startOffset) - 1]?.image === '}')
+                return OR_IN_STATE_MESSAGE;
+            if (actual === 'state' && rule === 'Block')
+                return STATE_IN_ACTION_MESSAGE;
+            const state = RESERVED_WORDS.has(options.actual.image) ? unclosedState(options.actual) : undefined;
+            if (state !== undefined)
+                return `${super.buildMismatchTokenMessage(options)} The state ${formatName(state, MESSAGE_SPELLING)} is not closed: add its } (a state takes everything up to its } as its items and inner states).`;
+        }
         return (expectsName ? `Expecting a name but found \`${options.actual.image}\`.` : super.buildMismatchTokenMessage(options)) + hint(options.actual, options.previous, expectsName);
     }
     override buildNoViableAltMessage(options: Parameters<LangiumParserErrorMessageProvider['buildNoViableAltMessage']>[0]): string {
@@ -352,7 +393,13 @@ export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
         const assign = alternatives.findIndex(x => startsWith(x, 'Assign')), expression = alternatives.findIndex(x => startsWith(x, 'ExpressionStatement'));
         if (assign < 0 || expression < 0)
             return base;
+        const stateStep = alternatives.findIndex(x => startsWith(x, 'StateStep'));
         return function (this: Lookahead, choices?: unknown) {
+            // A state written without its name, state { … }, is a state: its missing name is reported and inserted, and
+            // the state, its items and the rest of the package are kept (state is a contextual word and would otherwise
+            // read as an expression statement whose ; is missing). A valid source never writes state {.
+            if (stateStep >= 0 && this.LA(1).tokenType.name === 'state' && this.LA(2).image === '{')
+                return stateStep;
             const predicted = base.call(this, choices);
             if (predicted !== undefined || !nameToken(this.LA(1).tokenType))
                 return predicted;
