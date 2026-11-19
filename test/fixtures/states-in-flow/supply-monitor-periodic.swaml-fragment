@@ -4,7 +4,7 @@
         state normal {
           if (supplyMv < underMv and lowSamples < qualifySamples) { lowSamples = lowSamples + 1; }
           if (supplyMv >= recoverMv) { lowSamples = 0; }
-          if (lowSamples >= qualifySamples) { exit; }
+          if (lowSamples >= qualifySamples) exit;
         }
         state under {
           on entry { undervoltage = true; }

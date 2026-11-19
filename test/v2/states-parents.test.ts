@@ -464,7 +464,7 @@ function compared(result: ReturnType<typeof eachTest> extends Iterable<infer R> 
 }
 
 test('gate D: the window lifter with parents moving and driven behaves as the migrated flat machine on every door-showcase case', async () => {
-    const flat = withGateCases(readFileSync(new URL('examples/showcase/autosar-classic-door-controller.swaml', root), 'utf8').replaceAll('\r\n', '\n'));
+    const flat = withGateCases(readFileSync(new URL('test/fixtures/states-in-flow/door-controller-migrated.swaml', root), 'utf8').replaceAll('\r\n', '\n'));
     const parents = withParents(flat);
     assert.notEqual(parents, flat);
     const load = async (text: string, uri: string) => {
@@ -492,7 +492,7 @@ test('gate D: the window lifter with parents moving and driven behaves as the mi
     // The first added case sees the level of motionInhibited: written on moving instead of driven, the reversal stops.
     const inhibited = 'on receive permissionIn.motionInhibited() { inhibitedStops = inhibitedStops + 1; to idle; }';
     assert.ok(parents.includes(inhibited));
-    const moved = parents.replace(inhibited, '').replace('on receive supervision.sensorFault() { to idle; }', `on receive supervision.sensorFault() { to idle; }\n        ${inhibited}`);
+    const moved = parents.replace(inhibited, '').replace('on receive supervision.sensorFault() to idle;', `on receive supervision.sensorFault() to idle;\n        ${inhibited}`);
     const index = before.findIndex(b => String((b as { case?: string }).case).endsWith('Gate D, motion inhibited during a pinch reversal'));
     const variant = [...eachTest(await load(moved, uri), options)][index];
     assert.notDeepEqual(compared(variant).stores, compared(before[index]).stores, 'the reversal case tells the levels apart');
