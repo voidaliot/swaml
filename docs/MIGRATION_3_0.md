@@ -16,7 +16,7 @@ swaml migrate [--write] file.swaml|directory [more files or directories...]
 ```
 
 - A **dry run** by default: for every file it prints the machines it would rewrite (`line:column` of the machine, its operation and number of states), what it removes or renames, and the changed lines; it writes nothing.
-- `--write` writes the migrated files. Nothing is written unless every file migrates and validates.
+- `--write` writes the migrated files. Nothing is written unless every file migrates and validates, and nothing is written when a file cannot be written (every target is checked, the new texts replace the targets only after all of them were written beside them). Line ends (LF or CRLF) and a byte order mark are kept; a file named twice, in any spelling, is migrated once.
 - A **directory** is walked for `.swaml` files (not into `node_modules`, `out` or hidden directories).
 - Every migrated file is **validated** with the 3.0 language as one workspace with the other files given; a file that does not validate is reported with its errors.
 - **Release guards** written `when (g)` (the spelling of an unreleased draft of this edition) are rewritten to `if (g)`.
@@ -31,7 +31,7 @@ The recipe, for each 2.2 machine:
 5. A leave to the state written next is `exit;`, every other leave `to T;`; a body that is only the leave is written without braces.
 6. Final states become ordinary states at the end; with several finals, `return;` follows each one but the last.
 7. Nothing is written for unhandled input: 2.2 dropped it while a machine waited, and so does 3.0.
-8. The migration keeps comments and every byte outside the machines, and gives an identity map from each new statement identity to its 2.2 identity (`migrateSource` in `src/migrate/machines.ts`), so old traces and overlays can be mapped.
+8. The migration keeps comments and every byte outside the machines, and gives an identity map from each new statement identity to its 2.2 identity (`migrateSource` and `migrateFile` of the package export `@swaml/language/migrate`), so old traces and overlays can be mapped.
 
 ## A worked example
 
@@ -127,7 +127,7 @@ A refused file is left unchanged; the reason and location are printed.
 - **A binding that would be captured** by a name of a later transition, or a binding written before `.` (a port named like it): rename it by hand.
 - **A non-final state without transitions** (it waited for ever in 2.2): give it the event it waits for, or make it final.
 - **Forms of the unreleased draft** (completion transitions `when (g) to S`, internal transitions without `to`, guarded timers, `defer`): rewrite them by hand as an `if` in the state's braces, a line that does not leave, `after D { if (g) … }` and a variable.
-- **A file that parses neither as 2.2 nor as 3.0**, such as a file that mixes a 2.2 machine with 3.0 forms: the first syntax error of the 3.0 grammar is reported.
+- **A file that parses neither as 2.2 nor as 3.0**, such as a file that mixes a 2.2 machine with 3.0 forms: a file with 2.2 machine syntax is refused at the first error of the 2.2 grammar, any other file at the first error of the 3.0 grammar, each with its location and whole message.
 
 ## Accepted behaviour differences
 

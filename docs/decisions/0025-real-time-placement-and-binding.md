@@ -1,6 +1,6 @@
 # ADR 0025: Release guards, operation placement, tasks and the target binding
 
-Status: accepted for the unreleased standard 3.0, 18 November 2026. Owner approval of the 3.0 scope and decisions D9, D10, D11 and D13 of the [2.3 proposal](../proposals/NEXT_MINOR_PROPOSAL.md). The owner decided the state-machine rule T4. Not implemented: each rule lands with the work package named in the [2.3 chapter drafts](../design/3.0-drafts/README.md). This ADR is normative where it differs from the proposal. It amends chapter 4.1 of the specification, which leaves core and task allocation to target translation. Published editions remain unchanged. WP7 implements B19 (chapters 3.5, 6.2, 6.6 and 6.7, rules WP7-*); see *Implementation in WP7*.
+Status: accepted on 18 November 2026 for the unreleased candidate then called 2.3, released as standard 3.0 ([ADR 0026](0026-states-in-the-flow.md) explains the major number). Owner approval of the 2.3 scope and decisions D9, D10, D11 and D13 of the [2.3 proposal](../proposals/NEXT_MINOR_PROPOSAL.md). The owner decided the state-machine rule T4. Not implemented: each rule lands with the work package named in the [2.3 chapter drafts](../design/3.0-drafts/README.md). This ADR is normative where it differs from the proposal. It amends chapter 4.1 of the specification, which leaves core and task allocation to target translation. Published editions remain unchanged. WP7 implements B19 (chapters 3.5, 6.2, 6.6 and 6.7, rules WP7-*); see *Implementation in WP7*.
 
 Items: B19 mode-dependent schedules, B17 operation-level deployment, B18 tasks (Tier 1). Deferred: B18 timed run and B20 latency chains (Tier 2). Work packages: WP7 (B19, after WP4), WP8 (B17, B18, after WP4, WP7 and tool fix A4).
 
@@ -107,7 +107,7 @@ package Swaml::Os {
 
 ### Target binding (B18, WP8)
 
-`spec/binding.schema.json` defines `"schema": "swaml-binding/1"` (first written `swaml-binding/3.0`; decoupled from the language edition after the WP8 review, F6, so that renaming the release does not invalidate binding files; a root `$schema` string for editors is allowed):
+`spec/binding.schema.json` defines `"schema": "swaml-binding/1"` (first written `swaml-binding/2.3`; decoupled from the language edition after the WP8 review, F6, so that renaming the release does not invalidate binding files; a root `$schema` string for editors is allowed):
 - `deployment`: the deployment's qualified identity;
 - `costs`: per operation occurrence `wcetNs`, optional `bcetNs ≤ wcetNs` and a `source` reference;
 - `budgets`: per Task occurrence, `budgetNs`;

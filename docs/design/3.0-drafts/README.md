@@ -12,7 +12,7 @@ WP1a has allocated the candidate. `scripts/build-reference.mjs --check` now rege
 
 ## How a work package uses these drafts
 
-1. Two small PRs come before WP1 ([release draft](../../RELEASE_3_0.md#version-allocation)); both are done:
+1. Two small PRs come before WP1 ([release plan](../3.0-release-plan.md#version-allocation)); both are done:
    - **P0** switches the 2.2 PDF check to archive mode. It is a tooling change with no language change.
    - **WP1a** allocates the unreleased 2.3 candidate, following [VERSIONING.md](../../VERSIONING.md):
      - `spec/standard.json` 2.3;
