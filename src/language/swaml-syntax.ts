@@ -206,7 +206,7 @@ function memberAfterUnclosedBlock(actual: Token | undefined): boolean {
  * 2.3). The parser's message keeps its fixed leading text and explains the spelling. A guard written after
  * deadline or concurrent gets the same explanation instead of calling if a reserved word.
  */
-const RELEASE_GUARD_HINT = ' A release guard is written if (condition) after the call, as in f() if (ready) deadline 2ms.';
+export const RELEASE_GUARD_HINT = ' A release guard is written if (condition) after the call, as in f() if (ready) deadline 2ms.';
 /** Whether the if at actual follows the deadline or concurrent of its own schedule entry: a guard written too late (review F2). */
 function guardAfterModifier(actual: Token): boolean {
     if (actual.tokenType?.name !== 'if')

@@ -4,7 +4,7 @@
 // Runtime mutations (packages 2a, 3, 4 and 5: ids A, C, D, E) edit the BUILD OUTPUT (out/src/simulation/simulator.js, and
 // for D3 out/src/language/semantic.js) in place and run the states unit tests (every out/test/v2/states-*.test.js), then
 // the example cases (check-simulations), then gate B. Package 2b mutations (ids B) edit the migrator
-// scripts/migrate-machines.mjs and run its tests (test/ci/migrate-machines.test.mjs), then gate B
+// in its build output (out/src/migrate/machines.js, from src/migrate/machines.ts) and run its tests (test/ci/migrate-machines.test.mjs), then gate B
 // (scripts/compatibility-machines.mjs). A mutation is one or more [anchor, replacement] edits; each anchor must occur
 // exactly once. A3 and A4 ("look continuing after a leave", "on exit before the leave's block") are code mutations of
 // several edits. Never run it beside other work on the same checkout (tests, probes, a watch build or a second copy of
@@ -18,7 +18,8 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SIM = 'out/src/simulation/simulator.js', SEM = 'out/src/language/semantic.js', MIG = 'scripts/migrate-machines.mjs';
+const SIM = 'out/src/simulation/simulator.js', SEM = 'out/src/language/semantic.js', MIG = 'out/src/migrate/machines.js';
+const CMD = 'out/src/cli/migrate.js';
 const TIM = 'out/src/simulation/timing.js', PRJ = 'out/src/language/projection.js', VAL = 'out/src/language/swaml-validator.js';
 const GATE = 'scripts/compatibility-2-2.mjs', EXT = 'scripts/compatibility-2-2-extended.mjs';
 const ONLY = process.argv.slice(2).find(a => !a.startsWith('--'))?.split(',');
@@ -45,10 +46,10 @@ const MUTATIONS = [
     ['A12', 'exit; from a flow-level state not continuing with the next statement', SIM, 'if (yield* this.leave(levels, left.level, left.node, f, local, key)) {', 'if (yield* this.leave(levels, left.level, left.node, f, local, key)) {\n                        throw new ReturnValue(voidValue());'],
     ['A13', 'backward jump not re-running a declaration', SIM, 'yield* this.statement(b.statements[i], f, local);', 'if (!(a.isLocalVariable(b.statements[i]) && local.has(b.statements[i].name)))\n                    yield* this.statement(b.statements[i], f, local);'],
     // Package 2b (section 11): the migrator.
-    ['B1', 'chain order by target instead of declaration', MIG, 'const transitions = s.transitions.filter(t => t.endpoint === member);', 'const transitions = s.transitions.filter(t => t.endpoint === member).sort((x, y) => String(x.target).localeCompare(String(y.target)));'],
+    ['B1', 'chain order by target instead of declaration', MIG, 'const transitions = s.transitions.filter((t) => t.endpoint === member);', 'const transitions = s.transitions.filter((t) => t.endpoint === member).sort((x, y) => String(x.target).localeCompare(String(y.target)));'],
     ['B2', 'exit actions copied only into some leaving blocks', MIG, 'if (copyExit)\n                for (const [i, st] of exitStatements.entries()) {', 'if (copyExit && t === s.transitions[0])\n                for (const [i, st] of exitStatements.entries()) {'],
     ['B3', 'dead-timer rule removing a smaller timer', MIG, 'durationNs(u.delay) <= durationNs(t.delay)', 'durationNs(u.delay) >= durationNs(t.delay)'],
-    ['B4', 'finals without return;', MIG, "if (s.final && i < order.length - 1) steps.push('return');", 'void 0;'],
+    ['B4', 'finals without return;', MIG, "if (s.final && i < order.length - 1)\n        steps.push('return');", 'void 0;'],
     ['B5', 'dead end migrated as a named step', MIG, 'if (!s.final && !s.transitions.length && !s.deferrals?.length)\n            report.refused.push(', 'if (false)\n            report.refused.push('],
     ['B6', 'identity map off by one statement', MIG, 'map[`${path}/${n}`] = oldTransition(s, t);', 'map[`${path}/${n + 1}`] = oldTransition(s, t);'],
     // Package 3 (section 11): parents.
@@ -94,7 +95,7 @@ const MUTATIONS = [
     ['R4-R12', 'T4: a suspending helper of a periodic machine is basic-safe (review 4 R12)', 'out/src/language/placement.js', 'if (target && isExecutable(target) && suspendSite(target, c, seen))', 'if (target && isExecutable(target) && suspendSite(target, c, seen) && !periodic)'],
     ['R4-R13', 'T4: a request in a periodic machine is not a suspension (review 4 R13)', 'out/src/language/placement.js', "if (n.target.includes('.'))\n                return statementOf(n);", "if (n.target.includes('.') && !periodic)\n                return statementOf(n);"],
     ['R1-P1', 'projection: a leave in an else labelled with the then condition (review 1 P-1)', PRJ, 'if (a.isIf(x) && child === x.then)', 'if (a.isIf(x))'],
-    ['R1-M1', 'migrator: bindings renamed one after the other (review 1 M-1)', MIG, 'return str => renameAll(str, pairs);', 'return str => pairs.reduce((acc, [x, y]) => acc.replace(word(x), y), str);'],
+    ['R1-M1', 'migrator: bindings renamed one after the other (review 1 M-1)', MIG, 'return (str) => renameAll(str, pairs);', 'return (str) => pairs.reduce((acc, [x, y]) => acc.replace(word(x), y), str);'],
     ['R1-M3', 'migrator: renames inside string literals (review 1 M-3)', MIG, "skip.some(([s, e]) => offset >= s && offset < e) ? m : to.get(m)", 'to.get(m)'],
     ['R1-G1', 'gate A excludes every source that mentions state or schedule (review 1 G1)', GATE, 'cache.set(text, !parsed.errors && containsMachine(parsed.ast));', "cache.set(text, !parsed.errors && containsMachine(parsed.ast) || /\\b(state|schedule)\\b/.test(text));"],
     ['R1-G2', 'gate 1 excludes every source (review 1 G2)', GATE, 'if (!old.errors && containsMachine(old.ast))', 'if (true)'],
@@ -105,12 +106,20 @@ const MUTATIONS = [
     ['R5-N5', 'stale read: a parent var not evaluated again in an inner look (review 5 N5)', 'out/src/language/stale-read.js', 'for (const v of parentLocals)', 'for (const v of [])'],
     ['R5-N7a', 'gate B: the accepted list not compared with the directory (review 5 N7)', 'scripts/compatibility-machines.mjs', 'if (canonicalJson(files) !== canonicalJson(named) ||', 'if (false &&'],
     ['R5-N7b', 'gate B: an accepted model\'s kind not checked (review 5 N7)', 'scripts/compatibility-machines.mjs', 'if (!shows)', 'if (false)'],
+    // The user command swaml migrate (final package): its build output.
+    ['MC1', 'migrate: a dry run writes', CMD, 'if (write && !failed)', 'if (!failed)'],
+    ['MC2', 'migrate: a refused file does not fail the run', CMD, 'failed = true;\n            for (const x of r.refused)','for (const x of r.refused)'],
+    ['MC3', 'migrate: a migrated file that does not validate is written', CMD, 'if (errors.get(file).length) {', 'if (false) {'],
+    ['MC4', 'migrate: a directory is not walked into its subdirectories', CMD, 'out.push(...await swamlFiles(join(path, entry.name)));', 'void 0;'],
+    ['MC5', 'migrate: a release guard rewritten to another spelling', 'out/src/migrate/tools.js', "text = text.slice(0, offset) + 'if' + text.slice(offset + 4);", "text = text.slice(0, offset) + 'if ' + text.slice(offset + 4);"],
     ['E9', 'deadline measured once from the dispatch, not per release', SIM, "            // The deadline is per release, from the release (SIF-R15).\n            if (deadline)", "            // The deadline is per release, from the release (SIF-R15).\n            if (false)"],
 ];
 const run = (command, args) => { try { execFileSync(command, args, { cwd: root, stdio: 'pipe', encoding: 'utf8', timeout: 1500000 }); return true; } catch { return false; } };
 const node = args => run(process.execPath, args);
 const statesTests = readdirSync(join(root, 'out/test/v2')).filter(f => /^states-.*\.test\.js$/.test(f)).map(f => `out/test/v2/${f}`);
-const suites = id => id.startsWith('R5-N7')
+const suites = id => id.startsWith('MC')
+    ? [['migrate command tests', ['--test', 'test/ci/swaml-migrate.test.mjs']]]
+    : id.startsWith('R5-N7')
     ? [['gate C test', ['--test', 'test/ci/accepted-differences.test.mjs']]]
     : id.startsWith('R5-N1')
     ? [['migrator tests', ['--test', 'test/ci/migrate-machines.test.mjs']]]
