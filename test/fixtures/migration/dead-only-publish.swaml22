@@ -1,0 +1,46 @@
+package Fz {
+  port def In { requires event a(v: int); requires event b(v: int); requires event c(); }
+  port def Out { provides event a(v: int); provides event b(v: int); provides event c(); }
+  port def Ob { provides event res(v: int); }
+  port def Ib { requires event res(v: int); }
+  component def M {
+    port i: In;
+    port o: Ob;
+    attribute n: int = 0;
+    attribute m: int = 0;
+    attribute k: int = 0;
+    operation run() {
+      initial S0;
+      state S0 {
+        on entry {   }
+        after 6ms to F0 { if (n > 1) { m = m + 9; } else { publish o.res(9); } publish o.res(10); }
+        on receive i.b(x) to F1 { m = m + 1; }
+        on receive i.a(v) to S0 { n = n + v; }
+        after 5ms to F1 {  }
+        on receive i.c() to S1 {  }
+      }
+      state S1 {
+        on receive i.a(x) to S0 { k = k + 3; }
+        on receive i.b(y) to F1 {  }
+        on receive i.b(y) to S0 { m = m + 1; publish o.res(y + 5); }
+        on receive i.a(x) when (n > 5) to F0 { m = m + 1; k = k + 7; k = k + 8; }
+      }
+      final state F1 { }
+      final state F0 { on entry { k = k + 11; k = k + 12; k = k + 13; } }
+    }
+    schedule { on start run(); }
+  }
+  component def D {
+    port q: Out;
+    port w: Ib;
+    attribute got: int = 0;
+    operation emit() { publish q.a(3); publish q.a(4); publish q.b(1); publish q.c(); publish q.b(4); publish q.c(); publish q.b(5); publish q.c(); }
+    operation emitAll() { publish q.a(0); publish q.b(0); publish q.c(); }
+    operation sink(v: int) { got = got * 3 + v; }
+    schedule { on start emit(); on receive w.res(v) sink(v); }
+  }
+  component mm: M;
+  component d: D;
+  connect (d.q, mm.i);
+  connect (mm.o, d.w);
+}

@@ -68,9 +68,12 @@ function exitTarget(s: a.StateStep): a.StateStep | undefined {
 /** What leads to a leave: its event line's head and the conditions of the ifs on the way, as [c]; 'to S' (or 'exit') alone otherwise. */
 function leaveLabel(leave: a.Jump | a.Exit, word = `to ${a.isJump(leave) ? leave.target : ''}`): string {
     const parts: string[] = [];
-    for (let x: AstNode | undefined = leave.$container; x && !a.isStateStep(x); x = x.$container) {
-        if (a.isIf(x))
+    // The branch the leave stands in: [c] in then, [else] in a final else; an else if branch carries its own condition.
+    for (let child: AstNode = leave, x: AstNode | undefined = leave.$container; x && !a.isStateStep(x); child = x, x = x.$container) {
+        if (a.isIf(x) && child === x.then)
             parts.unshift(`[${displayText(x.condition)}]`);
+        else if (a.isIf(x) && child === x.otherwise && !a.isElseIf(child))
+            parts.unshift('[else]');
         if (a.isEventLine(x))
             parts.unshift(x.endpoint !== undefined ? x.endpoint : x.delayValue ? `after (${displayText(x.delayValue)})` : x.delay ? `after ${x.delay.value}${x.delay.unit}` : '');
     }
@@ -158,7 +161,7 @@ export function projectModel(models: readonly a.Model[]): Projection {
                 const leaves = nodes(state).filter((x): x is a.Exit | a.Jump => (a.isJump(x) || a.isExit(x)) && owner(x, a.isStateStep) === state);
                 leaves.forEach((leave, order) => {
                     const target = a.isJump(leave) ? leave.target : exitTarget(state)?.name;
-                    if (target !== undefined && state.name !== undefined)
+                    if (target !== undefined && state.name !== undefined && flowStates(n).some(x => x.name === target))
                         addEdge('transition', id + '.' + state.name, id + '.' + target, a.isJump(leave) ? leaveLabel(leave) : leaveLabel(leave, 'exit'), { order });
                 });
             }

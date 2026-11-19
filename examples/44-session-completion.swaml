@@ -42,14 +42,9 @@ package SessionCompletion {
           attempts = attempts + 1;
           sessionId = try(cloud.openSession(vehicleId), 0);
         }
+        // The arrival look always leaves: input that arrives during the request waits for the next state.
         if (sessionId > 0) to Connected;
         else to Backoff;
-        on receive network.coverage(up) {
-          if (not up) {
-            coverageLosses = coverageLosses + 1;
-            to Offline;
-          }
-        }
       }
       state Backoff {
         on entry {

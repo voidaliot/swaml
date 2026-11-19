@@ -1,0 +1,48 @@
+{
+  "comment": "The exact sources and models the compatibility gates exclude because their recorded 2.2 text holds a state machine; gate B runs them after migration. A gate that excludes anything else fails.",
+  "gate1": [
+    "examples/04-stateful-function.swaml",
+    "examples/showcase/autosar-adaptive-v2x-telemetry.swaml",
+    "examples/showcase/autosar-classic-door-controller.swaml",
+    "examples/showcase/cloud-fleet-monitoring.swaml"
+  ],
+  "gate2": [
+    "examples/04-stateful-function.swaml",
+    "examples/showcase/autosar-adaptive-v2x-telemetry.swaml",
+    "examples/showcase/autosar-classic-door-controller.swaml",
+    "examples/showcase/cloud-fleet-monitoring.swaml"
+  ],
+  "gate2Results": 92,
+  "extendedValid": [
+    "models-wp2.json ctx: state keyword next to quoted state names and a quoted state attribute",
+    "models-wp3.json w18 own package operation def now in an initializer and a receive guard",
+    "models-wp3b.json v8 user Swaml::Time now in an initializer and a guard, qualified",
+    "models-wp4.json d3 state timers with every unit, equal expiry in declaration order, states named like units (runs)",
+    "models-wp4.json d18 after chains next to state after timers and periodic deadlines (runs)",
+    "models-wp5.json r1 a timer and an input at the same instant: the elapsed timer is selected first (runs)",
+    "models-wp5.json r2 a self transition restarts the state timers; exit and entry run each time (runs)",
+    "models-wp5.json r3 discardInput: no enabled transition (guards false) and inactive owner (no transition in the state) (runs)",
+    "models-wp5.json r4 ordered transitions with guards on one member and equal timer expiries in declaration order (runs)",
+    "models-wp5.json r5 entry and exit actions that suspend; a timer expires during a suspended entry; input queued during actions (runs)",
+    "models-wp5.json r6 machines in a multiplicity family keep separate states, timers and queues (runs)",
+    "models-wp5.json n1 defer as an ordinary name in every position: package, enum literal, field, port, port member, parameter, state, operation, attribute, local, connection (runs)",
+    "models-wp5.json n2 defer as a statement start: assignment, call and field place inside entry actions and effects (runs)",
+    "models-wp5.json n3 states and members named when, to and after (quoted where reserved) (runs)",
+    "models-wp5.json r7 a receive guard reading an attribute written by another operation; default policies on events a state does not handle (runs)",
+    "models-wp5.json r8 a machine whose states have only timers, with equal expiries and a chain of zero-wait reactions (runs)",
+    "models-wp5.json r9 a test drives a machine through its actor port and inspects its state attribute (cases)",
+    "models-wp5.json r10 input for two members queued while the machine is busy: the queue created first is served first, the 2.2 queue walk (runs)",
+    "models-wp6.json s10 one connection policy for an event queue, a latest attribute and a request timeout (runs)",
+    "models-wp6.json s11 a redefined connection with another policy (runs)",
+    "models-wp6.json s15 a case script that receives on a port with a policy and test reads of the subject (runs)",
+    "models-wp6.json s16 completion-like guards in 2.2: a self-polling timer machine reading another operation's attribute (runs)"
+  ],
+  "extendedInvalid": [
+    "models.json sem: R6b transition binding bare",
+    "models-wp4.json d10 duration ranges: zero and unrepresentable waits, timeouts, timers, periods and deadlines",
+    "models-wp5.json i1 diagnostics that name a state or member called defer (invalid)",
+    "models-wp5.json i2 2.2 state rule messages: guards with effects, duplicate actions, parameters, return, unknown initial (invalid)",
+    "models-wp5.json i3 two owners of one member: a machine and a schedule entry; an unhandled required member (invalid)",
+    "models-wp6.json s3 p.m in a receive guard and in state guards"
+  ]
+}

@@ -1,0 +1,79 @@
+{
+ "results": [
+  {
+   "file": "c3-if-test-not-a-step.swaml",
+   "status": "quiescent",
+   "stores": {
+    "mm": {
+     "n": 2
+    },
+    "d": {
+     "got": 1
+    }
+   },
+   "order": [
+    "0 publish d.q.b",
+    "0 publish mm.o.res",
+    "0 write mm.n",
+    "0 write d.got"
+   ]
+  },
+  {
+   "file": "r10-delivery-order-drop.swaml",
+   "status": "horizon",
+   "stores": {
+    "mm": {
+     "n": 0,
+     "m": 11,
+     "k": 49
+    },
+    "d": {
+     "got": 15894
+    }
+   },
+   "order": [
+    "0 write mm.m",
+    "0 publish d.q.c",
+    "0 write mm.m",
+    "0 publish d.q.a",
+    "0 publish mm.o.res",
+    "0 publish d.q.c",
+    "0 publish d.q.a",
+    "0 write mm.k",
+    "0 write mm.m",
+    "0 write d.got",
+    "0 publish mm.o.res",
+    "0 write mm.m",
+    "0 write d.got",
+    "0 write mm.m",
+    "0 publish mm.o.res",
+    "0 write d.got",
+    "0 discardInput i.c",
+    "0 write mm.k",
+    "0 publish mm.o.res",
+    "0 write d.got",
+    "4000000 write mm.k",
+    "4000000 publish mm.o.res",
+    "4000000 write mm.m",
+    "4000000 write d.got",
+    "4000000 write mm.k",
+    "4000000 write mm.m",
+    "4000000 write mm.m",
+    "4000000 publish mm.o.res",
+    "4000000 write d.got",
+    "13000000 publish d.q.a",
+    "13000000 publish d.q.b",
+    "13000000 discardInput i.b",
+    "17000000 write mm.k",
+    "17000000 publish mm.o.res",
+    "17000000 write mm.m",
+    "17000000 write d.got",
+    "17000000 write mm.k",
+    "17000000 write mm.m",
+    "17000000 write mm.m",
+    "17000000 publish mm.o.res",
+    "17000000 write d.got"
+   ]
+  }
+ ]
+}

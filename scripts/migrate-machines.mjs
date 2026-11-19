@@ -35,7 +35,35 @@ import { GrammarUtils } from 'langium';
 const durationNs = d => Number(d.value) * { ns: 1, us: 1e3, ms: 1e6, s: 1e9 }[d.unit];
 const kind = t => t.endpoint ? 'receive' : (t.delay || t.delayValue) ? 'timer' : 'completion';
 const text = n => n.$cstNode.text;
-const word = name => new RegExp(`(?<![\\w'.])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w'])`, 'g');
+const escape = name => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const word = name => new RegExp(`(?<![\\w'.])${escape(name)}(?![\\w'])`, 'g');
+/** String literals and comments of a text, which renames never touch: [start, end) offsets. */
+const literals = str => [...str.matchAll(/"(?:[^"\\\n]|\\.)*"|\/\/[^\n]*|\/\*[\s\S]*?\*\//g)].map(m => [m.index, m.index + m[0].length]);
+/**
+ * Renames every name of pairs at once (one pass over the text, so swapped names never collapse: review 1 M-1), outside
+ * string literals and comments (review 1 M-3).
+ */
+function renameAll(str, pairs) {
+    if (!pairs.length)
+        return str;
+    const to = new Map(pairs), skip = literals(str);
+    const pattern = new RegExp(`(?<![\\w'.])(?:${pairs.map(([x]) => escape(x)).sort((a, b) => b.length - a.length).join('|')})(?![\\w'])`, 'g');
+    return str.replace(pattern, (m, offset) => skip.some(([s, e]) => offset >= s && offset < e) ? m : to.get(m));
+}
+/**
+ * The comments of source between start and end that lie outside the given copied ranges (each [start, end)), so that the
+ * migrated text keeps them (7.2: everything else stays as written). Strings are skipped.
+ */
+function commentsBetween(source, start, end, copied) {
+    const out = [];
+    for (const m of source.slice(start, end).matchAll(/"(?:[^"\\\n]|\\.)*"|\/\/[^\n]*|\/\*[\s\S]*?\*\//g)) {
+        const at = start + m.index;
+        if (m[0].startsWith('"') || copied.some(([s, e]) => at >= s && at < e))
+            continue;
+        out.push(m[0]);
+    }
+    return out;
+}
 const permutations = list => list.length <= 1 ? [list.slice()] : list.flatMap((x, i) => permutations([...list.slice(0, i), ...list.slice(i + 1)]).map(p => [x, ...p]));
 
 /** Step 2: the order of the states in the new text. */
@@ -98,6 +126,15 @@ function migrateMachine(source, op, b, identity) {
     const oldTransition = (s, t) => `${oldState(s)}/transitions/${s.transitions.indexOf(t)}`;
     const map = {}, lines = [];
     const emit = (depth, line) => lines.push(indent + '  '.repeat(depth) + line);
+    // Comments of the machine that no copied text holds: those before a state are written before it, those inside a state
+    // (between its actions and transitions) at the start of its braces (review 1 M-3).
+    const range = n => [n.$cstNode.offset, n.$cstNode.end];
+    const copied = b.states.flatMap(s => [...(s.documentation ? [range(s.documentation)] : []), ...s.actions.map(range), ...s.transitions.flatMap(t => [...(t.guard ? [range(t.guard)] : []), ...t.effect.statements.map(range)])]);
+    const before = new Map(), inside = new Map();
+    b.states.forEach((s, i) => {
+        before.set(s, commentsBetween(source, i === 0 ? initialKeyword.offset : b.states[i - 1].$cstNode.end, s.$cstNode.offset, copied));
+        inside.set(s, commentsBetween(source, s.$cstNode.offset, s.$cstNode.end, copied));
+    });
     steps.forEach((item, at) => {
         if (item === 'return') {
             emit(0, 'return;');
@@ -105,9 +142,13 @@ function migrateMachine(source, op, b, identity) {
         }
         const s = item, id = `${opId}/${at}`;
         map[id] = oldState(s);
+        for (const c of before.get(s))
+            emit(0, c);
         emit(0, `state ${nameText(s)} {`);
         if (s.documentation)
             emit(1, text(s.documentation));
+        for (const c of inside.get(s))
+            emit(1, c);
         let k = 0;
         const exitAction = s.actions.find(x => x.kind === 'exit'), exitStatements = exitAction ? exitAction.body.statements : [];
         const copyExit = exitStatements.length > 0 && s.transitions.some(t => t.effect.statements.length > 0);
@@ -174,7 +215,7 @@ function migrateMachine(source, op, b, identity) {
                     if (word(y).test(written) && !names.includes(y))
                         refused = `the binding ${y} would be captured in ${s.name}`;
                 report.renamedBindings.push(`${s.name}: ${pairs.map(([x, y]) => `${x} -> ${y}`).join(', ')}`);
-                return str => pairs.reduce((acc, [x, y]) => acc.replace(word(x), y), str);
+                return str => renameAll(str, pairs);
             });
             if (copyExit && bindingNames.some(x => exitStatements.some(st => word(x).test(text(st)))))
                 refused = `a binding of ${head} would capture a name in the copied exit actions of ${s.name}`;
@@ -291,12 +332,29 @@ export async function migrationTools({ root = new URL('..', import.meta.url), cu
     return { parse: text => kept.parser.LangiumParser.parse(text), identity };
 }
 
+/**
+ * 7.2: validates the migrated files as one workspace with the repository's language (2.3), beside the files given unchanged;
+ * returns the errors of each migrated file (an empty list when it validates).
+ */
+export async function validateMigrated(texts, { root = new URL('..', import.meta.url) } = {}) {
+    const { EmptyFileSystem, URI } = await import('langium');
+    const { createSwamlServices } = await import(new URL('out/src/language/swaml-module.js', root).href);
+    const { shared, Swaml } = createSwamlServices(EmptyFileSystem);
+    const documents = [...texts].map(([file, text], i) => Swaml.shared.workspace.LangiumDocumentFactory.fromString(text, URI.parse(`file:///migrated/${i}/${encodeURIComponent(file)}`)));
+    for (const d of documents)
+        shared.workspace.LangiumDocuments.addDocument(d);
+    await shared.workspace.DocumentBuilder.build(documents, { validation: true });
+    return new Map([...texts.keys()].map((file, i) => [file, (documents[i].diagnostics ?? []).filter(d => d.severity === 1).map(d => `${d.range.start.line + 1}:${d.range.start.character + 1} ${d.code ?? ''} ${d.message}`)]));
+}
+
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
     const files = process.argv.slice(2).filter(x => !x.startsWith('--')), write = process.argv.includes('--write');
     const { parse, identity } = await migrationTools({ current: process.argv.includes('--current') });
     let failed = false;
+    const texts = new Map(), migrated = new Set();
     for (const file of files) {
         const source = readFileSync(file, 'utf8'), r = migrateSource(source, parse, identity);
+        texts.set(file, r.text ?? source);
         if (!r.machines.length && !r.refused?.length) {
             console.log(`${file}: no 2.2 machine; unchanged`);
             continue;
@@ -306,13 +364,24 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
             console.log(`${file}: refused, unchanged\n  ${r.refused.join('\n  ')}`);
             continue;
         }
+        migrated.add(file);
         console.log(`${file}: ${r.machines.length} machine(s) migrated`);
         for (const m of r.machines)
             for (const [label, list] of [['removed transitions', m.removedTransitions], ['removed timers', m.removedTimers], ['renamed bindings', m.renamedBindings], ['copied exit actions', m.copiedExits], ['notes', m.notes]])
                 if (list.length)
                     console.log(`  ${m.operation} ${label}: ${list.join('; ')}`);
-        if (write)
-            writeFileSync(file, r.text);
     }
+    // 7.2: nothing is written unless every migrated file validates as part of the workspace given (review 1 M-2).
+    const errors = migrated.size ? await validateMigrated(texts) : new Map();
+    for (const file of migrated)
+        if (errors.get(file).length) {
+            failed = true;
+            console.log(`${file}: the migrated text does not validate, nothing written\n  ${errors.get(file).join('\n  ')}`);
+        }
+    if (write && !failed)
+        for (const file of migrated)
+            writeFileSync(file, texts.get(file));
+    else if (write && migrated.size)
+        console.log('No file written: fix the reasons above (or the 2.2 source) and run the migration again.');
     process.exitCode = failed ? 1 : 0;
 }

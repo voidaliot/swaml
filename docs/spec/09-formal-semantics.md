@@ -14,7 +14,7 @@ D; Γ ⊢ s ⇒ Γ'
 C —observation→ C'
 ```
 
-The configuration also holds sample cells S, per port occurrence and sampled member (WP6), initialized to the member's initial value. The queued messages in Q carry a retained mark (WP5): a message that a deferring state retained, recorded once by `defer` and consumed in offer-ordinal order when a state handles it (chapter 6.5).
+The configuration also holds sample cells S, per port occurrence and sampled member (WP6), initialized to the member's initial value. Queued messages in Q carry their delivery ordinal; an operation with states looks at its owned input in delivery order (chapter 6.5, SIF-R05).
 
 Values are bounded primitive scalars, nominal enums/records and fixed copied arrays; void has no inhabitant. Effect ε retains read/write/communication/suspension flags, with pure as empty. Transitive union over an acyclic call graph computes effects. The maximum class is a presentation of these flags rather than permission to erase a write beneath suspension.
 
@@ -47,7 +47,7 @@ Values are bounded primitive scalars, nominal enums/records and fixed copied arr
 | for in | Collection T[n], explicit compatible element type; copied collection; fresh element/body scope |
 | wait/receive | Suspended continuation; owned input with explicit payload binding for receive; no implicit failure/payload name |
 | interruptible | Non-stateful operation, exclusive required input; protected and handler scopes share only outer locals |
-| state guard | bool, effects pure or reads state; transitions selected in authored order |
+| state condition | bool, effects pure or reads state; an `if` in a state's braces is tested at every look of the state (SIF-R02) |
 | concurrent entry | Callee transitive effect has no write and body is not stateful |
 | attribute initializer | Explicit destination type; empty state environment; pure effect |
 
@@ -86,7 +86,7 @@ Scalar type assignability uses widening, with checked integral value conversion 
 | violation | Deadline, activation overflow, step/concurrent resource or clock failure stops the reference run and bypasses try |
 | case script | A fresh package configuration adds one serial script activation after startup releases; direct primary-subject calls borrow its actual serial context, script emissions/requests/receives use actor ports, on call replies to the pending correlation, and script completion or failure stops the run |
 
-At terminal correlation, later replies cannot change R. Inactive interrupt input is discarded observably. Receive statements preserve queued early input. A state's unhandled input leaves its entry time/timer generation intact. Set entry time at the state update, before entry actions. After entry completes, evaluate completion transitions, then select an already elapsed timer, then queued input (retained input first, in offer order); earliest expiry then declaration order determines competing timers. Deadline/timeout measurements include suspension and backlog; zero-cost interpreter steps do not supply physical cost evidence.
+At terminal correlation, later replies cannot change R. Inactive interrupt input is discarded observably. Receive statements preserve queued early input. A state's unnamed input is dropped while it waits and leaves its timers intact. A state's timers count from its arrival, before `on entry`. When a state begins to wait, timers that ran out make a look first, then queued input is looked at in delivery order (chapter 6.5, SIF-R01 to SIF-R06). Deadline/timeout measurements include suspension and backlog; zero-cost interpreter steps do not supply physical cost evidence.
 
 ## 9.4 Projection and adequacy
 

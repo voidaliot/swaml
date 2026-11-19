@@ -124,3 +124,93 @@ test('7.1 a source without machines is left alone; a migrated source keeps every
     assert.ok(machine.text.startsWith(wrap('').slice(0, wrap('').indexOf('operation run() {') + 'operation run() {'.length)));
     assert.ok(machine.text.endsWith(wrap('').slice(wrap('').indexOf('\n    }\n    schedule'))));
 });
+
+// ---------------------------------------------------------------- review 1: M-1, M-2, M-3
+const pair = (first, second, extra = '') => migrateSource(`package Sw {
+  port def In { requires event p(a: int, b: int, c: int); }
+  component def M {
+    port i: In;
+    attribute r: int = 0;
+    operation run() {
+      initial S0;
+      state S0 {
+        on receive i.p(${first.join(', ')}) when (${first[0]} > 100) to S0 { r = 1; }
+        on receive i.p(${second.join(', ')}) when (${second[0]} > ${second[1]}) to S1 { ${extra}r = ${second[0]} - ${second[1]} + ${second[2]}; fail "${second[0]} was larger"; }
+      }
+      final state S1 { }
+    }
+    schedule { on start run(); }
+  }
+}
+`, tools.parse, tools.identity);
+
+test('M-1 (review 1): bindings renamed to the first transition\'s names all at once: swapped, rotated and partially equal names (generated)', () => {
+    const names = ['a', 'b', 'c', 'x'];
+    const lists = names.flatMap(p => names.flatMap(q => names.flatMap(s => p !== q && q !== s && p !== s ? [[p, q, s]] : [])));
+    let checked = 0;
+    for (const first of lists)
+        for (const second of lists) {
+            const r = pair(first, second);
+            assert.deepEqual(r.refused, [], `${first} / ${second}`);
+            // Position k of the second transition reads the first transition's name k.
+            const expected = `} else if (${first[0]} > ${first[1]}) { r = ${first[0]} - ${first[1]} + ${first[2]}; fail "${second[0]} was larger";`;
+            assert.ok(r.text.replace(/\s+/g, ' ').includes(expected), `${first} / ${second}:\n${r.text}`);
+            checked++;
+        }
+    assert.equal(checked, 576);
+});
+
+test('M-1 (review 1): a local of the second transition named like a first binding would be captured: refused', () => {
+    const r = pair(['a', 'b', 'c'], ['b', 'c', 'x'], 'var a: int = 1; ');
+    assert.ok(r.refused.some(x => x.includes('would be captured')), JSON.stringify(r.refused));
+});
+
+test('M-3 (review 1): comments of the machine are kept; text inside string literals is not renamed', () => {
+    const r = migrateSource(`package Sw {
+  port def In { requires event p(a: int, b: int); }
+  component def M {
+    port i: In;
+    attribute r: int = 0;
+    operation run() {
+      initial S0;
+      // before S0
+      state S0 {
+        // inside S0
+        on receive i.p(a, b) when (a > 100) to S0 { r = 1; }
+        /* between transitions */
+        on receive i.p(c, d) when (c > d) to S1 { r = c; fail "c is too large"; }
+      }
+      // before S1
+      final state S1 { }
+    }
+    schedule { on start run(); }
+  }
+}
+`, tools.parse, tools.identity);
+    assert.deepEqual(r.refused, []);
+    for (const c of ['// before S0', '// inside S0', '/* between transitions */', '// before S1'])
+        assert.ok(r.text.includes(c), `${c}:\n${r.text}`);
+    assert.ok(r.text.includes('fail "c is too large";') && r.text.includes('r = a;'), r.text);
+});
+
+test('M-2 (review 1): the CLI validates the migrated text and writes nothing, exiting 1, when it does not validate', async () => {
+    const { mkdtempSync, copyFileSync, readFileSync } = await import('node:fs');
+    const { execFileSync } = await import('node:child_process');
+    const { tmpdir } = await import('node:os');
+    const { join } = await import('node:path');
+    const dir = mkdtempSync(join(tmpdir(), 'migrate-')), file = join(dir, 'dead.swaml');
+    copyFileSync(new URL('../fixtures/migration/dead-only-publish.swaml22', import.meta.url), file);
+    const before = readFileSync(file, 'utf8');
+    let status = 0, out = '';
+    try {
+        out = execFileSync(process.execPath, [new URL('../../scripts/migrate-machines.mjs', import.meta.url).pathname.replace(/^\/(\w:)/, '$1'), file, '--write'], { encoding: 'utf8' });
+    }
+    catch (e) {
+        status = e.status;
+        out = String(e.stdout);
+    }
+    assert.equal(status, 1, out);
+    assert.match(out, /does not validate, nothing written/);
+    assert.match(out, /needs an emitting operation/);
+    assert.equal(readFileSync(file, 'utf8'), before);
+});

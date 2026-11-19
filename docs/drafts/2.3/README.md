@@ -68,7 +68,7 @@ Counted from the identifiers in these drafts (ten files). The count includes gra
 | WP2 | Conditional, contextual words, association lists | 3 | 6 | 1 | 5 | 0 | 0 | 5 | 20 |
 | WP3 | `Swaml::Numeric`, `Swaml::Text`, `Swaml::Time` | 0 | 2 | 3 | 1 | 0 | 4 | 1 | 11 |
 | WP4 | Durations as values, `PolicySetting`, constant evaluator | 4 | 8 | 2 | 8 | 1 | 0 | 5 | 28 |
-| WP5 | Completion, timer guards, internal transitions, deferral | 3 | 10 | 13 | 9 | 4 | 0 | 4 | 43 |
+| WP5 | Completion, timer guards, internal transitions, deferral (superseded by states in the flow; never released) | 3 | 10 | 13 | 9 | 4 | 0 | 4 | 43 |
 | WP6 | Sampled reads, member policies | 2 | 9 | 7 | 10 | 1 | 0 | 5 | 34 |
 | WP7 | Release guards | 1 | 3 | 7 | 4 | 2 | 0 | 3 | 20 |
 | WP8 | Operation placement, `Swaml::Os`, T1–T7, in-task order, binding | 0 | 10 | 2 | 13 | 0 | 1 | 6 | 32 |

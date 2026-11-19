@@ -29,7 +29,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { canonicalJson, machineTest, normalizeAst, parsers, sourceSha256 } from './compatibility-2-2.mjs';
+import { canonicalJson, exclusionFailure, machineTest, normalizeAst, parsers, pinnedExclusions, sourceSha256 } from './compatibility-2-2.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const directory = join(root, 'test', 'fixtures', 'compatibility-2-2-extended');
@@ -127,6 +127,8 @@ export async function checkExtended() {
         + (threw.length ? ` Not compared, because 3.1.0 threw a host error: ${threw.join('; ')}.` : '')
         + `\nExcluded, 2.2 models with a state machine: ${excludedValid.length} valid (gate B runs them after migration)${excludedValid.length ? ': ' + excludedValid.join(', ') : ''}; `
         + `${excludedInvalid.length} invalid (recorded with an error; syntax errors in 2.3)${excludedInvalid.length ? ': ' + excludedInvalid.join(', ') : ''}.`;
+    const pinned = pinnedExclusions();
+    failures.push(...exclusionFailure('extended, valid', excludedValid, pinned.extendedValid), ...exclusionFailure('extended, invalid', excludedInvalid, pinned.extendedInvalid));
     return { report, failures };
 }
 /** Compares one recorded set with the current results, collecting failures and runs that threw in 3.1.0. */

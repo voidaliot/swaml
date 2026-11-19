@@ -33,6 +33,18 @@ import { fileURLToPath } from 'node:url';
 
 export const root = fileURLToPath(new URL('..', import.meta.url));
 export const fixtureDirectory = 'test/fixtures/compatibility-2-2';
+/**
+ * The exact sources and models the gates exclude because their 2.2 text holds a state machine (gate B runs them after
+ * migration), committed in excluded-machines.json: a gate that excludes anything else, or less, fails (review 1 G-1).
+ */
+export const pinnedExclusions = () => JSON.parse(readFileSync(join(root, ...fixtureDirectory.split('/'), 'excluded-machines.json'), 'utf8'));
+/** The failure when an exclusion list differs from its pinned list, or nothing. */
+export function exclusionFailure(gate, actual, pinned) {
+    const a = [...actual].sort(), p = [...pinned].sort();
+    if (JSON.stringify(a) === JSON.stringify(p))
+        return [];
+    return [`${gate}: excludes ${JSON.stringify(a.filter(x => !p.includes(x)))} beyond and misses ${JSON.stringify(p.filter(x => !a.includes(x)))} of the pinned exclusions (test/fixtures/compatibility-2-2/excluded-machines.json)`];
+}
 const fixturePath = path => join(root, ...fixtureDirectory.split('/'), ...path.split('/'));
 const read = path => readFileSync(join(root, ...path.split('/')), 'utf8');
 export const sha256 = text => createHash('sha256').update(text, 'utf8').digest('hex');
@@ -531,6 +543,7 @@ export async function checkAst({ writeProjections } = {}) {
         + (skipped.size ? ` (${[...skipped.keys()].join(', ')})` : '') + `; ${resolved} sources keep the recorded references, diagnostics and expression types (${amendments.length} amendments); ${projected} keep their view projections; ${failures.length} differences.`
         + (amendments.length ? '\nApplied amendments:\n' + amendmentReport(amendments) : '')
         + `\nExcluded (2.2 sources with a state machine; gate B runs them after migration): ${excluded.size}${excluded.size ? ` (${[...excluded].sort().join(', ')})` : ''}.`;
+    failures.push(...exclusionFailure('gate 1', excluded, pinnedExclusions().gate1));
     return { report, failures, compared: [...compared], skipped: [...skipped.keys()], excluded: [...excluded] };
 }
 
@@ -767,6 +780,10 @@ export async function checkRuns({ writeTraces } = {}) {
         + ` Excluded, 2.2 sources with a state machine (gate B runs them after migration): ${excludedCount} results of ${excluded.size} models${excluded.size ? ` (${[...excluded.keys()].sort().join(', ')})` : ''}.`
         + (uncovered.length ? ` Not in the 2.2 fixture (not compared): ${uncovered.map(s => s.id).join(', ')}.` : '')
         + ` Recorded with ${fixture.recordedWith.implementation} at ${fixture.recordedWith.commit}.`;
+    const pinned = pinnedExclusions();
+    failures.push(...exclusionFailure('gate 2', excluded.keys(), pinned.gate2));
+    if (excludedCount !== pinned.gate2Results)
+        failures.push(`gate 2: excludes ${excludedCount} results, the pinned count is ${pinned.gate2Results}`);
     return { report, failures };
 }
 

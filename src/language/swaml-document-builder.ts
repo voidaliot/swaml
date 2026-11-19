@@ -55,6 +55,9 @@ export class SwamlDocumentBuilder extends DefaultDocumentBuilder {
     }
     protected override shouldRelink(document: LangiumDocument, changedUris: Set<string>): boolean { return changedUris.size > 0 && isModel(document.parseResult.value) || super.shouldRelink(document, changedUris); }
 }
+/** 2.2 state-machine syntax: initial S; in an operation, final state, or a transition when (g) to T (a release guard written with when keeps its own hint). */
+const LEGACY_MACHINE = /\binitial\s+[A-Za-z_'][^;{}\n]*;|\bfinal\s+state\b|\bwhen\s*\([^;{}]*\)\s*to\b/;
+export const LEGACY_MACHINE_MESSAGE = 'This is swa.ml 2.2 state-machine syntax (initial S;, final state, ordered transitions with when and to T { … }), which 2.3 replaces by states that are steps of the flow; node scripts/migrate-machines.mjs <file> --write rewrites it.';
 /** The portable service supplies the same stable diagnostics to CLI and LSP hosts. */
 export class SwamlDocumentValidator extends DefaultDocumentValidator {
     /** An ambiguous short name also points at each declaration that shares it. */
@@ -69,7 +72,14 @@ export class SwamlDocumentValidator extends DefaultDocumentValidator {
         });
     }
     override async validateDocument(document: LangiumDocument, options?: ValidationOptions, cancelToken?: CancellationToken): Promise<Diagnostic[]> {
-        const diagnostics = await super.validateDocument(document, options, cancelToken);
+        let diagnostics = await super.validateDocument(document, options, cancelToken);
+        // A 2.2 state machine (initial S;, final state, transitions with when) is a syntax error in 2.3: one error that says
+        // so and names the migration replaces the parser's errors (review 1 D-1).
+        const machine = document.parseResult.parserErrors.length ? LEGACY_MACHINE.exec(document.textDocument.getText()) : null;
+        if (machine) {
+            const start = document.textDocument.positionAt(machine.index), end = document.textDocument.positionAt(machine.index + machine[0].length);
+            diagnostics = [{ severity: 1, range: { start, end }, message: LEGACY_MACHINE_MESSAGE, data: { code: 'parsing-error' }, source: 'swaml' } as Diagnostic, ...diagnostics.filter(d => d.data?.code !== 'parsing-error')];
+        }
         return diagnostics.map(d => {
             if (d.code !== undefined)
                 return d;

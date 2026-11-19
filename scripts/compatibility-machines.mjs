@@ -189,11 +189,50 @@ async function check() {
     return { failures, report: `Gate B (2.2 machines after migration): ${same} of ${Object.keys(fixture.entries).length} results identical after mapping identities, ${accepted.length} accepted difference of store and order (r10, gate C); ${failures.length} other differences.` };
 }
 
+/**
+ * The accepted behaviour changes of the migration, each pinned by one model (test/fixtures/compatibility-2-2/accepted):
+ * its 3.1.0 result (recorded-2.2.json, recorded once from 213f583) and its result now (expected-2.3.json). The gate fails
+ * when a model's result now is not the pinned one, or no longer differs from 2.2 as described, so the difference stays
+ * visible: r10 (owned input looked at in delivery order, which also decides what is dropped) changes the final store; C-3
+ * (an if test in a migrated block is no scheduling step) changes only the order across components.
+ */
+export async function acceptedDifferences({ write = false } = {}) {
+    const dir = join(root, 'test', 'fixtures', 'compatibility-2-2', 'accepted'), tools = await migrationTools(), failures = [], now = [];
+    const recorded = JSON.parse(readFileSync(join(dir, 'recorded-2.2.json'), 'utf8')).results;
+    const { EmptyFileSystem } = await import('langium');
+    const { parseHelper } = await import('langium/test');
+    const { createSwamlServices } = await import(new URL('../out/src/language/swaml-module.js', import.meta.url).href);
+    const { simulate } = await import(new URL('../out/src/simulation/simulator.js', import.meta.url).href);
+    for (const old of recorded) {
+        const migrated = migrateSource(readFileSync(join(dir, old.file), 'utf8'), tools.parse, tools.identity);
+        const { Swaml } = createSwamlServices(EmptyFileSystem);
+        const doc = await parseHelper(Swaml)(migrated.text, { validation: true, documentUri: `file:///accepted/${old.file}` });
+        const r = simulate([doc.parseResult.value], old.target, { untilNs: 80e6, maxSteps: 200000 });
+        now.push({ file: old.file, status: r.status, stores: r.stores, order: r.trace.filter(e => ['write', 'publish', 'discardInput'].includes(e.kind)).map(e => `${e.timeNs} ${e.kind} ${e.subject}`) });
+    }
+    const expectedFile = join(dir, 'expected-2.3.json');
+    if (write)
+        writeFileSync(expectedFile, JSON.stringify({ results: now }, null, 1) + '\n');
+    const expected = JSON.parse(readFileSync(expectedFile, 'utf8')).results;
+    for (const [i, r] of now.entries()) {
+        if (canonicalJson(r) !== canonicalJson(expected[i]))
+            failures.push(`accepted ${r.file}: the result is not the pinned one`);
+        const old = recorded[i], storesDiffer = canonicalJson(old.stores) !== canonicalJson(r.stores), orderDiffers = canonicalJson(old.order) !== canonicalJson(r.order);
+        if (r.file.startsWith('r10') ? !storesDiffer : storesDiffer || !orderDiffers)
+            failures.push(`accepted ${r.file}: no longer differs from 2.2 as described`);
+    }
+    return { failures, report: `Accepted differences of the migration, pinned: ${now.map(r => r.file).join(', ')}.` };
+}
+
 if (process.argv[2] === 'record')
     console.log(await record());
+else if (process.argv[2] === 'pin-accepted')
+    console.log((await acceptedDifferences({ write: true })).report);
 else {
     const { failures, report } = await check();
-    console.log(report);
+    const pinned = await acceptedDifferences();
+    failures.push(...pinned.failures);
+    console.log(report + '\n' + pinned.report);
     if (failures.length) {
         console.error(failures.join('\n'));
         process.exitCode = 1;

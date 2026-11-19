@@ -429,6 +429,31 @@ test('SIF-G01 projection: states are view candidates of their operation; each to
     assert.ok(b.some(r => r.declaration) && b.filter(r => !r.declaration).length === 2, JSON.stringify(b.map(r => [r.symbol.key, r.declaration])));
 });
 
+test('SIF-M01 projection labels the branch a leave stands in: [c] in then, [else] in a final else, the else if condition in an else if (review 1 P-1)', async () => {
+    const p = await parseSample(sampleModel(machine('run() { state a { on receive p.m(v) { if (v == 1) { to q; } else if (v == 2) { to s; } else { exit; } } } state s { on receive p.k() exit; } state q { on receive p.n() { if (v2()) exit; else to s; } } }', { ops: 'operation v2() returns bool { return x > 2; }' }), ''));
+    assert.deepEqual(p.errors.map(e => e.message), []);
+    const edges = projectModel([p.model]).edges.filter(e => e.kind === 'transition' && e.source.startsWith('Flow::c.run.')).map(e => [e.source.split('.').at(-1), e.target.split('.').at(-1), e.label]);
+    // exit; reaches the state written next (a: s; s: q); q's exit; has no next state and no edge.
+    assert.deepEqual(edges, [['a', 'q', 'p.m [v == 1]'], ['a', 's', 'p.m [v == 2]'], ['a', 's', 'p.m [else]'], ['s', 'q', 'p.k'], ['q', 's', 'p.n [else]']]);
+});
+
+test('D-1 (review 1): a file in 2.2 state-machine syntax gets one error that names the migration, and no dangling projection edge', async () => {
+    const r = await parse(`package Kp {
+  port def In { requires event a(); }
+  component def M {
+    port i: In;
+    operation run() {
+      initial S0;
+      state S0 { on receive i.a() to S1 { } }
+      final state S1 { }
+    }
+    schedule { on start run(); }
+  }
+}`);
+    assert.deepEqual(r.errors.map(e => [e.range.start.line + 1, String(e.code), e.message]), [[6, 'SW2000', 'This is swa.ml 2.2 state-machine syntax (initial S;, final state, ordered transitions with when and to T { … }), which 2.3 replaces by states that are steps of the flow; node scripts/migrate-machines.mjs <file> --write rewrites it.']]);
+    assert.deepEqual(projectModel([r.model]).edges.filter(e => e.kind === 'transition'), []);
+});
+
 test('SIF-G01 half-typed states validate, project, index, build view candidates, format-refuse and simulate-refuse without throwing', async () => {
     const other = 'package V { import Flow; }';
     for (const text of ['state', 'state s', 'state s {', 'state s { on receive p.m(v) }', 'state s { on receive p.m(v) if (v > 1) exit; }', 'state s { to }', 'state s { after }', 'state s { after 5ms }', 'state s { on entry }', 'state { exit; }', 'state s { exit }', 'state s { on receive }', 'state s { state }', 'to', 'exit', 'state s { if (x > 0) exit else to t; }',
