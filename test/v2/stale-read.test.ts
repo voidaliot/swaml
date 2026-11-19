@@ -93,7 +93,7 @@ test('SW2011 analyses one reaction as the line\'s block, exit and target entry u
     assert.deepEqual(await stale(leaving('', 'wait 1ms;', 'on entry { if (n > 0) { n = 0; } }'), ports), []);
     assert.deepEqual(await stale(leaving('on exit { n = 2; }', 'n = 0;', 'on entry { n = 3; }'), ports), []);
 });
-test('SW2011 follows a leave into on exit and the next state\'s on entry', { todo: 'the analysis stops at the leave' }, async () => {
+test('SW2011 follows a leave into on exit and the next state\'s on entry', async () => {
     assert.deepEqual(await stale(leaving('on exit { wait 1ms; }', '', 'on entry { n = 0; }'), ports), ['n = 0;']);
     assert.deepEqual(await stale(leaving('on exit { n = 0; }', 'wait 1ms;', ''), ports), ['n = 0;']);
     assert.deepEqual(await stale(leaving('', 'wait 1ms;', 'on entry { n = 0; }'), ports), ['n = 0;']);

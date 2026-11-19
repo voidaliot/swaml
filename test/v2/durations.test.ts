@@ -651,7 +651,7 @@ test('WP4-G01 WP4-G02 WP4-G03 WP4-G04 an unfinished or malformed duration keeps 
             assert.ok(kept.operations.includes('other') && kept.elements.includes('Demo'), line);
         }
 });
-nodeTest('SIF-G01 a half-typed jump standing in a state keeps the following items, states and members', { todo: 'a bare to before the next item loses the rest of the package' }, () => {
+nodeTest('SIF-G01 a half-typed jump standing in a state keeps the following items, states and members', () => {
     const { Swaml } = createSwamlServices(EmptyFileSystem);
     for (const line of ['to', 'exit; to']) {
         const now = Swaml.parser.LangiumParser.parse(state(line)), kept = keptItems(now.value as Model);

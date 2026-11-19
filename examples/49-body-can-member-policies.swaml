@@ -20,7 +20,7 @@ package BodyCan {
     provides event lockStatus(locked: bool);
   }
   component def DoorEcu {
-    /** Takes one frame and stays busy for 5 ms in the line that took it; the frames that arrive meanwhile stay in their connection queues, where each member route's policy applies, and are looked at one by one when idle waits again. */
+    /** Takes one frame and stays busy for 5 ms in the line that took it; the frames that arrive meanwhile stay in their connection queues, where each member route's policy applies, and are looked at one by one when idle waits again. The wait is what the example shows: a variable remembered by the line instead would keep only what it stores, so no frame would queue and the per-member policies (crash frames kept in order, only the newest lockStatus frame kept) would have nothing to act on. */
     reversed port canBus: BodyCanFrames;
     attribute crashes: uint = 0;
     attribute crashOrder: int = 0;

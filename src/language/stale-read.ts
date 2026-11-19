@@ -154,6 +154,14 @@ class Analysis {
     private readonly records?: Map<string, { value: Value, guards: Value[], targets: Set<string> }>;
     /** Flows at each suspension inside the protected bodies of the enclosing interrupt regions. */
     private readonly collectors: Flow[][] = [];
+    /** Flows at each exit; or to S; run by the looks of the enclosing states (SIF-R09). */
+    private readonly leaves: { flow: Flow; node: a.Exit | a.Jump }[][] = [];
+    /**
+     * The conditions under which the state just analysed was left (SIF-R09): leaving runs the line's block, then on exit,
+     * then the next state's on entry, all under the conditions of the leave. Set by a state, used by the on entry of a state
+     * written next in the same list, cleared by any other statement.
+     */
+    private leftUnder?: Value;
     private suspensions = 0;
     constructor(private readonly ctx: StaleReadContext, private readonly active: Set<Executable>, summarising = false) {
         if (summarising)
@@ -325,7 +333,9 @@ class Analysis {
         const depth = flow.guards.length;
         let current = flow;
         for (const s of list) {
-            current = this.statement(s, current);
+            const under = this.leftUnder;
+            this.leftUnder = undefined;
+            current = this.statement(s, current, under);
             // An if whose only branch returns or fails guards the rest of the block with its condition.
             if (a.isIf(s) && !s.otherwise && terminates(s.then))
                 current.guards = [...current.guards, this.conditions.get(s) ?? none()];
@@ -337,7 +347,7 @@ class Analysis {
     block(b: a.Block | a.ElseIf | undefined, flow: Flow): Flow {
         return this.statements(b?.statements ?? [], flow);
     }
-    statement(s: a.Statement | a.StateMember, flow: Flow): Flow {
+    statement(s: a.Statement | a.StateMember, flow: Flow, leftUnder?: Value): Flow {
         if (this.found)
             return flow;
         if (++this.ctx.budget.work > (this.ctx.budget.limit ?? STALE_READ_WORK_LIMIT))
@@ -403,33 +413,62 @@ class Analysis {
                 return this.block(s.body, g);
             }));
         }
+        else if (a.isExit(s) || a.isJump(s))
+            this.leaves.at(-1)?.push({ flow: flow.copy(), node: s });
         else if (a.isStateStep(s)) {
-            // States in the flow (SIF-R01, SIF-R02, SIF-R05, SIF-R09): on entry once; then looks, each possibly after a wait
-            // (a suspension), running the statements standing in the state and, when present, the event lines; leaving runs
-            // on exit. Inner states are statements of their parent's look here, which over-approximates their order.
+            // States in the flow (SIF-R01, SIF-R02, SIF-R05, SIF-R09): on entry once (under the conditions of the leave of
+            // the state written before it, if any); then looks, each possibly after a wait (a suspension), running the
+            // statements standing in the state and, when present, the event lines; each leave goes on with on exit under its
+            // own conditions. Inner states are statements of their parent's look here, which over-approximates their order.
+            const depth = flow.guards.length;
             for (const x of s.statements)
-                if (a.isStateAction(x) && x.kind === 'entry')
+                if (a.isStateAction(x) && x.kind === 'entry') {
+                    if (leftUnder)
+                        flow.guards = [...flow.guards, leftUnder];
                     flow = this.block(x.body, flow);
-            let looked = this.loop(flow, inner => {
-                this.suspend(inner);
-                let at = inner;
-                for (const item of s.statements) {
-                    if (a.isStateAction(item))
-                        continue;
-                    if (a.isEventLine(item)) {
-                        const line = at.copy();
-                        item.bindings.forEach(n => line.locals.set(n, none()));
-                        at.merge(this.block(item.body, line));
-                    }
-                    else
-                        at = this.statement(item, at);
+                    flow.guards = flow.guards.slice(0, depth);
                 }
-                return at;
-            });
+            const leaves: { flow: Flow; node: a.Exit | a.Jump }[] = [];
+            this.leaves.push(leaves);
+            let looked: Flow;
+            try {
+                looked = this.loop(flow, inner => {
+                    this.suspend(inner);
+                    let at = inner;
+                    for (const item of s.statements) {
+                        if (a.isStateAction(item))
+                            continue;
+                        if (a.isEventLine(item)) {
+                            const line = at.copy();
+                            item.bindings.forEach(n => line.locals.set(n, none()));
+                            at.merge(this.block(item.body, line));
+                        }
+                        else
+                            at = this.statement(item, at);
+                    }
+                    return at;
+                });
+            }
+            finally {
+                this.leaves.pop();
+            }
+            // What follows the state runs only after a leave: the flows at the leaves (aged by the suspensions of their look),
+            // joined, with the join of their conditions, go through on exit. The conditions of the exit; leaves (a jump goes
+            // on at its target, not here), aged by a suspension in on exit, then guard the on entry of a state written next.
+            // A state that is never left by a statement here (a named step, or left by a parent) goes on as looked.
+            const extra = (l: Flow) => l.guards.slice(depth), joined = (gs: Value[]) => gs.reduce<Value | undefined>((x, g) => x ? join(x, g) : g, undefined);
+            const flows = leaves.length ? leaves.map(l => l.flow) : [looked.copy()];
+            const left = flows.slice(1).reduce((x, y) => { x.merge(y); return x; }, flows[0].copy());
+            const under = joined(flows.flatMap(extra)), exits = joined(leaves.filter(l => a.isExit(l.node)).flatMap(l => extra(l.flow)));
+            left.guards = under ? [...left.guards.slice(0, depth), under] : left.guards.slice(0, depth);
+            let out = left;
+            const before = this.suspensions;
             for (const x of s.statements)
                 if (a.isStateAction(x) && x.kind === 'exit')
-                    looked = this.block(x.body, looked);
-            return looked;
+                    out = this.block(x.body, out);
+            this.leftUnder = exits && this.suspensions !== before ? aged(exits) : exits;
+            out.guards = out.guards.slice(0, depth);
+            return out;
         }
         else if (a.isReceive(s)) {
             // A computed timeout is evaluated before the statement suspends (WP4-S03).

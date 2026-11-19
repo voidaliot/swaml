@@ -345,7 +345,10 @@ export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
                     return base.call(this, choices) ?? block;
                 };
         }
-        const alternatives = ruleName(options.rule.name) === 'Statement' ? production(options.rule, 'Alternation', options.prodOccurrence)?.definition ?? [] : [];
+        // The items of a state's braces (StateMember) recover as statements do: a half-typed jump such as a bare to before
+        // the next item reads as an expression statement whose ; is missing, so the following items, states and members
+        // are kept (SIF-G01).
+        const alternatives = ['Statement', 'StateMember'].includes(ruleName(options.rule.name) ?? '') ? production(options.rule, 'Alternation', options.prodOccurrence)?.definition ?? [] : [];
         const assign = alternatives.findIndex(x => startsWith(x, 'Assign')), expression = alternatives.findIndex(x => startsWith(x, 'ExpressionStatement'));
         if (assign < 0 || expression < 0)
             return base;

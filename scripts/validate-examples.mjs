@@ -14,9 +14,6 @@ const documentedWarnings={
     'examples/19-interruptible-function.swaml':['SW2012 19:7'],
     // An abort that arrives outside the interruptible conversion is discarded, as the calibration bench shows.
     'examples/32-calibration-bench.swaml':['SW2012 82:9'],
-    // SelfBreaker (migrated, states in the flow): write(t) runs in the else of the trip test and writes the failure count after
-    // the store request, under that test, which the look made before the request.
-    'examples/46-breaker-internal.swaml':['SW2011 103:13'],
     'examples/showcase/autosar-adaptive-v2x-telemetry.swaml':[
         // beginOwnEvent: transmitHazard checks the signed trailer against the frame built before signing.
         'SW2011 1078:7',
@@ -24,8 +21,10 @@ const documentedWarnings={
         'SW2011 1133:9',
         // repeatHazard: re-checks the event after signing, but the identity check uses the frame built before it.
         'SW2011 1178:9',
-        // hazardLifecycle (migrated, states in the flow): the hazardCleared line's transmitHazard reaches the same pre-signing frame comparison.
-        'SW2011 1208:11',
+        // hazardLifecycle (migrated, states in the flow): Active's on entry calls beginOwnEvent under the condition of Idle's
+        // hazardDetected line, which leaves into it (SW2011 follows a leave into the next state's on entry, as 2.2 followed a
+        // transition into its target's entry), and reaches the same pre-signing frame comparison.
+        'SW2011 1198:11',
         // sampleTick: takeSample re-checks consent and the application state; the sampling divider is not re-read.
         'SW2011 1582:7',
         // The backoff wait is interruptible only while it runs; an abort outside it is deliberately discarded.
@@ -35,10 +34,7 @@ const documentedWarnings={
     // The NvM write-all cancel request only matters while the write-all runs; outside it, it is discarded.
     'examples/showcase/autosar-classic-door-controller.swaml':['SW2012 1342:7'],
     // flushWindow: storeRollup counts the rollup after the store request, under checks made before it.
-    'examples/showcase/cloud-fleet-monitoring.swaml':['SW2011 1474:7',
-        // circuit (migrated, states in the flow): write(t) runs in the else of the trip test and writes the failure count after
-        // the store request, under that test, which the look made before the request.
-        'SW2011 1430:13']};
+    'examples/showcase/cloud-fleet-monitoring.swaml':['SW2011 1473:7']};
 const actualWarnings={};for(const d of report.diagnostics.filter(d=>d.severity===2)){const file=relative(fileURLToPath(root),fileURLToPath(d.uri)).split(sep).join('/');(actualWarnings[file]??=[]).push(`${d.code} ${d.range.start.line+1}:${d.range.start.character+1}`);}
 for(const list of [...Object.values(actualWarnings),...Object.values(documentedWarnings)])list.sort();
 assert.deepEqual(actualWarnings,documentedWarnings,'Example warnings differ from the documented warnings');

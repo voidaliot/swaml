@@ -76,7 +76,7 @@ package BreakerInternal {
     }
   }
   component def SelfBreaker {
-    /** The 2.2 shape, migrated. */
+    /** The 2.2 shape, migrated: the trip test leaves, and the statements after it are the 2.2 unguarded transition. */
     reversed port stream: Stream;
     reversed port store: StoreApi;
     const attribute failureThreshold: uint = 3;
@@ -99,10 +99,9 @@ package BreakerInternal {
           if (consecutiveFailures >= failureThreshold) {
             trips = trips + 1;
             exit;
-          } else {
-            write(t);
-            to Closed;
           }
+          write(t);
+          to Closed;
         }
       }
       state Open {

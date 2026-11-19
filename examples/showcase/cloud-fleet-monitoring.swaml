@@ -1426,10 +1426,9 @@ package FleetCloud {
           if (consecutiveFailures >= failureThreshold) {
             trippingArrivals = trippingArrivals + 1;
             exit;
-          } else {
-            write(t);
-            to Closed;
           }
+          write(t);
+          to Closed;
         }
       }
       state Open {

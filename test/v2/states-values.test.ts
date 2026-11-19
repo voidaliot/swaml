@@ -134,6 +134,53 @@ test('SIF-R07 a parent\'s statements belong to the read set of the states inside
     pass(other, 'x is not read');
 });
 
+test('SIF-R05 step 3 the message picked when the wait begins is taken at its end; a delivery of the same instant is applied before the wait begins', async () => {
+    // At 0 ms the k line runs and suspends 5 ms; at 2 ms another activation writes x (in the read set): a pending wake. At
+    // 5 ms the line publishes m to the machine's own input (zero latency: a delivery event of this instant). That delivery
+    // runs between the publish step and the end of the look, so when the state begins to wait m is queued: the zero-time
+    // wait picks it, and one look serves the pending wake and m. This is the closest case to a delivery between the start
+    // and the end of the zero-time wait, which cannot happen (the mutation "re-pick replaced by the picked message", A8,
+    // is equivalent, so the rule takes the message picked when the wait begins).
+    const r = (await cases(`package Repick {
+  port def In { provides event k(); provides event go(); }
+  port def Loop { provides event m(v: uint); }
+  component def M {
+    reversed port in: In;
+    port out: Loop;
+    reversed port back: Loop;
+    attribute x: uint = 0;
+    attribute y: uint = 0;
+    attribute z: uint = 0;
+    operation poke() { x = 1; }
+    operation run() {
+      state s {
+        y = y + 1;
+        if (x > 5) exit;
+        on receive in.k() { wait 5ms; publish out.m(1); }
+        on receive back.m(v) { z = z + v; }
+      }
+    }
+    schedule { on start run(); on receive in.go() poke(); }
+  }
+  component def Bench { port out: In; }
+  component m: M;
+  component bench: Bench;
+  connect (bench.out, m.in);
+  connect (m.out, m.back);
+  associate bench to 'T';
+  test 'T' of m {
+    publish bench.out.k();
+    wait 2ms;
+    publish bench.out.go();
+    wait 10ms;
+    assert m.y == 3 and m.z == 1;
+  }
+}`)).get('T');
+    pass(r, 're-pick');
+    // The look at 5 ms is a message look: the pending wake is served by it, so no wake is recorded.
+    assert.deepEqual(wakes(r), []);
+});
+
 // ---------------------------------------------------------------- SIF-R08: the machine's own writes
 
 test('SIF-R08 the prototype own-write cases: counter, timer, parent condition, an acting statement once more, statement writes', async () => {
