@@ -1,5 +1,5 @@
 package FleetBackend {
-  /** A fleet backend in the shape of the cloud model's AlertRouter and vehicle twins. The 2.2 shape copies an array element into a local to read one of its fields; the 2.3 shape reads the member after the index, as in recent[i].vehicleId. A test may now also inspect one twin of the family twins[2] by a literal index, reading backend.twins[0].link and calling backend.twins[0].currentView(), instead of testing the twin behaviour on a separate stand-in occurrence. */
+  /** A fleet backend in the shape of the cloud model's AlertRouter and vehicle twins. The 2.2 shape copies an array element into a local to read one of its fields; the 3.0 shape reads the member after the index, as in recent[i].vehicleId. A test may now also inspect one twin of the family twins[2] by a literal index, reading backend.twins[0].link and calling backend.twins[0].currentView(), instead of testing the twin behaviour on a separate stand-in occurrence. */
   enum AlertStatus {
     open, acknowledged, resolved
   }
@@ -44,7 +44,7 @@ package FleetBackend {
       return -1;
     }
     operation findOpen(vehicle: string, kind: string) returns int {
-      /** The 2.3 shape: member access after the index. */
+      /** The 3.0 shape: member access after the index. */
       for (var i: int = 0; i < 4; i = i + 1) {
         if (recent[i].vehicleId == vehicle and recent[i].kind == kind and recent[i].status != AlertStatus.resolved) {
           return i;

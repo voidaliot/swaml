@@ -55,7 +55,7 @@ package LockDeferral {
     }
   }
   component def RememberingLock {
-    /** The 2.3 shape: every state remembers the latest request in wanted; the resting states ask it. */
+    /** The 3.0 shape: every state remembers the latest request in wanted; the resting states ask it. */
     reversed port requests: Requests;
     attribute locked: bool = false;
     attribute pulses: uint = 0;
@@ -121,7 +121,7 @@ package LockDeferral {
   associate body, discarding to 'Requests during the pulse';
   associate body, fob to 'Request order across the pulse';
   test 'Requests during the pulse' of remembering {
-    /** lock at 0 ms, then unlock at 100 ms and lock at 200 ms, both during the first pulse. The discarding lock drops both and stays locked after one pulse. The remembering lock keeps only the latest request, lock, so after the pulse ends at 250 ms it rests locked: one pulse, locked. A request queue (2.3 has no deferral) would have pulsed three times. */
+    /** lock at 0 ms, then unlock at 100 ms and lock at 200 ms, both during the first pulse. The discarding lock drops both and stays locked after one pulse. The remembering lock keeps only the latest request, lock, so after the pulse ends at 250 ms it rests locked: one pulse, locked. A request queue (3.0 has no deferral) would have pulsed three times. */
     publish body.toDiscarding.request(true);
     publish body.toRemembering.request(true);
     wait 100ms;

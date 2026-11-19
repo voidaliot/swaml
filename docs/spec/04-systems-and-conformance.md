@@ -8,7 +8,7 @@ Swaml::Platform supplies Node, Platform, Partition and Process component definit
 
 A package deployment Name of Root on PlatformRoot owns placements. deploy on nodePath places the software root; deploy childPath on nodePath places that occurrence and descendants. A more specific path overrides an ancestor; an indexed path overrides a multiplicity family path. Exact paths are unique within one deployment. Every software path and literal index resolves in that root; every target resolves to a Node occurrence of that platform root. Only components are deployed. A top-level occurrence has at most one deployment in the workspace (SW2009 on each later one, at its root reference), and a package or component run applies it to that occurrence's tree; absence remains unallocated.
 
-From 2.3 a placement may end at an operation, and a platform may declare its Cores and operating-system Tasks with `Swaml::Os` ([ADR 0025](../decisions/0025-real-time-placement-and-binding.md)). Example 52 (`examples/52-door-deployment.swaml`) is the door deployment in the shape of the showcase model; example 53 orders equal-time work on an implicit Core.
+From 3.0 a placement may end at an operation, and a platform may declare its Cores and operating-system Tasks with `Swaml::Os` ([ADR 0025](../decisions/0025-real-time-placement-and-binding.md)). Example 52 (`examples/52-door-deployment.swaml`) is the door deployment in the shape of the showcase model; example 53 orders equal-time work on an implicit Core.
 
 ```text
 deployment 'Front left door' of dcu on vehicle {
@@ -34,7 +34,7 @@ deployment 'Front left door' of dcu on vehicle {
 | WP8-M02 | **Target binding.** `spec/binding.schema.json` defines schema `swaml-binding/1` (a version of its own, independent of the language edition, so that a later release name does not invalidate binding files; decision 3, review F6) with an optional root `$schema` string for editor association, `deployment`, `costs` (`operation`, `wcetNs`, optional `bcetNs`, `source`), `budgets` (`task`, `budgetNs`) and `crossCoreLatencyNs` (`connection`, `maxNs`), and no other properties. Software operations are named by occurrence path plus operation name from the deployed root, and Tasks by platform occurrence path. Connections use the route identities of runs and traces: `owner.name`, or `owner.@connectN` for an unnamed component connection, where `N` counts every `connect` member of the owner including forwarding. A package connection is `name`, or `@packageN` when unnamed. Names use canonical spelling: a quoted name keeps its quotes (`app.'my link'`), while traces record decoded names (`app.my link`), so for a quoted name the binding identity is the trace route id with each name segment in canonical spelling. Not in schema version 1: a family form for costs (each `x[i].op` is listed), a link to a model revision (a binding resolves against the sources it is checked with) and per-entry costs (an operation released by two entries has one cost). |
 | WP8-M03 | **`swaml binding check`.** `swaml binding check <binding> <sources…>` validates the file against the schema and resolves every identity against the validated model and the named deployment. It exits 1 on a schema error, an unresolved identity or `bcetNs > wcetNs`. It reports every placed operation without a cost as a finding without failing. It computes no schedule. |
 
-Notes on the implementation (owner-reviewable, [release draft](../RELEASE_2_3.md#owner-decisions-in-wp8)): WP8-D01 names an unreleased operation only on a platform that contains a `Swaml::Os` Core or Task; on any other platform such a path keeps the 2.2 message `Unknown software occurrence {path}.` (WP8-A). T4 (WP8-S08) is decided on the property "the activation can wait apart from the idle selection of a machine": a `wait`, a `receive` statement, a request (a dotted call) or a call of an operation that can wait in that sense, in the operation's own code, its states' entry and exit actions and its transition effects; the transitions themselves are the idle selection and do not count (WP8-C). An entry's Task attributes are read from the Task occurrence after redefinition with the constant evaluator (WP4-S05).
+Notes on the implementation (owner-reviewable, [release draft](../RELEASE_3_0.md#owner-decisions-in-wp8)): WP8-D01 names an unreleased operation only on a platform that contains a `Swaml::Os` Core or Task; on any other platform such a path keeps the 2.2 message `Unknown software occurrence {path}.` (WP8-A). T4 (WP8-S08) is decided on the property "the activation can wait apart from the idle selection of a machine": a `wait`, a `receive` statement, a request (a dotted call) or a call of an operation that can wait in that sense, in the operation's own code, its states' entry and exit actions and its transition effects; the transitions themselves are the idle selection and do not count (WP8-C). An entry's Task attributes are read from the Task occurrence after redefinition with the constant evaluator (WP4-S05).
 
 ## 4.2 Requirements, cases and package links
 
@@ -119,7 +119,7 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | SW2004 | Port shape, structural compatibility, endpoints, package connection ends, aliases, per-package closure/cardinality |
 | SW2005 | Single input owner and emission provenance; interface-only components are exempt |
 | SW2006 | Calls, nested scope, effects, returns, out arguments and suspension placement |
-| SW2007 | Schedule identity, signatures, deadlines and after graph; release guards (2.3) |
+| SW2007 | Schedule identity, signatures, deadlines and after graph; release guards (3.0) |
 | SW2008 | Operations with states, structure of states, leaves and jumps (states in the flow, SIF-D01 to SIF-D03) |
 | SW2009 | Node content, deployment paths, indexes and specificity |
 | SW2010 | Requirement/case/view references, case subjects, associate, satisfy and verify links, the environment role and white-box access of case scripts |
@@ -128,14 +128,14 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | SW2013 | Complete typed policies and representable positive durations; the reference resource limits: expression nesting in the validator, the work of the stale-read analysis, expanded component occurrences per top-level occurrence and the parser's bracket nesting and stack (WP2-D05) |
 | SW2014 | Canonical formatting differs, only in explicit formatting-check mode |
 | SW2015 | Retired in 2.1 together with the 2.0 case spellings; not reported |
-| SW2016 | Warning (2.3): a computed duration without a time unit, which counts nanoseconds |
-| SW2019 | Warning (2.3): two every entries of one occurrence for the same operation with equal periods but different triggers |
-| SW2017 | Not reported: the completion-guard warnings of the 2.3 work packages (WP5-D08, WP6-D09, WP6-D10) left with the completion transitions before release (states in the flow) |
-| SW2018 | Not used from 2.3 (its 2.2 deferral forms and the warning SIF-D06 of the states in the flow candidate are removed) |
-| SW2020 | Warning (2.3): a release guard that folds to false, so its entry never runs its operation, or a replacing schedule entry without a guard that drops an inherited release guard |
-| SW2021 | Warning (2.3): an operation placement on a platform without a `Swaml::Os` task, which changes no run and which only T7 uses (WP8-D12) |
+| SW2016 | Warning (3.0): a computed duration without a time unit, which counts nanoseconds |
+| SW2019 | Warning (3.0): two every entries of one occurrence for the same operation with equal periods but different triggers |
+| SW2017 | Not reported: the completion-guard warnings of the 3.0 work packages (WP5-D08, WP6-D09, WP6-D10) left with the completion transitions before release (states in the flow) |
+| SW2018 | Not used from 3.0 (its 2.2 deferral forms and the warning SIF-D06 of the states in the flow candidate are removed) |
+| SW2020 | Warning (3.0): a release guard that folds to false, so its entry never runs its operation, or a replacing schedule entry without a guard that drops an inherited release guard |
+| SW2021 | Warning (3.0): an operation placement on a platform without a `Swaml::Os` task, which changes no run and which only T7 uses (WP8-D12) |
 
-Diagnostics added by 2.3. Message shapes are templates; implementations may add context but keep the leading clause stable. All are errors except WP4-D06, WP4-D08, WP7-D03, WP7-D04 and WP8-D12, which are warnings. A diagnostic of WP6 applies only to a reference `p.m` of a member that opts in to sampling (an attribute member with an initial value, 2.3 syntax), to behaviour inherited with such a reference or to a member-policy body, so every 2.2 source keeps its diagnostics.
+Diagnostics added by 3.0. Message shapes are templates; implementations may add context but keep the leading clause stable. All are errors except WP4-D06, WP4-D08, WP7-D03, WP7-D04 and WP8-D12, which are warnings. A diagnostic of WP6 applies only to a reference `p.m` of a member that opts in to sampling (an attribute member with an initial value, 3.0 syntax), to behaviour inherited with such a reference or to a member-policy body, so every 2.2 source keeps its diagnostics.
 
 | ID | Code | Condition | Message shape |
 | --- | --- | --- | --- |

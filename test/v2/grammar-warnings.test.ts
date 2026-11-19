@@ -1,4 +1,4 @@
-// Compatibility gate 3 of swa.ml 2.3 (rule WP1a-M03): the grammar is free of warnings. Parser construction
+// Compatibility gate 3 of swa.ml 3.0 (rule WP1a-M03): the grammar is free of warnings. Parser construction
 // in createSwamlServices must print nothing, and neither may parsing the corpus: the ALL(*) lookahead of the
 // generated parser reports an ambiguity only when a parse reaches it, on console.log. Generation warnings are
 // rejected by scripts/langium-generate.mjs, which npm run build uses.

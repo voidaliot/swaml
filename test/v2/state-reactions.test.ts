@@ -1,4 +1,4 @@
-// WP5 of swa.ml 2.3 (state reactions, ADR 0023) is replaced in place by states in the flow and never ships
+// WP5 of swa.ml 3.0 (state reactions, ADR 0023) is replaced in place by states in the flow and never ships
 // (docs/proposals/STATES_IN_FLOW_PROPOSAL.md 4.7, 4.8, 7.3). What WP5 tested and what became of it:
 // - completion transitions, guarded timers and internal transitions (a transition without a target): an if in a
 //   state's braces or in an event line's block, and an event line that does not leave; their flow-state counterparts

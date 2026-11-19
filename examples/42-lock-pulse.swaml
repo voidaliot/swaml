@@ -1,5 +1,5 @@
 package LockPulse {
-  /** A door lock actuator in the shape of the door model's LockControl. The pulse length is a calibration attribute, pulseMs. In 2.2 a state timer takes a literal only, so the locking state repeats the calibration as after 250ms and ignores a recalibration. From 2.3 the timer is after (pulseMs * 1ms): it is evaluated when the entry actions of the state finish, and each pulse uses the current calibration. Without the unit, after (pulseMs) would count nanoseconds; the validator warns about it (SW2016). */
+  /** A door lock actuator in the shape of the door model's LockControl. The pulse length is a calibration attribute, pulseMs. In 2.2 a state timer takes a literal only, so the locking state repeats the calibration as after 250ms and ignores a recalibration. From 3.0 the timer is after (pulseMs * 1ms): it is evaluated when the entry actions of the state finish, and each pulse uses the current calibration. Without the unit, after (pulseMs) would count nanoseconds; the validator warns about it (SW2016). */
   import Swaml::Time;
   port def Request {
     provides event lock();
@@ -35,7 +35,7 @@ package LockPulse {
     }
   }
   component def ComputedLock {
-    /** The 2.3 shape: the pulse follows the calibration. */
+    /** The 3.0 shape: the pulse follows the calibration. */
     reversed port requests: Request;
     attribute pulseMs: uint = 250;
     attribute pulses: uint = 0;

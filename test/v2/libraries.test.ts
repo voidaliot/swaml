@@ -1,4 +1,4 @@
-// WP3 of swa.ml 2.3: the library packages Swaml::Numeric, Swaml::Text and Swaml::Time (WP3-L01, WP3-L02,
+// WP3 of swa.ml 3.0: the library packages Swaml::Numeric, Swaml::Text and Swaml::Time (WP3-L01, WP3-L02,
 // WP3-L03, WP3-L04, WP3-M01), their runtime rules (WP3-R01 sqrt, WP3-R02 intText and realText, WP3-R03 now),
 // the effect of now() (WP3-S01, WP3-D01) and the stale-read rule for it (WP3-S02).
 import nodeTest from 'node:test';
@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { AstUtils, EmptyFileSystem, URI } from 'langium';
 import { createSwamlServices } from '../../src/language/swaml-module.js';
-import { STANDARD_LIBRARY, STANDARD_LIBRARY_2_3 } from '../../src/language/standard-library.js';
+import { STANDARD_LIBRARY, STANDARD_LIBRARY_3_0 } from '../../src/language/standard-library.js';
 import { effects, identity, isClockRead, isLibraryCopy, libraryIntrinsic, LIBRARY_INTRINSICS, signature, typeKey } from '../../src/language/semantic.js';
 import { intText, realText, squareRoot, REAL_TEXT_LIMIT, REAL_TEXT_MAX_DECIMALS, RuntimeFault } from '../../src/simulation/values.js';
 import { runCase, simulate, type SimulationOptions } from '../../src/simulation/simulator.js';
@@ -76,10 +76,10 @@ test('WP3-L03 Swaml::Time declares now() returns uint as a host intrinsic', () =
     assert.equal(libraryIntrinsic(time[0]), 'now');
     assert.equal(isClockRead(time[0]), true);
 });
-test('WP3-M01 the packages are the versioned source libraries/swaml-2.3.swaml, a separate built-in document; intrinsic bodies are documentation only', () => {
-    assert.equal(STANDARD_LIBRARY_2_3, read('libraries/swaml-2.3.swaml'));
+test('WP3-M01 the packages are the versioned source libraries/swaml-3.0.swaml, a separate built-in document; intrinsic bodies are documentation only', () => {
+    assert.equal(STANDARD_LIBRARY_3_0, read('libraries/swaml-3.0.swaml'));
     assert.equal(STANDARD_LIBRARY, read('libraries/swaml-2.0.swaml'));
-    assert.deepEqual(library().map(d => d.uri.toString()), ['builtin:/swaml-2.0.swaml', 'builtin:/swaml-2.3.swaml']);
+    assert.deepEqual(library().map(d => d.uri.toString()), ['builtin:/swaml-2.0.swaml', 'builtin:/swaml-3.0.swaml']);
     const docs = library();
     assert.deepEqual((docs[1].parseResult.value as a.Model).packages.map(p => p.name), ['Swaml::Numeric', 'Swaml::Text', 'Swaml::Time', 'Swaml::Os']);
     for (const [name, intrinsic] of Object.entries(LIBRARY_INTRINSICS)) {
@@ -125,7 +125,7 @@ test('WP3-M01 the packages are imported explicitly; qualified names need no impo
 }`), [['SW2006', 'Unknown operation intText; remote calls require an owned port.']]);
 });
 
-test('WP3-M01 a run lists the 2.3 library document among its sources only when the model uses it', async () => {
+test('WP3-M01 a run lists the 3.0 library document among its sources only when the model uses it', async () => {
     const builtins = (r: { sources: { uri: string }[] }) => r.sources.map(x => x.uri).filter(u => u.startsWith('builtin:'));
     const plain = await runStores(`package Test {
   import Swaml::Math;
@@ -134,12 +134,12 @@ test('WP3-M01 a run lists the 2.3 library document among its sources only when t
 }`);
     assert.deepEqual(builtins(plain), ['builtin:/swaml-2.0.swaml']);
     const imported = await runStores(wrap('attribute r: real = 0.0; operation go() { r = sqrt(4.0); } schedule { on start go(); }'));
-    assert.deepEqual(builtins(imported), ['builtin:/swaml-2.0.swaml', 'builtin:/swaml-2.3.swaml']);
+    assert.deepEqual(builtins(imported), ['builtin:/swaml-2.0.swaml', 'builtin:/swaml-3.0.swaml']);
     const qualified = await runStores(`package Test {
   component def D { attribute t: uint = 1; operation go() { t = Swaml::Time::now(); } schedule { on start go(); } }
   component Demo: D;
 }`);
-    assert.deepEqual(builtins(qualified), ['builtin:/swaml-2.0.swaml', 'builtin:/swaml-2.3.swaml']);
+    assert.deepEqual(builtins(qualified), ['builtin:/swaml-2.0.swaml', 'builtin:/swaml-3.0.swaml']);
     assert.deepEqual(qualified.stores.Demo, { t: 0 });
 });
 
@@ -161,10 +161,10 @@ package Test {
 }`;
     assert.deepEqual((await runStores(door('import Swaml::Math; import Types;'))).stores.Demo, { k: 10 });
     // A short call name that two visible packages declare does not resolve, exactly as for two user packages.
-    // With a 2.3 library operation among them, the SW2001 ambiguity message names both (never in a 2.2 source).
+    // With a 3.0 library operation among them, the SW2001 ambiguity message names both (never in a 2.2 source).
     const ambiguous = await parse(door('import Swaml::Math; import Types; import Swaml::Numeric;'));
     assert.deepEqual(ambiguous.errors.map(e => [e.code, e.message]), [['SW2001', 'Ambiguous name clampInt: it names operation Types::clampInt (imported) and operation Swaml::Numeric::clampInt (imported). A short name must name one visible declaration; qualify the reference (Types::clampInt or Swaml::Numeric::clampInt) or rename one declaration.']]);
-    assert.deepEqual(ambiguous.errors[0].relatedInformation?.map(r => [r.location.uri, r.message]), [[ambiguous.doc.uri.toString(), 'Declaration Types::clampInt'], ['builtin:/swaml-2.3.swaml', 'Declaration Swaml::Numeric::clampInt']]);
+    assert.deepEqual(ambiguous.errors[0].relatedInformation?.map(r => [r.location.uri, r.message]), [[ambiguous.doc.uri.toString(), 'Declaration Types::clampInt'], ['builtin:/swaml-3.0.swaml', 'Declaration Swaml::Numeric::clampInt']]);
     // Two user packages keep the 2.2 message.
     // Own package against the library.
     assert.deepEqual(await errors(`package Test {
@@ -190,7 +190,7 @@ package Test {
 }`);
     assert.deepEqual(r.errors.map(e => [e.code, e.message]), [['SW2001', 'Ambiguous name now: it names component def Test::now and operation Swaml::Time::now (imported). A short name must name one visible declaration; qualify the reference (Test::now) or rename one declaration.']]);
 });
-test('WP3-L04 a workspace that declares a package named like a 2.3 library package uses its own; the library package is hidden there', async () => {
+test('WP3-L04 a workspace that declares a package named like a 3.0 library package uses its own; the library package is hidden there', async () => {
     const r = await runStores(`package Swaml::Numeric {
   operation def sqrt(v: real) returns real { return v / 2.0; }
 }
@@ -204,7 +204,7 @@ package Test {
 }`);
     // The own sqrt halves; Swaml::Text is still the library's.
     assert.deepEqual(r.stores.Demo, { r: 4, q: 1, s: '-3' });
-    assert.deepEqual(r.sources.map(x => x.uri).filter(u => u.startsWith('builtin:')), ['builtin:/swaml-2.0.swaml', 'builtin:/swaml-2.3.swaml']);
+    assert.deepEqual(r.sources.map(x => x.uri).filter(u => u.startsWith('builtin:')), ['builtin:/swaml-2.0.swaml', 'builtin:/swaml-3.0.swaml']);
     // Library names of a hidden package are not available: minInt is not in the own Swaml::Numeric.
     assert.deepEqual(await errors(`package Swaml::Numeric { }
 package Test { import Swaml::Numeric; component def D { attribute k: int = 0; operation go() { k = minInt(1, 2); } } component Demo: D; }`), [['SW2006', 'Unknown operation minInt; remote calls require an owned port.']]);
@@ -239,7 +239,7 @@ const lspWorkspace = () => {
     const remove = async (name: string) => { const uri = URI.parse(`memory:///${name}`); files.delete(uri.toString()); await DocumentBuilder.update([], [uri]); };
     const doc = (name: string) => LangiumDocuments.getDocument(URI.parse(`memory:///${name}`))!;
     const messages = (name: string) => (doc(name).diagnostics ?? []).map(d => d.message);
-    const library = () => (LangiumDocuments.getDocument(URI.parse('builtin:///swaml-2.3.swaml'))!.parseResult.value as a.Model).packages.map(p => p.name);
+    const library = () => (LangiumDocuments.getDocument(URI.parse('builtin:///swaml-3.0.swaml'))!.parseResult.value as a.Model).packages.map(p => p.name);
     const runs = (...names: string[]) => simulate(names.map(n => doc(n).parseResult.value as a.Model), 'App::Demo', { untilNs: 1000 }).stores.Demo;
     return { services, put, remove, doc, messages, library, runs };
 };
@@ -273,11 +273,11 @@ test('WP3-L04 hiding follows the workspace through updates: add, delete (a delet
     await w.remove('user2.swaml');
     assert.deepEqual([w.library(), w.messages('app.swaml'), w.runs('app.swaml')], [['Swaml::Numeric', 'Swaml::Text', 'Swaml::Time', 'Swaml::Os'], [], { r: 4 }]);
 });
-test('WP3-L04 the index exports of the built-in 2.3 document follow the visible packages after hide and unhide (review R4)', async () => {
+test('WP3-L04 the index exports of the built-in 3.0 document follow the visible packages after hide and unhide (review R4)', async () => {
     const w = lspWorkspace(), index = w.services.shared.workspace.IndexManager, locator = w.services.Swaml.workspace.AstNodeLocator;
     const exported = () => {
-        const library = w.services.shared.workspace.LangiumDocuments.getDocument(URI.parse('builtin:///swaml-2.3.swaml'))!, model = library.parseResult.value;
-        const entries = index.allElements().filter(d => d.documentUri.toString() === 'builtin:/swaml-2.3.swaml').toArray();
+        const library = w.services.shared.workspace.LangiumDocuments.getDocument(URI.parse('builtin:///swaml-3.0.swaml'))!, model = library.parseResult.value;
+        const entries = index.allElements().filter(d => d.documentUri.toString() === 'builtin:/swaml-3.0.swaml').toArray();
         // Every exported path names the node it was exported for.
         for (const d of entries)
             assert.equal((locator.getAstNode(model, d.path) as { name?: string } | undefined)?.name, d.name, `${d.name} at ${d.path}`);
@@ -291,7 +291,7 @@ test('WP3-L04 the index exports of the built-in 2.3 document follow the visible 
     assert.deepEqual(exported(), ['Swaml::Numeric', 'Swaml::Os', 'Swaml::Text', 'Swaml::Time']);
 });
 test('WP3-M01 a library copy may differ only by a byte order mark, line ends and trailing whitespace (review R3)', async () => {
-    const text = read('libraries/swaml-2.3.swaml');
+    const text = read('libraries/swaml-3.0.swaml');
     for (const copy of ['﻿' + text, text.replaceAll('\n', '\r\n'), text + '\n\n  ', text.trimEnd()]) {
         assert.equal(isLibraryCopy(copy), true);
         assert.deepEqual((await parse(copy)).errors.map(e => e.code), ['SW2001', 'SW2001', 'SW2001', 'SW2001']);
@@ -313,15 +313,15 @@ test('WP3-L04 a call and a reference ambiguous with a library operation list the
     assert.deepEqual(r.errors.map(e => e.relatedInformation?.map(x => x.message)), [['Declaration App::now', 'Declaration Swaml::Time::now'], ['Declaration App::now', 'Declaration Swaml::Time::now']]);
 });
 test('WP3-M01 a byte-equal copy of a library document is a duplicate, hides nothing and needs no return paths for its intrinsics', async () => {
-    const copy = await parse(read('libraries/swaml-2.3.swaml'));
+    const copy = await parse(read('libraries/swaml-3.0.swaml'));
     assert.deepEqual(copy.errors.map(e => [e.code, e.message]), [['SW2001', 'Duplicate package Swaml::Numeric.'], ['SW2001', 'Duplicate package Swaml::Text.'], ['SW2001', 'Duplicate package Swaml::Time.'], ['SW2001', 'Duplicate package Swaml::Os.']]);
     const copy20 = await parse(read('libraries/swaml-2.0.swaml'));
     assert.ok(copy20.errors.every(e => e.code === 'SW2001' && String(e.message).startsWith('Duplicate package')), JSON.stringify(copy20.errors.map(e => e.message)));
-    const changed = await parse(read('libraries/swaml-2.3.swaml') + '// a note\n');
+    const changed = await parse(read('libraries/swaml-3.0.swaml') + '// a note\n');
     assert.deepEqual(changed.errors.map(e => e.code), ['SW2006', 'SW2006', 'SW2006', 'SW2006'], 'a changed copy is user source that hides the library');
 });
 
-test('WP3-L04 no corpus model becomes ambiguous or names a 2.3 library package', async () => {
+test('WP3-L04 no corpus model becomes ambiguous or names a 3.0 library package', async () => {
     const files = [...readdirSync(new URL('examples/', root)).filter(f => f.endsWith('.swaml')).map(f => 'examples/' + f), ...readdirSync(new URL('examples/showcase/', root)).filter(f => f.endsWith('.swaml')).map(f => 'examples/showcase/' + f)];
     assert.ok(files.length >= 40);
     for (const file of files) {
@@ -329,7 +329,7 @@ test('WP3-L04 no corpus model becomes ambiguous or names a 2.3 library package',
         const r = await parse(text);
         for (const d of r.doc.diagnostics ?? [])
             assert.doesNotMatch(String(d.message), /Swaml::(Numeric|Text|Time)|Ambiguous name/u, `${file}: ${String(d.message)}`);
-        // The 2.3 examples of WP3 (38 to 40) and WP4 (41 to 43) import the libraries they demonstrate; those of WP7 (50, 51)
+        // The 3.0 examples of WP3 (38 to 40) and WP4 (41 to 43) import the libraries they demonstrate; those of WP7 (50, 51)
         // record release times with now().
         if (!/examples\/3[89]-|examples\/4[0-3]-|examples\/5[01]-/u.test(file))
             assert.doesNotMatch(text, /import Swaml::(Numeric|Text|Time);/u, file);

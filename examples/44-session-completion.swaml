@@ -1,5 +1,5 @@
 package SessionCompletion {
-  /** An uplink session in the shape of the V2X model's UplinkSessionManager. In 2.2 a state machine cannot decide on a value its own entry action computed: LegacySession publishes openRequested, a second component, Transfer, performs the request and answers opened or refused, and two control events exist only to return that decision. From 2.3 a state is a step of the flow: one machine opens the session in its entry action and decides with if (sessionId > 0) to Connected; standing in the state, which its arrival look checks after the entry action finishes. A coverage loss queued during the request is taken in whatever state the decision reaches. */
+  /** An uplink session in the shape of the V2X model's UplinkSessionManager. In 2.2 a state machine cannot decide on a value its own entry action computed: LegacySession publishes openRequested, a second component, Transfer, performs the request and answers opened or refused, and two control events exist only to return that decision. From 3.0 a state is a step of the flow: one machine opens the session in its entry action and decides with if (sessionId > 0) to Connected; standing in the state, which its arrival look checks after the entry action finishes. A coverage loss queued during the request is taken in whatever state the decision reaches. */
   port def CloudApi {
     provides operation openSession(vehicle: uint) returns uint;
   }
@@ -28,7 +28,7 @@ package SessionCompletion {
     }
   }
   component def Session {
-    /** The 2.3 shape: one machine that decides on the result of its own request by a condition standing in Connecting. */
+    /** The 3.0 shape: one machine that decides on the result of its own request by a condition standing in Connecting. */
     reversed port cloud: CloudApi;
     reversed port network: Coverage;
     const attribute vehicleId: uint = 7;

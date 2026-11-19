@@ -46,7 +46,7 @@ test('ordinary public text passes', () => {
         'Banking::ATM.serve/2/then/0 and Component/schedule/0',
         'a ratio of 3:2 and the time 10:30/11:00',
         'C: drive letters without a path, and Note: text',
-        'swaml-reference/2.3 and voidaliot/swaml#12',
+        'swaml-reference/3.0 and voidaliot/swaml#12',
         'import type {Diagnostic} from \'vs' + 'code-languageserver\';',
         '"vs' + 'code-jsonrpc": "8.2.1", "vs' + 'code-uri": "3.1.0"',
         'x.replace(' + S + 'a' + S + 'g, "")',

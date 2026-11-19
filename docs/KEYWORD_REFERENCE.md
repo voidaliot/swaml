@@ -1,4 +1,4 @@
-# swa.ml 2.3 keyword reference
+# swa.ml 3.0 keyword reference
 
 Generated from spec/keywords.json and the normative grammar. Examples here are grammar fragments; complete runnable models are in the usage guide and examples. 19 contextual words remain legal names outside their positions. call appears in the on call schedule trigger and in on call branches of case scripts.
 
@@ -238,7 +238,7 @@ Used in directed port members; see its grammar contexts and normative constraint
 
 ## Keyword: if
 
-Starts a decision: an if statement, whose else may be followed by another if (else if, SIF-G01), a whole-expression conditional (WP2-G01), or (from 2.3) the release guard of an every, receive or after schedule entry (WP7-S01).
+Starts a decision: an if statement, whose else may be followed by another if (else if, SIF-G01), a whole-expression conditional (WP2-G01), or (from 3.0) the release guard of an every, receive or after schedule entry (WP7-S01).
 
 **Context:** Statements and decisions. **Grammar:** ScheduleEntry, If, ConditionalExpression. **Name use:** reserved.
 

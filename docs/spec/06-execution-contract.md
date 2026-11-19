@@ -1,6 +1,6 @@
 # 6. Reference execution contract
 
-Normative contract of [swa.ml 2.3](../LANGUAGE_SPECIFICATION.md) (unreleased candidate), profile **swaml-reference/2.3**. Every 2.2 run keeps its result and trace apart from `profile` and `languageVersion` ([E20](08-conformance-obligations.md)). A run records parser/package identity, source bytes, run target, applied deployments, options, limits, fault assumptions and an ordinal logical trace. Host adapters load files and hash sources; the language core performs neither filesystem access nor hashing.
+Normative contract of [swa.ml 3.0](../LANGUAGE_SPECIFICATION.md) (unreleased candidate), profile **swaml-reference/3.0**. Every 2.2 run keeps its result and trace apart from `profile` and `languageVersion` ([E20](08-conformance-obligations.md)). A run records parser/package identity, source bytes, run target, applied deployments, options, limits, fault assumptions and an ordinal logical trace. Host adapters load files and hash sources; the language core performs neither filesystem access nor hashing.
 
 ## 6.1 Lifecycle and time
 
@@ -22,7 +22,7 @@ One serial activation runs at a time per component occurrence. Nonsuspending loc
 
 After a successful whole operation completes and unlocks, each effective after entry releases one fresh activation. No release occurs on failure, idle state reaction or intermediate local return. Each dependent has fresh deadline, locals and snapshot/backlog accounting. Correlated service reply transport and local completion dependencies are distinct observations. Duplicate dependencies are statically invalid and the graph is acyclic.
 
-Release guards (2.3) decide at dispatch whether a released activation runs. A false guard is a skip, which counts as a completion for after successors.
+Release guards (3.0) decide at dispatch whether a released activation runs. A false guard is a skip, which counts as a completion for after successors.
 
 | ID | Rule |
 | --- | --- |
@@ -62,7 +62,7 @@ A required request creates a unique pending correlation and suspends the caller.
 
 An event is consumed by its one owner. Input for a receive statement remains queued before that statement waits. Inputs for inactive interrupt regions are discarded and observed. An armed region includes suspended local callees; matching input cancels protected frames/continuation and any pending local request, but not a remote server. Transfer stays in the same activation/deadline, preserves outer locals and committed effects, and runs the handler. Terminal interrupted correlations suppress late replies. No physical scheduling/preemption guarantee is implied.
 
-An operation with states (chapter 3.6) keeps its place in its own activation: a waiting machine (released `on start`) waits between looks without the component lock, and each look holds the lock until it ends or a block suspends. A periodic machine (released `on every P`) keeps its place between releases and looks once per release. The rules below are normative from 2.3; the [states in the flow proposal](../proposals/STATES_IN_FLOW_PROPOSAL.md) gives their reasons, examples and measurements. The 2.2 machine order (ordered transitions with exit, effect, state update and entry) no longer exists; 2.2 machines are migrated (proposal 7.1), and the migrated text gives the 2.2 results except the one accepted difference r10 (proposal 7.4, gates B and C).
+An operation with states (chapter 3.6) keeps its place in its own activation: a waiting machine (released `on start`) waits between looks without the component lock, and each look holds the lock until it ends or a block suspends. A periodic machine (released `on every P`) keeps its place between releases and looks once per release. The rules below are normative from 3.0; the [states in the flow proposal](../proposals/STATES_IN_FLOW_PROPOSAL.md) gives their reasons, examples and measurements. The 2.2 machine order (ordered transitions with exit, effect, state update and entry) no longer exists; 2.2 machines are migrated (proposal 7.1), and the migrated text gives the 2.2 results except the one accepted difference r10 (proposal 7.4, gates B and C).
 
 | ID | Rule |
 | --- | --- |
@@ -90,7 +90,7 @@ An operation with states (chapter 3.6) keeps its place in its own activation: a 
 
 Trace ordinals distinguish equal-time observations. Record initialize, release, dispatch, ready, unlock, wait/requestWait/receiveWait, messages/offers/delivery, writes, states, interruption, completion/failure, caught failures, timeout, overflow/discards, late replies and violations. Retain activation/correlation/route identities where applicable. Each observation caused by a statement or schedule entry records its statement identity as source: writes, emissions, asserts, failures and suspensions name the executing statement, a state wait or reaction its state or transition, releases and dispatches the schedule entry, and every message lifecycle observation (offer, delivery, replacement, overflow, drop, retry, age or input discard, interruption, request, reply, timeout, cancellation, late reply) the statement that emitted or requested the message. Messages and correlations keep the identity of the emitting or requesting statement. Final stores are occurrence-indexed and timing projections leave live intervals open. No-failure-observed means only that finite run under its recorded assumptions. Step, backlog and concurrent limits are finite, explicit options. Production timing, real transport guarantees and universal verification remain separate claims.
 
-New and extended observations of 2.3 appear only where new syntax is used, so a 2.2 model's trace is unchanged.
+New and extended observations of 3.0 appear only where new syntax is used, so a 2.2 model's trace is unchanged.
 
 | ID | Observation | Fields and meaning |
 | --- | --- | --- |

@@ -1,5 +1,5 @@
 package ReactionForms {
-  /** The forms of a state in the flow in one machine: conditions standing in a state, staying and leaving timers, literal and computed, conditions checked once in a timer's line, staying and leaving receive lines, and input remembered in variables while a state cannot use it (2.3 has no deferral). defer is a name, here an attribute. */
+  /** The forms of a state in the flow in one machine: conditions standing in a state, staying and leaving timers, literal and computed, conditions checked once in a timer's line, staying and leaving receive lines, and input remembered in variables while a state cannot use it (3.0 has no deferral). defer is a name, here an attribute. */
   port def Feed {
     provides event tick(n: uint);
     provides attribute level: uint;

@@ -24,7 +24,7 @@ package BreakerInternal {
     }
   }
   component def InternalBreaker {
-    /** The 2.3 shape. */
+    /** The 3.0 shape. */
     reversed port stream: Stream;
     reversed port store: StoreApi;
     const attribute failureThreshold: uint = 3;

@@ -29,7 +29,7 @@ Schedule: 'schedule' '{' entries+=ScheduleEntry* '}';
 ScheduleEntry: ('on' (kind='start' | kind='every' (period=Duration | '(' periodValue=Expression ')') | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('if' '(' guard=Expression ')')? ('deadline' (deadline=Duration | '(' deadlineValue=Expression ')'))? (concurrent?='concurrent')? ';';
 Block: '{' statements+=Statement* '}';
 Statement: LocalVariable | Assign | Send | ExpressionStatement | Return | If | While | Until | For | ForEach | Wait | Receive | Interruptible | Fail | Assert | StateStep | Leave;
-// 2.3 states in the flow (SIF-G01): a state is a statement. Its braces hold on entry/on exit, event lines and statements, then
+// 3.0 states in the flow (SIF-G01): a state is a statement. Its braces hold on entry/on exit, event lines and statements, then
 // inner states (SIF-S03 is checked by the validator). Every item stands in `statements`, so items have statement identities.
 StateStep: 'state' name=Name '{' documentation=Documentation? statements+=StateMember* '}';
 StateMember: StateAction | EventLine | LocalVariable | Assign | Send | ExpressionStatement | Return | If | While | Until | For | ForEach | Wait | Interruptible | Fail | Assert | StateStep | Leave;
@@ -46,7 +46,7 @@ Selector: '.' field=Name | '[' index=Expression ']';
 ExpressionStatement: expression=OrExpression ';';
 Send: kind=('send'|'publish') endpoint=EndpointPath '(' (args+=Expression (',' args+=Expression)*)? ')' ';';
 Return: 'return' value=Expression? ';';
-// 2.3 (SIF-G01): else if. An ElseIf holds the one If written after else, as a one-statement list, so every block walker runs
+// 3.0 (SIF-G01): else if. An ElseIf holds the one If written after else, as a one-statement list, so every block walker runs
 // it as 2.2 runs else { if … }, and its If has the identity of that statement (…/otherwise/0). The alternation stays inside
 // If, without a rule of its own, so a 2.2 else block costs the parser no extra rule call per nesting level (WP2-D05).
 If: 'if' '(' condition=Expression ')' (then=Block | then=ShortBody) ('else' (otherwise=Block | otherwise=ShortBody | otherwise=ElseIf))?;

@@ -1,6 +1,6 @@
 # swa.ml: states as steps of the flow
 
-**Status:** **final specification, revision 6**, 19 November 2026 (revision 5 with the decisions taken after four adversarial reviews of the implementation, listed in "Revision 6" below; where an older section still says otherwise, revision 6, the maintained chapters 3.6, 4 and 6.5 and RELEASE_2_3 win), from which the language implementation is built. Not yet normative: the packages of section 11 make it normative, one by one. Nothing here changes the grammar, validator, simulator, standard version or a published artefact by itself. New syntax is in `text` fences because the released parser does not accept it.
+**Status:** **final specification, revision 6**, 19 November 2026 (revision 5 with the decisions taken after four adversarial reviews of the implementation, listed in "Revision 6" below; where an older section still says otherwise, revision 6, the maintained chapters 3.6, 4 and 6.5 and RELEASE_3_0 win), from which the language implementation is built. Not yet normative: the packages of section 11 make it normative, one by one. Nothing here changes the grammar, validator, simulator, standard version or a published artefact by itself. New syntax is in `text` fences because the released parser does not accept it.
 
 Every runtime rule of this revision has been run by an interpreter prototype; "measured" means measured by one, and section 8 lists every measurement with its numbers. What remains argued and not measured is named where it is stated.
 
@@ -29,7 +29,7 @@ Every runtime rule of this revision has been run by an interpreter prototype; "m
 
 ## Revision 6: decisions after the adversarial reviews
 
-Four adversarial reviews of the implementation (flat states and migration; parents; wakes and `StateLoop`; periodic machines) found mechanisms that were unsound or could not be stated simply. Following the owner's standing rules (simplicity, minimum rules, no pointless warnings, nothing unsound in a language that cannot change later), the orchestrator decided as follows; RELEASE_2_3 records each among the owner decisions of the states section, and chapters 3.6, 4 and 6.5 state the rules.
+Four adversarial reviews of the implementation (flat states and migration; parents; wakes and `StateLoop`; periodic machines) found mechanisms that were unsound or could not be stated simply. Following the owner's standing rules (simplicity, minimum rules, no pointless warnings, nothing unsound in a language that cannot change later), the orchestrator decided as follows; RELEASE_3_0 records each among the owner decisions of the states section, and chapters 3.6, 4 and 6.5 state the rules.
 
 | Topic | Decision |
 | --- | --- |

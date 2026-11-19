@@ -165,7 +165,7 @@ function hint(actual: Token | undefined, previous: Token | undefined, expectsNam
 /**
  * WP4: a computed duration that is missing its expression, such as wait ( or after ( followed by something that
  * cannot start an expression, is explained in one line instead of the list of every expression start. Only the
- * keyword forms new in 2.3 (wait, after, every and deadline directly followed by an opening parenthesis) qualify,
+ * keyword forms new in 3.0 (wait, after, every and deadline directly followed by an opening parenthesis) qualify,
  * so no 2.2 message changes.
  */
 function computedDurationHint(actual: Token | undefined, previous: Token | undefined): string | undefined {
@@ -232,7 +232,7 @@ function memberAfterUnclosedBlock(actual: Token | undefined): boolean {
 }
 /**
  * SIF-G01: a release guard is written if (g); the WP7 candidate spelling when (g) is not accepted (when is no word of
- * 2.3). The parser's message keeps its fixed leading text and explains the spelling. A guard written after
+ * 3.0). The parser's message keeps its fixed leading text and explains the spelling. A guard written after
  * deadline or concurrent gets the same explanation instead of calling if a reserved word.
  */
 export const RELEASE_GUARD_HINT = ' A release guard is written if (condition) after the call, as in f() if (ready) deadline 2ms.';
@@ -376,7 +376,7 @@ export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
                 };
         }
         if (ruleName(options.rule.name) === 'If') {
-            // SIF-G01: else is followed by a block or, from 2.3, by an if. Anything else predicts the block, so the
+            // SIF-G01: else is followed by a block or, from 3.0, by an if. Anything else predicts the block, so the
             // block's { is reported and recovered exactly as by the 2.2 parser, whose else took a block only, instead
             // of a list of both alternatives that would also recover differently. Valid sources never reach this case.
             const choices = production(options.rule, 'Alternation', options.prodOccurrence)?.definition ?? [];

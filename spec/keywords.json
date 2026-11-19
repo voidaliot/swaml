@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0",
-  "languageVersion": "2.3",
-  "edition": "2.3",
+  "languageVersion": "3.0",
+  "edition": "3.0",
   "entries": [
     {
       "keyword": "after",
@@ -342,7 +342,7 @@
     },
     {
       "keyword": "if",
-      "meaning": "Starts a decision: an if statement, whose else may be followed by another if (else if, SIF-G01), a whole-expression conditional (WP2-G01), or (from 2.3) the release guard of an every, receive or after schedule entry (WP7-S01).",
+      "meaning": "Starts a decision: an if statement, whose else may be followed by another if (else if, SIF-G01), a whole-expression conditional (WP2-G01), or (from 3.0) the release guard of an every, receive or after schedule entry (WP7-S01).",
       "concern": "Statements and decisions",
       "normative": "docs/spec/03-behavior.md",
       "example": "('on' (kind='start' | kind='every' (period=Duration | '(' periodValue=Expression ')') | kind=('receive'|'call') endpoint=MemberPath '(' (bindings+=Name (',' bindings+=Name)*)? ')') | kind='after' predecessor=Name) operation=Name '(' (args+=Expression (',' args+=Expression)*)? ')' ('if' '(' guard=Expression ')')? ('deadline' (deadline=Duration | '(' deadlineValue=Expression ')'))? (concurrent?='concurrent')? ';';",

@@ -1,14 +1,14 @@
 import { AstUtils, DefaultDocumentBuilder, DefaultDocumentValidator, DocumentState, type LangiumDocument, type AstNode, type BuildOptions, type LinkingError, type LangiumSharedCoreServices, type ValidationOptions } from 'langium';
 import type { CancellationToken, Diagnostic } from 'vscode-languageserver';
 import { isModel, isPackage, type Model, type Package } from './generated/ast.js';
-import { LIBRARY_2_3_URI, isLibraryCopyDocument } from './semantic.js';
+import { LIBRARY_3_0_URI, isLibraryCopyDocument } from './semantic.js';
 import { MESSAGE_SPELLING, formatQualifiedName } from './names.js';
 import { BRACKET_NESTING_CLAUSE } from './swaml-syntax.js';
 /** The packages of each built-in document as loaded, before any is hidden. */
 const loadedPackages = new WeakMap<Model, Package[]>();
 /**
- * WP3-L04: a workspace that declares a package named like a 2.3 library package (Swaml::Numeric, Swaml::Text,
- * Swaml::Time) uses its own; the library package is not available there. The built-in 2.3 document then lists
+ * WP3-L04: a workspace that declares a package named like a 3.0 library package (Swaml::Numeric, Swaml::Text,
+ * Swaml::Time) uses its own; the library package is not available there. The built-in 3.0 document then lists
  * only its other packages, so scope, linking, resolution, validation and runs see exactly the 2.2 workspace.
  * A byte-equal copy of a built-in library is not a user package and hides nothing (it is a duplicate, as a copy of
  * the 2.2 library is). Hiding is workspace-global, as package resolution and duplicate detection are, and a
@@ -23,7 +23,7 @@ export function hideShadowedLibraryPackages(documents: Iterable<LangiumDocument>
                 own.add(p.name);
     for (const d of all) {
         const model = d.parseResult.value;
-        if (d.uri.toString() !== LIBRARY_2_3_URI || !isModel(model))
+        if (d.uri.toString() !== LIBRARY_3_0_URI || !isModel(model))
             continue;
         const loaded = loadedPackages.get(model) ?? loadedPackages.set(model, [...model.packages]).get(model)!;
         const visible = loaded.filter(p => !own.has(p.name));
@@ -57,7 +57,7 @@ export class SwamlDocumentBuilder extends DefaultDocumentBuilder {
 }
 /** 2.2 state-machine syntax: initial S; in an operation, final state, or a transition when (g) to T (a release guard written with when keeps its own hint). */
 const LEGACY_MACHINE = /\binitial\s+[A-Za-z_'][^;{}\n]*;|\bfinal\s+state\b|\bwhen\s*\([^;{}]*\)\s*to\b/;
-export const LEGACY_MACHINE_MESSAGE = 'This is swa.ml 2.2 state-machine syntax (initial S;, final state, ordered transitions with when and to T { … }), which 2.3 replaces by states that are steps of the flow; swaml migrate <file> rewrites it.';
+export const LEGACY_MACHINE_MESSAGE = 'This is swa.ml 2.2 state-machine syntax (initial S;, final state, ordered transitions with when and to T { … }), which 3.0 replaces by states that are steps of the flow; swaml migrate <file> rewrites it.';
 /** The portable service supplies the same stable diagnostics to CLI and LSP hosts. */
 export class SwamlDocumentValidator extends DefaultDocumentValidator {
     /** An ambiguous short name also points at each declaration that shares it. */
@@ -73,7 +73,7 @@ export class SwamlDocumentValidator extends DefaultDocumentValidator {
     }
     override async validateDocument(document: LangiumDocument, options?: ValidationOptions, cancelToken?: CancellationToken): Promise<Diagnostic[]> {
         let diagnostics = await super.validateDocument(document, options, cancelToken);
-        // A 2.2 state machine (initial S;, final state, transitions with when) is a syntax error in 2.3: one error that says
+        // A 2.2 state machine (initial S;, final state, transitions with when) is a syntax error in 3.0: one error that says
         // so and names the migration replaces the parser's errors (review 1 D-1).
         const machine = document.parseResult.parserErrors.length ? LEGACY_MACHINE.exec(document.textDocument.getText()) : null;
         if (machine) {

@@ -1,6 +1,6 @@
 # ADR 0025: Release guards, operation placement, tasks and the target binding
 
-Status: accepted for the unreleased standard 2.3, 18 November 2026. Owner approval of the 2.3 scope and decisions D9, D10, D11 and D13 of the [2.3 proposal](../proposals/NEXT_MINOR_PROPOSAL.md). The owner decided the state-machine rule T4. Not implemented: each rule lands with the work package named in the [2.3 chapter drafts](../drafts/2.3/README.md). This ADR is normative where it differs from the proposal. It amends chapter 4.1 of the specification, which leaves core and task allocation to target translation. Published editions remain unchanged. WP7 implements B19 (chapters 3.5, 6.2, 6.6 and 6.7, rules WP7-*); see *Implementation in WP7*.
+Status: accepted for the unreleased standard 3.0, 18 November 2026. Owner approval of the 3.0 scope and decisions D9, D10, D11 and D13 of the [2.3 proposal](../proposals/NEXT_MINOR_PROPOSAL.md). The owner decided the state-machine rule T4. Not implemented: each rule lands with the work package named in the [2.3 chapter drafts](../design/3.0-drafts/README.md). This ADR is normative where it differs from the proposal. It amends chapter 4.1 of the specification, which leaves core and task allocation to target translation. Published editions remain unchanged. WP7 implements B19 (chapters 3.5, 6.2, 6.6 and 6.7, rules WP7-*); see *Implementation in WP7*.
 
 Items: B19 mode-dependent schedules, B17 operation-level deployment, B18 tasks (Tier 1). Deferred: B18 timed run and B20 latency chains (Tier 2). Work packages: WP7 (B19, after WP4), WP8 (B17, B18, after WP4, WP7 and tool fix A4).
 
@@ -19,8 +19,8 @@ The review (findings 2, 3 and 13) found:
 - event entries landed on periodic tasks;
 - suspending operations landed on basic tasks;
 - in-task order and preemptability were missing;
-- without a binding schema, the 2.3 door schedule could not be checked by any 2.3 tool;
-- the closing claim of the proposal overstated what 2.3 derives.
+- without a binding schema, the 3.0 door schedule could not be checked by any 3.0 tool;
+- the closing claim of the proposal overstated what 3.0 derives.
 
 ## Decision
 
@@ -83,7 +83,7 @@ package Swaml::Os {
 | T1 | Priorities are unique among the Tasks of one Core (D11). |
 | T2 | A Task with `periodNs > 0` receives only `every` entries whose period is a positive multiple of `periodNs`, plus `after` successors of entries on the same Task. Event entries (`receive`, `call`, `start`) go to Tasks with `periodNs = 0`. |
 | T3 | An `isr` Task has `periodNs = 0`, is preemptive, and receives only `receive` entries and their `after` successors. |
-| T4 | An activation that may suspend is placed only on an `extended` Task. Suspension here means a transitive suspend effect: `wait`, a request, a `receive` statement or suspending callees. A stateful operation may sit on a `basic` Task only if none of its reactions can suspend, counting the entry actions, exit actions, transition effects (including internal and completion effects) and their callees. Otherwise it needs an `extended` Task. The idle wait between reactions does not count: each reaction runs to completion and maps to one activation of a basic task. **Amended by states in the flow ([proposal](../proposals/STATES_IN_FLOW_PROPOSAL.md) section 9, 2.3):** the 2.2 stateful operation no longer exists, and the exception for its idle wait is withdrawn. A waiting machine (an operation with states released `on start`) waits between looks inside its one activation, which is a suspension: it is placed only on an `extended` Task. A periodic machine (released `on every P`) never waits inside a release; its place, locals, loops and timer starts live between releases, and it may be placed on a `basic` Task when nothing it runs in a release can suspend (no `wait`, request or suspending call in any item, entry, exit, line block or flow between states, transitively). |
+| T4 | An activation that may suspend is placed only on an `extended` Task. Suspension here means a transitive suspend effect: `wait`, a request, a `receive` statement or suspending callees. A stateful operation may sit on a `basic` Task only if none of its reactions can suspend, counting the entry actions, exit actions, transition effects (including internal and completion effects) and their callees. Otherwise it needs an `extended` Task. The idle wait between reactions does not count: each reaction runs to completion and maps to one activation of a basic task. **Amended by states in the flow ([proposal](../proposals/STATES_IN_FLOW_PROPOSAL.md) section 9, 3.0):** the 2.2 stateful operation no longer exists, and the exception for its idle wait is withdrawn. A waiting machine (an operation with states released `on start`) waits between looks inside its one activation, which is a suspension: it is placed only on an `extended` Task. A periodic machine (released `on every P`) never waits inside a release; its place, locals, loops and timer starts live between releases, and it may be placed on a `basic` Task when nothing it runs in a release can suspend (no `wait`, request or suspending call in any item, entry, exit, line block or flow between states, transitively). |
 | T5 | If `responseNs > 0`, every entry on the Task that has an explicit deadline has `deadline ≥ responseNs`. |
 | T6 | Complete mapping: every schedule entry of the deployed tree is on a Task. |
 | T7 | Same Core per component occurrence (above). |
@@ -107,7 +107,7 @@ package Swaml::Os {
 
 ### Target binding (B18, WP8)
 
-`spec/binding.schema.json` defines `"schema": "swaml-binding/1"` (first written `swaml-binding/2.3`; decoupled from the language edition after the WP8 review, F6, so that renaming the release does not invalidate binding files; a root `$schema` string for editors is allowed):
+`spec/binding.schema.json` defines `"schema": "swaml-binding/1"` (first written `swaml-binding/3.0`; decoupled from the language edition after the WP8 review, F6, so that renaming the release does not invalidate binding files; a root `$schema` string for editors is allowed):
 - `deployment`: the deployment's qualified identity;
 - `costs`: per operation occurrence `wcetNs`, optional `bcetNs ≤ wcetNs` and a `source` reference;
 - `budgets`: per Task occurrence, `budgetNs`;
@@ -125,14 +125,14 @@ No other properties are allowed.
 - exits 1 on a schema error, an unresolved identity or `bcetNs > wcetNs`;
 - reports every placed operation without a cost as a finding without failing.
 
-It computes no schedule in 2.3.
+It computes no schedule in 3.0.
 
-### Tier 2 (not in 2.3)
+### Tier 2 (not in 3.0)
 
 - **Timed profile.** `swaml-reference-timed/2.4` uses the binding for fixed-priority scheduling per Core, preemption at statement boundaries, budget and deadline violations and cross-core blocking. Its results are evidence under the stated assumptions.
 - **Latency chains (B20).** Deferred. A declarative chain needs causal correlation across sampling activations and an analysis level with stated assumptions. With `now()` (ADR 0022) a test can already assert a bounded latency.
 
-### What 2.3 derives for a door ECU
+### What 3.0 derives for a door ECU
 
 **Statically checked:**
 - the task set per Core: kind, priority, preemptability, and period or response bound;
@@ -163,7 +163,7 @@ It computes no schedule in 2.3.
 - **Observations.** The activation exists from its release: a skipped serial release records `release`, `dispatch`, `unlock`, `skip` (a concurrent one has no `unlock`), and a receive entry adds `discardInput`; no argument or operation observation belongs to it. A skip replaces `complete` and, like it, follows the activation's `unlock`; a skipped receive entry's `discardInput` (reason `releaseGuard`, with `activation` and `message`) directly follows its `skip`. A failing guard's `failure` names the entry as `source` when its own expression fails, and the failing statement when the failure happens inside an operation the guard calls, exactly as for a dispatch argument (owner decision H in the WP7 review, replacing the draft's entry-only source).
 - **Diagnostics.** A suspending, remote or unresolved call in a guard is reported by the existing call rules only; the guard rule reports calls that write or communicate. A guard on a `start` or `call` entry is reported once, where it is written, and is not typed.
 - **Inherited guards.** Like the arguments, a guard of an inherited entry is typed in every effective structure, so a redefined helper that writes is an error before any run; a guard whose document has syntax errors is typed nowhere until its syntax is fixed: the validation of a document with syntax errors reports only those errors, and a structure in another document that inherits the entry skips the guard, so a valid file that specializes it gets no error for the unfinished guard. An entry with the same trigger and operation in a specialization or usage replaces the inherited entry with its guard (WP7-S03).
-- **Independent of state machines.** Release guards apply to schedule entries only. They use none of the WP5 state forms (completion transitions, internal reactions, deferral); an operation with states (states in the flow, 2.3) has exactly one `on start` entry, which cannot carry a guard, or one `on every` entry, whose guard is evaluated at each release by the machine's one persistent activation; a false guard is a `skip` of that release, recorded after the activation's `unlock` like every skip, and followed by its wait for the next release (`receiveWait`).
+- **Independent of state machines.** Release guards apply to schedule entries only. They use none of the WP5 state forms (completion transitions, internal reactions, deferral); an operation with states (states in the flow, 3.0) has exactly one `on start` entry, which cannot carry a guard, or one `on every` entry, whose guard is evaluated at each release by the machine's one persistent activation; a false guard is a `skip` of that release, recorded after the activation's `unlock` like every skip, and followed by its wait for the next release (`receiveWait`).
 
 ## Implementation in WP8
 
@@ -187,7 +187,7 @@ It computes no schedule in 2.3.
 - **Per-entry placement (D13 alternative).** It needs entry names, which do not exist. Wrapper operations cover the showcase.
 - **Cross-core operations of one component.** This is cross-core blocking under one serial lock, with no defined semantics before Tier 2 (finding 3a).
 - **Releasing event entries at the next grid point of a periodic task.** It hides queueing delay in the release semantics; T2 makes the mapping explicit instead (finding 3b).
-- **State machines on extended tasks only.** (Superseded for 2.3 by states in the flow: waiting machines are on extended tasks only; periodic machines keep the rule below.) Rejected by the owner's decision: a machine whose reactions never suspend runs each reaction to completion like a basic-task runnable. A machine with a suspending reaction (door `ModeManager`, whose entry action requests `nvm.writeAll()`) needs an extended task under T4.
+- **State machines on extended tasks only.** (Superseded for 3.0 by states in the flow: waiting machines are on extended tasks only; periodic machines keep the rule below.) Rejected by the owner's decision: a machine whose reactions never suspend runs each reaction to completion like a basic-task runnable. A machine with a suspending reaction (door `ModeManager`, whose entry action requests `nvm.writeAll()`) needs an extended task under T4.
 - **Activating the T rules only when something is placed on a Task** (first WP0 draft). Re-pointing every placement to a Core silently switched off T1–T6 (WP0 review finding 3).
 - **Separate binding identities for connections** (first WP0 draft, `owner@connectN` counting connections only). They disagreed with trace route identities whenever a forwarding connect precedes (WP0 review finding 4).
 - **Leaving the in-task order to insertion order.** A generator must still decide it (finding 3d). Deploy order expresses it with existing syntax.

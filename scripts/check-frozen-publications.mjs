@@ -84,7 +84,7 @@ export const frozenCopies = new Map([
             'scripts/publication_2_2_sources.py', 'scripts/publication_archive.py', 'scripts/test-publication-2-2.py', 'scripts/ci-pdf-requirements.txt',
             'scripts/standard-version.mjs'),
         directories: ['docs/figures/2.2/', 'docs/notation/2.2/', 'examples/simulation/2.2/'], count: 109,
-        // From the 2.3 allocation (WP1a, docs/RELEASE_2_3.md) on, the shared notation, figure and reference builders are 2.3 tools.
+        // From the 2.3 allocation (WP1a, docs/RELEASE_3_0.md) on, the shared notation, figure and reference builders are 2.3 tools.
         exceptions: Object.fromEntries(maintainedTooling.map(path => [path, path === 'scripts/build-reference.mjs'
             ? later('the 2.3 allocation (WP1a), which marks the generated 2.3 book as an unreleased draft')
             : 'maintained 2.3 tooling from the 2.3 allocation (WP1a) on; later 2.3 work may change it, and the published PDF keeps the released bytes']))}],

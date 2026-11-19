@@ -1,6 +1,6 @@
 # swa.ml 2.3 chapter drafts
 
-**Status: draft for the unreleased standard 2.3. Not normative for any published edition.** These files state the changes that work packages WP1–WP8 make to the normative chapters. They are the checklist that implementers and reviewers tick off. The decisions behind them are [ADR 0022](../../decisions/0022-values-places-and-expressions.md), [ADR 0023](../../decisions/0023-state-reactions.md), [ADR 0024](../../decisions/0024-communication-and-package-links.md) and [ADR 0025](../../decisions/0025-real-time-placement-and-binding.md); the plan is in [the 2.3 release draft](../../RELEASE_2_3.md). Where a draft and an ADR differ, the ADR wins and the draft is corrected.
+**Status: draft for the unreleased standard 2.3. Not normative for any published edition.** These files state the changes that work packages WP1–WP8 make to the normative chapters. They are the checklist that implementers and reviewers tick off. The decisions behind them are [ADR 0022](../../decisions/0022-values-places-and-expressions.md), [ADR 0023](../../decisions/0023-state-reactions.md), [ADR 0024](../../decisions/0024-communication-and-package-links.md) and [ADR 0025](../../decisions/0025-real-time-placement-and-binding.md); the plan is in [the 2.3 release draft](../../RELEASE_3_0.md). Where a draft and an ADR differ, the ADR wins and the draft is corrected.
 
 ## Why separate files
 
@@ -10,7 +10,7 @@ WP1a has allocated the candidate. `scripts/build-reference.mjs --check` now rege
 
 ## How a work package uses these drafts
 
-1. Two small PRs come before WP1 ([release draft](../../RELEASE_2_3.md#version-allocation)); both are done:
+1. Two small PRs come before WP1 ([release draft](../../RELEASE_3_0.md#version-allocation)); both are done:
    - **P0** switches the 2.2 PDF check to archive mode. It is a tooling change with no language change.
    - **WP1a** allocates the unreleased 2.3 candidate, following [VERSIONING.md](../../VERSIONING.md):
      - `spec/standard.json` 2.3;

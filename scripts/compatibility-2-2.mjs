@@ -1,7 +1,7 @@
-// Compatibility gates 1 and 2 of swa.ml 2.3 (rules WP1a-M01 and WP1a-M02 of docs/drafts/2.3/grammar.md):
+// Compatibility gates 1 and 2 of swa.ml 3.0 (rules WP1a-M01 and WP1a-M02 of docs/design/3.0-drafts/grammar.md):
 // every valid 2.2 source keeps its AST and its behaviour. Both compare with fixtures under
 // test/fixtures/compatibility-2-2/, recorded once with the 3.1.0 implementation (standard 2.2, profile
-// swaml-reference/2.2) at the commit each fixture names, before any 2.3 change.
+// swaml-reference/2.2) at the commit each fixture names, before any 3.0 change.
 //
 //   node scripts/compatibility-2-2.mjs ast             gate 1 (also run by test/v2/compatibility-2-2.test.ts)
 //   node scripts/compatibility-2-2.mjs runs            gate 2 (run by npm run check)
@@ -19,7 +19,7 @@
 //
 // States in the flow (docs/proposals/STATES_IN_FLOW_PROPOSAL.md 7.4): these gates are gate A, the 2.2 sources without a
 // 2.2 state machine. A recorded source whose 2.2 AST holds a machine (an OperationBody with states, containsMachine) is
-// excluded from every comparison here and named in the report: 2.3 no longer parses the 2.2 machine syntax, and gate B
+// excluded from every comparison here and named in the report: 3.0 no longer parses the 2.2 machine syntax, and gate B
 // (scripts/compatibility-machines.mjs) runs those sources after migration instead. The recorded fixtures are unchanged.
 //
 // Recorded sources: a fixture names the SHA-256 of every source it was recorded from. A gate always checks
@@ -234,28 +234,28 @@ export async function analyser() {
 
 /**
  * Amendments (test/fixtures/compatibility-2-2/amendments.json) are the only reviewed way to change a
- * recorded gate-1 expectation of one file, when a 2.3 rule changes it deliberately:
+ * recorded gate-1 expectation of one file, when a 3.0 rule changes it deliberately:
  * - a diagnostic's message, keeping its severity, code and range;
  * - the removal of a warning (current: null) that a cited rule retires;
  * - an expression type, to another known type.
  * Each names the file, the kind, the exact recorded value, the exact new value, the rule that requires the
- * change (a WPn-Kxx identifier defined in the 2.3 drafts or maintained chapters, never WP1a, or an ADR that
+ * change (a WPn-Kxx identifier defined in the 3.0 drafts or maintained chapters, never WP1a, or an ADR that
  * exists under docs/decisions) and a reason. A 2.2 source never gains an error or any new diagnostic, never
  * loses an error and never changes a diagnostic's severity, code or range: none of this is amendable.
  * References are never amended: a 2.2 name keeps its target. Behaviour (gate 2) is never amended either: no
- * 2.3 rule changes the result or trace of a 2.2 source, and a changed source keeps its recorded bytes under
+ * 3.0 rule changes the result or trace of a 2.2 source, and a changed source keeps its recorded bytes under
  * sources/.
  */
 const DIAGNOSTIC = /^(error|warning|information|hint) (\S+) (\d+:\d+-\d+:\d+) (.*)$/su;
 /**
  * The rule identifiers and ADRs an amendment may cite: every WPn-Kxx identifier at the start of a table row
- * of the 2.3 drafts, the maintained chapters or the specification (where rules move as packages land them),
+ * of the 3.0 drafts, the maintained chapters or the specification (where rules move as packages land them),
  * and every ADR number with a file under docs/decisions.
  */
 export function knownRules(base = root) {
     const rules = new Set(), adrs = new Set(), withdrawn = new Set();
     const markdown = directory => existsSync(join(base, ...directory.split('/'))) ? readdirSync(join(base, ...directory.split('/'))).filter(f => f.endsWith('.md')).map(f => `${directory}/${f}`) : [];
-    for (const path of [...markdown('docs/drafts/2.3'), ...markdown('docs/spec'), 'docs/LANGUAGE_SPECIFICATION.md'].filter(p => existsSync(join(base, ...p.split('/')))))
+    for (const path of [...markdown('docs/design/3.0-drafts'), ...markdown('docs/spec'), 'docs/LANGUAGE_SPECIFICATION.md'].filter(p => existsSync(join(base, ...p.split('/')))))
         for (const match of readFileSync(join(base, ...path.split('/')), 'utf8').matchAll(/^\| (WP\d+[a-z]?-[GSRDTLM]\d{2}) \|([^\r\n]*)/gmu))
             // Every cell after the identifier counts: a diagnostic row puts its code before the rule text.
             (match[2].split(/(?<!\\)\|/u).some(cell => WITHDRAWN.test(cell.trim())) ? withdrawn : rules).add(match[1]);
@@ -267,7 +267,7 @@ export function knownRules(base = root) {
             adrs.add(`ADR ${file.slice(0, 4)}`);
     return { rules, adrs, withdrawn };
 }
-/** The marker of a deferred or rejected rule: a cell of its row after the identifier (the rule text, or the condition of a diagnostic row) starts with *Deferred.* or *Rejected.* (docs/drafts/2.3/README.md). */
+/** The marker of a deferred or rejected rule: a cell of its row after the identifier (the rule text, or the condition of a diagnostic row) starts with *Deferred.* or *Rejected.* (docs/design/3.0-drafts/README.md). */
 export const WITHDRAWN = /^\*(?:Deferred|Rejected)\.\*/u;
 /** One line per applied amendment for the gate-1 report: file, rule, kind and the recorded and current values. */
 export function amendmentReport(amendments) {
@@ -284,7 +284,7 @@ export function amendmentProblems(amendments, files, known = knownRules()) {
         else if (known.withdrawn?.has(a.rule))
             problems.push(`${at}: ${a.rule} is marked deferred or rejected and cannot justify an amendment`);
         else if (!known.rules.has(a.rule) && !known.adrs.has(a.rule))
-            problems.push(`${at}: needs the rule identifier (WPn-Kxx) defined in the 2.3 drafts or chapters, or an existing ADR (ADR 00nn), that requires it; ${JSON.stringify(a.rule ?? null)} is neither`);
+            problems.push(`${at}: needs the rule identifier (WPn-Kxx) defined in the 3.0 drafts or chapters, or an existing ADR (ADR 00nn), that requires it; ${JSON.stringify(a.rule ?? null)} is neither`);
         if (typeof a.reason !== 'string' || !a.reason.trim())
             problems.push(`${at}: needs a reason`);
         if (typeof a.recorded !== 'string' || a.recorded === a.current || !(typeof a.current === 'string' || a.current === null && a.kind === 'diagnostic'))

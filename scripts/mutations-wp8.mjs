@@ -19,7 +19,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const P = 'out/src/language/placement.js', V = 'out/src/language/swaml-validator.js', S = 'out/src/simulation/simulator.js', B = 'out/src/language/binding.js', C = 'out/src/cli/binding.js', TM = 'out/src/simulation/timing.js';
 const ONLY = process.argv.slice(2).find(a => !a.startsWith('--'))?.split(',');
 const MUTATIONS = [
-    ['M1', 'osRole by name: a user Swaml::Os Task counts', P, ' && AstUtils.getDocument(x).uri.toString() === LIBRARY_2_3_URI)', ')'],
+    ['M1', 'osRole by name: a user Swaml::Os Task counts', P, ' && AstUtils.getDocument(x).uri.toString() === LIBRARY_3_0_URI)', ')'],
     ['M2', 'WP8-D01 message on every platform (literal draft)', V, 'if (placed?.unreleased && plan.coreRule)', 'if (placed?.unreleased)'],
     ['M3', 'occurrence placement overrides operation placement', P, '(family !== undefined ? byOperation.get(`${family}\\u0000${entry.operation}`) : undefined) ?? occurrence;', 'undefined ?? occurrence;'],
     ['M4', 'indexed path does not override its family', P, 'const found = byPath.get(path) ?? (family !== undefined ? byPath.get(family) : undefined)', 'const found = (family !== undefined ? byPath.get(family) : undefined) ?? byPath.get(path)'],

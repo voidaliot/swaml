@@ -12,7 +12,7 @@ const insideConditional = (e: AstNode): boolean => { for (let n = e.$container; 
 /** The name of the attribute, requirement attribute or policy setting whose initializer contains e. */
 const initialized = (e: AstNode): string => { for (let n: AstNode | undefined = e; n; n = n.$container) if (a.isAttribute(n) || a.isPolicySetting(n) || a.isPortMember(n)) return n.name; return ''; };
 const isExpression = (n: unknown): n is a.Expression => !!n && typeof n === 'object' && EXPRESSION_TYPES.has((n as AstNode).$type);
-import { flowStates, innerStates, stateItems, forwardedPorts, isSampledMember, memberPolicy, memberQos, optsIn, sampledMembers, sampledReadForm, sampledReads, useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_2_3_URI, container, constantValue, displayText, entryDeadline, entryPeriod, representableDuration, settingDuration, triggerIdentity, type ConstantProblem } from './semantic.js';
+import { flowStates, innerStates, stateItems, forwardedPorts, isSampledMember, memberPolicy, memberQos, optsIn, sampledMembers, sampledReadForm, sampledReads, useEffectCache, isClockRead, declaredIntrinsic, LIBRARY_3_0_URI, container, constantValue, displayText, entryDeadline, entryPeriod, representableDuration, settingDuration, triggerIdentity, type ConstantProblem } from './semantic.js';
 import { ambiguousNameMessage } from './swaml-scope.js';
 import type { Occurrence } from './semantic.js';
 import { coreText, deploymentPlan, durationText, entryLabel, pathText, predecessors, statementText, suspendSite, type DeploymentPlan, type EntryPlacement, type OsTask } from './placement.js';
@@ -309,7 +309,7 @@ export class SwamlValidator {
             if (!['delivery', 'ordering', 'capacity', 'overflow', 'requestTimeout', 'maxLatency', 'maxAge'].includes(s.name))
                 this.report(s, 'SW2013', `Unknown setting ${s.name}.`);
             // A duration literal value is the 2.2 duration setting and keeps its 2.2 rules and messages (WP4-M01). Only a
-            // value that contains a duration literal inside a larger expression is new in 2.3 (WP4-S02, WP4-D01).
+            // value that contains a duration literal inside a larger expression is new in 3.0 (WP4-S02, WP4-D01).
             const literal = settingDuration(s), computed = !literal && nodes(s.value).some(a.isDuration), timeout = ['requestTimeout', 'maxLatency', 'maxAge'].includes(s.name);
             if (timeout && computed)
                 this.report(s, 'SW2013', `${s.name} must be a duration literal such as 1s.`);
@@ -374,7 +374,7 @@ export class SwamlValidator {
     }
     /**
      * Definite assignment of out parameters, or of the out bindings of an on call branch of a case script
-     * (binding). For a binding only the 2.3 checks apply (WP1-S07): a place write, and a read with
+     * (binding). For a binding only the 3.0 checks apply (WP1-S07): a place write, and a read with
      * selectors, need the whole binding assigned first; 2.2 reads and replies keep their 2.2 rules.
      */
     private outFlow(op: Executable | undefined, c?: Structure, binding?: { outs: string[]; body: a.Block }): void {
@@ -509,8 +509,8 @@ export class SwamlValidator {
             check(op, end);
     }
     /**
-     * The visible declarations of an unresolved short call name when several share it and one of them is a 2.3 library
-     * declaration (WP3-L04). A 2.2 source cannot import the 2.3 packages, so it never gets this.
+     * The visible declarations of an unresolved short call name when several share it and one of them is a 3.0 library
+     * declaration (WP3-L04). A 2.2 source cannot import the 3.0 packages, so it never gets this.
      */
     private libraryAmbiguity(call: a.CallExpression): AstNode[] | undefined {
         const pkg = owner(call, a.isPackage);
@@ -519,7 +519,7 @@ export class SwamlValidator {
         // The linker's order: the own package, then the imports in source order (SwamlLinker.createLinkingError).
         const packages = this.models.flatMap(m => m.packages), visible = [pkg.name, ...pkg.imports.map(i => i.namespace).filter(n => n !== pkg.name)];
         const clashing = [...new Set(visible.flatMap(name => packages.filter(p => p.name === name).flatMap(p => p.elements.filter(x => x.name === call.target))))];
-        return clashing.length > 1 && clashing.some(x => AstUtils.getDocument(x).uri.toString() === LIBRARY_2_3_URI) ? clashing : undefined;
+        return clashing.length > 1 && clashing.some(x => AstUtils.getDocument(x).uri.toString() === LIBRARY_3_0_URI) ? clashing : undefined;
     }
     private callTarget(call: a.CallExpression, c?: Structure): Executable | a.PortMember | undefined {
         if (this.script && call.target.includes('.')) {
@@ -553,7 +553,7 @@ export class SwamlValidator {
     }
     /**
      * A sampled read p.m (WP6-S01, WP6-S08) in component c: the member type, '?' after reporting an error, or undefined
-     * when the reference is not the 2.3 form, because member m of the owned port p declares no initial value (optsIn),
+     * when the reference is not the 3.0 form, because member m of the owned port p declares no initial value (optsIn),
      * so that every 2.2 source keeps its 2.2 diagnostics. Errors: not a required attribute (SW2006, WP6-D05), a
      * forwarded boundary (SW2005, WP6-D01) and an initializer (SW2006, WP6-D05). In the constant sublanguage (period
      * and deadline expressions) the constant check reports it (SW2007, WP6-D05).
@@ -719,7 +719,7 @@ export class SwamlValidator {
                 }
                 else if (!sampled) {
                     this.report(e, 'SW2002', this.script ? (selected
-                        // A 2.3 read names the whole path; a 2.2 read keeps its 2.2 message (review F3, F5).
+                        // A 3.0 read names the whole path; a 2.2 read keeps its 2.2 message (review F3, F5).
                         ? `Unknown value ${this.placeText(e)}${this.failingSegment(e, steps)}; a case reads its locals and bindings, and a test may also read attributes of its subject, explicitly associated software components and their parts (a part family member by a literal index, as in twins[0]).`
                         : `Unknown value ${e.path}; a case reads its locals and bindings, and a test may also read attributes of its subject, explicitly associated software components and their single parts.`) : this.unknownLocal(e, e.path));
                     return '?';
@@ -802,7 +802,7 @@ export class SwamlValidator {
             if (!t) {
                 const clashing = this.libraryAmbiguity(e);
                 if (clashing)
-                    // A short call name shared with a 2.3 library operation (WP3-L04); never in a 2.2 source.
+                    // A short call name shared with a 3.0 library operation (WP3-L04); never in a 2.2 source.
                     this.report(e, 'SW2001', ambiguousNameMessage(e.target, clashing, owner(e, a.isPackage)!, x => a.isOperation(x) && clashing.filter(y => owner(y, a.isPackage) === owner(x, a.isPackage)).length === 1), false, { ...this.at(e, 'target'), related: clashing });
                 else
                     this.report(e, 'SW2006', `Unknown operation ${e.target}; remote calls require an owned port.`);
@@ -1039,7 +1039,7 @@ export class SwamlValidator {
             this.report(n, 'SW2002', `Expected ${params.length} arguments, received ${args.length}.`);
         params.forEach((p, i) => { const v = args[i]; if (!v)
             return; if (p.direction === 'out') {
-            // A place is not an out argument in 2.3 (WP1-S04); out arguments stay bare names.
+            // A place is not an out argument in 3.0 (WP1-S04); out arguments stay bare names.
             // A 2.2 form (r.f, a[i]) keeps the 2.2 message.
             if (a.isReferenceExpression(v) && env.has(placeRoot(v.path)) && (v.selectors ?? []).length)
                 this.report(v, 'SW2006', `An out argument must be a name; ${this.placeText(v)} is a place.`);
@@ -1254,7 +1254,7 @@ export class SwamlValidator {
         }
         return t;
     }
-    /** The first segment of a 2.3 test read that names no attribute or part, for the unknown-value message (review F5). */
+    /** The first segment of a 3.0 test read that names no attribute or part, for the unknown-value message (review F5). */
     private failingSegment(e: a.ReferenceExpression, steps: readonly Step[]): string {
         const head = placeRoot(e.path), p = this.script && owner(this.script.scenario, a.isPackage), occurrence = p && packageOccurrences(p).find(o => o.name === head);
         if (!occurrence)

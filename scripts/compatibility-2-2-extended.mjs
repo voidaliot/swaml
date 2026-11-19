@@ -4,8 +4,8 @@
 // separately pinned sets, each source parsing with the kept 2.2 grammar: models.json (WP1 review F3) and
 // models-wp2.json (WP2: view, state, in and out in their keyword roles next to names, if statements and
 // single associations), models-wp2b.json (WP2 review: diagnostics that spell a quoted contextual word, compared
-// with their related information) and models-wp3.json (WP3-L04: the names of the 2.3 library packages, with
-// related information), models-wp3b.json (WP3 review F1: own packages named like the 2.3 library packages) and
+// with their related information) and models-wp3.json (WP3-L04: the names of the 3.0 library packages, with
+// related information), models-wp3b.json (WP3 review F1: own packages named like the 3.0 library packages) and
 // models-wp4.json (WP4: durations in every 2.2 position, policy settings and names that look like units) and
 // models-wp5.json (WP5: 2.2 state machines in every 2.2 shape, defer as an ordinary name) and models-wp6.json (WP6: p.m
 // references to port members and connection policies in every 2.2 shape). For each set, recorded.json or recorded-wp2.json holds, recorded once from the 3.1.0
@@ -16,7 +16,7 @@
 // States in the flow (docs/proposals/STATES_IN_FLOW_PROPOSAL.md 7.4): this check is part of gate A, the 2.2 sources
 // without a 2.2 state machine. A model whose 2.2 AST (kept 2.2 grammar) holds a machine is excluded and named in the
 // report: valid ones are run after migration by gate B (scripts/compatibility-machines.mjs); invalid ones (recorded with
-// an error) are syntax errors in 2.3, which no longer parses the 2.2 machine syntax, and are listed as such. The
+// an error) are syntax errors in 3.0, which no longer parses the 2.2 machine syntax, and are listed as such. The
 // specification does not mention invalid 2.2 machine models; excluding and listing them is this script's decision.
 //
 //   node scripts/compatibility-2-2-extended.mjs                 check the current build (out/), every set
@@ -42,9 +42,9 @@ export const SETS = [
     { models: 'models-wp2.json', recorded: 'recorded-wp2.json', rule: 'WP2: 2.2 sources with view, state, in and out in their keyword roles next to names, if statements and single associations' },
     // Diagnostics here also carry their related information, which spells names too (WP2 review H1).
     { models: 'models-wp2b.json', recorded: 'recorded-wp2b.json', rule: 'WP2 review H1: 2.2 sources whose diagnostics spell a quoted contextual word', related: true },
-    // The 2.3 library packages change the global scope; these 2.2 sources use their names (WP3-L04).
-    { models: 'models-wp3.json', recorded: 'recorded-wp3.json', rule: 'WP3-L04: 2.2 sources that declare, import or use the names of the 2.3 library packages', related: true },
-    // User packages named like the 2.3 library packages hide them (WP3-L04, WP3 review F1).
+    // The 3.0 library packages change the global scope; these 2.2 sources use their names (WP3-L04).
+    { models: 'models-wp3.json', recorded: 'recorded-wp3.json', rule: 'WP3-L04: 2.2 sources that declare, import or use the names of the 3.0 library packages', related: true },
+    // User packages named like the 3.0 library packages hide them (WP3-L04, WP3 review F1).
     { models: 'models-wp3b.json', recorded: 'recorded-wp3b.json', rule: 'WP3-L04 (review F1): 2.2 sources that declare their own Swaml::Numeric, Swaml::Text or Swaml::Time', related: true },
     // Durations become expression values and PolicySetting has one form (WP4-G01, WP4-G02); these 2.2 sources use
     // every position a duration can have in 2.2.
@@ -126,7 +126,7 @@ export async function checkExtended() {
     const report = `Extended 2.2 compatibility: ${counts.join(' and ')} models outside the corpus keep their 3.1.0 diagnostics, ASTs and runs; ${failures.length} differences.`
         + (threw.length ? ` Not compared, because 3.1.0 threw a host error: ${threw.join('; ')}.` : '')
         + `\nExcluded, 2.2 models with a state machine: ${excludedValid.length} valid (gate B runs them after migration)${excludedValid.length ? ': ' + excludedValid.join(', ') : ''}; `
-        + `${excludedInvalid.length} invalid (recorded with an error; syntax errors in 2.3)${excludedInvalid.length ? ': ' + excludedInvalid.join(', ') : ''}.`;
+        + `${excludedInvalid.length} invalid (recorded with an error; syntax errors in 3.0)${excludedInvalid.length ? ': ' + excludedInvalid.join(', ') : ''}.`;
     const pinned = pinnedExclusions();
     failures.push(...exclusionFailure('extended, valid', excludedValid, pinned.extendedValid), ...exclusionFailure('extended, invalid', excludedInvalid, pinned.extendedInvalid));
     return { report, failures };

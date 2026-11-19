@@ -1,7 +1,7 @@
 // Tripwire against re-recorded or hand-edited compatibility fixtures. Every recorded fixture file of the 2.2
 // compatibility gates is pinned by its SHA-256 (LF line endings) and names the same recording commit, the
 // 3.1.0 implementation of standard 2.2; amendments.json is the only fixture file that may change, in a
-// reviewed PR (see docs/RELEASE_2_3.md). Source CI fetches the recording commit (depth 1) next to the
+// reviewed PR (see docs/RELEASE_3_0.md). Source CI fetches the recording commit (depth 1) next to the
 // release tags; it is then checked for package version 3.1.0, the 2.2 edition and the kept grammar. Under CI
 // a missing commit fails. Ancestry needs history that the shallow CI clone does not have, so it is checked
 // only in a full clone: the commit contents and the pinned fixture digests are the guard.
@@ -69,7 +69,7 @@ const EXTENDED = {
     // The WP2 review set: 2.2 sources whose diagnostics spell a quoted contextual word.
     'models-wp2b.json': '80173cb5e9945077c896e9f18eaebd2282a041782dc59c82628433829d2bf665',
     'recorded-wp2b.json': '3a6881e47c39199378e44ab140a699e105faf8b6fb476f53cb2c1b1ce1b752a8',
-    // The WP3 set: 2.2 sources that declare, import or use the names of the 2.3 library packages (WP3-L04).
+    // The WP3 set: 2.2 sources that declare, import or use the names of the 3.0 library packages (WP3-L04).
     'models-wp3.json': '192203cced460e3d49a36f187930128a263eea58f9d5c5aa9aeda342071d1201',
     'recorded-wp3.json': 'c03bed8354e225fc0d463e7e8e6d69202a39be3ba329ebb3dfdb669739d180ab',
     // The WP3 review set: 2.2 sources with their own Swaml::Numeric, Swaml::Text or Swaml::Time (review F1).

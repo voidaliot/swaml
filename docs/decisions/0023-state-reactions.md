@@ -1,6 +1,6 @@
 # ADR 0023: State reactions
 
-Status: **superseded** (never released) by states in the flow ([specification](../proposals/STATES_IN_FLOW_PROPOSAL.md), chapters 3.6 and 6.5): 2.3 has no completion, guarded-timer or internal transitions and no deferral; the 2.2 machine syntax itself is replaced. The text below is kept as the record of the decision. Previously: accepted for the unreleased standard 2.3, 18 November 2026. Owner approval of the 2.3 scope and decisions D3 and D8 of the [2.3 proposal](../proposals/NEXT_MINOR_PROPOSAL.md), with the warning codes allocated by the owner. Not implemented: each rule lands with the work package named in the [2.3 chapter drafts](../drafts/2.3/README.md). This ADR is normative where it differs from the proposal. It reverses the exclusion of completion transitions in [the 2.0 transition design](../SWAML_2_0_TRANSITION.md) and [ADR 0016](0016-swaml-2-0.md), for guard-only completion only. Published editions remain unchanged.
+Status: **superseded** (never released) by states in the flow ([specification](../proposals/STATES_IN_FLOW_PROPOSAL.md), chapters 3.6 and 6.5): 3.0 has no completion, guarded-timer or internal transitions and no deferral; the 2.2 machine syntax itself is replaced. The text below is kept as the record of the decision. Previously: accepted for the unreleased standard 3.0, 18 November 2026. Owner approval of the 3.0 scope and decisions D3 and D8 of the [2.3 proposal](../proposals/NEXT_MINOR_PROPOSAL.md), with the warning codes allocated by the owner. Not implemented: each rule lands with the work package named in the [2.3 chapter drafts](../design/3.0-drafts/README.md). This ADR is normative where it differs from the proposal. It reverses the exclusion of completion transitions in [the 2.0 transition design](../SWAML_2_0_TRANSITION.md) and [ADR 0016](0016-swaml-2-0.md), for guard-only completion only. Published editions remain unchanged.
 
 Items: B7 completion transitions and B10 guarded timers (together), B8 internal transitions, B9 deferral. Work package: WP5, after WP4 (computed state timers). WP6 revisits the completion-guard warning when sampled reads land.
 
@@ -121,5 +121,5 @@ All three forms are new syntax, so no valid 2.2 source contains them. A 2.2 mach
 
 ## Open items
 
-- WP6 confirms SW2017 for guards that read only sampled cells. Re-evaluating completion guards on cell updates is not part of 2.3.
+- WP6 confirms SW2017 for guards that read only sampled cells. Re-evaluating completion guards on cell updates is not part of 3.0.
 - Hierarchical and orthogonal states remain outside the language.

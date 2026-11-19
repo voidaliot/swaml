@@ -1,5 +1,5 @@
 package HazardDistance {
-  /** Hazard relevance by distance, in the shape of the V2X model's AdaptiveV2x::Types. The 2.2 shape computes a square root by a fixed number of Newton steps, because the library had none; it is not correctly rounded and does not converge for large distances. The 2.3 shape imports Swaml::Numeric and calls sqrt, the host's IEEE-754 correctly rounded square root, whose argument below zero is the runtime failure Arithmetic. */
+  /** Hazard relevance by distance, in the shape of the V2X model's AdaptiveV2x::Types. The 2.2 shape computes a square root by a fixed number of Newton steps, because the library had none; it is not correctly rounded and does not converge for large distances. The 3.0 shape imports Swaml::Numeric and calls sqrt, the host's IEEE-754 correctly rounded square root, whose argument below zero is the runtime failure Arithmetic. */
   import Swaml::Math;
   import Swaml::Numeric;
   datatype Position {

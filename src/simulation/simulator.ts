@@ -2,7 +2,7 @@ import { AstUtils, DocumentState, type AstNode } from 'langium';
 import * as a from '../language/generated/ast.js';
 import { SWAML_REFERENCE_PROFILE } from '../language/edition.js';
 import { deploymentPlan } from '../language/placement.js';
-import { flowStates, innerStates, stateItems, statementReads, type StatementReads, inputEndpoints, memberQos, sampledMembers, sampledReadForm, LIBRARY_2_3_URI, libraryIntrinsic, type LibraryIntrinsic, caseRead, caseTarget, isPlace, placeRoot, valueSteps, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, entryPeriod, entryDeadline, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
+import { flowStates, innerStates, stateItems, statementReads, type StatementReads, inputEndpoints, memberQos, sampledMembers, sampledReadForm, LIBRARY_3_0_URI, libraryIntrinsic, type LibraryIntrinsic, caseRead, caseTarget, isPlace, placeRoot, valueSteps, executableCase, softwareRoots, expressionTypes, workspaceModels, body, container, direction, effectiveQos, endpoint, identity, isExecutable, localOperation, memberEndpoint, members, nanos, nodes, occurrences, owner, packageEndpoint, portMembers, resolve, runTarget, schedule, signature, statementIdentity, typeKey, entryPeriod, entryDeadline, type Executable, type Policy, type RunTarget, type Structure } from '../language/semantic.js';
 import { binary, bind, checked, ContractViolation, copy, intText, plain, realText, RuntimeFault, scalar, squareRoot, voidValue, widen, type Environment, type Value } from './values.js';
 export { projectOperationTiming } from './timing.js';
 export interface SimulationOptions {
@@ -412,11 +412,11 @@ function workspace(models: a.Model[]): a.Model[] {
     }
     const builtin = (workspaceModels.get(models[0]) ?? []).filter(m => AstUtils.getDocument(m).uri.scheme === 'builtin');
     const supplied = new Set(models);
-    // The 2.3 library document (WP3-M01) joins a run, and so its result's sources, only when a supplied model
+    // The 3.0 library document (WP3-M01) joins a run, and so its result's sources, only when a supplied model
     // imports one of its packages or references one of its declarations; a run that does not use it, every
     // 2.2 run among them, keeps exactly the 2.2 workspace and sources.
     const used = new Set<a.Model>();
-    const library23 = new Set(builtin.filter(m => AstUtils.getDocument(m).uri.toString() === LIBRARY_2_3_URI));
+    const library23 = new Set(builtin.filter(m => AstUtils.getDocument(m).uri.toString() === LIBRARY_3_0_URI));
     const use = (doc: { parseResult: { value: unknown } }) => { if (library23.has(doc.parseResult.value as a.Model)) used.add(doc.parseResult.value as a.Model); };
     for (const model of models) {
         const workspace = workspaceModels.get(model) ?? models;
@@ -1175,7 +1175,7 @@ class Interpreter {
     private intrinsic(name: string, args: Value[]): Value { if (name === 'length')
         return checked('uint', [...String(args[0].data)].length); const n = args[0].data as number; return checked('int', name === 'floor' ? Math.floor(n) : name === 'round' ? Math.round(n) : Math.trunc(n)); }
     /**
-     * The 2.3 library intrinsics (chapter 6): sqrt (WP3-R01), intText and realText (WP3-R02) and now (WP3-R03),
+     * The 3.0 library intrinsics (chapter 6): sqrt (WP3-R01), intText and realText (WP3-R02) and now (WP3-R03),
      * the logical time of the evaluating step. Every activation reads the live clock, a concurrent one too;
      * dispatch snapshots hold attributes only.
      */

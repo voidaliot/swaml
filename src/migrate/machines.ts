@@ -24,7 +24,7 @@
 // 10. the end check: the end of the operation is reachable iff a final state was;
 // 11. no parents are introduced;
 // 12. the report lists removals, renames, copied exits and refusals.
-// The forms of the unreleased 2.3 candidate (completion transitions, internal transitions, guarded timers, defer) were never
+// The forms of the unreleased 3.0 candidate (completion transitions, internal transitions, guarded timers, defer) were never
 // released: a source that uses them is refused and rewritten by hand. A release guard of that candidate spelled
 // when (g) is rewritten to if (g) by migrateReleaseGuards.
 /* eslint-disable @typescript-eslint/no-explicit-any */

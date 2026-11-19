@@ -1,41 +1,41 @@
 {
-  "languageVersion": "2.3",
+  "languageVersion": "3.0",
   "stages": [
     {
       "id": "architecture",
       "source": "examples/02-realtime-controller.swaml",
       "subject": "Control::Demo",
-      "diagram": "docs/figures/2.3/architecture.svg"
+      "diagram": "docs/figures/3.0/architecture.svg"
     },
     {
       "id": "forwarding",
       "source": "examples/26-boundary-forwarding.swaml",
       "subject": "Boundary::Demo",
-      "diagram": "docs/figures/2.3/forwarding.svg"
+      "diagram": "docs/figures/3.0/forwarding.svg"
     },
     {
       "id": "schedule",
       "source": "examples/25-function-completion.swaml",
       "subject": "Chaining::Demo",
-      "diagram": "docs/figures/2.3/schedule.svg"
+      "diagram": "docs/figures/3.0/schedule.svg"
     },
     {
       "id": "states",
       "source": "examples/04-stateful-function.swaml",
       "subject": "States::Demo.lamp",
-      "diagram": "docs/figures/2.3/states.svg"
+      "diagram": "docs/figures/3.0/states.svg"
     },
     {
       "id": "deployment",
       "source": "examples/22-platform-deployment.swaml",
       "subject": "Placement::Demo",
-      "diagram": "docs/figures/2.3/deployment.svg"
+      "diagram": "docs/figures/3.0/deployment.svg"
     },
     {
       "id": "timing",
       "source": "examples/17-function-timing.swaml",
       "subject": "Timing::Demo.sample",
-      "diagram": "docs/figures/2.3/timing.svg"
+      "diagram": "docs/figures/3.0/timing.svg"
     }
   ]
 }

@@ -18,7 +18,7 @@ Ports map to owned typed features with per-member directional projections. Rever
 | WP6-M03 | `PortMember` with an initial value maps the initial value as the feature's default value. Sampled reads lower to a read of a per-port-occurrence sample feature. They are not a transfer step. `Connect` records its member policies. |
 | WP2-M03 | `Association` keeps its entry. Its semantic text states that a list statement lowers to one reference per occurrence–case pair, with the statement and the list positions as provenance. |
 
-The changed productions `Assign`, `ReferenceExpression` and `CallExpression` (WP1), `Expression` and `ExpressionStatement` (WP2) and `PolicySetting`, `Literal`, `Wait`, `Receive`, `ScheduleEntry` (WP4) and `ScheduleEntry` (WP7, release guards) keep their mapping entries with updated semantic text in `spec/kerml-mapping.json`. States in the flow (2.3) replace the productions `State`, `Transition` and WP5's `Deferral`, which are removed, by `StateStep`, `EventLine` and `Leave` (SIF-M01).
+The changed productions `Assign`, `ReferenceExpression` and `CallExpression` (WP1), `Expression` and `ExpressionStatement` (WP2) and `PolicySetting`, `Literal`, `Wait`, `Receive`, `ScheduleEntry` (WP4) and `ScheduleEntry` (WP7, release guards) keep their mapping entries with updated semantic text in `spec/kerml-mapping.json`. States in the flow (3.0) replace the productions `State`, `Transition` and WP5's `Deferral`, which are removed, by `StateStep`, `EventLine` and `Leave` (SIF-M01).
 
 ## 5.2 Required semantic library
 

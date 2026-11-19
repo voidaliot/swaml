@@ -1,4 +1,4 @@
-// WP8 of swa.ml 2.3: the target binding schema swaml-binding/1 and swaml binding check (WP8-M02, WP8-M03,
+// WP8 of swa.ml 3.0: the target binding schema swaml-binding/1 and swaml binding check (WP8-M02, WP8-M03,
 // WP8-D10, WP8-M05).
 import nodeTest from 'node:test';
 import assert from 'node:assert/strict';

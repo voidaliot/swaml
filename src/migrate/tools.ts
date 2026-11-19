@@ -28,7 +28,7 @@ export interface FileMigration {
     text?: string;
     edits: MigrationEdit[];
     machines: MachineReport[];
-    /** Release guards spelled when (g) (the unreleased 2.3 candidate's spelling) rewritten to if (g), by 1-based line. */
+    /** Release guards spelled when (g) (the unreleased 3.0 candidate's spelling) rewritten to if (g), by 1-based line. */
     guards: { line: number; column: number }[];
     refused: MigrationRefusal[];
     /** New statement identity -> 2.2 statement identity, for old traces and overlays. */
