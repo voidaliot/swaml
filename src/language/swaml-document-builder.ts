@@ -57,7 +57,7 @@ export class SwamlDocumentBuilder extends DefaultDocumentBuilder {
 }
 /** 2.2 state-machine syntax: initial S; in an operation, final state, or a transition when (g) to T (a release guard written with when keeps its own hint). */
 const LEGACY_MACHINE = /\binitial\s+[A-Za-z_'][^;{}\n]*;|\bfinal\s+state\b|\bwhen\s*\([^;{}]*\)\s*to\b/;
-export const LEGACY_MACHINE_MESSAGE = 'This is swa.ml 2.2 state-machine syntax (initial S;, final state, ordered transitions with when and to T { … }), which 2.3 replaces by states that are steps of the flow; node scripts/migrate-machines.mjs <file> --write rewrites it.';
+export const LEGACY_MACHINE_MESSAGE = 'This is swa.ml 2.2 state-machine syntax (initial S;, final state, ordered transitions with when and to T { … }), which 2.3 replaces by states that are steps of the flow; swaml migrate <file> rewrites it.';
 /** The portable service supplies the same stable diagnostics to CLI and LSP hosts. */
 export class SwamlDocumentValidator extends DefaultDocumentValidator {
     /** An ambiguous short name also points at each declaration that shares it. */
