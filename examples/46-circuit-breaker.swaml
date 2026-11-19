@@ -14,7 +14,7 @@ package CircuitBreaker {
     operation handle(t: uint) returns bool {
       puts = puts + 1;
       wait 1ms;
-      return not down and t >= 0;
+      return not down;
     }
     operation setDown(value: bool) {
       down = value;
@@ -98,6 +98,10 @@ package CircuitBreaker {
     publish feed.out.accepted(7);
     wait 5ms;
     assert breaker.written == 1 and breaker.consecutiveFailures == 0 and store.puts == 4;
+    // The successful probe closed the breaker: the next arrival is written, not shed.
+    publish feed.out.accepted(8);
+    wait 5ms;
+    assert breaker.written == 2 and breaker.shedArrivals == 4 and breaker.trips == 1 and store.puts == 5;
   }
   test 'A failed probe opens the breaker again' of breaker {
     /** Three failures trip the breaker at 11 ms; it is half open at 31 ms. The probe at 35 ms fails at 36 ms and opens the breaker again, with a fresh cool-down: half open at 56 ms. */

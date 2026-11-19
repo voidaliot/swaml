@@ -58,7 +58,7 @@ package InteriorLight {
   component body: Body;
   connect (body.toPower, light.power);
   connect (body.toDoor, light.door);
-  associate body to 'Courtesy light after a key wake', 'A door opening restarts the courtesy time', 'A crash wake keeps the light on';
+  associate body to 'Courtesy light after a key wake', 'A door opening restarts the courtesy time', 'A crash wake keeps the light on', 'Sleep ends the courtesy light at once';
   test 'Courtesy light after a key wake' of light {
     /** A door opening before the wake is dropped while asleep waits. The key wake at 1 ms lights the courtesy light until 21 ms; then the light sleeps again. */
     publish body.toDoor.opened();
@@ -66,8 +66,19 @@ package InteriorLight {
     publish body.toPower.wake(WakeReason.key);
     wait 10ms;
     assert light.lit and light.wakes == 1;
-    wait 15ms;
+    wait 9500us;
+    assert light.lit;
+    wait 1ms;
     assert not light.lit and light.courtesyStarts == 1;
+  }
+  test 'Sleep ends the courtesy light at once' of light {
+    /** A sleep request during the courtesy time leaves courtesy at once (its sleep line), not at the end of its 20 ms. */
+    publish body.toPower.wake(WakeReason.key);
+    wait 5ms;
+    assert light.lit;
+    publish body.toPower.sleep();
+    wait 1ms;
+    assert not light.lit and light.wakes == 1 and light.courtesyStarts == 1;
   }
   test 'A door opening restarts the courtesy time' of light {
     /** Key wake at 0 ms, door opened at 15 ms: courtesy is entered again and lights until 35 ms. */

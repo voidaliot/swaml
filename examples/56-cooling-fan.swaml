@@ -68,10 +68,10 @@ package CoolingFan {
     assert not fan.fanOn and fan.stoppedAtNs == 50000000;
   }
   test 'Stops below the lower threshold' of fan {
-    /** After the minimum time, 85 degrees at 60 ms is still above the lower threshold; 75 degrees at 70 ms stops the fan. 90 degrees at 80 ms does not start it again. */
+    /** After the minimum time, 80 degrees at 60 ms, the lower threshold itself, keeps the fan running; 75 degrees at 70 ms stops the fan. 90 degrees at 80 ms does not start it again. */
     send engine.toFan.celsius(100);
     wait 60ms;
-    send engine.toFan.celsius(85);
+    send engine.toFan.celsius(80);
     wait 10ms;
     assert fan.fanOn;
     send engine.toFan.celsius(75);

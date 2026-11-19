@@ -72,6 +72,13 @@ package SensorWarmup {
   connect (exhaust.toSensor, sensor.probe);
   connect (sensor.heater, exhaust.fromSensor);
   associate exhaust to 'Ready at the deadline', 'Too cold at the deadline', 'Cooling heats again';
+  test 'Half power after 10 ms' of sensor {
+    /** The heater runs at full power for 10 ms after the warm-up starts, then at half power. */
+    wait 9500us;
+    assert sensor.power == 100;
+    wait 1ms;
+    assert sensor.power == 50;
+  }
   test 'Ready at the deadline' of sensor {
     /** Full power until 10 ms, then half power. The reading at 20 ms is hot enough, but the sensor is ready only at the 30 ms deadline. */
     wait 5ms;

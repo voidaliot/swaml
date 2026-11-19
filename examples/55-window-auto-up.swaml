@@ -69,8 +69,11 @@ package WindowAutoUp {
     publish door.toSwitch.autoUp();
     wait 100ms;
     assert lift.drive == Drive.fast;
-    wait 220ms;
+    wait 199500us;
+    assert lift.drive == Drive.fast;
+    wait 1ms;
     assert lift.drive == Drive.slow;
+    wait 19500us;
     publish door.toEndStop.reached();
     wait 1ms;
     assert lift.drive == Drive.stop and lift.closings == 1 and lift.timeouts == 0;
@@ -93,9 +96,9 @@ package WindowAutoUp {
   test 'The parent timer covers both inner states' of lift {
     /** The end stop never comes. seal is entered at 300 ms, but closing's timer counts from 0 ms: the motor stops at 400 ms, not 700 ms. */
     publish door.toSwitch.autoUp();
-    wait 399ms;
+    wait 399500us;
     assert lift.drive == Drive.slow;
-    wait 2ms;
+    wait 1ms;
     assert lift.drive == Drive.stop and lift.timeouts == 1;
   }
 }

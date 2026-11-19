@@ -109,6 +109,7 @@
       "CircuitBreaker::A failed probe opens the breaker again": "pass"
     },
     "examples/47-sensor-warmup.swaml": {
+      "SensorWarmup::Half power after 10 ms": "pass",
       "SensorWarmup::Ready at the deadline": "pass",
       "SensorWarmup::Too cold at the deadline": "pass",
       "SensorWarmup::Cooling heats again": "pass"
@@ -145,7 +146,8 @@
     "examples/54-interior-light.swaml": {
       "InteriorLight::Courtesy light after a key wake": "pass",
       "InteriorLight::A door opening restarts the courtesy time": "pass",
-      "InteriorLight::A crash wake keeps the light on": "pass"
+      "InteriorLight::A crash wake keeps the light on": "pass",
+      "InteriorLight::Sleep ends the courtesy light at once": "pass"
     },
     "examples/55-window-auto-up.swaml": {
       "WindowAutoUp::Closes fast, then slowly into the seal": "pass",
