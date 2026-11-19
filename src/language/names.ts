@@ -36,7 +36,8 @@ export type NameEdition = string;
 export const MESSAGE_SPELLING: NameEdition = '2.2';
 // A non-string edition is the default: the name functions stay safe as callbacks, as in names.map(formatName) (WP2 review M1).
 const editionOf = (edition: unknown): NameEdition => typeof edition === 'string' ? edition : SWAML_LANGUAGE_VERSION;
-const before3_0 = (edition: unknown) => { const [major, minor] = editionOf(edition).split('.').map(Number); return major < 2 || major === 2 && minor < 3; };
+/** Whether an edition is older than 3.0 (2.2 and older): such a workspace still quotes the words 3.0 made contextual or retired. */
+const before3_0 = (edition: unknown) => Number(editionOf(edition).split('.')[0]) < 3;
 /** The words that need quotes in a workspace of the given edition. */
 export function reservedWords(edition: NameEdition | number = SWAML_LANGUAGE_VERSION): ReadonlySet<string> { return before3_0(edition) ? RESERVED_WORDS_2_2 : RESERVED_WORDS; }
 /** True when a name can be written without quotes in a workspace of the given edition. */

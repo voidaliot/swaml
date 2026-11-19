@@ -111,6 +111,10 @@ const MUTATIONS = [
     ['MC2', 'migrate: a refused file does not fail the run', CMD, 'failed = true;\n            for (const x of r.refused)','for (const x of r.refused)'],
     ['MC3', 'migrate: a migrated file that does not validate is written', CMD, 'if (errors.get(file).length) {', 'if (false) {'],
     ['MC4', 'migrate: a directory is not walked into its subdirectories', CMD, 'out.push(...await swamlFiles(join(path, entry.name)));', 'void 0;'],
+    ['MC6', 'migrate: a file that cannot be written leaves the others written (review m8)', CMD, 'for (const [file] of files)\n            await access(file, constants.W_OK);\n        for (const [file, text] of files) {\n            await writeFile(temporary(file), text, \'utf8\');', 'for (const [file, text] of files) {\n            await writeFile(file, text, \'utf8\');'],
+    ['MC7', 'migrate: CRLF line ends not written back (review m9)', 'out/src/migrate/tools.js', "const back = (text) => crlf ? text.replace(/\\n/g, '\\r\\n') : text;", 'const back = (text) => text;'],
+    ['MC8', 'migrate: one file in two spellings migrated twice (review m10)', CMD, 'if (!seen.has(real)) {', 'if (true) {'],
+    ['MC9', 'migrate: a file with 2.2 machine syntax refused at the current grammar error (review m7)', 'out/src/migrate/tools.js', 'errors = machine ? old : parsed;', 'errors = parsed;'],
     ['MC5', 'migrate: a release guard rewritten to another spelling', 'out/src/migrate/tools.js', "text = text.slice(0, offset) + 'if' + text.slice(offset + 4);", "text = text.slice(0, offset) + 'if ' + text.slice(offset + 4);"],
     // Recovery of half-typed states (final package).
     ['RC1', 'recovery: a nameless state read as an expression statement', 'out/src/language/swaml-syntax.js', "if (stateStep >= 0 && this.LA(1).tokenType.name === 'state'", "if (false && this.LA(1).tokenType.name === 'state'"],

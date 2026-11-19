@@ -1,4 +1,5 @@
-import { readFile, readdir, stat, writeFile } from 'node:fs/promises';
+import { access, constants, readFile, readdir, rename, stat, unlink, writeFile } from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { migrateFile, validateMigrated, type FileMigration } from '../migrate/tools.js';
 import { withoutLanguageVersion } from './options.js';
@@ -21,8 +22,40 @@ async function swamlFiles(path: string): Promise<string[]> {
     return out;
 }
 
+/**
+ * Writes every file or none (review m8): each target must be writable, each new text is written to a temporary file
+ * beside it, then the temporary files replace the targets; a failure removes the temporary files and puts back the
+ * targets already replaced. Returns undefined on success, else what failed.
+ */
+async function writeAll(files: [string, string, string][]): Promise<string | undefined> {
+    const temporary = (file: string) => `${file}.swaml-migrate.tmp`;
+    const written: string[] = [], replaced: [string, string][] = [];
+    try {
+        for (const [file] of files)
+            await access(file, constants.W_OK);
+        for (const [file, text] of files) {
+            await writeFile(temporary(file), text, 'utf8');
+            written.push(file);
+        }
+        for (const [file, , original] of files) {
+            await rename(temporary(file), file);
+            replaced.push([file, original]);
+        }
+        return undefined;
+    }
+    catch (error) {
+        for (const file of written)
+            if (!replaced.some(([f]) => f === file))
+                await unlink(temporary(file)).catch(() => undefined);
+        for (const [file, original] of replaced)
+            await writeFile(file, original, 'utf8').catch(() => undefined);
+        return `${(error as NodeJS.ErrnoException).code ?? 'error'} on ${(error as NodeJS.ErrnoException).path ?? 'a file'}: ${(error as Error).message}`;
+    }
+}
+
 /** The changed lines of one file, old then new, per edit, with 1-based line numbers of the old text. */
-function diff(source: string, m: FileMigration): string[] {
+function diff(m: FileMigration): string[] {
+    const source = m.base!, text = m.baseText!;
     const out: string[] = [];
     let delta = 0;
     const lineOf = (text: string, offset: number) => text.slice(0, offset).split('\n').length;
@@ -34,7 +67,7 @@ function diff(source: string, m: FileMigration): string[] {
         const newStart = e.start + delta, newEnd = newStart + e.text.length;
         out.push(`@@ line ${lineOf(source, e.start)} @@`);
         out.push(...linesOf(source, e.start, e.end).map(l => `-${l}`));
-        out.push(...linesOf(m.text!, newStart, newEnd).map(l => `+${l}`));
+        out.push(...linesOf(text, newStart, newEnd).map(l => `+${l}`));
         delta += e.text.length - (e.end - e.start);
     }
     return out;
@@ -68,12 +101,17 @@ export async function migrateCommand(args: string[]): Promise<number> {
         console.error(`Usage: ${MIGRATE_USAGE}`);
         return 2;
     }
-    const files: string[] = [];
+    const files: string[] = [], seen = new Set<string>();
     try {
         for (const p of paths)
-            for (const f of await swamlFiles(resolve(p)))
-                if (!files.includes(f))
+            for (const f of await swamlFiles(resolve(p))) {
+                // One file named in two spellings (case on Windows, links) is migrated once (review m10).
+                const real = realpathSync.native(f);
+                if (!seen.has(real)) {
+                    seen.add(real);
                     files.push(f);
+                }
+            }
     }
     catch (error) {
         console.error(String(error));
@@ -113,7 +151,7 @@ export async function migrateCommand(args: string[]): Promise<number> {
         for (const g of r.guards)
             console.log(`  ${g.line}:${g.column} release guard when (…) -> if (…)`);
         if (!write)
-            for (const line of diff(sources.get(file)!, r))
+            for (const line of diff(r))
                 console.log(`    ${line}`);
     }
     // Nothing is written unless every migrated file validates as part of the workspace given.
@@ -126,9 +164,13 @@ export async function migrateCommand(args: string[]): Promise<number> {
                 console.log(`${shown(file)}: the migrated text does not validate, nothing written\n  ${errors.get(file)!.join('\n  ')}`);
             }
     }
-    if (write && !failed)
-        for (const file of migrated)
-            await writeFile(file, results.get(file)!.text!, 'utf8');
+    if (write && !failed) {
+        const problem = await writeAll(migrated.map(file => [file, results.get(file)!.text!, sources.get(file)!]));
+        if (problem) {
+            console.log(`No file written: ${problem}`);
+            return 2;
+        }
+    }
     const nothing = files.length - migrated.length - [...results.values()].filter(r => r.refused.length).length;
     if (failed)
         console.log(`No file written: fix the reasons above (or the 2.2 source) and run swaml migrate again.`);

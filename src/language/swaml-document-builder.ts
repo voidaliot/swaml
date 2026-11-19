@@ -59,6 +59,8 @@ export class SwamlDocumentBuilder extends DefaultDocumentBuilder {
 const LEGACY_MACHINE = /(?<=[;{}]\s*)initial\s+(?:[A-Za-z_]\w*|'(?:[^'\\\n]|\\.)*')\s*;|(?<=[;{}]\s*)final\s+state\s+(?:[A-Za-z_]\w*|'(?:[^'\\\n]|\\.)*')\s*\{|\bwhen\s*\([^;{}]*\)\s*to\b/;
 /** Comments and string literals blanked with spaces (offsets kept), so their text never looks like machine syntax. */
 const codeOnly = (text: string) => text.replace(/"(?:[^"\\\n]|\\.)*"|\/\/[^\n]*|\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '));
+/** Where text holds 2.2 state-machine syntax outside comments and strings, if anywhere. */
+export function legacyMachineSyntax(text: string): RegExpExecArray | null { return LEGACY_MACHINE.exec(codeOnly(text)); }
 export const LEGACY_MACHINE_MESSAGE = 'This is swa.ml 2.2 state-machine syntax (initial S;, final state, ordered transitions with when and to T { … }), which 3.0 replaces by states that are steps of the flow; swaml migrate <file> rewrites it.';
 /** The portable service supplies the same stable diagnostics to CLI and LSP hosts. */
 export class SwamlDocumentValidator extends DefaultDocumentValidator {
@@ -77,7 +79,7 @@ export class SwamlDocumentValidator extends DefaultDocumentValidator {
         let diagnostics = await super.validateDocument(document, options, cancelToken);
         // A 2.2 state machine (initial S;, final state, transitions with when) is a syntax error in 3.0: one error that says
         // so and names the migration replaces the parser's errors (review 1 D-1).
-        const machine = document.parseResult.parserErrors.length ? LEGACY_MACHINE.exec(codeOnly(document.textDocument.getText())) : null;
+        const machine = document.parseResult.parserErrors.length ? legacyMachineSyntax(document.textDocument.getText()) : null;
         if (machine) {
             const start = document.textDocument.positionAt(machine.index), end = document.textDocument.positionAt(machine.index + machine[0].length);
             diagnostics = [{ severity: 1, range: { start, end }, message: LEGACY_MACHINE_MESSAGE, data: { code: 'parsing-error' }, source: 'swaml' } as Diagnostic, ...diagnostics.filter(d => d.data?.code !== 'parsing-error')];

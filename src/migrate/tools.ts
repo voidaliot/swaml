@@ -4,6 +4,7 @@ import { createServicesForGrammar } from 'langium/grammar';
 import { createSwamlServices } from '../language/swaml-module.js';
 import { identity } from '../language/semantic.js';
 import { RELEASE_GUARD_HINT, SwamlValueConverter } from '../language/swaml-syntax.js';
+import { legacyMachineSyntax } from '../language/swaml-document-builder.js';
 import { GRAMMAR_2_2 } from './grammar-2-2.js';
 import { migrateSource, type MachineReport, type Identity, type Parse } from './machines.js';
 
@@ -31,6 +32,9 @@ export interface FileMigration {
     /** Release guards spelled when (g) (the unreleased 3.0 candidate's spelling) rewritten to if (g), by 1-based line. */
     guards: { line: number; column: number }[];
     refused: MigrationRefusal[];
+    /** The LF text the edits refer to and its migrated LF text (for a dry run's changed lines). */
+    base?: string;
+    baseText?: string;
     /** New statement identity -> 2.2 statement identity, for old traces and overlays. */
     map: Record<string, string>;
 }
@@ -73,19 +77,25 @@ export function migrateReleaseGuards(source: string): { text: string; edits: Mig
  * source that parses with neither is refused at its first syntax error; a machine that cannot be migrated is refused at
  * its initial keyword, and the file is left unchanged as a whole.
  */
-export async function migrateFile(source: string): Promise<FileMigration> {
+export async function migrateFile(original: string): Promise<FileMigration> {
+    // Line ends: the migration works on LF text and writes the file's own CRLF line ends back (review m9).
+    const crlf = original.includes('\r\n'), source = crlf ? original.replace(/\r\n/g, '\n') : original;
+    const back = (text: string) => crlf ? text.replace(/\n/g, '\r\n') : text;
     const guards = migrateReleaseGuards(source);
     const parsed = current().parser.LangiumParser.parse(guards.text);
     const guardLines = guards.edits.map(e => position(source, e.start));
     if (!parsed.lexerErrors.length && !parsed.parserErrors.length)
-        return { text: guards.edits.length ? guards.text : undefined, edits: guards.edits, machines: [], guards: guardLines, refused: [], map: {} };
+        return { text: guards.edits.length ? back(guards.text) : undefined, base: source, baseText: guards.text, edits: guards.edits, machines: [], guards: guardLines, refused: [], map: {} };
     const { parse, identity: id } = await migrationTools();
     const old = parse(source);
     if (old.lexerErrors.length || old.parserErrors.length) {
-        // Neither grammar reads it: report the current grammar's first error, where the user has to look.
-        const first = (parsed.lexerErrors[0] ?? parsed.parserErrors[0]) as any;
-        const offset = first.offset ?? first.token?.startOffset ?? 0, at = position(guards.text, Number.isFinite(offset) ? offset : 0);
-        return { edits: [], machines: [], guards: [], map: {}, refused: [{ ...at, reason: `syntax error that is not 2.2 state-machine syntax: ${String(first.message).split('\n')[0]}` }] };
+        // Neither grammar reads it. A file with 2.2 machine syntax is reported with the 2.2 grammar's first error, any other
+        // file with the current grammar's, each with its location and whole message (review m7).
+        const machine = !!legacyMachineSyntax(source), errors = machine ? old : parsed;
+        const first = (errors.lexerErrors[0] ?? errors.parserErrors[0]) as any;
+        const offset = [first.offset, first.token?.startOffset, first.previousToken?.endOffset].find(x => Number.isFinite(x)) ?? 0;
+        const message = String(first.message).replace(/\s*\n\s*/g, ' ');
+        return { edits: [], machines: [], guards: [], map: {}, refused: [{ ...position(source, offset), reason: machine ? `syntax error that the 2.2 grammar reports in a file with 2.2 state-machine syntax: ${message}` : `syntax error: ${message}` }] };
     }
     const r = migrateSource(source, parse, id);
     if (!r.machines.length)
@@ -93,7 +103,7 @@ export async function migrateFile(source: string): Promise<FileMigration> {
     const refused = r.machines.flatMap(m => m.refused.map(reason => ({ line: m.line ?? 1, column: m.column ?? 1, reason: `${m.operation}: ${reason}` })));
     if (refused.length)
         return { edits: [], machines: r.machines, guards: [], map: {}, refused };
-    return { text: r.text, edits: r.edits ?? [], machines: r.machines, guards: [], refused: [], map: r.map };
+    return { text: back(r.text!), base: source, baseText: r.text, edits: r.edits ?? [], machines: r.machines, guards: [], refused: [], map: r.map };
 }
 
 /**
