@@ -155,14 +155,6 @@ type Component = {
     structure: Structure;
     store: Environment;
     lock?: Frame;
-    /**
-     * What happened to this occurrence from outside so far (SIF-R18): deliveries and sample updates from another
-     * occurrence, replies, and writes of a case script or of a case call into it. Two looks of a state with the same count
-     * between them saw only the occurrence's own activity.
-     */
-    external?: number;
-    /** SIF-R18 within the current instant: looks per state, and the configurations seen at them with their external count. */
-    loops?: { time: number; looks: Map<a.StateStep, number>; seen: Map<a.StateStep, Map<string, number>> };
 };
 /** Why a waiting state looks without a message (SIF-R07, SIF-R08, SIF-T03). */
 type WakeCause = { cause: 'write'; writer: string; attributes: string[] } | { cause: 'sample'; cell: string } | { cause: 'own'; names: string[] };
@@ -210,7 +202,7 @@ type Frame = {
     flowTrigger?: AstNode;
     /** Statements run so far by the event line block that runs now (SIF-R06, SIF-T02); a false if test is no work. */
     lineWork?: number;
-    /** The state levels of the machine's current state and the locals of the list holding its outermost state (SIF-R07, SIF-R18). */
+    /** The state levels of the machine's current state and the locals of the list holding its outermost state (SIF-R07). */
     flow?: { levels: FlowLevel[]; local: Environment };
     /** Attribute names this segment wrote, per occurrence written (a case call writes its subject), until its unlock (SIF-R07). */
     dirty?: Map<Component, Set<string>>;
@@ -218,15 +210,10 @@ type Frame = {
     wakePending?: WakeCause;
     /** Attribute and local names written by the event line block that runs now (SIF-R08). */
     lookWrites?: Set<string>;
-    /** Iteration counters of the bounded loops being run (n times, for … in): part of the configuration (SIF-R18). */
-    loops?: Map<AstNode, number>;
-    /** A case script running a call of an operation of its subject: its writes are external to the subject (SIF-R18). */
-    borrowed?: boolean;
     /**
-     * The persistent activation of a periodic machine (SIF-R14): releases issued (seq), releases whose work has ended (done),
-     * and releases that came while the previous one still ran (backlog; a deadline at most the period makes it unreachable).
+     * The persistent activation of a periodic machine (SIF-R14): releases issued (seq) and releases whose work has ended (done).
      */
-    periodic?: { seq: number; done: number; backlog: number };
+    periodic?: { seq: number; done: number };
     /** The states reached in the current release of a periodic machine, the state current at the release included (SIF-R16). */
     reached?: Set<a.StateStep>;
     /** The arrival just recorded was a second arrival of its state in this release (SIF-R16): no arrival look. */
@@ -642,7 +629,14 @@ class Interpreter {
     private source(n?: AstNode): string | undefined { return n && statementIdentity(n); }
     private log(kind: string, subject: string, details: Record<string, unknown> = {}): void { this.trace.push({ timeNs: this.time, ordinal: this.trace.length + 1, kind, subject, ...details }); }
     private fuel = (): void => { if (++this.steps > this.options.maxSteps)
-        throw new ContractViolation('StepLimit'); };
+        throw new ContractViolation('StepLimit', this.stepLimitMessage()); };
+    /** The activations driven at the current instant, in the order they first ran: a StepLimit names them. */
+    private stepping = { time: -1, frames: new Set<Frame>() };
+    /** A run that loops without time passing ends at the step limit; the report says at which instant and who was stepping. */
+    private stepLimitMessage(): string {
+        const who = [...this.stepping.frames].map(f => { const m = this.machines[this.label(f)]; return m?.state ? `${this.label(f)} (state ${m.state})` : this.label(f); });
+        return `StepLimit: the run reached maxSteps = ${this.options.maxSteps} at ${this.time}ns; activations that ran at this instant: ${[...new Set(who)].join(', ') || 'none'}.`;
+    }
     private at(time: number, phase: number, run: () => void, live: () => boolean = () => true, key?: RunKey): void { if (!Number.isSafeInteger(time))
         throw new ContractViolation('ClockRange'); this.events.push(key ? { time, phase, order: this.order++, run, live, key } : { time, phase, order: this.order++, run, live }); }
     private keyOf(c: Component, entry: a.ScheduleEntry): RunKey | undefined { return this.tasked ? this.keys.get(c)?.get(entry) : undefined; }
@@ -807,10 +801,9 @@ class Interpreter {
             }
             else if (e instanceof ContractViolation) {
                 this.stop = e.code === 'StepLimit' ? 'limit' : 'violation';
-                // A violation with details names its own subject and source; the others name the run target.
                 // An ActivationOverflow of a run with Tasks also says which limit and which Core (WP8-R02); runs without
                 // Tasks record the 2.2 observation.
-                this.log('violation', e.details?.subject ?? this.target.identity, { code: e.code, ...(e.details?.source !== undefined ? { source: e.details.source } : {}), ...(e.code === 'ActivationOverflow' && e.message !== e.code ? { message: e.message } : {}) });
+                this.log('violation', this.target.identity, { code: e.code, ...((e.code === 'ActivationOverflow' || e.code === 'StepLimit') && e.message !== e.code ? { message: e.message } : {}) });
             }
             else
                 throw e;
@@ -865,10 +858,10 @@ class Interpreter {
             if (deadline)
                 this.at(this.time + deadline, 0, () => { if (!machine.done && p.done < seq)
                     throw new ContractViolation('Deadline', machine.id); }, () => !machine.done && p.done < seq);
+            // A release finds the machine waiting for it: a deadline at most the period (WP4-S04) stops the run before a
+            // release can come while the previous one still runs.
             if (machine.suspended && machine.waiting?.kind === 'receive' && machine.waiting.periodic)
                 this.resume(machine, { release: true });
-            else
-                p.backlog++;
             return;
         }
         if (this.unstarted >= this.options.maxPending)
@@ -878,7 +871,7 @@ class Interpreter {
         if (key)
             f.key = key;
         if (persistent) {
-            f.periodic = { seq: 1, done: 0, backlog: 0 };
+            f.periodic = { seq: 1, done: 0 };
             this.periodicMachines.set(label, f);
         }
         f.iterator = this.activate(f, message);
@@ -991,6 +984,9 @@ class Interpreter {
     private drive(f: Frame): void {
         if (f.done)
             return;
+        if (this.stepping.time !== this.time)
+            this.stepping = { time: this.time, frames: new Set() };
+        this.stepping.frames.add(f);
         try {
             let step: IteratorResult<Yield, Value>;
             if (f.interrupted) {
@@ -1043,10 +1039,6 @@ class Interpreter {
             if (y.kind === 'receive' && y.periodic && f.periodic) {
                 f.periodic.done++;
                 this.releaseSuccessors(f);
-                if (f.periodic.backlog) {
-                    f.periodic.backlog--;
-                    this.resume(f, { release: true });
-                }
             }
             if (y.kind === 'receive' && y.timeout !== undefined)
                 this.at(this.time + y.timeout, 1, () => { if (f.token === token && f.suspended)
@@ -1304,7 +1296,6 @@ class Interpreter {
                 f.op = scripted.operation;
                 f.script = undefined;
                 f.watches = [];
-                f.borrowed = true;
                 let completed = false, result: Value, outputs: Value[] | undefined;
                 try {
                     result = yield* this.call(scripted.operation, args, f);
@@ -1314,7 +1305,6 @@ class Interpreter {
                 finally {
                     const failedAt = f.at;
                     this.unlock(f);
-                    f.borrowed = false;
                     Object.assign(f, saved);
                     // A failure keeps its actual callee statement; a successful
                     // return and all out writes belong to the restored caller.
@@ -1414,24 +1404,16 @@ class Interpreter {
         }
         else if (a.isWhile(s) || a.isUntil(s)) {
             const limit = s.limit ? widen(yield* this.evaluate(s.limit, f, local), 'uint').data as number : Infinity;
-            try {
-                for (let i = 0; i < limit; i++) {
-                    this.fuel();
-                    // A bounded loop's counter belongs to the configuration (SIF-R18); an unbounded loop's count would hide a repetition.
-                    if (s.limit)
-                        (f.loops ??= new Map()).set(s, i);
-                    // The body moves f.at; a condition belongs to the loop statement again.
-                    f.at = s;
-                    if (a.isWhile(s) && !(yield* this.evaluate(s.condition, f, local)).data)
-                        break;
-                    yield* this.block(s.body, f, local);
-                    f.at = s;
-                    if (a.isUntil(s) && (yield* this.evaluate(s.condition, f, local)).data)
-                        break;
-                }
-            }
-            finally {
-                f.loops?.delete(s);
+            for (let i = 0; i < limit; i++) {
+                this.fuel();
+                // The body moves f.at; a condition belongs to the loop statement again.
+                f.at = s;
+                if (a.isWhile(s) && !(yield* this.evaluate(s.condition, f, local)).data)
+                    break;
+                yield* this.block(s.body, f, local);
+                f.at = s;
+                if (a.isUntil(s) && (yield* this.evaluate(s.condition, f, local)).data)
+                    break;
             }
         }
         else if (a.isFor(s)) {
@@ -1447,16 +1429,10 @@ class Interpreter {
         }
         else if (a.isForEach(s)) {
             const values = copy((yield* this.evaluate(s.collection, f, local)).data as Value[]);
-            try {
-                for (const [i, v] of values.entries()) {
-                    (f.loops ??= new Map()).set(s, i);
-                    const loop = new Map(local);
-                    bind(loop, s.variable.name, typeKey(s.variable.type), v);
-                    yield* this.block(s.body, f, loop);
-                }
-            }
-            finally {
-                f.loops?.delete(s);
+            for (const v of values) {
+                const loop = new Map(local);
+                bind(loop, s.variable.name, typeKey(s.variable.type), v);
+                yield* this.block(s.body, f, loop);
             }
         }
         else if (a.isWait(s) && s.delay) {
@@ -1907,16 +1883,15 @@ class Interpreter {
     }
     /**
      * Before every look: the pending wake is served by it (SIF-R05 step 3: one look serves every write made while the machine
-     * was busy; a look that it causes records it now, with pending: true), and the look is checked for StateLoop (SIF-R18).
+     * was busy; a look that it causes records it now, with pending: true).
      */
     private beginLook(f: Frame, levels: readonly FlowLevel[], key: string, present: Present): void {
         const pending = f.wakePending;
         f.wakePending = undefined;
         if (pending && present.cause === 'pending')
             this.log('wake', key, { activation: f.id, state: levels.at(-1)!.state.name, ...pending, pending: true });
-        this.checkLoop(f, levels, present);
     }
-    // ---- Values that wake a state (SIF-R07), the own-write re-look (SIF-R08) and StateLoop (SIF-R18) ----
+    // ---- Values that wake a state (SIF-R07) and the own-write re-look (SIF-R08) ----
     /** Whether a machine looks again after its own line's write (SIF-R08): waiting machines only. */
     private relooks(f: Frame): boolean { return !f.periodic; }
     private reads = new Map<AstNode, Map<Structure, StatementReads>>();
@@ -1963,8 +1938,7 @@ class Interpreter {
     }
     /**
      * SIF-R07: at the end of a segment (its unlock at suspension, completion or failure) the attributes it wrote wake the
-     * waiting machines of the occurrence written whose read set holds them; a case script's writes into its subject are also
-     * activity from outside for StateLoop (SIF-R18).
+     * waiting machines of the occurrence written whose read set holds them.
      */
     private flushWrites(f: Frame): void {
         const dirty = f.dirty;
@@ -1972,8 +1946,6 @@ class Interpreter {
             return;
         f.dirty = undefined;
         for (const [c, names] of dirty) {
-            if (f.borrowed || f.script)
-                c.external = (c.external ?? 0) + 1;
             for (const g of this.wakeable(c, f)) {
                 const reads = this.readSet(g).attributes, hit = [...names].filter(n => reads.has(n));
                 if (hit.length)
@@ -1989,52 +1961,6 @@ class Interpreter {
         for (const g of this.wakeable(c))
             if (this.readSet(g).cells.has(cell))
                 this.wakeOrPend(g, { cause: 'sample', cell: `${m.target}.${m.member}` });
-    }
-    /** SIF-R18: a delivery or sample update from another occurrence is activity from outside of the target occurrence. */
-    private noteExternal(m: Message): void {
-        const target = this.ports.get(m.target)?.c, source = this.ports.get(m.source)?.c;
-        if (target && source !== target)
-            target.external = (target.external ?? 0) + 1;
-    }
-    /**
-     * The configuration of an occurrence at a look (SIF-R18): its attributes and sample cells; its input queues by member,
-     * payload, order and readiness (not message identity); for each of its activations its place, its state levels with
-     * their arrival times and the timers already present, its locals, its bounded loop counters and its pending wake.
-     */
-    private configuration(c: Component): string {
-        const queues: unknown[] = [];
-        for (const [k, q] of this.queues)
-            if (q.length && this.ports.get(q[0].target)?.c === c)
-                queues.push([k.slice(k.indexOf('|') + 1), q.map(m => [m.member, m.args.map(plain), !!(m as Message & { ready?: boolean }).ready])]);
-        const frames: unknown[] = [];
-        for (const g of this.frames)
-            if (!g.done && g.c === c)
-                frames.push([g.op?.name, this.source(g.at), g.waiting?.kind, g.flow?.levels.map(l => [l.state.name, l.entered, [...l.presented].map(x => this.source(x))]), g.flow ? [...g.flow.local].map(([n, v]) => [n, plain(v.value)]) : undefined, g.loops ? [...g.loops].map(([n, i]) => [this.source(n), i]) : undefined, g.wakePending ?? null]);
-        const cells = [...this.cells].filter(([k]) => k.startsWith(`${c.path}.`)).map(([k, v]) => [k, plain(v.value)]);
-        return JSON.stringify([[...c.store].map(([n, v]) => [n, plain(v.value)]), cells, queues, frames]);
-    }
-    /**
-     * SIF-R18: StateLoop at a look of state S of a waiting machine when the configuration of the occurrence, with what is
-     * present at this look (the message, by member and payload, and the timers that have run out), equals the one at an
-     * earlier look of S in the same instant with no activity from outside between. Configurations are taken from the
-     * second look of S in an instant, so a loop that would end is never stopped and nothing is hashed in the usual case.
-     */
-    private checkLoop(f: Frame, levels: readonly FlowLevel[], present: Present): void {
-        if (!this.relooks(f))
-            return;
-        const c = f.c, s = levels.at(-1)!.state;
-        if (c.loops?.time !== this.time)
-            c.loops = { time: this.time, looks: new Map(), seen: new Map() };
-        const n = (c.loops.looks.get(s) ?? 0) + 1;
-        c.loops.looks.set(s, n);
-        if (n < 2)
-            return;
-        const due = present.timers ? levels.flatMap(l => this.timerLines(l).filter(t => !l.presented.has(t) && this.time >= this.due(l, t)).map(t => this.source(t))) : [];
-        const config = this.configuration(c) + JSON.stringify([present.input ? [present.input.member, present.input.args.map(plain)] : null, due]);
-        const seen = c.loops.seen.get(s) ?? c.loops.seen.set(s, new Map()).get(s)!, external = c.external ?? 0;
-        if (seen.get(config) === external)
-            throw new ContractViolation('StateLoop', 'StateLoop', { subject: this.label(f), source: this.source(s) });
-        seen.set(config, external);
     }
     /** A script's on call branch answers a request at an actor port; return inside it is the reply. */
     private *answer(branch: a.ReceiveBranch, input: Message, f: Frame, scope: Environment): Iterator {
@@ -2197,7 +2123,6 @@ class Interpreter {
                         cell.value = widen(copy(m.args)[0], cell.type);
                         cell.offer = offer;
                         this.log('sample', `${m.target}.${m.member}`, { source: m.origin, message: m.id, targetPort: m.target, member: m.member, value: plain(cell.value) });
-                        this.noteExternal(m);
                         // An update of a cell a waiting state reads wakes it, at this delivery event (SIF-R07).
                         this.cellUpdated(m);
                     }
@@ -2211,8 +2136,6 @@ class Interpreter {
                 }
                 (m as Message & { ready: boolean }).ready = true;
                 m.delivered = ++this.deliveries;
-                if (!cell)
-                    this.noteExternal(m);
             }, undefined, this.deliveryKey(m));
         }
     }
@@ -2253,7 +2176,6 @@ class Interpreter {
                         continue;
                     }
                     c.state = m.response?.failure ? 'failed' : 'succeeded';
-                    c.frame.c.external = (c.frame.c.external ?? 0) + 1;
                     this.log('reply', m.route.id, { source: c.origin, correlation: c.id, state: c.state });
                     this.resume(c.frame, m.response);
                     continue;

@@ -3,7 +3,7 @@
 // continues in the release), SIF-R15 (timers across releases and skipped releases, one message per release in delivery
 // order, input of members the state does not name dropped at the release, deadline per release from the release, release
 // guards with skip carrying the machine's activation), SIF-R16 (held arrivals), SIF-R17 (periodic end and restart),
-// SIF-S01 for on every, SIF-D06, T4 per section 9, the periodic Timing projection, reading samples 9 and 10 and gate F (the
+// SIF-S01 for on every, T4 per section 9, the periodic Timing projection, reading samples 9 and 10 and gate F (the
 // door showcase with MirrorHeater.tick and SupplyMonitor.classify written as periodic machines). The fixture models are the
 // interpreter prototype's (states-p7: p6-periodic, p6-window-10ms, p6-traffic-connection, p6-heater-supply, p7-own-writes);
 // results and step counts are those of its recorded evidence unless a comment says otherwise. Each runtime case names the
@@ -84,7 +84,7 @@ test('SIF-R14 to SIF-R17 the prototype periodic cases: parent line per release, 
         assert.equal(r.get(name)?.run?.steps, steps, `${name} steps`);
     }
     // SIF-R16 (kills E5, the bound counting the first arrival): a, b, c and d are passed in the release in which go holds;
-    // the zero-time cycle a, b, a ends its release at the held arrival of a, never with StateLoop or the step limit.
+    // the zero-time cycle a, b, a ends its release at the held arrival of a, never at the step limit.
     assert.deepEqual(states(r.get('Entered and left in one release'), 'chain.step').slice(0, 5), ['10ms state a', '20ms state b', '20ms state c', '20ms state d', '30ms state a']);
     const spin = states(r.get('Zero-time cycle in one release'), 'spin.step');
     assert.deepEqual(spin, ['10ms state a', '10ms state b', '10ms state a held']);
@@ -266,18 +266,18 @@ test('SIF-R15 after successors are released after the work of each release of a 
     assert.ok(!trace(r).some(e => e.kind === 'complete' && e.subject === 'm.step'));
 });
 
-// ---------------------------------------------------------------- static rules: SIF-S01 on every, SIF-D05 and SIF-D06, T4
+// ---------------------------------------------------------------- static rules: SIF-S01 on every, T4
 
-test('SIF-S01 an operation with states may be released on every; SIF-D05 applies to waiting machines only; SIF-D06 warns of a rejecting route', async () => {
+test('SIF-S01 an operation with states may be released on every; an event line on a rejecting route gets no warning (SIF-D06 is cut)', async () => {
     const { diagnostics } = await load(unit(`step() {
       state a { to b; }
       state b { to a; }
       state c { on receive in.m(v) { x = v; } }
     }`, ''), 'file:///d06.swaml');
     assert.deepEqual(diagnostics.filter(d => d.severity === 1), [], 'no error: on every is accepted and the zero-time cycle is bounded per release');
-    // The default connection policy rejects on overflow.
-    assert.deepEqual(diagnostics.filter(d => d.code === 'SW2018').map(d => [d.severity, String(d.message)]), [[2, "'in'.m is taken one per release by step; a faster sender, or a false release guard, fills its queue and makes the sender fail (SIF-D06)."]]);
-    // A dropping member policy: no warning.
+    // The default connection policy rejects on overflow: the run reports a sender that overflows; the text gets no warning.
+    assert.deepEqual(diagnostics.filter(d => d.code === 'SW2018'), []);
+    // A dropping member policy: no warning either.
     const dropping = unit('step() { state c { on receive in.m(v) { x = v; } } }', '').replace('package Unit {', 'package Unit {\n  import Swaml::Qos;').replace('  component def Bench', '  qos def Drop: Policy { delivery = Delivery.atMostOnce; ordering = Ordering.fifo; capacity = 8; overflow = Overflow.dropOldest; requestTimeout = 1s; }\n  component def Bench').replace('connect (bench.out, m.in);', 'connect (bench.out, m.in) { m: Drop; }');
     const d2 = await load(dropping, 'file:///d06b.swaml');
     assert.deepEqual(d2.diagnostics.filter(d => d.severity === 1 || d.code === 'SW2018'), []);

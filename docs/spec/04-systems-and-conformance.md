@@ -120,7 +120,7 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | SW2005 | Single input owner and emission provenance; interface-only components are exempt |
 | SW2006 | Calls, nested scope, effects, returns, out arguments and suspension placement |
 | SW2007 | Schedule identity, signatures, deadlines and after graph; release guards (2.3) |
-| SW2008 | Operations with states, structure of states, leaves and jumps (states in the flow, SIF-D01 to SIF-D03 and SIF-D05) |
+| SW2008 | Operations with states, structure of states, leaves and jumps (states in the flow, SIF-D01 to SIF-D03) |
 | SW2009 | Node content, deployment paths, indexes and specificity |
 | SW2010 | Requirement/case/view references, case subjects, associate, satisfy and verify links, the environment role and white-box access of case scripts |
 | SW2011 | Conservative stale-read warning |
@@ -131,11 +131,11 @@ Flow covers statements, nested operation calls, loops, receive, interruption and
 | SW2016 | Warning (2.3): a computed duration without a time unit, which counts nanoseconds |
 | SW2019 | Warning (2.3): two every entries of one occurrence for the same operation with equal periods but different triggers |
 | SW2017 | Not reported: the completion-guard warnings of the 2.3 work packages (WP5-D08, WP6-D09, WP6-D10) left with the completion transitions before release (states in the flow) |
-| SW2018 | Warning (2.3): a member named in a periodic machine that is delivered over a route that rejects on overflow (SIF-D06, states in the flow) |
+| SW2018 | Not used from 2.3 (its 2.2 deferral forms and the warning SIF-D06 of the states in the flow candidate are removed) |
 | SW2020 | Warning (2.3): a release guard that folds to false, so its entry never runs its operation, or a replacing schedule entry without a guard that drops an inherited release guard |
 | SW2021 | Warning (2.3): an operation placement on a platform without a `Swaml::Os` task, which changes no run and which only T7 uses (WP8-D12) |
 
-Diagnostics added by 2.3. Message shapes are templates; implementations may add context but keep the leading clause stable. All are errors except WP4-D06, WP4-D08, SIF-D06, WP7-D03, WP7-D04 and WP8-D12, which are warnings. A diagnostic of WP6 applies only to a reference `p.m` of a member that opts in to sampling (an attribute member with an initial value, 2.3 syntax), to behaviour inherited with such a reference or to a member-policy body, so every 2.2 source keeps its diagnostics.
+Diagnostics added by 2.3. Message shapes are templates; implementations may add context but keep the leading clause stable. All are errors except WP4-D06, WP4-D08, WP7-D03, WP7-D04 and WP8-D12, which are warnings. A diagnostic of WP6 applies only to a reference `p.m` of a member that opts in to sampling (an attribute member with an initial value, 2.3 syntax), to behaviour inherited with such a reference or to a member-policy body, so every 2.2 source keeps its diagnostics.
 
 | ID | Code | Condition | Message shape |
 | --- | --- | --- | --- |
@@ -163,9 +163,9 @@ Diagnostics added by 2.3. Message shapes are templates; implementations may add 
 | SIF-D01 | SW2008 | Operation-kind violations of SIF-S01 (chapter 3.6) | The messages of the proposal's section 3.1, for example `` `op` contains states, so it keeps its place and can only be released by one `on start` or one `on every` entry. `` |
 | SIF-D02 | SW2008 | Leave and jump violations (SIF-S04, SIF-S06) | For example `` `to c` skips the declaration of `x`, which `c` uses. Declare `x` before the jump. `` |
 | SIF-D03 | SW2008 | Structure (SIF-S02, SIF-S03) | `Duplicate on {entry/exit} in {state}` / `{state} has inner states; only states may follow the first one` / `Two states are named {name} in {op}` |
-| SIF-D04 | SW2006 | A statement standing in a state reads `now()`, directly or through a called operation (SIF-S05); a non-sampled port member is already unreadable (WP6-S01) | `{statement} in {state} reads now(), which nothing announces; use after D, or a sampled member (SIF-D04).` with the statement's first line, for example `` if (now() > t0) in s reads now(), … `` |
-| SIF-D05 | SW2008 | A waiting machine has a cycle of states whose arrival looks leave without any condition: the first item of the look (parents' items first) that can leave is `exit;` or `to S;` standing directly in the braces, and the state it reaches (the jump's target, the next inner state, the next state of the flow, or the first state of a `while (true)` body after its last one; a parent is entered at its first inner state) is on the cycle. Reported once per cycle, at its first state | `{a} and {b} leave each other at once; reached, this stops the run with StateLoop (SIF-D05).`; three or more states are listed as `{a}, {b} and {c}`; a state that reaches itself: `{a} leaves to itself at once; …` |
-| SIF-D06 | SW2018, warning | An event named by an event line of a periodic machine is delivered over a route whose effective policy (member policy, connection policy or `Swaml::Qos::Default`) rejects on overflow; per effective occurrence, at the first line naming the member. Attributes keep their latest value and never overflow | `{member} is taken one per release by {op}; a faster sender, or a false release guard, fills its queue and makes the sender fail (SIF-D06).` |
+| SIF-D04 | SW2006 | The condition of an `if` (or of one of its `else if`) standing directly in a state of a waiting machine reads `now()`, directly or through a called operation (SIF-S05). `now()` in plain statements, in event line blocks, in `on entry`/`on exit` and anywhere in a periodic machine is allowed; a non-sampled port member is already unreadable (WP6-S01) | `if ({condition}) in {state} reads now(); a waiting state tests it only when something wakes it and time passing wakes nothing, so write after D instead (SIF-D04).` at the condition |
+| SIF-D05 | — | *Cut.* A cycle of states that leave each other is not a diagnostic: such a cycle can wait in `on entry` or make a request, and one that loops without time passing ends at the step limit, whose report names the instant and the activations that ran (SIF-R18) | — |
+| SIF-D06 | — | *Cut.* A periodic machine's event line on a route that rejects on overflow gets no warning; a sender that overflows the queue is reported by the run (`overflow`, the sender's failure) | — |
 | WP6-D01 | SW2005 | Sampling a forwarded boundary (WP6-S08) | `{port}.{member} cannot be sampled: {port} is a forwarded boundary.` |
 | WP6-D02 | SW2004 | Port redefinition that removes the initial value, or changes the type, of a member that inherited behaviour samples (WP6-S03), at the redefinition, once per member | `Sampled attribute {member} of {portDefinition} needs an initial value: inherited {operation} samples {port}.{member}.` / `Sampled attribute {member} of {portDefinition} must keep type {type}: inherited {operation} samples {port}.{member}.` (`an inherited schedule entry` for a read in a schedule-entry argument) |
 | WP6-D03 | SW2005 | Ownership of sampled and unsampled members (WP6-S04) | The existing owner messages; a sampled member with no owner is not reported. |

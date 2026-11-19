@@ -1,8 +1,8 @@
 // States in the flow, package 4 (docs/proposals/STATES_IN_FLOW_PROPOSAL.md 3.7, 3.8, 3.17, 4.4, 4.5): values that wake a
-// state, the machine's own writes and StateLoop. SIF-R07 (read sets per effective occurrence through helpers, redefinition
+// state and the machine's own writes. SIF-R07 (read sets per effective occurrence through helpers, redefinition
 // and shadowing; wakes counted by writes at the writer's unlock, by case calls at every unlock, by sample-cell updates at
-// their delivery; pending wakes), SIF-R08 (the own-write re-look, waiting machines only), SIF-R18 (the configuration and
-// when it is compared), SIF-D04, SIF-D05, SIF-T03 (wake) and reading sample 8. The fixture models are the interpreter
+// their delivery; pending wakes), SIF-R08 (the own-write re-look, waiting machines only), zero-time loops ending at the
+// step limit (StateLoop, SIF-R18 and SIF-D05 are cut), SIF-D04, SIF-T03 (wake) and reading sample 8. The fixture models are the interpreter
 // prototype's (states-p7: p4-values, p4-stateloop, p7-own-writes, p4-antipinch-*); results and step counts are those of
 // its recorded evidence. Each runtime case names the mutation of the plan's package 4 it kills (scripts/mutations-sif2.mjs).
 import nodeTest from 'node:test';
@@ -218,19 +218,18 @@ test('SIF-R08 only a statement written before the line looks again: a statement 
     assert.deepEqual(wakes(local).map(w => w.names), [['seen']]);
 });
 
-// ---------------------------------------------------------------- SIF-R18: StateLoop
+// ---------------------------------------------------------------- loops without time passing end at the step limit
 
-test('SIF-R18 the prototype StateLoop cases: drains pass, ping-pongs stop with StateLoop, the two known misses reach the step limit (kills D10)', async () => {
+test('a zero-time loop ends at the step limit, whose report names the instant and the activations that ran; bounded drains pass', async () => {
     const r = await fixture('p4-stateloop.swaml');
-    // Results and step counts of the recorded evidence (states-p7 p4-stateloop.txt); a configuration taken from the first
-    // look of a state in an instant would stop the ping-pongs one cycle earlier.
+    // The prototype's StateLoop cases (states-p7 p4-stateloop.txt): StateLoop is cut, so every endless one ends at the limit.
     const expected: Record<string, [string, string | undefined, number]> = {
         'Drain by re-arrival': ['pass', undefined, 300],
         'Drain by a staying statement': ['pass', undefined, 164],
-        'Wake ping-pong': ['fail', 'violation', 128],
+        'Wake ping-pong': ['inconclusive', 'limit', 200001],
         'Growing ping-pong': ['inconclusive', 'limit', 200001],
         'Four-step handshake': ['pass', undefined, 165],
-        'Arrival ping-pong': ['fail', 'violation', 111],
+        'Arrival ping-pong': ['inconclusive', 'limit', 200001],
         'Arrival ping-pong with a request': ['inconclusive', 'limit', 200001],
     };
     for (const [name, [result, reason, steps]] of Object.entries(expected)) {
@@ -238,37 +237,20 @@ test('SIF-R18 the prototype StateLoop cases: drains pass, ping-pongs stop with S
         assert.equal(r.get(name)?.reason, reason, name);
         assert.equal(r.get(name)?.run?.steps, steps, `${name} steps`);
     }
-    // The violation names the operation occurrence and the state (SIF-T07).
     const violation = trace(r.get('Arrival ping-pong')).find(e => e.kind === 'violation')!;
-    assert.equal(violation.code, 'StateLoop');
-    assert.equal(violation.subject, 'arrival.run');
-    assert.match(String(violation.source), /^StateLoops::Arrival\.run\/\d+$/);
-    assert.equal(trace(r.get('Growing ping-pong')).find(e => e.kind === 'violation')?.code, 'StepLimit');
+    assert.equal(violation.code, 'StepLimit');
+    assert.match(String(violation.message), /^StepLimit: the run reached maxSteps = 200000 at \d+ns; activations that ran at this instant: .*arrival\.run \(state \w+\)/);
 });
 
-test('SIF-R18 what is present belongs to the configuration: a message look and the arrival look after it are not a loop (kills D8)', async () => {
-    // At 0 ms: z leaves on k and reaches a (arrival look 1); m, delivered at the same instant, makes look 2 of a, which
-    // jumps to a (arrival look 3). Looks 2 and 3 differ only by the message present.
-    const r = await one(`run() {
-      state z { on receive in.k() exit; }
-      state a { on receive in.m(v) { if (v == 0) exit; to a; } }
-      y = 1;
-    }`, 'publish bench.out.k(); publish bench.out.m(1); wait 1ms; publish bench.out.m(0); wait 1ms; assert m.y == 1;', 'n = 1;');
-    pass(r, 'no StateLoop');
-});
-
-test('SIF-R18 an unbounded loop counter is not part of the configuration: a zero-time loop through while (true) stops with StateLoop (kills D9)', async () => {
+test('a zero-time loop through while (true) ends at the step limit; the same loop bounded with 3 times goes on', async () => {
     const r = await one(`run() {
       state z { on receive in.k() { ready = true; exit; } }
       while (true) {
         state a { if (ready) exit; }
       }
     }`, 'publish bench.out.k(); wait 1ms;', 'n = 1;');
-    assert.equal(r.result, 'fail');
-    assert.equal(r.reason, 'violation');
-    const v = trace(r).find(e => e.kind === 'violation')!;
-    assert.deepEqual([v.code, v.subject], ['StateLoop', 'm.run']);
-    // A bounded loop's counter is: the same loop with 3 times ends after three rounds and goes on.
+    assert.deepEqual([r.result, r.reason], ['inconclusive', 'limit']);
+    assert.equal(trace(r).find(e => e.kind === 'violation')!.message, 'StepLimit: the run reached maxSteps = 200000 at 0ns; activations that ran at this instant: m.run (state a), Unit::T.');
     const bounded = await one(`run() {
       state z { on receive in.k() { ready = true; exit; } }
       while (true, 3 times) {
@@ -277,6 +259,19 @@ test('SIF-R18 an unbounded loop counter is not part of the configuration: a zero
       y = 1;
     }`, 'publish bench.out.k(); wait 1ms; assert m.y == 1;', 'n = 1;');
     pass(bounded, 'bounded loop');
+});
+
+test('a cycle of states that leave each other is not an error: a state in while (true) whose on entry waits runs every 10 ms (review 3 F4)', async () => {
+    const r = await one(`run() {
+      state idle { on receive in.k() exit; }
+      while (true) {
+        state blink {
+          on entry { n = n + 1; wait 10ms; }
+          exit;
+        }
+      }
+    }`, 'publish bench.out.k(); wait 95ms; assert m.n == 10;');
+    pass(r, 'blink');
 });
 
 // ---------------------------------------------------------------- reading sample 8 (SIF-R04, SIF-R07; gate E)
@@ -313,70 +308,42 @@ test('reading sample 8: a look reads the values when it runs; Q2 reverses; the f
     }
 });
 
-// ---------------------------------------------------------------- SIF-D04, SIF-D05
+// ---------------------------------------------------------------- SIF-D04
 
-const machine = (control: string): Sample => ({
-    pkg: 'Values', entry: 'run', control, types: 'import Swaml::Time;',
+const machine = (control: string, entry = 'run'): Sample => ({
+    pkg: 'Values', entry, control, types: 'import Swaml::Time;',
     ports: { p: [['n', 'requires event n()'], ['k', 'requires event k()']].filter(([m]) => control.includes(`p.${m}(`)).map(([, d]) => d) },
     attributes: 'attribute x: uint = 0; attribute t0: uint = 0;',
     ops: 'operation late() returns bool { return now() > t0 + 5000000; } operation later() returns bool { return late(); }',
 });
 const errorsOf = async (control: string) => (await parseSample(sampleModel(machine(control), ''))).errors.map(e => `${String(e.code)} ${e.message}`);
 
-test('SIF-D04 a statement standing in a state that reads now(), directly or through a called operation, is an error with a fixed leading text', async () => {
+test('SIF-D04 an if standing in a state of a waiting machine whose condition reads now(), directly or through a called operation, is an error', async () => {
     assert.deepEqual(await errorsOf(`run() {
       state s {
         if (now() > t0) exit;
         on receive p.n() exit;
       }
-    }`), ['SW2006 if (now() > t0) in s reads now(), which nothing announces; use after D, or a sampled member (SIF-D04).']);
+    }`), ['SW2006 if (now() > t0) in s reads now(); a waiting state tests it only when something wakes it and time passing wakes nothing, so write after D instead (SIF-D04).']);
     assert.deepEqual(await errorsOf(`run() {
       state s {
         x = x + 1;
-        if (later()) exit;
+        if (x > 3) exit; else if (later()) exit;
         on receive p.n() exit;
       }
-    }`), ['SW2006 if (later()) in s reads now(), which nothing announces; use after D, or a sampled member (SIF-D04).']);
-    // An event line's block, on entry and on exit read it once, when they run: no error.
+    }`), ['SW2006 if (later()) in s reads now(); a waiting state tests it only when something wakes it and time passing wakes nothing, so write after D instead (SIF-D04).']);
+    // Plain statements, an event line's block, on entry and on exit read it when they run: no error (review 3 F5).
     assert.deepEqual(await errorsOf(`run() {
       state s {
+        t0 = now();
         on entry { t0 = now(); }
         on exit { t0 = now(); }
         on receive p.n() { if (late()) exit; }
       }
     }`), []);
-});
-
-test('SIF-D05 a cycle of states whose arrival looks leave without a condition is an error in a waiting machine; a condition or an event line breaks it', async () => {
-    assert.deepEqual(await errorsOf(`run() {
-      state a { on receive p.n() exit; }
-      state b { to c; }
-      state c { x = x + 1; to b; }
-    }`), ['SW2008 b and c leave each other at once; reached, this stops the run with StateLoop (SIF-D05).']);
-    assert.deepEqual(await errorsOf(`run() {
-      while (true) {
-        state a { on entry { x = x + 1; } exit; }
-      }
-    }`), ['SW2008 a leaves to itself at once; reached, this stops the run with StateLoop (SIF-D05).']);
-    // Through parents: a parent's leave applies to its inner state, exit; of the last inner state leaves the parent.
-    assert.deepEqual(await errorsOf(`run() {
-      state pp {
-        to q;
-        state i { on receive p.k() exit; }
-      }
-      state q {
-        state j { exit; }
-      }
-      state r { to pp; }
-    }`), ['SW2008 i, j and r leave each other at once; reached, this stops the run with StateLoop (SIF-D05).']);
-    // Conditions, or a line before the leave, break the certainty: no error.
-    assert.deepEqual(await errorsOf(`run() {
-      state a { if (x > 0) to b; on receive p.n() exit; }
-      state b { to a; }
-    }`), []);
-    assert.deepEqual(await errorsOf(`run() {
-      state a { to b; }
-      state b { exit; }
-      state c { on receive p.n() exit; }
-    }`), []);
+    // A periodic machine looks at every release, so its conditions may read the clock.
+    const periodic = sampleModel(machine(`run() {
+      state s { if (now() > t0 + 5000000000) exit; }
+    }`), '').replace('on start run();', 'on every 10ms run();');
+    assert.deepEqual((await parseSample(periodic)).errors.map(e => e.message), []);
 });

@@ -630,7 +630,7 @@ test('WP3-S01 now() is allowed in every other expression: statements, receive an
 }`);
 });
 // SIF (proposal 4.4, 4.8): 'WP3-S01 hook for WP5-S03', now() in a completion guard, left with completion transitions; its
-// successor is SIF-D04 (a statement standing in a state that reads now()), which is not implemented yet.
+// successor is SIF-D04 (an if standing in a state of a waiting machine whose condition reads now(); test/v2/states-values.test.ts).
 test('WP3-S01 hook for WP4-S05: now() is not in the constant sublanguage (SW2007); the check uses isClockRead', async () => {
     const source = (period: string) => wrap(`attribute n: uint = 0; operation tick() { n = n + 1; } schedule { on every (${period}) tick(); }`);
     assert.deepEqual((await parse(source('now() + 1ms'))).errors.map(e => [e.code, e.message]), [['SW2007', 'now() + 1ms is not a constant duration: now() are not allowed.']]);

@@ -1397,58 +1397,6 @@ export class SwamlValidator {
             this.report(e, 'SW2008', `${released} An operation with states cannot answer calls; answer in a plain operation and let it set an attribute that a state reads.`);
         else if (e.concurrent || entries.filter(x => x.operation === op.name).length !== 1)
             this.report(e, 'SW2008', `${keeps} and needs exactly one on start or one on every entry, not concurrent (SIF-S01).`);
-        // A waiting machine (on start) can loop in zero time (SIF-D05); a periodic machine (on every) passes each state at most
-        // once per release (SIF-R16).
-        else if (e.kind === 'start')
-            this.leaveCycles(op);
-    }
-    /**
-     * SIF-D05: in a waiting machine, a cycle of states whose arrival looks leave without any condition is certain to stop the
-     * run with StateLoop (SIF-R18) once reached. A state leaves without a condition when the first statement of its look (its
-     * parents' items first) that can leave is exit; or to S; standing directly in the braces. Its successor is the state its
-     * arrival then reaches: the jump's target, the next inner state, the next state of the flow, or the first state of a
-     * while (true) body after its last one; entering a parent descends to its first inner state.
-     */
-    private leaveCycles(op: Executable): void {
-        const states = flowStates(op), byName = new Map(states.map(s => [s.name, s] as const));
-        const leaf = (s: a.StateStep | undefined): a.StateStep | undefined => s && innerStates(s).length ? leaf(innerStates(s)[0]) : s;
-        const levels = (s: a.StateStep): a.StateStep[] => a.isStateStep(s.$container) ? [...levels(s.$container), s] : [s];
-        const leaves = (n: AstNode) => a.isExit(n) || a.isJump(n) || nodes(n).some(x => a.isExit(x) || a.isJump(x));
-        // The state reached after exit; written at level s: the next inner state, or the next statement of the list.
-        const after = (s: a.StateStep): a.StateStep | undefined => {
-            const list = s.$container as AstNode & { statements?: AstNode[] }, i = s.$containerIndex ?? -1;
-            if (a.isStateStep(list))
-                return innerStates(list)[innerStates(list).indexOf(s) + 1] ? leaf(innerStates(list)[innerStates(list).indexOf(s) + 1]) : after(list);
-            const next = list.statements?.[i + 1];
-            if (next)
-                return a.isStateStep(next) ? leaf(next) : undefined;
-            const loop = list.$container;
-            const literalTrue = a.isWhile(loop) && a.isLiteral(loop.condition) && loop.condition.boolean === 'true';
-            return literalTrue && a.isStateStep(list.statements?.[0]) ? leaf(list.statements![0] as a.StateStep) : undefined;
-        };
-        const successor = new Map<a.StateStep, a.StateStep>();
-        for (const s of states.filter(x => !innerStates(x).length)) {
-            const first = levels(s).flatMap(l => stateItems(l).filter(x => !a.isStateAction(x) && !a.isEventLine(x)).map(x => ({ x, l }))).find(({ x }) => leaves(x));
-            const next = !first ? undefined : a.isJump(first.x) ? leaf(byName.get(first.x.target ?? '')) : a.isExit(first.x) ? after(first.l) : undefined;
-            if (next)
-                successor.set(s, next);
-        }
-        const reported = new Set<a.StateStep>();
-        for (const start of states) {
-            const path: a.StateStep[] = [];
-            let s: a.StateStep | undefined = start;
-            while (s && !path.includes(s) && !reported.has(s)) {
-                path.push(s);
-                s = successor.get(s);
-            }
-            if (!s || reported.has(s))
-                continue;
-            const cycle = path.slice(path.indexOf(s));
-            cycle.forEach(x => reported.add(x));
-            const names = cycle.map(x => formatName(x.name, MESSAGE_SPELLING));
-            const who = names.length === 1 ? `${names[0]} leaves to itself` : `${names.slice(0, -1).join(', ')} and ${names.at(-1)} leave each other`;
-            this.report(cycle[0], 'SW2008', `${who} at once; reached, this stops the run with StateLoop (SIF-D05).`, false, this.at(cycle[0], 'name'));
-        }
     }
     /** SIF-S01 (parameterless void, no plain receive statement) and SIF-S02 (state names unique in the operation): SIF-D01, SIF-D03. */
     private flowOperation(op: Executable, b: a.OperationBody): void {
@@ -1505,16 +1453,18 @@ export class SwamlValidator {
                 this.stateStep(item, env, c, op);
             else {
                 this.block({ statements: [item] } as unknown as a.Block, look, c, op, look);
-                this.unannounced(item, s, c);
+                if (a.isIf(item) && !(c && schedule(c).some(e => e.operation === op.name && e.kind === 'every')))
+                    this.unannounced(item, s, c);
             }
         }
     }
     /**
-     * SIF-S05 (SIF-D04): a statement standing in a state reads only what announces its changes to the state. now() changes
-     * without anything happening to the state, directly or through a called operation, so a condition on it would never be
-     * looked at again when it changes. A port member that is not sampled is not readable at all (WP6-S01 reports it).
+     * SIF-S05 (SIF-D04): an if standing directly in a state of a waiting machine tests its conditions (the else if ones too)
+     * at every look, and a waiting state looks only when something happens to it; time passing wakes nothing, so a condition
+     * that reads now(), directly or through a called operation, would not be tested when the time it waits for comes. now()
+     * in plain statements, in event line blocks and in a periodic machine (which looks at every release) is allowed.
      */
-    private unannounced(item: AstNode, s: a.StateStep, c: Structure | undefined): void {
+    private unannounced(item: a.If, s: a.StateStep, c: Structure | undefined): void {
         const visited = new Set<AstNode>();
         const clock = (root: AstNode): boolean => nodes(root).filter(a.isCallExpression).some(call => {
             const t = this.callTarget(call, c);
@@ -1525,10 +1475,11 @@ export class SwamlValidator {
             const b = body(t);
             return !!b && !visited.has(b) && (visited.add(b), clock(b));
         });
-        if (!clock(item))
-            return;
-        const text = a.isIf(item) ? `if (${item.condition.$cstNode?.text ?? '…'})` : (item.$cstNode?.text ?? '').split('\n')[0].trim().replace(/;$/, '');
-        this.report(item, 'SW2006', `${text} in ${formatName(s.name, MESSAGE_SPELLING)} reads now(), which nothing announces; use after D, or a sampled member (SIF-D04).`);
+        for (let x: a.If | undefined = item; x; x = a.isElseIf(x.otherwise) && a.isIf(x.otherwise.statements[0]) ? x.otherwise.statements[0] : undefined)
+            if (x.condition && clock(x.condition)) {
+                this.report(x, 'SW2006', `if (${x.condition.$cstNode?.text ?? '…'}) in ${formatName(s.name, MESSAGE_SPELLING)} reads now(); a waiting state tests it only when something wakes it and time passing wakes nothing, so write after D instead (SIF-D04).`, false, this.at(x, 'condition'));
+                return;
+            }
     }
     /** An event line (SIF-S07): its input (events and attributes only), its timer, and its block with the bindings. */
     private eventLine(line: a.EventLine, env: Env, c: Structure | undefined, op: Executable): void {
@@ -2012,33 +1963,6 @@ export class SwamlValidator {
                     this.report(node, 'SW2004', `Unconnected required port ${path} in package ${p.name}.`, false, range);
                 if (count > 1 && portMembers(port).some(m => direction(port, m) === 'requires' && m.kind !== 'event'))
                     this.report(node, 'SW2004', `Port ${path} requires exactly one peer after forwarding.`, false, range);
-            }
-        this.periodicOverflow(occ.filter(o => checked.has(o.path.split('.')[0])), links, leaf);
-    }
-    /**
-     * SIF-D06 (SW2018, warning): an event named by an event line of a periodic machine is taken at most one per release
-     * (SIF-R15). Delivered over a route whose effective policy rejects on overflow, a faster sender, or releases skipped by a
-     * false guard, fill its queue and make the sender's offer fail; the machine's text does not show it. Attributes keep only
-     * their latest value and never overflow. Reported at the first line naming the member, per effective occurrence.
-     */
-    private periodicOverflow(occ: ReturnType<typeof connectionRoutes>['occurrences'], links: ReturnType<typeof connectionRoutes>['links'], leaf: (path: string) => string): void {
-        for (const o of occ)
-            for (const op of members(o.structure).filter(isExecutable)) {
-                if (!flowStates(op).length || !schedule(o.structure).some(e => e.operation === op.name && e.kind === 'every'))
-                    continue;
-                const seen = new Set<string>();
-                for (const line of nodes(body(op)!).filter(a.isEventLine)) {
-                    const endpoint = line.endpoint;
-                    if (endpoint === undefined || seen.has(endpoint) || owner(line, isExecutable) !== (op.body ? op : signature(op)))
-                        continue;
-                    seen.add(endpoint);
-                    const ep = memberEndpoint(o.structure, endpoint), member = endpoint.split('.')[1];
-                    if (!ep || ep.member.kind !== 'event' || direction(ep.port, ep.member) !== 'requires')
-                        continue;
-                    const port = leaf(`${o.path}.${endpoint.split('.')[0]}`);
-                    if (links.some(l => l.ends.includes(port) && memberQos(l.node, member).overflow === 'reject'))
-                        this.report(line, 'SW2018', `${formatPath(endpoint, MESSAGE_SPELLING)} is taken one per release by ${formatName(op.name, MESSAGE_SPELLING)}; a faster sender, or a false release guard, fills its queue and makes the sender fail (SIF-D06).`, true, this.at(line, 'endpoint'));
-                }
             }
     }
     /** The case script being validated: its case and, inside on call, the answered result type. */

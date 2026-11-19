@@ -6,8 +6,8 @@
 //   the flow passes states) are in test/v2/states-in-flow.test.ts;
 // - deferral and retention (WP5-R08 to WP5-R10, WP5-T03, SW2018 of WP5-D09): deleted; unhandled input is dropped while a
 //   state waits (SIF-R05, SIF-R06) and what must be remembered is a variable written by a line (example 45);
-// - CompletionLoop (WP5-R07, WP5-R12, WP5-T04, WP5-D03): deleted; StateLoop (SIF-R18) and SIF-D05 come with package 4;
-// - SW2017 (WP5-D08) and the completion-guard rules (WP5-S02 to WP5-S07): deleted; SIF-D04 comes later (4.4);
+// - CompletionLoop (WP5-R07, WP5-R12, WP5-T04, WP5-D03): deleted; a loop without time passing ends at the step limit (SIF-R18);
+// - SW2017 (WP5-D08) and the completion-guard rules (WP5-S02 to WP5-S07): deleted; SIF-D04 covers now() in a condition;
 // - the contextual word of deferral (WP5-S01, WP5-G03): it stays an ordinary name (test/v2/conditional-words-lists.test.ts);
 // - the WP5 projection fields, formatter and recovery of the WP5 forms: the flow-state projection, formatter and
 //   half-typed texts are in test/v2/states-in-flow.test.ts and test/v2/durations.test.ts.
