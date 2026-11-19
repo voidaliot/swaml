@@ -166,7 +166,7 @@ Used in statements and decisions; see its grammar contexts and normative constra
 
 ## Keyword: entry
 
-Used in states as steps of the flow; see its grammar contexts and normative constraints.
+Names the action that runs once when a state is reached (on entry).
 
 **Context:** States as steps of the flow. **Grammar:** StateAction. **Name use:** reserved.
 
@@ -198,7 +198,7 @@ Used in schedule entry and successful chaining; see its grammar contexts and nor
 
 ## Keyword: exit
 
-Used in states as steps of the flow; see its grammar contexts and normative constraints.
+Leaves the state it is written in and goes on with what is written next (exit;), or names the action that runs when a state is left (on exit).
 
 **Context:** States as steps of the flow. **Grammar:** Exit, StateAction. **Name use:** reserved.
 
@@ -334,7 +334,7 @@ Used in use cases, tests and associations; see its grammar contexts and normativ
 
 ## Keyword: on
 
-Used in states as steps of the flow; see its grammar contexts and normative constraints.
+Starts a schedule trigger (on start, on every, on receive, on call), an action or event line of a state (on entry, on exit, on receive), a receive statement, an on call branch of a case script or an interrupt handler, or the target of a deployment or deploy statement.
 
 **Context:** States as steps of the flow. **Grammar:** ScheduleEntry, EventLine, Receive, Interruptible, StateAction, Deployment, Placement. **Name use:** reserved.
 
@@ -550,7 +550,7 @@ Used in schedule entry and successful chaining; see its grammar contexts and nor
 
 ## Keyword: state
 
-Used in states as steps of the flow; see its grammar contexts and normative constraints.
+Declares a state, a step of an operation's flow that runs on entry once and looks at its items each time something happens to it (chapter 3.6).
 
 **Context:** States as steps of the flow. **Grammar:** StateStep, Name. **Name use:** contextual.
 

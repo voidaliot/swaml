@@ -1,5 +1,7 @@
 # swa.ml: states as steps of the flow
 
+> **Historical design record.** This proposal was the design input of states in the flow, drafted for an edition then called 2.3 and released as swa.ml 3.0. It is not normative: its older narrative sections were only partly rewritten by revision 6 and may describe forms that were cut (`StateLoop`, SIF-D05, SIF-D06, the periodic backlog, the zero-time wait). The normative text is the specification, chapters [3.6](../spec/03-behavior.md), [4](../spec/04-systems-and-conformance.md) and [6.5](../spec/06-execution-contract.md); the decisions are recorded in [ADR 0026](../decisions/0026-states-in-the-flow.md) and the migration in [MIGRATION_3_0.md](../MIGRATION_3_0.md).
+
 **Status:** **final specification, revision 6**, 19 November 2026 (revision 5 with the decisions taken after four adversarial reviews of the implementation, listed in "Revision 6" below; where an older section still says otherwise, revision 6, the maintained chapters 3.6, 4 and 6.5 and RELEASE_3_0 win), from which the language implementation is built. Not yet normative: the packages of section 11 make it normative, one by one. Nothing here changes the grammar, validator, simulator, standard version or a published artefact by itself. New syntax is in `text` fences because the released parser does not accept it.
 
 Every runtime rule of this revision has been run by an interpreter prototype; "measured" means measured by one, and section 8 lists every measurement with its numbers. What remains argued and not measured is named where it is stated.

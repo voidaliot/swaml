@@ -1,5 +1,7 @@
 # swa.ml next minor (2.3): language gaps from the showcase models
 
+> **Historical design record.** This proposal was the design input of the edition drafted as 2.3 and released as swa.ml 3.0. Its state-reaction items (B7 to B10) were replaced by states in the flow ([ADR 0026](../decisions/0026-states-in-the-flow.md)). The specification chapters are the normative text.
+
 **Design record.** The owner approved this proposal. The normative decisions are ADRs [0022](../decisions/0022-values-places-and-expressions.md), [0023](../decisions/0023-state-reactions.md), [0024](../decisions/0024-communication-and-package-links.md) and [0025](../decisions/0025-real-time-placement-and-binding.md), with the rules to implement in the [2.3 chapter drafts](../design/3.0-drafts/README.md). Where they differ from this proposal, the ADRs are normative. Changes include separate warning codes SW2016–SW2018 instead of one shared SW2016, and the state-machine rule T4.
 
 **Status:** design proposal for owner approval, revision 2 (after the adversarial review of 17 November 2026). Not normative. Nothing here changes the grammar, validator, standard version or a published artefact.

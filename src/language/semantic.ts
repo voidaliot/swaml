@@ -927,12 +927,13 @@ const statementOwner = (n: AstNode) => isExecutable(n) || a.isScenario(n);
  * operation, or a case, with decoded names. The path walks the abstract syntax from that
  * executable's body: a statement contributes its index in the enclosing statement list, and every
  * other step contributes its slot name, followed by an index for list slots (then, otherwise, body,
- * branches/N, timeoutBody, handler, initializer, update, states/N, actions/N, transitions/N, effect).
+ * branches/N, timeoutBody, handler, initializer, update).
  * The If of an else if (SIF-G01) is the one statement of its ElseIf and has the identity it has in the 2.2 form
  * else { if … }, for example Shop::Desk.serve/2/otherwise/0/then/0 in both spellings, so rewriting one spelling as the
  * other keeps every identity.
- * A state is itself identified as <executable>/states/N and a transition, including its guard, as
- * <executable>/states/N/transitions/M. A schedule entry is written <component identity>/schedule/N with N counting the entries the
+ * A state is a statement (3.0): Pkg::C.op/1 is a state, Pkg::C.op/1/0 its first item and Pkg::C.op/1/2/body/0 the first
+ * statement of the block of its third item, an event line; 2.2 identities (…/states/N/transitions/M) map through the
+ * migration's identity map. A schedule entry is written <component identity>/schedule/N with N counting the entries the
  * component declares. Identities follow source structure, so an edit that reorders statements
  * changes them; resolveStatement maps an identity back to its node.
  */
