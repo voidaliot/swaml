@@ -49,7 +49,7 @@ def publication_inventory(root: Path, edition: str = '3.0') -> PublicationInvent
         for folder in [f'docs/notation/{edition}', f'docs/figures/{edition}', 'resources/fonts', f'examples/simulation/{edition}', 'examples/notation']
         for p in (root/folder).glob('*') if p.is_file())
     attachments += sorted(p.relative_to(root).as_posix() for p in (root/'src').rglob('*.ts')
-        if 'generated' not in p.parts and p.name != 'standard-library.ts')
+        if 'generated' not in p.parts and p.name not in ('standard-library.ts', 'grammar-2-2.ts'))
     sources = list(dict.fromkeys(normative + guidance + ['src/language/swaml.langium', 'spec/kerml-mapping.json']
         + examples + ['LICENSE'] + attachments))
     return PublicationInventory(normative, guidance, examples, attachments, sources)

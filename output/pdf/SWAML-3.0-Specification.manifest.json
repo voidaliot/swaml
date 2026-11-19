@@ -551,7 +551,7 @@
     {
       "path": "scripts/publication_3_0_sources.py",
       "attachmentName": "scripts__publication_3_0_sources.py",
-      "sha256": "9c32fff02fe222d922b637518e005d08ed1f16960ea465ce57e796677b5cb12b"
+      "sha256": "66eef570af1e36ccfded4be1fb98010774165baf14f3dcfc439bef3a426cf743"
     },
     {
       "path": "scripts/publication_archive.py",
@@ -1254,11 +1254,6 @@
       "sha256": "0714cef5ea5376dbb4a3c4db5658be876e7c466b3e1f19852efa12031a9cef12"
     },
     {
-      "path": "src/migrate/grammar-2-2.ts",
-      "attachmentName": "src__migrate__grammar-2-2.ts",
-      "sha256": "e491729972c347bddade7a269f804f597990560f057510e8790d2536bf80f7d8"
-    },
-    {
       "path": "src/migrate/index.ts",
       "attachmentName": "src__migrate__index.ts",
       "sha256": "7ead4646831cdf31f9e395ab05e62feb03a5b7966c4516423ff8193e5e699c2f"
@@ -1294,8 +1289,8 @@
       "sha256": "78a333fa3e0968847ae770f206d7f5f5bd36a0dc8201ef4d657e1b6d3884c371"
     }
   ],
-  "sourceBaseCommit": "0565b024c6d719453d28278c82dd5ee475d571f0",
-  "sourceBundleSha256": "70c27b4d2f6b85eca5d6b8041dc050ab785429272e42547dbb606d88eba0c3df",
+  "sourceBaseCommit": "c229f7ea3aaeaca3873fddcaa248201d122f8205",
+  "sourceBundleSha256": "c8339585254b993edd599726fbf70ac334d928afd51ee81fa5f4150d4b916939",
   "dependencies": {
     "reportlab": "4.4.9",
     "mistune": "3.4.0",
@@ -1304,5 +1299,5 @@
     "Pillow": "13.0.0"
   },
   "python": "3.14.4",
-  "pdfSha256": "a226d4fe0f116b4238977bae08ecde4795a6c205a0bd61fd7d5b007fc5a443b2"
+  "pdfSha256": "36a0345679ca3137349b283c5f71a1c055f95e94a1e39ff8dfa520b8be1e7585"
 }
