@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { lstat, readdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { checkSiteSpec } from './check-site-spec.mjs';
 
 // Publication is an explicit allowlist. New public resources need a review here.
 const required = new Set([
@@ -15,21 +16,24 @@ const required = new Set([
 const bundle = /^assets\/[A-Za-z0-9_-]+\.(?:js|css)$/;
 
 export async function checkSiteArtifact(root) {
+    // The specification reader under spec/ has its own content and link checks and its own file boundary.
+    const spec = await checkSiteSpec(root);
     const files = new Set();
     async function visit(path = '') {
         const entry = await lstat(join(root, path));
         assert.ok(!entry.isSymbolicLink(), `Publication contains a symbolic link: ${path || '.'}`);
         if (entry.isDirectory()) {
-            assert.ok(['', 'assets', 'downloads'].includes(path), `Unexpected publication directory: ${path}`);
+            assert.ok(['', 'assets', 'downloads'].includes(path) || spec.dirs.has(path), `Unexpected publication directory: ${path}`);
             for (const name of await readdir(join(root, path))) await visit(path ? `${path}/${name}` : name);
         } else {
             assert.ok(entry.isFile() && entry.nlink === 1, `Publication contains a linked or special file: ${path}`);
-            assert.ok(required.has(path) || bundle.test(path), `Unexpected publication file: ${path}`);
+            assert.ok(required.has(path) || bundle.test(path) || spec.files.has(path), `Unexpected publication file: ${path}`);
             files.add(path);
         }
     }
     await visit();
     for (const name of required) assert.ok(files.has(name), `Missing publication file: ${name}`);
+    for (const name of spec.files) assert.ok(files.has(name), `Missing publication file: ${name}`);
     for (const extension of ['js', 'css']) {
         assert.ok([...files].some(name => name.startsWith('assets/') && name.endsWith(`.${extension}`)), `Missing ${extension} bundle`);
     }
