@@ -1,4 +1,102 @@
 {
+  "states": {
+    "model": "examples/54-interior-light.swaml",
+    "sha256": "97bff1cc3b3a586c3022ca8928441880fa7e18df5043ebecd252654af0277d73",
+    "component": "Light",
+    "operation": "run",
+    "code": "operation run() {\n  while (true) {\n    var reason: WakeReason = WakeReason.key;\n    state asleep {\n      on receive power.wake(r) {\n        reason = r;\n        exit;\n      }\n    }\n    wakes = wakes + 1;\n    lit = true;\n    if (reason == WakeReason.crash) {\n      state crashLight {\n        on receive power.sleep() exit;\n      }\n    } else {\n      state courtesy {\n        on entry {\n          courtesyStarts = courtesyStarts + 1;\n        }\n        on receive door.opened() to courtesy;\n        on receive power.sleep() exit;\n        after 20ms exit;\n      }\n    }\n    lit = false;\n  }\n}",
+    "test": "A door opening restarts the courtesy time",
+    "result": "pass",
+    "profile": "swaml-reference/3.0",
+    "timeNs": 40000000,
+    "observations": [
+      {
+        "ordinal": 7,
+        "timeNs": 0,
+        "kind": "publish",
+        "subject": "toPower.wake",
+        "value": "key"
+      },
+      {
+        "ordinal": 9,
+        "timeNs": 0,
+        "kind": "state",
+        "subject": "light.run",
+        "value": "asleep"
+      },
+      {
+        "ordinal": 18,
+        "timeNs": 0,
+        "kind": "write",
+        "subject": "light.wakes",
+        "value": 1
+      },
+      {
+        "ordinal": 19,
+        "timeNs": 0,
+        "kind": "write",
+        "subject": "light.lit",
+        "value": true
+      },
+      {
+        "ordinal": 20,
+        "timeNs": 0,
+        "kind": "state",
+        "subject": "light.run",
+        "value": "courtesy"
+      },
+      {
+        "ordinal": 21,
+        "timeNs": 0,
+        "kind": "write",
+        "subject": "light.courtesyStarts",
+        "value": 1
+      },
+      {
+        "ordinal": 25,
+        "timeNs": 15000000,
+        "kind": "publish",
+        "subject": "toDoor.opened",
+        "value": null
+      },
+      {
+        "ordinal": 31,
+        "timeNs": 15000000,
+        "kind": "state",
+        "subject": "light.run",
+        "value": "courtesy (entered again)"
+      },
+      {
+        "ordinal": 32,
+        "timeNs": 15000000,
+        "kind": "write",
+        "subject": "light.courtesyStarts",
+        "value": 2
+      },
+      {
+        "ordinal": 41,
+        "timeNs": 35000000,
+        "kind": "write",
+        "subject": "light.lit",
+        "value": false
+      },
+      {
+        "ordinal": 42,
+        "timeNs": 35000000,
+        "kind": "state",
+        "subject": "light.run",
+        "value": "asleep"
+      }
+    ],
+    "stores": {
+      "light": {
+        "lit": false,
+        "wakes": 1,
+        "courtesyStarts": 2
+      },
+      "body": {}
+    }
+  },
   "cases": [
     {
       "name": "ControlLoop",

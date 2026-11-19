@@ -228,6 +228,9 @@ table caption{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:i
 .execution-description h3 { margin-top: 0; }
 .execution-description p { font-size: 14px; line-height: 1.8; margin: 0 0 18px; }
 .execution-description code { font-size: 12px; }
+.states-grid { margin-top: 48px; padding-top: 44px; border-top: 1px solid var(--line); align-items: start; }
+.execution-description .source-preview { margin-top: 26px; }
+.execution-description .source-preview code { font-size: inherit; }
 .execution-limit { color: var(--muted); border-left: 2px solid var(--line); padding-left: 18px; }
 .trace-panel { min-width: 0; border: 1px solid var(--strong-line); align-self: start; }
 .trace-scroll { overflow: auto; }
