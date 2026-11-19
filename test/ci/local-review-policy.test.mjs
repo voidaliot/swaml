@@ -136,5 +136,5 @@ test('the patterns reject every invocation not directly followed by --archive an
         `name = "scripts/${stem}"`, `python scripts/${stem}`];
     for (const line of computed) assert.ok(violates(line), line);
     // Later editions and the 1.x archive checker are not published 2.x checkers.
-    for (const line of [`python scripts/${stem}2.3.py`, 'python scripts/check-spec-pdf.py']) assert.ok(!violates(line), line);
+    for (const line of [`python scripts/${stem}3.0.py`, 'python scripts/check-spec-pdf.py']) assert.ok(!violates(line), line);
 });

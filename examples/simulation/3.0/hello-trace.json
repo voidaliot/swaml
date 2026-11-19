@@ -1,5 +1,5 @@
 {
-  "profile": "swaml-reference/2.3",
+  "profile": "swaml-reference/3.0",
   "target": {
     "kind": "component",
     "identity": "Hello::Demo"

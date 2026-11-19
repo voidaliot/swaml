@@ -78,7 +78,7 @@ const source = (form: string, depth: number) => { const [statement, extra] = for
 
 // The deepest nesting the 3.1.0 build (213f583) parses through the document builder on Node.js 26.12.0 with the
 // default stack, the highest of a fresh process, a process warmed with the same form and a process that built other
-// sources first (docs/RELEASE_2_3.md, WP2-D05). Nested array literals are not valid 2.2 sources (no nested array
+// sources first (docs/RELEASE_3_0.md, WP2-D05). Nested array literals are not valid 2.2 sources (no nested array
 // types), and the validation of array literals inside calls takes time exponential in the depth in 3.1.0 and here
 // alike, so both are checked for parsing only.
 const MEASURED_3_1_0: Record<string, number> = {
@@ -87,9 +87,9 @@ const MEASURED_3_1_0: Record<string, number> = {
 };
 const VALID_FORMS = new Set(['parentheses', 'indexes', 'calls', 'record literals', 'calls around a record literal', 'parentheses around a record literal', 'indexes inside calls', 'record literals inside calls', 'calls inside indexes']);
 
-// SIF-G01 (review F1): else blocks that each hold an if, the 2.2 spelling of a decision chain, and the 2.3 else if chain.
+// SIF-G01 (review F1): else blocks that each hold an if, the 2.2 spelling of a decision chain, and the 3.0 else if chain.
 // These are blocks, not brackets, so the bracket limit does not stop them. Measured through the document builder on
-// Node.js 26.12.0 in a fresh process (docs/RELEASE_2_3.md, WP2-D05), 3.1.0 parses about 290 nested else { if … } levels;
+// Node.js 26.12.0 in a fresh process (docs/RELEASE_3_0.md, WP2-D05), 3.1.0 parses about 290 nested else { if … } levels;
 // this parser parses about 303 (about 291 inside this test file's process) and about 520 links of an else if chain. With
 // the else alternation in a rule of its own, one more rule call per level, it parsed about 261 (about 250 here).
 const ELSE_NESTING = 270;

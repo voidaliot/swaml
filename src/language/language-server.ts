@@ -12,7 +12,7 @@ export class SwamlLanguageServer extends DefaultLanguageServer {
         } | undefined;
         for (const version of [options?.languageVersion, options?.swaml?.languageVersion])
             if (version !== undefined && version !== SWAML_LANGUAGE_VERSION)
-                throw new ResponseError(ErrorCodes.InvalidParams, `Unsupported language version ${version}; this host selects swa.ml ${SWAML_LANGUAGE_VERSION}.`);
+                throw new ResponseError(ErrorCodes.InvalidParams, `Unsupported language version ${version}; this host selects swa.ml ${SWAML_LANGUAGE_VERSION}.${version === '2.3' ? ' The edition drafted as 2.3 is swa.ml 3.0.' : ''}`);
         const result = await super.initialize(params);
         return { ...result, serverInfo: { name: 'swa.ml', version: SWAML_IMPLEMENTATION_VERSION }, capabilities: { ...result.capabilities, experimental: { swaml: { languageVersion: SWAML_LANGUAGE_VERSION, profile: SWAML_REFERENCE_PROFILE } } } };
     }

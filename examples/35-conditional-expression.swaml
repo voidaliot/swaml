@@ -1,5 +1,5 @@
 package FaultDebounce {
-  /** A fault-memory debounce in the shape of the door model's DoorEcu::Types helpers. The 2.2 shape selects values through helper operations pickInt and pickStatus, which evaluate every argument; the 2.3 shape writes the whole-expression conditional if (c) a else b, which evaluates its condition and then only the selected branch. As an operand a conditional is parenthesized, as in clampInt((if (previous < 0) 0 else previous) + stepUp, …). */
+  /** A fault-memory debounce in the shape of the door model's DoorEcu::Types helpers. The 2.2 shape selects values through helper operations pickInt and pickStatus, which evaluate every argument; the 3.0 shape writes the whole-expression conditional if (c) a else b, which evaluates its condition and then only the selected branch. As an operand a conditional is parenthesized, as in clampInt((if (previous < 0) 0 else previous) + stepUp, …). */
   datatype DtcStatus {
     testFailed: bool;
     confirmed: bool;
@@ -63,7 +63,7 @@ package FaultDebounce {
       }, status);
     }
     operation report(index: uint, failed: bool) {
-      /** The 2.3 shape: a conditional per value. */
+      /** The 3.0 shape: a conditional per value. */
       var previous: int = counters[index];
       counters[index] = if (failed) clampInt((if (previous < 0) 0 else previous) + stepUp, passedThreshold, failedThreshold) else clampInt((if (previous > 0) 0 else previous) - stepDown, passedThreshold, failedThreshold);
       var status: DtcStatus = statuses[index];

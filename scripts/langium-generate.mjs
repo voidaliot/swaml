@@ -1,5 +1,5 @@
 // Runs langium generate for langium-config.json and fails on any grammar diagnostic, whatever its level
-// (compatibility gate 3 of swa.ml 2.3, rule WP1a-M03). The generator reports errors with console.error,
+// (compatibility gate 3 of swa.ml 3.0, rule WP1a-M03). The generator reports errors with console.error,
 // warnings with console.warn and information and hints (such as an unused rule) with console.log as
 // "<file>.langium:line:column - message"; parser definition errors also make it return false.
 import { generate } from 'langium-cli';

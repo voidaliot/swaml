@@ -1,5 +1,5 @@
 package DiagnosticText {
-  /** Diagnostic labels with numbers. In 2.2 a number could not become text, so a label named one of a fixed set of values through a selection helper. In 2.3 Swaml::Text writes intText(v) in decimal, realText(v, decimals) rounded to exactly decimals fraction digits (ties away from zero, no exponent and no negative zero; more than 15 decimals or a magnitude of at least 1e21 is the runtime failure Bounds) and boolText(v). */
+  /** Diagnostic labels with numbers. In 2.2 a number could not become text, so a label named one of a fixed set of values through a selection helper. In 3.0 Swaml::Text writes intText(v) in decimal, realText(v, decimals) rounded to exactly decimals fraction digits (ties away from zero, no exponent and no negative zero; more than 15 decimals or a magnitude of at least 1e21 is the runtime failure Bounds) and boolText(v). */
   import Swaml::Math;
   import Swaml::Text;
   operation def levelName(level: int) returns string {
@@ -37,7 +37,7 @@ package DiagnosticText {
   }
   component monitor: Monitor;
   test 'Labels' of monitor {
-    /** A level of 7 has no 2.2 text; the 2.3 label writes every value. */
+    /** A level of 7 has no 2.2 text; the 3.0 label writes every value. */
     monitor.legacyReport(4711, 7);
     assert monitor.legacy == "DTC level many";
     monitor.report(4711, 11.996, true);

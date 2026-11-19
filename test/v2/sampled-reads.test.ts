@@ -1,4 +1,4 @@
-// WP6 of swa.ml 2.3: sampled reads of required attributes and per-member communication policies (ADR 0024), and the
+// WP6 of swa.ml 3.0: sampled reads of required attributes and per-member communication policies (ADR 0024), and the
 // completion-guard warning revisited (WP5 review N2, N3): WP6-G01, WP6-G02, WP6-S01..S09, WP6-R01..R07, WP6-D01..D10,
 // WP6-T01, WP6-M01..M05.
 import nodeTest from 'node:test';
@@ -352,7 +352,7 @@ test('WP6-S06 redefines connect replaces the whole connection with its member po
 });
 
 // SIF (proposal 4.4, 4.8, 7.3): three WP5/WP6 tests left with the forms they checked. 'WP6-S07 SW2018 uses the effective
-// policy of the deferred member route': deferral never ships, and SW2018 is unused in 2.3.
+// policy of the deferred member route': deferral never ships, and SW2018 is unused in 3.0.
 // 'WP6-D10 (SW2017) a completion guard that folds to false is dead': completion transitions are gone and SIF has no
 // warning for a dead condition. 'WP5-D08 WP6 SW2017 confirmed for sampled cells': under SIF-R07 a sample-cell update in
 // a waiting state's read set makes it look again (wakes, package 4), so the warning and the stuck run are gone.
@@ -561,7 +561,7 @@ test('WP6-M02 WP6-M03 the KerML inventory maps MemberPolicy as a reference and P
 test('WP6 examples: door status sampling and body CAN member policies pass their cases, deterministically', async () => {
     const cases: Record<string, string[]> = {
         'examples/48-door-status-sampling.swaml': ['DoorStatus::Initial values before the first delivery', 'DoorStatus::Latest value at each frame', 'DoorStatus::Live read after a wait'],
-        'examples/49-body-can-member-policies.swaml': ['BodyCan::Per-member policies on one connection'],
+        'examples/49-body-can-member-policies.swaml': ['BodyCan::Crash frames queue, status frames keep the newest', 'BodyCan::One policy for both members loses crash frames'],
     };
     for (const [file, names] of Object.entries(cases)) {
         const { model } = await valid(readFileSync(new URL(file, root), 'utf8'));

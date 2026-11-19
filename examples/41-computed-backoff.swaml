@@ -1,5 +1,5 @@
 package Backoff {
-  /** Retry backoff in the shapes of the V2X uplink and the cloud gateway. In 2.2 a wait takes a literal only, so the uplink waits out a computed delay in a loop of 250 ms steps, which rounds every delay up to the next multiple of 250 ms, and the gateway keeps a fixed table of delays. From 2.3 a duration literal is a uint value in nanoseconds and wait (e), or after (e) and state timers after (e) take a computed integral delay: the backoff doubles up to a cap and is waited exactly. A delay that is not positive is the runtime failure DurationRange, which try catches like any runtime failure. */
+  /** Retry backoff in the shapes of the V2X uplink and the cloud gateway. In 2.2 a wait takes a literal only, so the uplink waits out a computed delay in a loop of 250 ms steps, which rounds every delay up to the next multiple of 250 ms, and the gateway keeps a fixed table of delays. From 3.0 a duration literal is a uint value in nanoseconds and wait (e), or after (e) and state timers after (e) take a computed integral delay: the backoff doubles up to a cap and is waited exactly. A delay that is not positive is the runtime failure DurationRange, which try catches like any runtime failure. */
   import Swaml::Numeric;
   import Swaml::Time;
   component def CountedUplink {
@@ -17,7 +17,7 @@ package Backoff {
     }
   }
   component def ComputedUplink {
-    /** The 2.3 shape: the delay doubles from firstMs up to capMs and is waited exactly. */
+    /** The 3.0 shape: the delay doubles from firstMs up to capMs and is waited exactly. */
     const attribute firstMs: uint = 100;
     const attribute capMs: uint = 1000;
     attribute delayMs: uint = 0;

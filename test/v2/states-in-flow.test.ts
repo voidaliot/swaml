@@ -460,7 +460,7 @@ test('D-1 (review 1): a file in 2.2 state-machine syntax gets one error that nam
     schedule { on start run(); }
   }
 }`);
-    assert.deepEqual(r.errors.map(e => [e.range.start.line + 1, String(e.code), e.message]), [[6, 'SW2000', 'This is swa.ml 2.2 state-machine syntax (initial S;, final state, ordered transitions with when and to T { … }), which 2.3 replaces by states that are steps of the flow; swaml migrate <file> rewrites it.']]);
+    assert.deepEqual(r.errors.map(e => [e.range.start.line + 1, String(e.code), e.message]), [[6, 'SW2000', 'This is swa.ml 2.2 state-machine syntax (initial S;, final state, ordered transitions with when and to T { … }), which 3.0 replaces by states that are steps of the flow; swaml migrate <file> rewrites it.']]);
     assert.deepEqual(projectModel([r.model]).edges.filter(e => e.kind === 'transition'), []);
 });
 

@@ -1,5 +1,7 @@
 # 3. Operations, schedules and states: 2.3 changes (draft)
 
+> **Historical record of swa.ml 3.0.** This file is one of the work-package checklists of the 3.0 edition, drafted under the name 2.3. Every rule has moved into the [specification chapters](../../LANGUAGE_SPECIFICATION.md), which are the only normative text; where a row here differs from them, the chapter wins. The 2.2 state machines and the WP5 state reactions some rows mention are not part of 3.0: states are steps of the flow ([chapter 3.6](../../spec/03-behavior.md#36-states), [chapter 6.5](../../spec/06-execution-contract.md#65-input-ownership-and-interruption)).
+
 **Draft for the unreleased standard 2.3; see [the draft index](README.md).** Target: [chapter 3](../../spec/03-behavior.md). Examples are `text` fences until their work package lands. Decisions: [ADR 0022](../../decisions/0022-values-places-and-expressions.md), [ADR 0023](../../decisions/0023-state-reactions.md) and [ADR 0025](../../decisions/0025-real-time-placement-and-binding.md).
 
 ## 3.1 Operations and effects
@@ -59,7 +61,7 @@ Applied in WP7: the release rows of the trigger table gain "unless its release g
 
 ## 3.6 States
 
-Applied in WP5: the first paragraph's last sentence reads "There are no transition names or priorities.", followed by the 2.3 state members. The fragments that stood here are complete validated sources now: the `swaml` fence in [chapter 3.6](../../spec/03-behavior.md#36-states) and the [session completion](../../../examples/44-session-completion.swaml), [lock deferral](../../../examples/45-lock-deferral.swaml) and [breaker](../../../examples/46-breaker-internal.swaml) examples.
+Applied in WP5: the first paragraph's last sentence reads "There are no transition names or priorities.", followed by the 2.3 state members. The WP5 forms were later cut by states in the flow, which replaced them before 3.0 was released. The behaviours of the WP5 examples are written with states in the flow in the [uplink session](../../../examples/44-uplink-session.swaml), [lock latest request](../../../examples/45-lock-latest-request.swaml), [circuit breaker](../../../examples/46-circuit-breaker.swaml) and [sensor warm-up](../../../examples/47-sensor-warmup.swaml) examples.
 
 | ID | Rule |
 | --- | --- |

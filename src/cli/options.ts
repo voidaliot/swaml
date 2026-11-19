@@ -13,7 +13,7 @@ export function withoutLanguageVersion(args: string[]): string[] {
             selected = true;
             const version = arg === '--language-version' ? args[++i] : arg.slice('--language-version='.length);
             if (version !== LANGUAGE_VERSION)
-                throw new Error(`Unsupported language version ${version ?? '(missing)'}; this host implements swa.ml ${LANGUAGE_VERSION}.`);
+                throw new Error(`Unsupported language version ${version ?? '(missing)'}; this host implements swa.ml ${LANGUAGE_VERSION}.${version === '2.3' ? ' The edition drafted as 2.3 is swa.ml 3.0: pass --language-version 3.0.' : ''}`);
         }
         else
             rest.push(arg);

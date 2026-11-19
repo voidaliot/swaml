@@ -1,7 +1,7 @@
 import { AstUtils, CstUtils, type AstNode, type Reference } from 'langium';
 import { decodeQuotedName, formatName, type NameEdition } from './names.js';
 import * as a from './generated/ast.js';
-import { STANDARD_LIBRARY, STANDARD_LIBRARY_2_3 } from './standard-library.js';
+import { STANDARD_LIBRARY, STANDARD_LIBRARY_3_0 } from './standard-library.js';
 /** Shared semantic algorithms have no filesystem or host dependencies. */
 export type Node = AstNode & {
     [key: string]: any;
@@ -128,19 +128,19 @@ export const stateItems = (s: a.StateStep): Exclude<a.StateMember, a.StateStep>[
 export const isShortBody = (b: a.Block): boolean => !!b.$cstNode && !b.$cstNode.text.startsWith('{');
 export const isExecutable = (n: AstNode): n is Executable => a.isOperation(n) || a.isOperationUsage(n);
 /**
- * The host intrinsics of the 2.3 library packages (WP3-L01, WP3-L02, WP3-L03, WP3-M01): operation defs of the
- * built-in document swaml-2.3.swaml whose bodies are documentation only. A host evaluates them (chapter 6).
+ * The host intrinsics of the 3.0 library packages (WP3-L01, WP3-L02, WP3-L03, WP3-M01): operation defs of the
+ * built-in document swaml-3.0.swaml whose bodies are documentation only. A host evaluates them (chapter 6).
  * Swaml::Math keeps its 2.2 intrinsics and their handling unchanged (WP3-L04).
  */
 export const LIBRARY_INTRINSICS: Readonly<Record<string, 'sqrt' | 'intText' | 'realText' | 'now'>> = { 'Swaml::Numeric::sqrt': 'sqrt', 'Swaml::Text::intText': 'intText', 'Swaml::Text::realText': 'realText', 'Swaml::Time::now': 'now' };
 export type LibraryIntrinsic = 'sqrt' | 'intText' | 'realText' | 'now';
-/** The URI of the built-in document of the 2.3 library packages (WP3-M01). */
-export const LIBRARY_2_3_URI = 'builtin:/swaml-2.3.swaml';
+/** The URI of the built-in document of the 3.0 library packages (WP3-M01). */
+export const LIBRARY_3_0_URI = 'builtin:/swaml-3.0.swaml';
 const libraryText = (text: string) => text.replace(/^﻿/u, '').replaceAll('\r\n', '\n').replace(/\s+$/u, '');
-const LIBRARY_TEXTS = [libraryText(STANDARD_LIBRARY), libraryText(STANDARD_LIBRARY_2_3)];
+const LIBRARY_TEXTS = [libraryText(STANDARD_LIBRARY), libraryText(STANDARD_LIBRARY_3_0)];
 const LIBRARY_COPY_MIN = Math.min(...LIBRARY_TEXTS.map(t => t.length)), LIBRARY_COPY_MAX = 2 * Math.max(...LIBRARY_TEXTS.map(t => t.length)) + 4096;
 /**
- * Whether text is a copy of a built-in library document, 2.2 or 2.3. Only a leading byte order mark, line ends and
+ * Whether text is a copy of a built-in library document, 2.2 or 3.0. Only a leading byte order mark, line ends and
  * whitespace at the end of the file may differ; any other change makes it user source. A text whose length rules
  * out a copy is never normalized.
  */
@@ -163,7 +163,7 @@ export function isLibraryCopyDocument(document: { uri: { scheme: string }; textD
     return copy;
 }
 /**
- * A declared intrinsic of the 2.3 library, in the built-in document or a byte-equal copy of it: its body is
+ * A declared intrinsic of the 3.0 library, in the built-in document or a byte-equal copy of it: its body is
  * documentation only, so the return-path and package-definition checks exempt it by identity, as they exempt
  * Swaml::Math (WP3-M01). Only the built-in declaration is evaluated (libraryIntrinsic).
  */
@@ -175,7 +175,7 @@ export function declaredIntrinsic(op: AstNode | undefined): boolean {
     const document = AstUtils.getDocument(op);
     return document.uri.scheme === 'builtin' || isLibraryCopyDocument(document);
 }
-/** The 2.3 host intrinsic op is, if any: only the built-in library's declaration counts, never a same-named user operation. */
+/** The 3.0 host intrinsic op is, if any: only the built-in library's declaration counts, never a same-named user operation. */
 export function libraryIntrinsic(op: AstNode | undefined): LibraryIntrinsic | undefined {
     // A usage of an intrinsic definition without its own body is that intrinsic; a usage body replaces it.
     if (op && a.isOperationUsage(op))
@@ -252,7 +252,7 @@ export function constantNumber(e?: a.Expression): number | undefined {
 export function nanos(d: a.Duration): number { return d.value * ({ ns: 1, us: 1000, ms: 1000000, s: 1000000000 }[d.unit]); }
 /**
  * The duration literal of a policy setting written in its 2.2 form, such as requestTimeout = 1s; (WP4-M01). Since
- * 2.3 a setting has the single form name = Expression; (WP4-G01), so a 2.2 duration setting is Literal{duration}.
+ * 3.0 a setting has the single form name = Expression; (WP4-G01), so a 2.2 duration setting is Literal{duration}.
  */
 export function settingDuration(s: a.PolicySetting): a.Duration | undefined { return a.isLiteral(s.value) ? s.value.duration : undefined; }
 /** The keywords that the grammar also accepts as names (rule Name). */
@@ -264,7 +264,7 @@ const NAME_WORDS = new Set(['reversed', 'to', 'times', 'name', 'kind', 'path', '
  * (1ms). A parenthesized subexpression and an array literal are spaced like any operand: a * (b + c), [1, 2].
  * Messages and projections show this text; it keeps the unit of a literal (deadline (3ms) shows 3ms). With an
  * edition, every name is spelled for that edition instead, so a message can quote names as 2.2 does
- * (MESSAGE_SPELLING): a contextual word written unquoted in 2.3, such as view, is shown 'view'.
+ * (MESSAGE_SPELLING): a contextual word written unquoted in 3.0, such as view, is shown 'view'.
  */
 export function displayText(e: a.Expression, edition?: NameEdition): string {
     const leaves = e.$cstNode ? CstUtils.flattenCst(e.$cstNode).filter(n => !n.hidden).toArray() : [];
@@ -558,8 +558,8 @@ export function memberQos(c: a.Connect, member: string): Policy {
     return policy ? effectiveQos(policy) : effectiveQos(c);
 }
 /**
- * An attribute member that declares an initial value (2.3 syntax) opts in to sampled reads (WP6-S01, WP6-S02; owner
- * decision A of WP6): p.m of it is the 2.3 form, with the 2.3 diagnostics. p.m of any other member, also on a port
+ * An attribute member that declares an initial value (3.0 syntax) opts in to sampled reads (WP6-S01, WP6-S02; owner
+ * decision A of WP6): p.m of it is the 3.0 form, with the 3.0 diagnostics. p.m of any other member, also on a port
  * where a sibling member opts in, keeps its 2.2 meaning and diagnostics, so no 2.2 source changes.
  */
 export const optsIn = (m: a.PortMember | undefined): boolean => !!m && m.kind === 'attribute' && m.initial !== undefined;
@@ -927,12 +927,13 @@ const statementOwner = (n: AstNode) => isExecutable(n) || a.isScenario(n);
  * operation, or a case, with decoded names. The path walks the abstract syntax from that
  * executable's body: a statement contributes its index in the enclosing statement list, and every
  * other step contributes its slot name, followed by an index for list slots (then, otherwise, body,
- * branches/N, timeoutBody, handler, initializer, update, states/N, actions/N, transitions/N, effect).
+ * branches/N, timeoutBody, handler, initializer, update).
  * The If of an else if (SIF-G01) is the one statement of its ElseIf and has the identity it has in the 2.2 form
  * else { if … }, for example Shop::Desk.serve/2/otherwise/0/then/0 in both spellings, so rewriting one spelling as the
  * other keeps every identity.
- * A state is itself identified as <executable>/states/N and a transition, including its guard, as
- * <executable>/states/N/transitions/M. A schedule entry is written <component identity>/schedule/N with N counting the entries the
+ * A state is a statement (3.0): Pkg::C.op/1 is a state, Pkg::C.op/1/0 its first item and Pkg::C.op/1/2/body/0 the first
+ * statement of the block of its third item, an event line; 2.2 identities (…/states/N/transitions/M) map through the
+ * migration's identity map. A schedule entry is written <component identity>/schedule/N with N counting the entries the
  * component declares. Identities follow source structure, so an edit that reorders statements
  * changes them; resolveStatement maps an identity back to its node.
  */
@@ -999,7 +1000,7 @@ export interface AssociationPair {
 export const associationOccurrences = (x: a.Association): Reference<a.ComponentUsage>[] => [x.occurrence, ...(x.moreOccurrences ?? [])];
 /** The listed cases of an associate statement in source order (… to 'X', 'Y';). */
 export const associationTargets = (x: a.Association): Reference<a.Scenario>[] => [x.target, ...(x.moreTargets ?? [])];
-/** Whether an associate statement uses the 2.3 list form (WP2-G03) rather than the single 2.2 pair. */
+/** Whether an associate statement uses the 3.0 list form (WP2-G03) rather than the single 2.2 pair. */
 export const isAssociationList = (x: a.Association): boolean => (x.moreOccurrences ?? []).length > 0 || (x.moreTargets ?? []).length > 0;
 /**
  * Every occurrence–case pair of an associate statement (WP2-S06): each listed occurrence with each listed case,

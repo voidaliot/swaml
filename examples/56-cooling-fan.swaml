@@ -1,0 +1,83 @@
+package CoolingFan {
+  /** A radiator fan with hysteresis and a minimum run time. coolant.celsius is a sampled port member: an attribute with an initial value, read without a handler. A condition written in a state's braces is checked again each time something happens to the state, so off and running look again at every delivered temperature. The minimum run time is a local, minRunDone, written by running's timer line; the condition that reads it is written above that line, so the write makes running look again at once. */
+  port def Coolant {
+    provides attribute celsius: int = 20;
+  }
+  component def Fan {
+    reversed port coolant: Coolant;
+    const attribute onCelsius: int = 95;
+    const attribute offCelsius: int = 80;
+    attribute fanOn: bool = false;
+    attribute starts: uint = 0;
+    attribute startedAtNs: uint = 0;
+    attribute stoppedAtNs: uint = 0;
+    operation control() {
+      while (true) {
+        state off {
+          if (coolant.celsius >= onCelsius) exit;
+        }
+        var minRunDone: bool = false;
+        state running {
+          on entry {
+            fanOn = true;
+            starts = starts + 1;
+            startedAtNs = Swaml::Time::now();
+          }
+          on exit {
+            fanOn = false;
+            stoppedAtNs = Swaml::Time::now();
+          }
+          if (minRunDone and coolant.celsius < offCelsius) exit;
+          after 50ms {
+            minRunDone = true;
+          }
+        }
+      }
+    }
+    schedule {
+      on start control();
+    }
+  }
+  component def Engine {
+    /** Interface-only actor: the coolant temperature sensor. */
+    port toFan: Coolant;
+  }
+  component fan: Fan;
+  component engine: Engine;
+  connect (engine.toFan, fan.coolant);
+  associate engine to 'Starts at the threshold', 'Runs at least the minimum time', 'Stops below the lower threshold';
+  test 'Starts at the threshold' of fan {
+    /** The sample holds its initial 20 degrees until the first delivery. 90 degrees at 5 ms is not enough; 95 degrees at 10 ms starts the fan at once. */
+    wait 5ms;
+    assert not fan.fanOn;
+    send engine.toFan.celsius(90);
+    wait 5ms;
+    assert not fan.fanOn;
+    send engine.toFan.celsius(95);
+    wait 1ms;
+    assert fan.fanOn and fan.startedAtNs == 10000000;
+  }
+  test 'Runs at least the minimum time' of fan {
+    /** Started at 0 ms; the coolant is cold again at 20 ms, but the fan stops only when the minimum run time ends, at 50 ms, without a new delivery. */
+    send engine.toFan.celsius(100);
+    wait 20ms;
+    send engine.toFan.celsius(70);
+    wait 20ms;
+    assert fan.fanOn;
+    wait 20ms;
+    assert not fan.fanOn and fan.stoppedAtNs == 50000000;
+  }
+  test 'Stops below the lower threshold' of fan {
+    /** After the minimum time, 80 degrees at 60 ms, the lower threshold itself, keeps the fan running; 75 degrees at 70 ms stops the fan. 90 degrees at 80 ms does not start it again. */
+    send engine.toFan.celsius(100);
+    wait 60ms;
+    send engine.toFan.celsius(80);
+    wait 10ms;
+    assert fan.fanOn;
+    send engine.toFan.celsius(75);
+    wait 10ms;
+    send engine.toFan.celsius(90);
+    wait 1ms;
+    assert not fan.fanOn and fan.stoppedAtNs == 70000000 and fan.starts == 1;
+  }
+}

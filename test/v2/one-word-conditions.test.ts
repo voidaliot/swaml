@@ -85,7 +85,7 @@ test('SIF-G01 else if parses as an ElseIf holding one If; a chain nests to the r
     assert.equal((top.otherwise as a.ElseIf).statements.length, 1);
 });
 
-test('SIF-G01 the kept 2.2 grammar rejects else if and accepts else { if … }; every source with else if is new in 2.3', async () => {
+test('SIF-G01 the kept 2.2 grammar rejects else if and accepts else { if … }; every source with else if is new in 3.0', async () => {
     const { parsers } = await import(new URL('scripts/compatibility-2-2.mjs', root).href) as { parsers(): Promise<{ v22(text: string): { errors?: string[] }; current(text: string): { errors?: string[] } }> };
     const { v22, current } = await parsers();
     assert.ok(v22(model(chain)).errors?.length, '2.2 rejects else if');

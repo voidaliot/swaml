@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0",
-  "languageVersion": "2.3",
-  "edition": "2.3",
+  "languageVersion": "3.0",
+  "edition": "3.0",
   "style": {
     "background": "white",
     "stroke": "#171717",
@@ -13,7 +13,7 @@
     {
       "id": "package",
       "title": "Packages and imports",
-      "context": "swa.ml 2.3; Hello::Demo",
+      "context": "swa.ml 3.0; Hello::Demo",
       "syntax": "component Demo {\n    component sender: Sender;\n    component receiver: Receiver;\n    connect (sender.output, receiver.input);\n  }",
       "model": "examples/01-hello.swaml",
       "subject": "Hello::Demo",
@@ -32,9 +32,9 @@
         "package",
         "import"
       ],
-      "drawing": "docs/notation/2.3/package.svg",
-      "scene": "docs/notation/2.3/package.scene.json",
-      "raster": "docs/notation/2.3/package.png",
+      "drawing": "docs/notation/3.0/package.svg",
+      "scene": "docs/notation/3.0/package.scene.json",
+      "raster": "docs/notation/3.0/package.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -44,7 +44,7 @@
     {
       "id": "values",
       "title": "Typed copied values",
-      "context": "swa.ml 2.3; Values::Demo",
+      "context": "swa.ml 3.0; Values::Demo",
       "syntax": "component Demo {\n    attribute sum: int = 0;\n    attribute mode: Mode = Mode.idle;\n    attribute reading: Reading = record Reading {\n      value = 4.5;\n      unit = \"C\";\n    };\n    operation add(a: int, b: int) returns int {\n      return a + b;\n    }\n    operation boot() {\n      var values: int[3] =[1, 2, 3];\n      for (value: int in values) {\n        sum = add(sum, value);\n      }\n      mode = Mode.active;\n    }\n    schedule {\n      on start boot();\n    }\n  }",
       "model": "examples/05-values-and-flow.swaml",
       "subject": "Values::Demo",
@@ -75,9 +75,9 @@
         "string",
         "void"
       ],
-      "drawing": "docs/notation/2.3/values.svg",
-      "scene": "docs/notation/2.3/values.scene.json",
-      "raster": "docs/notation/2.3/values.png",
+      "drawing": "docs/notation/3.0/values.svg",
+      "scene": "docs/notation/3.0/values.scene.json",
+      "raster": "docs/notation/3.0/values.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -87,7 +87,7 @@
     {
       "id": "components",
       "title": "Component definitions and usages",
-      "context": "swa.ml 2.3; Reuse::Demo",
+      "context": "swa.ml 3.0; Reuse::Demo",
       "syntax": "component Demo {\n    component left: Counter {\n      redefines attribute count: int = 10;\n    }\n    component right: Fast;\n  }",
       "model": "examples/15-component-specialization.swaml",
       "subject": "Reuse::Demo",
@@ -108,9 +108,9 @@
         "specializes",
         "redefines"
       ],
-      "drawing": "docs/notation/2.3/components.svg",
-      "scene": "docs/notation/2.3/components.scene.json",
-      "raster": "docs/notation/2.3/components.png",
+      "drawing": "docs/notation/3.0/components.svg",
+      "scene": "docs/notation/3.0/components.scene.json",
+      "raster": "docs/notation/3.0/components.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -120,7 +120,7 @@
     {
       "id": "multiplicity",
       "title": "Indexed occurrence identity",
-      "context": "swa.ml 2.3; Multiplicity::Demo",
+      "context": "swa.ml 3.0; Multiplicity::Demo",
       "syntax": "component Demo {\n    component counters: Counter[3];\n  }",
       "model": "examples/23-multiplicity.swaml",
       "subject": "Multiplicity::Demo",
@@ -131,9 +131,9 @@
       ],
       "productions": [],
       "keywords": [],
-      "drawing": "docs/notation/2.3/multiplicity.svg",
-      "scene": "docs/notation/2.3/multiplicity.scene.json",
-      "raster": "docs/notation/2.3/multiplicity.png",
+      "drawing": "docs/notation/3.0/multiplicity.svg",
+      "scene": "docs/notation/3.0/multiplicity.scene.json",
+      "raster": "docs/notation/3.0/multiplicity.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -143,7 +143,7 @@
     {
       "id": "attributes",
       "title": "Attributes and lexical locals",
-      "context": "swa.ml 2.3; Values::Demo",
+      "context": "swa.ml 3.0; Values::Demo",
       "syntax": "component Demo {\n    attribute sum: int = 0;\n    attribute mode: Mode = Mode.idle;\n    attribute reading: Reading = record Reading {\n      value = 4.5;\n      unit = \"C\";\n    };\n    operation add(a: int, b: int) returns int {\n      return a + b;\n    }\n    operation boot() {\n      var values: int[3] =[1, 2, 3];\n      for (value: int in values) {\n        sum = add(sum, value);\n      }\n      mode = Mode.active;\n    }\n    schedule {\n      on start boot();\n    }\n  }",
       "model": "examples/05-values-and-flow.swaml",
       "subject": "Values::Demo",
@@ -164,9 +164,9 @@
         "in",
         "out"
       ],
-      "drawing": "docs/notation/2.3/attributes.svg",
-      "scene": "docs/notation/2.3/attributes.scene.json",
-      "raster": "docs/notation/2.3/attributes.png",
+      "drawing": "docs/notation/3.0/attributes.svg",
+      "scene": "docs/notation/3.0/attributes.scene.json",
+      "raster": "docs/notation/3.0/attributes.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -176,7 +176,7 @@
     {
       "id": "ports",
       "title": "Mixed directed port members",
-      "context": "swa.ml 2.3; Mixed::Boundary",
+      "context": "swa.ml 3.0; Mixed::Boundary",
       "syntax": "port def Boundary {\n    provides attribute value: real;\n    requires event reset();\n    provides operation read() returns real;\n    requires operation acknowledge();\n  }",
       "model": "examples/27-mixed-port.swaml",
       "subject": "Mixed::Boundary",
@@ -203,9 +203,9 @@
         "send",
         "publish"
       ],
-      "drawing": "docs/notation/2.3/ports.svg",
-      "scene": "docs/notation/2.3/ports.scene.json",
-      "raster": "docs/notation/2.3/ports.png",
+      "drawing": "docs/notation/3.0/ports.svg",
+      "scene": "docs/notation/3.0/ports.scene.json",
+      "raster": "docs/notation/3.0/ports.png",
       "constraints": [
         "One square boundary can contain attribute, event and operation members together.",
         "Arrowheads show data/event direction; an outward arrow means provides and inward means requires.",
@@ -218,7 +218,7 @@
     {
       "id": "connection",
       "title": "Policy-bearing connection",
-      "context": "swa.ml 2.3; Policies::Demo",
+      "context": "swa.ml 3.0; Policies::Demo",
       "syntax": "component Demo {\n    component sender: Sender;\n    component receiver: Receiver;\n    connect delivery: Small (sender.output, receiver.input);\n  }",
       "model": "examples/10-reusable-qos.swaml",
       "subject": "Policies::Demo",
@@ -237,9 +237,9 @@
         "connect",
         "qos"
       ],
-      "drawing": "docs/notation/2.3/connection.svg",
-      "scene": "docs/notation/2.3/connection.scene.json",
-      "raster": "docs/notation/2.3/connection.png",
+      "drawing": "docs/notation/3.0/connection.svg",
+      "scene": "docs/notation/3.0/connection.scene.json",
+      "raster": "docs/notation/3.0/connection.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -249,7 +249,7 @@
     {
       "id": "forwarding",
       "title": "Queue-free boundary forwarding",
-      "context": "swa.ml 2.3; Boundary::Demo",
+      "context": "swa.ml 3.0; Boundary::Demo",
       "syntax": "component Demo {\n    component source: Composite;\n    component display: Display;\n    connect (source.boundary, display.reading);\n  }",
       "model": "examples/26-boundary-forwarding.swaml",
       "subject": "Boundary::Demo",
@@ -260,9 +260,9 @@
       ],
       "productions": [],
       "keywords": [],
-      "drawing": "docs/notation/2.3/forwarding.svg",
-      "scene": "docs/notation/2.3/forwarding.scene.json",
-      "raster": "docs/notation/2.3/forwarding.png",
+      "drawing": "docs/notation/3.0/forwarding.svg",
+      "scene": "docs/notation/3.0/forwarding.scene.json",
+      "raster": "docs/notation/3.0/forwarding.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Boundary alias adds no queue, policy or message."
@@ -272,7 +272,7 @@
     {
       "id": "operations",
       "title": "Operations and nested ownership",
-      "context": "swa.ml 2.3; OperationUsage::Demo",
+      "context": "swa.ml 3.0; OperationUsage::Demo",
       "syntax": "component Demo {\n    attribute result: real = 0.0;\n    operation clamp: Clamp;\n    operation low: Clamp {\n      return lo;\n    }\n    operation boot() {\n      operation double(v: real) returns real {\n        return v * 2.0;\n      }\n      result = clamp(double(4.0), 0.0, 5.0);\n    }\n    schedule {\n      on start boot();\n    }\n  }",
       "model": "examples/24-operation-usage.swaml",
       "subject": "OperationUsage::Demo",
@@ -291,9 +291,9 @@
         "operation",
         "returns"
       ],
-      "drawing": "docs/notation/2.3/operations.svg",
-      "scene": "docs/notation/2.3/operations.scene.json",
-      "raster": "docs/notation/2.3/operations.png",
+      "drawing": "docs/notation/3.0/operations.svg",
+      "scene": "docs/notation/3.0/operations.scene.json",
+      "raster": "docs/notation/3.0/operations.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -303,7 +303,7 @@
     {
       "id": "calls",
       "title": "Expression calls and copied out values",
-      "context": "swa.ml 2.3; ClientServer::Client",
+      "context": "swa.ml 3.0; ClientServer::Client",
       "syntax": "component def Client {\n    reversed port api: Catalog;\n    attribute last: real = 0.0;\n    attribute changedKey: int = 0;\n    operation read() {\n      last = try(api.get(1), - 1.0);\n    }\n    operation changed(key: int) {\n      changedKey = key;\n    }\n    schedule {\n      on start read();\n      on receive api.changed(k) changed(k);\n    }\n  }",
       "model": "examples/07-client-server.swaml",
       "subject": "ClientServer::Client",
@@ -320,9 +320,9 @@
       "keywords": [
         "return"
       ],
-      "drawing": "docs/notation/2.3/calls.svg",
-      "scene": "docs/notation/2.3/calls.scene.json",
-      "raster": "docs/notation/2.3/calls.png",
+      "drawing": "docs/notation/3.0/calls.svg",
+      "scene": "docs/notation/3.0/calls.scene.json",
+      "raster": "docs/notation/3.0/calls.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -332,7 +332,7 @@
     {
       "id": "try",
       "title": "Runtime failure and lazy fallback",
-      "context": "swa.ml 2.3; ClientServer::Client",
+      "context": "swa.ml 3.0; ClientServer::Client",
       "syntax": "component def Client {\n    reversed port api: Catalog;\n    attribute last: real = 0.0;\n    attribute changedKey: int = 0;\n    operation read() {\n      last = try(api.get(1), - 1.0);\n    }\n    operation changed(key: int) {\n      changedKey = key;\n    }\n    schedule {\n      on start read();\n      on receive api.changed(k) changed(k);\n    }\n  }",
       "model": "examples/07-client-server.swaml",
       "subject": "ClientServer::Client",
@@ -351,9 +351,9 @@
         "fail",
         "assert"
       ],
-      "drawing": "docs/notation/2.3/try.svg",
-      "scene": "docs/notation/2.3/try.scene.json",
-      "raster": "docs/notation/2.3/try.png",
+      "drawing": "docs/notation/3.0/try.svg",
+      "scene": "docs/notation/3.0/try.scene.json",
+      "raster": "docs/notation/3.0/try.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -363,7 +363,7 @@
     {
       "id": "flow",
       "title": "Statements and decisions",
-      "context": "swa.ml 2.3; Values::Demo",
+      "context": "swa.ml 3.0; Values::Demo",
       "syntax": "component Demo {\n    attribute sum: int = 0;\n    attribute mode: Mode = Mode.idle;\n    attribute reading: Reading = record Reading {\n      value = 4.5;\n      unit = \"C\";\n    };\n    operation add(a: int, b: int) returns int {\n      return a + b;\n    }\n    operation boot() {\n      var values: int[3] =[1, 2, 3];\n      for (value: int in values) {\n        sum = add(sum, value);\n      }\n      mode = Mode.active;\n    }\n    schedule {\n      on start boot();\n    }\n  }",
       "model": "examples/05-values-and-flow.swaml",
       "subject": "Values::Demo",
@@ -383,9 +383,9 @@
         "if",
         "else"
       ],
-      "drawing": "docs/notation/2.3/flow.svg",
-      "scene": "docs/notation/2.3/flow.scene.json",
-      "raster": "docs/notation/2.3/flow.png",
+      "drawing": "docs/notation/3.0/flow.svg",
+      "scene": "docs/notation/3.0/flow.scene.json",
+      "raster": "docs/notation/3.0/flow.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -395,7 +395,7 @@
     {
       "id": "loops",
       "title": "Loops and copied iteration",
-      "context": "swa.ml 2.3; Loops::Demo",
+      "context": "swa.ml 3.0; Loops::Demo",
       "syntax": "component Demo {\n    attribute count: int = 0;\n    operation boot() {\n      while (count < 2, 3 times) {\n        count = count + 1;\n      }\n      until (count == 4, 5 times) {\n        count = count + 1;\n      }\n      for (var i: int = 0; i < 2; i = i + 1) {\n        count = count + i;\n      }\n      for (x: int in[1, 2]) {\n        count = count + x;\n      }\n    }\n    schedule {\n      on start boot();\n    }\n  }",
       "model": "examples/18-control-loops.swaml",
       "subject": "Loops::Demo",
@@ -417,9 +417,9 @@
         "for",
         "times"
       ],
-      "drawing": "docs/notation/2.3/loops.svg",
-      "scene": "docs/notation/2.3/loops.scene.json",
-      "raster": "docs/notation/2.3/loops.png",
+      "drawing": "docs/notation/3.0/loops.svg",
+      "scene": "docs/notation/3.0/loops.scene.json",
+      "raster": "docs/notation/3.0/loops.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -429,7 +429,7 @@
     {
       "id": "schedule",
       "title": "Schedule entry and successful chaining",
-      "context": "swa.ml 2.3; Chaining::Demo",
+      "context": "swa.ml 3.0; Chaining::Demo",
       "syntax": "component Demo {\n    attribute count: int = 0;\n    operation load() {\n      wait 1ms;\n      count = 1;\n    }\n    operation report() {\n      count = count + 1;\n    }\n    schedule {\n      on start load();\n      after load report();\n    }\n  }",
       "model": "examples/25-function-completion.swaml",
       "subject": "Chaining::Demo",
@@ -450,9 +450,9 @@
         "deadline",
         "concurrent"
       ],
-      "drawing": "docs/notation/2.3/schedule.svg",
-      "scene": "docs/notation/2.3/schedule.scene.json",
-      "raster": "docs/notation/2.3/schedule.png",
+      "drawing": "docs/notation/3.0/schedule.svg",
+      "scene": "docs/notation/3.0/schedule.scene.json",
+      "raster": "docs/notation/3.0/schedule.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -462,7 +462,7 @@
     {
       "id": "receive",
       "title": "Suspending wait and receive",
-      "context": "swa.ml 2.3; Receiving::Receiver",
+      "context": "swa.ml 3.0; Receiving::Receiver",
       "syntax": "component def Receiver {\n    reversed port input: Messages;\n    attribute last: int = 0;\n    operation work() {\n      wait 2ms;\n      on receive input.message(value) {\n        last = value;\n      } or after 1ms {\n        last = - 1;\n      }\n    }\n    schedule {\n      on start work();\n    }\n  }",
       "model": "examples/21-receive-and-try.swaml",
       "subject": "Receiving::Receiver",
@@ -481,9 +481,9 @@
         "receive",
         "or"
       ],
-      "drawing": "docs/notation/2.3/receive.svg",
-      "scene": "docs/notation/2.3/receive.scene.json",
-      "raster": "docs/notation/2.3/receive.png",
+      "drawing": "docs/notation/3.0/receive.svg",
+      "scene": "docs/notation/3.0/receive.scene.json",
+      "raster": "docs/notation/3.0/receive.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -493,7 +493,7 @@
     {
       "id": "interrupt",
       "title": "Armed interrupt and cancellation",
-      "context": "swa.ml 2.3; Interrupts::Receiver",
+      "context": "swa.ml 3.0; Interrupts::Receiver",
       "syntax": "component def Receiver {\n    reversed port input: Messages;\n    attribute last: int = 0;\n    operation work() {\n      interruptible {\n        wait 8ms;\n        last = 99;\n      } on receive input.message(value) {\n        last = value;\n      }\n    }\n    schedule {\n      on start work();\n    }\n  }",
       "model": "examples/19-interruptible-function.swaml",
       "subject": "Interrupts::Receiver",
@@ -508,9 +508,9 @@
       "keywords": [
         "interruptible"
       ],
-      "drawing": "docs/notation/2.3/interrupt.svg",
-      "scene": "docs/notation/2.3/interrupt.scene.json",
-      "raster": "docs/notation/2.3/interrupt.png",
+      "drawing": "docs/notation/3.0/interrupt.svg",
+      "scene": "docs/notation/3.0/interrupt.scene.json",
+      "raster": "docs/notation/3.0/interrupt.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -520,7 +520,7 @@
     {
       "id": "states",
       "title": "States as steps of the flow",
-      "context": "swa.ml 2.3; States::Demo.lamp",
+      "context": "swa.ml 3.0; States::Demo.lamp",
       "syntax": "operation lamp() {\n      state Off {\n        after 2ms exit;\n      }\n      state On {\n        on entry {\n          lit = true;\n        }\n        on exit {\n          lit = false;\n        }\n        after 3ms exit;\n      }\n      state Done {\n      }\n    }",
       "model": "examples/04-stateful-function.swaml",
       "subject": "States::Demo.lamp",
@@ -546,9 +546,9 @@
         "after",
         "on"
       ],
-      "drawing": "docs/notation/2.3/states.svg",
-      "scene": "docs/notation/2.3/states.scene.json",
-      "raster": "docs/notation/2.3/states.png",
+      "drawing": "docs/notation/3.0/states.svg",
+      "scene": "docs/notation/3.0/states.scene.json",
+      "raster": "docs/notation/3.0/states.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -558,7 +558,7 @@
     {
       "id": "deployment",
       "title": "Platform Nodes and placement",
-      "context": "swa.ml 2.3; Placement::Demo",
+      "context": "swa.ml 3.0; Placement::Demo",
       "syntax": "component Demo {\n    component workers: Worker[3];\n  }",
       "model": "examples/22-platform-deployment.swaml",
       "subject": "Placement::Demo",
@@ -575,9 +575,9 @@
         "deployment",
         "deploy"
       ],
-      "drawing": "docs/notation/2.3/deployment.svg",
-      "scene": "docs/notation/2.3/deployment.scene.json",
-      "raster": "docs/notation/2.3/deployment.png",
+      "drawing": "docs/notation/3.0/deployment.svg",
+      "scene": "docs/notation/3.0/deployment.scene.json",
+      "raster": "docs/notation/3.0/deployment.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -587,7 +587,7 @@
     {
       "id": "requirements",
       "title": "Requirements and package intent links",
-      "context": "swa.ml 2.3; Traceability::Delivery",
+      "context": "swa.ml 3.0; Traceability::Delivery",
       "syntax": "requirement Delivery {\n    /** One named routed message reaches the receiver. */\n    attribute description: string = \"Deliver startup message\";\n  }",
       "model": "examples/16-requirements-and-views.swaml",
       "subject": "Traceability::Delivery",
@@ -607,9 +607,9 @@
         "verify",
         "by"
       ],
-      "drawing": "docs/notation/2.3/requirements.svg",
-      "scene": "docs/notation/2.3/requirements.scene.json",
-      "raster": "docs/notation/2.3/requirements.png",
+      "drawing": "docs/notation/3.0/requirements.svg",
+      "scene": "docs/notation/3.0/requirements.scene.json",
+      "raster": "docs/notation/3.0/requirements.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -619,7 +619,7 @@
     {
       "id": "cases",
       "title": "Use cases, tests and associations",
-      "context": "swa.ml 2.3; Cash Machine::Withdraw cash",
+      "context": "swa.ml 3.0; Cash Machine::Withdraw cash",
       "syntax": "use case 'Withdraw cash' of atm {\n    /** The customer inserts a card, asks for cash and receives it. */\n    publish customer.panel.cardInserted(\"4711\");\n    publish customer.panel.cashRequested(100);\n    on receive customer.panel.cashDispensed(amount) {\n      assert amount == 100;\n    } or after 2s {\n      fail \"no cash dispensed\";\n    }\n  }",
       "model": "examples/28-use-cases.swaml",
       "subject": "Cash Machine::Withdraw cash",
@@ -639,9 +639,9 @@
         "associate",
         "of"
       ],
-      "drawing": "docs/notation/2.3/cases.svg",
-      "scene": "docs/notation/2.3/cases.scene.json",
-      "raster": "docs/notation/2.3/cases.png",
+      "drawing": "docs/notation/3.0/cases.svg",
+      "scene": "docs/notation/3.0/cases.scene.json",
+      "raster": "docs/notation/3.0/cases.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -651,7 +651,7 @@
     {
       "id": "scripts",
       "title": "Executable case scripts",
-      "context": "swa.ml 2.3; AtmTests::Bank refusal",
+      "context": "swa.ml 3.0; AtmTests::Bank refusal",
       "syntax": "test 'Bank refusal' of atm {\n    /** The bank refuses: the machine refuses the customer and pays nothing. */\n    send customer.panel.amount(100);\n    publish customer.panel.cashRequested();\n    on call bank.link.authorize(amount) {\n      assert amount == 100;\n      return false;\n    } or after 1s {\n      fail \"no authorization request\";\n    }\n    on receive customer.panel.refused() {\n    } or after 1s {\n      fail \"not refused\";\n    }\n    assert atm.dispenser.count == 0;\n  }",
       "model": "examples/29-executable-cases.swaml",
       "subject": "AtmTests::Bank refusal",
@@ -664,9 +664,9 @@
         "EndpointPath"
       ],
       "keywords": [],
-      "drawing": "docs/notation/2.3/scripts.svg",
-      "scene": "docs/notation/2.3/scripts.scene.json",
-      "raster": "docs/notation/2.3/scripts.png",
+      "drawing": "docs/notation/3.0/scripts.svg",
+      "scene": "docs/notation/3.0/scripts.scene.json",
+      "raster": "docs/notation/3.0/scripts.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -676,7 +676,7 @@
     {
       "id": "views",
       "title": "Seven library view definitions",
-      "context": "swa.ml 2.3; Traceability::Demo",
+      "context": "swa.ml 3.0; Traceability::Demo",
       "syntax": "component Demo {\n    component sender: Sender;\n    component receiver: Receiver;\n    connect (sender.output, receiver.input);\n  }",
       "model": "examples/16-requirements-and-views.swaml",
       "subject": "Traceability::Demo",
@@ -706,9 +706,9 @@
         "kind",
         "path"
       ],
-      "drawing": "docs/notation/2.3/views.svg",
-      "scene": "docs/notation/2.3/views.scene.json",
-      "raster": "docs/notation/2.3/views.png",
+      "drawing": "docs/notation/3.0/views.svg",
+      "scene": "docs/notation/3.0/views.scene.json",
+      "raster": "docs/notation/3.0/views.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -718,7 +718,7 @@
     {
       "id": "timing",
       "title": "Declared and observed timing",
-      "context": "swa.ml 2.3; Timing::Demo.sample",
+      "context": "swa.ml 3.0; Timing::Demo.sample",
       "syntax": "operation sample() {\n      wait 1ms;\n      count = count + 1;\n    }",
       "model": "examples/17-function-timing.swaml",
       "subject": "Timing::Demo.sample",
@@ -728,9 +728,9 @@
       ],
       "productions": [],
       "keywords": [],
-      "drawing": "docs/notation/2.3/timing.svg",
-      "scene": "docs/notation/2.3/timing.scene.json",
-      "raster": "docs/notation/2.3/timing.png",
+      "drawing": "docs/notation/3.0/timing.svg",
+      "scene": "docs/notation/3.0/timing.scene.json",
+      "raster": "docs/notation/3.0/timing.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -740,7 +740,7 @@
     {
       "id": "documentation",
       "title": "Owned documentation and lexical notes",
-      "context": "swa.ml 2.3; Traceability::Delivery",
+      "context": "swa.ml 3.0; Traceability::Delivery",
       "syntax": "requirement Delivery {\n    /** One named routed message reaches the receiver. */\n    attribute description: string = \"Deliver startup message\";\n  }",
       "model": "examples/16-requirements-and-views.swaml",
       "subject": "Traceability::Delivery",
@@ -754,9 +754,9 @@
         "DOC_COMMENT"
       ],
       "keywords": [],
-      "drawing": "docs/notation/2.3/documentation.svg",
-      "scene": "docs/notation/2.3/documentation.scene.json",
-      "raster": "docs/notation/2.3/documentation.png",
+      "drawing": "docs/notation/3.0/documentation.svg",
+      "scene": "docs/notation/3.0/documentation.scene.json",
+      "raster": "docs/notation/3.0/documentation.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -766,7 +766,7 @@
     {
       "id": "expressions",
       "title": "Typed expressions and operators",
-      "context": "swa.ml 2.3; Values::Demo",
+      "context": "swa.ml 3.0; Values::Demo",
       "syntax": "component Demo {\n    attribute sum: int = 0;\n    attribute mode: Mode = Mode.idle;\n    attribute reading: Reading = record Reading {\n      value = 4.5;\n      unit = \"C\";\n    };\n    operation add(a: int, b: int) returns int {\n      return a + b;\n    }\n    operation boot() {\n      var values: int[3] =[1, 2, 3];\n      for (value: int in values) {\n        sum = add(sum, value);\n      }\n      mode = Mode.active;\n    }\n    schedule {\n      on start boot();\n    }\n  }",
       "model": "examples/05-values-and-flow.swaml",
       "subject": "Values::Demo",
@@ -799,9 +799,9 @@
         "true",
         "false"
       ],
-      "drawing": "docs/notation/2.3/expressions.svg",
-      "scene": "docs/notation/2.3/expressions.scene.json",
-      "raster": "docs/notation/2.3/expressions.png",
+      "drawing": "docs/notation/3.0/expressions.svg",
+      "scene": "docs/notation/3.0/expressions.scene.json",
+      "raster": "docs/notation/3.0/expressions.png",
       "constraints": [
         "Preserve owned source and distinct definition/occurrence identities.",
         "Drawing is a projection; it does not add execution semantics."
@@ -811,7 +811,7 @@
     {
       "id": "lexical",
       "title": "Lexical and path spelling",
-      "context": "swa.ml 2.3; Hello::Demo",
+      "context": "swa.ml 3.0; Hello::Demo",
       "syntax": "component Demo {\n    component sender: Sender;\n    component receiver: Receiver;\n    connect (sender.output, receiver.input);\n  }",
       "model": "examples/01-hello.swaml",
       "subject": "Hello::Demo",
@@ -839,9 +839,9 @@
         "ms",
         "s"
       ],
-      "drawing": "docs/notation/2.3/lexical.svg",
-      "scene": "docs/notation/2.3/lexical.scene.json",
-      "raster": "docs/notation/2.3/lexical.png",
+      "drawing": "docs/notation/3.0/lexical.svg",
+      "scene": "docs/notation/3.0/lexical.scene.json",
+      "raster": "docs/notation/3.0/lexical.png",
       "constraints": [
         "Text-only spelling; show as a source caption without invented semantic nodes.",
         "Drawing is a projection; it does not add execution semantics."

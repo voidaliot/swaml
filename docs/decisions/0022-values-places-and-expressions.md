@@ -1,6 +1,6 @@
 # ADR 0022: Values, places and expressions
 
-Status: accepted for the unreleased standard 2.3, 18 November 2026. Owner approval of the 2.3 scope and decisions D1, D2, D4, D5, D6 and D14 of the [2.3 proposal](../proposals/NEXT_MINOR_PROPOSAL.md). Not implemented: each rule lands with the work package named in the [2.3 chapter drafts](../drafts/2.3/README.md). This ADR is normative where it differs from the proposal. Amends the indexed-path clause of [ADR 0020](0020-associated-test-access.md). Published editions remain unchanged.
+Status: accepted on 18 November 2026 for the unreleased candidate then called 2.3, released as standard 3.0 ([ADR 0026](0026-states-in-the-flow.md) explains the major number). Owner approval of the 2.3 scope and decisions D1, D2, D4, D5, D6 and D14 of the [2.3 proposal](../proposals/NEXT_MINOR_PROPOSAL.md). Not implemented: each rule lands with the work package named in the [2.3 chapter drafts](../design/3.0-drafts/README.md). This ADR is normative where it differs from the proposal. Amends the indexed-path clause of [ADR 0020](0020-associated-test-access.md). Published editions remain unchanged.
 
 Items: B1 element and field assignment, B2 index followed by member access, B3 conditional expression, B4 numbers and text, B5 logical clock, B6 computed durations, B11a indexed parts in tests. Work packages: WP1 (B1, B2, B11a), WP2 (B3), WP3 (B4, B5), WP4 (B6). The compatibility gates are added by the allocation package WP1a.
 
@@ -26,7 +26,7 @@ An assignment target is a place: a value path followed, after a first `[index]`,
 - **Root.** The first segment is a mutable local, an `out` parameter or a non-const attribute of the executing component. In case scripts it is one of the script's own locals or an `on call` out binding. `in` parameters, const attributes, ports, child components and qualified names are rejected (SW2006).
 - **Typing.** `.f` selects a field of a record type; `[i]` indexes a fixed array with an integral index. A literal index outside the extent is a static error. All are SW2002.
 - **`out` roots.** An `out` parameter used as a root must be definitely assigned before the place assignment (SW2006).
-- **Out arguments.** A place is not an out argument in 2.3; out arguments stay bare names (SW2006, the existing rule).
+- **Out arguments.** A place is not an out argument in 3.0; out arguments stay bare names (SW2006, the existing rule).
 - **`for` updates.** The `for` header update keeps a bare name.
 - **Evaluation order.** Evaluate the target's index expressions left to right, then the right side, then read the root cell, check every index against the value read, and write the root with exactly one place replaced. A write performed by the right side, as in `counters[i] = bump();` where `bump` writes `counters`, is therefore kept.
 - **Failure.** An index outside the extent at runtime is the runtime failure `Bounds`; the root is unchanged.
@@ -108,7 +108,7 @@ The expression is integral (`byte`, `uint` or `int`); a `real` result is SW2002.
 
 For example, `after (pulseMs)` with `pulseMs = 250` means 250 ns and warns, while `wait (timeoutNs);` does not.
 
-### Tier 2 (not in 2.3)
+### Tier 2 (not in 3.0)
 
 - **Trigonometry** (`sin`, `cos`, `atan2`, `pi`) as swa.ml library source with documented range reduction and polynomial coefficients. Only IEEE `+ - * /` are used, so results are bit-identical on every binary64 host. A backend must not contract to fused multiply-add.
 - **Enum conversions** `ordinal(v: enum)` and `literalText(v: enum)`, with `enum` as a parameter type allowed only in `Swaml::*` library operations (D14).
@@ -145,13 +145,13 @@ For example, `after (pulseMs)` with `pulseMs = 250` means 250 ns and warns, whil
 
 ## Compatibility
 
-Every valid 2.2 source stays valid with unchanged meaning (for the 2.3 library packages through WP3-L04: a user package of the same name hides the library package). This is a compatible minor edition (D1), established by three release gates. The allocation package WP1a adds all three gates before any language change. It requires the showcase models merged to main as `examples/showcase/*.swaml` and tool fixes A1, A2, A4 and A7 merged. Every later package reruns them, and WP9 runs them on the final grammar.
+Every valid 2.2 source without a state machine stays valid with unchanged meaning (for the 3.0 library packages through WP3-L04: a user package of the same name hides the library package). It was planned as a compatible minor edition (D1), established by three release gates; replacing the 2.2 state machines (ADR 0026) made the release the major edition 3.0, and the gates hold for every 2.2 source without a state machine, while migrated machines are compared by gates B and C. The allocation package WP1a adds all three gates before any language change. It requires the showcase models merged to main as `examples/showcase/*.swaml` and tool fixes A1, A2, A4 and A7 merged. Every later package reruns them, and WP9 runs them on the final grammar.
 
 1. **Corpus AST identity.** Parse every repository `.swaml` file, including the showcase models at `examples/showcase/*.swaml`, with the 2.2 grammar (kept as a test fixture) and the current grammar. Compare the ASTs (references as text; positions and empty defaults stripped) after exactly one normalization, N1, applied to both sides: `PolicySetting{duration: d}` is rewritten to `PolicySetting{value: Literal{duration: d}}`. The gate is `test/compatibility-2-2.test.ts`, which lists the corpus and N1. Prototype result: 39 files, 38 identical, 1 skipped (a 2.2 negative example with parse errors), 0 differences.
 2. **Behaviour identity.** The result of every run in `examples/simulation/runs.json`, every case of every example (`examples/simulation/cases.json`) and every test of the showcase models (`examples/showcase/*.swaml` at the commit where WP1a records the fixture, run through the API or `--json`) is compared with a fixture recorded once with the 3.1.0 implementation. The fixture holds status, full final stores, case verdicts and a SHA-256 digest of the canonical JSON trace, with lengths and kind counts. Only `profile` and `languageVersion` are ignored. The exact fixture and mismatch report are rule WP1a-M02 of the drafts. New trace fields and observation kinds appear only where new syntax is used, so a 2.2 model's trace stays identical.
 3. **Warning-free grammar.** `langium generate` and parser construction emit no ambiguity warning. A unit test captures `console.warn` during `createSwamlServices` and fails on any output.
 
-The formatter may print a 2.2 source differently where a new form is shorter. Meaning does not change. Contextual words are written unquoted only for a 2.3 workspace (ADR 0024).
+The formatter may print a 2.2 source differently where a new form is shorter. Meaning does not change. Contextual words are written unquoted only for a 3.0 workspace (ADR 0024).
 
 ## Open items
 

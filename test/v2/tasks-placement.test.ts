@@ -1,4 +1,4 @@
-// WP8 of swa.ml 2.3: operation placement, Swaml::Os tasks, task rules T1 to T7, in-task order and ordering keys
+// WP8 of swa.ml 3.0: operation placement, Swaml::Os tasks, task rules T1 to T7, in-task order and ordering keys
 // (ADR 0025, B17, B18): WP8-L01, WP8-S01..S10, WP8-D01..D11, WP8-M01, WP8-M04, WP8-M06, WP8-R01, WP8-R02.
 import nodeTest from 'node:test';
 import assert from 'node:assert/strict';

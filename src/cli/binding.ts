@@ -6,7 +6,7 @@ import { createSwamlServices } from '../language/swaml-module.js';
 import type { Model } from '../language/generated/ast.js';
 import { BINDING_SCHEMA, bindingFindingText, checkBinding, type BindingFinding } from '../language/binding.js';
 import { languageArguments } from './options.js';
-export const BINDING_USAGE = 'swaml binding check [--language-version 2.3] [--json] binding.json file.swaml [more files...]';
+export const BINDING_USAGE = 'swaml binding check [--language-version 3.0] [--json] binding.json file.swaml [more files...]';
 /**
  * swaml binding check (WP8-M03, WP8-D10): validates a target binding against swaml-binding/1 and resolves its
  * identities against the validated sources and the named deployment. Prints one line per finding (severity, JSON

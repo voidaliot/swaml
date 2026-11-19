@@ -1,6 +1,6 @@
 # 8. Conformance obligations and evidence
 
-Normative chapter of [swa.ml 2.2](../LANGUAGE_SPECIFICATION.md). Acceptance levels are separate; implementations report the tested subset and limitations in their support matrix.
+Normative chapter of [swa.ml 3.0](../LANGUAGE_SPECIFICATION.md). Acceptance levels are separate; implementations report the tested subset and limitations in their support matrix.
 
 ## 8.1 Static obligations
 
@@ -25,8 +25,8 @@ Normative chapter of [swa.ml 2.2](../LANGUAGE_SPECIFICATION.md). Acceptance leve
 | V17 | Conditional typing, whole-expression placement, no suspension; contextual words in every name position; association lists without repeated pairs | SW2000/2002/2006/2010 |
 | V18 | `Swaml::Numeric`, `Swaml::Text` and `Swaml::Time` without new ambiguity for 2.2 sources; `now()` reads state and is rejected in initializers; no stale-read warning for `now()` values | SW2001/2006/2011 |
 | V19 | Duration values, policy setting literals, the constant sublanguage per occurrence, trigger identity, unit warning | SW2002/2007/2008/2013/2016/2019 |
-| V20 | States in the flow: SIF-D01 to SIF-D03 (structure, leaves, entries) and SIF-D04 (`now()` in a condition of a waiting state); the WP5 forms and their warnings are removed | SW2006/2008 |
-| V21 | Sampled-read ports and positions, mandatory initial values, zero-or-one owners of sampled members, member policies, dead completion guards | SW2004/2005/2006/2007/2010/2013/2017 |
+| V20 | States in the flow: SIF-D01 to SIF-D03 (structure, leaves, entries) and SIF-D04 (`now()` in a condition of a waiting state) | SW2006/2008 |
+| V21 | Sampled-read ports and positions, mandatory initial values, zero-or-one owners of sampled members, member policies | SW2004/2005/2006/2007/2010/2013 |
 | V22 | Release guards on every, receive and after entries only, bool with read-only effects, in the scope of the entry's arguments; not part of entry identity | SW2007 |
 | V23 | Operation placement, specificity, T1–T7 on Swaml::Os platforms (T6 per Core), in-task position, constant Task attributes, no Task as platform root, operation placements without effect | SW2009/2021 |
 
@@ -41,7 +41,7 @@ Validation MUST rebuild semantic string paths as well as indexed references afte
 | E03 | Separate occurrence/direction/member queues, Default policy, latest attributes, overflow/order/age/delivery behavior |
 | E04 | Unique routed correlations, result/out reply, failure propagation, timeout tie and terminal late-reply suppression |
 | E05 | Ordered expression/flow execution, loop limits, copied iteration, checked arithmetic/indexes, lazy try without rollback |
-| E06 | Ordered state reactions, live guards, timer generations, inactive input and final whole completion |
+| E06 | States in the flow: entry once, looks in written order, one message per look, timers once per arrival, unnamed input dropped while a state waits, completion at the end of the flow |
 | E07 | Entry release/deadline accounting, finite step/backlog/concurrent resources and explicit violations outside try |
 | E08 | Armed interrupt extent across callees/suspensions, same-activation unwind, terminal cancellation and no server rollback |
 | E09 | One fresh after activation per successful whole completion after unlock, failure suppression and new context/deadline |
@@ -55,7 +55,7 @@ Validation MUST rebuild semantic string paths as well as indexed references afte
 | E17 | Sample cells updated at delivery (after latency and faults, ordered within the instant by the event order), independent of consumption, read live and stable within an activation segment, with `sample` observations; per-member policies |
 | E18 | Release guards at dispatch before the arguments (a false guard evaluates none), deadline cancellation, skip as completion for successors, `skip` observations, `releaseGuard` discard, guard failure sourced at the entry or at the failing statement of a called operation, with no successor, unchanged grid |
 | E19 | Priority and in-task ordering keys for releases, dispatches and ready continuations, Task-placed before unplaced at equal priority, unplaced case scripts; unchanged order without Tasks; `task` on releases on a Task |
-| E20 | Every run, use case and test of the 2.2 corpus keeps its status, full final stores, machines, deployments, verdict and message and its complete trace, ignoring only `profile` and `languageVersion` (compatibility gate 2, compared with a fixture recorded with implementation 3.1.0) |
+| E20 | Every run, use case and test of a 2.2 corpus source without a state machine keeps its status, full final stores, machines, deployments, verdict and message and its complete trace, ignoring only `profile` and `languageVersion` (compatibility gate 2, compared with a fixture recorded with implementation 3.1.0); a 2.2 source with a machine gives the same results after `swaml migrate`, apart from the accepted differences r10 and C-3 (gates B and C) |
 
 A deterministic reference run may choose one permitted order/delivery outcome. Its tests do not establish all possible traces or real transport reliability. A target implementation identifies additional scheduling/transport assumptions and evidence. Idempotency annotations are checked declarations, not proofs of side-effect behavior.
 

@@ -87,7 +87,7 @@ export interface ProjectionEdge {
     label: string;
     policy?: ReturnType<typeof effectiveQos>;
     order?: number;
-    /** For a link of an association list (2.3), the positions of its occurrence and case in their lists; absent for a single 2.2 statement. */
+    /** For a link of an association list (3.0), the positions of its occurrence and case in their lists; absent for a single 2.2 statement. */
     pair?: { occurrence: number; case: number };
     /** The member policies of a connection with each member route's effective policy (WP6-M01); absent without them. */
     memberPolicies?: { member: string; policy: string; qos: ReturnType<typeof effectiveQos> }[];

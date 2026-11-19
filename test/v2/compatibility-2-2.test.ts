@@ -1,4 +1,4 @@
-// Compatibility gate 1 of swa.ml 2.3 (rule WP1a-M01): every repository .swaml file parses to the same AST
+// Compatibility gate 1 of swa.ml 3.0 (rule WP1a-M01): every repository .swaml file parses to the same AST
 // under the kept 2.2 grammar and the current grammar, after normalization N1. The corpus, N1 and the
 // fixture are defined in scripts/compatibility-2-2.mjs; the recorded digests are in
 // test/fixtures/compatibility-2-2/ast.json.
@@ -74,7 +74,7 @@ test('gate 1 amendments: a 2.2 source never gains an error or a new diagnostic a
     assert.match(resolutionDifferences('m.swaml', recorded, { ...recorded, diagnostics: [...recorded.diagnostics, 'warning SW2016 5:1-5:2 New.'] }, []).join(), /not in 3\.1\.0/u);
 });
 
-test('gate 1 amendments: the rule index finds the 2.3 draft rules and the ADRs', async () => {
+test('gate 1 amendments: the rule index finds the 3.0 draft rules and the ADRs', async () => {
     const { knownRules } = await import(new URL('../../../scripts/compatibility-2-2.mjs', import.meta.url).href) as { knownRules(): { rules: Set<string>; adrs: Set<string> } };
     const { rules, adrs } = knownRules();
     assert.ok(rules.has('WP4-D06') && rules.has('WP8-S08') && adrs.has('ADR 0022') && adrs.has('ADR 0025'));
@@ -89,9 +89,9 @@ test('gate 1 amendments: rules marked deferred or rejected are not known and can
     const { tmpdir } = await import('node:os');
     const base = mkdtempSync(join(tmpdir(), 'swaml-rules-'));
     try {
-        for (const directory of ['docs/drafts/2.3', 'docs/spec', 'docs/decisions'])
+        for (const directory of ['docs/design/3.0-drafts', 'docs/spec', 'docs/decisions'])
             mkdirSync(join(base, ...directory.split('/')), { recursive: true });
-        writeFileSync(join(base, 'docs', 'drafts', '2.3', 'x.md'), '| ID | Rule |\n| --- | --- |\n| WP4-D06 | A rule. |\n| WP5-S04 | *Deferred.* Moved to 2.4. |\n| WP6-S01 | *Rejected.* Not adopted. |\n| WP7-S01 | Moved to chapter 3.5. |\r\n| WP7-D01 | SW2007 | *Deferred.* Moved to 2.4. | `Message.` |\n| WP7-D02 | SW2007 | A condition. | `One \\| other.` |\n');
+        writeFileSync(join(base, 'docs', 'design', '3.0-drafts', 'x.md'), '| ID | Rule |\n| --- | --- |\n| WP4-D06 | A rule. |\n| WP5-S04 | *Deferred.* Moved to 2.4. |\n| WP6-S01 | *Rejected.* Not adopted. |\n| WP7-S01 | Moved to chapter 3.5. |\r\n| WP7-D01 | SW2007 | *Deferred.* Moved to 2.4. | `Message.` |\n| WP7-D02 | SW2007 | A condition. | `One \\| other.` |\n');
         writeFileSync(join(base, 'docs', 'spec', '03.md'), '| ID | Rule |\n| --- | --- |\n| WP7-S01 | A moved rule. |\n| WP6-S01 | Still written here, but rejected in the drafts. |\n');
         writeFileSync(join(base, 'docs', 'LANGUAGE_SPECIFICATION.md'), '# Spec\n');
         writeFileSync(join(base, 'docs', 'decisions', '0022-x.md'), '# ADR\n');

@@ -42,7 +42,7 @@ test('reserved and contextual words match the grammar', () => {
 test('name spelling quotes only when needed and round-trips', () => {
     assert.equal(formatName('Pump'), 'Pump');
     assert.equal(formatName('Withdraw cash'), "'Withdraw cash'");
-    // WP2-M01: a 2.3 workspace writes the contextual words view, state, in and out unquoted; 2.2 keeps quoting them.
+    // WP2-M01: a 3.0 workspace writes the contextual words view, state, in and out unquoted; 2.2 keeps quoting them.
     assert.equal(formatName('state'), 'state');
     assert.equal(formatName('operation'), "'operation'");
     assert.equal(formatName('state', '2.2'), "'state'");

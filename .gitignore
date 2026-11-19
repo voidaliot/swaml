@@ -13,4 +13,5 @@ showcase/.vite/
 
 # Rebuilt from versioned source by the build/preview scripts
 src/language/standard-library.ts
+src/migrate/grammar-2-2.ts
 showcase/public/downloads/

@@ -3,7 +3,7 @@ import { formatName, formatPath, formatQualifiedName } from './names.js';
 import { deploymentPlan } from './placement.js';
 import { endpoint, isExecutable, members, owner, packageEndpoint } from './semantic.js';
 /**
- * The target binding of swa.ml 2.3 (WP8-M02, WP8-M03): the schema swaml-binding/1 of spec/binding.schema.json and
+ * The target binding of swa.ml 3.0 (WP8-M02, WP8-M03): the schema swaml-binding/1 of spec/binding.schema.json and
  * the resolution of its identities against a validated model. Portable: the host reads the file and the sources.
  * A binding check is static resolution of target assumptions; it computes no schedule and is neither an analysis
  * claim nor schedulability evidence (WP8-M05). The schema has a version of its own, independent of the language

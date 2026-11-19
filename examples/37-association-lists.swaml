@@ -1,5 +1,5 @@
 package FleetCases {
-  /** Grouped associations in the shape of the cloud model's use cases and tests. In 2.2 each pair needed its own statement: associate truck to 'Monitor live position'; associate van to 'Monitor live position'; associate truck to 'Command a vehicle'; and so on. From 2.3 one statement lists occurrences and cases, associate truck, van to 'Monitor live position', 'Command a vehicle';, and associates every listed occurrence with every listed case. A pair repeated in one statement or across statements is an error. */
+  /** Grouped associations in the shape of the cloud model's use cases and tests. In 2.2 each pair needed its own statement: associate truck to 'Monitor live position'; associate van to 'Monitor live position'; associate truck to 'Command a vehicle'; and so on. From 3.0 one statement lists occurrences and cases, associate truck, van to 'Monitor live position', 'Command a vehicle';, and associates every listed occurrence with every listed case. A pair repeated in one statement or across statements is an error. */
   port def Telemetry {
     provides event position(vehicle: string, km: int);
   }

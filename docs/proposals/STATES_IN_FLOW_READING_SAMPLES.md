@@ -1,5 +1,7 @@
 # States in the flow: reading samples
 
+> **Historical design record** of the 3.0 edition (drafted as 2.3). Every answer was run as a case (test/v2/states-*.test.ts); the specification chapters 3.6 and 6.5 are the normative text.
+
 **Purpose:** prototype P3 of the design review, updated for revision 5 (the final specification) of [the proposal](STATES_IN_FLOW_PROPOSAL.md). Ten small behaviours, each with a sketch of its Flow View drawing and five plain questions. Read the text and the drawing cold, answer the questions, then compare with the answers at the end. If a question cannot be answered from the text and the drawing alone, the look has failed there.
 
 **Every answer has been run** by the interpreter prototypes (samples 1 to 7: P5, rerun with P7; sample 8: P4; sample 9: P6; sample 10: P7). Revision 5 corrects sample 8 Q2 and the reason of Q5, and adds sample 10. Nothing here is accepted by the released parser; the fences are plain text.

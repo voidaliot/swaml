@@ -1,6 +1,6 @@
 # Requirements, documentation and intent
 
-swa.ml 2.2.
+swa.ml 3.0.
 
 A requirement owns immutable typed attributes and at most one formal doc. Use `/** ... */` first in a body or immediately before the semicolon of a leaf declaration. Ordinary `//` and `/* ... */` comments remain separate lexical annotations. Formal documentation is owned source, not an executable statement or proof.
 

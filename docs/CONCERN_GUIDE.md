@@ -1,6 +1,6 @@
 # Concern guide
 
-swa.ml 2.1.
+swa.ml 3.0.
 
 | Concern | Read or try |
 | --- | --- |
@@ -13,6 +13,7 @@ swa.ml 2.1.
 | Graphical notation and views | [Notation](GRAPHICAL_NOTATION.md) |
 | Implemented support | [Status](IMPLEMENTATION_STATUS.md) |
 | Keywords | [Generated reference](KEYWORD_REFERENCE.md) |
+| Migrating 2.2 state machines | [swaml migrate](TOOLING.md#migrating-22-state-machines) |
 | Requirements and cases | [Intent guide](REQUIREMENTS_AND_DOCUMENTATION.md) |
 | Schedules, states and timing | [Flow/timing](CONTROL_FLOW_AND_TIMING.md) |
 | Start a model | [Usage](USER_GUIDE.md) |

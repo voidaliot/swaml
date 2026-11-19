@@ -1,4 +1,4 @@
-// WP7 of swa.ml 2.3: release guards on every, receive and after schedule entries (ADR 0025, B19), written if (g) after
+// WP7 of swa.ml 3.0: release guards on every, receive and after schedule entries (ADR 0025, B19), written if (g) after
 // the call since states-in-flow package 1 (SIF-G01; the candidate spelling when (g) is a syntax error): WP7-G01,
 // WP7-S01..S03, WP7-D01, WP7-D02, WP7-R01..R07, WP7-T01, WP7-T02, WP7-M01..M03.
 import nodeTest from 'node:test';

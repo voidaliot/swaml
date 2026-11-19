@@ -1,4 +1,4 @@
-// swa.ml 2.3 work package WP1: places, selector reads and literal component indexes in test paths.
+// swa.ml 3.0 work package WP1: places, selector reads and literal component indexes in test paths.
 // Every WP1 rule identifier is named in at least one test title below.
 import nodeTest from 'node:test';
 import assert from 'node:assert/strict';

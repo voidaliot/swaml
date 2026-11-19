@@ -1,0 +1,109 @@
+package ComMainGating {
+  /** Com main functions in the shape of the door model's ComMain. In 2.2 txMainFunction returns early while the power mode is sleep. From 3.0 the after entry carries a release guard: reception runs every 20 ms whatever the mode, transmission only while awake, and its 100 ms timer pauses while asleep instead of advancing. The diagnostics entry is guarded by a helper that reads the sampled mode. */
+  import Swaml::Time;
+  enum PowerMode {
+    startup,
+    run,
+    sleep
+  }
+  datatype DoorStatusPdu {
+    ajar: bool;
+    alive: uint;
+  }
+  port def ModeState {
+    provides attribute current: PowerMode = PowerMode.run;
+  }
+  port def DoorState {
+    provides attribute ajar: bool = false;
+  }
+  port def TxPdu {
+    provides event doorStatus(pdu: DoorStatusPdu);
+  }
+  port def Diagnostics {
+    provides event report(rxCycles: uint);
+  }
+  component def ComMain {
+    reversed port mode: ModeState;
+    reversed port door: DoorState;
+    port tx: TxPdu;
+    port diag: Diagnostics;
+    const attribute txPeriodMs: uint = 100;
+    attribute rxCycles: uint = 0;
+    attribute txRuns: uint = 0;
+    attribute txTimerMs: uint = 0;
+    attribute txAlive: uint = 0;
+    attribute framesSent: uint = 0;
+    attribute lastFrameNs: uint = 0;
+    attribute reports: uint = 0;
+    operation networkActive() returns bool {
+      return mode.current == PowerMode.run;
+    }
+    operation rxMainFunction() {
+      /** 20 ms reception; it runs in every mode. */
+      rxCycles = rxCycles + 1;
+    }
+    operation txMainFunction() {
+      /** 20 ms: cyclic transmission of the door status every 100 ms of awake time. */
+      txRuns = txRuns + 1;
+      txTimerMs = txTimerMs + 20;
+      if (txTimerMs >= txPeriodMs) {
+        txTimerMs = 0;
+        txAlive = (txAlive + 1) % 16;
+        framesSent = framesSent + 1;
+        lastFrameNs = now();
+        publish tx.doorStatus(record DoorStatusPdu { ajar = door.ajar; alive = txAlive; });
+      }
+    }
+    operation reportDiagnostics() {
+      reports = reports + 1;
+      publish diag.report(rxCycles);
+    }
+    schedule {
+      on every 20ms rxMainFunction() deadline 2ms;
+      after rxMainFunction txMainFunction() when (mode.current != PowerMode.sleep) deadline 5ms;
+      on every 100ms reportDiagnostics() when (networkActive()) deadline 10ms;
+    }
+  }
+  component def Ecu {
+    /** Interface-only actor: the ECU state manager and the door sensor. */
+    port mode: ModeState;
+    port door: DoorState;
+  }
+  component def Gateway {
+    /** Interface-only actor that receives the frames and the diagnostics. */
+    reversed port tx: TxPdu;
+    reversed port diag: Diagnostics;
+  }
+  component com: ComMain;
+  component ecu: Ecu;
+  component gateway: Gateway;
+  connect (ecu.mode, com.mode);
+  connect (ecu.door, com.door);
+  connect (com.tx, gateway.tx);
+  connect (com.diag, gateway.diag);
+  associate ecu, gateway to 'Frames every 100 ms while awake', 'Transmission pauses while asleep, reception continues', 'The transmit timer resumes after waking';
+  test 'Frames every 100 ms while awake' of com {
+    wait 5ms;
+    send ecu.door.ajar(true);
+    wait 200ms;
+    assert com.rxCycles == 10 and com.txRuns == 10 and com.framesSent == 2 and com.lastFrameNs == 200000000;
+    assert com.reports == 2;
+  }
+  test 'Transmission pauses while asleep, reception continues' of com {
+    /** Asleep from 50 ms: transmission ran at 20 and 40 ms only, its timer holds 40 ms, and no frame or report is sent. */
+    wait 50ms;
+    send ecu.mode.current(PowerMode.sleep);
+    wait 155ms;
+    assert com.rxCycles == 10 and com.txRuns == 2 and com.txTimerMs == 40 and com.framesSent == 0 and com.reports == 0;
+  }
+  test 'The transmit timer resumes after waking' of com {
+    /** Asleep from 50 to 130 ms: the timer continues from 40 ms at 140 ms and reaches 100 ms at 180 ms, which sends the first frame. */
+    wait 50ms;
+    send ecu.mode.current(PowerMode.sleep);
+    wait 80ms;
+    send ecu.mode.current(PowerMode.run);
+    wait 55ms;
+    assert com.txRuns == 5 and com.framesSent == 1 and com.lastFrameNs == 180000000 and com.txTimerMs == 0;
+    assert com.reports == 0;
+  }
+}

@@ -462,7 +462,12 @@ const REWRITTEN = ['heater', 'supply'];
  * The heater's tick counter, which the periodic machine replaces by its 600 s timer (1.12: "the counter is gone"); it stays
  * declared and is never written by the rewrite, so it is not compared.
  */
-const REPLACED = 'heaterTicks';
+const REPLACED = new Set(['heaterTicks', 'heaterLimitTicks', 'heaterLimitMs']);
+/** The heater attributes of the migrated text, which the periodic machine replaces by one constant limit in milliseconds. */
+const HEATER_ATTRIBUTES = '    const attribute heaterLimitTicks: uint = 6000 /** 10 minutes in 100 ms ticks. */;\n    attribute requested: bool = false;\n    attribute heating: bool = false;\n    attribute heaterTicks: uint = 0;\n';
+const HEATER_LIMIT = '    const attribute heaterLimitMs: uint = 600000 /** 10 minutes. */;\n    attribute requested: bool = false;\n    attribute heating: bool = false;\n';
+/** The baseline of gates D and F: the door showcase as migrated from 2.2 (a flat machine and flag code); the showcase is the rewrite. */
+const MIGRATED = () => readFileSync(new URL('door-controller-migrated.swaml', fixtures), 'utf8').replaceAll('\r\n', '\n');
 /**
  * What gate F compares of one case: the verdict, every final store (but the replaced counter), and the sends and the value
  * changes of the attributes of the rewritten components, in order.
@@ -477,14 +482,14 @@ function compared(result: CaseResult, initial: ReadonlyMap<string, unknown>) {
             seen.add(e.subject);
             last.set(e.subject, initial.get(String(e.subject).split('.').at(-1)!));
         }
-    const stores = Object.fromEntries(Object.entries(run?.stores ?? {}).map(([path, store]) => [path, Object.fromEntries(Object.entries(store).filter(([n]) => !(path.endsWith('.heater') && n === REPLACED)))]));
-    const observable = ((run?.trace ?? []) as Observation[]).filter(e => rewritten(String(e.subject)) && !String(e.subject).endsWith(`.${REPLACED}`) && (e.kind === 'send' || e.kind === 'write' && e.scope === 'attribute' && JSON.stringify(last.get(e.subject)) !== JSON.stringify(e.value) && (last.set(e.subject, e.value), true))).map(e => `${e.timeNs} ${e.kind} ${e.subject} ${JSON.stringify(e.value ?? e.args)}`);
+    const stores = Object.fromEntries(Object.entries(run?.stores ?? {}).map(([path, store]) => [path, Object.fromEntries(Object.entries(store).filter(([n]) => !(path.endsWith('.heater') && REPLACED.has(n))))]));
+    const observable = ((run?.trace ?? []) as Observation[]).filter(e => rewritten(String(e.subject)) && !REPLACED.has(String(e.subject).split('.').at(-1)!) && (e.kind === 'send' || e.kind === 'write' && e.scope === 'attribute' && JSON.stringify(last.get(e.subject)) !== JSON.stringify(e.value) && (last.set(e.subject, e.value), true))).map(e => `${e.timeNs} ${e.kind} ${e.subject} ${JSON.stringify(e.value ?? e.args)}`);
     return { verdict: { result: verdict.result, reason: verdict.reason, message: verdict.message }, stores, observable };
 }
 
 test('gate F: the door showcase with MirrorHeater.tick and SupplyMonitor.classify as periodic machines gives the same verdicts, stores, sends and writes in all cases', async () => {
-    const original = readFileSync(new URL('examples/showcase/autosar-classic-door-controller.swaml', root), 'utf8').replaceAll('\r\n', '\n');
-    const rewritten = replaceOperation(replaceOperation(original, 'MirrorHeater', 'tick', HEATER), 'SupplyMonitor', 'classify', SUPPLY);
+    const original = MIGRATED();
+    const rewritten = replaceOperation(replaceOperation(original, 'MirrorHeater', 'tick', HEATER), 'SupplyMonitor', 'classify', SUPPLY).replace(HEATER_ATTRIBUTES, HEATER_LIMIT);
     assert.notEqual(rewritten, original);
     const uri = 'file:///examples/showcase/autosar-classic-door-controller.swaml', options = { untilNs: 10_000_000_000, maxSteps: 200000 };
     const before = await load(original, uri), after = await load(rewritten, uri);
@@ -507,4 +512,10 @@ test('gate F: the door showcase with MirrorHeater.tick and SupplyMonitor.classif
         identical++;
     }
     assert.equal(identical, 36);
+});
+
+test('the door showcase is the migrated text with the three rewrites: the window lifter with parents (gate D), the heater and the supply monitor as periodic machines (gate F)', () => {
+    const LIFTER = readFileSync(new URL('window-lifter-parents.swaml-fragment', fixtures), 'utf8');
+    const composed = replaceOperation(replaceOperation(replaceOperation(MIGRATED(), 'WindowLifter', 'control', LIFTER), 'MirrorHeater', 'tick', HEATER), 'SupplyMonitor', 'classify', SUPPLY).replace(HEATER_ATTRIBUTES, HEATER_LIMIT);
+    assert.equal(readFileSync(new URL('examples/showcase/autosar-classic-door-controller.swaml', root), 'utf8').replaceAll('\r\n', '\n'), composed);
 });

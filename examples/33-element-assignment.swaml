@@ -1,5 +1,5 @@
 package EventMemory {
-  /** A diagnostic event memory written twice, as in the door controller's Dem. The 2.2 shape rebuilds the whole counter array with one selection per slot and replaces a whole status record to change one flag. The 2.3 shape assigns the element and the field directly: counters[index] = counter; and statuses[index].confirmed = true;. A test feeds both memories the same reports and checks that they end in the same state. */
+  /** A diagnostic event memory written twice, as in the door controller's Dem. The 2.2 shape rebuilds the whole counter array with one selection per slot and replaces a whole status record to change one flag. The 3.0 shape assigns the element and the field directly: counters[index] = counter; and statuses[index].confirmed = true;. A test feeds both memories the same reports and checks that they end in the same state. */
   enum Fault {
     voltage, motor, hall
   }
@@ -110,7 +110,7 @@ package EventMemory {
     }
   }
   component def Placing specializes Memory {
-    /** The 2.3 shape: the element and the fields are assigned in place. */
+    /** The 3.0 shape: the element and the fields are assigned in place. */
     redefines operation report(fault: Fault, failed: bool) {
       reports = reports + 1;
       var index: uint = indexOf(fault);

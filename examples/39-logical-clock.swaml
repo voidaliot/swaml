@@ -1,5 +1,5 @@
 package ReceptionAge {
-  /** A reception timeout in the shape of the door model's ComMain. The 2.2 shape counts the age of the last frame with rxAgeMs = rxAgeMs + 20, which is right only while the main function runs every 20 ms. The 2.3 shape stores the logical time of the last frame, lastRxNs = now(), and compares now() - lastRxNs with the timeout in nanoseconds, so it does not depend on the period. now() is the logical time of the evaluating step in nanoseconds since the run epoch; it reads state and is therefore not allowed in attribute initializers. */
+  /** A reception timeout in the shape of the door model's ComMain. The 2.2 shape counts the age of the last frame with rxAgeMs = rxAgeMs + 20, which is right only while the main function runs every 20 ms. The 3.0 shape stores the logical time of the last frame, lastRxNs = now(), and compares now() - lastRxNs with the timeout in nanoseconds, so it does not depend on the period. now() is the logical time of the evaluating step in nanoseconds since the run epoch; it reads state and is therefore not allowed in attribute initializers. */
   import Swaml::Time;
   port def Bus {
     provides event frame(rolling: uint);
@@ -26,7 +26,7 @@ package ReceptionAge {
       if (rxAgeMs >= rxTimeoutMs) {
         timedOutByTicks = true;
       }
-      // 2.3 shape: the age is now() - lastRxNs.
+      // 3.0 shape: the age is now() - lastRxNs.
       if (now() - lastRxNs >= rxTimeoutMs * 1000000) {
         timedOutByClock = true;
       }

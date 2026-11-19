@@ -1,9 +1,9 @@
 import { AstUtils, type AstNode } from 'langium';
 import * as a from './generated/ast.js';
 import { formatName, formatPath, MESSAGE_SPELLING } from './names.js';
-import { body, constantValue, displayText, entryDeadline, entryPeriod, isExecutable, LIBRARY_2_3_URI, localOperation, members, nodes, occurrenceCount, occurrences, owner, resolve, schedule, signature, workspaceModels, OCCURRENCE_LIMIT, type Executable, type Occurrence, type Structure } from './semantic.js';
+import { body, constantValue, displayText, entryDeadline, entryPeriod, isExecutable, LIBRARY_3_0_URI, localOperation, members, nodes, occurrenceCount, occurrences, owner, resolve, schedule, signature, workspaceModels, OCCURRENCE_LIMIT, type Executable, type Occurrence, type Structure } from './semantic.js';
 /**
- * Operation placement, Swaml::Os tasks and the static task rules of swa.ml 2.3 (WP8, ADR 0025): one plan per
+ * Operation placement, Swaml::Os tasks and the static task rules of swa.ml 3.0 (WP8, ADR 0025): one plan per
  * deployment, shared by the validator (WP8-S01 to WP8-S10), the reference run (WP8-R01) and the binding check
  * (WP8-M02, WP8-M03). Portable: no filesystem or host dependency.
  */
@@ -15,7 +15,7 @@ export function osRole(s: Structure | undefined): 'Task' | 'Core' | undefined {
         seen.add(x);
         // Only the built-in declaration counts: a workspace's own Swaml::Os hides the library package (WP3-L04), and its
         // Task or Core keeps the 2.2 meaning of an ordinary Node.
-        if (a.isComponentDef(x) && (x.name === 'Task' || x.name === 'Core') && owner(x, a.isPackage)?.name === 'Swaml::Os' && AstUtils.getDocument(x).uri.toString() === LIBRARY_2_3_URI)
+        if (a.isComponentDef(x) && (x.name === 'Task' || x.name === 'Core') && owner(x, a.isPackage)?.name === 'Swaml::Os' && AstUtils.getDocument(x).uri.toString() === LIBRARY_3_0_URI)
             return x.name;
     }
     return undefined;

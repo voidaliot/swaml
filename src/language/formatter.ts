@@ -2,7 +2,7 @@ import { CstUtils, DefaultLexer, DefaultLexerErrorMessageProvider, DefaultTokenB
 import type { Formatter } from 'langium/lsp';
 import type { TextEdit } from 'vscode-languageserver';
 import { isArrayLiteral, isAssociation, isInterruptible, isUnaryExpression, type Association } from './generated/ast.js';
-/** Whether an associate statement uses the list form (2.3). */
+/** Whether an associate statement uses the list form (3.0). */
 const isAssociationListNode = (n: unknown): boolean => isAssociation(n) && ((n as Association).moreOccurrences.length > 0 || (n as Association).moreTargets.length > 0);
 import { SwamlGrammar } from './generated/grammar.js';
 import { SwamlLanguageMetaData } from './generated/module.js';

@@ -1,4 +1,4 @@
-// WP2 of swa.ml 2.3: the whole-expression conditional (WP2-G01, WP2-G02, WP2-S02..S05, WP2-R01, WP2-D01,
+// WP2 of swa.ml 3.0: the whole-expression conditional (WP2-G01, WP2-G02, WP2-S02..S05, WP2-R01, WP2-D01,
 // WP2-D02, WP2-D04, WP2-M02), the contextual words view, state, in and out (WP2-G03, WP2-S01, WP2-M01) and
 // association lists (WP2-G03, WP2-S06, WP2-D03, WP2-M03, WP2-M04); the formatter (WP2-M05).
 import nodeTest from 'node:test';
@@ -184,7 +184,7 @@ test('WP2-S04 WP2-D02 a suspending call cannot appear anywhere in a conditional;
     for (const statement of ['x = if (c) api.get() else 0;', 'x = if (c) 0 else waits();', 'x = if (api.get() > 0) 1 else 0;', 'x = if (c) try(api.get(), 0) else 1;', 'r = if (c) record R { n = api.get(); ok = true; } else r;', 'x = if (c) 1 + (if (c) waits() else 0) else 2;', 'var v: int = if (c) api.get() else 0;']) {
         const found = await errors(source(statement));
         assert.ok(found.some(([code, m]) => code === 'SW2006' && m === message), `${statement}: ${JSON.stringify(found)}`);
-        assert.ok(!found.some(([, m]) => String(m).startsWith('Suspending calls must be standalone')), `${statement}: the 2.3 message replaces the 2.2 one inside a conditional`);
+        assert.ok(!found.some(([, m]) => String(m).startsWith('Suspending calls must be standalone')), `${statement}: the 3.0 message replaces the 2.2 one inside a conditional`);
     }
     // Outside a conditional, a suspending call keeps its 2.2 rule and message.
     const outside = await errors(source('x = api.get() + 1;'));
@@ -429,10 +429,10 @@ test('WP2-S01 the words in every name position: package, enum literal, field, me
     assert.deepEqual(simulate([quoted.model], 'Test::Demo', { untilNs: 1000 }).stores.Demo, { state: 2 });
 });
 
-test('WP2-M01 name services are edition-aware: 2.3 writes the words unquoted, 2.2 keeps quoting them', () => {
+test('WP2-M01 name services are edition-aware: 3.0 writes the words unquoted, 2.2 keeps quoting them', () => {
     for (const word of ['view', 'state', 'in', 'out']) {
         assert.equal(formatName(word), word);
-        assert.equal(formatName(word, '2.3'), word);
+        assert.equal(formatName(word, '3.0'), word);
         assert.equal(formatName(word, '2.2'), `'${word}'`);
         assert.equal(formatName(word, '2.1'), `'${word}'`);
         assert.ok(isBasicName(word) && !isBasicName(word, '2.2'));
@@ -450,7 +450,7 @@ test('WP2-M01 name services are edition-aware: 2.3 writes the words unquoted, 2.
     assert.equal(reservedWords(), RESERVED_WORDS);
 });
 
-test('WP2-M01 the 2.2 word sets match the kept 2.2 grammar and the 2.3 sets the current grammar', async () => {
+test('WP2-M01 the 2.2 word sets match the kept 2.2 grammar and the 3.0 sets the current grammar', async () => {
     const words = (grammar: GrammarAST.Grammar) => {
         const all = new Set(AstUtils.streamAllContents(grammar).filter(GrammarAST.isKeyword).map(k => k.value).filter(k => /^[A-Za-z]\w*$/.test(k)));
         const contextual = new Set(AstUtils.streamAllContents(grammar.rules.find(r => r.name === 'Name')!).filter(GrammarAST.isKeyword).map(k => k.value));
@@ -461,7 +461,7 @@ test('WP2-M01 the 2.2 word sets match the kept 2.2 grammar and the 2.3 sets the 
     assert.deepEqual(words(SwamlGrammar()), { contextual: [...CONTEXTUAL_KEYWORDS].sort(), reserved: [...RESERVED_WORDS].sort() });
 });
 
-test('WP2-M01 rename writes a contextual word unquoted in 2.3, and references find quoted and unquoted spellings', async () => {
+test('WP2-M01 rename writes a contextual word unquoted in 3.0, and references find quoted and unquoted spellings', async () => {
     const source = wrap(`attribute level: int = 0; operation f() { level = level + 1; } schedule { on start f(); }`);
     const r = await valid(source), offset = source.indexOf('level: int');
     const edit = await r.Swaml.lsp.RenameProvider!.rename(r.doc, { textDocument: { uri: r.doc.uri.toString() }, position: r.doc.textDocument.positionAt(offset), newName: 'state' });

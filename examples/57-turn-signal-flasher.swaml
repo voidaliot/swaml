@@ -1,0 +1,83 @@
+package TurnSignalFlasher {
+  /** A turn signal flasher released every 10 ms. Released on every, the operation keeps its place between releases: each release makes one look at the current state, which reads the sampled stalk position as it is at that release. The 40 ms timers count from their state's arrival across releases, so the lamp changes every fourth release. The neutral check is written once, on the parent blinking, and applies in lit and dark. A position that comes and goes between two releases is never seen. */
+  enum Stalk {
+    neutral,
+    left,
+    right
+  }
+  port def StalkState {
+    provides attribute position: Stalk = Stalk.neutral;
+  }
+  component def Flasher {
+    reversed port stalk: StalkState;
+    attribute lamp: bool = false;
+    attribute flashes: uint = 0;
+    attribute lastFlashNs: uint = 0;
+    operation flash() {
+      while (true) {
+        state idle {
+          if (stalk.position != Stalk.neutral) exit;
+        }
+        state blinking {
+          on exit {
+            lamp = false;
+          }
+          if (stalk.position == Stalk.neutral) exit;
+          state lit {
+            on entry {
+              lamp = true;
+              flashes = flashes + 1;
+              lastFlashNs = Swaml::Time::now();
+            }
+            after 40ms exit;
+          }
+          state dark {
+            on entry {
+              lamp = false;
+            }
+            after 40ms to lit;
+          }
+        }
+      }
+    }
+    schedule {
+      on every 10ms flash();
+    }
+  }
+  component def Steering {
+    /** Interface-only actor: the turn signal stalk. */
+    port toFlasher: StalkState;
+  }
+  component flasher: Flasher;
+  component steering: Steering;
+  connect (steering.toFlasher, flasher.stalk);
+  associate steering to 'Flashes while the stalk is set', 'Neutral turns the lamp off at the next release', 'A blip between releases is not seen';
+  test 'Flashes while the stalk is set' of flasher {
+    /** The stalk is set at 5 ms. The release at 10 ms lights the lamp; dark from 50 ms, lit again at 90 ms and at 170 ms. */
+    wait 5ms;
+    send steering.toFlasher.position(Stalk.left);
+    wait 50ms;
+    assert not flasher.lamp and flasher.flashes == 1;
+    wait 120ms;
+    assert flasher.lamp and flasher.flashes == 3 and flasher.lastFlashNs == 170000000;
+  }
+  test 'Neutral turns the lamp off at the next release' of flasher {
+    /** Lit at 10 ms; the stalk returns at 25 ms. The release at 30 ms leaves blinking from lit, and its on exit turns the lamp off. */
+    wait 5ms;
+    send steering.toFlasher.position(Stalk.right);
+    wait 22ms;
+    assert flasher.lamp;
+    send steering.toFlasher.position(Stalk.neutral);
+    wait 4ms;
+    assert not flasher.lamp and flasher.flashes == 1;
+  }
+  test 'A blip between releases is not seen' of flasher {
+    /** The stalk is set at 12 ms and back at 15 ms; the release at 20 ms reads neutral, and the lamp never lights. */
+    wait 12ms;
+    send steering.toFlasher.position(Stalk.left);
+    wait 3ms;
+    send steering.toFlasher.position(Stalk.neutral);
+    wait 50ms;
+    assert not flasher.lamp and flasher.flashes == 0;
+  }
+}

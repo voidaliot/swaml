@@ -1,0 +1,97 @@
+package LockLatestRequest {
+  /** A door lock that drives a 250 ms motor pulse to lock or unlock. Requests also arrive during a pulse, when the lock cannot act on them; what must be remembered until it can is a variable. The request line is written once, on the parent serving, so every state inside it keeps the latest request in wanted; the resting states unlocked and isLocked leave when wanted differs from where they rest. Only the latest request counts: requests that arrive during one pulse never queue up a sequence of pulses. */
+  import Swaml::Qos;
+  qos def Queued: Policy {
+    delivery = Delivery.atMostOnce;
+    ordering = Ordering.fifo;
+    capacity = 8;
+    overflow = Overflow.dropOldest;
+    requestTimeout = 1s;
+  }
+  port def Requests {
+    provides event request(lock: bool);
+  }
+  component def Lock {
+    reversed port requests: Requests;
+    attribute locked: bool = false;
+    attribute pulses: uint = 0;
+    operation control() {
+      var wanted: bool = false;
+      state serving {
+        on receive requests.request(lock) {
+          wanted = lock;
+        }
+        state unlocked {
+          on entry {
+            locked = false;
+          }
+          if (wanted) exit;
+        }
+        state locking {
+          on entry {
+            pulses = pulses + 1;
+          }
+          after 250ms exit;
+        }
+        state isLocked {
+          on entry {
+            locked = true;
+          }
+          if (not wanted) exit;
+        }
+        state unlocking {
+          on entry {
+            pulses = pulses + 1;
+          }
+          after 250ms to unlocked;
+        }
+      }
+    }
+    schedule {
+      on start control();
+    }
+  }
+  component def Body {
+    /** Interface-only actor: the body controller sends lock requests. */
+    port toLock: Requests;
+  }
+  component def Fob {
+    /** Interface-only actor: a key fob with its own connection to the lock, so its requests have their own queue. */
+    port toLock: Requests;
+  }
+  component lock: Lock;
+  component body: Body;
+  component fob: Fob;
+  connect: Queued (body.toLock, lock.requests);
+  connect: Queued (fob.toLock, lock.requests);
+  associate body, fob to 'Requests during the pulse', 'Unlock during the lock pulse', 'Request order across the pulse';
+  test 'Requests during the pulse' of lock {
+    /** lock at 0 ms, then unlock at 100 ms and lock at 200 ms, both during the pulse. The latest request is lock, so isLocked, reached at 250 ms, finds nothing to do: one pulse, locked. */
+    publish body.toLock.request(true);
+    wait 100ms;
+    publish body.toLock.request(false);
+    wait 100ms;
+    publish body.toLock.request(true);
+    wait 600ms;
+    assert lock.locked and lock.pulses == 1;
+  }
+  test 'Unlock during the lock pulse' of lock {
+    /** An unlock at 100 ms is remembered during the lock pulse. At 250 ms isLocked sets locked and its arrival look leaves at once for the unlock pulse, which ends at 500 ms in unlocked: two pulses. */
+    publish body.toLock.request(true);
+    wait 100ms;
+    publish body.toLock.request(false);
+    wait 200ms;
+    assert lock.locked and lock.pulses == 2;
+    wait 300ms;
+    assert not lock.locked and lock.pulses == 2;
+  }
+  test 'Request order across the pulse' of lock {
+    /** Two requests during one pulse are looked at in delivery order across their queues: the fob's unlock, then the body's lock, so wanted ends true and the lock rests locked after one pulse. Taking the older queue (the body's) first would leave wanted false: two pulses, unlocked. */
+    publish body.toLock.request(true);
+    wait 10ms;
+    publish fob.toLock.request(false);
+    publish body.toLock.request(true);
+    wait 900ms;
+    assert lock.locked and lock.pulses == 1;
+  }
+}

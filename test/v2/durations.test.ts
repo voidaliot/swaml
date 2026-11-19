@@ -1,4 +1,4 @@
-// WP4 of swa.ml 2.3: durations as values (WP4-G01..G04, WP4-S01..S08, WP4-R01, WP4-R02, WP4-D01..D07, WP4-T01,
+// WP4 of swa.ml 3.0: durations as values (WP4-G01..G04, WP4-S01..S08, WP4-R01, WP4-R02, WP4-D01..D07, WP4-T01,
 // WP4-M01..M04, WP4-M08). A duration literal is a uint value in nanoseconds; wait (e), or after (e), state
 // timers after (e), on every (e) and deadline (e) take computed durations; periods and deadlines use the constant
 // sublanguage, evaluated per expanded occurrence by constantValue; PolicySetting has one form.
@@ -109,7 +109,7 @@ test('WP4-S02 WP4-D01 a timeout setting is a duration literal and no other setti
     // 2.2 forms (SW2013 with the 2.2 messages, gate 1 and the sixth extended set).
     assert.deepEqual(await errors(policy('capacity = 5ms; requestTimeout = 1s;')), [['SW2013', 'capacity needs a positive integer count, not a duration.']]);
     assert.deepEqual(await errors(policy('capacity = 4; requestTimeout = 5;')), [['SW2013', 'requestTimeout needs a duration.']]);
-    // Computed values are new in 2.3 (WP4-D01).
+    // Computed values are new in 3.0 (WP4-D01).
     assert.deepEqual(await errors(policy('capacity = 4; requestTimeout = 2 * 1s; maxAge = 1ms + 1ms;')), [['SW2013', 'A policy needs complete valid delivery, ordering, capacity, overflow and requestTimeout.'], ['SW2013', 'requestTimeout must be a duration literal such as 1s.'], ['SW2013', 'maxAge must be a duration literal such as 1s.']]);
     assert.deepEqual(await errors(policy('capacity = 4ms * 2; requestTimeout = 1s;')), [['SW2013', 'A policy needs complete valid delivery, ordering, capacity, overflow and requestTimeout.'], ['SW2013', 'capacity is not a duration setting.']]);
     // A parenthesized literal is a literal.

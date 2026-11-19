@@ -1,5 +1,7 @@
 # 9. Formal semantics: 2.3 changes (draft)
 
+> **Historical record of swa.ml 3.0.** This file is one of the work-package checklists of the 3.0 edition, drafted under the name 2.3. Every rule has moved into the [specification chapters](../../LANGUAGE_SPECIFICATION.md), which are the only normative text; where a row here differs from them, the chapter wins. The 2.2 state machines and the WP5 state reactions some rows mention are not part of 3.0: states are steps of the flow ([chapter 3.6](../../spec/03-behavior.md#36-states), [chapter 6.5](../../spec/06-execution-contract.md#65-input-ownership-and-interruption)).
+
 **Draft for the unreleased standard 2.3; see [the draft index](README.md).** Target: [chapter 9](../../spec/09-formal-semantics.md). These schemas restate rules owned by chapters 1–7. They carry a package tag, not a rule identifier.
 
 ## 9.1 Domains

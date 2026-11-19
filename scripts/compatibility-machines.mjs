@@ -193,7 +193,7 @@ async function check() {
 /**
  * The accepted behaviour changes of the migration, pinned by models (test/fixtures/compatibility-2-2/accepted): the list
  * accepted.json names each model and the kind of difference it shows; recorded-2.2.json holds its 3.1.0 result (recorded
- * from 213f583) and expected-2.3.json its result now. The gate fails when the models in the directory, the list and the two
+ * from 213f583) and expected-3.0.json its result now. The gate fails when the models in the directory, the list and the two
  * result files are not the same set, when a result now is not the pinned one, or when a model no longer differs from 2.2 as
  * its kind says (review 5 N7): stores (the final store differs), componentOrder (stores equal, the order of observations of
  * some component differs) or globalOrder (stores and every component's order equal, the order across components differs).
@@ -218,12 +218,12 @@ export async function acceptedDifferences({ write = false, dir = join(root, 'tes
         const r = simulate([doc.parseResult.value], old.target, { untilNs: 80e6, maxSteps: 200000 });
         now.push({ file: old.file, status: r.status, stores: r.stores, order: r.trace.filter(e => ['write', 'publish', 'discardInput'].includes(e.kind)).map(e => `${e.timeNs} ${e.kind} ${e.subject}`) });
     }
-    const expectedFile = join(dir, 'expected-2.3.json');
+    const expectedFile = join(dir, 'expected-3.0.json');
     if (write)
         writeFileSync(expectedFile, JSON.stringify({ results: now }, null, 1) + '\n');
     const expected = JSON.parse(readFileSync(expectedFile, 'utf8')).results;
     if (canonicalJson(expected.map(r => r.file).sort()) !== canonicalJson(named))
-        failures.push('accepted: expected-2.3.json does not hold exactly the listed models');
+        failures.push('accepted: expected-3.0.json does not hold exactly the listed models');
     const perComponent = order => { const by = {}; for (const line of order) (by[line.split(' ')[2].split('.')[0]] ??= []).push(line); return canonicalJson(Object.entries(by).sort()); };
     for (const r of now) {
         const pinned = expected.find(x => x.file === r.file), old = recorded.find(x => x.file === r.file), kind = list.find(m => m.file === r.file)?.kind;

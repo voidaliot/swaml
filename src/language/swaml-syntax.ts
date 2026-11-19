@@ -1,5 +1,5 @@
 import { DefaultLexer, DefaultLexerErrorMessageProvider, DefaultValueConverter, LangiumParserErrorMessageProvider, type CstNode, type GrammarAST, type LexerResult, type TokenizeOptions, type ValueType } from 'langium';
-import { CONTEXTUAL_KEYWORDS, RESERVED_WORDS, decodeQuotedName, quoteName } from './names.js';
+import { CONTEXTUAL_KEYWORDS, MESSAGE_SPELLING, RESERVED_WORDS, decodeQuotedName, formatName, quoteName } from './names.js';
 type Token = Parameters<LangiumParserErrorMessageProvider['buildMismatchTokenMessage']>[0]['actual'];
 type TokenKind = Token['tokenType'];
 /** Decodes quoted names and normalizes the two-word use case keyword to useCase. */
@@ -30,8 +30,99 @@ export class SwamlLexer extends DefaultLexer {
         skipped.clear();
         const result = super.tokenize(text, options);
         guardNesting(result);
+        guardStateForms(result, (this as unknown as { tokenTypes: Record<string, TokenKind> }).tokenTypes?.['if']);
         tokens = result.tokens;
         return result;
+    }
+}
+/** A condition written when (c) { … } as an item of a state (a 2.2 or draft habit): 3.0 writes if (c). */
+export const WHEN_IN_STATE_MESSAGE = 'when is no word of swa.ml 3.0: a condition in a state is written if (c) { … }, and the state looks at it again each time something happens to it.';
+/**
+ * Half-typed or misplaced state forms after which the parser cannot resynchronise, found on the tokens before parsing so
+ * that one message says what is wrong and the rest of the package is kept (final-package review, M1):
+ * - after D { … } (or a short leave) outside a state's braces and outside a schedule: not parsed, one error;
+ * - an event line of a state joined to another by or (on receive p.m() or receive p.k() { … }, or a block followed by
+ *   or receive … { … }): the joined part is not parsed, one error, the first line is kept;
+ * - when (c) { … } as an item of a state: read as if (c) { … }, with one error that says when is gone;
+ * - a state written directly inside on entry or on exit: not parsed, one error.
+ * Only braces are tracked: a { after state <name> opens a state, after schedule a schedule, after on entry / on exit an
+ * action, any other { a block. A valid source never contains these shapes, so its tokens are unchanged.
+ */
+function guardStateForms(result: LexerResult, ifType: TokenKind | undefined): void {
+    const all = result.tokens, kinds: string[] = [], drop: [number, number][] = [];
+    const report = (t: Token, message: string) => result.errors.push({ offset: t.startOffset, line: t.startLine, column: t.startColumn, length: t.image.length, message });
+    const leave = (t: Token | undefined) => t?.tokenType.name === 'exit' || t?.tokenType.name === 'to';
+    /** The index just after the } that closes the { at i. */
+    const closing = (i: number) => { for (let j = i, d = 0; j < all.length; j++) { if (all[j].image === '{') d++; else if (all[j].image === '}' && --d === 0) return j + 1; } return all.length; };
+    /** From i, the first { or leave word outside parentheses: where a body starts; -1 at a ; or } first. */
+    const bodyStart = (i: number) => {
+        for (let j = i, d = 0; j < all.length; j++) {
+            const x = all[j].image;
+            d += x === '(' ? 1 : x === ')' ? -1 : 0;
+            if (d === 0 && (x === '{' || leave(all[j])))
+                return j;
+            if (d <= 0 && (x === ';' || x === '}'))
+                return -1;
+        }
+        return -1;
+    };
+    /** The end (exclusive) of the body that starts at j: its block, or a short leave up to its ;. */
+    const bodyEnd = (j: number) => {
+        if (j < 0)
+            return -1;
+        if (all[j].image === '{')
+            return closing(j);
+        let k = j;
+        while (k < all.length && !['{', '}', ';'].includes(all[k].image))
+            k++;
+        return all[k]?.image === ';' ? k + 1 : -1;
+    };
+    const skip = (i: number, end: number, t: Token, message: string) => { report(t, message); drop.push([i, end]); return end - 1; };
+    for (let i = 0; i < all.length; i++) {
+        const t = all[i], text = t.image, type = t.tokenType.name;
+        if (text === '{') {
+            const before = all[i - 1]?.tokenType.name, twoBefore = all[i - 2]?.tokenType.name;
+            kinds.push(twoBefore === 'state' && nameToken(all[i - 1]?.tokenType) ? 'state' : before === 'schedule' ? 'schedule' : (before === 'entry' || before === 'exit') && twoBefore === 'on' ? 'action' : 'block');
+            continue;
+        }
+        if (text === '}') {
+            kinds.pop();
+            continue;
+        }
+        const atStart = i === 0 || [';', '{', '}'].includes(all[i - 1].image), inner = kinds[kinds.length - 1];
+        if (type === 'after' && atStart && kinds.length > 0 && inner !== 'state' && inner !== 'schedule') {
+            const end = bodyEnd(bodyStart(i + 1));
+            if (end > 0) {
+                i = skip(i, end, t, AFTER_OUTSIDE_STATE_MESSAGE);
+                continue;
+            }
+        }
+        if (type === 'state' && atStart && inner === 'action' && nameToken(all[i + 1]?.tokenType) && all[i + 2]?.image === '{') {
+            i = skip(i, closing(i + 2), t, STATE_IN_ACTION_MESSAGE);
+            continue;
+        }
+        if (text === 'when' && atStart && inner === 'state' && all[i + 1]?.image === '(' && ifType && bodyEnd(bodyStart(i + 1)) > 0) {
+            report(t, WHEN_IN_STATE_MESSAGE);
+            (t as { tokenType: TokenKind }).tokenType = ifType;
+            (t as unknown as { tokenTypeIdx?: number }).tokenTypeIdx = (ifType as unknown as { tokenTypeIdx?: number }).tokenTypeIdx;
+            continue;
+        }
+        if (type === 'or' && inner === 'state' && (['receive', 'call', 'after'].includes(all[i + 1]?.tokenType.name ?? '') || all[i - 1]?.image === ')' && nameToken(all[i + 1]?.tokenType) && all[i + 2]?.image === '.')) {
+            const start = bodyStart(i + 1);
+            // Joined heads: the first head keeps the body. A joined branch after a body: dropped with its own body.
+            const end = all[i - 1]?.image === ')' ? start : all[i - 1]?.image === '}' ? bodyEnd(start) : -1;
+            if (end > 0) {
+                i = skip(i, end, t, OR_IN_STATE_MESSAGE);
+                continue;
+            }
+        }
+    }
+    if (drop.length) {
+        const gone = new Set<number>();
+        for (const [s, e] of drop)
+            for (let k = s; k < e; k++)
+                gone.add(k);
+        result.tokens = all.filter((_, k) => !gone.has(k));
     }
 }
 /**
@@ -158,14 +249,16 @@ function hint(actual: Token | undefined, previous: Token | undefined, expectsNam
         return ` Names use single quotes, for example ${quoteName(actual.image.slice(1, -1).replace(/[.:[\]]/g, ' ').trim() || 'name')}.`;
     if (RESERVED_WORDS.has(actual.image))
         return ` '${actual.image}' is a reserved word. ${expectsName ? 'Write' : 'If it is meant as a name, write'} it as a quoted name ('${actual.image}') or choose another name.`;
-    if (!expectsName && nameToken(actual.tokenType) && nameToken(previous?.tokenType) && (previous!.endOffset ?? previous!.startOffset) + 1 < actual.startOffset && ![...skipped].some(offset => offset > previous!.startOffset && offset < actual.startOffset))
+    // state <name> { after a name starts a state after a statement whose ; is missing; it is never a name with a space.
+    const at = tokens.findIndex(x => x.startOffset === actual.startOffset), stateStart = type === 'state' && nameToken(tokens[at + 1]?.tokenType) && tokens[at + 2]?.image === '{';
+    if (!expectsName && !stateStart && nameToken(actual.tokenType) && nameToken(previous?.tokenType) && (previous!.endOffset ?? previous!.startOffset) + 1 < actual.startOffset && ![...skipped].some(offset => offset > previous!.startOffset && offset < actual.startOffset))
         return ` A name containing spaces must be quoted, for example '${shown(previous!)} ${shown(actual)}'.`;
     return '';
 }
 /**
  * WP4: a computed duration that is missing its expression, such as wait ( or after ( followed by something that
  * cannot start an expression, is explained in one line instead of the list of every expression start. Only the
- * keyword forms new in 2.3 (wait, after, every and deadline directly followed by an opening parenthesis) qualify,
+ * keyword forms new in 3.0 (wait, after, every and deadline directly followed by an opening parenthesis) qualify,
  * so no 2.2 message changes.
  */
 function computedDurationHint(actual: Token | undefined, previous: Token | undefined): string | undefined {
@@ -182,6 +275,35 @@ function computedDurationHint(actual: Token | undefined, previous: Token | undef
  * on receive p.m(…) as a receive statement, so no 2.2 message changes.
  */
 const MISSING_BRACE_HINT = ' The block before it is not closed: add } before this state member.';
+/** A timer line written outside a state's braces (SIF-S08): it is a line of a state, and the flow waits with wait D;. */
+export const AFTER_OUTSIDE_STATE_MESSAGE = 'after D { … } is a line of a state and stands only directly in a state\'s braces; to wait in the flow, write wait D;.';
+/** A receive line of a state joined to another by or: a state takes one line per member and looks at all of them. */
+export const OR_IN_STATE_MESSAGE = 'An event line of a state takes one member and is not joined by or: write one on receive line per member (the state looks at all its lines); or joins the branches of a receive statement in the flow.';
+/** A state written inside on entry or on exit (the member-start recovery ends the block there). */
+export const STATE_IN_ACTION_MESSAGE = 'A state does not stand inside on entry or on exit: close the block with } before it. A state stands in the flow or directly in a parent state\'s braces.';
+/**
+ * The innermost state whose braces are still open at actual, when a } is missing before a member or element: an unclosed
+ * state takes everything after it. Only a source with states (new in 3.0) gets this hint, so no 2.2 message changes.
+ */
+function unclosedState(actual: Token | undefined): string | undefined {
+    const index = actual ? tokens.findIndex(t => t.startOffset === actual.startOffset) : -1;
+    // The column a line starts at, from the first token on it (tokens carry lines and columns).
+    const indent = (i: number) => { let j = i; while (j > 0 && tokens[j - 1].startLine === tokens[i].startLine) j--; return tokens[j].startColumn ?? 0; };
+    const open: { name?: string; at: number }[] = [];
+    let dedented: string | undefined;
+    for (let i = 0; i < index; i++) {
+        const text = tokens[i].image;
+        if (text === '{')
+            open.push({ name: tokens[i - 2]?.tokenType?.name === 'state' && nameToken(tokens[i - 1]?.tokenType) ? shown(tokens[i - 1]) : undefined, at: i });
+        else if (text === '}') {
+            const o = open.pop();
+            // A } that starts its line left of the state it closes was written for an outer block: that state is unclosed.
+            if (o?.name !== undefined && dedented === undefined && indent(i) === tokens[i].startColumn && (tokens[i].startColumn ?? 0) < indent(o.at))
+                dedented = o.name;
+        }
+    }
+    return open.filter(x => x.name !== undefined).at(-1)?.name ?? dedented;
+}
 function memberAfterUnclosedBlock(actual: Token | undefined): boolean {
     const index = actual ? tokens.findIndex(t => t.startOffset === actual.startOffset) : -1;
     if (index < 0)
@@ -203,10 +325,10 @@ function memberAfterUnclosedBlock(actual: Token | undefined): boolean {
 }
 /**
  * SIF-G01: a release guard is written if (g); the WP7 candidate spelling when (g) is not accepted (when is no word of
- * 2.3). The parser's message keeps its fixed leading text and explains the spelling. A guard written after
+ * 3.0). The parser's message keeps its fixed leading text and explains the spelling. A guard written after
  * deadline or concurrent gets the same explanation instead of calling if a reserved word.
  */
-const RELEASE_GUARD_HINT = ' A release guard is written if (condition) after the call, as in f() if (ready) deadline 2ms.';
+export const RELEASE_GUARD_HINT = ' A release guard is written if (condition) after the call, as in f() if (ready) deadline 2ms.';
 /** Whether the if at actual follows the deadline or concurrent of its own schedule entry: a guard written too late (review F2). */
 function guardAfterModifier(actual: Token): boolean {
     if (actual.tokenType?.name !== 'if')
@@ -230,6 +352,18 @@ export class SwamlParserErrorMessageProvider extends LangiumParserErrorMessagePr
             return super.buildMismatchTokenMessage(options) + RELEASE_GUARD_HINT;
         if (options.expected.name === '}' && memberAfterUnclosedBlock(options.actual))
             return super.buildMismatchTokenMessage(options) + MISSING_BRACE_HINT;
+        if (options.expected.name === '}') {
+            const rule = ruleName(options.ruleName), actual = options.actual.tokenType?.name;
+            if (actual === 'after' && ['OperationBody', 'Block', 'Scenario'].includes(rule ?? ''))
+                return AFTER_OUTSIDE_STATE_MESSAGE;
+            if (actual === 'or' && rule === 'StateStep' && tokens[tokens.findIndex(t => t.startOffset === options.actual.startOffset) - 1]?.image === '}')
+                return OR_IN_STATE_MESSAGE;
+            if (actual === 'state' && rule === 'Block')
+                return STATE_IN_ACTION_MESSAGE;
+            const state = RESERVED_WORDS.has(options.actual.image) ? unclosedState(options.actual) : undefined;
+            if (state !== undefined)
+                return `${super.buildMismatchTokenMessage(options)} The state ${formatName(state, MESSAGE_SPELLING)} is not closed: add its } (a state takes everything up to its } as its items and inner states).`;
+        }
         return (expectsName ? `Expecting a name but found \`${options.actual.image}\`.` : super.buildMismatchTokenMessage(options)) + hint(options.actual, options.previous, expectsName);
     }
     override buildNoViableAltMessage(options: Parameters<LangiumParserErrorMessageProvider['buildNoViableAltMessage']>[0]): string {
@@ -335,7 +469,7 @@ export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
                 };
         }
         if (ruleName(options.rule.name) === 'If') {
-            // SIF-G01: else is followed by a block or, from 2.3, by an if. Anything else predicts the block, so the
+            // SIF-G01: else is followed by a block or, from 3.0, by an if. Anything else predicts the block, so the
             // block's { is reported and recovered exactly as by the 2.2 parser, whose else took a block only, instead
             // of a list of both alternatives that would also recover differently. Valid sources never reach this case.
             const choices = production(options.rule, 'Alternation', options.prodOccurrence)?.definition ?? [];
@@ -352,7 +486,13 @@ export function recoverStatements(inner: LookaheadStrategy): LookaheadStrategy {
         const assign = alternatives.findIndex(x => startsWith(x, 'Assign')), expression = alternatives.findIndex(x => startsWith(x, 'ExpressionStatement'));
         if (assign < 0 || expression < 0)
             return base;
+        const stateStep = alternatives.findIndex(x => startsWith(x, 'StateStep'));
         return function (this: Lookahead, choices?: unknown) {
+            // A state written without its name, state { … }, is a state: its missing name is reported and inserted, and
+            // the state, its items and the rest of the package are kept (state is a contextual word and would otherwise
+            // read as an expression statement whose ; is missing). A valid source never writes state {.
+            if (stateStep >= 0 && this.LA(1).tokenType.name === 'state' && this.LA(2).image === '{')
+                return stateStep;
             const predicted = base.call(this, choices);
             if (predicted !== undefined || !nameToken(this.LA(1).tokenType))
                 return predicted;

@@ -16,7 +16,7 @@
       }
       state moving {
         /** Stops that apply to every movement, the pinch reversal included. */
-        on receive supervision.sensorFault() { to idle; }
+        on receive supervision.sensorFault() to idle;
         on receive supervision.motionStalled() { stalledStops = stalledStops + 1; to idle; }
         state driven {
           /** Movements requested by the switch; a withdrawn motion permission stops them, not the reversal. */
@@ -26,7 +26,7 @@
             after 8s { runTimeouts = runTimeouts + 1; to idle; }
             on receive supervision.pinchDetected() { pinchReversals = pinchReversals + 1; to reversing; }
             on receive supervision.obstructed() { obstructionStops = obstructionStops + 1; to idle; }
-            on receive supervision.endPosition(closed) { if (closed) { to idle; } }
+            on receive supervision.endPosition(closed) { if (closed) to idle; }
             on receive requests.request(command) {
               if (command == WindowRequest.autoUp and oneTouchAllowed()) {
                 oneTouchCloses = oneTouchCloses + 1;
@@ -41,16 +41,16 @@
             on entry { drive(MotorDirection.up); }
             after 8s { runTimeouts = runTimeouts + 1; to idle; }
             on receive supervision.pinchDetected() { pinchReversals = pinchReversals + 1; to reversing; }
-            on receive supervision.endPosition(closed) { if (closed) { to idle; } }
+            on receive supervision.endPosition(closed) { if (closed) to idle; }
             on receive requests.request(command) {
-              if (command == WindowRequest.manualDown or command == WindowRequest.autoDown) { to idle; }
+              if (command == WindowRequest.manualDown or command == WindowRequest.autoDown) to idle;
             }
           }
           state manualDown {
             on entry { drive(MotorDirection.down); }
             after 8s { runTimeouts = runTimeouts + 1; to idle; }
             on receive supervision.obstructed() { obstructionStops = obstructionStops + 1; to idle; }
-            on receive supervision.endPosition(closed) { if (not closed) { to idle; } }
+            on receive supervision.endPosition(closed) { if (not closed) to idle; }
             on receive requests.request(command) {
               if (command == WindowRequest.autoDown and oneTouchAllowed()) {
                 to autoDown;
@@ -63,9 +63,9 @@
             on entry { drive(MotorDirection.down); }
             after 8s { runTimeouts = runTimeouts + 1; to idle; }
             on receive supervision.obstructed() { obstructionStops = obstructionStops + 1; to idle; }
-            on receive supervision.endPosition(closed) { if (not closed) { to idle; } }
+            on receive supervision.endPosition(closed) { if (not closed) to idle; }
             on receive requests.request(command) {
-              if (command == WindowRequest.manualUp or command == WindowRequest.autoUp) { to idle; }
+              if (command == WindowRequest.manualUp or command == WindowRequest.autoUp) to idle;
             }
           }
         }
@@ -73,8 +73,8 @@
           /** Pinch reversal: switch requests and a withdrawn motion permission are dropped here. */
           on entry { drive(MotorDirection.down); }
           after 1600ms { runTimeouts = runTimeouts + 1; to idle; }
-          on receive supervision.reversalComplete() { to idle; }
-          on receive supervision.endPosition(closed) { if (not closed) { to idle; } }
+          on receive supervision.reversalComplete() to idle;
+          on receive supervision.endPosition(closed) { if (not closed) to idle; }
           on receive supervision.obstructed() { obstructionStops = obstructionStops + 1; to idle; }
         }
       }

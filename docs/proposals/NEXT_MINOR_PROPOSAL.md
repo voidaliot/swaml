@@ -1,6 +1,8 @@
 # swa.ml next minor (2.3): language gaps from the showcase models
 
-**Design record.** The owner approved this proposal. The normative decisions are ADRs [0022](../decisions/0022-values-places-and-expressions.md), [0023](../decisions/0023-state-reactions.md), [0024](../decisions/0024-communication-and-package-links.md) and [0025](../decisions/0025-real-time-placement-and-binding.md), with the rules to implement in the [2.3 chapter drafts](../drafts/2.3/README.md). Where they differ from this proposal, the ADRs are normative. Changes include separate warning codes SW2016–SW2018 instead of one shared SW2016, and the state-machine rule T4.
+> **Historical design record.** This proposal was the design input of the edition drafted as 2.3 and released as swa.ml 3.0. Its state-reaction items (B7 to B10) were replaced by states in the flow ([ADR 0026](../decisions/0026-states-in-the-flow.md)). The specification chapters are the normative text.
+
+**Design record.** The owner approved this proposal. The normative decisions are ADRs [0022](../decisions/0022-values-places-and-expressions.md), [0023](../decisions/0023-state-reactions.md), [0024](../decisions/0024-communication-and-package-links.md) and [0025](../decisions/0025-real-time-placement-and-binding.md), with the rules to implement in the [2.3 chapter drafts](../design/3.0-drafts/README.md). Where they differ from this proposal, the ADRs are normative. Changes include separate warning codes SW2016–SW2018 instead of one shared SW2016, and the state-machine rule T4.
 
 **Status:** design proposal for owner approval, revision 2 (after the adversarial review of 17 November 2026). Not normative. Nothing here changes the grammar, validator, standard version or a published artefact.
 
@@ -1227,7 +1229,7 @@ New runtime codes: `DurationRange`, and `CompletionLoop` (a violation). New trac
 | Implementation | 4.0.0 (§1.3); root and lockfile synchronized |
 | Consuming tools | Own versions and pins |
 | ADRs | 0022 expressions and places; 0023 state reactions (reverses §307); 0024 ports, sampled reads and member policies; 0025 tasks, operation placement and binding |
-| Notes | `docs/RELEASE_2_3.md`; no migration guide (compatible) |
+| Notes | `docs/RELEASE_3_0.md`; no migration guide (compatible) |
 
 ### 5.2 Publication gate
 

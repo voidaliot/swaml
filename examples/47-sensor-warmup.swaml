@@ -1,0 +1,120 @@
+package SensorWarmup {
+  /** The heater of an exhaust gas sensor. The heater starts at full power and drops to half power after 10 ms, while the probe readings are recorded: both lines stay in heating. The warm-up deadline is computed from the calibration, after (warmupMs * 1ms), and its line checks the temperature once, when the deadline comes: ready, or a fault. A condition in a timer's line does not wait; a later reading cannot make the sensor ready from the fault. The fault retries after 50 ms, and a ready sensor that cools down heats again. */
+  port def Probe {
+    provides event reading(celsius: int);
+  }
+  port def Heater {
+    provides event power(percent: uint);
+  }
+  component def SensorHeater {
+    reversed port probe: Probe;
+    port heater: Heater;
+    const attribute readyCelsius: int = 350;
+    const attribute coolCelsius: int = 300;
+    attribute warmupMs: uint = 30;
+    attribute celsius: int = 20;
+    attribute power: uint = 0;
+    attribute attempts: uint = 0;
+    attribute faults: uint = 0;
+    attribute readyAtNs: uint = 0;
+    operation drive(percent: uint) {
+      power = percent;
+      publish heater.power(percent);
+    }
+    operation control() {
+      while (true) {
+        state heating {
+          on entry {
+            attempts = attempts + 1;
+            drive(100);
+          }
+          on receive probe.reading(c) {
+            celsius = c;
+          }
+          after 10ms {
+            drive(50);
+          }
+          after (warmupMs * 1ms) {
+            if (celsius >= readyCelsius) to ready;
+            faults = faults + 1;
+            exit;
+          }
+        }
+        state fault {
+          on entry {
+            drive(0);
+          }
+          after 50ms to heating;
+        }
+        state ready {
+          on entry {
+            readyAtNs = Swaml::Time::now();
+            drive(20);
+          }
+          on receive probe.reading(c) {
+            celsius = c;
+          }
+          if (celsius < coolCelsius) exit;
+        }
+      }
+    }
+    schedule {
+      on start control();
+    }
+  }
+  component def Exhaust {
+    /** Interface-only actor: the probe readings and the heater driver. */
+    port toSensor: Probe;
+    reversed port fromSensor: Heater;
+  }
+  component sensor: SensorHeater;
+  component exhaust: Exhaust;
+  connect (exhaust.toSensor, sensor.probe);
+  connect (sensor.heater, exhaust.fromSensor);
+  associate exhaust to 'Ready at the deadline', 'Too cold at the deadline', 'Cooling heats again';
+  test 'Half power after 10 ms' of sensor {
+    /** The heater runs at full power for 10 ms after the warm-up starts, then at half power. */
+    wait 9500us;
+    assert sensor.power == 100;
+    wait 1ms;
+    assert sensor.power == 50;
+  }
+  test 'Ready at the deadline' of sensor {
+    /** Full power until 10 ms, then half power. The reading at 20 ms is hot enough, but the sensor is ready only at the 30 ms deadline. */
+    wait 5ms;
+    publish exhaust.toSensor.reading(100);
+    wait 10ms;
+    assert sensor.power == 50 and sensor.attempts == 1;
+    wait 5ms;
+    publish exhaust.toSensor.reading(400);
+    wait 5ms;
+    assert sensor.readyAtNs == 0;
+    wait 10ms;
+    assert sensor.readyAtNs == 30000000 and sensor.power == 20 and sensor.faults == 0;
+  }
+  test 'Too cold at the deadline' of sensor {
+    /** At 30 ms the last reading is 100: a fault, heater off. A hot reading at 35 ms changes nothing, because fault does not read the probe. The retry starts heating at 80 ms; a hot reading at 90 ms makes the sensor ready at its deadline, 110 ms. */
+    wait 5ms;
+    publish exhaust.toSensor.reading(100);
+    wait 30ms;
+    publish exhaust.toSensor.reading(400);
+    wait 5ms;
+    assert sensor.faults == 1 and sensor.power == 0 and sensor.celsius == 100;
+    wait 50ms;
+    publish exhaust.toSensor.reading(400);
+    wait 25ms;
+    assert sensor.attempts == 2 and sensor.readyAtNs == 110000000;
+  }
+  test 'Cooling heats again' of sensor {
+    /** Ready at 30 ms. A reading of 320 at 40 ms is below readiness but not below the cool limit: the sensor stays ready. A reading of 280 at 50 ms starts heating again at full power. */
+    publish exhaust.toSensor.reading(400);
+    wait 40ms;
+    publish exhaust.toSensor.reading(320);
+    wait 5ms;
+    assert sensor.power == 20 and sensor.attempts == 1;
+    wait 5ms;
+    publish exhaust.toSensor.reading(280);
+    wait 1ms;
+    assert sensor.power == 100 and sensor.attempts == 2;
+  }
+}
