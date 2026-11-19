@@ -270,7 +270,8 @@ for (const p of pages.slice(1)) {
   for (const part of parts) {
     const m = /^<h([1-3]) id="([^"]+)"[^>]*>([\s\S]*?)<\/h\1>/.exec(part);
     const id = m ? m[2] : p.headings[0].id, title = m ? plain(m[3]) : p.title;
-    const text = plain(part.replace(/^<h[1-3][\s\S]*?<\/h[1-3]>/, '').replace(/<span class="eyebrow">[\s\S]*?<\/span>/, '').replace(/<span class="line-number"[^>]*>\d+<\/span>/g, '')).replace(/\s+/g, ' ').trim();
+    // Cell, paragraph and item ends separate words in the plain text.
+    const text = plain(part.replace(/<\/(?:td|th|tr|p|li|div|figcaption)>|<br>/g, ' $&').replace(/^<h[1-3][\s\S]*?<\/h[1-3]>/, '').replace(/<span class="eyebrow">[\s\S]*?<\/span>/, '').replace(/<span class="line-number"[^>]*>\d+<\/span>/g, '')).replace(/\s+/g, ' ').trim();
     search.push({u: `${p.slug}/#${id}`, t: title, c: p.title, x: text});
     for (const row of part.matchAll(/<tr id="([^"]+)">([\s\S]*?)<\/tr>/g)) search.push({u: `${p.slug}/#${row[1]}`, t: row[1], c: p.title, x: plain(row[2].replace(/<\/td>/g, ' ')).replace(/\s+/g, ' ').trim()});
   }
