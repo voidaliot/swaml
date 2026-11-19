@@ -721,7 +721,7 @@ export class SwamlValidator {
                     this.report(e, 'SW2002', this.script ? (selected
                         // A 2.3 read names the whole path; a 2.2 read keeps its 2.2 message (review F3, F5).
                         ? `Unknown value ${this.placeText(e)}${this.failingSegment(e, steps)}; a case reads its locals and bindings, and a test may also read attributes of its subject, explicitly associated software components and their parts (a part family member by a literal index, as in twins[0]).`
-                        : `Unknown value ${e.path}; a case reads its locals and bindings, and a test may also read attributes of its subject, explicitly associated software components and their single parts.`) : `Unknown local value ${e.path}; nested operations never capture enclosing locals and component attributes are private.`);
+                        : `Unknown value ${e.path}; a case reads its locals and bindings, and a test may also read attributes of its subject, explicitly associated software components and their single parts.`) : this.unknownLocal(e, e.path));
                     return '?';
                 }
             }
@@ -1417,12 +1417,23 @@ export class SwamlValidator {
                 this.report(n, 'SW2008', 'An operation with states contains no plain receive statement; write a state with an event line, for example state waitGo { on receive cmd.go(v) { ok = v; exit; } } (SIF-S01).');
     }
     /**
+     * The message for a name that is no visible local. In an operation with states, a var declared in some state's braces is
+     * a local of that state's looks (SIF-R10): the message says who sees it instead of speaking of nested operations.
+     */
+    private unknownLocal(e: AstNode, path: string): string {
+        const head = path.split('.')[0], op = owner(e, isExecutable);
+        const declared = op && body(op) ? flowStates(op).find(s => s.statements.some(x => a.isLocalVariable(x) && x.name === head)) : undefined;
+        if (declared)
+            return `Unknown local value ${path}; ${formatName(head, MESSAGE_SPELLING)} is declared in the braces of state ${formatName(declared.name, MESSAGE_SPELLING)}, a local of its looks: its later items and the items of its inner states see it, on entry, on exit and other states do not (SIF-R10).`;
+        return `Unknown local value ${path}; nested operations never capture enclosing locals and component attributes are private.`;
+    }
+    /**
      * A state statement (SIF-S02 to SIF-S04, SIF-S07, SIF-S08; SIF-D03): where it may stand, its entry and exit actions,
      * items before inner states, event lines with their bindings and timers. Statements standing in the state are typed as
-     * one list (a local declared there is a local of the look, seen by later items); entry and exit actions and inner states
-     * see the enclosing scope only.
+     * one list: a local declared there is a local of the look, seen by later items and by the items of inner states; entry
+     * and exit actions see the enclosing scope only.
      */
-    private stateStep(s: a.StateStep, env: Env, c: Structure | undefined, op: Executable | undefined): void {
+    private stateStep(s: a.StateStep, env: Env, c: Structure | undefined, op: Executable | undefined, lookEnv: Env = env): void {
         const name = formatName(s.name, MESSAGE_SPELLING);
         if (!op || this.script) {
             this.report(s, 'SW2008', 'Case scripts contain no states (SIF-S01).');
@@ -1443,14 +1454,16 @@ export class SwamlValidator {
         const first = s.statements.findIndex(a.isStateStep);
         if (first >= 0 && s.statements.slice(first).some(x => !a.isStateStep(x)))
             this.report(s, 'SW2008', `${name} has inner states; only states may follow the first one (SIF-S03).`, false, this.at(s, 'name'));
-        const look = new Map(env);
+        // A local declared in the braces is a local of the look: later items and the items of inner states see it (SIF-R10);
+        // on entry and on exit, of this state and of inner states, see the flow's scope only.
+        const look = new Map(lookEnv);
         for (const item of s.statements) {
             if (a.isStateAction(item))
                 this.block(item.body, env, c, op);
             else if (a.isEventLine(item))
                 this.eventLine(item, look, c, op);
             else if (a.isStateStep(item))
-                this.stateStep(item, env, c, op);
+                this.stateStep(item, env, c, op, look);
             else {
                 this.block({ statements: [item] } as unknown as a.Block, look, c, op, look);
                 if (a.isIf(item) && !(c && schedule(c).some(e => e.operation === op.name && e.kind === 'every')))

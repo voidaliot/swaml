@@ -638,15 +638,17 @@ export function sampledReads(c: Structure): SampledRead[] {
  * in its body, of an interrupt region in its handler and of a receive transition in its guard and effect.
  */
 export function localVisible(n: AstNode, name: string): boolean {
-    let child = n;
+    let child = n, inAction = false;
     for (let p = n.$container; p; child = p, p = p.$container) {
         if (isExecutable(p))
             return (signature(p)?.parameters ?? []).some(x => x.name === name);
         if (a.isScheduleEntry(p))
             return p.bindings.includes(name);
-        // A local declared in a state's braces is a local of the look (SIF-R10): seen by later items, not by on entry, on
-        // exit or inner states, which run outside the look.
-        if (a.isBlock(p) || a.isOperationBody(p) || a.isScenario(p) || a.isStateStep(p) && !a.isStateAction(child) && !a.isStateStep(child)) {
+        // A local declared in a state's braces is a local of the look (SIF-R10): seen by its later items and by the items of its
+        // inner states, not by on entry or on exit, which run outside the look.
+        if (a.isStateAction(child))
+            inAction = true;
+        if (a.isBlock(p) || a.isOperationBody(p) || a.isScenario(p) || a.isStateStep(p) && !inAction) {
             const index = child.$containerProperty === 'statements' ? child.$containerIndex ?? 0 : 0;
             if (p.statements.slice(0, index).some(s => a.isLocalVariable(s) && s.name === name))
                 return true;

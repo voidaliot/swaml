@@ -122,7 +122,10 @@ export function projectModel(models: readonly a.Model[]): Projection {
         return undefined;
     } : (id: string): ViewSubject | undefined => candidates.filter(x => id.startsWith(x.path + '.') || a.isPackage(x.node) && id.startsWith(x.path + '::')).sort((a, b) => b.path.length - a.path.length)[0];
     for (const item of candidates) {
-        const n = item.node as Node, id = item.path, parent = a.isPackage(n) ? undefined : ownerOf(id);
+        const n = item.node as Node, id = item.path;
+        // A state inside a parent is owned by its parent state (SIF-M01): both are named in their operation.
+        const enclosing = a.isStateStep(n) && a.isStateStep(n.$container) ? byPath.get(`${id.slice(0, id.length - n.name.length - 1)}.${n.$container.name}`) : undefined;
+        const parent = a.isPackage(n) ? undefined : enclosing ?? ownerOf(id);
         const p: ProjectionNode = { id, name: item.name, kind: item.kind, definition: item.definition, owner: parent?.path, source: source(n), code: n.$cstNode!.text, doc: documentationText({ documentation: n.documentation }) };
         if (a.isAttribute(n) || a.isLocalVariable(n) || a.isField(n))
             p.type = typeKey(n.type);

@@ -16,7 +16,8 @@
 //
 // Normalization (both sides, the documented differences of 7.4 only): ordinal, profile and languageVersion are left out
 // (an observation's position is in the per-component order); range and uri of emitter and caller are left out (the text
-// moved); the trigger of a state observation is left out (SIF-T01, new). On the migrated side, every statement identity
+// moved); the trigger of a state observation is left out (SIF-T01, new), and so is the leave observation (SIF-T09, new:
+// the flow goes on outside every state, after a final state for example). On the migrated side, every statement identity
 // (source) is mapped to its 2.2 identity through the identity map. The one accepted difference is r10 (gate C): input for
 // two members queued while the machine is busy is served in delivery order; its final store is listed in the baseline.
 import { execFileSync } from 'node:child_process';
@@ -38,7 +39,8 @@ const ACCEPTED = { stores: { 'ext models-wp5.json r10 input for two members queu
 const normalized = (trace, map) => {
     const keys = map ? Object.keys(map).sort((x, y) => y.length - x.length) : [];
     const mapId = s => { if (typeof s !== 'string' || !map) return s; for (const k of keys) if (s === k || s.startsWith(k + '/')) return map[k] + s.slice(k.length); return s; };
-    return comparedTrace(trace).map(({ ordinal: _o, trigger: _t, ...e }) => {
+    // leave (SIF-T09) is new: it records that the flow goes on outside every state, which 2.2 had no observation for.
+    return comparedTrace(trace).filter(e => e.kind !== 'leave').map(({ ordinal: _o, trigger: _t, ...e }) => {
         for (const k of ['emitter', 'caller'])
             if (e[k] && typeof e[k] === 'object') {
                 const { range: _r, uri: _u, ...rest } = e[k];

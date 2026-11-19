@@ -202,7 +202,7 @@ type Frame = {
     /** Statements run so far by the event line block that runs now (SIF-R06, SIF-T02); a false if test is no work. */
     lineWork?: number;
     /** The state levels of the machine's current state and the locals of the list holding its outermost state (SIF-R07). */
-    flow?: { levels: FlowLevel[]; local: Environment };
+    flow?: { levels: FlowLevel[]; local: Environment; scope?: Environment };
     /** Attribute names this segment wrote, per occurrence written (a case call writes its subject), until its unlock (SIF-R07). */
     dirty?: Map<Component, Set<string>>;
     /** A wake that came while the machine was busy (SIF-R07): the next look serves it and every later one. */
@@ -217,6 +217,8 @@ type Frame = {
     reached?: Set<a.StateStep>;
     /** The arrival just recorded was a second arrival of its state in this release (SIF-R16): no arrival look. */
     held?: boolean;
+    /** The outermost state the flow left last into plain flow: a completed machine reports it (SIF-R13). */
+    lastState?: string;
 };
 /** The state levels of an operation with states: each entered state, outermost first (SIF-R01, SIF-R11). */
 type FlowLevel = {
@@ -1052,9 +1054,10 @@ class Interpreter {
         for (const w of f.watches)
             w.active = false;
         this.unlock(f);
-        // A waiting machine that completed or failed has no current state (SIF-R13).
-        if (!f.script && this.machines[this.label(f)] && flowStates(f.op).length)
-            this.machines[this.label(f)].live = false;
+        // A waiting machine that completed or failed is not live; its state is the last state it was in (SIF-R13).
+        const machine = !f.script && flowStates(f.op).length ? this.machines[this.label(f)] : undefined;
+        if (machine)
+            this.machines[this.label(f)] = { state: machine.state || f.lastState || '', live: false };
         // A false release guard (WP7-R02, WP7-T01, WP7-T02): skip names the entry, then a receive entry's input is discarded.
         // Both name the operation occurrence, as complete and an activation's noEnabledTransition discard do.
         const skipped = !failure ? f.skipped : undefined;
@@ -1631,8 +1634,6 @@ class Interpreter {
                 level.delays.set(t, value);
                 this.log('timer', key, { state: s.name, source: this.source(t), timerNs: value, expiresNs: level.entered + value });
             }
-            if (!queue.length && innerStates(s).length)
-                queue.push(innerStates(s)[0]);
         }
         return voidValue();
     }
@@ -1653,24 +1654,26 @@ class Interpreter {
      * block wrote a name that a statement run before that line in walk order reads returns those names (SIF-R08): the
      * state looks again at once.
      */
-    private *look(levels: FlowLevel[], f: Frame, local: Environment, key: string, present: Present): Generator<Yield, { node: a.Exit | a.Jump; level: number } | { relook: string[] } | undefined, Reply | undefined> {
+    private *look(levels: FlowLevel[], f: Frame, local: Environment, key: string, present: Present, from = 0, base?: Environment): Generator<Yield, { node: a.Exit | a.Jump; level: number } | { relook: string[] } | undefined, Reply | undefined> {
         // SIF-R08: the names read by the statements run so far in this look, and those a later line wrote.
         const passed = new Set<string>(), relook = new Set<string>(), own = this.relooks(f);
-        // Every timer of a level that has run out when the look starts and was not present before (SIF-R03).
+        // Every timer of a level walked that has run out when the look starts and was not present before (SIF-R03).
         const timers = new Set<a.EventLine>();
         if (present.timers)
-            for (const l of levels)
+            for (const l of levels.slice(from))
                 for (const t of this.timerLines(l))
                     if (!l.presented.has(t) && this.time >= this.due(l, t)) {
                         timers.add(t);
                         l.presented.add(t);
                     }
         const input = present.input, leaf = levels.at(-1)!.state;
-        let level = 0, lineRan = false, messageWork = 0, lineWork = 0, firstLine: a.EventLine | undefined, left: a.Exit | a.Jump | undefined;
+        let level = from, lineRan = false, messageWork = 0, lineWork = 0, firstLine: a.EventLine | undefined, left: a.Exit | a.Jump | undefined;
+        // A local declared in a state's braces is a local of the look, seen by the later items of that state and by the items
+        // of its inner states (SIF-R10); the arrival look of a parent's first inner state goes on with the parent's scope.
+        const scope = new Map(base ?? local);
+        f.flow!.scope = scope;
         try {
-            for (level = 0; level < levels.length; level++) {
-                // A local declared in a state's braces is a local of the look (SIF-R10).
-                const scope = new Map(local);
+            for (level = from; level < levels.length; level++) {
                 for (const item of stateItems(levels[level].state)) {
                     if (a.isStateAction(item))
                         continue;
@@ -1745,8 +1748,9 @@ class Interpreter {
                 }
             }
         }
-        // to T: leave every state up to the innermost level that contains T, then enter down to T (direct entry, SIF-R11).
-        for (let k = levels.length - 1; k >= 0; k--) {
+        // to T: from the level the jump is written at outwards, leave every state up to the innermost level that contains T
+        // (everything inside the written level is left too), then enter down to T (direct entry, SIF-R11).
+        for (let k = level; k >= 0; k--) {
             const path = this.pathInside(levels[k].state, node.target);
             if (!path)
                 continue;
@@ -1802,36 +1806,64 @@ class Interpreter {
     private *flowMachine(top: a.StateStep, f: Frame, local: Environment): Iterator {
         const key = this.label(f), target = f.flowTarget, trigger = f.flowTrigger;
         f.flowTarget = f.flowTrigger = undefined;
-        const levels: FlowLevel[] = [], flow = f.flow = { levels, local };
+        const levels: FlowLevel[] = [], flow: NonNullable<Frame['flow']> = f.flow = { levels, local };
         try {
             yield* this.enter(levels, target !== undefined && target !== top.name ? [top, ...this.pathInside(top, target)!] : [top], f, local, key, trigger);
-            let present: Present = { timers: true, cause: 'arrival' };
+            // from: the first level the next look walks. A parent reached is looked at (its levels) before its first inner
+            // state is entered; that state's arrival look then walks its own level only, with the parent's scope (SIF-R11).
+            let present: Present = { timers: true, cause: 'arrival' }, from = 0, arrivedBy: AstNode | undefined = trigger;
             while (true) {
                 // SIF-R16: a held arrival makes no look; the state is current and its first look is the next release's.
                 if (f.held) {
                     f.held = false;
                     present = yield* this.wait(levels, f);
+                    from = 0;
                 }
+                if (!from)
+                    flow.scope = undefined;
+                const parent = innerStates(levels.at(-1)!.state).length > 0;
                 let left: { node: a.Exit | a.Jump | undefined; level: number } | undefined;
-                if (!this.hasSomething(levels))
+                if (!parent && !this.hasSomething(levels))
                     left = { node: undefined, level: levels.length - 1 };
-                else {
+                else if (!parent || this.hasSomething(levels.slice(from))) {
                     this.beginLook(f, levels, key, present);
-                    const looked = yield* this.look(levels, f, local, key, present);
+                    const looked = yield* this.look(levels, f, local, key, present, from, from ? flow.scope : undefined);
                     if (looked && 'relook' in looked) {
                         this.log('wake', key, { activation: f.id, state: levels.at(-1)!.state.name, cause: 'own', names: looked.relook });
                         present = { timers: false, cause: 'own' };
+                        from = 0;
                         continue;
                     }
                     left = looked;
                 }
                 if (left) {
-                    if (yield* this.leave(levels, left.level, left.node, f, local, key))
+                    const outermost = levels[0].state;
+                    if (yield* this.leave(levels, left.level, left.node, f, local, key)) {
+                        // The flow goes on outside every state: no state is entered (SIF-T09, 4.5, 4.6). A state written next
+                        // in the same list is reached at once, and its arrival says so.
+                        const list = top.$container as AstNode & { statements?: AstNode[] };
+                        f.lastState = outermost.name;
+                        if (!a.isStateStep(list.statements?.[(top.$containerIndex ?? -1) + 1])) {
+                            this.machines[key] = { state: '', live: true };
+                            this.log('leave', key, { activation: f.id, source: this.source(left.node ?? outermost) });
+                        }
                         return voidValue();
+                    }
                     present = { timers: true, cause: 'arrival' };
+                    from = 0;
+                    arrivedBy = left.node;
+                    continue;
+                }
+                if (parent) {
+                    const at = levels.length;
+                    // The first inner state is reached by the leave that reached its parent (SIF-T01 trigger).
+                    yield* this.enter(levels, [innerStates(levels.at(-1)!.state)[0]], f, local, key, arrivedBy);
+                    present = { timers: true, cause: 'arrival' };
+                    from = at;
                     continue;
                 }
                 present = yield* this.wait(levels, f);
+                from = 0;
             }
         }
         finally {

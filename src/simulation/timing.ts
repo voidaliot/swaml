@@ -56,7 +56,8 @@ export function projectOperationTiming(result: SimulationResult): {
             open.push({ band, source });
             current.set(id, open);
         }
-        if (['complete', 'failure', 'periodicEnd'].includes(e.kind) && current.has(id)) {
+        // Leaving the outermost state into plain flow (leave), completion, failure and periodicEnd close every band.
+        if (['leave', 'complete', 'failure', 'periodicEnd'].includes(e.kind) && current.has(id)) {
             for (const { band } of current.get(id)!)
                 band.endNs = e.timeNs;
             current.delete(id);
