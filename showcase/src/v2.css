@@ -272,7 +272,7 @@ table caption{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:i
 }
 @media(max-width:800px) {
   .site-header { min-height: 76px; padding: 16px 22px; gap: 20px; flex-wrap: wrap; }
-  .site-header nav { order: 3; width: 100%; justify-content: space-between; gap: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; }
+  .site-header nav { order: 3; width: 100%; flex-wrap: wrap; justify-content: space-between; gap: 10px 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; }
   .theme-toggle { margin-left: auto; }
   .hero { display: grid; grid-template-columns: minmax(0,1fr); padding: 38px 22px 42px; gap: 30px; }
   .hero h1 { font-size: clamp(36px,6vw,48px); letter-spacing: -1.4px; margin: 20px 0; max-width: 600px; }
