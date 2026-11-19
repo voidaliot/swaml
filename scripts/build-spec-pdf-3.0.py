@@ -128,6 +128,14 @@ def esc(text: str) -> str:
     return html.escape(normalize(text), quote=True)
 
 
+def table_pipes(nodes: list[dict]) -> None:
+    """In a GFM table cell, \\| is a literal pipe, also inside a code span; the table plugin keeps the backslash."""
+    for node in nodes:
+        if node['type'] in ('text', 'codespan') and 'raw' in node:
+            node['raw'] = node['raw'].replace('\\|', '|')
+        table_pipes(node.get('children', []))
+
+
 def inline(nodes: list[dict], source: str) -> str:
     out = ''
     for node in nodes:
@@ -305,7 +313,36 @@ def auto_widths(rows):
         words=max(len(w) for row in rows for w in (re.sub('<[^>]+>',' ',row[j]) if isinstance(row[j],str) else 'x').split() or ['x'])
         weights.append(max(min(average*1.6+longest*.15,90),words*1.15,8))
     total=sum(weights)
-    return [WIDTH*w/total for w in weights]
+    widths=[WIDTH*w/total for w in weights]
+    minimum=[min(min_column_width(rows,j),WIDTH*.3) for j in range(n)]
+    if sum(minimum)<=WIDTH:
+        for _ in range(n):
+            short=[j for j in range(n) if widths[j]<minimum[j]-0.01]
+            if not short: break
+            need=sum(minimum[j]-widths[j] for j in short)
+            wide=[j for j in range(n) if j not in short and widths[j]>minimum[j]]
+            spare=sum(widths[j]-minimum[j] for j in wide)
+            if spare<=0: break
+            for j in short: widths[j]=minimum[j]
+            for j in wide: widths[j]-=need*(widths[j]-minimum[j])/spare
+    return widths
+
+
+def min_column_width(rows, j):
+    """The width that holds the longest unbreakable word of column j on one line: header in bold, body text in the
+    cell font, code spans in the mono font, with the cell padding."""
+    widest=0.0
+    for i,row in enumerate(rows):
+        cell=row[j]
+        if not isinstance(cell,str): return 0.0
+        body='BodyB' if i==0 else 'Body'
+        size=STYLES['cell'].fontSize
+        for part in re.split(r'(<font name="Mono" size="8">.*?</font>)',cell):
+            mono=part.startswith('<font name="Mono"')
+            plain=html.unescape(re.sub('<[^>]+>',' ',part))
+            for word in plain.split():
+                widest=max(widest,pdfmetrics.stringWidth(word,'Mono' if mono else body,8 if mono else size))
+    return widest+14+1
 
 
 def table(rows: list[list[str]], widths=None):
@@ -367,6 +404,8 @@ def markdown(source: str, status: str):
                         else: output.extend(blocks([child],indent+1))
             elif kind=='table':
                 head=children[0]['children'];body=children[1]['children'] if len(children)>1 else []
+                for row in [head]+[r['children'] for r in body]:
+                    for cell in row: table_pipes(cell['children'])
                 widths=None
                 if source=='docs/GRAPHICAL_CATALOG.md' and len(head)==3:
                     graphical=any(plain_heading(cell['children']).lower()=='graphical notation' for cell in head)

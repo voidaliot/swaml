@@ -5,7 +5,7 @@
   "simulationProfile": "swaml-reference/3.0",
   "implementationRevision": "4.0.0",
   "publicationDate": "2026-11-19",
-  "pages": 257,
+  "pages": 256,
   "pdf": "SWAML-3.0-Specification.pdf",
   "sources": [
     {
@@ -541,7 +541,7 @@
     {
       "path": "scripts/build-spec-pdf-3.0.py",
       "attachmentName": "scripts__build-spec-pdf-3.0.py",
-      "sha256": "1d58ae749c6137e18215dbf744fd583553197742866f7736c5affc74369a05a0"
+      "sha256": "a21ab8ceeea01824c12876e095caa8077b28de7bc42420c0a57323f35d125935"
     },
     {
       "path": "scripts/check-spec-pdf-3.0.py",
@@ -1289,8 +1289,8 @@
       "sha256": "78a333fa3e0968847ae770f206d7f5f5bd36a0dc8201ef4d657e1b6d3884c371"
     }
   ],
-  "sourceBaseCommit": "c229f7ea3aaeaca3873fddcaa248201d122f8205",
-  "sourceBundleSha256": "c8339585254b993edd599726fbf70ac334d928afd51ee81fa5f4150d4b916939",
+  "sourceBaseCommit": "a4487c2bdbf50b32f3b618d2901bff4b8367176a",
+  "sourceBundleSha256": "b08baef897f73046cc84fd44585b3f5f6016fcb5dda37a5e4080801ea2eff872",
   "dependencies": {
     "reportlab": "4.4.9",
     "mistune": "3.4.0",
@@ -1299,5 +1299,5 @@
     "Pillow": "13.0.0"
   },
   "python": "3.14.4",
-  "pdfSha256": "36a0345679ca3137349b283c5f71a1c055f95e94a1e39ff8dfa520b8be1e7585"
+  "pdfSha256": "dbef3a2b6834bdfc03f4553c2884b677911296af06129b1131d460f57a5b762a"
 }
