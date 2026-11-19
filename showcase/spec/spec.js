@@ -27,22 +27,32 @@
   media.addEventListener('change', applyTheme);
   applyTheme();
 
-  // On a phone the contents start collapsed above the text.
-  const contents = document.querySelector('.spec-contents');
+  // A deep link lands at once; later in-page jumps scroll smoothly.
+  addEventListener('load', () => setTimeout(() => html.classList.add('smooth-scroll'), 300), { once: true });
+
+  // On a phone the contents start collapsed above the text; on a wide screen they are always open and the
+  // CONTENTS label is not a control.
+  const contents = document.querySelector('.spec-contents'), summary = contents?.querySelector('summary');
   const narrow = matchMedia('(max-width: 800px)');
-  const fitContents = () => { if (contents) contents.open = !narrow.matches; };
+  const fitContents = () => {
+    if (!contents || !summary) return;
+    contents.open = !narrow.matches;
+    if (narrow.matches) { summary.removeAttribute('tabindex'); summary.removeAttribute('aria-disabled'); }
+    else { summary.tabIndex = -1; summary.setAttribute('aria-disabled', 'true'); }
+  };
   fitContents();
   narrow.addEventListener('change', fitContents);
-  contents?.querySelector('summary')?.addEventListener('click', event => { if (!narrow.matches) event.preventDefault(); });
+  summary?.addEventListener('click', event => { if (!narrow.matches) event.preventDefault(); });
 
   // Search: a prebuilt index of sections and rule rows, loaded on first use.
-  const form = document.querySelector('.spec-search'), input = document.getElementById('spec-q'), results = document.getElementById('spec-results');
-  if (!form || !input || !results) return;
+  const form = document.querySelector('.spec-search'), input = document.getElementById('spec-q'), results = document.getElementById('spec-results'), status = document.getElementById('spec-status');
+  if (!form || !input || !results || !status) return;
   let index = null, loading = null, timer = 0, first = null;
   const load = () => loading ??= fetch(spec + 'search.json').then(r => { if (!r.ok) throw Error(String(r.status)); return r.json(); }).then(data => (index = data));
   const escape = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  function highlight(text, terms) {
-    const pattern = new RegExp('(' + terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'gi');
+  const literal = t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  function mark(text, terms) {
+    const pattern = new RegExp('(' + terms.map(literal).join('|') + ')', 'gi');
     return text.split(pattern).map((part, i) => i % 2 ? `<mark>${escape(part)}</mark>` : escape(part)).join('');
   }
   function snippet(text, query, terms) {
@@ -53,33 +63,40 @@
     const start = Math.max(0, at - 60), end = Math.min(text.length, at + 160);
     return (start ? '… ' : '') + text.slice(start, end) + (end < text.length ? ' …' : '');
   }
+  // A quoted "phrase" is one term; other words are terms of their own. Every term must occur in the title or the text.
+  const parse = raw => [...raw.toLowerCase().matchAll(/"([^"]+)"?|(\S+)/g)].map(m => (m[1] ?? m[2]).replace(/"/g, '').trim().replace(/\s+/g, ' ')).filter(Boolean);
+  const whole = term => new RegExp('(?:^|[^\\w])' + literal(term) + '(?!\\w)');
+  const count = (text, term) => { let n = 0, at = text.indexOf(term); while (at >= 0 && n < 10) { n++; at = text.indexOf(term, at + term.length); } return n; };
+  // Ranking: headings and rule identifiers above body text, whole words above parts of words.
   function search(raw) {
-    const query = raw.trim().toLowerCase().replace(/\s+/g, ' ');
-    const terms = query.split(' ').filter(Boolean);
+    const terms = parse(raw), query = terms.join(' ');
     if (!terms.length) return [];
-    const found = [];
+    const words = terms.map(whole), phrase = whole(query), found = [];
     for (const entry of index) {
       const title = entry.t.toLowerCase(), text = entry.x.toLowerCase();
       if (!terms.every(t => title.includes(t) || text.includes(t))) continue;
-      let score = 0;
-      if (title === query) score += 200;
-      if (title.includes(query)) score += 80;
-      if (terms.every(t => title.includes(t))) score += 30;
-      if (text.includes(query)) score += 20 + Math.min(text.split(query).length - 1, 10);
+      let score = title === query ? 400 : 0;
+      terms.forEach((t, i) => {
+        if (words[i].test(title)) score += 100; else if (title.includes(t)) score += 25;
+        if (words[i].test(text)) score += 10 + count(text, t); else if (text.includes(t)) score += 1;
+      });
+      if (terms.length > 1 && phrase.test(text)) score += 20;
       found.push({ entry, score });
     }
     return found.sort((a, b) => b.score - a.score).slice(0, 50).map(f => ({ ...f.entry, snippet: snippet(f.entry.x || f.entry.t, query, terms), terms }));
   }
   async function show() {
     const query = input.value;
-    if (!query.trim()) { results.hidden = true; results.innerHTML = ''; if (contents) contents.hidden = false; first = null; return; }
-    try { await load(); } catch { results.hidden = false; results.innerHTML = '<p>The search index could not be loaded.</p>'; return; }
+    if (!query.trim()) { results.hidden = true; results.innerHTML = ''; status.textContent = ''; if (contents) contents.hidden = false; first = null; return; }
+    try { await load(); } catch { results.hidden = false; results.innerHTML = '<p>The search index could not be loaded.</p>'; status.textContent = 'The search index could not be loaded.'; return; }
     if (query !== input.value) return;
     const hits = search(query);
     first = hits[0] ? spec + hits[0].u : null;
     results.innerHTML = hits.length
-      ? `<span class="pane-heading">RESULTS</span><ol>${hits.map(h => `<li><a href="${escape(spec + h.u)}"><span class="result-chapter">${escape(h.c)}</span><span class="result-title">${highlight(h.t, h.terms)}</span><span class="result-text">${highlight(h.snippet, h.terms)}</span></a></li>`).join('')}</ol>`
+      ? `<span class="pane-heading">RESULTS</span><ol>${hits.map(h => `<li><a href="${escape(spec + h.u)}"><span class="result-chapter">${escape(h.c)}</span><span class="result-title">${mark(h.t, h.terms)}</span><span class="result-text">${mark(h.snippet, h.terms)}</span></a></li>`).join('')}</ol>`
       : `<p>No section contains “${escape(query.trim())}”.</p>`;
+    // Only the number of results is announced; the list itself is not a live region.
+    status.textContent = hits.length ? `${hits.length === 50 ? '50 or more' : hits.length} results` : 'No results';
     results.hidden = false;
     if (contents) contents.hidden = true;
   }

@@ -154,7 +154,9 @@ function renderMarkdown(text, source, p) {
           return `<td${align(i)}>${this.parser.parseInline(c.tokens)}</td>`;
         }).join('') + '</tr>';
       }).join('\n');
-      return `<div class="table-scroll" tabindex="0"><table><thead><tr>${head}</tr></thead><tbody>\n${rows}\n</tbody></table></div>\n`;
+      // A scrollable table is a named region that the keyboard can focus and scroll.
+      const name = 'Table: ' + token.header.map(c => plain(this.parser.parseInline(c.tokens))).join(', ');
+      return `<div class="table-scroll" tabindex="0" role="region" aria-label="${esc(name.length > 120 ? name.slice(0, 117) + '…' : name)}"><table><thead><tr>${head}</tr></thead><tbody>\n${rows}\n</tbody></table></div>\n`;
     },
     // Mentions of a rule identifier or diagnostics code link to the row that defines it.
     text(token) {
@@ -176,7 +178,7 @@ for (const p of pages) {
   } else if (p.slug === 'grammar-inventory') {
     const entries = JSON.parse(await read(inventory)).mapping;
     p.html = `<span class="eyebrow">${p.label}</span><h1 id="grammar-inventory">${esc(p.title)}</h1><p>Every grammar rule/type name is represented. Proposed kernel bases identify the design target; they do not constitute an implemented or validated exporter. Empty bases indicate syntax normalized through its owner.</p>`
-      + `<div class="table-scroll" tabindex="0"><table><thead><tr><th>Rule / kind</th><th>Proposed kernel base</th><th>Meaning to preserve</th></tr></thead><tbody>\n`
+      + `<div class="table-scroll" tabindex="0" role="region" aria-label="Table: Rule / kind, Proposed kernel base, Meaning to preserve"><table><thead><tr><th>Rule / kind</th><th>Proposed kernel base</th><th>Meaning to preserve</th></tr></thead><tbody>\n`
       + entries.map(e => `<tr><td><strong>${esc(e.source)}</strong><br>${esc(e.kind)}</td><td>${esc(e.kernel.join(', ') || 'Owner representation')}</td><td>${esc(e.semantic)}</td></tr>`).join('\n') + '\n</tbody></table></div>';
     p.headings = [section('grammar-inventory', 1, p.title)];
   } else if (p.slug === 'models') {
@@ -241,7 +243,8 @@ function shell(p, index) {
 <div class="spec-layout">
 <aside class="spec-sidebar">
 <form class="spec-search" role="search" action="${specPath}"><label for="spec-q" class="pane-heading">SEARCH THE SPECIFICATION</label><input id="spec-q" name="q" type="search" autocomplete="off" spellcheck="false" placeholder="Rule, keyword or phrase" aria-controls="spec-results"></form>
-<div id="spec-results" class="spec-results" aria-live="polite" hidden></div>
+<p id="spec-status" class="visually-hidden" role="status" aria-live="polite"></p>
+<div id="spec-results" class="spec-results" hidden></div>
 <details class="spec-contents" open><summary class="pane-heading">CONTENTS</summary><nav aria-label="Specification contents"><ul><li><a href="${specPath}"${p.slug ? '' : ' aria-current="page"'}>About this edition</a></li></ul>${contents(p)}</nav></details>
 </aside>
 <main id="main" class="spec-main">
