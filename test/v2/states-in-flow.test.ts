@@ -224,6 +224,16 @@ test('SIF-R05 a message queued when a state begins to wait is looked at before a
     assert.deepEqual(result.stores['mm'], { n: 1, seen: 0 });
 });
 
+test('SIF-R05 queued input is looked at at the next scheduling point, in activation order: an older activation woken meanwhile runs first (review 5 N3)', async () => {
+    // b's line writes x (a's read set) and reaches s2 with m queued; a, released before b, takes the lock first: log 12.
+    const { readFileSync } = await import('node:fs');
+    const r = await parse(readFileSync(new URL('../../../test/fixtures/states-in-flow/r5-wait-order.swaml', import.meta.url), 'utf8'));
+    assert.deepEqual(r.errors.map(e => e.message), []);
+    const { eachTest } = await import('../../src/simulation/simulator.js');
+    const result = [...eachTest([r.model], { untilNs: 20e6, maxSteps: 200000 })][0];
+    assert.equal(result.result, 'pass', `${result.reason} ${result.message}`);
+});
+
 test('SIF-R05 a capacity-1 dropOldest overflow before the wait begins is respected: the state takes the newest message', async () => {
     const source = `package Flow {
   import Swaml::Qos;

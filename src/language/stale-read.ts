@@ -432,9 +432,16 @@ class Analysis {
             this.leaves.push(leaves);
             let looked: Flow;
             try {
+                // Every look walks the parents' items first, so a var declared in a parent's braces is evaluated again in
+                // each look of an inner state, after its wait (SIF-R10; review 5 N5).
+                const parentLocals: a.LocalVariable[] = [];
+                for (let p = s.$container; a.isStateStep(p); p = p.$container)
+                    parentLocals.unshift(...p.statements.filter(a.isLocalVariable));
                 looked = this.loop(flow, inner => {
                     this.suspend(inner);
                     let at = inner;
+                    for (const v of parentLocals)
+                        at = this.statement(v, at);
                     for (const item of s.statements) {
                         if (a.isStateAction(item))
                             continue;

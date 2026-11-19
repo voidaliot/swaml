@@ -2276,8 +2276,8 @@ class Interpreter {
                 if (flowOwner) {
                     // Kept while the machine runs, for its next waiting state to decide; discarded after it completed (SIF-R06, SIF-R13).
                     // A periodic machine lives as long as its occurrence: its input waits for its next release, also before its
-                    // first release and after it reached its end (SIF-R06).
-                    if (this.findFrame(x => x.c === c && x.op === flowOwner && !x.done) || schedule(c.structure).some(e => e.kind === 'every' && e.operation === flowOwner.name))
+                    // first release and after it reached its end (SIF-R06); after it failed, its input is discarded like a failed waiting machine's (SIF-R17).
+                    if (this.findFrame(x => x.c === c && x.op === flowOwner && !x.done) || schedule(c.structure).some(e => e.kind === 'every' && e.operation === flowOwner.name) && !this.periodicMachines.get(`${c.path}.${flowOwner.name}`)?.done)
                         break;
                     remove();
                     this.log('discardInput', endpointName, { source: m.origin, reason: 'inactiveOwner' });

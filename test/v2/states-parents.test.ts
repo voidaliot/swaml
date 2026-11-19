@@ -396,6 +396,13 @@ test('SIF-M01 the projection gives a nested state its parent state as owner (rev
     assert.match(String(owner('b0')), /\.run\.B$/);
 });
 
+test('SW2011 a var of a parent read by an inner line is evaluated in the same look: no stale-read warning (review 5 N5)', async () => {
+    const { Swaml } = createSwamlServices(EmptyFileSystem);
+    const text = readFileSync(new URL('test/fixtures/states-in-flow/r5-parent-var-stale-read.swaml', root), 'utf8');
+    const document = await parseHelper<Model>(Swaml)(text, { documentUri: 'file:///r5-parent-var.swaml', validation: true });
+    assert.deepEqual((document.diagnostics ?? []).map(d => `${String(d.code)} ${d.message}`), []);
+});
+
 // ---------------------------------------------------------------- gate D (7.4)
 
 /** The door showcase with WindowLifter.control written with the parents moving and driven (the prototype's design rewrite). */

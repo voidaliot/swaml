@@ -322,6 +322,15 @@ test('SIF-R17 a periodic machine that fails ends: the failure is reported, later
     assert.deepEqual(c.run!.machines['h.step'], { state: 'active', live: false });
 });
 
+test('SIF-R17 a periodic machine that failed discards its input (inactiveOwner), like a failed waiting machine (review 5 N4)', async () => {
+    const r = await fixture('r5-failed-periodic-input.swaml');
+    for (const name of ['Periodic', 'Waiting']) {
+        const c = r.get(name)!;
+        assert.ok(!trace(c).some(e => e.kind === 'overflow'), name);
+        assert.ok(trace(c).filter(e => e.kind === 'discardInput' && e.reason === 'inactiveOwner').length >= 20, name);
+    }
+});
+
 test('SIF-R16 a named step counts for the bound within one release: a pulse in while (true) runs once per release (review 4 P5)', async () => {
     const r = await one(`step() {
       while (true) {
