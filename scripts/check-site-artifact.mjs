@@ -39,10 +39,12 @@ export async function checkSiteArtifact(root) {
     const spec = await checkSiteSpec(root);
     for (const name of specFiles) assert.ok(spec.files.has(name), `Unexpected publication file: ${name}`);
     for (const name of specDirs) assert.ok(spec.dirs.has(name), `Unexpected publication directory: ${name}`);
-    // The front page and its downloads show the current edition only.
-    for (const name of [...files].filter(f => f === 'index.html' || f.startsWith('downloads/'))) {
-        const other = editionMentions(await readFile(join(root, name), 'utf8')).filter(v => v !== spec.edition);
-        assert.deepEqual(other, [], `${name} mentions another edition than ${spec.edition}`);
+    // The front page, its bundle and its downloads name the current standard only, and the published edition that the
+    // specification reader shows (the same edition unless the standard is an unreleased candidate).
+    const standard = JSON.parse(await readFile(new URL('../spec/standard.json', import.meta.url), 'utf8')).version;
+    for (const name of [...files].filter(f => f === 'index.html' || f.startsWith('downloads/') || /^assets\/.*\.js$/.test(f))) {
+        const other = editionMentions(await readFile(join(root, name), 'utf8')).filter(v => v !== spec.edition && v !== standard);
+        assert.deepEqual(other, [], `${name} mentions another edition than ${standard}`);
     }
     return files.size + specFiles.size;
 }

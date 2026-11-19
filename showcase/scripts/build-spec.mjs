@@ -3,21 +3,25 @@
 // the source inventory comes from the edition's PDF manifest, the book order from scripts/build-spec-pdf-X.Y.py.
 // Output: showcase/public/spec/ (git-ignored), copied unchanged into the production artifact by Vite.
 import {readFile, writeFile, mkdir, rm, copyFile, stat} from 'node:fs/promises';
-import {existsSync} from 'node:fs';
+import {publishedEdition, publishedReader, readManifest, editionTree} from '../../scripts/site-publication.mjs';
 import {posix} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {Marked} from 'marked';
+import {highlight} from '../src/highlight.js';
 
 const root = new URL('../../', import.meta.url);
 const out = new URL('showcase/public/spec/', root);
-const read = path => readFile(new URL(path, root), 'utf8');
-const standard = JSON.parse(await read('spec/standard.json')).version;
-const manifestPath = `output/pdf/SWAML-${standard}-Specification.manifest.json`;
-// The reader shows a published edition only: its inventory and date come from the release manifest.
-if (!existsSync(new URL(manifestPath, root)) || !existsSync(new URL(`output/pdf/SWAML-${standard}-Specification.pdf`, root)))
-  throw Error(`Specification ${standard} is not published (${manifestPath} missing); the site reader needs a released edition.`);
-const manifest = JSON.parse(await read(manifestPath));
-if (manifest.release !== standard) throw Error(`${manifestPath} records release ${manifest.release}, not ${standard}`);
+// Site files (styles and script) come from the working tree; book sources only through the published reader.
+const readSite = path => readFile(new URL(path, root), 'utf8');
+// The reader shows the latest published edition, also while spec/standard.json names an unreleased candidate.
+// Its inventory, order and date come from the release manifest; every source is read from the edition tag when
+// present and must equal its manifest digest (the published text is frozen).
+const standard = publishedEdition(root);
+const manifest = readManifest(root, standard);
+if (manifest.release !== standard) throw Error(`The ${standard} manifest records release ${manifest.release}`);
+const published = publishedReader(root, standard, manifest);
+const read = async path => published.text(path);
+const tree = editionTree(root, standard, manifest);
 const sources = manifest.sources.map(s => s.path);
 const grammar = 'src/language/swaml.langium', inventory = 'spec/kerml-mapping.json', license = 'LICENSE';
 const at = path => { const i = sources.indexOf(path); if (i < 0) throw Error(`The ${standard} manifest does not list ${path}`); return i; };
@@ -64,11 +68,13 @@ const modelAnchor = p => slug(posix.basename(p, '.swaml'));
 if (new Set(models.map(modelAnchor)).size !== models.length) throw Error('Duplicate model anchor');
 
 const KEYWORDS = new Set(JSON.parse(await read('spec/keywords.json')).entries.flatMap(e => e.keyword.split(' ')));
-// The same token rule as the site's example source (showcase/src/App.tsx), over the complete keyword inventory.
-function code(text, {highlight = false, numbers = false, label} = {}) {
-  const lines = text.replace(/\n+$/, '').split('\n');
+// The site's source highlighting (showcase/src/highlight.js, also used by the front page) over the complete keyword inventory.
+function code(text, {highlight: colour = false, numbers = false, label} = {}) {
+  const source = text.replace(/\r\n/g, '\n').replace(/\n+$/, '');
+  const lines = colour ? highlight(source, KEYWORDS) : source.split('\n').map(t => [{t}]);
   const width = String(lines.length).length;
-  const body = lines.map((line, i) => `<span class="code-line">${numbers ? `<span class="line-number" aria-hidden="true">${String(i + 1).padStart(Math.max(2, width), '0')}</span>` : ''}<span>${highlight ? line.split(/("(?:[^"\\]|\\.)*"|\b[A-Za-z]\w*\b)/g).map(t => !t ? '' : KEYWORDS.has(t) ? `<span class="token-keyword">${esc(t)}</span>` : t.startsWith('"') ? `<span class="token-string">${esc(t)}</span>` : esc(t)).join('') : esc(line)}</span>\n</span>`).join('');
+  const span = token => token.c === 'keyword' ? `<span class="token-keyword">${esc(token.t)}</span>` : token.c === 'string' ? `<span class="token-string">${esc(token.t)}</span>` : esc(token.t);
+  const body = lines.map((line, i) => `<span class="code-line">${numbers ? `<span class="line-number" aria-hidden="true">${String(i + 1).padStart(Math.max(2, width), '0')}</span>` : ''}<span>${line.map(span).join('')}</span>\n</span>`).join('');
   return `<div class="spec-code">${label ? `<div class="panel-heading"><span>${esc(label)}</span></div>` : ''}<pre class="source-code${numbers ? ' numbered' : ''}"><code>${body}</code></pre></div>`;
 }
 
@@ -97,7 +103,7 @@ function resolveLink(url, source, from) {
     if (anchor) linkChecks.push({page: target, anchor, where: `${url} in ${source}`});
     return {url: href(from, target, anchor)};
   }
-  if (!existsSync(new URL(rel, root))) throw Error(`Broken repository link ${url} in ${source}`);
+  if (!tree.paths.has(rel)) throw Error(`Broken repository link ${url} in ${source}: not in ${tree.fromTag ? 'tag v' + standard : 'the ' + standard + ' manifest (fetch tag v' + standard + ' to check other files)'}`);
   return {url: REPO + rel.split('/').map(encodeURIComponent).join('/') + (fragment ? '#' + fragment : ''), external: true};
 }
 
@@ -128,7 +134,7 @@ function renderMarkdown(text, source, p) {
     },
     image({href: url, text: alt}) {
       const rel = posix.normalize(posix.join(posix.dirname(source), url));
-      if (!/\.svg$/.test(rel) || !existsSync(new URL(rel, root))) throw Error(`Missing figure ${url} in ${source}`);
+      if (!/\.svg$/.test(rel) || !tree.paths.has(rel)) throw Error(`Missing figure ${url} in ${source}`);
       const name = rel.replace(/^docs\//, '').replace(/\//g, '-');
       figures.set(name, rel);
       return `<img class="notation-figure" src="${p.slug ? '../' : ''}figures/${esc(name)}" alt="${esc(alt)}" loading="lazy">`;
@@ -284,10 +290,10 @@ for (const [i, p] of pages.entries()) {
   await mkdir(dir, {recursive: true});
   await writeFile(new URL('index.html', dir), shell(p, i));
 }
-for (const [name, rel] of figures) await copyFile(new URL(rel, root), new URL('figures/' + name, out));
-const css = (await read('showcase/src/v2.css')) + '\n' + (await read('showcase/spec/spec.css'));
+for (const [name, rel] of figures) await writeFile(new URL('figures/' + name, out), published.bytes(rel));
+const css = (await readSite('showcase/src/v2.css')) + '\n' + (await readSite('showcase/spec/spec.css'));
 await writeFile(new URL('site.css', out), css);
 await copyFile(new URL('showcase/spec/spec.js', root), new URL('spec.js', out));
 await writeFile(new URL('search.json', out), JSON.stringify(search));
 const size = (await stat(new URL('search.json', out))).size;
-console.log(`Specification ${standard}: ${pages.length} pages from ${new Set(pages.flatMap(p => p.sources)).size} sources, ${figures.size} figures, ${ruleHome.size} rule anchors, ${search.length} search entries (${Math.round(size / 1024)} KiB) in ${fileURLToPath(out)}.`);
+console.log(`Specification ${standard} (${published.fromTag ? 'tag v' + standard : 'working tree'}, manifest digests verified): ${pages.length} pages from ${new Set(pages.flatMap(p => p.sources)).size} sources, ${figures.size} figures, ${ruleHome.size} rule anchors, ${search.length} search entries (${Math.round(size / 1024)} KiB) in ${fileURLToPath(out)}.`);

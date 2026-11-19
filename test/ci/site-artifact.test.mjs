@@ -24,6 +24,7 @@ async function fixture(t) {
         'spec/site.css', 'spec/spec.js']) {
         await writeFile(join(root, name), 'public fixture');
     }
+    await writeFile(join(root, 'assets/index-test.js'), 'const links={spec:"./spec/",top:"./spec/#top"};');
     await writeFile(join(root, 'spec/search.json'), JSON.stringify([{ u: '#top', t: 'Top', c: 'Start', x: 'text' }]));
     await writeFile(join(root, 'spec/index.html'), await specPage());
     return root;
@@ -83,4 +84,19 @@ test('the front page and its downloads name the current edition only', async t =
     const root = await fixture(t);
     await writeFile(join(root, 'downloads/mixed-ports.svg'), '<svg><title>swa.ml 2.1 original notation</title></svg>');
     await assert.rejects(checkSiteArtifact(root), /mentions another edition/);
+});
+
+test('front-page specification links, repository links and link case are checked', async t => {
+    const root = await fixture(t);
+    await writeFile(join(root, 'assets/index-test.js'), 'const m={migration:"./spec/migration-9-9/"};');
+    await assert.rejects(checkSiteArtifact(root), /missing specification page/);
+    await writeFile(join(root, 'assets/index-test.js'), 'const m={spec:"./spec/",note:"the swa.ml 2.1 edition"};');
+    await assert.rejects(checkSiteArtifact(root), /mentions another edition/);
+    await writeFile(join(root, 'assets/index-test.js'), 'const m={spec:"./spec/"};');
+    await writeFile(join(root, 'spec/index.html'), await specPage('<h1 id="top">x</h1><a href="https://github.com/voidaliot/swaml/blob/main/README.md">x</a>'));
+    await assert.rejects(checkSiteArtifact(root), /outside the published edition/);
+    await writeFile(join(root, 'spec/index.html'), await specPage('<h1 id="top">x</h1><a href="./Site.css">x</a>'));
+    await assert.rejects(checkSiteArtifact(root), /broken link/);
+    await writeFile(join(root, 'spec/index.html'), await specPage('<h1 id="top">x</h1><iframe src="x"></iframe>'));
+    await assert.rejects(checkSiteArtifact(root), /embeds a resource/);
 });

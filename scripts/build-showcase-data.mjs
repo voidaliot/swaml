@@ -49,7 +49,15 @@ const observed=e=>e.kind==='publish'||e.kind==='state'||e.kind==='write'&&e.scop
 const states={model:statesModel,sha256:createHash('sha256').update(statesSource).digest('hex'),component:light.name,operation:lightRun.name,code:excerpt(lightRun),test:statesTest,result:statesCase.result,profile:statesRun.profile,timeNs:statesRun.timeNs,
   observations:statesRun.trace.filter(observed).map(e=>({ordinal:e.ordinal,timeNs:e.timeNs,kind:e.kind,subject:e.kind==='publish'?e.subject.split('.').slice(1).join('.'):e.subject,value:e.kind==='state'?e.state+(e.trigger?' (entered again)':''):e.kind==='write'?e.value:e.args?.[0]??null})),
   stores:statesRun.stores};
-const data={states,cases,satisfactions,sequence,requirements,flow,languageVersion:standardVersion,edition:standardVersion,status:publication.status,publishedEdition:publication.edition,model:'examples/02-realtime-controller.swaml',source,sha256:createHash('sha256').update(source).digest('hex'),projection,timing:projectOperationTiming(run),run:{profile:run.profile,target:run.target,status:run.status,untilNs:run.options.untilNs,trace:run.trace,stores:run.stores}};
+// The annotation beside the excerpt is read from the excerpt and the run: the received messages, the states, the timer
+// and the attributes the run switches on and off.
+states.annotation={inputs:[...new Set([...states.code.matchAll(/\bon receive ([\w.]+\([^)]*\))/g)].map(m=>m[1]))],states:[...states.code.matchAll(/\bstate (\w+)/g)].map(m=>m[1]),
+  timer:/\bafter (\d+)(ns|us|ms|s)\b/.exec(states.code)?.slice(1).join(' ')??null,outputs:[...new Set(states.observations.filter(o=>o.kind==='write'&&typeof o.value==='boolean').map(o=>o.subject.split('.').at(-1)))]};
+// Front-page links into the specification reader, which shows the latest published edition (showcase/scripts/build-spec.mjs).
+const publishedSources=JSON.parse(await readFile(new URL(`output/pdf/SWAML-${publication.edition}-Specification.manifest.json`,root),'utf8')).sources.map(x=>x.path),underscore=publication.edition.replace('.','_');
+const specLinks={releaseNotes:publishedSources.includes(`docs/RELEASE_${underscore}.md`)?`./spec/release-${underscore.replace('_','-')}/`:null,migration:publishedSources.includes(`docs/MIGRATION_${underscore}.md`)?`./spec/migration-${underscore.replace('_','-')}/`:null};
+const keywords=[...new Set(JSON.parse(await readFile(new URL('spec/keywords.json',root),'utf8')).entries.flatMap(e=>e.keyword.split(' ')))].sort();
+const data={specLinks,keywords,states,cases,satisfactions,sequence,requirements,flow,languageVersion:standardVersion,edition:standardVersion,status:publication.status,publishedEdition:publication.edition,model:'examples/02-realtime-controller.swaml',source,sha256:createHash('sha256').update(source).digest('hex'),projection,timing:projectOperationTiming(run),run:{profile:run.profile,target:run.target,status:run.status,untilNs:run.options.untilNs,trace:run.trace,stores:run.stores}};
 const path=new URL('showcase/src/generated/model.json',root),text=JSON.stringify(data,null,2)+'\n';
 if(check){if(await readFile(path,'utf8')!==text)throw Error('Stale site model/trace; run scripts/build-showcase-data.mjs');}
 else{await mkdir(new URL('showcase/src/generated/',root),{recursive:true});await writeFile(path,text);
