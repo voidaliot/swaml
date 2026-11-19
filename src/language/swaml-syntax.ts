@@ -30,8 +30,99 @@ export class SwamlLexer extends DefaultLexer {
         skipped.clear();
         const result = super.tokenize(text, options);
         guardNesting(result);
+        guardStateForms(result, (this as unknown as { tokenTypes: Record<string, TokenKind> }).tokenTypes?.['if']);
         tokens = result.tokens;
         return result;
+    }
+}
+/** A condition written when (c) { … } as an item of a state (a 2.2 or draft habit): 3.0 writes if (c). */
+export const WHEN_IN_STATE_MESSAGE = 'when is no word of swa.ml 3.0: a condition in a state is written if (c) { … }, and the state looks at it again each time something happens to it.';
+/**
+ * Half-typed or misplaced state forms after which the parser cannot resynchronise, found on the tokens before parsing so
+ * that one message says what is wrong and the rest of the package is kept (final-package review, M1):
+ * - after D { … } (or a short leave) outside a state's braces and outside a schedule: not parsed, one error;
+ * - an event line of a state joined to another by or (on receive p.m() or receive p.k() { … }, or a block followed by
+ *   or receive … { … }): the joined part is not parsed, one error, the first line is kept;
+ * - when (c) { … } as an item of a state: read as if (c) { … }, with one error that says when is gone;
+ * - a state written directly inside on entry or on exit: not parsed, one error.
+ * Only braces are tracked: a { after state <name> opens a state, after schedule a schedule, after on entry / on exit an
+ * action, any other { a block. A valid source never contains these shapes, so its tokens are unchanged.
+ */
+function guardStateForms(result: LexerResult, ifType: TokenKind | undefined): void {
+    const all = result.tokens, kinds: string[] = [], drop: [number, number][] = [];
+    const report = (t: Token, message: string) => result.errors.push({ offset: t.startOffset, line: t.startLine, column: t.startColumn, length: t.image.length, message });
+    const leave = (t: Token | undefined) => t?.tokenType.name === 'exit' || t?.tokenType.name === 'to';
+    /** The index just after the } that closes the { at i. */
+    const closing = (i: number) => { for (let j = i, d = 0; j < all.length; j++) { if (all[j].image === '{') d++; else if (all[j].image === '}' && --d === 0) return j + 1; } return all.length; };
+    /** From i, the first { or leave word outside parentheses: where a body starts; -1 at a ; or } first. */
+    const bodyStart = (i: number) => {
+        for (let j = i, d = 0; j < all.length; j++) {
+            const x = all[j].image;
+            d += x === '(' ? 1 : x === ')' ? -1 : 0;
+            if (d === 0 && (x === '{' || leave(all[j])))
+                return j;
+            if (d <= 0 && (x === ';' || x === '}'))
+                return -1;
+        }
+        return -1;
+    };
+    /** The end (exclusive) of the body that starts at j: its block, or a short leave up to its ;. */
+    const bodyEnd = (j: number) => {
+        if (j < 0)
+            return -1;
+        if (all[j].image === '{')
+            return closing(j);
+        let k = j;
+        while (k < all.length && !['{', '}', ';'].includes(all[k].image))
+            k++;
+        return all[k]?.image === ';' ? k + 1 : -1;
+    };
+    const skip = (i: number, end: number, t: Token, message: string) => { report(t, message); drop.push([i, end]); return end - 1; };
+    for (let i = 0; i < all.length; i++) {
+        const t = all[i], text = t.image, type = t.tokenType.name;
+        if (text === '{') {
+            const before = all[i - 1]?.tokenType.name, twoBefore = all[i - 2]?.tokenType.name;
+            kinds.push(twoBefore === 'state' && nameToken(all[i - 1]?.tokenType) ? 'state' : before === 'schedule' ? 'schedule' : (before === 'entry' || before === 'exit') && twoBefore === 'on' ? 'action' : 'block');
+            continue;
+        }
+        if (text === '}') {
+            kinds.pop();
+            continue;
+        }
+        const atStart = i === 0 || [';', '{', '}'].includes(all[i - 1].image), inner = kinds[kinds.length - 1];
+        if (type === 'after' && atStart && kinds.length > 0 && inner !== 'state' && inner !== 'schedule') {
+            const end = bodyEnd(bodyStart(i + 1));
+            if (end > 0) {
+                i = skip(i, end, t, AFTER_OUTSIDE_STATE_MESSAGE);
+                continue;
+            }
+        }
+        if (type === 'state' && atStart && inner === 'action' && nameToken(all[i + 1]?.tokenType) && all[i + 2]?.image === '{') {
+            i = skip(i, closing(i + 2), t, STATE_IN_ACTION_MESSAGE);
+            continue;
+        }
+        if (text === 'when' && atStart && inner === 'state' && all[i + 1]?.image === '(' && ifType && bodyEnd(bodyStart(i + 1)) > 0) {
+            report(t, WHEN_IN_STATE_MESSAGE);
+            (t as { tokenType: TokenKind }).tokenType = ifType;
+            (t as unknown as { tokenTypeIdx?: number }).tokenTypeIdx = (ifType as unknown as { tokenTypeIdx?: number }).tokenTypeIdx;
+            continue;
+        }
+        if (type === 'or' && inner === 'state' && (['receive', 'call', 'after'].includes(all[i + 1]?.tokenType.name ?? '') || all[i - 1]?.image === ')' && nameToken(all[i + 1]?.tokenType) && all[i + 2]?.image === '.')) {
+            const start = bodyStart(i + 1);
+            // Joined heads: the first head keeps the body. A joined branch after a body: dropped with its own body.
+            const end = all[i - 1]?.image === ')' ? start : all[i - 1]?.image === '}' ? bodyEnd(start) : -1;
+            if (end > 0) {
+                i = skip(i, end, t, OR_IN_STATE_MESSAGE);
+                continue;
+            }
+        }
+    }
+    if (drop.length) {
+        const gone = new Set<number>();
+        for (const [s, e] of drop)
+            for (let k = s; k < e; k++)
+                gone.add(k);
+        result.tokens = all.filter((_, k) => !gone.has(k));
     }
 }
 /**
@@ -158,7 +249,9 @@ function hint(actual: Token | undefined, previous: Token | undefined, expectsNam
         return ` Names use single quotes, for example ${quoteName(actual.image.slice(1, -1).replace(/[.:[\]]/g, ' ').trim() || 'name')}.`;
     if (RESERVED_WORDS.has(actual.image))
         return ` '${actual.image}' is a reserved word. ${expectsName ? 'Write' : 'If it is meant as a name, write'} it as a quoted name ('${actual.image}') or choose another name.`;
-    if (!expectsName && nameToken(actual.tokenType) && nameToken(previous?.tokenType) && (previous!.endOffset ?? previous!.startOffset) + 1 < actual.startOffset && ![...skipped].some(offset => offset > previous!.startOffset && offset < actual.startOffset))
+    // state <name> { after a name starts a state after a statement whose ; is missing; it is never a name with a space.
+    const at = tokens.findIndex(x => x.startOffset === actual.startOffset), stateStart = type === 'state' && nameToken(tokens[at + 1]?.tokenType) && tokens[at + 2]?.image === '{';
+    if (!expectsName && !stateStart && nameToken(actual.tokenType) && nameToken(previous?.tokenType) && (previous!.endOffset ?? previous!.startOffset) + 1 < actual.startOffset && ![...skipped].some(offset => offset > previous!.startOffset && offset < actual.startOffset))
         return ` A name containing spaces must be quoted, for example '${shown(previous!)} ${shown(actual)}'.`;
     return '';
 }

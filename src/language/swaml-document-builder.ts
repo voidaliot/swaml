@@ -56,7 +56,7 @@ export class SwamlDocumentBuilder extends DefaultDocumentBuilder {
     protected override shouldRelink(document: LangiumDocument, changedUris: Set<string>): boolean { return changedUris.size > 0 && isModel(document.parseResult.value) || super.shouldRelink(document, changedUris); }
 }
 /** 2.2 state-machine syntax: initial S; in an operation, final state, or a transition when (g) to T (a release guard written with when keeps its own hint). */
-const LEGACY_MACHINE = /\binitial\s+(?:[A-Za-z_]\w*|'(?:[^'\\\n]|\\.)*')\s*;|\bfinal\s+state\s+(?:[A-Za-z_]\w*|'(?:[^'\\\n]|\\.)*')\s*\{|\bwhen\s*\([^;{}]*\)\s*to\b/;
+const LEGACY_MACHINE = /(?<=[;{}]\s*)initial\s+(?:[A-Za-z_]\w*|'(?:[^'\\\n]|\\.)*')\s*;|(?<=[;{}]\s*)final\s+state\s+(?:[A-Za-z_]\w*|'(?:[^'\\\n]|\\.)*')\s*\{|\bwhen\s*\([^;{}]*\)\s*to\b/;
 /** Comments and string literals blanked with spaces (offsets kept), so their text never looks like machine syntax. */
 const codeOnly = (text: string) => text.replace(/"(?:[^"\\\n]|\\.)*"|\/\/[^\n]*|\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '));
 export const LEGACY_MACHINE_MESSAGE = 'This is swa.ml 2.2 state-machine syntax (initial S;, final state, ordered transitions with when and to T { … }), which 3.0 replaces by states that are steps of the flow; swaml migrate <file> rewrites it.';

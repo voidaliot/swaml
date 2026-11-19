@@ -1067,15 +1067,14 @@ export class SwamlValidator {
                     this.report(s, 'SW2006', this.script ? `Cannot assign ${s.target}; a case script assigns only its own locals and the out bindings of on call, and a test never assigns its subject.` : `Cannot assign ${s.target}; inputs and const attributes are immutable.`);
                 this.value(s.value, cell?.type ?? '?', env, c, op, true);
             }
+            else if (a.isExpressionStatement(s) && s.expression.$cstNode?.text === 'to' && owner(s, a.isStateStep))
+                // A half-typed jump, to; in a state's braces: say what is missing, and nothing about a value named to.
+                this.report(s, 'SW2008', 'to needs the state it goes to, as in to S; (to alone reads a value named to).');
             else if (a.isExpressionStatement(s)) {
                 const t = this.infer(s.expression, env, c, op, true), target = a.isCallExpression(s.expression) && this.callTarget(s.expression, c), out = target && (isExecutable(target) ? signature(target)?.parameters : target.parameters)?.some(x => x.direction === 'out');
-                // A half-typed jump, to; in a state's braces, reads a value named to (an attribute, say): say what is missing.
-                const halfJump = s.expression.$cstNode?.text === 'to' && !!owner(s, a.isStateStep);
-                if (halfJump)
-                    this.report(s, 'SW2008', 'to needs the state it goes to, as in to S; (to alone reads a value named to).');
-                else if (t !== 'void' && t !== '?')
+                if (t !== 'void' && t !== '?')
                     this.report(s, 'SW2006', 'A non-void result cannot be discarded.');
-                if (!halfJump && !a.isCallExpression(s.expression) && !a.isTryExpression(s.expression))
+                if (!a.isCallExpression(s.expression) && !a.isTryExpression(s.expression))
                     this.report(s, 'SW2006', 'Expression statements must call an operation or try.');
             }
             else if (a.isReturn(s)) {

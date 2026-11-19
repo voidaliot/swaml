@@ -114,9 +114,14 @@ const MUTATIONS = [
     ['MC5', 'migrate: a release guard rewritten to another spelling', 'out/src/migrate/tools.js', "text = text.slice(0, offset) + 'if' + text.slice(offset + 4);", "text = text.slice(0, offset) + 'if ' + text.slice(offset + 4);"],
     // Recovery of half-typed states (final package).
     ['RC1', 'recovery: a nameless state read as an expression statement', 'out/src/language/swaml-syntax.js', "if (stateStep >= 0 && this.LA(1).tokenType.name === 'state'", "if (false && this.LA(1).tokenType.name === 'state'"],
-    ['RC2', 'recovery: a half-typed to; in a state gets the 2.2 messages', VAL, "const halfJump = s.expression.$cstNode?.text === 'to'", "const halfJump = false && s.expression.$cstNode?.text === 'to'"],
+    ['RC2', 'recovery: a half-typed to; in a state gets the 2.2 messages', VAL, "else if (a.isExpressionStatement(s) && s.expression.$cstNode?.text === 'to' && owner(s, a.isStateStep))", "else if (false)"],
     ['RC3', 'recovery: a dedented } does not name the unclosed state', 'out/src/language/swaml-syntax.js', 'dedented = o.name;', 'void 0;'],
     ['RC4', 'recovery: after outside a state gets the generic message', 'out/src/language/swaml-syntax.js', 'return AFTER_OUTSIDE_STATE_MESSAGE;', 'void 0;'],
+    ['RC5', 'recovery: after outside a state not taken out before parsing (review M1)', 'out/src/language/swaml-syntax.js', "if (type === 'after' && atStart", "if (false && type === 'after' && atStart"],
+    ['RC6', 'recovery: an event line joined by or not taken out before parsing (review M1)', 'out/src/language/swaml-syntax.js', "if (type === 'or' && inner === 'state'", "if (false && type === 'or' && inner === 'state'"],
+    ['RC7', 'recovery: when (c) in a state not read as if (review M1)', 'out/src/language/swaml-syntax.js', "t.tokenTypeIdx = ifType.tokenTypeIdx;", "void 0;"],
+    ['RC8', 'recovery: a state inside on entry not taken out before parsing (review m6)', 'out/src/language/swaml-syntax.js', "if (type === 'state' && atStart && inner === 'action'", "if (false && type === 'state' && atStart && inner === 'action'"],
+    ['RC9', 'diagnostics: 2.2 final state recognised after any token (review m5)', 'out/src/language/swaml-document-builder.js', String.raw`|(?<=[;{}]\s*)final\s+state`, String.raw`|final\s+state`],
     ['E9', 'deadline measured once from the dispatch, not per release', SIM, "            // The deadline is per release, from the release (SIF-R15).\n            if (deadline)", "            // The deadline is per release, from the release (SIF-R15).\n            if (false)"],
 ];
 const run = (command, args) => { try { execFileSync(command, args, { cwd: root, stdio: 'pipe', encoding: 'utf8', timeout: 1500000 }); return true; } catch { return false; } };
