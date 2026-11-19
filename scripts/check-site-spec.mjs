@@ -116,7 +116,7 @@ export async function checkSiteSpec(site, repoRoot = repo) {
         assert.ok(pages.has(page) && ids.get(page).has(fragment), `Search entry points to a missing section: ${entry.u}`);
         assert.ok(typeof entry.t === 'string' && typeof entry.x === 'string' && typeof entry.c === 'string', `Malformed search entry ${entry.u}`);
     }
-    return { files, dirs, pages: pages.size, links, search: search.length, sources: sources.length };
+    return { edition, files, dirs, pages: pages.size, links, search: search.length, sources: sources.length };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

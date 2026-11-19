@@ -1,43 +1,50 @@
 import assert from 'node:assert/strict';
-import { lstat, readdir } from 'node:fs/promises';
+import { lstat, readdir, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checkSiteSpec } from './check-site-spec.mjs';
+import { editionMentions } from './site-edition.mjs';
 
 // Publication is an explicit allowlist. New public resources need a review here.
 const required = new Set([
     'index.html', 'swaml.svg', 'swaml-white.svg',
-    'downloads/controller.swaml', 'downloads/usage-guide.md',
-    'downloads/ai-guide.md', 'downloads/swaml-author-SKILL.md',
-    'downloads/swaml-validate-SKILL.md', 'downloads/mixed-ports.svg',
-    'downloads/simulation.md', 'downloads/implementation-status.md',
+    'downloads/controller.swaml', 'downloads/mixed-ports.svg',
     'downloads/controller-options.json', 'downloads/controller-run.json',
+    'downloads/interior-light.swaml', 'downloads/interior-light-run.json',
 ]);
 const bundle = /^assets\/[A-Za-z0-9_-]+\.(?:js|css)$/;
 
 export async function checkSiteArtifact(root) {
-    // The specification reader under spec/ has its own content and link checks and its own file boundary.
-    const spec = await checkSiteSpec(root);
-    const files = new Set();
+    const files = new Set(), specFiles = new Set(), specDirs = new Set();
     async function visit(path = '') {
         const entry = await lstat(join(root, path));
         assert.ok(!entry.isSymbolicLink(), `Publication contains a symbolic link: ${path || '.'}`);
+        // The specification reader under spec/ is checked by check-site-spec.mjs, which owns that boundary.
+        const inSpec = path === 'spec' || path.startsWith('spec/');
         if (entry.isDirectory()) {
-            assert.ok(['', 'assets', 'downloads'].includes(path) || spec.dirs.has(path), `Unexpected publication directory: ${path}`);
+            assert.ok(['', 'assets', 'downloads'].includes(path) || inSpec, `Unexpected publication directory: ${path}`);
+            if (inSpec) specDirs.add(path);
             for (const name of await readdir(join(root, path))) await visit(path ? `${path}/${name}` : name);
         } else {
             assert.ok(entry.isFile() && entry.nlink === 1, `Publication contains a linked or special file: ${path}`);
-            assert.ok(required.has(path) || bundle.test(path) || spec.files.has(path), `Unexpected publication file: ${path}`);
-            files.add(path);
+            assert.ok(required.has(path) || bundle.test(path) || inSpec, `Unexpected publication file: ${path}`);
+            (inSpec ? specFiles : files).add(path);
         }
     }
     await visit();
     for (const name of required) assert.ok(files.has(name), `Missing publication file: ${name}`);
-    for (const name of spec.files) assert.ok(files.has(name), `Missing publication file: ${name}`);
     for (const extension of ['js', 'css']) {
         assert.ok([...files].some(name => name.startsWith('assets/') && name.endsWith(`.${extension}`)), `Missing ${extension} bundle`);
     }
-    return files.size;
+    const spec = await checkSiteSpec(root);
+    for (const name of specFiles) assert.ok(spec.files.has(name), `Unexpected publication file: ${name}`);
+    for (const name of specDirs) assert.ok(spec.dirs.has(name), `Unexpected publication directory: ${name}`);
+    // The front page and its downloads show the current edition only.
+    for (const name of [...files].filter(f => f === 'index.html' || f.startsWith('downloads/'))) {
+        const other = editionMentions(await readFile(join(root, name), 'utf8')).filter(v => v !== spec.edition);
+        assert.deepEqual(other, [], `${name} mentions another edition than ${spec.edition}`);
+    }
+    return files.size + specFiles.size;
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
