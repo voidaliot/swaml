@@ -75,7 +75,7 @@
     for (const entry of index) {
       const title = entry.t.toLowerCase(), text = entry.x.toLowerCase();
       if (!terms.every(t => title.includes(t) || text.includes(t))) continue;
-      let score = title === query ? 400 : 0;
+      let score = title === query || title.endsWith(': ' + query) ? 400 : 0;
       terms.forEach((t, i) => {
         if (words[i].test(title)) score += 100; else if (title.includes(t)) score += 25;
         if (words[i].test(text)) score += 10 + count(text, t); else if (text.includes(t)) score += 1;

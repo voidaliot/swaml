@@ -14,7 +14,7 @@ npm run build --prefix showcase
 npm run dev --prefix showcase -- --port 5188 --strictPort
 ```
 
-The specification reader under spec/ is generated at prebuild time by showcase/scripts/build-spec.mjs from the Markdown, grammar, models and license listed in the published PDF manifest of the edition, in the order of the book; it is not committed. scripts/check-site-spec.mjs (called by scripts/check-site-artifact.mjs) checks its sources, links, anchors, escapes and files. Preview it with `npm run preview --prefix showcase` and open /spec/.
+The specification reader under spec/ is generated at prebuild time by showcase/scripts/build-spec.mjs from the Markdown, grammar, models and license listed in the PDF manifest of the latest published edition, in the order of the book; it is not committed. Sources are read from the edition tag (the Pages workflow fetches tags) and must equal the manifest digests, so the reader always shows the published text. scripts/check-site-spec.mjs (called by scripts/check-site-artifact.mjs) checks its sources, links, anchors, escapes and files. Preview it with `npm run preview --prefix showcase` and open /spec/.
 
 Review the printed local URL, all seven tabs, source/copy/download controls, keyboard navigation, both explicit themes/system selection and narrow layouts. Relative Vite assets support GitHub Pages subpaths and local preview. No account or server backend is required by the built site.
 
