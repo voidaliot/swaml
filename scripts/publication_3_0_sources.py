@@ -42,7 +42,7 @@ def publication_inventory(root: Path, edition: str = '3.0') -> PublicationInvent
     examples += sorted(p.relative_to(root).as_posix() for p in (root/'libraries').glob('*.swaml'))
     attachments = [f'docs/SWAML-{edition}-Reference.md', 'spec/standard.json', 'spec/keywords.json', 'spec/notation.json',
         'spec/graphical-examples.json', 'spec/modeling-overview.json', 'package.json', 'package-lock.json', 'tsconfig.json',
-        f'scripts/build-spec-pdf-{edition}.py', f'scripts/check-spec-pdf-{edition}.py', 'scripts/publication_3_0_sources.py',
+        'scripts/build-spec-pdf-3.0.py', 'scripts/check-spec-pdf-3.0.py', 'scripts/publication_3_0_sources.py',
         'scripts/publication_archive.py', 'scripts/ci-pdf-requirements.txt', 'scripts/v2_scene.py', 'scripts/build-notation.py',
         'scripts/build-graphical-examples.py', 'scripts/build-reference.mjs', 'scripts/standard-version.mjs', 'scripts/test-publication-3-0.py']
     attachments += sorted(p.relative_to(root).as_posix()
