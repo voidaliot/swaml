@@ -171,17 +171,17 @@ function section(id, depth, title) { return {id, depth, title}; }
 for (const p of pages) {
   if (p.markdown) { Object.assign(p, renderMarkdown(await read(p.markdown), p.markdown, p)); continue; }
   if (p.slug === 'grammar') {
-    p.html = `<span class="eyebrow">${p.label}</span><h1 id="grammar">${esc(p.title)}</h1><p>Authoritative Langium grammar, reproduced in full from <a href="${REPO}${grammar}" target="_blank" rel="noreferrer">${grammar}</a>.</p>` + code(await read(grammar), {numbers: true, label: 'LANGIUM GRAMMAR'});
+    p.html = `<span class="eyebrow">${p.label}</span><h1 id="grammar">${esc(p.title)}</h1><p>Authoritative Langium grammar, reproduced in full.</p>` + code(await read(grammar), {numbers: true, label: 'LANGIUM GRAMMAR'});
     p.headings = [section('grammar', 1, p.title)];
   } else if (p.slug === 'grammar-inventory') {
     const entries = JSON.parse(await read(inventory)).mapping;
-    p.html = `<span class="eyebrow">${p.label}</span><h1 id="grammar-inventory">${esc(p.title)}</h1><p>Every grammar rule/type name is represented. Proposed kernel bases identify the design target; they do not constitute an implemented or validated exporter. Empty bases indicate syntax normalized through its owner. Source: <a href="${REPO}${inventory}" target="_blank" rel="noreferrer">${inventory}</a>.</p>`
+    p.html = `<span class="eyebrow">${p.label}</span><h1 id="grammar-inventory">${esc(p.title)}</h1><p>Every grammar rule/type name is represented. Proposed kernel bases identify the design target; they do not constitute an implemented or validated exporter. Empty bases indicate syntax normalized through its owner.</p>`
       + `<div class="table-scroll" tabindex="0"><table><thead><tr><th>Rule / kind</th><th>Proposed kernel base</th><th>Meaning to preserve</th></tr></thead><tbody>\n`
       + entries.map(e => `<tr><td><strong>${esc(e.source)}</strong><br>${esc(e.kind)}</td><td>${esc(e.kernel.join(', ') || 'Owner representation')}</td><td>${esc(e.semantic)}</td></tr>`).join('\n') + '\n</tbody></table></div>';
     p.headings = [section('grammar-inventory', 1, p.title)];
   } else if (p.slug === 'models') {
     p.headings = [section('models', 1, p.title)];
-    p.html = `<span class="eyebrow">${p.label}</span><h1 id="models">${esc(p.title)}</h1><p>Complete runnable models and the library sources of the edition.</p>`;
+    p.html = `<span class="eyebrow">${p.label}</span><h1 id="models">${esc(p.title)}</h1>`;
     for (const m of models) {
       const id = modelAnchor(m), title = posix.basename(m, '.swaml').replace(/-/g, ' ');
       p.headings.push(section(id, 2, title));
@@ -259,13 +259,22 @@ ${onPage.length ? `<aside class="spec-toc" aria-label="On this page"><span class
 `;
 }
 
-// The start page: edition, date, the PDF and the complete contents.
+// The start page is the book's "About this edition", read from the edition's own PDF builder (a published source), with
+// the edition and date stated once; the PDF-only navigation table is replaced by one sentence on this site's links.
+const builder = await read(`scripts/build-spec-pdf-${standard}.py`);
+const about = /heading\('About this edition'[\s\S]*?\n\s*toc_title=/.exec(builder)?.[0];
+if (!about) throw Error(`No "About this edition" in scripts/build-spec-pdf-${standard}.py`);
+const values = {RELEASE: manifest.release, LANGUAGE: manifest.languageVersion, SIMULATION_PROFILE: manifest.simulationProfile, IMPLEMENTATION: manifest.implementationRevision, 'PUBLICATION_DATE.upper()': date.toUpperCase()};
+const aboutParagraphs = [...about.matchAll(/Paragraph\((f?)'((?:[^'\\]|\\.)*)',STYLES\['(\w+)'\]\)/g)].map(([, f, text, style]) => ({style, text: (f ? text.replace(/\{([^}]+)\}/g, (_, k) => { if (!(k in values)) throw Error('Unknown value in the About text: ' + k); return values[k]; }) : text).replace(/\\(.)/g, '$1')}));
+const aboutLabel = aboutParagraphs.find(x => x.style === 'label'), aboutBody = aboutParagraphs.filter(x => x.style !== 'label');
+if (!aboutLabel || aboutBody.length < 3) throw Error('Unexpected "About this edition" in the book builder');
 const start = pages[0];
+start.label = aboutLabel.text;
 start.headings = [section('contents', 2, 'Contents')];
-start.html = `<span class="eyebrow">${esc(start.label)}</span><h1 id="top">${esc(start.title)}</h1>
-<p class="spec-lead">The complete swa.ml ${standard} specification as published in the ${standard} book: the keyword reference, the normative chapters with the graphical notation and catalog, the complete grammar and its semantics inventory, the model and library sources, the guides, the release notes and migration guide, the decisions and the license, in the order of the book.</p>
-<p>Normative chapters define syntax, validity, interface isolation, operation and state behavior, case scripts and mapping obligations. Tutorials and figures illustrate these rules. Links between chapters stay on this site; other repository files open at the <code>v${standard}</code> tag on GitHub. Rule identifiers such as <code>SIF-R05</code> and diagnostics codes such as <code>SW2008</code> link to the rows that define them.</p>
-<div class="spec-pdf"><div><span class="pane-heading">PUBLISHED EDITION</span><strong>swa.ml ${standard} Specification (PDF)</strong><span class="muted">Edition ${standard} · ${date}</span></div><a class="button primary" href="${PDF}">Download the PDF ${svg(icon.arrow)}</a></div>
+start.html = `<span class="eyebrow">${esc(start.label)}</span><h1 id="top">About this edition</h1>
+${aboutBody.map(x => `<p${x.style === 'small' ? ' class="muted"' : ''}>${esc(x.text)}</p>`).join('\n')}
+<p>Links between included documents stay on this site; other repository links open at the <code>v${standard}</code> release tag. Rule identifiers and diagnostics codes link to the rows that define them.</p>
+<div class="spec-pdf"><strong>Specification PDF</strong><a class="button primary" href="${PDF}">Download the PDF ${svg(icon.arrow)}</a></div>
 <h2 id="contents"><a class="heading-link" href="#contents">Contents</a></h2>
 <div class="spec-index">${groups.map(g => `<section><p class="spec-group">${esc(g)}</p><ol>${pages.filter(p => p.group === g).map(p => `<li><a href="${href(start, p)}">${esc(p.title)}</a></li>`).join('')}</ol></section>`).join('')}</div>`;
 
