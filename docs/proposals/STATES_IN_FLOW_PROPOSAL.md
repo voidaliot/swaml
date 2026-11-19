@@ -1055,7 +1055,7 @@ Attributes of the executing occurrence, whoever writes them; sampled port member
 After the arrival look and after any look that did not leave, S **waits**. When it begins to wait, in this order:
 1. **Timers that ran out** and have not been present: one look now, in zero time.
 2. **Queued messages of owned members not named at S** are dropped, in delivery order (`discardInput`, `inactiveOwner`).
-3. **A queued message of a member named at S, or a pending wake** (SIF-R07), ends the wait in zero time (the component lock is released; the wait end is an event of the same instant, phase 2, next insertion ordinal). At that event a look is made with the first-delivered named message at that moment (picked again, so a delivery that replaced or overflowed a queue meanwhile is respected), or, if none is queued, a look with nothing present. Every look clears the pending wake: one look serves all writes made while the machine was busy.
+3. **A queued message of a member named at S, or a pending wake** (SIF-R07), ends the wait in zero time (the component lock is released; the wait end is an event of the same instant, phase 2, next insertion ordinal). At that event a look is made with the first-delivered named message queued when the wait began, or, if none was queued, a look with nothing present. (Revision 5 said "picked again at that event"; implementation package 4 found that nothing can change the queue between the start and the end of this wait, because an offer replaces or overflows a queue at its publication, the deliveries of an instant run between the steps of activations and no activation runs before that event, so the two rules cannot be told apart and the simpler one is kept: decision A8.) Every look clears the pending wake: one look serves all writes made while the machine was busy.
 4. Otherwise S waits without the lock until one of:
    - **a timer of a level of S runs out** (phase 1): a look;
    - **a message of a member named at S is delivered** (phase 2): a look with it;
@@ -1258,7 +1258,7 @@ Removed:    OperationBody's 'initial' Name ';' State+ alternative; State with 'f
 | SIF-R02 | A look: levels outermost first, items in written order; present event lines and every statement run; ends at the first leave (3.3). |
 | SIF-R03 | Present: at most one message; every timer that has run out when the look starts and was not present before, once per arrival of its level (3.3). |
 | SIF-R04 | A look reads values as they are when it runs (WP6-R03) (3.3). |
-| SIF-R05 | Waiting: on beginning to wait, timers first, then drop, then a queued named message (re-picked) or a pending wake in zero time; then timer (phase 1), delivery (phase 2) and wake looks (3.5). |
+| SIF-R05 | Waiting: on beginning to wait, timers first, then drop, then a queued named message (picked when the wait begins, decision A8) or a pending wake in zero time; then timer (phase 1), delivery (phase 2) and wake looks (3.5). |
 | SIF-R06 | Inputs: the regimes of 3.6, with the reasons `inactiveOwner`, `noEnabledTransition`, `leftBeforeLine`. |
 | SIF-R07 | Wakes (waiting machines): writes of the read set by another activation of the occurrence at its unlock (borrowed calls at every unlock), sample-cell updates; pending wakes while busy (3.7). |
 | SIF-R08 | Own writes: a line's write to a value read by a statement before it in the look makes one re-look; waiting machines only (3.8). |
