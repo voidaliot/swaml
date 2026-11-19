@@ -15,3 +15,4 @@ showcase/.vite/
 src/language/standard-library.ts
 src/migrate/grammar-2-2.ts
 showcase/public/downloads/
+showcase/public/spec/
