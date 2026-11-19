@@ -2,6 +2,57 @@
  "recordedWith": "3.1.0 at 213f583, untilNs 80 ms",
  "results": [
   {
+   "file": "c3-component-order-7129.swaml",
+   "target": "Fz",
+   "status": "quiescent",
+   "stores": {
+    "mm": {
+     "n": 0,
+     "m": 3,
+     "k": 26
+    },
+    "d": {
+     "got": 9117
+    }
+   },
+   "order": [
+    "0 publish d.q.c",
+    "0 publish d.q.b",
+    "0 publish mm.o.res",
+    "0 publish d.q.a",
+    "0 publish d.q.c",
+    "0 publish d.q.a",
+    "0 discardInput mm.run",
+    "0 publish mm.o.res",
+    "0 write d.got",
+    "0 write mm.k",
+    "0 write d.got",
+    "0 write mm.m",
+    "0 publish mm.o.res",
+    "0 publish mm.o.res",
+    "0 write d.got",
+    "0 write d.got",
+    "0 discardInput mm.run",
+    "0 discardInput mm.run",
+    "1000000 publish mm.o.res",
+    "1000000 publish d.q.b",
+    "1000000 write mm.k",
+    "1000000 write mm.m",
+    "1000000 write d.got",
+    "1000000 write mm.k",
+    "1000000 write mm.m",
+    "1000000 publish mm.o.res",
+    "1000000 write d.got",
+    "1000000 publish mm.o.res",
+    "1000000 write d.got",
+    "1000000 publish mm.o.res",
+    "1000000 discardInput i.b",
+    "1000000 write d.got",
+    "9000000 publish d.q.a",
+    "9000000 discardInput i.a"
+   ]
+  },
+  {
    "file": "c3-if-test-not-a-step.swaml",
    "target": "Ifs",
    "status": "quiescent",
@@ -18,6 +69,58 @@
     "0 publish mm.o.res",
     "0 write d.got",
     "0 write mm.n"
+   ]
+  },
+  {
+   "file": "c3-store-5299.swaml",
+   "target": "Fz",
+   "status": "quiescent",
+   "stores": {
+    "mm": {
+     "n": 4,
+     "m": 10,
+     "k": 7
+    },
+    "d": {
+     "got": 3127
+    }
+   },
+   "order": [
+    "0 publish d.q.a",
+    "0 publish d.q.b",
+    "0 write mm.n",
+    "0 publish d.q.c",
+    "0 write mm.k",
+    "0 publish mm.o.res",
+    "0 publish mm.o.res",
+    "0 write d.got",
+    "0 write mm.m",
+    "0 write d.got",
+    "3000000 write mm.j",
+    "3000000 write mm.n",
+    "4000000 publish mm.o.res",
+    "4000000 write d.got",
+    "5000000 write mm.m",
+    "5000000 publish d.q.c",
+    "5000000 publish mm.o.res",
+    "5000000 publish d.q.a",
+    "5000000 discardInput i.a",
+    "5000000 publish d.q.b",
+    "5000000 discardInput i.b",
+    "5000000 publish d.q.c",
+    "5000000 publish d.q.c",
+    "5000000 write mm.k",
+    "5000000 publish mm.o.res",
+    "5000000 write d.got",
+    "5000000 publish mm.o.res",
+    "5000000 discardInput i.c",
+    "5000000 write d.got",
+    "5000000 write d.got",
+    "6000000 write mm.j",
+    "6000000 write mm.n",
+    "9000000 write mm.j",
+    "9000000 write mm.n",
+    "12000000 write mm.j"
    ]
   },
   {

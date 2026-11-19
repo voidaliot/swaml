@@ -21,8 +21,9 @@
 // (source) is mapped to its 2.2 identity through the identity map. The one accepted difference is r10 (gate C): input for
 // two members queued while the machine is busy is served in delivery order; its final store is listed in the baseline.
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { canonicalJson, comparedTrace, containsMachine, execute, fixtureDirectory, loader, recordedSource, root, sha256, sourceSha256, subjectsOf } from './compatibility-2-2.mjs';
 import { SETS } from './compatibility-2-2-extended.mjs';
 import { migrateSource, migrationTools } from './migrate-machines.mjs';
@@ -190,15 +191,22 @@ async function check() {
 }
 
 /**
- * The accepted behaviour changes of the migration, each pinned by one model (test/fixtures/compatibility-2-2/accepted):
- * its 3.1.0 result (recorded-2.2.json, recorded once from 213f583) and its result now (expected-2.3.json). The gate fails
- * when a model's result now is not the pinned one, or no longer differs from 2.2 as described, so the difference stays
- * visible: r10 (owned input looked at in delivery order, which also decides what is dropped) changes the final store; C-3
- * (an if test in a migrated block is no scheduling step) changes only the order across components.
+ * The accepted behaviour changes of the migration, pinned by models (test/fixtures/compatibility-2-2/accepted): the list
+ * accepted.json names each model and the kind of difference it shows; recorded-2.2.json holds its 3.1.0 result (recorded
+ * from 213f583) and expected-2.3.json its result now. The gate fails when the models in the directory, the list and the two
+ * result files are not the same set, when a result now is not the pinned one, or when a model no longer differs from 2.2 as
+ * its kind says (review 5 N7): stores (the final store differs), componentOrder (stores equal, the order of observations of
+ * some component differs) or globalOrder (stores and every component's order equal, the order across components differs).
+ * r10 (owned input looked at in delivery order, which also decides what is dropped) and C-3 (an if test in a migrated block
+ * is no scheduling step, which moves a publish before or after a state change) are pinned so.
  */
-export async function acceptedDifferences({ write = false } = {}) {
-    const dir = join(root, 'test', 'fixtures', 'compatibility-2-2', 'accepted'), tools = await migrationTools(), failures = [], now = [];
+export async function acceptedDifferences({ write = false, dir = join(root, 'test', 'fixtures', 'compatibility-2-2', 'accepted') } = {}) {
+    const tools = await migrationTools(), failures = [], now = [];
+    const list = JSON.parse(readFileSync(join(dir, 'accepted.json'), 'utf8')).models;
     const recorded = JSON.parse(readFileSync(join(dir, 'recorded-2.2.json'), 'utf8')).results;
+    const files = readdirSync(dir).filter(f => f.endsWith('.swaml')).sort(), named = list.map(m => m.file).sort();
+    if (canonicalJson(files) !== canonicalJson(named) || canonicalJson(recorded.map(r => r.file).sort()) !== canonicalJson(named))
+        failures.push(`accepted: the models ${canonicalJson(files)}, the list ${canonicalJson(named)} and the recorded results ${canonicalJson(recorded.map(r => r.file).sort())} differ`);
     const { EmptyFileSystem } = await import('langium');
     const { parseHelper } = await import('langium/test');
     const { createSwamlServices } = await import(new URL('../out/src/language/swaml-module.js', import.meta.url).href);
@@ -214,27 +222,35 @@ export async function acceptedDifferences({ write = false } = {}) {
     if (write)
         writeFileSync(expectedFile, JSON.stringify({ results: now }, null, 1) + '\n');
     const expected = JSON.parse(readFileSync(expectedFile, 'utf8')).results;
-    for (const [i, r] of now.entries()) {
-        if (canonicalJson(r) !== canonicalJson(expected[i]))
+    if (canonicalJson(expected.map(r => r.file).sort()) !== canonicalJson(named))
+        failures.push('accepted: expected-2.3.json does not hold exactly the listed models');
+    const perComponent = order => { const by = {}; for (const line of order) (by[line.split(' ')[2].split('.')[0]] ??= []).push(line); return canonicalJson(Object.entries(by).sort()); };
+    for (const r of now) {
+        const pinned = expected.find(x => x.file === r.file), old = recorded.find(x => x.file === r.file), kind = list.find(m => m.file === r.file)?.kind;
+        if (!pinned || canonicalJson(r) !== canonicalJson(pinned))
             failures.push(`accepted ${r.file}: the result is not the pinned one`);
-        const old = recorded[i], storesDiffer = canonicalJson(old.stores) !== canonicalJson(r.stores), orderDiffers = canonicalJson(old.order) !== canonicalJson(r.order);
-        if (r.file.startsWith('r10') ? !storesDiffer : storesDiffer || !orderDiffers)
-            failures.push(`accepted ${r.file}: no longer differs from 2.2 as described`);
+        const stores = canonicalJson(old.stores) !== canonicalJson(r.stores), component = perComponent(old.order) !== perComponent(r.order), global = canonicalJson(old.order) !== canonicalJson(r.order);
+        const shows = { stores, componentOrder: !stores && component, globalOrder: !stores && !component && global }[kind];
+        if (!shows)
+            failures.push(`accepted ${r.file}: no longer differs from 2.2 as its kind ${kind} says`);
     }
-    return { failures, report: `Accepted differences of the migration, pinned: ${now.map(r => r.file).join(', ')}.` };
+    return { failures, report: `Accepted differences of the migration, pinned: ${list.map(m => `${m.file} (${m.kind})`).join(', ')}.` };
 }
 
-if (process.argv[2] === 'record')
-    console.log(await record());
-else if (process.argv[2] === 'pin-accepted')
-    console.log((await acceptedDifferences({ write: true })).report);
-else {
-    const { failures, report } = await check();
-    const pinned = await acceptedDifferences();
-    failures.push(...pinned.failures);
-    console.log(report + '\n' + pinned.report);
-    if (failures.length) {
-        console.error(failures.join('\n'));
-        process.exitCode = 1;
+// Run as a script only, so that tests can import acceptedDifferences.
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+    if (process.argv[2] === 'record')
+        console.log(await record());
+    else if (process.argv[2] === 'pin-accepted')
+        console.log((await acceptedDifferences({ write: true })).report);
+    else {
+        const { failures, report } = await check();
+        const pinned = await acceptedDifferences();
+        failures.push(...pinned.failures);
+        console.log(report + '\n' + pinned.report);
+        if (failures.length) {
+            console.error(failures.join('\n'));
+            process.exitCode = 1;
+        }
     }
 }

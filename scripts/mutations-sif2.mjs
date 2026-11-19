@@ -99,12 +99,22 @@ const MUTATIONS = [
     ['R1-G1', 'gate A excludes every source that mentions state or schedule (review 1 G1)', GATE, 'cache.set(text, !parsed.errors && containsMachine(parsed.ast));', "cache.set(text, !parsed.errors && containsMachine(parsed.ast) || /\\b(state|schedule)\\b/.test(text));"],
     ['R1-G2', 'gate 1 excludes every source (review 1 G2)', GATE, 'if (!old.errors && containsMachine(old.ast))', 'if (true)'],
     ['R1-G3', 'extended sets exclude every model with a schedule (review 1 G3)', EXT, '.models.filter(m => hasMachine(m.text)).map(m => m.name)', ".models.filter(m => hasMachine(m.text) || m.text.includes('schedule')).map(m => m.name)"],
+    ['R5-N1', 'migrator: a binding written before . renamed instead of refused (review 5 N1)', MIG, 'if (qualifies(written, x))', 'if (false)'],
+    ['R5-N1b', 'migrator: renames inside quoted names (review 5 N1)', MIG, String.raw`|'(?:[^'\\\n]|\\.)*'|\/\/`, String.raw`|\/\/`],
+    ['R5-N4', 'a failed periodic machine keeps its input (review 5 N4)', SIM, ' && !this.periodicMachines.get(`${c.path}.${flowOwner.name}`)?.done)', ')'],
+    ['R5-N5', 'stale read: a parent var not evaluated again in an inner look (review 5 N5)', 'out/src/language/stale-read.js', 'for (const v of parentLocals)', 'for (const v of [])'],
+    ['R5-N7a', 'gate B: the accepted list not compared with the directory (review 5 N7)', 'scripts/compatibility-machines.mjs', 'if (canonicalJson(files) !== canonicalJson(named) ||', 'if (false &&'],
+    ['R5-N7b', 'gate B: an accepted model\'s kind not checked (review 5 N7)', 'scripts/compatibility-machines.mjs', 'if (!shows)', 'if (false)'],
     ['E9', 'deadline measured once from the dispatch, not per release', SIM, "            // The deadline is per release, from the release (SIF-R15).\n            if (deadline)", "            // The deadline is per release, from the release (SIF-R15).\n            if (false)"],
 ];
 const run = (command, args) => { try { execFileSync(command, args, { cwd: root, stdio: 'pipe', encoding: 'utf8', timeout: 1500000 }); return true; } catch { return false; } };
 const node = args => run(process.execPath, args);
 const statesTests = readdirSync(join(root, 'out/test/v2')).filter(f => /^states-.*\.test\.js$/.test(f)).map(f => `out/test/v2/${f}`);
-const suites = id => id.startsWith('R1-G')
+const suites = id => id.startsWith('R5-N7')
+    ? [['gate C test', ['--test', 'test/ci/accepted-differences.test.mjs']]]
+    : id.startsWith('R5-N1')
+    ? [['migrator tests', ['--test', 'test/ci/migrate-machines.test.mjs']]]
+    : id.startsWith('R1-G')
     ? [['gate 1 unit test', ['--test', 'out/test/v2/compatibility-2-2.test.js']], ['gate 2', ['scripts/compatibility-2-2.mjs', 'runs']], ['extended sets', ['scripts/compatibility-2-2-extended.mjs']]]
     : id.startsWith('R1-M')
     ? [['migrator tests', ['--test', 'test/ci/migrate-machines.test.mjs']]]
