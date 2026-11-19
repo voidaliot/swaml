@@ -1360,7 +1360,7 @@ export class SwamlValidator {
                     }
             const flow = flowStates(op).length > 0;
             if (flow)
-                this.flowEntry(op, e, entries);
+                this.flowEntry(op, e, entries, c);
             if (!flow && e.concurrent && effects(op, c).writes)
                 this.report(e, 'SW2006', 'Concurrent entries cannot write state through any callee or be stateful.');
             if (e.kind === 'every' && e.deadline && e.period && nanos(e.deadline) > nanos(e.period))
@@ -1387,7 +1387,7 @@ export class SwamlValidator {
      * SIF-S01 for one schedule entry of an operation with states (SIF-D01): exactly one effective entry, on start or on
      * every, never concurrent. The other entry kinds get a message that says how to write what they mean.
      */
-    private flowEntry(op: Executable, e: a.ScheduleEntry, entries: readonly a.ScheduleEntry[]): void {
+    private flowEntry(op: Executable, e: a.ScheduleEntry, entries: readonly a.ScheduleEntry[], c: Structure): void {
         const name = formatName(op.name, MESSAGE_SPELLING), keeps = `${name} contains states, so it keeps its place`, released = `${keeps} and can only be released by one on start or one on every entry.`;
         if (e.kind === 'receive')
             this.report(e, 'SW2008', `${released} To react to ${formatPath(e.endpoint ?? '', MESSAGE_SPELLING)}, write on receive ${formatPath(e.endpoint ?? '', MESSAGE_SPELLING)}(…) { … } in its states.`);
@@ -1395,8 +1395,18 @@ export class SwamlValidator {
             this.report(e, 'SW2008', `${released} To start after ${formatName(e.predecessor ?? '', MESSAGE_SPELLING)}, release ${name} on start and let its first state wait for a value that ${formatName(e.predecessor ?? '', MESSAGE_SPELLING)} sets.`);
         else if (e.kind === 'call')
             this.report(e, 'SW2008', `${released} An operation with states cannot answer calls; answer in a plain operation and let it set an attribute that a state reads.`);
-        else if (e.concurrent || entries.filter(x => x.operation === op.name).length !== 1)
+        else if (e.concurrent)
             this.report(e, 'SW2008', `${keeps} and needs exactly one on start or one on every entry, not concurrent (SIF-S01).`);
+        else {
+            // Schedules accumulate: a derived definition that writes an entry for an inherited machine gives it a second one.
+            // Reported at the entry written in the definition being checked, naming it and the inherited entry (review 4 P6).
+            const all = entries.filter(x => x.operation === op.name), here = (x: a.ScheduleEntry) => owner(x, a.isSchedule)?.$container === c;
+            const inherited = all.filter(x => !here(x));
+            if (all.length !== 1 && here(e))
+                this.report(e, 'SW2008', inherited.length && c.name !== undefined
+                    ? `${keeps} and needs exactly one on start or one on every entry; ${formatName(c.name, MESSAGE_SPELLING)} adds ${e.$cstNode?.text.trim().replace(/;$/, '')} to the inherited ${inherited[0].$cstNode?.text.trim().replace(/;$/, '')}: the entry of an inherited machine cannot be changed (SIF-S01).`
+                    : `${keeps} and needs exactly one on start or one on every entry, not concurrent (SIF-S01).`);
+        }
     }
     /** SIF-S01 (parameterless void, no plain receive statement) and SIF-S02 (state names unique in the operation): SIF-D01, SIF-D03. */
     private flowOperation(op: Executable, b: a.OperationBody): void {

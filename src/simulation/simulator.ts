@@ -219,6 +219,8 @@ type Frame = {
     held?: boolean;
     /** The outermost state the flow left last into plain flow: a completed machine reports it (SIF-R13). */
     lastState?: string;
+    /** A false release guard of a periodic machine, recorded as skip after the unlock of its wait (WP7-T01). */
+    skipNote?: Record<string, unknown>;
 };
 /** The state levels of an operation with states: each entered state, outermost first (SIF-R01, SIF-R11). */
 type FlowLevel = {
@@ -852,7 +854,10 @@ class Interpreter {
         // and never completed; every later release resumes it for one look (or the skip of a false release guard).
         const persistent = entry.kind === 'every' && flowStates(op).length > 0, label = `${c.path}.${op.name}`;
         const machine = persistent ? this.periodicMachines.get(label) : undefined;
-        if (machine && !machine.done) {
+        // SIF-R17: a periodic machine that failed has ended, like a waiting machine: later releases do nothing.
+        if (machine?.done)
+            return;
+        if (machine) {
             const p = machine.periodic!, seq = ++p.seq, deadline = this.releaseDeadline(c, entry);
             this.log('release', label, { activation: machine.id, source: this.source(entry), cause: entry.kind, release: seq, ...(machine.key ? { task: machine.key.task } : {}) });
             // The deadline is per release, from the release (SIF-R15).
@@ -1013,6 +1018,10 @@ class Interpreter {
             f.waiting = y;
             f.suspended = true;
             this.unlock(f);
+            if (f.skipNote) {
+                this.log('skip', this.label(f), f.skipNote);
+                f.skipNote = undefined;
+            }
             this.leaveCore(f);
             const token = ++f.token;
             // A computed wait or receive timeout records its evaluated value; literal ones add nothing (WP4-T01).
@@ -1619,7 +1628,7 @@ class Interpreter {
             // SIF-R16: in a periodic machine, the state reached is entered as usual; reached a second time in this release
             // (the state current at the release counts), its arrival is held: no arrival look, and the release ends there.
             let held = false;
-            if (f.reached && !queue.length && !innerStates(s).length && this.hasSomething(levels)) {
+            if (f.reached && !queue.length && !innerStates(s).length) {
                 held = f.reached.has(s);
                 f.reached.add(s);
                 f.held = held;
@@ -1906,8 +1915,9 @@ class Interpreter {
         f.at = f.entry;
         const holds = (yield* this.evaluate(f.entry.guard, f, new Map())).data === true;
         f.at = at;
+        // The skip is recorded after the activation's unlock, as for every entry (WP7-T01): drive() records it.
         if (!holds)
-            this.log('skip', this.label(f), { activation: f.id, source: this.source(f.entry), release: f.periodic!.seq });
+            f.skipNote = { activation: f.id, source: this.source(f.entry), release: f.periodic!.seq };
         return holds;
     }
     /**

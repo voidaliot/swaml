@@ -155,6 +155,18 @@ test('reading sample 10: the supply monitor every 50 ms; the arrival look counts
     assert.deepEqual(changes('supplyStates.undervoltage'), ['200ms true', '300ms false']);
 });
 
+test('gate F (heater bench, review 4 P2): the periodic heater ends heating at the instant of the flag code after 10 minutes', async () => {
+    const text = readFileSync(new URL('p6-heater-supply.swaml', fixtures), 'utf8');
+    const r = (await cases(text, 'file:///p6-heater-supply.swaml', { maxSteps: 5_000_000, untilNs: 700_000_000_000 }, 'HeaterSupply::Heater limit and toggles')).get('Heater limit and toggles');
+    pass(r, 'Heater limit and toggles');
+    const observed = (c: string) => trace(r).filter(e => e.kind === 'send' && e.subject === `${c}.drive.heaterPercent` || e.kind === 'write' && e.subject === `${c}.heating`).map(e => `${ms(e)}ms ${e.kind} ${JSON.stringify(e.value ?? e.args)}`);
+    // Switched on at the release at 300 ms (the off and on requests at 1.25 s and 1.28 s fall between two releases): the flag
+    // code's 6000th count is at 300 ms + 5999 periods = 600.2 s, and the state's after 599900ms (6000 - 1 periods from the
+    // arrival) is looked at at that same release; after 600s was looked at one period later, at 600.3 s.
+    assert.deepEqual(observed('heaterStates'), observed('heater'));
+    assert.ok(observed('heater').includes('600200ms write false'), observed('heater').join('\n'));
+});
+
 test('SIF-R08 a periodic machine sees its own line\'s write at the next release, never in a second look of the same release (kills D7)', async () => {
     const r = await fixture('p7-own-writes.swaml', 'OwnWrites::Periodic sees its write at the next release');
     const c = r.get('Periodic sees its write at the next release');
@@ -287,6 +299,85 @@ test('SIF-S01 an operation with states may be released on every; an event line o
     assert.ok(concurrent.diagnostics.some(d => d.severity === 1 && String(d.message).includes('not concurrent (SIF-S01)')));
 });
 
+// ---------------------------------------------------------------- review 4: message taking, failure, bound, skip order, P6
+
+test('SIF-R03 SIF-R15 a release look that leaves before the message\'s line leaves it queued for the state reached, as a waiting machine does (review 4 P1)', async () => {
+    const r = await fixture('r4-release-message.swaml');
+    const c = r.get('T')!;
+    assert.deepEqual(['lose', 'losew', 'timer', 'timerw'].map(x => (c.run!.stores[x] as Record<string, unknown>).got), [107, 107, 105, 105]);
+    assert.ok(!trace(c).some(e => e.kind === 'discardInput'), 'nothing is lost');
+});
+
+test('SIF-R17 a periodic machine that fails ends: the failure is reported, later releases do nothing, on exit does not run (review 4 P4, kills R8)', async () => {
+    const r = await fixture('r4-failing-periodic.swaml');
+    const c = r.get('T')!;
+    assert.equal(c.result, 'fail');
+    const failure = trace(c).find(e => e.kind === 'failure' && e.subject === 'h.step')!;
+    assert.equal(ms(failure), 30);
+    // No release of the machine after its failure, no second activation.
+    assert.deepEqual(trace(c).filter(e => e.kind === 'release' && e.subject === 'h.step' && e.timeNs > failure.timeNs), []);
+    assert.equal(new Set(trace(c).filter(e => e.subject === 'h.step' && e.activation).map(e => e.activation)).size, 1);
+    // Like a waiting machine that fails: no on exit, the last state reported, not live.
+    assert.equal((c.run!.stores['h'] as Record<string, unknown>).heating, true);
+    assert.deepEqual(c.run!.machines['h.step'], { state: 'active', live: false });
+});
+
+test('SIF-R16 a named step counts for the bound within one release: a pulse in while (true) runs once per release (review 4 P5)', async () => {
+    const r = await one(`step() {
+      while (true) {
+        state pulse { on entry { x = x + 1; } }
+      }
+    }`, 'wait 45ms; assert m.x == 5;');
+    pass(r, 'one pulse per release');
+    assert.ok(!trace(r).some(e => e.kind === 'violation'));
+    assert.deepEqual(states(r, 'm.step').slice(0, 3), ['10ms state pulse', '10ms state pulse held', '20ms state pulse held']);
+});
+
+test('SIF-R17 after a periodic end machines has no state until the next release reaches one (kills review 4 R5)', async () => {
+    const r = await one('step() { state s { if (true) exit; } }', 'wait 15ms;');
+    assert.ok(trace(r).some(e => e.kind === 'periodicEnd'));
+    assert.deepEqual(r.run!.machines['m.step'], { state: '', live: true });
+});
+
+test('WP7-T01 a false release guard of a periodic machine is a skip that follows its unlock, as for a plain entry (review 4 P7)', async () => {
+    const r = (await cases(`package R {
+  component def G {
+    attribute ok: bool = false;
+    attribute x: uint = 0;
+    operation step() { state s { x = x + 1; } }
+    operation plain() { x = x + 1; }
+    schedule { on every 10ms step() if (ok); on every 10ms plain() if (ok); }
+  }
+  component g: G;
+  test 'T' of g { wait 25ms; }
+}`)).get('T')!;
+    const at10 = trace(r).filter(e => e.timeNs === 10e6 && (e.subject === 'g.step' || e.subject === 'g' && e.activation === trace(r).find(x => x.kind === 'release' && x.subject === 'g.step')!.activation)).map(e => e.kind);
+    assert.deepEqual(at10.filter(k => ['unlock', 'skip', 'receiveWait'].includes(k)), ['unlock', 'skip', 'receiveWait']);
+});
+
+test('SIF-S01 a derived definition cannot change the entry of an inherited machine: one error, at the derived entry, naming it (review 4 P6)', async () => {
+    const { diagnostics } = await load(`package R {
+  component def Base {
+    attribute x: uint = 0;
+    operation step() { state s { x = x + 1; if (x > 2) exit; } state t { x = x + 10; } }
+    schedule { on every 10ms step(); }
+  }
+  component def D specializes Base {
+    schedule { on every 20ms step(); }
+  }
+  component d: D;
+  component b: Base;
+}`, 'file:///p6.swaml');
+    assert.deepEqual(diagnostics.filter(d => d.severity === 1).map(d => [d.line, d.message]), [[8, 'step contains states, so it keeps its place and needs exactly one on start or one on every entry; D adds on every 20ms step() to the inherited on every 10ms step(): the entry of an inherited machine cannot be changed (SIF-S01).']]);
+});
+
+test('T4 a periodic machine that calls a suspending helper or makes a request needs an extended Task (kills review 4 R12, R13)', async () => {
+    for (const [file, site] of [['r4-t4-phelper.swaml', 'helper()'], ['r4-t4-preq.swaml', 'x = q.get()']]) {
+        const { diagnostics } = await load(readFileSync(new URL(file, fixtures), 'utf8'), `file:///${file}`);
+        assert.deepEqual(diagnostics.filter(d => d.severity === 1).map(d => d.message), [`on every 10ms step of m may suspend in ${site} and needs an extended task; ecu.t is basic.`], file);
+    }
+});
+
 test('T4 (section 9): a waiting machine needs an extended Task; a periodic machine may use a basic Task unless something it runs can suspend', async () => {
     const platform = (op: string, entry: string, task: string) => `package T4 {
   import Swaml::Platform;
@@ -317,7 +408,7 @@ test('T4 (section 9): a waiting machine needs an extended Task; a periodic machi
 
 // ---------------------------------------------------------------- Timing projection (4.6)
 
-test('4.6 the Timing projection of a periodic machine: one interval per release, idle between releases, a state band per arrival, skips and the end as markers', async () => {
+test('4.6 the Timing projection of a periodic machine: the phases of each release with its number, idle between releases, a state band per arrival, passed states, skips and the end as markers (review 4 P8)', async () => {
     const r = await one(`step() {
       var n: uint = 0;
       state s {
@@ -329,12 +420,18 @@ test('4.6 the Timing projection of a periodic machine: one interval per release,
     const timing = projectOperationTiming(r.run!);
     const machine = timing.intervals.filter(i => i.subject === 'm.step');
     assert.ok(machine.length >= 5);
-    assert.ok(machine.every(i => i.phase === 'release' && typeof i.release === 'number' && i.endNs !== undefined && i.endNs <= i.startNs + 1e7), 'one interval per release, closed before the next');
-    assert.deepEqual(machine.map(i => i.release), machine.map((_, i) => i + 1));
+    // Each release: release (waiting for the lock or Core), then dispatch (the first) or ready (later ones): running.
+    assert.ok(machine.every(i => ['release', 'dispatch', 'ready'].includes(i.phase) && typeof i.release === 'number' && i.endNs !== undefined && i.endNs <= i.startNs + 1e7), 'phases of a release, closed before the next');
+    const releases = [...new Set(machine.map(i => i.release))];
+    assert.deepEqual(releases, releases.map((_, i) => i + 1));
+    assert.deepEqual(machine.filter(i => i.release === 1).map(i => i.phase), ['release', 'dispatch']);
+    assert.deepEqual(machine.filter(i => i.release === 2).map(i => i.phase), ['release', 'ready']);
     const bands = (timing.states ?? []).filter(b => b.subject === 'm.step').map(b => `${b.state} ${b.startNs / 1e6}-${(b.endNs ?? NaN) / 1e6}`);
     // s from 10 ms; at 20 ms s leaves for t, which leaves too: the end closes the band; 30 ms starts again.
     assert.deepEqual(bands.slice(0, 3), ['s 10-20', 't 20-20', 's 30-40']);
     assert.ok(timing.markers.some(e => e.kind === 'periodicEnd'));
+    // t is passed through at 20 ms (a zero-width band): its arrival is a marker.
+    assert.ok(timing.markers.some(e => e.kind === 'state' && e.state === 't' && e.timeNs === 20e6));
 });
 
 // ---------------------------------------------------------------- gate F
