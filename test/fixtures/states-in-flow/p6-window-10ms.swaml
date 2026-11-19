@@ -1,0 +1,96 @@
+package Window10ms {
+  /** Reading sample 9, the periodic window controller released on every 10ms with a release guard (WP7, spelled if) and a 2 ms deadline. Each test is one question of the sample. */
+  enum MotorDirection { stop, up, down }
+  enum SwitchPos { neutral, up, down }
+  port def SwitchIn {
+    provides attribute position: SwitchPos = SwitchPos.neutral;
+  }
+  port def MotorSense {
+    provides attribute current: uint = 0;
+  }
+  port def Supply {
+    provides attribute ok: bool = true;
+  }
+  port def MotorOut {
+    provides attribute drive: MotorDirection;
+  }
+  component def WindowController {
+    reversed port switch: SwitchIn;
+    reversed port sense: MotorSense;
+    reversed port supply: Supply;
+    port motor: MotorOut;
+    const attribute pinchLimit: uint = 4500;
+    const attribute fullTravel: uint = 400;
+    attribute travel: uint = 0;
+    operation step() {
+      state idle {
+        on entry { send motor.drive(MotorDirection.stop); }
+        if (switch.position == SwitchPos.up and travel < fullTravel) { exit; }
+        if (switch.position == SwitchPos.down and travel > 0) { to opening; }
+      }
+      state closing {
+        on entry { send motor.drive(MotorDirection.up); }
+        if (sense.current > pinchLimit) { to reversing; }
+        if (switch.position != SwitchPos.up or travel >= fullTravel) { to idle; }
+        after 8s { to idle; }
+        travel = travel + 1;
+      }
+      state opening {
+        on entry { send motor.drive(MotorDirection.down); }
+        if (switch.position != SwitchPos.down or travel == 0) { to idle; }
+        travel = travel - 1;
+      }
+      state reversing {
+        on entry { send motor.drive(MotorDirection.down); }
+        after 400ms { to idle; }
+        if (travel > 0) { travel = travel - 1; }
+      }
+    }
+    schedule {
+      on every 10ms step() if (supply.ok) deadline 2ms;
+    }
+  }
+  component def Bench {
+    port switch: SwitchIn;
+    port sense: MotorSense;
+    port supply: Supply;
+    reversed port motor: MotorOut;
+  }
+  component controller: WindowController;
+  component bench: Bench;
+  connect (bench.switch, controller.switch);
+  connect (bench.sense, controller.sense);
+  connect (bench.supply, controller.supply);
+  connect (controller.motor, bench.motor);
+  associate bench to 'Q1 to Q3 switch up at 25 ms, neutral at 95 ms', 'Q4 pinch and neutral at one release', 'Q5 guard false while reversing';
+  test 'Q1 to Q3 switch up at 25 ms, neutral at 95 ms' of controller {
+    wait 25ms;
+    send bench.switch.position(SwitchPos.up);
+    wait 70ms;
+    send bench.switch.position(SwitchPos.neutral);
+    wait 20ms;
+    assert controller.travel == 7;
+  }
+  test 'Q4 pinch and neutral at one release' of controller {
+    wait 25ms;
+    send bench.switch.position(SwitchPos.up);
+    wait 50ms;
+    send bench.sense.current(5000);
+    send bench.switch.position(SwitchPos.neutral);
+    wait 10ms;
+  }
+  test 'Q5 guard false while reversing' of controller {
+    wait 25ms;
+    send bench.switch.position(SwitchPos.up);
+    wait 120ms;
+    send bench.sense.current(5000);
+    send bench.switch.position(SwitchPos.neutral);
+    wait 5ms;
+    send bench.sense.current(0);
+    wait 345ms;
+    send bench.supply.ok(false);
+    wait 110ms;
+    send bench.supply.ok(true);
+    wait 30ms;
+  }
+}

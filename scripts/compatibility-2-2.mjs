@@ -17,6 +17,11 @@
 // counts and the SHA-256 of the canonical JSON trace (UTF-8, object keys sorted, no whitespace), with
 // `profile` and `languageVersion` removed.
 //
+// States in the flow (docs/proposals/STATES_IN_FLOW_PROPOSAL.md 7.4): these gates are gate A, the 2.2 sources without a
+// 2.2 state machine. A recorded source whose 2.2 AST holds a machine (an OperationBody with states, containsMachine) is
+// excluded from every comparison here and named in the report: 2.3 no longer parses the 2.2 machine syntax, and gate B
+// (scripts/compatibility-machines.mjs) runs those sources after migration instead. The recorded fixtures are unchanged.
+//
 // Recorded sources: a fixture names the SHA-256 of every source it was recorded from. A gate always checks
 // the recorded source. When a later package deliberately changes such a file, it keeps the recorded bytes
 // at test/fixtures/compatibility-2-2/sources/<path>, where the gates look first; otherwise the gate fails.
@@ -28,6 +33,18 @@ import { fileURLToPath } from 'node:url';
 
 export const root = fileURLToPath(new URL('..', import.meta.url));
 export const fixtureDirectory = 'test/fixtures/compatibility-2-2';
+/**
+ * The exact sources and models the gates exclude because their 2.2 text holds a state machine (gate B runs them after
+ * migration), committed in excluded-machines.json: a gate that excludes anything else, or less, fails (review 1 G-1).
+ */
+export const pinnedExclusions = () => JSON.parse(readFileSync(join(root, ...fixtureDirectory.split('/'), 'excluded-machines.json'), 'utf8'));
+/** The failure when an exclusion list differs from its pinned list, or nothing. */
+export function exclusionFailure(gate, actual, pinned) {
+    const a = [...actual].sort(), p = [...pinned].sort();
+    if (JSON.stringify(a) === JSON.stringify(p))
+        return [];
+    return [`${gate}: excludes ${JSON.stringify(a.filter(x => !p.includes(x)))} beyond and misses ${JSON.stringify(p.filter(x => !a.includes(x)))} of the pinned exclusions (test/fixtures/compatibility-2-2/excluded-machines.json)`];
+}
 const fixturePath = path => join(root, ...fixtureDirectory.split('/'), ...path.split('/'));
 const read = path => readFileSync(join(root, ...path.split('/')), 'utf8');
 export const sha256 = text => createHash('sha256').update(text, 'utf8').digest('hex');
@@ -55,6 +72,29 @@ const missingSource = (path, expected) => `${path}: the recorded source (sha256 
     + 'A package that changes a recorded source keeps the recorded bytes there, so that the gate still checks them.';
 
 /** Every repository .swaml file (tracked or untracked, not ignored), except kept fixture sources. */
+/** True when a (normalized or raw) 2.2 AST contains a 2.2 state machine: an OperationBody with states. */
+export function containsMachine(node) {
+    for (const [key, value] of Object.entries(node ?? {})) {
+        if (key.startsWith('$'))
+            continue;
+        for (const child of Array.isArray(value) ? value : [value])
+            if (child && typeof child === 'object' && typeof child.$type === 'string' && (child.$type === 'OperationBody' && child.states?.length || containsMachine(child)))
+                return true;
+    }
+    return false;
+}
+/** A test for 2.2 sources with a machine, read with the kept 2.2 grammar (v22 of parsers()); a source it does not parse has none. */
+export function machineTest(v22) {
+    const cache = new Map();
+    return text => {
+        if (!cache.has(text)) {
+            const parsed = v22(text);
+            cache.set(text, !parsed.errors && containsMachine(parsed.ast));
+        }
+        return cache.get(text);
+    };
+}
+
 export function corpus() {
     const listed = execFileSync('git', ['-C', root, 'ls-files', '-co', '--exclude-standard', '--', '*.swaml'], { encoding: 'utf8' });
     return [...new Set(listed.split('\n').map(x => x.trim()).filter(Boolean))].filter(p => !p.startsWith(fixtureDirectory + '/')).sort();
@@ -406,7 +446,7 @@ export async function checkAst({ writeProjections } = {}) {
     const resolution = optional('resolution.json'), projection = optional('projection.json'), amendments = optional('amendments.json')?.amendments ?? [];
     const recordedFiles = { ...Object.fromEntries(Object.entries(resolution?.files ?? {}).map(([p, f]) => [p, { sourceSha256: f.sourceSha256, ...(f.skipped ? { skipped: f.skipped } : { astSha256: f.astSha256 }) }])), ...fixture.files };
     const { grammarSha256, v22, current } = await parsers();
-    const failures = [], skipped = new Map(), compared = new Set(), identical = new Set();
+    const failures = [], skipped = new Map(), compared = new Set(), identical = new Set(), excluded = new Set(), hasMachine = machineTest(v22);
     if (grammarSha256 !== fixture.grammarSha256)
         failures.push(`The kept 2.2 grammar changed: sha256 ${grammarSha256}, recorded ${fixture.grammarSha256}. The 2.2 grammar fixture is never edited.`);
     for (const [path, f] of Object.entries(fixture.files))
@@ -414,7 +454,10 @@ export async function checkAst({ writeProjections } = {}) {
             failures.push(`${path}: ast.json and resolution.json record different source or AST digests`);
     // label names the bytes compared: the workspace path, or the kept copy of a recorded source.
     const compare = (path, label, text, recorded) => {
-        const old = v22(text), now = current(text), before = failures.length;
+        const old = v22(text), before = failures.length;
+        if (!old.errors && containsMachine(old.ast))
+            return void excluded.add(path);
+        const now = current(text);
         compared.add(path);
         if (old.errors) {
             if (recorded && !recorded.skipped)
@@ -461,6 +504,8 @@ export async function checkAst({ writeProjections } = {}) {
             const source = recordedSource(path, recorded.sourceSha256);
             if (!source)
                 continue; // already reported as a missing recorded source
+            if (hasMachine(source.text))
+                continue; // gate B
             const differences = resolutionDifferences(path, recorded, await analyse(path, source.text), amendments);
             if (differences.length)
                 failures.push(`${source.from}: name resolution or validation differs from 3.1.0:\n    ${differences.join('\n    ')}`);
@@ -483,6 +528,8 @@ export async function checkAst({ writeProjections } = {}) {
                     failures.push(missingSource(path, recorded.sourceSha256));
                 continue;
             }
+            if (hasMachine(source.text))
+                continue; // gate B
             const actual = await project(path, source.text), differences = projectionDifferences(recorded, actual);
             if (writeProjections)
                 writeProjection(path, actual);
@@ -494,8 +541,10 @@ export async function checkAst({ writeProjections } = {}) {
     }
     const report = `Gate 1 (AST identity under N1): ${identical.size} sources identical to 2.2, ${skipped.size} skipped with 2.2 parse errors`
         + (skipped.size ? ` (${[...skipped.keys()].join(', ')})` : '') + `; ${resolved} sources keep the recorded references, diagnostics and expression types (${amendments.length} amendments); ${projected} keep their view projections; ${failures.length} differences.`
-        + (amendments.length ? '\nApplied amendments:\n' + amendmentReport(amendments) : '');
-    return { report, failures, compared: [...compared], skipped: [...skipped.keys()] };
+        + (amendments.length ? '\nApplied amendments:\n' + amendmentReport(amendments) : '')
+        + `\nExcluded (2.2 sources with a state machine; gate B runs them after migration): ${excluded.size}${excluded.size ? ` (${[...excluded].sort().join(', ')})` : ''}.`;
+    failures.push(...exclusionFailure('gate 1', excluded, pinnedExclusions().gate1));
+    return { report, failures, compared: [...compared], skipped: [...skipped.keys()], excluded: [...excluded] };
 }
 
 // ---------------------------------------------------------------- gate 2: behaviour identity
@@ -520,7 +569,7 @@ function caseSummary(result) {
     return run ? { fields: without(fields, IGNORED), ...runSummary(run) } : { fields: without(fields, IGNORED) };
 }
 
-async function loader() {
+export async function loader() {
     const { EmptyFileSystem } = await import('langium');
     const { parseHelper } = await import('langium/test');
     const { createSwamlServices } = await import('../out/src/language/swaml-module.js');
@@ -557,7 +606,7 @@ async function currentSubjects() {
 }
 
 /** Runs one subject and yields [id, summary, trace] for each result. */
-async function* execute(subject, text, load) {
+export async function* execute(subject, text, load) {
     const { runCase, eachTest, simulate } = await import('../out/src/simulation/simulator.js');
     const models = await load(subject.model, text);
     if (subject.tests) {
@@ -624,7 +673,7 @@ function summaryDifferences(expected, actual) {
 }
 
 /** A run entry is its own subject; the case entries of one model run together, as swaml test runs them. */
-function subjectsOf(entries) {
+export function subjectsOf(entries) {
     const subjects = new Map();
     for (const entry of entries) {
         const key = entry.kind === 'run' ? entry.id : `cases of ${entry.model}`;
@@ -684,11 +733,18 @@ export async function checkRuns({ writeTraces } = {}) {
         writeFileSync(file, JSON.stringify(trace, null, 1) + '\n');
         return file;
     };
-    const subjects = subjectsOf(fixture.entries);
+    const subjects = subjectsOf(fixture.entries), hasMachine = machineTest((await parsers()).v22), excluded = new Map();
+    let excludedSubjects = 0;
     for (const subject of subjects.values()) {
         const source = recordedSource(subject.model, fixture.sources[subject.model]);
         if (!source) {
             failures.push(missingSource(subject.model, fixture.sources[subject.model]));
+            continue;
+        }
+        if (hasMachine(source.text)) {
+            // Gate A covers 2.2 sources without machines; gate B (scripts/compatibility-machines.mjs) runs these after migration.
+            excluded.set(subject.model, (excluded.get(subject.model) ?? 0) + fixture.entries.filter(e => subject.tests ? e.kind === 'case' && e.model === subject.model : e.id === subject.id).length);
+            excludedSubjects++;
             continue;
         }
         try {
@@ -715,13 +771,19 @@ export async function checkRuns({ writeTraces } = {}) {
             failures.push(`${subject.id}: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
-    for (const id of recorded.keys())
-        if (!seen.has(id) && !failures.some(f => f.startsWith(id)))
+    for (const [id, entry] of recorded)
+        if (!seen.has(id) && !excluded.has(entry.model) && !failures.some(f => f.startsWith(id)))
             failures.push(`${id}: recorded in the 2.2 fixture but not produced by the current run`);
     const uncovered = (await currentSubjects()).filter(s => s.tests ? !fixture.sources[s.model] : !recorded.has(s.id));
-    const report = `Gate 2 (behaviour identity, ignoring ${IGNORED.join(' and ')}): ${seen.size} of ${recorded.size} recorded runs and cases rerun from ${subjects.size} subjects; ${failures.length} differences.`
+    const excludedCount = [...excluded.values()].reduce((n, k) => n + k, 0);
+    const report = `Gate 2 (behaviour identity, ignoring ${IGNORED.join(' and ')}): ${seen.size} of ${recorded.size - excludedCount} recorded runs and cases rerun from ${subjects.size - excludedSubjects} subjects; ${failures.length} differences.`
+        + ` Excluded, 2.2 sources with a state machine (gate B runs them after migration): ${excludedCount} results of ${excluded.size} models${excluded.size ? ` (${[...excluded.keys()].sort().join(', ')})` : ''}.`
         + (uncovered.length ? ` Not in the 2.2 fixture (not compared): ${uncovered.map(s => s.id).join(', ')}.` : '')
         + ` Recorded with ${fixture.recordedWith.implementation} at ${fixture.recordedWith.commit}.`;
+    const pinned = pinnedExclusions();
+    failures.push(...exclusionFailure('gate 2', excluded.keys(), pinned.gate2));
+    if (excludedCount !== pinned.gate2Results)
+        failures.push(`gate 2: excludes ${excludedCount} results, the pinned count is ${pinned.gate2Results}`);
     return { report, failures };
 }
 

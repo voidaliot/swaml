@@ -13,6 +13,12 @@
 // AST and, for runnable models, the run or case results with their trace digests. The current implementation
 // must reproduce all of it. A run that threw a host error in 3.1.0 is not compared and is listed.
 //
+// States in the flow (docs/proposals/STATES_IN_FLOW_PROPOSAL.md 7.4): this check is part of gate A, the 2.2 sources
+// without a 2.2 state machine. A model whose 2.2 AST (kept 2.2 grammar) holds a machine is excluded and named in the
+// report: valid ones are run after migration by gate B (scripts/compatibility-machines.mjs); invalid ones (recorded with
+// an error) are syntax errors in 2.3, which no longer parses the 2.2 machine syntax, and are listed as such. The
+// specification does not mention invalid 2.2 machine models; excluding and listing them is this script's decision.
+//
 //   node scripts/compatibility-2-2-extended.mjs                 check the current build (out/), every set
 //   node scripts/compatibility-2-2-extended.mjs record <root>   record the first set without a recording, once,
 //                                                               from a clean, built checkout of 213f583
@@ -23,7 +29,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { canonicalJson, normalizeAst, sourceSha256 } from './compatibility-2-2.mjs';
+import { canonicalJson, exclusionFailure, machineTest, normalizeAst, parsers, pinnedExclusions, sourceSha256 } from './compatibility-2-2.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const directory = join(root, 'test', 'fixtures', 'compatibility-2-2-extended');
@@ -58,7 +64,7 @@ const strip = trace => trace.map(({ profile: _p, languageVersion: _l, ...rest })
 const at = r => `${r.start.line + 1}:${r.start.character + 1}-${r.end.line + 1}:${r.end.character + 1}`;
 
 /** The observable 2.2 results of every model with the implementation built at buildRoot. */
-async function analyse(buildRoot, set) {
+async function analyse(buildRoot, set, skip = () => false) {
     const base = pathToFileURL(buildRoot.replace(/[\\/]?$/u, '/')).href;
     const { EmptyFileSystem } = await import(base + 'node_modules/langium/lib/index.js');
     const { parseHelper } = await import(base + 'node_modules/langium/lib/test/index.js');
@@ -66,6 +72,8 @@ async function analyse(buildRoot, set) {
     const { simulate, runCase } = await import(base + 'out/src/simulation/simulator.js');
     const models = JSON.parse(readFileSync(join(directory, set.models), 'utf8')).models, results = {};
     for (const [index, m] of models.entries()) {
+        if (skip(m))
+            continue;
         const { Swaml } = createSwamlServices(EmptyFileSystem);
         // Traces name the document URI. Each set was recorded in a fresh process, where parseHelper numbered
         // its documents file:///1.swaml, file:///2.swaml and so on; that URI is given explicitly, so that a
@@ -102,16 +110,25 @@ function record(buildRoot) {
 
 /** Compares the current build with every recorded set; returns the report and its failures. */
 export async function checkExtended() {
-    const failures = [], threw = [], counts = [];
+    const failures = [], threw = [], counts = [], excludedValid = [], excludedInvalid = [], hasMachine = machineTest((await parsers()).v22);
     for (const set of SETS) {
-        const recorded = JSON.parse(readFileSync(join(directory, set.recorded), 'utf8')), actual = await analyse(root, set);
+        const all = JSON.parse(readFileSync(join(directory, set.recorded), 'utf8'));
+        const machines = new Set(JSON.parse(readFileSync(join(directory, set.models), 'utf8')).models.filter(m => hasMachine(m.text)).map(m => m.name));
+        for (const name of machines)
+            (all.files[name]?.diagnostics.some(d => d.startsWith('error ')) ? excludedInvalid : excludedValid).push(`${set.models} ${name}`);
+        const recorded = { ...all, files: Object.fromEntries(Object.entries(all.files).filter(([name]) => !machines.has(name))) };
+        const actual = await analyse(root, set, m => machines.has(m.name));
         counts.push(`${Object.keys(recorded.files).length} of ${set.models}`);
         if (recorded.recordedWith.models !== `${set.models} sha256 ${sha256(readFileSync(join(directory, set.models), 'utf8').replaceAll('\r\n', '\n'))}`)
             failures.push(`${set.models} differs from the models recorded in ${set.recorded}`);
         compare(recorded, actual, failures, threw);
     }
     const report = `Extended 2.2 compatibility: ${counts.join(' and ')} models outside the corpus keep their 3.1.0 diagnostics, ASTs and runs; ${failures.length} differences.`
-        + (threw.length ? ` Not compared, because 3.1.0 threw a host error: ${threw.join('; ')}.` : '');
+        + (threw.length ? ` Not compared, because 3.1.0 threw a host error: ${threw.join('; ')}.` : '')
+        + `\nExcluded, 2.2 models with a state machine: ${excludedValid.length} valid (gate B runs them after migration)${excludedValid.length ? ': ' + excludedValid.join(', ') : ''}; `
+        + `${excludedInvalid.length} invalid (recorded with an error; syntax errors in 2.3)${excludedInvalid.length ? ': ' + excludedInvalid.join(', ') : ''}.`;
+    const pinned = pinnedExclusions();
+    failures.push(...exclusionFailure('extended, valid', excludedValid, pinned.extendedValid), ...exclusionFailure('extended, invalid', excludedInvalid, pinned.extendedInvalid));
     return { report, failures };
 }
 /** Compares one recorded set with the current results, collecting failures and runs that threw in 3.1.0. */

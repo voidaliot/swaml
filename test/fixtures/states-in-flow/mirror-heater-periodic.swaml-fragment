@@ -1,0 +1,16 @@
+    operation tick() {
+      /** A periodic machine (SIF-R14, 1.12); heating keeps the attribute the bench reads. */
+      while (true) {
+        state off {
+          if (requested) { exit; }
+        }
+        state active {
+          on entry { heating = true; send drive.heaterPercent(heaterPercent); }
+          on exit { heating = false; send drive.heaterPercent(0); }
+          if (not requested) { exit; }
+          // The flag code counts 6000 releases from the release that switches on; this state looks at that release
+          // too (its arrival look), so the limit is 6000 - 1 periods after the arrival (1.13, the counting table).
+          after 599900ms { requested = false; exit; }
+        }
+      }
+    }

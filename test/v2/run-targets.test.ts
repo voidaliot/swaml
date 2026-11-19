@@ -130,9 +130,8 @@ test('statement identities follow the statement structure of operations', async 
       publish p.ping(n);
     }
     operation machine() {
-      initial A;
-      state A { on entry { n = 4; } after 2 ms to B { n = 5; } }
-      final state B { }
+      state A { on entry { n = 4; } after 2 ms { n = 5; exit; } }
+      state B { }
     }
     schedule { on start 'run/0'(); on start machine(); }
   }
@@ -149,8 +148,8 @@ test('statement identities follow the statement structure of operations', async 
         'Paths::Slash/Owner.run/0/1/branches/0/body/0',
         'Paths::Slash/Owner.run/0/1/timeoutBody/0',
         'Paths::Slash/Owner.run/0/2',
-        'Paths::Slash/Owner.machine/states/0/actions/0/body/0',
-        'Paths::Slash/Owner.machine/states/0/transitions/0/effect/0',
+        'Paths::Slash/Owner.machine/0/0/body/0',
+        'Paths::Slash/Owner.machine/0/1/body/0',
         'Paths::Slash/Owner/schedule/0',
         'Paths::Slash/Owner/schedule/1',
         'Paths::Peer.take/0',
@@ -316,17 +315,16 @@ test('loop conditions belong to their loop statement on every iteration', async 
     assert.ok(r.trace.some(e => e.kind === 'write' && e.source === 'S::C.f/0/update'));
 });
 
-test('state waits belong to their state and guard failures to their transition', async () => {
+test('state waits belong to their state and guard failures to their if', async () => {
     const m = await models(`package M {
   port def P { provides event go(v: int); }
   component def C {
     reversed port p: P;
     attribute n: int = 0;
     operation m() {
-      initial A;
-      state A { after 1 ms to B { n = 1; } }
-      state B { on receive p.go(v) when (10 / v > 0) to Done { n = v; } }
-      final state Done { }
+      state A { after 1 ms { n = 1; exit; } }
+      state B { on receive p.go(v) { if (10 / v > 0) { n = v; exit; } } }
+      state Done { }
     }
     schedule { on start m(); }
   }
@@ -337,13 +335,13 @@ test('state waits belong to their state and guard failures to their transition',
 }`);
     const r = simulate(m, 'M', { untilNs: 10000000 });
     assert.deepEqual(r.trace.filter(e => e.subject === 'c.m' && ['state', 'receiveWait', 'failure'].includes(e.kind)).map(e => [e.kind, e.source]), [
-        ['state', 'M::C.m/states/0'],
-        ['receiveWait', 'M::C.m/states/0'],
-        ['state', 'M::C.m/states/1'],
-        ['receiveWait', 'M::C.m/states/1'],
-        ['failure', 'M::C.m/states/1/transitions/0']
+        ['state', 'M::C.m/0'],
+        ['receiveWait', 'M::C.m/0'],
+        ['state', 'M::C.m/1'],
+        ['receiveWait', 'M::C.m/1'],
+        ['failure', 'M::C.m/1/0/body/0']
     ]);
-    assert.ok(r.trace.some(e => e.kind === 'write' && e.source === 'M::C.m/states/0/transitions/0/effect/0'));
+    assert.ok(r.trace.some(e => e.kind === 'write' && e.source === 'M::C.m/0/0/body/0'));
     for (const e of r.trace.filter(e => e.source))
         assert.equal(statementIdentity(resolveStatement(m, e.source!)!), e.source);
 });

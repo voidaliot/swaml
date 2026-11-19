@@ -1,0 +1,27 @@
+package T4 {
+  import Swaml::Platform;
+  import Swaml::Os;
+  port def Q { requires operation get() returns uint; }
+  component def M {
+    attribute x: uint = 0;
+    port q: Q;
+    operation helper() { wait 1ms; }
+    operation step() { state s { x = q.get(); } }
+    schedule { on every 10ms step(); }
+  }
+  component def S { reversed port q: Q; operation get() returns uint { return 1; } schedule { on call q.get() get(); } }
+  component m: M;
+  component s: S;
+  connect (m.q, s.q);
+  component def Ecu specializes Node {
+    component t: Task {
+      redefines const attribute kind: TaskKind = TaskKind.basic;
+      redefines const attribute priority: uint = 20;
+      redefines const attribute periodNs: uint = 10ms;
+    }
+  }
+  component ecu: Ecu;
+  deployment D of m on ecu {
+    deploy step on t;
+  }
+}

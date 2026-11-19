@@ -1,0 +1,273 @@
+package HeaterSupply {
+  /** The door showcase's MirrorHeater.tick and SupplyMonitor.classify, original flag code beside periodic machines, on a bench that exercises what the showcase cases do not: the 10 minute heater limit and supply dips. SupplyTrap is the natural three-state rewrite that the arrival look breaks. */
+  port def HeaterRequest {
+    provides event heat(enabled: bool);
+  }
+  port def HeaterPort {
+    provides attribute heaterPercent: uint;
+  }
+  port def SupplyVoltage {
+    provides event supplyMv(mv: uint);
+  }
+  component def MirrorHeater {
+    reversed port request: HeaterRequest;
+    port drive: HeaterPort;
+    const attribute heaterPercent: uint = 70;
+    const attribute heaterLimitTicks: uint = 6000;
+    attribute requested: bool = false;
+    attribute heating: bool = false;
+    attribute heaterTicks: uint = 0;
+    operation store(enabled: bool) {
+      requested = enabled;
+    }
+    operation tick() {
+      if (requested and not heating) {
+        heating = true;
+        heaterTicks = 0;
+        send drive.heaterPercent(heaterPercent);
+      }
+      if (not requested and heating) {
+        heating = false;
+        send drive.heaterPercent(0);
+      }
+      if (heating) {
+        heaterTicks = heaterTicks + 1;
+        if (heaterTicks >= heaterLimitTicks) {
+          heating = false;
+          requested = false;
+          send drive.heaterPercent(0);
+        }
+      }
+    }
+    schedule {
+      on receive request.heat(enabled) store(enabled);
+      on every 100ms tick() deadline 10ms;
+    }
+  }
+  component def MirrorHeaterStates {
+    reversed port request: HeaterRequest;
+    port drive: HeaterPort;
+    const attribute heaterPercent: uint = 70;
+    attribute requested: bool = false;
+    attribute heating: bool = false;
+    operation store(enabled: bool) {
+      requested = enabled;
+    }
+    operation tick() {
+      while (true) {
+        state off {
+          if (requested) { exit; }
+        }
+        state active {
+          on entry { heating = true; send drive.heaterPercent(heaterPercent); }
+          on exit { heating = false; send drive.heaterPercent(0); }
+          if (not requested) { exit; }
+          // The flag code counts 6000 releases from the release that switches on; this state looks at that release
+          // too (its arrival look), so the limit is 6000 - 1 periods after the arrival (1.13, the counting table).
+          after 599900ms { requested = false; exit; }
+        }
+      }
+    }
+    schedule {
+      on receive request.heat(enabled) store(enabled);
+      on every 100ms tick() deadline 10ms;
+    }
+  }
+  component def SupplyMonitor {
+    reversed port supply: SupplyVoltage;
+    const attribute underMv: uint = 9000;
+    const attribute recoverMv: uint = 9500;
+    const attribute qualifySamples: uint = 2;
+    attribute supplyMv: uint = 13500;
+    attribute lowSamples: uint = 0;
+    attribute undervoltage: bool = false;
+    operation store(mv: uint) {
+      supplyMv = mv;
+    }
+    operation classify() {
+      if (supplyMv < underMv) {
+        if (lowSamples < qualifySamples) {
+          lowSamples = lowSamples + 1;
+        }
+      }
+      if (supplyMv >= recoverMv) {
+        lowSamples = 0;
+      }
+      undervoltage = lowSamples >= qualifySamples;
+    }
+    schedule {
+      on receive supply.supplyMv(mv) store(mv);
+      on every 50ms classify() deadline 2ms;
+    }
+  }
+  component def SupplyStates {
+    reversed port supply: SupplyVoltage;
+    const attribute underMv: uint = 9000;
+    const attribute recoverMv: uint = 9500;
+    const attribute qualifySamples: uint = 2;
+    attribute supplyMv: uint = 13500;
+    attribute lowSamples: uint = 0;
+    attribute undervoltage: bool = false;
+    operation store(mv: uint) {
+      supplyMv = mv;
+    }
+    operation classify() {
+      while (true) {
+        state normal {
+          if (supplyMv < underMv and lowSamples < qualifySamples) { lowSamples = lowSamples + 1; }
+          if (supplyMv >= recoverMv) { lowSamples = 0; }
+          if (lowSamples >= qualifySamples) { exit; }
+        }
+        state under {
+          on entry { undervoltage = true; }
+          on exit { undervoltage = false; }
+          if (supplyMv >= recoverMv) { lowSamples = 0; exit; }
+        }
+      }
+    }
+    schedule {
+      on receive supply.supplyMv(mv) store(mv);
+      on every 50ms classify() deadline 2ms;
+    }
+  }
+  component def SupplyTrap {
+    /** One state per qualifying sample: the arrival look of low sees the same sample that left normal, so one low sample qualifies. */
+    reversed port supply: SupplyVoltage;
+    const attribute underMv: uint = 9000;
+    const attribute recoverMv: uint = 9500;
+    attribute supplyMv: uint = 13500;
+    attribute undervoltage: bool = false;
+    operation store(mv: uint) {
+      supplyMv = mv;
+    }
+    operation classify() {
+      while (true) {
+        state normal {
+          if (supplyMv < underMv) { exit; }
+        }
+        state low {
+          if (supplyMv >= recoverMv) { to normal; }
+          if (supplyMv < underMv) { exit; }
+        }
+        state under {
+          on entry { undervoltage = true; }
+          on exit { undervoltage = false; }
+          if (supplyMv >= recoverMv) { to normal; }
+        }
+      }
+    }
+    schedule {
+      on receive supply.supplyMv(mv) store(mv);
+      on every 50ms classify() deadline 2ms;
+    }
+  }
+  component def SupplyCounted {
+    /** The trap written correctly: the arrival look of low is the first qualifying sample, and the state counts it. */
+    reversed port supply: SupplyVoltage;
+    const attribute underMv: uint = 9000;
+    const attribute recoverMv: uint = 9500;
+    const attribute qualifySamples: uint = 2;
+    attribute supplyMv: uint = 13500;
+    attribute lowSamples: uint = 0;
+    attribute undervoltage: bool = false;
+    operation store(mv: uint) {
+      supplyMv = mv;
+    }
+    operation classify() {
+      while (true) {
+        state normal {
+          if (supplyMv < underMv) { exit; }
+        }
+        state low {
+          on entry { lowSamples = 0; }
+          if (supplyMv >= recoverMv) { to normal; }
+          if (supplyMv < underMv) { lowSamples = lowSamples + 1; }
+          if (lowSamples >= qualifySamples) { exit; }
+        }
+        state under {
+          on entry { undervoltage = true; }
+          on exit { undervoltage = false; }
+          if (supplyMv >= recoverMv) { to normal; }
+        }
+      }
+    }
+    schedule {
+      on receive supply.supplyMv(mv) store(mv);
+      on every 50ms classify() deadline 2ms;
+    }
+  }
+  component def Bench {
+    port toHeater: HeaterRequest;
+    port toHeaterStates: HeaterRequest;
+    reversed port heater: HeaterPort;
+    reversed port heaterStates: HeaterPort;
+    port toSupply: SupplyVoltage;
+    port toSupplyStates: SupplyVoltage;
+    port toSupplyTrap: SupplyVoltage;
+    port toSupplyCounted: SupplyVoltage;
+  }
+  component heater: MirrorHeater;
+  component heaterStates: MirrorHeaterStates;
+  component supply: SupplyMonitor;
+  component supplyStates: SupplyStates;
+  component supplyTrap: SupplyTrap;
+  component supplyCounted: SupplyCounted;
+  component bench: Bench;
+  connect (bench.toHeater, heater.request);
+  connect (bench.toHeaterStates, heaterStates.request);
+  connect (heater.drive, bench.heater);
+  connect (heaterStates.drive, bench.heaterStates);
+  connect (bench.toSupply, supply.supply);
+  connect (bench.toSupplyStates, supplyStates.supply);
+  connect (bench.toSupplyTrap, supplyTrap.supply);
+  connect (bench.toSupplyCounted, supplyCounted.supply);
+  associate bench, heaterStates to 'Heater limit and toggles';
+  associate bench, supplyStates, supplyTrap, supplyCounted to 'Supply dips';
+  test 'Heater limit and toggles' of heater {
+    wait 250ms;
+    publish bench.toHeater.heat(true);
+    publish bench.toHeaterStates.heat(true);
+    wait 1s;
+    publish bench.toHeater.heat(false);
+    publish bench.toHeaterStates.heat(false);
+    wait 30ms;
+    publish bench.toHeater.heat(true);
+    publish bench.toHeaterStates.heat(true);
+    wait 601s;
+    assert not heater.heating and not heaterStates.heating;
+  }
+  test 'Supply dips' of supply {
+    /** One low sample, a middle sample, a second low sample (qualifies), recovery; then a single low sample. */
+    wait 60ms;
+    publish bench.toSupply.supplyMv(8800);
+    publish bench.toSupplyStates.supplyMv(8800);
+    publish bench.toSupplyTrap.supplyMv(8800);
+    publish bench.toSupplyCounted.supplyMv(8800);
+    wait 50ms;
+    publish bench.toSupply.supplyMv(9200);
+    publish bench.toSupplyStates.supplyMv(9200);
+    publish bench.toSupplyTrap.supplyMv(9200);
+    publish bench.toSupplyCounted.supplyMv(9200);
+    wait 50ms;
+    publish bench.toSupply.supplyMv(8700);
+    publish bench.toSupplyStates.supplyMv(8700);
+    publish bench.toSupplyTrap.supplyMv(8700);
+    publish bench.toSupplyCounted.supplyMv(8700);
+    wait 100ms;
+    publish bench.toSupply.supplyMv(9600);
+    publish bench.toSupplyStates.supplyMv(9600);
+    publish bench.toSupplyTrap.supplyMv(9600);
+    publish bench.toSupplyCounted.supplyMv(9600);
+    wait 100ms;
+    publish bench.toSupply.supplyMv(8900);
+    publish bench.toSupplyStates.supplyMv(8900);
+    publish bench.toSupplyTrap.supplyMv(8900);
+    publish bench.toSupplyCounted.supplyMv(8900);
+    wait 50ms;
+    publish bench.toSupply.supplyMv(9600);
+    publish bench.toSupplyStates.supplyMv(9600);
+    publish bench.toSupplyTrap.supplyMv(9600);
+    publish bench.toSupplyCounted.supplyMv(9600);
+    wait 100ms;
+  }
+}

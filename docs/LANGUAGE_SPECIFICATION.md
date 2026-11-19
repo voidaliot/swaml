@@ -49,7 +49,7 @@ Local calls, startup, periodic releases, waits, state timers and same-owner afte
 | Connection/forwarding | Policy-bearing opposite directions or queue-free boundary alias |
 | Operation definition/declaration/usage | Reusable signature/body or owned executable, nested without captures |
 | Schedule/entry | Trigger binding, dispatch arguments, deadline and concurrency |
-| State/transition | Ordered nested receive/timer reactions; final completion |
+| States | States as steps of the flow: entry once, looks in written order, event lines, `exit;` and `to S;`, parents (chapters 3.6, 6.5) |
 | Deployment/placement | Software occurrences placed on platform Node occurrences |
 | Requirement/case/view | Immutable intent; package-owned use cases and tests with an optional top-level subject occurrence, package associate/satisfy/verify links; stable selection union |
 

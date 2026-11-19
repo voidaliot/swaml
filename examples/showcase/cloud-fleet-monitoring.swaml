@@ -1230,11 +1230,11 @@ package FleetCloud {
       watchZone(t.position);
     }
     operation connection() {
-      initial Unseen;
       state Unseen {
         /** No vehicle has reported in this slot yet. */
-        on receive feed.reading(t) to Online {
+        on receive feed.reading(t) {
           apply(t);
+          exit;
         }
       }
       state Online {
@@ -1242,13 +1242,14 @@ package FleetCloud {
           link = LinkState.online;
           publishSnapshot();
         }
-        on receive feed.reading(t) to Online {
+        after 3s exit;
+        on receive feed.reading(t) {
           apply(t);
+          to Online;
         }
-        on receive feed.beat(sequence) to Online {
+        on receive feed.beat(sequence) {
           beats = beats + 1;
-        }
-        after 3s to Stale {
+          to Online;
         }
       }
       state Stale {
@@ -1256,13 +1257,14 @@ package FleetCloud {
           link = LinkState.stale;
           publishSnapshot();
         }
-        on receive feed.reading(t) to Online {
+        after 3s exit;
+        on receive feed.reading(t) {
           apply(t);
+          to Online;
         }
-        on receive feed.beat(sequence) to Online {
+        on receive feed.beat(sequence) {
           beats = beats + 1;
-        }
-        after 3s to Offline {
+          to Online;
         }
       }
       state Offline {
@@ -1271,14 +1273,15 @@ package FleetCloud {
           publishSnapshot();
           publish conditions.changed(condition(AlertKind.vehicleOffline, Severity.warning, true, "no frames or heartbeats for 6 s"));
         }
-        on exit {
+        on receive feed.reading(t) {
           publish conditions.changed(condition(AlertKind.vehicleOffline, Severity.warning, false, "vehicle reporting again"));
-        }
-        on receive feed.reading(t) to Online {
           apply(t);
+          to Online;
         }
-        on receive feed.beat(sequence) to Online {
+        on receive feed.beat(sequence) {
+          publish conditions.changed(condition(AlertKind.vehicleOffline, Severity.warning, false, "vehicle reporting again"));
           beats = beats + 1;
+          to Online;
         }
       }
     }
@@ -1415,16 +1418,17 @@ package FleetCloud {
       }
     }
     operation circuit() {
-      initial Closed;
       state Closed {
         on entry {
           enter(Breaker.closed);
         }
-        on receive stream.accepted(t) when (consecutiveFailures >= failureThreshold) to Open {
-          trippingArrivals = trippingArrivals + 1;
-        }
-        on receive stream.accepted(t) to Closed {
+        on receive stream.accepted(t) {
+          if (consecutiveFailures >= failureThreshold) {
+            trippingArrivals = trippingArrivals + 1;
+            exit;
+          }
           write(t);
+          to Closed;
         }
       }
       state Open {
@@ -1432,15 +1436,15 @@ package FleetCloud {
         on entry {
           enter(Breaker.open);
         }
-        after 2s to HalfOpen {
-        }
+        after 2s exit;
       }
       state HalfOpen {
         on entry {
           enter(Breaker.halfOpen);
         }
-        on receive stream.accepted(t) to Closed {
+        on receive stream.accepted(t) {
           probe(t);
+          to Closed;
         }
       }
     }
@@ -1686,10 +1690,10 @@ package FleetCloud {
       publish audit.logged(Entry(AuditKind.alerting, "escalation-desk", current.tenantId, action, current.vehicleId));
     }
     operation escalation() {
-      initial Idle;
       state Idle {
-        on receive pages.page(a) to Paging {
+        on receive pages.page(a) {
           current = a;
+          exit;
         }
       }
       state Paging {
@@ -1697,15 +1701,22 @@ package FleetCloud {
           notify(compose(Channel.push, primaryRecipient));
           report(AlertStatus.paged, "paged primary on-call");
         }
-        on receive acks.acknowledge(alertId, engineer) when (alertId == current.alertId) to Acknowledged {
-          lastAcknowledgedBy = engineer;
-        }
-        on receive pages.withdrawn(alertId) when (alertId == current.alertId) to Idle {
-          withdrawals = withdrawals + 1;
-          report(AlertStatus.resolved, "paging withdrawn: condition cleared");
-        }
-        after 2s to Escalated {
+        after 2s {
           escalations = escalations + 1;
+          exit;
+        }
+        on receive acks.acknowledge(alertId, engineer) {
+          if (alertId == current.alertId) {
+            lastAcknowledgedBy = engineer;
+            to Acknowledged;
+          }
+        }
+        on receive pages.withdrawn(alertId) {
+          if (alertId == current.alertId) {
+            withdrawals = withdrawals + 1;
+            report(AlertStatus.resolved, "paging withdrawn: condition cleared");
+            to Idle;
+          }
         }
       }
       state Escalated {
@@ -1713,15 +1724,22 @@ package FleetCloud {
           notify(compose(Channel.voice, secondaryRecipient));
           report(AlertStatus.escalated, "escalated to secondary on-call");
         }
-        on receive acks.acknowledge(alertId, engineer) when (alertId == current.alertId) to Acknowledged {
-          lastAcknowledgedBy = engineer;
-        }
-        on receive pages.withdrawn(alertId) when (alertId == current.alertId) to Idle {
-          withdrawals = withdrawals + 1;
-          report(AlertStatus.resolved, "paging withdrawn: condition cleared");
-        }
-        after 5s to Escalated {
+        after 5s {
           escalations = escalations + 1;
+          to Escalated;
+        }
+        on receive acks.acknowledge(alertId, engineer) {
+          if (alertId == current.alertId) {
+            lastAcknowledgedBy = engineer;
+            exit;
+          }
+        }
+        on receive pages.withdrawn(alertId) {
+          if (alertId == current.alertId) {
+            withdrawals = withdrawals + 1;
+            report(AlertStatus.resolved, "paging withdrawn: condition cleared");
+            to Idle;
+          }
         }
       }
       state Acknowledged {
@@ -1729,10 +1747,10 @@ package FleetCloud {
           acknowledged = acknowledged + 1;
           report(AlertStatus.acknowledged, "acknowledged by " + lastAcknowledgedBy);
         }
-        on receive pages.page(a) to Paging {
+        after 100ms to Idle;
+        on receive pages.page(a) {
           current = a;
-        }
-        after 100ms to Idle {
+          to Paging;
         }
       }
     }
@@ -1849,27 +1867,31 @@ package FleetCloud {
     attribute refusedByVehicle: uint = 0;
     attribute timedOut: uint = 0;
     operation tracking() {
-      initial Idle;
       state Idle {
-        on receive dispatch.queued(c) to AwaitingAck {
+        on receive dispatch.queued(c) {
           current = c;
+          exit;
         }
       }
       state AwaitingAck {
         on entry {
           publish downlink.deliver(current);
         }
-        on receive acks.ack(commandId, vehicleId, executed) when (commandId == current.commandId and vehicleId == current.vehicleId and executed) to Idle {
-          delivered = delivered + 1;
-          publish updates.update(Outcome(current, CommandStatus.delivered));
-        }
-        on receive acks.ack(commandId, vehicleId, executed) when (commandId == current.commandId and vehicleId == current.vehicleId) to Idle {
-          refusedByVehicle = refusedByVehicle + 1;
-          publish updates.update(Outcome(current, CommandStatus.rejected));
-        }
-        after 1500ms to Idle {
+        after 1500ms {
           timedOut = timedOut + 1;
           publish updates.update(Outcome(current, CommandStatus.timedOut));
+          to Idle;
+        }
+        on receive acks.ack(commandId, vehicleId, executed) {
+          if (commandId == current.commandId and vehicleId == current.vehicleId and executed) {
+            delivered = delivered + 1;
+            publish updates.update(Outcome(current, CommandStatus.delivered));
+            to Idle;
+          } else if (commandId == current.commandId and vehicleId == current.vehicleId) {
+            refusedByVehicle = refusedByVehicle + 1;
+            publish updates.update(Outcome(current, CommandStatus.rejected));
+            to Idle;
+          }
         }
       }
     }

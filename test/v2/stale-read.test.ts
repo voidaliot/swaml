@@ -44,13 +44,13 @@ test('SW2011 accepts a re-read after resuming and a condition re-checked after r
 });
 
 test('SW2011 treats each state reaction separately', async () => {
-    const machine = (entry: string) => `attribute n: int = 1; reversed port input: Ticks; operation lamp() { initial A; state A { on entry { if (n > 0) { n = 2; } } on receive input.tick(v) to B { } } state B { on entry { ${entry} } } } schedule { on start lamp(); }`;
+    const machine = (entry: string) => `attribute n: int = 1; reversed port input: Ticks; operation lamp() { state A { on entry { if (n > 0) { n = 2; } } on receive input.tick(v) exit; } state B { on entry { ${entry} } } } schedule { on start lamp(); }`;
     // A read in one reaction does not reach a write after a wait in another reaction.
     assert.deepEqual(await stale(machine('wait 1ms; n = 3;'), ports), []);
     // Within one reaction the rule still applies.
     assert.deepEqual(await stale(machine('var x: int = n; wait 1ms; n = x;'), ports), ['n = x;']);
-    // A transition guard is read before its effect.
-    assert.deepEqual(await stale(`attribute n: int = 1; reversed port input: Ticks; operation lamp() { initial A; state A { on receive input.tick(v) when (n > 0) to B { wait 1ms; n = 0; } } state B { } } schedule { on start lamp(); }`, ports), ['n = 0;']);
+    // The condition of an event line's if is read before its block.
+    assert.deepEqual(await stale(`attribute n: int = 1; reversed port input: Ticks; operation lamp() { state A { on receive input.tick(v) { if (n > 0) { wait 1ms; n = 0; exit; } } } state B { } } schedule { on start lamp(); }`, ports), ['n = 0;']);
 });
 
 test('SW2011 follows calls to operations that write attributes', async () => {
@@ -84,12 +84,19 @@ test('SW2011 does not read out-argument targets and follows out values', async (
     assert.deepEqual(await stale('attribute n: int = 1; attribute m: int = 0; operation fetch(k: int, out v: int) { wait 1ms; v = k; } operation f() { var x: int = 0; fetch(m, x); n = x; } schedule { on start f(); }'), ['n = x;']);
 });
 
-test('SW2011 analyses one reaction as exit, transition effect and target entry under the guard', async () => {
-    const machine = (a: string, effect: string, b: string) => `attribute n: int = 1; reversed port input: Ticks; operation lamp() { initial A; state A { ${a} on receive input.tick(v) when (n > 0) to B { ${effect} } } state B { ${b} } } schedule { on start lamp(); }`;
-    assert.deepEqual(await stale(machine('on exit { wait 1ms; }', 'n = 0;', ''), ports), ['n = 0;']);
-    assert.deepEqual(await stale(machine('', 'wait 1ms;', 'on entry { n = 0; }'), ports), ['n = 0;']);
-    assert.deepEqual(await stale(machine('', 'wait 1ms;', 'on entry { if (n > 0) { n = 0; } }'), ports), []);
-    assert.deepEqual(await stale(machine('on exit { n = 2; }', 'n = 0;', 'on entry { n = 3; }'), ports), []);
+// SIF-R09: leaving runs in text order, the line's block, then on exit, then the next state's on entry (2.2 ran exit,
+// effect, entry, so a 2.2 exit that suspends no longer comes before the block's write).
+const leaving = (a: string, effect: string, b: string) => `attribute n: int = 1; reversed port input: Ticks; operation lamp() { state A { ${a} on receive input.tick(v) { if (n > 0) { ${effect} exit; } } } state B { ${b} } } schedule { on start lamp(); }`;
+test('SW2011 analyses one reaction as the line\'s block, exit and target entry under the if', async () => {
+    assert.deepEqual(await stale(leaving('', 'wait 1ms; n = 0;', ''), ports), ['n = 0;']);
+    assert.deepEqual(await stale(leaving('on exit { wait 1ms; }', 'n = 0;', ''), ports), []);
+    assert.deepEqual(await stale(leaving('', 'wait 1ms;', 'on entry { if (n > 0) { n = 0; } }'), ports), []);
+    assert.deepEqual(await stale(leaving('on exit { n = 2; }', 'n = 0;', 'on entry { n = 3; }'), ports), []);
+});
+test('SW2011 follows a leave into on exit and the next state\'s on entry', async () => {
+    assert.deepEqual(await stale(leaving('on exit { wait 1ms; }', '', 'on entry { n = 0; }'), ports), ['n = 0;']);
+    assert.deepEqual(await stale(leaving('on exit { n = 0; }', 'wait 1ms;', ''), ports), ['n = 0;']);
+    assert.deepEqual(await stale(leaving('', 'wait 1ms;', 'on entry { n = 0; }'), ports), ['n = 0;']);
 });
 
 test('SW2011 on the showcase shapes: a re-check of what the write depends on clears a stale condition', async () => {

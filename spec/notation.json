@@ -519,9 +519,9 @@
     },
     {
       "id": "states",
-      "title": "Ordered state transitions",
+      "title": "States as steps of the flow",
       "context": "swa.ml 2.3; States::Demo.lamp",
-      "syntax": "operation lamp() {\n      initial Off;\n      state Off {\n        after 2ms to On {\n        }\n      }\n      state On {\n        on entry {\n          lit = true;\n        } on exit {\n          lit = false;\n        }\n        after 3ms to Done {\n        }\n      }\n      final state Done {\n      }\n    }",
+      "syntax": "operation lamp() {\n      state Off {\n        after 2ms exit;\n      }\n      state On {\n        on entry {\n          lit = true;\n        }\n        on exit {\n          lit = false;\n        }\n        after 3ms exit;\n      }\n      state Done {\n      }\n    }",
       "model": "examples/04-stateful-function.swaml",
       "subject": "States::Demo.lamp",
       "template": "state",
@@ -529,22 +529,22 @@
         "Flow"
       ],
       "productions": [
-        "State",
         "StateAction",
-        "Transition",
-        "Deferral"
+        "StateStep",
+        "StateMember",
+        "EventLine",
+        "ShortBody",
+        "Leave",
+        "Exit",
+        "Jump"
       ],
       "keywords": [
-        "initial",
         "state",
-        "final",
         "entry",
         "exit",
-        "when",
         "to",
         "after",
-        "on",
-        "defer"
+        "on"
       ],
       "drawing": "docs/notation/2.3/states.svg",
       "scene": "docs/notation/2.3/states.scene.json",
@@ -1055,6 +1055,55 @@
         "rationale": "Owned semantic projection preserves this production."
       },
       {
+        "production": "StateStep",
+        "concepts": [
+          "states"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "StateMember",
+        "concepts": [
+          "states"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "EventLine",
+        "concepts": [
+          "states"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "ShortBody",
+        "concepts": [
+          "states"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "Leave",
+        "concepts": [
+          "states"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "Exit",
+        "concepts": [
+          "states"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
+        "production": "Jump",
+        "concepts": [
+          "states"
+        ],
+        "rationale": "Owned semantic projection preserves this production."
+      },
+      {
         "production": "LocalVariable",
         "concepts": [
           "attributes"
@@ -1188,28 +1237,7 @@
         "rationale": "Owned semantic projection preserves this production."
       },
       {
-        "production": "State",
-        "concepts": [
-          "states"
-        ],
-        "rationale": "Owned semantic projection preserves this production."
-      },
-      {
         "production": "StateAction",
-        "concepts": [
-          "states"
-        ],
-        "rationale": "Owned semantic projection preserves this production."
-      },
-      {
-        "production": "Transition",
-        "concepts": [
-          "states"
-        ],
-        "rationale": "Owned semantic projection preserves this production."
-      },
-      {
-        "production": "Deferral",
         "concepts": [
           "states"
         ],
@@ -1579,7 +1607,7 @@
         "concepts": [
           "states"
         ],
-        "rationale": "Shown in the source caption/compartment for ordered state transitions."
+        "rationale": "Shown in the source caption/compartment for states as steps of the flow."
       },
       {
         "term": "and",
@@ -1694,13 +1722,6 @@
         "rationale": "Shown in the source caption/compartment for component definitions and usages."
       },
       {
-        "term": "defer",
-        "concepts": [
-          "states"
-        ],
-        "rationale": "Shown in the source caption/compartment for ordered state transitions."
-      },
-      {
         "term": "deploy",
         "concepts": [
           "deployment"
@@ -1726,7 +1747,7 @@
         "concepts": [
           "states"
         ],
-        "rationale": "Shown in the source caption/compartment for ordered state transitions."
+        "rationale": "Shown in the source caption/compartment for states as steps of the flow."
       },
       {
         "term": "enum",
@@ -1754,7 +1775,7 @@
         "concepts": [
           "states"
         ],
-        "rationale": "Shown in the source caption/compartment for ordered state transitions."
+        "rationale": "Shown in the source caption/compartment for states as steps of the flow."
       },
       {
         "term": "fail",
@@ -1769,13 +1790,6 @@
           "expressions"
         ],
         "rationale": "Shown in the source caption/compartment for typed expressions and operators."
-      },
-      {
-        "term": "final",
-        "concepts": [
-          "states"
-        ],
-        "rationale": "Shown in the source caption/compartment for ordered state transitions."
       },
       {
         "term": "for",
@@ -1818,13 +1832,6 @@
           "views"
         ],
         "rationale": "Shown in the source caption/compartment for seven library view definitions."
-      },
-      {
-        "term": "initial",
-        "concepts": [
-          "states"
-        ],
-        "rationale": "Shown in the source caption/compartment for ordered state transitions."
       },
       {
         "term": "int",
@@ -1887,7 +1894,7 @@
         "concepts": [
           "states"
         ],
-        "rationale": "Shown in the source caption/compartment for ordered state transitions."
+        "rationale": "Shown in the source caption/compartment for states as steps of the flow."
       },
       {
         "term": "operation",
@@ -2076,7 +2083,7 @@
         "concepts": [
           "states"
         ],
-        "rationale": "Shown in the source caption/compartment for ordered state transitions."
+        "rationale": "Shown in the source caption/compartment for states as steps of the flow."
       },
       {
         "term": "string",
@@ -2104,7 +2111,7 @@
         "concepts": [
           "states"
         ],
-        "rationale": "Shown in the source caption/compartment for ordered state transitions."
+        "rationale": "Shown in the source caption/compartment for states as steps of the flow."
       },
       {
         "term": "true",
@@ -2182,13 +2189,6 @@
           "receive"
         ],
         "rationale": "Shown in the source caption/compartment for suspending wait and receive."
-      },
-      {
-        "term": "when",
-        "concepts": [
-          "states"
-        ],
-        "rationale": "Shown in the source caption/compartment for ordered state transitions."
       },
       {
         "term": "where",

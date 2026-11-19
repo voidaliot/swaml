@@ -2,7 +2,7 @@ import { AstUtils, type AstNode } from 'langium';
 import type { Range } from 'vscode-languageserver';
 import * as a from './generated/ast.js';
 import { SWAML_LANGUAGE_VERSION } from './edition.js';
-import { memberQos, sampledMembers, isCompletion, isInternal, stateDeferrals, entryDeadline, entryPeriod, displayText, associationPairs, body, isAssociationList, direction, effectiveQos, identity, isExecutable, members, nanos, owner, portMembers, schedule, signature, typeKey, type Node } from './semantic.js';
+import { flowStates, nodes, memberQos, sampledMembers, entryDeadline, entryPeriod, displayText, associationPairs, body, isAssociationList, direction, effectiveQos, identity, isExecutable, members, nanos, owner, portMembers, schedule, signature, typeKey, type Node } from './semantic.js';
 import { documentationText, viewCandidates, type ViewSubject } from './presentation.js';
 export interface ProjectionNode {
     id: string;
@@ -52,19 +52,32 @@ export interface ProjectionNode {
         concurrent: boolean;
         code: string;
     }[];
-    /** A state's internal transitions, reactions without a target edge, in declaration order (WP5-M01); absent without one. */
-    reactions?: { label: string; order: number; guard?: string }[];
-    /** A state's deferred members in source order (WP5-M01); absent when the state defers nothing. */
-    deferrals?: string[];
 }
 /** Interconnect labels of a connection's member policies (WP6-M01); an unfinished one without a member or policy name is left out. */
 function memberPolicyLabels(c: a.Connect): Pick<ProjectionEdge, 'memberPolicies'> {
     const complete = c.memberPolicies.filter(mp => !!mp.member && !!(mp.policy?.ref?.name ?? mp.policy?.$refText));
     return complete.length ? { memberPolicies: complete.map(mp => ({ member: mp.member, policy: mp.policy.ref?.name ?? mp.policy.$refText, qos: memberQos(c, mp.member) })) } : {};
 }
-/** The label of a state transition: its trigger, or for a completion transition its guard (WP5-M01). */
-function transitionLabel(t: a.Transition): string {
-    return t.endpoint ? 'on receive ' + t.endpoint : t.delayValue ? `after (${displayText(t.delayValue)})` : t.delay ? 'after ' + t.delay.value + t.delay.unit : `when (${t.guard ? displayText(t.guard) : ''})`;
+/** The state that exit; of state s reaches (SIF-R09): the state written next in its list, or, after the last inner state, what exit; of its parent reaches; undefined when the flow goes on with a plain statement or the end. */
+function exitTarget(s: a.StateStep): a.StateStep | undefined {
+    const list = (s.$container as { statements?: AstNode[] }).statements, next = list?.[list.indexOf(s) + 1];
+    if (next)
+        return a.isStateStep(next) ? next : undefined;
+    return a.isStateStep(s.$container) ? exitTarget(s.$container) : undefined;
+}
+/** What leads to a leave: its event line's head and the conditions of the ifs on the way, as [c]; 'to S' (or 'exit') alone otherwise. */
+function leaveLabel(leave: a.Jump | a.Exit, word = `to ${a.isJump(leave) ? leave.target : ''}`): string {
+    const parts: string[] = [];
+    // The branch the leave stands in: [c] in then, [else] in a final else; an else if branch carries its own condition.
+    for (let child: AstNode = leave, x: AstNode | undefined = leave.$container; x && !a.isStateStep(x); child = x, x = x.$container) {
+        if (a.isIf(x) && child === x.then)
+            parts.unshift(`[${displayText(x.condition)}]`);
+        else if (a.isIf(x) && child === x.otherwise && !a.isElseIf(child))
+            parts.unshift('[else]');
+        if (a.isEventLine(x))
+            parts.unshift(x.endpoint !== undefined ? x.endpoint : x.delayValue ? `after (${displayText(x.delayValue)})` : x.delay ? `after ${x.delay.value}${x.delay.unit}` : '');
+    }
+    return parts.length ? parts.join(' ') : word;
 }
 export interface ProjectionEdge {
     id: string;
@@ -76,10 +89,6 @@ export interface ProjectionEdge {
     order?: number;
     /** For a link of an association list (2.3), the positions of its occurrence and case in their lists; absent for a single 2.2 statement. */
     pair?: { occurrence: number; case: number };
-    /** A completion transition, labelled when (g) (WP5-M01); absent for receive and timer transitions. */
-    completion?: true;
-    /** The guard text of a guarded timer transition (WP5-M01); absent otherwise. */
-    guard?: string;
     /** The member policies of a connection with each member route's effective policy (WP6-M01); absent without them. */
     memberPolicies?: { member: string; policy: string; qos: ReturnType<typeof effectiveQos> }[];
 }
@@ -116,7 +125,10 @@ export function projectModel(models: readonly a.Model[]): Projection {
         return undefined;
     } : (id: string): ViewSubject | undefined => candidates.filter(x => id.startsWith(x.path + '.') || a.isPackage(x.node) && id.startsWith(x.path + '::')).sort((a, b) => b.path.length - a.path.length)[0];
     for (const item of candidates) {
-        const n = item.node as Node, id = item.path, parent = a.isPackage(n) ? undefined : ownerOf(id);
+        const n = item.node as Node, id = item.path;
+        // A state inside a parent is owned by its parent state (SIF-M01): both are named in their operation.
+        const enclosing = a.isStateStep(n) && a.isStateStep(n.$container) ? byPath.get(`${id.slice(0, id.length - n.name.length - 1)}.${n.$container.name}`) : undefined;
+        const parent = a.isPackage(n) ? undefined : enclosing ?? ownerOf(id);
         const p: ProjectionNode = { id, name: item.name, kind: item.kind, definition: item.definition, owner: parent?.path, source: source(n), code: n.$cstNode!.text, doc: documentationText({ documentation: n.documentation }) };
         if (a.isAttribute(n) || a.isLocalVariable(n) || a.isField(n))
             p.type = typeKey(n.type);
@@ -141,19 +153,18 @@ export function projectModel(models: readonly a.Model[]): Projection {
                 if (e.kind === 'after')
                     addEdge('after', id + '.' + e.predecessor, id + '.' + e.operation, e.$cstNode!.text);
         }
-        // WP5-M01: a completion transition is an edge labelled with its guard; an internal transition is a reaction of its
-        // state without an edge; a timer guard is the edge's guard. These fields appear only for the 2.3 forms.
-        if (isExecutable(n) && body(n)?.states.length)
-            for (const state of body(n)!.states)
-                state.transitions.forEach((t, i) => { if (t.target !== undefined)
-                    addEdge('transition', id + '.' + state.name, id + '.' + t.target, transitionLabel(t), { order: i, ...(isCompletion(t) ? { completion: true } : t.guard && !t.endpoint ? { guard: displayText(t.guard) } : {}) }); });
-        if (a.isState(n)) {
-            const reactions = n.transitions.flatMap((t, order) => isInternal(t) ? [{ label: transitionLabel(t), order, ...(t.guard ? { guard: displayText(t.guard) } : {}) }] : []), deferrals = stateDeferrals(n);
-            if (reactions.length)
-                p.reactions = reactions;
-            if (deferrals.length)
-                p.deferrals = deferrals;
-        }
+        // States in the flow (SIF-G01, SIF-M01): one transition edge per leave, in written order of the leaves of its state,
+        // labelled with what leads to it: the event line and the if conditions on the way. to S reaches S; exit; reaches the
+        // state written next (SIF-R09), and draws no edge when the flow goes on with a plain statement or the end.
+        if (isExecutable(n))
+            for (const state of flowStates(n)) {
+                const leaves = nodes(state).filter((x): x is a.Exit | a.Jump => (a.isJump(x) || a.isExit(x)) && owner(x, a.isStateStep) === state);
+                leaves.forEach((leave, order) => {
+                    const target = a.isJump(leave) ? leave.target : exitTarget(state)?.name;
+                    if (target !== undefined && state.name !== undefined && flowStates(n).some(x => x.name === target))
+                        addEdge('transition', id + '.' + state.name, id + '.' + target, a.isJump(leave) ? leaveLabel(leave) : leaveLabel(leave, 'exit'), { order });
+                });
+            }
         if (a.isScenario(n) && n.subject?.ref)
             // The subject is a top-level occurrence of the same package; a case without of has none.
             addEdge('subject', id, identity(n.subject.ref), 'subject');

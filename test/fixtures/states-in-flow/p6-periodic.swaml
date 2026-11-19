@@ -1,0 +1,241 @@
+package Periodic {
+  /** Machines released on every 10ms (SIF-R14 to SIF-R17): a release only looks, timers run across releases, the arrival look counts, reaching the end restarts at the next release. */
+  enum MotorDirection { stop, up, down }
+  enum SwitchPos { neutral, up, down }
+  port def SwitchIn {
+    provides attribute position: SwitchPos = SwitchPos.neutral;
+  }
+  port def MotorSense {
+    provides attribute current: uint = 0;
+  }
+  port def MotorOut {
+    provides attribute drive: MotorDirection;
+  }
+  port def Diag {
+    provides event query();
+    requires event travel(t: uint);
+  }
+  port def Flags {
+    provides attribute go: bool = false;
+    provides attribute spin: bool = false;
+  }
+  port def Slow {
+    provides attribute slow: bool = false;
+  }
+  port def Input {
+    provides event m(v: uint);
+    provides event n();
+    provides event done();
+  }
+  component def WindowWithParent {
+    /** The review's B2 counterexample in its original periodic form: a line that applies in every state (written on a parent) answers a query at every release that has one. */
+    reversed port switch: SwitchIn;
+    reversed port sense: MotorSense;
+    reversed port diag: Diag;
+    port motor: MotorOut;
+    const attribute pinchLimit: uint = 4500;
+    const attribute fullTravel: uint = 400;
+    attribute travel: uint = 0;
+    attribute answered: uint = 0;
+    operation step() {
+      state running {
+        on receive diag.query() { answered = answered + 1; publish diag.travel(travel); }
+        state idle {
+          on entry { send motor.drive(MotorDirection.stop); }
+          if (switch.position == SwitchPos.up and travel < fullTravel) { exit; }
+        }
+        state closing {
+          on entry { send motor.drive(MotorDirection.up); }
+          if (sense.current > pinchLimit) { to reversing; }
+          if (switch.position != SwitchPos.up or travel >= fullTravel) { to idle; }
+          travel = travel + 1;
+        }
+        state reversing {
+          on entry { send motor.drive(MotorDirection.down); }
+          after 100ms { to idle; }
+          if (travel > 0) { travel = travel - 1; }
+        }
+      }
+    }
+    schedule {
+      on every 10ms step() deadline 2ms;
+    }
+  }
+  component def Chain {
+    /** A look that leaves reaches the next state in the same release: a, b and c are passed through in one release when go holds; d stays. */
+    reversed port flags: Flags;
+    attribute visited: uint = 0;
+    operation step() {
+      while (true) {
+        state a {
+          on entry { visited = visited + 1; }
+          if (flags.go) { exit; }
+        }
+        state b {
+          on entry { visited = visited + 1; }
+          if (flags.go) { exit; }
+        }
+        state c {
+          on entry { visited = visited + 1; }
+          if (flags.go) { exit; }
+        }
+        state d {
+          on entry { visited = visited + 1; }
+          if (not flags.go) { to a; }
+          if (flags.spin) { exit; }
+        }
+      }
+    }
+    schedule {
+      on every 10ms step();
+    }
+  }
+  component def Spin {
+    /** The zero-time cycle of Chain without the visit counter: a state reached a second time in one release ends the release (SIF-R16). */
+    reversed port flags: Flags;
+    operation step() {
+      while (true) {
+        state a {
+          if (flags.go) { exit; }
+        }
+        state b {
+          if (flags.spin) { exit; }
+        }
+      }
+    }
+    schedule {
+      on every 10ms step();
+    }
+  }
+  component def Restart {
+    /** Locals live across releases; reaching the end leaves no state, and the next release runs the flow from the top with the locals declared again. */
+    attribute restarts: uint = 0;
+    attribute lastLooks: uint = 0;
+    attribute lookLog: uint = 0;
+    operation step() {
+      var looks: uint = 0;
+      state counting {
+        looks = looks + 1;
+        lookLog = lookLog * 10 + looks;
+        if (looks >= 3) { exit; }
+      }
+      lastLooks = looks;
+      restarts = restarts + 1;
+    }
+    schedule {
+      on every 10ms step();
+    }
+  }
+  component def LongLook {
+    /** A look that suspends for longer than the deadline. */
+    reversed port flags: Slow;
+    attribute looks: uint = 0;
+    operation step() {
+      state s {
+        looks = looks + 1;
+        if (flags.slow) { wait 3ms; }
+      }
+    }
+    schedule {
+      on every 10ms step() deadline 2ms;
+    }
+  }
+  component def Messages {
+    /** Input between releases: one message per release in delivery order; input of members the current state does not name is dropped at the next release. */
+    reversed port in: Input;
+    attribute got: uint = 0;
+    attribute ns: uint = 0;
+    operation step() {
+      state a {
+        on receive in.m(v) { got = got * 10 + v; }
+        on receive in.done() { exit; }
+      }
+      state b {
+        on receive in.n() { ns = ns + 1; }
+        on receive in.m(v) { got = got * 10 + v; }
+      }
+    }
+    schedule {
+      on every 10ms step();
+    }
+  }
+  component def Bench {
+    port switch: SwitchIn;
+    port sense: MotorSense;
+    port diag: Diag;
+    reversed port motor: MotorOut;
+    port toChain: Flags;
+    port toSpin: Flags;
+    port toLong: Slow;
+    port toMessages: Input;
+  }
+  component window: WindowWithParent;
+  component chain: Chain;
+  component spin: Spin;
+  component restart: Restart;
+  component longLook: LongLook;
+  component messages: Messages;
+  component bench: Bench;
+  connect (bench.switch, window.switch);
+  connect (bench.sense, window.sense);
+  connect (bench.diag, window.diag);
+  connect (window.motor, bench.motor);
+  connect (bench.toChain, chain.flags);
+  connect (bench.toSpin, spin.flags);
+  connect (bench.toLong, longLook.flags);
+  connect (bench.toMessages, messages.in);
+  associate bench to 'B2 a query at every release while closing and at the pinch', 'Entered and left in one release', 'Zero-time cycle in one release', 'Zero-time cycle that grows', 'End and restart', 'Deadline miss by a long look', 'Messages between releases';
+  test 'B2 a query at every release while closing and at the pinch' of window {
+    wait 25ms;
+    send bench.switch.position(SwitchPos.up);
+    for (var i: uint = 0; i < 8; i = i + 1) {
+      publish bench.diag.query();
+      wait 10ms;
+    }
+    send bench.sense.current(5000);
+    publish bench.diag.query();
+    wait 10ms;
+    send bench.sense.current(0);
+    publish bench.diag.query();
+    wait 30ms;
+    assert window.answered == 10;
+  }
+  test 'Entered and left in one release' of chain {
+    wait 15ms;
+    send bench.toChain.go(true);
+    wait 10ms;
+    assert chain.visited == 4;
+    send bench.toChain.go(false);
+    wait 10ms;
+  }
+  test 'Zero-time cycle in one release' of spin {
+    send bench.toSpin.go(true);
+    send bench.toSpin.spin(true);
+    wait 15ms;
+  }
+  test 'Zero-time cycle that grows' of chain {
+    /** The entries count visits, so the configuration never repeats; the bound within one release (SIF-R16) still ends the release. */
+    send bench.toChain.go(true);
+    send bench.toChain.spin(true);
+    wait 15ms;
+  }
+  test 'End and restart' of restart {
+    wait 75ms;
+    assert restart.restarts == 2 and restart.lastLooks == 3;
+  }
+  test 'Deadline miss by a long look' of longLook {
+    wait 15ms;
+    send bench.toLong.slow(true);
+    wait 20ms;
+  }
+  test 'Messages between releases' of messages {
+    publish bench.toMessages.m(1);
+    publish bench.toMessages.m(2);
+    publish bench.toMessages.n();
+    publish bench.toMessages.m(3);
+    publish bench.toMessages.done();
+    publish bench.toMessages.m(4);
+    publish bench.toMessages.n();
+    wait 75ms;
+  }
+}

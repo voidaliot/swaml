@@ -1,0 +1,48 @@
+package B5 {
+  port def In { provides event m(v: uint); provides event bad(); }
+  component def P {
+    reversed port in: In;
+    attribute got: uint = 0;
+    operation step() {
+      state s {
+        on receive in.m(v) { got = got + v; }
+        on receive in.bad() { fail "broken"; }
+      }
+    }
+    schedule { on every 10ms step(); }
+  }
+  component def W {
+    reversed port in: In;
+    attribute got: uint = 0;
+    operation step() {
+      state s {
+        on receive in.m(v) { got = got + v; }
+        on receive in.bad() { fail "broken"; }
+      }
+    }
+    schedule { on start step(); }
+  }
+  component def Bench { port out: In; port out2: In; }
+  component p: P;
+  component w: W;
+  component bench: Bench;
+  connect (bench.out, p.in);
+  connect (bench.out2, w.in);
+  associate bench to 'Periodic', 'Waiting';
+  test 'Periodic' of p {
+    publish bench.out.bad();
+    wait 25ms;
+    var i: uint = 0;
+    while (i < 20) { publish bench.out.m(1); i = i + 1; }
+    wait 50ms;
+    assert p.got == 0;
+  }
+  test 'Waiting' of w {
+    publish bench.out2.bad();
+    wait 15ms;
+    var i: uint = 0;
+    while (i < 20) { publish bench.out2.m(1); i = i + 1; }
+    wait 50ms;
+    assert w.got == 0;
+  }
+}

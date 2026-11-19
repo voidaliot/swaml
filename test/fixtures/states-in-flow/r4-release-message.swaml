@@ -1,0 +1,93 @@
+package R {
+  port def In { provides event m(v: uint); }
+  component def Lose {
+    reversed port in: In;
+    attribute go: bool = false;
+    attribute got: uint = 0;
+    operation begin() { go = true; }
+    operation step() {
+      while (true) {
+        state s {
+          if (go) exit;
+          on receive in.m(v) { got = v; }
+        }
+        state t {
+          on receive in.m(v) { got = v + 100; go = false; to s; }
+        }
+      }
+    }
+    schedule { on every 10ms step(); }
+  }
+  component def LoseW {
+    reversed port in: In;
+    attribute go: bool = false;
+    attribute got: uint = 0;
+    operation begin() { go = true; }
+    operation step() {
+      while (true) {
+        state s {
+          if (go) exit;
+          on receive in.m(v) { got = v; }
+        }
+        state t {
+          on receive in.m(v) { got = v + 100; go = false; to s; }
+        }
+      }
+    }
+    schedule { on start step(); }
+  }
+  component def Timer {
+    reversed port in: In;
+    attribute got: uint = 0;
+    attribute fired: uint = 0;
+    operation step() {
+      while (true) {
+        state awaiting {
+          after 30ms { fired = fired + 1; exit; }
+          on receive in.m(v) { got = v; }
+        }
+        state retry {
+          on receive in.m(v) { got = v + 100; }
+          after 100ms exit;
+        }
+      }
+    }
+    schedule { on every 10ms step(); }
+  }
+  component def TimerW {
+    reversed port in: In;
+    attribute got: uint = 0;
+    attribute fired: uint = 0;
+    operation step() {
+      while (true) {
+        state awaiting {
+          after 30ms { fired = fired + 1; exit; }
+          on receive in.m(v) { got = v; }
+        }
+        state retry {
+          on receive in.m(v) { got = v + 100; }
+          after 100ms exit;
+        }
+      }
+    }
+    schedule { on start step(); }
+  }
+  component def Bench { port o1: In; port o2: In; port o3: In; port o4: In; }
+  component lose: Lose;
+  component losew: LoseW;
+  component timer: Timer;
+  component timerw: TimerW;
+  component bench: Bench;
+  connect (bench.o1, lose.in);
+  connect (bench.o2, losew.in);
+  connect (bench.o3, timer.in);
+  connect (bench.o4, timerw.in);
+  associate bench, losew, timer, timerw to 'T';
+  test 'T' of lose {
+    wait 15ms;
+    lose.begin(); losew.begin(); publish bench.o1.m(7); publish bench.o2.m(7);
+    wait 20ms;
+    publish bench.o3.m(5); publish bench.o4.m(5);
+    wait 50ms;
+  }
+}

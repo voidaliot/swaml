@@ -16,8 +16,7 @@ export class RuntimeFault extends Error {
     constructor(public code: string, message = code) { super(message); }
 }
 export class ContractViolation extends Error {
-    /** details names the subject and source of a violation that has its own (CompletionLoop, WP5-T04); the others name the run target. */
-    constructor(public code: string, message = code, public details?: { subject: string; source?: string }) { super(message); }
+    constructor(public code: string, message = code) { super(message); }
 }
 export function plain(v: Value): unknown { if (Array.isArray(v.data))
     return v.data.map(plain); if (v.data !== null && typeof v.data === 'object')

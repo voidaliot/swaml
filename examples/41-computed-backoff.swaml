@@ -73,27 +73,23 @@ package Backoff {
     attribute attempts: uint = 0;
     attribute connectedAt: uint = 0;
     operation run() {
-      initial Connecting;
       state Connecting {
         on entry {
           attempts = attempts + 1;
         }
-        after 10ms to Backoff {
-        }
+        after 10ms exit;
       }
       state Backoff {
         on entry {
           delayMs = minInt(delayMs * 2, capMs);
         }
-        after (delayMs * 1ms) to Retry {
-        }
+        after (delayMs * 1ms) exit;
       }
       state Retry {
         on entry {
           connectedAt = now();
         }
-        after 5ms to Connecting {
-        }
+        after 5ms to Connecting;
       }
     }
     schedule {

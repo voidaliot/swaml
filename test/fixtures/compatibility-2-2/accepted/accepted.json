@@ -1,0 +1,9 @@
+{
+  "comment": "The accepted behaviour changes of the migration of 2.2 machines, each model with the kind of difference it shows against its 3.1.0 result (scripts/compatibility-machines.mjs, acceptedDifferences).",
+  "models": [
+    { "file": "c3-component-order-7129.swaml", "kind": "componentOrder", "difference": "C-3: an if test in a migrated block is no scheduling step; a noEnabledTransition discard and a line of the machine run in the other order" },
+    { "file": "c3-if-test-not-a-step.swaml", "kind": "globalOrder", "difference": "C-3: the machine's write moves before another component's write" },
+    { "file": "c3-store-5299.swaml", "kind": "stores", "difference": "C-3: the machine reaches a state before another component publishes, so the state takes a message that 2.2 dropped (also with 2.2's queue order)" },
+    { "file": "r10-delivery-order-drop.swaml", "kind": "stores", "difference": "r10: owned input is looked at in delivery order, not in the order the queues were created, which also decides what is dropped" }
+  ]
+}

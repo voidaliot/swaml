@@ -28,12 +28,15 @@ export function largeModel(count: number): string {
       }
     }
     operation lamp() {
-      initial Off;
       state Off {
         /** State documentation ${i}. */
-        after 2ms to On {
-        } on receive control.message(v) when(v > 0) to On {
-          last = v;
+        after 2ms {
+          exit;
+        } on receive control.message(v) {
+          if(v > 0) {
+            last = v;
+            exit;
+          }
         }
       }
       state On {
@@ -42,10 +45,9 @@ export function largeModel(count: number): string {
         } on exit {
           last = 0;
         }
-        after 3ms to Done {
-        }
+        after 3ms exit;
       }
-      final state Done {
+      state Done {
       }
     }
     schedule {
@@ -89,14 +91,14 @@ export function bodyDocsModel(count: number): string {
       sent = sent - d;
     }
     operation hazardLifecycle() {
-      initial Idle;
       state Idle {
         /** No own hazard is announced ${i}. */
         on entry {
           transmitAwareness(1);
         }
-        on receive input.tick(v) to Idle {
+        on receive input.tick(v) {
           transmitHazard(v);
+          to Idle;
         }
       }
     }

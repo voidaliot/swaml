@@ -1,5 +1,5 @@
 package BreakerInternal {
-  /** A persistence circuit breaker in the shape of the cloud model's PersistenceWriter. In 2.2 every transition has a target: SelfBreaker writes an arrival in Closed with a self transition, to Closed, which exits and enters the state again, and trips only at the next arrival after the third failed write. In Open it must leave arrivals unhandled, because a self transition would restart the cool-down timer, so they appear only as discards. From 2.3 a transition without to is internal: it runs only its effect, without exit, entry or state update, and the state's timers keep their epoch. InternalBreaker writes arrivals internally, trips by a completion transition right after the third failed write, and counts the arrivals it sheds while Open without delaying the cool-down. */
+  /** A persistence circuit breaker in the shape of the cloud model's PersistenceWriter. SelfBreaker keeps the shape of its 2.2 machine (migrated): every arrival in Closed leaves and reaches Closed again (to Closed), which exits and enters the state, and it trips only at the next arrival after the third failed write; in Open it leaves arrivals unhandled, so they are dropped. With states in the flow a line that does not leave stays: the state is not left, its entry does not run again and its timers keep running. InternalBreaker writes arrivals with a staying line, trips by the condition standing in Closed after that line, right after the third failed write, and counts the arrivals it sheds while Open without delaying the cool-down. */
   port def Stream {
     provides event accepted(t: uint);
   }
@@ -43,29 +43,31 @@ package BreakerInternal {
       }
     }
     operation circuit() {
-      initial Closed;
       state Closed {
         on receive stream.accepted(t) {
           write(t);
         }
-        when (consecutiveFailures >= failureThreshold) to Open {
+        if (consecutiveFailures >= failureThreshold) {
           trips = trips + 1;
+          to Open;
         }
       }
       state Open {
         on receive stream.accepted(t) {
           shedArrivals = shedArrivals + 1;
         }
-        after 20ms to HalfOpen {
+        after 20ms {
           halfOpenAtNs = Swaml::Time::now();
+          exit;
         }
       }
       state HalfOpen {
         on entry {
           consecutiveFailures = 0;
         }
-        on receive stream.accepted(t) to Closed {
+        on receive stream.accepted(t) {
           write(t);
+          to Closed;
         }
       }
     }
@@ -74,7 +76,7 @@ package BreakerInternal {
     }
   }
   component def SelfBreaker {
-    /** The 2.2 shape. */
+    /** The 2.2 shape, migrated: the trip test leaves, and the statements after it are the 2.2 unguarded transition. */
     reversed port stream: Stream;
     reversed port store: StoreApi;
     const attribute failureThreshold: uint = 3;
@@ -92,26 +94,29 @@ package BreakerInternal {
       }
     }
     operation circuit() {
-      initial Closed;
       state Closed {
-        on receive stream.accepted(t) when (consecutiveFailures >= failureThreshold) to Open {
-          trips = trips + 1;
-        }
-        on receive stream.accepted(t) to Closed {
+        on receive stream.accepted(t) {
+          if (consecutiveFailures >= failureThreshold) {
+            trips = trips + 1;
+            exit;
+          }
           write(t);
+          to Closed;
         }
       }
       state Open {
-        after 20ms to HalfOpen {
+        after 20ms {
           halfOpenAtNs = Swaml::Time::now();
+          exit;
         }
       }
       state HalfOpen {
         on entry {
           consecutiveFailures = 0;
         }
-        on receive stream.accepted(t) to Closed {
+        on receive stream.accepted(t) {
           write(t);
+          to Closed;
         }
       }
     }
@@ -135,7 +140,7 @@ package BreakerInternal {
   connect (feed.toSelf, selfBreaker.stream);
   associate feed, store, selfStore, selfBreaker to 'Store outage trips the breaker and recovers';
   test 'Store outage trips the breaker and recovers' of internal {
-    /** Both stores are down; arrivals every 5 ms from 0 to 30 ms. The internal breaker trips right after its third failed write, at 11 ms, sheds the four arrivals at 15 to 30 ms while the cool-down keeps its epoch, and is half open at 31 ms. The 2.2 breaker trips only at the fourth arrival, at 15 ms, discards the arrivals while open and is half open at 35 ms. When the store is back, the next arrival closes both. */
+    /** Both stores are down; arrivals every 5 ms from 0 to 30 ms. The internal breaker trips right after its third failed write, at 11 ms, sheds the four arrivals at 15 to 30 ms while the cool-down keeps its epoch, and is half open at 31 ms. The breaker of the 2.2 shape trips only at the fourth arrival, at 15 ms, discards the arrivals while open and is half open at 35 ms. When the store is back, the next arrival closes both. */
     store.setDown(true);
     selfStore.setDown(true);
     for (var i: uint = 0; i <= 6; i = i + 1) {

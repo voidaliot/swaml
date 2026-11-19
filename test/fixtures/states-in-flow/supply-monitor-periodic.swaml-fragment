@@ -1,0 +1,15 @@
+    operation classify() {
+      /** Undervoltage as a state of a periodic machine (gate F); the qualifying count stays a counter (a state per sample would be looked at by its arrival look in the same release). */
+      while (true) {
+        state normal {
+          if (supplyMv < underMv and lowSamples < qualifySamples) { lowSamples = lowSamples + 1; }
+          if (supplyMv >= recoverMv) { lowSamples = 0; }
+          if (lowSamples >= qualifySamples) { exit; }
+        }
+        state under {
+          on entry { undervoltage = true; }
+          on exit { undervoltage = false; }
+          if (supplyMv >= recoverMv) { lowSamples = 0; exit; }
+        }
+      }
+    }

@@ -243,11 +243,10 @@ test('WP2-R01 a conditional in a test script, a guard and a send argument runs i
     reversed port p: P;
     attribute got: int = 0;
     operation machine() {
-      initial waiting;
       state waiting {
-        on receive p.level(v) when (if (v > 0) v < 100 else false) to done { got = if (v == 30) v + 1 else v; }
+        on receive p.level(v) { if (if (v > 0) v < 100 else false) { got = if (v == 30) v + 1 else v; exit; } }
       }
-      final state done { }
+      state done { }
     }
     schedule { on start machine(); }
   }
@@ -378,12 +377,11 @@ const everyPosition = `package view::state {
       publish gate.view(out, state);
     }
     operation machine() {
-      initial state;
       state state {
         on entry { sum = sum + 100; }
-        after 1ms to view { }
+        after 1ms to view;
       }
-      final state view { }
+      state view { }
     }
     operation keep(value: int) { sum = sum + value; }
     schedule { on start run(); on start machine(); on receive gate.in(value) keep(value); }
@@ -411,16 +409,17 @@ const everyPosition = `package view::state {
     assert in.state.state == Mode.in and in.view.state == Mode.in and in.view.got == 12 and in.state.view.view == 12 and in.state.sum == 113;
   }
 }`;
-test('WP2-S01 the words in every name position: package, enum literal, field, member, parameter, local, operation, state, initial state, view, both for … in positions', async () => {
+test('WP2-S01 the words in every name position: package, enum literal, field, member, parameter, local, operation, state, jump target, view, both for … in positions', async () => {
     const { value: r, logged } = await silently(() => valid(everyPosition));
     assert.deepEqual(logged, []);
     const names = AstUtils.streamAllContents(r.model).flatMap(n => typeof (n as { name?: unknown }).name === 'string' ? [`${n.$type}:${(n as unknown as { name: string }).name}`] : []).toArray();
-    for (const expected of ['Attribute:state', 'Attribute:view', 'Attribute:in', 'Field:view', 'Field:state', 'Field:in', 'Field:out', 'PortMember:view', 'PortMember:in', 'PortMember:out', 'Argument:in', 'Argument:out', 'LocalVariable:out', 'Operation:out', 'State:state', 'State:view', 'ComponentUsage:in', 'ComponentUsage:state', 'ComponentUsage:view', 'View:out', 'View:state'])
+    for (const expected of ['Attribute:state', 'Attribute:view', 'Attribute:in', 'Field:view', 'Field:state', 'Field:in', 'Field:out', 'PortMember:view', 'PortMember:in', 'PortMember:out', 'Argument:in', 'Argument:out', 'LocalVariable:out', 'Operation:out', 'StateStep:state', 'StateStep:view','ComponentUsage:in', 'ComponentUsage:state', 'ComponentUsage:view', 'View:out', 'View:state'])
         assert.ok(names.includes(expected), expected);
     assert.deepEqual(r.model.packages[0].elements.filter(a.isEnumType)[0].literals, ['view', 'state', 'in', 'out']);
     assert.equal(r.model.packages[0].name, 'view::state');
     const machine = operation(r.model, 'machine');
-    assert.equal(machine.body!.initial, 'state');
+    assert.equal((machine.body!.statements[0] as a.StateStep).name, 'state');
+    assert.equal(AstUtils.streamAllContents(machine).find(a.isJump)?.target, 'view');
     const loops = AstUtils.streamAllContents(r.model).filter(a.isForEach).toArray();
     assert.deepEqual(loops.map(l => [l.variable.name, (l.collection as a.ReferenceExpression).path]), [['in', 'values'], ['x', 'in']]);
     assert.equal(runCase([r.model], 'view::state::Checks', { untilNs: 5000000 }).result, 'pass');
@@ -438,7 +437,7 @@ test('WP2-M01 name services are edition-aware: 2.3 writes the words unquoted, 2.
         assert.equal(formatName(word, '2.1'), `'${word}'`);
         assert.ok(isBasicName(word) && !isBasicName(word, '2.2'));
     }
-    // defer is no keyword before WP5, so every edition writes it as a basic name.
+    // The name defer, WP5's word that never ships (SIF, proposal 4.7), is a basic name in every edition.
     assert.equal(formatName('defer'), 'defer');
     assert.equal(formatName('defer', '2.2'), 'defer');
     // Reserved words stay quoted in every edition.
@@ -503,9 +502,9 @@ const positions = [
     (w: string) => `operation f() { for (x: int in ${w}`,
     (w: string) => `operation f() { publish ${w}.`,
     (w: string) => `operation f() { send p.${w}(`,
-    (w: string) => `operation f() { initial ${w}; state ${w} {`,
-    (w: string) => `operation f() { initial ${w}`,
-    (w: string) => `operation f() { initial s; state ${w}`,
+    (w: string) => `operation f() { state ${w} {`,
+    (w: string) => `operation f() { state s { to ${w}`,
+    (w: string) => `operation f() { state ${w}`,
     (w: string) => `component ${w}`,
     (w: string) => `component ${w}: `,
     (w: string) => `schedule { on receive ${w}.m(`,

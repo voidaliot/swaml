@@ -1,6 +1,6 @@
 import { AstUtils, CstUtils, type AstNode } from 'langium';
 import * as a from './generated/ast.js';
-import { OCCURRENCE_LIMIT, occurrenceCount, body, identity, isExecutable, members, occurrences, owner, resolve, type Node } from './semantic.js';
+import { OCCURRENCE_LIMIT, occurrenceCount, body, flowStates, identity, isExecutable, members, occurrences, owner, resolve, type Node } from './semantic.js';
 export function documentationText(n: {
     documentation?: a.Documentation;
 }): string | undefined { return n.documentation?.text.slice(3,-2).replace(/^\s*\* ?/gm, '').trim(); }
@@ -34,8 +34,10 @@ export function viewCandidates(models: readonly a.Model[]): ViewSubject[] {
         if (isExecutable(n)) {
             for (const op of body(n)?.operations ?? [])
                 add(op as Node, `${path}.${op.name}`);
-            for (const state of body(n)?.states ?? [])
-                add(state as Node, `${path}.${state.name}`);
+            // States in the flow are named in their operation, parents and inner states alike (names are unique there, SIF-S02).
+            for (const state of flowStates(n))
+                if (state.name !== undefined)
+                    out.push({ path: `${path}.${state.name}`, name: state.name, kind: 'state', node: state as Node, definition: identity(state) });
         }
     };
     for (const m of models)

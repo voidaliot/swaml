@@ -1,0 +1,39 @@
+package R {
+  port def Drive { provides attribute power: uint; }
+  component def Heater {
+    port drive: Drive;
+    attribute requested: bool = true;
+    attribute heating: bool = false;
+    attribute bad: bool = false;
+    operation setBad(b: bool) { bad = b; }
+    operation setReq(b: bool) { requested = b; }
+    operation step() {
+      while (true) {
+        state off {
+          if (requested) exit;
+        }
+        state active {
+          on entry { heating = true; send drive.power(70); }
+          on exit { heating = false; send drive.power(0); }
+          if (bad) { fail "sensor"; }
+          if (not requested) exit;
+        }
+      }
+    }
+    schedule { on every 10ms step(); }
+  }
+  component def Bench { reversed port d: Drive; }
+  component h: Heater;
+  component bench: Bench;
+  connect (h.drive, bench.d);
+  associate bench to 'T';
+  test 'T' of h {
+    wait 25ms;
+    h.setBad(true);
+    wait 20ms;
+    h.setBad(false);
+    h.setReq(false);
+    wait 30ms;
+    assert not h.heating;
+  }
+}

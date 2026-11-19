@@ -1,0 +1,31 @@
+package Ifs {
+  port def In { requires event b(v: int); }
+  port def Out { provides event b(v: int); }
+  port def Ob { provides event res(v: int); }
+  port def Ib { requires event res(v: int); }
+  component def M {
+    port i: In;
+    port o: Ob;
+    attribute n: int = 0;
+    operation run() {
+      initial S0;
+      state S0 {
+        on receive i.b(v) to S1 { publish o.res(1); if (n > 5) { n = 1; } n = n + 2; }
+      }
+      final state S1 { }
+    }
+    schedule { on start run(); }
+  }
+  component def D {
+    port q: Out;
+    port w: Ib;
+    attribute got: int = 0;
+    operation emit() { publish q.b(3); }
+    operation sink(v: int) { got = got + 1; }
+    schedule { on start emit(); on receive w.res(v) sink(v); }
+  }
+  component mm: M;
+  component d: D;
+  connect (d.q, mm.i);
+  connect (mm.o, d.w);
+}

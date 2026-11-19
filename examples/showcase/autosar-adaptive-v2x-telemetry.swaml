@@ -1179,14 +1179,16 @@ package AdaptiveV2x {
       }
     }
     operation hazardLifecycle() {
-      initial Idle;
       state Idle {
         /** No own hazard is announced; pseudonym rotation is allowed. */
         on entry {
           send security.rotationHold(false);
         }
-        on receive hazards.hazardDetected(cause, position) when (canAnnounce()) to Active {
-          startHazard(cause, position);
+        on receive hazards.hazardDetected(cause, position) {
+          if (canAnnounce()) {
+            startHazard(cause, position);
+            exit;
+          }
         }
       }
       state Active {
@@ -1195,15 +1197,16 @@ package AdaptiveV2x {
           send security.rotationHold(true);
           beginOwnEvent();
         }
-        on exit {
+        after 5s {
           hazardActive = false;
+          hazardsExpired = hazardsExpired + 1;
+          to Idle;
         }
-        on receive hazards.hazardCleared() to Idle {
+        on receive hazards.hazardCleared() {
+          hazardActive = false;
           hazardsCancelled = hazardsCancelled + 1;
           transmitHazard(ownHazardFrame(true));
-        }
-        after 5s to Idle {
-          hazardsExpired = hazardsExpired + 1;
+          to Idle;
         }
       }
     }
@@ -1633,12 +1636,14 @@ package AdaptiveV2x {
       send ctl.sessionUp(s == SessionState.connected);
     }
     operation session() {
-      initial Offline;
       state Offline {
         on entry {
           enter(SessionState.offline);
         }
-        on receive network.coverage(up) when (up) to Connecting {
+        on receive network.coverage(up) {
+          if (up) {
+            exit;
+          }
         }
       }
       state Connecting {
@@ -1647,14 +1652,17 @@ package AdaptiveV2x {
           attempts = attempts + 1;
           publish ctl.openRequested(attempts);
         }
-        on receive ctl.opened(id) to Connected {
+        on receive ctl.opened(id) {
           sessionId = id;
           sessionsOpened = sessionsOpened + 1;
+          exit;
         }
-        on receive ctl.refused() to Backoff {
-        }
-        on receive network.coverage(up) when (not up) to Offline {
-          coverageLosses = coverageLosses + 1;
+        on receive ctl.refused() to Backoff;
+        on receive network.coverage(up) {
+          if (not up) {
+            coverageLosses = coverageLosses + 1;
+            to Offline;
+          }
         }
       }
       state Connected {
@@ -1662,10 +1670,12 @@ package AdaptiveV2x {
           enter(SessionState.connected);
           attempts = 0;
         }
-        on receive ctl.transferFailed() to Backoff {
-        }
-        on receive network.coverage(up) when (not up) to Offline {
-          coverageLosses = coverageLosses + 1;
+        on receive ctl.transferFailed() exit;
+        on receive network.coverage(up) {
+          if (not up) {
+            coverageLosses = coverageLosses + 1;
+            to Offline;
+          }
         }
       }
       state Backoff {
@@ -1674,11 +1684,13 @@ package AdaptiveV2x {
           backoffs = backoffs + 1;
           publish ctl.backoffRequested(attempts);
         }
-        on receive ctl.backoffElapsed() to Connecting {
-        }
-        on receive network.coverage(up) when (not up) to Offline {
-          coverageLosses = coverageLosses + 1;
-          publish ctl.backoffAborted();
+        on receive ctl.backoffElapsed() to Connecting;
+        on receive network.coverage(up) {
+          if (not up) {
+            coverageLosses = coverageLosses + 1;
+            publish ctl.backoffAborted();
+            to Offline;
+          }
         }
       }
     }
@@ -2053,50 +2065,43 @@ package AdaptiveV2x {
       send display.groupState(s);
     }
     operation functionGroup() {
-      initial Off;
       state Off {
         /** Power is up; the machine has not yet started the function group. */
-        after 10ms to Startup {
-        }
+        after 10ms exit;
       }
       state Startup {
         on entry {
           enter(FunctionGroupState.startup);
         }
-        after 200ms to Running {
-        }
-        on receive power.ignitionOff() to ShuttingDown {
-        }
+        after 200ms exit;
+        on receive power.ignitionOff() to ShuttingDown;
       }
       state Running {
         on entry {
           enter(FunctionGroupState.running);
         }
-        on receive platform.supervisionFailed(entity) to Degraded {
+        on receive platform.supervisionFailed(entity) {
           degradations = degradations + 1;
           lastFailedEntity = entity;
+          exit;
         }
-        on receive power.ignitionOff() to ShuttingDown {
-        }
+        on receive power.ignitionOff() to ShuttingDown;
       }
       state Degraded {
         /** Supervision failed: awareness transmission pauses, reception and telemetry continue. */
         on entry {
           enter(FunctionGroupState.degraded);
         }
-        on receive platform.supervisionRecovered() to Running {
-        }
-        on receive power.ignitionOff() to ShuttingDown {
-        }
+        on receive platform.supervisionRecovered() to Running;
+        on receive power.ignitionOff() exit;
       }
       state ShuttingDown {
         on entry {
           enter(FunctionGroupState.shutdown);
         }
-        after 500ms to Down {
-        }
+        after 500ms exit;
       }
-      final state Down {
+      state Down {
         on entry {
           enter(FunctionGroupState.off);
         }

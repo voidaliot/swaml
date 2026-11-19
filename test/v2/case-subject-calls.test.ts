@@ -276,7 +276,7 @@ test('a direct subject call remains local-call behavior and never releases an af
 
 test('stateful operations still start only through their on-start entry', async () => {
     for (const kind of kinds) await invalid(`package P {
-  component subject { operation machine() { initial Done; final state Done { } } schedule { on start machine(); } }
+  component subject { operation machine() { state Done { } } schedule { on start machine(); } }
   ${kind} U of subject { subject.machine(); }
-}`, 'SW2006');
+}`, 'SW2008'); // SIF-S01 (SIF-D01): never called, also not by a case script; SW2008 (2.2 reported SW2006).
 });

@@ -3,21 +3,19 @@ package States {
   component Demo {
     attribute lit: bool = false;
     operation lamp() {
-      initial Off;
       state Off {
-        after 2ms to On {
-        }
+        after 2ms exit;
       }
       state On {
         on entry {
           lit = true;
-        } on exit {
+        }
+        on exit {
           lit = false;
         }
-        after 3ms to Done {
-        }
+        after 3ms exit;
       }
-      final state Done {
+      state Done {
       }
     }
     schedule {

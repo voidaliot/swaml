@@ -1,6 +1,6 @@
 import type { AstNode } from 'langium';
 import * as a from './generated/ast.js';
-import { body, isClockRead, isExecutable, isPlace, placeRoot, signature, type Effect, type Executable } from './semantic.js';
+import { body, isClockRead, isStateful, isExecutable, isPlace, placeRoot, signature, type Effect, type Executable } from './semantic.js';
 /** The index expressions of a value reference or place, left to right: the first index, then each selector index. */
 const indexExpressions = (n: a.ReferenceExpression | a.Assign): a.Expression[] => [...(n.index ? [n.index] : []), ...(n.selectors ?? []).flatMap(x => x.index ? [x.index] : [])];
 
@@ -24,9 +24,8 @@ const indexExpressions = (n: a.ReferenceExpression | a.Assign): a.Expression[] =
  * reports by itself (with neutral inputs) stays the helper's finding; every other write of the helper that
  * this call site makes stale is reported at the call, so both are reported. Loops run to a fixed point over
  * the finite domain of attribute sets. The work per document is capped; past the cap the analysis stops and
- * the caller reports a reference validation limit instead of a stale read. One state machine reaction runs the source state's
- * exit action, the transition effect and the target state's entry action under the transition's guard; the
- * initial state's entry action runs on its own. Nested operations are analysed on their own.
+ * the caller reports a reference validation limit instead of a stale read. States are statements of the flow (see
+ * statement). Nested operations are analysed on their own.
  */
 export interface StaleReadContext {
     readonly attributes: ReadonlySet<string>;
@@ -155,6 +154,14 @@ class Analysis {
     private readonly records?: Map<string, { value: Value, guards: Value[], targets: Set<string> }>;
     /** Flows at each suspension inside the protected bodies of the enclosing interrupt regions. */
     private readonly collectors: Flow[][] = [];
+    /** Flows at each exit; or to S; run by the looks of the enclosing states (SIF-R09). */
+    private readonly leaves: { flow: Flow; node: a.Exit | a.Jump }[][] = [];
+    /**
+     * The conditions under which the state just analysed was left (SIF-R09): leaving runs the line's block, then on exit,
+     * then the next state's on entry, all under the conditions of the leave. Set by a state, used by the on entry of a state
+     * written next in the same list, cleared by any other statement.
+     */
+    private leftUnder?: Value;
     private suspensions = 0;
     constructor(private readonly ctx: StaleReadContext, private readonly active: Set<Executable>, summarising = false) {
         if (summarising)
@@ -283,7 +290,7 @@ class Analysis {
     /** The call-site independent summary of target, computed once per validation pass and component. */
     private summary(target: Executable, effect: Effect): Summary | undefined {
         const b = body(target);
-        if (!(effect.reads || effect.writes) || !b || b.states.length || this.active.has(target))
+        if (!(effect.reads || effect.writes) || !b || isStateful(target) || this.active.has(target))
             return undefined;
         const cached = this.ctx.summaries.get(target);
         if (cached)
@@ -326,7 +333,9 @@ class Analysis {
         const depth = flow.guards.length;
         let current = flow;
         for (const s of list) {
-            current = this.statement(s, current);
+            const under = this.leftUnder;
+            this.leftUnder = undefined;
+            current = this.statement(s, current, under);
             // An if whose only branch returns or fails guards the rest of the block with its condition.
             if (a.isIf(s) && !s.otherwise && terminates(s.then))
                 current.guards = [...current.guards, this.conditions.get(s) ?? none()];
@@ -338,7 +347,7 @@ class Analysis {
     block(b: a.Block | a.ElseIf | undefined, flow: Flow): Flow {
         return this.statements(b?.statements ?? [], flow);
     }
-    statement(s: a.Statement, flow: Flow): Flow {
+    statement(s: a.Statement | a.StateMember, flow: Flow, leftUnder?: Value): Flow {
         if (this.found)
             return flow;
         if (++this.ctx.budget.work > (this.ctx.budget.limit ?? STALE_READ_WORK_LIMIT))
@@ -404,6 +413,70 @@ class Analysis {
                 return this.block(s.body, g);
             }));
         }
+        else if (a.isExit(s) || a.isJump(s))
+            this.leaves.at(-1)?.push({ flow: flow.copy(), node: s });
+        else if (a.isStateStep(s)) {
+            // States in the flow (SIF-R01, SIF-R02, SIF-R05, SIF-R09): on entry once (under the conditions of the leave of
+            // the state written before it, if any); then looks, each possibly after a wait (a suspension), running the
+            // statements standing in the state and, when present, the event lines; each leave goes on with on exit under its
+            // own conditions. Inner states are statements of their parent's look here, which over-approximates their order.
+            const depth = flow.guards.length;
+            for (const x of s.statements)
+                if (a.isStateAction(x) && x.kind === 'entry') {
+                    if (leftUnder)
+                        flow.guards = [...flow.guards, leftUnder];
+                    flow = this.block(x.body, flow);
+                    flow.guards = flow.guards.slice(0, depth);
+                }
+            const leaves: { flow: Flow; node: a.Exit | a.Jump }[] = [];
+            this.leaves.push(leaves);
+            let looked: Flow;
+            try {
+                // Every look walks the parents' items first, so a var declared in a parent's braces is evaluated again in
+                // each look of an inner state, after its wait (SIF-R10; review 5 N5).
+                const parentLocals: a.LocalVariable[] = [];
+                for (let p = s.$container; a.isStateStep(p); p = p.$container)
+                    parentLocals.unshift(...p.statements.filter(a.isLocalVariable));
+                looked = this.loop(flow, inner => {
+                    this.suspend(inner);
+                    let at = inner;
+                    for (const v of parentLocals)
+                        at = this.statement(v, at);
+                    for (const item of s.statements) {
+                        if (a.isStateAction(item))
+                            continue;
+                        if (a.isEventLine(item)) {
+                            const line = at.copy();
+                            item.bindings.forEach(n => line.locals.set(n, none()));
+                            at.merge(this.block(item.body, line));
+                        }
+                        else
+                            at = this.statement(item, at);
+                    }
+                    return at;
+                });
+            }
+            finally {
+                this.leaves.pop();
+            }
+            // What follows the state runs only after a leave: the flows at the leaves (aged by the suspensions of their look),
+            // joined, with the join of their conditions, go through on exit. The conditions of the exit; leaves (a jump goes
+            // on at its target, not here), aged by a suspension in on exit, then guard the on entry of a state written next.
+            // A state that is never left by a statement here (a named step, or left by a parent) goes on as looked.
+            const extra = (l: Flow) => l.guards.slice(depth), joined = (gs: Value[]) => gs.reduce<Value | undefined>((x, g) => x ? join(x, g) : g, undefined);
+            const flows = leaves.length ? leaves.map(l => l.flow) : [looked.copy()];
+            const left = flows.slice(1).reduce((x, y) => { x.merge(y); return x; }, flows[0].copy());
+            const under = joined(flows.flatMap(extra)), exits = joined(leaves.filter(l => a.isExit(l.node)).flatMap(l => extra(l.flow)));
+            left.guards = under ? [...left.guards.slice(0, depth), under] : left.guards.slice(0, depth);
+            let out = left;
+            const before = this.suspensions;
+            for (const x of s.statements)
+                if (a.isStateAction(x) && x.kind === 'exit')
+                    out = this.block(x.body, out);
+            this.leftUnder = exits && this.suspensions !== before ? aged(exits) : exits;
+            out.guards = out.guards.slice(0, depth);
+            return out;
+        }
         else if (a.isReceive(s)) {
             // A computed timeout is evaluated before the statement suspends (WP4-S03).
             this.expression(s.timeoutValue, flow);
@@ -454,27 +527,7 @@ export function staleWrite(op: Executable, ctx: StaleReadContext): { write?: Ast
     const analysis = new Analysis(ctx, new Set([op]));
     const parameters = () => new Flow(new Map((signature(op)?.parameters ?? []).map(p => [p.name, none()])));
     try {
-        if (!b.states.length) {
-            analysis.statements(b.statements, parameters());
-            return { write: analysis.found };
-        }
-        const actions = (state: a.State | undefined, kind: 'entry' | 'exit') => state?.actions.filter(x => x.kind === kind) ?? [];
-        const run = (list: a.StateAction[], flow: Flow) => list.reduce((f, x) => analysis.block(x.body, f), flow);
-        run(actions(b.states.find(x => x.name === b.initial), 'entry'), parameters());
-        // One reaction: the guard selects the transition, then exit, effect and the target's entry run (internal: the effect only).
-        for (const state of b.states)
-            for (const t of state.transitions) {
-                if (analysis.found)
-                    return { write: analysis.found };
-                const flow = parameters();
-                t.bindings.forEach(n => flow.locals.set(n, none()));
-                const guard = analysis.expression(t.guard, flow), inner = flow.copy();
-                inner.guards.push(guard);
-                // An internal reaction runs only its effect: no exit and no entry (WP5-R05). A completion reaction is one
-                // reaction like the others; its guard is evaluated after the entry actions without a suspension between.
-                const target = b.states.find(x => x.name === t.target), internal = t.target === undefined;
-                run(internal ? [] : actions(target, 'entry'), analysis.block(t.effect, internal ? inner : run(actions(state, 'exit'), inner)));
-            }
+        analysis.statements(b.statements, parameters());
         return { write: analysis.found };
     }
     catch (error) {

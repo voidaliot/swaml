@@ -1,14 +1,14 @@
 # swa.ml 2.3 keyword reference
 
-Generated from spec/keywords.json and the normative grammar. Examples here are grammar fragments; complete runnable models are in the usage guide and examples. 20 contextual words remain legal names outside their positions. call appears in the on call schedule trigger and in on call branches of case scripts.
+Generated from spec/keywords.json and the normative grammar. Examples here are grammar fragments; complete runnable models are in the usage guide and examples. 19 contextual words remain legal names outside their positions. call appears in the on call schedule trigger and in on call branches of case scripts.
 
-[after](#keyword-after) · [and](#keyword-and) · [assert](#keyword-assert) · [associate](#keyword-associate) · [attribute](#keyword-attribute) · [bool](#keyword-bool) · [by](#keyword-by) · [byte](#keyword-byte) · [call](#keyword-call) · [case](#keyword-case) · [component](#keyword-component) · [concurrent](#keyword-concurrent) · [connect](#keyword-connect) · [const](#keyword-const) · [datatype](#keyword-datatype) · [deadline](#keyword-deadline) · [def](#keyword-def) · [defer](#keyword-defer) · [deploy](#keyword-deploy) · [deployment](#keyword-deployment) · [else](#keyword-else) · [entry](#keyword-entry) · [enum](#keyword-enum) · [event](#keyword-event) · [every](#keyword-every) · [exit](#keyword-exit) · [fail](#keyword-fail) · [false](#keyword-false) · [final](#keyword-final) · [for](#keyword-for) · [idempotent](#keyword-idempotent) · [if](#keyword-if) · [import](#keyword-import) · [in](#keyword-in) · [include](#keyword-include) · [initial](#keyword-initial) · [int](#keyword-int) · [interruptible](#keyword-interruptible) · [kind](#keyword-kind) · [ms](#keyword-ms) · [name](#keyword-name) · [not](#keyword-not) · [ns](#keyword-ns) · [of](#keyword-of) · [on](#keyword-on) · [operation](#keyword-operation) · [optional](#keyword-optional) · [or](#keyword-or) · [out](#keyword-out) · [package](#keyword-package) · [path](#keyword-path) · [port](#keyword-port) · [provides](#keyword-provides) · [publish](#keyword-publish) · [qos](#keyword-qos) · [real](#keyword-real) · [receive](#keyword-receive) · [record](#keyword-record) · [recursive](#keyword-recursive) · [redefines](#keyword-redefines) · [requirement](#keyword-requirement) · [requires](#keyword-requires) · [return](#keyword-return) · [returns](#keyword-returns) · [reversed](#keyword-reversed) · [s](#keyword-s) · [satisfy](#keyword-satisfy) · [schedule](#keyword-schedule) · [send](#keyword-send) · [specializes](#keyword-specializes) · [start](#keyword-start) · [state](#keyword-state) · [string](#keyword-string) · [test](#keyword-test) · [times](#keyword-times) · [to](#keyword-to) · [true](#keyword-true) · [try](#keyword-try) · [uint](#keyword-uint) · [until](#keyword-until) · [us](#keyword-us) · [use](#keyword-use) · [var](#keyword-var) · [verify](#keyword-verify) · [view](#keyword-view) · [void](#keyword-void) · [wait](#keyword-wait) · [when](#keyword-when) · [where](#keyword-where) · [while](#keyword-while)
+[after](#keyword-after) · [and](#keyword-and) · [assert](#keyword-assert) · [associate](#keyword-associate) · [attribute](#keyword-attribute) · [bool](#keyword-bool) · [by](#keyword-by) · [byte](#keyword-byte) · [call](#keyword-call) · [case](#keyword-case) · [component](#keyword-component) · [concurrent](#keyword-concurrent) · [connect](#keyword-connect) · [const](#keyword-const) · [datatype](#keyword-datatype) · [deadline](#keyword-deadline) · [def](#keyword-def) · [deploy](#keyword-deploy) · [deployment](#keyword-deployment) · [else](#keyword-else) · [entry](#keyword-entry) · [enum](#keyword-enum) · [event](#keyword-event) · [every](#keyword-every) · [exit](#keyword-exit) · [fail](#keyword-fail) · [false](#keyword-false) · [for](#keyword-for) · [idempotent](#keyword-idempotent) · [if](#keyword-if) · [import](#keyword-import) · [in](#keyword-in) · [include](#keyword-include) · [int](#keyword-int) · [interruptible](#keyword-interruptible) · [kind](#keyword-kind) · [ms](#keyword-ms) · [name](#keyword-name) · [not](#keyword-not) · [ns](#keyword-ns) · [of](#keyword-of) · [on](#keyword-on) · [operation](#keyword-operation) · [optional](#keyword-optional) · [or](#keyword-or) · [out](#keyword-out) · [package](#keyword-package) · [path](#keyword-path) · [port](#keyword-port) · [provides](#keyword-provides) · [publish](#keyword-publish) · [qos](#keyword-qos) · [real](#keyword-real) · [receive](#keyword-receive) · [record](#keyword-record) · [recursive](#keyword-recursive) · [redefines](#keyword-redefines) · [requirement](#keyword-requirement) · [requires](#keyword-requires) · [return](#keyword-return) · [returns](#keyword-returns) · [reversed](#keyword-reversed) · [s](#keyword-s) · [satisfy](#keyword-satisfy) · [schedule](#keyword-schedule) · [send](#keyword-send) · [specializes](#keyword-specializes) · [start](#keyword-start) · [state](#keyword-state) · [string](#keyword-string) · [test](#keyword-test) · [times](#keyword-times) · [to](#keyword-to) · [true](#keyword-true) · [try](#keyword-try) · [uint](#keyword-uint) · [until](#keyword-until) · [us](#keyword-us) · [use](#keyword-use) · [var](#keyword-var) · [verify](#keyword-verify) · [view](#keyword-view) · [void](#keyword-void) · [wait](#keyword-wait) · [where](#keyword-where) · [while](#keyword-while)
 
 ## Keyword: after
 
 Introduces a state timer, receive timeout or success schedule dependency.
 
-**Context:** Ordered state transitions. **Grammar:** ScheduleEntry, Receive, Transition. **Name use:** reserved.
+**Context:** States as steps of the flow. **Grammar:** ScheduleEntry, EventLine, Receive. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -140,14 +140,6 @@ Used in component definitions and usages; see its grammar contexts and normative
 
 [Normative rule](spec/01-structure-and-types.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
-## Keyword: defer
-
-Used in ordered state transitions; see its grammar contexts and normative constraints.
-
-**Context:** Ordered state transitions. **Grammar:** Deferral, Name. **Name use:** contextual.
-
-[Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
-
 ## Keyword: deploy
 
 Used in platform nodes and placement; see its grammar contexts and normative constraints.
@@ -174,9 +166,9 @@ Used in statements and decisions; see its grammar contexts and normative constra
 
 ## Keyword: entry
 
-Used in ordered state transitions; see its grammar contexts and normative constraints.
+Used in states as steps of the flow; see its grammar contexts and normative constraints.
 
-**Context:** Ordered state transitions. **Grammar:** StateAction. **Name use:** reserved.
+**Context:** States as steps of the flow. **Grammar:** StateAction. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -206,9 +198,9 @@ Used in schedule entry and successful chaining; see its grammar contexts and nor
 
 ## Keyword: exit
 
-Used in ordered state transitions; see its grammar contexts and normative constraints.
+Used in states as steps of the flow; see its grammar contexts and normative constraints.
 
-**Context:** Ordered state transitions. **Grammar:** StateAction. **Name use:** reserved.
+**Context:** States as steps of the flow. **Grammar:** Exit, StateAction. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -227,14 +219,6 @@ Used in typed expressions and operators; see its grammar contexts and normative 
 **Context:** Typed expressions and operators. **Grammar:** Literal. **Name use:** reserved.
 
 [Normative rule](spec/01-structure-and-types.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
-
-## Keyword: final
-
-Used in ordered state transitions; see its grammar contexts and normative constraints.
-
-**Context:** Ordered state transitions. **Grammar:** State. **Name use:** reserved.
-
-[Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
 ## Keyword: for
 
@@ -283,14 +267,6 @@ Adds a subject selection to a view.
 **Context:** Seven library view definitions. **Grammar:** ViewSelection. **Name use:** reserved.
 
 [Normative rule](spec/04-systems-and-conformance.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
-
-## Keyword: initial
-
-Used in ordered state transitions; see its grammar contexts and normative constraints.
-
-**Context:** Ordered state transitions. **Grammar:** OperationBody. **Name use:** reserved.
-
-[Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
 ## Keyword: int
 
@@ -358,9 +334,9 @@ Used in use cases, tests and associations; see its grammar contexts and normativ
 
 ## Keyword: on
 
-Used in ordered state transitions; see its grammar contexts and normative constraints.
+Used in states as steps of the flow; see its grammar contexts and normative constraints.
 
-**Context:** Ordered state transitions. **Grammar:** ScheduleEntry, Receive, Interruptible, StateAction, Transition, Deployment, Placement. **Name use:** reserved.
+**Context:** States as steps of the flow. **Grammar:** ScheduleEntry, EventLine, Receive, Interruptible, StateAction, Deployment, Placement. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -456,7 +432,7 @@ Used in typed copied values; see its grammar contexts and normative constraints.
 
 Used in suspending wait and receive; see its grammar contexts and normative constraints.
 
-**Context:** Suspending wait and receive. **Grammar:** ScheduleEntry, ReceiveBranch, Interruptible, Transition. **Name use:** reserved.
+**Context:** Suspending wait and receive. **Grammar:** ScheduleEntry, EventLine, ReceiveBranch, Interruptible. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -574,9 +550,9 @@ Used in schedule entry and successful chaining; see its grammar contexts and nor
 
 ## Keyword: state
 
-Used in ordered state transitions; see its grammar contexts and normative constraints.
+Used in states as steps of the flow; see its grammar contexts and normative constraints.
 
-**Context:** Ordered state transitions. **Grammar:** State, Name. **Name use:** contextual.
+**Context:** States as steps of the flow. **Grammar:** StateStep, Name. **Name use:** contextual.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -606,9 +582,9 @@ Introduces a once-evaluated uint loop limit.
 
 ## Keyword: to
 
-Introduces a state transition target or the case of an associate link.
+Starts a jump to a state, to S; (SIF-G01), or introduces the case of an associate link.
 
-**Context:** Ordered state transitions. **Grammar:** Transition, Association, Name. **Name use:** contextual.
+**Context:** States as steps of the flow. **Grammar:** Jump, Association, Name. **Name use:** contextual.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 
@@ -697,14 +673,6 @@ Used in typed copied values; see its grammar contexts and normative constraints.
 Suspends for a duration and releases the serial lock.
 
 **Context:** Suspending wait and receive. **Grammar:** Wait. **Name use:** reserved.
-
-[Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
-
-## Keyword: when
-
-Guards a receive, timer or completion transition of a state.
-
-**Context:** Ordered state transitions. **Grammar:** Transition. **Name use:** reserved.
 
 [Normative rule](spec/03-behavior.md) · [Graphical catalog](GRAPHICAL_CATALOG.md).
 

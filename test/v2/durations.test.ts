@@ -29,7 +29,7 @@ const wrap = (body: string, extra = '') => `package Test {
 const diagnostics = async (source: string) => (await parse(source)).doc.diagnostics?.map(d => [d.code, d.message]) ?? [];
 const errors = async (source: string) => (await parse(source)).errors.map(e => [String(e.code), e.message]);
 const warnings = async (source: string) => (await parse(source)).warnings.map(e => [e.code, e.message]);
-const nodesOf = <T extends a.Expression | a.ScheduleEntry | a.Transition | a.Wait | a.Receive | a.PolicySetting>(m: Model, is: (n: unknown) => n is T) => AstUtils.streamAllContents(m).filter(is).toArray();
+const nodesOf = <T extends a.Expression | a.ScheduleEntry | a.EventLine | a.Wait | a.Receive | a.PolicySetting>(m: Model, is: (n: unknown) => n is T) => AstUtils.streamAllContents(m).filter(is).toArray();
 const run = async (source: string, untilNs = 1000000000, target = 'Test::Demo') => { const r = await valid(source); return simulate([r.model], target, { untilNs }); };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Observation = { kind: string; [field: string]: any };
@@ -74,7 +74,7 @@ test('WP4-G03 WP4-G04 computed waits, timeouts, timers, periods and deadlines ar
     const r = await parse(wrap(`const attribute periodMs: uint = 10; attribute n: uint = 1;
       port p { requires event m(); requires event k(); }
       operation f() { wait 1ms; wait (n * 1ms); on receive p.m() { } or after (n * 2ms) { } on receive p.k() { } or after 3ms { } }
-      operation g() { initial A; state A { after (n * 1ms) to B { } } state B { after 1ms to A { } } }
+      operation g() { state A { after (n * 1ms) to B; } state B { after 1ms to A; } }
       operation h() { }
       schedule { on start f(); on start g(); on every (periodMs * 1ms) h() deadline (periodMs * 1ms / 2); on every 20ms h() deadline 5ms; }`));
     assert.deepEqual([...r.doc.parseResult.lexerErrors, ...r.doc.parseResult.parserErrors], []);
@@ -83,7 +83,7 @@ test('WP4-G03 WP4-G04 computed waits, timeouts, timers, periods and deadlines ar
     assert.ok(literal.duration && !literal.delay && computed.delay && !computed.duration, 'Wait.duration is optional (WP4-G03)');
     const [timed, fixed] = nodesOf(r.model, a.isReceive);
     assert.ok(timed.timeoutValue && !timed.timeout && fixed.timeout && !fixed.timeoutValue);
-    const [t1, t2] = nodesOf(r.model, a.isTransition);
+    const [t1, t2] = nodesOf(r.model, a.isEventLine);
     assert.ok(t1.delayValue && !t1.delay && t2.delay && !t2.delayValue);
     const entries = nodesOf(r.model, a.isScheduleEntry).filter(e => e.kind === 'every');
     assert.ok(entries[0].periodValue && !entries[0].period && entries[0].deadlineValue && !entries[0].deadline);
@@ -214,20 +214,20 @@ test('WP4-R02 WP4-S04 (review F1) the deadline precedence is the same for every 
 // ---------------------------------------------------------------- computed state timers
 
 const machine = (states: string, attributes = '', more = '') => wrap(`${attributes}
-      operation run() { initial A; ${states} }
+      operation run() { ${states} }
       ${more}
       schedule { on start run(); }`);
 test('WP4-S08 WP4-R02 a state timer is evaluated when the entry actions finish and uses the new delay (review counterexample)', async () => {
     const out = await run(machine(`
-      state A { after 1ms to Backoff { } }
+      state A { after 1ms exit; }
       state Backoff {
         on entry { delayMs = minInt(delayMs * 2, capMs); }
-        after (delayMs * 1ms) to Connecting { }
+        after (delayMs * 1ms) exit;
       }
-      state Connecting { on entry { tries = tries + 1; arrived = now(); } after 1ms to Backoff { } }`, 'attribute delayMs: uint = 10; const attribute capMs: uint = 50; attribute tries: uint = 0; attribute arrived: uint = 0;'), 50000000);
+      state Connecting { on entry { tries = tries + 1; arrived = now(); } after 1ms to Backoff; }`, 'attribute delayMs: uint = 10; const attribute capMs: uint = 50; attribute tries: uint = 0; attribute arrived: uint = 0;'), 50000000);
     // 1 ms, then 20 ms (not the old 10), then 1 ms and 40 ms (not 20).
     const timers = kinds(out.trace, 'timer');
-    assert.deepEqual(timers.map(t => [t.timeNs, t.state, t.timerNs, t.expiresNs, t.source]), [[1000000, 'Backoff', 20000000, 21000000, 'Test::D.run/states/1/transitions/0'], [22000000, 'Backoff', 40000000, 62000000, 'Test::D.run/states/1/transitions/0']]);
+    assert.deepEqual(timers.map(t => [t.timeNs, t.state, t.timerNs, t.expiresNs, t.source]), [[1000000, 'Backoff', 20000000, 21000000, 'Test::D.run/1/1'], [22000000, 'Backoff', 40000000, 62000000, 'Test::D.run/1/1']]);
     assert.deepEqual(out.stores.Demo, { delayMs: 40, capMs: 50, tries: 1, arrived: 21000000 });
     // The timer observation follows the state observation of its entry and the entry's effects (WP4-T01).
     const i = out.trace.findIndex(t => t.kind === 'timer'), state = out.trace.slice(0, i).reverse().find(t => t.kind === 'state');
@@ -239,14 +239,15 @@ test('WP4-S08 WP4-R02 a state timer is evaluated when the entry actions finish a
 test('WP4-R02 a computed timer expires at the state-update time plus its value, also when entry suspends, and once per entry', async () => {
     // Entry waits 3 ms; the 5 ms timer expires 5 ms after the state update, not 8 ms.
     const suspended = await run(machine(`
-      state A { on entry { wait 3ms; } after (delayMs * 1ms) to B { leftAt = now(); } }
-      final state B { }`, 'attribute delayMs: uint = 5; attribute leftAt: uint = 0;'), 50000000);
+      state A { on entry { wait 3ms; } after (delayMs * 1ms) { leftAt = now(); exit; } }
+      state B { }`, 'attribute delayMs: uint = 5; attribute leftAt: uint = 0;'), 50000000);
     assert.equal(suspended.stores.Demo.leftAt, 5000000);
     // Entry suspends past expiry: the elapsed computed timer is selected on resumption.
     const past = await run(machine(`
-      state A { on entry { wait 8ms; } after (delayMs * 1ms) to B { leftAt = now(); } after 20ms to C { } }
-      final state B { }
-      final state C { }`, 'attribute delayMs: uint = 5; attribute leftAt: uint = 0;'), 50000000);
+      state A { on entry { wait 8ms; } after (delayMs * 1ms) { leftAt = now(); exit; } after 20ms to C; }
+      state B { }
+      return;
+      state C { }`, 'attribute delayMs: uint = 5; attribute leftAt: uint = 0;'), 50000000);
     assert.equal(past.stores.Demo.leftAt, 8000000);
     // Discarded input does not re-evaluate the timer; a write by another operation meanwhile does not move it.
     const once = await run(`package Test {
@@ -257,9 +258,8 @@ test('WP4-R02 a computed timer expires at the state-update time plus its value, 
     attribute leftAt: uint = 0;
     operation setDelay(v: uint) { delayMs = v; }
     operation run() {
-      initial A;
-      state A { after (delayMs * 1ms) to B { leftAt = now(); } on receive p.m() when (false) to B { } }
-      final state B { }
+      state A { after (delayMs * 1ms) { leftAt = now(); exit; } on receive p.m() { if (false) exit; } }
+      state B { }
     }
     schedule { on start run(); on receive p.set(v) setDelay(v); }
   }
@@ -275,23 +275,24 @@ test('WP4-R02 a computed timer expires at the state-update time plus its value, 
 
 test('WP4-R02 re-entering a state re-evaluates its computed timer; equal expiries keep declaration order; literal timers add no observation', async () => {
     const out = await run(machine(`
-      state A { on entry { n = n + 1; } after (n * 1ms) to A { path = path * 10 + 1; } after 3ms to B { path = path * 10 + 2; } }
-      final state B { }`, 'attribute n: uint = 0; attribute path: uint = 0;'), 50000000);
+      state A { on entry { n = n + 1; } after (n * 1ms) { path = path * 10 + 1; to A; } after 3ms { path = path * 10 + 2; exit; } }
+      state B { }`, 'attribute n: uint = 0; attribute path: uint = 0;'), 50000000);
     // Timers 1 ms, 2 ms, then 3 ms ties with the literal 3 ms: the computed one is declared first.
     assert.deepEqual(kinds(out.trace, 'timer').map(t => [t.timeNs, t.timerNs]), [[0, 1000000], [1000000, 2000000], [3000000, 3000000], [6000000, 4000000]]);
     assert.equal(out.stores.Demo.path, 1112);
-    const literal = await run(machine(`state A { after 1ms to B { } } final state B { }`), 10000000);
+    const literal = await run(machine(`state A { after 1ms exit; } state B { }`), 10000000);
     assert.equal(kinds(literal.trace, 'timer').length, 0);
 });
 
 test('WP4-S08 a computed state timer is integral, pure or reads state (SW2008), and may fail with DurationRange', async () => {
-    const component = (timer: string) => machine(`state A { after (${timer}) to B { } } final state B { }`, 'attribute n: uint = 1; attribute r: real = 1.0;', 'operation bump() returns uint { n = n + 1; return n; } operation peek() returns uint { return n; }');
+    const component = (timer: string) => machine(`state A { after (${timer}) exit; } state B { }`, 'attribute n: uint = 1; attribute r: real = 1.0;', 'operation bump() returns uint { n = n + 1; return n; } operation peek() returns uint { return n; }');
     assert.deepEqual(await errors(component('peek() * 1ms')), []);
     assert.deepEqual(await errors(component('bump() * 1ms')), [['SW2008', 'State timers may only be pure or read state.']]);
     assert.deepEqual(await errors(component('r * 1ms')), [['SW2002', 'A duration must be integral, found real.']]);
     const out = await run(component('(n - 1) * 1ms'), 1000);
     assert.equal(kinds(out.trace, 'failure')[0]?.reason, 'DurationRange');
-    assert.deepEqual(out.machines, { 'Demo.run': { state: 'A', live: true } });
+    // The failure ends the activation of the operation, which then has no current state (SIF-R13; 2.2 kept the machine live in A).
+    assert.deepEqual(out.machines, { 'Demo.run': { state: 'A', live: false } });
 });
 
 // ---------------------------------------------------------------- constant sublanguage
@@ -435,7 +436,7 @@ test('WP4-D06 SW2016 warns on a computed duration without a unit, not on literal
     for (const op of ['wait (n * 1ms);', 'wait (timeoutNs);', 'wait (timeoutNs * 2);', 'wait (now() % 7 + 1);', 'wait 250ms;', 'on receive p.m() { } or after 2ms { }', 'wait (if (n > 1) 1ms else 2);'])
         assert.deepEqual(await sw2016(op), [], op);
     assert.deepEqual(await sw2016('wait 1ms;', 'on every (pulseMs * 1ms) g() deadline (timeoutNs);'), []);
-    const states = machine('state A { after (pulseMs) to B { } } final state B { }', 'const attribute pulseMs: uint = 250;');
+    const states = machine('state A { after (pulseMs) exit; } state B { }','const attribute pulseMs: uint = 250;');
     assert.deepEqual((await warnings(states)).map(w => w[0]), ['SW2016']);
 });
 
@@ -458,7 +459,7 @@ test('WP1-M01 WP4-S03 SW2011 sees reads inside a computed wait and a computed ti
 // ---------------------------------------------------------------- projections and the formatter
 
 test('WP4-M03 projections show computed periods per occurrence and the expression text; transitions label computed timers', async () => {
-    const r = await valid(periodic('on every (periodMs * 1ms) tick() deadline (periodMs * 1ms / 2); on every 5ms tock();', undefined, 'component Fast: D { redefines const attribute periodMs: uint = 4; } component def M { attribute d: uint = 1; operation run() { initial A; state A { after (d * 1ms) to B { } } state B { after 2ms to A { } } } schedule { on start run(); } } component m: M;'));
+    const r = await valid(periodic('on every (periodMs * 1ms) tick() deadline (periodMs * 1ms / 2); on every 5ms tock();', undefined, 'component Fast: D { redefines const attribute periodMs: uint = 4; } component def M { attribute d: uint = 1; operation run() { state A { after (d * 1ms) to B; } state B { after 2ms to A; } } schedule { on start run(); } } component m: M;'));
     const p = projectModel([r.model]), node = (id: string) => p.nodes.find(n => n.id === id)!;
     assert.deepEqual(node('Test::D').schedule!.map(e => [e.periodNs, e.deadlineNs, e.periodExpression, e.deadlineExpression]), [[undefined, undefined, 'periodMs * 1ms', 'periodMs * 1ms / 2'], [5000000, 5000000, undefined, undefined]]);
     assert.deepEqual(node('Test::Demo').schedule!.map(e => [e.periodNs, e.deadlineNs, e.periodExpression]), [[10000000, 5000000, 'periodMs * 1ms'], [5000000, 5000000, undefined]]);
@@ -471,14 +472,14 @@ test('WP4-M08 the formatter prints computed durations in parentheses and literal
     const services = createSwamlServices(EmptyFileSystem), parseOnly = parseHelper<Model>(services.Swaml);
     const source = wrap(`const attribute periodMs: uint = 10; attribute n: uint = 1;
  operation f() { wait(n*1ms); wait 5 ms; wait   (  -n*1ms+5ms ); }
- operation g() { initial A; state A { after(n * 2ms)to B { } } state B { after 1 ms to A { } } }
+ operation g() { state A { after(n * 2ms)to B ; } state B { after 1 ms to A; } }
  schedule { on start f(); on start g(); on every(periodMs*1ms)f()deadline(periodMs * 1ms/2); on every 20 ms g(); }`);
     const once = formatDocument(await parseOnly(source));
     assert.match(once, /wait \(n \* 1ms\);/);
     assert.match(once, /wait 5ms;/);
     assert.match(once, /wait \(-n \* 1ms \+ 5ms\);/);
-    assert.match(once, /after \(n \* 2ms\) to B \{/);
-    assert.match(once, /after 1ms to A \{/);
+    assert.match(once, /after \(n \* 2ms\) to B;/);
+    assert.match(once, /after 1ms to A;/);
     assert.match(once, /on every \(periodMs \* 1ms\) f\(\) deadline \(periodMs \* 1ms \/ 2\);/);
     assert.match(once, /on every 20ms g\(\);/);
     assert.equal(formatDocument(await parseOnly(once)), once, 'idempotent');
@@ -514,7 +515,7 @@ test('WP4-D07 (review F5) a remainder by zero has its own wording', async () => 
 
 test('WP4-D01 WP4-S08 (review F6) one diagnostic per cause on the new forms; a missing duration expression has a short syntax message', async () => {
     assert.deepEqual(await errors(policy('capacity = 4; requestTimeout = 1s; delivery = 5ms * 2;').replace('delivery = Delivery.atMostOnce; ', '')), [['SW2013', 'A policy needs complete valid delivery, ordering, capacity, overflow and requestTimeout.'], ['SW2013', 'delivery is not a duration setting.']]);
-    const unknown = await errors(machine('state A { after (nope() * 1ms) to B { } } final state B { }'));
+    const unknown = await errors(machine('state A { after (nope() * 1ms) exit; } state B { }'));
     assert.ok(!unknown.some(([c]) => c === 'SW2008'), JSON.stringify(unknown));
     const { Swaml } = createSwamlServices(EmptyFileSystem);
     for (const [line, keyword] of [['wait ();', 'wait'], ['on receive p.m() { } or after () { }', 'after']])
@@ -571,13 +572,12 @@ const state = (line: string) => `package Test {
   component def D {
     attribute x: int = 0;
     operation run() {
-      initial A;
       state A {
         ${line}
-        after 1ms to B { }
+        after 1ms exit;
       }
-      state B { after 2ms to C { } }
-      final state C { }
+      state B { after 2ms exit; }
+      state C { }
     }
     operation other() { x = 4; }
     schedule { on start run(); }
@@ -615,18 +615,20 @@ const keptItems = (m: Model) => ({
     elements: m.packages.flatMap(p => p.elements.map(e => (e as { name?: string }).name)).filter(n => ['D', 'Demo', 'P'].includes(n ?? '')),
     statements: AstUtils.streamAllContents(m).filter(a.isAssign).map(n => n.$cstNode?.text).filter(t => /^x = [234];$/.test(t ?? '')).toArray(),
     operations: AstUtils.streamAllContents(m).filter(a.isOperation).map(n => n.name).filter(n => n === 'other').toArray(),
-    states: AstUtils.streamAllContents(m).filter(a.isState).map(n => n.name).filter(n => ['B', 'C'].includes(n)).toArray(),
+    states: AstUtils.streamAllContents(m).filter(a.isStateStep).map(n => n.name).filter(n => ['B', 'C'].includes(n)).toArray(),
     entries: AstUtils.streamAllContents(m).filter(a.isScheduleEntry).filter(e => e.kind === 'start' || e.kind === 'every' && e.period?.value === 5).map(e => e.operation).filter(op => op === 'f' || op === 'g').toArray(),
     settings: AstUtils.streamAllContents(m).filter(a.isPolicySetting).map(n => n.name).filter(n => n === 'capacity').toArray(),
 });
 // Each unfinished or malformed duration form, paired with the nearest 2.2 form of the same position: an unfinished
 // parenthesis is compared with an unfinished parenthesized 2.2 expression or argument list, a malformed literal
-// with the 2.2 literal form.
+// with the 2.2 literal form. States in the flow are not 2.2 text: a half-typed timer, event line, if or jump in a state
+// is paired with the nearest half-typed statement of the current grammar in the same place, which is its reference.
 const recovery: [(line: string) => string, [string, string][]][] = [
     [statement, [['wait (', 'x = ('], ['wait (x *', 'x = (x *'], ['wait (x * 1ms', 'x = (x * 1'], ['wait (x * 1ms)', 'wait 5'], ['wait ();', 'wait ;'], ['wait (5m);', 'x = (5m);'],
         ['wait 5m;', 'wait 5m;'], ['x = 5m;', 'x = 5m;'], ['x = 5ms', 'x = 5'], ['x = 5 ms * ;', 'x = 5 * ;'], ['on receive p.m() { } or after (', 'x = ('],
         ['on receive p.m() { } or after (x * 1ms {', 'on receive p.m() { } or after 5 {'], ['on receive p.m() { } or after (x * 1ms) ', 'on receive p.m() { } or after 5 '], ['on receive p.m() { } or after () { }', 'on receive p.m() { } or after { }']]],
-    [state, [['after (', 'on receive p.m() when ('], ['after (x * 1ms', 'on receive p.m() when (x'], ['after (x * 1ms) to', 'after 5ms to'], ['after (x * 1ms) to B', 'after 5ms to B'], ['after () to B { }', 'after to B { }'], ['after (5m) to B { }', 'after 5m to B { }']]],
+    [state, [['after (', 'x = ('], ['after (x * 1ms', 'x = (x * 1'], ['after (x * 1ms) to', 'if (x > 1) to'], ['after (x * 1ms) to B', 'if (x > 1) to B'], ['after () exit;', 'x = ();'], ['after (5m) exit;', 'x = (5m);'],
+        ['on receive p.m(', 'x = p.m('], ['if (x', 'x = (x'], ['if (x > 1) exit; else to', 'if (x > 1) to'], ['to B', 'x = 5'], ['after 5ms', 'x = 5']]],
     [entry, [['on every (', 'on start g('], ['on every (x * 1ms', 'on start g(x /'], ['on every (x * 1ms) g(', 'on every 10ms g('], ['on every (x * 1ms g();', 'on start g(x / 2;'], ['on every 10ms g() deadline (x /', 'on start g(x /'],
         ['on every 10ms g() deadline (', 'on start g('], ['on every 10ms g() deadline (x / 2;', 'on start g(x / 2;'], ['on every (5m) g();', 'on every 5m g();'], ['on every () g();', 'on every g();']]],
     [setting, [['requestTimeout = ;', 'requestTimeout = ;'], ['requestTimeout = 5m;', 'requestTimeout = 5m;'], ['requestTimeout = (1s;', 'requestTimeout = (1;'], ['requestTimeout = 1s * ;', 'requestTimeout = 1 * ;'], ['requestTimeout = 5ms', 'requestTimeout = 5'], ['requestTimeout = (', 'requestTimeout = ('], ['requestTimeout =', 'requestTimeout =']]],
@@ -635,7 +637,8 @@ test('WP4-G01 WP4-G02 WP4-G03 WP4-G04 an unfinished or malformed duration keeps 
     const old = await kept22(), { Swaml } = createSwamlServices(EmptyFileSystem);
     for (const [context, pairs] of recovery)
         for (const [line, nearest] of pairs) {
-            const text = context(line), now = Swaml.parser.LangiumParser.parse(text), before = old.parse(text), near = old.parse(context(nearest));
+            const reference = context === state ? Swaml.parser.LangiumParser : old;
+            const text = context(line), now = Swaml.parser.LangiumParser.parse(text), before = reference.parse(text), near = reference.parse(context(nearest));
             const count = now.parserErrors.length + now.lexerErrors.length, limit = Math.max(1, before.parserErrors.length + before.lexerErrors.length, near.parserErrors.length + near.lexerErrors.length);
             assert.ok(count > 0, `${line} is a syntax error`);
             assert.ok(count <= limit, `${line}: ${count} errors, 2.2 had ${limit}`);
@@ -647,6 +650,13 @@ test('WP4-G01 WP4-G02 WP4-G03 WP4-G04 an unfinished or malformed duration keeps 
             assert.deepEqual(kept.packages, ['Test', 'After'], line);
             assert.ok(kept.operations.includes('other') && kept.elements.includes('Demo'), line);
         }
+});
+nodeTest('SIF-G01 a half-typed jump standing in a state keeps the following items, states and members', () => {
+    const { Swaml } = createSwamlServices(EmptyFileSystem);
+    for (const line of ['to', 'exit; to']) {
+        const now = Swaml.parser.LangiumParser.parse(state(line)), kept = keptItems(now.value as Model);
+        assert.ok(now.parserErrors.length <= 1 && kept.states.includes('B') && kept.operations.includes('other') && kept.elements.includes('Demo'), `${line}: ${now.parserErrors.length} errors, ${JSON.stringify(kept)}`);
+    }
 });
 
 test('WP4-G03 WP4-G04 (gate 3) the new forms parse without console output, and a valid source using every form validates', async () => {
@@ -695,7 +705,7 @@ test('WP4 examples: computed backoff, lock pulse and derived period pass their c
 });
 
 test('WP4-T01 2.2 forms add nothing to traces: a model of literal durations has no durationNs field and no timer observation', async () => {
-    const out = await run(machine('state A { on entry { wait 1ms; } after 2ms to B { } } state B { on receive p.m() to A { } }', 'port p { requires event m(); requires event k(); }', 'operation pulse() { wait 3 ms; on receive p.k() { } or after 1ms { } } schedule { on every 10ms pulse() deadline 5ms; }').replace('schedule { on every 10ms pulse() deadline 5ms; }', '').replace('schedule { on start run(); }', 'schedule { on start run(); on every 10ms pulse() deadline 5ms; }').replace('component Demo: D;', `component Demo: D;
+    const out = await run(machine('state A { on entry { wait 1ms; } after 2ms exit; } state B { on receive p.m() to A; }', 'port p { requires event m(); requires event k(); }', 'operation pulse() { wait 3 ms; on receive p.k() { } or after 1ms { } } schedule { on every 10ms pulse() deadline 5ms; }').replace('schedule { on every 10ms pulse() deadline 5ms; }', '').replace('schedule { on start run(); }', 'schedule { on start run(); on every 10ms pulse() deadline 5ms; }').replace('component Demo: D;', `component Demo: D;
   component def S { port q: P; operation g() { if (false) { publish q.m(); publish q.k(); } } schedule { on start g(); } }
   component s: S;
   connect (s.q, Demo.p);`).replace('import Swaml::Time;', 'import Swaml::Time;\n  port def P { provides event m(); provides event k(); }'), 50000000);

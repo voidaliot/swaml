@@ -68,18 +68,17 @@ export function largeModel(scale = 1) {
     line(1, 'component def Controller {');
     line(2, 'attribute phase: int = 0;');
     line(2, 'operation sequence() {');
-    line(3, 'initial Warmup;');
+    // States in the flow: each state leaves to the next one after its timer; Stopped is the named last step.
     const states = ['Warmup', 'Fill', 'Heat', 'Hold', 'Drain', 'Rinse'];
     states.forEach((name, i) => {
         line(3, `state ${name} {`);
         line(4, 'on entry {');
         line(5, `phase = ${i + 1};`);
         line(4, '}');
-        line(4, `after ${2 * i + 1}ms to ${states[i + 1] ?? 'Stopped'} {`);
-        line(4, '}');
+        line(4, `after ${2 * i + 1}ms exit;`);
         line(3, '}');
     });
-    line(3, 'final state Stopped {');
+    line(3, 'state Stopped {');
     line(3, '}');
     line(2, '}');
     line(2, 'schedule {');

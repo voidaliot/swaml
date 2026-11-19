@@ -1,0 +1,516 @@
+# Sample 1 (LockSample)
+  Q1 lock 0, lock 100 [horizon, 250ms]: stores {"locked":true,"pulses":1,"shutdowns":0}
+      0ms >> requests.request(true)
+      0ms state powered
+      0ms state unlocked
+      0ms locked = false
+      0ms state locking (via 1/3/1/then/0)
+      0ms send motor.lockMotor("lockPulse")
+      100ms >> requests.request(true)
+      100ms stay locking
+      250ms send motor.lockMotor("idle")
+      250ms state isLocked (via 1/4/2/body/0)
+      250ms locked = true
+  Q2 lock 0, unlock 100 [horizon, 500ms]: stores {"locked":false,"pulses":2,"shutdowns":0}
+      0ms >> requests.request(true)
+      0ms state powered
+      0ms state unlocked
+      0ms locked = false
+      0ms state locking (via 1/3/1/then/0)
+      0ms send motor.lockMotor("lockPulse")
+      100ms >> requests.request(false)
+      100ms stay locking
+      250ms send motor.lockMotor("idle")
+      250ms state isLocked (via 1/4/2/body/0)
+      250ms locked = true
+      250ms state unlocking (via 1/5/1/then/0)
+      250ms send motor.lockMotor("unlockPulse")
+      500ms send motor.lockMotor("idle")
+      500ms state unlocked (via 1/6/2/body/0)
+      500ms locked = false
+  Q3 lock 0, query 100 [horizon, 250ms]: stores {"locked":true,"pulses":1,"shutdowns":0}
+      0ms >> requests.request(true)
+      0ms state powered
+      0ms state unlocked
+      0ms locked = false
+      0ms state locking (via 1/3/1/then/0)
+      0ms send motor.lockMotor("lockPulse")
+      100ms >> status.query()
+      100ms publish status.report(false, 1)
+      100ms stay locking
+      250ms send motor.lockMotor("idle")
+      250ms state isLocked (via 1/4/2/body/0)
+      250ms locked = true
+  Q4 lock 0, unlock 100, off 300 [quiescent, 300ms]: stores {"locked":true,"pulses":2,"shutdowns":1}
+      0ms >> requests.request(true)
+      0ms state powered
+      0ms state unlocked
+      0ms locked = false
+      0ms state locking (via 1/3/1/then/0)
+      0ms send motor.lockMotor("lockPulse")
+      100ms >> requests.request(false)
+      100ms stay locking
+      250ms send motor.lockMotor("idle")
+      250ms state isLocked (via 1/4/2/body/0)
+      250ms locked = true
+      250ms state unlocking (via 1/5/1/then/0)
+      250ms send motor.lockMotor("unlockPulse")
+      300ms >> power.off()
+      300ms send motor.lockMotor("idle")
+      300ms control completes
+  Q5 off, then lock [quiescent, 10ms]: stores {"locked":false,"pulses":0,"shutdowns":1}
+      0ms >> power.off()
+      0ms state powered
+      0ms state unlocked
+      0ms locked = false
+      0ms control completes
+      10ms >> requests.request(true)
+      10ms discard requests.request (inactiveOwner)
+      10ms >> status.query()
+      10ms discard status.query (inactiveOwner)
+# Sample 2 (TrafficSample)
+  Q1 press at 3s [horizon, 40s]: stores {}
+      0ms state green
+      0ms send lamps.set("green")
+      0ms state minimum
+      3s >> ped.button()
+      3s stay minimum
+      10s state extended (via 1/body/0/3/0/body/0)
+      10s state yellow
+      10s send lamps.set("yellow")
+      13s state red
+      13s send lamps.set("red")
+      15s state walk
+      15s send walkSign.set(true)
+      30s send walkSign.set(false)
+      30s state green
+      30s send lamps.set("green")
+      30s state minimum
+      40s state extended (via 1/body/0/3/0/body/0)
+  Q2 press at 20s [horizon, 50s]: stores {}
+      0ms state green
+      0ms send lamps.set("green")
+      0ms state minimum
+      10s state extended (via 1/body/0/3/0/body/0)
+      20s >> ped.button()
+      20s state yellow
+      20s send lamps.set("yellow")
+      23s state red
+      23s send lamps.set("red")
+      25s state walk
+      25s send walkSign.set(true)
+      40s send walkSign.set(false)
+      40s state green
+      40s send lamps.set("green")
+      40s state minimum
+      50s state extended (via 1/body/0/3/0/body/0)
+  Q3 no press [horizon, 140s]: stores {}
+      0ms state green
+      0ms send lamps.set("green")
+      0ms state minimum
+      10s state extended (via 1/body/0/3/0/body/0)
+      60s state yellow
+      60s send lamps.set("yellow")
+      63s state red
+      63s send lamps.set("red")
+      65s state green
+      65s send lamps.set("green")
+      65s state minimum
+      75s state extended (via 1/body/0/3/0/body/0)
+      125s state yellow
+      125s send lamps.set("yellow")
+      128s state red
+      128s send lamps.set("red")
+      130s state green
+      130s send lamps.set("green")
+      130s state minimum
+      140s state extended (via 1/body/0/3/0/body/0)
+  Q4 press at 3s and during walk (25s) [horizon, 95s]: stores {}
+      0ms state green
+      0ms send lamps.set("green")
+      0ms state minimum
+      3s >> ped.button()
+      3s stay minimum
+      10s state extended (via 1/body/0/3/0/body/0)
+      10s state yellow
+      10s send lamps.set("yellow")
+      13s state red
+      13s send lamps.set("red")
+      15s state walk
+      15s send walkSign.set(true)
+      25s >> ped.button()
+      25s discard ped.button (inactiveOwner)
+      30s send walkSign.set(false)
+      30s state green
+      30s send lamps.set("green")
+      30s state minimum
+      40s state extended (via 1/body/0/3/0/body/0)
+      90s state yellow
+      90s send lamps.set("yellow")
+      93s state red
+      93s send lamps.set("red")
+      95s state green
+      95s send lamps.set("green")
+      95s state minimum
+  Q5 no press in green, press during yellow (61s) [horizon, 140s]: stores {}
+      0ms state green
+      0ms send lamps.set("green")
+      0ms state minimum
+      10s state extended (via 1/body/0/3/0/body/0)
+      60s state yellow
+      60s send lamps.set("yellow")
+      61s >> ped.button()
+      61s discard ped.button (inactiveOwner)
+      63s state red
+      63s send lamps.set("red")
+      65s state green
+      65s send lamps.set("green")
+      65s state minimum
+      75s state extended (via 1/body/0/3/0/body/0)
+      125s state yellow
+      125s send lamps.set("yellow")
+      128s state red
+      128s send lamps.set("red")
+      130s state green
+      130s send lamps.set("green")
+      130s state minimum
+      140s state extended (via 1/body/0/3/0/body/0)
+# Sample 3 (ModesFlat)
+  Q1 go while off, then ignitionOn [horizon, 10ms]: stores {}
+      0ms state off
+      0ms send status.mode("off")
+      0ms >> cmd.go()
+      0ms discard cmd.go (inactiveOwner)
+      10ms >> key.ignitionOn()
+      10ms state standby
+      10ms send status.mode("standby")
+  Q2 running; halt and ignitionOff at one instant [horizon, 20ms]: stores {}
+      0ms state off
+      0ms send status.mode("off")
+      0ms >> key.ignitionOn()
+      0ms state standby
+      0ms send status.mode("standby")
+      10ms >> cmd.go()
+      10ms state running
+      10ms send status.mode("running")
+      10ms send drive.enable(true)
+      20ms >> cmd.halt()
+      20ms >> key.ignitionOff()
+      20ms send drive.enable(false)
+      20ms state standby (via 0/body/2/3/body/0)
+      20ms send status.mode("standby")
+      20ms state off (via 0/body/1/1/body/0)
+      20ms send status.mode("off")
+  Q3 running; diag.enter, then diag.leave [horizon, 30ms]: stores {}
+      0ms state off
+      0ms send status.mode("off")
+      0ms >> key.ignitionOn()
+      0ms state standby
+      0ms send status.mode("standby")
+      10ms >> cmd.go()
+      10ms state running
+      10ms send status.mode("running")
+      10ms send drive.enable(true)
+      20ms >> diag.enter()
+      20ms send drive.enable(false)
+      20ms state diagnostic
+      20ms send status.mode("diagnostic")
+      30ms >> diag.leave()
+      30ms state standby (via 0/body/3/2/body/0)
+      30ms send status.mode("standby")
+  Q4 standby; diag.leave [horizon, 10ms]: stores {}
+      0ms state off
+      0ms send status.mode("off")
+      0ms >> key.ignitionOn()
+      0ms state standby
+      0ms send status.mode("standby")
+      10ms >> diag.leave()
+      10ms discard diag.leave (inactiveOwner)
+  Q5 ends? (long run with every input) [horizon, 50ms]: stores {}
+      0ms state off
+      0ms send status.mode("off")
+      0ms >> key.ignitionOn()
+      0ms state standby
+      0ms send status.mode("standby")
+      10ms >> cmd.go()
+      10ms state running
+      10ms send status.mode("running")
+      10ms send drive.enable(true)
+      20ms >> key.ignitionOff()
+      20ms send drive.enable(false)
+      20ms state off (via 0/body/2/2/body/0)
+      20ms send status.mode("off")
+      30ms >> key.ignitionOn()
+      30ms state standby
+      30ms send status.mode("standby")
+      40ms >> diag.enter()
+      40ms state diagnostic (via 0/body/1/3/body/0)
+      40ms send status.mode("diagnostic")
+      50ms >> key.ignitionOff()
+      50ms state off (via 0/body/3/1/body/0)
+      50ms send status.mode("off")
+# Sample 4 (ConnSample)
+  Q1 no answer [horizon, 30.62s]: stores {}
+      0ms publish link.hello(1)
+      0ms state awaiting
+      10ms publish link.hello(2)
+      10ms state awaiting
+      30ms publish link.hello(3)
+      30ms state awaiting
+      70ms publish link.hello(4)
+      70ms state awaiting
+      150ms publish link.hello(5)
+      150ms state awaiting
+      310ms state cooldown
+      30.31s publish link.hello(1)
+      30.31s state awaiting
+      30.32s publish link.hello(2)
+      30.32s state awaiting
+      30.34s publish link.hello(3)
+      30.34s state awaiting
+      30.38s publish link.hello(4)
+      30.38s state awaiting
+      30.46s publish link.hello(5)
+      30.46s state awaiting
+      30.62s state cooldown
+  Q2 late ack(1) at 12ms [horizon, 70ms]: stores {}
+      0ms publish link.hello(1)
+      0ms state awaiting
+      10ms publish link.hello(2)
+      10ms state awaiting
+      12ms >> link.ack(1)
+      12ms discard c.manage (noEnabledTransition)
+      30ms publish link.hello(3)
+      30ms state awaiting
+      70ms publish link.hello(4)
+      70ms state awaiting
+  Q3 ack(2) at 30ms [horizon, 70ms]: stores {}
+      0ms publish link.hello(1)
+      0ms state awaiting
+      10ms publish link.hello(2)
+      10ms state awaiting
+      30ms >> link.ack(2)
+      30ms publish link.hello(3)
+      30ms state awaiting
+      30ms discard c.manage (noEnabledTransition)
+      70ms publish link.hello(4)
+      70ms state awaiting
+  Q4 ack(1) at 5ms, down at 50ms [horizon, 60ms]: stores {}
+      0ms publish link.hello(1)
+      0ms state awaiting
+      5ms >> link.ack(1)
+      5ms state connected
+      5ms publish status.connected(true)
+      50ms >> link.down()
+      50ms publish status.connected(false)
+      50ms publish link.hello(1)
+      50ms state awaiting
+      60ms publish link.hello(2)
+      60ms state awaiting
+  Q5 ack during cooldown (1s) [horizon, 1s]: stores {}
+      0ms publish link.hello(1)
+      0ms state awaiting
+      10ms publish link.hello(2)
+      10ms state awaiting
+      30ms publish link.hello(3)
+      30ms state awaiting
+      70ms publish link.hello(4)
+      70ms state awaiting
+      150ms publish link.hello(5)
+      150ms state awaiting
+      310ms state cooldown
+      1s >> link.ack(1)
+      1s discard link.ack (inactiveOwner)
+# Sample 5 (DebounceSample)
+  Q1 true 0, false 5, true 8 [horizon, 28ms]: stores {}
+      0ms state low
+      0ms >> sw.level(true)
+      0ms state risingCheck
+      5ms >> sw.level(false)
+      5ms state low (via 0/body/1/0/body/0/then/0)
+      8ms >> sw.level(true)
+      8ms state risingCheck
+      28ms publish out.pressed()
+      28ms state high
+  Q2 true 0, true 10 [horizon, 20ms]: stores {}
+      0ms state low
+      0ms >> sw.level(true)
+      0ms state risingCheck
+      10ms >> sw.level(true)
+      10ms discard c.debounce (noEnabledTransition)
+      20ms publish out.pressed()
+      20ms state high
+  Q3 true 0, false 20 [horizon, 40ms]: stores {}
+      0ms state low
+      0ms >> sw.level(true)
+      0ms state risingCheck
+      20ms publish out.pressed()
+      20ms state high
+      20ms >> sw.level(false)
+      20ms state fallingCheck
+      40ms publish out.released()
+      40ms state low
+  Q4 false in low [horizon, 0ms]: stores {}
+      0ms state low
+      0ms >> sw.level(false)
+      0ms discard c.debounce (noEnabledTransition)
+  Q5 pressed; false 100, true 105, false 110 [horizon, 130ms]: stores {}
+      0ms state low
+      0ms >> sw.level(true)
+      0ms state risingCheck
+      20ms publish out.pressed()
+      20ms state high
+      100ms >> sw.level(false)
+      100ms state fallingCheck
+      105ms >> sw.level(true)
+      105ms state high (via 0/body/3/0/body/0/then/0)
+      110ms >> sw.level(false)
+      110ms state fallingCheck
+      130ms publish out.released()
+      130ms state low
+# Sample 6 (OwnerSample)
+  Q1 go(false) [horizon, 0ms]: stores {"processed":0,"reported":0}
+      0ms >> cmd.go(false)
+      0ms state state0
+      0ms send lamp.set("waiting")
+      0ms state state1
+      0ms send lamp.set("retry")
+  Q2 retry 5ms, go(false) 10ms [horizon, 10ms]: stores {"processed":0,"reported":0}
+      0ms state state0
+      0ms send lamp.set("waiting")
+      5ms >> cmd.retry()
+      5ms discard cmd.retry (inactiveOwner)
+      10ms >> cmd.go(false)
+      10ms state state1
+      10ms send lamp.set("retry")
+  Q3 go(true) 0, go 5ms [quiescent, 10ms]: stores {"processed":1,"reported":1}
+      0ms >> cmd.go(true)
+      0ms state state0
+      0ms send lamp.set("waiting")
+      0ms state state2
+      0ms send lamp.set("go")
+      5ms >> cmd.go(true)
+      5ms discard cmd.go (inactiveOwner)
+      10ms state state4
+      10ms run completes
+  Q4 go(true) 0: when process() [quiescent, 10ms]: stores {"processed":1,"reported":1}
+      0ms >> cmd.go(true)
+      0ms state state0
+      0ms send lamp.set("waiting")
+      0ms state state2
+      0ms send lamp.set("go")
+      10ms state state4
+      10ms run completes
+  Q5 after state4: go again [quiescent, 50ms]: stores {"processed":1,"reported":1}
+      0ms >> cmd.go(true)
+      0ms state state0
+      0ms send lamp.set("waiting")
+      0ms state state2
+      0ms send lamp.set("go")
+      10ms state state4
+      10ms run completes
+      50ms >> cmd.go(true)
+      50ms discard cmd.go (inactiveOwner)
+      50ms >> cmd.retry()
+      50ms discard cmd.retry (inactiveOwner)
+# Sample 7 (ModesParent)
+  Q1 running; ecu.shutdown [quiescent, 30ms]: stores {}
+      0ms state system
+      0ms state off
+      0ms send status.mode("off")
+      0ms >> key.ignitionOn()
+      0ms state powered (via 0/1/1/body/0)
+      0ms state standby (via 0/1/1/body/0)
+      0ms send status.mode("standby")
+      10ms >> cmd.go()
+      10ms state running (via 0/2/1/1/body/0)
+      10ms send status.mode("running")
+      10ms send drive.enable(true)
+      20ms >> ecu.shutdown()
+      20ms send drive.enable(false)
+      20ms send status.mode("off")
+      20ms modes completes
+      30ms >> key.ignitionOn()
+      30ms discard key.ignitionOn (inactiveOwner)
+  Q2 diagnostic; ignitionOff [horizon, 20ms]: stores {}
+      0ms state system
+      0ms state off
+      0ms send status.mode("off")
+      0ms >> key.ignitionOn()
+      0ms state powered (via 0/1/1/body/0)
+      0ms state standby (via 0/1/1/body/0)
+      0ms send status.mode("standby")
+      10ms >> diag.enter()
+      10ms state diagnostic (via 0/2/1/2/body/0)
+      10ms send status.mode("diagnostic")
+      20ms >> key.ignitionOff()
+      20ms state off (via 0/2/0/body/0)
+      20ms send status.mode("off")
+  Q3 standby; cmd.halt [horizon, 10ms]: stores {}
+      0ms state system
+      0ms state off
+      0ms send status.mode("off")
+      0ms >> key.ignitionOn()
+      0ms state powered (via 0/1/1/body/0)
+      0ms state standby (via 0/1/1/body/0)
+      0ms send status.mode("standby")
+      10ms >> cmd.halt()
+      10ms discard cmd.halt (inactiveOwner)
+  Q4 running; halt, go, ignitionOff at one instant [horizon, 20ms]: stores {}
+      0ms state system
+      0ms state off
+      0ms send status.mode("off")
+      0ms >> key.ignitionOn()
+      0ms state powered (via 0/1/1/body/0)
+      0ms state standby (via 0/1/1/body/0)
+      0ms send status.mode("standby")
+      10ms >> cmd.go()
+      10ms state running (via 0/2/1/1/body/0)
+      10ms send status.mode("running")
+      10ms send drive.enable(true)
+      20ms >> cmd.halt()
+      20ms >> cmd.go()
+      20ms send drive.enable(false)
+      20ms >> key.ignitionOff()
+      20ms state standby (via 0/2/2/2/body/0)
+      20ms send status.mode("standby")
+      20ms state running (via 0/2/1/1/body/0)
+      20ms send status.mode("running")
+      20ms send drive.enable(true)
+      20ms send drive.enable(false)
+      20ms state off (via 0/2/0/body/0)
+      20ms send status.mode("off")
+  Q4b running; same three queued while the machine is busy (delivered at one instant before it waits) [quiescent, 10ms]: stores {}
+      0ms state system
+      0ms state off
+      0ms send status.mode("off")
+      0ms >> key.ignitionOn()
+      0ms >> cmd.go()
+      0ms state powered (via 0/1/1/body/0)
+      0ms state standby (via 0/1/1/body/0)
+      0ms send status.mode("standby")
+      0ms state running (via 0/2/1/1/body/0)
+      0ms send status.mode("running")
+      0ms send drive.enable(true)
+      10ms >> cmd.halt()
+      10ms >> cmd.go()
+      10ms send drive.enable(false)
+      10ms >> key.ignitionOff()
+      10ms state standby (via 0/2/2/2/body/0)
+      10ms send status.mode("standby")
+      10ms >> ecu.shutdown()
+      10ms state running (via 0/2/1/1/body/0)
+      10ms send status.mode("running")
+      10ms send drive.enable(true)
+      10ms send drive.enable(false)
+      10ms state off (via 0/2/0/body/0)
+      10ms send status.mode("off")
+      10ms send status.mode("off")
+      10ms modes completes
+  Q5 shutdown from off [quiescent, 0ms]: stores {}
+      0ms state system
+      0ms state off
+      0ms send status.mode("off")
+      0ms >> ecu.shutdown()
+      0ms send status.mode("off")
+      0ms modes completes

@@ -1474,22 +1474,26 @@ package DoorEcu {
       publish modeOut.changed(next);
     }
     operation control() {
-      initial startup;
       state startup {
         /** Power-on reset: initialization, then post-run unless the ignition is on. */
         on entry {
           announce(PowerMode.startup);
         }
-        on receive vehicle.signals(s) when (s.ignitionOn) to run {
-        }
-        after 20ms to postRun {
+        after 20ms to postRun;
+        on receive vehicle.signals(s) {
+          if (s.ignitionOn) {
+            exit;
+          }
         }
       }
       state run {
         on entry {
           announce(PowerMode.run);
         }
-        on receive vehicle.signals(s) when (not s.ignitionOn) to postRun {
+        on receive vehicle.signals(s) {
+          if (not s.ignitionOn) {
+            exit;
+          }
         }
       }
       state postRun {
@@ -1497,26 +1501,33 @@ package DoorEcu {
         on entry {
           announce(PowerMode.postRun);
         }
-        on receive vehicle.signals(s) when (s.ignitionOn) to run {
-        }
-        on receive wake.request(source) to postRun {
-          lastWake = source;
-        }
-        after 1s to readySleep {
+        after 1s {
           announce(PowerMode.readySleep);
+          exit;
+        }
+        on receive vehicle.signals(s) {
+          if (s.ignitionOn) {
+            to run;
+          }
+        }
+        on receive wake.request(source) {
+          lastWake = source;
+          to postRun;
         }
       }
       state readySleep {
         /** Network released: every received frame restarts the 500 ms NM timeout. */
-        on receive vehicle.signals(s) when (s.ignitionOn) to run {
+        after 500ms exit;
+        on receive vehicle.signals(s) {
+          if (s.ignitionOn) {
+            to run;
+          }
         }
-        on receive wake.request(source) to postRun {
+        on receive wake.request(source) {
           lastWake = source;
+          to postRun;
         }
-        on receive bus.frameReceived() to readySleep {
-        }
-        after 500ms to shutdown {
-        }
+        on receive bus.frameReceived() to readySleep;
       }
       state shutdown {
         /**
@@ -1528,22 +1539,26 @@ package DoorEcu {
           announce(PowerMode.shutdown);
           publish nvm.writeAll();
         }
-        on receive nvm.writeAllDone(ok) to sleep {
-          nvmStored = ok;
+        after 200ms {
+          nvmStored = false;
+          publish nvm.cancelWriteAll();
+          exit;
         }
-        on receive bus.frameReceived() to readySleep {
+        on receive nvm.writeAllDone(ok) {
+          nvmStored = ok;
+          exit;
+        }
+        on receive bus.frameReceived() {
           shutdownsAborted = shutdownsAborted + 1;
           publish nvm.cancelWriteAll();
           announce(PowerMode.readySleep);
+          to readySleep;
         }
-        on receive wake.request(source) to postRun {
+        on receive wake.request(source) {
           lastWake = source;
           shutdownsAborted = shutdownsAborted + 1;
           publish nvm.cancelWriteAll();
-        }
-        after 200ms to sleep {
-          nvmStored = false;
-          publish nvm.cancelWriteAll();
+          to postRun;
         }
       }
       state sleep {
@@ -1552,8 +1567,9 @@ package DoorEcu {
           sleeps = sleeps + 1;
           announce(PowerMode.sleep);
         }
-        on receive wake.request(source) to wakeup {
+        on receive wake.request(source) {
           lastWake = source;
+          exit;
         }
       }
       state wakeup {
@@ -1561,9 +1577,11 @@ package DoorEcu {
           wakeups = wakeups + 1;
           announce(PowerMode.wakeup);
         }
-        on receive vehicle.signals(s) when (s.ignitionOn) to run {
-        }
-        after 20ms to postRun {
+        after 20ms to postRun;
+        on receive vehicle.signals(s) {
+          if (s.ignitionOn) {
+            to run;
+          }
         }
       }
     }
@@ -2035,48 +2053,60 @@ package DoorEcu {
       return motionAllowed() and permission.oneTouch;
     }
     operation control() {
-      initial idle;
       state idle {
         on entry {
           drive(MotorDirection.stop);
         }
-        on receive requests.request(command) when (command == WindowRequest.autoUp and oneTouchAllowed()) to autoUp {
-          oneTouchCloses = oneTouchCloses + 1;
-        }
-        on receive requests.request(command) when ((command == WindowRequest.manualUp or command == WindowRequest.autoUp) and motionAllowed()) to manualUp {
-        }
-        on receive requests.request(command) when (command == WindowRequest.autoDown and oneTouchAllowed()) to autoDown {
-        }
-        on receive requests.request(command) when ((command == WindowRequest.manualDown or command == WindowRequest.autoDown) and motionAllowed()) to manualDown {
+        on receive requests.request(command) {
+          if (command == WindowRequest.autoUp and oneTouchAllowed()) {
+            oneTouchCloses = oneTouchCloses + 1;
+            to autoUp;
+          } else if ((command == WindowRequest.manualUp or command == WindowRequest.autoUp) and motionAllowed()) {
+            exit;
+          } else if (command == WindowRequest.autoDown and oneTouchAllowed()) {
+            to autoDown;
+          } else if ((command == WindowRequest.manualDown or command == WindowRequest.autoDown) and motionAllowed()) {
+            to manualDown;
+          }
         }
       }
       state manualUp {
         on entry {
           drive(MotorDirection.up);
         }
-        on receive supervision.pinchDetected() to reversing {
-          pinchReversals = pinchReversals + 1;
-        }
-        on receive supervision.motionStalled() to idle {
-          stalledStops = stalledStops + 1;
-        }
-        on receive supervision.obstructed() to idle {
-          obstructionStops = obstructionStops + 1;
-        }
-        on receive supervision.endPosition(closed) when (closed) to idle {
-        }
-        on receive supervision.sensorFault() to idle {
-        }
-        on receive permissionIn.motionInhibited() to idle {
-          inhibitedStops = inhibitedStops + 1;
-        }
-        on receive requests.request(command) when (command == WindowRequest.autoUp and oneTouchAllowed()) to autoUp {
-          oneTouchCloses = oneTouchCloses + 1;
-        }
-        on receive requests.request(command) when (command != WindowRequest.manualUp and command != WindowRequest.autoUp) to idle {
-        }
-        after 8s to idle {
+        after 8s {
           runTimeouts = runTimeouts + 1;
+          to idle;
+        }
+        on receive supervision.pinchDetected() {
+          pinchReversals = pinchReversals + 1;
+          to reversing;
+        }
+        on receive supervision.motionStalled() {
+          stalledStops = stalledStops + 1;
+          to idle;
+        }
+        on receive supervision.obstructed() {
+          obstructionStops = obstructionStops + 1;
+          to idle;
+        }
+        on receive supervision.endPosition(closed) {
+          if (closed) {
+            to idle;
+          }
+        }
+        on receive supervision.sensorFault() to idle;
+        on receive permissionIn.motionInhibited() {
+          inhibitedStops = inhibitedStops + 1;
+          to idle;
+        }
+        on receive requests.request(command) {
+          if (command == WindowRequest.autoUp and oneTouchAllowed()) {
+            oneTouchCloses = oneTouchCloses + 1;
+            exit;
+          } else if (command != WindowRequest.manualUp and command != WindowRequest.autoUp) {
+            to idle;
+          }
         }
       }
       state autoUp {
@@ -2084,23 +2114,32 @@ package DoorEcu {
         on entry {
           drive(MotorDirection.up);
         }
-        on receive supervision.pinchDetected() to reversing {
-          pinchReversals = pinchReversals + 1;
-        }
-        on receive supervision.motionStalled() to idle {
-          stalledStops = stalledStops + 1;
-        }
-        on receive supervision.endPosition(closed) when (closed) to idle {
-        }
-        on receive supervision.sensorFault() to idle {
-        }
-        on receive permissionIn.motionInhibited() to idle {
-          inhibitedStops = inhibitedStops + 1;
-        }
-        on receive requests.request(command) when (command == WindowRequest.manualDown or command == WindowRequest.autoDown) to idle {
-        }
-        after 8s to idle {
+        after 8s {
           runTimeouts = runTimeouts + 1;
+          to idle;
+        }
+        on receive supervision.pinchDetected() {
+          pinchReversals = pinchReversals + 1;
+          exit;
+        }
+        on receive supervision.motionStalled() {
+          stalledStops = stalledStops + 1;
+          to idle;
+        }
+        on receive supervision.endPosition(closed) {
+          if (closed) {
+            to idle;
+          }
+        }
+        on receive supervision.sensorFault() to idle;
+        on receive permissionIn.motionInhibited() {
+          inhibitedStops = inhibitedStops + 1;
+          to idle;
+        }
+        on receive requests.request(command) {
+          if (command == WindowRequest.manualDown or command == WindowRequest.autoDown) {
+            to idle;
+          }
         }
       }
       state reversing {
@@ -2113,68 +2152,90 @@ package DoorEcu {
         on entry {
           drive(MotorDirection.down);
         }
-        on receive supervision.reversalComplete() to idle {
-        }
-        on receive supervision.endPosition(closed) when (not closed) to idle {
-        }
-        on receive supervision.sensorFault() to idle {
-        }
-        on receive supervision.obstructed() to idle {
-          obstructionStops = obstructionStops + 1;
-        }
-        on receive supervision.motionStalled() to idle {
-          stalledStops = stalledStops + 1;
-        }
-        after 1600ms to idle {
+        after 1600ms {
           runTimeouts = runTimeouts + 1;
+          to idle;
+        }
+        on receive supervision.reversalComplete() to idle;
+        on receive supervision.endPosition(closed) {
+          if (not closed) {
+            to idle;
+          }
+        }
+        on receive supervision.sensorFault() to idle;
+        on receive supervision.obstructed() {
+          obstructionStops = obstructionStops + 1;
+          to idle;
+        }
+        on receive supervision.motionStalled() {
+          stalledStops = stalledStops + 1;
+          to idle;
         }
       }
       state manualDown {
         on entry {
           drive(MotorDirection.down);
         }
-        on receive supervision.obstructed() to idle {
-          obstructionStops = obstructionStops + 1;
-        }
-        on receive supervision.motionStalled() to idle {
-          stalledStops = stalledStops + 1;
-        }
-        on receive supervision.endPosition(closed) when (not closed) to idle {
-        }
-        on receive supervision.sensorFault() to idle {
-        }
-        on receive permissionIn.motionInhibited() to idle {
-          inhibitedStops = inhibitedStops + 1;
-        }
-        on receive requests.request(command) when (command == WindowRequest.autoDown and oneTouchAllowed()) to autoDown {
-        }
-        on receive requests.request(command) when (command != WindowRequest.manualDown and command != WindowRequest.autoDown) to idle {
-        }
-        after 8s to idle {
+        after 8s {
           runTimeouts = runTimeouts + 1;
+          to idle;
+        }
+        on receive supervision.obstructed() {
+          obstructionStops = obstructionStops + 1;
+          to idle;
+        }
+        on receive supervision.motionStalled() {
+          stalledStops = stalledStops + 1;
+          to idle;
+        }
+        on receive supervision.endPosition(closed) {
+          if (not closed) {
+            to idle;
+          }
+        }
+        on receive supervision.sensorFault() to idle;
+        on receive permissionIn.motionInhibited() {
+          inhibitedStops = inhibitedStops + 1;
+          to idle;
+        }
+        on receive requests.request(command) {
+          if (command == WindowRequest.autoDown and oneTouchAllowed()) {
+            exit;
+          } else if (command != WindowRequest.manualDown and command != WindowRequest.autoDown) {
+            to idle;
+          }
         }
       }
       state autoDown {
         on entry {
           drive(MotorDirection.down);
         }
-        on receive supervision.obstructed() to idle {
-          obstructionStops = obstructionStops + 1;
-        }
-        on receive supervision.motionStalled() to idle {
-          stalledStops = stalledStops + 1;
-        }
-        on receive supervision.endPosition(closed) when (not closed) to idle {
-        }
-        on receive supervision.sensorFault() to idle {
-        }
-        on receive permissionIn.motionInhibited() to idle {
-          inhibitedStops = inhibitedStops + 1;
-        }
-        on receive requests.request(command) when (command == WindowRequest.manualUp or command == WindowRequest.autoUp) to idle {
-        }
-        after 8s to idle {
+        after 8s {
           runTimeouts = runTimeouts + 1;
+          to idle;
+        }
+        on receive supervision.obstructed() {
+          obstructionStops = obstructionStops + 1;
+          to idle;
+        }
+        on receive supervision.motionStalled() {
+          stalledStops = stalledStops + 1;
+          to idle;
+        }
+        on receive supervision.endPosition(closed) {
+          if (not closed) {
+            to idle;
+          }
+        }
+        on receive supervision.sensorFault() to idle;
+        on receive permissionIn.motionInhibited() {
+          inhibitedStops = inhibitedStops + 1;
+          to idle;
+        }
+        on receive requests.request(command) {
+          if (command == WindowRequest.manualUp or command == WindowRequest.autoUp) {
+            to idle;
+          }
         }
       }
     }
@@ -2222,50 +2283,58 @@ package DoorEcu {
       publish diag.report(FaultId.lockActuator, switchLocked != expectLocked);
     }
     operation control() {
-      initial unlocked;
       state unlocked {
-        on receive crash.crashUnlock() to crashUnlocking {
+        on receive crash.crashUnlock() to crashUnlocking;
+        on receive requests.request(command) {
+          if (command == LockRequest.lock and not ajar) {
+            exit;
+          }
         }
-        on receive requests.request(command) when (command == LockRequest.lock and not ajar) to locking {
-        }
-        on receive vehicle.signals(s) when (s.speedValid and s.speedKph >= autoLockKph and autoLockArmed and not ajar) to locking {
-          autoLockArmed = false;
-          autoLocked = true;
+        on receive vehicle.signals(s) {
+          if (s.speedValid and s.speedKph >= autoLockKph and autoLockArmed and not ajar) {
+            autoLockArmed = false;
+            autoLocked = true;
+            exit;
+          }
         }
       }
       state locking {
         on entry {
           send motor.lockMotor(LockDrive.lockPulse);
         }
-        on exit {
+        after 250ms {
           send motor.lockMotor(LockDrive.idle);
-        }
-        on receive crash.crashUnlock() to crashUnlocking {
-        }
-        after 250ms to locked {
           lockCycles = lockCycles + 1;
           checkFeedback(true);
           announce(LockState.locked);
+          exit;
+        }
+        on receive crash.crashUnlock() {
+          send motor.lockMotor(LockDrive.idle);
+          to crashUnlocking;
         }
       }
       state locked {
-        on receive crash.crashUnlock() to crashUnlocking {
-        }
-        on receive requests.request(command) when (command == LockRequest.unlock) to unlocking {
+        on receive crash.crashUnlock() to crashUnlocking;
+        on receive requests.request(command) {
+          if (command == LockRequest.unlock) {
+            exit;
+          }
         }
       }
       state unlocking {
         on entry {
           send motor.lockMotor(LockDrive.unlockPulse);
         }
-        on exit {
+        after 250ms {
           send motor.lockMotor(LockDrive.idle);
-        }
-        on receive crash.crashUnlock() to crashUnlocking {
-        }
-        after 250ms to unlocked {
           lockCycles = lockCycles + 1;
           announce(LockState.unlocked);
+          to unlocked;
+        }
+        on receive crash.crashUnlock() {
+          send motor.lockMotor(LockDrive.idle);
+          exit;
         }
       }
       state crashUnlocking {
@@ -2274,18 +2343,19 @@ package DoorEcu {
           crashLatched = true;
           send motor.lockMotor(LockDrive.unlockPulse);
         }
-        on exit {
+        after 250ms {
           send motor.lockMotor(LockDrive.idle);
-        }
-        after 250ms to crashHold {
           announce(LockState.unlocked);
+          exit;
         }
       }
       state crashHold {
         /** After a crash: auto-lock stays inhibited; a manual lock is still accepted. */
-        on receive crash.crashUnlock() to crashUnlocking {
-        }
-        on receive requests.request(command) when (command == LockRequest.lock and not ajar) to locking {
+        on receive crash.crashUnlock() to crashUnlocking;
+        on receive requests.request(command) {
+          if (command == LockRequest.lock and not ajar) {
+            to locking;
+          }
         }
       }
     }
@@ -2341,18 +2411,23 @@ package DoorEcu {
       });
     }
     operation foldControl() {
-      initial stopped;
       state stopped {
         on entry {
           send drive.foldMotor(FoldRequest.none);
         }
-        on receive request.fold(command) when (command == FoldRequest.fold and not folded) to folding {
+        on receive request.fold(command) {
+          if (command == FoldRequest.fold and not folded) {
+            exit;
+          } else if (command == FoldRequest.unfold and folded) {
+            to unfolding;
+          }
         }
-        on receive request.fold(command) when (command == FoldRequest.unfold and folded) to unfolding {
-        }
-        on receive lockStatus.changed(current) when (autoFold and current == LockState.locked and not folded) to folding {
-        }
-        on receive lockStatus.changed(current) when (autoFold and current == LockState.unlocked and folded) to unfolding {
+        on receive lockStatus.changed(current) {
+          if (autoFold and current == LockState.locked and not folded) {
+            exit;
+          } else if (autoFold and current == LockState.unlocked and folded) {
+            to unfolding;
+          }
         }
       }
       state folding {
@@ -2360,15 +2435,23 @@ package DoorEcu {
           foldMoves = foldMoves + 1;
           send drive.foldMotor(FoldRequest.fold);
         }
-        on receive feedback.foldEndStop() to stopped {
-          folded = true;
-        }
-        on receive request.fold(command) when (command == FoldRequest.unfold) to unfolding {
-        }
-        on receive lockStatus.changed(current) when (autoFold and current == LockState.unlocked) to unfolding {
-        }
-        after 1500ms to stopped {
+        after 1500ms {
           foldTimeouts = foldTimeouts + 1;
+          to stopped;
+        }
+        on receive feedback.foldEndStop() {
+          folded = true;
+          to stopped;
+        }
+        on receive request.fold(command) {
+          if (command == FoldRequest.unfold) {
+            exit;
+          }
+        }
+        on receive lockStatus.changed(current) {
+          if (autoFold and current == LockState.unlocked) {
+            exit;
+          }
         }
       }
       state unfolding {
@@ -2376,15 +2459,23 @@ package DoorEcu {
           foldMoves = foldMoves + 1;
           send drive.foldMotor(FoldRequest.unfold);
         }
-        on receive feedback.foldEndStop() to stopped {
-          folded = false;
-        }
-        on receive request.fold(command) when (command == FoldRequest.fold) to folding {
-        }
-        on receive lockStatus.changed(current) when (autoFold and current == LockState.locked) to folding {
-        }
-        after 1500ms to stopped {
+        after 1500ms {
           foldTimeouts = foldTimeouts + 1;
+          to stopped;
+        }
+        on receive feedback.foldEndStop() {
+          folded = false;
+          to stopped;
+        }
+        on receive request.fold(command) {
+          if (command == FoldRequest.fold) {
+            to folding;
+          }
+        }
+        on receive lockStatus.changed(current) {
+          if (autoFold and current == LockState.locked) {
+            to folding;
+          }
         }
       }
     }

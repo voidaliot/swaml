@@ -1,0 +1,36 @@
+package B4v {
+  port def In { provides event k(); provides event m(v: uint); }
+  component def C {
+    reversed port in: In;
+    attribute x: uint = 0;
+    attribute looks: uint = 0;
+    attribute e: uint = 0;
+    operation run() {
+      state P {
+        var t: uint = looks;
+        looks = looks + 1;
+        state a {
+          
+          on receive in.m(v) { x = x * 1000 + t + v; }
+          on receive in.k() to a;
+        }
+      }
+    }
+    schedule { on start run(); }
+  }
+  component def Bench { port out: In; }
+  component c: C;
+  component bench: Bench;
+  connect (bench.out, c.in);
+  associate bench to 'T';
+  test 'T' of c {
+    wait 1ms;
+    publish bench.out.m(1);
+    wait 1ms;
+    publish bench.out.k();
+    wait 1ms;
+    publish bench.out.m(2);
+    wait 1ms;
+    assert c.x == 0;
+  }
+}

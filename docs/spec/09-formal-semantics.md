@@ -14,7 +14,7 @@ D; Γ ⊢ s ⇒ Γ'
 C —observation→ C'
 ```
 
-The configuration also holds sample cells S, per port occurrence and sampled member (WP6), initialized to the member's initial value. The queued messages in Q carry a retained mark (WP5): a message that a deferring state retained, recorded once by `defer` and consumed in offer-ordinal order when a state handles it (chapter 6.5).
+The configuration also holds sample cells S, per port occurrence and sampled member (WP6), initialized to the member's initial value. Queued messages in Q carry their delivery ordinal; an operation with states looks at its owned input in delivery order (chapter 6.5, SIF-R05).
 
 Values are bounded primitive scalars, nominal enums/records and fixed copied arrays; void has no inhabitant. Effect ε retains read/write/communication/suspension flags, with pure as empty. Transitive union over an acyclic call graph computes effects. The maximum class is a presentation of these flags rather than permission to erase a write beneath suspension.
 
@@ -47,7 +47,7 @@ Values are bounded primitive scalars, nominal enums/records and fixed copied arr
 | for in | Collection T[n], explicit compatible element type; copied collection; fresh element/body scope |
 | wait/receive | Suspended continuation; owned input with explicit payload binding for receive; no implicit failure/payload name |
 | interruptible | Non-stateful operation, exclusive required input; protected and handler scopes share only outer locals |
-| state guard | bool, effects pure or reads state; transitions selected in authored order |
+| state condition | bool, effects pure or reads state; an `if` in a state's braces is tested at every look of the state (SIF-R02) |
 | concurrent entry | Callee transitive effect has no write and body is not stateful |
 | attribute initializer | Explicit destination type; empty state environment; pure effect |
 
@@ -71,11 +71,14 @@ Scalar type assignability uses widening, with checked integral value conversion 
 | timeout | At expiry, pending becomes failed; ready failure continuation; tie beats reply |
 | try success/failure | Return e value on success; on RuntimeFault evaluate fallback lazily with existing σ/Q effects retained |
 | interrupt | Match active region; disarm/unwind protected continuation, cancel pending correlation as interrupted, retain activation/deadline/outer ρ and committed effects |
-| state reaction | Select first enabled transition, exit/effect/update/entry, invalidate old timer generation; idle releases lock |
-| completion | After entry or an internal reaction: the first enabled completion transition in order, then exit, effect, update, entry; a revisited state in a completion chain is a `CompletionLoop` violation |
-| guarded timer | At expiry, a false guard consumes the timer generation for this entry (`discardTimer`) |
-| internal reaction | Effect only; M (timer generations) unchanged |
-| retain | A deferred member's message stays in Q, marked retained (`defer` once); it is consumed in offer-ordinal order on entering a handling state |
+| state arrival | Observation, timer start, entry once, computed timers; a parent reaches its first inner state, a state with nothing to look at continues the flow, any other state makes its arrival look (SIF-R01) |
+| look | Levels outermost first, items in written order; present lines and every statement run; the first leave ends it; it runs to completion holding L[o] unless a block suspends (SIF-R02, SIF-R12) |
+| state wait | Timers that ran out first, then drop unnamed owned input, then a queued named message (picked now) or a pending wake in zero time (the wait end at phase 2), else wait without L[o] for a timer (phase 1), a named delivery (phase 2) or a wake (SIF-R05, SIF-R07) |
+| wake | At the unlock of another activation of o that wrote an attribute in the read set of a waiting state, or at the delivery event of a sample in its read set: a look with nothing present; while the machine is busy, a pending wake served by its next look (SIF-R07) |
+| own re-look | After a look of a waiting machine that did not leave and whose event line wrote a name read by a statement before it: one look with nothing present (SIF-R08) |
+| zero-time loop | A loop that runs without time passing ends at the step limit (`StepLimit`, SIF-R18); there is no loop detection |
+| periodic release | Resume the one activation of a periodic machine: evaluate the release guard (false: `skip` with the activation), drop unnamed owned input, take the first-delivered named message, look once; leaving continues in the release; a second arrival of a state in the release ends it (held); the end of the body ends the release with no state (`periodicEnd`), and the next release starts the flow again (SIF-R14 to SIF-R17) |
+| leave | Block statements before the leave, exits innermost first, entries outermost first, the target's arrival look (SIF-R09) |
 | sample | At the delivery event of a value whose offer is not older than the offer of the value S[p, m] holds, S[p, m] := value, with a `sample` observation; a read sees the updates ordered before it in the event order (time, phase, insertion ordinal), and one activation sees one value of a cell between two suspensions (WP6) |
 | guarded dispatch | At the first execution step, before the arguments, evaluate the release guard. False (no argument is evaluated): cancel the deadline, release L[o], record `skip`, release `after` targets as on completion, and discard a receive entry's input (`discardInput`, `releaseGuard`). Failure: `failure` with the entry as source (the failing statement of a called operation), no successors (WP7) |
 | ordered selection | Equal (t, phase) items are ordered by descending Task priority (unplaced items at 0), then Task-placed before unplaced, then by Task declaration rank and in-task position, then by insertion ordinal (WP8-R01); on a Core that has Tasks only the activation that holds the Core (from its dispatch or resumption to its next wait or end) may take a step, and the selection among the others applies when the Core is free (WP8-R02, no preemption) |
@@ -83,7 +86,7 @@ Scalar type assignability uses widening, with checked integral value conversion 
 | violation | Deadline, activation overflow, step/concurrent resource or clock failure stops the reference run and bypasses try |
 | case script | A fresh package configuration adds one serial script activation after startup releases; direct primary-subject calls borrow its actual serial context, script emissions/requests/receives use actor ports, on call replies to the pending correlation, and script completion or failure stops the run |
 
-At terminal correlation, later replies cannot change R. Inactive interrupt input is discarded observably. Receive statements preserve queued early input. A state's unhandled input leaves its entry time/timer generation intact. Set entry time at the state update, before entry actions. After entry completes, evaluate completion transitions, then select an already elapsed timer, then queued input (retained input first, in offer order); earliest expiry then declaration order determines competing timers. Deadline/timeout measurements include suspension and backlog; zero-cost interpreter steps do not supply physical cost evidence.
+At terminal correlation, later replies cannot change R. Inactive interrupt input is discarded observably. Receive statements preserve queued early input. A state's unnamed input is dropped while it waits and leaves its timers intact. A state's timers count from its arrival, before `on entry`. When a state begins to wait, timers that ran out make a look first, then queued input is looked at in delivery order (chapter 6.5, SIF-R01 to SIF-R06). Deadline/timeout measurements include suspension and backlog; zero-cost interpreter steps do not supply physical cost evidence.
 
 ## 9.4 Projection and adequacy
 

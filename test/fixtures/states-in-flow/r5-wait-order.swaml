@@ -1,0 +1,31 @@
+package B2 {
+  port def In { provides event go(); provides event m(v: uint); provides event k(); }
+  component def C {
+    reversed port in: In;
+    attribute x: uint = 0;
+    attribute log: uint = 0;
+    operation a() {
+      state wa {
+        if (x == 1) { log = log * 10 + 1; exit; }
+        on receive in.k() { }
+      }
+    }
+    operation b() {
+      state s1 { on receive in.go() { wait 2ms; x = 1; to s2; } }
+      state s2 { on receive in.m(v) { log = log * 10 + 2; } }
+    }
+    schedule { on start a(); on start b(); }
+  }
+  component def Bench { port out: In; }
+  component c: C;
+  component bench: Bench;
+  connect (bench.out, c.in);
+  associate bench to 'T';
+  test 'T' of c {
+    publish bench.out.go();
+    wait 1ms;
+    publish bench.out.m(5);
+    wait 5ms;
+    assert c.log == 12;
+  }
+}
