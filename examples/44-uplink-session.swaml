@@ -1,0 +1,108 @@
+package UplinkSessionManager {
+  /** A V2X uplink session manager. Connecting asks the cloud for a session in its entry action, and its arrival look decides on the answer at once: to Connected with a session, to Backoff without one. The coverage line is written once, on the parent online, so a coverage loss leaves online from whichever state inside it is current; Offline then waits for coverage before the manager tries again. A coverage message that arrives during the request stays queued until a waiting state looks at it. */
+  port def CloudApi {
+    provides operation openSession(vehicle: uint) returns uint;
+  }
+  port def Coverage {
+    provides event coverage(up: bool);
+  }
+  component def Cloud {
+    /** Answers each open request after 2 ms: it refuses the first two, then grants sessions 101, 102 and so on. */
+    port api: CloudApi;
+    attribute calls: uint = 0;
+    operation open(vehicle: uint) returns uint {
+      calls = calls + 1;
+      wait 2ms;
+      if (calls <= 2) {
+        return 0;
+      }
+      return 98 + calls;
+    }
+    schedule {
+      on call api.openSession(vehicle) open(vehicle);
+    }
+  }
+  component def Session {
+    reversed port cloud: CloudApi;
+    reversed port network: Coverage;
+    const attribute vehicleId: uint = 7;
+    attribute sessionId: uint = 0;
+    attribute attempts: uint = 0;
+    attribute backoffs: uint = 0;
+    attribute coverageLosses: uint = 0;
+    operation run() {
+      while (true) {
+        state online {
+          on receive network.coverage(up) {
+            if (not up) {
+              coverageLosses = coverageLosses + 1;
+              sessionId = 0;
+              exit;
+            }
+          }
+          state Connecting {
+            on entry {
+              attempts = attempts + 1;
+              sessionId = try(cloud.openSession(vehicleId), 0);
+            }
+            if (sessionId > 0) to Connected;
+            else to Backoff;
+          }
+          state Backoff {
+            on entry {
+              backoffs = backoffs + 1;
+            }
+            after 10ms to Connecting;
+          }
+          state Connected {
+          }
+        }
+        state Offline {
+          on receive network.coverage(up) {
+            if (up) exit;
+          }
+        }
+      }
+    }
+    schedule {
+      on start run();
+    }
+  }
+  component def Car {
+    /** Interface-only actor that reports radio coverage. */
+    port radio: Coverage;
+  }
+  component session: Session;
+  component cloud: Cloud;
+  component car: Car;
+  connect (session.cloud, cloud.api);
+  connect (car.radio, session.network);
+  associate car, cloud to 'Opens after two refusals', 'Coverage loss during the request', 'Coverage loss while connected';
+  test 'Opens after two refusals' of session {
+    /** Two refusals and two 10 ms backoffs: the third request, sent at 24 ms, is answered with session 101 at 26 ms. */
+    wait 25ms;
+    assert session.sessionId == 0 and session.attempts == 3 and session.backoffs == 2;
+    wait 5ms;
+    assert session.sessionId == 101 and cloud.calls == 3;
+  }
+  test 'Coverage loss during the request' of session {
+    /** The loss arrives at 1 ms, while the first request is in flight, and stays queued. The refusal at 2 ms reaches Backoff, whose wait looks at the loss first: the parent's line leaves online before the backoff timer runs out. Coverage at 6 ms starts again from Connecting. */
+    wait 1ms;
+    publish car.radio.coverage(false);
+    wait 5ms;
+    assert session.coverageLosses == 1 and session.backoffs == 1 and session.attempts == 1;
+    publish car.radio.coverage(true);
+    wait 30ms;
+    assert session.sessionId == 101 and session.attempts == 3 and cloud.calls == 3;
+  }
+  test 'Coverage loss while connected' of session {
+    /** Connected at 26 ms. The loss at 30 ms clears the session through the same parent line; coverage at 31 ms opens session 102 at once, without a backoff. */
+    wait 30ms;
+    publish car.radio.coverage(false);
+    wait 1ms;
+    assert session.sessionId == 0 and session.coverageLosses == 1;
+    publish car.radio.coverage(true);
+    wait 5ms;
+    assert session.sessionId == 102 and session.attempts == 4 and session.backoffs == 2;
+  }
+}

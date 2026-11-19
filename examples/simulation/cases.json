@@ -94,19 +94,24 @@
       "DerivedPeriod::Literal period, computed deadline": "pass",
       "DerivedPeriod::Deadline per usage": "fail"
     },
-    "examples/44-session-completion.swaml": {
-      "SessionCompletion::Opens after two refusals": "pass",
-      "SessionCompletion::Coverage loss during the request": "pass"
+    "examples/44-uplink-session.swaml": {
+      "UplinkSessionManager::Opens after two refusals": "pass",
+      "UplinkSessionManager::Coverage loss during the request": "pass",
+      "UplinkSessionManager::Coverage loss while connected": "pass"
     },
-    "examples/45-lock-deferral.swaml": {
-      "LockDeferral::Requests during the pulse": "pass",
-      "LockDeferral::Request order across the pulse": "pass"
+    "examples/45-lock-latest-request.swaml": {
+      "LockLatestRequest::Requests during the pulse": "pass",
+      "LockLatestRequest::Unlock during the lock pulse": "pass",
+      "LockLatestRequest::Request order across the pulse": "pass"
     },
-    "examples/46-breaker-internal.swaml": {
-      "BreakerInternal::Store outage trips the breaker and recovers": "pass"
+    "examples/46-circuit-breaker.swaml": {
+      "CircuitBreaker::Store outage trips the breaker and recovers": "pass",
+      "CircuitBreaker::A failed probe opens the breaker again": "pass"
     },
-    "examples/47-reaction-forms.swaml": {
-      "ReactionForms::Every form": "pass"
+    "examples/47-sensor-warmup.swaml": {
+      "SensorWarmup::Ready at the deadline": "pass",
+      "SensorWarmup::Too cold at the deadline": "pass",
+      "SensorWarmup::Cooling heats again": "pass"
     },
     "examples/48-door-status-sampling.swaml": {
       "DoorStatus::Initial values before the first delivery": "pass",
@@ -114,7 +119,8 @@
       "DoorStatus::Live read after a wait": "pass"
     },
     "examples/49-body-can-member-policies.swaml": {
-      "BodyCan::Per-member policies on one connection": "pass"
+      "BodyCan::Crash frames queue, status frames keep the newest": "pass",
+      "BodyCan::One policy for both members loses crash frames": "pass"
     },
     "examples/50-lin-master-mode-gating.swaml": {
       "LinMasterGating::Headers every slot while awake": "pass",
@@ -135,6 +141,26 @@
     "examples/53-task-order.swaml": {
       "TaskOrder::Priority first, then deploy order": "pass",
       "TaskOrder::The interrupt stores the edge and flags it": "pass"
+    },
+    "examples/54-interior-light.swaml": {
+      "InteriorLight::Courtesy light after a key wake": "pass",
+      "InteriorLight::A door opening restarts the courtesy time": "pass",
+      "InteriorLight::A crash wake keeps the light on": "pass"
+    },
+    "examples/55-window-auto-up.swaml": {
+      "WindowAutoUp::Closes fast, then slowly into the seal": "pass",
+      "WindowAutoUp::Stop works in both inner states": "pass",
+      "WindowAutoUp::The parent timer covers both inner states": "pass"
+    },
+    "examples/56-cooling-fan.swaml": {
+      "CoolingFan::Starts at the threshold": "pass",
+      "CoolingFan::Runs at least the minimum time": "pass",
+      "CoolingFan::Stops below the lower threshold": "pass"
+    },
+    "examples/57-turn-signal-flasher.swaml": {
+      "TurnSignalFlasher::Flashes while the stalk is set": "pass",
+      "TurnSignalFlasher::Neutral turns the lamp off at the next release": "pass",
+      "TurnSignalFlasher::A blip between releases is not seen": "pass"
     },
     "examples/notation/catalog.swaml": {
       "Notation::Startup": "pass"

@@ -45,12 +45,16 @@ test('attributeAccess sees reads, writes, out arguments and the clock through ca
     assert.deepEqual([[...written.writes].sort(), [...read.reads].sort(), written.clock], [['n', 'ok'], ['log', 'ok'], false]);
 });
 
-test('the WP5 examples rewritten as states in the flow pass their cases, deterministically', async () => {
+test('the state examples (the rewritten WP5 examples 44 to 47 and examples 54 to 57) pass their cases, deterministically', async () => {
     const expected: Record<string, string[]> = {
-        'examples/44-session-completion.swaml': ['SessionCompletion::Opens after two refusals', 'SessionCompletion::Coverage loss during the request'],
-        'examples/45-lock-deferral.swaml': ['LockDeferral::Requests during the pulse', 'LockDeferral::Request order across the pulse'],
-        'examples/46-breaker-internal.swaml': ['BreakerInternal::Store outage trips the breaker and recovers'],
-        'examples/47-reaction-forms.swaml': ['ReactionForms::Every form'],
+        'examples/44-uplink-session.swaml': ['UplinkSessionManager::Opens after two refusals', 'UplinkSessionManager::Coverage loss during the request', 'UplinkSessionManager::Coverage loss while connected'],
+        'examples/45-lock-latest-request.swaml': ['LockLatestRequest::Requests during the pulse', 'LockLatestRequest::Unlock during the lock pulse', 'LockLatestRequest::Request order across the pulse'],
+        'examples/46-circuit-breaker.swaml': ['CircuitBreaker::Store outage trips the breaker and recovers', 'CircuitBreaker::A failed probe opens the breaker again'],
+        'examples/47-sensor-warmup.swaml': ['SensorWarmup::Ready at the deadline', 'SensorWarmup::Too cold at the deadline', 'SensorWarmup::Cooling heats again'],
+        'examples/54-interior-light.swaml': ['InteriorLight::Courtesy light after a key wake', 'InteriorLight::A door opening restarts the courtesy time', 'InteriorLight::A crash wake keeps the light on'],
+        'examples/55-window-auto-up.swaml': ['WindowAutoUp::Closes fast, then slowly into the seal', 'WindowAutoUp::Stop works in both inner states', 'WindowAutoUp::The parent timer covers both inner states'],
+        'examples/56-cooling-fan.swaml': ['CoolingFan::Starts at the threshold', 'CoolingFan::Runs at least the minimum time', 'CoolingFan::Stops below the lower threshold'],
+        'examples/57-turn-signal-flasher.swaml': ['TurnSignalFlasher::Flashes while the stalk is set', 'TurnSignalFlasher::Neutral turns the lamp off at the next release', 'TurnSignalFlasher::A blip between releases is not seen'],
     };
     for (const [file, cases] of Object.entries(expected)) {
         const r = await parse(readFileSync(new URL(file, root), 'utf8'));

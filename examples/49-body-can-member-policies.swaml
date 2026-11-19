@@ -1,5 +1,5 @@
 package BodyCan {
-  /** A body CAN link in the shape of the door model's BodyCanFrames. Event-triggered frames (crash) must be queued and kept in order, while a cyclic frame (lockStatus) only needs its latest value. In 2.2 one connection has one policy, so either cyclic frames pile up or crash frames are lost. From 3.0 a connection names a policy per member: connect bodyCan: Cyclic (bcm.bus, dcu.canBus) { crash: CanEvent; } queues crash frames with CanEvent and keeps only the newest lockStatus frame with Cyclic. The effective policy of a member route is its member policy, else the connection policy, else Swaml::Qos::Default. */
+  /** A body CAN link in the shape of the door model's BodyCanFrames. Event-triggered frames (crash) must be queued and kept in order, while a cyclic frame (lockStatus) only needs its latest value. A connection names a policy per member: connect bodyCan: Cyclic (bcm.bus, dcu.canBus) { crash: CanEvent; } queues crash frames with CanEvent and keeps only the newest lockStatus frame with Cyclic. The effective policy of a member route is its member policy, else the connection policy, else Swaml::Qos::Default. The connection to onePolicy names one policy for both members, so its crash frames are lost like status frames. */
   import Swaml::Qos;
   qos def CanEvent: Policy {
     delivery = Delivery.atMostOnce;
@@ -20,14 +20,14 @@ package BodyCan {
     provides event lockStatus(locked: bool);
   }
   component def DoorEcu {
-    /** Takes one frame and stays busy for 5 ms in the line that took it; the frames that arrive meanwhile stay in their connection queues, where each member route's policy applies, and are looked at one by one when idle waits again. The wait is what the example shows: a variable remembered by the line instead would keep only what it stores, so no frame would queue and the per-member policies (crash frames kept in order, only the newest lockStatus frame kept) would have nothing to act on. */
+    /** Takes one frame and stays busy for 5 ms in the line that took it. The frames that arrive meanwhile stay in their connection queues, where each member route's policy applies, and listening looks at them one by one when it waits again. */
     reversed port canBus: BodyCanFrames;
     attribute crashes: uint = 0;
     attribute crashOrder: int = 0;
     attribute statuses: uint = 0;
     attribute locked: bool = false;
     operation run() {
-      state idle {
+      state listening {
         on receive canBus.crash(severity) {
           crashes = crashes + 1;
           crashOrder = crashOrder * 10 + severity;
@@ -47,30 +47,36 @@ package BodyCan {
   component def Bcm {
     /** Interface-only actor: the body control module. */
     port bus: BodyCanFrames;
-    port plainBus: BodyCanFrames;
+    port onePolicyBus: BodyCanFrames;
   }
   component dcu: DoorEcu;
-  component plain: DoorEcu;
+  component onePolicy: DoorEcu;
   component bcm: Bcm;
   connect bodyCan: Cyclic (bcm.bus, dcu.canBus) {
     crash: CanEvent;
   }
-  connect plainCan: Cyclic (bcm.plainBus, plain.canBus);
-  associate bcm, plain to 'Per-member policies on one connection';
-  test 'Per-member policies on one connection' of dcu {
-    /** Three crash frames and three lock status frames in one burst. dcu takes the first status frame at once; while it is busy its status queue keeps only the newest of the two others (Cyclic, capacity 1, dropOldest) and its crash queue keeps every crash frame (CanEvent): two status frames, the last one true, and three crashes in the order 1, 2, 3. plain has the one policy Cyclic for both members, so it loses crash frames too: it handles crash 1 and then only crash 3. */
+  connect onePolicyCan: Cyclic (bcm.onePolicyBus, onePolicy.canBus);
+  associate bcm to 'Crash frames queue, status frames keep the newest';
+  associate bcm, dcu to 'One policy for both members loses crash frames';
+  test 'Crash frames queue, status frames keep the newest' of dcu {
+    /** Three lock status frames and three crash frames in one burst. dcu takes the first status frame at once; while it is busy its status queue keeps only the newest of the two others (Cyclic, capacity 1, dropOldest) and its crash queue keeps every crash frame (CanEvent): two status frames, the last one true, and three crashes in the order 1, 2, 3. */
     publish bcm.bus.lockStatus(true);
     publish bcm.bus.lockStatus(false);
     publish bcm.bus.lockStatus(true);
     publish bcm.bus.crash(1);
     publish bcm.bus.crash(2);
     publish bcm.bus.crash(3);
-    publish bcm.plainBus.crash(1);
-    publish bcm.plainBus.crash(2);
-    publish bcm.plainBus.crash(3);
     wait 100ms;
     assert dcu.statuses == 2 and dcu.locked;
     assert dcu.crashes == 3 and dcu.crashOrder == 123;
-    assert plain.crashes == 2 and plain.crashOrder == 13;
+  }
+  test 'One policy for both members loses crash frames' of onePolicy {
+    /** The same crash burst on the connection with the one policy Cyclic: onePolicy takes crash 1 at once, crash 2 is replaced by crash 3 in the queue, so it handles crash 1 and then only crash 3. dcu receives nothing. */
+    publish bcm.onePolicyBus.crash(1);
+    publish bcm.onePolicyBus.crash(2);
+    publish bcm.onePolicyBus.crash(3);
+    wait 100ms;
+    assert onePolicy.crashes == 2 and onePolicy.crashOrder == 13;
+    assert dcu.crashes == 0;
   }
 }

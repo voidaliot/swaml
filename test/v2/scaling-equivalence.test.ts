@@ -10,10 +10,21 @@ import { parse, valid, workspace } from './helpers.js';
 const root = new URL('../../../', import.meta.url);
 /** The benchmark model generators, shared with npm run bench and the differential check. */
 const generators = (): Promise<{ largeModel(scale: number): string; timerModel(options: { iterations: number; timeout: string }): string }> => import(new URL('scripts/bench/large-model.mjs', root).href);
-/** The owner rule as originally written: the longest candidate path before '.', or a package before '::'; the first among equal paths. */
+/**
+ * The owner rule as originally written: the longest candidate path before '.', or a package before '::'; the first among
+ * equal paths. A state inside a parent state is named in its operation like every state, so its path has no prefix of
+ * its parent's; it is owned by its parent state (SIF-M01), the first candidate with the parent's path.
+ */
 function referenceOwners(models: readonly Model[]): ({ path: string } | undefined)[] {
     const candidates = viewCandidates(models);
-    return candidates.map(item => item.node.$type === 'Package' ? undefined : candidates.filter(x => item.path.startsWith(x.path + '.') || x.node.$type === 'Package' && item.path.startsWith(x.path + '::')).sort((a, b) => b.path.length - a.path.length)[0]);
+    const parentState = (item: (typeof candidates)[number]) => {
+        const n = item.node as { $type: string; name?: string; $container?: { $type: string; name?: string } };
+        if (n.$type !== 'StateStep' || n.$container?.$type !== 'StateStep')
+            return undefined;
+        const path = `${item.path.slice(0, item.path.length - n.name!.length - 1)}.${n.$container.name}`;
+        return candidates.find(x => x.path === path);
+    };
+    return candidates.map(item => item.node.$type === 'Package' ? undefined : parentState(item) ?? candidates.filter(x => item.path.startsWith(x.path + '.') || x.node.$type === 'Package' && item.path.startsWith(x.path + '::')).sort((a, b) => b.path.length - a.path.length)[0]);
 }
 /** The result or thrown message of a projection step, so a failure of the original rule is compared too. */
 function outcome<T>(work: () => T): { value: T } | { error: string } { try { return { value: work() }; } catch (e) { return { error: (e as Error).message }; } }

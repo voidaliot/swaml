@@ -1,0 +1,96 @@
+package InteriorLight {
+  /** The interior light of a car. A state is a step of the operation's flow, like a call or an if: asleep waits for a wake-up and keeps its reason in a local, the if after it decides which light comes next, and the loop goes back to sleep. A key wake turns on the courtesy light for 20 ms; a door that opens meanwhile restarts the time, because to courtesy; enters courtesy again. A crash wake keeps the light on until sleep. Lines that only leave are written without braces: after 20ms exit; and on receive power.sleep() exit;. */
+  enum WakeReason {
+    key,
+    crash
+  }
+  port def Power {
+    provides event wake(reason: WakeReason);
+    provides event sleep();
+  }
+  port def Door {
+    provides event opened();
+  }
+  component def Light {
+    reversed port power: Power;
+    reversed port door: Door;
+    attribute lit: bool = false;
+    attribute wakes: uint = 0;
+    attribute courtesyStarts: uint = 0;
+    operation run() {
+      while (true) {
+        var reason: WakeReason = WakeReason.key;
+        state asleep {
+          on receive power.wake(r) {
+            reason = r;
+            exit;
+          }
+        }
+        wakes = wakes + 1;
+        lit = true;
+        if (reason == WakeReason.crash) {
+          state crashLight {
+            on receive power.sleep() exit;
+          }
+        } else {
+          state courtesy {
+            on entry {
+              courtesyStarts = courtesyStarts + 1;
+            }
+            on receive door.opened() to courtesy;
+            on receive power.sleep() exit;
+            after 20ms exit;
+          }
+        }
+        lit = false;
+      }
+    }
+    schedule {
+      on start run();
+    }
+  }
+  component def Body {
+    /** Interface-only actor: power management and the door switch. */
+    port toPower: Power;
+    port toDoor: Door;
+  }
+  component light: Light;
+  component body: Body;
+  connect (body.toPower, light.power);
+  connect (body.toDoor, light.door);
+  associate body to 'Courtesy light after a key wake', 'A door opening restarts the courtesy time', 'A crash wake keeps the light on';
+  test 'Courtesy light after a key wake' of light {
+    /** A door opening before the wake is dropped while asleep waits. The key wake at 1 ms lights the courtesy light until 21 ms; then the light sleeps again. */
+    publish body.toDoor.opened();
+    wait 1ms;
+    publish body.toPower.wake(WakeReason.key);
+    wait 10ms;
+    assert light.lit and light.wakes == 1;
+    wait 15ms;
+    assert not light.lit and light.courtesyStarts == 1;
+  }
+  test 'A door opening restarts the courtesy time' of light {
+    /** Key wake at 0 ms, door opened at 15 ms: courtesy is entered again and lights until 35 ms. */
+    publish body.toPower.wake(WakeReason.key);
+    wait 15ms;
+    publish body.toDoor.opened();
+    wait 15ms;
+    assert light.lit and light.courtesyStarts == 2;
+    wait 10ms;
+    assert not light.lit and light.wakes == 1;
+  }
+  test 'A crash wake keeps the light on' of light {
+    /** The crash light has no timer: it stays on until sleep, and door openings are dropped. A key wake afterwards gives the courtesy light again. */
+    publish body.toPower.wake(WakeReason.crash);
+    wait 100ms;
+    publish body.toDoor.opened();
+    wait 1ms;
+    assert light.lit and light.courtesyStarts == 0;
+    publish body.toPower.sleep();
+    wait 1ms;
+    assert not light.lit;
+    publish body.toPower.wake(WakeReason.key);
+    wait 1ms;
+    assert light.lit and light.wakes == 2 and light.courtesyStarts == 1;
+  }
+}

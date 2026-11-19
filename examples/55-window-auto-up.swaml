@@ -1,0 +1,101 @@
+package WindowAutoUp {
+  /** One-touch closing of a power window. closing is a parent: what is written on it applies in both of its inner states. Its stop line leaves from fast and from seal alike, its on exit stops the motor however closing is left, and its 400 ms timer counts from closing's arrival and keeps running while fast gives way to seal, so a window that never reaches the seal is stopped. When seal leaves at the end stop, it is the last inner state, so closing is left too. */
+  enum Drive {
+    stop,
+    fast,
+    slow
+  }
+  port def Switch {
+    provides event autoUp();
+    provides event stop();
+  }
+  port def EndStop {
+    provides event reached();
+  }
+  component def WindowLift {
+    reversed port switch: Switch;
+    reversed port endStop: EndStop;
+    attribute drive: Drive = Drive.stop;
+    attribute closings: uint = 0;
+    attribute timeouts: uint = 0;
+    operation control() {
+      while (true) {
+        state idle {
+          on receive switch.autoUp() exit;
+        }
+        state closing {
+          on entry {
+            closings = closings + 1;
+          }
+          on exit {
+            drive = Drive.stop;
+          }
+          on receive switch.stop() exit;
+          after 400ms {
+            timeouts = timeouts + 1;
+            exit;
+          }
+          state fast {
+            on entry {
+              drive = Drive.fast;
+            }
+            after 300ms exit;
+          }
+          state seal {
+            on entry {
+              drive = Drive.slow;
+            }
+            on receive endStop.reached() exit;
+          }
+        }
+      }
+    }
+    schedule {
+      on start control();
+    }
+  }
+  component def Door {
+    /** Interface-only actor: the window switch and the end stop at the seal. */
+    port toSwitch: Switch;
+    port toEndStop: EndStop;
+  }
+  component lift: WindowLift;
+  component door: Door;
+  connect (door.toSwitch, lift.switch);
+  connect (door.toEndStop, lift.endStop);
+  associate door to 'Closes fast, then slowly into the seal', 'Stop works in both inner states', 'The parent timer covers both inner states';
+  test 'Closes fast, then slowly into the seal' of lift {
+    /** Fast until 300 ms, slow into the seal, stopped at the end stop at 350 ms. */
+    publish door.toSwitch.autoUp();
+    wait 100ms;
+    assert lift.drive == Drive.fast;
+    wait 220ms;
+    assert lift.drive == Drive.slow;
+    publish door.toEndStop.reached();
+    wait 1ms;
+    assert lift.drive == Drive.stop and lift.closings == 1 and lift.timeouts == 0;
+  }
+  test 'Stop works in both inner states' of lift {
+    /** A stop at 100 ms leaves fast, and a stop at 550 ms, during the second closing, leaves seal: one line on closing for both. */
+    publish door.toSwitch.autoUp();
+    wait 100ms;
+    publish door.toSwitch.stop();
+    wait 1ms;
+    assert lift.drive == Drive.stop;
+    wait 99ms;
+    publish door.toSwitch.autoUp();
+    wait 350ms;
+    assert lift.drive == Drive.slow;
+    publish door.toSwitch.stop();
+    wait 1ms;
+    assert lift.drive == Drive.stop and lift.closings == 2 and lift.timeouts == 0;
+  }
+  test 'The parent timer covers both inner states' of lift {
+    /** The end stop never comes. seal is entered at 300 ms, but closing's timer counts from 0 ms: the motor stops at 400 ms, not 700 ms. */
+    publish door.toSwitch.autoUp();
+    wait 399ms;
+    assert lift.drive == Drive.slow;
+    wait 2ms;
+    assert lift.drive == Drive.stop and lift.timeouts == 1;
+  }
+}

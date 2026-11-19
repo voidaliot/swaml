@@ -1,0 +1,114 @@
+package CircuitBreaker {
+  /** A circuit breaker in front of a persistence store, in the shape of the cloud model's PersistenceWriter. A line that does not leave stays: Closed writes each arrival and stays, so its entry does not run again, and its trip condition, written after the line, is checked by the same look, right after the write that failed for the third time. Open sheds arrivals with a staying line, so its 20 ms cool-down keeps running from the trip. HalfOpen lets one arrival through as a probe: success closes the breaker, failure opens it again. */
+  port def Stream {
+    provides event accepted(t: uint);
+  }
+  port def StoreApi {
+    provides operation put(t: uint) returns bool;
+  }
+  component def Store {
+    /** Answers each put after 1 ms; while down, every put fails. */
+    port api: StoreApi;
+    attribute down: bool = false;
+    attribute puts: uint = 0;
+    operation handle(t: uint) returns bool {
+      puts = puts + 1;
+      wait 1ms;
+      return not down and t >= 0;
+    }
+    operation setDown(value: bool) {
+      down = value;
+    }
+    schedule {
+      on call api.put(t) handle(t);
+    }
+  }
+  component def Breaker {
+    reversed port stream: Stream;
+    reversed port store: StoreApi;
+    const attribute failureThreshold: uint = 3;
+    attribute consecutiveFailures: uint = 0;
+    attribute written: uint = 0;
+    attribute shedArrivals: uint = 0;
+    attribute trips: uint = 0;
+    attribute halfOpenAtNs: uint = 0;
+    operation write(t: uint) {
+      var ok: bool = try(store.put(t), false);
+      if (ok) {
+        consecutiveFailures = 0;
+        written = written + 1;
+      } else {
+        consecutiveFailures = consecutiveFailures + 1;
+      }
+    }
+    operation circuit() {
+      state Closed {
+        on receive stream.accepted(t) {
+          write(t);
+        }
+        if (consecutiveFailures >= failureThreshold) {
+          trips = trips + 1;
+          exit;
+        }
+      }
+      state Open {
+        on receive stream.accepted(t) {
+          shedArrivals = shedArrivals + 1;
+        }
+        after 20ms {
+          halfOpenAtNs = Swaml::Time::now();
+          exit;
+        }
+      }
+      state HalfOpen {
+        on receive stream.accepted(t) {
+          consecutiveFailures = 0;
+          write(t);
+          if (consecutiveFailures == 0) to Closed;
+          trips = trips + 1;
+          to Open;
+        }
+      }
+    }
+    schedule {
+      on start circuit();
+    }
+  }
+  component def Feed {
+    /** Interface-only actor that delivers arrivals to the breaker. */
+    port out: Stream;
+  }
+  component breaker: Breaker;
+  component store: Store;
+  component feed: Feed;
+  connect (breaker.store, store.api);
+  connect (feed.out, breaker.stream);
+  associate feed, store to 'Store outage trips the breaker and recovers', 'A failed probe opens the breaker again';
+  test 'Store outage trips the breaker and recovers' of breaker {
+    /** The store is down; arrivals every 5 ms from 0 to 30 ms. The breaker trips right after its third failed write, at 11 ms, sheds the four arrivals from 15 to 30 ms without restarting the cool-down, and is half open at 31 ms. The store is back for the next arrival, which closes the breaker. */
+    store.setDown(true);
+    for (var i: uint = 0; i <= 6; i = i + 1) {
+      publish feed.out.accepted(i);
+      wait 5ms;
+    }
+    wait 1ms;
+    assert breaker.trips == 1 and breaker.shedArrivals == 4 and breaker.halfOpenAtNs == 31000000;
+    assert store.puts == 3;
+    store.setDown(false);
+    publish feed.out.accepted(7);
+    wait 5ms;
+    assert breaker.written == 1 and breaker.consecutiveFailures == 0 and store.puts == 4;
+  }
+  test 'A failed probe opens the breaker again' of breaker {
+    /** Three failures trip the breaker at 11 ms; it is half open at 31 ms. The probe at 35 ms fails at 36 ms and opens the breaker again, with a fresh cool-down: half open at 56 ms. */
+    store.setDown(true);
+    for (var i: uint = 0; i < 3; i = i + 1) {
+      publish feed.out.accepted(i);
+      wait 5ms;
+    }
+    wait 20ms;
+    publish feed.out.accepted(3);
+    wait 25ms;
+    assert breaker.trips == 2 and breaker.halfOpenAtNs == 56000000 and store.puts == 4;
+  }
+}

@@ -561,7 +561,7 @@ test('WP6-M02 WP6-M03 the KerML inventory maps MemberPolicy as a reference and P
 test('WP6 examples: door status sampling and body CAN member policies pass their cases, deterministically', async () => {
     const cases: Record<string, string[]> = {
         'examples/48-door-status-sampling.swaml': ['DoorStatus::Initial values before the first delivery', 'DoorStatus::Latest value at each frame', 'DoorStatus::Live read after a wait'],
-        'examples/49-body-can-member-policies.swaml': ['BodyCan::Per-member policies on one connection'],
+        'examples/49-body-can-member-policies.swaml': ['BodyCan::Crash frames queue, status frames keep the newest', 'BodyCan::One policy for both members loses crash frames'],
     };
     for (const [file, names] of Object.entries(cases)) {
         const { model } = await valid(readFileSync(new URL(file, root), 'utf8'));
