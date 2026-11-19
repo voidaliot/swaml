@@ -25,6 +25,7 @@ export const publishedEditions = new Map([
     ['2.0.0', {pdf: '44b30b67ca3b29fdd2541ae926d66fe408697bf8a44e0852c6154d75032fd79c', 'manifest.json': 'c6b5e99294146af3ca2926aa50d9ce3462790aaa6a080b6f1068a9064202d683', sha256: '9c0c7446f01aaf0fced63fddba4e3020bcbb677e6a28362e4a81b4003247c32f'}],
     ['2.1', {pdf: 'd2bce7f2a0362232b4d1c032a9b68bc70466906f2f8922075486b06fca66d271', 'manifest.json': '0cb3f826c20117d7bd830dcab97928946c93c77ca5e0fede788f88990758e7c6', sha256: '876532fb943ed2171d96dee6f783e7a2f4a09c85a2f544f016b69a0bc34cd910'}],
     ['2.2', {pdf: '481ee9a6a08d155f332180aa89a97b4854bf82abd73c12dd4a817b03b04ec868', 'manifest.json': 'a52a67639784965090517151312c7a3fc57c1e77fb74d81a4fc04a9cb483fffa', sha256: 'c24d3f6b61021eff4766e821e11fface5c8cff9d7b1e1cb8eec0966fce5ba911'}],
+    ['3.0', {pdf: 'a226d4fe0f116b4238977bae08ecde4795a6c205a0bd61fd7d5b007fc5a443b2', 'manifest.json': '8c961592d86fe0b0b11d1337b387fce85e63f8dc142142b5042fd07a24cfe23a', sha256: 'd5c0fac13af2039f6891aa29dd37ab2a4175a89dbcf8599c701cfafe9c72bbcf'}],
 ]);
 
 /**
@@ -84,10 +85,16 @@ export const frozenCopies = new Map([
             'scripts/publication_2_2_sources.py', 'scripts/publication_archive.py', 'scripts/test-publication-2-2.py', 'scripts/ci-pdf-requirements.txt',
             'scripts/standard-version.mjs'),
         directories: ['docs/figures/2.2/', 'docs/notation/2.2/', 'examples/simulation/2.2/'], count: 109,
-        // From the 2.3 allocation (WP1a, docs/RELEASE_3_0.md) on, the shared notation, figure and reference builders are 2.3 tools.
+        // From the 2.3 allocation (WP1a; the candidate was released as 3.0) on, the shared notation, figure and reference builders are 3.0 tools.
         exceptions: Object.fromEntries(maintainedTooling.map(path => [path, path === 'scripts/build-reference.mjs'
             ? later('the 2.3 allocation (WP1a), which marks the generated 2.3 book as an unreleased draft')
             : 'maintained 2.3 tooling from the 2.3 allocation (WP1a) on; later 2.3 work may change it, and the published PDF keeps the released bytes']))}],
+    ['3.0', {files: same('docs/SWAML-3.0-Reference.md', 'docs/RELEASE_3_0.md', 'docs/MIGRATION_3_0.md', 'scripts/build-spec-pdf-3.0.py', checker('3.0'),
+            'scripts/publication_3_0_sources.py', 'scripts/publication_archive.py', 'scripts/test-publication-3-0.py', 'scripts/ci-pdf-requirements.txt',
+            'scripts/standard-version.mjs'),
+        directories: ['docs/figures/3.0/', 'docs/notation/3.0/', 'examples/simulation/3.0/'], count: 110,
+        // The shared notation, figure and reference builders stay maintained tooling of later editions.
+        exceptions: Object.fromEntries(maintainedTooling.map(path => [path, 'maintained tooling shared with later editions; later work may change it, and the published 3.0 PDF keeps the released bytes']))}],
 ]);
 
 /** Manifest sources that must be frozen or a named exception. */

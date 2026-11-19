@@ -1,6 +1,6 @@
 # Publication and historical editions
 
-swa.ml 2.2 is the current release edition, with parser/host semantics 2.2 and profile swaml-reference/2.2. The maintained sources hold the prepared, unreleased swa.ml 3.0 (parser 3.0, swaml-reference/3.0), whose reference is generated as SWAML-3.0-Reference.md; no 3.0 PDF exists yet (see "3.0 commands" below). Its dedicated [reference](SWAML-2.2-Reference.md), PDF, source manifest and checksum use new 2.2 paths. Published 2.1 artifacts remain frozen: the [2.1 reference book](SWAML-2.1-Reference.md), PDF, source manifest and checksum use dedicated X.Y files, SWAML-2.1-Reference.md and SWAML-2.1-Specification.pdf, .manifest.json and .sha256. The published 2.0 standard uses the legacy v2.0.0 tag and filenames; preserve those artifacts. Its frozen [reference](../history/2.0.0/docs/SWAML-2.0.0-Reference.md) stays under history/2.0.0, and docs/SWAML-2.0.0-Reference.md remains as a pointer so that existing links work. No compatibility parser is part of the language; the [2.1 release notes](RELEASE_2_1.md) describe the migration from 2.0.
+swa.ml 3.0 is the current release edition, with parser/host semantics 3.0 and profile swaml-reference/3.0; its reference is SWAML-3.0-Reference.md and its PDF, manifest and checksum are under output/pdf (see "3.0 commands" below). swa.ml 2.2 is the previous edition. Its dedicated [reference](SWAML-2.2-Reference.md), PDF, source manifest and checksum use new 2.2 paths. Published 2.1 artifacts remain frozen: the [2.1 reference book](SWAML-2.1-Reference.md), PDF, source manifest and checksum use dedicated X.Y files, SWAML-2.1-Reference.md and SWAML-2.1-Specification.pdf, .manifest.json and .sha256. The published 2.0 standard uses the legacy v2.0.0 tag and filenames; preserve those artifacts. Its frozen [reference](../history/2.0.0/docs/SWAML-2.0.0-Reference.md) stays under history/2.0.0, and docs/SWAML-2.0.0-Reference.md remains as a pointer so that existing links work. No compatibility parser is part of the language; the [2.1 release notes](RELEASE_2_1.md) describe the migration from 2.0.
 
 Preserve every published 1.x Markdown/PDF, source manifest, checksum and historical figure file. Their embedded sources retain their own grammar and provenance. The pinned 1.3.1 builder refuses a different workspace edition; do not relabel current development as an archived release. [The tooling pin](../scripts/publication-tooling-1.3.1.json) and archive/rebuild scripts retain the original source/tool hashes. Archive-aware checks compare an older PDF to its own embedded manifest rather than the evolving current chapters.
 
@@ -28,7 +28,7 @@ The check also requires each frozen workspace copy to equal the hash its edition
 
 ## 3.0 commands
 
-The 3.0 publication tooling is prepared but has not been run: `scripts/build-spec-pdf-3.0.py`, `scripts/check-spec-pdf-3.0.py`, `scripts/publication_3_0_sources.py` and `scripts/test-publication-3-0.py` are the 2.2 tools with the 3.0 identifiers (release, revision and language 3.0, profile `swaml-reference/3.0`, implementation from package.json), a source inventory that adds the 3.0 release notes, the migration guide and ADRs 0022, 0024, 0025 and 0026, and a checker whose required sources and text fragments name the 3.0 edition. When publication is authorized, on the release commit:
+The 3.0 publication tooling, which built the 3.0 PDF on 19 November 2026: `scripts/build-spec-pdf-3.0.py`, `scripts/check-spec-pdf-3.0.py`, `scripts/publication_3_0_sources.py` and `scripts/test-publication-3-0.py` are the 2.2 tools with the 3.0 identifiers (release, revision and language 3.0, profile `swaml-reference/3.0`, implementation from package.json), a source inventory that adds the 3.0 release notes, the migration guide and ADRs 0022, 0024, 0025 and 0026, and a checker whose required sources and text fragments name the 3.0 edition. The commands, on the release commit:
 
 ```sh
 python -m pip install -r scripts/ci-pdf-requirements.txt
@@ -41,7 +41,7 @@ python scripts/check-spec-pdf-3.0.py
 python scripts/test-publication-3-0.py
 ```
 
-Then render and inspect every page, add the 3.0 PDF, manifest and checksum to the pins of `scripts/check-frozen-publications.mjs`, and add the strict 3.0 check to the Publication and compatibility workflow. Fix the 3.0 tools where the first run shows a defect; they become frozen with the 3.0 PDF that embeds them.
+Every page was rendered and inspected; the 3.0 PDF, manifest and checksum are pinned in `scripts/check-frozen-publications.mjs`, and the Publication and compatibility workflow runs the strict 3.0 check and the 3.0 publication test. Once the v3.0 tag exists, the 3.0 tools are frozen with the PDF that embeds them, and the strict check becomes an archive check when maintained sources move on.
 
 ## 2.2 commands
 

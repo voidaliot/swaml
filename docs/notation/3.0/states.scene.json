@@ -28,7 +28,7 @@
     },
     {
       "kind": "ellipse",
-      "x": 50,
+      "x": 35,
       "y": 200,
       "w": 10,
       "h": 10,
@@ -36,39 +36,39 @@
     },
     {
       "kind": "rect",
-      "x": 110,
+      "x": 75,
       "y": 135,
-      "w": 220,
+      "w": 200,
       "h": 140,
       "fill": "#ffffff",
       "dash": false
     },
     {
       "kind": "rect",
-      "x": 110,
+      "x": 75,
       "y": 135,
-      "w": 220,
+      "w": 200,
       "h": 34,
       "fill": "#eeeeee",
       "dash": false
     },
     {
       "kind": "text",
-      "x": 122,
+      "x": 87,
       "y": 158,
       "text": "state Off",
       "size": 14
     },
     {
       "kind": "text",
-      "x": 122,
+      "x": 87,
       "y": 193,
-      "text": "after 2ms to On",
+      "text": "after 2ms exit;",
       "size": 12
     },
     {
       "kind": "rect",
-      "x": 400,
+      "x": 345,
       "y": 135,
       "w": 230,
       "h": 140,
@@ -77,7 +77,7 @@
     },
     {
       "kind": "rect",
-      "x": 400,
+      "x": 345,
       "y": 135,
       "w": 230,
       "h": 34,
@@ -86,28 +86,67 @@
     },
     {
       "kind": "text",
-      "x": 412,
+      "x": 357,
       "y": 158,
       "text": "state On",
       "size": 14
     },
     {
       "kind": "text",
-      "x": 412,
+      "x": 357,
       "y": 193,
       "text": "on entry: lit = true",
       "size": 12
     },
     {
       "kind": "text",
-      "x": 412,
+      "x": 357,
       "y": 215,
       "text": "on exit: lit = false",
       "size": 12
     },
     {
+      "kind": "text",
+      "x": 357,
+      "y": 237,
+      "text": "after 3ms exit;",
+      "size": 12
+    },
+    {
+      "kind": "rect",
+      "x": 645,
+      "y": 135,
+      "w": 150,
+      "h": 140,
+      "fill": "#ffffff",
+      "dash": false
+    },
+    {
+      "kind": "rect",
+      "x": 645,
+      "y": 135,
+      "w": 150,
+      "h": 34,
+      "fill": "#eeeeee",
+      "dash": false
+    },
+    {
+      "kind": "text",
+      "x": 657,
+      "y": 158,
+      "text": "state Done",
+      "size": 14
+    },
+    {
+      "kind": "text",
+      "x": 657,
+      "y": 193,
+      "text": "nothing to look at",
+      "size": 12
+    },
+    {
       "kind": "ellipse",
-      "x": 791,
+      "x": 841,
       "y": 191,
       "w": 28,
       "h": 28,
@@ -115,47 +154,41 @@
     },
     {
       "kind": "line",
-      "x1": 60,
+      "x1": 45,
       "y1": 205,
-      "x2": 110,
+      "x2": 75,
       "y2": 205,
       "dash": false
     },
     {
       "kind": "line",
-      "x1": 330,
+      "x1": 275,
       "y1": 205,
-      "x2": 400,
+      "x2": 345,
       "y2": 205,
       "dash": false
     },
     {
       "kind": "line",
-      "x1": 630,
+      "x1": 575,
       "y1": 205,
-      "x2": 790,
+      "x2": 645,
+      "y2": 205,
+      "dash": false
+    },
+    {
+      "kind": "line",
+      "x1": 795,
+      "y1": 205,
+      "x2": 841,
       "y2": 205,
       "dash": false
     },
     {
       "kind": "text",
-      "x": 655.0,
-      "y": 193.0,
-      "text": "after 3ms",
-      "size": 12
-    },
-    {
-      "kind": "text",
-      "x": 670,
-      "y": 305,
-      "text": "final state Done",
-      "size": 14
-    },
-    {
-      "kind": "text",
-      "x": 80,
+      "x": 45,
       "y": 345,
-      "text": "Nested transitions are tested in source order. Final entry completes the operation.",
+      "text": "States are steps of the flow: exit; goes on with the state written next; the end of the flow ends the operation.",
       "size": 13
     }
   ]

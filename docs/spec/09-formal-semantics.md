@@ -34,9 +34,7 @@ Values are bounded primitive scalars, nominal enums/records and fixed copied arr
 | now() | result uint, the logical time t of the evaluating step; effect reads state; not in initializers or constant expressions (SW2007, WP4-S05) and not in the condition of an `if` standing directly in a state of a waiting machine (SW2006, SIF-S05); never a stale read |
 | duration literal | Result uint (nanoseconds), a safe integer; positive in the 2.2 positions |
 | computed duration `(e)` | e integral; in wait and receive timeouts without suspending calls; in state timers pure or reads state; in periods and deadlines in the constant sublanguage, with exact integral `/`, valued per occurrence |
-| completion guard | bool; pure or reads state; no `now()`, directly or through a callee |
 | `p.m` sampled | p an owned, non-forwarded port; m a required attribute that declares an initial value in the definition p has in the occurrence; result the member type; effect reads state (WP6) |
-| timer guard | bool; pure or reads state |
 | release guard | bool; pure or reads state; on every, receive and after entries; scope: attributes, sampled ports, `now()`, receive bindings, not the operation's parameters (WP7) |
 | var x:T=e | Compatible value, fresh live name; Γ extends with mutable x; suspension allowed only when e is whole call/try |
 | x=e | Mutable local/out/attribute, compatible type; attribute write adds write effect; same whole-expression suspension rule |

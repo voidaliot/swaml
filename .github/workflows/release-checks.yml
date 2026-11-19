@@ -68,6 +68,13 @@ jobs:
           python scripts/check-spec-pdf.py
           python scripts/check-spec-pdf-2.0.py --archive
           python scripts/test-publication-2-1.py
+      # The 3.0 edition is checked strictly: every embedded source must equal the
+      # current workspace. Once maintained sources change after its release, this
+      # becomes an --archive check, as it did for 2.1 and 2.2.
+      - name: Check the 3.0 edition
+        run: |
+          python scripts/test-publication-3-0.py
+          python scripts/check-spec-pdf-3.0.py
       # Published 2.1 and 2.2 bytes are checked only against their own embedded
       # sources; the maintained sources have moved on since each release.
       - name: Check the published 2.2 edition
