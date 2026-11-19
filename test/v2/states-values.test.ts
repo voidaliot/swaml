@@ -194,6 +194,45 @@ test('SIF-R05 SIF-R07 a delivery of a member the state both reads and names in a
     }
 });
 
+test('SIF-R07 a pending wake records the cause of the first write that made it pending (review 3 F8, kills W2)', async () => {
+    // At 0 ms the k line suspends 5 ms; at 1 ms poke writes x, at 2 ms another poke writes x again: one pending wake, recorded
+    // when the state begins to wait with the first writer.
+    const r = await one(`run() {
+      state s {
+        y = y + 1;
+        if (x > 50) exit;
+        on receive in.k() { wait 5ms; }
+      }
+    }`, 'publish bench.out.k(); wait 1ms; publish bench.out.go(); wait 1ms; publish bench.out.go(); wait 10ms;', 'x = x + 1;');
+    const w = wakes(r);
+    assert.equal(w.length, 1, JSON.stringify(w));
+    assert.equal(w[0].pending, true);
+    const writers = trace(r).filter(e => e.kind === 'write' && e.subject === 'm.x').map(e => e.activation);
+    assert.equal(w[0].writer, writers[0]);
+});
+
+test('SIF-R08 a write to a local of the look causes no re-look; a timer that ran out while the line was suspended is not present at the re-look (kills O2, O4)', async () => {
+    const look = await one(`run() {
+      state s {
+        var t: uint = 1;
+        y = y + t;
+        on receive in.m(v) { t = v; }
+        on receive in.k() exit;
+      }
+    }`, 'publish bench.out.m(4); wait 1ms; assert m.y == 2;');
+    pass(look, 'no re-look for a look local');
+    assert.deepEqual(wakes(look), []);
+    const timer = await one(`run() {
+      state s {
+        y = y + n;
+        on receive in.m(v) { n = 1; wait 20ms; }
+        after 10ms { x = x + 1; }
+        on receive in.k() exit;
+      }
+    }`, 'publish bench.out.m(1); wait 40ms; assert m.y == 2 and m.x == 1;');
+    pass(timer, 're-look without the timer, then a timer look');
+});
+
 // ---------------------------------------------------------------- SIF-R08: the machine's own writes
 
 test('SIF-R08 the prototype own-write cases: counter, timer, parent condition, an acting statement once more, statement writes', async () => {
