@@ -1397,9 +1397,8 @@ export class SwamlValidator {
             this.report(e, 'SW2008', `${released} An operation with states cannot answer calls; answer in a plain operation and let it set an attribute that a state reads.`);
         else if (e.concurrent || entries.filter(x => x.operation === op.name).length !== 1)
             this.report(e, 'SW2008', `${keeps} and needs exactly one on start or one on every entry, not concurrent (SIF-S01).`);
-        // States in the flow, package 5 replaces this: periodic machines (SIF-R14 to SIF-R17) are not run yet.
-        else if (e.kind === 'every')
-            this.report(e, 'SW2008', `${name} contains states; this implementation does not run periodic machines (on every) yet.`);
+        // A waiting machine (on start) can loop in zero time (SIF-D05); a periodic machine (on every) passes each state at most
+        // once per release (SIF-R16).
         else if (e.kind === 'start')
             this.leaveCycles(op);
     }
@@ -1456,6 +1455,9 @@ export class SwamlValidator {
         const sig = signature(op);
         if (sig && (sig.parameters.length || typeKey(sig.result) !== 'void'))
             this.report(op, 'SW2008', `${formatName(op.name, MESSAGE_SPELLING)} contains states, so it is parameterless and returns void (SIF-S01).`);
+        // A nested operation has no schedule entry of its own; it could only be called, which an operation with states never is.
+        if (a.isOperationBody(op.$container))
+            this.report(op, 'SW2008', `${formatName(op.name, MESSAGE_SPELLING)} contains states, so it is directly owned by a component definition and released by its schedule, never nested in an operation (SIF-S01).`, false, this.at(op, 'name'));
         const seen = new Set<string>();
         for (const s of flowStates(op)) {
             if (seen.has(s.name))
@@ -2010,6 +2012,33 @@ export class SwamlValidator {
                     this.report(node, 'SW2004', `Unconnected required port ${path} in package ${p.name}.`, false, range);
                 if (count > 1 && portMembers(port).some(m => direction(port, m) === 'requires' && m.kind !== 'event'))
                     this.report(node, 'SW2004', `Port ${path} requires exactly one peer after forwarding.`, false, range);
+            }
+        this.periodicOverflow(occ.filter(o => checked.has(o.path.split('.')[0])), links, leaf);
+    }
+    /**
+     * SIF-D06 (SW2018, warning): an event named by an event line of a periodic machine is taken at most one per release
+     * (SIF-R15). Delivered over a route whose effective policy rejects on overflow, a faster sender, or releases skipped by a
+     * false guard, fill its queue and make the sender's offer fail; the machine's text does not show it. Attributes keep only
+     * their latest value and never overflow. Reported at the first line naming the member, per effective occurrence.
+     */
+    private periodicOverflow(occ: ReturnType<typeof connectionRoutes>['occurrences'], links: ReturnType<typeof connectionRoutes>['links'], leaf: (path: string) => string): void {
+        for (const o of occ)
+            for (const op of members(o.structure).filter(isExecutable)) {
+                if (!flowStates(op).length || !schedule(o.structure).some(e => e.operation === op.name && e.kind === 'every'))
+                    continue;
+                const seen = new Set<string>();
+                for (const line of nodes(body(op)!).filter(a.isEventLine)) {
+                    const endpoint = line.endpoint;
+                    if (endpoint === undefined || seen.has(endpoint) || owner(line, isExecutable) !== (op.body ? op : signature(op)))
+                        continue;
+                    seen.add(endpoint);
+                    const ep = memberEndpoint(o.structure, endpoint), member = endpoint.split('.')[1];
+                    if (!ep || ep.member.kind !== 'event' || direction(ep.port, ep.member) !== 'requires')
+                        continue;
+                    const port = leaf(`${o.path}.${endpoint.split('.')[0]}`);
+                    if (links.some(l => l.ends.includes(port) && memberQos(l.node, member).overflow === 'reject'))
+                        this.report(line, 'SW2018', `${formatPath(endpoint, MESSAGE_SPELLING)} is taken one per release by ${formatName(op.name, MESSAGE_SPELLING)}; a faster sender, or a false release guard, fills its queue and makes the sender fail (SIF-D06).`, true, this.at(line, 'endpoint'));
+                }
             }
     }
     /** The case script being validated: its case and, inside on call, the answered result type. */

@@ -33,11 +33,14 @@ const MUTATIONS = [
     ['A4', "on exit before the leave's block (a line whose block leaves runs the state's on exit first)", SIM, [
         ['yield* this.block(item.body, f, lineScope);', 'if (AstUtils.streamAst(item.body).some(n => a.isExit(n) || a.isJump(n)))\n                            for (const x of levels.at(-1).state.statements.filter(a.isStateAction).filter(x => x.kind === \'exit\'))\n                                yield* this.block(x.body, f, local);\n                        yield* this.block(item.body, f, lineScope);'],
     ]],
-    ['A5', 'dropping input while busy', SIM, 'if (this.findFrame(x => x.c === c && x.op === flowOwner && !x.done))', 'if (false)'],
+    ['A5', 'dropping input while busy', SIM, "if (this.findFrame(x => x.c === c && x.op === flowOwner && !x.done) || schedule(c.structure).some(e => e.kind === 'every' && e.operation === flowOwner.name))", 'if (false)'],
     ['A6', 'a timer present twice per arrival', SIM, 'l.presented.add(t);', 'void 0;'],
     ['A7', 'timer and delivery phases swapped (a timeout ends in phase 2)', SIM, 'this.at(this.time + y.timeout, 1,', 'this.at(this.time + y.timeout, 2,'],
-    ['A8', 're-pick replaced by the picked message', SIM, 'this.dropUnnamed(f, named);\n                this.at(this.time, 2, () => {\n                    if (f.token !== token || !f.suspended)\n                        return;\n                    const h = this.flowHeads(f).find(x => named.has(x.endpointName));',
-        'this.dropUnnamed(f, named);\n                const picked = this.flowHeads(f).find(x => named.has(x.endpointName));\n                this.at(this.time, 2, () => {\n                    if (f.token !== token || !f.suspended)\n                        return;\n                    const h = picked;'],
+    // A8 was written as "re-pick replaced by the picked message". It is equivalent (nothing can change the queue between the
+    // start and the end of the zero-time wait), so the rule now takes the message picked when the wait begins; the mutation
+    // is kept in its inverse form and is expected to survive.
+    ['A8', 'picked message replaced by a re-pick at the end of the zero-time wait (equivalent; decision A8)', SIM, "this.resume(f, picked && picked.queue[0] === picked.m ? { input: this.take(picked.queue, picked.m, picked.endpointName, f.c) } : {});",
+        "const h = this.flowHeads(f).find(x => named.has(x.endpointName));\n                    this.resume(f, h ? { input: this.take(h.queue, h.m, h.endpointName, f.c) } : {});"],
     ['A9', 'the two discard reasons swapped', SIM, "reason: left && !lineRan ? 'leftBeforeLine' : 'noEnabledTransition'", "reason: left && !lineRan ? 'noEnabledTransition' : 'leftBeforeLine'"],
     ['A10', 'if test counted as a step', SIM, 'if (a.isIf(s) && this.inLookText(s))', 'if (false)'],
     ['A11', 'named step that waits', SIM, 'if (!this.hasSomething(levels))\n                    left = { node: undefined', 'if (false)\n                    left = { node: undefined'],
@@ -67,6 +70,17 @@ const MUTATIONS = [
     ['D8', 'configuration without what is present', SIM, 'const config = this.configuration(c) + JSON.stringify([present.input ? [present.input.member, present.input.args.map(plain)] : null, due]);', 'const config = this.configuration(c);'],
     ['D9', 'configuration with unbounded loop counters', SIM, 'if (s.limit)\n                        (f.loops ??= new Map()).set(s, i);', 'if (true)\n                        (f.loops ??= new Map()).set(s, i);'],
     ['D10', 'StateLoop from the first look', SIM, 'if (n < 2)\n            return;', 'if (n < 1)\n            return;'],
+    ['D7', 're-look in periodic machines', SIM, 'const passed = new Set(), relook = new Set(), own = this.relooks(f);', 'const passed = new Set(), relook = new Set(), own = true;'],
+    // Package 5 (section 11): periodic machines.
+    ['E1', 'on entry rerun at each release', SIM, 'f.reached = new Set([leaf]);', "f.reached = new Set([leaf]);\n            for (const x of leaf.statements.filter(a.isStateAction).filter(x => x.kind === 'entry'))\n                yield* this.block(x.body, f, f.flow.local);"],
+    ['E2', 'timer reset by a skipped release', SIM, "            this.log('skip', this.label(f), { activation: f.id, source: this.source(f.entry), release: f.periodic.seq });", "            this.log('skip', this.label(f), { activation: f.id, source: this.source(f.entry), release: f.periodic.seq });\n        if (!holds && f.flow)\n            for (const l of f.flow.levels) {\n                l.entered = this.time;\n                l.presented.clear();\n            }"],
+    ['E3', 'two messages taken in one release (the second is consumed by the same release)', SIM, 'f.reached = new Set([leaf]);\n            this.dropUnnamed(f, named);\n            const h = this.flowHeads(f).find(x => named.has(x.endpointName));', 'f.reached = new Set([leaf]);\n            this.dropUnnamed(f, named);\n            const h = this.flowHeads(f).find(x => named.has(x.endpointName));\n            const second = h && this.flowHeads(f).filter(x => named.has(x.endpointName) && x !== h)[0];\n            if (second)\n                this.take(second.queue, second.m, second.endpointName, f.c);'],
+    ['E4', 'arrival look skipped (every arrival in a periodic machine waits for the next release)', SIM, 'f.held = held;', 'f.held = true;'],
+    ['E5', 'bound counting the first arrival (a state is held at its first arrival in a release)', SIM, 'held = f.reached.has(s);', 'held = f.reached.has(s) || f.reached.size === 0;'],
+    ['E6', 'periodic end treated as a completion', SIM, "this.log('periodicEnd', this.label(f), { activation: f.id, release: f.periodic.seq });\n            yield* this.nextRelease(f, new Set());", 'return voidValue();'],
+    ['E7', 'bound applied in waiting machines', SIM, 'return yield* this.periodicMachine(f);', 'return yield* this.periodicMachine(f);\n        f.reached = new Set();'],
+    ['E8', 'skip without activation', SIM, "this.log('skip', this.label(f), { activation: f.id, source: this.source(f.entry), release: f.periodic.seq });", "this.log('skip', this.label(f), { source: this.source(f.entry), release: f.periodic.seq });"],
+    ['E9', 'deadline measured once from the dispatch, not per release', SIM, "            // The deadline is per release, from the release (SIF-R15).\n            if (deadline)", "            // The deadline is per release, from the release (SIF-R15).\n            if (false)"],
 ];
 const run = (command, args) => { try { execFileSync(command, args, { cwd: root, stdio: 'pipe', encoding: 'utf8', timeout: 1500000 }); return true; } catch { return false; } };
 const node = args => run(process.execPath, args);

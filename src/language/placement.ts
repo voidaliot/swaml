@@ -309,11 +309,12 @@ export const pathText = (path: string) => formatPath(path, MESSAGE_SPELLING);
 /** A Core as diagnostics name it. */
 export const coreText = (plan: DeploymentPlan, core: string) => core === plan.platform.name && osRole(plan.platform) !== 'Core' ? `the implicit core of ${pathText(core)}` : pathText(core);
 /**
- * Where an activation of op may suspend, apart from the idle selection of a machine (WP8-S08, T4): the first
- * statement of op's own code that waits, receives, makes a request (a dotted call) or calls an operation that may
- * suspend in the same sense. A machine's transitions (its idle wait between reactions) are not suspension points;
- * its entry, exit and effect statements are ordinary statements. The rule is stated on this property, not on the
- * state syntax: any form whose reactions run to completion is accepted on a basic Task.
+ * Where an activation of op may suspend (WP8-S08, T4): the first statement of op's own code that waits, receives, makes a
+ * request (a dotted call) or calls an operation that may suspend in the same sense. States in the flow (section 9): a
+ * waiting machine (released on start) waits between looks inside its one activation, so its first state is a suspension
+ * point; ADR 0025's exception for the idle wait of a 2.2 stateful operation is withdrawn. A periodic machine (released on
+ * every in c) never waits inside a release: its states are no suspension points, and it may use a basic Task when nothing
+ * it runs in a release (items, entries, exits, line blocks, flow between states, their callees) can suspend.
  */
 export function suspendSite(op: Executable, c: Structure | undefined, seen = new Set<Executable>()): AstNode | undefined {
     if (seen.has(op))
@@ -323,11 +324,12 @@ export function suspendSite(op: Executable, c: Structure | undefined, seen = new
     if (!b)
         return undefined;
     const own = op.body ? op : signature(op);
+    const periodic = !!c && schedule(c).some(e => e.operation === op.name && e.kind === 'every');
     for (const n of nodes(b)) {
         if (owner(n, isExecutable) !== own)
             continue;
         // A waiting machine waits between looks inside its activation, a suspension in T4's sense (states in the flow, 9).
-        if (a.isWait(n) || a.isReceive(n) || a.isStateStep(n))
+        if (a.isWait(n) || a.isReceive(n) || a.isStateStep(n) && !periodic)
             return n;
         if (a.isCallExpression(n)) {
             if (n.target.includes('.'))

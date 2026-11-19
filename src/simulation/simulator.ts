@@ -93,6 +93,8 @@ type Reply = {
     branch?: a.ReceiveBranch;
     /** A waiting state is woken by a value (SIF-R07): a look with no message. */
     wake?: boolean;
+    /** A periodic machine is released (SIF-R14): one look at its current state. */
+    release?: boolean;
 };
 type Yield = {
     kind: 'step';
@@ -114,6 +116,8 @@ type Yield = {
     flow?: { named: Set<string> };
     /** The zero-time wait of SIF-R05 step 3: it ends at an event of the same instant, which picks the message again. */
     zero?: boolean;
+    /** A periodic machine waits for its next release (SIF-R14); nothing else ends this wait. */
+    periodic?: boolean;
     /** The evaluated value of a computed receive timeout, recorded on its receiveWait observation (WP4-T01). */
     durationNs?: number;
 };
@@ -218,6 +222,15 @@ type Frame = {
     loops?: Map<AstNode, number>;
     /** A case script running a call of an operation of its subject: its writes are external to the subject (SIF-R18). */
     borrowed?: boolean;
+    /**
+     * The persistent activation of a periodic machine (SIF-R14): releases issued (seq), releases whose work has ended (done),
+     * and releases that came while the previous one still ran (backlog; a deadline at most the period makes it unreachable).
+     */
+    periodic?: { seq: number; done: number; backlog: number };
+    /** The states reached in the current release of a periodic machine, the state current at the release included (SIF-R16). */
+    reached?: Set<a.StateStep>;
+    /** The arrival just recorded was a second arrival of its state in this release (SIF-R16): no arrival look. */
+    held?: boolean;
 };
 /** The state levels of an operation with states: each entered state, outermost first (SIF-R01, SIF-R11). */
 type FlowLevel = {
@@ -230,7 +243,7 @@ type FlowLevel = {
     presented: Set<a.EventLine>;
 };
 /** What is present at a look (SIF-R03) and what caused it. */
-type Present = { input?: Message; timers: boolean; cause: 'arrival' | 'message' | 'timer' | 'wake' | 'pending' | 'own' };
+type Present = { input?: Message; timers: boolean; cause: 'arrival' | 'message' | 'timer' | 'wake' | 'pending' | 'own' | 'release' };
 /** exit; or to S; run by a look (SIF-R09). */
 class LeaveSignal {
     constructor(public node: a.Exit | a.Jump) { }
@@ -573,6 +586,8 @@ class Interpreter {
     private offers = 0;
     /** Delivery events so far: the delivery order of queued input (SIF-R03, SIF-R05). */
     private deliveries = 0;
+    /** The persistent activation of each periodic machine, by operation occurrence (SIF-R14). */
+    private periodicMachines = new Map<string, Frame>();
     private stop?: 'violation' | 'limit';
     private options: Required<SimulationOptions>;
     constructor(private models: a.Model[], private target: RunTarget, options: SimulationOptions, private script?: a.Scenario) {
@@ -838,23 +853,50 @@ class Interpreter {
         r = g.next(); if (!r.done)
         throw new Error('A pure expression suspended.'); return r.value; }
     private release(c: Component, entry: a.ScheduleEntry, message?: Message, predecessor?: Frame): void {
+        const op = members(c.structure).filter(isExecutable).find(x => x.name === entry.operation)!;
+        // SIF-R14: an operation with states released on every is one activation per occurrence, created at the first release
+        // and never completed; every later release resumes it for one look (or the skip of a false release guard).
+        const persistent = entry.kind === 'every' && flowStates(op).length > 0, label = `${c.path}.${op.name}`;
+        const machine = persistent ? this.periodicMachines.get(label) : undefined;
+        if (machine && !machine.done) {
+            const p = machine.periodic!, seq = ++p.seq, deadline = this.releaseDeadline(c, entry);
+            this.log('release', label, { activation: machine.id, source: this.source(entry), cause: entry.kind, release: seq, ...(machine.key ? { task: machine.key.task } : {}) });
+            // The deadline is per release, from the release (SIF-R15).
+            if (deadline)
+                this.at(this.time + deadline, 0, () => { if (!machine.done && p.done < seq)
+                    throw new ContractViolation('Deadline', machine.id); }, () => !machine.done && p.done < seq);
+            if (machine.suspended && machine.waiting?.kind === 'receive' && machine.waiting.periodic)
+                this.resume(machine, { release: true });
+            else
+                p.backlog++;
+            return;
+        }
         if (this.unstarted >= this.options.maxPending)
             throw new ContractViolation('ActivationOverflow', this.tasked ? this.overflowMessage() : undefined);
-        const op = members(c.structure).filter(isExecutable).find(x => x.name === entry.operation)!;
         const f: Frame = { id: this.id('a'), c, op, entry, released: this.time, iterator: undefined!, snapshot: new Map(), done: false, suspended: false, started: false, token: 0, watches: [], correlation: message?.correlation, at: entry };
         const key = this.keyOf(c, entry);
         if (key)
             f.key = key;
+        if (persistent) {
+            f.periodic = { seq: 1, done: 0, backlog: 0 };
+            this.periodicMachines.set(label, f);
+        }
         f.iterator = this.activate(f, message);
         this.addFrame(f);
         this.unstarted++;
         // The Task of an activation on a Swaml::Os Task, for Task lanes (WP8-M04); absent otherwise.
-        this.log('release', `${c.path}.${op.name}`, { activation: f.id, source: this.source(entry), cause: entry.kind, predecessorActivation: predecessor?.id, ...(key ? { task: key.task } : {}) });
-        // One precedence everywhere (entryDeadline): an explicit deadline, literal or computed, then the period (WP4-S04).
-        const deadline = entry.deadlineValue || entry.periodValue ? this.computedDeadline(c, entry) : entryDeadline(entry, c.structure);
-        if (deadline)
+        this.log('release', label, { activation: f.id, source: this.source(entry), cause: entry.kind, predecessorActivation: predecessor?.id, ...(persistent ? { release: 1 } : {}), ...(key ? { task: key.task } : {}) });
+        const deadline = this.releaseDeadline(c, entry);
+        if (deadline && persistent)
+            this.at(this.time + deadline, 0, () => { if (!f.done && f.periodic!.done < 1)
+                throw new ContractViolation('Deadline', f.id); }, () => !f.done && f.periodic!.done < 1);
+        else if (deadline)
             this.at(this.time + deadline, 0, () => { if (!f.done)
                 throw new ContractViolation('Deadline', f.id); }, () => !f.done);
+    }
+    /** One precedence everywhere (entryDeadline): an explicit deadline, literal or computed, then the period (WP4-S04). */
+    private releaseDeadline(c: Component, entry: a.ScheduleEntry): number | undefined {
+        return entry.deadlineValue || entry.periodValue ? this.computedDeadline(c, entry) : entryDeadline(entry, c.structure);
     }
     /**
      * WP8-R02: with Tasks a Core holds back every release of an instant until the running activation waits or ends, so
@@ -982,16 +1024,29 @@ class Interpreter {
                 this.at(this.time + y.duration, 2, () => { if (f.token === token)
                     this.resume(f); }, () => f.token === token && !f.done, f.key);
             if (y.kind === 'receive' && y.flow && y.zero) {
-                // SIF-R05 steps 2 and 3: queued input of owned members not named here is dropped; the wait ends at an event
-                // of the same instant (phase 2, next insertion ordinal), which picks the first-delivered named message again.
+                // SIF-R05 steps 2 and 3: queued input of owned members not named here is dropped; the first-delivered named
+                // message queued now is picked, and the wait ends at an event of the same instant (phase 2, next insertion
+                // ordinal) with a look at it, or with a look with nothing present for a pending wake. Nothing can change the
+                // queue in between: an offer replaces or overflows at its publication, every delivery of this instant
+                // scheduled before the wait began has run (deliveries run in phase 2, between steps of phase 4), and no
+                // activation runs before that event (mutation A8 of the plan is equivalent).
                 const named = y.flow.named;
                 this.dropUnnamed(f, named);
+                const picked = this.flowHeads(f).find(x => named.has(x.endpointName));
                 this.at(this.time, 2, () => {
                     if (f.token !== token || !f.suspended)
                         return;
-                    const h = this.flowHeads(f).find(x => named.has(x.endpointName));
-                    this.resume(f, h ? { input: this.take(h.queue, h.m, h.endpointName, f.c) } : {});
+                    this.resume(f, picked && picked.queue[0] === picked.m ? { input: this.take(picked.queue, picked.m, picked.endpointName, f.c) } : {});
                 }, () => f.token === token && !f.done, f.key);
+            }
+            // A periodic machine that waits for its next release has ended the work of the current one (SIF-R14).
+            if (y.kind === 'receive' && y.periodic && f.periodic) {
+                f.periodic.done++;
+                this.releaseSuccessors(f);
+                if (f.periodic.backlog) {
+                    f.periodic.backlog--;
+                    this.resume(f, { release: true });
+                }
             }
             if (y.kind === 'receive' && y.timeout !== undefined)
                 this.at(this.time + y.timeout, 1, () => { if (f.token === token && f.suspended)
@@ -1041,18 +1096,27 @@ class Interpreter {
                 }).out });
         // A skip counts as a successful whole completion for after successors (WP7-R03); a failure releases none (WP7-R06).
         if (!failure && !f.script)
-            for (const e of schedule(f.c.structure))
-                if (e.kind === 'after' && e.predecessor === f.op.name) {
-                    // WP8-R02: a successor of an activation on a Task is released in its predecessor's completion step
-                    // (OSEK chaining), so that it competes for the freed Core with the work already released at this
-                    // instant. A predecessor not on a Task keeps the 2.2 release, also in a run that has Tasks.
-                    if (f.key)
-                        this.release(f.c, e, undefined, f);
-                    else
-                        this.at(this.time, 2, () => this.release(f.c, e, undefined, f), undefined, this.keyOf(f.c, e));
-                }
+            this.releaseSuccessors(f);
+    }
+    /**
+     * Releases the after successors of f's operation: at its completion or skip, and for a periodic machine after the work of
+     * each release, a skipped release included (SIF-R15).
+     */
+    private releaseSuccessors(f: Frame): void {
+        for (const e of schedule(f.c.structure))
+            if (e.kind === 'after' && e.predecessor === f.op.name) {
+                // WP8-R02: a successor of an activation on a Task is released in its predecessor's completion step
+                // (OSEK chaining), so that it competes for the freed Core with the work already released at this
+                // instant. A predecessor not on a Task keeps the 2.2 release, also in a run that has Tasks.
+                if (f.key)
+                    this.release(f.c, e, undefined, f);
+                else
+                    this.at(this.time, 2, () => this.release(f.c, e, undefined, f), undefined, this.keyOf(f.c, e));
+            }
     }
     private *activate(f: Frame, message?: Message): Iterator {
+        if (f.periodic)
+            return yield* this.periodicMachine(f);
         const env: Environment = new Map();
         if (message)
             this.bindInputs(env, f.entry.bindings, message);
@@ -1567,7 +1631,15 @@ class Interpreter {
             levels.push(level);
             this.machines[key] = { state: s.name, live: true };
             f.at = s;
-            this.log('state', key, { state: s.name, activation: f.id, source: this.source(s), ...(trigger ? { trigger: this.source(trigger) } : {}) });
+            // SIF-R16: in a periodic machine, the state reached is entered as usual; reached a second time in this release
+            // (the state current at the release counts), its arrival is held: no arrival look, and the release ends there.
+            let held = false;
+            if (f.reached && !queue.length && !innerStates(s).length && this.hasSomething(levels)) {
+                held = f.reached.has(s);
+                f.reached.add(s);
+                f.held = held;
+            }
+            this.log('state', key, { state: s.name, activation: f.id, source: this.source(s), ...(trigger ? { trigger: this.source(trigger) } : {}), ...(held ? { held: true } : {}) });
             for (const action of s.statements.filter(a.isStateAction).filter(x => x.kind === 'entry'))
                 yield* this.block(action.body, f, local);
             // Computed durations are evaluated once, when the entry actions finish (WP4-R02); the timer counts from arrival.
@@ -1706,6 +1778,19 @@ class Interpreter {
      * owned members not named here is dropped on arrival.
      */
     private *wait(levels: FlowLevel[], f: Frame): Generator<Yield, Present, Reply | undefined> {
+        // SIF-R14, SIF-R15: a periodic machine waits for its next release only. At the release (its guard held) the state
+        // current then counts as reached (SIF-R16); queued input of owned members not named here is dropped, then the
+        // first-delivered named message is present at the release look, with every timer that has run out.
+        if (f.periodic) {
+            const named = this.namedAt(levels), leaf = levels.at(-1)!.state;
+            f.at = leaf;
+            yield* this.nextRelease(f, named);
+            f.at = leaf;
+            f.reached = new Set([leaf]);
+            this.dropUnnamed(f, named);
+            const h = this.flowHeads(f).find(x => named.has(x.endpointName));
+            return { input: h ? this.take(h.queue, h.m, h.endpointName, f.c) : undefined, timers: true, cause: 'release' };
+        }
         while (true) {
             if (this.timersDue(levels))
                 return { timers: true, cause: 'timer' };
@@ -1749,6 +1834,11 @@ class Interpreter {
             yield* this.enter(levels, target !== undefined && target !== top.name ? [top, ...this.pathInside(top, target)!] : [top], f, local, key, trigger);
             let present: Present = { timers: true, cause: 'arrival' };
             while (true) {
+                // SIF-R16: a held arrival makes no look; the state is current and its first look is the next release's.
+                if (f.held) {
+                    f.held = false;
+                    present = yield* this.wait(levels, f);
+                }
                 let left: { node: a.Exit | a.Jump | undefined; level: number } | undefined;
                 if (!this.hasSomething(levels))
                     left = { node: undefined, level: levels.length - 1 };
@@ -1777,6 +1867,45 @@ class Interpreter {
         }
     }
     /**
+     * SIF-R14 to SIF-R17: a periodic machine, one activation for the life of its occurrence. Each release first evaluates
+     * the release guard (WP7, under the lock): a false guard is a skip that carries the machine's activation and leaves its
+     * place, timers and queues unchanged. The first release runs the flow from the top until a state's look does not leave
+     * (wait then ends the release); when the flow reaches its end or return, no state is active (periodicEnd) and the next
+     * release starts it again from the top, declaring its locals again.
+     */
+    private *periodicMachine(f: Frame): Iterator {
+        if (!(yield* this.guardHolds(f)))
+            yield* this.nextRelease(f, new Set());
+        while (true) {
+            f.reached = new Set();
+            yield* this.call(f.op, [], f, new Map());
+            f.flow = undefined;
+            this.machines[this.label(f)] = { state: '', live: true };
+            this.log('periodicEnd', this.label(f), { activation: f.id, release: f.periodic!.seq });
+            yield* this.nextRelease(f, new Set());
+        }
+    }
+    /** Waits for the next release of a periodic machine whose release guard holds (SIF-R15); each false guard is a skip. */
+    private *nextRelease(f: Frame, named: Set<string>): Generator<Yield, void, Reply | undefined> {
+        while (true) {
+            yield { kind: 'receive', branches: [], flow: { named }, periodic: true };
+            if (yield* this.guardHolds(f))
+                return;
+        }
+    }
+    /** WP7-R01, WP7-R02 for a periodic machine: the release guard, evaluated at the release; false is a skip of this release. */
+    private *guardHolds(f: Frame): Generator<Yield, boolean, Reply | undefined> {
+        if (!f.entry.guard)
+            return true;
+        const at = f.at;
+        f.at = f.entry;
+        const holds = (yield* this.evaluate(f.entry.guard, f, new Map())).data === true;
+        f.at = at;
+        if (!holds)
+            this.log('skip', this.label(f), { activation: f.id, source: this.source(f.entry), release: f.periodic!.seq });
+        return holds;
+    }
+    /**
      * Before every look: the pending wake is served by it (SIF-R05 step 3: one look serves every write made while the machine
      * was busy; a look that it causes records it now, with pending: true), and the look is checked for StateLoop (SIF-R18).
      */
@@ -1789,7 +1918,7 @@ class Interpreter {
     }
     // ---- Values that wake a state (SIF-R07), the own-write re-look (SIF-R08) and StateLoop (SIF-R18) ----
     /** Whether a machine looks again after its own line's write (SIF-R08): waiting machines only. */
-    private relooks(_f: Frame): boolean { return true; }
+    private relooks(f: Frame): boolean { return !f.periodic; }
     private reads = new Map<AstNode, Map<Structure, StatementReads>>();
     /** What one statement standing in a state reads in the effective structure c (statementReads), computed once. */
     private readsOf(item: AstNode, c: Structure): StatementReads {
@@ -2092,7 +2221,7 @@ class Interpreter {
         // delivery of an owned member it does not name is dropped on arrival. A busy machine leaves its input queued.
         for (const f of this.frames) {
             const w = f.waiting;
-            if (f.done || f.script || w?.kind !== 'receive' || !w.flow || w.zero)
+            if (f.done || f.script || w?.kind !== 'receive' || !w.flow || w.zero || w.periodic)
                 continue;
             for (let h = this.flowHeads(f)[0]; h; h = this.flowHeads(f)[0]) {
                 const m = this.take(h.queue, h.m, h.endpointName, f.c);
@@ -2183,7 +2312,9 @@ class Interpreter {
                 const flowOwner = this.flowOwner(c, endpointName);
                 if (flowOwner) {
                     // Kept while the machine runs, for its next waiting state to decide; discarded after it completed (SIF-R06, SIF-R13).
-                    if (this.findFrame(x => x.c === c && x.op === flowOwner && !x.done))
+                    // A periodic machine lives as long as its occurrence: its input waits for its next release, also before its
+                    // first release and after it reached its end (SIF-R06).
+                    if (this.findFrame(x => x.c === c && x.op === flowOwner && !x.done) || schedule(c.structure).some(e => e.kind === 'every' && e.operation === flowOwner.name))
                         break;
                     remove();
                     this.log('discardInput', endpointName, { source: m.origin, reason: 'inactiveOwner' });

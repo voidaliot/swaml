@@ -1,5 +1,5 @@
 package OwnWrites {
-  /** SIF-R08: a write made by an event line's block to a name that a statement already run in the same look reads makes the state look again at once, with nothing present. Writes by statements standing in a state never cause a look. */
+  /** SIF-R08: a write made by an event line's block to a name that a statement already run in the same look reads makes the state look again at once, with nothing present. Writes by statements standing in a state never cause a look. Periodic machines never look again inside a release. */
   port def XIn {
     provides event x();
   }
@@ -89,25 +89,48 @@ package OwnWrites {
     }
     schedule { on start run(); }
   }
+  component def PeriodicCounter {
+    /** Periodic: the line's write is seen at the next release; travel counts releases. */
+    reversed port in: XIn;
+    attribute travel: uint = 0;
+    attribute left: bool = false;
+    operation step() {
+      var n: uint = 0;
+      while (true) {
+        state s {
+          if (n >= 1) { left = true; exit; }
+          on receive in.x() { n = n + 1; }
+          travel = travel + 1;
+        }
+        state done {
+          if (false) { exit; }
+        }
+      }
+    }
+    schedule { on every 10ms step(); }
+  }
   component def Bench {
     port toCounter: XIn;
     port toParent: FaultIn;
     port toAlarm: AlarmIn;
     reversed port alarm: AlarmOut;
     port toDuring: XIn;
+    port toPeriodic: XIn;
   }
   component counter: Counter;
   component ownTimer: OwnTimer;
   component parentAlarm: ParentAlarm;
   component alarm: Alarm;
   component during: During;
+  component periodicCounter: PeriodicCounter;
   component bench: Bench;
   connect (bench.toCounter, counter.in);
   connect (bench.toParent, parentAlarm.in);
   connect (bench.toAlarm, alarm.in);
   connect (alarm.out, bench.alarm);
   connect (bench.toDuring, during.in);
-  associate bench to 'Counter leaves at the third x', 'Own timer write', 'Parent condition and inner line', 'Alarm acts once more, not forever', 'Statement writes cause no look';
+  connect (bench.toPeriodic, periodicCounter.in);
+  associate bench to 'Counter leaves at the third x', 'Own timer write', 'Parent condition and inner line', 'Alarm acts once more, not forever', 'Statement writes cause no look', 'Periodic sees its write at the next release';
   test 'Counter leaves at the third x' of counter {
     publish bench.toCounter.x();
     wait 1ms;
@@ -143,5 +166,11 @@ package OwnWrites {
     publish bench.toDuring.x();
     wait 1ms;
     assert during.left;
+  }
+  test 'Periodic sees its write at the next release' of periodicCounter {
+    wait 25ms;
+    publish bench.toPeriodic.x();
+    wait 30ms;
+    assert periodicCounter.left;
   }
 }

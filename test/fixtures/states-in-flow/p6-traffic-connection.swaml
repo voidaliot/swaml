@@ -1,0 +1,134 @@
+package Every100ms {
+  /** The traffic light (1.10) and the connection manager (1.11), released on every 100ms instead of on start. Timers count from arrival and are looked at by the first release at or after their expiry; input waits for the next release, one message per release. */
+  enum Light { red, yellow, green }
+  port def Pedestrian {
+    provides event button();
+  }
+  port def Lamps {
+    provides attribute light: Light;
+    provides attribute walk: bool;
+  }
+  port def Link {
+    provides event hello(attempt: uint);
+    requires event ack(id: uint);
+    requires event down();
+  }
+  port def Status {
+    provides event connected(up: bool);
+  }
+  component def TrafficLight {
+    reversed port ped: Pedestrian;
+    port lamps: Lamps;
+    operation cycle() {
+      var requested: bool = false;
+      while (true) {
+        state green {
+          on entry { send lamps.light(Light.green); }
+          on receive ped.button() { requested = true; }
+          after 60s { exit; }
+          state minimum {
+            after 10s { exit; }
+          }
+          state extended {
+            if (requested) { exit; }
+          }
+        }
+        state yellow {
+          on entry { send lamps.light(Light.yellow); }
+          after 3s { exit; }
+        }
+        state red {
+          on entry { send lamps.light(Light.red); }
+          after 2s { exit; }
+        }
+        if (requested) {
+          state walk {
+            on entry { send lamps.walk(true); }
+            on exit { send lamps.walk(false); }
+            after 15s { exit; }
+          }
+          requested = false;
+        }
+      }
+    }
+    schedule {
+      on every 100ms cycle();
+    }
+  }
+  component def ConnectionManager {
+    port link: Link;
+    port status: Status;
+    operation manage() {
+      while (true) {
+        var attempt: uint = 0;
+        var backoffMs: uint = 10;
+        var up: bool = false;
+        while (attempt < 5 and not up) {
+          attempt = attempt + 1;
+          publish link.hello(attempt);
+          state awaiting {
+            on receive link.ack(id) { if (id == attempt) { up = true; exit; } }
+            after (backoffMs * 1ms) {
+              if (backoffMs < 1000) { backoffMs = backoffMs * 2; }
+              exit;
+            }
+          }
+        }
+        if (up) {
+          state connected {
+            on entry { publish status.connected(true); }
+            on exit { publish status.connected(false); }
+            on receive link.down() { exit; }
+          }
+        } else {
+          state cooldown {
+            after 30s { exit; }
+          }
+        }
+      }
+    }
+    schedule {
+      on every 100ms manage();
+    }
+  }
+  component def Bench {
+    port ped: Pedestrian;
+    reversed port lamps: Lamps;
+    reversed port link: Link;
+    reversed port status: Status;
+  }
+  component light: TrafficLight;
+  component manager: ConnectionManager;
+  component bench: Bench;
+  connect (bench.ped, light.ped);
+  connect (light.lamps, bench.lamps);
+  connect (manager.link, bench.link);
+  connect (manager.status, bench.status);
+  associate bench to 'Light, press at 5 s and in yellow', 'Light, no press', 'Connection, no ack', 'Connection, ack and ran-out timer at one release', 'Connection, ack then down';
+  test 'Light, press at 5 s and in yellow' of light {
+    wait 5s;
+    publish bench.ped.button();
+    wait 6s;
+    publish bench.ped.button();
+    wait 25s;
+  }
+  test 'Light, no press' of light {
+    wait 70s;
+  }
+  test 'Connection, no ack' of manager {
+    wait 31s;
+  }
+  test 'Connection, ack and ran-out timer at one release' of manager {
+    /** hello(1) at 100 ms; its 10 ms timer ran out at 110 ms; the ack comes at 150 ms; the release at 200 ms sees both. */
+    wait 150ms;
+    publish bench.link.ack(1);
+    wait 200ms;
+  }
+  test 'Connection, ack then down' of manager {
+    wait 105ms;
+    publish bench.link.ack(1);
+    wait 300ms;
+    publish bench.link.down();
+    wait 300ms;
+  }
+}

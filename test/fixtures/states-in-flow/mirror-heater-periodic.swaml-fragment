@@ -1,0 +1,14 @@
+    operation tick() {
+      /** A periodic machine (SIF-R14, 1.12); heating keeps the attribute the bench reads. */
+      while (true) {
+        state off {
+          if (requested) { exit; }
+        }
+        state active {
+          on entry { heating = true; send drive.heaterPercent(heaterPercent); }
+          on exit { heating = false; send drive.heaterPercent(0); }
+          if (not requested) { exit; }
+          after 600s { requested = false; exit; }
+        }
+      }
+    }

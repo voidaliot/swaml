@@ -7,6 +7,8 @@ export interface TimingInterval {
     phase: string;
     /** The Swaml::Os Task the activation runs on, from its release observation: its Task lane (WP8-M04). Absent when unplaced. */
     task?: string;
+    /** A periodic machine's release number (states in the flow, 4.6): its interval spans that release's work. */
+    release?: number;
 }
 /**
  * A state band of an operation with states (states in the flow, 4.6): the time a state is entered. Bands nest for parents
@@ -22,14 +24,19 @@ export interface StateBand {
     depth: number;
     parent?: string;
 }
-/** Declared schedules are a separate projection; these intervals require an identified run. */
+/**
+ * Declared schedules are a separate projection; these intervals require an identified run. A periodic machine (states in the
+ * flow, 4.6; its release observations carry a release number) gets one interval per release, from the release to the end of
+ * that release's work (it waits for the next release, or its guard skipped it); between releases its track is idle. Its
+ * state bands change at the release in which a new state is reached; periodicEnd closes them, and skips are markers.
+ */
 export function projectOperationTiming(result: SimulationResult): {
     profile: string;
     intervals: TimingInterval[];
     markers: TraceEvent[];
     states?: StateBand[];
 } {
-    const intervals: TimingInterval[] = [], open = new Map<string, TimingInterval>(), tasks = new Map<string, string>();
+    const intervals: TimingInterval[] = [], open = new Map<string, TimingInterval>(), tasks = new Map<string, string>(), periodic = new Set<string>();
     // The open bands of each activation, outermost first, with the identity of their state.
     const states: StateBand[] = [], current = new Map<string, { band: StateBand; source: string }[]>();
     for (const e of result.trace) {
@@ -49,10 +56,29 @@ export function projectOperationTiming(result: SimulationResult): {
             open.push({ band, source });
             current.set(id, open);
         }
-        if (['complete', 'failure'].includes(e.kind) && current.has(id)) {
+        if (['complete', 'failure', 'periodicEnd'].includes(e.kind) && current.has(id)) {
             for (const { band } of current.get(id)!)
                 band.endNs = e.timeNs;
             current.delete(id);
+        }
+        if (e.kind === 'release' && typeof e.release === 'number')
+            periodic.add(id);
+        if (periodic.has(id)) {
+            if (e.kind === 'release' && typeof e.task === 'string')
+                tasks.set(id, e.task);
+            const task = tasks.get(id);
+            if (['release', 'receiveWait', 'skip', 'failure'].includes(e.kind)) {
+                const previous = open.get(id);
+                if (previous)
+                    previous.endNs = e.timeNs;
+                open.delete(id);
+            }
+            if (e.kind === 'release') {
+                const next: TimingInterval = { activation: id, subject: e.subject, startNs: e.timeNs, phase: 'release', release: e.release as number, ...(task ? { task } : {}) };
+                intervals.push(next);
+                open.set(id, next);
+            }
+            continue;
         }
         if (['release', 'dispatch', 'ready', 'wait', 'receiveWait', 'requestWait'].includes(e.kind)) {
             const previous = open.get(id);
@@ -73,5 +99,5 @@ export function projectOperationTiming(result: SimulationResult): {
             open.delete(id);
         }
     }
-    return { profile: result.profile, intervals, ...(states.length ? { states } : {}), markers: result.trace.filter(e => ['complete', 'failure', 'interrupt', 'timeout', 'skip'].includes(e.kind)) };
+    return { profile: result.profile, intervals, ...(states.length ? { states } : {}), markers: result.trace.filter(e => ['complete', 'failure', 'interrupt', 'timeout', 'skip', 'periodicEnd'].includes(e.kind)) };
 }

@@ -40,7 +40,7 @@ for (const [name, source, code] of [
     // SIF (proposal 4.8): 'state reachability' and 'final transition' have no counterpart: a state is a step of the
     // flow (unreachable code keeps the ordinary checks) and no state is final.
     // Until periodic machines run (SIF-R14, package 5), on every with states is rejected.
-    ['state periodic', wrap('operation f() { state A { } } schedule { on every 1ms f(); }'), 'SW2008'],
+    ['state periodic concurrent', wrap('operation f() { state A { } } schedule { on every 1ms f() concurrent; }'), 'SW2008'],
     ['implicit override', 'package Test { component def C { attribute x: int = 0; } component Demo: C { attribute x: int = 2; } }', 'SW2003'],
     ['changed override type', 'package Test { component def C { attribute x: int = 0; } component Demo: C { redefines attribute x: bool = false; } }', 'SW2003'],
     ['inheritance cycle', 'package Test { component def A specializes B { } component def B specializes A { } }', 'SW2003'],
