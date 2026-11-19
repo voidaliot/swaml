@@ -91,8 +91,9 @@ type Reply = {
     failure?: string;
     input?: Message;
     branch?: a.ReceiveBranch;
-    /** A waiting state is woken by a value (SIF-R07): a look with no message. */
+    /** A waiting state is woken by a value (SIF-R07): a look with no message; pending: a wake that came while it was busy. */
     wake?: boolean;
+    pending?: boolean;
     /** A periodic machine is released (SIF-R14): one look at its current state. */
     release?: boolean;
 };
@@ -114,8 +115,6 @@ type Yield = {
     timeout?: number;
     /** A state of an operation with states waits (SIF-R05); named: the members its levels name. */
     flow?: { named: Set<string> };
-    /** The zero-time wait of SIF-R05 step 3: it ends at an event of the same instant, which picks the message again. */
-    zero?: boolean;
     /** A periodic machine waits for its next release (SIF-R14); nothing else ends this wait. */
     periodic?: boolean;
     /** The evaluated value of a computed receive timeout, recorded on its receiveWait observation (WP4-T01). */
@@ -1019,22 +1018,6 @@ class Interpreter {
             if (y.kind === 'wait')
                 this.at(this.time + y.duration, 2, () => { if (f.token === token)
                     this.resume(f); }, () => f.token === token && !f.done, f.key);
-            if (y.kind === 'receive' && y.flow && y.zero) {
-                // SIF-R05 steps 2 and 3: queued input of owned members not named here is dropped; the first-delivered named
-                // message queued now is picked, and the wait ends at an event of the same instant (phase 2, next insertion
-                // ordinal) with a look at it, or with a look with nothing present for a pending wake. Nothing can change the
-                // queue in between: an offer replaces or overflows at its publication, every delivery of this instant
-                // scheduled before the wait began has run (deliveries run in phase 2, between steps of phase 4), and no
-                // activation runs before that event (mutation A8 of the plan is equivalent).
-                const named = y.flow.named;
-                this.dropUnnamed(f, named);
-                const picked = this.flowHeads(f).find(x => named.has(x.endpointName));
-                this.at(this.time, 2, () => {
-                    if (f.token !== token || !f.suspended)
-                        return;
-                    this.resume(f, picked && picked.queue[0] === picked.m ? { input: this.take(picked.queue, picked.m, picked.endpointName, f.c) } : {});
-                }, () => f.token === token && !f.done, f.key);
-            }
             // A periodic machine that waits for its next release has ended the work of the current one (SIF-R14).
             if (y.kind === 'receive' && y.periodic && f.periodic) {
                 f.periodic.done++;
@@ -1547,23 +1530,46 @@ class Interpreter {
         }
         return heads.sort((x, y) => (x.m.delivered ?? Infinity) - (y.m.delivered ?? Infinity));
     }
-    /** Takes a queue head as delivered input, as consume() does (deliver observation, argument widening). */
+    /**
+     * Takes a queue head as delivered input, as consume() does (deliver observation, argument widening). A message put back
+     * by a look that left before a line on its member ran (SIF-R06) was delivered once: taking it again records nothing.
+     */
     private take(queue: Message[], m: Message, endpointName: string, c: Component): Message {
         queue.shift();
-        this.log('deliver', m.route.id, { source: m.origin, message: m.id, correlation: m.correlation?.id, targetPort: m.target });
+        if (!this.putBack.has(m))
+            this.log('deliver', m.route.id, { source: m.origin, message: m.id, correlation: m.correlation?.id, targetPort: m.target });
         const ep = memberEndpoint(c.structure, endpointName);
         if (ep) {
             const types = ep.member.kind === 'attribute' ? [typeKey(ep.member.type)] : ep.member.parameters.map(p => typeKey(p.type));
             m.args = m.args.map((v, i) => widen(v, types[i]));
         }
-        return { ...m, member: endpointName };
+        const input = { ...m, member: endpointName };
+        this.taken.set(input, { queue, m });
+        return input;
     }
-    /** SIF-R05 step 2: queued input of owned members not named at the waiting state is dropped, in delivery order. */
-    private dropUnnamed(f: Frame, named: Set<string>): void {
-        for (let h = this.flowHeads(f).find(x => !named.has(x.endpointName)); h; h = this.flowHeads(f).find(x => !named.has(x.endpointName))) {
+    /** Where a message presented at a look came from, so that it can stay queued when no line on its member ran (SIF-R06). */
+    private taken = new WeakMap<Message, { queue: Message[]; m: Message }>();
+    private putBack = new WeakSet<Message>();
+    /** SIF-R06: a message presented at a look that left before a line on its member ran stays queued, at the head of its queue. */
+    private keepQueued(input: Message): void {
+        const from = this.taken.get(input);
+        if (!from)
+            return;
+        this.putBack.add(from.m);
+        from.queue.unshift(from.m);
+    }
+    /**
+     * SIF-R05, SIF-R15: the input a waiting state or a release looks at: queued input of owned members, in delivery order;
+     * input of a member not named at the state is dropped (inactiveOwner) until a named message is taken, which is returned.
+     */
+    private nextNamed(f: Frame, named: Set<string>): Message | undefined {
+        for (let h = this.flowHeads(f)[0]; h; h = this.flowHeads(f)[0]) {
             const m = this.take(h.queue, h.m, h.endpointName, f.c);
+            if (named.has(h.endpointName))
+                return m;
             this.log('discardInput', h.endpointName, { source: m.origin, reason: 'inactiveOwner' });
         }
+        return undefined;
     }
     /** The chain of inner states from a child of p down to the state named name, or undefined (direct entry, SIF-S06). */
     private pathInside(p: a.StateStep, name: string): a.StateStep[] | undefined {
@@ -1707,8 +1713,12 @@ class Interpreter {
                 throw e;
             left = e.node;
         }
-        if (input && !messageWork)
-            this.log('discardInput', key, { activation: f.id, source: input.origin ?? this.source(leaf), reason: left && !lineRan ? 'leftBeforeLine' : 'noEnabledTransition' });
+        // SIF-R06: a message is taken when a line on its member runs for it; a look that left before such a line leaves it
+        // queued for the state reached. A taken message whose lines did no work is noEnabledTransition.
+        if (input && !lineRan)
+            this.keepQueued(input);
+        else if (input && !messageWork)
+            this.log('discardInput', key, { activation: f.id, source: input.origin ?? this.source(leaf), reason: 'noEnabledTransition' });
         else if (!left && lineWork && firstLine)
             this.log('state', key, { state: leaf.name, activation: f.id, source: this.source(firstLine), stay: true });
         return left ? { node: left, level } : relook.size ? { relook: [...relook] } : undefined;
@@ -1748,10 +1758,10 @@ class Interpreter {
         throw new JumpSignal(node.target, node);
     }
     /**
-     * SIF-R05: when a state begins to wait: timers that ran out first (a look now); then queued input of owned members not
-     * named here is dropped in delivery order and a queued named message ends the wait in zero time, picked again at that
-     * event (drive); otherwise the state waits for a timer (phase 1) or a named delivery (phase 2, consume), and input of
-     * owned members not named here is dropped on arrival.
+     * SIF-R05: when a state begins to wait, timers that ran out make a look now. Otherwise it waits, and consume() looks at
+     * its queued input as at every delivery, the moment the wait begins as in 2.2: owned input in delivery order, input not
+     * named here dropped until a named message is taken (a look with it); a pending wake with no named message is a look
+     * with nothing present. Then a timer (phase 1), a named delivery (phase 2) or a wake (SIF-R07) ends the wait.
      */
     private *wait(levels: FlowLevel[], f: Frame): Generator<Yield, Present, Reply | undefined> {
         // SIF-R14, SIF-R15: a periodic machine waits for its next release only. At the release (its guard held) the state
@@ -1763,38 +1773,25 @@ class Interpreter {
             yield* this.nextRelease(f, named);
             f.at = leaf;
             f.reached = new Set([leaf]);
-            this.dropUnnamed(f, named);
-            const h = this.flowHeads(f).find(x => named.has(x.endpointName));
-            return { input: h ? this.take(h.queue, h.m, h.endpointName, f.c) : undefined, timers: true, cause: 'release' };
+            return { input: this.nextNamed(f, named), timers: true, cause: 'release' };
         }
-        while (true) {
-            if (this.timersDue(levels))
-                return { timers: true, cause: 'timer' };
-            const named = this.namedAt(levels);
-            f.at = levels.at(-1)!.state;
-            // Step 3: a queued named message, or a wake that came while the machine was busy (SIF-R07), ends the wait in zero time.
-            if (f.wakePending || this.flowHeads(f).some(x => named.has(x.endpointName))) {
-                const reply: Reply | undefined = yield { kind: 'receive', branches: [], flow: { named }, zero: true };
-                if (reply?.input)
-                    return { input: reply.input, timers: true, cause: 'message' };
-                if (f.wakePending)
-                    return { timers: true, cause: 'pending' };
-                continue;
-            }
-            let expires: number | undefined;
-            for (const l of levels)
-                for (const t of this.timerLines(l))
-                    if (!l.presented.has(t) && (expires === undefined || this.due(l, t) < expires))
-                        expires = this.due(l, t);
-            if (expires !== undefined && !Number.isSafeInteger(expires))
-                throw new ContractViolation('ClockRange');
-            const reply: Reply | undefined = yield { kind: 'receive', branches: [], timeout: expires === undefined ? undefined : Math.max(0, expires - this.time), flow: { named } };
-            if (reply?.input)
-                return { input: reply.input, timers: true, cause: 'message' };
-            if (reply?.wake)
-                return { timers: true, cause: 'wake' };
+        if (this.timersDue(levels))
             return { timers: true, cause: 'timer' };
-        }
+        const named = this.namedAt(levels);
+        f.at = levels.at(-1)!.state;
+        let expires: number | undefined;
+        for (const l of levels)
+            for (const t of this.timerLines(l))
+                if (!l.presented.has(t) && (expires === undefined || this.due(l, t) < expires))
+                    expires = this.due(l, t);
+        if (expires !== undefined && !Number.isSafeInteger(expires))
+            throw new ContractViolation('ClockRange');
+        const reply: Reply | undefined = yield { kind: 'receive', branches: [], timeout: expires === undefined ? undefined : Math.max(0, expires - this.time), flow: { named } };
+        if (reply?.input)
+            return { input: reply.input, timers: true, cause: 'message' };
+        if (reply?.wake)
+            return { timers: true, cause: reply.pending ? 'pending' : 'wake' };
+        return { timers: true, cause: 'timer' };
     }
     /**
      * A state standing in a statement list, reached by the flow or by a jump into it or into a state inside it (SIF-R01):
@@ -1929,7 +1926,7 @@ class Interpreter {
     /** Wakes g now when its state waits (a look with no message), or remembers the wake while it is busy (SIF-R07). */
     private wakeOrPend(g: Frame, why: WakeCause): void {
         const w = g.waiting;
-        if (g.suspended && w?.kind === 'receive' && w.flow && !w.zero) {
+        if (g.suspended && w?.kind === 'receive' && w.flow && !w.periodic) {
             this.log('wake', this.label(g), { activation: g.id, state: g.flow!.levels.at(-1)?.state.name, ...why });
             this.resume(g, { wake: true });
         }
@@ -1953,13 +1950,17 @@ class Interpreter {
             }
         }
     }
-    /** SIF-R07: a sample-cell update, at its delivery event, wakes the machines of the port's occurrence that read the cell. */
+    /**
+     * SIF-R07: a sample-cell update, at its delivery event, wakes the machines of the port's occurrence that read the cell. A
+     * state that also names the member in a line is not woken: the delivery itself makes its one look, with the message.
+     */
     private cellUpdated(m: Message): void {
-        const c = this.ports.get(m.target)?.c, cell = `${m.target}|${m.member}`;
-        if (!c)
+        const destination = this.ports.get(m.target), cell = `${m.target}|${m.member}`;
+        if (!destination)
             return;
-        for (const g of this.wakeable(c))
-            if (this.readSet(g).cells.has(cell))
+        const endpointName = `${destination.p.name}.${m.member}`;
+        for (const g of this.wakeable(destination.c))
+            if (this.readSet(g).cells.has(cell) && !this.namedAt(g.flow!.levels).has(endpointName))
                 this.wakeOrPend(g, { cause: 'sample', cell: `${m.target}.${m.member}` });
     }
     /** A script's on call branch answers a request at an actor port; return inside it is the reply. */
@@ -2140,20 +2141,18 @@ class Interpreter {
         }
     }
     private consume(): void {
-        // SIF-R05, SIF-R06: a waiting state takes the first-delivered message of a member it names, which makes a look; a
-        // delivery of an owned member it does not name is dropped on arrival. A busy machine leaves its input queued.
+        // SIF-R05, SIF-R06: a waiting state takes the first-delivered message of a member it names, which makes a look; input
+        // of an owned member it does not name is dropped until then. A pending wake with no named message makes a look with
+        // nothing present (SIF-R07). A busy machine leaves its input queued.
         for (const f of this.frames) {
             const w = f.waiting;
-            if (f.done || f.script || w?.kind !== 'receive' || !w.flow || w.zero || w.periodic)
+            if (f.done || f.script || w?.kind !== 'receive' || !w.flow || w.periodic || !f.suspended)
                 continue;
-            for (let h = this.flowHeads(f)[0]; h; h = this.flowHeads(f)[0]) {
-                const m = this.take(h.queue, h.m, h.endpointName, f.c);
-                if (w.flow.named.has(h.endpointName)) {
-                    this.resume(f, { input: m });
-                    break;
-                }
-                this.log('discardInput', h.endpointName, { source: m.origin, reason: 'inactiveOwner' });
-            }
+            const m = this.nextNamed(f, w.flow.named);
+            if (m)
+                this.resume(f, { input: m });
+            else if (f.wakePending)
+                this.resume(f, { wake: true, pending: true });
         }
         for (const queue of this.queues.values()) {
             while (queue.length) {

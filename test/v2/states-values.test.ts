@@ -67,7 +67,7 @@ const one = async (run: string, script: string, poke?: string) => (await cases(u
 test('SIF-R07 the prototype values cases: helpers, case calls, shadowing, redefinition per occurrence, a write while the look is suspended', async () => {
     const r = await fixture('p4-values.swaml');
     // Results and step counts of the recorded evidence (states-p7 p4-values-and-wakes.txt).
-    const expected: Record<string, number> = { 'Own write after the line': 140, 'Own write before the line': 142, 'Helper read set, write by another activation': 178, 'Case call writes': 166, 'Case call suspended in the middle': 209, 'Shadowed attribute': 146, 'Redefinition per occurrence': 257, 'Write while the look is suspended': 184 };
+    const expected: Record<string, number> = { 'Own write after the line': 140, 'Own write before the line': 142, 'Helper read set, write by another activation': 178, 'Case call writes': 166, 'Case call suspended in the middle': 209, 'Shadowed attribute': 146, 'Redefinition per occurrence': 257, 'Write while the look is suspended': 183 };
     for (const [name, steps] of Object.entries(expected)) {
         pass(r.get(name), name);
         assert.equal(r.get(name)?.run?.steps, steps, `${name} steps`);
@@ -181,6 +181,19 @@ test('SIF-R05 step 3 the message picked when the wait begins is taken at its end
     assert.deepEqual(wakes(r), []);
 });
 
+test('SIF-R05 SIF-R07 a delivery of a member the state both reads and names in a line makes one look, with the message, whether the machine was idle or busy (review 3 F3)', async () => {
+    const line = await fixture('r3-sampled-line.swaml');
+    pass(line.get('T'), 'one look per delivery');
+    assert.deepEqual(wakes(line.get('T')), []);
+    const r = await fixture('r3-sampled-idle-busy.swaml');
+    for (const name of ['Idle', 'Busy']) {
+        pass(r.get(name), name);
+        // closing leaves before its line; the delivery stays queued and reversing takes it.
+        assert.deepEqual(trace(r.get(name)).filter(e => e.kind === 'discardInput'), [], name);
+        assert.deepEqual(wakes(r.get(name)), [], name);
+    }
+});
+
 // ---------------------------------------------------------------- SIF-R08: the machine's own writes
 
 test('SIF-R08 the prototype own-write cases: counter, timer, parent condition, an acting statement once more, statement writes', async () => {
@@ -190,7 +203,7 @@ test('SIF-R08 the prototype own-write cases: counter, timer, parent condition, a
     // One re-look per message look whose line wrote what the condition read, with the names written (SIF-T03, cause own).
     assert.deepEqual(wakes(r.get('Counter leaves at the third x'), 'counter.run').map(w => [w.ms, w.cause, w.names]), [[0, 'own', ['n']], [1, 'own', ['n']], [2, 'own', ['n']]]);
     assert.deepEqual(wakes(r.get('Own timer write'), 'ownTimer.run').map(w => [w.ms, w.cause, w.names]), [[10, 'own', ['ready']]]);
-    // Kills D5 (re-look also after statement writes): k counts looks; the third x leaves before its line (leftBeforeLine).
+    // Kills D5 (re-look also after statement writes): k counts looks; the third x leaves before its line, and the message stays queued.
     assert.deepEqual(wakes(r.get('Statement writes cause no look'), 'during.run'), []);
 });
 
@@ -278,7 +291,7 @@ test('a cycle of states that leave each other is not an error: a state in while 
 
 test('reading sample 8: a look reads the values when it runs; Q2 reverses; the flip sees 3000; Q5 goes to idle (sampled and filtered)', async () => {
     const r = await fixture('p4-antipinch-sampled.swaml');
-    const steps: Record<string, number> = { 'Q1 5000 at 100 ms': 137, 'Q2 halt then 5000 at one instant': 126, 'Q3 already 5000 on arrival': 114, 'Q5 5000 exactly at 8 s': 97, 'Flip 5000 then 3000 at one instant': 85, 'Flip 5000 then 3000 one ns apart': 132 };
+    const steps: Record<string, number> = { 'Q1 5000 at 100 ms': 136, 'Q2 halt then 5000 at one instant': 125, 'Q3 already 5000 on arrival': 114, 'Q5 5000 exactly at 8 s': 96, 'Flip 5000 then 3000 at one instant': 84, 'Flip 5000 then 3000 one ns apart': 131 };
     for (const [name, n] of Object.entries(steps)) {
         pass(r.get(name), name);
         assert.equal(r.get(name)?.run?.steps, n, `${name} steps`);
@@ -287,10 +300,10 @@ test('reading sample 8: a look reads the values when it runs; Q2 reverses; the f
     // Q1: the delivery updates the cell and wakes closing, which reverses at 100 ms.
     assert.deepEqual(wakes(r.get('Q1 5000 at 100 ms')).map(w => [w.ms, w.cause, w.cell]), [[100, 'sample', 'lifter.sense.current']]);
     assert.deepEqual(lifter('Q1 5000 at 100 ms'), ['0ms state idle', '0ms state closing', '100ms state reversing', '500ms state idle']);
-    // Q2 (corrected in revision 5): the request's look runs after the second delivery and reverses; the request is taken by
-    // a look that left before its line ran.
+    // Q2 (corrected in revision 5): the request's look runs after the second delivery and reverses before the request's
+    // line; the request stays queued (revision 6) and reversing, which does not name it, drops it when it begins to wait.
     assert.deepEqual(lifter('Q2 halt then 5000 at one instant'), ['0ms state idle', '0ms state closing', '100ms state reversing', '500ms state idle']);
-    assert.deepEqual(trace(r.get('Q2 halt then 5000 at one instant')).filter(e => e.kind === 'discardInput').map(e => e.reason), ['leftBeforeLine']);
+    assert.deepEqual(trace(r.get('Q2 halt then 5000 at one instant')).filter(e => e.kind === 'discardInput').map(e => e.reason), ['inactiveOwner']);
     // Q3: the arrival look checks the condition.
     assert.deepEqual(lifter('Q3 already 5000 on arrival'), ['0ms state idle', '10ms state closing', '10ms state reversing', '410ms state idle']);
     // Q5: the timer is looked at before the delivery of the same instant.
@@ -301,7 +314,7 @@ test('reading sample 8: a look reads the values when it runs; Q2 reverses; the f
     assert.deepEqual(lifter('Flip 5000 then 3000 one ns apart').slice(2, 3), ['100ms state reversing']);
     // Q4 (filtered): closing looks at every write of motorCurrent and never sees the raw 9000.
     const filtered = await fixture('p4-antipinch-filtered.swaml');
-    const filteredSteps: Record<string, number> = { 'Q4 9000 for one millisecond': 3112, 'Spike of three milliseconds': 2868, 'Closing for one second': 20074 };
+    const filteredSteps: Record<string, number> = { 'Q4 9000 for one millisecond': 3111, 'Spike of three milliseconds': 2867, 'Closing for one second': 20073 };
     for (const [name, n] of Object.entries(filteredSteps)) {
         pass(filtered.get(name), name);
         assert.equal(filtered.get(name)?.run?.steps, n, `${name} steps`);

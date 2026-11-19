@@ -184,8 +184,47 @@ test('SIF-R05 a timer that runs out at t is looked at in phase 1, before a deliv
     assert.equal(store.x, 12);
 });
 
-test('SIF-R05 the zero-time wait picks the named message again at its event: a capacity-1 dropOldest overflow in between is respected', async () => {
-    // Kills: re-pick replaced by the message picked when the wait began.
+test('SIF-R05 a message queued when a state begins to wait is looked at before another activation of the occurrence runs, as in 2.2 (review 1 C-1)', async () => {
+    // The migrated text of the reviewer's model: b(3) is queued during S0's on entry; 2.2 took it before helper ran (seen 0).
+    const r = await parse(`package Dr {
+  port def In { requires event b(v: int); requires event c(); }
+  port def Out { provides event b(v: int); provides event c(); }
+  port def Ob { provides event res(v: int); }
+  port def Ib { requires event res(v: int); }
+  component def M {
+    port i: In;
+    port o: Ob;
+    attribute n: int = 0;
+    attribute seen: int = 0;
+    operation run() {
+      state S0 {
+        on entry { seen = 0; publish o.res(1); }
+        on receive i.b(v) { seen = n; to S1; }
+      }
+      state S1 { on receive i.c() to S0; }
+    }
+    operation helper() { n = n + 1; }
+    schedule { on start run(); on start helper(); }
+  }
+  component def D {
+    port q: Out;
+    port w: Ib;
+    operation emit() { publish q.b(3); }
+    operation other() { publish q.c(); }
+    operation sink(v: int) { }
+    schedule { on start emit(); on receive w.res(v) sink(v); }
+  }
+  component mm: M;
+  component d: D;
+  connect (d.q, mm.i);
+  connect (mm.o, d.w);
+}`);
+    assert.deepEqual(r.errors.map(e => e.message), []);
+    const result = simulate([r.model], 'Dr', { untilNs: 50e6 });
+    assert.deepEqual(result.stores['mm'], { n: 1, seen: 0 });
+});
+
+test('SIF-R05 a capacity-1 dropOldest overflow before the wait begins is respected: the state takes the newest message', async () => {
     const source = `package Flow {
   import Swaml::Qos;
   qos def One: Policy { delivery = Delivery.atMostOnce; ordering = Ordering.fifo; capacity = 1; overflow = Overflow.dropOldest; requestTimeout = 1s; }
@@ -205,13 +244,17 @@ test('SIF-R05 the zero-time wait picks the named message again at its event: a c
     assert.deepEqual(result.stores['c'], { x: 2, seen: 1 });
 });
 
-test('SIF-R06 SIF-T04 a taken message whose lines ran only false tests is noEnabledTransition; one taken by a look that left before its line is leftBeforeLine', async () => {
-    // Kills: the two discard reasons swapped.
+test('SIF-R06 SIF-T04 a taken message whose lines ran only false tests is noEnabledTransition; a look that leaves before a line on its member leaves the message queued for the next state', async () => {
     const false_ = await drive(machine('run() { state s { on receive p.m(v) { if (v > 5) exit; } on receive p.k() exit; } }'), 'publish p.m(1);');
     assert.ok(false_.lines.includes('0ms discard c.run (noEnabledTransition)'), false_.lines.join('\n'));
-    const before = await drive(machine('run() { state s { x = x + 1; if (x > 1) exit; on receive p.m(v) { y = v; } } }'), 'publish p.m(1);');
-    assert.ok(before.lines.includes('0ms discard c.run (leftBeforeLine)'), before.lines.join('\n'));
+    // Review 4 P1, review 3 F3: the message look of s leaves before its line; m stays queued and t takes it.
+    const before = await drive(machine('run() { state s { x = x + 1; if (x > 1) exit; on receive p.m(v) { y = v; } } state t { on receive p.m(v) { z = v + 100; } on receive p.k() exit; } }'), 'publish p.m(1);');
     assert.equal(before.store.y, 0);
+    assert.equal(before.store.z, 101, before.lines.join('\n'));
+    assert.ok(!before.lines.some(l => l.includes('discard')), before.lines.join('\n'));
+    // A next state that does not name it drops it when it begins to wait.
+    const dropped = await drive(machine('run() { state s { x = x + 1; if (x > 1) exit; on receive p.m(v) { y = v; } } state t { on receive p.k() exit; } }'), 'publish p.m(1);');
+    assert.ok(dropped.lines.includes('0ms discard p.m (inactiveOwner)'), dropped.lines.join('\n'));
 });
 
 test('SIF-R05 SIF-R06 owned members not named at the waiting state are dropped (inactiveOwner): queued when the wait begins, and on arrival', async () => {

@@ -1,0 +1,27 @@
+package SampledLine {
+  port def Sense { provides attribute current: uint = 0; }
+  component def L {
+    reversed port sense: Sense;
+    attribute looks: uint = 0;
+    attribute last: uint = 0;
+    operation run() {
+      state closing {
+        looks = looks + 1;
+        if (sense.current > 4500) exit;
+        on receive sense.current(v) { last = v; }
+      }
+    }
+    schedule { on start run(); }
+  }
+  component def Bench { port out: Sense; }
+  component l: L;
+  component bench: Bench;
+  connect (bench.out, l.sense);
+  associate bench to 'T';
+  test 'T' of l {
+    wait 1ms;
+    send bench.out.current(100);
+    wait 1ms;
+    assert l.looks == 2;
+  }
+}

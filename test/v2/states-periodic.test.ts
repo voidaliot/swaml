@@ -77,7 +77,7 @@ test('SIF-R14 to SIF-R17 the prototype periodic cases: parent line per release, 
     const expected: Record<string, [string, number]> = {
         'B2 a query at every release while closing and at the pinch': ['pass', 1302], 'Entered and left in one release': ['pass', 296],
         'Zero-time cycle in one release': ['pass', 125], 'Zero-time cycle that grows': ['pass', 160], 'End and restart': ['pass', 467],
-        'Deadline miss by a long look': ['fail', 168], 'Messages between releases': ['pass', 523],
+        'Deadline miss by a long look': ['fail', 168], 'Messages between releases': ['pass', 529],
     };
     for (const [name, [result, steps]] of Object.entries(expected)) {
         assert.equal(r.get(name)?.result, result, `${name}: ${r.get(name)?.message ?? ''}`);
@@ -100,11 +100,12 @@ test('SIF-R14 to SIF-R17 the prototype periodic cases: parent line per release, 
     // from that release is missed at 22 ms.
     const deadline = trace(r.get('Deadline miss by a long look')).find(e => e.kind === 'violation')!;
     assert.deepEqual([ms(deadline), deadline.code], [22, 'Deadline']);
-    // SIF-R15 (kills E3, two messages taken in one release): one message per release in delivery order; n, not named by a,
-    // is dropped at the release (both n were queued at a's first release look); after done, b takes m(4).
+    // SIF-R15 (kills E3, two messages taken in one release): one message per release in delivery order; at a release, input
+    // a does not name is dropped in delivery order until a named message is taken (the first n at 40 ms); input delivered
+    // after the message taken stays queued, as for a waiting machine, so the second n reaches b, which names it (70 ms).
     assert.deepEqual(writes(r.get('Messages between releases'), 'messages.got'), ['20ms 1', '30ms 12', '40ms 123', '60ms 1234']);
-    assert.deepEqual(writes(r.get('Messages between releases'), 'messages.ns'), []);
-    assert.equal(trace(r.get('Messages between releases')).filter(e => e.kind === 'discardInput' && e.reason === 'inactiveOwner').length, 2);
+    assert.deepEqual(writes(r.get('Messages between releases'), 'messages.ns'), ['70ms 1']);
+    assert.equal(trace(r.get('Messages between releases')).filter(e => e.kind === 'discardInput' && e.reason === 'inactiveOwner').length, 1);
 });
 
 test('reading sample 9: the periodic window controller (Q1 to Q5) and the traffic light and connection manager every 100 ms', async () => {
