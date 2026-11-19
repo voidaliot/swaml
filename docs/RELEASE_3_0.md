@@ -1,6 +1,6 @@
 # swa.ml 3.0 release
 
-**Unreleased; prepared 19 November 2026.** Standard 3.0, parser and host semantics 3.0, reference profile `swaml-reference/3.0`, reference implementation package 4.0.0. Nothing here is published until the `v3.0` tag and its verified reference, PDF, manifest and checksum exist ([VERSIONING.md](VERSIONING.md)).
+19 November 2026. Standard 3.0, parser and host semantics 3.0, reference profile `swaml-reference/3.0`, reference implementation package 4.0.0. The edition is published by the `v3.0` tag with its [complete reference](SWAML-3.0-Reference.md), [PDF](../output/pdf/SWAML-3.0-Specification.pdf), [source manifest](../output/pdf/SWAML-3.0-Specification.manifest.json) and [SHA-256 checksum](../output/pdf/SWAML-3.0-Specification.sha256) ([VERSIONING.md](VERSIONING.md)).
 
 swa.ml 3.0 is a **major edition**: it replaces the 2.2 state machines by states that are steps of the flow and removes the `when` keyword. Every valid 2.2 source without a state machine stays valid with unchanged meaning; a 2.2 source with a state machine is rewritten by `swaml migrate` ([migration guide](MIGRATION_3_0.md)). The edition was drafted under the name 2.3; its design record is kept in [docs/design](design/3.0-release-plan.md).
 
@@ -22,7 +22,7 @@ A state is an ordinary statement of a flow: `state s { … }`. The flow reaches 
 | Communication | Sampled reads `p.m` of required attributes that declare an initial value (sample cells, the `sample` observation); policies per connection member `connect … { crash: CanEvent; }` | ADR 0024 |
 | Schedules | Release guards `on every 20ms slot() if (g) deadline 2ms;` on `every`, `receive` and `after` entries; a false guard is a `skip` that counts as completion for `after` successors | ADR 0025 |
 | Placement | Deploy paths that end at released operations; `Swaml::Os` tasks with the static rules T1 to T7; equal-time work ordered by task priority and in-task position; the `swaml-binding/1` schema and `swaml binding check` | ADR 0025 |
-| Tools | `swaml migrate <file|dir> [--write]`: rewrites 2.2 machines and `when` release guards, a dry run by default, validated as a workspace | [MIGRATION_3_0.md](MIGRATION_3_0.md) |
+| Tools | `swaml migrate [--write] <file or directory>`: rewrites 2.2 machines and `when` release guards, a dry run by default, validated as a workspace | [MIGRATION_3_0.md](MIGRATION_3_0.md) |
 
 **New diagnostics** (warnings): SW2016 (a computed duration without a unit), SW2019 (two `every` entries of one occurrence with equal periods but different triggers), SW2020 (a release guard that folds to false, or a replacing entry that drops an inherited guard), SW2021 (an operation placement on a platform without a task). State rules use SW2008 and SW2006 (SIF-D01 to SIF-D04); task rules use SW2009. SW2017 and SW2018 are not used by any rule of 3.0.
 
@@ -57,7 +57,7 @@ What a tool that reads swa.ml must change (details per area in the [implementati
 
 ## Publication checklist
 
-Following [VERSIONING.md](VERSIONING.md) and [PDF_PUBLICATION.md](PDF_PUBLICATION.md); none of these steps is authorized by the preparation.
+Following [VERSIONING.md](VERSIONING.md) and [PDF_PUBLICATION.md](PDF_PUBLICATION.md). Steps 1 to 4 are done (the PDF tools ran; see [RELEASE_VALIDATION_3_0.md](RELEASE_VALIDATION_3_0.md)); step 5, the tag and the GitHub release, establishes the publication.
 
 1. Review and merge the release-preparation PR after its independent adversarial review; the complete `npm run check` and `node --test test/ci/*.test.mjs` on Node 26.12.0.
 2. Regenerate and check figures with the Python builders (`build-graphical-examples.py`, `build-notation.py`, `build-modeling-overview.py`, each then with `--check`).

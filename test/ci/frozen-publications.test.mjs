@@ -32,9 +32,9 @@ async function scratch(t, editions) {
 
 test('published editions and their frozen workspace copies are unchanged', async () => {
     const {pinned, copies, exceptions} = await checkFrozenPublications(repository);
-    assert.equal(pinned, 33);
-    assert.equal(copies, 241);
-    assert.equal(exceptions, 22);
+    assert.equal(pinned, 36);
+    assert.equal(copies, 351);
+    assert.equal(exceptions, 26);
 });
 
 test('a weakened archive checker or publication script fails', async t => {

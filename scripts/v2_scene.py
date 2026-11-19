@@ -72,7 +72,7 @@ def scene(title, template):
         for x in [320,470,620]:line(x,125,x,180);rect(x,205,30,34,'#dddddd');rect(x+30,205,60,34,'#ffffff',True)
         text(332,268,'wait / unlock',12);text(628,292,'deadline contract',12)
     elif template=='state':
-        dot(55,205);box(110,135,220,140,'state Off',['after 2ms to On']);box(400,135,230,140,'state On',['on entry: lit = true','on exit: lit = false']);dot(805,205,14);line(60,205,110,205);line(330,205,400,205);line(630,205,790,205,'after 3ms');text(670,305,'final state Done',14);text(80,345,'Nested transitions are tested in source order. Final entry completes the operation.',13)
+        dot(40,205);box(75,135,200,140,'state Off',['after 2ms exit;']);box(345,135,230,140,'state On',['on entry: lit = true','on exit: lit = false','after 3ms exit;']);box(645,135,150,140,'state Done',['nothing to look at']);dot(855,205,14);line(45,205,75,205);line(275,205,345,205);line(575,205,645,205);line(795,205,841,205);text(45,345,'States are steps of the flow: exit; goes on with the state written next; the end of the flow ends the operation.',13)
     elif template=='deployment':
         box(40,110,300,195,'software Demo',['workers[0]','workers[1]','workers[2]']);box(540,110,335,195,'Vehicle: Platform',['front: Ecu','rear[0]: Ecu','rear[1]: Ecu']);line(340,205,540,205,'deploy on',True);text(45,348,'Node targets own only const attributes and child Nodes; placement is separate.',13)
     elif template=='loop':

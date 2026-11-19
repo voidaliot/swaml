@@ -47,8 +47,8 @@ RELEASE = '3.0'
 REVISION = '3.0'
 LANGUAGE = '3.0'
 SIMULATION_PROFILE = 'swaml-reference/3.0'
-PUBLICATION_DATE = '10 November 2026'
-PUBLICATION_ISO = '2026-11-10'
+PUBLICATION_DATE = '19 November 2026'
+PUBLICATION_ISO = '2026-11-19'
 STANDARD = json.loads((ROOT/'spec/standard.json').read_text(encoding='utf-8'))['version']
 if STANDARD != REVISION:
     raise RuntimeError(f'This builder targets standard {REVISION}, but spec/standard.json is {STANDARD}. A new edition requires an explicitly versioned builder and publication review.')
@@ -251,7 +251,7 @@ class Cover(Flowable):
 class Book(BaseDocTemplate):
     def __init__(self, filename: str):
         super().__init__(filename,pagesize=A4,leftMargin=MARGIN,rightMargin=MARGIN,topMargin=48,bottomMargin=44,
-                         title=f'swa.ml {RELEASE} Complete Language Specification',author='Catalin Ilie and swa.ml contributors',
+                         title=f'swa.ml {RELEASE} Complete Language Specification',author='swa.ml contributors',
                          subject=f'Software Architecture Modeling Language {RELEASE}: normative specification, grammar and examples',
                          pageCompression=1)
         self.addPageTemplates(PageTemplate(id='book',frames=[Frame(MARGIN,44,WIDTH,PAGE_H-92,leftPadding=0,rightPadding=0,topPadding=0,bottomPadding=0)],onPageEnd=self.decorate))
@@ -425,11 +425,11 @@ def main():
     args=parser.parse_args();fonts(args.font_dir);args.output.parent.mkdir(parents=True,exist_ok=True)
     story=[Cover(),PageBreak(),heading('About this edition',1,'edition')]
     story.extend([Paragraph(f'STANDARD {RELEASE} / RELEASE EDITION, {PUBLICATION_DATE.upper()}',STYLES['label']),
-        Paragraph(f'This book contains the complete swa.ml {RELEASE} language specification, every keyword in alphabetical order, formal execution rules, flat notation examples, an ontology and view guide, a reference simulation binding, the complete grammar, runnable model examples and the release notes for the syntax-preserving additions to 2.1. Source files are headerless and begin with packages; hosts select and pin parser {LANGUAGE} and the reference profile {SIMULATION_PROFILE}. A package is a closed context: its top-level occurrences, package connections, executable use cases and tests, and requirement links live side by side.',STYLES['body']),
+        Paragraph(f'This book contains the complete swa.ml {RELEASE} language specification, every keyword in alphabetical order, formal execution rules, flat notation examples, an ontology and view guide, a reference simulation binding, the complete grammar, runnable model examples, the release notes and the migration guide of this major edition, which replaces the 2.2 state machines by states that are steps of the flow. Source files are headerless and begin with packages; hosts select and pin parser {LANGUAGE} and the reference profile {SIMULATION_PROFILE}. A package is a closed context: its top-level occurrences, package connections, executable use cases and tests, and requirement links live side by side.',STYLES['body']),
         Paragraph('Normative chapters define syntax, validity, interface isolation, operation/state behavior, case scripts and mapping obligations. Tutorials and figures illustrate these rules. This independently authored language is not an OMG UML release or an AUTOSAR implementation. KerML export remains a proposed semantic mapping contract.',STYLES['body']),
         Paragraph(f'The standard uses MAJOR.MINOR versions: this is standard {RELEASE}. The reference parser, validator, deterministic logical-time simulator and case runner of the reference implementation package {IMPLEMENTATION} provide executable evidence; the package version follows its own SemVer lifecycle. A passing case is bounded evidence of one deterministic run, not proof. Production timing, runtime and platform mappings require the target binding and evidence defined in the normative chapters.',STYLES['body']),
         table([['Navigation','How to use this PDF'],['Contents and bookmarks','Select a contents entry or use the PDF outline to open a chapter or section.'],['Cross-references',f'Links to included documents jump inside this book. Other repository links target the v{RELEASE} release tag.'],['Code and tables','Code is selectable, numbered and wrapped without omitting source text. Tables repeat their headers across pages.'],['Source record','The build manifest lists every included source and its SHA-256 digest. Original source files are embedded as PDF attachments. The release includes a PDF checksum.']]),
-        Paragraph('Original text and code: MIT license, copyright 2026 Catalin Ilie. Referenced standards retain their own terms; no standards PDFs are redistributed. Full license text appears at the end.',STYLES['small']),
+        Paragraph('Original text and code: MIT license; the copyright notice is part of the full license text at the end. Referenced standards retain their own terms; no standards PDFs are redistributed. Full license text appears at the end.',STYLES['small']),
         PageBreak()])
     toc_title=Paragraph('Contents',STYLES['h1']);toc_title.running_title='Contents';story.append(toc_title)
     toc=TableOfContents();toc.levelStyles=[STYLES['toc0'],STYLES['toc1']];story.append(toc)
