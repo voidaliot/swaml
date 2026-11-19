@@ -1,0 +1,38 @@
+package Sw {
+  port def In { requires event p(a: int, b: int); }
+  port def Out { provides event p(a: int, b: int); }
+  port def Ob { provides event res(v: int); }
+  port def Ib { requires event res(v: int); }
+  component def M {
+    port i: In;
+    port q: Ob;
+    port o: Ob;
+    attribute r: int = 0;
+    operation run() {
+      initial S0;
+      state S0 {
+        on receive i.p(q, b) when (q > 100) to S0 { r = 1; }
+        on receive i.p(o, b) when (o > b) to S1 { publish o.res(o); }
+      }
+      final state S1 { }
+    }
+    operation ping() { publish q.res(99); publish o.res(98); }
+    schedule { on start run(); }
+  }
+  component def D {
+    port q: Out;
+    port wo: Ib;
+    port wq: Ib;
+    attribute viaO: int = 0;
+    attribute viaQ: int = 0;
+    operation emit() { publish q.p(7, 2); }
+    operation fromO(v: int) { viaO = v; }
+    operation fromQ(v: int) { viaQ = v; }
+    schedule { on start emit(); on receive wo.res(v) fromO(v); on receive wq.res(v) fromQ(v); }
+  }
+  component mm: M;
+  component d: D;
+  connect (d.q, mm.i);
+  connect (mm.o, d.wo);
+  connect (mm.q, d.wq);
+}

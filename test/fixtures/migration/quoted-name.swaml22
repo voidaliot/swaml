@@ -1,0 +1,27 @@
+package Sw {
+  port def In { requires event p(a: int, b: int); }
+  port def Out { provides event p(a: int, b: int); }
+  component def M {
+    port i: In;
+    attribute r: int = 0;
+    attribute 'x b y': int = 40;
+    attribute 'x a y': int = 1000; attribute 'x c y': int = 3;
+    operation run() {
+      initial S0;
+      state S0 {
+        on receive i.p(a, b) when (a > 100) to S0 { r = 1; }
+        on receive i.p(c, b) when (c > b) to S1 { r = 'x c y' + c; }
+      }
+      final state S1 { }
+    }
+    schedule { on start run(); }
+  }
+  component def D {
+    port q: Out;
+    operation emit() { publish q.p(7, 2); }
+    schedule { on start emit(); }
+  }
+  component mm: M;
+  component d: D;
+  connect (d.q, mm.i);
+}

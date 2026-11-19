@@ -2,6 +2,7 @@
 // per step of the recipe, read with the kept 2.2 grammar. Needs a build (out/).
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { migrateSource, migrationTools } from '../../scripts/migrate-machines.mjs';
 
 const tools = await migrationTools();
@@ -213,4 +214,53 @@ test('M-2 (review 1): the CLI validates the migrated text and writes nothing, ex
     assert.match(out, /does not validate, nothing written/);
     assert.match(out, /needs an emitting operation/);
     assert.equal(readFileSync(file, 'utf8'), before);
+});
+
+// ---------------------------------------------------------------- review 5: N1
+const fixture = name => readFileSync(new URL(`../fixtures/migration/${name}`, import.meta.url), 'utf8');
+
+test('N1 (review 5): a binding word inside a quoted name is not renamed; a binding written before . (a port named alike) refuses the machine', () => {
+    const quoted = migrateSource(fixture('quoted-name.swaml22'), tools.parse, tools.identity);
+    assert.deepEqual(quoted.refused, []);
+    assert.ok(quoted.text.includes("'x c y'") && !quoted.text.includes("'x a y' + a"), quoted.text);
+    const port = migrateSource(fixture('port-like-binding.swaml22'), tools.parse, tools.identity);
+    assert.equal(port.text, undefined);
+    assert.ok(port.refused.some(x => x.includes("written before '.'")), JSON.stringify(port.refused));
+});
+
+test('N1 (review 5): generated quoted names and port/binding clashes never rename a quoted name or a port', () => {
+    const names = ['a', 'b', 'c'];
+    let n = 0;
+    for (const first of names)
+        for (const second of names.filter(x => x !== first)) {
+            // A quoted name holding the second binding's word, read beside the binding.
+            const quoted = pair([first, 'y', 'z'], [second, 'y', 'z'], `r = r + '${second} ${first} q'; `);
+            const text = quoted.text ?? '';
+            assert.ok(quoted.refused.length || text.includes(`'${second} ${first} q'`), `${first}/${second}: ${text}`);
+            // The second binding spelled like a port of the component, used before '.'.
+            const clash = migrateSource(`package Sw {
+  port def In { requires event p(a: int, b: int); }
+  port def Ob { provides event res(v: int); }
+  component def M {
+    port i: In;
+    port ${first}: Ob;
+    port ${second}: Ob;
+    attribute r: int = 0;
+    operation run() {
+      initial S0;
+      state S0 {
+        on receive i.p(${first}, y) when (${first} > 100) to S0 { r = 1; }
+        on receive i.p(${second}, y) when (${second} > y) to S1 { publish ${second}.res(${second}); }
+      }
+      final state S1 { }
+    }
+    operation ping() { publish ${first}.res(1); }
+    schedule { on start run(); }
+  }
+}
+`, tools.parse, tools.identity);
+            assert.equal(clash.text, undefined, `${first}/${second}`);
+            n++;
+        }
+    assert.equal(n, 6);
 });

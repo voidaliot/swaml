@@ -37,11 +37,15 @@ const kind = t => t.endpoint ? 'receive' : (t.delay || t.delayValue) ? 'timer' :
 const text = n => n.$cstNode.text;
 const escape = name => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const word = name => new RegExp(`(?<![\\w'.])${escape(name)}(?![\\w'])`, 'g');
-/** String literals and comments of a text, which renames never touch: [start, end) offsets. */
-const literals = str => [...str.matchAll(/"(?:[^"\\\n]|\\.)*"|\/\/[^\n]*|\/\*[\s\S]*?\*\//g)].map(m => [m.index, m.index + m[0].length]);
+/** String literals, quoted names and comments of a text, which renames never touch: one pattern, and [start, end) offsets. */
+const LITERAL = /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|\/\/[^\n]*|\/\*[\s\S]*?\*\//g;
+const literals = str => [...str.matchAll(LITERAL)].map(m => [m.index, m.index + m[0].length]);
+/** Whether name is written before '.' outside literals: a port or a field of that name, which the text cannot tell apart. */
+const qualifies = (str, name) => new RegExp(`(?<![\\w'.])${escape(name)}\\s*\\.`).test(str.replace(LITERAL, ' '));
 /**
  * Renames every name of pairs at once (one pass over the text, so swapped names never collapse: review 1 M-1), outside
- * string literals and comments (review 1 M-3).
+ * string literals, quoted names and comments (review 1 M-3, review 5 N1). The caller refuses a rename of a name written
+ * before '.' (qualifies), so a port spelled like a binding is never renamed.
  */
 function renameAll(str, pairs) {
     if (!pairs.length)
@@ -214,6 +218,9 @@ function migrateMachine(source, op, b, identity) {
                 for (const [, y] of pairs)
                     if (word(y).test(written) && !names.includes(y))
                         refused = `the binding ${y} would be captured in ${s.name}`;
+                for (const [x] of pairs)
+                    if (qualifies(written, x))
+                        refused = `the binding ${x} of ${s.name} is written before '.' (a port or a field named like it); rename it by hand`;
                 report.renamedBindings.push(`${s.name}: ${pairs.map(([x, y]) => `${x} -> ${y}`).join(', ')}`);
                 return str => renameAll(str, pairs);
             });
